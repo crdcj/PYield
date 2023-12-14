@@ -3,12 +3,12 @@
 ## Introduction
 
 Welcome to PYield, a Python library designed for the analysis of fixed income instruments in Brazil. This library is tailored for financial analysts, researchers, and enthusiasts interested in the Brazilian fixed income market. Leveraging the power of popular Python libraries like Pandas and Requests, PYield simplifies the process of obtaining and processing data from key sources such as Tesouro Nacional (TN), Banco Central (BC), ANBIMA, and B3.
-Features
+## Features
 
-    Data Collection: Automated fetching of data from TN, BC, ANBIMA, and B3.
-    Data Processing: Efficient processing and normalization of fixed income data.
-    Analysis Tools: Built-in functions for common analysis tasks in fixed income markets.
-    Easy Integration: Seamless integration with Python data analysis workflows.
+- Data Collection: Automated fetching of data from TN, BC, ANBIMA, and B3.
+- Data Processing: Efficient processing and normalization of fixed income data.
+- Analysis Tools: Built-in functions for common analysis tasks in fixed income markets.
+- Easy Integration: Seamless integration with Python data analysis workflows.
 
 ##Installation
 
