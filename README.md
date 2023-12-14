@@ -31,7 +31,8 @@ anbima_data = py.get_anbima_data()
 
 # Analyze data
 analysis_results = py.analyze(anbima_data)
-```
+```python
+
 ##Documentation
 
 For detailed documentation on all features and functionalities, please visit PYield Documentation.
