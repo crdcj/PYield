@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyield"
+version = "0.1.0"
+description = "A Python library for analysis of fixed income instruments in Brazil"
+authors = [
+    {name = "Carlos Carvalho", email = "cr.cj@outlook.com"},
+    {name = "Felipe Costa", email = "felipe@..."},
+]
+readme = "README.md"
+license = "MIT"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Topic :: Office/Business :: Financial :: Investment"
+]
+keywords = ["fixed-income, brazil, finance, analysis, bonds"]
+
+dependencies = [
+    "requests",
+    "pandas",    
+]
+[tool.black]
+line-length = 88
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
