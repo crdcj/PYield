@@ -10,13 +10,13 @@ Welcome to PYield, a Python library designed for the analysis of fixed income in
 - Analysis Tools: Built-in functions for common analysis tasks in fixed income markets.
 - Easy Integration: Seamless integration with Python data analysis workflows.
 
-##Installation
+## Installation
 
 You can install PYield using pip:
 ```sh
 pip install pyield
 ```
-Usage
+## Usage
 
 Here is a quick example of how to use PYield:
 
@@ -31,9 +31,9 @@ anbima_data = py.get_anbima_data()
 
 # Analyze data
 analysis_results = py.analyze(anbima_data)
-```python
+```
 
-##Documentation
+## Documentation
 
 For detailed documentation on all features and functionalities, please visit PYield Documentation.
 Contributing
