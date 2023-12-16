@@ -21,16 +21,10 @@ pip install pyield
 Here is a quick example of how to use PYield:
 
 ```python
-import pyield
+import pyield as yd
 
 # Initialize the library
-py = pyield.PYield()
-
-# Fetch data from ANBIMA
-anbima_data = py.get_anbima_data()
-
-# Analyze data
-analysis_results = py.analyze(anbima_data)
+df_di = yd.di(reference_date='15-12-2023')
 ```
 
 ## Documentation
