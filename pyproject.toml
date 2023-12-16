@@ -22,6 +22,10 @@ classifiers = [
 dependencies = [
     "requests",
     "pandas",
+    "numpy",
+    "beautifulsoup4",
+    "html5lib",
+    "lxml",
 ]
 dynamic = ["version"]
 
@@ -31,3 +35,7 @@ Source = "https://github.com/crdcj/PYield"
 [tool.pdm]
 package-type = "library"
 version = {source = "file", path = "pyield/__about__.py" }
+[tool.pdm.dev-dependencies]
+dev = [
+    "ipykernel>=6.27.1",
+]
