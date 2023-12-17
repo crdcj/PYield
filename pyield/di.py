@@ -1,5 +1,5 @@
 import io
-
+import warnings
 import requests
 import pandas as pd
 
@@ -81,21 +81,29 @@ def get_raw_di_data(reference_date: pd.Timestamp) -> pd.DataFrame:
     url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={reference_date.strftime('%d/%m/%Y')}&Mercadoria=DI1&XLS=false"
     r = requests.get(url)
     f = io.StringIO(r.text)
-    # Get the first table in the page that matches the header "AJUSTE"
-    df = pd.read_html(
-        f,
-        match="AJUSTE",
-        header=1,
-        thousands=".",
-        decimal=",",
-        dtype_backend="numpy_nullable",
-    )[0]
-    # Remove rows with all NaN values
-    df = df.dropna(how="all")
-    # Remove columns with all NaN values
-    df = df.dropna(axis=1, how="all")
 
-    return df
+    try:
+        # Attempt to get the first table with the header "AJUSTE"
+        df = pd.read_html(
+            f,
+            match="AJUSTE",
+            header=1,
+            thousands=".",
+            decimal=",",
+            dtype_backend="numpy_nullable",
+        )[0]
+        # Remove rows with all NaN values
+        df = df.dropna(how="all")
+        # Remove columns with all NaN values
+        df = df.dropna(axis=1, how="all")
+        return df
+
+    except ValueError:
+        # Emit a warning indicating the absence of data for the specific date
+        warnings.warn(
+            f"No data found for the date {reference_date.strftime('%d/%m/%Y')}. Returning an empty DataFrame."
+        )
+        return pd.DataFrame()
 
 
 def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
@@ -109,6 +117,10 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     Returns:
         pd.DataFrame: Processed and transformed data as a Pandas DataFrame.
     """
+    # Check if the DataFrame is empty
+    if df.empty:
+        return df
+
     df = df.rename(
         columns={
             "VENCTO": "contract_code",
