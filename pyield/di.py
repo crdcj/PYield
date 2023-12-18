@@ -197,6 +197,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     ]
     if reference_date < pd.Timestamp("2006-05-22"):
         for col in rate_columns:
+            # Force conversion to float, since sometimes column is read as int
             df[col] = df[col].astype(float)
             df[col] = np.where(
                 df[col] == 0, 0, (100_000 / df[col]) ** (252 / df["bday"]) - 1
