@@ -118,6 +118,8 @@ def get_raw_di_data(reference_date: pd.Timestamp) -> pd.DataFrame:
             header=1,
             thousands=".",
             decimal=",",
+            # Avoid parsing "-" as a string. See column "AJUSTE CORRIG. (4)" in 02/01/2006.
+            na_values=["-"],
             dtype_backend="numpy_nullable",
         )[0]
         # Remove rows with all NaN values
@@ -126,10 +128,9 @@ def get_raw_di_data(reference_date: pd.Timestamp) -> pd.DataFrame:
         df = df.dropna(axis=1, how="all")
         return df
 
-    except ValueError:
-        # Emit a warning indicating the absence of data for the specific date
+    except Exception as e:
         warnings.warn(
-            f"No data found for the date {reference_date.strftime('%d/%m/%Y')}. Returning an empty DataFrame."
+            f"A {type(e).__name__} occurred while reading the DI futures data for {reference_date.strftime("%d/%m/%Y")}. Is this a valid date? Returning an empty DataFrame."
         )
         return pd.DataFrame()
 
@@ -157,14 +158,14 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
             "NÚM. NEGOC.": "number_of_trades",
             "CONTR. NEGOC.": "trading_volume",
             "VOL.": "financial_volume",
-            "AJUSTE ANTER. (3)": "prev_settlement",
-            "AJUSTE CORRIG. (4)": "adj_prev_settlement",
+            "AJUSTE ANTER. (3)": "prev_settlement_rate",
+            "AJUSTE CORRIG. (4)": "adj_prev_settlement_rate",
             "PREÇO ABERTU.": "opening_rate",
             "PREÇO MÍN.": "min_rate",
             "PREÇO MÁX.": "max_rate",
             "PREÇO MÉD.": "avg_rate",
-            "ÚLT. PREÇO": "last_rate",
-            "AJUSTE": "settlement",
+            "ÚLT. PREÇO": "closing_rate",
+            "AJUSTE": "settlement_rate",
             "VAR. PTOS.": "point_variation",
             "ÚLT.OF. COMPRA": "last_bid",
             "ÚLT.OF. VENDA": "last_offer",
@@ -180,30 +181,53 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
         df["maturity"] = df["contract_code"].apply(convert_contract_code)
 
     df["bday"] = wd.count_business_days(reference_date, df["maturity"])
+    # Remove rows with bday <= 0
+    df = df[df["bday"] > 0]
 
-    df["settlement_rate"] = (100_000 / df["settlement"]) ** (252 / df["bday"]) - 1
-    # Convert to percentage and round to 3 decimal places
-    df["settlement_rate"] = (100 * df["settlement_rate"]).round(3)
-
-    # Prior to 01/01/2002, prices were not converted to rates
-    rate_columns = [
+    # Columns where 0 means NaN
+    cols_with_nan = [
+        "prev_settlement_rate",
+        "adj_prev_settlement_rate",
+        "settlement_rate",
         "opening_rate",
         "min_rate",
         "max_rate",
         "avg_rate",
-        "last_rate",
+        "closing_rate",
+        "last_bid",
+        "last_offer",
+    ]
+    for col in cols_with_nan:
+        df[cols_with_nan] = df[cols_with_nan].replace(0, np.nan)
+
+    # Convert prices to rates in settlement columns
+    settlement_cols = [
+        "prev_settlement_rate",
+        "adj_prev_settlement_rate",
+        "settlement_rate",
+    ]
+    for col in settlement_cols:
+        df[col] = (100_000 / df[col]) ** (252 / df["bday"]) - 1
+        # Convert to percentage and round to 3 decimal places
+        df[col] = (100 * df[col]).round(3)
+
+    # Prior to 01/01/2002, prices were not converted to rates
+    convert_cols = [
+        "opening_rate",
+        "min_rate",
+        "max_rate",
+        "avg_rate",
+        "closing_rate",
         "last_bid",
         "last_offer",
     ]
     if reference_date < pd.Timestamp("2002-01-01"):
-        for col in rate_columns:
-            # Force conversion to float, since sometimes columns are read as int
-            df[col] = df[col].astype(float)
-            df[col] = np.where(
-                df[col] == 0, 0, (100_000 / df[col]) ** (252 / df["bday"]) - 1
-            )
+        for col in convert_cols:
+            df[col] = (100_000 / df[col]) ** (252 / df["bday"]) - 1
             # Convert to percentage and round to 3 decimal places
             df[col] = (100 * df[col]).round(3)
+        # Invert low and high prices
+        df["min_rate"], df["max_rate"] = df["max_rate"], df["min_rate"]
 
     # Order columns
     df = df[
@@ -215,16 +239,15 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
             "number_of_trades",
             "trading_volume",
             "financial_volume",
-            "prev_settlement",
-            "adj_prev_settlement",
-            "settlement",
             "opening_rate",
             "min_rate",
             "max_rate",
             "avg_rate",
-            "last_rate",
+            "closing_rate",
             "last_bid",
             "last_offer",
+            "prev_settlement_rate",
+            "adj_prev_settlement_rate",
             "settlement_rate",
         ]
     ]

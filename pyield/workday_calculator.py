@@ -20,6 +20,17 @@ HOLIDAYS_NPA = df["date"].values.astype("datetime64[D]")
 # HOLIDAYS_STR = df["date"].dt.strftime("%Y-%m-%d").to_list()
 
 
+def convert_to_numpy_date(dates):
+    if isinstance(dates, pd.Timestamp):
+        return dates.to_numpy().astype("datetime64[D]")
+    else:
+        return dates.values.astype("datetime64[D]")
+
+
+def adjust_to_next_business_day(dates):
+    return np.busday_offset(dates, 0, roll="forward", holidays=HOLIDAYS_NPA)
+
+
 def count_business_days(
     start_dates: pd.Series | pd.Timestamp,
     end_dates: pd.Series | pd.Timestamp,
@@ -55,16 +66,12 @@ def count_business_days(
         >>> bday_count(start_series, end_series)
         array([22, 18])
     """
-    # Convert start_dates to the corresponding numpy type
-    if isinstance(start_dates, pd.Timestamp):
-        start_dates = start_dates.to_numpy().astype("datetime64[D]")
-    else:
-        start_dates = start_dates.values.astype("datetime64[D]")
+    # Convert to numpy date format
+    start_dates = convert_to_numpy_date(start_dates)
+    end_dates = convert_to_numpy_date(end_dates)
 
-    # Convert end_dates to the corresponding numpy type
-    if isinstance(end_dates, pd.Timestamp):
-        end_dates = end_dates.to_numpy().astype("datetime64[D]")
-    else:
-        end_dates = end_dates.values.astype("datetime64[D]")
+    # Adjust start and end dates to the next business day if they fall on a holiday or weekend
+    start_dates = adjust_to_next_business_day(start_dates)
+    end_dates = adjust_to_next_business_day(end_dates)
 
     return np.busday_count(start_dates, end_dates, holidays=HOLIDAYS_NPA)
