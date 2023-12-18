@@ -118,8 +118,6 @@ def get_raw_di_data(reference_date: pd.Timestamp) -> pd.DataFrame:
             header=1,
             thousands=".",
             decimal=",",
-            # Avoid parsing "-" as a string. See column "AJUSTE CORRIG. (4)" in 02/01/2006.
-            na_values=["-"],
             dtype_backend="numpy_nullable",
         )[0]
         # Remove rows with all NaN values
@@ -171,7 +169,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
             "ÚLT.OF. VENDA": "last_offer",
         }
     )
-
+            
     # Contract code format was changed in 22/05/2006
     if reference_date < pd.Timestamp("2006-05-22"):
         df["maturity"] = df["contract_code"].apply(
@@ -183,6 +181,12 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     df["bday"] = wd.count_business_days(reference_date, df["maturity"])
     # Remove rows with bday <= 0
     df = df[df["bday"] > 0]
+
+    # Column "adj_prev_settlement_rate" can contain "-" values. Convert them to NaN.
+    df["adj_prev_settlement_rate"] = (df["adj_prev_settlement_rate"]
+        .replace("-", np.nan)
+        .astype(pd.Float64Dtype())
+    )
 
     # Columns where 0 means NaN
     cols_with_nan = [
