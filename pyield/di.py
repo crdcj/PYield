@@ -2,8 +2,38 @@ import io
 import warnings
 import requests
 import pandas as pd
+import numpy as np
 
 from . import workday_calculator as wd
+
+
+def convert_old_contract_code(
+    contract_code: str, reference_date: pd.Timestamp
+) -> pd.Timestamp:
+    month_codes = {
+        "JAN": 1,
+        "FEV": 2,
+        "MAR": 3,
+        "ABR": 4,
+        "MAI": 5,
+        "JUN": 6,
+        "JUL": 7,
+        "AGO": 8,
+        "SET": 9,
+        "OUT": 10,
+        "NOV": 11,
+        "DEZ": 12,
+    }
+    month_code = contract_code[:3]
+    month = month_codes[month_code]
+
+    base_year = reference_date.year
+    year_codes = {}
+    for year in range(base_year, base_year + 10):
+        year_codes[str(year)[-1:]] = year
+
+    year = year_codes[contract_code[-1:]]
+    return pd.Timestamp(year, month, 1)
 
 
 def convert_contract_code(contract_code: str) -> pd.Timestamp:
@@ -57,12 +87,10 @@ def convert_contract_code(contract_code: str) -> pd.Timestamp:
 
     try:
         month_code = contract_code[0]
+        month = month_codes[month_code]
         year = int("20" + contract_code[-2:])
-        if month_code in month_codes:
-            month = month_codes[month_code]
-            return pd.Timestamp(year, month, 1)
-        else:
-            return pd.NaT
+        return pd.Timestamp(year, month, 1)
+
     except ValueError:
         return pd.NaT
 
@@ -143,12 +171,39 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
         }
     )
 
-    df["maturity"] = df["contract_code"].apply(convert_contract_code)
+    # Contract code format was changed in 22/05/2006
+    if reference_date < pd.Timestamp("2006-05-22"):
+        df["maturity"] = df["contract_code"].apply(
+            convert_old_contract_code, args=(reference_date,)
+        )
+    else:
+        df["maturity"] = df["contract_code"].apply(convert_contract_code)
+
     df["bday"] = wd.count_business_days(reference_date, df["maturity"])
 
     df["settlement_rate"] = (100_000 / df["settlement"]) ** (252 / df["bday"]) - 1
-    # Convert to percentage and round to 4 decimal places
-    df["settlement_rate"] = (100 * df["settlement_rate"]).round(4)
+    # Convert to percentage and round to 3 decimal places
+    df["settlement_rate"] = (100 * df["settlement_rate"]).round(3)
+
+    # Prior to 22/05/2006, prices were not converted to rates
+    rate_columns = [
+        "opening_rate",
+        "min_rate",
+        "max_rate",
+        "avg_rate",
+        "last_rate",
+        "last_bid",
+        "last_offer",
+    ]
+    if reference_date < pd.Timestamp("2006-05-22"):
+        for col in rate_columns:
+            df[col] = df[col].astype(float)
+            df[col] = np.where(
+                df[col] == 0, 0, (100_000 / df[col]) ** (252 / df["bday"]) - 1
+            )
+            # Convert to percentage and round to 3 decimal places
+            df[col] = (100 * df[col]).round(3)
+
     # Order columns
     df = df[
         [
