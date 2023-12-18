@@ -185,7 +185,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     # Convert to percentage and round to 3 decimal places
     df["settlement_rate"] = (100 * df["settlement_rate"]).round(3)
 
-    # Prior to 22/05/2006, prices were not converted to rates
+    # Prior to 01/01/2002, prices were not converted to rates
     rate_columns = [
         "opening_rate",
         "min_rate",
@@ -195,9 +195,9 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
         "last_bid",
         "last_offer",
     ]
-    if reference_date < pd.Timestamp("2006-05-22"):
+    if reference_date < pd.Timestamp("2002-01-01"):
         for col in rate_columns:
-            # Force conversion to float, since sometimes column is read as int
+            # Force conversion to float, since sometimes columns are read as int
             df[col] = df[col].astype(float)
             df[col] = np.where(
                 df[col] == 0, 0, (100_000 / df[col]) ** (252 / df["bday"]) - 1
