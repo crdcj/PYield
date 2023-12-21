@@ -23,8 +23,12 @@ Here is a quick example of how to use PYield:
 ```python
 import pyield as yd
 
-# Initialize the library
+# Get DI raw data from B3
+df_di_raw = yd.di(reference_date='15-12-2023', raw=True)
+
+# Get DI processed data from B3 (default)
 df_di = yd.di(reference_date='15-12-2023')
+
 ```
 
 ## Documentation

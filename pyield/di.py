@@ -149,6 +149,25 @@ def convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
     return (100 * rates).round(3)
 
 
+def convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
+    # Prior to 01/01/2002, prices were not converted to rates
+    convert_cols = [
+        "opening_rate",
+        "min_rate",
+        "max_rate",
+        "avg_rate",
+        "closing_rate",
+        "last_bid",
+        "last_offer",
+    ]
+    for col in convert_cols:
+        df[col] = convert_prices_to_rates(df[col], df["bdays"])
+    # Invert low and high prices
+    df["min_rate"], df["max_rate"] = df["max_rate"], df["min_rate"]
+
+    return df        
+
+
 def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
@@ -195,22 +214,13 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
         df["maturity"] = df["contract_code"].apply(convert_contract_code)
 
     df["bdays"] = wd.count_business_days(reference_date, df["maturity"])
-    # Previous settlement rates have one more business day
-    df["prev_bd"] = df["bdays"] + 1
-
+    # Convert to nullable integer, since other columns use this data type
+    df["bdays"] = df["bdays"].astype(pd.Int64Dtype())
     # Remove rows with bday <= 0
     df = df[df["bdays"] > 0]
     
-    # Column "adj_prev_settlement_price" can contain "-" values. Convert them to NaN.
-    df["adj_prev_settlement_price"] = (df["adj_prev_settlement_price"]
-        .replace("-", np.nan)
-        .astype(pd.Float64Dtype())
-    )
-
     # Columns where 0 means NaN
     cols_with_nan = [
-        "prev_settlement_price",
-        "adj_prev_settlement_price",
         "settlement_price",
         "opening_rate",
         "min_rate",
@@ -226,21 +236,9 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     df["settlement_rate"] = convert_prices_to_rates(df["settlement_price"], df["bdays"])
 
     # Prior to 01/01/2002, prices were not converted to rates
-    convert_cols = [
-        "opening_rate",
-        "min_rate",
-        "max_rate",
-        "avg_rate",
-        "closing_rate",
-        "last_bid",
-        "last_offer",
-    ]
     if reference_date < pd.Timestamp("2002-01-01"):
-        for col in convert_cols:
-            df[col] = convert_prices_to_rates(df[col], df["bdays"])
-        # Invert low and high prices
-        df["min_rate"], df["max_rate"] = df["max_rate"], df["min_rate"]
-
+        df = convert_prices_in_older_contracts(df)
+    
     # Order columns
     df = df[
         [
