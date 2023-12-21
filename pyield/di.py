@@ -4,7 +4,7 @@ import requests
 import pandas as pd
 import numpy as np
 
-from . import workday_calculator as wd
+from . import bd_calculator as wd
 
 
 def convert_old_contract_code(
@@ -133,6 +133,22 @@ def get_raw_di_data(reference_date: pd.Timestamp) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
+    """
+    Internal function to convert DI futures prices to rates.
+
+    Args:
+        prices (pd.Series): A Series containing DI futures prices.
+        bd (pd.Series): A Series containing the number of business days to maturity.
+
+    Returns:
+        pd.Series: A Series containing DI futures rates.
+    """
+    rates = (100_000 / prices) ** (252 / bd) - 1
+    # Convert to percentage and round to 3 decimal places
+    return (100 * rates).round(3)
+
+
 def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
@@ -156,14 +172,14 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
             "NÚM. NEGOC.": "number_of_trades",
             "CONTR. NEGOC.": "trading_volume",
             "VOL.": "financial_volume",
-            "AJUSTE ANTER. (3)": "prev_settlement_rate",
-            "AJUSTE CORRIG. (4)": "adj_prev_settlement_rate",
+            "AJUSTE ANTER. (3)": "prev_settlement_price",
+            "AJUSTE CORRIG. (4)": "adj_prev_settlement_price",
             "PREÇO ABERTU.": "opening_rate",
             "PREÇO MÍN.": "min_rate",
             "PREÇO MÁX.": "max_rate",
             "PREÇO MÉD.": "avg_rate",
             "ÚLT. PREÇO": "closing_rate",
-            "AJUSTE": "settlement_rate",
+            "AJUSTE": "settlement_price",
             "VAR. PTOS.": "point_variation",
             "ÚLT.OF. COMPRA": "last_bid",
             "ÚLT.OF. VENDA": "last_offer",
@@ -178,21 +194,24 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     else:
         df["maturity"] = df["contract_code"].apply(convert_contract_code)
 
-    df["bday"] = wd.count_business_days(reference_date, df["maturity"])
-    # Remove rows with bday <= 0
-    df = df[df["bday"] > 0]
+    df["bdays"] = wd.count_business_days(reference_date, df["maturity"])
+    # Previous settlement rates have one more business day
+    df["prev_bd"] = df["bdays"] + 1
 
-    # Column "adj_prev_settlement_rate" can contain "-" values. Convert them to NaN.
-    df["adj_prev_settlement_rate"] = (df["adj_prev_settlement_rate"]
+    # Remove rows with bday <= 0
+    df = df[df["bdays"] > 0]
+    
+    # Column "adj_prev_settlement_price" can contain "-" values. Convert them to NaN.
+    df["adj_prev_settlement_price"] = (df["adj_prev_settlement_price"]
         .replace("-", np.nan)
         .astype(pd.Float64Dtype())
     )
 
     # Columns where 0 means NaN
     cols_with_nan = [
-        "prev_settlement_rate",
-        "adj_prev_settlement_rate",
-        "settlement_rate",
+        "prev_settlement_price",
+        "adj_prev_settlement_price",
+        "settlement_price",
         "opening_rate",
         "min_rate",
         "max_rate",
@@ -204,16 +223,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     for col in cols_with_nan:
         df[cols_with_nan] = df[cols_with_nan].replace(0, np.nan)
 
-    # Convert prices to rates in settlement columns
-    settlement_cols = [
-        "prev_settlement_rate",
-        "adj_prev_settlement_rate",
-        "settlement_rate",
-    ]
-    for col in settlement_cols:
-        df[col] = (100_000 / df[col]) ** (252 / df["bday"]) - 1
-        # Convert to percentage and round to 3 decimal places
-        df[col] = (100 * df[col]).round(3)
+    df["settlement_rate"] = convert_prices_to_rates(df["settlement_price"], df["bdays"])
 
     # Prior to 01/01/2002, prices were not converted to rates
     convert_cols = [
@@ -227,9 +237,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     ]
     if reference_date < pd.Timestamp("2002-01-01"):
         for col in convert_cols:
-            df[col] = (100_000 / df[col]) ** (252 / df["bday"]) - 1
-            # Convert to percentage and round to 3 decimal places
-            df[col] = (100 * df[col]).round(3)
+            df[col] = convert_prices_to_rates(df[col], df["bdays"])
         # Invert low and high prices
         df["min_rate"], df["max_rate"] = df["max_rate"], df["min_rate"]
 
@@ -238,6 +246,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
         [
             "contract_code",
             "maturity",
+            "bdays",
             "open_contracts",
             "closed_contracts",
             "number_of_trades",
@@ -250,15 +259,13 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
             "closing_rate",
             "last_bid",
             "last_offer",
-            "prev_settlement_rate",
-            "adj_prev_settlement_rate",
             "settlement_rate",
         ]
     ]
     return df
 
 
-def get_di_data(reference_date: str) -> pd.DataFrame:
+def get_di_data(reference_date: str, raw=False) -> pd.DataFrame:
     """
     Gets the DI futures data for a given date from B3.
 
@@ -267,6 +274,8 @@ def get_di_data(reference_date: str) -> pd.DataFrame:
 
     Args:
         reference_date (str): The reference date in the format "dd-mm-yyyy".
+        raw (bool): If True, returns the raw data as a Pandas DataFrame.
+            Defaults to False.
 
     Returns:
         pd.DataFrame: A Pandas DataFrame containing processed DI futures data.
@@ -276,6 +285,8 @@ def get_di_data(reference_date: str) -> pd.DataFrame:
     """
     reference_date = pd.to_datetime(reference_date, format="%d-%m-%Y")
     df = get_raw_di_data(reference_date)
+    if raw:
+        return df
     df = process_di_data(df, reference_date)
 
     return df

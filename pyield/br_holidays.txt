@@ -1,8 +1,14 @@
-date
+# Brazilian National Holidays
+# File Update:
+#     - Open the ANBIMA Excel holiday file:
+#         - Go to https://www.anbima.com.br/feriados/feriados.asp
+#         - Open the file "Feriados.xls" on the page.
+#         - Direct link to the ANBIMA file: https://www.anbima.com.br/feriados/arqs/feriados_nacionais.xls
+#     - Select all the dates and copy it to the clipboard
+#     - Paste the dates in the corresponding section below
 01/01/1995
 27/02/1995
 28/02/1995
-01/03/1995
 13/04/1995
 14/04/1995
 21/04/1995
