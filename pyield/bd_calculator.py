@@ -15,11 +15,9 @@ def convert_to_np_datetime(dates):
         return dates.to_numpy().astype("datetime64[D]")
     elif isinstance(dates, pd.Series):
         return dates.values.astype("datetime64[D]")
-    elif isinstance(dates, np.ndarray):
-        return dates.astype("datetime64[D]")
     else:
         raise TypeError(
-            f"Dates must be a Pandas Timestamp, Series, or Numpy ndarray. Received {type(dates)}."
+            f"Dates must be a Pandas Timestamp or Series. Received {type(dates)}."
         )
 
 
@@ -50,20 +48,16 @@ def count_business_days(
         >>> import pandas as pd
         >>> start = pd.Timestamp('2023-12-15')
         >>> end = pd.Timestamp('2024-01-01')
-        >>> bday_count(start, end)
+        >>> count_business_days(start, end)
         10
 
         >>> start_series = pd.Series([pd.Timestamp('2023-01-01'), pd.Timestamp('2023-02-01')])
-        >>> end_series = pd.Series([pd.Timestamp('2023-01-31'), pd.Timestamp('2023-02-28')])
-        >>> bday_count(start_series, end_series)
+        >>> end_series = pd.Series([pd.Timestamp('2023-01-31'), pd.Timestamp('2023-03-01')])
+        >>> count_business_days(start_series, end_series)
         array([22, 18])
     """
     # Convert to numpy date format
     start_dates = convert_to_np_datetime(start_dates)
     end_dates = convert_to_np_datetime(end_dates)
-
-    # Adjust start and end dates to the next business day if they fall on a holiday or weekend
-    start_dates = np.busday_offset(start_dates, 0, roll="forward", holidays=BR_HOLIDAYS)
-    end_dates = np.busday_offset(end_dates, 0, roll="forward", holidays=BR_HOLIDAYS)
 
     return np.busday_count(start_dates, end_dates, holidays=BR_HOLIDAYS)

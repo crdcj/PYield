@@ -1,8 +1,8 @@
 import io
 import warnings
-import requests
+
 import pandas as pd
-import numpy as np
+import requests
 
 from . import bd_calculator as wd
 
@@ -231,7 +231,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
         "last_offer",
     ]
     for col in cols_with_nan:
-        df[cols_with_nan] = df[cols_with_nan].replace(0, np.nan)
+        df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
 
     df["settlement_rate"] = convert_prices_to_rates(df["settlement_price"], df["bdays"])
 

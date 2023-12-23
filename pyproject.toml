@@ -9,7 +9,7 @@ authors = [
 ]
 description = "A Python library for analysis of fixed income instruments in Brazil"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 keywords = ["fixed-income, brazil, finance, analysis, bonds"]
 license = {file = "LICENSE"}
 classifiers = [
@@ -21,7 +21,7 @@ classifiers = [
 ]
 dependencies = [
     "requests",
-    "pandas",
+    "pandas>=2.0.0",
     "numpy",
     "beautifulsoup4",
     "html5lib",
@@ -37,5 +37,6 @@ package-type = "library"
 version = {source = "file", path = "pyield/__about__.py" }
 [tool.pdm.dev-dependencies]
 dev = [
-    "ipykernel>=6.27.1",
+    "ipykernel",
+    "pytest",
 ]
