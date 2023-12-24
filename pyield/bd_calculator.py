@@ -2,47 +2,44 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-holidays_path = Path(__file__).parent / "br_holidays.txt"
-df = pd.read_csv(holidays_path, header=None, names=["date"], comment="#")
-df["date"] = pd.to_datetime(df["date"], format="%d/%m/%Y")
-# Using numpy array, speed is almost 10x faster
-BR_HOLIDAYS = df["date"].values.astype("datetime64[D]")
-# BR_HOLIDAYS = df["date"].dt.strftime("%Y-%m-%d").to_list()
-
-
-def convert_to_np_datetime(dates):
-    if isinstance(dates, pd.Timestamp):
-        return dates.to_numpy().astype("datetime64[D]")
-    elif isinstance(dates, pd.Series):
-        return dates.values.astype("datetime64[D]")
-    else:
-        raise TypeError(
-            f"Dates must be a Pandas Timestamp or Series. Received {type(dates)}."
-        )
+new_holidays_path = Path(__file__).parent / "br_holidays.txt"
+old_holidays_path = Path(__file__).parent / "br_holidays_old.txt"
+df_new = pd.read_csv(new_holidays_path, header=None, names=["date"], comment="#")
+df_old = pd.read_csv(old_holidays_path, header=None, names=["date"], comment="#")
+df_new["date"] = pd.to_datetime(df_new["date"], format="%d/%m/%Y")
+df_old["date"] = pd.to_datetime(df_old["date"], format="%d/%m/%Y")
+# Using numpy datetime64[D] array increases performance by almost 10x
+BR_HOLIDAYS = df_new["date"].values.astype("datetime64[D]")
+# BR_HOLIDAYS = df_new["date"].dt.strftime("%Y-%m-%d").to_list()
+BR_HOLIDAYS_OLD = df_old["date"].values.astype("datetime64[D]")
 
 
 def count_business_days(
-    start_dates: pd.Series | pd.Timestamp,
+    start_date: pd.Timestamp,
     end_dates: pd.Series | pd.Timestamp,
 ) -> np.int64 | np.ndarray:
     """
-    Counts the number of business days between `start_dates` and `end_dates`, excluding
-    the end date itself. If an end date is earlier than its corresponding start date, the
-    count will be negative. This function is a wrapper for `numpy.busday_count` to be used
-    directly with Pandas Timestamps and Series.
+    Counts the number of business days between a `start_date` (inclusive) and
+    `end_dates` (exclusive). If an end date is earlier than the start date, the count
+    will be negative. This function is a wrapper for `numpy.busday_count` to be used
+    directly with Pandas data types. The start date is used to determine which list of
+    holidays to use. Because of this, a single value for start date is necessary in order
+    to use the numpy function with the right list of holidays.
 
     Args:
-        start_dates (pd.Series | pd.Timestamp): A Series or Timestamp representing the start dates.
+        start_date (pd.Timestamp): A Timestamp representing the start date.
         end_dates (pd.Series | pd.Timestamp): A Series or Timestamp representing the end dates.
 
     Returns:
-        np.int64 | np.ndarray: The number of business days between start and end dates. Returns a
-        single integer if `start_dates` and `end_dates` are Timestamps, otherwise returns an
-        ndarray of integers.
+        np.int64 | np.ndarray: The number of business days between the start date and
+        end dates. Returns a single integer if `end_dates` is a single Timestamp, otherwise
+        returns an ndarray of integers.
 
     Note:
         For more information on error handling, see numpy.busday_count documentation at
         https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
+        If a start date before 26/12/2023 is used, the old list of brazilian holidays is
+        selected. Otherwise, the new list is be used.
 
     Examples:
         >>> import pandas as pd
@@ -51,13 +48,24 @@ def count_business_days(
         >>> count_business_days(start, end)
         10
 
-        >>> start_series = pd.Series([pd.Timestamp('2023-01-01'), pd.Timestamp('2023-02-01')])
-        >>> end_series = pd.Series([pd.Timestamp('2023-01-31'), pd.Timestamp('2023-03-01')])
-        >>> count_business_days(start_series, end_series)
-        array([22, 18])
+        >>> start = pd.Timestamp('2023-01-01')
+        >>> end = pd.Series([pd.Timestamp('2023-01-31'), pd.Timestamp('2023-03-01')])
+        >>> count_business_days(start, end)
+        array([22, 40])
     """
-    # Convert to numpy date format
-    start_dates = convert_to_np_datetime(start_dates)
-    end_dates = convert_to_np_datetime(end_dates)
+    # Convert to numpy data types
+    start_date = start_date.to_numpy().astype("datetime64[D]")
+    if isinstance(end_dates, pd.Timestamp):
+        end_dates = pd.Series(end_dates)
+    end_dates = end_dates.values.astype("datetime64[D]")
 
-    return np.busday_count(start_dates, end_dates, holidays=BR_HOLIDAYS)
+    # Determine which list of holidays to use
+    cutoff_date = np.datetime64("2023-12-26", "D")
+    if start_date < cutoff_date:
+        holiday_list = BR_HOLIDAYS_OLD
+        print("Using old list of holidays")
+    else:
+        holiday_list = BR_HOLIDAYS
+        print("Using new list of holidays")
+
+    return np.busday_count(start_date, end_dates, holidays=holiday_list)
