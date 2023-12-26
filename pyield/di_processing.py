@@ -4,12 +4,36 @@ import warnings
 import pandas as pd
 import requests
 
-from . import bd_calculator as wd
+from . import bday_calculator as bd
 
 
 def convert_old_contract_code(
     contract_code: str, reference_date: pd.Timestamp
 ) -> pd.Timestamp:
+    """
+    Internal function to convert an old DI contract code into its maturity date.
+
+    In 22-05-2006, B3 changed the format of the DI contract codes. Before that date,
+    the first three letters represented the month and the last digit represented the
+    year. 
+    
+    Args:
+        contract_code (str):
+            An old DI contract code from B3, where the first three letters represent
+            the month and the last digit represents the year. Example: "JAN3".
+        reference_date (pd.Timestamp):
+            The reference date for which the contract code is valid.
+
+    Returns:
+        pd.Timestamp
+            The contract's maturity date, adjusted to the next business day.
+            Returns pd.NaT if the input is invalid.
+
+    Examples:
+        >>> convert_old_contract_code("JAN3", pd.Timestamp("2001-05-21"))
+        pd.Timestamp('2003-01-01')
+    """
+
     month_codes = {
         "JAN": 1,
         "FEV": 2,
@@ -213,7 +237,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     else:
         df["maturity"] = df["contract_code"].apply(convert_contract_code)
 
-    df["bdays"] = wd.count_business_days(reference_date, df["maturity"])
+    df["bdays"] = bd.count_business_days(reference_date, df["maturity"])
     # Convert to nullable integer, since other columns use this data type
     df["bdays"] = df["bdays"].astype(pd.Int64Dtype())
     # Remove rows with bday <= 0

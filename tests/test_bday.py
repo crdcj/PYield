@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from pyield import bd_calculator as bd
+from pyield import bday_calculator as bd
 
 
 def test_count_business_days_with_timestamps1():
