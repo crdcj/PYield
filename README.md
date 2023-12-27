@@ -1,3 +1,7 @@
+[![PyPI version](https://img.shields.io/pypi/v/finlogic.svg)](https://pypi.python.org/pypi/pyield)
+[![Made with Python](https://img.shields.io/badge/Python->=3.11-blue?logo=python&logoColor=white)](https://python.org "Go to Python homepage")
+[![License](https://img.shields.io/badge/License-MIT-blue)](#license)
+
 # PYield: Brazilian Fixed Income Analysis Library
 
 ## Introduction
