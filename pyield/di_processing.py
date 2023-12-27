@@ -61,7 +61,7 @@ def convert_old_contract_code(
 
         return pd.Timestamp(year, month, 1)
 
-    except Exception:
+    except (KeyError, ValueError):
         return pd.NaT
 
 
@@ -120,7 +120,7 @@ def convert_contract_code(contract_code: str) -> pd.Timestamp:
         year = int("20" + contract_code[-2:])
         return pd.Timestamp(year, month, 1)
 
-    except Exception:
+    except (KeyError, ValueError):
         return pd.NaT
 
 
