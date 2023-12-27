@@ -4,14 +4,14 @@ import numpy as np
 from pyield import bday_calculator as bd
 
 
-def test_count_business_days_with_timestamps1():
+def test_count_business_days_1():
     start = pd.Timestamp("2023-01-01")
     end = pd.Timestamp("2023-01-08")
     # 01/01/2023 is a Sunday and a holiday
     assert bd.count_business_days(start, end) == 5
 
 
-def test_count_business_days_with_timestamps2():
+def test_count_business_days_2():
     start = pd.Timestamp("2023-12-15")
     end = pd.Timestamp("2024-01-02")
     # 25/12/2023 is a holiday
@@ -33,13 +33,13 @@ def test_count_business_days_negative_count():
     assert bd.count_business_days(start, end) == -5
 
 
-def test_count_business_days_new_list():
+def test_count_business_days_new_holiday_list():
     start = pd.Timestamp("2024-11-20")  # Zumbi Nacional Day
     end = pd.Timestamp("2024-11-21")
     assert bd.count_business_days(start, end) == 0
 
 
-def test_count_business_days_old_list():
+def test_count_business_days_old_holiday_list():
     start = pd.Timestamp("2020-11-20")  # Was not a holiday in 2020
     end = pd.Timestamp("2020-11-21")
     assert bd.count_business_days(start, end) == 1

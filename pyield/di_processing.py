@@ -15,8 +15,8 @@ def convert_old_contract_code(
 
     In 22-05-2006, B3 changed the format of the DI contract codes. Before that date,
     the first three letters represented the month and the last digit represented the
-    year. 
-    
+    year.
+
     Args:
         contract_code (str):
             An old DI contract code from B3, where the first three letters represent
@@ -26,7 +26,7 @@ def convert_old_contract_code(
 
     Returns:
         pd.Timestamp
-            The contract's maturity date, adjusted to the next business day.
+            The contract's maturity date.
             Returns pd.NaT if the input is invalid.
 
     Examples:
@@ -48,16 +48,21 @@ def convert_old_contract_code(
         "NOV": 11,
         "DEZ": 12,
     }
-    month_code = contract_code[:3]
-    month = month_codes[month_code]
+    try:
+        month_code = contract_code[:3]
+        month = month_codes[month_code]
 
-    base_year = reference_date.year
-    year_codes = {}
-    for year in range(base_year, base_year + 10):
-        year_codes[str(year)[-1:]] = year
+        # Year codes must generated dynamically, since it depends on the reference date
+        reference_year = reference_date.year
+        year_codes = {}
+        for year in range(reference_year, reference_year + 10):
+            year_codes[str(year)[-1:]] = year
+        year = year_codes[contract_code[-1:]]
 
-    year = year_codes[contract_code[-1:]]
-    return pd.Timestamp(year, month, 1)
+        return pd.Timestamp(year, month, 1)
+
+    except Exception:
+        return pd.NaT
 
 
 def convert_contract_code(contract_code: str) -> pd.Timestamp:
@@ -115,7 +120,7 @@ def convert_contract_code(contract_code: str) -> pd.Timestamp:
         year = int("20" + contract_code[-2:])
         return pd.Timestamp(year, month, 1)
 
-    except ValueError:
+    except Exception:
         return pd.NaT
 
 
@@ -152,7 +157,7 @@ def get_raw_di_data(reference_date: pd.Timestamp) -> pd.DataFrame:
 
     except Exception as e:
         warnings.warn(
-            f"A {type(e).__name__} occurred while reading the DI futures data for {reference_date.strftime("%d/%m/%Y")}. Is this a valid date? Returning an empty DataFrame."
+            f"A {type(e).__name__} occurred while reading the DI futures data for {reference_date.strftime("%d/%m/%Y")}. Returning an empty DataFrame."
         )
         return pd.DataFrame()
 
@@ -189,7 +194,7 @@ def convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
     # Invert low and high prices
     df["min_rate"], df["max_rate"] = df["max_rate"], df["min_rate"]
 
-    return df        
+    return df
 
 
 def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
@@ -228,7 +233,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
             "ÚLT.OF. VENDA": "last_offer",
         }
     )
-            
+
     # Contract code format was changed in 22/05/2006
     if reference_date < pd.Timestamp("2006-05-22"):
         df["maturity"] = df["contract_code"].apply(
@@ -242,7 +247,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     df["bdays"] = df["bdays"].astype(pd.Int64Dtype())
     # Remove rows with bday <= 0
     df = df[df["bdays"] > 0]
-    
+
     # Columns where 0 means NaN
     cols_with_nan = [
         "settlement_price",
@@ -262,7 +267,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     # Prior to 01/01/2002, prices were not converted to rates
     if reference_date < pd.Timestamp("2002-01-01"):
         df = convert_prices_in_older_contracts(df)
-    
+
     # Order columns
     df = df[
         [
