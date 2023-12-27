@@ -28,10 +28,10 @@ Here is a quick example of how to use PYield:
 import pyield as yd
 
 # Get DI raw data from B3
-df_di_raw = yd.di(reference_date='15-12-2023', raw=True)
+df_di_raw = yd.di(reference_date='26-12-2023', raw=True)
 
 # Get DI processed data from B3 (default)
-df_di = yd.di(reference_date='15-12-2023')
+df_di = yd.di(reference_date='26-12-2023')
 ```
 
 ## Example Output
