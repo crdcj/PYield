@@ -2,8 +2,7 @@
 # Data Source: https://www.anbima.com.br/feriados/feriados.asp
 # Direct link to the ANBIMA file: https://www.anbima.com.br/feriados/arqs/feriados_nacionais.xls
 # In december 2023, a new holiday was added: "Dia Nacional de Zumbi"
-# Note: dates until 22-12-2023 (inclusive) 
-# added, must use the old holiday list (br_holidays_old.txt)
+# Note: dates until 22-12-2023 (inclusive) must use "br_holidays_old.txt" list
 01/01/2001
 26/02/2001
 27/02/2001
