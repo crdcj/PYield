@@ -42,7 +42,7 @@ def test_settlement_rate_with_old_holiday_list():
 
     # 22-12-2023 is before the new holiday calendar
     df = dip.get_di_data(reference_date="22-12-2023")
-    contract_codes = list(settlement_rates.keys())
+    contract_codes = list(settlement_rates.keys())  # noqa: F841
     result = df.query("contract_code in @contract_codes")["settlement_rate"].to_list()
     assert result == list(settlement_rates.values())
 
@@ -67,6 +67,6 @@ def test_settlement_rates_with_current_holiday_list():
     }
 
     df = dip.get_di_data(reference_date="26-12-2023")
-    contract_codes = list(settlement_rates.keys())
+    contract_codes = list(settlement_rates.keys())  # noqa: F841
     results = df.query("contract_code in @contract_codes")["settlement_rate"].to_list()
     assert results == list(settlement_rates.values())
