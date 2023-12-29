@@ -28,30 +28,30 @@ Here is a quick example of how to use PYield:
 import pyield as yd
 
 # Get DI raw data from B3
-df_di_raw = yd.di(reference_date='26-12-2023', raw=True)
+df_di_raw = yd.di(reference_date='28-12-2023', raw=True)
 
 # Get DI processed data from B3 (default)
-df_di = yd.di(reference_date='26-12-2023')
+df_di = yd.di(reference_date='28-12-2023')
 ```
 
 ## Example Output
 
-Below is an example of the output from PYield when fetching DI data from B3 for the reference date of 26-12-2023:
+Below is an example of the output from PYield when fetching DI data from B3 for the reference date of 28-12-2023:
 ```text
-contract_code   maturity  bdays  ...  closing_rate  last_bid  last_offer  settlement_rate
-          F24 2024-01-01      4  ...        11.642    11.642      11.646           11.644
-          G24 2024-02-01     26  ...        11.650    11.648      11.652           11.652
-          H24 2024-03-01     45  ...        11.440    11.432      11.440           11.436
-          J24 2024-04-01     65  ...        11.300    11.290      11.300           11.300
-          K24 2024-05-01     87  ...        11.140         -      11.140           11.133
-          M24 2024-06-01    108  ...        10.965    10.950      10.965           10.955
-          ...        ...    ...  ...           ...       ...         ...              ...
-          F33 2033-01-01   2262  ...        10.330    10.320      10.340           10.331
-          F34 2034-01-01   2513  ...        10.330    10.290      10.390           10.320
-          F35 2035-01-01   2761  ...             -     9.990           -           10.344
-          F36 2036-01-01   3010  ...             -         -           -           10.363
-          F37 2037-01-01   3263  ...             -         -           -           10.382
-          F38 2038-01-01   3512  ...             -    10.380           -           10.382
+contract_code expiration  bdays  ...  last_bid  last_offer  settlement_rate
+          F24 2024-01-02      2  ...    11.636      11.650           11.634
+          G24 2024-02-01     24  ...    11.644      11.646           11.648
+          H24 2024-03-01     43  ...      -         11.426           11.425
+          J24 2024-04-01     63  ...    11.285      11.290           11.290
+          K24 2024-05-02     85  ...      -           -              11.121
+          M24 2024-06-03    106  ...    10.900      11.000           10.960
+          ...        ...    ...  ...       ...         ...              ...
+          F33 2033-01-03   2260  ...    10.350      10.380           10.363
+          F34 2034-01-02   2511  ...      -           -              10.365
+          F35 2035-01-02   2759  ...      -           -              10.389
+          F36 2036-01-02   3008  ...      -           -              10.395
+          F37 2037-01-02   3261  ...      -           -              10.414
+          F38 2038-01-04   3510  ...      -           -              10.414
 ```
 
 ## Documentation
