@@ -4,18 +4,15 @@ import warnings
 import pandas as pd
 import requests
 
-from . import bday_calculator as bd
+from . import br_calendar as bc
 
 
-def convert_old_contract_code(
+def get_old_expiration_date(
     contract_code: str, reference_date: pd.Timestamp
 ) -> pd.Timestamp:
     """
-    Internal function to convert an old DI contract code into its maturity date.
-
-    In 22-05-2006, B3 changed the format of the DI contract codes. Before that date,
-    the first three letters represented the month and the last digit represented the
-    year.
+    Internal function to convert an old DI contract code into its expiration date. Valid for
+    contract codes up to 21-05-2006.
 
     Args:
         contract_code (str):
@@ -26,12 +23,16 @@ def convert_old_contract_code(
 
     Returns:
         pd.Timestamp
-            The contract's maturity date.
+            The contract's expiration date.
             Returns pd.NaT if the input is invalid.
 
     Examples:
-        >>> convert_old_contract_code("JAN3", pd.Timestamp("2001-05-21"))
+        >>> get_old_expiration_date("JAN3", pd.Timestamp("2001-05-21"))
         pd.Timestamp('2003-01-01')
+    Notes:
+        - In 22-05-2006, B3 changed the format of the DI contract codes. Before that date,
+          the first three letters represented the month and the last digit represented the
+          year.
     """
 
     month_codes = {
@@ -59,19 +60,23 @@ def convert_old_contract_code(
             year_codes[str(year)[-1:]] = year
         year = year_codes[contract_code[-1:]]
 
-        return pd.Timestamp(year, month, 1)
+        expiration = pd.Timestamp(year, month, 1)
+        # Adjust to the next business day when expiration date is a weekend or a holiday
+        # Must use the old holiday calendar, since this type of contract code was used until 2006
+        return bc.adjust_to_next_business_day(expiration, bc.BR_HOLIDAYS_OLD)
 
     except (KeyError, ValueError):
         return pd.NaT
 
 
-def convert_contract_code(contract_code: str) -> pd.Timestamp:
+def get_expiration_date(contract_code: str) -> pd.Timestamp:
     """
-    Internal function to convert a DI contract code into its maturity date.
+    Internal function to convert a DI contract code into its expiration date.
 
-    Given a DI contract code from B3, this function determines its maturity date.
+    Given a DI contract code from B3, this function determines its expiration date.
     If the contract code does not correspond to a valid month or year, or if the input
     is not in the expected format, the function will return a pd.NaT (Not a Timestamp).
+    Valid for contract codes from 22-05-2006 onwards.
 
     Args:
         contract_code (str):
@@ -80,23 +85,26 @@ def convert_contract_code(contract_code: str) -> pd.Timestamp:
 
     Returns:
         pd.Timestamp
-            The contract's maturity date, adjusted to the next business day.
+            The contract's expiration date, adjusted to the next business day.
             Returns pd.NaT if the input is invalid.
 
     Examples:
-        >>> convert_contract_code("F23")
+        >>> get_expiration_date("F23")
         pd.Timestamp('2023-01-01')
 
-        >>> convert_contract_code("Z33")
+        >>> get_expiration_date("Z33")
         pd.Timestamp('2033-12-01')
 
-        >>> convert_contract_code("A99")
+        >>> get_expiration_date("A99")
         pd.NaT
 
     Notes:
-        If the contract code does not represent a valid month or if the year is not in
-        the range [2000, 2099], a ValueError will be raised and the function will return
-        pd.NaT.
+        - In 22-05-2006, B3 changed the format of the DI contract codes.
+        - The first letter represents the month and the last two digits represent the
+          year.
+        - Only the new holiday calendar can be used, since this type of contract code
+          was used from 2006 onwards, the expiration date is the first business day of
+          the month and the new holiday calendar inserted a holiday in 20th of November.
 
     """
     month_codes = {
@@ -118,7 +126,10 @@ def convert_contract_code(contract_code: str) -> pd.Timestamp:
         month_code = contract_code[0]
         month = month_codes[month_code]
         year = int("20" + contract_code[-2:])
-        return pd.Timestamp(year, month, 1)
+        # The expiration date is always the first business day of the month
+        expiration = pd.Timestamp(year, month, 1)
+        # Adjust to the next business day when expiration date is a weekend or a holiday
+        return bc.adjust_to_next_business_day(expiration, bc.BR_HOLIDAYS)
 
     except (KeyError, ValueError):
         return pd.NaT
@@ -168,7 +179,7 @@ def convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
 
     Args:
         prices (pd.Series): A Series containing DI futures prices.
-        bd (pd.Series): A Series containing the number of business days to maturity.
+        bd (pd.Series): A Series containing the number of business days to expiration.
 
     Returns:
         pd.Series: A Series containing DI futures rates.
@@ -236,13 +247,13 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
 
     # Contract code format was changed in 22/05/2006
     if reference_date < pd.Timestamp("2006-05-22"):
-        df["maturity"] = df["contract_code"].apply(
-            convert_old_contract_code, args=(reference_date,)
+        df["expiration"] = df["contract_code"].apply(
+            get_old_expiration_date, args=(reference_date,)
         )
     else:
-        df["maturity"] = df["contract_code"].apply(convert_contract_code)
+        df["expiration"] = df["contract_code"].apply(get_expiration_date)
 
-    df["bdays"] = bd.count_business_days(reference_date, df["maturity"])
+    df["bdays"] = bc.count_business_days(reference_date, df["expiration"])
     # Convert to nullable integer, since other columns use this data type
     df["bdays"] = df["bdays"].astype(pd.Int64Dtype())
     # Remove rows with bday <= 0
@@ -272,7 +283,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     df = df[
         [
             "contract_code",
-            "maturity",
+            "expiration",
             "bdays",
             "open_contracts",
             "closed_contracts",

@@ -4,14 +4,47 @@ import numpy as np
 
 new_holidays_path = Path(__file__).parent / "br_holidays.txt"
 old_holidays_path = Path(__file__).parent / "br_holidays_old.txt"
+
 df_new = pd.read_csv(new_holidays_path, header=None, names=["date"], comment="#")
 df_old = pd.read_csv(old_holidays_path, header=None, names=["date"], comment="#")
+
 df_new["date"] = pd.to_datetime(df_new["date"], format="%d/%m/%Y")
 df_old["date"] = pd.to_datetime(df_old["date"], format="%d/%m/%Y")
+
 # Using numpy datetime64[D] array increases performance by almost 10x
 BR_HOLIDAYS = df_new["date"].values.astype("datetime64[D]")
 # BR_HOLIDAYS = df_new["date"].dt.strftime("%Y-%m-%d").to_list()
 BR_HOLIDAYS_OLD = df_old["date"].values.astype("datetime64[D]")
+
+
+def adjust_to_next_business_day(
+    date: pd.Timestamp, holiday_list: np.ndarray = BR_HOLIDAYS
+) -> pd.Timestamp:
+    """
+    Adjusts a date to the next business day. If the date is already a business day,
+    it is returned unchanged.
+
+    Args:
+        date (pd.Timestamp): A Timestamp representing the date to be adjusted.
+
+    Returns:
+        pd.Timestamp: The next business day after the input date if it is not a business
+        day, otherwise returns the input date unchanged.
+
+    Examples:
+        >>> import pandas as pd
+        >>> date = pd.Timestamp('2023-12-23') # Saturday before Christmas
+        >>> adjust_to_next_business_day(date)
+        Timestamp('2023-12-26')
+    """
+    # Convert to numpy data type
+    date = date.to_numpy().astype("datetime64[D]")
+
+    # Adjust to next business day
+    adj_date = np.busday_offset(date, 0, roll="forward", holidays=holiday_list)
+
+    # Convert back to pandas data type
+    return pd.Timestamp(adj_date)
 
 
 def count_business_days(
