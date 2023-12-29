@@ -96,9 +96,7 @@ def count_business_days(
     cutoff_date = np.datetime64("2023-12-26", "D")
     if start_date < cutoff_date:
         holiday_list = BR_HOLIDAYS_OLD
-        print("Using old list of holidays")
     else:
         holiday_list = BR_HOLIDAYS
-        print("Using new list of holidays")
 
     return np.busday_count(start_date, end_dates, holidays=holiday_list)
