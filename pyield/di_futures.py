@@ -158,12 +158,20 @@ def get_raw_di_data(reference_date: pd.Timestamp) -> pd.DataFrame:
             header=1,
             thousands=".",
             decimal=",",
+            na_values=["-"],
             dtype_backend="numpy_nullable",
         )[0]
+
         # Remove rows with all NaN values
         df = df.dropna(how="all")
         # Remove columns with all NaN values
         df = df.dropna(axis=1, how="all")
+
+        # Force "VAR. PTOS." column to be string, since it can vary between str and float
+        df["VAR. PTOS."] = df["VAR. PTOS."].astype(pd.StringDtype())
+        # Force "AJUSTE CORRIG. (4)" column to be float, since it can vary between int and float
+        df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype(pd.Float64Dtype())
+
         return df
 
     except Exception as e:

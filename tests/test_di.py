@@ -1,6 +1,6 @@
 import pandas as pd
 
-from pyield import di_processing as dip
+from pyield import di_futures as dip
 
 
 def test_valid_old_contract_code1():
