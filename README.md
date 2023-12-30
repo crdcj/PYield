@@ -27,7 +27,7 @@ Here is a quick example of how to use PYield:
 ```python
 import pyield as yd
 
-# Get DI raw data from B3
+# Get DI raw data from B3 (first date available is 05-06-1991)
 df_di_raw = yd.di(reference_date='28-12-2023', raw=True)
 
 # Get DI processed data from B3 (default)
