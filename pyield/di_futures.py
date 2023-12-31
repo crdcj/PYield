@@ -135,16 +135,17 @@ def get_expiration_date(contract_code: str) -> pd.Timestamp:
         return pd.NaT
 
 
-def get_raw_di_data(reference_date: pd.Timestamp) -> pd.DataFrame:
+def get_raw_di_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to fetch raw DI futures data from B3 for a specific reference date.
 
     Args:
-        reference_date (pd.Timestamp): The reference date for which data is to be fetched.
+        reference_date: a datetime-like object representing the reference date.
 
     Returns:
         pd.DataFrame: Raw data as a Pandas DataFrame.
     """
+    reference_date = pd.Timestamp(reference_date)
     # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
     url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={reference_date.strftime('%d/%m/%Y')}&Mercadoria=DI1&XLS=false"
     r = requests.get(url)
@@ -221,8 +222,8 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     Internal function to process and transform raw DI futures data.
 
     Args:
-        df (pd.DataFrame): The raw data DataFrame.
-        reference_date (pd.Timestamp): The reference date for data processing.
+        df (pd.DataFrame): the raw DI DataFrame.
+        reference_date: a datetime-like object representing the reference date.
 
     Returns:
         pd.DataFrame: Processed and transformed data as a Pandas DataFrame.
@@ -252,7 +253,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
             "ÚLT.OF. VENDA": "last_offer",
         }
     )
-
+    reference_date = pd.Timestamp(reference_date)
     # Contract code format was changed in 22/05/2006
     if reference_date < pd.Timestamp("2006-05-22"):
         df["expiration"] = df["contract_code"].apply(
@@ -261,7 +262,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     else:
         df["expiration"] = df["contract_code"].apply(get_expiration_date)
 
-    df["bdays"] = bc.count_business_days(reference_date, df["expiration"])
+    df["bdays"] = bc.count_bdays(reference_date, df["expiration"])
     # Convert to nullable integer, since other columns use this data type
     df["bdays"] = df["bdays"].astype(pd.Int64Dtype())
     # Remove rows with bday <= 0
@@ -311,7 +312,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     return df
 
 
-def get_di_data(reference_date: str, raw=False) -> pd.DataFrame:
+def get_di_data(reference_date: str | pd.Timestamp, raw: bool = False) -> pd.DataFrame:
     """
     Gets the DI futures data for a given date from B3.
 
@@ -319,7 +320,7 @@ def get_di_data(reference_date: str, raw=False) -> pd.DataFrame:
     reference date. It's the primary external interface for accessing DI data.
 
     Args:
-        reference_date (str): The reference date in the format "dd-mm-yyyy".
+        reference_date: a datetime-like object representing the reference date.
         raw (bool): If True, returns the raw data as a Pandas DataFrame.
             Defaults to False.
 
@@ -327,9 +328,9 @@ def get_di_data(reference_date: str, raw=False) -> pd.DataFrame:
         pd.DataFrame: A Pandas DataFrame containing processed DI futures data.
 
     Examples:
-        >>> get_di_data("25-11-2023")
+        >>> get_di_data("2023-12-28")
     """
-    reference_date = pd.to_datetime(reference_date, format="%d-%m-%Y")
+    reference_date = pd.Timestamp(reference_date)
     df = get_raw_di_data(reference_date)
     if raw:
         return df

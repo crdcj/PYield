@@ -18,7 +18,7 @@ BR_HOLIDAYS_OLD = df_old["date"].values.astype("datetime64[D]")
 
 
 def adjust_to_next_business_day(
-    date: pd.Timestamp, holiday_list: np.ndarray = BR_HOLIDAYS
+    date: str | pd.Timestamp, holiday_list: np.ndarray = BR_HOLIDAYS
 ) -> pd.Timestamp:
     """
     Adjusts a date to the next business day. If the date is already a business day,
@@ -33,11 +33,11 @@ def adjust_to_next_business_day(
 
     Examples:
         >>> import pandas as pd
-        >>> date = pd.Timestamp('2023-12-23') # Saturday before Christmas
+        >>> date = '2023-12-23' # Saturday before Christmas
         >>> adjust_to_next_business_day(date)
         Timestamp('2023-12-26')
     """
-    # Convert to numpy data type
+    date = pd.Timestamp(date)
     date = date.to_numpy().astype("datetime64[D]")
 
     # Adjust to next business day
@@ -47,25 +47,22 @@ def adjust_to_next_business_day(
     return pd.Timestamp(adj_date)
 
 
-def count_business_days(
-    start_date: pd.Timestamp,
-    end_dates: pd.Series | pd.Timestamp,
-) -> np.int64 | np.ndarray:
+def count_bdays(start, end):
     """
-    Counts the number of business days between a `start_date` (inclusive) and
-    `end_dates` (exclusive). If an end date is earlier than the start date, the count
+    Counts the number of business days between a `start` (inclusive) and
+    `end` (exclusive). If an end date is earlier than the start date, the count
     will be negative. This function is a wrapper for `numpy.busday_count` to be used
     directly with Pandas data types. The start date is used to determine which list of
     holidays to use. Because of this, a single value for start date is necessary in order
     to use the numpy function with the right list of holidays.
 
     Args:
-        start_date (pd.Timestamp): A Timestamp representing the start date.
-        end_dates (pd.Series | pd.Timestamp): A Series or Timestamp representing the end dates.
+        start: a datetime-like object representing the start date.
+        end: a datetime Series or datetime-like object representing the end date(s).
 
     Returns:
         np.int64 | np.ndarray: The number of business days between the start date and
-        end dates. Returns a single integer if `end_dates` is a single Timestamp, otherwise
+        end dates. Returns a single integer if `end` is a single Timestamp, otherwise
         returns an ndarray of integers.
 
     Note:
@@ -76,27 +73,68 @@ def count_business_days(
 
     Examples:
         >>> import pandas as pd
-        >>> start = pd.Timestamp('2023-12-15')
-        >>> end = pd.Timestamp('2024-01-01')
-        >>> count_business_days(start, end)
+        >>> start = '2023-12-15'
+        >>> end = '2024-01-01'
+        >>> count_bdays(start, end)
         10
 
-        >>> start = pd.Timestamp('2023-01-01')
-        >>> end = pd.Series([pd.Timestamp('2023-01-31'), pd.Timestamp('2023-03-01')])
-        >>> count_business_days(start, end)
+        >>> start = '2023-01-01'
+        >>> end = pd.Series('2023-01-31', '2023-03-01'])
+        >>> count_bdays(start, end)
         array([22, 40])
     """
+    # Convert to pandas Timestamp
+    start = pd.to_datetime(start)
+    end = pd.to_datetime(end)
+
     # Convert to numpy data types
-    start_date = start_date.to_numpy().astype("datetime64[D]")
-    if isinstance(end_dates, pd.Timestamp):
-        end_dates = pd.Series(end_dates)
-    end_dates = end_dates.values.astype("datetime64[D]")
+    start = start.to_numpy().astype("datetime64[D]")
+    if isinstance(end, pd.Timestamp):
+        end = pd.Series(end)
+    end = end.values.astype("datetime64[D]")
 
     # Determine which list of holidays to use
     cutoff_date = np.datetime64("2023-12-26", "D")
-    if start_date < cutoff_date:
+    if start < cutoff_date:
         holiday_list = BR_HOLIDAYS_OLD
     else:
         holiday_list = BR_HOLIDAYS
 
-    return np.busday_count(start_date, end_dates, holidays=holiday_list)
+    return np.busday_count(start, end, holidays=holiday_list)
+
+
+def generate_bdays(start, end, holiday_list=BR_HOLIDAYS) -> pd.Series:
+    """
+    Generates a Series of business days between a `start` (inclusive) and
+    `end` (inclusive) that takes into account the list of brazilian holidays as the
+    default. This function is a wrapper for `pandas.bdate_range`.
+
+    Args:
+        start: str or datetime-like
+        end: str or datetime-like
+
+    Returns:
+        pd.Series: A Series of business days between the start date and end date.
+
+    Note:
+        For more information on error handling, see pandas.bdate_range documentation at
+        https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html#
+
+    Examples:
+        >>> import pandas as pd
+        >>> start = '2023-12-20'
+        >>> end = '2024-01-05'
+        >>> generate_bdays(start, end)
+        2023-12-15    2023-12-15
+        2023-12-18    2023-12-18
+        2023-12-19    2023-12-19
+        2023-12-20    2023-12-20
+        2023-12-21    2023-12-21
+        2023-12-22    2023-12-22
+        2023-12-27    2023-12-27
+        2023-12-28    2023-12-28
+        2023-12-29    2023-12-29
+        dtype: object
+    """
+    bdays = pd.bdate_range(start, end, freq="C", holidays=holiday_list)
+    return pd.Series(bdays)
