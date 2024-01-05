@@ -17,34 +17,51 @@ BR_HOLIDAYS = df_new["date"].values.astype("datetime64[D]")
 BR_HOLIDAYS_OLD = df_old["date"].values.astype("datetime64[D]")
 
 
-def adjust_to_next_business_day(
-    date: str | pd.Timestamp, holiday_list: np.ndarray = BR_HOLIDAYS
-) -> pd.Timestamp:
+def offset_bdays(
+    dates: str | pd.Timestamp, offset: int, holiday_list: np.ndarray = BR_HOLIDAYS
+):
     """
-    Adjusts a date to the next business day. If the date is already a business day,
-    it is returned unchanged.
+    Offsets the dates to the next or previous business day. This function is a wrapper
+    for `numpy.busday_offset` to be used directly with Pandas data types.
 
     Args:
-        date (pd.Timestamp): A Timestamp representing the date to be adjusted.
+        dates: a datetime-like object representing the date(s) to be adjusted.
 
-    Returns:
-        pd.Timestamp: The next business day after the input date if it is not a business
-        day, otherwise returns the input date unchanged.
+    Return type depends on input:
+        - scalar: Timestamp
+        - Series: Series of datetime64 dtype
 
     Examples:
         >>> import pandas as pd
         >>> date = '2023-12-23' # Saturday before Christmas
-        >>> adjust_to_next_business_day(date)
+        >>> offset_bdays(date, 0)
         Timestamp('2023-12-26')
+        >>> date = '2023-12-22' # Friday before Christmas
+        >>> offset_bdays(date, 0)
+        Timestamp('2023-12-22') # No offset because it's a business day
+        >>> offset_bdays(date, 1)
+        Timestamp('2023-12-26') # Offset to the next business day
+        >>> offset_bdays(date, -1)
+        Timestamp('2023-12-21') # Offset to the previous business day
     """
-    date = pd.Timestamp(date)
-    date = date.to_numpy().astype("datetime64[D]")
-
-    # Adjust to next business day
-    adj_date = np.busday_offset(date, 0, roll="forward", holidays=holiday_list)
-
-    # Convert back to pandas data type
-    return pd.Timestamp(adj_date)
+    # Convert to pandas datetime64[ns]
+    dates = pd.to_datetime(dates)
+    # Force a single value to be a Series to facilitate the conversion to numpy
+    dates = pd.Series(dates)
+    # Convert to numpy data types
+    dates = dates.values.astype("datetime64[D]")
+    # Adjust the dates according to the offset
+    adj_dates = np.busday_offset(
+        dates, offsets=offset, roll="forward", holidays=holiday_list
+    )
+    # Convert back to pandas datetime64[ns]
+    adj_dates = pd.to_datetime(adj_dates, unit="ns")
+    # Convert back to Series
+    adj_dates = pd.Series(adj_dates)
+    # Return a single value if a single value was passed
+    if len(adj_dates) == 1:
+        adj_dates = adj_dates[0]
+    return adj_dates
 
 
 def count_bdays(start, end):
