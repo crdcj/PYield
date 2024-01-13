@@ -22,14 +22,22 @@ def offset_bdays(
 ):
     """
     Offsets the dates to the next or previous business day. This function is a wrapper
-    for `numpy.busday_offset` to be used directly with Pandas data types.
+    for `numpy.busday_offset` to be used directly with Pandas data types that takes into
+    account the list of brazilian holidays as the default.
 
     Args:
-        dates: a datetime-like object representing the date(s) to be adjusted.
+        dates (str | pd.Timestamp | pd.Series): A single date or a Series of dates to be offset.
+        offset (int): The number of business days to offset the dates. Positive numbers
+            offset to the next business day, negative numbers offset to the previous
+            business day. Zero offsets to the same date if it's a business day, otherwise
+            offsets to the next business day.
 
-    Return type depends on input:
-        - scalar: Timestamp
-        - Series: Series of datetime64 dtype
+    Returns:
+        str | pd.Timestamp | pd.Series: The offset dates. Returns a single date if
+        `dates` is a single date, otherwise returns a Series of dates.
+
+    Note: For more information on error handling, see numpy.busday_offset documentation at
+        https://numpy.org/doc/stable/reference/generated/numpy.busday_offset.html.
 
     Examples:
         >>> import pandas as pd
@@ -74,8 +82,8 @@ def count_bdays(start, end):
     to use the numpy function with the right list of holidays.
 
     Args:
-        start: a datetime-like object representing the start date.
-        end: a datetime Series or datetime-like object representing the end date(s).
+        start (str | pd.Timestamp, optional): Defaults to None. The start date.
+        end (str | pd.Timestamp optional): Defaults to None. The end date.
 
     Returns:
         np.int64 | np.ndarray: The number of business days between the start date and
@@ -120,16 +128,19 @@ def count_bdays(start, end):
     return np.busday_count(start, end, holidays=holiday_list)
 
 
-def generate_bdays(start, end, holiday_list=BR_HOLIDAYS) -> pd.Series:
+def generate_bdays(
+    start=None, end=None, inclusive="both", holiday_list=BR_HOLIDAYS, **kwargs
+):
     """
     Generates a Series of business days between a `start` (inclusive) and
     `end` (inclusive) that takes into account the list of brazilian holidays as the
     default. This function is a wrapper for `pandas.bdate_range`.
 
     Args:
-        start: str or datetime-like
-        end: str or datetime-like
-
+        start (str | pd.Timestamp, optional): Defaults to None. The start date.
+        end (str | pd.Timestamp | pd.Series, optional): Defaults to None. The end date.
+        inclusive (str, optional): Defaults to 'both'. Whether to include the start and
+            end dates. Valid options are 'both', 'neither', 'left', 'right'.
     Returns:
         pd.Series: A Series of business days between the start date and end date.
 
@@ -153,5 +164,7 @@ def generate_bdays(start, end, holiday_list=BR_HOLIDAYS) -> pd.Series:
         2023-12-29    2023-12-29
         dtype: object
     """
-    bdays = pd.bdate_range(start, end, freq="C", holidays=holiday_list)
+    bdays = pd.bdate_range(
+        start, end, freq="C", inclusive=inclusive, holidays=holiday_list, **kwargs
+    )
     return pd.Series(bdays)
