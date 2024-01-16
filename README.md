@@ -25,16 +25,16 @@ pip install pyield
 Here is a quick example of how to use PYield:
 
 ```python
-import pyield as yd
+import pyield as pyd
 
 # Get DI raw data from B3 (first date available is 05-06-1991)
-df_di_raw = yd.di(reference_date='2023-12-28', raw=True)
+df_di_raw = pyd.di(reference_date='2023-12-28', raw=True)
 
 # Get DI processed data from B3 (default)
-df_di = yd.di(reference_date='2023-12-28')
+df_di = pyd.di(reference_date='2023-12-28')
 ```
 
-## Example Output
+## DI Futures Example Output
 
 Below is an example of the output from PYield when fetching DI data from B3 for the reference date of 28-12-2023:
 ```text

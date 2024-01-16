@@ -40,16 +40,15 @@ def offset_bdays(
         https://numpy.org/doc/stable/reference/generated/numpy.busday_offset.html.
 
     Examples:
-        >>> import pandas as pd
         >>> date = '2023-12-23' # Saturday before Christmas
-        >>> offset_bdays(date, 0)
+        >>> pyd.offset_bdays(date, 0)
         Timestamp('2023-12-26')
         >>> date = '2023-12-22' # Friday before Christmas
-        >>> offset_bdays(date, 0)
+        >>> pyd.offset_bdays(date, 0)
         Timestamp('2023-12-22') # No offset because it's a business day
-        >>> offset_bdays(date, 1)
+        >>> pyd.offset_bdays(date, 1)
         Timestamp('2023-12-26') # Offset to the next business day
-        >>> offset_bdays(date, -1)
+        >>> pyd.offset_bdays(date, -1)
         Timestamp('2023-12-21') # Offset to the previous business day
     """
     # Convert to pandas datetime64[ns]
@@ -97,15 +96,14 @@ def count_bdays(start, end):
         selected. Otherwise, the new list is be used.
 
     Examples:
-        >>> import pandas as pd
         >>> start = '2023-12-15'
         >>> end = '2024-01-01'
-        >>> count_bdays(start, end)
+        >>> pyd.count_bdays(start, end)
         10
 
         >>> start = '2023-01-01'
         >>> end = pd.Series('2023-01-31', '2023-03-01'])
-        >>> count_bdays(start, end)
+        >>> pyd.count_bdays(start, end)
         array([22, 40])
     """
     # Convert to pandas Timestamp
@@ -149,10 +147,9 @@ def generate_bdays(
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html#
 
     Examples:
-        >>> import pandas as pd
         >>> start = '2023-12-20'
         >>> end = '2024-01-05'
-        >>> generate_bdays(start, end)
+        >>> pyd.generate_bdays(start, end)
         2023-12-15    2023-12-15
         2023-12-18    2023-12-18
         2023-12-19    2023-12-19
