@@ -2,8 +2,8 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-new_holidays_path = Path(__file__).parent / "br_holidays.txt"
-old_holidays_path = Path(__file__).parent / "br_holidays_old.txt"
+new_holidays_path = Path(__file__).parent / "new_br_holidays.txt"
+old_holidays_path = Path(__file__).parent / "old_br_holidays.txt"
 
 df_new = pd.read_csv(new_holidays_path, header=None, names=["date"], comment="#")
 df_old = pd.read_csv(old_holidays_path, header=None, names=["date"], comment="#")
@@ -12,13 +12,12 @@ df_new["date"] = pd.to_datetime(df_new["date"], format="%d/%m/%Y")
 df_old["date"] = pd.to_datetime(df_old["date"], format="%d/%m/%Y")
 
 # Using numpy datetime64[D] array increases performance by almost 10x
-BR_HOLIDAYS = df_new["date"].values.astype("datetime64[D]")
-# BR_HOLIDAYS = df_new["date"].dt.strftime("%Y-%m-%d").to_list()
-BR_HOLIDAYS_OLD = df_old["date"].values.astype("datetime64[D]")
+NEW_BR_HOLIDAYS = df_new["date"].values.astype("datetime64[D]")
+OLD_BR_HOLIDAYS = df_old["date"].values.astype("datetime64[D]")
 
 
 def offset_bdays(
-    dates: str | pd.Timestamp, offset: int, holiday_list: np.ndarray = BR_HOLIDAYS
+    dates: str | pd.Timestamp, offset: int, holiday_list: np.ndarray = NEW_BR_HOLIDAYS
 ):
     """
     Offsets the dates to the next or previous business day. This function is a wrapper
@@ -57,6 +56,7 @@ def offset_bdays(
     dates = pd.Series(dates)
     # Convert to numpy data types
     dates = dates.values.astype("datetime64[D]")
+
     # Adjust the dates according to the offset
     adj_dates = np.busday_offset(
         dates, offsets=offset, roll="forward", holidays=holiday_list
@@ -65,9 +65,11 @@ def offset_bdays(
     adj_dates = pd.to_datetime(adj_dates, unit="ns")
     # Convert back to Series
     adj_dates = pd.Series(adj_dates)
+
     # Return a single value if a single value was passed
     if len(adj_dates) == 1:
         adj_dates = adj_dates[0]
+
     return adj_dates
 
 
@@ -119,15 +121,19 @@ def count_bdays(start, end):
     # Determine which list of holidays to use
     cutoff_date = np.datetime64("2023-12-26", "D")
     if start < cutoff_date:
-        holiday_list = BR_HOLIDAYS_OLD
+        holiday_list = OLD_BR_HOLIDAYS
     else:
-        holiday_list = BR_HOLIDAYS
+        holiday_list = NEW_BR_HOLIDAYS
 
-    return np.busday_count(start, end, holidays=holiday_list)
+    bdays = np.busday_count(start, end, holidays=holiday_list)
+    # Return a single value if a single value was passed
+    if len(bdays) == 1:
+        bdays = bdays[0]
+    return bdays
 
 
 def generate_bdays(
-    start=None, end=None, inclusive="both", holiday_list=BR_HOLIDAYS, **kwargs
+    start=None, end=None, inclusive="both", holiday_list=NEW_BR_HOLIDAYS, **kwargs
 ):
     """
     Generates a Series of business days between a `start` (inclusive) and

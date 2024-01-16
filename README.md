@@ -20,38 +20,49 @@ You can install PYield using pip:
 ```sh
 pip install pyield
 ```
-## Usage
-
-Here is a quick example of how to use PYield:
-
+## How to use PYield
+### Getting DI Futures Data
 ```python
 import pyield as pyd
 
-# Get DI raw data from B3 (first date available is 05-06-1991)
-df_di_raw = pyd.di(reference_date='2023-12-28', raw=True)
+# Get a pandas dataframe with the DI raw data from B3 (first date available is 05-06-1991)
+>>> pyd.di(reference_date='2024-01-15', raw=True)
+VENCTO CONTR. ABERT.(1) ... ÚLT.OF. COMPRA  ÚLT.OF. VENDA
+   G24           796903 ...         11.650         11.656
+   H24           548377 ...         11.346         11.352
+   ...              ... ...            ...            ...
 
-# Get DI processed data from B3 (default)
-df_di = pyd.di(reference_date='2023-12-28')
+# Get a pandas dataframe with the DI processed data from B3 (default)
+>>> pyd.di(reference_date='2024-01-15')
+contract_code expiration bdays ... last_offer  settlement_rate
+          G24 2024-02-01    13 ...     11.656           11.650
+          H24 2024-03-01    32 ...     11.352           11.349
+          ...        ...   ... ...        ...              ...
 ```
+### Business Days Tools (Brazilian holidays are automatically considered)
+```python
+# Generate a pandas series with the business days between two dates
+>>> pyd.generate_bdays('2023-12-29', '2024-01-03')
+0   2023-12-29
+1   2024-01-02
+2   2024-01-03
+dtype: datetime64[ns]
 
-## DI Futures Example Output
+# Get the next business day after a given date
+>>> pyd.offset_bdays("2023-12-29", 1)
+Timestamp('2024-01-02 00:00:00')
 
-Below is an example of the output from PYield when fetching DI data from B3 for the reference date of 28-12-2023:
-```text
-contract_code expiration  bdays  ...  last_bid  last_offer  settlement_rate
-          F24 2024-01-02      2  ...    11.636      11.650           11.634
-          G24 2024-02-01     24  ...    11.644      11.646           11.648
-          H24 2024-03-01     43  ...      -         11.426           11.425
-          J24 2024-04-01     63  ...    11.285      11.290           11.290
-          K24 2024-05-02     85  ...      -           -              11.121
-          M24 2024-06-03    106  ...    10.900      11.000           10.960
-          ...        ...    ...  ...       ...         ...              ...
-          F33 2033-01-03   2260  ...    10.350      10.380           10.363
-          F34 2034-01-02   2511  ...      -           -              10.365
-          F35 2035-01-02   2759  ...      -           -              10.389
-          F36 2036-01-02   3008  ...      -           -              10.395
-          F37 2037-01-02   3261  ...      -           -              10.414
-          F38 2038-01-04   3510  ...      -           -              10.414
+# Get the next business day if it is not a business day
+>>> pyd.offset_bdays("2023-12-29", 0)
+Timestamp('2023-12-29 00:00:00')
+>>> pyd.offset_bdays("2023-12-30", 0)
+Timestamp('2024-01-02 00:00:00')
+
+# Count the number of business days between two dates
+# Start date is included, end date is excluded
+>>> pyd.count_bdays('2023-12-29', '2024-01-02')
+1
+
 ```
 
 ## Documentation
