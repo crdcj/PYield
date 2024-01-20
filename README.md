@@ -42,25 +42,28 @@ contract_code expiration bdays ... last_offer  settlement_rate
 ### Business Days Tools (Brazilian holidays are automatically considered)
 ```python
 # Generate a pandas series with the business days between two dates
->>> pyd.generate_bdays('2023-12-29', '2024-01-03')
+>>> pyd.generate_bdays(start='2023-12-29', end='2024-01-03')
 0   2023-12-29
 1   2024-01-02
 2   2024-01-03
 dtype: datetime64[ns]
 
-# Get the next business day after a given date
->>> pyd.offset_bdays("2023-12-29", 1)
+# Get the next business day after a given date (offset=1)
+>>> pyd.offset_bdays(dates="2023-12-29", offset=1)
 Timestamp('2024-01-02 00:00:00')
 
-# Get the next business day if it is not a business day
->>> pyd.offset_bdays("2023-12-29", 0)
-Timestamp('2023-12-29 00:00:00')
->>> pyd.offset_bdays("2023-12-30", 0)
+# Get the next business day if it is not a business day (offset=0)
+>>> pyd.offset_bdays(dates="2023-12-30", offset=0)
 Timestamp('2024-01-02 00:00:00')
+
+# Since 2023-12-29 is a business day, it returns the same date (offset=0)
+>>> pyd.offset_bdays(dates="2023-12-29", offset=0)
+Timestamp('2023-12-29 00:00:00')
+
 
 # Count the number of business days between two dates
 # Start date is included, end date is excluded
->>> pyd.count_bdays('2023-12-29', '2024-01-02')
+>>> pyd.count_bdays(start='2023-12-29', end='2024-01-02')
 1
 
 ```

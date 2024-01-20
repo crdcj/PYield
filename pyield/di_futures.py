@@ -300,6 +300,8 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
             "number_of_trades",
             "trading_volume",
             "financial_volume",
+            "settlement_price",
+            "settlement_rate",
             "opening_rate",
             "min_rate",
             "max_rate",
@@ -307,7 +309,6 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
             "closing_rate",
             "last_bid",
             "last_offer",
-            "settlement_rate",
         ]
     ]
     return df
