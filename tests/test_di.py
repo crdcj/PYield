@@ -36,8 +36,8 @@ def test_new_contract_code():
 
 def test_settlement_rate_with_old_holiday_list():
     settlement_rates = {
-        "N27": 9.809,
-        "F33": 10.368,
+        "N27": 0.09809,
+        "F33": 0.10368,
     }
 
     # 22-12-2023 is before the new holiday calendar
@@ -49,21 +49,21 @@ def test_settlement_rate_with_old_holiday_list():
 
 def test_settlement_rates_with_current_holiday_list():
     settlement_rates = {
-        "F24": 11.644,
-        "J24": 11.300,
-        "N24": 10.786,
-        "V24": 10.321,
-        "F25": 10.031,
-        "J25": 9.852,
-        "N25": 9.715,
-        "V25": 9.651,
-        "F26": 9.583,
-        "N26": 9.631,
-        "F27": 9.683,
-        "N27": 9.794,
-        "F29": 10.042,
-        "F31": 10.240,
-        "F33": 10.331,
+        "F24": 0.11644,
+        "J24": 0.11300,
+        "N24": 0.10786,
+        "V24": 0.10321,
+        "F25": 0.10031,
+        "J25": 0.09852,
+        "N25": 0.09715,
+        "V25": 0.09651,
+        "F26": 0.09583,
+        "N26": 0.09631,
+        "F27": 0.09683,
+        "N27": 0.09794,
+        "F29": 0.10042,
+        "F31": 0.10240,
+        "F33": 0.10331,
     }
 
     df = di.get_di_data(reference_date="2023-12-26")

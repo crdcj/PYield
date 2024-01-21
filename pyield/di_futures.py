@@ -195,8 +195,8 @@ def convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
         pd.Series: A Series containing DI futures rates.
     """
     rates = (100_000 / prices) ** (252 / bd) - 1
-    # Convert to percentage and round to 3 decimal places
-    return (100 * rates).round(3)
+    # Round to 5 decimal places (3 in percentage) since it's the standard for DI rates
+    return rates.round(5)
 
 
 def convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
