@@ -195,8 +195,8 @@ def convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
         pd.Series: A Series containing DI futures rates.
     """
     rates = (100_000 / prices) ** (252 / bd) - 1
-    # Round to 5 decimal places (3 in percentage) since it's the standard for DI rates
-    return rates.round(5)
+    # Return rates as percentage
+    return 100 * rates
 
 
 def convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
@@ -207,8 +207,8 @@ def convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
         "max_rate",
         "avg_rate",
         "closing_rate",
-        "last_bid",
-        "last_offer",
+        "last_bid_rate",
+        "last_offer_rate",
     ]
     for col in convert_cols:
         df[col] = convert_prices_to_rates(df[col], df["bdays"])
@@ -250,8 +250,8 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
             "ÚLT. PREÇO": "closing_rate",
             "AJUSTE": "settlement_price",
             "VAR. PTOS.": "point_variation",
-            "ÚLT.OF. COMPRA": "last_bid",
-            "ÚLT.OF. VENDA": "last_offer",
+            "ÚLT.OF. COMPRA": "last_bid_rate",
+            "ÚLT.OF. VENDA": "last_offer_rate",
         }
     )
     reference_date = pd.Timestamp(reference_date)
@@ -277,17 +277,23 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
         "max_rate",
         "avg_rate",
         "closing_rate",
-        "last_bid",
-        "last_offer",
+        "last_bid_rate",
+        "last_offer_rate",
     ]
     for col in cols_with_nan:
         df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
 
-    df["settlement_rate"] = convert_prices_to_rates(df["settlement_price"], df["bdays"])
-
     # Prior to 01/01/2002, prices were not converted to rates
     if reference_date < pd.Timestamp("2002-01-01"):
         df = convert_prices_in_older_contracts(df)
+
+    df["settlement_rate"] = convert_prices_to_rates(df["settlement_price"], df["bdays"])
+
+    # Remove percentage in all rate columns and round to 5 decimal places since it's the precision used by B3
+    # Obs: 5 decimal places = 3 decimal places in percentage
+    rate_cols = [col for col in df.columns if "rate" in col]
+    for col in rate_cols:
+        df[col] = (df[col] / 100).round(5)
 
     # Order columns
     df = df[
@@ -307,8 +313,8 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
             "max_rate",
             "avg_rate",
             "closing_rate",
-            "last_bid",
-            "last_offer",
+            "last_bid_rate",
+            "last_offer_rate",
         ]
     ]
     return df

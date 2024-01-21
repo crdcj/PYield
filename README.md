@@ -28,15 +28,15 @@ import pyield as pyd
 # Get a pandas dataframe with the DI raw data from B3 (first date available is 05-06-1991)
 >>> pyd.di(reference_date='2024-01-15', raw=True)
 VENCTO CONTR. ABERT.(1) ... ÚLT.OF. COMPRA  ÚLT.OF. VENDA
-   G24           796903 ...         11.650         11.656
-   H24           548377 ...         11.346         11.352
+   G24           796903 ...         0.11650         0.11656
+   H24           548377 ...         0.11346         0.11352
    ...              ... ...            ...            ...
 
 # Get a pandas dataframe with the DI processed data from B3 (default)
 >>> pyd.di(reference_date='2024-01-15')
 contract_code expiration bdays ... last_offer  settlement_rate
-          G24 2024-02-01    13 ...     11.656           11.650
-          H24 2024-03-01    32 ...     11.352           11.349
+          G24 2024-02-01    13 ...     0.11656           0.11650
+          H24 2024-03-01    32 ...     0.11352           0.11349
           ...        ...   ... ...        ...              ...
 ```
 ### Business Days Tools (Brazilian holidays are automatically considered)
