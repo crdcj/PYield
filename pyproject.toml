@@ -4,20 +4,18 @@ build-backend = "pdm.backend"
 
 [project]
 name = "PYield"
-authors = [
-    {name = "Carlos Carvalho", email = "cr.cj@outlook.com"},
-]
+authors = [{ name = "Carlos Carvalho", email = "cr.cj@outlook.com" }]
 description = "A Python library for analysis of fixed income instruments in Brazil"
 readme = "README.md"
 requires-python = ">=3.11"
 keywords = ["fixed-income, brazil, finance, analysis, bonds"]
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Intended Audience :: Financial and Insurance Industry",
-    "Topic :: Office/Business :: Financial :: Investment"
+    "Topic :: Office/Business :: Financial :: Investment",
 ]
 dependencies = [
     "requests",
@@ -33,10 +31,7 @@ dynamic = ["version"]
 Source = "https://github.com/crdcj/PYield"
 
 [tool.pdm]
-version = {source = "file", path = "pyield/__about__.py" }
-distribution = "true"
+version = { source = "file", path = "pyield/__about__.py" }
+distribution = true
 [tool.pdm.dev-dependencies]
-dev = [
-    "ipykernel",
-    "pytest",
-]
+dev = ["ipykernel", "pytest"]
