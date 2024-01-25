@@ -266,7 +266,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     df["bdays"] = bc.count_bdays(reference_date, df["expiration"])
     # Convert to nullable integer, since other columns use this data type
     df["bdays"] = df["bdays"].astype(pd.Int64Dtype())
-    # Remove rows with bday <= 0
+    # Remove expired contracts
     df = df[df["bdays"] > 0]
 
     # Columns where 0 means NaN
@@ -283,8 +283,8 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     for col in cols_with_nan:
         df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
 
-    # Prior to 01/01/2002, prices were not converted to rates
-    if reference_date < pd.Timestamp("2002-01-01"):
+    # Prior to 17/01/2002 (incluive), prices were not converted to rates
+    if reference_date <= pd.Timestamp("2002-01-17"):
         df = convert_prices_in_older_contracts(df)
 
     df["settlement_rate"] = convert_prices_to_rates(df["settlement_price"], df["bdays"])
