@@ -337,6 +337,11 @@ def get_di_data(reference_date: str | pd.Timestamp, raw: bool = False) -> pd.Dat
 
     Examples:
         >>> get_di_data("2023-12-28")
+
+    Columns:
+        - bdays: number of business days to expiration.
+        - open_contracts: number of open contracts at the start of the trading day.
+        - closed_contracts: number of closed contracts at the end of the trading day.
     """
     reference_date = pd.Timestamp(reference_date)
     df = get_raw_di_data(reference_date)
