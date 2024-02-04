@@ -91,8 +91,6 @@ def process_df(df_raw: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFra
     df = df_raw.copy()
     # Remover colunas cujos dados são constantes: MktDataStrmId, AdjstdQtStin e PrvsAdjstdQtStin
     df.drop(columns=["MktDataStrmId", "AdjstdQtStin", "PrvsAdjstdQtStin"], inplace=True)
-    # Remover colunas que não são necessárias
-    df.drop(columns=["PrvsAdjstdQt", "PrvsAdjstdQtTax"], inplace=True)
 
     expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
     # Insert the column at the beginning
@@ -100,11 +98,11 @@ def process_df(df_raw: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFra
 
     business_days = brc.count_bdays(reference_date, df["ExpDt"])
     # Insert the column at the beginning
-    df.insert(2, "BDays", business_days)
+    df.insert(2, "BDaysToExp", business_days)
     # Convert to nullable integer, since other columns use this data type
-    df["BDays"] = df["BDays"].astype(pd.Int64Dtype())
+    df["BDaysToExp"] = df["BDaysToExp"].astype(pd.Int64Dtype())
     # Remove expired contracts
-    df.query("BDays > 0", inplace=True)
+    df.query("BDaysToExp > 0", inplace=True)
 
     return df.sort_values(by=["ExpDt"], ignore_index=True)
 
