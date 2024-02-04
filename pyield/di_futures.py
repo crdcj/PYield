@@ -103,6 +103,9 @@ def get_di(
         - closed_contracts: number of closed contracts at the end of the trading day.
     """
     reference_date = pd.Timestamp(reference_date)
+    if not reference_date:
+        raise ValueError("Uma data de referência válida deve ser fornecida.")
+
     if source_type == "xml":
         df = di_xml.get_di(reference_date, data_path, return_raw)
     elif source_type == "html":

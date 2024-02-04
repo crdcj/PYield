@@ -201,7 +201,7 @@ def process_di(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
     # Convert to nullable integer, since other columns use this data type
     df["bdays"] = df["bdays"].astype(pd.Int64Dtype())
     # Remove expired contracts
-    df = df[df["bdays"] > 0]
+    df.query("bdays > 0", inplace=True)
 
     # Columns where 0 means NaN
     cols_with_nan = [

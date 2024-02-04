@@ -7,6 +7,7 @@ import pandas as pd
 from lxml import etree
 
 from . import di_futures as dif
+from . import br_calendar as brc
 
 
 def read_file_from_url(reference_date) -> io.BytesIO:
@@ -86,26 +87,34 @@ def create_df(xml_data: list) -> pd.DataFrame:
     return pd.read_csv(file, dtype_backend="numpy_nullable")
 
 
-def process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
+def process_df(df_raw: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
     df = df_raw.copy()
     # Remover colunas cujos dados são constantes: MktDataStrmId, AdjstdQtStin e PrvsAdjstdQtStin
     df.drop(columns=["MktDataStrmId", "AdjstdQtStin", "PrvsAdjstdQtStin"], inplace=True)
+    # Remover colunas que não são necessárias
+    df.drop(columns=["PrvsAdjstdQt", "PrvsAdjstdQtTax"], inplace=True)
 
     expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
     # Insert the column at the beginning
     df.insert(1, "ExpDt", expiration)
 
+    business_days = brc.count_bdays(reference_date, df["ExpDt"])
+    # Insert the column at the beginning
+    df.insert(2, "BDays", business_days)
+    # Convert to nullable integer, since other columns use this data type
+    df["BDays"] = df["BDays"].astype(pd.Int64Dtype())
+    # Remove expired contracts
+    df.query("BDays > 0", inplace=True)
+
     return df.sort_values(by=["ExpDt"], ignore_index=True)
 
 
-def get_di(reference_date: str, data_path: Path, return_raw: bool) -> pd.DataFrame:
-    reference_date_pd = pd.Timestamp(reference_date)
-    if not reference_date_pd:
-        raise ValueError("Uma data de referência válida deve ser fornecida.")
-
+def get_di(
+    reference_date: pd.Timestamp, data_path: Path, return_raw: bool
+) -> pd.DataFrame:
     if data_path:
         # Filename example: PR231228.zip
-        reference_date_str = reference_date_pd.strftime("%y%m%d")
+        reference_date_str = reference_date.strftime("%y%m%d")
         filepath = data_path / f"PR{reference_date_str}.zip"
         if not filepath.exists():
             raise FileNotFoundError(
@@ -124,4 +133,4 @@ def get_di(reference_date: str, data_path: Path, return_raw: bool) -> pd.DataFra
     raw_df = create_df(xml_data)
     if return_raw:
         return raw_df
-    return process_df(raw_df)
+    return process_df(raw_df, reference_date)
