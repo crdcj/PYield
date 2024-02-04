@@ -92,13 +92,17 @@ def process_df(df_raw: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFra
     # Remover colunas cujos dados são constantes: MktDataStrmId, AdjstdQtStin e PrvsAdjstdQtStin
     df.drop(columns=["MktDataStrmId", "AdjstdQtStin", "PrvsAdjstdQtStin"], inplace=True)
 
+    df.insert(0, "RptDt", reference_date)
+    # Convert to datetime64[ns] since it is pandas default type for timestamps
+    df["RptDt"] = df["RptDt"].astype("datetime64[ns]")
+
     expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
     # Insert the column at the beginning
-    df.insert(1, "ExpDt", expiration)
+    df.insert(2, "ExpDt", expiration)
 
     business_days = brc.count_bdays(reference_date, df["ExpDt"])
     # Insert the column at the beginning
-    df.insert(2, "BDaysToExp", business_days)
+    df.insert(3, "BDaysToExp", business_days)
     # Convert to nullable integer, since other columns use this data type
     df["BDaysToExp"] = df["BDaysToExp"].astype(pd.Int64Dtype())
     # Remove expired contracts

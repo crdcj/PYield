@@ -188,7 +188,11 @@ def process_di(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
             "ÚLT.OF. VENDA": "last_offer_rate",
         }
     )
-    reference_date = pd.Timestamp(reference_date)
+
+    df.insert(0, "reference_date", reference_date)
+    # Convert to datetime64[ns] since it is pandas default type for timestamps
+    df["reference_date"] = df["reference_date"].astype("datetime64[ns]")
+
     # Contract code format was changed in 22/05/2006
     if reference_date < pd.Timestamp("2006-05-22"):
         df["expiration"] = df["contract_code"].apply(
@@ -232,6 +236,7 @@ def process_di(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
     # Order columns
     df = df[
         [
+            "reference_date",
             "contract_code",
             "expiration",
             "bdays",
