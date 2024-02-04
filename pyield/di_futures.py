@@ -136,7 +136,7 @@ def get_expiration_date(contract_code: str) -> pd.Timestamp:
         return pd.NaT
 
 
-def get_raw_di_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def get_raw_di(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to fetch raw DI futures data from B3 for a specific reference date.
 
@@ -218,7 +218,7 @@ def convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
+def process_di(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -320,7 +320,7 @@ def process_di_data(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFr
     return df
 
 
-def get_di_data(reference_date: str | pd.Timestamp, raw: bool = False) -> pd.DataFrame:
+def get_di(reference_date: str | pd.Timestamp, raw: bool = False) -> pd.DataFrame:
     """
     Gets the DI futures data for a given date from B3.
 
@@ -336,7 +336,7 @@ def get_di_data(reference_date: str | pd.Timestamp, raw: bool = False) -> pd.Dat
         pd.DataFrame: A Pandas DataFrame containing processed DI futures data.
 
     Examples:
-        >>> get_di_data("2023-12-28")
+        >>> get_di("2023-12-28")
 
     Columns:
         - bdays: number of business days to expiration.
@@ -344,9 +344,7 @@ def get_di_data(reference_date: str | pd.Timestamp, raw: bool = False) -> pd.Dat
         - closed_contracts: number of closed contracts at the end of the trading day.
     """
     reference_date = pd.Timestamp(reference_date)
-    df = get_raw_di_data(reference_date)
+    df_raw = get_raw_di(reference_date)
     if raw:
-        return df
-    df = process_di_data(df, reference_date)
-
-    return df
+        return df_raw
+    return process_di(df_raw, reference_date)

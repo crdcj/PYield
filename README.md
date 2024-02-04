@@ -26,14 +26,14 @@ pip install pyield
 import pyield as pyd
 
 # Get a pandas dataframe with the DI raw data from B3 (first date available is 05-06-1991)
->>> pyd.di(reference_date='2024-01-15', raw=True)
+>>> yd.get_di(reference_date='2024-01-15', raw=True)
 VENCTO CONTR. ABERT.(1) ... ÚLT.OF. COMPRA  ÚLT.OF. VENDA
    G24           796903 ...         0.11650         0.11656
    H24           548377 ...         0.11346         0.11352
    ...              ... ...            ...            ...
 
 # Get a pandas dataframe with the DI processed data from B3 (default)
->>> pyd.di(reference_date='2024-01-15')
+>>> yd.get_di(reference_date='2024-01-15')
 contract_code expiration bdays ... last_offer  settlement_rate
           G24 2024-02-01    13 ...     0.11656           0.11650
           H24 2024-03-01    32 ...     0.11352           0.11349
@@ -42,28 +42,28 @@ contract_code expiration bdays ... last_offer  settlement_rate
 ### Business Days Tools (Brazilian holidays are automatically considered)
 ```python
 # Generate a pandas series with the business days between two dates
->>> pyd.generate_bdays(start='2023-12-29', end='2024-01-03')
+>>> yd.generate_bdays(start='2023-12-29', end='2024-01-03')
 0   2023-12-29
 1   2024-01-02
 2   2024-01-03
 dtype: datetime64[ns]
 
 # Get the next business day after a given date (offset=1)
->>> pyd.offset_bdays(dates="2023-12-29", offset=1)
+>>> yd.offset_bdays(dates="2023-12-29", offset=1)
 Timestamp('2024-01-02 00:00:00')
 
 # Get the next business day if it is not a business day (offset=0)
->>> pyd.offset_bdays(dates="2023-12-30", offset=0)
+>>> yd.offset_bdays(dates="2023-12-30", offset=0)
 Timestamp('2024-01-02 00:00:00')
 
 # Since 2023-12-29 is a business day, it returns the same date (offset=0)
->>> pyd.offset_bdays(dates="2023-12-29", offset=0)
+>>> yd.offset_bdays(dates="2023-12-29", offset=0)
 Timestamp('2023-12-29 00:00:00')
 
 
 # Count the number of business days between two dates
 # Start date is included, end date is excluded
->>> pyd.count_bdays(start='2023-12-29', end='2024-01-02')
+>>> yd.count_bdays(start='2023-12-29', end='2024-01-02')
 1
 
 ```

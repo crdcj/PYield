@@ -40,14 +40,14 @@ def offset_bdays(
 
     Examples:
         >>> date = '2023-12-23' # Saturday before Christmas
-        >>> pyd.offset_bdays(date, 0)
+        >>> yd.offset_bdays(date, 0)
         Timestamp('2023-12-26')
         >>> date = '2023-12-22' # Friday before Christmas
-        >>> pyd.offset_bdays(date, 0)
+        >>> yd.offset_bdays(date, 0)
         Timestamp('2023-12-22') # No offset because it's a business day
-        >>> pyd.offset_bdays(date, 1)
+        >>> yd.offset_bdays(date, 1)
         Timestamp('2023-12-26') # Offset to the next business day
-        >>> pyd.offset_bdays(date, -1)
+        >>> yd.offset_bdays(date, -1)
         Timestamp('2023-12-21') # Offset to the previous business day
     """
     # Convert to pandas datetime64[ns]
@@ -100,12 +100,12 @@ def count_bdays(start, end):
     Examples:
         >>> start = '2023-12-15'
         >>> end = '2024-01-01'
-        >>> pyd.count_bdays(start, end)
+        >>> yd.count_bdays(start, end)
         10
 
         >>> start = '2023-01-01'
         >>> end = pd.Series('2023-01-31', '2023-03-01'])
-        >>> pyd.count_bdays(start, end)
+        >>> yd.count_bdays(start, end)
         array([22, 40])
     """
     # Convert to pandas Timestamp
@@ -138,7 +138,9 @@ def generate_bdays(
     """
     Generates a Series of business days between a `start` (inclusive) and
     `end` (inclusive) that takes into account the list of brazilian holidays as the
-    default. This function is a wrapper for `pandas.bdate_range`.
+    default. If no start date is provided, the current date is used. If no end date is
+    provided, the current date is used.
+
 
     Args:
         start (str | pd.Timestamp, optional): Defaults to None. The start date.
@@ -149,13 +151,14 @@ def generate_bdays(
         pd.Series: A Series of business days between the start date and end date.
 
     Note:
-        For more information on error handling, see pandas.bdate_range documentation at
+        This function is a wrapper for `pandas.bdate_range`.For more information on
+        error handling, see pandas.bdate_range documentation at
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html#
 
     Examples:
         >>> start = '2023-12-20'
         >>> end = '2024-01-05'
-        >>> pyd.generate_bdays(start, end)
+        >>> yd.generate_bdays(start, end)
         2023-12-15    2023-12-15
         2023-12-18    2023-12-18
         2023-12-19    2023-12-19
@@ -167,6 +170,13 @@ def generate_bdays(
         2023-12-29    2023-12-29
         dtype: object
     """
+    if start is None and end is None:
+        raise ValueError("start and end dates must be provided")
+    if start is None or end is None:
+        if start:
+            end = pd.Timestamp.today()
+        else:
+            start = pd.Timestamp.today()
     bdays = pd.bdate_range(
         start, end, freq="C", inclusive=inclusive, holidays=holiday_list, **kwargs
     )
