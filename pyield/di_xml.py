@@ -34,14 +34,19 @@ def extract_xml_file(zip_file: io.BytesIO) -> io.BytesIO:
 
     # Then, read the inner file
     with zipfile.ZipFile(outer_file, "r") as inner_zip:
-        inner_file_name = inner_zip.namelist()[0]
-        inner_file_content = inner_zip.read(inner_file_name)
+        filenames = inner_zip.namelist()
+        # Get first file that ends with ".xml"
+        xml_filename = [name for name in filenames if name.endswith(".xml")][0]
+        inner_file_content = inner_zip.read(xml_filename)
 
     return io.BytesIO(inner_file_content)
 
 
 def parse_xml_file(xml_file: io.BytesIO) -> list:
-    tree = etree.parse(xml_file)
+    parser = etree.XMLParser(
+        ns_clean=True, remove_blank_text=True, remove_comments=True, recover=True
+    )
+    tree = etree.parse(xml_file, parser)
     # Definir os namespaces (substitua 'ns' pelo prefixo apropriado se necessário)
     namespaces = {"ns": "urn:bvmf.217.01.xsd"}
 
