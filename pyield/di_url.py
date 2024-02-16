@@ -112,7 +112,7 @@ def get_raw_di(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
     except Exception as e:
         warnings.warn(
-            f"A {type(e).__name__} occurred while reading the DI futures data for {reference_date.strftime("%d/%m/%Y")}. Returning an empty DataFrame."
+            f"A {type(e).__name__} occurred while reading the DI futures data for {reference_date.strftime('%d/%m/%Y')}. Returning an empty DataFrame."
         )
         return pd.DataFrame()
 

@@ -2,7 +2,7 @@ from typing import Literal
 from pathlib import Path
 import pandas as pd
 
-from . import di_html
+from . import di_url
 from . import di_xml
 from . import br_calendar as bc
 
@@ -109,7 +109,7 @@ def get_di(
     if source_type == "xml":
         df = di_xml.get_di(reference_date, data_path, return_raw)
     elif source_type == "html":
-        df = di_html.get_di(reference_date, return_raw)
+        df = di_url.get_di(reference_date, return_raw)
     else:
         raise ValueError("source_type must be either 'xml' or 'html'.")
 

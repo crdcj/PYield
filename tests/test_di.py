@@ -1,13 +1,13 @@
 import pandas as pd
 
 from pyield import di_futures as dif
-from pyield import di_html as dih
+from pyield import di_url as diu
 
 
 def test_valid_old_contract_code1():
     contact_code = "JAN3"  # Valid contract code
     reference_date = pd.Timestamp("2001-05-21")
-    result = dih.get_old_expiration_date(contact_code, reference_date)
+    result = diu.get_old_expiration_date(contact_code, reference_date)
     contract_expiration = pd.Timestamp("2003-01-02")
     assert result == contract_expiration
 
@@ -15,7 +15,7 @@ def test_valid_old_contract_code1():
 def test_valid_old_contract_code2():
     contact_code = "JAN3"  # Valid contract code
     reference_date = pd.Timestamp("1990-01-01")
-    result = dih.get_old_expiration_date(contact_code, reference_date)
+    result = diu.get_old_expiration_date(contact_code, reference_date)
     contract_expiration = pd.Timestamp("1993-01-04")
     assert result == contract_expiration
 
@@ -24,7 +24,7 @@ def test_invalid_old_contract_code():
     contact_code = "J3"  # Invalid contract code
     reference_date = pd.Timestamp("2001-01-02")
     # Must return NaT
-    result = dih.get_old_expiration_date(contact_code, reference_date)
+    result = diu.get_old_expiration_date(contact_code, reference_date)
     assert pd.isnull(result)
 
 
@@ -71,3 +71,8 @@ def test_settlement_rates_with_current_holiday_list():
     contract_codes = list(settlement_rates.keys())  # noqa: F841
     results = df.query("contract_code in @contract_codes")["settlement_rate"].to_list()
     assert results == list(settlement_rates.values())
+
+
+def test_invalid_date():
+    result = dif.get_di(reference_date="2023-12-24")
+    assert result.empty
