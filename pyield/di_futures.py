@@ -77,7 +77,7 @@ def get_expiration_date(contract_code: str) -> pd.Timestamp:
 def get_di(
     reference_date: str | pd.Timestamp,
     return_raw: bool = False,
-    source_type: Literal["xml", "html"] = "html",
+    source_type: Literal["url", "xml", "xml-s"] = "url",
     data_path: Path = None,
 ) -> pd.DataFrame:
     """
@@ -88,30 +88,31 @@ def get_di(
 
     Args:
         reference_date: a datetime-like object representing the reference date.
-        raw (bool): If True, returns the raw data as a Pandas DataFrame.
-            Defaults to False.
+        return_raw: a boolean indicating whether to return the raw DI data.
+        source_type: a string indicating the source of the data. Options are "url",
+            "xml" and "xml-s".
+        data_path: a Path object indicating the path to the directory where the XML. If
+            None is provided, the file will be downloaded from the internet.
 
     Returns:
-        pd.DataFrame: A Pandas DataFrame containing processed DI futures data.
+        pd.DataFrame: A Pandas DataFrame containing the DI Futures data for
+        the given reference date.
 
     Examples:
         >>> get_di("2023-12-28")
 
-    Columns:
-        - bdays: number of business days to expiration.
-        - open_contracts: number of open contracts at the start of the trading day.
-        - closed_contracts: number of closed contracts at the end of the trading day.
     """
     # Force reference_date to be a pandas Timestamp
     reference_date = pd.Timestamp(reference_date)
     if not reference_date:
         raise ValueError("Uma data de referência válida deve ser fornecida.")
 
-    if source_type == "xml":
-        df = di_xml.get_di(reference_date, data_path, return_raw)
-    elif source_type == "html":
+    if source_type == "url":
         df = di_url.get_di(reference_date, return_raw)
+
+    elif source_type == "xml" or source_type == "xml-s":
+        df = di_xml.get_di(reference_date, data_path, return_raw)
     else:
-        raise ValueError("source_type must be either 'xml' or 'html'.")
+        raise ValueError("source_type must be either 'url', 'xml' or 'xml-s'")
 
     return df
