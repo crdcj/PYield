@@ -10,7 +10,7 @@ from . import di_futures as dif
 from . import br_calendar as brc
 
 
-def read_file_from_url(reference_date) -> io.BytesIO:
+def get_file_from_url(reference_date) -> io.BytesIO:
     reference_date = pd.Timestamp(reference_date)
     reference_date_str = reference_date.strftime("%y%m%d")
     # url example: https://www.b3.com.br/pesquisapregao/download?filelist=PR231228.zip
@@ -25,7 +25,7 @@ def read_file_from_url(reference_date) -> io.BytesIO:
     return io.BytesIO(response.content)
 
 
-def extract_xml_file(zip_file: io.BytesIO) -> io.BytesIO:
+def extract_xml_from_zip(zip_file: io.BytesIO) -> io.BytesIO:
     # First, read the outer file
     with zipfile.ZipFile(zip_file, "r") as outer_zip:
         outer_file_name = outer_zip.namelist()[0]
@@ -35,28 +35,29 @@ def extract_xml_file(zip_file: io.BytesIO) -> io.BytesIO:
     # Then, read the inner file
     with zipfile.ZipFile(outer_file, "r") as inner_zip:
         filenames = inner_zip.namelist()
-        # Get first file that ends with ".xml"
-        xml_filename = [name for name in filenames if name.endswith(".xml")][0]
-        inner_file_content = inner_zip.read(xml_filename)
+        # Filter only xml files
+        xml_filenames = [name for name in filenames if name.endswith(".xml")]
+        xml_filenames.sort()
+        # Unzip last file (the most recent as per B3's name convention)
+        inner_file_content = inner_zip.read(xml_filenames[-1])
 
     return io.BytesIO(inner_file_content)
 
 
-def parse_xml_file(xml_file: io.BytesIO) -> list:
+def extract_di1_data_from_xml(xml_file: io.BytesIO) -> list:
     parser = etree.XMLParser(
         ns_clean=True, remove_blank_text=True, remove_comments=True, recover=True
     )
     tree = etree.parse(xml_file, parser)
-    # Definir os namespaces (substitua 'ns' pelo prefixo apropriado se necessário)
-    namespaces = {"ns": "urn:bvmf.217.01.xsd"}
 
+    namespaces = {"ns": "urn:bvmf.217.01.xsd"}
     # XPath para encontrar elementos cujo texto começa com "DI1"
     tckr_symbols = tree.xpath(
         '//ns:TckrSymb[starts-with(text(), "DI1")]', namespaces=namespaces
     )
 
     # Lista para armazenar os dados
-    data = []
+    di1_data = []
 
     # Processar cada TckrSymb encontrado
     for tckr_symb in tckr_symbols:
@@ -78,14 +79,14 @@ def parse_xml_file(xml_file: io.BytesIO) -> list:
             tckr_data[tag_name] = attr.text
 
         # Adicionar o dicionário à lista
-        data.append(tckr_data)
+        di1_data.append(tckr_data)
 
-    return data
+    return di1_data
 
 
-def create_df(xml_data: list) -> pd.DataFrame:
+def create_df_from_di1_data(di1_data: list) -> pd.DataFrame:
     # Criar um DataFrame com os dados coletados
-    df = pd.DataFrame(xml_data)
+    df = pd.DataFrame(di1_data)
 
     # Convert to CSV and then back to pandas to get automatic type conversion
     file = io.StringIO(df.to_csv(index=False))
@@ -132,12 +133,12 @@ def get_di(
             zip_file = io.BytesIO(content)
     else:
         # Read the file from the internet
-        zip_file = read_file_from_url(reference_date)
+        zip_file = get_file_from_url(reference_date)
 
-    xml_file = extract_xml_file(zip_file)
-    xml_data = parse_xml_file(xml_file)
+    xml_file = extract_xml_from_zip(zip_file)
+    xml_data = extract_di1_data_from_xml(xml_file)
 
-    raw_df = create_df(xml_data)
+    raw_df = create_df_from_di1_data(xml_data)
     if return_raw:
         return raw_df
     return process_df(raw_df, reference_date)
