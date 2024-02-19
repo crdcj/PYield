@@ -102,6 +102,7 @@ def get_di(
         - open_contracts: number of open contracts at the start of the trading day.
         - closed_contracts: number of closed contracts at the end of the trading day.
     """
+    # Force reference_date to be a pandas Timestamp
     reference_date = pd.Timestamp(reference_date)
     if not reference_date:
         raise ValueError("Uma data de referência válida deve ser fornecida.")

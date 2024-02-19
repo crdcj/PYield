@@ -10,11 +10,22 @@ from . import di_futures as dif
 from . import br_calendar as brc
 
 
-def get_file_from_url(reference_date) -> io.BytesIO:
-    reference_date = pd.Timestamp(reference_date)
+def get_file_from_url(reference_date: pd.Timestamp, source: str = "pr") -> io.BytesIO:
+    """
+    Types of Price Reports (PR) available:
+    pr - Price Report (all assets)
+        url example: https://www.b3.com.br/pesquisapregao/download?filelist=PR231228.zip
+    spr - Simplified Price Report (derivatives)
+        url example: https://www.b3.com.br/pesquisapregao/download?filelist=SPRD240216.zip
+    """
+
     reference_date_str = reference_date.strftime("%y%m%d")
-    # url example: https://www.b3.com.br/pesquisapregao/download?filelist=PR231228.zip
-    url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{reference_date_str}.zip"
+    if source == "pr":
+        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{reference_date_str}.zip"
+    elif source == "spr":
+        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=SPR{reference_date_str}.zip"
+    else:
+        raise ValueError("source must be either 'pr' or 'spr'.")
 
     response = requests.get(url)
     # If size is less than 1 KB, then the file does not exist
