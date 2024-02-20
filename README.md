@@ -26,14 +26,14 @@ pip install pyield
 import pyield as pyd
 
 # Get a pandas dataframe with the DI raw data from B3 (first date available is 05-06-1991)
->>> yd.get_di(reference_date='2024-01-15', raw=True)
+>>> yd.get_di(trade_date='2024-01-15', raw=True)
 VENCTO CONTR. ABERT.(1) ... ÚLT.OF. COMPRA  ÚLT.OF. VENDA
    G24           796903 ...         0.11650         0.11656
    H24           548377 ...         0.11346         0.11352
    ...              ... ...            ...            ...
 
 # Get a pandas dataframe with the DI processed data from B3 (default)
->>> yd.get_di(reference_date='2024-01-15')
+>>> yd.get_di(trade_date='2024-01-15')
 contract_code expiration bdays ... last_offer  settlement_rate
           G24 2024-02-01    13 ...     0.11656           0.11650
           H24 2024-03-01    32 ...     0.11352           0.11349

@@ -6,25 +6,25 @@ from pyield import di_url as diu
 
 def test_valid_old_contract_code1():
     contact_code = "JAN3"  # Valid contract code
-    reference_date = pd.Timestamp("2001-05-21")
-    result = diu.get_old_expiration_date(contact_code, reference_date)
+    trade_date = pd.Timestamp("2001-05-21")
+    result = diu.get_old_expiration_date(contact_code, trade_date)
     contract_expiration = pd.Timestamp("2003-01-02")
     assert result == contract_expiration
 
 
 def test_valid_old_contract_code2():
     contact_code = "JAN3"  # Valid contract code
-    reference_date = pd.Timestamp("1990-01-01")
-    result = diu.get_old_expiration_date(contact_code, reference_date)
+    trade_date = pd.Timestamp("1990-01-01")
+    result = diu.get_old_expiration_date(contact_code, trade_date)
     contract_expiration = pd.Timestamp("1993-01-04")
     assert result == contract_expiration
 
 
 def test_invalid_old_contract_code():
     contact_code = "J3"  # Invalid contract code
-    reference_date = pd.Timestamp("2001-01-02")
+    trade_date = pd.Timestamp("2001-01-02")
     # Must return NaT
-    result = diu.get_old_expiration_date(contact_code, reference_date)
+    result = diu.get_old_expiration_date(contact_code, trade_date)
     assert pd.isnull(result)
 
 
@@ -42,7 +42,7 @@ def test_settlement_rate_with_old_holiday_list():
     }
 
     # 22-12-2023 is before the new holiday calendar
-    df = dif.get_di(reference_date="2023-12-22")
+    df = dif.get_di(trade_date="2023-12-22")
     contract_codes = list(settlement_rates.keys())  # noqa: F841
     result = df.query("contract_code in @contract_codes")["settlement_rate"].to_list()
     assert result == list(settlement_rates.values())
@@ -67,12 +67,12 @@ def test_settlement_rates_with_current_holiday_list():
         "F33": 0.10331,
     }
 
-    df = dif.get_di(reference_date="2023-12-26")
+    df = dif.get_di(trade_date="2023-12-26")
     contract_codes = list(settlement_rates.keys())  # noqa: F841
     results = df.query("contract_code in @contract_codes")["settlement_rate"].to_list()
     assert results == list(settlement_rates.values())
 
 
 def test_invalid_date():
-    result = dif.get_di(reference_date="2023-12-24")
+    result = dif.get_di(trade_date="2023-12-24")
     assert result.empty

@@ -75,10 +75,9 @@ def get_expiration_date(contract_code: str) -> pd.Timestamp:
 
 
 def get_di(
-    reference_date: str | pd.Timestamp,
+    trade_date: str | pd.Timestamp,
     source_type: Literal["bmf", "b3", "b3s"] = "bmf",
     return_raw: bool = False,
-    data_path: Path = None,
 ) -> pd.DataFrame:
     """
     Gets the DI futures data for a given date from B3.
@@ -87,9 +86,15 @@ def get_di(
     reference date. It's the primary external interface for accessing DI data.
 
     Args:
-        reference_date: a datetime-like object representing the reference date.
+        trade_date: a datetime-like object representing the reference date.
         source_type: a string indicating the source of the data. Options are "bmf",
             "b3" and "b3s" (default is "bmf").
+            - "bmf" (fast) fetches DI data from old BM&FBOVESPA website. This is the default
+                option.
+            - "b3" (slow) fetches DI data from the complete Price Report XML file of the day.
+            - "b3s" (fast) fetches DI data from the simplified Price Report XML file of the day.
+            This option is faster than "b3" but it provides less information.
+
         return_raw: a boolean indicating whether to return the raw DI data.
         data_path: a Path object indicating the path to the directory where the XML
             files are stored. This argument is only used when source_type is "b3" or
@@ -102,15 +107,40 @@ def get_di(
     Examples:
         >>> get_di("2023-12-28")
 
+    Notes:
+        - The Complete Price Report XML files are approximately 5 MB zipped files.
+        - The Simplified Price Report XML files are approximately 50 kB zipped files.
+        - File information can be found at: https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf
+
     """
-    # Force reference_date to be a pandas Timestamp
-    reference_date = pd.Timestamp(reference_date)
-    if not reference_date:
+    # Force trade_date to be a pandas Timestamp
+    trade_date = pd.Timestamp(trade_date)
+    if not trade_date:
         raise ValueError("Uma data de referência válida deve ser fornecida.")
 
     if source_type == "bmf":
-        return di_url.get_di(reference_date, return_raw)
+        return di_url.get_di(trade_date, return_raw)
     elif source_type in ["b3", "b3s"]:
-        return di_xml.get_di(reference_date, source_type, return_raw, data_path)
+        return di_xml.get_di(trade_date, source_type, return_raw)
     else:
         raise ValueError("source_type must be either 'bmf', 'b3' or 'b3s'.")
+
+
+def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
+    """
+    Reads a DI futures data file and returns a DataFrame.
+
+    This function reads a DI futures data file and returns a DataFrame with the data.
+
+    Args:
+        file_path: a Path object indicating the path to the file.
+
+    Returns:
+        pd.DataFrame: A Pandas DataFrame containing the DI Futures data.
+
+    Examples:
+        >>> read_di_from_file(Path("path/to/file.xml"))
+
+    """
+
+    return di_xml.read_di_from_file(file_path)

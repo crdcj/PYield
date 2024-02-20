@@ -10,7 +10,7 @@ from . import di_futures as dif
 from . import br_calendar as brc
 
 
-def get_file_from_url(reference_date: pd.Timestamp, source_type: str) -> io.BytesIO:
+def get_file_from_url(trade_date: pd.Timestamp, source_type: str) -> io.BytesIO:
     """
     Types of XML files available:
     Full Price Report (all assets)
@@ -21,7 +21,7 @@ def get_file_from_url(reference_date: pd.Timestamp, source_type: str) -> io.Byte
         url example: https://www.b3.com.br/pesquisapregao/download?filelist=SPRD240216.zip
     """
 
-    formatted_date = reference_date.strftime("%y%m%d")
+    formatted_date = trade_date.strftime("%y%m%d")
 
     if source_type == "b3":
         url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{formatted_date}.zip"
@@ -32,7 +32,7 @@ def get_file_from_url(reference_date: pd.Timestamp, source_type: str) -> io.Byte
 
     # File will be considered invalid if it is too small
     if response.status_code != 200 or len(response.content) < 1024:
-        formatted_date = reference_date.strftime("%Y-%m-%d")
+        formatted_date = trade_date.strftime("%Y-%m-%d")
         raise ValueError(f"There is no data available for {formatted_date}.")
 
     return io.BytesIO(response.content)
@@ -106,12 +106,12 @@ def create_df_from_di_data(di1_data: list) -> pd.DataFrame:
     return pd.read_csv(file, dtype_backend="numpy_nullable")
 
 
-def process_df(df_raw: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
+def process_df(df_raw: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     df = df_raw.copy()
     # Remover colunas cujos dados são constantes: MktDataStrmId, AdjstdQtStin e PrvsAdjstdQtStin
     df.drop(columns=["MktDataStrmId", "AdjstdQtStin", "PrvsAdjstdQtStin"], inplace=True)
 
-    df.insert(0, "RptDt", reference_date)
+    df.insert(0, "RptDt", trade_date)
 
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["RptDt"] = df["RptDt"].astype("datetime64[ns]")
@@ -119,7 +119,7 @@ def process_df(df_raw: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFra
     expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
     df.insert(2, "ExpDt", expiration)
 
-    business_days = brc.count_bdays(reference_date, df["ExpDt"])
+    business_days = brc.count_bdays(trade_date, df["ExpDt"])
     df.insert(3, "BDaysToExp", business_days)
 
     # Convert to nullable integer, since other columns use this data type
@@ -132,13 +132,13 @@ def process_df(df_raw: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFra
 
 
 def process_simplified_df(
-    df_raw: pd.DataFrame, reference_date: pd.Timestamp
+    df_raw: pd.DataFrame, trade_date: pd.Timestamp
 ) -> pd.DataFrame:
     df = df_raw.copy()
     # Remove constant columns: AdjstdQtStin and PrvsAdjstdQtStin
     df = df.drop(columns=["AdjstdQtStin", "PrvsAdjstdQtStin"])
 
-    df.insert(0, "RptDt", reference_date)
+    df.insert(0, "RptDt", trade_date)
 
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["RptDt"] = df["RptDt"].astype("datetime64[ns]")
@@ -146,7 +146,7 @@ def process_simplified_df(
     expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
     df.insert(2, "ExpDt", expiration)
 
-    business_days = brc.count_bdays(reference_date, df["ExpDt"])
+    business_days = brc.count_bdays(trade_date, df["ExpDt"])
     df.insert(3, "BDaysToExp", business_days)
 
     # Convert to nullable integer, since other columns use this data type
@@ -159,23 +159,11 @@ def process_simplified_df(
 
 
 def get_di(
-    reference_date: pd.Timestamp,
+    trade_date: pd.Timestamp,
     source_type: str,
     return_raw: bool,
-    data_path: Path,
 ) -> pd.DataFrame:
-    if data_path:
-        # Filename example: PR231228.zip
-        formatted_date = reference_date.strftime("%y%m%d")
-        filepath = data_path / f"PR{formatted_date}.zip"
-        if not filepath.exists():
-            raise FileNotFoundError(f"No file found at {filepath}.")
-        else:
-            content = filepath.read_bytes()
-            zip_file = io.BytesIO(content)
-    else:
-        # Read the file from the internet
-        zip_file = get_file_from_url(reference_date, source_type)
+    zip_file = get_file_from_url(trade_date, source_type)
 
     xml_file = extract_xml_from_zip(zip_file)
     di_data = extract_di_data_from_xml(xml_file)
@@ -186,6 +174,37 @@ def get_di(
         return raw_df
 
     if source_type == "b3":
-        return process_df(raw_df, reference_date)
+        return process_df(raw_df, trade_date)
+
     elif source_type == "b3s":
-        return process_simplified_df(raw_df, reference_date)
+        return process_simplified_df(raw_df, trade_date)
+
+
+def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
+    if file_path:
+        if file_path.exists():
+            content = file_path.read_bytes()
+            zip_file = io.BytesIO(content)
+        else:
+            raise FileNotFoundError(f"No file found at {file_path}.")
+
+        xml_file = extract_xml_from_zip(zip_file)
+        di_data = extract_di_data_from_xml(xml_file)
+
+        raw_df = create_df_from_di_data(di_data)
+        if return_raw:
+            return raw_df
+
+        # Filename examples: PR231228.zip or SPRD240216.zip
+        file_stem = file_path.stem
+        trade_date_str = file_stem.replace("PR", "").replace("SPRD", "")
+        trade_date = pd.to_datetime(trade_date_str, format="%y%m%d")
+
+        if "PR" in file_stem:
+            return process_df(raw_df, trade_date)
+        elif "SPRD" in file_stem:
+            return process_simplified_df(raw_df, trade_date)
+        else:
+            raise ValueError("Filename must start with 'PR' or 'SPRD'.")
+    else:
+        raise ValueError("A file path must be provided.")

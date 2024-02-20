@@ -9,7 +9,7 @@ from . import di_futures as dif
 
 
 def get_old_expiration_date(
-    contract_code: str, reference_date: pd.Timestamp
+    contract_code: str, trade_date: pd.Timestamp
 ) -> pd.Timestamp:
     """
     Internal function to convert an old DI contract code into its expiration date. Valid for
@@ -19,7 +19,7 @@ def get_old_expiration_date(
         contract_code (str):
             An old DI contract code from B3, where the first three letters represent
             the month and the last digit represents the year. Example: "JAN3".
-        reference_date (pd.Timestamp):
+        trade_date (pd.Timestamp):
             The reference date for which the contract code is valid.
 
     Returns:
@@ -55,7 +55,7 @@ def get_old_expiration_date(
         month = month_codes[month_code]
 
         # Year codes must generated dynamically, since it depends on the reference date
-        reference_year = reference_date.year
+        reference_year = trade_date.year
         year_codes = {}
         for year in range(reference_year, reference_year + 10):
             year_codes[str(year)[-1:]] = year
@@ -70,19 +70,19 @@ def get_old_expiration_date(
         return pd.NaT
 
 
-def get_raw_di(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def get_raw_di(trade_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to fetch raw DI futures data from B3 for a specific reference date.
 
     Args:
-        reference_date: a datetime-like object representing the reference date.
+        trade_date: a datetime-like object representing the reference date.
 
     Returns:
         pd.DataFrame: Raw data as a Pandas DataFrame.
     """
-    reference_date = pd.Timestamp(reference_date)
+    trade_date = pd.Timestamp(trade_date)
     # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
-    url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={reference_date.strftime('%d/%m/%Y')}&Mercadoria=DI1&XLS=false"
+    url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={trade_date.strftime('%d/%m/%Y')}&Mercadoria=DI1&XLS=false"
     r = requests.get(url)
     f = io.StringIO(r.text)
 
@@ -112,7 +112,7 @@ def get_raw_di(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
     except Exception as e:
         warnings.warn(
-            f"A {type(e).__name__} occurred while reading the DI futures data for {reference_date.strftime('%d/%m/%Y')}. Returning an empty DataFrame."
+            f"A {type(e).__name__} occurred while reading the DI futures data for {trade_date.strftime('%d/%m/%Y')}. Returning an empty DataFrame."
         )
         return pd.DataFrame()
 
@@ -152,13 +152,13 @@ def convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def process_di(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
+def process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
     Args:
         df (pd.DataFrame): the raw DI DataFrame.
-        reference_date: a datetime-like object representing the reference date.
+        trade_date: a datetime-like object representing the reference date.
 
     Returns:
         pd.DataFrame: Processed and transformed data as a Pandas DataFrame.
@@ -189,19 +189,19 @@ def process_di(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
         }
     )
 
-    df.insert(0, "reference_date", reference_date)
+    df.insert(0, "trade_date", trade_date)
     # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["reference_date"] = df["reference_date"].astype("datetime64[ns]")
+    df["trade_date"] = df["trade_date"].astype("datetime64[ns]")
 
     # Contract code format was changed in 22/05/2006
-    if reference_date < pd.Timestamp("2006-05-22"):
+    if trade_date < pd.Timestamp("2006-05-22"):
         df["expiration"] = df["contract_code"].apply(
-            get_old_expiration_date, args=(reference_date,)
+            get_old_expiration_date, args=(trade_date,)
         )
     else:
         df["expiration"] = df["contract_code"].apply(dif.get_expiration_date)
 
-    df["bdays"] = brc.count_bdays(reference_date, df["expiration"])
+    df["bdays"] = brc.count_bdays(trade_date, df["expiration"])
     # Convert to nullable integer, since other columns use this data type
     df["bdays"] = df["bdays"].astype(pd.Int64Dtype())
     # Remove expired contracts
@@ -222,7 +222,7 @@ def process_di(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
         df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
 
     # Prior to 17/01/2002 (incluive), prices were not converted to rates
-    if reference_date <= pd.Timestamp("2002-01-17"):
+    if trade_date <= pd.Timestamp("2002-01-17"):
         df = convert_prices_in_older_contracts(df)
 
     df["settlement_rate"] = convert_prices_to_rates(df["settlement_price"], df["bdays"])
@@ -236,7 +236,7 @@ def process_di(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
     # Order columns
     df = df[
         [
-            "reference_date",
+            "trade_date",
             "contract_code",
             "expiration",
             "bdays",
@@ -259,9 +259,7 @@ def process_di(df: pd.DataFrame, reference_date: pd.Timestamp) -> pd.DataFrame:
     return df
 
 
-def get_di(
-    reference_date: str | pd.Timestamp, return_raw: bool = False
-) -> pd.DataFrame:
+def get_di(trade_date: str | pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
     """
     Gets the DI futures data for a given date from B3.
 
@@ -269,7 +267,7 @@ def get_di(
     reference date. It's the primary external interface for accessing DI data.
 
     Args:
-        reference_date: a datetime-like object representing the reference date.
+        trade_date: a datetime-like object representing the reference date.
         raw (bool): If True, returns the raw data as a Pandas DataFrame.
             Defaults to False.
 
@@ -284,8 +282,8 @@ def get_di(
         - open_contracts: number of open contracts at the start of the trading day.
         - closed_contracts: number of closed contracts at the end of the trading day.
     """
-    reference_date = pd.Timestamp(reference_date)
-    df_raw = get_raw_di(reference_date)
+    trade_date = pd.Timestamp(trade_date)
+    df_raw = get_raw_di(trade_date)
     if return_raw:
         return df_raw
-    return process_di(df_raw, reference_date)
+    return process_di(df_raw, trade_date)
