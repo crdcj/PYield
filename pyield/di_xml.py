@@ -10,7 +10,7 @@ from . import di_futures as dif
 from . import br_calendar as brc
 
 
-def get_file_from_url(reference_date: pd.Timestamp, source: str) -> io.BytesIO:
+def get_file_from_url(reference_date: pd.Timestamp, source_type: str) -> io.BytesIO:
     """
     Types of XML files available:
     Full Price Report (all assets)
@@ -21,20 +21,20 @@ def get_file_from_url(reference_date: pd.Timestamp, source: str) -> io.BytesIO:
         url example: https://www.b3.com.br/pesquisapregao/download?filelist=SPRD240216.zip
     """
 
-    reference_date_str = reference_date.strftime("%y%m%d")
-    if source == "xml":
-        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{reference_date_str}.zip"
-    elif source == "xml-s":
-        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=SPR{reference_date_str}.zip"
-    else:
-        raise ValueError("source must be either 'xml' or 'xml-s'.")
+    formatted_date = reference_date.strftime("%y%m%d")
+
+    if source_type == "b3":
+        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{formatted_date}.zip"
+    else:  # source_type == "b3s"
+        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{formatted_date}.zip"
 
     response = requests.get(url)
-    # If size is less than 1 KB, then the file does not exist
+
+    # File will be considered invalid if it is too small
     if response.status_code != 200 or len(response.content) < 1024:
-        raise ValueError(
-            f"Não existe dado disponível para a data {reference_date.strftime('%Y-%m-%d')}."
-        )
+        formatted_date = reference_date.strftime("%Y-%m-%d")
+        raise ValueError(f"There is no data available for {formatted_date}.")
+
     return io.BytesIO(response.content)
 
 
@@ -159,27 +159,33 @@ def process_simplified_df(
 
 
 def get_di(
-    reference_date: pd.Timestamp, data_path: Path, return_raw: bool
+    reference_date: pd.Timestamp,
+    source_type: str,
+    return_raw: bool,
+    data_path: Path,
 ) -> pd.DataFrame:
     if data_path:
         # Filename example: PR231228.zip
-        reference_date_str = reference_date.strftime("%y%m%d")
-        filepath = data_path / f"PR{reference_date_str}.zip"
+        formatted_date = reference_date.strftime("%y%m%d")
+        filepath = data_path / f"PR{formatted_date}.zip"
         if not filepath.exists():
-            raise FileNotFoundError(
-                f"O arquivo PR{reference_date_str}.zip não foi encontrado em {data_path}"
-            )
+            raise FileNotFoundError(f"No file found at {filepath}.")
         else:
             content = filepath.read_bytes()
             zip_file = io.BytesIO(content)
     else:
         # Read the file from the internet
-        zip_file = get_file_from_url(reference_date)
+        zip_file = get_file_from_url(reference_date, source_type)
 
     xml_file = extract_xml_from_zip(zip_file)
-    xml_data = extract_di_data_from_xml(xml_file)
+    di_data = extract_di_data_from_xml(xml_file)
 
-    raw_df = create_df_from_di_data(xml_data)
+    raw_df = create_df_from_di_data(di_data)
+
     if return_raw:
         return raw_df
-    return process_df(raw_df, reference_date)
+
+    if source_type == "b3":
+        return process_df(raw_df, reference_date)
+    elif source_type == "b3s":
+        return process_simplified_df(raw_df, reference_date)

@@ -76,8 +76,8 @@ def get_expiration_date(contract_code: str) -> pd.Timestamp:
 
 def get_di(
     reference_date: str | pd.Timestamp,
+    source_type: Literal["bmf", "b3", "b3s"] = "bmf",
     return_raw: bool = False,
-    source_type: Literal["url", "xml", "xml-s"] = "url",
     data_path: Path = None,
 ) -> pd.DataFrame:
     """
@@ -88,11 +88,12 @@ def get_di(
 
     Args:
         reference_date: a datetime-like object representing the reference date.
+        source_type: a string indicating the source of the data. Options are "bmf",
+            "b3" and "b3s" (default is "bmf").
         return_raw: a boolean indicating whether to return the raw DI data.
-        source_type: a string indicating the source of the data. Options are "url",
-            "xml" and "xml-s".
-        data_path: a Path object indicating the path to the directory where the XML. If
-            None is provided, the file will be downloaded from the internet.
+        data_path: a Path object indicating the path to the directory where the XML
+            files are stored. This argument is only used when source_type is "b3" or
+            "b3s". If not provided, data will be downloaded from B3's website.
 
     Returns:
         pd.DataFrame: A Pandas DataFrame containing the DI Futures data for
@@ -107,12 +108,9 @@ def get_di(
     if not reference_date:
         raise ValueError("Uma data de referência válida deve ser fornecida.")
 
-    if source_type == "url":
-        df = di_url.get_di(reference_date, return_raw)
-
-    elif source_type == "xml" or source_type == "xml-s":
-        df = di_xml.get_di(reference_date, data_path, return_raw)
+    if source_type == "bmf":
+        return di_url.get_di(reference_date, return_raw)
+    elif source_type in ["b3", "b3s"]:
+        return di_xml.get_di(reference_date, source_type, return_raw, data_path)
     else:
-        raise ValueError("source_type must be either 'url', 'xml' or 'xml-s'")
-
-    return df
+        raise ValueError("source_type must be either 'bmf', 'b3' or 'b3s'.")
