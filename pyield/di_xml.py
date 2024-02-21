@@ -62,8 +62,8 @@ def extract_di_data_from_xml(xml_file: io.BytesIO) -> list:
         ns_clean=True, remove_blank_text=True, remove_comments=True, recover=True
     )
     tree = etree.parse(xml_file, parser)
-
     namespaces = {"ns": "urn:bvmf.217.01.xsd"}
+
     # XPath para encontrar elementos cujo texto começa com "DI1"
     tckr_symbols = tree.xpath(
         '//ns:TckrSymb[starts-with(text(), "DI1")]', namespaces=namespaces
@@ -74,23 +74,21 @@ def extract_di_data_from_xml(xml_file: io.BytesIO) -> list:
 
     # Processar cada TckrSymb encontrado
     for tckr_symb in tckr_symbols:
-        # Subir na hierarquia para encontrar o PricRpt pai
+        # Acessar o elemento PricRpt que contém o TckrSymb
         price_report = tckr_symb.getparent().getparent()
 
-        # Encontrar o elemento TradDt dentro de PricRpt
+        # Extrair a data de negociação
         trade_date = price_report.find(".//ns:TradDt/ns:Dt", namespaces)
 
-        # Encontrar o elemento FinInstrmAttrbts dentro de PricRpt
-        fin_instrm_attrbts = price_report.find(".//ns:FinInstrmAttrbts", namespaces)
+        # Preparar o dicionário de dados do ticker com a data de negociação
+        ticker_data = {"TradDt": trade_date.text, "TckrSymb": tckr_symb.text}
 
+        # Acessar o elemento FinInstrmAttrbts que contém o TckrSymb
+        fin_instrm_attrbts = price_report.find(".//ns:FinInstrmAttrbts", namespaces)
         # Verificar se FinInstrmAttrbts existe
         if fin_instrm_attrbts is None:
             continue  # Pular para o próximo TckrSymb se FinInstrmAttrbts não existir
-
-        # Dicionário para armazenar os dados de um TckrSymb
-        ticker_data = {"TradDt": trade_date.text, "TckrSymb": tckr_symb.text}
-
-        # Iterar sobre cada filho de FinInstrmAttrbts
+        # Extrair os dados de FinInstrmAttrbts
         for attr in fin_instrm_attrbts:
             tag_name = etree.QName(attr).localname
             ticker_data[tag_name] = attr.text
@@ -110,7 +108,7 @@ def create_df_from_di_data(di1_data: list) -> pd.DataFrame:
     return pd.read_csv(file, dtype_backend="numpy_nullable")
 
 
-def process_df(df_raw: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
+def process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
     # Remover colunas cujos dados são constantes: MktDataStrmId, AdjstdQtStin e PrvsAdjstdQtStin
     df.drop(columns=["MktDataStrmId", "AdjstdQtStin", "PrvsAdjstdQtStin"], inplace=True)
@@ -118,12 +116,12 @@ def process_df(df_raw: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     # df.insert(0, "RptDt", trade_date)
 
     # Convert to datetime64[ns] since it is pandas default type for timestamps
-    # df["RptDt"] = df["RptDt"].astype("datetime64[ns]")
+    df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
 
     expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
     df.insert(2, "ExpDt", expiration)
 
-    business_days = brc.count_bdays(trade_date, df["ExpDt"])
+    business_days = brc.count_bdays(df["TradDt"], df["ExpDt"])
     df.insert(3, "BDaysToExp", business_days)
 
     # Convert to nullable integer, since other columns use this data type
@@ -135,22 +133,20 @@ def process_df(df_raw: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     return df.sort_values(by=["ExpDt"], ignore_index=True)
 
 
-def process_simplified_df(
-    df_raw: pd.DataFrame, trade_date: pd.Timestamp
-) -> pd.DataFrame:
+def process_simplified_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
     # Remove constant columns: AdjstdQtStin and PrvsAdjstdQtStin
     df = df.drop(columns=["AdjstdQtStin", "PrvsAdjstdQtStin"])
 
-    df.insert(0, "RptDt", trade_date)
+    # df.insert(0, "RptDt", trade_date)
 
     # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["RptDt"] = df["RptDt"].astype("datetime64[ns]")
+    df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
 
     expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
     df.insert(2, "ExpDt", expiration)
 
-    business_days = brc.count_bdays(trade_date, df["ExpDt"])
+    business_days = brc.count_bdays(df["TradDt"], df["ExpDt"])
     df.insert(3, "BDaysToExp", business_days)
 
     # Convert to nullable integer, since other columns use this data type
@@ -178,10 +174,10 @@ def get_di(
         return raw_df
 
     if source_type == "b3":
-        return process_df(raw_df, trade_date)
+        return process_df(raw_df)
 
     elif source_type == "b3s":
-        return process_simplified_df(raw_df, trade_date)
+        return process_simplified_df(raw_df)
 
 
 def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:

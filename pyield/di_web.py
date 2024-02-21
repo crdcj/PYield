@@ -259,7 +259,7 @@ def process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     return df
 
 
-def get_di(trade_date: str | pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
+def get_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
     """
     Gets the DI futures data for a given date from B3.
 
@@ -282,7 +282,6 @@ def get_di(trade_date: str | pd.Timestamp, return_raw: bool = False) -> pd.DataF
         - open_contracts: number of open contracts at the start of the trading day.
         - closed_contracts: number of closed contracts at the end of the trading day.
     """
-    trade_date = pd.Timestamp(trade_date)
     df_raw = get_raw_di(trade_date)
     if return_raw:
         return df_raw
