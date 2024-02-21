@@ -73,14 +73,13 @@ def offset_bdays(
     return adj_dates
 
 
-def count_bdays(start, end):
+def count_bdays(start, end, holiday_list=NEW_BR_HOLIDAYS):
     """
-    Counts the number of business days between a `start` (inclusive) and
-    `end` (exclusive). If an end date is earlier than the start date, the count
-    will be negative. This function is a wrapper for `numpy.busday_count` to be used
-    directly with Pandas data types. The start date is used to determine which list of
-    holidays to use. Because of this, a single value for start date is necessary in order
-    to use the numpy function with the right list of holidays.
+    Counts the number of business days between a `start` (inclusive) and `end`
+    (exclusive). If an end date is earlier than the start date, the count will be
+    negative. This function is a wrapper for `numpy.busday_count` to be used directly
+    with Pandas data types. The start date is used to determine which list of holidays
+    to use.
 
     Args:
         start (str | pd.Timestamp, optional): Defaults to None. The start date.
@@ -91,11 +90,11 @@ def count_bdays(start, end):
         end dates. Returns a single integer if `end` is a single Timestamp, otherwise
         returns an ndarray of integers.
 
-    Note:
-        For more information on error handling, see numpy.busday_count documentation at
-        https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
-        If a start date before 26/12/2023 is used, the old list of brazilian holidays is
-        selected. Otherwise, the new list is be used.
+    Notes:
+        - For more information on error handling, see numpy.busday_count documentation at
+            https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
+        - If the start date is a single value, the list of holidays used will be the one
+
 
     Examples:
         >>> start = '2023-12-15'
@@ -104,31 +103,37 @@ def count_bdays(start, end):
         10
 
         >>> start = '2023-01-01'
-        >>> end = pd.Series('2023-01-31', '2023-03-01'])
+        >>> end = pd.to_datetime(['2023-01-31', '2023-03-01'])
         >>> yd.count_bdays(start, end)
         array([22, 40])
     """
-    # Convert to pandas Timestamp
-    start = pd.to_datetime(start)
-    end = pd.to_datetime(end)
+    # Convert inputs to a Series of Timestamps even if a single value was passed
+    start = pd.to_datetime(pd.Series(start))
+    end = pd.to_datetime(pd.Series(end))
 
     # Convert to numpy data types
-    start = start.to_numpy().astype("datetime64[D]")
-    if isinstance(end, pd.Timestamp):
-        end = pd.Series(end)
+    start = start.values.astype("datetime64[D]")
     end = end.values.astype("datetime64[D]")
 
     # Determine which list of holidays to use
     cutoff_date = np.datetime64("2023-12-26", "D")
-    if start < cutoff_date:
+    # Check if cutoff_date is between min and max dates in start
+    if start.min() < cutoff_date and start.max() >= cutoff_date:
+        raise ValueError(
+            "Cannot determine which list of holidays to use. Please specify the list of holidays."
+        )
+
+    if start.max() < cutoff_date:
         holiday_list = OLD_BR_HOLIDAYS
     else:
         holiday_list = NEW_BR_HOLIDAYS
 
     bdays = np.busday_count(start, end, holidays=holiday_list)
+
     # Return a single value if a single value was passed
     if len(bdays) == 1:
         bdays = bdays[0]
+
     return bdays
 
 
