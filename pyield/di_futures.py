@@ -2,7 +2,7 @@ from typing import Literal
 from pathlib import Path
 import pandas as pd
 
-from . import di_url
+from . import di_web
 from . import di_xml
 from . import br_calendar as bc
 
@@ -83,18 +83,17 @@ def get_di(
     Gets the DI futures data for a given date from B3.
 
     This function fetches and processes the DI futures data from B3 for a specific
-    reference date. It's the primary external interface for accessing DI data.
+    trade date. It's the primary external interface for accessing DI data.
 
     Args:
-        trade_date: a datetime-like object representing the reference date.
+        trade_date: a datetime-like object representing the trade date.
         source_type: a string indicating the source of the data. Options are "bmf",
             "b3" and "b3s" (default is "bmf").
             - "bmf" (fast) fetches DI data from old BM&FBOVESPA website. This is the default
-                option.
-            - "b3" (slow) fetches DI data from the complete Price Report XML file of the day.
-            - "b3s" (fast) fetches DI data from the simplified Price Report XML file of the day.
-            This option is faster than "b3" but it provides less information.
-
+              option.
+            - "b3" (slow) fetches DI data from the complete Price Report (XML file) provided by B3.
+            - "b3s" (fast) fetches DI data from the simplified Price Report (XML file) provided by B3.
+              This option is faster than "b3" but it has less information.
         return_raw: a boolean indicating whether to return the raw DI data.
         data_path: a Path object indicating the path to the directory where the XML
             files are stored. This argument is only used when source_type is "b3" or
@@ -102,7 +101,7 @@ def get_di(
 
     Returns:
         pd.DataFrame: A Pandas DataFrame containing the DI Futures data for
-        the given reference date.
+        the given trade date.
 
     Examples:
         >>> get_di("2023-12-28")
@@ -119,7 +118,7 @@ def get_di(
         raise ValueError("Uma data de referência válida deve ser fornecida.")
 
     if source_type == "bmf":
-        return di_url.get_di(trade_date, return_raw)
+        return di_web.get_di(trade_date, return_raw)
     elif source_type in ["b3", "b3s"]:
         return di_xml.get_di(trade_date, source_type, return_raw)
     else:

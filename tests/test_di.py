@@ -1,7 +1,7 @@
 import pandas as pd
 
 from pyield import di_futures as dif
-from pyield import di_url as diu
+from pyield import di_web as diu
 
 
 def test_valid_old_contract_code1():

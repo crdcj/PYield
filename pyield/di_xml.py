@@ -70,31 +70,35 @@ def extract_di_data_from_xml(xml_file: io.BytesIO) -> list:
     )
 
     # Lista para armazenar os dados
-    di1_data = []
+    di_data = []
 
     # Processar cada TckrSymb encontrado
     for tckr_symb in tckr_symbols:
         # Subir na hierarquia para encontrar o PricRpt pai
-        pric_rpt = tckr_symb.getparent().getparent()
+        price_report = tckr_symb.getparent().getparent()
+
+        # Encontrar o elemento TradDt dentro de PricRpt
+        trade_date = price_report.find(".//ns:TradDt/ns:Dt", namespaces)
 
         # Encontrar o elemento FinInstrmAttrbts dentro de PricRpt
-        fin_instrm_attrbts = pric_rpt.find(".//ns:FinInstrmAttrbts", namespaces)
+        fin_instrm_attrbts = price_report.find(".//ns:FinInstrmAttrbts", namespaces)
 
         # Verificar se FinInstrmAttrbts existe
         if fin_instrm_attrbts is None:
             continue  # Pular para o próximo TckrSymb se FinInstrmAttrbts não existir
+
         # Dicionário para armazenar os dados de um TckrSymb
-        tckr_data = {"TckrSymb": tckr_symb.text}
+        ticker_data = {"TradDt": trade_date.text, "TckrSymb": tckr_symb.text}
 
         # Iterar sobre cada filho de FinInstrmAttrbts
         for attr in fin_instrm_attrbts:
             tag_name = etree.QName(attr).localname
-            tckr_data[tag_name] = attr.text
+            ticker_data[tag_name] = attr.text
 
         # Adicionar o dicionário à lista
-        di1_data.append(tckr_data)
+        di_data.append(ticker_data)
 
-    return di1_data
+    return di_data
 
 
 def create_df_from_di_data(di1_data: list) -> pd.DataFrame:
@@ -111,10 +115,10 @@ def process_df(df_raw: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     # Remover colunas cujos dados são constantes: MktDataStrmId, AdjstdQtStin e PrvsAdjstdQtStin
     df.drop(columns=["MktDataStrmId", "AdjstdQtStin", "PrvsAdjstdQtStin"], inplace=True)
 
-    df.insert(0, "RptDt", trade_date)
+    # df.insert(0, "RptDt", trade_date)
 
     # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["RptDt"] = df["RptDt"].astype("datetime64[ns]")
+    # df["RptDt"] = df["RptDt"].astype("datetime64[ns]")
 
     expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
     df.insert(2, "ExpDt", expiration)

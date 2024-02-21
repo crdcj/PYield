@@ -20,7 +20,7 @@ def get_old_expiration_date(
             An old DI contract code from B3, where the first three letters represent
             the month and the last digit represents the year. Example: "JAN3".
         trade_date (pd.Timestamp):
-            The reference date for which the contract code is valid.
+            The trade date for which the contract code is valid.
 
     Returns:
         pd.Timestamp
@@ -54,7 +54,7 @@ def get_old_expiration_date(
         month_code = contract_code[:3]
         month = month_codes[month_code]
 
-        # Year codes must generated dynamically, since it depends on the reference date
+        # Year codes must generated dynamically, since it depends on the trade date
         reference_year = trade_date.year
         year_codes = {}
         for year in range(reference_year, reference_year + 10):
@@ -72,10 +72,10 @@ def get_old_expiration_date(
 
 def get_raw_di(trade_date: str | pd.Timestamp) -> pd.DataFrame:
     """
-    Internal function to fetch raw DI futures data from B3 for a specific reference date.
+    Internal function to fetch raw DI futures data from B3 for a specific trade date.
 
     Args:
-        trade_date: a datetime-like object representing the reference date.
+        trade_date: a datetime-like object representing the trade date.
 
     Returns:
         pd.DataFrame: Raw data as a Pandas DataFrame.
@@ -158,7 +158,7 @@ def process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
 
     Args:
         df (pd.DataFrame): the raw DI DataFrame.
-        trade_date: a datetime-like object representing the reference date.
+        trade_date: a datetime-like object representing the trade date.
 
     Returns:
         pd.DataFrame: Processed and transformed data as a Pandas DataFrame.
@@ -264,10 +264,10 @@ def get_di(trade_date: str | pd.Timestamp, return_raw: bool = False) -> pd.DataF
     Gets the DI futures data for a given date from B3.
 
     This function fetches and processes the DI futures data from B3 for a specific
-    reference date. It's the primary external interface for accessing DI data.
+    trade date. It's the primary external interface for accessing DI data.
 
     Args:
-        trade_date: a datetime-like object representing the reference date.
+        trade_date: a datetime-like object representing the trade date.
         raw (bool): If True, returns the raw data as a Pandas DataFrame.
             Defaults to False.
 
