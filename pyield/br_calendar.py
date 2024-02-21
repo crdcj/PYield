@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 import pandas as pd
 import numpy as np
 
@@ -17,12 +18,12 @@ OLD_BR_HOLIDAYS = df_old["date"].values.astype("datetime64[D]")
 
 
 def offset_bdays(
-    dates: str | pd.Timestamp, offset: int, holiday_list: np.ndarray = NEW_BR_HOLIDAYS
+    dates: str | pd.Timestamp, offset: int, holiday_list: Literal["old", "new"] = "new"
 ):
     """
     Offsets the dates to the next or previous business day. This function is a wrapper
     for `numpy.busday_offset` to be used directly with Pandas data types that takes into
-    account the list of brazilian holidays as the default.
+    account the new list of brazilian holidays as the default.
 
     Args:
         dates (str | pd.Timestamp | pd.Series): A single date or a Series of dates to be offset.
@@ -30,6 +31,7 @@ def offset_bdays(
             offset to the next business day, negative numbers offset to the previous
             business day. Zero offsets to the same date if it's a business day, otherwise
             offsets to the next business day.
+        holiday_list (str, optional): Defaults to "new". The list of holidays to use.
 
     Returns:
         str | pd.Timestamp | pd.Series: The offset dates. Returns a single date if
@@ -50,12 +52,14 @@ def offset_bdays(
         >>> yd.offset_bdays(date, -1)
         Timestamp('2023-12-21') # Offset to the previous business day
     """
-    # Convert to pandas datetime64[ns]
-    dates = pd.to_datetime(dates)
-    # Force a single value to be a Series to facilitate the conversion to numpy
-    dates = pd.Series(dates)
+    # Convert to pandas Series of datetime64[ns] even if a single value was passed
+    dates = pd.to_datetime(pd.Series(dates))
+
     # Convert to numpy data types
     dates = dates.values.astype("datetime64[D]")
+
+    # Get the correct list of holidays from passed argument
+    holiday_list = NEW_BR_HOLIDAYS if holiday_list == "new" else OLD_BR_HOLIDAYS
 
     # Adjust the dates according to the offset
     adj_dates = np.busday_offset(
@@ -73,13 +77,13 @@ def offset_bdays(
     return adj_dates
 
 
-def count_bdays(start, end, holiday_list=NEW_BR_HOLIDAYS):
+def count_bdays(start, end, holiday_list: Literal["old", "new"] = None):
     """
     Counts the number of business days between a `start` (inclusive) and `end`
     (exclusive). If an end date is earlier than the start date, the count will be
     negative. This function is a wrapper for `numpy.busday_count` to be used directly
     with Pandas data types. The start date is used to determine which list of holidays
-    to use.
+    to use (see Notes for more information on this).
 
     Args:
         start (str | pd.Timestamp, optional): Defaults to None. The start date.
@@ -93,7 +97,9 @@ def count_bdays(start, end, holiday_list=NEW_BR_HOLIDAYS):
     Notes:
         - For more information on error handling, see numpy.busday_count documentation at
             https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
-        - If the start date is a single value, the list of holidays used will be the one
+        - The maximum start date is used to determine which list of holidays to use. If the
+            maximum start date is earlier than 2023-12-26, the list of holidays is
+            `OLD_BR_HOLIDAYS`. Otherwise, the list of holidays is `NEW_BR_HOLIDAYS`.
 
 
     Examples:
@@ -107,7 +113,7 @@ def count_bdays(start, end, holiday_list=NEW_BR_HOLIDAYS):
         >>> yd.count_bdays(start, end)
         array([22, 40])
     """
-    # Convert inputs to a Series of Timestamps even if a single value was passed
+    # Convert inputs to a Series of datetime64[ns] even if a single value was passed
     start = pd.to_datetime(pd.Series(start))
     end = pd.to_datetime(pd.Series(end))
 
@@ -116,17 +122,18 @@ def count_bdays(start, end, holiday_list=NEW_BR_HOLIDAYS):
     end = end.values.astype("datetime64[D]")
 
     # Determine which list of holidays to use
-    cutoff_date = np.datetime64("2023-12-26", "D")
-    # Check if cutoff_date is between min and max dates in start
-    if start.min() < cutoff_date and start.max() >= cutoff_date:
-        raise ValueError(
-            "Cannot determine which list of holidays to use. Please specify the list of holidays."
-        )
+    if holiday_list is None:
+        cutoff_date = np.datetime64("2023-12-26", "D")
+        # Check if cutoff_date is between min and max dates in start
+        if start.min() < cutoff_date <= start.max():
+            raise ValueError(
+                "Cannot determine which list of holidays to use. Please specify the list of holidays."
+            )
 
-    if start.max() < cutoff_date:
-        holiday_list = OLD_BR_HOLIDAYS
-    else:
-        holiday_list = NEW_BR_HOLIDAYS
+        if start.max() < cutoff_date:
+            holiday_list = "old"
+        else:
+            holiday_list = "new"
 
     bdays = np.busday_count(start, end, holidays=holiday_list)
 
@@ -138,7 +145,11 @@ def count_bdays(start, end, holiday_list=NEW_BR_HOLIDAYS):
 
 
 def generate_bdays(
-    start=None, end=None, inclusive="both", holiday_list=NEW_BR_HOLIDAYS, **kwargs
+    start=None,
+    end=None,
+    inclusive="both",
+    holiday_list: Literal["old", "new"] = "new",
+    **kwargs,
 ):
     """
     Generates a Series of business days between a `start` (inclusive) and
@@ -182,7 +193,12 @@ def generate_bdays(
             end = pd.Timestamp.today()
         else:
             start = pd.Timestamp.today()
+
+    # Get the correct list of holidays from passed argument
+    holiday_list = NEW_BR_HOLIDAYS if holiday_list == "new" else OLD_BR_HOLIDAYS
+
     bdays = pd.bdate_range(
         start, end, freq="C", inclusive=inclusive, holidays=holiday_list, **kwargs
     )
+
     return pd.Series(bdays)
