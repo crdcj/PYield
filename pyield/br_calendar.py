@@ -45,7 +45,7 @@ def convert_to_np_array(dates: pd.Series | pd.Timestamp | str) -> np.array:
     return dates.values.astype("datetime64[D]")
 
 
-def get_list_of_holidays(dates: pd.Timestamp) -> np.array:
+def get_list_of_holidays(dates: np.array) -> np.array:
     """
     Returns the correct list of holidays to use based on the maximum date in the input.
 
@@ -54,11 +54,6 @@ def get_list_of_holidays(dates: pd.Timestamp) -> np.array:
 
     Returns:
         np.array: The list of holidays to use.
-
-    Examples:
-        >>> date = pd.to_datetime('2023-12-20')
-        >>> yd.get_the_right_list_of_holidays(date)
-        array(['2023-12-25', '2023-12-31'], dtype='datetime64[D]')
     """
     if dates.min() < np.datetime64("2023-12-26", "D"):
         return OLD_BR_HOLIDAYS
@@ -181,7 +176,7 @@ def generate_bdays(
     inclusive="both",
     holiday_list: Literal["old", "new"] = None,
     **kwargs,
-):
+) -> pd.DatetimeIndex:
     """
     Generates a Series of business days between a `start` (inclusive) and
     `end` (inclusive) that takes into account the list of brazilian holidays as the
@@ -218,16 +213,19 @@ def generate_bdays(
         dtype: object
     """
     if start is None and end is None:
-        raise ValueError("start and end dates must be provided")
-    if start is None or end is None:
-        if start:
-            end = pd.Timestamp.today()
-        else:
-            start = pd.Timestamp.today()
+        raise ValueError("At least one of start or end must be provided.")
+
+    if start is None:
+        start = pd.Timestamp.today()
+
+    if end is None:
+        end = pd.Timestamp.today()
 
     if holiday_list is None:
-        start_np_array = convert_to_np_array(start)
-        holiday_list = get_list_of_holidays(start_np_array)
+        if start < pd.Timestamp("2023-12-26"):
+            holiday_list = OLD_BR_HOLIDAYS
+        else:
+            holiday_list = NEW_BR_HOLIDAYS
 
     bdays = pd.bdate_range(
         start, end, freq="C", inclusive=inclusive, holidays=holiday_list, **kwargs
