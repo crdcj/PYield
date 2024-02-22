@@ -142,4 +142,4 @@ def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
 
     """
 
-    return di_xml.read_di_from_file(file_path)
+    return di_xml.read_di(file_path)

@@ -197,13 +197,11 @@ def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
 
         # Filename examples: PR231228.zip or SPRD240216.zip
         file_stem = file_path.stem
-        trade_date_str = file_stem.replace("PR", "").replace("SPRD", "")
-        trade_date = pd.to_datetime(trade_date_str, format="%y%m%d")
 
         if "PR" in file_stem:
-            return process_df(raw_df, trade_date)
+            return process_df(raw_df)
         elif "SPRD" in file_stem:
-            return process_simplified_df(raw_df, trade_date)
+            return process_simplified_df(raw_df)
         else:
             raise ValueError("Filename must start with 'PR' or 'SPRD'.")
     else:

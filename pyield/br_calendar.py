@@ -17,8 +17,57 @@ NEW_BR_HOLIDAYS = df_new["date"].values.astype("datetime64[D]")
 OLD_BR_HOLIDAYS = df_old["date"].values.astype("datetime64[D]")
 
 
+def convert_to_np_array(dates: pd.Series | pd.Timestamp | str) -> np.array:
+    """
+    Converts a Series of dates, a single date or a string to a numpy datetime64[D] array.
+
+    Args:
+        dates (pd.Series | pd.Timestamp | str): A Series of dates, a single date or a string.
+
+    Returns:
+        np.datetime64: A numpy datetime64[D] array.
+
+    Examples:
+        >>> dates = pd.to_datetime(['2023-12-20', '2023-12-21'])
+        >>> yd.convert_to_np_array(dates)
+        array(['2023-12-20', '2023-12-21'], dtype='datetime64[D]')
+        >>> date = '2023-12-20'
+        >>> yd.convert_to_np_array(date)
+        numpy.datetime64('2023-12-20')
+        >>> date = pd.to_datetime('2023-12-20')
+        >>> yd.convert_to_np_array(date)
+        numpy.datetime64('2023-12-20')
+    """
+    # Convert to a Series of datetime64[ns] even if a single value was passed
+    dates = pd.to_datetime(pd.Series(dates))
+
+    # Return the numpy datetime64[D] array
+    return dates.values.astype("datetime64[D]")
+
+
+def get_list_of_holidays(dates: pd.Timestamp) -> np.array:
+    """
+    Returns the correct list of holidays to use based on the maximum date in the input.
+
+    Args:
+        dates (pd.Timestamp): A single date or a Series of dates.
+
+    Returns:
+        np.array: The list of holidays to use.
+
+    Examples:
+        >>> date = pd.to_datetime('2023-12-20')
+        >>> yd.get_the_right_list_of_holidays(date)
+        array(['2023-12-25', '2023-12-31'], dtype='datetime64[D]')
+    """
+    if dates.min() < np.datetime64("2023-12-26", "D"):
+        return OLD_BR_HOLIDAYS
+    else:
+        return NEW_BR_HOLIDAYS
+
+
 def offset_bdays(
-    dates: str | pd.Timestamp, offset: int, holiday_list: Literal["old", "new"] = "new"
+    dates: str | pd.Timestamp, offset: int, holiday_list: Literal["old", "new"] = None
 ):
     """
     Offsets the dates to the next or previous business day. This function is a wrapper
@@ -52,14 +101,10 @@ def offset_bdays(
         >>> yd.offset_bdays(date, -1)
         Timestamp('2023-12-21') # Offset to the previous business day
     """
-    # Convert to pandas Series of datetime64[ns] even if a single value was passed
-    dates = pd.to_datetime(pd.Series(dates))
+    dates = convert_to_np_array(dates)
 
-    # Convert to numpy data types
-    dates = dates.values.astype("datetime64[D]")
-
-    # Get the correct list of holidays from passed argument
-    holiday_list = NEW_BR_HOLIDAYS if holiday_list == "new" else OLD_BR_HOLIDAYS
+    if holiday_list is None:
+        holiday_list = get_list_of_holidays(dates)
 
     # Adjust the dates according to the offset
     adj_dates = np.busday_offset(
@@ -114,26 +159,12 @@ def count_bdays(start, end, holiday_list: Literal["old", "new"] = None):
         array([22, 40])
     """
     # Convert inputs to a Series of datetime64[ns] even if a single value was passed
-    start = pd.to_datetime(pd.Series(start))
-    end = pd.to_datetime(pd.Series(end))
-
-    # Convert to numpy data types
-    start = start.values.astype("datetime64[D]")
-    end = end.values.astype("datetime64[D]")
+    start = convert_to_np_array(start)
+    end = convert_to_np_array(end)
 
     # Determine which list of holidays to use
     if holiday_list is None:
-        cutoff_date = np.datetime64("2023-12-26", "D")
-        # Check if cutoff_date is between min and max dates in start
-        if start.min() < cutoff_date <= start.max():
-            raise ValueError(
-                "Cannot determine which list of holidays to use. Please specify the list of holidays."
-            )
-
-        if start.max() < cutoff_date:
-            holiday_list = "old"
-        else:
-            holiday_list = "new"
+        holiday_list = get_list_of_holidays(start)
 
     bdays = np.busday_count(start, end, holidays=holiday_list)
 
@@ -148,7 +179,7 @@ def generate_bdays(
     start=None,
     end=None,
     inclusive="both",
-    holiday_list: Literal["old", "new"] = "new",
+    holiday_list: Literal["old", "new"] = None,
     **kwargs,
 ):
     """
@@ -194,8 +225,9 @@ def generate_bdays(
         else:
             start = pd.Timestamp.today()
 
-    # Get the correct list of holidays from passed argument
-    holiday_list = NEW_BR_HOLIDAYS if holiday_list == "new" else OLD_BR_HOLIDAYS
+    if holiday_list is None:
+        start_np_array = convert_to_np_array(start)
+        holiday_list = get_list_of_holidays(start_np_array)
 
     bdays = pd.bdate_range(
         start, end, freq="C", inclusive=inclusive, holidays=holiday_list, **kwargs
