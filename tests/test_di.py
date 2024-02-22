@@ -1,13 +1,13 @@
 import pandas as pd
 
 from pyield import di_futures as dif
-from pyield import di_web as diu
+from pyield import di_web as diw
 
 
 def test_valid_old_contract_code1():
     contact_code = "JAN3"  # Valid contract code
     trade_date = pd.Timestamp("2001-05-21")
-    result = diu.get_old_expiration_date(contact_code, trade_date)
+    result = diw.get_old_expiration_date(contact_code, trade_date)
     contract_expiration = pd.Timestamp("2003-01-02")
     assert result == contract_expiration
 
@@ -15,7 +15,7 @@ def test_valid_old_contract_code1():
 def test_valid_old_contract_code2():
     contact_code = "JAN3"  # Valid contract code
     trade_date = pd.Timestamp("1990-01-01")
-    result = diu.get_old_expiration_date(contact_code, trade_date)
+    result = diw.get_old_expiration_date(contact_code, trade_date)
     contract_expiration = pd.Timestamp("1993-01-04")
     assert result == contract_expiration
 
@@ -24,7 +24,7 @@ def test_invalid_old_contract_code():
     contact_code = "J3"  # Invalid contract code
     trade_date = pd.Timestamp("2001-01-02")
     # Must return NaT
-    result = diu.get_old_expiration_date(contact_code, trade_date)
+    result = diw.get_old_expiration_date(contact_code, trade_date)
     assert pd.isnull(result)
 
 
