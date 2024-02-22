@@ -110,10 +110,6 @@ def create_df_from_di_data(di1_data: list) -> pd.DataFrame:
 
 def process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
-    # Remover colunas cujos dados são constantes: MktDataStrmId, AdjstdQtStin e PrvsAdjstdQtStin
-    df.drop(columns=["MktDataStrmId", "AdjstdQtStin", "PrvsAdjstdQtStin"], inplace=True)
-
-    # df.insert(0, "RptDt", trade_date)
 
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
@@ -129,16 +125,49 @@ def process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 
     # Remove expired contracts
     df.query("BDaysToExp > 0", inplace=True)
+    df.sort_values(by=["ExpDt"], ignore_index=True, inplace=True)
 
-    return df.sort_values(by=["ExpDt"], ignore_index=True)
+    selected_columns = [
+        "TradDt",
+        "TckrSymb",
+        # "MktDataStrmId",
+        "NtlFinVol",
+        # "IntlFinVol",
+        "OpnIntrst",
+        "FinInstrmQty",
+        "BestBidPric",
+        "BestAskPric",
+        "FrstPric",
+        "MinPric",
+        "MaxPric",
+        "TradAvrgPric",
+        "LastPric",
+        "RglrTxsQty",
+        "RglrTraddCtrcts",
+        "NtlRglrVol",
+        # "IntlRglrVol",
+        "AdjstdQt",
+        "AdjstdQtTax",
+        # "AdjstdQtStin",
+        # "PrvsAdjstdQt",
+        # "PrvsAdjstdQtTax",
+        # "PrvsAdjstdQtStin",
+        # "OscnPctg",
+        # "VartnPts",
+        # "AdjstdValCtrct",
+        "MaxTradLmt",
+        "MinTradLmt",
+    ]
+
+    return df[selected_columns]
 
 
 def process_simplified_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
     # Remove constant columns: AdjstdQtStin and PrvsAdjstdQtStin
-    df = df.drop(columns=["AdjstdQtStin", "PrvsAdjstdQtStin"])
-
-    # df.insert(0, "RptDt", trade_date)
+    df = df.drop(
+        columns=["AdjstdQtStin", "PrvsAdjstdQtStin", "PrvsAdjstdQt", "PrvsAdjstdQtTax"]
+    )
 
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
