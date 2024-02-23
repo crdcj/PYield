@@ -51,30 +51,29 @@ def select_holidays_list(dates: np.array, select: str) -> np.array:
 
     Args:
         dates (pd.Timestamp): A single date or a Series of dates.
+        select (str): The list of holidays to use. Valid options are 'old', 'new' or 'infer'.
 
     Returns:
         np.array: The list of holidays to use.
     """
-    if select == "old":
-        selected_list = OLD_HOLIDAYS
-    elif select == "new":
-        selected_list = NEW_HOLIDAYS
-    elif select == "auto":
-        if dates.min() < NEW_HOLIDAYS_START_DATE:
+    match select:
+        case "old":
             selected_list = OLD_HOLIDAYS
-        else:
+        case "new":
             selected_list = NEW_HOLIDAYS
-    else:
-        raise ValueError(
-            "Invalid holiday list. Valid options are 'old', 'new' or 'auto'."
-        )
+        case "infer":
+            selected_list = NEW_HOLIDAYS
+            if dates.min() < NEW_HOLIDAYS_START_DATE:
+                selected_list = OLD_HOLIDAYS
+        case _:
+            raise ValueError("Options are 'old', 'new' or 'infer'.")
     return selected_list
 
 
 def offset_bdays(
     dates: str | pd.Timestamp,
     offset: int,
-    holiday_list: Literal["old", "new", "auto"] = "auto",
+    holiday_list: Literal["old", "new", "infer"] = "infer",
 ):
     """
     Offsets the dates to the next or previous business day. This function is a wrapper
@@ -87,7 +86,7 @@ def offset_bdays(
             offset to the next business day, negative numbers offset to the previous
             business day. Zero offsets to the same date if it's a business day, otherwise
             offsets to the next business day.
-        holiday_list (str, optional): Defaults to "new". The list of holidays to use.
+        holiday_list (str, optional): Defaults to "infer". The list of holidays to use.
 
     Returns:
         str | pd.Timestamp | pd.Series: The offset dates. Returns a single date if
@@ -129,7 +128,7 @@ def offset_bdays(
     return adj_dates
 
 
-def count_bdays(start, end, holiday_list: Literal["old", "new", "auto"] = "auto"):
+def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infer"):
     """
     Counts the number of business days between a `start` (inclusive) and `end`
     (exclusive). If an end date is earlier than the start date, the count will be
@@ -140,6 +139,7 @@ def count_bdays(start, end, holiday_list: Literal["old", "new", "auto"] = "auto"
     Args:
         start (str | pd.Timestamp, optional): Defaults to None. The start date.
         end (str | pd.Timestamp optional): Defaults to None. The end date.
+        holiday_list (str, optional): Defaults to "infer". The list of holidays to use.
 
     Returns:
         np.int64 | np.ndarray: The number of business days between the start date and
@@ -152,7 +152,6 @@ def count_bdays(start, end, holiday_list: Literal["old", "new", "auto"] = "auto"
         - The maximum start date is used to determine which list of holidays to use. If the
             maximum start date is earlier than 2023-12-26, the list of holidays is
             `OLD_BR_HOLIDAYS`. Otherwise, the list of holidays is `NEW_BR_HOLIDAYS`.
-
 
     Examples:
         >>> start = '2023-12-15'
@@ -185,7 +184,7 @@ def generate_bdays(
     start=None,
     end=None,
     inclusive="both",
-    holiday_list: Literal["old", "new", "auto"] = "auto",
+    holiday_list: Literal["old", "new", "infer"] = "infer",
     **kwargs,
 ) -> pd.DatetimeIndex:
     """
@@ -200,6 +199,9 @@ def generate_bdays(
         end (str | pd.Timestamp | pd.Series, optional): Defaults to None. The end date.
         inclusive (str, optional): Defaults to 'both'. Whether to include the start and
             end dates. Valid options are 'both', 'neither', 'left', 'right'.
+        holiday_list (str, optional): Defaults to "infer". The list of holidays to use.
+        **kwargs: Additional arguments to pass to `pandas.bdate_range`.
+
     Returns:
         pd.Series: A Series of business days between the start date and end date.
 
