@@ -64,7 +64,7 @@ def get_old_expiration_date(
         expiration = pd.Timestamp(year, month, 1)
         # Adjust to the next business day when expiration date is a weekend or a holiday
         # Must use the old holiday calendar, since this type of contract code was used until 2006
-        return brc.offset_bdays(expiration, offset=0, holiday_list=brc.OLD_BR_HOLIDAYS)
+        return brc.offset_bdays(expiration, offset=0, holiday_list="old")
 
     except (KeyError, ValueError):
         return pd.NaT

@@ -2,28 +2,28 @@ from typing import Literal
 from pathlib import Path
 import pandas as pd
 
-from . import di_web
-from . import di_xml
-from . import br_calendar as bc
+from . import di_web as diw
+from . import di_xml as dix
+from . import br_calendar as brc
 
 
-def get_expiration_date(contract_code: str) -> pd.Timestamp:
+def get_expiration_date(expiration_code: str) -> pd.Timestamp:
     """
-    Internal function to convert a DI contract code into its expiration date.
+    Internal function to convert the expiration code into its expiration date.
 
-    Given a DI contract code from B3, this function determines its expiration date.
-    If the contract code does not correspond to a valid month or year, or if the input
+    Given a expiration code, this function determines its expiration date.
+    If the expiration code does not correspond to a valid month or year, or if the input
     is not in the expected format, the function will return a pd.NaT (Not a Timestamp).
-    Valid for contract codes from 22-05-2006 onwards.
+    Valid for contract codes from 22-05-2006 (inclusive) onwards.
 
     Args:
-        contract_code (str):
-            A DI contract code from B3, where the first letter represents the month
-            and the last two digits represent the year. Example: "F23".
+        expiration_code (str):
+            A string where the first letter represents the month and the last two digits
+            represent the year. Example: "F23".
 
     Returns:
         pd.Timestamp
-            The contract's expiration date, adjusted to the next business day.
+            The contract's expiration date, adjusted for a valid business day.
             Returns pd.NaT if the input is invalid.
 
     Examples:
@@ -40,10 +40,6 @@ def get_expiration_date(contract_code: str) -> pd.Timestamp:
         - In 22-05-2006, B3 changed the format of the DI contract codes.
         - The first letter represents the month and the last two digits represent the
           year.
-        - Only the new holiday calendar is used, since this type of contract code
-          was adopted from 2006 onwards, the expiration date is the first business day of
-          the month and the new holiday calendar inserted a holiday in 20th of November.
-
     """
     month_codes = {
         "F": 1,
@@ -61,14 +57,13 @@ def get_expiration_date(contract_code: str) -> pd.Timestamp:
     }
 
     try:
-        month_code = contract_code[0]
+        month_code = expiration_code[0]
         month = month_codes[month_code]
-        year = int("20" + contract_code[-2:])
+        year = int("20" + expiration_code[-2:])
         # The expiration date is always the first business day of the month
         expiration = pd.Timestamp(year, month, 1)
         # Adjust to the next business day when expiration date is a weekend or a holiday
-        # Only the new holiday calendar is used, see docstring for more details
-        return bc.offset_bdays(expiration, offset=0, holiday_list=bc.NEW_BR_HOLIDAYS)
+        return brc.offset_bdays(expiration, offset=0)
 
     except (KeyError, ValueError):
         return pd.NaT
@@ -118,9 +113,9 @@ def get_di(
         raise ValueError("Uma data de referência válida deve ser fornecida.")
 
     if source_type == "bmf":
-        return di_web.get_di(trade_date, return_raw)
+        return diw.get_di(trade_date, return_raw)
     elif source_type in ["b3", "b3s"]:
-        return di_xml.get_di(trade_date, source_type, return_raw)
+        return dix.get_di(trade_date, source_type, return_raw)
     else:
         raise ValueError("source_type must be either 'bmf', 'b3' or 'b3s'.")
 
@@ -142,4 +137,4 @@ def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
 
     """
 
-    return di_xml.read_di(file_path)
+    return dix.read_di(file_path, return_raw=return_raw)
