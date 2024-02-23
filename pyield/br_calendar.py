@@ -14,6 +14,7 @@ def get_holidays_list(file_path: Path) -> np.array:
 CURRENT_DIR = Path(__file__).parent
 NEW_BR_HOLIDAYS = get_holidays_list(CURRENT_DIR / "new_br_holidays.txt")
 OLD_BR_HOLIDAYS = get_holidays_list(CURRENT_DIR / "old_br_holidays.txt")
+NEW_BR_HOLIDAYS_START_DATE = np.datetime64("2023-12-26", "D")
 
 
 def convert_to_np_array(dates: pd.Series | pd.Timestamp | str) -> np.array:
@@ -54,7 +55,7 @@ def choose_holidays_list(dates: np.array) -> np.array:
     Returns:
         np.array: The list of holidays to use.
     """
-    if dates.min() < NEW_BR_HOLIDAYS.min():
+    if dates.min() < NEW_BR_HOLIDAYS_START_DATE:
         return OLD_BR_HOLIDAYS
     else:
         return NEW_BR_HOLIDAYS
@@ -218,7 +219,7 @@ def generate_bdays(
         end = pd.Timestamp.today()
 
     if holiday_list is None:
-        holiday_list = choose_holidays_list(start)
+        holiday_list = choose_holidays_list(np.datetime64(start))
 
     bdays = pd.bdate_range(
         start, end, freq="C", inclusive=inclusive, holidays=holiday_list, **kwargs
