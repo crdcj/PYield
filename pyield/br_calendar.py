@@ -3,18 +3,17 @@ from typing import Literal
 import pandas as pd
 import numpy as np
 
-new_holidays_path = Path(__file__).parent / "new_br_holidays.txt"
-old_holidays_path = Path(__file__).parent / "old_br_holidays.txt"
 
-df_new = pd.read_csv(new_holidays_path, header=None, names=["date"], comment="#")
-df_old = pd.read_csv(old_holidays_path, header=None, names=["date"], comment="#")
+def get_holidays_list(file_path: Path) -> np.array:
+    df = pd.read_csv(file_path, header=None, names=["date"], comment="#")
+    df["date"] = pd.to_datetime(df["date"], format="%d/%m/%Y")
+    # Using numpy datetime64[D] array increases performance by almost 10x
+    return df["date"].values.astype("datetime64[D]")
 
-df_new["date"] = pd.to_datetime(df_new["date"], format="%d/%m/%Y")
-df_old["date"] = pd.to_datetime(df_old["date"], format="%d/%m/%Y")
 
-# Using numpy datetime64[D] array increases performance by almost 10x
-NEW_BR_HOLIDAYS = df_new["date"].values.astype("datetime64[D]")
-OLD_BR_HOLIDAYS = df_old["date"].values.astype("datetime64[D]")
+CURRENT_DIR = Path(__file__).parent
+NEW_BR_HOLIDAYS = get_holidays_list(CURRENT_DIR / "new_br_holidays.txt")
+OLD_BR_HOLIDAYS = get_holidays_list(CURRENT_DIR / "old_br_holidays.txt")
 
 
 def convert_to_np_array(dates: pd.Series | pd.Timestamp | str) -> np.array:
@@ -45,7 +44,7 @@ def convert_to_np_array(dates: pd.Series | pd.Timestamp | str) -> np.array:
     return dates.values.astype("datetime64[D]")
 
 
-def get_list_of_holidays(dates: np.array) -> np.array:
+def choose_holidays_list(dates: np.array) -> np.array:
     """
     Returns the correct list of holidays to use based on the maximum date in the input.
 
@@ -55,7 +54,7 @@ def get_list_of_holidays(dates: np.array) -> np.array:
     Returns:
         np.array: The list of holidays to use.
     """
-    if dates.min() < np.datetime64("2023-12-26", "D"):
+    if dates.min() < NEW_BR_HOLIDAYS.min():
         return OLD_BR_HOLIDAYS
     else:
         return NEW_BR_HOLIDAYS
@@ -99,7 +98,7 @@ def offset_bdays(
     dates = convert_to_np_array(dates)
 
     if holiday_list is None:
-        holiday_list = get_list_of_holidays(dates)
+        holiday_list = choose_holidays_list(dates)
 
     # Adjust the dates according to the offset
     adj_dates = np.busday_offset(
@@ -159,7 +158,7 @@ def count_bdays(start, end, holiday_list: Literal["old", "new"] = None):
 
     # Determine which list of holidays to use
     if holiday_list is None:
-        holiday_list = get_list_of_holidays(start)
+        holiday_list = choose_holidays_list(start)
 
     bdays = np.busday_count(start, end, holidays=holiday_list)
 
@@ -212,9 +211,6 @@ def generate_bdays(
         2023-12-29    2023-12-29
         dtype: object
     """
-    if start is None and end is None:
-        raise ValueError("At least one of start or end must be provided.")
-
     if start is None:
         start = pd.Timestamp.today()
 
@@ -222,10 +218,7 @@ def generate_bdays(
         end = pd.Timestamp.today()
 
     if holiday_list is None:
-        if start < pd.Timestamp("2023-12-26"):
-            holiday_list = OLD_BR_HOLIDAYS
-        else:
-            holiday_list = NEW_BR_HOLIDAYS
+        holiday_list = choose_holidays_list(start)
 
     bdays = pd.bdate_range(
         start, end, freq="C", inclusive=inclusive, holidays=holiday_list, **kwargs
