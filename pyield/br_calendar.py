@@ -14,7 +14,8 @@ def get_holidays_list(file_path: Path) -> np.array:
 CURRENT_DIR = Path(__file__).parent
 NEW_HOLIDAYS = get_holidays_list(CURRENT_DIR / "new_br_holidays.txt")
 OLD_HOLIDAYS = get_holidays_list(CURRENT_DIR / "old_br_holidays.txt")
-NEW_HOLIDAYS_START_DATE = np.datetime64("2023-12-26", "D")
+# The date (inclusive) that the new list of holidays starts to be valid
+TRANSITION_DATE = np.datetime64("2023-12-26", "D")
 
 
 def convert_to_np_array(dates: pd.Series | pd.Timestamp | str) -> np.array:
@@ -47,7 +48,7 @@ def convert_to_np_array(dates: pd.Series | pd.Timestamp | str) -> np.array:
     return dates.values.astype("datetime64[D]")
 
 
-def select_holidays_list(dates: np.array, select: str) -> np.array:
+def get_applicable_holidays(dates: np.array, select: str) -> np.array:
     """
     Returns the correct list of holidays to use based on the most recent date in the input.
 
@@ -67,7 +68,7 @@ def select_holidays_list(dates: np.array, select: str) -> np.array:
             selected_list = NEW_HOLIDAYS
         case "infer":
             selected_list = NEW_HOLIDAYS
-            if dates.min() < NEW_HOLIDAYS_START_DATE:
+            if dates.min() < TRANSITION_DATE:
                 selected_list = OLD_HOLIDAYS
         case _:
             raise ValueError("Options are 'old', 'new' or 'infer'.")
@@ -112,25 +113,25 @@ def offset_bdays(
         >>> yd.offset_bdays(date, -1)
         Timestamp('2023-12-21') # Offset to the previous business day
     """
-    dates = convert_to_np_array(dates)
+    dates_np = convert_to_np_array(dates)
 
-    selected_holidays = select_holidays_list(dates, holiday_list)
+    selected_holidays = get_applicable_holidays(dates_np, holiday_list)
 
     # Adjust the dates according to the offset
-    adj_dates = np.busday_offset(
-        dates, offsets=offset, roll="forward", holidays=selected_holidays
+    dates_adj = np.busday_offset(
+        dates_np, offsets=offset, roll="forward", holidays=selected_holidays
     )
 
     # Convert back to pandas datetime64[ns]
-    adj_dates = pd.to_datetime(adj_dates, unit="ns")
+    dates_adj = pd.to_datetime(dates_adj, unit="ns")
     # Convert back to Series
-    adj_dates = pd.Series(adj_dates)
+    dates_adj = pd.Series(dates_adj)
 
     # Return a single value if a single value was passed
-    if len(adj_dates) == 1:
-        adj_dates = adj_dates[0]
+    if len(dates_adj) == 1:
+        dates_adj = dates_adj[0]
 
-    return adj_dates
+    return dates_adj
 
 
 def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infer"):
@@ -171,13 +172,13 @@ def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infe
         array([22, 40])
     """
     # Convert inputs to a Series of datetime64[ns] even if a single value was passed
-    start = convert_to_np_array(start)
-    end = convert_to_np_array(end)
+    start_np = convert_to_np_array(start)
+    end_np = convert_to_np_array(end)
 
     # Determine which list of holidays to use
-    selected_holidays = select_holidays_list(start, holiday_list)
+    selected_holidays = get_applicable_holidays(start_np, holiday_list)
 
-    bdays = np.busday_count(start, end, holidays=selected_holidays)
+    bdays = np.busday_count(start_np, end_np, holidays=selected_holidays)
 
     # Return a single value if a single value was passed
     if len(bdays) == 1:
@@ -239,7 +240,7 @@ def generate_bdays(
     if end is None:
         end = pd.Timestamp.today()
 
-    selected_holidays = select_holidays_list(np.datetime64(start), holiday_list)
+    selected_holidays = get_applicable_holidays(np.datetime64(start), holiday_list)
 
     bdays = pd.bdate_range(
         start, end, freq="C", inclusive=inclusive, holidays=selected_holidays, **kwargs
