@@ -19,10 +19,12 @@ NEW_HOLIDAYS_START_DATE = np.datetime64("2023-12-26", "D")
 
 def convert_to_np_array(dates: pd.Series | pd.Timestamp | str) -> np.array:
     """
-    Converts a Series of dates, a single date or a string to a numpy datetime64[D] array.
+    Converts a Series of dates, a single date or a string to a numpy datetime64[D]
+    array.
 
     Args:
-        dates (pd.Series | pd.Timestamp | str): A Series of dates, a single date or a string.
+        dates (pd.Series | pd.Timestamp | str): A Series of dates, a single date or a
+        string in ISO format.
 
     Returns:
         np.datetime64: A numpy datetime64[D] array.
@@ -51,7 +53,9 @@ def select_holidays_list(dates: np.array, select: str) -> np.array:
 
     Args:
         dates (pd.Timestamp): A single date or a Series of dates.
-        select (str): The list of holidays to use. Valid options are 'old', 'new' or 'infer'.
+        select (str): The list of holidays to use. Valid options are 'old', 'new' or
+            'infer'. If 'infer' is used, the list of holidays is selected based on the
+            most recent (minimum) date in the input.
 
     Returns:
         np.array: The list of holidays to use.
@@ -77,8 +81,8 @@ def offset_bdays(
 ):
     """
     Offsets the dates to the next or previous business day. This function is a wrapper
-    for `numpy.busday_offset` to be used directly with Pandas data types that takes into
-    account the new list of brazilian holidays as the default.
+    for `numpy.busday_offset` to be used directly with Pandas data types that infers the
+    right list of holidays based on the most recent date in the input.
 
     Args:
         dates (str | pd.Timestamp | pd.Series): A single date or a Series of dates to be offset.
@@ -86,7 +90,8 @@ def offset_bdays(
             offset to the next business day, negative numbers offset to the previous
             business day. Zero offsets to the same date if it's a business day, otherwise
             offsets to the next business day.
-        holiday_list (str, optional): Defaults to "infer". The list of holidays to use.
+        holiday_list (str, optional): The list of holidays to use. Defaults to "infer", which
+            infers the right list of holidays based on the most recent date in the input.
 
     Returns:
         str | pd.Timestamp | pd.Series: The offset dates. Returns a single date if
@@ -133,13 +138,14 @@ def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infe
     Counts the number of business days between a `start` (inclusive) and `end`
     (exclusive). If an end date is earlier than the start date, the count will be
     negative. This function is a wrapper for `numpy.busday_count` to be used directly
-    with Pandas data types. The start date is used to determine which list of holidays
-    to use (see Notes for more information on this).
+    with Pandas data types.
 
     Args:
-        start (str | pd.Timestamp, optional): Defaults to None. The start date.
-        end (str | pd.Timestamp optional): Defaults to None. The end date.
-        holiday_list (str, optional): Defaults to "infer". The list of holidays to use.
+        start (str | pd.Timestamp, optional): The start date. Defaults to None.
+        end (str | pd.Timestamp optional): The end date. Defaults to None.
+        holiday_list (str, optional): The list of holidays to use. Defaults to "infer",
+            which infers the right list of holidays based on the most recent date in
+            the input.
 
     Returns:
         np.int64 | np.ndarray: The number of business days between the start date and
@@ -188,18 +194,20 @@ def generate_bdays(
     **kwargs,
 ) -> pd.DatetimeIndex:
     """
-    Generates a Series of business days between a `start` (inclusive) and
-    `end` (inclusive) that takes into account the list of brazilian holidays as the
-    default. If no start date is provided, the current date is used. If no end date is
-    provided, the current date is used.
+    Generates a Series of business days between a `start` (inclusive) and `end`
+    (inclusive) that takes into account the list of brazilian holidays as the default.
+    If no start date is provided, the current date is used. If no end date is provided,
+    the current date is used.
 
 
     Args:
-        start (str | pd.Timestamp, optional): Defaults to None. The start date.
-        end (str | pd.Timestamp | pd.Series, optional): Defaults to None. The end date.
-        inclusive (str, optional): Defaults to 'both'. Whether to include the start and
-            end dates. Valid options are 'both', 'neither', 'left', 'right'.
-        holiday_list (str, optional): Defaults to "infer". The list of holidays to use.
+        start (str | pd.Timestamp, optional): The start date. Defaults to None.
+        end (str | pd.Timestamp | pd.Series, optional): The end date. Defaults to None.
+        inclusive (str, optional): Whether to include the start and end dates.
+            Valid options are 'both', 'neither', 'left', 'right'. Defaults to 'both'.
+        holiday_list (str, optional): The list of holidays to use. Defaults to "infer",
+            which infers the right list of holidays based on the most recent date in the
+            input.
         **kwargs: Additional arguments to pass to `pandas.bdate_range`.
 
     Returns:
