@@ -108,27 +108,7 @@ def create_df_from_di_data(di1_data: list) -> pd.DataFrame:
     return pd.read_csv(file, dtype_backend="numpy_nullable")
 
 
-def prepare_df(df_raw: pd.DataFrame) -> pd.DataFrame:
-    df = df_raw.copy()
-    # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
-
-    expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
-    df.insert(2, "ExpDt", expiration)
-
-    business_days = brc.count_bdays(df["TradDt"], df["ExpDt"])
-    df.insert(3, "BDToExp", business_days)
-
-    # Convert to nullable integer, since other columns use this data type
-    df["BDToExp"] = df["BDToExp"].astype(pd.Int64Dtype())
-
-    # Remove expired contracts
-    df.query("BDToExp > 0", inplace=True)
-
-    return df.sort_values(by=["ExpDt"], ignore_index=True)
-
-
-def filter_b3_df(df: pd.DataFrame) -> pd.DataFrame:
+def filter_pr_df(df: pd.DataFrame) -> pd.DataFrame:
     selected_columns = [
         "TradDt",
         "TckrSymb",
@@ -164,7 +144,7 @@ def filter_b3_df(df: pd.DataFrame) -> pd.DataFrame:
     return df[selected_columns]
 
 
-def filter_b3s_df(df: pd.DataFrame) -> pd.DataFrame:
+def filter_sprd_df(df: pd.DataFrame) -> pd.DataFrame:
     cols = [
         "TradDt",
         "TckrSymb",
@@ -186,6 +166,26 @@ def filter_b3s_df(df: pd.DataFrame) -> pd.DataFrame:
     return df[cols]
 
 
+def process_di_df(df_raw: pd.DataFrame) -> pd.DataFrame:
+    df = df_raw.copy()
+    # Convert to datetime64[ns] since it is pandas default type for timestamps
+    df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
+
+    expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
+    df.insert(2, "ExpDt", expiration)
+
+    business_days = brc.count_bdays(df["TradDt"], df["ExpDt"])
+    df.insert(3, "BDToExp", business_days)
+
+    # Convert to nullable integer, since other columns use this data type
+    df["BDToExp"] = df["BDToExp"].astype(pd.Int64Dtype())
+
+    # Remove expired contracts
+    df.query("BDToExp > 0", inplace=True)
+
+    return df.sort_values(by=["ExpDt"], ignore_index=True)
+
+
 def get_di(
     trade_date: pd.Timestamp,
     source_type: str,
@@ -198,17 +198,16 @@ def get_di(
     di_data = extract_di_data_from_xml(xml_file)
 
     raw_df = create_df_from_di_data(di_data)
-
-    di_df = prepare_df(raw_df)
-
     if return_raw:
         return raw_df
 
+    # Remove unnecessary columns
     if source_type == "b3":
-        return filter_b3_df(di_df)
-
+        di_df = filter_pr_df(raw_df)
     elif source_type == "b3s":
-        return filter_b3s_df(di_df)
+        di_df = filter_sprd_df(raw_df)
+
+    return process_di_df(di_df)
 
 
 def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
@@ -224,20 +223,19 @@ def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
         di_data = extract_di_data_from_xml(xml_file)
 
         raw_df = create_df_from_di_data(di_data)
-
-        di_df = prepare_df(raw_df)
-
         if return_raw:
             return raw_df
 
         # Filename examples: PR231228.zip or SPRD240216.zip
         file_stem = file_path.stem
-
         if "PR" in file_stem:
-            return filter_b3_df(di_df)
+            df_di = filter_pr_df(raw_df)
         elif "SPRD" in file_stem:
-            return filter_b3s_df(di_df)
+            df_di = filter_sprd_df(raw_df)
         else:
             raise ValueError("Filename must start with 'PR' or 'SPRD'.")
+
+        return process_di_df(df_di)
+
     else:
         raise ValueError("A file path must be provided.")

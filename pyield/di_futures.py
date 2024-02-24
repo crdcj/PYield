@@ -134,7 +134,5 @@ def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
 
     Examples:
         >>> read_di_from_file(Path("path/to/file.xml"))
-
     """
-
     return dix.read_di(file_path, return_raw=return_raw)
