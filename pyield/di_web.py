@@ -9,15 +9,15 @@ from . import di_futures as dif
 
 
 def get_old_expiration_date(
-    contract_code: str, trade_date: pd.Timestamp
+    expiration_code: str, trade_date: pd.Timestamp
 ) -> pd.Timestamp:
     """
     Internal function to convert an old DI contract code into its expiration date. Valid for
     contract codes up to 21-05-2006.
 
     Args:
-        contract_code (str):
-            An old DI contract code from B3, where the first three letters represent
+        expiration_code (str):
+            An old DI expiration_code from B3, where the first three letters represent
             the month and the last digit represents the year. Example: "JAN3".
         trade_date (pd.Timestamp):
             The trade date for which the contract code is valid.
@@ -51,7 +51,7 @@ def get_old_expiration_date(
         "DEZ": 12,
     }
     try:
-        month_code = contract_code[:3]
+        month_code = expiration_code[:3]
         month = month_codes[month_code]
 
         # Year codes must generated dynamically, since it depends on the trade date
@@ -59,7 +59,7 @@ def get_old_expiration_date(
         year_codes = {}
         for year in range(reference_year, reference_year + 10):
             year_codes[str(year)[-1:]] = year
-        year = year_codes[contract_code[-1:]]
+        year = year_codes[expiration_code[-1:]]
 
         expiration = pd.Timestamp(year, month, 1)
         # Adjust to the next business day when expiration date is a weekend or a holiday
@@ -70,7 +70,7 @@ def get_old_expiration_date(
         return pd.NaT
 
 
-def get_raw_di(trade_date: str | pd.Timestamp) -> pd.DataFrame:
+def get_raw_di(trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to fetch raw DI futures data from B3 for a specific trade date.
 
@@ -78,9 +78,8 @@ def get_raw_di(trade_date: str | pd.Timestamp) -> pd.DataFrame:
         trade_date: a datetime-like object representing the trade date.
 
     Returns:
-        pd.DataFrame: Raw data as a Pandas DataFrame.
+        pd.DataFrame: Raw DI data as a Pandas DataFrame.
     """
-    trade_date = pd.Timestamp(trade_date)
     # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
     url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={trade_date.strftime('%d/%m/%Y')}&Mercadoria=DI1&XLS=false"
     r = requests.get(url)
@@ -129,6 +128,7 @@ def convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
         pd.Series: A Series containing DI futures rates.
     """
     rates = (100_000 / prices) ** (252 / bd) - 1
+
     # Return rates as percentage
     return 100 * rates
 
@@ -146,6 +146,7 @@ def convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
     ]
     for col in convert_cols:
         df[col] = convert_prices_to_rates(df[col], df["bdays"])
+
     # Invert low and high prices
     df["min_rate"], df["max_rate"] = df["max_rate"], df["min_rate"]
 
@@ -277,7 +278,7 @@ def get_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
     Examples:
         >>> get_di("2023-12-28")
 
-    Columns:
+    Notes:
         - bdays: number of business days to expiration.
         - open_contracts: number of open contracts at the start of the trading day.
         - closed_contracts: number of closed contracts at the end of the trading day.

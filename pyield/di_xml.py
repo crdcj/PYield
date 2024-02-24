@@ -108,9 +108,8 @@ def create_df_from_di_data(di1_data: list) -> pd.DataFrame:
     return pd.read_csv(file, dtype_backend="numpy_nullable")
 
 
-def process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
+def prepare_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
-
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
 
@@ -118,15 +117,18 @@ def process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df.insert(2, "ExpDt", expiration)
 
     business_days = brc.count_bdays(df["TradDt"], df["ExpDt"])
-    df.insert(3, "BDaysToExp", business_days)
+    df.insert(3, "BDToExp", business_days)
 
     # Convert to nullable integer, since other columns use this data type
-    df["BDaysToExp"] = df["BDaysToExp"].astype(pd.Int64Dtype())
+    df["BDToExp"] = df["BDToExp"].astype(pd.Int64Dtype())
 
     # Remove expired contracts
-    df.query("BDaysToExp > 0", inplace=True)
-    df.sort_values(by=["ExpDt"], ignore_index=True, inplace=True)
+    df.query("BDToExp > 0", inplace=True)
 
+    return df.sort_values(by=["ExpDt"], ignore_index=True)
+
+
+def filter_b3_df(df: pd.DataFrame) -> pd.DataFrame:
     selected_columns = [
         "TradDt",
         "TckrSymb",
@@ -162,29 +164,26 @@ def process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df[selected_columns]
 
 
-def process_simplified_df(df_raw: pd.DataFrame) -> pd.DataFrame:
-    df = df_raw.copy()
-    # Remove constant columns: AdjstdQtStin and PrvsAdjstdQtStin
-    df = df.drop(
-        columns=["AdjstdQtStin", "PrvsAdjstdQtStin", "PrvsAdjstdQt", "PrvsAdjstdQtTax"]
-    )
+def filter_b3s_df(df: pd.DataFrame) -> pd.DataFrame:
+    cols = [
+        "TradDt",
+        "TckrSymb",
+        "OpnIntrst",
+        "FrstPric",
+        "MinPric",
+        "MaxPric",
+        "TradAvrgPric",
+        "LastPric",
+        "RglrTxsQty",
+        "AdjstdQt",
+        "AdjstdQtTax",
+        # "AdjstdQtStin",  # Constant column
+        # "PrvsAdjstdQt",
+        # "PrvsAdjstdQtTax",
+        # "PrvsAdjstdQtStin",  # Constant column
+    ]
 
-    # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
-
-    expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
-    df.insert(2, "ExpDt", expiration)
-
-    business_days = brc.count_bdays(df["TradDt"], df["ExpDt"])
-    df.insert(3, "BDaysToExp", business_days)
-
-    # Convert to nullable integer, since other columns use this data type
-    df["BDaysToExp"] = df["BDaysToExp"].astype(pd.Int64Dtype())
-
-    # Remove expired contracts
-    df.query("BDaysToExp > 0", inplace=True)
-
-    return df.sort_values(by=["ExpDt"], ignore_index=True)
+    return df[cols]
 
 
 def get_di(
@@ -195,18 +194,21 @@ def get_di(
     zip_file = get_file_from_url(trade_date, source_type)
 
     xml_file = extract_xml_from_zip(zip_file)
+
     di_data = extract_di_data_from_xml(xml_file)
 
     raw_df = create_df_from_di_data(di_data)
+
+    di_df = prepare_df(raw_df)
 
     if return_raw:
         return raw_df
 
     if source_type == "b3":
-        return process_df(raw_df)
+        return filter_b3_df(di_df)
 
     elif source_type == "b3s":
-        return process_simplified_df(raw_df)
+        return filter_b3s_df(di_df)
 
 
 def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
@@ -218,9 +220,13 @@ def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
             raise FileNotFoundError(f"No file found at {file_path}.")
 
         xml_file = extract_xml_from_zip(zip_file)
+
         di_data = extract_di_data_from_xml(xml_file)
 
         raw_df = create_df_from_di_data(di_data)
+
+        di_df = prepare_df(raw_df)
+
         if return_raw:
             return raw_df
 
@@ -228,9 +234,9 @@ def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
         file_stem = file_path.stem
 
         if "PR" in file_stem:
-            return process_df(raw_df)
+            return filter_b3_df(di_df)
         elif "SPRD" in file_stem:
-            return process_simplified_df(raw_df)
+            return filter_b3s_df(di_df)
         else:
             raise ValueError("Filename must start with 'PR' or 'SPRD'.")
     else:

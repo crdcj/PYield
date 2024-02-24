@@ -3,10 +3,10 @@ from typing import Literal
 import pandas as pd
 import numpy as np
 
-from .br_holidays import Holidays
+from .br_holidays import BRHolidays
 
 # Instância global da classe Holidays
-holidays = Holidays()
+br_holidays = BRHolidays()
 
 
 def convert_to_numpy_date(
@@ -70,7 +70,7 @@ def offset_bdays(
     """
     dates_np = convert_to_numpy_date(dates)
 
-    selected_holidays = holidays.get_applicable_holidays(dates_np, holiday_list)
+    selected_holidays = br_holidays.get_applicable_holidays(dates_np, holiday_list)
 
     # Offset the dates
     offsetted_dates = np.busday_offset(
@@ -123,7 +123,7 @@ def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infe
     end_np = convert_to_numpy_date(end)
 
     # Determine which list of holidays to use
-    selected_holidays = holidays.get_applicable_holidays(start_np, holiday_list)
+    selected_holidays = br_holidays.get_applicable_holidays(start_np, holiday_list)
 
     return np.busday_count(start_np, end_np, holidays=selected_holidays)
 
@@ -182,7 +182,7 @@ def generate_bdays(
         end = pd.Timestamp.today()
 
     start_np = convert_to_numpy_date(start)
-    selected_holidays = holidays.get_applicable_holidays(start_np, holiday_list)
+    selected_holidays = br_holidays.get_applicable_holidays(start_np, holiday_list)
 
     return pd.bdate_range(
         start, end, freq="C", inclusive=inclusive, holidays=selected_holidays, **kwargs
