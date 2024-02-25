@@ -6,15 +6,15 @@ import numpy as np
 
 
 class BRHolidays:
-    CURRENT_DIR = Path(__file__).parent
-    NEW_HOLIDAYS_PATH = CURRENT_DIR / "br_holidays_new.txt"
-    OLD_HOLIDAYS_PATH = CURRENT_DIR / "br_holidays_old.txt"
     # The date (inclusive) when the new holidays list starts to be valid
     TRANSITION_DATE = np.datetime64("2023-12-26", "D")
 
     def __init__(self):
-        self.new_holidays = self._load_holidays(BRHolidays.NEW_HOLIDAYS_PATH)
-        self.old_holidays = self._load_holidays(BRHolidays.OLD_HOLIDAYS_PATH)
+        current_dir = Path(__file__).parent
+        new_holidays_path = current_dir / "br_holidays_new.txt"
+        old_holidays_path = current_dir / "br_holidays_old.txt"
+        self.new_holidays = self._load_holidays(new_holidays_path)
+        self.old_holidays = self._load_holidays(old_holidays_path)
 
     def _load_holidays(self, file_path: Path) -> np.array:
         df = pd.read_csv(file_path, header=None, names=["date"], comment="#")
