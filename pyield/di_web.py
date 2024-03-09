@@ -9,22 +9,22 @@ from . import di_futures as dif
 
 
 def get_old_expiration_date(
-    expiration_code: str, trade_date: pd.Timestamp
+    ExpirationCode: str, trade_date: pd.Timestamp
 ) -> pd.Timestamp:
     """
-    Internal function to convert an old DI contract code into its expiration date. Valid for
+    Internal function to convert an old DI contract code into its ExpirationDate date. Valid for
     contract codes up to 21-05-2006.
 
     Args:
-        expiration_code (str):
-            An old DI expiration_code from B3, where the first three letters represent
+        ExpirationCode (str):
+            An old DI ExpirationCode from B3, where the first three letters represent
             the month and the last digit represents the year. Example: "JAN3".
         trade_date (pd.Timestamp):
             The trade date for which the contract code is valid.
 
     Returns:
         pd.Timestamp
-            The contract's expiration date.
+            The contract's ExpirationDate date.
             Returns pd.NaT if the input is invalid.
 
     Examples:
@@ -51,7 +51,7 @@ def get_old_expiration_date(
         "DEZ": 12,
     }
     try:
-        month_code = expiration_code[:3]
+        month_code = ExpirationCode[:3]
         month = month_codes[month_code]
 
         # Year codes must generated dynamically, since it depends on the trade date
@@ -59,12 +59,12 @@ def get_old_expiration_date(
         year_codes = {}
         for year in range(reference_year, reference_year + 10):
             year_codes[str(year)[-1:]] = year
-        year = year_codes[expiration_code[-1:]]
+        year = year_codes[ExpirationCode[-1:]]
 
-        expiration = pd.Timestamp(year, month, 1)
-        # Adjust to the next business day when expiration date is a weekend or a holiday
+        ExpirationDate = pd.Timestamp(year, month, 1)
+        # Adjust to the next business day when ExpirationDate date is a weekend or a holiday
         # Must use the old holiday calendar, since this type of contract code was used until 2006
-        return brc.offset_bdays(expiration, offset=0, holiday_list="old")
+        return brc.offset_bdays(ExpirationDate, offset=0, holiday_list="old")
 
     except (KeyError, ValueError):
         return pd.NaT
@@ -99,11 +99,13 @@ def get_raw_di(trade_date: pd.Timestamp) -> pd.DataFrame:
 
         # Remove rows with all NaN values
         df = df.dropna(how="all")
+
         # Remove columns with all NaN values
         df = df.dropna(axis=1, how="all")
 
         # Force "VAR. PTOS." column to be string, since it can vary between str and float
         df["VAR. PTOS."] = df["VAR. PTOS."].astype(pd.StringDtype())
+
         # Force "AJUSTE CORRIG. (4)" column to be float, since it can vary between int and float
         df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype(pd.Float64Dtype())
 
@@ -122,7 +124,7 @@ def convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
 
     Args:
         prices (pd.Series): A Series containing DI futures prices.
-        bd (pd.Series): A Series containing the number of business days to expiration.
+        bd (pd.Series): A Series containing the number of business days to ExpirationDate.
 
     Returns:
         pd.Series: A Series containing DI futures rates.
@@ -136,19 +138,19 @@ def convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
 def convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
     # Prior to 01/01/2002, prices were not converted to rates
     convert_cols = [
-        "opening_rate",
-        "min_rate",
-        "max_rate",
-        "avg_rate",
-        "closing_rate",
-        "last_bid_rate",
-        "last_offer_rate",
+        "FirstRate",
+        "MinRate",
+        "MaxRate",
+        "AvgRate",
+        "LastRate",
+        "LastBidRate",
+        "LastAskRate",
     ]
     for col in convert_cols:
-        df[col] = convert_prices_to_rates(df[col], df["bdays"])
+        df[col] = convert_prices_to_rates(df[col], df["BDToExpiration"])
 
     # Invert low and high prices
-    df["min_rate"], df["max_rate"] = df["max_rate"], df["min_rate"]
+    df["MinRate"], df["MaxRate"] = df["MaxRate"], df["MinRate"]
 
     return df
 
@@ -168,56 +170,57 @@ def process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     if df.empty:
         return df
 
-    df = df.rename(
-        columns={
-            "VENCTO": "contract_code",
-            "CONTR. ABERT.(1)": "open_contracts",
-            "CONTR. FECH.(2)": "closed_contracts",
-            "NÚM. NEGOC.": "number_of_trades",
-            "CONTR. NEGOC.": "trading_volume",
-            "VOL.": "financial_volume",
-            "AJUSTE ANTER. (3)": "prev_settlement_price",
-            "AJUSTE CORRIG. (4)": "adj_prev_settlement_price",
-            "PREÇO ABERTU.": "opening_rate",
-            "PREÇO MÍN.": "min_rate",
-            "PREÇO MÁX.": "max_rate",
-            "PREÇO MÉD.": "avg_rate",
-            "ÚLT. PREÇO": "closing_rate",
-            "AJUSTE": "settlement_price",
-            "VAR. PTOS.": "point_variation",
-            "ÚLT.OF. COMPRA": "last_bid_rate",
-            "ÚLT.OF. VENDA": "last_offer_rate",
-        }
-    )
+    rename_dict = {
+        "VENCTO": "ExpirationCode",
+        "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
+        "CONTR. FECH.(2)": "OpenContractsEndSession",  # At the end of the day
+        "NÚM. NEGOC.": "NumOfTrades",
+        "CONTR. NEGOC.": "TradedQuantity",
+        "VOL.": "FinancialVolume",
+        "AJUSTE": "SettlementPrice",
+        "AJUSTE ANTER. (3)": "PrevSettlementRate",
+        "AJUSTE CORRIG. (4)": "AdjSettlementRate",
+        "PREÇO MÍN.": "MinRate",
+        "PREÇO MÉD.": "AvgRate",
+        "PREÇO MÁX.": "MaxRate",
+        "PREÇO ABERTU.": "FirstRate",
+        "ÚLT. PREÇO": "LastRate",
+        "VAR. PTOS.": "PointsVariation",
+        # Attention: bid/ask rates are inverted
+        "ÚLT.OF. COMPRA": "LastAskRate",
+        "ÚLT.OF. VENDA": "LastBidRate",
+    }
 
-    df.insert(0, "trade_date", trade_date)
+    df = df.rename(columns=rename_dict)
+
+    df["TradeDate"] = trade_date
     # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["trade_date"] = df["trade_date"].astype("datetime64[ns]")
+    df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
 
     # Contract code format was changed in 22/05/2006
     if trade_date < pd.Timestamp("2006-05-22"):
-        df["expiration"] = df["contract_code"].apply(
+        df["ExpirationDate"] = df["ExpirationCode"].apply(
             get_old_expiration_date, args=(trade_date,)
         )
     else:
-        df["expiration"] = df["contract_code"].apply(dif.get_expiration_date)
+        df["ExpirationDate"] = df["ExpirationCode"].apply(dif.get_expiration_date)
 
-    df["bdays"] = brc.count_bdays(trade_date, df["expiration"])
+    df["BDToExpiration"] = brc.count_bdays(trade_date, df["ExpirationDate"])
     # Convert to nullable integer, since other columns use this data type
-    df["bdays"] = df["bdays"].astype(pd.Int64Dtype())
+    df["BDToExpiration"] = df["BDToExpiration"].astype(pd.Int64Dtype())
     # Remove expired contracts
-    df.query("bdays > 0", inplace=True)
+    df.query("BDToExpiration > 0", inplace=True)
 
     # Columns where 0 means NaN
     cols_with_nan = [
-        "settlement_price",
-        "opening_rate",
-        "min_rate",
-        "max_rate",
-        "avg_rate",
-        "closing_rate",
-        "last_bid_rate",
-        "last_offer_rate",
+        "SettlementPrice",
+        "FirstRate",
+        "MinRate",
+        "MaxRate",
+        "AvgRate",
+        "LastRate",
+        "LastBidRate",
+        "LastAskRate",
     ]
     for col in cols_with_nan:
         df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
@@ -226,38 +229,39 @@ def process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     if trade_date <= pd.Timestamp("2002-01-17"):
         df = convert_prices_in_older_contracts(df)
 
-    df["settlement_rate"] = convert_prices_to_rates(df["settlement_price"], df["bdays"])
+    df["SettlementRate"] = convert_prices_to_rates(
+        df["SettlementPrice"], df["BDToExpiration"]
+    )
 
     # Remove percentage in all rate columns and round to 5 decimal places since it's the precision used by B3
     # Obs: 5 decimal places = 3 decimal places in percentage
-    rate_cols = [col for col in df.columns if "rate" in col]
+    rate_cols = [col for col in df.columns if "Rate" in col]
     for col in rate_cols:
         df[col] = (df[col] / 100).round(5)
 
-    # Order columns
-    df = df[
-        [
-            "trade_date",
-            "contract_code",
-            "expiration",
-            "bdays",
-            "open_contracts",
-            "closed_contracts",
-            "number_of_trades",
-            "trading_volume",
-            "financial_volume",
-            "settlement_price",
-            "settlement_rate",
-            "opening_rate",
-            "min_rate",
-            "max_rate",
-            "avg_rate",
-            "closing_rate",
-            "last_bid_rate",
-            "last_offer_rate",
-        ]
+    # Filter and order columns
+    ordered_cols = [
+        "TradeDate",
+        "ExpirationCode",
+        "ExpirationDate",
+        "BDToExpiration",
+        "OpenContracts",
+        # "OpenContractsEndSession" since there is no OpenContracts at the end of the
+        # day in XML data, it will be removed to avoid confusion with XML data
+        "NumOfTrades",
+        "TradedQuantity",
+        "FinancialVolume",
+        "SettlementPrice",
+        "MinRate",
+        "AvgRate",
+        "MaxRate",
+        "FirstRate",
+        "LastRate",
+        "LastAskRate",
+        "LastBidRate",
+        "SettlementRate",
     ]
-    return df
+    return df[ordered_cols]
 
 
 def get_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
@@ -279,8 +283,8 @@ def get_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
         >>> get_di("2023-12-28")
 
     Notes:
-        - bdays: number of business days to expiration.
-        - open_contracts: number of open contracts at the start of the trading day.
+        - BDToExpiration: number of business days to ExpirationDate.
+        - OpenContracts: number of open contracts at the start of the trading day.
         - closed_contracts: number of closed contracts at the end of the trading day.
     """
     df_raw = get_raw_di(trade_date)

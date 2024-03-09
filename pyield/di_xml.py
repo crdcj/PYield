@@ -124,12 +124,10 @@ def filter_pr_df(df: pd.DataFrame) -> pd.DataFrame:
         "MaxPric",
         "TradAvrgPric",
         "LastPric",
-        "RglrTxsQty",
-        "RglrTraddCtrcts",
-        "NtlRglrVol",
+        # "RglrTxsQty",
+        # "RglrTraddCtrcts",
+        # "NtlRglrVol",
         # "IntlRglrVol",
-        "AdjstdQt",
-        "AdjstdQtTax",
         # "AdjstdQtStin",
         # "PrvsAdjstdQt",
         # "PrvsAdjstdQtTax",
@@ -139,6 +137,8 @@ def filter_pr_df(df: pd.DataFrame) -> pd.DataFrame:
         # "AdjstdValCtrct",
         "MaxTradLmt",
         "MinTradLmt",
+        "AdjstdQtTax",
+        "AdjstdQt",
     ]
 
     return df[selected_columns]
@@ -154,16 +154,52 @@ def filter_sprd_df(df: pd.DataFrame) -> pd.DataFrame:
         "MaxPric",
         "TradAvrgPric",
         "LastPric",
-        "RglrTxsQty",
-        "AdjstdQt",
+        # "RglrTxsQty",
         "AdjstdQtTax",
         # "AdjstdQtStin",  # Constant column
         # "PrvsAdjstdQt",
         # "PrvsAdjstdQtTax",
         # "PrvsAdjstdQtStin",  # Constant column
+        "AdjstdQt",
     ]
 
     return df[cols]
+
+
+def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
+    rename_dict = {
+        "TradDt": "TradeDate",
+        "TckrSymb": "Ticker",
+        # "MktDataStrmId"
+        "NtlFinVol": "FinancialVolume",
+        # "IntlFinVol",
+        "OpnIntrst": "OpenContracts",
+        "FinInstrmQty": "TradedQuantity",
+        "BestBidPric": "BestBidRate",
+        "BestAskPric": "BestAskRate",
+        "FrstPric": "FirstRate",
+        "MinPric": "MinRate",
+        "MaxPric": "MaxRate",
+        "LastPric": "LastRate",
+        "TradAvrgPric": "AvgRate",
+        # "RglrTxsQty"
+        # "RglrTraddCtrcts"
+        # "NtlRglrVol"
+        # "IntlRglrVol",
+        # "AdjstdQtStin",
+        # "PrvsAdjstdQt",
+        # "PrvsAdjstdQtTax",
+        # "PrvsAdjstdQtStin",
+        # "OscnPctg",
+        # "VartnPts",
+        # "AdjstdValCtrct",
+        "MaxTradLmt": "MaxTradeLimitRate",
+        "MinTradLmt": "MinTradeLimitRate",
+        "AdjstdQtTax": "SettlementRate",
+        "AdjstdQt": "SettlementPrice",
+    }
+
+    return df.rename(columns=rename_dict)
 
 
 def process_di_df(df_raw: pd.DataFrame) -> pd.DataFrame:
@@ -172,18 +208,18 @@ def process_di_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
 
     expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
-    df.insert(2, "ExpDt", expiration)
+    df.insert(2, "ExpirationDate", expiration)
 
-    business_days = brc.count_bdays(df["TradDt"], df["ExpDt"])
-    df.insert(3, "BDToExp", business_days)
+    business_days = brc.count_bdays(df["TradDt"], df["ExpirationDate"])
+    df.insert(3, "BDToExpiration", business_days)
 
     # Convert to nullable integer, since other columns use this data type
-    df["BDToExp"] = df["BDToExp"].astype(pd.Int64Dtype())
+    df["BDToExpiration"] = df["BDToExpiration"].astype(pd.Int64Dtype())
 
     # Remove expired contracts
-    df.query("BDToExp > 0", inplace=True)
+    df.query("BDToExpiration > 0", inplace=True)
 
-    return df.sort_values(by=["ExpDt"], ignore_index=True)
+    return df.sort_values(by=["ExpirationDate"], ignore_index=True)
 
 
 def get_di(
@@ -197,17 +233,23 @@ def get_di(
 
     di_data = extract_di_data_from_xml(xml_file)
 
-    raw_df = create_df_from_di_data(di_data)
+    df_raw = create_df_from_di_data(di_data)
     if return_raw:
-        return raw_df
+        return df_raw
 
     # Remove unnecessary columns
     if source_type == "b3":
-        di_df = filter_pr_df(raw_df)
+        df_di = filter_pr_df(df_raw)
     elif source_type == "b3s":
-        di_df = filter_sprd_df(raw_df)
+        df_di = filter_sprd_df(df_raw)
 
-    return process_di_df(di_df)
+    # Process and transform data
+    df_di = process_di_df(df_di)
+
+    # Standardize column names
+    df_di = standardize_column_names(df_di)
+
+    return df_di
 
 
 def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
@@ -222,16 +264,16 @@ def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
 
         di_data = extract_di_data_from_xml(xml_file)
 
-        raw_df = create_df_from_di_data(di_data)
+        df_raw = create_df_from_di_data(di_data)
         if return_raw:
-            return raw_df
+            return df_raw
 
         # Filename examples: PR231228.zip or SPRD240216.zip
         file_stem = file_path.stem
         if "PR" in file_stem:
-            df_di = filter_pr_df(raw_df)
+            df_di = filter_pr_df(df_raw)
         elif "SPRD" in file_stem:
-            df_di = filter_sprd_df(raw_df)
+            df_di = filter_sprd_df(df_raw)
         else:
             raise ValueError("Filename must start with 'PR' or 'SPRD'.")
 
