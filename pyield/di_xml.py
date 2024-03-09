@@ -108,22 +108,26 @@ def create_df_from_di_data(di1_data: list) -> pd.DataFrame:
     return pd.read_csv(file, dtype_backend="numpy_nullable")
 
 
-def filter_pr_df(df: pd.DataFrame) -> pd.DataFrame:
+def filter_and_order_pr_df(df: pd.DataFrame) -> pd.DataFrame:
     selected_columns = [
         "TradDt",
         "TckrSymb",
         # "MktDataStrmId",
-        "NtlFinVol",
-        # "IntlFinVol",
         "OpnIntrst",
         "FinInstrmQty",
+        "NtlFinVol",
+        # "IntlFinVol",
+        "AdjstdQt",
+        "MinTradLmt",
+        "MaxTradLmt",
         "BestBidPric",
         "BestAskPric",
-        "FrstPric",
         "MinPric",
-        "MaxPric",
         "TradAvrgPric",
+        "MaxPric",
+        "FrstPric",
         "LastPric",
+        "AdjstdQtTax",
         # "RglrTxsQty",
         # "RglrTraddCtrcts",
         # "NtlRglrVol",
@@ -135,32 +139,28 @@ def filter_pr_df(df: pd.DataFrame) -> pd.DataFrame:
         # "OscnPctg",
         # "VartnPts",
         # "AdjstdValCtrct",
-        "MaxTradLmt",
-        "MinTradLmt",
-        "AdjstdQtTax",
-        "AdjstdQt",
     ]
 
     return df[selected_columns]
 
 
-def filter_sprd_df(df: pd.DataFrame) -> pd.DataFrame:
+def filter_and_order_sprd_df(df: pd.DataFrame) -> pd.DataFrame:
     cols = [
         "TradDt",
         "TckrSymb",
         "OpnIntrst",
-        "FrstPric",
+        "AdjstdQt",
         "MinPric",
-        "MaxPric",
         "TradAvrgPric",
+        "MaxPric",
+        "FrstPric",
         "LastPric",
-        # "RglrTxsQty",
         "AdjstdQtTax",
+        # "RglrTxsQty",
         # "AdjstdQtStin",  # Constant column
         # "PrvsAdjstdQt",
         # "PrvsAdjstdQtTax",
         # "PrvsAdjstdQtStin",  # Constant column
-        "AdjstdQt",
     ]
 
     return df[cols]
@@ -171,17 +171,22 @@ def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
         "TradDt": "TradeDate",
         "TckrSymb": "Ticker",
         # "MktDataStrmId"
-        "NtlFinVol": "FinancialVolume",
         # "IntlFinVol",
         "OpnIntrst": "OpenContracts",
         "FinInstrmQty": "TradedQuantity",
-        "BestBidPric": "BestBidRate",
-        "BestAskPric": "BestAskRate",
-        "FrstPric": "FirstRate",
+        "NtlFinVol": "FinancialVolume",
+        "AdjstdQt": "SettlementPrice",
+        "MinTradLmt": "MinTradeLimitRate",
+        "MaxTradLmt": "MaxTradeLimitRate",
+        # Must invert bid/ask for rates
+        "BestAskPric": "BestBidRate",
+        "BestBidPric": "BestAskRate",
         "MinPric": "MinRate",
-        "MaxPric": "MaxRate",
-        "LastPric": "LastRate",
         "TradAvrgPric": "AvgRate",
+        "MaxPric": "MaxRate",
+        "FrstPric": "FirstRate",
+        "LastPric": "LastRate",
+        "AdjstdQtTax": "SettlementRate",
         # "RglrTxsQty"
         # "RglrTraddCtrcts"
         # "NtlRglrVol"
@@ -193,10 +198,6 @@ def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
         # "OscnPctg",
         # "VartnPts",
         # "AdjstdValCtrct",
-        "MaxTradLmt": "MaxTradeLimitRate",
-        "MinTradLmt": "MinTradeLimitRate",
-        "AdjstdQtTax": "SettlementRate",
-        "AdjstdQt": "SettlementPrice",
     }
 
     return df.rename(columns=rename_dict)
@@ -239,9 +240,9 @@ def get_di(
 
     # Remove unnecessary columns
     if source_type == "b3":
-        df_di = filter_pr_df(df_raw)
+        df_di = filter_and_order_pr_df(df_raw)
     elif source_type == "b3s":
-        df_di = filter_sprd_df(df_raw)
+        df_di = filter_and_order_sprd_df(df_raw)
 
     # Process and transform data
     df_di = process_di_df(df_di)
@@ -271,13 +272,19 @@ def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
         # Filename examples: PR231228.zip or SPRD240216.zip
         file_stem = file_path.stem
         if "PR" in file_stem:
-            df_di = filter_pr_df(df_raw)
+            df_di = filter_and_order_pr_df(df_raw)
         elif "SPRD" in file_stem:
-            df_di = filter_sprd_df(df_raw)
+            df_di = filter_and_order_sprd_df(df_raw)
         else:
             raise ValueError("Filename must start with 'PR' or 'SPRD'.")
 
-        return process_di_df(df_di)
+        # Process and transform data
+        df_di = process_di_df(df_di)
+
+        # Standardize column names
+        df_di = standardize_column_names(df_di)
+
+        return df_di
 
     else:
         raise ValueError("A file path must be provided.")
