@@ -1,8 +1,41 @@
 import pandas as pd
 from urllib.error import HTTPError
 
+import di_futures as di
 
-def get_anbima_rates(reference_date: str | pd.Timestamp | None = None) -> pd.DataFrame:
+
+def calculate_di_spreads(df, reference_date: pd.Timestamp) -> pd.DataFrame:
+    """
+    Calcula o prêmio implícito nas taxas indicativas da ANBIMA para os títulos LTN e NTN-F.
+
+    Parâmetros:
+    -----------
+    data_consulta : pd.Timestamp
+        A data de referência para a consulta das taxas indicativas da ANBIMA.
+    """
+    df_di = di.get_di(reference_date)
+
+    # Passar para %
+    df_di["SettlementRate"] = df_di["SettlementRate"] * 100
+    df_di.rename(columns={"ExpirationDate": "maturity"}, inplace=True)
+
+    # Ajustar o vencimento para o primeiro dia do mês para concidir com o formato dos títulos
+    df_di["maturity"] = df_di["maturity"].dt.to_period("M").dt.to_timestamp()
+
+    # Unir os dois DataFrames
+    df = pd.merge(df, df_di, how="left", on="maturity")
+
+    # Calcular o prêmio implícito na taxa da ANBIMA
+    df["DISpread"] = df["IndicativeRate"] - df["SettlementRate"]
+    # Converter o prêmio para bps e arredondar para 2 casas decimais
+    df["DISpread"] = (100 * df["DISpread"]).round(2)
+    # Retornar somente as colunas desejadas
+    return df[["bond", "maturity", "DISpread"]]
+
+
+def get_anbima_rates(
+    reference_date: str | pd.Timestamp | None = None, return_raw=False
+) -> pd.DataFrame:
     """
     Fetch indicative rates from ANBIMA for a specific date.
 
@@ -33,16 +66,30 @@ def get_anbima_rates(reference_date: str | pd.Timestamp | None = None) -> pd.Dat
         error_date = reference_date.strftime("%d/%m/%Y")
         raise ValueError(f"Failed to get ANBIMA rates for {error_date}")
 
+    if return_raw:
+        return df
+
     # Filter selected columns and rename them
     selected_columns_dict = {
         "Titulo": "BondType",
+        "Data Referencia": "ReferenceDate",
+        # "Codigo SELIC",
+        # "Data Base/Emissao",
         "Data Vencimento": "MaturityDate",
+        "Tx. Compra": "BidRate",
+        "Tx. Venda": "AskRate",
         "Tx. Indicativas": "IndicativeRate",
+        "PU": "Price",
+        # "Desvio padrao",
+        # "Interv. Ind. Inf. (D0)",
+        # "Interv. Ind. Sup. (D0)",
+        # "Interv. Ind. Inf. (D+1)",
+        # "Interv. Ind. Sup. (D+1)",
+        # "Criterio",
     }
     df = df[list(selected_columns_dict.keys())]
     df.rename(columns=selected_columns_dict, inplace=True)
-
+    df["ReferenceDate"] = pd.to_datetime(df["ReferenceDate"], format="%Y%m%d")
     df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%Y%m%d")
-    df.insert(0, "ReferenceDate", reference_date)
 
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
