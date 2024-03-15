@@ -1,7 +1,7 @@
 import pandas as pd
 from urllib.error import HTTPError
 
-import di_futures as di
+from . import di_futures as di
 
 
 def calculate_di_spreads(df, reference_date: pd.Timestamp) -> pd.DataFrame:
@@ -13,24 +13,28 @@ def calculate_di_spreads(df, reference_date: pd.Timestamp) -> pd.DataFrame:
     data_consulta : pd.Timestamp
         A data de referência para a consulta das taxas indicativas da ANBIMA.
     """
-    df_di = di.get_di(reference_date)
 
-    # Passar para %
-    df_di["SettlementRate"] = df_di["SettlementRate"] * 100
-    df_di.rename(columns={"ExpirationDate": "maturity"}, inplace=True)
+    df_di = di.get_di(reference_date)[["MaturityDate", "SettlementRate"]]
+
+    df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
 
     # Ajustar o vencimento para o primeiro dia do mês para concidir com o formato dos títulos
-    df_di["maturity"] = df_di["maturity"].dt.to_period("M").dt.to_timestamp()
+    df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Unir os dois DataFrames
-    df = pd.merge(df, df_di, how="left", on="maturity")
+    df = pd.merge(df, df_di, how="left", on="MaturityDate")
 
     # Calcular o prêmio implícito na taxa da ANBIMA
     df["DISpread"] = df["IndicativeRate"] - df["SettlementRate"]
+
     # Converter o prêmio para bps e arredondar para 2 casas decimais
-    df["DISpread"] = (100 * df["DISpread"]).round(2)
-    # Retornar somente as colunas desejadas
-    return df[["bond", "maturity", "DISpread"]]
+    df["DISpread"] = (10_000 * df["DISpread"]).round(2)
+
+    # Make not fixed rate bonds have NaN spread
+    fixed_rate_bonds_mask = df["BondType"].isin(["LTN", "NTN-F"])
+    df.loc[~fixed_rate_bonds_mask, "DISpread"] = pd.NA
+
+    return df
 
 
 def get_anbima_rates(
