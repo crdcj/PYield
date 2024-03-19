@@ -23,7 +23,7 @@ pip install pyield
 ## How to use PYield
 ### Getting DI Futures Data
 ```python
-import pyield as pyd
+import pyield as yd
 
 # Get a pandas dataframe with the DI raw data from B3 (first date available is 05-06-1991)
 >>> yd.get_di(trade_date='2024-03-08', raw=True)

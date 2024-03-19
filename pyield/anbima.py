@@ -2,6 +2,7 @@ import pandas as pd
 from urllib.error import HTTPError
 
 from . import di_futures as di
+from . import br_calendar as cl
 
 
 def process_reference_date(
@@ -9,13 +10,12 @@ def process_reference_date(
 ) -> pd.Timestamp:
     if reference_date:
         # Force reference_date to be a pd.Timestamp
-        reference_date = pd.Timestamp(reference_date)
+        processed_date = pd.Timestamp(reference_date)
     else:  # If no reference_date is given, use yesterday's date
         today = pd.Timestamp.today().date()
-        yesterday = today - pd.Timedelta(days=1)
-        reference_date = yesterday
+        processed_date = cl.offset_bdays(today, -1)
 
-    return reference_date
+    return processed_date
 
 
 def get_raw_data(reference_date: pd.Timestamp, anbima_member: bool) -> pd.DataFrame:
@@ -87,7 +87,7 @@ def process_raw_data(df: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def get_anbima_rates(
+def get_treasuries_rates(
     reference_date: str | pd.Timestamp | None = None,
     return_raw=False,
     anbima_member=False,
@@ -111,7 +111,7 @@ def get_anbima_rates(
         return process_raw_data(df)
 
 
-def get_anbima_di_spreads(
+def get_treasuries_di_spreads(
     reference_date: str | pd.Timestamp | None = None,
     anbima_member=False,
 ) -> pd.DataFrame:
@@ -133,7 +133,7 @@ def get_anbima_di_spreads(
     # Ajustar o vencimento para o primeiro dia do mês para concidir com o formato dos títulos
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
-    df_anb = get_anbima_rates(
+    df_anb = get_treasuries_rates(
         reference_date=reference_date, anbima_member=anbima_member
     )
 
@@ -153,3 +153,11 @@ def get_anbima_di_spreads(
     select_columns = ["BondType", "ReferenceDate", "MaturityDate", "DISpread"]
     df = df[select_columns]
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
+
+
+def list_treasuries(
+    reference_date: str | pd.Timestamp | None = None, anbima_member=False
+) -> pd.DataFrame:
+    reference_date = process_reference_date(reference_date)
+    df = get_treasuries_rates(reference_date, anbima_member)
+    return df[["BondType", "ReferenceDate", "MaturityDate"]]
