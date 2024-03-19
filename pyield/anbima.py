@@ -4,38 +4,59 @@ from urllib.error import HTTPError
 from . import di_futures as di
 from . import br_calendar as cl
 
+# URL Constants
+ANBIMA_NON_MEMBER_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
+ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs/"
+
+# Constant for conversion to basis points
+BP_CONVERSION_FACTOR = 10_000
+
 
 def process_reference_date(
     reference_date: str | pd.Timestamp | None = None,
 ) -> pd.Timestamp:
-    if reference_date:
-        # Force reference_date to be a pd.Timestamp
+    """
+    Process the given reference date, converting it to a pandas Timestamp. If no date is provided,
+    use the previous business day based on the Brazilian calendar.
+
+    Parameters:
+    - reference_date (str | pd.Timestamp | None): The reference date to process.
+
+    Returns:
+    - pd.Timestamp: The processed reference date.
+    """
+    if reference_date:  # Force reference_date to be a pd.Timestamp
         processed_date = pd.Timestamp(reference_date)
-    else:  # If no reference_date is given, use yesterday's date
+    else:  # If no reference_date is given, use the previous business day
         today = pd.Timestamp.today().date()
         processed_date = cl.offset_bdays(today, -1)
 
     return processed_date
 
 
-def get_raw_data(reference_date: pd.Timestamp, anbima_member: bool) -> pd.DataFrame:
+def get_raw_data(
+    reference_date: str | pd.Timestamp | None = None, is_anbima_member: bool = False
+) -> pd.DataFrame:
     """
     Fetch indicative rates from ANBIMA for a specific date.
 
     Parameters:
-    - reference_date: pd.Timestamp for which to fetch the indicative rates.
-        If None, fetches yesterday's rates.
+    - reference_date (pd.Timestamp): Date for which to fetch the indicative rates.
+    - is_anbima_member (bool): Whether the request is being made by an ANBIMA member.
 
     Returns:
-    - A pandas DataFrame with the indicative rates for the given date.
+    - pd.DataFrame: DataFrame with the indicative rates for the given date.
     """
+    # Process the reference date, defaulting to the previous business day if not provided
+    validated_date = process_reference_date(reference_date)
 
-    # Example URL: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms231128.txt
-    url_date = reference_date.strftime("%y%m%d")
-    if anbima_member:
-        url = f"http://www.anbima.associados.rtm/merc_sec/arqs/ms{url_date}.txt"
-    else:
-        url = f"https://www.anbima.com.br/informacoes/merc-sec/arqs/ms{url_date}.txt"
+    # Format the date to match the URL format
+    url_date = validated_date.strftime("%y%m%d")
+
+    # Set the base URL according to the member status
+    base_url = ANBIMA_MEMBER_URL if is_anbima_member else ANBIMA_NON_MEMBER_URL
+    # url example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms231128.txt
+    url = f"{base_url}ms{url_date}.txt"
 
     try:
         df = pd.read_csv(
@@ -48,13 +69,22 @@ def get_raw_data(reference_date: pd.Timestamp, anbima_member: bool) -> pd.DataFr
             dtype_backend="numpy_nullable",
         )
     except HTTPError:
-        error_date = reference_date.strftime("%d-%m-%Y")
+        error_date = validated_date.strftime("%d-%m-%Y")
         raise ValueError(f"Failed to get ANBIMA rates for {error_date}")
 
     return df
 
 
 def process_raw_data(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Process raw data from ANBIMA by filtering selected columns, renaming them, and adjusting data formats.
+
+    Parameters:
+    - df (pd.DataFrame): Raw data DataFrame to process.
+
+    Returns:
+    - pd.DataFrame: Processed DataFrame.
+    """
     # Filter selected columns and rename them
     selected_columns_dict = {
         "Titulo": "BondType",
@@ -87,77 +117,79 @@ def process_raw_data(df: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def get_treasuries_rates(
+def get_treasury_rates(
     reference_date: str | pd.Timestamp | None = None,
     return_raw=False,
-    anbima_member=False,
+    is_anbima_member=False,
 ) -> pd.DataFrame:
     """
-    Fetch indicative rates from ANBIMA for a specific date.
+    Fetch and process indicative rates from ANBIMA for a specific date.
+    If no date is provided, the previous business day based on the Brazilian calendar
+    is used.
+
+     Parameters:
+     - reference_date (str | pd.Timestamp | None): Date for which to fetch the indicative rates.
+        If None, previous business day based on the Brazilian calendar is used.
+     - return_raw (bool): Whether to return raw data without processing.
+     - is_anbima_member (bool): Whether the request is being made by an ANBIMA member.
+
+     Returns:
+     - pd.DataFrame: DataFrame with the indicative rates for the given date.
+    """
+
+    df = get_raw_data(reference_date, is_anbima_member)
+
+    if not return_raw:
+        df = process_raw_data(df)
+
+    return df
+
+
+def calculate_treasury_di_spreads(
+    reference_date: str | pd.Timestamp | None = None,
+    is_anbima_member=False,
+) -> pd.DataFrame:
+    """
+    Calculate the DI spread for LTN and NTN-F bonds based on ANBIMA's indicative rates.
+    If no date is provided, the previous business day based on the Brazilian calendar
+    is used.
 
     Parameters:
-    - reference_date: pd.Timestamp for which to fetch the indicative rates.
-        If None, fetches yesterday's rates.
+    - reference_date (str | pd.Timestamp | None): The reference date for querying ANBIMA's indicative rates.
+        If None, the previous business day based on the Brazilian calendar is used.
+    - is_anbima_member (bool): Specifies whether the request is made by an ANBIMA member.
 
     Returns:
-    - A pandas DataFrame with the indicative rates for the given date.
+    - pd.DataFrame: A DataFrame containing the bond type, reference date, maturity date, and DI spread in basis points.
     """
-    reference_date = process_reference_date(reference_date)
-    df = get_raw_data(reference_date, anbima_member)
+    # Process the reference date, defaulting to the previous business day if not provided
+    validated_date = process_reference_date(reference_date)
 
-    if return_raw:
-        return df
-    else:
-        return process_raw_data(df)
+    # Fetch DI rates and adjust the maturity date format for compatibility
+    df_di = di.get_di(validated_date)[["ExpirationDate", "SettlementRate"]]
 
-
-def get_treasuries_di_spreads(
-    reference_date: str | pd.Timestamp | None = None,
-    anbima_member=False,
-) -> pd.DataFrame:
-    """
-    Calcula o prêmio (spread) com relação ao DI nas taxas indicativas da ANBIMA para os títulos LTN e NTN-F.
-    A coluna DISpread contém o prêmio em bps.
-
-    Parâmetros:
-    -----------
-    data_consulta : pd.Timestamp
-        A data de referência para a consulta das taxas indicativas da ANBIMA.
-    """
-    reference_date = process_reference_date(reference_date)
-
-    df_di = di.get_di(reference_date)[["ExpirationDate", "SettlementRate"]]
-
+    # Renaming the columns to match the ANBIMA structure
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
 
-    # Ajustar o vencimento para o primeiro dia do mês para concidir com o formato dos títulos
+    # Adjusting maturity date to match bond data format
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
-    df_anb = get_treasuries_rates(
-        reference_date=reference_date, anbima_member=anbima_member
+    # Fetch bond rates, filtering for LTN and NTN-F types
+    df_anbima = get_treasury_rates(
+        reference_date=validated_date, is_anbima_member=is_anbima_member
     )
+    df_anbima.query("BondType in ['LTN', 'NTN-F']", inplace=True)
 
-    # Filtrar apenas os títulos LTN e NTN-F
-    df_anb.query("BondType in ['LTN', 'NTN-F']", inplace=True)
+    # Merge bond and DI rates by maturity date to calculate spreads
+    df_final = pd.merge(df_anbima, df_di, how="left", on="MaturityDate")
 
-    # Unir os dois DataFrames
-    df = pd.merge(df_anb, df_di, how="left", on="MaturityDate")
+    # Calculating the DI spread as the difference between indicative and settlement rates
+    df_final["DISpread"] = df_final["IndicativeRate"] - df_final["SettlementRate"]
 
-    # Calcular o prêmio implícito na taxa da ANBIMA
-    df["DISpread"] = df["IndicativeRate"] - df["SettlementRate"]
-    df.drop(columns="SettlementRate", inplace=True)
+    # Convert spread to basis points for clarity
+    df_final["DISpread"] = (BP_CONVERSION_FACTOR * df_final["DISpread"]).round(2)
 
-    # Converter o prêmio para bps e arredondar para 2 casas decimais
-    df["DISpread"] = (10_000 * df["DISpread"]).round(2)
-
+    # Prepare and return the final sorted DataFrame
     select_columns = ["BondType", "ReferenceDate", "MaturityDate", "DISpread"]
-    df = df[select_columns]
-    return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
-
-
-def list_treasuries(
-    reference_date: str | pd.Timestamp | None = None, anbima_member=False
-) -> pd.DataFrame:
-    reference_date = process_reference_date(reference_date)
-    df = get_treasuries_rates(reference_date, anbima_member)
-    return df[["BondType", "ReferenceDate", "MaturityDate"]]
+    df_final = df_final[select_columns].copy()
+    return df_final.sort_values(["BondType", "MaturityDate"], ignore_index=True)
