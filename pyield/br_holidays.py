@@ -2,12 +2,11 @@ from pathlib import Path
 from typing import Literal
 
 import pandas as pd
-import numpy as np
 
 
 class BRHolidays:
     # The date (inclusive) when the new holidays list starts to be valid
-    TRANSITION_DATE = np.datetime64("2023-12-26", "D")
+    TRANSITION_DATE = pd.to_datetime("2023-12-26")
 
     def __init__(self):
         current_dir = Path(__file__).parent
@@ -16,34 +15,32 @@ class BRHolidays:
         self.new_holidays = self._load_holidays(new_holidays_path)
         self.old_holidays = self._load_holidays(old_holidays_path)
 
-    def _load_holidays(self, file_path: Path) -> np.array:
+    def _load_holidays(self, file_path: Path) -> pd.Series:
         df = pd.read_csv(file_path, header=None, names=["date"], comment="#")
-        holiday_dates = pd.to_datetime(df["date"], format="%d/%m/%Y")
-        # Return the dates as a numpy array of datetime64[D]
-        return holiday_dates.values.astype("datetime64[D]")
+        # Convert the dates to pandas datetime format
+        return pd.to_datetime(df["date"], format="%d/%m/%Y")
 
     def get_applicable_holidays(
         self,
-        dates: np.datetime64 | np.ndarray,
+        dates: pd.Timestamp | pd.Series,
         holiday_list: Literal["old", "new", "infer"] = "infer",
-    ) -> np.array:
+    ) -> pd.Series:
         """
         Returns the correct list of holidays to use based on the most recent date in the input.
 
         Args:
-            dates (np.datetime64 | np.ndarray): The date(s) to use to determine the list of
-                holidays.
+            dates (pd.Timestamp | pd.Series): The date(s) to use to infer the holidays.
             holiday_list (str): The holidays list to use. Valid options are 'old', 'new' or
                 'infer'. If 'infer' is used, the list of holidays is selected based on the
                 earliest (minimum) date in the input.
 
         Returns:
-            np.array: The list of holidays to use.
+            pd.Series: The list of holidays to use.
         """
-        if isinstance(dates, np.datetime64):
+        if isinstance(dates, pd.Timestamp):
             earliest_date = dates
         else:
-            earliest_date = np.min(dates)
+            earliest_date = dates.min()
 
         match holiday_list:
             case "old":

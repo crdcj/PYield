@@ -68,17 +68,16 @@ def offset_bdays(
         >>> yd.offset_bdays(date, -1)
         Timestamp('2023-12-21') # Offset to the previous business day
     """
+    selected_holidays = br_holidays.get_applicable_holidays(dates, holiday_list)
+    selected_holidays_np = convert_to_numpy_date(selected_holidays)
+
     dates_np = convert_to_numpy_date(dates)
-
-    selected_holidays = br_holidays.get_applicable_holidays(dates_np, holiday_list)
-
-    # Offset the dates
-    offsetted_dates = np.busday_offset(
-        dates_np, offsets=offset, roll="forward", holidays=selected_holidays
+    offsetted_dates_np = np.busday_offset(
+        dates_np, offsets=offset, roll="forward", holidays=selected_holidays_np
     )
 
     # Convert the dates back to a pandas datetime64[ns] format
-    return pd.to_datetime(offsetted_dates, unit="ns")
+    return pd.to_datetime(offsetted_dates_np, unit="ns")
 
 
 def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infer"):
@@ -124,8 +123,9 @@ def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infe
 
     # Determine which list of holidays to use
     selected_holidays = br_holidays.get_applicable_holidays(start_np, holiday_list)
+    selected_holidays_np = convert_to_numpy_date(selected_holidays)
 
-    return np.busday_count(start_np, end_np, holidays=selected_holidays)
+    return np.busday_count(start_np, end_np, holidays=selected_holidays_np)
 
 
 def generate_bdays(
@@ -181,8 +181,7 @@ def generate_bdays(
     if end is None:
         end = pd.Timestamp.today()
 
-    start_np = convert_to_numpy_date(start)
-    selected_holidays = br_holidays.get_applicable_holidays(start_np, holiday_list)
+    selected_holidays = br_holidays.get_applicable_holidays(start, holiday_list)
 
     return pd.bdate_range(
         start, end, freq="C", inclusive=inclusive, holidays=selected_holidays, **kwargs

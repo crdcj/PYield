@@ -9,10 +9,11 @@
 Welcome to PYield, a Python library designed for the analysis of fixed income instruments in Brazil. This library is tailored for financial analysts, researchers, and enthusiasts interested in the Brazilian fixed income market. Leveraging the power of popular Python libraries like Pandas and Requests, PYield simplifies the process of obtaining and processing data from key sources such as Tesouro Nacional (TN), Banco Central (BC), ANBIMA, and B3.
 ## Features
 
-- Data Collection: Automated fetching of data from TN, BC, ANBIMA, and B3.
-- Data Processing: Efficient processing and normalization of fixed income data.
-- Analysis Tools: Built-in functions for common analysis tasks in fixed income markets.
-- Easy Integration: Seamless integration with Python data analysis workflows.
+- **Data Collection**: Automated fetching of data from BC, ANBIMA and B3.
+- **Data Processing**: Efficient processing and normalization of fixed income data.
+- **Analysis Tools**: Built-in functions for common analysis tasks in fixed income markets.
+- **Easy Integration**: Seamless integration with Python data analysis workflows.
+- **Type Hints**: Full support for static type checking, enhancing development experience and code quality.
 
 ## Installation
 
@@ -24,17 +25,6 @@ pip install pyield
 ### Getting DI Futures Data
 ```python
 import pyield as yd
-
-# Get a pandas dataframe with the DI raw data from B3 (first date available is 05-06-1991)
->>> yd.get_di(trade_date='2024-03-08', raw=True)
-VENCTO  CONTR. ABERT.(1)  CONTR. FECH.(2)  NÚM. NEGOC.  ...     AJUSTE  VAR. PTOS.  ÚLT.OF. COMPRA  ÚLT.OF. VENDA
-   J24           3608626          3608626          294  ... 99,383.080       0,17-          10.952         10.956
-   K24            607759           607759          179  ... 98,508.490       0,03+          10.774         10.780
-   M24            339641           339641          194  ... 97,706.210       1,68-          10.602         10.604
-   ...               ...              ...          ...  ...        ...         ...             ...            ...
-   F37              3517             3517            0  ... 26,863.980     336,32-           0.000          0.000
-   F38              2200             2200            0  ... 24,262.320     327,41-           0.000          0.000
-   F39                 0                0            0  ... 21,894.700     317,01-           0.000          0.000
 
 # Get a pandas dataframe with the DI processed data from B3 (default)
 >>> yd.get_di(trade_date='2024-03-08')
