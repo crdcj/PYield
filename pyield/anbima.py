@@ -28,7 +28,7 @@ def process_reference_date(
     if reference_date:  # Force reference_date to be a pd.Timestamp
         processed_date = pd.Timestamp(reference_date)
     else:  # If no reference_date is given, use the previous business day
-        today = pd.Timestamp.today().date()
+        today = pd.Timestamp.today().normalize()
         processed_date = cl.offset_bdays(today, -1)
 
     return processed_date

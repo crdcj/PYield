@@ -190,12 +190,13 @@ def generate_bdays(
         end_pd = pd.Timestamp.today().normalize()
 
     selected_holidays = br_holidays.get_applicable_holidays(start_pd, holiday_list)
+    selected_holidays_list = selected_holidays.to_list()
 
     return pd.bdate_range(
         start_pd,
         end_pd,
         freq="C",
         inclusive=inclusive,
-        holidays=selected_holidays,
+        holidays=selected_holidays_list,
         # **kwargs,
     )
