@@ -10,7 +10,7 @@ br_holidays = BRHolidays()
 
 
 def convert_to_numpy_date(
-    dates: str | pd.Timestamp | pd.Series,
+    dates: pd.Timestamp | pd.Series,
 ) -> np.datetime64 | np.ndarray:
     """
     Converts the input dates to a numpy datetime64[D] format.
@@ -21,13 +21,10 @@ def convert_to_numpy_date(
     Returns:
         np.datetime64 | np.ndarray: The input dates in a numpy datetime64[D] format.
     """
-    # Assure that the input is in pandas datetime64[ns] format
-    dates_pd = pd.to_datetime(dates)
-
-    if isinstance(dates_pd, pd.Timestamp):
-        return np.datetime64(dates_pd, "D")
+    if isinstance(dates, pd.Timestamp):
+        return np.datetime64(dates, "D")
     else:
-        return dates_pd.to_numpy().astype("datetime64[D]")
+        return dates.to_numpy().astype("datetime64[D]")
 
 
 def offset_bdays(
@@ -68,10 +65,13 @@ def offset_bdays(
         >>> yd.offset_bdays(date, -1)
         Timestamp('2023-12-21') # Offset to the previous business day
     """
-    selected_holidays = br_holidays.get_applicable_holidays(dates, holiday_list)
+    # Assure that the input is in pandas datetime64[ns] format
+    dates_pd = pd.to_datetime(dates)
+
+    selected_holidays = br_holidays.get_applicable_holidays(dates_pd, holiday_list)
     selected_holidays_np = convert_to_numpy_date(selected_holidays)
 
-    dates_np = convert_to_numpy_date(dates)
+    dates_np = convert_to_numpy_date(dates_pd)
     offsetted_dates_np = np.busday_offset(
         dates_np, offsets=offset, roll="forward", holidays=selected_holidays_np
     )
@@ -117,12 +117,16 @@ def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infe
         >>> yd.count_bdays(start, end)
         array([22, 40])
     """
+    # Assure that the inputs are in pandas datetime64[ns] format
+    start_pd = pd.to_datetime(start)
+    end_pd = pd.to_datetime(end)
+
     # Convert inputs to a Series of datetime64[ns] even if a single value was passed
-    start_np = convert_to_numpy_date(start)
-    end_np = convert_to_numpy_date(end)
+    start_np = convert_to_numpy_date(start_pd)
+    end_np = convert_to_numpy_date(end_pd)
 
     # Determine which list of holidays to use
-    selected_holidays = br_holidays.get_applicable_holidays(start_np, holiday_list)
+    selected_holidays = br_holidays.get_applicable_holidays(start, holiday_list)
     selected_holidays_np = convert_to_numpy_date(selected_holidays)
 
     return np.busday_count(start_np, end_np, holidays=selected_holidays_np)
@@ -176,13 +180,18 @@ def generate_bdays(
         dtype: object
     """
     if start is None:
-        start = pd.Timestamp.today()
+        start_pd = pd.Timestamp.today()
 
     if end is None:
-        end = pd.Timestamp.today()
+        end_pd = pd.Timestamp.today()
 
-    selected_holidays = br_holidays.get_applicable_holidays(start, holiday_list)
+    selected_holidays = br_holidays.get_applicable_holidays(start_pd, holiday_list)
 
     return pd.bdate_range(
-        start, end, freq="C", inclusive=inclusive, holidays=selected_holidays, **kwargs
+        start_pd,
+        end_pd,
+        freq="C",
+        inclusive=inclusive,
+        holidays=selected_holidays,
+        **kwargs,
     )
