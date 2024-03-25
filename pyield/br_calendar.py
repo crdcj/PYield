@@ -3,10 +3,10 @@ from typing import Literal
 import pandas as pd
 import numpy as np
 
-from .br_holidays import BRHolidays
+from .br_holidays import BrHolidays
 
 # Instância global da classe Holidays
-br_holidays = BRHolidays()
+br_holidays = BrHolidays()
 
 
 def convert_to_numpy_date(
@@ -133,8 +133,8 @@ def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infe
 
 
 def generate_bdays(
-    start=None,
-    end=None,
+    start: str | pd.Timestamp | None = None,
+    end: str | pd.Timestamp | None = None,
     inclusive="both",
     holiday_list: Literal["old", "new", "infer"] = "infer",
     **kwargs,
@@ -179,11 +179,15 @@ def generate_bdays(
         2023-12-29    2023-12-29
         dtype: object
     """
-    if start is None:
-        start_pd = pd.Timestamp.today()
+    if start:
+        start_pd = pd.to_datetime(start)
+    else:
+        start_pd = pd.Timestamp.today().normalize()
 
-    if end is None:
-        end_pd = pd.Timestamp.today()
+    if end:
+        end_pd = pd.to_datetime(end)
+    else:
+        end_pd = pd.Timestamp.today().normalize()
 
     selected_holidays = br_holidays.get_applicable_holidays(start_pd, holiday_list)
 
@@ -193,5 +197,5 @@ def generate_bdays(
         freq="C",
         inclusive=inclusive,
         holidays=selected_holidays,
-        **kwargs,
+        # **kwargs,
     )

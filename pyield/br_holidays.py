@@ -4,7 +4,7 @@ from typing import Literal
 import pandas as pd
 
 
-class BRHolidays:
+class BrHolidays:
     # The date (inclusive) when the new holidays list starts to be valid
     TRANSITION_DATE = pd.to_datetime("2023-12-26")
 
@@ -16,8 +16,9 @@ class BRHolidays:
         self.old_holidays = self._load_holidays(old_holidays_path)
 
     def _load_holidays(self, file_path: Path) -> pd.Series:
+        """Loads the list of holidays from a text file and returns it as a pd.Series of pd.Timestamp."""
         df = pd.read_csv(file_path, header=None, names=["date"], comment="#")
-        # Convert the dates to pandas datetime format
+        # Convert the dates to a pd.Series of pd.Timestamp
         return pd.to_datetime(df["date"], format="%d/%m/%Y")
 
     def get_applicable_holidays(
@@ -48,7 +49,7 @@ class BRHolidays:
             case "new":
                 return self.new_holidays
             case "infer":
-                if earliest_date < BRHolidays.TRANSITION_DATE:
+                if earliest_date < BrHolidays.TRANSITION_DATE:
                     return self.old_holidays
                 else:
                     return self.new_holidays
