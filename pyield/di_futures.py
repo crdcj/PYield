@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 from pathlib import Path
 import pandas as pd
 import pandas.api.types
@@ -8,7 +8,7 @@ from . import di_xml as dix
 from . import br_calendar as brc
 
 
-def get_expiration_date(expiration_code: str) -> pd.Timestamp | pd.NaTType:
+def get_expiration_date(expiration_code: str) -> Optional[pd.Timestamp]:
     """
     Internal function to convert the expiration code into its expiration date.
 
@@ -67,7 +67,7 @@ def get_expiration_date(expiration_code: str) -> pd.Timestamp | pd.NaTType:
         return brc.offset_bdays(expiration, offset=0)
 
     except (KeyError, ValueError):
-        return pd.NaT
+        return pd.NaT  # type: ignore
 
 
 def get_di(
