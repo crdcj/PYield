@@ -121,13 +121,13 @@ def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infe
     start_pd = pd.to_datetime(start)
     end_pd = pd.to_datetime(end)
 
-    # Convert inputs to a Series of datetime64[ns] even if a single value was passed
+    # Determine which list of holidays to use
+    selected_holidays = br_holidays.get_applicable_holidays(start_pd, holiday_list)
+    selected_holidays_np = convert_to_numpy_date(selected_holidays)
+
+    # Convert inputs to numpy datetime64[D] before calling numpy.busday_count
     start_np = convert_to_numpy_date(start_pd)
     end_np = convert_to_numpy_date(end_pd)
-
-    # Determine which list of holidays to use
-    selected_holidays = br_holidays.get_applicable_holidays(start, holiday_list)
-    selected_holidays_np = convert_to_numpy_date(selected_holidays)
 
     return np.busday_count(start_np, end_np, holidays=selected_holidays_np)
 
@@ -198,5 +198,5 @@ def generate_bdays(
         freq="C",
         inclusive=inclusive,
         holidays=selected_holidays_list,
-        # **kwargs,
+        **kwargs,
     )
