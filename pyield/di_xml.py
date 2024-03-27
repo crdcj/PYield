@@ -57,7 +57,7 @@ def extract_xml_from_zip(zip_file: io.BytesIO) -> io.BytesIO:
     return io.BytesIO(inner_file_content)
 
 
-def extract_di_data_from_xml(xml_file: io.BytesIO) -> list:
+def extract_di_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
     parser = etree.XMLParser(
         ns_clean=True, remove_blank_text=True, remove_comments=True, recover=True
     )
@@ -69,18 +69,38 @@ def extract_di_data_from_xml(xml_file: io.BytesIO) -> list:
         '//ns:TckrSymb[starts-with(text(), "DI1")]', namespaces=namespaces
     )
 
-    # Lista para armazenar os dados
+    if (
+        tckr_symbols is None
+        or not isinstance(tckr_symbols, list)
+        or len(tckr_symbols) == 0
+    ):
+        return []
+
+    # Lista para armazenar os dados com type hinting
+    # di_data: list[dict] = []
     di_data = []
 
     # Processar cada TckrSymb encontrado
     for tckr_symb in tckr_symbols:
-        # Acessar o elemento PricRpt que contém o TckrSymb
-        price_report = tckr_symb.getparent().getparent()
+        if isinstance(tckr_symb, etree._Element):
+            price_report = tckr_symb.getparent()
+            if price_report is not None:
+                price_report = price_report.getparent()
+            else:
+                # Handle the case where tckr_symb doesn't have a parent
+                continue
+        else:
+            # Handle the case where tckr_symb is not an _Element
+            continue
 
         # Extrair a data de negociação
+        if price_report is None:
+            continue
         trade_date = price_report.find(".//ns:TradDt/ns:Dt", namespaces)
 
         # Preparar o dicionário de dados do ticker com a data de negociação
+        if trade_date is None:
+            continue
         ticker_data = {"TradDt": trade_date.text, "TckrSymb": tckr_symb.text}
 
         # Acessar o elemento FinInstrmAttrbts que contém o TckrSymb
