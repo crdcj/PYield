@@ -26,10 +26,18 @@ def process_reference_date(
     - pd.Timestamp: The processed reference date.
     """
     if reference_date:  # Force reference_date to be a pd.Timestamp
-        processed_date = pd.Timestamp(reference_date)
+        processed_date = pd.to_datetime(reference_date)
     else:  # If no reference_date is given, use the previous business day
         today = pd.Timestamp.today().normalize()
         processed_date = cl.offset_bdays(today, -1)
+
+    # Check if the reference date is Timestamp
+    if not isinstance(processed_date, pd.Timestamp):
+        raise ValueError("Reference date must be a pandas Timestamp.")
+
+    # Raise an error if the reference date is in the future
+    if processed_date > pd.Timestamp.today().normalize():
+        raise ValueError("Reference date cannot be in the future.")
 
     return processed_date
 

@@ -31,7 +31,7 @@ def offset_bdays(
     dates: str | pd.Timestamp | pd.Series,
     offset: int,
     holiday_list: Literal["old", "new", "infer"] = "infer",
-):
+) -> pd.Timestamp | pd.Series:
     """
     Offsets the dates to the next or previous business day. This function is a wrapper
     for `numpy.busday_offset` to be used directly with Pandas data types that infers the
@@ -75,9 +75,10 @@ def offset_bdays(
     offsetted_dates_np = np.busday_offset(
         dates_np, offsets=offset, roll="forward", holidays=selected_holidays_np
     )
-
     # Convert the dates back to a pandas datetime64[ns] format
-    return pd.to_datetime(offsetted_dates_np, unit="ns")
+    offsetted_dates_pd = pd.to_datetime(offsetted_dates_np, unit="ns")
+
+    return offsetted_dates_pd
 
 
 def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infer"):
