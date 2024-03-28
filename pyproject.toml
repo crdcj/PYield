@@ -34,4 +34,9 @@ Source = "https://github.com/crdcj/PYield"
 version = { source = "file", path = "pyield/__about__.py" }
 distribution = true
 [tool.pdm.dev-dependencies]
-dev = ["ipykernel", "pytest", "mypy"]
+dev = [
+    "ipykernel",
+    "pytest",
+    "mypy",
+    "pyright>=1.1.356",
+]

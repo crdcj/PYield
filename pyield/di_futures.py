@@ -1,14 +1,15 @@
-from typing import Literal, Optional
+from typing import Literal
 from pathlib import Path
+
 import pandas as pd
-import pandas.api.types
+from pandas._libs.tslibs.nattype import NaTType
 
 from . import di_web as diw
 from . import di_xml as dix
 from . import br_calendar as brc
 
 
-def get_expiration_date(expiration_code: str) -> Optional[pd.Timestamp]:
+def get_expiration_date(expiration_code: str) -> pd.Timestamp | NaTType:
     """
     Internal function to convert the expiration code into its expiration date.
 
@@ -63,11 +64,14 @@ def get_expiration_date(expiration_code: str) -> Optional[pd.Timestamp]:
         year = int("20" + expiration_code[-2:])
         # The expiration date is always the first business day of the month
         expiration = pd.Timestamp(year, month, 1)
+
         # Adjust to the next business day when expiration date is a weekend or a holiday
-        return brc.offset_bdays(expiration, offset=0)
+        adj_expiration = brc.offset_bdays(expiration, offset=0)
+
+        return pd.Timestamp(adj_expiration)
 
     except (KeyError, ValueError):
-        return pd.NaT  # type: ignore
+        return pd.NaT
 
 
 def get_di(

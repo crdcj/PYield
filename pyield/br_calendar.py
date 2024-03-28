@@ -2,6 +2,7 @@ from typing import Literal
 
 import pandas as pd
 import numpy as np
+from pandas._libs.tslibs.nattype import NaTType
 
 from .br_holidays import BrHolidays
 
@@ -28,7 +29,7 @@ def convert_to_numpy_date(
 
 
 def offset_bdays(
-    dates: str | pd.Timestamp | pd.Series,
+    dates: str | pd.Timestamp | pd.Series | NaTType,
     offset: int,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Timestamp | pd.Series:
@@ -75,10 +76,10 @@ def offset_bdays(
     offsetted_dates_np = np.busday_offset(
         dates_np, offsets=offset, roll="forward", holidays=selected_holidays_np
     )
-    # Convert the dates back to a pandas datetime64[ns] format
-    offsetted_dates_pd = pd.to_datetime(offsetted_dates_np, unit="ns")
-
-    return offsetted_dates_pd
+    if isinstance(offsetted_dates_np, np.datetime64):
+        return pd.Timestamp(offsetted_dates_np, unit="ns")
+    else:
+        return pd.to_datetime(offsetted_dates_np, unit="ns")
 
 
 def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infer"):
