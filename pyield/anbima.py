@@ -29,7 +29,7 @@ def process_reference_date(
         processed_date = pd.to_datetime(reference_date)
     else:  # If no reference_date is given, use the previous business day
         today = pd.Timestamp.today().normalize()
-        processed_date = cl.offset_bdays(today, -1)
+        processed_date = cl.offset_bdays(today, -1)  # type: ignore
 
     # Check if the reference date is Timestamp
     if not isinstance(processed_date, pd.Timestamp):
@@ -83,7 +83,7 @@ def get_raw_data(
     return df
 
 
-def process_raw_data(df: pd.DataFrame) -> pd.DataFrame:
+def process_raw_data(df_raw: pd.DataFrame) -> pd.DataFrame:
     """
     Process raw data from ANBIMA by filtering selected columns, renaming them, and adjusting data formats.
 
@@ -112,8 +112,8 @@ def process_raw_data(df: pd.DataFrame) -> pd.DataFrame:
         # "Criterio": "Criteria",
     }
     select_columns = list(selected_columns_dict.keys())
-    df = df[select_columns].copy()
-    df.rename(columns=selected_columns_dict, inplace=True)
+    df = df_raw[select_columns].copy()
+    df = df.rename(columns=selected_columns_dict)
 
     # Remove percentage from rates
     rate_cols = ["BidRate", "AskRate", "IndicativeRate"]

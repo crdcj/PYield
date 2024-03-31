@@ -1,7 +1,8 @@
 from typing import Literal
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+from pandas import Series, Timestamp
 from pandas._libs.tslibs.nattype import NaTType
 
 from .br_holidays import BrHolidays
@@ -10,9 +11,45 @@ from .br_holidays import BrHolidays
 br_holidays = BrHolidays()
 
 
-def convert_to_numpy_date(
-    dates: pd.Timestamp | pd.Series,
-) -> np.datetime64 | np.ndarray:
+def format_input_date(date: str | Timestamp | None) -> Timestamp:
+    """
+    Formats the input date to a pandas Timestamp. If the input date is None, the
+    current date is used.
+
+    Args:
+        date (str | pd.Timestamp | None): A single date or a Series of dates.
+
+    Returns:
+        pd.Timestamp: The input date in a pandas Timestamp format.
+    """
+    if date:
+        result = pd.to_datetime(date)
+    else:
+        result = pd.Timestamp.today().normalize()
+
+    if result is pd.NaT:
+        raise ValueError("Invalid date format.")
+
+    return result
+
+
+def format_input_dates(dates: Series) -> Series:
+    """
+    Formats the input dates to a pandas Series of Timestamps.
+
+    Args:
+        dates (pd.Series): A Series of dates.
+
+    Returns:
+        pd.Series: The input dates in a pandas Series of Timestamps format.
+    """
+    result = pd.to_datetime(dates)
+    if result is pd.NaT:
+        raise ValueError("Invalid date format.")
+    return result
+
+
+def convert_to_numpy_date(dates: Timestamp | Series) -> np.datetime64 | np.ndarray:
     """
     Converts the input dates to a numpy datetime64[D] format.
 
@@ -29,10 +66,10 @@ def convert_to_numpy_date(
 
 
 def offset_bdays(
-    dates: str | pd.Timestamp | pd.Series | NaTType,
+    dates: str | Timestamp | Series | None,
     offset: int,
     holiday_list: Literal["old", "new", "infer"] = "infer",
-) -> pd.Timestamp | pd.Series:
+) -> Timestamp | Series | NaTType:
     """
     Offsets the dates to the next or previous business day. This function is a wrapper
     for `numpy.busday_offset` to be used directly with Pandas data types that infers the
@@ -66,23 +103,34 @@ def offset_bdays(
         >>> yd.offset_bdays(date, -1)
         Timestamp('2023-12-21') # Offset to the previous business day
     """
-    # Assure that the input is in pandas datetime64[ns] format
-    dates_pd = pd.to_datetime(dates)
+    if isinstance(dates, Series):
+        formatted_dates = format_input_dates(dates)
+    elif isinstance(dates, str | Timestamp | None):
+        formatted_dates = format_input_date(dates)
+    else:
+        raise ValueError("Invalid input date format.")
 
-    selected_holidays = br_holidays.get_applicable_holidays(dates_pd, holiday_list)
+    selected_holidays = br_holidays.get_applicable_holidays(
+        formatted_dates, holiday_list
+    )
     selected_holidays_np = convert_to_numpy_date(selected_holidays)
 
-    dates_np = convert_to_numpy_date(dates_pd)
+    dates_np = convert_to_numpy_date(formatted_dates)
     offsetted_dates_np = np.busday_offset(
         dates_np, offsets=offset, roll="forward", holidays=selected_holidays_np
     )
     if isinstance(offsetted_dates_np, np.datetime64):
         return pd.Timestamp(offsetted_dates_np, unit="ns")
     else:
-        return pd.to_datetime(offsetted_dates_np, unit="ns")
+        result = pd.to_datetime(offsetted_dates_np, unit="ns")
+        return pd.Series(result)
 
 
-def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infer"):
+def count_bdays(
+    start: str | Timestamp | Series | None = None,
+    end: str | Timestamp | Series | None = None,
+    holiday_list: Literal["old", "new", "infer"] = "infer",
+) -> int | Series:
     """
     Counts the number of business days between a `start` (inclusive) and `end`
     (exclusive). If an end date is earlier than the start date, the count will be
@@ -90,16 +138,15 @@ def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infe
     with Pandas data types.
 
     Args:
-        start (str | pd.Timestamp, optional): The start date. Defaults to None.
-        end (str | pd.Timestamp optional): The end date. Defaults to None.
+        start (str | Timestamp, optional): The start date. Defaults to None.
+        end (str | Timestamp optional): The end date. Defaults to None.
         holiday_list (str, optional): The list of holidays to use. Defaults to "infer",
             which infers the right list of holidays based on the most recent date in
             the input.
 
     Returns:
-        np.int64 | np.ndarray: The number of business days between the start date and
-        end dates. Returns a single integer if `end` is a single Timestamp, otherwise
-        returns an ndarray of integers.
+        int | pd.Series: The number of business days between the start date and end date.
+        Returns an integer if the result is a single value, otherwise returns a Series.
 
     Notes:
         - For more information on error handling, see numpy.busday_count documentation at
@@ -117,30 +164,42 @@ def count_bdays(start, end, holiday_list: Literal["old", "new", "infer"] = "infe
         >>> start = '2023-01-01'
         >>> end = pd.to_datetime(['2023-01-31', '2023-03-01'])
         >>> yd.count_bdays(start, end)
-        array([22, 40])
+        pd.Series([22, 40], dtype='int64')
     """
-    # Assure that the inputs are in pandas datetime64[ns] format
-    start_pd = pd.to_datetime(start)
-    end_pd = pd.to_datetime(end)
+    if isinstance(start, Series):
+        formatted_start = format_input_dates(start)
+    else:
+        formatted_start = format_input_date(start)
+
+    if isinstance(end, Series):
+        formatted_end = format_input_dates(end)
+    else:
+        formatted_end = format_input_date(end)
 
     # Determine which list of holidays to use
-    selected_holidays = br_holidays.get_applicable_holidays(start_pd, holiday_list)
+    selected_holidays = br_holidays.get_applicable_holidays(
+        formatted_start, holiday_list
+    )
     selected_holidays_np = convert_to_numpy_date(selected_holidays)
 
     # Convert inputs to numpy datetime64[D] before calling numpy.busday_count
-    start_np = convert_to_numpy_date(start_pd)
-    end_np = convert_to_numpy_date(end_pd)
+    start_np = convert_to_numpy_date(formatted_start)
+    end_np = convert_to_numpy_date(formatted_end)
 
-    return np.busday_count(start_np, end_np, holidays=selected_holidays_np)
+    result_np = np.busday_count(start_np, end_np, holidays=selected_holidays_np)
+    if isinstance(result_np, np.int64):
+        return result_np
+    else:
+        return pd.Series(result_np)
 
 
 def generate_bdays(
-    start: str | pd.Timestamp | None = None,
-    end: str | pd.Timestamp | None = None,
+    start: str | Timestamp | None = None,
+    end: str | Timestamp | None = None,
     inclusive="both",
     holiday_list: Literal["old", "new", "infer"] = "infer",
     **kwargs,
-) -> pd.DatetimeIndex:
+) -> Series:
     """
     Generates a Series of business days between a `start` (inclusive) and `end`
     (inclusive) that takes into account the list of brazilian holidays as the default.
@@ -181,24 +240,20 @@ def generate_bdays(
         2023-12-29    2023-12-29
         dtype: object
     """
-    if start:
-        start_pd = pd.to_datetime(start)
-    else:
-        start_pd = pd.Timestamp.today().normalize()
+    formatted_start = format_input_date(start)
+    formatted_end = format_input_date(end)
 
-    if end:
-        end_pd = pd.to_datetime(end)
-    else:
-        end_pd = pd.Timestamp.today().normalize()
-
-    selected_holidays = br_holidays.get_applicable_holidays(start_pd, holiday_list)
+    selected_holidays = br_holidays.get_applicable_holidays(
+        formatted_start, holiday_list
+    )
     selected_holidays_list = selected_holidays.to_list()
 
-    return pd.bdate_range(
-        start_pd,
-        end_pd,
+    result = pd.bdate_range(
+        formatted_start,
+        formatted_end,
         freq="C",
         inclusive=inclusive,
         holidays=selected_holidays_list,
         **kwargs,
     )
+    return pd.Series(result)
