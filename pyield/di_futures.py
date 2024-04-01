@@ -2,14 +2,14 @@ from typing import Literal
 from pathlib import Path
 
 import pandas as pd
-from pandas._libs.tslibs.nattype import NaTType
+from pandas import DataFrame, Timestamp
 
 from . import di_web as diw
 from . import di_xml as dix
 from . import br_calendar as brc
 
 
-def get_expiration_date(expiration_code: str) -> pd.Timestamp | NaTType:
+def get_expiration_date(expiration_code: str) -> Timestamp:
     """
     Internal function to convert the expiration code into its expiration date.
 
@@ -71,11 +71,11 @@ def get_expiration_date(expiration_code: str) -> pd.Timestamp | NaTType:
         return adj_expiration
 
     except (KeyError, ValueError):
-        return pd.NaT
+        raise ValueError("Invalid expiration code.")
 
 
 def get_di(
-    trade_date: str | pd.Timestamp,
+    trade_date: str | Timestamp,
     source_type: Literal["bmf", "b3", "b3s"] = "bmf",
     return_raw: bool = False,
 ) -> pd.DataFrame:
@@ -125,7 +125,7 @@ def get_di(
         raise ValueError("source_type must be either 'bmf', 'b3' or 'b3s'.")
 
 
-def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
+def read_di(file_path: Path, return_raw: bool = False) -> DataFrame:
     """
     Reads a DI futures data file and returns a DataFrame.
 
