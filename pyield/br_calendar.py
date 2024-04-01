@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, overload
 
 import numpy as np
 import pandas as pd
@@ -11,42 +11,29 @@ from .br_holidays import BrHolidays
 br_holidays = BrHolidays()
 
 
-def format_input_date(date: str | Timestamp | None) -> Timestamp:
-    """
-    Formats the input date to a pandas Timestamp. If the input date is None, the
-    current date is used.
-
-    Args:
-        date (str | pd.Timestamp | None): A single date or a Series of dates.
-
-    Returns:
-        pd.Timestamp: The input date in a pandas Timestamp format.
-    """
-    if date:
-        result = pd.to_datetime(date)
-    else:
-        result = pd.Timestamp.today().normalize()
-
-    if result is pd.NaT:
-        raise ValueError("Invalid date format.")
-
-    return result
+@overload
+def format_input_dates(dates: None) -> Timestamp: ...
 
 
-def format_input_dates(dates: Series) -> Series:
-    """
-    Formats the input dates to a pandas Series of Timestamps.
+@overload
+def format_input_dates(dates: str | Timestamp) -> Timestamp: ...
 
-    Args:
-        dates (pd.Series): A Series of dates.
 
-    Returns:
-        pd.Series: The input dates in a pandas Series of Timestamps format.
-    """
+@overload
+def format_input_dates(dates: Series) -> Series: ...
+
+
+# Implementação da função que atende às sobrecargas acima
+def format_input_dates(dates: str | Timestamp | Series | None) -> Timestamp | Series:
+    if dates is None:
+        return pd.Timestamp.today().normalize()
     result = pd.to_datetime(dates)
-    if result is pd.NaT:
+    if isinstance(result, pd.Series):
+        return result
+    elif result is pd.NaT:
         raise ValueError("Invalid date format.")
-    return result
+    else:
+        return pd.Timestamp(result).normalize()
 
 
 def convert_to_numpy_date(dates: Timestamp | Series) -> np.datetime64 | np.ndarray:
@@ -69,7 +56,7 @@ def offset_bdays(
     dates: str | Timestamp | Series | None,
     offset: int,
     holiday_list: Literal["old", "new", "infer"] = "infer",
-) -> Timestamp | Series | NaTType:
+) -> Timestamp | Series:
     """
     Offsets the dates to the next or previous business day. This function is a wrapper
     for `numpy.busday_offset` to be used directly with Pandas data types that infers the
@@ -103,12 +90,7 @@ def offset_bdays(
         >>> yd.offset_bdays(date, -1)
         Timestamp('2023-12-21') # Offset to the previous business day
     """
-    if isinstance(dates, Series):
-        formatted_dates = format_input_dates(dates)
-    elif isinstance(dates, str | Timestamp | None):
-        formatted_dates = format_input_date(dates)
-    else:
-        raise ValueError("Invalid input date format.")
+    formatted_dates = format_input_dates(dates)
 
     selected_holidays = br_holidays.get_applicable_holidays(
         formatted_dates, holiday_list
@@ -166,15 +148,8 @@ def count_bdays(
         >>> yd.count_bdays(start, end)
         pd.Series([22, 40], dtype='int64')
     """
-    if isinstance(start, Series):
-        formatted_start = format_input_dates(start)
-    else:
-        formatted_start = format_input_date(start)
-
-    if isinstance(end, Series):
-        formatted_end = format_input_dates(end)
-    else:
-        formatted_end = format_input_date(end)
+    formatted_start = format_input_dates(start)
+    formatted_end = format_input_dates(end)
 
     # Determine which list of holidays to use
     selected_holidays = br_holidays.get_applicable_holidays(
@@ -240,8 +215,11 @@ def generate_bdays(
         2023-12-29    2023-12-29
         dtype: object
     """
-    formatted_start = format_input_date(start)
-    formatted_end = format_input_date(end)
+    formatted_start = format_input_dates(start)
+    formatted_end = format_input_dates(end)
+
+    if isinstance(formatted_start, Series) or isinstance(formatted_end, Series):
+        raise ValueError("The start and end dates must be single dates.")
 
     selected_holidays = br_holidays.get_applicable_holidays(
         formatted_start, holiday_list
