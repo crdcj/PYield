@@ -52,6 +52,30 @@ def convert_to_numpy_date(dates: Timestamp | Series) -> np.datetime64 | np.ndarr
         return dates.to_numpy().astype("datetime64[D]")
 
 
+@overload
+def offset_bdays(
+    dates: None,
+    offset: int,
+    holiday_list: Literal["old", "new", "infer"] = "infer",
+) -> Timestamp: ...
+
+
+@overload
+def offset_bdays(
+    dates: str | Timestamp,
+    offset: int,
+    holiday_list: Literal["old", "new", "infer"] = "infer",
+) -> Timestamp: ...
+
+
+@overload
+def offset_bdays(
+    dates: Series,
+    offset: int,
+    holiday_list: Literal["old", "new", "infer"] = "infer",
+) -> Series: ...
+
+
 def offset_bdays(
     dates: str | Timestamp | Series | None,
     offset: int,

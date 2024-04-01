@@ -68,7 +68,7 @@ def get_expiration_date(expiration_code: str) -> pd.Timestamp | NaTType:
         # Adjust to the next business day when expiration date is a weekend or a holiday
         adj_expiration = brc.offset_bdays(expiration, offset=0)
 
-        return pd.Timestamp(adj_expiration)
+        return adj_expiration
 
     except (KeyError, ValueError):
         return pd.NaT
