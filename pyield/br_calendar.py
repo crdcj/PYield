@@ -3,7 +3,6 @@ from typing import Literal, overload
 import numpy as np
 import pandas as pd
 from pandas import Series, Timestamp
-from pandas._libs.tslibs.nattype import NaTType
 
 from .br_holidays import BrHolidays
 
@@ -12,11 +11,7 @@ br_holidays = BrHolidays()
 
 
 @overload
-def format_input_dates(dates: None) -> Timestamp: ...
-
-
-@overload
-def format_input_dates(dates: str | Timestamp) -> Timestamp: ...
+def format_input_dates(dates: str | Timestamp | None) -> Timestamp: ...
 
 
 @overload
@@ -54,16 +49,8 @@ def convert_to_numpy_date(dates: Timestamp | Series) -> np.datetime64 | np.ndarr
 
 @overload
 def offset_bdays(
-    dates: None,
-    offset: int,
-    holiday_list: Literal["old", "new", "infer"] = "infer",
-) -> Timestamp: ...
-
-
-@overload
-def offset_bdays(
-    dates: str | Timestamp,
-    offset: int,
+    dates: str | Timestamp | None = None,
+    offset: int = 0,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> Timestamp: ...
 
@@ -71,14 +58,14 @@ def offset_bdays(
 @overload
 def offset_bdays(
     dates: Series,
-    offset: int,
+    offset: int = 0,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> Series: ...
 
 
 def offset_bdays(
-    dates: str | Timestamp | Series | None,
-    offset: int,
+    dates: str | Timestamp | Series | None = None,
+    offset: int = 0,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> Timestamp | Series:
     """
@@ -130,6 +117,30 @@ def offset_bdays(
     else:
         result = pd.to_datetime(offsetted_dates_np, unit="ns")
         return pd.Series(result)
+
+
+@overload
+def count_bdays(
+    start: str | Timestamp | None = None,
+    end: str | Timestamp | None = None,
+    holiday_list: Literal["old", "new", "infer"] = "infer",
+) -> int: ...
+
+
+@overload
+def count_bdays(
+    start: Series,
+    end: str | Timestamp | Series | None,
+    holiday_list: Literal["old", "new", "infer"] = "infer",
+) -> Series: ...
+
+
+@overload
+def count_bdays(
+    start: str | Timestamp | Series | None,
+    end: Series,
+    holiday_list: Literal["old", "new", "infer"] = "infer",
+) -> Series: ...
 
 
 def count_bdays(
@@ -186,16 +197,17 @@ def count_bdays(
     end_np = convert_to_numpy_date(formatted_end)
 
     result_np = np.busday_count(start_np, end_np, holidays=selected_holidays_np)
-    if isinstance(result_np, np.int64):
-        return result_np
+    if isinstance(result_np, np.ndarray):
+        # Return pandas Int64 type for type consistency
+        return pd.Series(result_np, dtype="Int64")
     else:
-        return pd.Series(result_np)
+        return int(result_np)
 
 
 def generate_bdays(
     start: str | Timestamp | None = None,
     end: str | Timestamp | None = None,
-    inclusive="both",
+    inclusive: Literal["both", "neither", "left", "right"] = "both",
     holiday_list: Literal["old", "new", "infer"] = "infer",
     **kwargs,
 ) -> Series:

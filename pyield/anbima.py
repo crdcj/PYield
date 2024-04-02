@@ -1,4 +1,5 @@
 import pandas as pd
+from pandas import Timestamp, DataFrame
 from urllib.error import HTTPError
 
 from . import di_futures as di
@@ -12,9 +13,7 @@ ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs/"
 BP_CONVERSION_FACTOR = 10_000
 
 
-def process_reference_date(
-    reference_date: str | pd.Timestamp | None = None,
-) -> pd.Timestamp:
+def process_reference_date(reference_date: str | Timestamp | None = None) -> Timestamp:
     """
     Process the given reference date, converting it to a pandas Timestamp. If no date is provided,
     use the previous business day based on the Brazilian calendar.
@@ -32,7 +31,7 @@ def process_reference_date(
         processed_date = cl.offset_bdays(today, -1)  # type: ignore
 
     # Check if the reference date is Timestamp
-    if not isinstance(processed_date, pd.Timestamp):
+    if not isinstance(processed_date, Timestamp):
         raise ValueError("Reference date must be a pandas Timestamp.")
 
     # Raise an error if the reference date is in the future
@@ -43,8 +42,8 @@ def process_reference_date(
 
 
 def get_raw_data(
-    reference_date: str | pd.Timestamp | None = None, is_anbima_member: bool = False
-) -> pd.DataFrame:
+    reference_date: str | Timestamp | None = None, is_anbima_member: bool = False
+) -> DataFrame:
     """
     Fetch indicative rates from ANBIMA for a specific date.
 
@@ -83,7 +82,7 @@ def get_raw_data(
     return df
 
 
-def process_raw_data(df_raw: pd.DataFrame) -> pd.DataFrame:
+def process_raw_data(df_raw: DataFrame) -> DataFrame:
     """
     Process raw data from ANBIMA by filtering selected columns, renaming them, and adjusting data formats.
 
@@ -126,10 +125,10 @@ def process_raw_data(df_raw: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_treasury_rates(
-    reference_date: str | pd.Timestamp | None = None,
+    reference_date: str | Timestamp | None = None,
     return_raw=False,
     is_anbima_member=False,
-) -> pd.DataFrame:
+) -> DataFrame:
     """
     Fetch and process indicative rates from ANBIMA for a specific date.
     If no date is provided, the previous business day based on the Brazilian calendar
@@ -154,9 +153,9 @@ def get_treasury_rates(
 
 
 def calculate_treasury_di_spreads(
-    reference_date: str | pd.Timestamp | None = None,
+    reference_date: str | Timestamp | None = None,
     is_anbima_member=False,
-) -> pd.DataFrame:
+) -> DataFrame:
     """
     Calculate the DI spread for LTN and NTN-F bonds based on ANBIMA's indicative rates.
     If no date is provided, the previous business day based on the Brazilian calendar

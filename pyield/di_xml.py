@@ -4,13 +4,14 @@ from pathlib import Path
 
 import requests
 import pandas as pd
+from pandas import Timestamp, DataFrame
 from lxml import etree
 
 from . import di_futures as dif
 from . import br_calendar as brc
 
 
-def get_file_from_url(trade_date: pd.Timestamp, source_type: str) -> io.BytesIO:
+def get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
     """
     Types of XML files available:
     Full Price Report (all assets)
@@ -119,7 +120,7 @@ def extract_di_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
     return di_data
 
 
-def create_df_from_di_data(di1_data: list) -> pd.DataFrame:
+def create_df_from_di_data(di1_data: list) -> DataFrame:
     # Criar um DataFrame com os dados coletados
     df = pd.DataFrame(di1_data)
 
@@ -128,7 +129,7 @@ def create_df_from_di_data(di1_data: list) -> pd.DataFrame:
     return pd.read_csv(file, dtype_backend="numpy_nullable")
 
 
-def filter_and_order_pr_df(df: pd.DataFrame) -> pd.DataFrame:
+def filter_and_order_pr_df(df: DataFrame) -> DataFrame:
     selected_columns = [
         "TradDt",
         "TckrSymb",
@@ -164,7 +165,7 @@ def filter_and_order_pr_df(df: pd.DataFrame) -> pd.DataFrame:
     return df[selected_columns]
 
 
-def filter_and_order_sprd_df(df: pd.DataFrame) -> pd.DataFrame:
+def filter_and_order_sprd_df(df: DataFrame) -> DataFrame:
     cols = [
         "TradDt",
         "TckrSymb",
@@ -186,7 +187,7 @@ def filter_and_order_sprd_df(df: pd.DataFrame) -> pd.DataFrame:
     return df[cols]
 
 
-def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
+def standardize_column_names(df: DataFrame) -> DataFrame:
     rename_dict = {
         "TradDt": "TradeDate",
         "TckrSymb": "Ticker",
@@ -223,7 +224,7 @@ def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns=rename_dict)
 
 
-def process_di_df(df_raw: pd.DataFrame) -> pd.DataFrame:
+def process_di_df(df_raw: DataFrame) -> DataFrame:
     df = df_raw.copy()
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
@@ -243,11 +244,7 @@ def process_di_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(by=["ExpirationDate"], ignore_index=True)
 
 
-def get_di(
-    trade_date: pd.Timestamp,
-    source_type: str,
-    return_raw: bool,
-) -> pd.DataFrame:
+def get_di(trade_date: Timestamp, source_type: str, return_raw: bool) -> DataFrame:
     zip_file = get_file_from_url(trade_date, source_type)
 
     xml_file = extract_xml_from_zip(zip_file)
@@ -263,6 +260,8 @@ def get_di(
         df_di = filter_and_order_pr_df(df_raw)
     elif source_type == "b3s":
         df_di = filter_and_order_sprd_df(df_raw)
+    else:
+        raise ValueError("Invalid source type. Must be 'b3' or 'b3s'.")
 
     # Process and transform data
     df_di = process_di_df(df_di)
@@ -273,7 +272,7 @@ def get_di(
     return df_di
 
 
-def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
+def read_di(file_path: Path, return_raw: bool = False) -> DataFrame:
     if file_path:
         if file_path.exists():
             content = file_path.read_bytes()

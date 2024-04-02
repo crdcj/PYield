@@ -3,6 +3,7 @@ import warnings
 from typing import Optional
 
 import pandas as pd
+from pandas import Timestamp, Series, DataFrame
 import requests
 
 from . import br_calendar as brc
@@ -10,8 +11,8 @@ from . import di_futures as dif
 
 
 def get_old_expiration_date(
-    ExpirationCode: str, trade_date: pd.Timestamp
-) -> Optional[pd.Timestamp]:
+    ExpirationCode: str, trade_date: Timestamp
+) -> Optional[Timestamp]:
     """
     Internal function to convert an old DI contract code into its ExpirationDate date. Valid for
     contract codes up to 21-05-2006.
@@ -71,7 +72,7 @@ def get_old_expiration_date(
         return pd.NaT  # type: ignore
 
 
-def get_raw_di(trade_date: pd.Timestamp) -> pd.DataFrame:
+def get_raw_di(trade_date: Timestamp) -> DataFrame:
     """
     Internal function to fetch raw DI futures data from B3 for a specific trade date.
 
@@ -119,7 +120,7 @@ def get_raw_di(trade_date: pd.Timestamp) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
+def convert_prices_to_rates(prices: Series, bd: Series) -> Series:
     """
     Internal function to convert DI futures prices to rates.
 
@@ -136,7 +137,7 @@ def convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
     return 100 * rates
 
 
-def convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
+def convert_prices_in_older_contracts(df: DataFrame) -> DataFrame:
     # Prior to 01/01/2002, prices were not converted to rates
     convert_cols = [
         "FirstRate",
@@ -156,7 +157,7 @@ def convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
+def process_di(df: DataFrame, trade_date: Timestamp) -> DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -265,7 +266,7 @@ def process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     return df[ordered_cols]
 
 
-def get_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
+def get_di(trade_date: Timestamp, return_raw: bool = False) -> DataFrame:
     """
     Gets the DI futures data for a given date from B3.
 
