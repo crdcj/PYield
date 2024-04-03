@@ -10,31 +10,6 @@ from .br_holidays import BrHolidays
 br_holidays = BrHolidays()
 
 
-def is_business_day(date: str | Timestamp | None) -> bool:
-    """
-    Checks if the input date is a business day.
-
-    Args:
-        date (str | pd.Timestamp): The date to check.
-
-    Returns:
-        bool: True if the input date is a business day, False otherwise.
-
-    Examples:
-        >>> date = '2023-12-25' # Christmas
-        >>> yd.is_business_day(date)
-        False
-        >>> date = '2023-12-26' # Boxing Day
-        >>> yd.is_business_day(date)
-        True
-    """
-    formatted_date = normalize_input_dates(date)
-    # Use offset_bdays to check if dates are the same
-    shifted_date = offset_bdays(formatted_date, 0)
-
-    return formatted_date == shifted_date
-
-
 @overload
 def normalize_input_dates(dates: str | Timestamp | None) -> Timestamp: ...
 
@@ -51,10 +26,31 @@ def normalize_input_dates(dates: str | Timestamp | Series | None) -> Timestamp |
     elif isinstance(dates, Series):
         return pd.to_datetime(dates)
     elif dates is None:
-        today = pd.Timestamp.today().normalize()
-        return offset_bdays(today, -1)
+        return pd.Timestamp.today().normalize()
     else:
         raise ValueError("Invalid date format.")
+
+
+def is_business_day(date: str | Timestamp | None = None) -> bool:
+    """
+    Checks if the input date is a business day.
+
+    Args:
+        date (str | Timestamp): The date to check.
+
+    Returns:
+        bool: True if the input date is a business day, False otherwise.
+
+    Examples:
+        >>> yd.is_business_day('2023-12-25') # Christmas
+        False
+        >>> yd.is_business_day() # Check if today is a business day
+        True
+    """
+    normalized_date = normalize_input_dates(date)
+    # Shift the date if it is not a business day
+    adjusted_date = offset_bdays(normalized_date, 0)
+    return normalized_date == adjusted_date
 
 
 def convert_to_numpy_date(dates: Timestamp | Series) -> np.datetime64 | np.ndarray:
@@ -77,6 +73,7 @@ def convert_to_numpy_date(dates: Timestamp | Series) -> np.datetime64 | np.ndarr
 def offset_bdays(
     dates: str | Timestamp | None = None,
     offset: int = 0,
+    roll: Literal["forward", "backward"] = "forward",
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> Timestamp: ...
 
@@ -85,6 +82,7 @@ def offset_bdays(
 def offset_bdays(
     dates: Series,
     offset: int = 0,
+    roll: Literal["forward", "backward"] = "forward",
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> Series: ...
 
@@ -92,6 +90,7 @@ def offset_bdays(
 def offset_bdays(
     dates: str | Timestamp | Series | None = None,
     offset: int = 0,
+    roll: Literal["forward", "backward"] = "forward",
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> Timestamp | Series:
     """
@@ -100,16 +99,19 @@ def offset_bdays(
     right list of holidays based on the most recent date in the input.
 
     Args:
-        dates (str | pd.Timestamp | pd.Series): A single date or a Series of dates to be offset.
+        dates (str | Timestamp | Series): A single date or a Series of dates to be offset. If
+            None, the current date is used.
         offset (int): The number of business days to offset the dates. Positive numbers
             offset to the next business day, negative numbers offset to the previous
             business day. Zero offsets to the same date if it's a business day, otherwise
             offsets to the next business day.
+        roll (str, optional): The direction to roll the date if it falls on a holiday.
+            Valid options are 'forward' and 'backward'. Defaults to 'forward'.
         holiday_list (str, optional): The list of holidays to use. Defaults to "infer", which
             infers the right list of holidays based on the most recent date in the input.
 
     Returns:
-        pd.Timestamp | pd.Series: The offset dates. Returns a single date if
+        Timestamp | Series: The offset dates. Returns a single date if
         `dates` is a single date, otherwise returns a Series of dates.
 
     Note: For more information on error handling, see numpy.busday_offset documentation at
@@ -136,7 +138,7 @@ def offset_bdays(
 
     dates_np = convert_to_numpy_date(normalized_dates)
     offsetted_dates_np = np.busday_offset(
-        dates_np, offsets=offset, roll="forward", holidays=selected_holidays_np
+        dates_np, offsets=offset, roll=roll, holidays=selected_holidays_np
     )
     if isinstance(offsetted_dates_np, np.datetime64):
         return pd.Timestamp(offsetted_dates_np, unit="ns")
@@ -181,14 +183,16 @@ def count_bdays(
     with Pandas data types.
 
     Args:
-        start (str | Timestamp, optional): The start date. Defaults to None.
-        end (str | Timestamp optional): The end date. Defaults to None.
+        start (str | Timestamp | Series, optional): The start date. If None, the current
+            date is used. Defaults to None.
+        end (str | Timestamp | Series, optional): The end date. If None, the current date
+            is used. Defaults to None.
         holiday_list (str, optional): The list of holidays to use. Defaults to "infer",
             which infers the right list of holidays based on the most recent date in
             the input.
 
     Returns:
-        int | pd.Series: The number of business days between the start date and end date.
+        int | Series: The number of business days between the start date and end date.
         Returns an integer if the result is a single value, otherwise returns a Series.
 
     Notes:
@@ -245,8 +249,10 @@ def generate_bdays(
 
 
     Args:
-        start (str | pd.Timestamp, optional): The start date. Defaults to None.
-        end (str | pd.Timestamp | pd.Series, optional): The end date. Defaults to None.
+        start (str | Timestamp, optional): The start date. Defaults to None. If None,
+            the current date is used.
+        end (str | Timestamp | Series, optional): The end date. Defaults to None. If None,
+            the current date is used.
         inclusive (str, optional): Whether to include the start and end dates.
             Valid options are 'both', 'neither', 'left', 'right'. Defaults to 'both'.
         holiday_list (str, optional): The list of holidays to use. Defaults to "infer",

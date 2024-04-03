@@ -9,15 +9,26 @@ from . import di_xml as dix
 from . import br_calendar as brc
 
 
-def format_input_dates(date: str | Timestamp | None) -> Timestamp:
-    if date:
-        result = pd.Timestamp(date).normalize()
-    else:
+def normalize_date(trade_date: str | Timestamp | None = None) -> Timestamp:
+    if isinstance(trade_date, str):
+        normalized_date = pd.Timestamp(trade_date).normalize()
+    elif isinstance(trade_date, Timestamp):
+        normalized_date = trade_date.normalize()
+    elif trade_date is None:
         today = pd.Timestamp.today().normalize()
-        # Get one business day before today
-        result = brc.offset_bdays(today, offset=-1)
+        normalized_date = brc.offset_bdays(today, -1)
+    else:
+        raise ValueError("Invalid date format.")
 
-    return result
+    # Raise an error if the trade date is in the future
+    if normalized_date > pd.Timestamp.today().normalize():
+        raise ValueError("Trade date cannot be in the future.")
+
+    # Raise error if the reference date is not a business day
+    if not brc.is_business_day(normalized_date):
+        raise ValueError("Trade date must be a business day.")
+
+    return normalized_date
 
 
 def get_expiration_date(expiration_code: str) -> Timestamp:
@@ -113,6 +124,9 @@ def get_di(
         the given trade date.
 
     Examples:
+        # Get the DI data for the previous business day
+        >>> get_di()
+        # Get the DI data for a specific date in ISO format (YYYY-MM-DD)
         >>> get_di("2023-12-28")
 
     Notes:
@@ -122,12 +136,12 @@ def get_di(
 
     """
     # Force trade_date to be a pandas Timestamp
-    formatted_trade_date = format_input_dates(trade_date)
+    normalized_trade_date = normalize_date(trade_date)
 
     if source_type == "bmf":
-        return diw.get_di(formatted_trade_date, return_raw)
+        return diw.get_di(normalized_trade_date, return_raw)
     elif source_type in ["b3", "b3s"]:
-        return dix.get_di(formatted_trade_date, source_type, return_raw)
+        return dix.get_di(normalized_trade_date, source_type, return_raw)
     else:
         raise ValueError("source_type must be either 'bmf', 'b3' or 'b3s'.")
 

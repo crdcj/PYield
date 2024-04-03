@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from pyield import di_futures as dif
 from pyield import di_web as diw
@@ -75,6 +76,7 @@ def test_settlement_rates_with_current_holiday_list():
     assert results == list(settlement_rates.values())
 
 
-def test_invalid_date():
-    result = dif.get_di(trade_date="2023-12-24")
-    assert result.empty
+def test_non_business_day():
+    non_business_day = "2023-12-24"
+    with pytest.raises(ValueError):
+        dif.get_di(trade_date=non_business_day)
