@@ -10,25 +10,51 @@ from .br_holidays import BrHolidays
 br_holidays = BrHolidays()
 
 
-@overload
-def format_input_dates(dates: str | Timestamp | None) -> Timestamp: ...
+def is_business_day(date: str | Timestamp | None) -> bool:
+    """
+    Checks if the input date is a business day.
+
+    Args:
+        date (str | pd.Timestamp): The date to check.
+
+    Returns:
+        bool: True if the input date is a business day, False otherwise.
+
+    Examples:
+        >>> date = '2023-12-25' # Christmas
+        >>> yd.is_business_day(date)
+        False
+        >>> date = '2023-12-26' # Boxing Day
+        >>> yd.is_business_day(date)
+        True
+    """
+    formatted_date = normalize_input_dates(date)
+    # Use offset_bdays to check if dates are the same
+    shifted_date = offset_bdays(formatted_date, 0)
+
+    return formatted_date == shifted_date
 
 
 @overload
-def format_input_dates(dates: Series) -> Series: ...
+def normalize_input_dates(dates: str | Timestamp | None) -> Timestamp: ...
 
 
-# Implementação da função que atende às sobrecargas acima
-def format_input_dates(dates: str | Timestamp | Series | None) -> Timestamp | Series:
-    if dates is None:
-        return pd.Timestamp.today().normalize()
-    result = pd.to_datetime(dates)
-    if isinstance(result, pd.Series):
-        return result
-    elif result is pd.NaT:
-        raise ValueError("Invalid date format.")
+@overload
+def normalize_input_dates(dates: Series) -> Series: ...
+
+
+def normalize_input_dates(dates: str | Timestamp | Series | None) -> Timestamp | Series:
+    if isinstance(dates, str):
+        return pd.Timestamp(dates).normalize()
+    elif isinstance(dates, Timestamp):
+        return dates.normalize()
+    elif isinstance(dates, Series):
+        return pd.to_datetime(dates)
+    elif dates is None:
+        today = pd.Timestamp.today().normalize()
+        return offset_bdays(today, -1)
     else:
-        return pd.Timestamp(result).normalize()
+        raise ValueError("Invalid date format.")
 
 
 def convert_to_numpy_date(dates: Timestamp | Series) -> np.datetime64 | np.ndarray:
@@ -101,14 +127,14 @@ def offset_bdays(
         >>> yd.offset_bdays(date, -1)
         Timestamp('2023-12-21') # Offset to the previous business day
     """
-    formatted_dates = format_input_dates(dates)
+    normalized_dates = normalize_input_dates(dates)
 
     selected_holidays = br_holidays.get_applicable_holidays(
-        formatted_dates, holiday_list
+        normalized_dates, holiday_list
     )
     selected_holidays_np = convert_to_numpy_date(selected_holidays)
 
-    dates_np = convert_to_numpy_date(formatted_dates)
+    dates_np = convert_to_numpy_date(normalized_dates)
     offsetted_dates_np = np.busday_offset(
         dates_np, offsets=offset, roll="forward", holidays=selected_holidays_np
     )
@@ -183,18 +209,18 @@ def count_bdays(
         >>> yd.count_bdays(start, end)
         pd.Series([22, 40], dtype='int64')
     """
-    formatted_start = format_input_dates(start)
-    formatted_end = format_input_dates(end)
+    normalized_start = normalize_input_dates(start)
+    normalized_end = normalize_input_dates(end)
 
     # Determine which list of holidays to use
     selected_holidays = br_holidays.get_applicable_holidays(
-        formatted_start, holiday_list
+        normalized_start, holiday_list
     )
     selected_holidays_np = convert_to_numpy_date(selected_holidays)
 
     # Convert inputs to numpy datetime64[D] before calling numpy.busday_count
-    start_np = convert_to_numpy_date(formatted_start)
-    end_np = convert_to_numpy_date(formatted_end)
+    start_np = convert_to_numpy_date(normalized_start)
+    end_np = convert_to_numpy_date(normalized_end)
 
     result_np = np.busday_count(start_np, end_np, holidays=selected_holidays_np)
     if isinstance(result_np, np.ndarray):
@@ -251,20 +277,20 @@ def generate_bdays(
         2023-12-29    2023-12-29
         dtype: object
     """
-    formatted_start = format_input_dates(start)
-    formatted_end = format_input_dates(end)
+    normalized_start = normalize_input_dates(start)
+    normalized_end = normalize_input_dates(end)
 
-    if isinstance(formatted_start, Series) or isinstance(formatted_end, Series):
+    if isinstance(normalized_start, Series) or isinstance(normalized_end, Series):
         raise ValueError("The start and end dates must be single dates.")
 
     selected_holidays = br_holidays.get_applicable_holidays(
-        formatted_start, holiday_list
+        normalized_start, holiday_list
     )
     selected_holidays_list = selected_holidays.to_list()
 
     result = pd.bdate_range(
-        formatted_start,
-        formatted_end,
+        normalized_start,
+        normalized_end,
         freq="C",
         inclusive=inclusive,
         holidays=selected_holidays_list,

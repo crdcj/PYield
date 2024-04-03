@@ -13,7 +13,7 @@ ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs/"
 BP_CONVERSION_FACTOR = 10_000
 
 
-def process_reference_date(reference_date: str | Timestamp | None = None) -> Timestamp:
+def validate_reference_date(reference_date: str | Timestamp | None = None) -> Timestamp:
     """
     Process the given reference date, converting it to a pandas Timestamp. If no date is provided,
     use the previous business day based on the Brazilian calendar.
@@ -25,20 +25,20 @@ def process_reference_date(reference_date: str | Timestamp | None = None) -> Tim
     - pd.Timestamp: The processed reference date.
     """
     if reference_date:  # Force reference_date to be a pd.Timestamp
-        processed_date = pd.to_datetime(reference_date)
+        validated_date = pd.to_datetime(reference_date)
     else:  # If no reference_date is given, use the previous business day
         today = pd.Timestamp.today().normalize()
-        processed_date = cl.offset_bdays(today, -1)  # type: ignore
-
-    # Check if the reference date is Timestamp
-    if not isinstance(processed_date, Timestamp):
-        raise ValueError("Reference date must be a pandas Timestamp.")
+        validated_date = cl.offset_bdays(today, -1)  # type: ignore
 
     # Raise an error if the reference date is in the future
-    if processed_date > pd.Timestamp.today().normalize():
+    if validated_date > pd.Timestamp.today().normalize():
         raise ValueError("Reference date cannot be in the future.")
 
-    return processed_date
+    # Reise error if the reference date is not a business day
+    if not cl.is_business_day(validated_date):
+        raise ValueError("Reference date must be a business day.")
+
+    return validated_date
 
 
 def get_raw_data(
@@ -55,7 +55,7 @@ def get_raw_data(
     - pd.DataFrame: DataFrame with the indicative rates for the given date.
     """
     # Process the reference date, defaulting to the previous business day if not provided
-    validated_date = process_reference_date(reference_date)
+    validated_date = validate_reference_date(reference_date)
 
     # Format the date to match the URL format
     url_date = validated_date.strftime("%y%m%d")
@@ -144,7 +144,8 @@ def get_treasury_rates(
      - pd.DataFrame: DataFrame with the indicative rates for the given date.
     """
 
-    df = get_raw_data(reference_date, is_anbima_member)
+    validated_date = validate_reference_date(reference_date)
+    df = get_raw_data(validated_date, is_anbima_member)
 
     if not return_raw:
         df = process_raw_data(df)
@@ -169,8 +170,8 @@ def calculate_treasury_di_spreads(
     Returns:
     - pd.DataFrame: A DataFrame containing the bond type, reference date, maturity date, and DI spread in basis points.
     """
-    # Process the reference date, defaulting to the previous business day if not provided
-    validated_date = process_reference_date(reference_date)
+    # Validate the reference date, defaulting to the previous business day if not provided
+    validated_date = validate_reference_date(reference_date)
 
     # Fetch DI rates and adjust the maturity date format for compatibility
     df_di = di.get_di(validated_date)[["ExpirationDate", "SettlementRate"]]
@@ -182,9 +183,7 @@ def calculate_treasury_di_spreads(
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = get_treasury_rates(
-        reference_date=validated_date, is_anbima_member=is_anbima_member
-    )
+    df_anbima = get_treasury_rates(validated_date, False, is_anbima_member)
     df_anbima.query("BondType in ['LTN', 'NTN-F']", inplace=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads

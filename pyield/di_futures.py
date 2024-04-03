@@ -9,6 +9,17 @@ from . import di_xml as dix
 from . import br_calendar as brc
 
 
+def format_input_dates(date: str | Timestamp | None) -> Timestamp:
+    if date:
+        result = pd.Timestamp(date).normalize()
+    else:
+        today = pd.Timestamp.today().normalize()
+        # Get one business day before today
+        result = brc.offset_bdays(today, offset=-1)
+
+    return result
+
+
 def get_expiration_date(expiration_code: str) -> Timestamp:
     """
     Internal function to convert the expiration code into its expiration date.
@@ -75,10 +86,10 @@ def get_expiration_date(expiration_code: str) -> Timestamp:
 
 
 def get_di(
-    trade_date: str | Timestamp,
+    trade_date: str | Timestamp | None = None,
     source_type: Literal["bmf", "b3", "b3s"] = "bmf",
     return_raw: bool = False,
-) -> pd.DataFrame:
+) -> DataFrame:
     """
     Gets the DI futures data for a given date from B3.
 
@@ -86,7 +97,8 @@ def get_di(
     trade date. It's the primary external interface for accessing DI data.
 
     Args:
-        trade_date: a datetime-like object representing the trade date.
+        trade_date: a datetime-like object representing the trade date. if not provided,
+            the function will use the previous business day.
         source_type: a string indicating the source of the data. Options are "bmf",
             "b3" and "b3s" (default is "bmf").
             - "bmf" (fast) fetches DI data from old BM&FBOVESPA website. This is the default
@@ -95,9 +107,6 @@ def get_di(
             - "b3s" (fast) fetches DI data from the simplified Price Report (XML file) provided by B3.
               This option is faster than "b3" but it has less information.
         return_raw: a boolean indicating whether to return the raw DI data.
-        data_path: a Path object indicating the path to the directory where the XML
-            files are stored. This argument is only used when source_type is "b3" or
-            "b3s". If not provided, data will be downloaded from B3's website.
 
     Returns:
         pd.DataFrame: A Pandas DataFrame containing the DI Futures data for
@@ -113,14 +122,12 @@ def get_di(
 
     """
     # Force trade_date to be a pandas Timestamp
-    trade_date = pd.Timestamp(trade_date)
-    if not trade_date:
-        raise ValueError("Uma data de referência válida deve ser fornecida.")
+    formatted_trade_date = format_input_dates(trade_date)
 
     if source_type == "bmf":
-        return diw.get_di(trade_date, return_raw)
+        return diw.get_di(formatted_trade_date, return_raw)
     elif source_type in ["b3", "b3s"]:
-        return dix.get_di(trade_date, source_type, return_raw)
+        return dix.get_di(formatted_trade_date, source_type, return_raw)
     else:
         raise ValueError("source_type must be either 'bmf', 'b3' or 'b3s'.")
 
