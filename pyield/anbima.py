@@ -67,6 +67,7 @@ def get_raw_data(
             skiprows=2,
             decimal=",",
             thousands=".",
+            na_values=["--"],
             dtype_backend="numpy_nullable",
         )
     except HTTPError:
