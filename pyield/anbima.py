@@ -36,7 +36,7 @@ def normalize_date(reference_date: str | Timestamp | None = None) -> Timestamp:
 
 
 def get_raw_data(
-    reference_date: str | Timestamp | None = None, is_anbima_member: bool = False
+    reference_date: Timestamp, is_anbima_member: bool = False
 ) -> DataFrame:
     """
     Fetch indicative rates from ANBIMA for a specific date.
@@ -48,11 +48,8 @@ def get_raw_data(
     Returns:
     - pd.DataFrame: DataFrame with the indicative rates for the given date.
     """
-    # Process the reference date, defaulting to the previous business day if not provided
-    normalized_date = normalize_date(reference_date)
-
     # Format the date to match the URL format
-    url_date = normalized_date.strftime("%y%m%d")
+    url_date = reference_date.strftime("%y%m%d")
 
     # Set the base URL according to the member status
     base_url = ANBIMA_MEMBER_URL if is_anbima_member else ANBIMA_NON_MEMBER_URL
@@ -71,7 +68,7 @@ def get_raw_data(
             dtype_backend="numpy_nullable",
         )
     except HTTPError:
-        error_date = normalized_date.strftime("%d-%m-%Y")
+        error_date = reference_date.strftime("%d-%m-%Y")
         raise ValueError(f"Failed to get ANBIMA rates for {error_date}")
 
     return df
