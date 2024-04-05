@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from pandas import Series, Timestamp
 
-from .holidays import BrHolidays
+from .holidays.holidays import BrHolidays
 
 # Initialize the BrHolidays class
 br_holidays = BrHolidays()
