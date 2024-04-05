@@ -3,14 +3,14 @@ from pandas import Timestamp, DataFrame
 from urllib.error import HTTPError
 
 from . import di_futures as di
-from . import br_calendar as cl
+from . import calendar as cd
 
 # URL Constants
 ANBIMA_NON_MEMBER_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
 ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs/"
 
 # Constant for conversion to basis points
-BP_CONVERSION_FACTOR = 10_000
+BPS_CONVERSION_FACTOR = 10_000
 
 
 def normalize_date(reference_date: str | Timestamp | None = None) -> Timestamp:
@@ -20,7 +20,12 @@ def normalize_date(reference_date: str | Timestamp | None = None) -> Timestamp:
         normalized_date = reference_date.normalize()
     elif reference_date is None:
         today = pd.Timestamp.today().normalize()
-        normalized_date = cl.offset_bdays(today, -1)
+        # Get last business day before today
+        if cd.is_business_day(today):
+            last_business_day = cd.offset_bdays(today, -1)
+        else:
+            last_business_day = cd.offset_bdays(today, offset=0, roll="backward")
+        normalized_date = last_business_day
     else:
         raise ValueError("Invalid date format.")
 
@@ -29,47 +34,39 @@ def normalize_date(reference_date: str | Timestamp | None = None) -> Timestamp:
         raise ValueError("Reference date cannot be in the future.")
 
     # Raise error if the reference date is not a business day
-    if not cl.is_business_day(normalized_date):
+    if not cd.is_business_day(normalized_date):
         raise ValueError("Reference date must be a business day.")
 
     return normalized_date
 
 
-def get_raw_data(
-    reference_date: Timestamp, is_anbima_member: bool = False
-) -> DataFrame:
-    """
-    Fetch indicative rates from ANBIMA for a specific date.
+def read_csv(url: str) -> DataFrame:
+    return pd.read_csv(
+        url,
+        sep="@",
+        encoding="latin-1",
+        skiprows=2,
+        decimal=",",
+        thousands=".",
+        na_values=["--"],
+        dtype_backend="numpy_nullable",
+    )
 
-    Parameters:
-    - reference_date (pd.Timestamp): Date for which to fetch the indicative rates.
-    - is_anbima_member (bool): Whether the request is being made by an ANBIMA member.
 
-    Returns:
-    - pd.DataFrame: DataFrame with the indicative rates for the given date.
-    """
+def get_raw_data(reference_date: Timestamp) -> DataFrame:
     # Format the date to match the URL format
     url_date = reference_date.strftime("%y%m%d")
-
-    # Set the base URL according to the member status
-    base_url = ANBIMA_MEMBER_URL if is_anbima_member else ANBIMA_NON_MEMBER_URL
-    # url example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms231128.txt
-    url = f"{base_url}ms{url_date}.txt"
+    member_url = f"{ANBIMA_MEMBER_URL}ms{url_date}.txt"
+    non_member_url = f"{ANBIMA_NON_MEMBER_URL}ms{url_date}.txt"
 
     try:
-        df = pd.read_csv(
-            url,
-            sep="@",
-            encoding="latin-1",
-            skiprows=2,
-            decimal=",",
-            thousands=".",
-            na_values=["--"],
-            dtype_backend="numpy_nullable",
-        )
+        df = read_csv(member_url)
     except HTTPError:
-        error_date = reference_date.strftime("%d-%m-%Y")
-        raise ValueError(f"Failed to get ANBIMA rates for {error_date}")
+        try:
+            df = read_csv(non_member_url)
+        except HTTPError:
+            error_date = reference_date.strftime("%d-%m-%Y")
+            raise ValueError(f"Failed to get ANBIMA rates for {error_date}")
 
     return df
 
@@ -119,7 +116,6 @@ def process_raw_data(df_raw: DataFrame) -> DataFrame:
 def get_treasury_rates(
     reference_date: str | Timestamp | None = None,
     return_raw=False,
-    is_anbima_member=False,
 ) -> DataFrame:
     """
     Fetch and process indicative rates from ANBIMA for a specific date.
@@ -130,14 +126,13 @@ def get_treasury_rates(
      - reference_date (str | pd.Timestamp | None): Date for which to fetch the indicative rates.
         If None, previous business day based on the Brazilian calendar is used.
      - return_raw (bool): Whether to return raw data without processing.
-     - is_anbima_member (bool): Whether the request is being made by an ANBIMA member.
 
      Returns:
      - pd.DataFrame: DataFrame with the indicative rates for the given date.
     """
 
     normalized_date = normalize_date(reference_date)
-    df = get_raw_data(normalized_date, is_anbima_member)
+    df = get_raw_data(normalized_date)
 
     if not return_raw:
         df = process_raw_data(df)
@@ -147,7 +142,6 @@ def get_treasury_rates(
 
 def calculate_treasury_di_spreads(
     reference_date: str | Timestamp | None = None,
-    is_anbima_member=False,
 ) -> DataFrame:
     """
     Calculate the DI spread for LTN and NTN-F bonds based on ANBIMA's indicative rates.
@@ -157,7 +151,6 @@ def calculate_treasury_di_spreads(
     Parameters:
     - reference_date (str | pd.Timestamp | None): The reference date for querying ANBIMA's indicative rates.
         If None, the previous business day based on the Brazilian calendar is used.
-    - is_anbima_member (bool): Specifies whether the request is made by an ANBIMA member.
 
     Returns:
     - pd.DataFrame: A DataFrame containing the bond type, reference date, maturity date, and DI spread in basis points.
@@ -175,7 +168,7 @@ def calculate_treasury_di_spreads(
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = get_treasury_rates(normalized_date, False, is_anbima_member)
+    df_anbima = get_treasury_rates(normalized_date, False)
     df_anbima.query("BondType in ['LTN', 'NTN-F']", inplace=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads
@@ -185,7 +178,7 @@ def calculate_treasury_di_spreads(
     df_final["DISpread"] = df_final["IndicativeRate"] - df_final["SettlementRate"]
 
     # Convert spread to basis points for clarity
-    df_final["DISpread"] = (BP_CONVERSION_FACTOR * df_final["DISpread"]).round(2)
+    df_final["DISpread"] = (BPS_CONVERSION_FACTOR * df_final["DISpread"]).round(2)
 
     # Prepare and return the final sorted DataFrame
     select_columns = ["BondType", "ReferenceDate", "MaturityDate", "DISpread"]

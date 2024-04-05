@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 from pandas import Series, Timestamp
 
-from .br_holidays import BrHolidays
+from .holidays import BrHolidays
 
-# Instância global da classe Holidays
+# Initialize the BrHolidays class
 br_holidays = BrHolidays()
 
 

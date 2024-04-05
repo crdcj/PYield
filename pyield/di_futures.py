@@ -6,7 +6,7 @@ from pandas import DataFrame, Timestamp
 
 from . import di_web as diw
 from . import di_xml as dix
-from . import br_calendar as brc
+from . import calendar as cd
 
 
 def normalize_date(trade_date: str | Timestamp | None = None) -> Timestamp:
@@ -16,7 +16,12 @@ def normalize_date(trade_date: str | Timestamp | None = None) -> Timestamp:
         normalized_date = trade_date.normalize()
     elif trade_date is None:
         today = pd.Timestamp.today().normalize()
-        normalized_date = brc.offset_bdays(today, -1)
+        # Get last business day before today
+        if cd.is_business_day(today):
+            last_business_day = cd.offset_bdays(today, -1)
+        else:
+            last_business_day = cd.offset_bdays(today, offset=0, roll="backward")
+        normalized_date = last_business_day
     else:
         raise ValueError("Invalid date format.")
 
@@ -25,7 +30,7 @@ def normalize_date(trade_date: str | Timestamp | None = None) -> Timestamp:
         raise ValueError("Trade date cannot be in the future.")
 
     # Raise error if the reference date is not a business day
-    if not brc.is_business_day(normalized_date):
+    if not cd.is_business_day(normalized_date):
         raise ValueError("Trade date must be a business day.")
 
     return normalized_date
@@ -88,7 +93,7 @@ def get_expiration_date(expiration_code: str) -> Timestamp:
         expiration = pd.Timestamp(year, month, 1)
 
         # Adjust to the next business day when expiration date is a weekend or a holiday
-        adj_expiration = brc.offset_bdays(expiration, offset=0)
+        adj_expiration = cd.offset_bdays(expiration, offset=0)
 
         return adj_expiration
 
