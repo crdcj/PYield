@@ -16,7 +16,7 @@ ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs/"
 BPS_CONVERSION_FACTOR = 10_000
 
 
-def normalize_date(reference_date: str | Timestamp | None = None) -> Timestamp:
+def _normalize_date(reference_date: str | Timestamp | None = None) -> Timestamp:
     if isinstance(reference_date, str):
         normalized_date = pd.Timestamp(reference_date).normalize()
     elif isinstance(reference_date, Timestamp):
@@ -39,33 +39,37 @@ def normalize_date(reference_date: str | Timestamp | None = None) -> Timestamp:
     return normalized_date
 
 
-def get_anbima_content(reference_date: Timestamp) -> str:
+def _get_anbima_content(reference_date: Timestamp) -> str:
     url_date = reference_date.strftime("%y%m%d")
     member_url = f"{ANBIMA_MEMBER_URL}ms{url_date}.txt"
     non_member_url = f"{ANBIMA_NON_MEMBER_URL}ms{url_date}.txt"
 
+    # Tries to access the member URL first
     try:
-        # Tries to access the main URL
         response = requests.get(member_url)
         # Checks if the response was successful (status code 200)
         response.raise_for_status()
         return response.text
-    except requests.exceptions.ConnectionError:
-        # If there is a connection error, tries non-member URL
-        try:
-            response = requests.get(non_member_url)
-            response.raise_for_status()  # Checks if the second attempt was successful
-            return response.text
-        except requests.exceptions.RequestException as e:
-            # If the attempt with the alternative URL also fails, handles the error
-            raise ValueError("Failed to access the ANBIMA rates.") from e
-    except requests.exceptions.HTTPError as e:
-        # Handles other possible HTTP errors that are not connection errors
-        raise ValueError("Failed to access the ANBIMA rates.") from e
+    except requests.exceptions.RequestException:
+        # Blind attempt to access the member URL
+        pass
+
+    # If the member URL fails, tries to access the non-member URL
+    try:
+        response = requests.get(non_member_url)
+        response.raise_for_status()  # Checks if the second attempt was successful
+        return response.text
+    except requests.exceptions.RequestException:
+        # Both URLs failed
+        return None
 
 
-def get_raw_data(reference_date: Timestamp) -> DataFrame:
-    url_content = get_anbima_content(reference_date)
+def _get_raw_data(reference_date: Timestamp) -> DataFrame:
+    url_content = _get_anbima_content(reference_date)
+    if url_content is None:
+        date_str = reference_date.strftime("%d-%m-%Y")
+        raise ValueError(f"Could not fetch ANBIMA data for {date_str}.")
+
     df = pd.read_csv(
         io.StringIO(url_content),
         sep="@",
@@ -79,7 +83,7 @@ def get_raw_data(reference_date: Timestamp) -> DataFrame:
     return df
 
 
-def process_raw_data(df_raw: DataFrame) -> DataFrame:
+def _process_raw_data(df_raw: DataFrame) -> DataFrame:
     """
     Process raw data from ANBIMA by filtering selected columns, renaming them, and adjusting data formats.
 
@@ -139,11 +143,11 @@ def get_treasury_rates(
      - pd.DataFrame: DataFrame with the indicative rates for the given date.
     """
 
-    normalized_date = normalize_date(reference_date)
-    df = get_raw_data(normalized_date)
+    normalized_date = _normalize_date(reference_date)
+    df = _get_raw_data(normalized_date)
 
     if not return_raw:
-        df = process_raw_data(df)
+        df = _process_raw_data(df)
 
     return df
 
@@ -164,7 +168,7 @@ def calculate_treasury_di_spreads(
     - pd.DataFrame: A DataFrame containing the bond type, reference date, maturity date, and DI spread in basis points.
     """
     # Validate the reference date, defaulting to the previous business day if not provided
-    normalized_date = normalize_date(reference_date)
+    normalized_date = _normalize_date(reference_date)
 
     # Fetch DI rates and adjust the maturity date format for compatibility
     df_di = di.get_di(normalized_date)[["ExpirationDate", "SettlementRate"]]

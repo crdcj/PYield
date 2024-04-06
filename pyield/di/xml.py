@@ -11,7 +11,7 @@ from . import core as cr
 from .. import calendar as cd
 
 
-def get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
+def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
     """
     Types of XML files available:
     Full Price Report (all assets)
@@ -39,7 +39,7 @@ def get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
     return io.BytesIO(response.content)
 
 
-def extract_xml_from_zip(zip_file: io.BytesIO) -> io.BytesIO:
+def _extract_xml_from_zip(zip_file: io.BytesIO) -> io.BytesIO:
     # First, read the outer file
     with zipfile.ZipFile(zip_file, "r") as outer_zip:
         outer_file_name = outer_zip.namelist()[0]
@@ -58,7 +58,7 @@ def extract_xml_from_zip(zip_file: io.BytesIO) -> io.BytesIO:
     return io.BytesIO(inner_file_content)
 
 
-def extract_di_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
+def _extract_di_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
     parser = etree.XMLParser(
         ns_clean=True, remove_blank_text=True, remove_comments=True, recover=True
     )
@@ -120,7 +120,7 @@ def extract_di_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
     return di_data
 
 
-def create_df_from_di_data(di1_data: list) -> DataFrame:
+def _create_df_from_di_data(di1_data: list) -> DataFrame:
     # Criar um DataFrame com os dados coletados
     df = pd.DataFrame(di1_data)
 
@@ -129,7 +129,7 @@ def create_df_from_di_data(di1_data: list) -> DataFrame:
     return pd.read_csv(file, dtype_backend="numpy_nullable")
 
 
-def filter_and_order_pr_df(df: DataFrame) -> DataFrame:
+def _filter_and_order_pr_df(df: DataFrame) -> DataFrame:
     selected_columns = [
         "TradDt",
         "TckrSymb",
@@ -165,7 +165,7 @@ def filter_and_order_pr_df(df: DataFrame) -> DataFrame:
     return df[selected_columns]
 
 
-def filter_and_order_sprd_df(df: DataFrame) -> DataFrame:
+def _filter_and_order_sprd_df(df: DataFrame) -> DataFrame:
     cols = [
         "TradDt",
         "TckrSymb",
@@ -187,7 +187,7 @@ def filter_and_order_sprd_df(df: DataFrame) -> DataFrame:
     return df[cols]
 
 
-def standardize_column_names(df: DataFrame) -> DataFrame:
+def _standardize_column_names(df: DataFrame) -> DataFrame:
     rename_dict = {
         "TradDt": "TradeDate",
         "TckrSymb": "Ticker",
@@ -224,7 +224,7 @@ def standardize_column_names(df: DataFrame) -> DataFrame:
     return df.rename(columns=rename_dict)
 
 
-def process_di_df(df_raw: DataFrame) -> DataFrame:
+def _process_di_df(df_raw: DataFrame) -> DataFrame:
     df = df_raw.copy()
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
@@ -245,29 +245,29 @@ def process_di_df(df_raw: DataFrame) -> DataFrame:
 
 
 def get_di(trade_date: Timestamp, source_type: str, return_raw: bool) -> DataFrame:
-    zip_file = get_file_from_url(trade_date, source_type)
+    zip_file = _get_file_from_url(trade_date, source_type)
 
-    xml_file = extract_xml_from_zip(zip_file)
+    xml_file = _extract_xml_from_zip(zip_file)
 
-    di_data = extract_di_data_from_xml(xml_file)
+    di_data = _extract_di_data_from_xml(xml_file)
 
-    df_raw = create_df_from_di_data(di_data)
+    df_raw = _create_df_from_di_data(di_data)
     if return_raw:
         return df_raw
 
     # Remove unnecessary columns
     if source_type == "b3":
-        df_di = filter_and_order_pr_df(df_raw)
+        df_di = _filter_and_order_pr_df(df_raw)
     elif source_type == "b3s":
-        df_di = filter_and_order_sprd_df(df_raw)
+        df_di = _filter_and_order_sprd_df(df_raw)
     else:
         raise ValueError("Invalid source type. Must be 'b3' or 'b3s'.")
 
     # Process and transform data
-    df_di = process_di_df(df_di)
+    df_di = _process_di_df(df_di)
 
     # Standardize column names
-    df_di = standardize_column_names(df_di)
+    df_di = _standardize_column_names(df_di)
 
     return df_di
 
@@ -280,28 +280,28 @@ def read_di(file_path: Path, return_raw: bool = False) -> DataFrame:
         else:
             raise FileNotFoundError(f"No file found at {file_path}.")
 
-        xml_file = extract_xml_from_zip(zip_file)
+        xml_file = _extract_xml_from_zip(zip_file)
 
-        di_data = extract_di_data_from_xml(xml_file)
+        di_data = _extract_di_data_from_xml(xml_file)
 
-        df_raw = create_df_from_di_data(di_data)
+        df_raw = _create_df_from_di_data(di_data)
         if return_raw:
             return df_raw
 
         # Filename examples: PR231228.zip or SPRD240216.zip
         file_stem = file_path.stem
         if "PR" in file_stem:
-            df_di = filter_and_order_pr_df(df_raw)
+            df_di = _filter_and_order_pr_df(df_raw)
         elif "SPRD" in file_stem:
-            df_di = filter_and_order_sprd_df(df_raw)
+            df_di = _filter_and_order_sprd_df(df_raw)
         else:
             raise ValueError("Filename must start with 'PR' or 'SPRD'.")
 
         # Process and transform data
-        df_di = process_di_df(df_di)
+        df_di = _process_di_df(df_di)
 
         # Standardize column names
-        df_di = standardize_column_names(df_di)
+        df_di = _standardize_column_names(df_di)
 
         return df_di
 

@@ -9,7 +9,7 @@ from . import xml as dix
 from .. import calendar as cl
 
 
-def normalize_date(trade_date: str | Timestamp | None = None) -> Timestamp:
+def _normalize_date(trade_date: str | Timestamp | None = None) -> Timestamp:
     if isinstance(trade_date, str):
         normalized_date = pd.Timestamp(trade_date).normalize()
     elif isinstance(trade_date, Timestamp):
@@ -137,7 +137,7 @@ def get_di(
 
     """
     # Force trade_date to be a pandas Timestamp
-    normalized_trade_date = normalize_date(trade_date)
+    normalized_trade_date = _normalize_date(trade_date)
 
     if source_type == "bmf":
         return wb.get_di(normalized_trade_date, return_raw)

@@ -72,7 +72,7 @@ def get_old_expiration_date(
         return pd.NaT  # type: ignore
 
 
-def get_raw_di(trade_date: Timestamp) -> DataFrame:
+def _get_raw_di(trade_date: Timestamp) -> DataFrame:
     """
     Internal function to fetch raw DI futures data from B3 for a specific trade date.
 
@@ -120,7 +120,7 @@ def get_raw_di(trade_date: Timestamp) -> DataFrame:
         return pd.DataFrame()
 
 
-def convert_prices_to_rates(prices: Series, bd: Series) -> Series:
+def _convert_prices_to_rates(prices: Series, bd: Series) -> Series:
     """
     Internal function to convert DI futures prices to rates.
 
@@ -137,7 +137,7 @@ def convert_prices_to_rates(prices: Series, bd: Series) -> Series:
     return 100 * rates
 
 
-def convert_prices_in_older_contracts(df: DataFrame) -> DataFrame:
+def _convert_prices_in_older_contracts(df: DataFrame) -> DataFrame:
     # Prior to 01/01/2002, prices were not converted to rates
     convert_cols = [
         "FirstRate",
@@ -149,7 +149,7 @@ def convert_prices_in_older_contracts(df: DataFrame) -> DataFrame:
         "LastAskRate",
     ]
     for col in convert_cols:
-        df[col] = convert_prices_to_rates(df[col], df["BDToExpiration"])
+        df[col] = _convert_prices_to_rates(df[col], df["BDToExpiration"])
 
     # Invert low and high prices
     df["MinRate"], df["MaxRate"] = df["MaxRate"], df["MinRate"]
@@ -157,7 +157,7 @@ def convert_prices_in_older_contracts(df: DataFrame) -> DataFrame:
     return df
 
 
-def process_di(df: DataFrame, trade_date: Timestamp) -> DataFrame:
+def _process_di(df: DataFrame, trade_date: Timestamp) -> DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -229,9 +229,9 @@ def process_di(df: DataFrame, trade_date: Timestamp) -> DataFrame:
 
     # Prior to 17/01/2002 (incluive), prices were not converted to rates
     if trade_date <= pd.Timestamp("2002-01-17"):
-        df = convert_prices_in_older_contracts(df)
+        df = _convert_prices_in_older_contracts(df)
 
-    df["SettlementRate"] = convert_prices_to_rates(
+    df["SettlementRate"] = _convert_prices_to_rates(
         df["SettlementPrice"], df["BDToExpiration"]
     )
 
@@ -289,7 +289,7 @@ def get_di(trade_date: Timestamp, return_raw: bool = False) -> DataFrame:
         - OpenContracts: number of open contracts at the start of the trading day.
         - closed_contracts: number of closed contracts at the end of the trading day.
     """
-    df_raw = get_raw_di(trade_date)
+    df_raw = _get_raw_di(trade_date)
     if return_raw:
         return df_raw
-    return process_di(df_raw, trade_date)
+    return _process_di(df_raw, trade_date)
