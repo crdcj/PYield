@@ -1,4 +1,5 @@
 from typing import Literal, overload, Union
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -6,11 +7,11 @@ import pandas as pd
 
 from .holidays import BrHolidays
 
-SingleDateType = Union[str, np.datetime64, pd.Timestamp]
+SingleDateType = Union[str, np.datetime64, pd.Timestamp, datetime]
 
 SeriesDateType = Union[list, tuple, np.ndarray, pd.Series, pd.Index, pd.DatetimeIndex]
 
-TO_TIMESTAMP_TYPES = (str, np.datetime64)
+TO_TIMESTAMP_TYPES = (str, np.datetime64, datetime)
 TO_SERIES_TYPES = (list, tuple, np.ndarray, pd.Series, pd.Index, pd.DatetimeIndex)
 
 # Initialize the BrHolidays class
@@ -306,12 +307,6 @@ def generate_bdays(
         2023-12-29    2023-12-29
         dtype: object
     """
-    # Check if the start and end dates are single dates
-    is_start_single_date = isinstance(start, TO_TIMESTAMP_TYPES)
-    is_end_single_date = isinstance(end, TO_TIMESTAMP_TYPES)
-    if not is_start_single_date or not is_end_single_date:
-        raise ValueError("The start and end dates must be single dates.")
-
     normalized_start = _normalize_input_dates(start)
     normalized_end = _normalize_input_dates(end)
 
