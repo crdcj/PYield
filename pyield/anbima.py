@@ -132,7 +132,7 @@ def get_treasury_rates(
 
      Parameters:
      - reference_date (str | pd.Timestamp | None): Date for which to fetch the indicative rates.
-        If None, previous business day based on the Brazilian calendar is used.
+        If None, the previous business day based on the Brazilian calendar is used.
      - return_raw (bool): Whether to return raw data without processing.
 
      Returns:
