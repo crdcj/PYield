@@ -6,8 +6,8 @@ import pandas as pd
 from pandas import Timestamp, Series, DataFrame
 import requests
 
-from . import calendar as cd
-from . import di_futures as dif
+from .. import calendar as cl
+from . import core as cr
 
 
 def get_old_expiration_date(
@@ -66,7 +66,7 @@ def get_old_expiration_date(
         ExpirationDate = pd.Timestamp(year, month, 1)
         # Adjust to the next business day when ExpirationDate date is a weekend or a holiday
         # Must use the old holiday calendar, since this type of contract code was used until 2006
-        return cd.offset_bdays(ExpirationDate, offset=0, holiday_list="old")
+        return cl.offset_bdays(ExpirationDate, offset=0, holiday_list="old")
 
     except (KeyError, ValueError):
         return pd.NaT  # type: ignore
@@ -205,9 +205,9 @@ def process_di(df: DataFrame, trade_date: Timestamp) -> DataFrame:
             get_old_expiration_date, args=(trade_date,)
         )
     else:
-        df["ExpirationDate"] = df["ExpirationCode"].apply(dif.get_expiration_date)
+        df["ExpirationDate"] = df["ExpirationCode"].apply(cr.get_expiration_date)
 
-    df["BDToExpiration"] = cd.count_bdays(trade_date, df["ExpirationDate"])
+    df["BDToExpiration"] = cl.count_bdays(trade_date, df["ExpirationDate"])
     # Convert to nullable integer, since other columns use this data type
     df["BDToExpiration"] = df["BDToExpiration"].astype(pd.Int64Dtype())
     # Remove expired contracts

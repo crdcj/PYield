@@ -1,14 +1,14 @@
 import pandas as pd
 import pytest
 
-from pyield import di_futures as dif
-from pyield import di_web as diw
+from pyield.di import core as cr
+from pyield.di import web as wb
 
 
 def test_valid_old_contract_code1():
     expiration_code = "JAN3"  # Valid contract code
     trade_date = pd.Timestamp("2001-05-21")
-    result = diw.get_old_expiration_date(expiration_code, trade_date)
+    result = wb.get_old_expiration_date(expiration_code, trade_date)
     contract_expiration = pd.Timestamp("2003-01-02")
     assert result == contract_expiration
 
@@ -16,7 +16,7 @@ def test_valid_old_contract_code1():
 def test_valid_old_contract_code2():
     expiration_code = "JAN3"  # Valid contract code
     trade_date = pd.Timestamp("1990-01-01")
-    result = diw.get_old_expiration_date(expiration_code, trade_date)
+    result = wb.get_old_expiration_date(expiration_code, trade_date)
     contract_expiration = pd.Timestamp("1993-01-04")
     assert result == contract_expiration
 
@@ -25,13 +25,13 @@ def test_invalid_old_contract_code():
     expiration_code = "J3"  # Invalid contract code
     trade_date = pd.Timestamp("2001-01-02")
     # Must return NaT
-    result = diw.get_old_expiration_date(expiration_code, trade_date)
+    result = wb.get_old_expiration_date(expiration_code, trade_date)
     assert pd.isnull(result)
 
 
 def test_new_contract_code():
     expiration_code = "F23"  # Valid contract code
-    result = dif.get_expiration_date(expiration_code)
+    result = cr.get_expiration_date(expiration_code)
     contract_expiration = pd.Timestamp("2023-01-02")
     assert result == contract_expiration
 
@@ -43,7 +43,7 @@ def test_settlement_rate_with_old_holiday_list():
     }
 
     # 22-12-2023 is before the new holiday calendar
-    df = dif.get_di(trade_date="2023-12-22")
+    df = cr.get_di(trade_date="2023-12-22")
     expiration_codes = list(settlement_rates.keys())  # noqa: F841
     result = df.query("ExpirationCode in @expiration_codes")["SettlementRate"].to_list()
     assert result == list(settlement_rates.values())
@@ -68,7 +68,7 @@ def test_settlement_rates_with_current_holiday_list():
         "F33": 0.10331,
     }
 
-    df = dif.get_di(trade_date="2023-12-26")
+    df = cr.get_di(trade_date="2023-12-26")
     expiration_codes = list(settlement_rates.keys())  # noqa: F841
     results = df.query("ExpirationCode in @expiration_codes")[
         "SettlementRate"
@@ -79,4 +79,4 @@ def test_settlement_rates_with_current_holiday_list():
 def test_non_business_day():
     non_business_day = "2023-12-24"
     with pytest.raises(ValueError):
-        dif.get_di(trade_date=non_business_day)
+        cr.get_di(trade_date=non_business_day)

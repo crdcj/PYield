@@ -1,5 +1,5 @@
 from .__about__ import __version__
-from .di.di_futures import get_di, read_di
+from .di import get_di, read_di
 from .calendar import count_bdays, generate_bdays, offset_bdays, is_business_day
 from .anbima import get_treasury_rates, calculate_treasury_di_spreads
 

@@ -4,9 +4,9 @@ from pathlib import Path
 import pandas as pd
 from pandas import DataFrame, Timestamp
 
-from . import di_web as diw
-from . import di_xml as dix
-from . import calendar as cd
+from . import web as wb
+from . import xml as dix
+from .. import calendar as cl
 
 
 def normalize_date(trade_date: str | Timestamp | None = None) -> Timestamp:
@@ -17,11 +17,7 @@ def normalize_date(trade_date: str | Timestamp | None = None) -> Timestamp:
     elif trade_date is None:
         today = pd.Timestamp.today().normalize()
         # Get last business day before today
-        if cd.is_business_day(today):
-            last_business_day = cd.offset_bdays(today, -1)
-        else:
-            last_business_day = cd.offset_bdays(today, offset=0, roll="backward")
-        normalized_date = last_business_day
+        normalized_date = cl.offset_bdays(today, -1)
     else:
         raise ValueError("Invalid date format.")
 
@@ -30,7 +26,7 @@ def normalize_date(trade_date: str | Timestamp | None = None) -> Timestamp:
         raise ValueError("Trade date cannot be in the future.")
 
     # Raise error if the reference date is not a business day
-    if not cd.is_business_day(normalized_date):
+    if not cl.is_business_day(normalized_date):
         raise ValueError("Trade date must be a business day.")
 
     return normalized_date
@@ -93,7 +89,7 @@ def get_expiration_date(expiration_code: str) -> Timestamp:
         expiration = pd.Timestamp(year, month, 1)
 
         # Adjust to the next business day when expiration date is a weekend or a holiday
-        adj_expiration = cd.offset_bdays(expiration, offset=0)
+        adj_expiration = cl.offset_bdays(expiration, offset=0)
 
         return adj_expiration
 
@@ -144,7 +140,7 @@ def get_di(
     normalized_trade_date = normalize_date(trade_date)
 
     if source_type == "bmf":
-        return diw.get_di(normalized_trade_date, return_raw)
+        return wb.get_di(normalized_trade_date, return_raw)
     elif source_type in ["b3", "b3s"]:
         return dix.get_di(normalized_trade_date, source_type, return_raw)
     else:

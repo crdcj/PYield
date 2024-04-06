@@ -1,9 +1,12 @@
-import pandas as pd
-from pandas import Timestamp, DataFrame
-from urllib.error import HTTPError
+import io
 
-from . import di_futures as di
-from . import calendar as cd
+import pandas as pd
+import requests
+
+from pandas import Timestamp, DataFrame
+
+from . import di
+from . import calendar as cl
 
 # URL Constants
 ANBIMA_NON_MEMBER_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
@@ -21,11 +24,7 @@ def normalize_date(reference_date: str | Timestamp | None = None) -> Timestamp:
     elif reference_date is None:
         today = pd.Timestamp.today().normalize()
         # Get last business day before today
-        if cd.is_business_day(today):
-            last_business_day = cd.offset_bdays(today, -1)
-        else:
-            last_business_day = cd.offset_bdays(today, offset=0, roll="backward")
-        normalized_date = last_business_day
+        normalized_date = cl.offset_bdays(today, -1)
     else:
         raise ValueError("Invalid date format.")
 
@@ -34,15 +33,41 @@ def normalize_date(reference_date: str | Timestamp | None = None) -> Timestamp:
         raise ValueError("Reference date cannot be in the future.")
 
     # Raise error if the reference date is not a business day
-    if not cd.is_business_day(normalized_date):
+    if not cl.is_business_day(normalized_date):
         raise ValueError("Reference date must be a business day.")
 
     return normalized_date
 
 
-def read_csv(url: str) -> DataFrame:
-    return pd.read_csv(
-        url,
+def get_anbima_content(reference_date: Timestamp) -> str:
+    url_date = reference_date.strftime("%y%m%d")
+    member_url = f"{ANBIMA_MEMBER_URL}ms{url_date}.txt"
+    non_member_url = f"{ANBIMA_NON_MEMBER_URL}ms{url_date}.txt"
+
+    try:
+        # Tries to access the main URL
+        response = requests.get(member_url)
+        # Checks if the response was successful (status code 200)
+        response.raise_for_status()
+        return response.text
+    except requests.exceptions.ConnectionError:
+        # If there is a connection error, tries non-member URL
+        try:
+            response = requests.get(non_member_url)
+            response.raise_for_status()  # Checks if the second attempt was successful
+            return response.text
+        except requests.exceptions.RequestException as e:
+            # If the attempt with the alternative URL also fails, handles the error
+            raise ValueError("Failed to access the ANBIMA rates.") from e
+    except requests.exceptions.HTTPError as e:
+        # Handles other possible HTTP errors that are not connection errors
+        raise ValueError("Failed to access the ANBIMA rates.") from e
+
+
+def get_raw_data(reference_date: Timestamp) -> DataFrame:
+    url_content = get_anbima_content(reference_date)
+    df = pd.read_csv(
+        io.StringIO(url_content),
         sep="@",
         encoding="latin-1",
         skiprows=2,
@@ -51,23 +76,6 @@ def read_csv(url: str) -> DataFrame:
         na_values=["--"],
         dtype_backend="numpy_nullable",
     )
-
-
-def get_raw_data(reference_date: Timestamp) -> DataFrame:
-    # Format the date to match the URL format
-    url_date = reference_date.strftime("%y%m%d")
-    member_url = f"{ANBIMA_MEMBER_URL}ms{url_date}.txt"
-    non_member_url = f"{ANBIMA_NON_MEMBER_URL}ms{url_date}.txt"
-
-    try:
-        df = read_csv(member_url)
-    except HTTPError:
-        try:
-            df = read_csv(non_member_url)
-        except HTTPError:
-            error_date = reference_date.strftime("%d-%m-%Y")
-            raise ValueError(f"Failed to get ANBIMA rates for {error_date}")
-
     return df
 
 

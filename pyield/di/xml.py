@@ -7,8 +7,8 @@ import pandas as pd
 from pandas import Timestamp, DataFrame
 from lxml import etree
 
-from . import di_futures as dif
-from . import calendar as cd
+from . import core as cr
+from .. import calendar as cd
 
 
 def get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
@@ -229,7 +229,7 @@ def process_di_df(df_raw: DataFrame) -> DataFrame:
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
 
-    expiration = df["TckrSymb"].str[3:].apply(dif.get_expiration_date)
+    expiration = df["TckrSymb"].str[3:].apply(cr.get_expiration_date)
     df.insert(2, "ExpirationDate", expiration)
 
     business_days = cd.count_bdays(df["TradDt"], df["ExpirationDate"])
