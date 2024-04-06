@@ -61,12 +61,12 @@ def _get_anbima_content(reference_date: Timestamp) -> str:
         return response.text
     except requests.exceptions.RequestException:
         # Both URLs failed
-        return None
+        return ""
 
 
 def _get_raw_data(reference_date: Timestamp) -> DataFrame:
     url_content = _get_anbima_content(reference_date)
-    if url_content is None:
+    if url_content == "":
         date_str = reference_date.strftime("%d-%m-%Y")
         raise ValueError(f"Could not fetch ANBIMA data for {date_str}.")
 

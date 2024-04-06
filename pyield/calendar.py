@@ -187,6 +187,14 @@ def count_bdays(
 ) -> pd.Series: ...
 
 
+@overload
+def count_bdays(
+    start: SeriesDateType,
+    end: SeriesDateType,
+    holiday_list: Literal["old", "new", "infer"] = "infer",
+) -> pd.Series: ...
+
+
 def count_bdays(
     start: SingleDateType | SeriesDateType | None = None,
     end: SingleDateType | SeriesDateType | None = None,
