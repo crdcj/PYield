@@ -3,8 +3,6 @@ import io
 import pandas as pd
 import requests
 
-from pandas import Timestamp, DataFrame
-
 from . import di
 from . import calendar as cl
 
@@ -16,10 +14,10 @@ ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs/"
 BPS_CONVERSION_FACTOR = 10_000
 
 
-def _normalize_date(reference_date: str | Timestamp | None = None) -> Timestamp:
+def _normalize_date(reference_date: str | pd.Timestamp | None = None) -> pd.Timestamp:
     if isinstance(reference_date, str):
         normalized_date = pd.Timestamp(reference_date).normalize()
-    elif isinstance(reference_date, Timestamp):
+    elif isinstance(reference_date, pd.Timestamp):
         normalized_date = reference_date.normalize()
     elif reference_date is None:
         today = pd.Timestamp.today().normalize()
@@ -33,13 +31,13 @@ def _normalize_date(reference_date: str | Timestamp | None = None) -> Timestamp:
         raise ValueError("Reference date cannot be in the future.")
 
     # Raise error if the reference date is not a business day
-    if not cl.is_business_day(normalized_date):
+    if not cl.is_bday(normalized_date):
         raise ValueError("Reference date must be a business day.")
 
     return normalized_date
 
 
-def _get_anbima_content(reference_date: Timestamp) -> str:
+def _get_anbima_content(reference_date: pd.Timestamp) -> str:
     url_date = reference_date.strftime("%y%m%d")
     member_url = f"{ANBIMA_MEMBER_URL}ms{url_date}.txt"
     non_member_url = f"{ANBIMA_NON_MEMBER_URL}ms{url_date}.txt"
@@ -64,7 +62,7 @@ def _get_anbima_content(reference_date: Timestamp) -> str:
         return ""
 
 
-def _get_raw_data(reference_date: Timestamp) -> DataFrame:
+def _get_raw_data(reference_date: pd.Timestamp) -> pd.DataFrame:
     url_content = _get_anbima_content(reference_date)
     if url_content == "":
         date_str = reference_date.strftime("%d-%m-%Y")
@@ -83,7 +81,7 @@ def _get_raw_data(reference_date: Timestamp) -> DataFrame:
     return df
 
 
-def _process_raw_data(df_raw: DataFrame) -> DataFrame:
+def _process_raw_data(df_raw: pd.DataFrame) -> pd.DataFrame:
     """
     Process raw data from ANBIMA by filtering selected columns, renaming them, and adjusting data formats.
 
@@ -126,21 +124,33 @@ def _process_raw_data(df_raw: DataFrame) -> DataFrame:
 
 
 def get_treasury_rates(
-    reference_date: str | Timestamp | None = None,
+    reference_date: str | pd.Timestamp | None = None,
     return_raw=False,
-) -> DataFrame:
+) -> pd.DataFrame:
     """
-    Fetch and process indicative rates from ANBIMA for a specific date.
-    If no date is provided, the previous business day based on the Brazilian calendar
-    is used.
+    Fetches and processes indicative treasury rates from ANBIMA for a specified reference date.
 
-     Parameters:
-     - reference_date (str | pd.Timestamp | None): Date for which to fetch the indicative rates.
-        If None, the previous business day based on the Brazilian calendar is used.
-     - return_raw (bool): Whether to return raw data without processing.
+    This function retrieves the indicative rates for Brazilian treasury securities from ANBIMA,
+    processing them into a structured pandas DataFrame. If no reference date is provided, it defaults
+    to the previous business day according to the Brazilian calendar. There is an option to return
+    raw data directly from the source without processing.
 
-     Returns:
-     - pd.DataFrame: DataFrame with the indicative rates for the given date.
+    Parameters:
+        reference_date (str | pd.Timestamp, optional): The date for which to fetch the indicative rates.
+            If None or not provided, the function defaults to the previous business day.
+        return_raw (bool, optional): Flag to return raw data without processing. Defaults to False.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the processed indicative rates for the given reference date,
+        or raw data if `return_raw` is True. The processed data includes bond type, reference date, maturity date,
+        and various rates (bid, ask, indicative) among others, depending on the `return_raw` flag.
+
+    Examples:
+        # Fetch processed indicative rates for the previous business day
+        >>> get_treasury_rates()
+
+        # Fetch raw indicative rates for a specific date
+        >>> get_treasury_rates("2023-12-28")
     """
 
     normalized_date = _normalize_date(reference_date)
@@ -153,19 +163,29 @@ def get_treasury_rates(
 
 
 def calculate_treasury_di_spreads(
-    reference_date: str | Timestamp | None = None,
-) -> DataFrame:
+    reference_date: str | pd.Timestamp | None = None,
+) -> pd.DataFrame:
     """
-    Calculate the DI spread for LTN and NTN-F bonds based on ANBIMA's indicative rates.
-    If no date is provided, the previous business day based on the Brazilian calendar
-    is used.
+    Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on ANBIMA's indicative rates.
+
+    This function fetches the indicative rates for Brazilian treasury securities (LTN and NTN-F bonds)
+    and the DI futures rates for a specified reference date, calculating the spread between these rates
+    in basis points. If no reference date is provided, the function uses the previous business day.
 
     Parameters:
-    - reference_date (str | pd.Timestamp | None): The reference date for querying ANBIMA's indicative rates.
-        If None, the previous business day based on the Brazilian calendar is used.
+        reference_date (str | pd.Timestamp, optional): The reference date for the DI spread calculation.
+            If None or not provided, defaults to the previous business day according to the Brazilian calendar.
 
     Returns:
-    - pd.DataFrame: A DataFrame containing the bond type, reference date, maturity date, and DI spread in basis points.
+        pd.DataFrame: A DataFrame containing the bond type, reference date, maturity date, and the calculated
+        DI spread in basis points. The data is sorted by bond type and maturity date.
+
+    Examples:
+        # Calculate DI spreads for the previous business day
+        >>> calculate_treasury_di_spreads()
+
+        # Calculate DI spreads for a specific reference date
+        >>> calculate_treasury_di_spreads("2023-12-15")
     """
     # Validate the reference date, defaulting to the previous business day if not provided
     normalized_date = _normalize_date(reference_date)

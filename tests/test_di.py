@@ -2,13 +2,13 @@ import pandas as pd
 import pytest
 
 from pyield.di import core as cr
-from pyield.di import web as wb
+from pyield.di import web as web
 
 
 def test_valid_old_contract_code1():
     expiration_code = "JAN3"  # Valid contract code
     trade_date = pd.Timestamp("2001-05-21")
-    result = wb.get_old_expiration_date(expiration_code, trade_date)
+    result = web.get_old_expiration_date(expiration_code, trade_date)
     contract_expiration = pd.Timestamp("2003-01-02")
     assert result == contract_expiration
 
@@ -16,7 +16,7 @@ def test_valid_old_contract_code1():
 def test_valid_old_contract_code2():
     expiration_code = "JAN3"  # Valid contract code
     trade_date = pd.Timestamp("1990-01-01")
-    result = wb.get_old_expiration_date(expiration_code, trade_date)
+    result = web.get_old_expiration_date(expiration_code, trade_date)
     contract_expiration = pd.Timestamp("1993-01-04")
     assert result == contract_expiration
 
@@ -25,7 +25,7 @@ def test_invalid_old_contract_code():
     expiration_code = "J3"  # Invalid contract code
     trade_date = pd.Timestamp("2001-01-02")
     # Must return NaT
-    result = wb.get_old_expiration_date(expiration_code, trade_date)
+    result = web.get_old_expiration_date(expiration_code, trade_date)
     assert pd.isnull(result)
 
 

@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Literal
 
 import pandas as pd
-from pandas import Series, Timestamp
 
 
 class BrHolidays:
@@ -16,7 +15,7 @@ class BrHolidays:
         self.new_holidays = self._load_holidays(new_holidays_path)
         self.old_holidays = self._load_holidays(old_holidays_path)
 
-    def _load_holidays(self, file_path: Path) -> Series:
+    def _load_holidays(self, file_path: Path) -> pd.Series:
         """Loads the list of holidays from a text file and returns it as a pd.Series of pd.Timestamp."""
         df = pd.read_csv(file_path, header=None, names=["date"], comment="#")
         # Convert the dates to a pd.Series of pd.Timestamp
@@ -24,9 +23,9 @@ class BrHolidays:
 
     def get_applicable_holidays(
         self,
-        dates: Timestamp | Series,
+        dates: pd.Timestamp | pd.Series,
         holiday_list: Literal["old", "new", "infer"] = "infer",
-    ) -> Series:
+    ) -> pd.Series:
         """
         Returns the correct list of holidays to use based on the most recent date in the input.
 
@@ -39,7 +38,7 @@ class BrHolidays:
         Returns:
             pd.Series: The list of holidays to use.
         """
-        if isinstance(dates, Timestamp):
+        if isinstance(dates, pd.Timestamp):
             earliest_date = dates
         else:
             earliest_date = dates.min()

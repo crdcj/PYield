@@ -2,17 +2,16 @@ from typing import Literal
 from pathlib import Path
 
 import pandas as pd
-from pandas import DataFrame, Timestamp
 
-from . import web as wb
-from . import xml as dix
+from . import web
+from . import xml
 from .. import calendar as cl
 
 
-def _normalize_date(trade_date: str | Timestamp | None = None) -> Timestamp:
+def _normalize_date(trade_date: str | pd.Timestamp | None = None) -> pd.Timestamp:
     if isinstance(trade_date, str):
         normalized_date = pd.Timestamp(trade_date).normalize()
-    elif isinstance(trade_date, Timestamp):
+    elif isinstance(trade_date, pd.Timestamp):
         normalized_date = trade_date.normalize()
     elif trade_date is None:
         today = pd.Timestamp.today().normalize()
@@ -26,30 +25,29 @@ def _normalize_date(trade_date: str | Timestamp | None = None) -> Timestamp:
         raise ValueError("Trade date cannot be in the future.")
 
     # Raise error if the reference date is not a business day
-    if not cl.is_business_day(normalized_date):
+    if not cl.is_bday(normalized_date):
         raise ValueError("Trade date must be a business day.")
 
     return normalized_date
 
 
-def get_expiration_date(expiration_code: str) -> Timestamp:
+def get_expiration_date(expiration_code: str) -> pd.Timestamp:
     """
-    Internal function to convert the expiration code into its expiration date.
+    Converts an expiration code into its corresponding expiration date.
 
-    Given a expiration code, this function determines its expiration date.
-    If the expiration code does not correspond to a valid month or year, or if the input
-    is not in the expected format, the function will return a pd.NaT (Not a Timestamp).
-    Valid for contract codes from 22-05-2006 (inclusive) onwards.
+    This function translates an expiration code into a specific expiration date based on
+    a given mapping. The expiration code consists of a letter representing the month and
+    two digits for the year. The function ensures the date returned is a valid business
+    day by adjusting weekends and holidays as necessary.
 
     Args:
-        expiration_code (str):
-            A string where the first letter represents the month and the last two digits
-            represent the year. Example: "F23".
+        expiration_code (str): The expiration code to be converted, where the first
+            letter represents the month and the last two digits represent the year
+            (e.g., "F23" for January 2023).
 
     Returns:
-        pd.Timestamp
-            The contract's expiration date, adjusted for a valid business day.
-            Returns pd.NaT if the input is invalid.
+        pd.Timestamp: The expiration date corresponding to the code, adjusted to a valid
+            business day. Returns pd.NaT if the code is invalid.
 
     Examples:
         >>> get_expiration_date("F23")
@@ -62,9 +60,9 @@ def get_expiration_date(expiration_code: str) -> Timestamp:
         pd.NaT
 
     Notes:
-        - In 22-05-2006, B3 changed the format of the DI contract codes.
-        - The first letter represents the month and the last two digits represent the
-          year.
+        The expiration date is calculated based on the format change introduced by B3 on
+        22-05-2006, where the first letter represents the month and the last two digits
+        represent the year.
     """
     month_codes = {
         "F": 1,
@@ -98,68 +96,84 @@ def get_expiration_date(expiration_code: str) -> Timestamp:
 
 
 def get_di(
-    trade_date: str | Timestamp | None = None,
+    trade_date: str | pd.Timestamp | None = None,
     source_type: Literal["bmf", "b3", "b3s"] = "bmf",
     return_raw: bool = False,
-) -> DataFrame:
+) -> pd.DataFrame:
     """
-    Gets the DI futures data for a given date from B3.
+    Fetches DI futures data for a specified trade date from B3.
 
-    This function fetches and processes the DI futures data from B3 for a specific
-    trade date. It's the primary external interface for accessing DI data.
+     Retrieves and processes DI futures data from B3 for a given trade date. This function
+     serves as the primary method for accessing DI data, with options to specify the source
+     of the data and whether to return raw data.
 
-    Args:
-        trade_date: a datetime-like object representing the trade date. if not provided,
-            the function will use the previous business day.
-        source_type: a string indicating the source of the data. Options are "bmf",
-            "b3" and "b3s" (default is "bmf").
-            - "bmf" (fast) fetches DI data from old BM&FBOVESPA website. This is the default
-              option.
-            - "b3" (slow) fetches DI data from the complete Price Report (XML file) provided by B3.
-            - "b3s" (fast) fetches DI data from the simplified Price Report (XML file) provided by B3.
-              This option is faster than "b3" but it has less information.
-        return_raw: a boolean indicating whether to return the raw DI data.
+     Args:
+         trade_date (str | pd.Timestamp | None, optional): The trade date for which to
+             fetch DI data. If None or not provided, uses the previous business day.
+         source_type (Literal["bmf", "b3", "b3s"], optional): Indicates the source of the
+             data. Options include:
+             - "bmf": Fetches data from the old BM&FBOVESPA website. Fastest option.
+             - "b3": Fetches data from the complete Price Report (XML file) provided by B3.
+             - "b3s": Fetches data from the simplified Price Report (XML file) provided by B3.
+               Faster than "b3" but less detailed.
+             Defaults to "bmf".
+         return_raw (bool, optional): If True, returns the raw DI data without processing.
 
-    Returns:
-        pd.DataFrame: A Pandas DataFrame containing the DI Futures data for
-        the given trade date.
+     Returns:
+         pd.DataFrame: A DataFrame containing the DI futures data for the specified trade
+             date. Format and content depend on the source_type and return_raw flag.
 
-    Examples:
-        # Get the DI data for the previous business day
-        >>> get_di()
-        # Get the DI data for a specific date in ISO format (YYYY-MM-DD)
-        >>> get_di("2023-12-28")
+     Examples:
+         # Fetch DI data for the previous business day using default settings
+         >>> get_di()
 
-    Notes:
-        - The Complete Price Report XML files are approximately 5 MB zipped files.
-        - The Simplified Price Report XML files are approximately 50 kB zipped files.
-        - File information can be found at: https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf
+         # Fetch DI data for a specific trade date from the simplified B3 Price Report
+         >>> get_di("2023-12-28", source_type="b3s")
 
+     Notes:
+         - Complete Price Report XML files are about 5 MB in size.
+         - Simplified Price Report XML files are significantly smaller, around 50 kB.
+         - For file specifications, refer to the B3 documentation: [B3 File Specs](https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf)
     """
-    # Force trade_date to be a pandas Timestamp
+    # Force trade_date to be a pandas pd.Timestamp
     normalized_trade_date = _normalize_date(trade_date)
 
     if source_type == "bmf":
-        return wb.get_di(normalized_trade_date, return_raw)
+        return web.get_di(normalized_trade_date, return_raw)
     elif source_type in ["b3", "b3s"]:
-        return dix.get_di(normalized_trade_date, source_type, return_raw)
+        return xml.get_di(normalized_trade_date, source_type, return_raw)
     else:
         raise ValueError("source_type must be either 'bmf', 'b3' or 'b3s'.")
 
 
-def read_di(file_path: Path, return_raw: bool = False) -> DataFrame:
+def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
     """
-    Reads a DI futures data file and returns a DataFrame.
+    Reads DI futures data from a file and returns it as a pandas DataFrame.
 
-    This function reads a DI futures data file and returns a DataFrame with the data.
+    This function opens and reads a DI futures data file, returning the contents as a
+    pandas DataFrame. It supports reading from both XML files provided by B3, wich
+    are the simplified and complete Price Reports.
 
     Args:
-        file_path: a Path object indicating the path to the file.
+        file_path (Path): The file path to the DI data file. This should be a valid
+            Path object pointing to the location of the file.
+        return_raw (bool, optional): If set to True, the function returns the raw data
+            without applying any transformation or processing. Useful for cases where
+            raw data inspection or custom processing is needed. Defaults to False.
 
     Returns:
-        pd.DataFrame: A Pandas DataFrame containing the DI Futures data.
+        pd.DataFrame: A DataFrame containing the processed or raw DI futures data,
+            depending on the `return_raw` flag.
 
     Examples:
-        >>> read_di_from_file(Path("path/to/file.xml"))
+        >>> read_di(Path("path/to/di_data_file.xml"))
+        # returns a DataFrame with the DI futures data
+
+        >>> read_di(Path("path/to/di_data_file.xml"), return_raw=True)
+        # returns a DataFrame with the raw DI futures data, without processing
+
+    Note:
+        The ability to process and return raw data is primarily intended for advanced
+        users who require access to the data in its original form for custom analyses.
     """
-    return dix.read_di(file_path, return_raw=return_raw)
+    return xml.read_di(file_path, return_raw=return_raw)
