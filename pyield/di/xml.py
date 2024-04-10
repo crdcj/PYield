@@ -8,7 +8,7 @@ from pandas import Timestamp, DataFrame
 from lxml import etree
 
 from . import core as cr
-from .. import calendar as cd
+from ..bday import core as cd
 
 
 def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
@@ -232,7 +232,7 @@ def _process_di_df(df_raw: DataFrame) -> DataFrame:
     expiration = df["TckrSymb"].str[3:].apply(cr.get_expiration_date)
     df.insert(2, "ExpirationDate", expiration)
 
-    business_days = cd.count_bdays(df["TradDt"], df["ExpirationDate"])
+    business_days = cd.count(df["TradDt"], df["ExpirationDate"])
     df.insert(3, "BDToExpiration", business_days)
 
     # Convert to nullable integer, since other columns use this data type

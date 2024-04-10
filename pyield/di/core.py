@@ -5,7 +5,7 @@ import pandas as pd
 
 from . import web
 from . import xml
-from .. import calendar as cl
+from ..bday import core as cl
 
 
 def _normalize_date(trade_date: str | pd.Timestamp | None = None) -> pd.Timestamp:
@@ -16,7 +16,7 @@ def _normalize_date(trade_date: str | pd.Timestamp | None = None) -> pd.Timestam
     elif trade_date is None:
         today = pd.Timestamp.today().normalize()
         # Get last business day before today
-        normalized_date = cl.offset_bdays(today, -1)
+        normalized_date = cl.offset(today, -1)
     else:
         raise ValueError("Invalid date format.")
 
@@ -87,7 +87,7 @@ def get_expiration_date(expiration_code: str) -> pd.Timestamp:
         expiration = pd.Timestamp(year, month, 1)
 
         # Adjust to the next business day when expiration date is a weekend or a holiday
-        adj_expiration = cl.offset_bdays(expiration, offset=0)
+        adj_expiration = cl.offset(expiration, offset=0)
 
         return adj_expiration
 
@@ -95,7 +95,7 @@ def get_expiration_date(expiration_code: str) -> pd.Timestamp:
         raise ValueError("Invalid expiration code.")
 
 
-def get_di(
+def get_data(
     trade_date: str | pd.Timestamp | None = None,
     source_type: Literal["bmf", "b3", "b3s"] = "bmf",
     return_raw: bool = False,

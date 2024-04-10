@@ -3,8 +3,8 @@ import io
 import pandas as pd
 import requests
 
-from . import di
-from . import calendar as cl
+from .. import di
+from .. import bday
 
 # URL Constants
 ANBIMA_NON_MEMBER_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
@@ -22,7 +22,7 @@ def _normalize_date(reference_date: str | pd.Timestamp | None = None) -> pd.Time
     elif reference_date is None:
         today = pd.Timestamp.today().normalize()
         # Get last business day before today
-        normalized_date = cl.offset_bdays(today, -1)
+        normalized_date = bday.offset(today, -1)
     else:
         raise ValueError("Invalid date format.")
 
@@ -31,7 +31,7 @@ def _normalize_date(reference_date: str | pd.Timestamp | None = None) -> pd.Time
         raise ValueError("Reference date cannot be in the future.")
 
     # Raise error if the reference date is not a business day
-    if not cl.is_bday(normalized_date):
+    if not bday.is_bday(normalized_date):
         raise ValueError("Reference date must be a business day.")
 
     return normalized_date
@@ -123,7 +123,7 @@ def _process_raw_data(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def get_treasury_rates(
+def get_data(
     reference_date: str | pd.Timestamp | None = None,
     return_raw=False,
 ) -> pd.DataFrame:
@@ -162,7 +162,7 @@ def get_treasury_rates(
     return df
 
 
-def calculate_treasury_di_spreads(
+def calculate_di_spreads(
     reference_date: str | pd.Timestamp | None = None,
 ) -> pd.DataFrame:
     """
@@ -191,7 +191,7 @@ def calculate_treasury_di_spreads(
     normalized_date = _normalize_date(reference_date)
 
     # Fetch DI rates and adjust the maturity date format for compatibility
-    df_di = di.get_di(normalized_date)[["ExpirationDate", "SettlementRate"]]
+    df_di = di.get_data(normalized_date)[["ExpirationDate", "SettlementRate"]]
 
     # Renaming the columns to match the ANBIMA structure
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
@@ -200,7 +200,7 @@ def calculate_treasury_di_spreads(
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = get_treasury_rates(normalized_date, False)
+    df_anbima = get_data(normalized_date, False)
     df_anbima.query("BondType in ['LTN', 'NTN-F']", inplace=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads
