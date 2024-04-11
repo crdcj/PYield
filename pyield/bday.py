@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 
-from ..holidays import BrHolidays
+from .holidays import BrHolidays
 
 
 SingleDateTypes = Union[str, np.datetime64, pd.Timestamp, datetime]
@@ -66,7 +66,7 @@ def is_bday(date: SingleDateTypes | None = None) -> bool:
     """
     normalized_date = _normalize_input_dates(date)
     # Shift the date if it is not a business day
-    adjusted_date = offset(normalized_date, 0)
+    adjusted_date = offset_bdays(normalized_date, 0)
     return normalized_date == adjusted_date
 
 
@@ -89,7 +89,7 @@ def _convert_to_numpy_date(
 
 
 @overload
-def offset(
+def offset_bdays(
     dates: SingleDateTypes | None = None,
     offset: int = 0,
     roll: Literal["forward", "backward"] = "forward",
@@ -98,7 +98,7 @@ def offset(
 
 
 @overload
-def offset(
+def offset_bdays(
     dates: SeriesDateTypes,
     offset: int = 0,
     roll: Literal["forward", "backward"] = "forward",
@@ -106,7 +106,7 @@ def offset(
 ) -> pd.Series: ...
 
 
-def offset(
+def offset_bdays(
     dates: SingleDateTypes | SeriesDateTypes | None = None,
     offset: int = 0,
     roll: Literal["forward", "backward"] = "forward",
@@ -172,7 +172,7 @@ def offset(
 
 
 @overload
-def count(
+def count_bdays(
     start: SingleDateTypes | None = None,
     end: SingleDateTypes | None = None,
     holiday_list: Literal["old", "new", "infer"] = "infer",
@@ -180,7 +180,7 @@ def count(
 
 
 @overload
-def count(
+def count_bdays(
     start: SeriesDateTypes,
     end: SingleDateTypes | None,
     holiday_list: Literal["old", "new", "infer"] = "infer",
@@ -188,7 +188,7 @@ def count(
 
 
 @overload
-def count(
+def count_bdays(
     start: SingleDateTypes | None,
     end: SeriesDateTypes,
     holiday_list: Literal["old", "new", "infer"] = "infer",
@@ -196,14 +196,14 @@ def count(
 
 
 @overload
-def count(
+def count_bdays(
     start: SeriesDateTypes,
     end: SeriesDateTypes,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series: ...
 
 
-def count(
+def count_bdays(
     start: SingleDateTypes | SeriesDateTypes | None = None,
     end: SingleDateTypes | SeriesDateTypes | None = None,
     holiday_list: Literal["old", "new", "infer"] = "infer",
@@ -263,7 +263,7 @@ def count(
         return pd.Series(result_np, dtype="Int64")
 
 
-def generate(
+def generate_bdays(
     start: SingleDateTypes | None = None,
     end: SingleDateTypes | None = None,
     inclusive: Literal["both", "neither", "left", "right"] = "both",

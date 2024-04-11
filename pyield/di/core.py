@@ -1,11 +1,10 @@
-from typing import Literal
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
 
-from . import web
-from . import xml
-from ..bday import core as cl
+from .. import bday
+from . import web, xml
 
 
 def _normalize_date(trade_date: str | pd.Timestamp | None = None) -> pd.Timestamp:
@@ -16,7 +15,7 @@ def _normalize_date(trade_date: str | pd.Timestamp | None = None) -> pd.Timestam
     elif trade_date is None:
         today = pd.Timestamp.today().normalize()
         # Get last business day before today
-        normalized_date = cl.offset(today, -1)
+        normalized_date = bday.offset(today, -1)
     else:
         raise ValueError("Invalid date format.")
 
@@ -25,7 +24,7 @@ def _normalize_date(trade_date: str | pd.Timestamp | None = None) -> pd.Timestam
         raise ValueError("Trade date cannot be in the future.")
 
     # Raise error if the reference date is not a business day
-    if not cl.is_bday(normalized_date):
+    if not bday.is_bday(normalized_date):
         raise ValueError("Trade date must be a business day.")
 
     return normalized_date
@@ -87,7 +86,7 @@ def get_expiration_date(expiration_code: str) -> pd.Timestamp:
         expiration = pd.Timestamp(year, month, 1)
 
         # Adjust to the next business day when expiration date is a weekend or a holiday
-        adj_expiration = cl.offset(expiration, offset=0)
+        adj_expiration = bday.offset(expiration, offset=0)
 
         return adj_expiration
 
@@ -95,7 +94,7 @@ def get_expiration_date(expiration_code: str) -> pd.Timestamp:
         raise ValueError("Invalid expiration code.")
 
 
-def get_data(
+def fetch_data(
     trade_date: str | pd.Timestamp | None = None,
     source_type: Literal["bmf", "b3", "b3s"] = "bmf",
     return_raw: bool = False,
@@ -141,12 +140,12 @@ def get_data(
     if source_type == "bmf":
         return web.get_di(normalized_trade_date, return_raw)
     elif source_type in ["b3", "b3s"]:
-        return xml.get_di(normalized_trade_date, source_type, return_raw)
+        return xml.read_xml(normalized_trade_date, source_type, return_raw)
     else:
         raise ValueError("source_type must be either 'bmf', 'b3' or 'b3s'.")
 
 
-def read_di(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
+def read_data(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
     """
     Reads DI futures data from a file and returns it as a pandas DataFrame.
 

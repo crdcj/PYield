@@ -3,8 +3,7 @@ import io
 import pandas as pd
 import requests
 
-from .. import di
-from .. import bday
+from . import di
 
 # URL Constants
 ANBIMA_NON_MEMBER_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
@@ -12,29 +11,6 @@ ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs/"
 
 # Constant for conversion to basis points
 BPS_CONVERSION_FACTOR = 10_000
-
-
-def _normalize_date(reference_date: str | pd.Timestamp | None = None) -> pd.Timestamp:
-    if isinstance(reference_date, str):
-        normalized_date = pd.Timestamp(reference_date).normalize()
-    elif isinstance(reference_date, pd.Timestamp):
-        normalized_date = reference_date.normalize()
-    elif reference_date is None:
-        today = pd.Timestamp.today().normalize()
-        # Get last business day before today
-        normalized_date = bday.offset(today, -1)
-    else:
-        raise ValueError("Invalid date format.")
-
-    # Raise an error if the reference date is in the future
-    if normalized_date > pd.Timestamp.today().normalize():
-        raise ValueError("Reference date cannot be in the future.")
-
-    # Raise error if the reference date is not a business day
-    if not bday.is_bday(normalized_date):
-        raise ValueError("Reference date must be a business day.")
-
-    return normalized_date
 
 
 def _get_anbima_content(reference_date: pd.Timestamp) -> str:
@@ -123,10 +99,7 @@ def _process_raw_data(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def get_data(
-    reference_date: str | pd.Timestamp | None = None,
-    return_raw=False,
-) -> pd.DataFrame:
+def fetch_data(reference_date: pd.Timestamp, return_raw=False) -> pd.DataFrame:
     """
     Fetches and processes indicative treasury rates from ANBIMA for a specified reference date.
 
@@ -152,9 +125,7 @@ def get_data(
         # Fetch raw indicative rates for a specific date
         >>> get_treasury_rates("2023-12-28")
     """
-
-    normalized_date = _normalize_date(reference_date)
-    df = _get_raw_data(normalized_date)
+    df = _get_raw_data(reference_date)
 
     if not return_raw:
         df = _process_raw_data(df)
@@ -162,9 +133,7 @@ def get_data(
     return df
 
 
-def calculate_di_spreads(
-    reference_date: str | pd.Timestamp | None = None,
-) -> pd.DataFrame:
+def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     """
     Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on ANBIMA's indicative rates.
 
@@ -187,11 +156,8 @@ def calculate_di_spreads(
         # Calculate DI spreads for a specific reference date
         >>> calculate_treasury_di_spreads("2023-12-15")
     """
-    # Validate the reference date, defaulting to the previous business day if not provided
-    normalized_date = _normalize_date(reference_date)
-
     # Fetch DI rates and adjust the maturity date format for compatibility
-    df_di = di.get_data(normalized_date)[["ExpirationDate", "SettlementRate"]]
+    df_di = di.fetch_data(reference_date)[["ExpirationDate", "SettlementRate"]]
 
     # Renaming the columns to match the ANBIMA structure
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
@@ -200,7 +166,7 @@ def calculate_di_spreads(
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = get_data(normalized_date, False)
+    df_anbima = fetch_data(reference_date, False)
     df_anbima.query("BondType in ['LTN', 'NTN-F']", inplace=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads

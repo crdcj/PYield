@@ -8,7 +8,7 @@ from pandas import Timestamp, DataFrame
 from lxml import etree
 
 from . import core as cr
-from ..bday import core as cd
+from ..bday import bday as cd
 
 
 def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
@@ -244,7 +244,7 @@ def _process_di_df(df_raw: DataFrame) -> DataFrame:
     return df.sort_values(by=["ExpirationDate"], ignore_index=True)
 
 
-def get_di(trade_date: Timestamp, source_type: str, return_raw: bool) -> DataFrame:
+def read_xml(trade_date: Timestamp, source_type: str, return_raw: bool) -> DataFrame:
     zip_file = _get_file_from_url(trade_date, source_type)
 
     xml_file = _extract_xml_from_zip(zip_file)

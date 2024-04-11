@@ -5,7 +5,7 @@ from typing import Optional
 import pandas as pd
 import requests
 
-from ..bday import core as cl
+from ..bday import bday as bday
 from . import core as cr
 
 
@@ -65,7 +65,7 @@ def get_old_expiration_date(
         ExpirationDate = pd.Timestamp(year, month, 1)
         # Adjust to the next business day when ExpirationDate date is a weekend or a holiday
         # Must use the old holiday calendar, since this type of contract code was used until 2006
-        return cl.offset(ExpirationDate, offset=0, holiday_list="old")
+        return bday.offset(ExpirationDate, offset=0, holiday_list="old")
 
     except (KeyError, ValueError):
         return pd.NaT  # type: ignore
@@ -206,7 +206,7 @@ def _process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     else:
         df["ExpirationDate"] = df["ExpirationCode"].apply(cr.get_expiration_date)
 
-    df["BDToExpiration"] = cl.count(trade_date, df["ExpirationDate"])
+    df["BDToExpiration"] = bday.count(trade_date, df["ExpirationDate"])
     # Convert to nullable integer, since other columns use this data type
     df["BDToExpiration"] = df["BDToExpiration"].astype(pd.Int64Dtype())
     # Remove expired contracts
