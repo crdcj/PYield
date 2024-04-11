@@ -59,7 +59,8 @@ def _get_raw_data(reference_date: pd.Timestamp) -> pd.DataFrame:
 
 def _process_raw_data(df_raw: pd.DataFrame) -> pd.DataFrame:
     """
-    Process raw data from ANBIMA by filtering selected columns, renaming them, and adjusting data formats.
+    Process raw data from ANBIMA by filtering selected columns, renaming them and
+    adjusting data formats.
 
     Parameters:
     - df (pd.DataFrame): Raw data DataFrame to process.
@@ -101,22 +102,26 @@ def _process_raw_data(df_raw: pd.DataFrame) -> pd.DataFrame:
 
 def fetch_data(reference_date: pd.Timestamp, return_raw=False) -> pd.DataFrame:
     """
-    Fetches and processes indicative treasury rates from ANBIMA for a specified reference date.
+    Fetches indicative treasury rates from ANBIMA for a specified reference date.
 
-    This function retrieves the indicative rates for Brazilian treasury securities from ANBIMA,
-    processing them into a structured pandas DataFrame. If no reference date is provided, it defaults
-    to the previous business day according to the Brazilian calendar. There is an option to return
-    raw data directly from the source without processing.
+    This function retrieves the indicative rates for Brazilian treasury securities
+    from ANBIMA, processing them into a structured pandas DataFrame. If no reference
+    date is provided, it defaults to the previous business day according to the
+    Brazilian calendar. There is an option to return raw data directly from the source
+    without processing.
 
     Parameters:
-        reference_date (str | pd.Timestamp, optional): The date for which to fetch the indicative rates.
-            If None or not provided, the function defaults to the previous business day.
-        return_raw (bool, optional): Flag to return raw data without processing. Defaults to False.
+        reference_date (str | pd.Timestamp, optional): The date for which to fetch the
+            indicative rates. If None or not provided, the function defaults to the
+            previous business day.
+        return_raw (bool, optional): Flag to return raw data without processing.
+            Defaults to False.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the processed indicative rates for the given reference date,
-        or raw data if `return_raw` is True. The processed data includes bond type, reference date, maturity date,
-        and various rates (bid, ask, indicative) among others, depending on the `return_raw` flag.
+        pd.DataFrame: A DataFrame containing the processed indicative rates for the
+            given reference date, or raw data if `return_raw` is True. The processed
+            data includes bond type, reference date, maturity date and various rates
+            (bid, ask, indicative) among others, depending on the `return_raw` flag.
 
     Examples:
         # Fetch processed indicative rates for the previous business day
@@ -135,19 +140,23 @@ def fetch_data(reference_date: pd.Timestamp, return_raw=False) -> pd.DataFrame:
 
 def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     """
-    Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on ANBIMA's indicative rates.
+    Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on
+    ANBIMA's indicative rates.
 
-    This function fetches the indicative rates for Brazilian treasury securities (LTN and NTN-F bonds)
-    and the DI futures rates for a specified reference date, calculating the spread between these rates
-    in basis points. If no reference date is provided, the function uses the previous business day.
+    This function fetches the indicative rates for Brazilian treasury securities (LTN
+    and NTN-F bonds) and the DI futures rates for a specified reference date,
+    calculating the spread between these rates in basis points. If no reference date is
+    provided, the function uses the previous business day.
 
     Parameters:
-        reference_date (str | pd.Timestamp, optional): The reference date for the DI spread calculation.
-            If None or not provided, defaults to the previous business day according to the Brazilian calendar.
+        reference_date (str | pd.Timestamp, optional): The reference date for the DI
+            spread calculation. If None or not provided, defaults to the previous
+            business day according to the Brazilian calendar.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the bond type, reference date, maturity date, and the calculated
-        DI spread in basis points. The data is sorted by bond type and maturity date.
+        pd.DataFrame: A DataFrame containing the bond type, reference date, maturity
+            date, and the calculated DI spread in basis points. The data is sorted by
+            bond type and maturity date.
 
     Examples:
         # Calculate DI spreads for the previous business day
@@ -172,7 +181,7 @@ def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     # Merge bond and DI rates by maturity date to calculate spreads
     df_final = pd.merge(df_anbima, df_di, how="left", on="MaturityDate")
 
-    # Calculating the DI spread as the difference between indicative and settlement rates
+    # Calculate the DI spread as the difference between indicative and settlement rates
     df_final["DISpread"] = df_final["IndicativeRate"] - df_final["SettlementRate"]
 
     # Convert spread to basis points for clarity

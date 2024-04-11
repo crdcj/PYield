@@ -15,7 +15,7 @@ def _normalize_date(trade_date: str | pd.Timestamp | None = None) -> pd.Timestam
     elif trade_date is None:
         today = pd.Timestamp.today().normalize()
         # Get last business day before today
-        normalized_date = bday.offset(today, -1)
+        normalized_date = bday.offset_bdays(today, -1)
     else:
         raise ValueError("Invalid date format.")
 
@@ -86,12 +86,12 @@ def get_expiration_date(expiration_code: str) -> pd.Timestamp:
         expiration = pd.Timestamp(year, month, 1)
 
         # Adjust to the next business day when expiration date is a weekend or a holiday
-        adj_expiration = bday.offset(expiration, offset=0)
+        adj_expiration = bday.offset_bdays(expiration, offset=0)
 
         return adj_expiration
 
     except (KeyError, ValueError):
-        raise ValueError("Invalid expiration code.")
+        return pd.NaT
 
 
 def fetch_data(
@@ -102,24 +102,26 @@ def fetch_data(
     """
     Fetches DI futures data for a specified trade date from B3.
 
-     Retrieves and processes DI futures data from B3 for a given trade date. This function
-     serves as the primary method for accessing DI data, with options to specify the source
-     of the data and whether to return raw data.
+     Retrieves and processes DI futures data from B3 for a given trade date. This
+     function serves as the primary method for accessing DI data, with options to
+     specify the source of the data and whether to return raw data.
 
      Args:
-         trade_date (str | pd.Timestamp | None, optional): The trade date for which to
-             fetch DI data. If None or not provided, uses the previous business day.
-         source_type (Literal["bmf", "b3", "b3s"], optional): Indicates the source of the
-             data. Options include:
-             - "bmf": Fetches data from the old BM&FBOVESPA website. Fastest option.
-             - "b3": Fetches data from the complete Price Report (XML file) provided by B3.
-             - "b3s": Fetches data from the simplified Price Report (XML file) provided by B3.
-               Faster than "b3" but less detailed.
-             Defaults to "bmf".
-         return_raw (bool, optional): If True, returns the raw DI data without processing.
+        trade_date (str | pd.Timestamp | None, optional): The trade date for which to
+            fetch DI data. If None or not provided, uses the previous business day.
+        source_type (Literal["bmf", "b3", "b3s"], optional): Indicates the source of
+            the data. Defaults to "bmf". Options include:
+                - "bmf": Fetches data from the old BM&FBOVESPA website. Fastest option.
+                - "b3": Fetches data from the complete Price Report (XML file) provided
+                    by B3.
+                - "b3s": Fetches data from the simplified Price Report (XML file)
+                    provided by B3. Faster than "b3" but less detailed.
+        return_raw (bool, optional): If True, returns the raw DI data without
+            processing.
 
      Returns:
-         pd.DataFrame: A DataFrame containing the DI futures data for the specified trade
+         pd.DataFrame: A DataFrame containing the DI futures data for the specified
+         trade
              date. Format and content depend on the source_type and return_raw flag.
 
      Examples:

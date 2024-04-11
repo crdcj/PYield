@@ -1,40 +1,38 @@
 import io
 import warnings
-from typing import Optional
 
 import pandas as pd
 import requests
 
-from ..bday import bday as bday
+from .. import bday
 from . import core as cr
 
 
 def get_old_expiration_date(
-    ExpirationCode: str, trade_date: pd.Timestamp
-) -> Optional[pd.Timestamp]:
+    expiration_code: str, trade_date: pd.Timestamp
+) -> pd.Timestamp | type(pd.NaT):
     """
-    Internal function to convert an old DI contract code into its ExpirationDate date. Valid for
-    contract codes up to 21-05-2006.
+    Internal function to convert an old DI contract code into its ExpirationDate date.
+    Valid for contract codes up to 21-05-2006.
 
     Args:
-        ExpirationCode (str):
-            An old DI ExpirationCode from B3, where the first three letters represent
-            the month and the last digit represents the year. Example: "JAN3".
-        trade_date (pd.Timestamp):
-            The trade date for which the contract code is valid.
+        expiration_code (str): An old DI Expiration Code from B3, where the first three
+            letters represent the month and the last digit represents the year.
+            Example: "JAN3".
+        trade_date (pd.Timestamp): The trade date for which the contract code is valid.
 
     Returns:
         pd.Timestamp
-            The contract's ExpirationDate date.
-            Returns pd.NaT if the input is invalid.
+            The contract's ExpirationDate date. Returns pd.NaT if the input is invalid.
 
     Examples:
         >>> get_old_expiration_date("JAN3", pd.Timestamp("2001-05-21"))
         pd.Timestamp('2003-01-01')
+
     Notes:
-        - In 22-05-2006, B3 changed the format of the DI contract codes. Before that date,
-          the first three letters represented the month and the last digit represented the
-          year.
+        - In 22-05-2006, B3 changed the format of the DI contract codes. Before that
+        date, the first three letters represented the month and the last digit
+        represented the year.
     """
 
     month_codes = {
@@ -52,23 +50,23 @@ def get_old_expiration_date(
         "DEZ": 12,
     }
     try:
-        month_code = ExpirationCode[:3]
+        month_code = expiration_code[:3]
         month = month_codes[month_code]
 
-        # Year codes must generated dynamically, since it depends on the trade date
+        # Year codes must generated dynamically, since it depends on the trade date.
         reference_year = trade_date.year
         year_codes = {}
         for year in range(reference_year, reference_year + 10):
             year_codes[str(year)[-1:]] = year
-        year = year_codes[ExpirationCode[-1:]]
+        year = year_codes[expiration_code[-1:]]
 
-        ExpirationDate = pd.Timestamp(year, month, 1)
-        # Adjust to the next business day when ExpirationDate date is a weekend or a holiday
-        # Must use the old holiday calendar, since this type of contract code was used until 2006
-        return bday.offset(ExpirationDate, offset=0, holiday_list="old")
+        expiration_date = pd.Timestamp(year, month, 1)
+        # Adjust to the next business day when the date is a weekend or a holiday.
+        # Must use old holiday list, since this contract code was used until 2006.
+        return bday.offset_bdays(expiration_date, offset=0, holiday_list="old")
 
     except (KeyError, ValueError):
-        return pd.NaT  # type: ignore
+        return pd.NaT
 
 
 def _get_raw_di(trade_date: pd.Timestamp) -> pd.DataFrame:
@@ -104,18 +102,19 @@ def _get_raw_di(trade_date: pd.Timestamp) -> pd.DataFrame:
         # Remove columns with all NaN values
         df = df.dropna(axis=1, how="all")
 
-        # Force "VAR. PTOS." column to be string, since it can vary between str and float
+        # Force "VAR. PTOS." to be string, since it can also be read as float
         df["VAR. PTOS."] = df["VAR. PTOS."].astype(pd.StringDtype())
 
-        # Force "AJUSTE CORRIG. (4)" column to be float, since it can vary between int and float
+        # Force "AJUSTE CORRIG. (4)" to be float, since it can be also read as int
         df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype(pd.Float64Dtype())
 
         return df
 
     except Exception as e:
-        warnings.warn(
-            f"A {type(e).__name__} occurred while reading the DI futures data for {trade_date.strftime('%d/%m/%Y')}. Returning an empty pd.DataFrame."
-        )
+        trade_date_str = trade_date.strftime("%d/%m/%Y")
+        message = f"""A {type(e).__name__} occurred while reading the DI futures data
+        for {trade_date_str}. Returning an empty pd.DataFrame."""
+        warnings.warn(message, stacklevel=2)
         return pd.DataFrame()
 
 
@@ -125,7 +124,7 @@ def _convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
 
     Args:
         prices (pd.Series): A pd.Series containing DI futures prices.
-        bd (pd.Series): A pd.Series containing the number of business days to ExpirationDate.
+        bd (pd.Series): A serie containing the number of business days to expiration.
 
     Returns:
         pd.Series: A pd.Series containing DI futures rates.
@@ -206,7 +205,7 @@ def _process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     else:
         df["ExpirationDate"] = df["ExpirationCode"].apply(cr.get_expiration_date)
 
-    df["BDToExpiration"] = bday.count(trade_date, df["ExpirationDate"])
+    df["BDToExpiration"] = bday.count_bdays(trade_date, df["ExpirationDate"])
     # Convert to nullable integer, since other columns use this data type
     df["BDToExpiration"] = df["BDToExpiration"].astype(pd.Int64Dtype())
     # Remove expired contracts
@@ -224,7 +223,7 @@ def _process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
         "LastAskRate",
     ]
     for col in cols_with_nan:
-        df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
+        df[col] = df[col].replace(0, pd.NA)
 
     # Prior to 17/01/2002 (incluive), prices were not converted to rates
     if trade_date <= pd.Timestamp("2002-01-17"):
@@ -234,8 +233,8 @@ def _process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
         df["SettlementPrice"], df["BDToExpiration"]
     )
 
-    # Remove percentage in all rate columns and round to 5 decimal places since it's the precision used by B3
-    # Obs: 5 decimal places = 3 decimal places in percentage
+    # Remove percentage in all rate columns and round to 5 decimal places since it's the
+    # precision used by B3. Obs: 5 decimal places = 3 decimal places in percentage
     rate_cols = [col for col in df.columns if "Rate" in col]
     for col in rate_cols:
         df[col] = (df[col] / 100).round(5)

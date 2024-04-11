@@ -1,8 +1,7 @@
 import pandas as pd
 
+from . import bday, di
 from . import treasuries as tr
-from . import di
-from . import bday
 
 
 def _normalize_date(reference_date: str | pd.Timestamp | None = None) -> pd.Timestamp:
@@ -34,7 +33,7 @@ def fetch_data(
     return_raw: bool = False,
 ) -> pd.DataFrame:
     """
-    Fetches data for a specified asset from a specified source between start and end dates.
+    Fetches data for a specified asset from a given reference date.
 
     Args:
     asset (str): The asset type (e.g., 'Treasury', 'DI Futures').
@@ -47,7 +46,7 @@ def fetch_data(
     Raises:
     ValueError: If the specified source or asset type is not supported.
     """
-    # Validate the reference date, defaulting to the previous business day if not provided
+    # Validate the date, defaulting to the previous business day if not provided
     normalized_date = _normalize_date(reference_date)
 
     if asset.lower() == "treasury":
