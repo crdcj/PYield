@@ -1,16 +1,13 @@
-from typing import Literal, overload, Union
 from datetime import datetime
+from typing import Literal, overload
 
 import numpy as np
 import pandas as pd
 
-
 from .holidays import BrHolidays
 
-
-SingleDateTypes = Union[str, np.datetime64, pd.Timestamp, datetime]
-
-SeriesDateTypes = Union[list, tuple, np.ndarray, pd.Series, pd.Index, pd.DatetimeIndex]
+SingleDateTypes = str | np.datetime64 | pd.Timestamp | datetime
+SeriesDateTypes = list | tuple | np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex
 
 TO_TIMESTAMP_TYPES = (str, np.datetime64, datetime)
 TO_SERIES_TYPES = (list, tuple, np.ndarray, pd.Series, pd.Index, pd.DatetimeIndex)
@@ -113,25 +110,33 @@ def offset_bdays(
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Timestamp | pd.Series:
     """
-    Offsets the dates to the next or previous business day, considering brazilian holidays.
-    This function supports both single dates and collections of dates, handling them
-    intelligently to return either a single offset date or a series of offset dates.
-    It is a wrapper for `numpy.busday_offset` adapted for Pandas data types and holiday adjustments.
+    Offsets the dates to the next or previous business day, considering brazilian
+    holidays. This function supports both single dates and collections of dates,
+    handling them intelligently to return either a single offset date or a series of
+    offset dates. It is a wrapper for `numpy.busday_offset` adapted for Pandas data
+    types and holiday adjustments.
 
     Args:
-        dates (str | np.datetime64 | pd.Timestamp | datetime | list | tuple | np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex, optional):
-            The date(s) to offset. Can be a single date in various formats (string, `datetime`, `Timestamp`, etc.)
-            or a collection of dates (list, tuple, `Series`, etc.). If None, the current date is used.
-        offset (int): The number of business days to offset the dates. Positive for future dates, negative for past dates.
-            Zero will return the same date if it's a business day, or the next business day otherwise.
-        roll (Literal["forward", "backward"], optional): Direction to roll the date if it falls on a holiday or weekend.
-            'forward' to the next business day, 'backward' to the previous. Defaults to 'forward'.
-        holiday_list (Literal["old", "new", "infer"], optional): The list of holidays to consider. 'old' or 'new' use predefined lists,
-            while 'infer' determines the most appropriate list based on the input dates. Defaults to "infer".
+        dates (str | np.datetime64 | pd.Timestamp | datetime | list | tuple | np.ndarray
+        | pd.Series | pd.Index | pd.DatetimeIndex, optional):
+            The date(s) to offset. Can be a single date in various formats (string,
+            `datetime`, `Timestamp`, etc.) or a collection of dates (list, tuple,
+            `Series`, etc.). If None, the current date is used.
+        offset (int): The number of business days to offset the dates. Positive for
+            future dates, negative for past dates. Zero will return the same date if
+            it's a business day, or the next business day otherwise.
+        roll (Literal["forward", "backward"], optional): Direction to roll the date if
+            it falls on a holiday or weekend. 'forward' to the next business day,
+            'backward' to the previous. Defaults to 'forward'.
+        holiday_list (Literal["old", "new", "infer"], optional):
+            The list of holidays to consider. 'old' or 'new' use predefined lists, while
+            'infer' determines the most appropriate list based on the input dates.
+            Defaults to "infer".
 
     Returns:
-         pd.Timestamp | pd.Series: If a single date is provided, returns a single `Timestamp` of the offset date.
-            If a series of dates is provided, returns a `Series` of offset dates.
+         pd.Timestamp | pd.Series: If a single date is provided, returns a single
+            `Timestamp` of the offset date. If a series of dates is provided, returns a
+            `Series` of offset dates.
 
     Examples:
         >>> date = '2023-12-23' # Saturday before Christmas
@@ -149,8 +154,9 @@ def offset_bdays(
         Timestamp('2023-12-21') # Offset to the previous business day
 
     Note:
-        This function uses `numpy.busday_offset` under the hood, which means it follows the same conventions and limitations
-        for business day calculations. For detailed information on error handling and behavior, refer to the `numpy.busday_offset`
+        This function uses `numpy.busday_offset` under the hood, which means it follows
+        the same conventions and limitations for business day calculations. For detailed
+        information on error handling and behavior, refer to the `numpy.busday_offset`
         documentation: https://numpy.org/doc/stable/reference/generated/numpy.busday_offset.html
     """
     normalized_dates = _normalize_input_dates(dates)
@@ -209,30 +215,40 @@ def count_bdays(
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> int | pd.Series:
     """
-    Counts the number of business days between a `start` and `end` date(s), inclusively for
-    the start date and exclusively for the end date. The function can handle single dates,
-    arrays of dates, and mixed inputs, returning either a single integer or a Series
-    depending on the inputs. It accounts for specified holidays, effectively excluding
-    them from the business day count.
+    Counts the number of business days between a `start` and `end` date(s), inclusively
+    for the start date and exclusively for the end date. The function can handle single
+    dates, arrays of dates, and mixed inputs, returning either a single integer or a
+    Series depending on the inputs. It accounts for specified holidays, effectively
+    excluding them from the business day count.
 
     Args:
-        start (str | np.datetime64 | pd.Timestamp | datetime | list | tuple | np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex, optional):
+        start (str | np.datetime64 | pd.Timestamp | datetime | list | tuple |
+            np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex, optional):
             The start date(s) for counting. Defaults to the current date if None.
-        end (str | np.datetime64 | pd.Timestamp | datetime | list | tuple | np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex, optional):
-            The end date(s) for counting, which are excluded from the count themselves. Defaults to the current date if None.
+        end (str | np.datetime64 | pd.Timestamp | datetime | list | tuple |
+            np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex, optional):
+            The end date(s) for counting, which are excluded from the count themselves.
+            Defaults to the current date if None.
         holiday_list (Literal["old", "new", "infer"], optional):
-            Specifies which set of holidays to consider in the count. 'old' or 'new' refer to predefined holiday lists,
-            while 'infer' automatically selects the list based on the most recent date in the input. Defaults to "infer".
+            Specifies which set of holidays to consider in the count. 'old' or 'new'
+            refer to predefined holiday lists, while 'infer' automatically selects the
+            list based on the most recent date in the input. Defaults to "infer".
 
     Returns:
         int | pd.Series: Returns an integer if `start` and `end` are single dates,
-            or a Series if either or both are arrays of dates. The value(s) represent the count of business days between `start` and `end`.
+            or a Series if either or both are arrays of dates. The value(s) represent
+            the count of business days between `start` and `end`.
 
     Notes:
-        - This function is a wrapper around `numpy.busday_count`, adapted to work directly with various Pandas and Numpy date formats.
-        - It supports flexible date inputs, including single dates, lists, Series, and more, for both `start` and `end` parameters.
-        - The return type depends on the input types: single dates return an int, while arrays of dates return a pd.Series with the count for each date range.
-        - See `numpy.busday_count` documentation for more details on how holidays are handled and how business day counts are calculated: https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
+        - This function is a wrapper around `numpy.busday_count`, adapted to work
+          directly with various Pandas and Numpy date formats.
+        - It supports flexible date inputs, including single dates, lists, Series, and
+          more, for both `start` and `end` parameters.
+        - The return type depends on the input types: single dates return an int, while
+          arrays of dates return a pd.Series with the count for each date range.
+        - See `numpy.busday_count` documentation for more details on how holidays are
+          handled and how business day counts are calculated:
+          https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
 
     Examples:
         >>> yd.count_bdays('2023-12-15', '2024-01-01')
@@ -277,28 +293,34 @@ def generate_bdays(
 
     Args:
         start (str | np.datetime64 | pd.Timestamp | datetime, optional):
-            The start date for generating business days. Defaults to None, using the current date.
+            The start date for generating business days. Defaults to None, using the
+            current date.
         end (str | np.datetime64 | pd.Timestamp | datetime, optional):
-            The end date for generating business days. Defaults to None, using the current date.
+            The end date for generating business days. Defaults to None, using the
+            current date.
         inclusive (Literal["both", "neither", "left", "right"], optional):
             Determines which of the start and end dates are included in the result.
             Valid options are 'both', 'neither', 'left', 'right'. Defaults to 'both'.
         holiday_list (Literal["old", "new", "infer"], optional):
-            Specifies the list of holidays to consider. 'old' or 'new' refer to predefined lists,
-            'infer' selects the list based on the most recent date in the range. Defaults to "infer".
+            Specifies the list of holidays to consider. 'old' or 'new' refer to
+            predefined lists, 'infer' selects the list based on the most recent date in
+            the range. Defaults to "infer".
         **kwargs:
-            Additional keyword arguments passed to `pandas.bdate_range` for customization.
+            Additional keyword arguments passed to `pandas.bdate_range` for
+            customization.
 
     Returns:
-        pd.Series: A Series representing a range of business days between the specified start and end dates,
-            considering the specified holidays.
+        pd.Series: A Series representing a range of business days between the specified
+            start and end dates, considering the specified holidays.
 
     Examples:
         >>> yd.generate_bdays(start='2023-12-22', end='2024-01-02')
-        pd.Series(['2023-12-22', '2023-12-26', '2023-12-27', '2023-12-28', '2023-12-29', '2024-01-02'], dtype='datetime64[ns]')
+        pd.Series(['2023-12-22', '2023-12-26', '2023-12-27', '2023-12-28', '2023-12-29',
+            '2024-01-02'], dtype='datetime64[ns]')
 
     Note:
-        For detailed information on parameters and error handling, refer to `pandas.bdate_range` documentation:
+        For detailed information on parameters and error handling, refer to
+        `pandas.bdate_range` documentation:
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html.
     """
     normalized_start = _normalize_input_dates(start)

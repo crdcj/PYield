@@ -10,7 +10,7 @@ from . import core as cr
 
 def get_old_expiration_date(
     expiration_code: str, trade_date: pd.Timestamp
-) -> pd.Timestamp | type(pd.NaT):
+) -> pd.Timestamp:
     """
     Internal function to convert an old DI contract code into its ExpirationDate date.
     Valid for contract codes up to 21-05-2006.
@@ -66,7 +66,7 @@ def get_old_expiration_date(
         return bday.offset_bdays(expiration_date, offset=0, holiday_list="old")
 
     except (KeyError, ValueError):
-        return pd.NaT
+        return pd.NaT  # type: ignore
 
 
 def _get_raw_di(trade_date: pd.Timestamp) -> pd.DataFrame:

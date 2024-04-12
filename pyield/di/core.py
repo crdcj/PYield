@@ -91,7 +91,7 @@ def get_expiration_date(expiration_code: str) -> pd.Timestamp:
         return adj_expiration
 
     except (KeyError, ValueError):
-        return pd.NaT
+        return pd.NaT  # type: ignore
 
 
 def fetch_data(
