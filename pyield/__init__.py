@@ -1,6 +1,5 @@
-from analysis import calculate_spreads
-
 from .__about__ import __version__
+from .analysis import calculate_spreads
 from .bday import count_bdays, generate_bdays, is_bday, offset_bdays
 from .data_access import get_data
 
