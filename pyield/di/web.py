@@ -69,7 +69,7 @@ def get_old_expiration_date(
         return pd.NaT  # type: ignore
 
 
-def _get_raw_di(trade_date: pd.Timestamp) -> pd.DataFrame:
+def _get_raw_df(trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to fetch raw DI futures data from B3 for a specific trade date.
 
@@ -155,7 +155,7 @@ def _convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _process_di(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
+def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -287,7 +287,7 @@ def get_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
         - OpenContracts: number of open contracts at the start of the trading day.
         - closed_contracts: number of closed contracts at the end of the trading day.
     """
-    df_raw = _get_raw_di(trade_date)
+    df_raw = _get_raw_df(trade_date)
     if return_raw:
         return df_raw
-    return _process_di(df_raw, trade_date)
+    return _process_raw_df(df_raw, trade_date)

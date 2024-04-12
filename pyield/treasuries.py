@@ -38,7 +38,7 @@ def _get_anbima_content(reference_date: pd.Timestamp) -> str:
         return ""
 
 
-def _get_raw_data(reference_date: pd.Timestamp) -> pd.DataFrame:
+def _get_raw_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     url_content = _get_anbima_content(reference_date)
     if url_content == "":
         date_str = reference_date.strftime("%d-%m-%Y")
@@ -57,7 +57,7 @@ def _get_raw_data(reference_date: pd.Timestamp) -> pd.DataFrame:
     return df
 
 
-def _process_raw_data(df_raw: pd.DataFrame) -> pd.DataFrame:
+def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     """
     Process raw data from ANBIMA by filtering selected columns, renaming them and
     adjusting data formats.
@@ -130,10 +130,10 @@ def fetch_data(reference_date: pd.Timestamp, return_raw=False) -> pd.DataFrame:
         # Fetch raw indicative rates for a specific date
         >>> get_treasury_rates("2023-12-28")
     """
-    df = _get_raw_data(reference_date)
+    df = _get_raw_df(reference_date)
 
     if not return_raw:
-        df = _process_raw_data(df)
+        df = _process_raw_df(df)
 
     return df
 

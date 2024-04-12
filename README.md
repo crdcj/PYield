@@ -29,8 +29,8 @@ pip install pyield
 ```python
 import pyield as yd
 
-# Get a pandas dataframe with the DI processed data from B3 (default)
->>> yd.get_di(trade_date='2024-03-08')
+# Get a pandas dataframe with DI Futures data from B3
+>>> yd.get_data(asset_code="DIF", reference_date='2024-03-08')
  TradeDate ExpirationCode ExpirationDate  BDToExpiration  ...  LastRate  LastAskRate  LastBidRate  SettlementRate
 2024-03-08            J24     2024-04-01              15  ...    10.952       10.952       10.956          10.956
 2024-03-08            K24     2024-05-02              37  ...    10.776       10.774       10.780          10.777
