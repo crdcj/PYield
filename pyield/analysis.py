@@ -14,8 +14,8 @@ def calculate_spreads(spread_type: str, reference_date: pd.Timestamp) -> pd.Data
     business day.
 
     Parameters:
-        spread_type (str): The type of spread to calculate. Available options are
-            'LTN-NTN-F' and 'LTN-LFT'.
+        spread_type (str): The type of spread to calculate. Available options are:
+            - "DI_vs_PRE": the spread between DI Futures and Treasury Pre-Fixed bonds.
         reference_date (str | pd.Timestamp, optional): The reference date for the
             spread calculation. If None or not provided, defaults to the previous
             business day according to the Brazilian calendar.
