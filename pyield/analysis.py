@@ -6,12 +6,8 @@ from .utils import _normalize_date
 
 def calculate_spreads(spread_type: str, reference_date: pd.Timestamp) -> pd.DataFrame:
     """
-    Calculates spreads for Brazilian treasury bonds based on indicative rates.
-
-    This function calculates the spread between different types of Brazilian treasury
-    bonds based on ANBIMA's indicative rates. The available spread types are 'LTN-NTN-F'
-    and 'LTN-LFT'. If no reference date is provided, the function uses the previous
-    business day.
+    Calculates spreads between assets based on the specified spread type.
+    If no reference date is provided, the function uses the previous business day.
 
     Parameters:
         spread_type (str): The type of spread to calculate. Available options are:
@@ -21,9 +17,8 @@ def calculate_spreads(spread_type: str, reference_date: pd.Timestamp) -> pd.Data
             business day according to the Brazilian calendar.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the bond types, reference date, maturity
-            date, and the calculated spread in basis points. The data is sorted by bond
-            type and maturity date.
+        pd.DataFrame: A DataFrame containing the calculated spread in basis points.
+        The data is sorted by asset type and maturity/expiration date.
 
     Raises:
         ValueError: If an invalid spread type is provided.

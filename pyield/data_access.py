@@ -8,7 +8,7 @@ from .utils import _normalize_date
 def get_data(
     asset_code: str,
     reference_date: str | pd.Timestamp | None = None,
-    return_raw: bool = False,
+    **kwargs,
 ) -> pd.DataFrame:
     """
     Fetches data for a specified asset type and reference date.
@@ -22,7 +22,6 @@ def get_data(
         - "NTN-B": Fetches indicative rates for Brazilian NTN-B bonds from ANBIMA.
         - "DI1": Fetches DI Futures rates from B3.
     reference_date (str): Reference date for the data in YYYY-MM-DD format.
-    return_raw (bool): If true, returns raw data without processing. Defaults to False.
 
     Returns:
     pd.DataFrame: A DataFrame containing the fetched data.
@@ -30,6 +29,9 @@ def get_data(
     Raises:
     ValueError: If the specified source or asset type is not supported.
     """
+    # Extract the internal use parameter with default value
+    return_raw = kwargs.get("return_raw", False)
+
     # Validate the date, defaulting to the previous business day if not provided
     normalized_date = _normalize_date(reference_date)
 
