@@ -35,3 +35,19 @@ version = { source = "file", path = "pyield/__about__.py" }
 distribution = true
 [tool.pdm.dev-dependencies]
 dev = ["ipykernel", "pytest", "mypy"]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]

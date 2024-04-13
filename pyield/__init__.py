@@ -1,16 +1,14 @@
 from .__about__ import __version__
-from .di import get_di, read_di
-from .calendar import count_bdays, generate_bdays, offset_bdays, is_bday
-from .anbima import get_treasury_rates, calculate_treasury_di_spreads
+from .bday import count_bdays, generate_bdays, is_bday, offset_bdays
+from .data_access import get_data
+from .data_analysis import calculate_spreads
 
 __all__ = [
     "__version__",
-    "get_di",
-    "read_di",
-    "count_bdays",
+    "is_bday",
     "generate_bdays",
     "offset_bdays",
-    "is_bday",
-    "get_treasury_rates",
-    "calculate_treasury_di_spreads",
+    "count_bdays",
+    "get_data",
+    "calculate_spreads",
 ]

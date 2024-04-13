@@ -2,13 +2,13 @@ import io
 import zipfile
 from pathlib import Path
 
-import requests
 import pandas as pd
-from pandas import Timestamp, DataFrame
+import requests
 from lxml import etree
+from pandas import DataFrame, Timestamp
 
+from .. import bday
 from . import core as cr
-from .. import calendar as cd
 
 
 def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
@@ -232,7 +232,7 @@ def _process_di_df(df_raw: DataFrame) -> DataFrame:
     expiration = df["TckrSymb"].str[3:].apply(cr.get_expiration_date)
     df.insert(2, "ExpirationDate", expiration)
 
-    business_days = cd.count_bdays(df["TradDt"], df["ExpirationDate"])
+    business_days = bday.count_bdays(df["TradDt"], df["ExpirationDate"])
     df.insert(3, "BDToExpiration", business_days)
 
     # Convert to nullable integer, since other columns use this data type
@@ -244,7 +244,7 @@ def _process_di_df(df_raw: DataFrame) -> DataFrame:
     return df.sort_values(by=["ExpirationDate"], ignore_index=True)
 
 
-def get_di(trade_date: Timestamp, source_type: str, return_raw: bool) -> DataFrame:
+def read_xml(trade_date: Timestamp, source_type: str, return_raw: bool) -> DataFrame:
     zip_file = _get_file_from_url(trade_date, source_type)
 
     xml_file = _extract_xml_from_zip(zip_file)

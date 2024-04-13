@@ -1,6 +1,6 @@
-from .core import get_di, read_di
+from .core import fetch_data, read_data
 
 __all__ = [
-    "get_di",
-    "read_di",
+    "fetch_data",
+    "read_data",
 ]

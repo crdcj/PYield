@@ -43,7 +43,7 @@ def test_settlement_rate_with_old_holiday_list():
     }
 
     # 22-12-2023 is before the new holiday calendar
-    df = cr.get_di(trade_date="2023-12-22")
+    df = cr.fetch_data(trade_date="2023-12-22")
     expiration_codes = list(settlement_rates.keys())  # noqa: F841
     result = df.query("ExpirationCode in @expiration_codes")["SettlementRate"].to_list()
     assert result == list(settlement_rates.values())
@@ -68,7 +68,7 @@ def test_settlement_rates_with_current_holiday_list():
         "F33": 0.10331,
     }
 
-    df = cr.get_di(trade_date="2023-12-26")
+    df = cr.fetch_data(trade_date="2023-12-26")
     expiration_codes = list(settlement_rates.keys())  # noqa: F841
     results = df.query("ExpirationCode in @expiration_codes")[
         "SettlementRate"
@@ -79,4 +79,4 @@ def test_settlement_rates_with_current_holiday_list():
 def test_non_business_day():
     non_business_day = "2023-12-24"
     with pytest.raises(ValueError):
-        cr.get_di(trade_date=non_business_day)
+        cr.fetch_data(trade_date=non_business_day)
