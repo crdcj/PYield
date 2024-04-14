@@ -134,3 +134,7 @@ None
 ## Conclusão
 
 Se você precisa obter e tratar dados de renda fixa no Brasil, o PYield pode ser uma ferramenta valiosa nesse processo. Com uma API simples, o seu código pode se tornar mais limpo e eficiente, permitindo que você se concentre na análise dos dados em vez de se preocupar com a obtenção e processamento deles.
+
+A biblioteca pode ser acessada diretamente em [GitHub](https://github.com/crdcj/PYield)
+
+Obs: quem quiser contribuir com a biblioteca, fique à vontade para abrir um pull request no repositório do GitHub.
