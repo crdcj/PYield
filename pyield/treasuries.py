@@ -105,10 +105,8 @@ def fetch_data(reference_date: pd.Timestamp, return_raw=False) -> pd.DataFrame:
     Fetches indicative treasury rates from ANBIMA for a specified reference date.
 
     This function retrieves the indicative rates for Brazilian treasury securities
-    from ANBIMA, processing them into a structured pandas DataFrame. If no reference
-    date is provided, it defaults to the previous business day according to the
-    Brazilian calendar. There is an option to return raw data directly from the source
-    without processing.
+    from ANBIMA, processing them into a structured pandas DataFrame.
+    There is an option to return raw data directly from the source without processing.
 
     Parameters:
         reference_date (str | pd.Timestamp, optional): The date for which to fetch the
@@ -123,12 +121,6 @@ def fetch_data(reference_date: pd.Timestamp, return_raw=False) -> pd.DataFrame:
             data includes bond type, reference date, maturity date and various rates
             (bid, ask, indicative) among others, depending on the `return_raw` flag.
 
-    Examples:
-        # Fetch processed indicative rates for the previous business day
-        >>> get_treasury_rates()
-
-        # Fetch raw indicative rates for a specific date
-        >>> get_treasury_rates("2023-12-28")
     """
     df = _get_raw_df(reference_date)
 
@@ -150,20 +142,12 @@ def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
 
     Parameters:
         reference_date (str | pd.Timestamp, optional): The reference date for the DI
-            spread calculation. If None or not provided, defaults to the previous
-            business day according to the Brazilian calendar.
+            spread calculation.
 
     Returns:
         pd.DataFrame: A DataFrame containing the bond type, reference date, maturity
             date, and the calculated DI spread in basis points. The data is sorted by
             bond type and maturity date.
-
-    Examples:
-        # Calculate DI spreads for the previous business day
-        >>> calculate_treasury_di_spreads()
-
-        # Calculate DI spreads for a specific reference date
-        >>> calculate_treasury_di_spreads("2023-12-15")
     """
     # Fetch DI rates and adjust the maturity date format for compatibility
     df_di = di.fetch_data(reference_date)[["ExpirationDate", "SettlementRate"]]

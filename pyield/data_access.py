@@ -1,45 +1,48 @@
 import pandas as pd
 
 from . import di
+from . import indicators as ir
 from . import treasuries as tr
 from .utils import _normalize_date
 
 
-def get_data(
+def fetch_asset(
     asset_code: str,
     reference_date: str | pd.Timestamp | None = None,
     **kwargs,
 ) -> pd.DataFrame:
     """
-    Fetches data for a specified asset type and reference date.
+    Fetches data for a specified asset based on type and reference date.
 
     Args:
-    asset (str): The asset type. Available options are:
-        - "TRB": Fetches indicative rates for Brazilian treasury bonds from ANBIMA.
-        - "LTN": Fetches indicative rates for Brazilian LTN bonds from ANBIMA.
-        - "LFT": Fetches indicative rates for Brazilian LFT bonds from ANBIMA.
-        - "NTN-F": Fetches indicative rates for Brazilian NTN-F bonds from ANBIMA.
-        - "NTN-B": Fetches indicative rates for Brazilian NTN-B bonds from ANBIMA.
-        - "DI1": Fetches DI Futures rates from B3.
-    reference_date (str): Reference date for the data in YYYY-MM-DD format.
+        asset_code (str): The asset code identifying the type of financial asset.
+        Supported options:
+            - "TRB": Treasury bonds (indicative rates from ANBIMA).
+            - "LTN", "LFT", "NTN-F", "NTN-B": Specific types of Brazilian treasury bonds
+                  (indicative rates from ANBIMA).
+            - "DI1": DI Futures rates from B3.
+        reference_date (str | pd.Timestamp | None): The reference date for which data is
+            fetched. Defaults to the previous business day if None.
+        **kwargs: Additional keyword arguments, specifically:
+            - return_raw (bool): Whether to return raw data without processing. Defaults
+              to False.
 
     Returns:
-    pd.DataFrame: A DataFrame containing the fetched data.
+        pd.DataFrame: A DataFrame containing the fetched data for the specified asset.
 
     Raises:
-    ValueError: If the specified source or asset type is not supported.
-    """
-    # Extract the internal use parameter with default value
-    return_raw = kwargs.get("return_raw", False)
+        ValueError: If the asset code is not recognized or supported.
 
-    # Validate the date, defaulting to the previous business day if not provided
+    Examples:
+        >>> fetch_asset('TRB', '2023-04-01')
+        >>> fetch_asset('DI1', '2023-04-01', return_raw=True)
+    """
+    return_raw = kwargs.get("return_raw", False)
     normalized_date = _normalize_date(reference_date)
 
     if asset_code.lower() == "trb":
-        # Fetch all indicative treasury rates from ANBIMA
         return tr.fetch_data(reference_date=normalized_date, return_raw=return_raw)
     elif asset_code.lower() in ["ltn", "lft", "ntn-f", "ntn-b"]:
-        # Fetch indicative rates for a specific type of Brazilian treasury bond
         df = tr.fetch_data(reference_date=normalized_date)
         return df.query(f"BondType == '{asset_code.upper()}'")
 
@@ -49,3 +52,37 @@ def get_data(
         )
     else:
         raise ValueError("Asset type not supported.")
+
+
+def fetch_indicator(
+    indicator_code: str,
+    reference_date: str | pd.Timestamp | None = None,
+) -> pd.Series:
+    """
+    Fetches data for a specified economic indicator and reference date.
+
+    Args:
+        indicator_code (str): The code for the economic indicator. Supported options:
+            - "SELIC_TARGET": SELIC target rate from the Central Bank of Brazil.
+            - "IPCA_MGR": IPCA monthly growth rate from IBGE.
+        reference_date (str | pd.Timestamp | None): The reference date for which data is
+            fetched. Defaults to the previous business day if None.
+
+    Returns:
+        pd.Series: A Series containing the fetched data for the specified indicator.
+
+    Raises:
+        ValueError: If the indicator code is not recognized or supported.
+
+    Examples:
+        >>> fetch_indicator('SELIC_TARGET', '2023-04-01')
+        >>> fetch_indicator('IPCA_MGR', '2023-04-01')
+    """
+    normalized_date = _normalize_date(reference_date)
+
+    if indicator_code.lower() == "selic_target":
+        return ir.fetch_selic_target(reference_date=normalized_date)
+    elif indicator_code.lower() == "ipca_mgr":
+        return ir.fetch_ipca_mgr(reference_date=normalized_date)
+    else:
+        raise ValueError("Indicator type not supported.")

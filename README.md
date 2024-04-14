@@ -30,7 +30,7 @@ pip install pyield
 import pyield as yd
 
 # Get a DataFrame with the DI Futures data from B3
->>> yd.get_data(asset_code="DI1", reference_date='2024-03-08')
+>>> yd.fetch_asset(asset_code="DI1", reference_date='2024-03-08')
 
 TradeDate  ExpirationCode ExpirationDate BDToExpiration  ... LastRate LastAskRate LastBidRate SettlementRate
 2024-03-08 J24            2024-04-01     15              ... 10.952   10.952      10.956      10.956
@@ -47,7 +47,7 @@ TradeDate  ExpirationCode ExpirationDate BDToExpiration  ... LastRate LastAskRat
 # Get a DataFrame with the NTN-B data from ANBIMA
 # Anbima data is available for the last 5 working days
 # Obs: Anbima members have access to the full history
->>> yd.get_data(asset_code="NTN-B", reference_date='2024-04-12')
+>>> yd.fetch_asset(asset_code="NTN-B", reference_date='2024-04-12')
 
 BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate Price
 NTN-B    2024-04-12    2024-08-15   0.07540 0.07504 0.07523        4,271.43565
