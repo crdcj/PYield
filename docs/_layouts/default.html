@@ -1,19 +1,7 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <title>{{ page.title }}</title>
-    <meta name="description" content="{{ page.description }}">
-    <meta property="og:title" content="{{ page.title }}">
-    <meta property="og:description" content="{{ page.description }}">
-    <meta property="og:image" content="{{ 'images/thumbnail.webp' | absolute_url }}">
-    <meta property="og:url" content="{{ page.url | absolute_url }}">
-    <meta property="og:type" content="article">
-</head>
-
-<body>
+{% block content %}
+<div class="article-content">
     {{ content }}
-</body>
-
-</html>
+</div>
+{% endblock %}
