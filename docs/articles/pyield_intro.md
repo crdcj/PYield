@@ -1,20 +1,22 @@
-# Introdução ao PYield: Uma Biblioteca de Análise de Renda Fixa Brasileira
+# Introdução ao PYield: Uma biblioteca para obteção de dados de Renda Fixa brasileira
+
+Se você é um entusiasta de VBA e Excel, pode pular esse artigo que aqui não é lugar para você! Brincadeira, você é bem-vindo também. Afinal, essa pode ser uma ótima desculpa para você finalmente aprender Python 😂
+
+Brincadeiras à parte, qualquer um que trabalhe com análise de renda fixa no Brasil sabe que a obtenção de dados de fontes como ANBIMA e B3 pode ser uma tarefa tediosa e demorada. Outro ponto de desepero é o tratamento dos feriados e dias úteis, que podem ser um verdadeiro pesadelo para quem precisa calcular prazos e vencimentos, ainda mais depois que criaram um novo feriado nacional no final do ano passado. Sim, agora temos que considerar duas listas de feriados nacionais, uma para antes de 26-12-2023 e outra para depois.
+
+Claro que para os afortunados que têm acesso a serviços pagos como Bloomberg, a obtenção desse tipo de dados é muito fácil. Mas para a maioria dos analistas financeiros, pesquisadores e entusiastas do mercado financeiro, a obtenção e processamento de dados de renda fixa pode ser um desafio. Afinal, você terá que lidar com chamadas para diversas APIs como a do IBGE, do BACEN, da ANBIMA, da B3, e por aí vai.
 
 ## O que é PYield?
 
-Bem-vindo ao PYield, uma biblioteca Python inovadora projetada especificamente para a análise de instrumentos de renda fixa no Brasil. Desenvolvida com o propósito de atender às necessidades de analistas financeiros, pesquisadores e entusiastas do mercado financeiro, a PYield emerge como uma ferramenta essencial para simplificar a obtenção e processamento de dados de fontes chave como ANBIMA e B3.
+A biblioteca Python foi projetada especificamente para a obtebção e tratamento de dados de instrumentos de renda fixa no Brasil. Ou seja, é uma tentativa de  simplificar a obtenção e processamento de dados de fontes chave como ANBIMA e B3, fornecendo uma API de fácil utilização para analistas financeiros, pesquisadores e entusiastas do mercado financeiro.
 
-Utilizando a robustez de bibliotecas populares de Python, como Pandas e Requests, PYield facilita a análise complexa de dados do mercado de renda fixa brasileiro, tornando processos anteriormente tediosos em tarefas simples e diretas.
+Utilizando a robustez de bibliotecas populares de Python, como Pandas e Requests, PYield pode ser usada como um backend para quem deseja construir aplicações mais complexas sem ter que lidar com a complexidade de obter e processar esse tipo de dado.
 
 ## Características Principais
 
-A PYield é repleta de funcionalidades projetadas para otimizar o fluxo de trabalho em análise de renda fixa:
-
-- **Coleta de Dados Automatizada**: Obtenha dados diretamente da ANBIMA e B3 sem esforços manuais.
-- **Processamento de Dados Eficiente**: Normalize e processe dados de renda fixa com facilidade.
-- **Ferramentas de Análise**: Acesse funções embutidas para tarefas comuns de análise do mercado de renda fixa.
-- **Integração Fácil**: Integre a PYield sem complicação em fluxos de trabalho existentes de análise de dados em Python.
-- **Suporte a Type Hints**: Melhore a experiência de desenvolvimento e a qualidade do código com type hints completos.
+- **Coleta de Dados Automatizada**: Obtenha dados diretamente de fontes primárias como ANBIMA e B3 de forma simples e rápida.
+- **Processamento de Dados Eficiente**: Os dados são processados e entregues em formatos fáceis de usar, como DataFrames do Pandas.
+- **Ferramentas de Análise**: Acesse funções embutidas para tarefas comuns de análise do mercado de renda fixa, como cálculos de dias úteis e feriados.
 
 ## Como Instalar o PYield
 
@@ -23,35 +25,101 @@ A instalação do PYield é rápida e fácil através do pip, o gerenciador de p
 ```sh
 pip install pyield
 ```
-Este comando instala a última versão do PYield, deixando você pronto para começar sua análise de renda fixa brasileira.
-Exemplos Práticos de Uso
+Este comando instala a última versão do PYield, deixando você pronto para começar a utilizar a biblioteca em seus projetos.
 
-A PYield torna a análise de dados de renda fixa acessível e intuitiva. Aqui estão alguns exemplos de como você pode utilizar a biblioteca em seus projetos:
+Exemplos Práticos de Uso:
 
-## Dados de DI Futuros
+### Ferramentas de Dias Úteis (Feriados brasileiros são automaticamente considerados)
 ```python
-import pyield as yd
+>>> import pyield as yd
 
-# Obtenha um dataframe do pandas com os dados processados de DI da B3
-di_data = yd.get_di(trade_date='2024-03-08')
-print(di_data)
+# Contar o número de dias úteis entre duas datas.
+# A data de início é incluída, a data de término é excluída.
+>>> yd.count_bdays(start='2023-12-29', end='2024-01-02')
+1
+
+# Obtenha o próximo dia útil após uma determinada data (offset=1).
+>>> yd.offset_bdays(dates="2023-12-29", offset=1)
+Timestamp('2024-01-02 00:00:00')
+
+# Obtenha o próximo dia útil se não for um dia útil (offset=0).
+>>> yd.offset_bdays(dates="2023-12-30", offset=0)
+Timestamp('2024-01-02 00:00:00')
+
+# Como 2023-12-29 é um dia útil, a função retorna a mesma data (offset=0).
+>>> yd.offset_bdays(dates="2023-12-29", offset=0)
+Timestamp('2023-12-29 00:00:00')
+
+# Gerar uma série pandas com os dias úteis entre duas datas.
+>>> yd.generate_bdays(start='2023-12-29', end='2024-01-03')
+0   2023-12-29
+1   2024-01-02
+2   2024-01-03
+dtype: datetime64[ns]
 ```
 
-## Ferramentas de Dias Úteis
-
+## Dados de Futuro de DI
 ```python
-# Gere uma série do pandas com os dias úteis entre duas datas
-bdays = yd.generate_bdays(start='2023-12-29', end='2024-01-03')
-print(bdays)
+# Obtenha um DataFrame com os dados dos Futuros de DI da B3 de uma data específica.
+>>> yd.fetch_asset(asset_code="DI1", reference_date='2024-03-08')
 
-# Obtenha o próximo dia útil após uma data específica
-next_bday = yd.offset_bdays(dates="2023-12-29", offset=1)
-print(next_bday)
+TradeDate  ExpirationCode ExpirationDate BDToExpiration  ... LastRate LastAskRate LastBidRate SettlementRate
+2024-03-08 J24            2024-04-01     15              ... 10.952   10.952      10.956      10.956
+2024-03-08 K24            2024-05-02     37              ... 10.776   10.774      10.780      10.777
+2024-03-08 M24            2024-06-03     58              ... 10.604   10.602      10.604      10.608
+...        ...            ...            ...             ... ...      ...         ...         ...
+2024-03-08 F37            2037-01-02     3213            ... <NA>     <NA>        <NA>        10.859
+2024-03-08 F38            2038-01-04     3462            ... <NA>     <NA>        <NA>        10.859
+2024-03-08 F39            2039-01-03     3713            ... <NA>     <NA>        <NA>        10.85
+```
 
+### Dados de Títulos do Tesouro
+```python
+# Obtenha um DataFrame com os dados dos títulos NTN-B da ANBIMA.
+# Os dados da Anbima estão disponíveis para os últimos 5 dias úteis.
+# Obs: Para quem é membro da Anbima, o acesso ao histórico é liberado de forma automática pela biblioteca.
+>>> yd.fetch_asset(asset_code="NTN-B", reference_date='2024-04-12')
+
+BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate Price
+NTN-B    2024-04-12    2024-08-15   0.07540 0.07504 0.07523        4,271.43565
+NTN-B    2024-04-12    2025-05-15   0.05945 0.05913 0.05930        4,361.34391
+NTN-B    2024-04-12    2026-08-15   0.05927 0.05897 0.05910        4,301.40082
+...      ...           ...          ...     ...     ...            ...
+NTN-B    2024-04-12    2050-08-15   0.06039 0.06006 0.06023        4,299.28233
+NTN-B    2024-04-12    2055-05-15   0.06035 0.05998 0.06017        4,367.13360
+NTN-B    2024-04-12    2060-08-15   0.06057 0.06016 0.06036        4,292.26323
+```
+
+### Cálculo de spreads
+```python
+# Calcule os spreads entre o futuro de DI e títulos pré-fixados do Tesouro.
+>>> yd.calculate_spreads(spread_type="di_vs_pre", reference_date="2024-4-11")
+
+BondType ReferenceDate MaturityDate  DISpread
+LTN      2024-04-11    2024-07-01    -20.28
+LTN      2024-04-11    2024-10-01    -10.19
+LTN      2024-04-11    2025-01-01    -15.05
+...      ...           ...           ...
+NTN-F    2024-04-11    2031-01-01    -0.66
+NTN-F    2024-04-11    2033-01-01    -5.69
+NTN-F    2024-04-11    2035-01-01    -1.27
+```
+
+### Dados de Indicadores
+```python
+# Obtenha a taxa SELIC meta do BCB em um determinado dia.
+>>> yd.fetch_indicator(indicator_code="SELIC", reference_date='2024-04-12')
+10.75
+
+# Obtenha a taxa de inflação mensal IPCA do IBGE com base no mês de referência da data.
+>>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-03-18')
+0.16
+
+# Se o indicador não estiver disponível para a data de referência, o retorno será nulo (None).
+>>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-04-10')
+None
 ```
 
 ## Conclusão
 
-A PYield é uma ferramenta poderosa para todos que trabalham com análise de renda fixa no Brasil. Sua facilidade de uso, combinada com a capacidade de executar tarefas complexas de maneira eficiente, a torna uma adição valiosa para o arsenal de qualquer analista financeiro, pesquisador ou entusiasta do mercado financeiro.
-
-Esperamos que este artigo tenha fornecido uma visão clara do que a PYield pode fazer por você. Estamos ansiosos para ver como você vai aplicar essa ferramenta em suas análises de mercado de renda fixa!
+Se você precisa obter e tratar dados de renda fixa no Brasil, o PYield pode ser uma ferramenta valiosa nesse processo. Com uma API simples, o seu código pode se tornar mais limpo e eficiente, permitindo que você se concentre na análise dos dados em vez de se preocupar com a obtenção e processamento deles.
