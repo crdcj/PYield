@@ -9,7 +9,7 @@ description: "Este artigo fornece uma introdução à biblioteca PYield, explica
 <meta property="og:url" content="https://crdcj.github.io/PYield/articles/pyield_intro.html">
 <meta property="og:type" content="article">
 
-# Introdução ao PYield: uma biblioteca para obteção de dados relacionado a instrumentos de Renda Fixa brasileira
+# Uma biblioteca em Python para obteção de dados relacionado a instrumentos de Renda Fixa brasileira
 
 Se você é um entusiasta de VBA e Excel, pode pular esse artigo que aqui não é lugar para você! Brincadeira, você é bem-vindo também. Afinal, essa pode ser uma ótima desculpa para você finalmente aprender Python 😂
 
@@ -134,6 +134,3 @@ None
 ## Conclusão
 
 Se você precisa obter e tratar dados de renda fixa no Brasil, o PYield pode ser uma ferramenta valiosa nesse processo. Com uma API simples, o seu código pode se tornar mais limpo e eficiente, permitindo que você se concentre na análise dos dados em vez de se preocupar com a obtenção e processamento deles.
-
-</body>
-</html>
