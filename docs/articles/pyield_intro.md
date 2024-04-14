@@ -1,21 +1,15 @@
 ---
-layout: default
 title: "Introdução ao PYield"
 description: "Este artigo fornece uma introdução à biblioteca PYield, explicando seus conceitos básicos e como utilizá-la."
-image: images/thumbnail.webp
 ---
 
-<html>
-<head>
-    <meta property="og:title" content="{{ page.title }}">
-    <meta property="og:description" content="{{ page.description }}">
-    <meta property="og:image" content="{{ site.baseurl }}/{{ page.image }}">
-    <meta property="og:url" content="{{ site.baseurl }}{{ page.url }}">
-    <meta property="og:type" content="article">
-</head>
-<body>
+<meta property="og:title" content="Introdução ao PYield">
+<meta property="og:description" content="Este artigo fornece uma introdução à biblioteca PYield, explicando seus conceitos básicos e como utilizá-la.">
+<meta property="og:image" content="https://crdcj.github.io/PYield/images/thumbnail.webp">
+<meta property="og:url" content="https://crdcj.github.io/PYield/articles/pyield_intro.html">
+<meta property="og:type" content="article">
 
-# Uma biblioteca para obteção de dados relacionado a instrumentos de Renda Fixa brasileira
+# Introdução ao PYield: uma biblioteca para obteção de dados relacionado a instrumentos de Renda Fixa brasileira
 
 Se você é um entusiasta de VBA e Excel, pode pular esse artigo que aqui não é lugar para você! Brincadeira, você é bem-vindo também. Afinal, essa pode ser uma ótima desculpa para você finalmente aprender Python 😂
 
