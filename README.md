@@ -25,11 +25,38 @@ pip install pyield
 
 ## How to use PYield
 
+### Business Days Tools (Brazilian holidays are automatically considered)
+```python
+>>> import pyield as yd
+
+# Count the number of business days between two dates
+# Start date is included, end date is excluded
+>>> yd.count_bdays(start='2023-12-29', end='2024-01-02')
+1
+
+# Get the next business day after a given date (offset=1)
+>>> yd.offset_bdays(dates="2023-12-29", offset=1)
+Timestamp('2024-01-02 00:00:00')
+
+# Get the next business day if it is not a business day (offset=0)
+>>> yd.offset_bdays(dates="2023-12-30", offset=0)
+Timestamp('2024-01-02 00:00:00')
+
+# Since 2023-12-29 is a business day, it returns the same date (offset=0)
+>>> yd.offset_bdays(dates="2023-12-29", offset=0)
+Timestamp('2023-12-29 00:00:00')
+
+# Generate a pandas series with the business days between two dates
+>>> yd.generate_bdays(start='2023-12-29', end='2024-01-03')
+0   2023-12-29
+1   2024-01-02
+2   2024-01-03
+dtype: datetime64[ns]
+```
+
 ### Futures Data
 ```python
-import pyield as yd
-
-# Get a DataFrame with the DI Futures data from B3
+# Fetch a DataFrame with the DI Futures data from B3
 >>> yd.fetch_asset(asset_code="DI1", reference_date='2024-03-08')
 
 TradeDate  ExpirationCode ExpirationDate BDToExpiration  ... LastRate LastAskRate LastBidRate SettlementRate
@@ -44,7 +71,7 @@ TradeDate  ExpirationCode ExpirationDate BDToExpiration  ... LastRate LastAskRat
 
 ### Treasury Bonds Data
 ```python
-# Get a DataFrame with the NTN-B data from ANBIMA
+# Fetch a DataFrame with the NTN-B data from ANBIMA
 # Anbima data is available for the last 5 working days
 # Obs: Anbima members have access to the full history
 >>> yd.fetch_asset(asset_code="NTN-B", reference_date='2024-04-12')
@@ -74,29 +101,17 @@ NTN-F    2024-04-11    2033-01-01    -5.69000
 NTN-F    2024-04-11    2035-01-01    -1.27000
 ```
 
-### Business Days Tools (Brazilian holidays are automatically considered)
+### Indicators Data
 ```python
-# Count the number of business days between two dates
-# Start date is included, end date is excluded
->>> yd.count_bdays(start='2023-12-29', end='2024-01-02')
-1
+# Fetch the SELIC target rate from the Central Bank of Brazil
+>>> yd.fetch_indicator(indicator_code="SELIC", reference_date='2024-04-12')
+10.75
 
-# Get the next business day after a given date (offset=1)
->>> yd.offset_bdays(dates="2023-12-29", offset=1)
-Timestamp('2024-01-02 00:00:00')
+# Fetch the IPCA monthly inflation rate from IBGE
+>>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-03-18')
+0.16
 
-# Get the next business day if it is not a business day (offset=0)
->>> yd.offset_bdays(dates="2023-12-30", offset=0)
-Timestamp('2024-01-02 00:00:00')
-
-# Since 2023-12-29 is a business day, it returns the same date (offset=0)
->>> yd.offset_bdays(dates="2023-12-29", offset=0)
-Timestamp('2023-12-29 00:00:00')
-
-# Generate a pandas series with the business days between two dates
->>> yd.generate_bdays(start='2023-12-29', end='2024-01-03')
-0   2023-12-29
-1   2024-01-02
-2   2024-01-03
-dtype: datetime64[ns]
+# If no data is yet available for the indicator, the function returns None
+>>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-04-10')
+None
 ```

@@ -57,14 +57,14 @@ def fetch_asset(
 def fetch_indicator(
     indicator_code: str,
     reference_date: str | pd.Timestamp | None = None,
-) -> pd.Series:
+) -> float | None:
     """
     Fetches data for a specified economic indicator and reference date.
 
     Args:
         indicator_code (str): The code for the economic indicator. Supported options:
-            - "SELIC_TARGET": SELIC target rate from the Central Bank of Brazil.
-            - "IPCA_MGR": IPCA monthly growth rate from IBGE.
+            - "SELIC": SELIC target rate from the Central Bank of Brazil.
+            - "IPCA": IPCA monthly inflation rate from IBGE.
         reference_date (str | pd.Timestamp | None): The reference date for which data is
             fetched. Defaults to the previous business day if None.
 
@@ -75,14 +75,14 @@ def fetch_indicator(
         ValueError: If the indicator code is not recognized or supported.
 
     Examples:
-        >>> fetch_indicator('SELIC_TARGET', '2023-04-01')
-        >>> fetch_indicator('IPCA_MGR', '2023-04-01')
+        >>> fetch_indicator('SELIC', '2023-04-01')
+        >>> fetch_indicator('IPCA', '2023-04-01')
     """
     normalized_date = _normalize_date(reference_date)
 
-    if indicator_code.lower() == "selic_target":
+    if indicator_code.lower() == "selic":
         return ir.fetch_selic_target(reference_date=normalized_date)
-    elif indicator_code.lower() == "ipca_mgr":
-        return ir.fetch_ipca_mgr(reference_date=normalized_date)
+    elif indicator_code.lower() == "ipca":
+        return ir.fetch_ipca_mr(reference_date=normalized_date)
     else:
         raise ValueError("Indicator type not supported.")

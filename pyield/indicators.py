@@ -2,9 +2,9 @@ import pandas as pd
 import requests
 
 
-def fetch_ipca_mgr(reference_date: pd.Timestamp) -> float | None:
+def fetch_ipca_mr(reference_date: pd.Timestamp) -> float | None:
     """
-    Fetches the IPCA (Índice Nacional de Preços ao Consumidor Amplo) monthly growth rate
+    Fetches the IPCA (Índice Nacional de Preços ao Consumidor Amplo) monthly rate
     from the IBGE (Instituto Brasileiro de Geografia e Estatística) for a given
     reference date.
 
@@ -13,7 +13,7 @@ def fetch_ipca_mgr(reference_date: pd.Timestamp) -> float | None:
         a pandas Timestamp object.
 
     Returns:
-        float | None: The IPCA monthly growth rate for the specified date as a float.
+        float | None: The IPCA monthly rate for the specified date as a float.
         Returns None if data is not found or in case of an error.
 
     Notes:
