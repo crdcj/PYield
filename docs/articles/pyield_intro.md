@@ -1,3 +1,9 @@
+---
+layout: default
+title: "Introdução ao PYield"
+description: "Este artigo fornece uma introdução à biblioteca PYield, explicando seus conceitos básicos e como utilizá-la."
+---
+
 # Uma biblioteca para obteção de dados relacionado a instrumentos de Renda Fixa brasileira
 
 Se você é um entusiasta de VBA e Excel, pode pular esse artigo que aqui não é lugar para você! Brincadeira, você é bem-vindo também. Afinal, essa pode ser uma ótima desculpa para você finalmente aprender Python 😂
