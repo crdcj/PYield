@@ -1,26 +1,26 @@
-# Introdução ao PYield: Uma biblioteca para obteção de dados de Renda Fixa brasileira
+# Uma biblioteca para obteção de dados relacionado a instrumentos de Renda Fixa brasileira
 
 Se você é um entusiasta de VBA e Excel, pode pular esse artigo que aqui não é lugar para você! Brincadeira, você é bem-vindo também. Afinal, essa pode ser uma ótima desculpa para você finalmente aprender Python 😂
 
-Brincadeiras à parte, qualquer um que trabalhe com análise de renda fixa no Brasil sabe que a obtenção de dados de fontes como ANBIMA e B3 pode ser uma tarefa tediosa e demorada. Outro ponto de desepero é o tratamento dos feriados e dias úteis, que podem ser um verdadeiro pesadelo para quem precisa calcular prazos e vencimentos, ainda mais depois que criaram um novo feriado nacional no final do ano passado. Sim, agora temos que considerar duas listas de feriados nacionais, uma para antes de 26-12-2023 e outra para depois.
+Brincadeiras à parte, qualquer um que trabalhe com análise de renda fixa no Brasil sabe que a obtenção de dados de fontes como ANBIMA e B3 pode ser uma tarefa complicada. Outro ponto refere-se ao tratamento dos feriados e dias úteis, um verdadeiro pesadelo para quem precisa calcular prazos e vencimentos, ainda mais depois que criaram um novo feriado nacional no final do ano passado. Sim, agora temos que considerar duas listas de feriados nacionais, uma para dados ateriores a 26-12-2023 e outra para depois.
 
-Claro que para os afortunados que têm acesso a serviços pagos como Bloomberg, a obtenção desse tipo de dados é muito fácil. Mas para a maioria dos analistas financeiros, pesquisadores e entusiastas do mercado financeiro, a obtenção e processamento de dados de renda fixa pode ser um desafio. Afinal, você terá que lidar com chamadas para diversas APIs como a do IBGE, do BACEN, da ANBIMA, da B3, e por aí vai.
+Claro que para os afortunados com acesso a serviços pagos como Bloomberg, a obtenção desse tipo de dados já é bem fácil. Mas para a maioria dos analistas financeiros, pesquisadores e entusiastas do mercado, a obtenção e processamento desses dados pode ser um desafio. Afinal, você terá que lidar com chamadas para diversas APIs como a do IBGE, do BACEN, da ANBIMA, da B3, e por aí vai. Em alguns casos, o dado tem que ser extraído diretamente de sites, o que pode ser ainda mais complicado.
 
 ## O que é PYield?
 
-A biblioteca Python foi projetada especificamente para a obtebção e tratamento de dados de instrumentos de renda fixa no Brasil. Ou seja, é uma tentativa de  simplificar a obtenção e processamento de dados de fontes chave como ANBIMA e B3, fornecendo uma API de fácil utilização para analistas financeiros, pesquisadores e entusiastas do mercado financeiro.
+A biblioteca Python foi projetada especificamente para a obtenção e tratamento de dados de instrumentos de renda fixa no Brasil. Ou seja, é uma tentativa de  simplificar a obtenção e processamento de dados de fontes primárias como ANBIMA e B3, fornecendo uma API de fácil utilização.
 
-Utilizando a robustez de bibliotecas populares de Python, como Pandas e Requests, PYield pode ser usada como um backend para quem deseja construir aplicações mais complexas sem ter que lidar com a complexidade de obter e processar esse tipo de dado.
+Utilizando a robustez de bibliotecas populares de Python, como Pandas, Requests e Numpy, PYield pode ser usada como backend de aplicações mais complexas, removendo a complexidade relacionada a obtenção e processamento de dados de renda fixa.
 
 ## Características Principais
 
-- **Coleta de Dados Automatizada**: Obtenha dados diretamente de fontes primárias como ANBIMA e B3 de forma simples e rápida.
-- **Processamento de Dados Eficiente**: Os dados são processados e entregues em formatos fáceis de usar, como DataFrames do Pandas.
+- **Coleta de Dados**: Obtenha dados diretamente de fontes primárias como ANBIMA e B3 de forma simples e rápida.
+- **Processamento de Dados**: Os dados são processados e entregues em formatos fáceis de usar, como DataFrames do Pandas.
 - **Ferramentas de Análise**: Acesse funções embutidas para tarefas comuns de análise do mercado de renda fixa, como cálculos de dias úteis e feriados.
 
 ## Como Instalar o PYield
 
-A instalação do PYield é rápida e fácil através do pip, o gerenciador de pacotes do Python. Basta abrir o terminal e executar o seguinte comando:
+A instalação do PYield é rápida e fácil através do pip, o gerenciador de pacotes do Python. Basta abrir o terminal e executar o seguinte comando no seu ambiente virtual:
 
 ```sh
 pip install pyield
@@ -46,11 +46,11 @@ Timestamp('2024-01-02 00:00:00')
 >>> yd.offset_bdays(dates="2023-12-30", offset=0)
 Timestamp('2024-01-02 00:00:00')
 
-# Como 2023-12-29 é um dia útil, a função retorna a mesma data (offset=0).
+# Como 2023-12-29 já é um dia útil, a função retorna a mesma data (offset=0).
 >>> yd.offset_bdays(dates="2023-12-29", offset=0)
 Timestamp('2023-12-29 00:00:00')
 
-# Gerar uma série pandas com os dias úteis entre duas datas.
+# Gerar uma série de dias úteis entre duas datas.
 >>> yd.generate_bdays(start='2023-12-29', end='2024-01-03')
 0   2023-12-29
 1   2024-01-02
@@ -77,7 +77,7 @@ TradeDate  ExpirationCode ExpirationDate BDToExpiration  ... LastRate LastAskRat
 ```python
 # Obtenha um DataFrame com os dados dos títulos NTN-B da ANBIMA.
 # Os dados da Anbima estão disponíveis para os últimos 5 dias úteis.
-# Obs: Para quem é membro da Anbima, o acesso ao histórico é liberado de forma automática pela biblioteca.
+# Obs: Para quem é membro da Anbima, o acesso ao histórico é liberado automaticamente pela biblioteca.
 >>> yd.fetch_asset(asset_code="NTN-B", reference_date='2024-04-12')
 
 BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate Price
@@ -92,7 +92,7 @@ NTN-B    2024-04-12    2060-08-15   0.06057 0.06016 0.06036        4,292.26323
 
 ### Cálculo de spreads
 ```python
-# Calcule os spreads entre o futuro de DI e títulos pré-fixados do Tesouro.
+# Calcule o spread entre o futuro de DI e os títulos pré-fixados do Tesouro.
 >>> yd.calculate_spreads(spread_type="di_vs_pre", reference_date="2024-4-11")
 
 BondType ReferenceDate MaturityDate  DISpread
