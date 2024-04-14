@@ -2,7 +2,14 @@
 <html lang="pt-br">
 
 <head>
-    {% include metatags.html %}
+    {% if page.custom_head %}
+    {{ content }}
+    {% else %}
+    <meta charset="UTF-8">
+    <title>{{ page.title | default: "PYield" }}</title>
+    <meta name="description" content="{{ page.description | default: " Descrição padrão do site" }}">
+    <!-- Outras tags head -->
+    {% endif %}
 </head>
 
 <body>

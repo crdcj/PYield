@@ -2,7 +2,18 @@
 layout: default
 title: "Introdução ao PYield"
 description: "Este artigo fornece uma introdução à biblioteca PYield, explicando seus conceitos básicos e como utilizá-la."
+image: images/thumbnail.webp
 ---
+
+<html>
+<head>
+    <meta property="og:title" content="{{ page.title }}">
+    <meta property="og:description" content="{{ page.description }}">
+    <meta property="og:image" content="{{ site.baseurl }}/{{ page.image }}">
+    <meta property="og:url" content="{{ site.baseurl }}{{ page.url }}">
+    <meta property="og:type" content="article">
+</head>
+<body>
 
 # Uma biblioteca para obteção de dados relacionado a instrumentos de Renda Fixa brasileira
 
