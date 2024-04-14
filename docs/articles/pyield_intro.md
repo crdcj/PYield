@@ -13,21 +13,21 @@ description: "Este artigo fornece uma introdução à biblioteca PYield, explica
 
 Se você é um entusiasta de VBA e Excel, pode pular esse artigo que aqui não é lugar para você! Brincadeira, você é bem-vindo também. Afinal, essa pode ser uma ótima desculpa para você finalmente aprender Python 😂
 
-Brincadeiras à parte, qualquer um que trabalhe com análise de renda fixa no Brasil sabe que a obtenção de dados de fontes como ANBIMA e B3 pode ser uma tarefa complicada. Outro ponto refere-se ao tratamento dos feriados e dias úteis, um verdadeiro pesadelo para quem precisa calcular prazos e vencimentos, ainda mais depois que criaram um novo feriado nacional no final do ano passado. Sim, agora temos que considerar duas listas de feriados nacionais, uma para dados ateriores a 26-12-2023 e outra para depois.
+Brincadeiras à parte, qualquer um que trabalhe com análise de renda fixa no sabe que a obtenção de dados de fontes como ANBIMA e B3 pode ser uma tarefa complicada. Outro ponto refere-se ao tratamento dos feriados e dias úteis, um verdadeiro pesadelo para quem precisa calcular prazos e vencimentos, ainda mais depois que criaram um novo feriado nacional no final do ano passado. Sim, agora temos que considerar duas listas de feriados nacionais, uma para dados ateriores a 26-12-2023 e outra para depois.
 
 Claro que para os afortunados com acesso a serviços pagos como Bloomberg, a obtenção desse tipo de dados já é bem fácil. Mas para a maioria dos analistas financeiros, pesquisadores e entusiastas do mercado, a obtenção e processamento desses dados pode ser um desafio. Afinal, você terá que lidar com chamadas para diversas APIs como a do IBGE, do BACEN, da ANBIMA, da B3, e por aí vai. Em alguns casos, o dado tem que ser extraído diretamente de sites, o que pode ser ainda mais complicado.
 
 ## O que é PYield?
 
-A biblioteca Python foi projetada especificamente para a obtenção e tratamento de dados de instrumentos de renda fixa no Brasil. Ou seja, é uma tentativa de  simplificar a obtenção e processamento de dados de fontes primárias como ANBIMA e B3, fornecendo uma API de fácil utilização.
+A biblioteca Python foi projetada especificamente para a obtenção e tratamento de dados de instrumentos de renda fixa. Ou seja, é uma tentativa de  simplificar a obtenção e processamento de dados de fontes primárias como ANBIMA e B3, fornecendo uma API de fácil utilização.
 
-Utilizando a robustez de bibliotecas populares de Python, como Pandas, Requests e Numpy, PYield pode ser usada como backend de aplicações mais complexas, removendo a complexidade relacionada a obtenção e processamento de dados de renda fixa.
+Utilizando a robustez de bibliotecas populares de Python, como Pandas, Requests e Numpy, PYield pode ser usada como backend de aplicações mais complexas, removendo a parte pesada relacionada a obtenção e processamento de dados de fontes e formatos diversos.
 
 ## Características Principais
 
 - **Coleta de Dados**: Obtenha dados diretamente de fontes primárias como ANBIMA e B3 de forma simples e rápida.
 - **Processamento de Dados**: Os dados são processados e entregues em formatos fáceis de usar, como DataFrames do Pandas.
-- **Ferramentas de Análise**: Acesse funções embutidas para tarefas comuns de análise do mercado de renda fixa, como cálculos de dias úteis e feriados.
+- **Ferramentas de Análise**: Acesse funções para tarefas comuns de análise do mercado de renda fixa, como cálculos de dias úteis e feriados.
 
 ## Como Instalar o PYield
 
@@ -104,7 +104,7 @@ NTN-B    2024-04-12    2060-08-15   0.06057 0.06016 0.06036        4,292.26323
 ### Cálculo de spreads
 ```python
 # Calcule o spread entre o futuro de DI e os títulos pré-fixados do Tesouro.
->>> yd.calculate_spreads(spread_type="di_vs_pre", reference_date="2024-4-11")
+>>> yd.calculate_spreads(spread_type="DI_VS_PRE", reference_date="2024-4-11")
 
 BondType ReferenceDate MaturityDate  DISpread
 LTN      2024-04-11    2024-07-01    -20.28
@@ -133,8 +133,8 @@ None
 
 ## Conclusão
 
-Se você precisa obter e tratar dados de renda fixa no Brasil, o PYield pode ser uma ferramenta valiosa nesse processo. Com uma API simples, o seu código pode se tornar mais limpo e eficiente, permitindo que você se concentre na análise dos dados em vez de se preocupar com a obtenção e processamento deles.
+Se você precisa obter e tratar dados de renda fixa, PYield pode ser uma ferramenta valiosa nesse processo. Com uma API simples, o seu código pode se tornar mais limpo e eficiente, permitindo que você se concentre na análise dos dados em vez de se preocupar com a obtenção e processamento deles.
 
-A biblioteca pode ser acessada diretamente em [GitHub](https://github.com/crdcj/PYield)
+A biblioteca pode ser acessada diretamente em: https://github.com/crdcj/PYield
 
-Obs: quem quiser contribuir com a biblioteca, fique à vontade para abrir um pull request no repositório do GitHub.
+Obs: quem quiser contribuir com o desenvolvimento da ferramenta entre em contato comigo em cr.cj@outlook.com
