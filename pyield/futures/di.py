@@ -1,7 +1,7 @@
 import pandas as pd
 
 from ... import bday
-from ..core import _fetch_raw_df, get_expiration_date, get_old_expiration_date
+from . import core
 
 
 def _convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
@@ -86,10 +86,10 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     # Contract code format was changed in 22/05/2006
     if trade_date < pd.Timestamp("2006-05-22"):
         df["ExpirationDate"] = df["ExpirationCode"].apply(
-            get_old_expiration_date, args=(trade_date,)
+            core.get_old_expiration_date, args=(trade_date,)
         )
     else:
-        df["ExpirationDate"] = df["ExpirationCode"].apply(get_expiration_date)
+        df["ExpirationDate"] = df["ExpirationCode"].apply(core.get_expiration_date)
 
     df["BDToExpiration"] = bday.count_bdays(trade_date, df["ExpirationDate"])
     # Convert to nullable integer, since other columns use this data type
@@ -173,50 +173,7 @@ def fetch_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame
         - OpenContracts: number of open contracts at the start of the trading day.
         - closed_contracts: number of closed contracts at the end of the trading day.
     """
-    df_raw = _fetch_raw_df(trade_date)
+    df_raw = core._fetch_raw_df(trade_date)
     if return_raw:
         return df_raw
     return _process_raw_df(df_raw, trade_date)
-
-
-def fetch_df(
-    trade_date: pd.Timestamp,
-    return_raw: bool = False,
-) -> pd.DataFrame:
-    """
-    Fetches DI futures data for a specified trade date from B3.
-
-     Retrieves and processes DI futures data from B3 for a given trade date. This
-     function serves as the primary method for accessing DI data, with options to
-     specify the source of the data and whether to return raw data.
-
-     Args:
-        trade_date (pd.Timestamp): The trade date for which to fetch DI data.
-        source_type (Literal["bmf", "b3", "b3s"], optional): Indicates the source of
-            the data. Defaults to "bmf". Options include:
-                - "bmf": Fetches data from the old BM&FBOVESPA website. Fastest option.
-                - "b3": Fetches data from the complete Price Report (XML file) provided
-                    by B3.
-                - "b3s": Fetches data from the simplified Price Report (XML file)
-                    provided by B3. Faster than "b3" but less detailed.
-        return_raw (bool, optional): If True, returns the raw DI data without
-            processing.
-
-     Returns:
-         pd.DataFrame: A DataFrame containing the DI futures data for the specified
-         trade date. Format and content depend on the source_type and return_raw flag.
-
-     Examples:
-         # Fetch DI data for the previous business day using default settings
-         >>> get_di()
-
-         # Fetch DI data for a specific trade date from the simplified B3 Price Report
-         >>> get_di("2023-12-28", source_type="b3s")
-
-     Notes:
-         - Complete Price Report XML files are about 5 MB in size.
-         - Simplified Price Report XML files are significantly smaller, around 50 kB.
-         - For file specifications, refer to the B3 documentation: [B3 File Specs](https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf)
-    """
-
-    return fetch_di(trade_date, return_raw)
