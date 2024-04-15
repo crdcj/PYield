@@ -323,6 +323,13 @@ def read_file(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
         return_raw (bool, optional): If set to True, the function returns the raw data
             without applying any transformation or processing. Useful for cases where
             raw data inspection or custom processing is needed. Defaults to False.
+        source_type (Literal["bmf", "b3", "b3s"], optional): Indicates the source of
+            the data. Defaults to "bmf". Options include:
+                - "bmf": Fetches data from the old BM&FBOVESPA website. Fastest option.
+                - "b3": Fetches data from the complete Price Report (XML file) provided
+                    by B3.
+                - "b3s": Fetches data from the simplified Price Report (XML file)
+                    provided by B3. Faster than "b3" but less detailed.
 
     Returns:
         pd.DataFrame: A DataFrame containing the processed or raw DI futures data,

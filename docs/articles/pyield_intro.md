@@ -1,11 +1,11 @@
 ---
-title: "Introdução ao PYield"
+title: "Introdução a PYield"
 description: "Este artigo fornece uma introdução à biblioteca PYield, explicando seus conceitos básicos e como utilizá-la."
 ---
 
-<meta property="og:title" content="Introdução ao PYield">
+<meta property="og:title" content="Introdução a PYield">
 <meta property="og:description" content="Este artigo fornece uma introdução à biblioteca PYield, explicando seus conceitos básicos e como utilizá-la.">
-<meta property="og:image" content="https://crdcj.github.io/PYield/images/thumbnail.webp">
+<meta property="og:image" content="https://crdcj.github.io/PYield/images/thumbnail.jpg">
 <meta property="og:url" content="https://crdcj.github.io/PYield/articles/pyield_intro.html">
 <meta property="og:type" content="article">
 

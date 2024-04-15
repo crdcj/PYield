@@ -132,7 +132,7 @@ def get_old_expiration_date(
         return pd.NaT  # type: ignore
 
 
-def _fetch_raw_df(trade_date: pd.Timestamp) -> pd.DataFrame:
+def _fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to fetch raw DI futures data from B3 for a specific trade date.
 
@@ -142,8 +142,9 @@ def _fetch_raw_df(trade_date: pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Raw DI data as a Pandas pd.DataFrame.
     """
+    url_date = trade_date.strftime("%d/%m/%Y")
     # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
-    url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={trade_date.strftime('%d/%m/%Y')}&Mercadoria=DI1&XLS=false"
+    url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={url_date}&Mercadoria={asset_code}&XLS=false"
     r = requests.get(url)
     f = io.StringIO(r.text)
 
@@ -179,46 +180,3 @@ def _fetch_raw_df(trade_date: pd.Timestamp) -> pd.DataFrame:
         for {trade_date_str}. Returning an empty pd.DataFrame."""
         warnings.warn(message, stacklevel=2)
         return pd.DataFrame()
-
-
-def fetch_df(
-    trade_date: pd.Timestamp,
-    return_raw: bool = False,
-) -> pd.DataFrame:
-    """
-    Fetches DI futures data for a specified trade date from B3.
-
-     Retrieves and processes DI futures data from B3 for a given trade date. This
-     function serves as the primary method for accessing DI data, with options to
-     specify the source of the data and whether to return raw data.
-
-     Args:
-        trade_date (pd.Timestamp): The trade date for which to fetch DI data.
-        source_type (Literal["bmf", "b3", "b3s"], optional): Indicates the source of
-            the data. Defaults to "bmf". Options include:
-                - "bmf": Fetches data from the old BM&FBOVESPA website. Fastest option.
-                - "b3": Fetches data from the complete Price Report (XML file) provided
-                    by B3.
-                - "b3s": Fetches data from the simplified Price Report (XML file)
-                    provided by B3. Faster than "b3" but less detailed.
-        return_raw (bool, optional): If True, returns the raw DI data without
-            processing.
-
-     Returns:
-         pd.DataFrame: A DataFrame containing the DI futures data for the specified
-         trade date. Format and content depend on the source_type and return_raw flag.
-
-     Examples:
-         # Fetch DI data for the previous business day using default settings
-         >>> get_di()
-
-         # Fetch DI data for a specific trade date from the simplified B3 Price Report
-         >>> get_di("2023-12-28", source_type="b3s")
-
-     Notes:
-         - Complete Price Report XML files are about 5 MB in size.
-         - Simplified Price Report XML files are significantly smaller, around 50 kB.
-         - For file specifications, refer to the B3 documentation: [B3 File Specs](https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf)
-    """
-
-    return fetch_di(trade_date, return_raw)
