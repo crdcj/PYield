@@ -7,8 +7,8 @@ import requests
 from lxml import etree
 from pandas import DataFrame, Timestamp
 
-from .. import bday
-from . import core as cr
+from . import bday
+from .di import core as cr
 
 
 def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
@@ -307,3 +307,36 @@ def read_di(file_path: Path, return_raw: bool = False) -> DataFrame:
 
     else:
         raise ValueError("A file path must be provided.")
+
+
+def read_file(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
+    """
+    Reads DI futures data from a file and returns it as a pandas DataFrame.
+
+    This function opens and reads a DI futures data file, returning the contents as a
+    pandas DataFrame. It supports reading from both XML files provided by B3, wich
+    are the simplified and complete Price Reports.
+
+    Args:
+        file_path (Path): The file path to the DI data file. This should be a valid
+            Path object pointing to the location of the file.
+        return_raw (bool, optional): If set to True, the function returns the raw data
+            without applying any transformation or processing. Useful for cases where
+            raw data inspection or custom processing is needed. Defaults to False.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the processed or raw DI futures data,
+            depending on the `return_raw` flag.
+
+    Examples:
+        >>> read_di(Path("path/to/di_data_file.xml"))
+        # returns a DataFrame with the DI futures data
+
+        >>> read_di(Path("path/to/di_data_file.xml"), return_raw=True)
+        # returns a DataFrame with the raw DI futures data, without processing
+
+    Note:
+        The ability to process and return raw data is primarily intended for advanced
+        users who require access to the data in its original form for custom analyses.
+    """
+    return read_di(file_path, return_raw=return_raw)
