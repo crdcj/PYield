@@ -5,7 +5,7 @@ description: "Este artigo fornece uma introdução à biblioteca PYield, explica
 
 <meta property="og:title" content="Introdução a PYield">
 <meta property="og:description" content="Este artigo fornece uma introdução à biblioteca PYield, explicando seus conceitos básicos e como utilizá-la.">
-<meta property="og:image" content="https://crdcj.github.io/PYield/images/thumbnail.jpg?v=2">
+<meta property="og:image" content="https://imgur.com/a/G57cA73">
 <meta property="og:url" content="https://crdcj.github.io/PYield/articles/pyield_intro.html">
 <meta property="og:type" content="article">
 
