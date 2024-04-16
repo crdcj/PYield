@@ -151,7 +151,7 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
 
 def fetch_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
     """
-    Fetchs the DI futures data for a given date from B3.
+    Fetchs the DDI futures data for a given date from B3.
 
     This function fetches and processes the DI futures data from B3 for a specific
     trade date. It's the primary external interface for accessing DI data.
@@ -166,7 +166,7 @@ def fetch_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFram
 
     Examples:
         >>> from pyield.futures import di
-        >>> di.fetch_di(pd.Timestamp("2021-01-04"))
+        >>> di.fetch_ddi(pd.Timestamp("2021-01-04"))
 
     Notes:
         - DaysToExpiration: number of business days to ExpirationDate.
