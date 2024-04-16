@@ -59,14 +59,14 @@ dtype: datetime64[ns]
 # Fetch a DataFrame with the DI Futures data from B3
 >>> yd.fetch_asset(asset_code="DI1", reference_date='2024-03-08')
 
-TradeDate  ExpirationCode ExpirationDate BDToExpiration  ... LastRate LastAskRate LastBidRate SettlementRate
-2024-03-08 J24            2024-04-01     15              ... 10.952   10.952      10.956      10.956
-2024-03-08 K24            2024-05-02     37              ... 10.776   10.774      10.780      10.777
-2024-03-08 M24            2024-06-03     58              ... 10.604   10.602      10.604      10.608
-...        ...            ...            ...             ... ...      ...         ...         ...
-2024-03-08 F37            2037-01-02     3213            ... <NA>     <NA>        <NA>        10.859
-2024-03-08 F38            2038-01-04     3462            ... <NA>     <NA>        <NA>        10.859
-2024-03-08 F39            2039-01-03     3713            ... <NA>     <NA>        <NA>        10.85
+TradeDate  ExpirationCode ExpirationDate BDaysToExpiration ... LastRate LastAskRate LastBidRate SettlementRate
+2024-03-08 J24            2024-04-01     15                ... 10.952   10.952      10.956      10.956
+2024-03-08 K24            2024-05-02     37                ... 10.776   10.774      10.780      10.777
+2024-03-08 M24            2024-06-03     58                ... 10.604   10.602      10.604      10.608
+...        ...            ...            ...               ... ...      ...         ...         ...
+2024-03-08 F37            2037-01-02     3213              ... <NA>     <NA>        <NA>        10.859
+2024-03-08 F38            2038-01-04     3462              ... <NA>     <NA>        <NA>        10.859
+2024-03-08 F39            2039-01-03     3713              ... <NA>     <NA>        <NA>        10.85
 ```
 
 ### Treasury Bonds Data

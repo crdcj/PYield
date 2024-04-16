@@ -33,7 +33,7 @@ def _convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
         "LastAskRate",
     ]
     for col in convert_cols:
-        df[col] = _convert_prices_to_rates(df[col], df["BDToExpiration"])
+        df[col] = _convert_prices_to_rates(df[col], df["BDaysToExpiration"])
 
     # Invert low and high prices
     df["MinRate"], df["MaxRate"] = df["MaxRate"], df["MinRate"]
@@ -91,11 +91,11 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     else:
         df["ExpirationDate"] = df["ExpirationCode"].apply(common.get_expiration_date)
 
-    df["BDToExpiration"] = bday.count_bdays(trade_date, df["ExpirationDate"])
+    df["BDaysToExpiration"] = bday.count_bdays(trade_date, df["ExpirationDate"])
     # Convert to nullable integer, since other columns use this data type
-    df["BDToExpiration"] = df["BDToExpiration"].astype(pd.Int64Dtype())
+    df["BDaysToExpiration"] = df["BDaysToExpiration"].astype(pd.Int64Dtype())
     # Remove expired contracts
-    df.query("BDToExpiration > 0", inplace=True)
+    df.query("BDaysToExpiration > 0", inplace=True)
 
     # Columns where 0 means NaN
     cols_with_nan = [
@@ -116,7 +116,7 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
         df = _convert_prices_in_older_contracts(df)
 
     df["SettlementRate"] = _convert_prices_to_rates(
-        df["SettlementPrice"], df["BDToExpiration"]
+        df["SettlementPrice"], df["BDaysToExpiration"]
     )
 
     # Remove percentage in all rate columns and round to 5 decimal places since it's the
@@ -130,7 +130,7 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
         "TradeDate",
         "ExpirationCode",
         "ExpirationDate",
-        "BDToExpiration",
+        "BDaysToExpiration",
         "OpenContracts",
         # "OpenContractsEndSession" since there is no OpenContracts at the end of the
         # day in XML data, it will be removed to avoid confusion with XML data
@@ -170,7 +170,7 @@ def fetch_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame
         >>> di.fetch_di(pd.Timestamp("2021-01-04"))
 
     Notes:
-        - BDToExpiration: number of business days to ExpirationDate.
+        - BDaysToExpiration: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
     df_raw = common._fetch_raw_df(asset_code="DI1", trade_date=trade_date)

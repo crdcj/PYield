@@ -20,7 +20,8 @@ def fetch_asset(
             - "TRB": Treasury bonds (indicative rates from ANBIMA).
             - "LTN", "LFT", "NTN-F", "NTN-B": Specific types of Brazilian treasury bonds
                   (indicative rates from ANBIMA).
-            - "DI1": DI Futures rates from B3.
+            - "DI1": One-day Interbank Deposit Futures (Futuro de DI) from B3.
+            - "DDI": DI x U.S. Dollar Spread Futures (Futuro de Cupom Cambial) from B3.
         reference_date (str | pd.Timestamp | None): The reference date for which data is
             fetched. Defaults to the previous business day if None.
         **kwargs: Additional keyword arguments, specifically:

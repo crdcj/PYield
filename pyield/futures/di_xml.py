@@ -97,12 +97,12 @@ def _extract_di_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
         # Extrair a data de negociação
         if price_report is None:
             continue
-        trade_date = price_report.find(".//ns:TradDt/ns:Dt", namespaces)
+        trade_date = price_report.find(".//ns:TradeDate/ns:Dt", namespaces)
 
         # Preparar o dicionário de dados do ticker com a data de negociação
         if trade_date is None:
             continue
-        ticker_data = {"TradDt": trade_date.text, "TckrSymb": tckr_symb.text}
+        ticker_data = {"TradeDate": trade_date.text, "TckrSymb": tckr_symb.text}
 
         # Acessar o elemento FinInstrmAttrbts que contém o TckrSymb
         fin_instrm_attrbts = price_report.find(".//ns:FinInstrmAttrbts", namespaces)
@@ -233,13 +233,13 @@ def _process_di_df(df_raw: DataFrame) -> DataFrame:
     df.insert(2, "ExpirationDate", expiration)
 
     business_days = bday.count_bdays(df["TradDt"], df["ExpirationDate"])
-    df.insert(3, "BDToExpiration", business_days)
+    df.insert(3, "BDaysToExpiration", business_days)
 
     # Convert to nullable integer, since other columns use this data type
-    df["BDToExpiration"] = df["BDToExpiration"].astype(pd.Int64Dtype())
+    df["BDaysToExpiration"] = df["BDaysToExpiration"].astype(pd.Int64Dtype())
 
     # Remove expired contracts
-    df.query("BDToExpiration > 0", inplace=True)
+    df.query("BDaysToExpiration > 0", inplace=True)
 
     return df.sort_values(by=["ExpirationDate"], ignore_index=True)
 
