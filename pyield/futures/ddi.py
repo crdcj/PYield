@@ -4,7 +4,7 @@ from .. import bday
 from . import common
 
 
-def _convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
+def _convert_prices_to_rates(prices: pd.Series, n_days: pd.Series) -> pd.Series:
     """
     Internal function to convert DI futures prices to rates.
 
@@ -15,7 +15,7 @@ def _convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
     Returns:
         pd.Series: A pd.Series containing DI futures rates.
     """
-    rates = (100_000 / prices) ** (252 / bd) - 1
+    rates = (100_000 / prices - 1) * (360 / n_days)
 
     # Return rates as percentage
     return 100 * rates
@@ -150,7 +150,7 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     return df[ordered_cols]
 
 
-def fetch_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
+def fetch_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
     """
     Fetchs the DI futures data for a given date from B3.
 

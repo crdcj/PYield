@@ -48,6 +48,8 @@ def fetch_asset(
 
     elif asset_code.lower() == "di1":
         return ft.fetch_di(trade_date=normalized_date, return_raw=return_raw)
+    elif asset_code.lower() == "ddi":
+        return ft.fetch_ddi(trade_date=normalized_date, return_raw=return_raw)
     else:
         raise ValueError("Asset type not supported.")
 
