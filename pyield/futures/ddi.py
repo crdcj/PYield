@@ -1,19 +1,18 @@
 import pandas as pd
 
-from .. import bday
 from . import common
 
 
 def _convert_prices_to_rates(prices: pd.Series, n_days: pd.Series) -> pd.Series:
     """
-    Internal function to convert DI futures prices to rates.
+    Internal function to convert DDI futures prices to rates.
 
     Args:
-        prices (pd.Series): A pd.Series containing DI futures prices.
-        bd (pd.Series): A serie containing the number of business days to expiration.
+        prices (pd.Series): A pd.Series containing DDI futures prices.
+        bd (pd.Series): A serie containing the number of days to expiration.
 
     Returns:
-        pd.Series: A pd.Series containing DI futures rates.
+        pd.Series: A pd.Series containing DDI futures rates.
     """
     rates = (100_000 / prices - 1) * (360 / n_days)
 
@@ -33,7 +32,7 @@ def _convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
         "LastAskRate",
     ]
     for col in convert_cols:
-        df[col] = _convert_prices_to_rates(df[col], df["BDToExpiration"])
+        df[col] = _convert_prices_to_rates(df[col], df["DaysToExpiration"])
 
     # Invert low and high prices
     df["MinRate"], df["MaxRate"] = df["MaxRate"], df["MinRate"]
@@ -91,11 +90,11 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     else:
         df["ExpirationDate"] = df["ExpirationCode"].apply(common.get_expiration_date)
 
-    df["BDToExpiration"] = bday.count_bdays(trade_date, df["ExpirationDate"])
+    df["DaysToExpiration"] = (df["ExpirationDate"] - trade_date).dt.days
     # Convert to nullable integer, since other columns use this data type
-    df["BDToExpiration"] = df["BDToExpiration"].astype(pd.Int64Dtype())
+    df["DaysToExpiration"] = df["DaysToExpiration"].astype(pd.Int64Dtype())
     # Remove expired contracts
-    df.query("BDToExpiration > 0", inplace=True)
+    df.query("DaysToExpiration > 0", inplace=True)
 
     # Columns where 0 means NaN
     cols_with_nan = [
@@ -116,7 +115,7 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
         df = _convert_prices_in_older_contracts(df)
 
     df["SettlementRate"] = _convert_prices_to_rates(
-        df["SettlementPrice"], df["BDToExpiration"]
+        df["SettlementPrice"], df["DaysToExpiration"]
     )
 
     # Remove percentage in all rate columns and round to 5 decimal places since it's the
@@ -130,7 +129,7 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
         "TradeDate",
         "ExpirationCode",
         "ExpirationDate",
-        "BDToExpiration",
+        "DaysToExpiration",
         "OpenContracts",
         # "OpenContractsEndSession" since there is no OpenContracts at the end of the
         # day in XML data, it will be removed to avoid confusion with XML data
@@ -170,7 +169,7 @@ def fetch_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFram
         >>> di.fetch_di(pd.Timestamp("2021-01-04"))
 
     Notes:
-        - BDToExpiration: number of business days to ExpirationDate.
+        - DaysToExpiration: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
     df_raw = common._fetch_raw_df(asset_code="DDI", trade_date=trade_date)
