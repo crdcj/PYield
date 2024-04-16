@@ -1,5 +1,4 @@
 import io
-import warnings
 
 import pandas as pd
 import requests
@@ -146,37 +145,31 @@ def _fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
     url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={url_date}&Mercadoria={asset_code}&XLS=false"
     r = requests.get(url)
-    f = io.StringIO(r.text)
 
-    try:
-        # Attempt to get the first table with the header "AJUSTE"
-        df = pd.read_html(
-            f,
-            match="AJUSTE",
-            header=1,
-            thousands=".",
-            decimal=",",
-            na_values=["-"],
-            dtype_backend="numpy_nullable",
-        )[0]
+    text = r.text
+    if "AJUSTE" not in text:
+        raise ValueError(f"Could not fetch data for {url_date}.")
 
-        # Remove rows with all NaN values
-        df = df.dropna(how="all")
+    df = pd.read_html(
+        io.StringIO(text),
+        match="AJUSTE",
+        header=1,
+        thousands=".",
+        decimal=",",
+        na_values=["-"],
+        dtype_backend="numpy_nullable",
+    )[0]
 
-        # Remove columns with all NaN values
-        df = df.dropna(axis=1, how="all")
+    # Remove rows with all NaN values
+    df = df.dropna(how="all")
 
-        # Force "VAR. PTOS." to be string, since it can also be read as float
-        df["VAR. PTOS."] = df["VAR. PTOS."].astype(pd.StringDtype())
+    # Remove columns with all NaN values
+    df = df.dropna(axis=1, how="all")
 
-        # Force "AJUSTE CORRIG. (4)" to be float, since it can be also read as int
-        df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype(pd.Float64Dtype())
+    # Force "VAR. PTOS." to be string, since it can also be read as float
+    df["VAR. PTOS."] = df["VAR. PTOS."].astype(pd.StringDtype())
 
-        return df
+    # Force "AJUSTE CORRIG. (4)" to be float, since it can be also read as int
+    df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype(pd.Float64Dtype())
 
-    except Exception as e:
-        trade_date_str = trade_date.strftime("%d/%m/%Y")
-        message = f"""A {type(e).__name__} occurred while reading the DI futures data
-        for {trade_date_str}. Returning an empty pd.DataFrame."""
-        warnings.warn(message, stacklevel=2)
-        return pd.DataFrame()
+    return df
