@@ -1,121 +1,7 @@
-import io
-import warnings
-
 import pandas as pd
-import requests
 
 from .. import bday
-from . import core as cr
-
-
-def get_old_expiration_date(
-    expiration_code: str, trade_date: pd.Timestamp
-) -> pd.Timestamp:
-    """
-    Internal function to convert an old DI contract code into its ExpirationDate date.
-    Valid for contract codes up to 21-05-2006.
-
-    Args:
-        expiration_code (str): An old DI Expiration Code from B3, where the first three
-            letters represent the month and the last digit represents the year.
-            Example: "JAN3".
-        trade_date (pd.Timestamp): The trade date for which the contract code is valid.
-
-    Returns:
-        pd.Timestamp
-            The contract's ExpirationDate date. Returns pd.NaT if the input is invalid.
-
-    Examples:
-        >>> get_old_expiration_date("JAN3", pd.Timestamp("2001-05-21"))
-        pd.Timestamp('2003-01-01')
-
-    Notes:
-        - In 22-05-2006, B3 changed the format of the DI contract codes. Before that
-        date, the first three letters represented the month and the last digit
-        represented the year.
-    """
-
-    month_codes = {
-        "JAN": 1,
-        "FEV": 2,
-        "MAR": 3,
-        "ABR": 4,
-        "MAI": 5,
-        "JUN": 6,
-        "JUL": 7,
-        "AGO": 8,
-        "SET": 9,
-        "OUT": 10,
-        "NOV": 11,
-        "DEZ": 12,
-    }
-    try:
-        month_code = expiration_code[:3]
-        month = month_codes[month_code]
-
-        # Year codes must generated dynamically, since it depends on the trade date.
-        reference_year = trade_date.year
-        year_codes = {}
-        for year in range(reference_year, reference_year + 10):
-            year_codes[str(year)[-1:]] = year
-        year = year_codes[expiration_code[-1:]]
-
-        expiration_date = pd.Timestamp(year, month, 1)
-        # Adjust to the next business day when the date is a weekend or a holiday.
-        # Must use old holiday list, since this contract code was used until 2006.
-        return bday.offset_bdays(expiration_date, offset=0, holiday_list="old")
-
-    except (KeyError, ValueError):
-        return pd.NaT  # type: ignore
-
-
-def _get_raw_df(trade_date: pd.Timestamp) -> pd.DataFrame:
-    """
-    Internal function to fetch raw DI futures data from B3 for a specific trade date.
-
-    Args:
-        trade_date: a datetime-like object representing the trade date.
-
-    Returns:
-        pd.DataFrame: Raw DI data as a Pandas pd.DataFrame.
-    """
-    # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
-    url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={trade_date.strftime('%d/%m/%Y')}&Mercadoria=DI1&XLS=false"
-    r = requests.get(url)
-    f = io.StringIO(r.text)
-
-    try:
-        # Attempt to get the first table with the header "AJUSTE"
-        df = pd.read_html(
-            f,
-            match="AJUSTE",
-            header=1,
-            thousands=".",
-            decimal=",",
-            na_values=["-"],
-            dtype_backend="numpy_nullable",
-        )[0]
-
-        # Remove rows with all NaN values
-        df = df.dropna(how="all")
-
-        # Remove columns with all NaN values
-        df = df.dropna(axis=1, how="all")
-
-        # Force "VAR. PTOS." to be string, since it can also be read as float
-        df["VAR. PTOS."] = df["VAR. PTOS."].astype(pd.StringDtype())
-
-        # Force "AJUSTE CORRIG. (4)" to be float, since it can be also read as int
-        df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype(pd.Float64Dtype())
-
-        return df
-
-    except Exception as e:
-        trade_date_str = trade_date.strftime("%d/%m/%Y")
-        message = f"""A {type(e).__name__} occurred while reading the DI futures data
-        for {trade_date_str}. Returning an empty pd.DataFrame."""
-        warnings.warn(message, stacklevel=2)
-        return pd.DataFrame()
+from . import common
 
 
 def _convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
@@ -147,7 +33,7 @@ def _convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
         "LastAskRate",
     ]
     for col in convert_cols:
-        df[col] = _convert_prices_to_rates(df[col], df["BDToExpiration"])
+        df[col] = _convert_prices_to_rates(df[col], df["BDaysToExpiration"])
 
     # Invert low and high prices
     df["MinRate"], df["MaxRate"] = df["MaxRate"], df["MinRate"]
@@ -200,16 +86,16 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     # Contract code format was changed in 22/05/2006
     if trade_date < pd.Timestamp("2006-05-22"):
         df["ExpirationDate"] = df["ExpirationCode"].apply(
-            get_old_expiration_date, args=(trade_date,)
+            common.get_old_expiration_date, args=(trade_date,)
         )
     else:
-        df["ExpirationDate"] = df["ExpirationCode"].apply(cr.get_expiration_date)
+        df["ExpirationDate"] = df["ExpirationCode"].apply(common.get_expiration_date)
 
-    df["BDToExpiration"] = bday.count_bdays(trade_date, df["ExpirationDate"])
+    df["BDaysToExpiration"] = bday.count_bdays(trade_date, df["ExpirationDate"])
     # Convert to nullable integer, since other columns use this data type
-    df["BDToExpiration"] = df["BDToExpiration"].astype(pd.Int64Dtype())
+    df["BDaysToExpiration"] = df["BDaysToExpiration"].astype(pd.Int64Dtype())
     # Remove expired contracts
-    df.query("BDToExpiration > 0", inplace=True)
+    df.query("BDaysToExpiration > 0", inplace=True)
 
     # Columns where 0 means NaN
     cols_with_nan = [
@@ -230,7 +116,7 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
         df = _convert_prices_in_older_contracts(df)
 
     df["SettlementRate"] = _convert_prices_to_rates(
-        df["SettlementPrice"], df["BDToExpiration"]
+        df["SettlementPrice"], df["BDaysToExpiration"]
     )
 
     # Remove percentage in all rate columns and round to 5 decimal places since it's the
@@ -244,7 +130,7 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
         "TradeDate",
         "ExpirationCode",
         "ExpirationDate",
-        "BDToExpiration",
+        "BDaysToExpiration",
         "OpenContracts",
         # "OpenContractsEndSession" since there is no OpenContracts at the end of the
         # day in XML data, it will be removed to avoid confusion with XML data
@@ -264,15 +150,15 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     return df[ordered_cols]
 
 
-def get_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
+def fetch_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
     """
-    Gets the DI futures data for a given date from B3.
+    Fetchs the DI futures data for a given date from B3.
 
     This function fetches and processes the DI futures data from B3 for a specific
     trade date. It's the primary external interface for accessing DI data.
 
     Args:
-        trade_date: a datetime-like object representing the trade date.
+        trade_date (pd.Timestamp): The trade date to fetch the DI futures data.
         raw (bool): If True, returns the raw data as a Pandas pd.DataFrame.
             Defaults to False.
 
@@ -280,14 +166,14 @@ def get_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
         pd.DataFrame: A Pandas pd.DataFrame containing processed DI futures data.
 
     Examples:
-        >>> get_di("2023-12-28")
+        >>> from pyield.futures import di
+        >>> di.fetch_di(pd.Timestamp("2021-01-04"))
 
     Notes:
-        - BDToExpiration: number of business days to ExpirationDate.
+        - BDaysToExpiration: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
-        - closed_contracts: number of closed contracts at the end of the trading day.
     """
-    df_raw = _get_raw_df(trade_date)
+    df_raw = common._fetch_raw_df(asset_code="DI1", trade_date=trade_date)
     if return_raw:
         return df_raw
     return _process_raw_df(df_raw, trade_date)

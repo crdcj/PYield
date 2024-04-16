@@ -1,7 +1,7 @@
 import pandas as pd
 
-from . import di
-from . import indicators as ir
+from . import futures as ft
+from . import indicators as it
 from . import treasuries as tr
 from .utils import _normalize_date
 
@@ -20,7 +20,8 @@ def fetch_asset(
             - "TRB": Treasury bonds (indicative rates from ANBIMA).
             - "LTN", "LFT", "NTN-F", "NTN-B": Specific types of Brazilian treasury bonds
                   (indicative rates from ANBIMA).
-            - "DI1": DI Futures rates from B3.
+            - "DI1": One-day Interbank Deposit Futures (Futuro de DI) from B3.
+            - "DDI": DI x U.S. Dollar Spread Futures (Futuro de Cupom Cambial) from B3.
         reference_date (str | pd.Timestamp | None): The reference date for which data is
             fetched. Defaults to the previous business day if None.
         **kwargs: Additional keyword arguments, specifically:
@@ -41,15 +42,15 @@ def fetch_asset(
     normalized_date = _normalize_date(reference_date)
 
     if asset_code.lower() == "trb":
-        return tr.fetch_data(reference_date=normalized_date, return_raw=return_raw)
+        return tr.fetch_bonds(reference_date=normalized_date, return_raw=return_raw)
     elif asset_code.lower() in ["ltn", "lft", "ntn-f", "ntn-b"]:
-        df = tr.fetch_data(reference_date=normalized_date)
+        df = tr.fetch_bonds(reference_date=normalized_date)
         return df.query(f"BondType == '{asset_code.upper()}'")
 
     elif asset_code.lower() == "di1":
-        return di.fetch_data(
-            trade_date=normalized_date, source_type="bmf", return_raw=return_raw
-        )
+        return ft.fetch_di(trade_date=normalized_date, return_raw=return_raw)
+    elif asset_code.lower() == "ddi":
+        return ft.fetch_ddi(trade_date=normalized_date, return_raw=return_raw)
     else:
         raise ValueError("Asset type not supported.")
 
@@ -81,8 +82,8 @@ def fetch_indicator(
     normalized_date = _normalize_date(reference_date)
 
     if indicator_code.lower() == "selic":
-        return ir.fetch_selic_target(reference_date=normalized_date)
+        return it.fetch_selic_target(reference_date=normalized_date)
     elif indicator_code.lower() == "ipca":
-        return ir.fetch_ipca_mr(reference_date=normalized_date)
+        return it.fetch_ipca_mr(reference_date=normalized_date)
     else:
         raise ValueError("Indicator type not supported.")

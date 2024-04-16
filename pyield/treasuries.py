@@ -3,7 +3,7 @@ import io
 import pandas as pd
 import requests
 
-from . import di
+from . import futures as ft
 
 # URL Constants
 ANBIMA_NON_MEMBER_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
@@ -100,7 +100,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def fetch_data(reference_date: pd.Timestamp, return_raw=False) -> pd.DataFrame:
+def fetch_bonds(reference_date: pd.Timestamp, return_raw=False) -> pd.DataFrame:
     """
     Fetches indicative treasury rates from ANBIMA for a specified reference date.
 
@@ -150,7 +150,7 @@ def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
             bond type and maturity date.
     """
     # Fetch DI rates and adjust the maturity date format for compatibility
-    df_di = di.fetch_data(reference_date)[["ExpirationDate", "SettlementRate"]]
+    df_di = ft.fetch_di(reference_date)[["ExpirationDate", "SettlementRate"]]
 
     # Renaming the columns to match the ANBIMA structure
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
@@ -159,7 +159,7 @@ def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = fetch_data(reference_date, False)
+    df_anbima = fetch_bonds(reference_date, False)
     df_anbima.query("BondType in ['LTN', 'NTN-F']", inplace=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads

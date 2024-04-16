@@ -74,7 +74,7 @@ dtype: datetime64[ns]
 # Obtenha um DataFrame com os dados dos Futuros de DI da B3 de uma data específica.
 >>> yd.fetch_asset(asset_code="DI1", reference_date='2024-03-08')
 
-TradeDate  ExpirationCode ExpirationDate BDToExpiration  ... LastRate LastAskRate LastBidRate SettlementRate
+TradeDate  ExpirationCode ExpirationDate BDaysToExpiration  ... LastRate LastAskRate LastBidRate SettlementRate
 2024-03-08 J24            2024-04-01     15              ... 10.952   10.952      10.956      10.956
 2024-03-08 K24            2024-05-02     37              ... 10.776   10.774      10.780      10.777
 2024-03-08 M24            2024-06-03     58              ... 10.604   10.602      10.604      10.608

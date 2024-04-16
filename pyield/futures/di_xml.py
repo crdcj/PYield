@@ -8,7 +8,7 @@ from lxml import etree
 from pandas import DataFrame, Timestamp
 
 from .. import bday
-from . import core as cr
+from . import common as cm
 
 
 def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
@@ -97,12 +97,12 @@ def _extract_di_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
         # Extrair a data de negociação
         if price_report is None:
             continue
-        trade_date = price_report.find(".//ns:TradDt/ns:Dt", namespaces)
+        trade_date = price_report.find(".//ns:TradeDate/ns:Dt", namespaces)
 
         # Preparar o dicionário de dados do ticker com a data de negociação
         if trade_date is None:
             continue
-        ticker_data = {"TradDt": trade_date.text, "TckrSymb": tckr_symb.text}
+        ticker_data = {"TradeDate": trade_date.text, "TckrSymb": tckr_symb.text}
 
         # Acessar o elemento FinInstrmAttrbts que contém o TckrSymb
         fin_instrm_attrbts = price_report.find(".//ns:FinInstrmAttrbts", namespaces)
@@ -229,17 +229,17 @@ def _process_di_df(df_raw: DataFrame) -> DataFrame:
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
 
-    expiration = df["TckrSymb"].str[3:].apply(cr.get_expiration_date)
+    expiration = df["TckrSymb"].str[3:].apply(cm.get_expiration_date)
     df.insert(2, "ExpirationDate", expiration)
 
     business_days = bday.count_bdays(df["TradDt"], df["ExpirationDate"])
-    df.insert(3, "BDToExpiration", business_days)
+    df.insert(3, "BDaysToExpiration", business_days)
 
     # Convert to nullable integer, since other columns use this data type
-    df["BDToExpiration"] = df["BDToExpiration"].astype(pd.Int64Dtype())
+    df["BDaysToExpiration"] = df["BDaysToExpiration"].astype(pd.Int64Dtype())
 
     # Remove expired contracts
-    df.query("BDToExpiration > 0", inplace=True)
+    df.query("BDaysToExpiration > 0", inplace=True)
 
     return df.sort_values(by=["ExpirationDate"], ignore_index=True)
 
@@ -307,3 +307,43 @@ def read_di(file_path: Path, return_raw: bool = False) -> DataFrame:
 
     else:
         raise ValueError("A file path must be provided.")
+
+
+def read_file(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
+    """
+    Reads DI futures data from a file and returns it as a pandas DataFrame.
+
+    This function opens and reads a DI futures data file, returning the contents as a
+    pandas DataFrame. It supports reading from both XML files provided by B3, wich
+    are the simplified and complete Price Reports.
+
+    Args:
+        file_path (Path): The file path to the DI data file. This should be a valid
+            Path object pointing to the location of the file.
+        return_raw (bool, optional): If set to True, the function returns the raw data
+            without applying any transformation or processing. Useful for cases where
+            raw data inspection or custom processing is needed. Defaults to False.
+        source_type (Literal["bmf", "b3", "b3s"], optional): Indicates the source of
+            the data. Defaults to "bmf". Options include:
+                - "bmf": Fetches data from the old BM&FBOVESPA website. Fastest option.
+                - "b3": Fetches data from the complete Price Report (XML file) provided
+                    by B3.
+                - "b3s": Fetches data from the simplified Price Report (XML file)
+                    provided by B3. Faster than "b3" but less detailed.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the processed or raw DI futures data,
+            depending on the `return_raw` flag.
+
+    Examples:
+        >>> read_di(Path("path/to/di_data_file.xml"))
+        # returns a DataFrame with the DI futures data
+
+        >>> read_di(Path("path/to/di_data_file.xml"), return_raw=True)
+        # returns a DataFrame with the raw DI futures data, without processing
+
+    Note:
+        The ability to process and return raw data is primarily intended for advanced
+        users who require access to the data in its original form for custom analyses.
+    """
+    return read_di(file_path, return_raw=return_raw)
