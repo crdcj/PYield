@@ -4,7 +4,9 @@ from . import treasuries as tr
 from .utils import _normalize_date
 
 
-def calculate_spreads(spread_type: str, reference_date: pd.Timestamp) -> pd.DataFrame:
+def calculate_spreads(
+    spread_type: str, reference_date: str | pd.Timestamp | None = None
+) -> pd.DataFrame:
     """
     Calculates spreads between assets based on the specified spread type.
     If no reference date is provided, the function uses the previous business day.
