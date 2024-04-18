@@ -41,9 +41,7 @@ def _convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _process_historical_data(
-    df: pd.DataFrame, trade_date: pd.Timestamp
-) -> pd.DataFrame:
+def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -152,7 +150,7 @@ def _process_historical_data(
     return df[ordered_cols]
 
 
-def fetch_historical_di_data(
+def fetch_past_di_data(
     trade_date: pd.Timestamp, return_raw: bool = False
 ) -> pd.DataFrame:
     """
@@ -177,31 +175,38 @@ def fetch_historical_di_data(
         - BDaysToExpiration: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
-    df_raw = common.fetch_historical_future_data(
-        asset_code="DI1", trade_date=trade_date
-    )
+    df_raw = common.fetch_past_data(asset_code="DI1", trade_date=trade_date)
     if return_raw:
         return df_raw
-    return _process_historical_data(df_raw, trade_date)
+    return _process_past_data(df_raw, trade_date)
 
 
-def _process_latest_data():
+def _process_last_di_data(raw_df: pd.DataFrame) -> pd.DataFrame:
     # Columns to be renamed
     rename_columns = {
+        "TradeTimestamp": "TradeTimestamp",
         "symb": "TickerSymbol",
-        "bottomLmtPric": "MaximumTradeLimit",
-        "topLmtPric": "MinimumTradeLimit",
+        "bottomLmtPric": "MaxTradeLimit",
+        "topLmtPric": "MinTradeLimit",
         "opngPric": "OpeningRate",
-        "minPric": "MinimumRate",
-        "maxPric": "MaximumRate",
+        "minPric": "MinRate",
+        "maxPric": "MaxRate",
         "avrgPric": "AverageRate",
-        "curPrc": "LastPrice",
+        "curPrc": "LastRate",
         "grssAmt": "GrossAmount",
         "mtrtyCode": "ExpirationCode",
         "opnCtrcts": "OpenContracts",
         "tradQty": "TradeQuantity",
         "traddCtrctsQty": "TradedContractsQuantity",
-        "buyOffer.price": "BuyOfferRate",
-        "sellOffer.price": "SellOfferRate",
+        "buyOffer.price": "BidRate",
+        "sellOffer.price": "AskRate",
         "prvsDayAdjstmntPric": "PreviousSettlementRate",
     }
+
+    df = raw_df.copy()
+
+    # Rename columns
+    df = df.rename(columns=rename_columns)
+
+    # Reorder columns based on the order of the dictionary
+    return df[rename_columns.values()]

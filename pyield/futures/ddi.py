@@ -172,9 +172,7 @@ def fetch_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFram
         - DaysToExpiration: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
-    df_raw = common.fetch_historical_future_data(
-        asset_code="DDI", trade_date=trade_date
-    )
+    df_raw = common.fetch_past_data(asset_code="DDI", trade_date=trade_date)
     if return_raw:
         return df_raw
     return _process_raw_df(df_raw, trade_date)

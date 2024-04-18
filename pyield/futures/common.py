@@ -1,4 +1,3 @@
-import base64
 import io
 
 import pandas as pd
@@ -132,9 +131,7 @@ def get_old_expiration_date(
         return pd.NaT  # type: ignore
 
 
-def fetch_historical_future_data(
-    asset_code: str, trade_date: pd.Timestamp
-) -> pd.DataFrame:
+def fetch_past_data(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetch the historical futures data from B3 for a specific trade date.
 
@@ -178,7 +175,7 @@ def fetch_historical_future_data(
     return df
 
 
-def fetch_latest_future_data(future_code: str) -> pd.DataFrame:
+def fetch_last_data(future_code: str) -> pd.DataFrame:
     """
     Fetch the latest data for a given future code from B3 derivatives quotation API.
 
@@ -191,10 +188,8 @@ def fetch_latest_future_data(future_code: str) -> pd.DataFrame:
     Raises:
     Exception: An exception is raised if the data fetch operation fails.
     """
-    # Decode the base64 encoded URL for the API endpoint
-    encoded_url = "aHR0cHM6Ly9jb3RhY2FvLmIzLmNvbS5ici9tZHMvYXBpL3YxL0Rlcml2YXRpdmVRdW90YXRpb24v"  # noqa # fmt: skip
-    base_url = base64.b64decode(encoded_url).decode("utf-8")
-    url = f"{base_url}{future_code}"
+
+    url = f"https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation/{future_code}"
 
     try:
         r = requests.get(url)
@@ -220,6 +215,12 @@ def fetch_latest_future_data(future_code: str) -> pd.DataFrame:
 
     # Sort the DataFrame by maturity code and reset the index
     df.sort_values("mtrtyCode", inplace=True, ignore_index=True)
+
+    # Get current date and time
+    now = pd.Timestamp.now()
+    # Subtract 15 minutes from the current time to account for API delay
+    trade_ts = now - pd.Timedelta(minutes=15)
+    df["TradeTimestamp"] = trade_ts
 
     # Convert DataFrame to use nullable data types for better type consistency
     df = df.convert_dtypes(dtype_backend="numpy_nullable")

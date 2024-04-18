@@ -48,9 +48,7 @@ def fetch_asset(
         return df.query(f"BondType == '{asset_code.upper()}'")
 
     elif asset_code.lower() == "di1":
-        return ft.fetch_historical_di_data(
-            trade_date=normalized_date, return_raw=return_raw
-        )
+        return ft.fetch_past_di_data(trade_date=normalized_date, return_raw=return_raw)
     elif asset_code.lower() == "ddi":
         return ft.fetch_ddi(trade_date=normalized_date, return_raw=return_raw)
     else:
