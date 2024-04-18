@@ -217,7 +217,7 @@ def fetch_last_data(future_code: str) -> pd.DataFrame:
     df.sort_values("mtrtyCode", inplace=True, ignore_index=True)
 
     # Get current date and time
-    now = pd.Timestamp.now()
+    now = pd.Timestamp.now().round("s")
     # Subtract 15 minutes from the current time to account for API delay
     trade_ts = now - pd.Timedelta(minutes=15)
     df["TradeTimestamp"] = trade_ts

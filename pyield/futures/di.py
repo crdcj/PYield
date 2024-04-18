@@ -125,9 +125,12 @@ def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFra
     for col in rate_cols:
         df[col] = (df[col] / 100).round(5)
 
+    df["TickerSymbol"] = "DI1" + df["ExpirationCode"]
+
     # Filter and order columns
     ordered_cols = [
         "TradeDate",
+        "TickerSymbol",
         "ExpirationCode",
         "ExpirationDate",
         "BDaysToExpiration",
@@ -186,6 +189,7 @@ def _process_last_di_data(raw_df: pd.DataFrame) -> pd.DataFrame:
     rename_columns = {
         "TradeTimestamp": "TradeTimestamp",
         "symb": "TickerSymbol",
+        "mtrtyCode": "ExpirationDate",
         "bottomLmtPric": "MaxTradeLimit",
         "topLmtPric": "MinTradeLimit",
         "opngPric": "OpeningRate",
@@ -193,13 +197,12 @@ def _process_last_di_data(raw_df: pd.DataFrame) -> pd.DataFrame:
         "maxPric": "MaxRate",
         "avrgPric": "AverageRate",
         "curPrc": "LastRate",
-        "grssAmt": "GrossAmount",
-        "mtrtyCode": "ExpirationCode",
+        "grssAmt": "FinancialVolume",
         "opnCtrcts": "OpenContracts",
         "tradQty": "TradeQuantity",
         "traddCtrctsQty": "TradedContractsQuantity",
-        "buyOffer.price": "BidRate",
-        "sellOffer.price": "AskRate",
+        "buyOffer.price": "AskRate",
+        "sellOffer.price": "BidRate",
         "prvsDayAdjstmntPric": "PreviousSettlementRate",
     }
 
@@ -210,3 +213,14 @@ def _process_last_di_data(raw_df: pd.DataFrame) -> pd.DataFrame:
 
     # Reorder columns based on the order of the dictionary
     return df[rename_columns.values()]
+
+
+def fetch_last_di_data() -> pd.DataFrame:
+    """
+    Fetch the latest DI futures data from B3.
+
+    Returns:
+        pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
+    """
+    raw_df = common.fetch_last_data(future_code="DI1")
+    return _process_last_di_data(raw_df)
