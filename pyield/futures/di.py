@@ -41,7 +41,9 @@ def _convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
+def _process_historical_data(
+    df: pd.DataFrame, trade_date: pd.Timestamp
+) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -150,7 +152,9 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     return df[ordered_cols]
 
 
-def fetch_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
+def fetch_historical_di_data(
+    trade_date: pd.Timestamp, return_raw: bool = False
+) -> pd.DataFrame:
     """
     Fetchs the DI futures data for a given date from B3.
 
@@ -173,7 +177,31 @@ def fetch_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame
         - BDaysToExpiration: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
-    df_raw = common._fetch_raw_df(asset_code="DI1", trade_date=trade_date)
+    df_raw = common.fetch_historical_future_data(
+        asset_code="DI1", trade_date=trade_date
+    )
     if return_raw:
         return df_raw
-    return _process_raw_df(df_raw, trade_date)
+    return _process_historical_data(df_raw, trade_date)
+
+
+def _process_latest_data():
+    # Columns to be renamed
+    rename_columns = {
+        "symb": "TickerSymbol",
+        "bottomLmtPric": "MaximumTradeLimit",
+        "topLmtPric": "MinimumTradeLimit",
+        "opngPric": "OpeningRate",
+        "minPric": "MinimumRate",
+        "maxPric": "MaximumRate",
+        "avrgPric": "AverageRate",
+        "curPrc": "LastPrice",
+        "grssAmt": "GrossAmount",
+        "mtrtyCode": "ExpirationCode",
+        "opnCtrcts": "OpenContracts",
+        "tradQty": "TradeQuantity",
+        "traddCtrctsQty": "TradedContractsQuantity",
+        "buyOffer.price": "BuyOfferRate",
+        "sellOffer.price": "SellOfferRate",
+        "prvsDayAdjstmntPric": "PreviousSettlementRate",
+    }

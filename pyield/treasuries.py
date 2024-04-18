@@ -150,7 +150,9 @@ def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
             bond type and maturity date.
     """
     # Fetch DI rates and adjust the maturity date format for compatibility
-    df_di = ft.fetch_di(reference_date)[["ExpirationDate", "SettlementRate"]]
+    df_di = ft.fetch_historical_di_data(reference_date)[
+        ["ExpirationDate", "SettlementRate"]
+    ]
 
     # Renaming the columns to match the ANBIMA structure
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)

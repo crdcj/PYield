@@ -1,3 +1,4 @@
+import base64
 import io
 
 import pandas as pd
@@ -131,12 +132,14 @@ def get_old_expiration_date(
         return pd.NaT  # type: ignore
 
 
-def _fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
+def fetch_historical_future_data(
+    asset_code: str, trade_date: pd.Timestamp
+) -> pd.DataFrame:
     """
-    Internal function to fetch raw DI futures data from B3 for a specific trade date.
+    Fetch the historical futures data from B3 for a specific trade date.
 
     Args:
-        trade_date: a datetime-like object representing the trade date.
+        trade_date (pd.Timestamp): The trade date for which the data should be fetched.
 
     Returns:
         pd.DataFrame: Raw DI data as a Pandas pd.DataFrame.
@@ -171,5 +174,54 @@ def _fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
 
     # Force "AJUSTE CORRIG. (4)" to be float, since it can be also read as int
     df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype(pd.Float64Dtype())
+
+    return df
+
+
+def fetch_latest_future_data(future_code: str) -> pd.DataFrame:
+    """
+    Fetch the latest data for a given future code from B3 derivatives quotation API.
+
+    Args:
+    future_code (str): The future code to fetch data for.
+
+    Returns:
+    pd.DataFrame: A DataFrame containing the normalized and cleaned data from the API.
+
+    Raises:
+    Exception: An exception is raised if the data fetch operation fails.
+    """
+    # Decode the base64 encoded URL for the API endpoint
+    encoded_url = "aHR0cHM6Ly9jb3RhY2FvLmIzLmNvbS5ici9tZHMvYXBpL3YxL0Rlcml2YXRpdmVRdW90YXRpb24v"  # noqa # fmt: skip
+    base_url = base64.b64decode(encoded_url).decode("utf-8")
+    url = f"{base_url}{future_code}"
+
+    try:
+        r = requests.get(url)
+        r.raise_for_status()  # Check for HTTP request errors
+    except requests.exceptions.RequestException:
+        raise Exception(f"Failed to fetch data for {future_code}.") from None
+
+    r.encoding = "utf-8"  # Explicitly set response encoding to utf-8 for consistency
+
+    # Normalize JSON response into a flat table
+    df = pd.json_normalize(r.json()["Scty"])
+
+    # Clean and reformat the DataFrame columns
+    df.columns = (df.columns
+        .str.replace("SctyQtn.", "")
+        .str.replace("asset.AsstSummry.", "")
+    )  # fmt: skip
+    df.drop(columns=["desc", "asset.code", "mkt.cd"], inplace=True)
+
+    # Convert maturity codes to datetime and drop rows with missing values
+    df["mtrtyCode"] = pd.to_datetime(df["mtrtyCode"], errors="coerce")
+    df.dropna(subset=["mtrtyCode"], inplace=True)
+
+    # Sort the DataFrame by maturity code and reset the index
+    df.sort_values("mtrtyCode", inplace=True, ignore_index=True)
+
+    # Convert DataFrame to use nullable data types for better type consistency
+    df = df.convert_dtypes(dtype_backend="numpy_nullable")
 
     return df
