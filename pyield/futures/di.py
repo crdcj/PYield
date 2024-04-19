@@ -28,9 +28,9 @@ def _convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
         "MinRate",
         "MaxRate",
         "AvgRate",
-        "LastRate",
-        "LastBidRate",
-        "LastAskRate",
+        "CloseRate",
+        "CloseBidRate",
+        "CloseAskRate",
     ]
     for col in convert_cols:
         df[col] = _convert_prices_to_rates(df[col], df["BDaysToExpiration"])
@@ -70,11 +70,11 @@ def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFra
         "PREÇO MÉD.": "AvgRate",
         "PREÇO MÁX.": "MaxRate",
         "PREÇO ABERTU.": "FirstRate",
-        "ÚLT. PREÇO": "LastRate",
+        "ÚLT. PREÇO": "CloseRate",
         "VAR. PTOS.": "PointsVariation",
         # Attention: bid/ask rates are inverted
-        "ÚLT.OF. COMPRA": "LastAskRate",
-        "ÚLT.OF. VENDA": "LastBidRate",
+        "ÚLT.OF. COMPRA": "CloseAskRate",
+        "ÚLT.OF. VENDA": "CloseBidRate",
     }
 
     df = df.rename(columns=rename_dict)
@@ -104,9 +104,9 @@ def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFra
         "MinRate",
         "MaxRate",
         "AvgRate",
-        "LastRate",
-        "LastBidRate",
-        "LastAskRate",
+        "CloseRate",
+        "CloseBidRate",
+        "CloseAskRate",
     ]
     for col in cols_with_nan:
         df[col] = df[col].replace(0, pd.NA)
@@ -131,7 +131,7 @@ def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFra
     ordered_cols = [
         "TradeDate",
         "TickerSymbol",
-        "ExpirationCode",
+        # "ExpirationCode",
         "ExpirationDate",
         "BDaysToExpiration",
         "OpenContracts",
@@ -141,14 +141,14 @@ def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFra
         "TradedQuantity",
         "FinancialVolume",
         "SettlementPrice",
+        "SettlementRate",
+        "FirstRate",
         "MinRate",
         "AvgRate",
         "MaxRate",
-        "FirstRate",
-        "LastRate",
-        "LastAskRate",
-        "LastBidRate",
-        "SettlementRate",
+        "CloseAskRate",
+        "CloseBidRate",
+        "CloseRate",
     ]
     return df[ordered_cols]
 
@@ -185,28 +185,35 @@ def fetch_past_di_data(
 
 
 def _process_last_di_data(raw_df: pd.DataFrame) -> pd.DataFrame:
+    df = raw_df.copy()
+
+    df["BDaysToExpiration"] = bday.count_bdays(
+        df["TradeTimestamp"], df["ExpirationDate"]
+    )
+    # Convert to nullable integer, since other columns use this data type
+    df["BDaysToExpiration"] = df["BDaysToExpiration"].astype(pd.Int64Dtype())
+
     # Columns to be renamed
     rename_columns = {
         "TradeTimestamp": "TradeTimestamp",
         "symb": "TickerSymbol",
         "mtrtyCode": "ExpirationDate",
-        "bottomLmtPric": "MaxTradeLimit",
-        "topLmtPric": "MinTradeLimit",
-        "opngPric": "OpeningRate",
-        "minPric": "MinRate",
-        "maxPric": "MaxRate",
-        "avrgPric": "AverageRate",
-        "curPrc": "LastRate",
+        "BDaysToExpiration": "BDaysToExpiration",
+        "prvsDayAdjstmntPric": "PreviousSettlementRate",
         "grssAmt": "FinancialVolume",
         "opnCtrcts": "OpenContracts",
         "tradQty": "TradeQuantity",
         "traddCtrctsQty": "TradedContractsQuantity",
-        "buyOffer.price": "AskRate",
-        "sellOffer.price": "BidRate",
-        "prvsDayAdjstmntPric": "PreviousSettlementRate",
+        "bottomLmtPric": "MaxTradeLimit",
+        "topLmtPric": "MinTradeLimit",
+        "opngPric": "OpenRate",
+        "minPric": "MinRate",
+        "avrgPric": "AvgRate",
+        "maxPric": "MaxRate",
+        "buyOffer.price": "LastAskRate",
+        "sellOffer.price": "LastBidRate",
+        "curPrc": "LastRate",
     }
-
-    df = raw_df.copy()
 
     # Rename columns
     df = df.rename(columns=rename_columns)
