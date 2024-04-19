@@ -23,7 +23,7 @@ def fetch_asset(
             - "DI1": One-day Interbank Deposit Futures (Futuro de DI) from B3.
             - "DDI": DI x U.S. Dollar Spread Futures (Futuro de Cupom Cambial) from B3.
         reference_date (str | pd.Timestamp | None): The reference date for which data is
-            fetched. Defaults to the previous business day if None.
+            fetched. Defaults to the last business day if None.
         **kwargs: Additional keyword arguments, specifically:
             - return_raw (bool): Whether to return raw data without processing. Defaults
               to False.
@@ -48,7 +48,13 @@ def fetch_asset(
         return df.query(f"BondType == '{asset_code.upper()}'")
 
     elif asset_code.lower() == "di1":
-        return ft.fetch_past_di_data(trade_date=normalized_date, return_raw=return_raw)
+        today = pd.Timestamp.today().normalize()
+        if normalized_date == today:
+            return ft.fetch_last_di_data()
+        else:
+            return ft.fetch_past_di_data(
+                trade_date=normalized_date, return_raw=return_raw
+            )
     elif asset_code.lower() == "ddi":
         return ft.fetch_ddi(trade_date=normalized_date, return_raw=return_raw)
     else:
@@ -67,7 +73,7 @@ def fetch_indicator(
             - "SELIC": SELIC target rate from the Central Bank of Brazil.
             - "IPCA": IPCA monthly inflation rate from IBGE.
         reference_date (str | pd.Timestamp | None): The reference date for which data is
-            fetched. Defaults to the previous business day if None.
+            fetched. Defaults to the last business day if None.
 
     Returns:
         pd.Series: A Series containing the fetched data for the specified indicator.

@@ -6,7 +6,7 @@ from . import bday
 def _normalize_date(reference_date: str | pd.Timestamp | None = None) -> pd.Timestamp:
     """
     Normalizes the given date to ensure it is a past business day at midnight. If no
-    date is provided, it defaults to the previous business day.
+    date is provided, it defaults to the last business day.
 
     Args:
         reference_date (str | pd.Timestamp | None): The date to normalize. Can be a
@@ -38,9 +38,9 @@ def _normalize_date(reference_date: str | pd.Timestamp | None = None) -> pd.Time
         # Normalize Timestamp to midnight
         normalized_date = reference_date.normalize()
     elif reference_date is None:
-        # If no date is provided, use the previous business day
+        # If no date is provided, use the last available business day
         today = pd.Timestamp.today().normalize()
-        normalized_date = bday.offset_bdays(today, -1)
+        normalized_date = bday.offset_bdays(dates=today, offset=0, roll="backward")
     else:
         raise ValueError("Invalid date format.")
 
