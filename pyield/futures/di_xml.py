@@ -194,7 +194,7 @@ def _standardize_column_names(df: DataFrame) -> DataFrame:
         # "MktDataStrmId"
         # "IntlFinVol",
         "OpnIntrst": "OpenContracts",
-        "FinInstrmQty": "TradedQuantity",
+        "FinInstrmQty": "TradeVolume",
         "NtlFinVol": "FinancialVolume",
         "AdjstdQt": "SettlementPrice",
         "MinTradLmt": "MinTradeLimitRate",
@@ -233,13 +233,13 @@ def _process_di_df(df_raw: DataFrame) -> DataFrame:
     df.insert(2, "ExpirationDate", expiration)
 
     business_days = bday.count_bdays(df["TradDt"], df["ExpirationDate"])
-    df.insert(3, "BDaysToExpiration", business_days)
+    df.insert(3, "BDaysToExp", business_days)
 
     # Convert to nullable integer, since other columns use this data type
-    df["BDaysToExpiration"] = df["BDaysToExpiration"].astype(pd.Int64Dtype())
+    df["BDaysToExp"] = df["BDaysToExp"].astype(pd.Int64Dtype())
 
     # Remove expired contracts
-    df.query("BDaysToExpiration > 0", inplace=True)
+    df.query("BDaysToExp > 0", inplace=True)
 
     return df.sort_values(by=["ExpirationDate"], ignore_index=True)
 

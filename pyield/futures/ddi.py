@@ -59,8 +59,8 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
         "VENCTO": "ExpirationCode",
         "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
         "CONTR. FECH.(2)": "OpenContractsEndSession",  # At the end of the day
-        "NÚM. NEGOC.": "NumOfTrades",
-        "CONTR. NEGOC.": "TradedQuantity",
+        "NÚM. NEGOC.": "TradeCount",
+        "CONTR. NEGOC.": "TradeVolume",
         "VOL.": "FinancialVolume",
         "AJUSTE": "SettlementPrice",
         "AJUSTE ANTER. (3)": "PrevSettlementRate",
@@ -133,8 +133,8 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
         "OpenContracts",
         # "OpenContractsEndSession" since there is no OpenContracts at the end of the
         # day in XML data, it will be removed to avoid confusion with XML data
-        "NumOfTrades",
-        "TradedQuantity",
+        "TradeCount",
+        "TradeVolume",
         "FinancialVolume",
         "SettlementPrice",
         "MinRate",
@@ -172,7 +172,7 @@ def fetch_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFram
         - DaysToExpiration: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
-    df_raw = common._fetch_raw_df(asset_code="DDI", trade_date=trade_date)
+    df_raw = common.fetch_past_data(asset_code="DDI", trade_date=trade_date)
     if return_raw:
         return df_raw
     return _process_raw_df(df_raw, trade_date)
