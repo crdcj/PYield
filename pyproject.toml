@@ -24,6 +24,7 @@ dependencies = [
     "beautifulsoup4",
     "html5lib",
     "lxml",
+    "python-calamine>=0.2.0",
 ]
 dynamic = ["version"]
 

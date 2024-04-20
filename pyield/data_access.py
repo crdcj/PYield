@@ -2,6 +2,7 @@ import pandas as pd
 
 from . import futures as ft
 from . import indicators as it
+from . import projections as pr
 from . import treasuries as tr
 from .utils import _normalize_date
 
@@ -96,3 +97,27 @@ def fetch_indicator(
         return it.fetch_vna_selic(reference_date=normalized_date)
     else:
         raise ValueError("Indicator type not supported.")
+
+
+def fetch_projection(projection_code: str) -> dict:
+    """
+    Fetches a financial projection for a specified code and reference date.
+
+    Args:
+        projection_code (str): The code for the financial projection. Supported options:
+            - "IPCA_CM": IPCA projection for the current month from ANBIMA.
+
+    Returns:
+        dict: A dictionary containing the fetched projection data.
+
+    Raises:
+        ValueError: If the projection code is not recognized or supported.
+
+    Examples:
+        >>> fetch_projection('IPCA_CM')
+    """
+
+    if projection_code.lower() == "ipca_cm":
+        return pr.fetch_current_month_ipca_projection()
+    else:
+        raise ValueError("Projection type not supported.")
