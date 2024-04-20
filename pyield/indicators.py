@@ -57,3 +57,42 @@ def fetch_selic_target(reference_date: pd.Timestamp) -> float | None:
         return float(data[0]["valor"])
     else:
         return None
+
+
+def fetch_vna_selic(reference_date: pd.Timestamp) -> float | None:
+    # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
+
+    url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
+    url_file = f"{reference_date.strftime("%Y%m%d")}APC238"
+    url_vna = url_base + url_file
+    response = requests.get(url_vna)
+    response.raise_for_status()
+    file_text = response.text
+
+    # Finding the part that contains the table
+    start_of_table = file_text.find("EMISSAO")
+    end_of_table = file_text.find("99999999*")
+
+    # Extracting the table
+    table_text = file_text[start_of_table:end_of_table].strip()
+    table_lines = table_text.splitlines()
+
+    # Remove empty lines
+    table_lines = [line.strip() for line in table_lines if line.strip()]
+
+    # Remove first line
+    body_lines = table_lines[1:]
+
+    vnas = []
+    for line in body_lines:
+        vna_str = line.split()[-1].replace(",", ".")
+        vna_float = float(vna_str)
+        vnas.append(vna_float)
+
+    # Raise error if all values are not the same
+    vna_value = vnas[0]
+    if any(vna_value != vna for vna in vnas):
+        bcb_url = "https://www.bcb.gov.br/estabilidadefinanceira/selicbaixar"
+        raise ValueError(f"VNA values are not the same. Please check data at {bcb_url}")
+
+    return vna_value

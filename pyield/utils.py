@@ -3,7 +3,7 @@ import pandas as pd
 from . import bday
 
 
-def _normalize_date(reference_date: str | pd.Timestamp | None = None) -> pd.Timestamp:
+def _normalize_date(input_date: str | pd.Timestamp | None = None) -> pd.Timestamp:
     """
     Normalizes the given date to ensure it is a past business day at midnight. If no
     date is provided, it defaults to the last business day.
@@ -31,25 +31,25 @@ def _normalize_date(reference_date: str | pd.Timestamp | None = None) -> pd.Time
         >>> _normalize_date(pd.Timestamp('2023-04-01 15:30'))
         >>> _normalize_date()
     """
-    if isinstance(reference_date, str):
+    if isinstance(input_date, str):
         # Convert string date to Timestamp and normalize to midnight
-        normalized_date = pd.Timestamp(reference_date).normalize()
-    elif isinstance(reference_date, pd.Timestamp):
+        normalized_date = pd.Timestamp(input_date).normalize()
+    elif isinstance(input_date, pd.Timestamp):
         # Normalize Timestamp to midnight
-        normalized_date = reference_date.normalize()
-    elif reference_date is None:
+        normalized_date = input_date.normalize()
+    elif input_date is None:
         # If no date is provided, use the last available business day
         today = pd.Timestamp.today().normalize()
         normalized_date = bday.offset_bdays(dates=today, offset=0, roll="backward")
     else:
-        raise ValueError("Invalid date format.")
+        raise ValueError(f"Date format not recognized: {input_date}")
 
+    error_date = normalized_date.strftime("%d-%m-%Y")
     # Validate that the date is not in the future
     if normalized_date > pd.Timestamp.today().normalize():
-        raise ValueError("Reference date cannot be in the future.")
-
+        raise ValueError(f"Date {error_date} is in the future")
     # Validate that the date is a business day
     if not bday.is_bday(normalized_date):
-        raise ValueError("Reference date must be a business day.")
+        raise ValueError(f"Date {error_date} is not a business day")
 
     return normalized_date
