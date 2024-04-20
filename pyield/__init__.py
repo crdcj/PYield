@@ -1,6 +1,6 @@
 from .__about__ import __version__
 from .bday import count_bdays, generate_bdays, is_bday, offset_bdays
-from .data_access import fetch_asset, fetch_indicator
+from .data_access import fetch_asset, fetch_indicator, fetch_projection
 from .data_analysis import calculate_spreads
 
 __all__ = [
@@ -11,5 +11,6 @@ __all__ = [
     "count_bdays",
     "fetch_asset",
     "fetch_indicator",
+    "fetch_projection",
     "calculate_spreads",
 ]
