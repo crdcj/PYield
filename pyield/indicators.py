@@ -52,8 +52,23 @@ def fetch_selic_target(reference_date: pd.Timestamp) -> float | None:
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial={selic_date}&dataFinal={selic_date}"
     response = requests.get(api_url)
     response.raise_for_status()
-    data = response.json()
-    if data:
+
+    if selic_date in response.text:
+        data = response.json()
+        return float(data[0]["valor"])
+    else:
+        return None
+
+
+def fetch_di(reference_date: pd.Timestamp) -> float | None:
+    # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
+    di_date = reference_date.strftime("%d/%m/%Y")
+    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial={di_date}&dataFinal={di_date}"
+    response = requests.get(api_url)
+    response.raise_for_status()
+
+    if di_date in response.text:
+        data = response.json()
         return float(data[0]["valor"])
     else:
         return None

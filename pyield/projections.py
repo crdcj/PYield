@@ -1,15 +1,24 @@
 import io
 import locale
+from dataclasses import dataclass
 
 import pandas as pd
 import python_calamine as pc
 import requests
 
 
-def fetch_current_month_ipca_projection() -> dict:
+@dataclass
+class IndicatorProjection:
+    last_updated: pd.Timestamp  # Date and time of the last update
+    reference_month_ts: pd.Timestamp  # Timestamp to which the projection applies
+    reference_month_br: str  # Brazilian formatted month (e.g., "ABR/2024")
+    projected_value: float  # Projected value
+
+
+def fetch_current_month_ipca_projection() -> IndicatorProjection:
     """
     Fetches the current month's IPCA projection from the ANBIMA website and returns it
-    as a dictionary.
+    as an IndicatorProjection instance.
 
     This function retrieves and parses the Excel file that contains economic indicators,
     specifically looking for the IPCA projection. It extracts the date of the last
@@ -19,23 +28,23 @@ def fetch_current_month_ipca_projection() -> dict:
         None
 
     Returns:
-        dict: A dictionary containing:
-            'update_datetime' (datetime.datetime): The datetime when the data was last
-                updated.
-            'projection_month_ts' (datetime.datetime): The month to which the
-                IPCA projection applies as a Timestamp.
-            'projection_month_str' (str): The formatted month as a string
+        IndicatorProjection: An instance of IndicatorProjection containing:
+            - last_updated (pd.Timestamp): The datetime when the data was last updated.
+            - reference_month_ts (pd.Timestamp): The month to which the IPCA projection
+                applies.
+            - reference_month_br (str): The formatted month as a string
                 (e.g., "ABR/2024") using the pt_BR locale.
-            'ipca_value' (float): The projected IPCA value.
+            - projected_value (float): The projected IPCA value.
 
-    Examples:
-        >>> fetch_current_month_ipca_projection()
-        {
-            'update_datetime': pd.Timestamp('2024-04-19 18:55:00'),
-            'projection_month_ts': pd.Timestamp('2024-04-01'),
-            'projection_month_str': "ABR/2024",
-            'ipca_value': 0.35
-        }
+    Example:
+        >>> projection = fetch_current_month_ipca_projection()
+        >>> print(projection)
+        IndicatorProjection(
+            last_updated=pd.Timestamp('2024-04-19 18:55:00'),
+            reference_month_ts=pd.Timestamp('2024-04-01 00:00:00'),
+            reference_month_br='ABR/2024',
+            projected_value=0.35
+        )
 
     Data file format example after parsing:
         - ['Data e Hora da Última Atualização: 19/04/2024 - 18:55 h', '', '']
@@ -53,9 +62,9 @@ def fetch_current_month_ipca_projection() -> dict:
     first_sheet = workbook.sheet_names[0]
     data = workbook.get_sheet_by_name(first_sheet).to_python(skip_empty_area=True)
 
-    # Extract projection update date from the first row
+    # Extract projection update date and time from the first row
     last_update_str = data[0][0].split("Atualização:")[-1].strip()
-    last_update_ts = pd.to_datetime(last_update_str, format="%d/%m/%Y - %H:%M h")
+    last_updated = pd.to_datetime(last_update_str, format="%d/%m/%Y - %H:%M h")
 
     # Find the row containing the IPCA projection and extract its data
     ipca_data = next(line for line in data if "IPCA1" in line)
@@ -64,21 +73,15 @@ def fetch_current_month_ipca_projection() -> dict:
     ipca_value = float(ipca_data[-1])
 
     # Extract and format the reference month
-    month_data = ipca_data[1]
-    month_begin = month_data.find("(")
-    month_end = month_data.find(")")
-    month_text = month_data[month_begin + 1 : month_end].strip()
+    month_text = ipca_data[1].split("(")[-1].split(")")[0]
     locale.setlocale(locale.LC_TIME, "pt_BR.UTF-8")
-    projection_month_ts = pd.to_datetime(month_text, format="%b/%y")
-    # locale.setlocale(locale.LC_TIME, "")  # Reset locale to default
-    projection_month_str = projection_month_ts.strftime("%b/%Y").upper()
+    ipca_month_ts = pd.to_datetime(month_text, format="%b/%y")
+    ipca_month_br = ipca_month_ts.strftime("%b/%Y").upper()
+    locale.setlocale(locale.LC_TIME, "")  # Reset locale to default
 
-    # Create and return a dictionary with the results
-    result_dict = {
-        "last_update_ts": last_update_ts,
-        "projection_month_ts": projection_month_ts,
-        "projection_month_str": projection_month_str,
-        "ipca_value": ipca_value,
-    }
-
-    return result_dict
+    return IndicatorProjection(
+        last_updated=last_updated,
+        reference_month_ts=ipca_month_ts,
+        reference_month_br=ipca_month_br,
+        projected_value=ipca_value,
+    )

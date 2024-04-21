@@ -73,6 +73,7 @@ def fetch_indicator(
         indicator_code (str): The code for the economic indicator. Supported options:
             - "SELIC": SELIC target rate from the Central Bank of Brazil.
             - "IPCA": IPCA monthly inflation rate from IBGE.
+            - "DI": Interbank Deposit rate from B3.
             - "VNA_LFT": VNA (Valor Nominal Atualizado) of LFT (Tesouro Selic) bonds.
         reference_date (str | pd.Timestamp | None): The reference date for which data is
             fetched. Defaults to the last business day if None.
@@ -93,6 +94,8 @@ def fetch_indicator(
         return it.fetch_selic_target(reference_date=normalized_date)
     elif indicator_code.lower() == "ipca":
         return it.fetch_ipca_mr(reference_date=normalized_date)
+    elif indicator_code.lower() == "di":
+        return it.fetch_di(reference_date=normalized_date)
     elif indicator_code.lower() == "vna_lft":
         return it.fetch_vna_selic(reference_date=normalized_date)
     else:
