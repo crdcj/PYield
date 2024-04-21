@@ -41,14 +41,18 @@ def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFra
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
 
-    df["ExpirationDate"] = df["ExpirationCode"].apply(common.get_expiration_date)
+    # Contract code format was changed in 22/05/2006
+    if trade_date < pd.Timestamp("2006-05-22"):
+        df["ExpirationDate"] = df["ExpirationCode"].apply(
+            common.get_old_expiration_date, args=(trade_date,)
+        )
+    else:
+        df["ExpirationDate"] = df["ExpirationCode"].apply(common.get_expiration_date)
 
     # Replace 0 values in rate columns with pd.NA and remove percentage
     rate_cols = [col for col in df.columns if "Rate" in col]
-    for col in rate_cols:
-        df[col] = df[col].replace(0, pd.NA)
-        # Round to 5 decimal places (3 in %) since it is the contract's precision
-        df[col] = (df[col] / 100).round(5)
+    # Round to 5 decimal places (3 in %) since it is the contract's precision
+    df[rate_cols] = df[rate_cols].replace(0, pd.NA).div(100).round(5)
 
     df["TickerSymbol"] = "FRC" + df["ExpirationCode"]
 

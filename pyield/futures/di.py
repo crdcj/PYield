@@ -95,20 +95,6 @@ def _process_past_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataF
     # Remove expired contracts
     df.query("BDaysToExp > 0", inplace=True)
 
-    # Columns where 0 means NaN
-    cols_with_nan = [
-        "SettlementPrice",
-        "FirstRate",
-        "MinRate",
-        "MaxRate",
-        "AvgRate",
-        "CloseRate",
-        "CloseBidRate",
-        "CloseAskRate",
-    ]
-    for col in cols_with_nan:
-        df[col] = df[col].replace(0, pd.NA)
-
     # Prior to 17/01/2002 (incluive), prices were not converted to rates
     if trade_date <= pd.Timestamp("2002-01-17"):
         df = _convert_prices_in_older_contracts(df)
@@ -117,11 +103,12 @@ def _process_past_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataF
         df["SettlementPrice"], df["BDaysToExp"]
     )
 
-    # Remove percentage in all rate columns and round to 5 decimal places since it's the
-    # precision used by B3. Obs: 5 decimal places = 3 decimal places in percentage
     rate_cols = [col for col in df.columns if "Rate" in col]
-    for col in rate_cols:
-        df[col] = (df[col] / 100).round(5)
+    cols_with_nan = rate_cols + ["SettlementPrice"]
+    # Columns where 0 means NaN
+    df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
+    # Remove % and round to 5 dec. places (3 in %) since it is the contract's precision
+    df[rate_cols] = df[rate_cols].div(100).round(5)
 
     df["TickerSymbol"] = "DI1" + df["ExpirationCode"]
 
