@@ -1,5 +1,5 @@
 
-# [PYield: Brazilian Fixed Income Toolkit](https://github.com/crdcj/PYield)
+# [Brazilian Fixed Income Toolkit](https://github.com/crdcj/PYield)
 
 ## Introduction
 
