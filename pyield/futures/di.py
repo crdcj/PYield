@@ -41,7 +41,7 @@ def _convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
+def _process_past_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -151,7 +151,7 @@ def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFra
     return df[ordered_cols]
 
 
-def _process_last_di_data(raw_df: pd.DataFrame) -> pd.DataFrame:
+def _process_last_raw_di_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     df = raw_df.copy()
 
     # Columns to be renamed
@@ -188,20 +188,18 @@ def _process_last_di_data(raw_df: pd.DataFrame) -> pd.DataFrame:
     return df[rename_columns.values()]
 
 
-def fetch_last_di_data() -> pd.DataFrame:
+def fetch_last_di() -> pd.DataFrame:
     """
     Fetch the latest DI futures data from B3.
 
     Returns:
         pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
     """
-    raw_df = common.fetch_last_data(future_code="DI1")
-    return _process_last_di_data(raw_df)
+    raw_df = common.fetch_last_raw_df(future_code="DI1")
+    return _process_last_raw_di_df(raw_df)
 
 
-def fetch_past_di_data(
-    trade_date: pd.Timestamp, return_raw: bool = False
-) -> pd.DataFrame:
+def fetch_past_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
     """
     Fetchs the DI futures data for a given date from B3.
 
@@ -216,15 +214,11 @@ def fetch_past_di_data(
     Returns:
         pd.DataFrame: A Pandas pd.DataFrame containing processed DI futures data.
 
-    Examples:
-        >>> from pyield.futures import di
-        >>> di.fetch_di(pd.Timestamp("2021-01-04"))
-
     Notes:
         - BDaysToExp: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
-    df_raw = common.fetch_past_data(asset_code="DI1", trade_date=trade_date)
+    df_raw = common.fetch_past_raw_df(asset_code="DI1", trade_date=trade_date)
     if return_raw:
         return df_raw
-    return _process_past_data(df_raw, trade_date)
+    return _process_past_raw_df(df_raw, trade_date)

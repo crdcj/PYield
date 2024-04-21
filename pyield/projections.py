@@ -31,9 +31,9 @@ def fetch_current_month_ipca_projection() -> IndicatorProjection:
         IndicatorProjection: An instance of IndicatorProjection containing:
             - last_updated (pd.Timestamp): The datetime when the data was last updated.
             - reference_month_ts (pd.Timestamp): The month to which the IPCA projection
-                applies.
+              applies.
             - reference_month_br (str): The formatted month as a string
-                (e.g., "ABR/2024") using the pt_BR locale.
+              (e.g., "ABR/2024") using the pt_BR locale.
             - projected_value (float): The projected IPCA value.
 
     Example:
@@ -70,7 +70,7 @@ def fetch_current_month_ipca_projection() -> IndicatorProjection:
     ipca_data = next(line for line in data if "IPCA1" in line)
 
     # Convert the last element of the IPCA data row to float for the projection value
-    ipca_value = float(ipca_data[-1])
+    ipca_value = round(float(ipca_data[-1]) / 100, 4)
 
     # Extract and format the reference month
     month_text = ipca_data[1].split("(")[-1].split(")")[0]

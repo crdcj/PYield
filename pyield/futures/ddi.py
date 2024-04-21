@@ -149,7 +149,7 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     return df[ordered_cols]
 
 
-def fetch_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
+def fetch_past_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
     """
     Fetchs the DDI futures data for a given date from B3.
 
@@ -172,7 +172,7 @@ def fetch_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFram
         - DaysToExpiration: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
-    df_raw = common.fetch_past_data(asset_code="DDI", trade_date=trade_date)
+    df_raw = common.fetch_past_raw_df(asset_code="DDI", trade_date=trade_date)
     if return_raw:
         return df_raw
     return _process_raw_df(df_raw, trade_date)

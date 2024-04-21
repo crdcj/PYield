@@ -131,7 +131,7 @@ def get_old_expiration_date(
         return pd.NaT  # type: ignore
 
 
-def fetch_past_data(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
+def fetch_past_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetch the historical futures data from B3 for a specific trade date.
 
@@ -170,12 +170,13 @@ def fetch_past_data(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     df["VAR. PTOS."] = df["VAR. PTOS."].astype(pd.StringDtype())
 
     # Force "AJUSTE CORRIG. (4)" to be float, since it can be also read as int
-    df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype(pd.Float64Dtype())
+    if "AJUSTE CORRIG. (4)" in df.columns:
+        df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype(pd.Float64Dtype())
 
     return df
 
 
-def fetch_last_data(future_code: str) -> pd.DataFrame:
+def fetch_last_raw_df(future_code: str) -> pd.DataFrame:
     """
     Fetch the latest data for a given future code from B3 derivatives quotation API.
 

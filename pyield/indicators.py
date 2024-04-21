@@ -41,7 +41,7 @@ def fetch_ipca_mr(reference_date: pd.Timestamp) -> float | None:
     # Extract and return the IPCA monthly growth rate if data is available
     if data:
         ipca_str = data[0]["resultados"][0]["series"][0]["serie"][ipca_date]
-        return float(ipca_str)
+        return round(float(ipca_str) / 100, 4)
     else:
         return None
 
@@ -55,7 +55,7 @@ def fetch_selic_target(reference_date: pd.Timestamp) -> float | None:
 
     if selic_date in response.text:
         data = response.json()
-        return float(data[0]["valor"])
+        return round(float(data[0]["valor"]) / 100, 4)
     else:
         return None
 
@@ -69,7 +69,7 @@ def fetch_di(reference_date: pd.Timestamp) -> float | None:
 
     if di_date in response.text:
         data = response.json()
-        return float(data[0]["valor"])
+        return round(float(data[0]["valor"]) / 100, 8)
     else:
         return None
 

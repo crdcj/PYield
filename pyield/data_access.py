@@ -23,6 +23,7 @@ def fetch_asset(
                   (indicative rates from ANBIMA).
             - "DI1": One-day Interbank Deposit Futures (Futuro de DI) from B3.
             - "DDI": DI x U.S. Dollar Spread Futures (Futuro de Cupom Cambial) from B3.
+            - "FRC": Forward Rate Agreement (FRA) from B3.
         reference_date (str | pd.Timestamp | None): The reference date for which data is
             fetched. Defaults to the last business day if None.
         **kwargs: Additional keyword arguments, specifically:
@@ -51,13 +52,13 @@ def fetch_asset(
     elif asset_code.lower() == "di1":
         today = pd.Timestamp.today().normalize()
         if normalized_date == today:
-            return ft.fetch_last_di_data()
+            return ft.fetch_last_di()
         else:
-            return ft.fetch_past_di_data(
-                trade_date=normalized_date, return_raw=return_raw
-            )
+            return ft.fetch_past_di(trade_date=normalized_date, return_raw=return_raw)
     elif asset_code.lower() == "ddi":
-        return ft.fetch_ddi(trade_date=normalized_date, return_raw=return_raw)
+        return ft.fetch_past_ddi(trade_date=normalized_date, return_raw=return_raw)
+    elif asset_code.lower() == "frc":
+        return ft.fetch_past_frc(trade_date=normalized_date, return_raw=return_raw)
     else:
         raise ValueError("Asset type not supported.")
 
@@ -71,22 +72,30 @@ def fetch_indicator(
 
     Args:
         indicator_code (str): The code for the economic indicator. Supported options:
-            - "SELIC": SELIC target rate from the Central Bank of Brazil.
-            - "IPCA": IPCA monthly inflation rate from IBGE.
-            - "DI": Interbank Deposit rate from B3.
-            - "VNA_LFT": VNA (Valor Nominal Atualizado) of LFT (Tesouro Selic) bonds.
-        reference_date (str | pd.Timestamp | None): The reference date for which data is
-            fetched. Defaults to the last business day if None.
+            - "SELIC": SELIC target rate from the Central Bank of Brazil, expressed as
+              an annual rate (p.a.).
+            - "DI": Interbank Deposit rate (DI) from B3 expressed as a daily rate,
+              calculated on a daily basis and expressed per diem (p.d.).
+            - "IPCA": IPCA monthly inflation rate from IBGE, expressed per month (p.m.).
+            - "VNA_LFT": VNA (Valor Nominal Atualizado) of LFT (Letra Financeira do
+              Tesouro), which reflects updated nominal values for these bonds.
+        - reference_date (str | pd.Timestamp | None): The reference date for which data
+          is fetched. Defaults to the last business day if None.
 
     Returns:
-        pd.Series: A Series containing the fetched data for the specified indicator.
+        float | None: The value of the specified economic indicator for the reference
+        date. Returns None if data is not found.
 
     Raises:
         ValueError: If the indicator code is not recognized or supported.
 
     Examples:
         >>> fetch_indicator('SELIC', '2023-04-01')
-        >>> fetch_indicator('IPCA', '2023-04-01')
+        0.1075  # Indicates a SELIC target rate of 10.75% p.a.
+        >>> fetch_indicator('IPCA', '2023-03-10')
+        0.0016  # Indicates an IPCA monthly rate of 0.16% p.m.
+        >>> fetch_indicator('DI', '2023-04-17')
+        0.00040168  # Indicates a DI daily rate of 0.02% p.d.
     """
     normalized_date = _normalize_date(reference_date)
 
@@ -111,13 +120,26 @@ def fetch_projection(projection_code: str) -> dict:
             - "IPCA_CM": IPCA projection for the current month from ANBIMA.
 
     Returns:
-        dict: A dictionary containing the fetched projection data.
+        IndicatorProjection: An instance of IndicatorProjection containing:
+            - last_updated (pd.Timestamp): The datetime when the projection was last
+              updated.
+            - reference_month_ts (pd.Timestamp): The month to which the projection
+              applies.
+            - reference_month_br (str): The formatted month as a string formatted using
+              the pt_BR locale.
+            - projected_value (float): The projected indicator value.
 
     Raises:
         ValueError: If the projection code is not recognized or supported.
 
     Examples:
         >>> fetch_projection('IPCA_CM')
+        IndicatorProjection(
+            last_updated=pd.Timestamp('2024-04-19 18:55:00'),
+            reference_month_ts=pd.Timestamp('2024-04-01 00:00:00'),
+            reference_month_br='ABR/2024',
+            projected_value=0.35
+        )
     """
 
     if projection_code.lower() == "ipca_cm":
