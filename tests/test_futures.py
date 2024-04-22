@@ -1,5 +1,4 @@
 import pandas as pd
-import pytest
 
 from pyield import futures as ft
 
@@ -76,5 +75,6 @@ def test_settlement_rates_with_current_holiday_list():
 
 def test_non_business_day():
     non_business_day = pd.Timestamp("2023-12-24")
-    with pytest.raises(ValueError):
-        ft.fetch_past_di(trade_date=non_business_day)
+    # Test if it an empty DataFrame is returned
+    df = ft.fetch_past_di(trade_date=non_business_day)
+    assert df.empty

@@ -52,10 +52,6 @@ def _process_past_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataF
     Returns:
         pd.DataFrame: Processed and transformed data as a Pandas pd.DataFrame.
     """
-    # Check if the pd.DataFrame is empty
-    if df.empty:
-        return df
-
     rename_dict = {
         "VENCTO": "ExpirationCode",
         "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
@@ -191,11 +187,12 @@ def fetch_past_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.Data
     Fetchs the DI futures data for a given date from B3.
 
     This function fetches and processes the DI futures data from B3 for a specific
-    trade date. It's the primary external interface for accessing DI data.
+    trade date. It's the primary external interface for accessing DI data. If the data
+    is not available, an empty DataFrame is returned.
 
     Args:
         trade_date (pd.Timestamp): The trade date to fetch the DI futures data.
-        raw (bool): If True, returns the raw data as a Pandas pd.DataFrame.
+        return_raw (bool): If True, returns the raw data as a Pandas pd.DataFrame.
             Defaults to False.
 
     Returns:
@@ -208,4 +205,7 @@ def fetch_past_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.Data
     df_raw = common.fetch_past_raw_df(asset_code="DI1", trade_date=trade_date)
     if return_raw:
         return df_raw
-    return _process_past_raw_df(df_raw, trade_date)
+    if df_raw.empty:
+        return pd.DataFrame()
+    else:
+        return _process_past_raw_df(df_raw, trade_date)

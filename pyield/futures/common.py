@@ -133,7 +133,8 @@ def get_old_expiration_date(
 
 def fetch_past_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
-    Fetch the historical futures data from B3 for a specific trade date.
+    Fetch the historical futures data from B3 for a specific trade date. If the data is
+    not available, an empty DataFrame is returned.
 
     Args:
         trade_date (pd.Timestamp): The trade date for which the data should be fetched.
@@ -148,7 +149,7 @@ def fetch_past_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame
 
     text = r.text
     if "AJUSTE" not in text:
-        raise ValueError(f"Could not fetch data for {url_date}.")
+        return pd.DataFrame()
 
     df = pd.read_html(
         io.StringIO(text),
