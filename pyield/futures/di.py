@@ -1,7 +1,7 @@
 import pandas as pd
 
-from .. import bday
-from . import common
+from .. import bday as bd
+from . import common as cm
 
 
 def _convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
@@ -17,22 +17,12 @@ def _convert_prices_to_rates(prices: pd.Series, bd: pd.Series) -> pd.Series:
     """
     rates = (100_000 / prices) ** (252 / bd) - 1
 
-    # Return rates as percentage
-    return 100 * rates
+    # Round to 5 (3 in %) dec. places (contract's current max. precision)
+    return rates.round(5)
 
 
-def _convert_prices_in_older_contracts(df: pd.DataFrame) -> pd.DataFrame:
-    # Prior to 01/01/2002, prices were not converted to rates
-    convert_cols = [
-        "FirstRate",
-        "MinRate",
-        "MaxRate",
-        "AvgRate",
-        "CloseRate",
-        "CloseBidRate",
-        "CloseAskRate",
-    ]
-    for col in convert_cols:
+def _adjust_older_contracts_rates(df: pd.DataFrame, rate_cols: list) -> pd.DataFrame:
+    for col in rate_cols:
         df[col] = _convert_prices_to_rates(df[col], df["BDaysToExp"])
 
     # Invert low and high prices
@@ -82,29 +72,33 @@ def _process_past_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataF
     # Contract code format was changed in 22/05/2006
     if trade_date < pd.Timestamp("2006-05-22"):
         df["ExpirationDate"] = df["ExpirationCode"].apply(
-            common.get_old_expiration_date, args=(trade_date,)
+            cm.get_old_expiration_date, args=(trade_date,)
         )
     else:
-        df["ExpirationDate"] = df["ExpirationCode"].apply(common.get_expiration_date)
+        df["ExpirationDate"] = df["ExpirationCode"].apply(cm.get_expiration_date)
 
-    df["BDaysToExp"] = bday.count_bdays(trade_date, df["ExpirationDate"])
+    df["BDaysToExp"] = bd.count_bdays(trade_date, df["ExpirationDate"])
+
     # Remove expired contracts
     df.query("BDaysToExp > 0", inplace=True)
 
-    # Prior to 17/01/2002 (incluive), prices were not converted to rates
-    if trade_date <= pd.Timestamp("2002-01-17"):
-        df = _convert_prices_in_older_contracts(df)
+    # Columns where 0 means NaN
+    rate_cols = [col for col in df.columns if "Rate" in col]
+    cols_with_nan = rate_cols + ["SettlementPrice"]
+    # Replace 0 with NaN in these columns
+    df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
 
+    # Prior to 17/01/2002 (inclusive), prices were not converted to rates
+    if trade_date > pd.Timestamp("2002-01-17"):
+        # Remove % and round to 5 (3 in %) dec. places in rate columns
+        df[rate_cols] = df[rate_cols].div(100).round(5)
+    else:
+        df = _adjust_older_contracts_rates(df, rate_cols)
+
+    # Calculate SettlementRate
     df["SettlementRate"] = _convert_prices_to_rates(
         df["SettlementPrice"], df["BDaysToExp"]
     )
-
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    cols_with_nan = rate_cols + ["SettlementPrice"]
-    # Columns where 0 means NaN
-    df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
-    # Remove % and round to 5 dec. places (3 in %) since it is the contract's precision
-    df[rate_cols] = df[rate_cols].div(100).round(5)
 
     df["TickerSymbol"] = "DI1" + df["ExpirationCode"]
 
@@ -161,7 +155,7 @@ def _process_last_raw_di_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     # Rename columns
     df = df.rename(columns=rename_columns)
 
-    df["BDaysToExp"] = bday.count_bdays(df["TradeTimestamp"], df["ExpirationDate"])
+    df["BDaysToExp"] = bd.count_bdays(df["TradeTimestamp"], df["ExpirationDate"])
 
     # Remove percentage in all rate columns
     rate_cols = [col for col in df.columns if "Rate" in col]
@@ -178,7 +172,7 @@ def fetch_last_di() -> pd.DataFrame:
     Returns:
         pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
     """
-    raw_df = common.fetch_last_raw_df(future_code="DI1")
+    raw_df = cm.fetch_last_raw_df(future_code="DI1")
     return _process_last_raw_di_df(raw_df)
 
 
@@ -202,7 +196,7 @@ def fetch_past_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.Data
         - BDaysToExp: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
-    df_raw = common.fetch_past_raw_df(asset_code="DI1", trade_date=trade_date)
+    df_raw = cm.fetch_past_raw_df(asset_code="DI1", trade_date=trade_date)
     if return_raw:
         return df_raw
     if df_raw.empty:

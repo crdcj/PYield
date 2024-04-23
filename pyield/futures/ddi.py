@@ -15,9 +15,8 @@ def _convert_prices_to_rates(prices: pd.Series, n_days: pd.Series) -> pd.Series:
         pd.Series: A pd.Series containing DDI futures rates.
     """
     rates = (100_000 / prices - 1) * (360 / n_days)
-
-    # Return rates as percentage
-    return 100 * rates
+    # Round to 5 (3 in %) dec. places (contract's current max. precision)
+    return rates.round(5)
 
 
 def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
@@ -70,29 +69,34 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     else:
         df["ExpirationDate"] = df["ExpirationCode"].apply(common.get_expiration_date)
 
-    df["DaysToExpiration"] = (df["ExpirationDate"] - trade_date).dt.days
+    df["DaysToExp"] = (df["ExpirationDate"] - trade_date).dt.days
     # Convert to nullable integer, since other columns use this data type
-    df["DaysToExpiration"] = df["DaysToExpiration"].astype(pd.Int64Dtype())
+    df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
+
     # Remove expired contracts
-    df.query("DaysToExpiration > 0", inplace=True)
+    df.query("DaysToExp > 0", inplace=True)
 
-    df["SettlementRate"] = _convert_prices_to_rates(
-        df["SettlementPrice"], df["DaysToExpiration"]
-    )
-
+    # Columns where 0 means NaN
     rate_cols = [col for col in df.columns if "Rate" in col]
     cols_with_nan = rate_cols + ["SettlementPrice"]
-    # Columns where 0 means NaN
+    # Replace 0 with NaN in these columns
     df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
-    # Remove % and round to 5 dec. places (3 in %) since it is the contract's precision
+
     df[rate_cols] = df[rate_cols].div(100).round(5)
+
+    # Calculate SettlementRate
+    df["SettlementRate"] = _convert_prices_to_rates(
+        df["SettlementPrice"], df["DaysToExp"]
+    )
+
+    df["TickerSymbol"] = "DI1" + df["ExpirationCode"]
 
     # Filter and order columns
     ordered_cols = [
         "TradeDate",
         "ExpirationCode",
         "ExpirationDate",
-        "DaysToExpiration",
+        "DaysToExp",
         "OpenContracts",
         # "OpenContractsEndSession" since there is no OpenContracts at the end of the
         # day in XML data, it will be removed to avoid confusion with XML data
@@ -132,7 +136,7 @@ def fetch_past_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.Dat
         >>> di.fetch_ddi(pd.Timestamp("2021-01-04"))
 
     Notes:
-        - DaysToExpiration: number of business days to ExpirationDate.
+        - DaysToExp: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
     df_raw = common.fetch_past_raw_df(asset_code="DDI", trade_date=trade_date)
