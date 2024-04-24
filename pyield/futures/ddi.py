@@ -140,6 +140,6 @@ def fetch_past_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.Dat
         - OpenContracts: number of open contracts at the start of the trading day.
     """
     df_raw = common.fetch_past_raw_df(asset_code="DDI", trade_date=trade_date)
-    if return_raw:
+    if return_raw or df_raw.empty:
         return df_raw
     return _process_raw_df(df_raw, trade_date)

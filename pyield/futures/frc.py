@@ -93,6 +93,6 @@ def fetch_past_frc(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.Dat
         pd.DataFrame: A Pandas pd.DataFrame containing processed DI futures data.
     """
     df_raw = common.fetch_past_raw_df(asset_code="FRC", trade_date=trade_date)
-    if return_raw:
+    if return_raw or df_raw.empty:
         return df_raw
     return _process_past_data(df_raw, trade_date)

@@ -197,9 +197,6 @@ def fetch_past_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.Data
         - OpenContracts: number of open contracts at the start of the trading day.
     """
     df_raw = cm.fetch_past_raw_df(asset_code="DI1", trade_date=trade_date)
-    if return_raw:
+    if return_raw or df_raw.empty:
         return df_raw
-    if df_raw.empty:
-        return pd.DataFrame()
-    else:
-        return _process_past_raw_df(df_raw, trade_date)
+    return _process_past_raw_df(df_raw, trade_date)

@@ -228,3 +228,27 @@ def fetch_last_raw_df(future_code: str) -> pd.DataFrame:
     df = df.convert_dtypes(dtype_backend="numpy_nullable")
 
     return df
+
+
+def adjust_column_names(df: pd.DataFrame):
+    columns_dict = {
+        "VENCTO": "ExpirationCode",
+        "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
+        "CONTR. FECH.(2)": "OpenContractsEndSession",  # At the end of the day
+        "NÚM. NEGOC.": "TradeCount",
+        "CONTR. NEGOC.": "TradeVolume",
+        "VOL.": "FinancialVolume",
+        "AJUSTE": "SettlementPrice",
+        "AJUSTE ANTER. (3)": "PrevSettlementRate",
+        "AJUSTE CORRIG. (4)": "AdjSettlementRate",
+        "AJUSTE  DE REF.": "SettlementRate",  # FRC
+        "PREÇO MÍN.": "MinRate",
+        "PREÇO MÉD.": "AvgRate",
+        "PREÇO MÁX.": "MaxRate",
+        "PREÇO ABERTU.": "FirstRate",
+        "ÚLT. PREÇO": "CloseRate",
+        "VAR. PTOS.": "PointsVariation",
+        # Attention: bid/ask rates are inverted
+        "ÚLT.OF. COMPRA": "CloseAskRate",
+        "ÚLT.OF. VENDA": "CloseBidRate",
+    }
