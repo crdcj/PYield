@@ -96,7 +96,7 @@ BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate       Price
 ### Spreads Calculation
 ```python
 # Calculate the spread between two DI Futures contracts and the pre-fix bonds
->>> yd.calculate_spreads(spread_type="di_vs_pre", reference_date="2024-4-11")
+>>> yd.calculate_spreads(spread_type="DI_VS_PRE", reference_date="2024-4-11")
 
 BondType ReferenceDate MaturityDate  DISpread
      LTN    2024-04-11   2024-07-01    -20.28
@@ -112,11 +112,12 @@ BondType ReferenceDate MaturityDate  DISpread
 ```python
 # Fetch the SELIC target rate from the Central Bank of Brazil
 >>> yd.fetch_indicator(indicator_code="SELIC", reference_date='2024-04-12')
-10.75
+0.1075  # 10.75%
 
 # Fetch the IPCA monthly inflation rate from IBGE
 >>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-03-18')
-0.16
+0.0016  # 0.16%
+
 
 # If no data is yet available for the indicator, the function returns None
 >>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-04-10')
@@ -135,6 +136,6 @@ IndicatorProjection(
     projected_value=0.0035
 )
 >>> ipca.projected_value
-0.0035
+0.0035  # 0.35%
 ```
 

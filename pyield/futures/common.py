@@ -305,8 +305,5 @@ def reorder_columns(df: pd.DataFrame):
         "CloseBidRate",
         "CloseRate",
     ]
-    reordered_columns = []
-    for col in all_columns:
-        if col in df.columns:
-            reordered_columns.append(col)
+    reordered_columns = [col for col in all_columns if col in df.columns]
     return df[reordered_columns]

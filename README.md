@@ -115,11 +115,11 @@ BondType ReferenceDate MaturityDate  DISpread
 ```python
 # Fetch the SELIC target rate from the Central Bank of Brazil
 >>> yd.fetch_indicator(indicator_code="SELIC", reference_date='2024-04-12')
-10.75
+0.1075  # 10.75%
 
 # Fetch the IPCA monthly inflation rate from IBGE
 >>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-03-18')
-0.16
+0.16  # 0.16%
 
 # If no data is yet available for the indicator, the function returns None
 >>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-04-10')
@@ -135,9 +135,9 @@ IndicatorProjection(
     last_updated=Timestamp('2024-04-19 18:55:00'),
     reference_month_ts=Timestamp('2024-04-01 00:00:00'),
     reference_month_br='ABR/2024',
-    projected_value=0.0035
+    projected_value=0.0035  # 0.35%
 )
 >>> ipca.projected_value
-0.0035
+0.0035  # 0.35%
 ```
 
