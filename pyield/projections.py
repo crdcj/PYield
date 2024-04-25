@@ -63,19 +63,22 @@ def fetch_current_month_ipca_projection() -> IndicatorProjection:
     data = workbook.get_sheet_by_name(first_sheet).to_python(skip_empty_area=True)
 
     # Extract projection update date and time from the first row
-    last_update_str = data[0][0].split("Atualização:")[-1].strip()
+    update_str = str(data[0][0])
+    last_update_str = update_str.split("Atualização:")[-1].strip()
     last_updated = pd.to_datetime(last_update_str, format="%d/%m/%Y - %H:%M h")
 
     # Find the row containing the IPCA projection and extract its data
     ipca_data = next(line for line in data if "IPCA1" in line)
+    ipca_text = str(ipca_data[-1])
 
     # Convert the last element of the IPCA data row to float for the projection value
-    ipca_value = round(float(ipca_data[-1]) / 100, 4)
+    ipca_value = round(float(ipca_text) / 100, 4)
 
     # Extract and format the reference month
-    month_text = ipca_data[1].split("(")[-1].split(")")[0]
+    projection_text = str(ipca_data[1])
+    month_str = projection_text.split("(")[-1].split(")")[0]
     locale.setlocale(locale.LC_TIME, "pt_BR.UTF-8")
-    ipca_month_ts = pd.to_datetime(month_text, format="%b/%y")
+    ipca_month_ts = pd.to_datetime(month_str, format="%b/%y")
     ipca_month_br = ipca_month_ts.strftime("%b/%Y").upper()
     locale.setlocale(locale.LC_TIME, "")  # Reset locale to default
 

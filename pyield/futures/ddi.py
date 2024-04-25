@@ -1,6 +1,6 @@
 import pandas as pd
 
-from . import common
+from . import common as cm
 
 
 def _convert_prices_to_rates(prices: pd.Series, n_days: pd.Series) -> pd.Series:
@@ -30,32 +30,7 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Processed and transformed data as a Pandas pd.DataFrame.
     """
-    # Check if the pd.DataFrame is empty
-    if df.empty:
-        return df
-
-    rename_dict = {
-        "VENCTO": "ExpirationCode",
-        "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
-        "CONTR. FECH.(2)": "OpenContractsEndSession",  # At the end of the day
-        "NÚM. NEGOC.": "TradeCount",
-        "CONTR. NEGOC.": "TradeVolume",
-        "VOL.": "FinancialVolume",
-        "AJUSTE": "SettlementPrice",
-        "AJUSTE ANTER. (3)": "PrevSettlementRate",
-        "AJUSTE CORRIG. (4)": "AdjSettlementRate",
-        "PREÇO MÍN.": "MinRate",
-        "PREÇO MÉD.": "AvgRate",
-        "PREÇO MÁX.": "MaxRate",
-        "PREÇO ABERTU.": "FirstRate",
-        "ÚLT. PREÇO": "LastRate",
-        "VAR. PTOS.": "PointsVariation",
-        # Attention: bid/ask rates are inverted
-        "ÚLT.OF. COMPRA": "LastAskRate",
-        "ÚLT.OF. VENDA": "LastBidRate",
-    }
-
-    df = df.rename(columns=rename_dict)
+    df = cm.rename_columns(df)
 
     df["TradeDate"] = trade_date
     # Convert to datetime64[ns] since it is pandas default type for timestamps
@@ -64,10 +39,10 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     # Contract code format was changed in 22/05/2006
     if trade_date < pd.Timestamp("2006-05-22"):
         df["ExpirationDate"] = df["ExpirationCode"].apply(
-            common.get_old_expiration_date, args=(trade_date,)
+            cm.get_old_expiration_date, args=(trade_date,)
         )
     else:
-        df["ExpirationDate"] = df["ExpirationCode"].apply(common.get_expiration_date)
+        df["ExpirationDate"] = df["ExpirationCode"].apply(cm.get_expiration_date)
 
     df["DaysToExp"] = (df["ExpirationDate"] - trade_date).dt.days
     # Convert to nullable integer, since other columns use this data type
@@ -92,28 +67,9 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     df["TickerSymbol"] = "DI1" + df["ExpirationCode"]
 
     # Filter and order columns
-    ordered_cols = [
-        "TradeDate",
-        "ExpirationCode",
-        "ExpirationDate",
-        "DaysToExp",
-        "OpenContracts",
-        # "OpenContractsEndSession" since there is no OpenContracts at the end of the
-        # day in XML data, it will be removed to avoid confusion with XML data
-        "TradeCount",
-        "TradeVolume",
-        "FinancialVolume",
-        "SettlementPrice",
-        "MinRate",
-        "AvgRate",
-        "MaxRate",
-        "FirstRate",
-        "LastRate",
-        "LastAskRate",
-        "LastBidRate",
-        "SettlementRate",
-    ]
-    return df[ordered_cols]
+    df = cm.reorder_columns(df)
+
+    return df
 
 
 def fetch_past_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
@@ -139,7 +95,7 @@ def fetch_past_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.Dat
         - DaysToExp: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
-    df_raw = common.fetch_past_raw_df(asset_code="DDI", trade_date=trade_date)
+    df_raw = cm.fetch_past_raw_df(asset_code="DDI", trade_date=trade_date)
     if return_raw or df_raw.empty:
         return df_raw
     return _process_raw_df(df_raw, trade_date)

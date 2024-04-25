@@ -5,6 +5,28 @@ import requests
 
 from .. import bday
 
+COLUMNS_MAPPING = {
+    "VENCTO": "ExpirationCode",
+    "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
+    "CONTR. FECH.(2)": "OpenContractsEndSession",  # At the end of the day
+    "NÚM. NEGOC.": "TradeCount",
+    "CONTR. NEGOC.": "TradeVolume",
+    "VOL.": "FinancialVolume",
+    "AJUSTE": "SettlementPrice",
+    "AJUSTE ANTER. (3)": "PrevSettlementRate",
+    "AJUSTE CORRIG. (4)": "AdjSettlementRate",
+    "AJUSTE  DE REF.": "SettlementRate",  # FRC
+    "PREÇO MÍN.": "MinRate",
+    "PREÇO MÉD.": "AvgRate",
+    "PREÇO MÁX.": "MaxRate",
+    "PREÇO ABERTU.": "FirstRate",
+    "ÚLT. PREÇO": "CloseRate",
+    "VAR. PTOS.": "PointsVariation",
+    # Attention: bid/ask rates are inverted
+    "ÚLT.OF. COMPRA": "CloseAskRate",
+    "ÚLT.OF. VENDA": "CloseBidRate",
+}
+
 
 def get_expiration_date(expiration_code: str) -> pd.Timestamp:
     """
@@ -230,8 +252,8 @@ def fetch_last_raw_df(future_code: str) -> pd.DataFrame:
     return df
 
 
-def adjust_column_names(df: pd.DataFrame):
-    columns_dict = {
+def rename_columns(df: pd.DataFrame):
+    all_columns = {
         "VENCTO": "ExpirationCode",
         "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
         "CONTR. FECH.(2)": "OpenContractsEndSession",  # At the end of the day
@@ -252,3 +274,39 @@ def adjust_column_names(df: pd.DataFrame):
         "ÚLT.OF. COMPRA": "CloseAskRate",
         "ÚLT.OF. VENDA": "CloseBidRate",
     }
+    rename_dict = {}
+    for col in all_columns:
+        if col in df.columns:
+            rename_dict[col] = all_columns[col]
+    return df.rename(columns=rename_dict)
+
+
+def reorder_columns(df: pd.DataFrame):
+    all_columns = [
+        "TradeDate",
+        "TickerSymbol",
+        # "ExpirationCode",
+        "ExpirationDate",
+        "BDaysToExp",
+        "DaysToExp",
+        "OpenContracts",
+        # "OpenContractsEndSession" since there is no OpenContracts at the end of the
+        # day in XML data, it will be removed to avoid confusion with XML data
+        "TradeCount",
+        "TradeVolume",
+        "FinancialVolume",
+        "SettlementPrice",
+        "SettlementRate",
+        "FirstRate",
+        "MinRate",
+        "AvgRate",
+        "MaxRate",
+        "CloseAskRate",
+        "CloseBidRate",
+        "CloseRate",
+    ]
+    reordered_columns = []
+    for col in all_columns:
+        if col in df.columns:
+            reordered_columns.append(col)
+    return df[reordered_columns]

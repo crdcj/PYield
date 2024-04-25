@@ -1,6 +1,6 @@
 import pandas as pd
 
-from . import common
+from . import common as cm
 
 
 def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
@@ -14,28 +14,7 @@ def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFra
     Returns:
         pd.DataFrame: Processed and transformed data as a Pandas pd.DataFrame.
     """
-    # Check if the pd.DataFrame is empty
-    if df.empty:
-        return df
-
-    rename_dict = {
-        "VENCTO": "ExpirationCode",
-        "NÚM. NEGOC.": "TradeCount",
-        "CONTR. NEGOC.": "TradeVolume",
-        "VOL.": "FinancialVolume",
-        "AJUSTE  DE REF.": "SettlementRate",
-        "PREÇO ABERTU.": "FirstRate",
-        "PREÇO MÍN.": "MinRate",
-        "PREÇO MÉD.": "AvgRate",
-        "PREÇO MÁX.": "MaxRate",
-        "ÚLT. PREÇO": "CloseRate",
-        "VAR. PTOS.": "PointsVariation",
-        # Attention: bid/ask rates are inverted
-        "ÚLT.OF. COMPRA": "CloseAskRate",
-        "ÚLT.OF. VENDA": "CloseBidRate",
-    }
-
-    df = df.rename(columns=rename_dict)
+    df = cm.rename_columns(df)
 
     df["TradeDate"] = trade_date
     # Convert to datetime64[ns] since it is pandas default type for timestamps
@@ -44,10 +23,10 @@ def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFra
     # Contract code format was changed in 22/05/2006
     if trade_date < pd.Timestamp("2006-05-22"):
         df["ExpirationDate"] = df["ExpirationCode"].apply(
-            common.get_old_expiration_date, args=(trade_date,)
+            cm.get_old_expiration_date, args=(trade_date,)
         )
     else:
-        df["ExpirationDate"] = df["ExpirationCode"].apply(common.get_expiration_date)
+        df["ExpirationDate"] = df["ExpirationCode"].apply(cm.get_expiration_date)
 
     # Replace 0 values in rate columns with pd.NA and remove percentage
     rate_cols = [col for col in df.columns if "Rate" in col]
@@ -57,24 +36,8 @@ def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFra
     df["TickerSymbol"] = "FRC" + df["ExpirationCode"]
 
     # Filter and order columns
-    ordered_cols = [
-        "TradeDate",
-        "TickerSymbol",
-        # "ExpirationCode",
-        "ExpirationDate",
-        "TradeCount",
-        "TradeVolume",
-        "FinancialVolume",
-        "SettlementRate",
-        "FirstRate",
-        "MinRate",
-        "AvgRate",
-        "MaxRate",
-        "CloseAskRate",
-        "CloseBidRate",
-        "CloseRate",
-    ]
-    return df[ordered_cols]
+    df = cm.reorder_columns(df)
+    return df
 
 
 def fetch_past_frc(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
@@ -92,7 +55,7 @@ def fetch_past_frc(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.Dat
     Returns:
         pd.DataFrame: A Pandas pd.DataFrame containing processed DI futures data.
     """
-    df_raw = common.fetch_past_raw_df(asset_code="FRC", trade_date=trade_date)
+    df_raw = cm.fetch_past_raw_df(asset_code="FRC", trade_date=trade_date)
     if return_raw or df_raw.empty:
         return df_raw
     return _process_past_data(df_raw, trade_date)

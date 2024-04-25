@@ -42,28 +42,7 @@ def _process_past_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataF
     Returns:
         pd.DataFrame: Processed and transformed data as a Pandas pd.DataFrame.
     """
-    rename_dict = {
-        "VENCTO": "ExpirationCode",
-        "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
-        "CONTR. FECH.(2)": "OpenContractsEndSession",  # At the end of the day
-        "NÚM. NEGOC.": "TradeCount",
-        "CONTR. NEGOC.": "TradeVolume",
-        "VOL.": "FinancialVolume",
-        "AJUSTE": "SettlementPrice",
-        "AJUSTE ANTER. (3)": "PrevSettlementRate",
-        "AJUSTE CORRIG. (4)": "AdjSettlementRate",
-        "PREÇO MÍN.": "MinRate",
-        "PREÇO MÉD.": "AvgRate",
-        "PREÇO MÁX.": "MaxRate",
-        "PREÇO ABERTU.": "FirstRate",
-        "ÚLT. PREÇO": "CloseRate",
-        "VAR. PTOS.": "PointsVariation",
-        # Attention: bid/ask rates are inverted
-        "ÚLT.OF. COMPRA": "CloseAskRate",
-        "ÚLT.OF. VENDA": "CloseBidRate",
-    }
-
-    df = df.rename(columns=rename_dict)
+    df = cm.rename_columns(df)
 
     df["TradeDate"] = trade_date
     # Convert to datetime64[ns] since it is pandas default type for timestamps
@@ -103,29 +82,8 @@ def _process_past_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataF
     df["TickerSymbol"] = "DI1" + df["ExpirationCode"]
 
     # Filter and order columns
-    ordered_cols = [
-        "TradeDate",
-        "TickerSymbol",
-        # "ExpirationCode",
-        "ExpirationDate",
-        "BDaysToExp",
-        "OpenContracts",
-        # "OpenContractsEndSession" since there is no OpenContracts at the end of the
-        # day in XML data, it will be removed to avoid confusion with XML data
-        "TradeCount",
-        "TradeVolume",
-        "FinancialVolume",
-        "SettlementPrice",
-        "SettlementRate",
-        "FirstRate",
-        "MinRate",
-        "AvgRate",
-        "MaxRate",
-        "CloseAskRate",
-        "CloseBidRate",
-        "CloseRate",
-    ]
-    return df[ordered_cols]
+    df = cm.reorder_columns(df)
+    return df
 
 
 def _process_last_raw_di_df(raw_df: pd.DataFrame) -> pd.DataFrame:

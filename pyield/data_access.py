@@ -111,7 +111,7 @@ def fetch_indicator(
         raise ValueError("Indicator type not supported.")
 
 
-def fetch_projection(projection_code: str) -> dict:
+def fetch_projection(projection_code: str) -> pr.IndicatorProjection:
     """
     Fetches a financial projection for a specified code and reference date.
 
