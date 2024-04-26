@@ -24,9 +24,9 @@ def _process_raw_df(raw_df: pd.DataFrame) -> pd.DataFrame:
         "minPric": "MinRate",
         "avrgPric": "AvgRate",
         "maxPric": "MaxRate",
-        "buyOffer.price": "LastAskRate",
-        "sellOffer.price": "LastBidRate",
-        "curPrc": "LastRate",
+        "buyOffer.price": "CurrentAskRate",
+        "sellOffer.price": "CurrentBidRate",
+        "curPrc": "CurrentRate",
     }
     # Rename columns
     df = df.rename(columns=rename_columns)

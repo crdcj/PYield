@@ -30,22 +30,8 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Processed and transformed data as a Pandas pd.DataFrame.
     """
-    df = cm.rename_columns(df)
-
-    df["TradeDate"] = trade_date
-    # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
-
-    # Contract code format was changed in 22/05/2006
-    if trade_date < pd.Timestamp("2006-05-22"):
-        df["ExpirationDate"] = df["ExpirationCode"].apply(
-            cm.get_old_expiration_date, args=(trade_date,)
-        )
-    else:
-        df["ExpirationDate"] = df["ExpirationCode"].apply(cm.get_expiration_date)
-
     df["DaysToExp"] = (df["ExpirationDate"] - trade_date).dt.days
-    # Convert to nullable integer, since other columns use this data type
+    # Convert to nullable integer, since it is the default type in the library
     df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
 
     # Remove expired contracts
@@ -53,21 +39,12 @@ def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
 
     # Columns where 0 means NaN
     rate_cols = [col for col in df.columns if "Rate" in col]
-    cols_with_nan = rate_cols + ["SettlementPrice"]
-    # Replace 0 with NaN in these columns
-    df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
-
     df[rate_cols] = df[rate_cols].div(100).round(5)
 
     # Calculate SettlementRate
     df["SettlementRate"] = _convert_prices_to_rates(
         df["SettlementPrice"], df["DaysToExp"]
     )
-
-    df["TickerSymbol"] = "DI1" + df["ExpirationCode"]
-
-    # Filter and order columns
-    df = cm.reorder_columns(df)
 
     return df
 
@@ -98,4 +75,6 @@ def fetch_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFram
     df_raw = cm.fetch_raw_df(asset_code="DDI", trade_date=trade_date)
     if return_raw or df_raw.empty:
         return df_raw
-    return _process_raw_df(df_raw, trade_date)
+    df = cm.pre_process_raw_df(df_raw, trade_date, asset_code="DDI")
+    df = _process_raw_df(df, trade_date)
+    return cm.reorder_columns(df)

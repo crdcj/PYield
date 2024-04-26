@@ -33,10 +33,6 @@ def _process_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     # Round to 5 decimal places (3 in %) since it is the contract's precision
     df[rate_cols] = df[rate_cols].replace(0, pd.NA).div(100).round(5)
 
-    df["TickerSymbol"] = "FRC" + df["ExpirationCode"]
-
-    # Filter and order columns
-    df = cm.reorder_columns(df)
     return df
 
 
@@ -58,4 +54,7 @@ def fetch_frc(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFram
     df_raw = cm.fetch_raw_df(asset_code="FRC", trade_date=trade_date)
     if return_raw or df_raw.empty:
         return df_raw
-    return _process_df(df_raw, trade_date)
+    # Filter and order columns
+    df = cm.pre_process_raw_df(df_raw, trade_date, asset_code="FRC")
+    df = _process_df(df, trade_date)
+    return cm.reorder_columns(df)

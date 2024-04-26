@@ -55,7 +55,7 @@ dtype: datetime64[ns]
 ```python
 # Fetch current DI Futures data from B3 (15 minutes delay)
 >>> yd.fetch_asset(asset_code="DI1")
-TradeTimestamp      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate LastBidRate LastRate
+TradeTimestamp      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate LastBidRate CurrentRate
 2024-04-21 13:37:39       DI1K24     2024-05-02          7 ... 0.10660     0.10652     0.10660  0.10660
 2024-04-21 13:37:39       DI1M24     2024-06-03         28 ... 0.10518     0.10510     0.10516  0.10518
 2024-04-21 13:37:39       DI1N24     2024-07-01         48 ... 0.10480     0.10456     0.10462  0.10460

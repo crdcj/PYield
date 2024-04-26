@@ -88,6 +88,4 @@ def fetch_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame
         return df_raw
     df = cm.pre_process_raw_df(df_raw, trade_date, asset_code="DI1")
     df = _process_raw_df(df, trade_date)
-    # Filter and order columns
-    df = cm.reorder_columns(df)
-    return df
+    return cm.reorder_columns(df)

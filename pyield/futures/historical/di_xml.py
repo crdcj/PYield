@@ -206,7 +206,7 @@ def _standardize_column_names(df: DataFrame) -> DataFrame:
         "TradAvrgPric": "AvgRate",
         "MaxPric": "MaxRate",
         "FrstPric": "FirstRate",
-        "LastPric": "LastRate",
+        "LastPric": "CloseRate",
         "AdjstdQtTax": "SettlementRate",
         # "RglrTxsQty"
         # "RglrTraddCtrcts"
