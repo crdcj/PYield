@@ -3,7 +3,7 @@ import pandas as pd
 from . import common as cm
 
 
-def _process_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
+def _process_frc_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -55,6 +55,6 @@ def fetch_frc(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFram
     if return_raw or df_raw.empty:
         return df_raw
     # Filter and order columns
-    df = cm.pre_process_raw_df(df_raw, trade_date, asset_code="FRC")
-    df = _process_df(df, trade_date)
+    df = cm.process_raw_df(df_raw, trade_date, asset_code="FRC")
+    df = _process_frc_df(df, trade_date)
     return cm.reorder_columns(df)

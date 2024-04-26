@@ -41,27 +41,31 @@ def fetch_asset(
         >>> fetch_asset('TRB', '2023-04-01')
         >>> fetch_asset('DI1', '2023-04-01', return_raw=True)
     """
+    SUPPORTED_FUTURES = ["di1", "ddi", "frc"]
     return_raw = kwargs.get("return_raw", False)
     normalized_date = _normalize_date(reference_date)
+    today = pd.Timestamp.today().normalize()
+
+    if asset_code.lower() in SUPPORTED_FUTURES and normalized_date == today:
+        return fi.fetch_intraday(future_code=asset_code.upper())
 
     if asset_code.lower() == "trb":
         return tr.fetch_bonds(reference_date=normalized_date, return_raw=return_raw)
-    elif asset_code.lower() in ["ltn", "lft", "ntn-f", "ntn-b"]:
+
+    if asset_code.lower() in ["ltn", "lft", "ntn-f", "ntn-b"]:
         df = tr.fetch_bonds(reference_date=normalized_date)
         return df.query(f"BondType == '{asset_code.upper()}'")
 
-    elif asset_code.lower() == "di1":
-        today = pd.Timestamp.today().normalize()
-        if normalized_date == today:
-            return fi.fetch_di()
-        else:
-            return fh.fetch_di(trade_date=normalized_date, return_raw=return_raw)
-    elif asset_code.lower() == "ddi":
+    if asset_code.lower() == "di1":
+        return fh.fetch_di(trade_date=normalized_date, return_raw=return_raw)
+
+    if asset_code.lower() == "ddi":
         return fh.fetch_ddi(trade_date=normalized_date, return_raw=return_raw)
-    elif asset_code.lower() == "frc":
+
+    if asset_code.lower() == "frc":
         return fh.fetch_frc(trade_date=normalized_date, return_raw=return_raw)
-    else:
-        raise ValueError("Asset type not supported.")
+
+    raise ValueError("Asset type not supported.")
 
 
 def fetch_indicator(

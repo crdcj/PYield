@@ -31,7 +31,7 @@ def _adjust_older_contracts_rates(df: pd.DataFrame, rate_cols: list) -> pd.DataF
     return df
 
 
-def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
+def _process_di1_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -86,6 +86,6 @@ def fetch_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame
     df_raw = cm.fetch_raw_df(asset_code="DI1", trade_date=trade_date)
     if return_raw or df_raw.empty:
         return df_raw
-    df = cm.pre_process_raw_df(df_raw, trade_date, asset_code="DI1")
-    df = _process_raw_df(df, trade_date)
+    df = cm.process_raw_df(df_raw, trade_date, asset_code="DI1")
+    df = _process_di1_df(df, trade_date)
     return cm.reorder_columns(df)

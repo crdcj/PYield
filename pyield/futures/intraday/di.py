@@ -1,45 +1,6 @@
 import pandas as pd
 import requests
 
-from ... import bday as bd
-
-
-def _process_raw_df(raw_df: pd.DataFrame) -> pd.DataFrame:
-    df = raw_df.copy()
-
-    # Columns to be renamed
-    rename_columns = {
-        "TradeTimestamp": "TradeTimestamp",
-        "symb": "TickerSymbol",
-        "mtrtyCode": "ExpirationDate",
-        "BDaysToExp": "BDaysToExp",
-        "opnCtrcts": "OpenContracts",
-        "tradQty": "TradeCount",
-        "traddCtrctsQty": "TradeVolume",
-        "grssAmt": "FinancialVolume",
-        "prvsDayAdjstmntPric": "PrevSettlementRate",
-        "bottomLmtPric": "MinLimitRate",
-        "topLmtPric": "MaxLimitRate",
-        "opngPric": "OpenRate",
-        "minPric": "MinRate",
-        "avrgPric": "AvgRate",
-        "maxPric": "MaxRate",
-        "buyOffer.price": "CurrentAskRate",
-        "sellOffer.price": "CurrentBidRate",
-        "curPrc": "CurrentRate",
-    }
-    # Rename columns
-    df = df.rename(columns=rename_columns)
-
-    df["BDaysToExp"] = bd.count_bdays(df["TradeTimestamp"], df["ExpirationDate"])
-
-    # Remove percentage in all rate columns
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    df[rate_cols] = df[rate_cols] / 100
-
-    # Reorder columns based on the order of the dictionary
-    return df[rename_columns.values()]
-
 
 def _fetch_raw_df(future_code: str) -> pd.DataFrame:
     """
@@ -64,6 +25,9 @@ def _fetch_raw_df(future_code: str) -> pd.DataFrame:
         raise Exception(f"Failed to fetch data for {future_code}.") from None
 
     r.encoding = "utf-8"  # Explicitly set response encoding to utf-8 for consistency
+
+    if "Quotation not available" in r.text:
+        return pd.DataFrame()
 
     # Normalize JSON response into a flat table
     df = pd.json_normalize(r.json()["Scty"])
@@ -94,12 +58,50 @@ def _fetch_raw_df(future_code: str) -> pd.DataFrame:
     return df
 
 
-def fetch_di() -> pd.DataFrame:
+def _process_raw_df(raw_df: pd.DataFrame) -> pd.DataFrame:
+    df = raw_df.copy()
+
+    # Columns to be renamed
+    all_columns = {
+        "TradeTimestamp": "TradeTimestamp",
+        "symb": "TickerSymbol",
+        "mtrtyCode": "ExpirationDate",
+        "BDaysToExp": "BDaysToExp",
+        "opnCtrcts": "OpenContracts",
+        "tradQty": "TradeCount",
+        "traddCtrctsQty": "TradeVolume",
+        "grssAmt": "FinancialVolume",
+        "prvsDayAdjstmntPric": "PrevSettlementRate",
+        "bottomLmtPric": "MinLimitRate",
+        "topLmtPric": "MaxLimitRate",
+        "opngPric": "OpenRate",
+        "minPric": "MinRate",
+        "avrgPric": "AvgRate",
+        "maxPric": "MaxRate",
+        "buyOffer.price": "CurrentAskRate",
+        "sellOffer.price": "CurrentBidRate",
+        "curPrc": "CurrentRate",
+    }
+    # Check which columns are present in the DataFrame before renaming
+    rename_dict = {c: all_columns[c] for c in all_columns if c in df.columns}
+    df = df.rename(columns=rename_dict)
+
+    # df["BDaysToExp"] = bd.count_bdays(df["TradeTimestamp"], df["ExpirationDate"])
+
+    # Remove percentage in all rate columns
+    rate_cols = [col for col in df.columns if "Rate" in col]
+    df[rate_cols] = df[rate_cols] / 100
+
+    # Reorder columns based on the order of the dictionary
+    return df[rename_dict.values()]
+
+
+def fetch_intraday(future_code: str) -> pd.DataFrame:
     """
     Fetch the latest DI futures data from B3.
 
     Returns:
         pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
     """
-    raw_df = _fetch_raw_df(future_code="DI1")
+    raw_df = _fetch_raw_df(future_code)
     return _process_raw_df(raw_df)

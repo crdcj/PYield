@@ -199,14 +199,11 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
         "ÚLT.OF. COMPRA": "CloseAskRate",
         "ÚLT.OF. VENDA": "CloseBidRate",
     }
-    rename_dict = {}
-    for col in all_columns:
-        if col in df.columns:
-            rename_dict[col] = all_columns[col]
+    rename_dict = {c: all_columns[c] for c in all_columns if c in df.columns}
     return df.rename(columns=rename_dict)
 
 
-def pre_process_raw_df(
+def process_raw_df(
     df: pd.DataFrame, trade_date: pd.Timestamp, asset_code: str
 ) -> pd.DataFrame:
     df = rename_columns(df)

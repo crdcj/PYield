@@ -19,7 +19,7 @@ def _convert_prices_to_rates(prices: pd.Series, n_days: pd.Series) -> pd.Series:
     return rates.round(5)
 
 
-def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
+def _process_ddi_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -75,6 +75,6 @@ def fetch_ddi(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFram
     df_raw = cm.fetch_raw_df(asset_code="DDI", trade_date=trade_date)
     if return_raw or df_raw.empty:
         return df_raw
-    df = cm.pre_process_raw_df(df_raw, trade_date, asset_code="DDI")
-    df = _process_raw_df(df, trade_date)
+    df = cm.process_raw_df(df_raw, trade_date, asset_code="DDI")
+    df = _process_ddi_df(df, trade_date)
     return cm.reorder_columns(df)
