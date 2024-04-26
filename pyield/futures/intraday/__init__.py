@@ -1,3 +1,3 @@
-from .di import fetch_intraday
+from .trading_data import fetch_intraday
 
 __all__ = ["fetch_intraday"]
