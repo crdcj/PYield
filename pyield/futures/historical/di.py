@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .. import bday as bd
+from ... import bday as bd
 from . import common as cm
 
 
@@ -31,7 +31,7 @@ def _adjust_older_contracts_rates(df: pd.DataFrame, rate_cols: list) -> pd.DataF
     return df
 
 
-def _process_past_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
+def _process_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -42,31 +42,12 @@ def _process_past_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataF
     Returns:
         pd.DataFrame: Processed and transformed data as a Pandas pd.DataFrame.
     """
-    df = cm.rename_columns(df)
-
-    df["TradeDate"] = trade_date
-    # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
-
-    # Contract code format was changed in 22/05/2006
-    if trade_date < pd.Timestamp("2006-05-22"):
-        df["ExpirationDate"] = df["ExpirationCode"].apply(
-            cm.get_old_expiration_date, args=(trade_date,)
-        )
-    else:
-        df["ExpirationDate"] = df["ExpirationCode"].apply(cm.get_expiration_date)
-
     df["BDaysToExp"] = bd.count_bdays(trade_date, df["ExpirationDate"])
 
     # Remove expired contracts
     df.query("BDaysToExp > 0", inplace=True)
 
-    # Columns where 0 means NaN
     rate_cols = [col for col in df.columns if "Rate" in col]
-    cols_with_nan = rate_cols + ["SettlementPrice"]
-    # Replace 0 with NaN in these columns
-    df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
-
     # Prior to 17/01/2002 (inclusive), prices were not converted to rates
     if trade_date > pd.Timestamp("2002-01-17"):
         # Remove % and round to 5 (3 in %) dec. places in rate columns
@@ -79,62 +60,10 @@ def _process_past_raw_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataF
         df["SettlementPrice"], df["BDaysToExp"]
     )
 
-    df["TickerSymbol"] = "DI1" + df["ExpirationCode"]
-
-    # Filter and order columns
-    df = cm.reorder_columns(df)
     return df
 
 
-def _process_last_raw_di_df(raw_df: pd.DataFrame) -> pd.DataFrame:
-    df = raw_df.copy()
-
-    # Columns to be renamed
-    rename_columns = {
-        "TradeTimestamp": "TradeTimestamp",
-        "symb": "TickerSymbol",
-        "mtrtyCode": "ExpirationDate",
-        "BDaysToExp": "BDaysToExp",
-        "opnCtrcts": "OpenContracts",
-        "tradQty": "TradeCount",
-        "traddCtrctsQty": "TradeVolume",
-        "grssAmt": "FinancialVolume",
-        "prvsDayAdjstmntPric": "PrevSettlementRate",
-        "bottomLmtPric": "MinLimitRate",
-        "topLmtPric": "MaxLimitRate",
-        "opngPric": "OpenRate",
-        "minPric": "MinRate",
-        "avrgPric": "AvgRate",
-        "maxPric": "MaxRate",
-        "buyOffer.price": "LastAskRate",
-        "sellOffer.price": "LastBidRate",
-        "curPrc": "LastRate",
-    }
-    # Rename columns
-    df = df.rename(columns=rename_columns)
-
-    df["BDaysToExp"] = bd.count_bdays(df["TradeTimestamp"], df["ExpirationDate"])
-
-    # Remove percentage in all rate columns
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    df[rate_cols] = df[rate_cols] / 100
-
-    # Reorder columns based on the order of the dictionary
-    return df[rename_columns.values()]
-
-
-def fetch_last_di() -> pd.DataFrame:
-    """
-    Fetch the latest DI futures data from B3.
-
-    Returns:
-        pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
-    """
-    raw_df = cm.fetch_last_raw_df(future_code="DI1")
-    return _process_last_raw_di_df(raw_df)
-
-
-def fetch_past_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
+def fetch_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
     """
     Fetchs the DI futures data for a given date from B3.
 
@@ -154,7 +83,11 @@ def fetch_past_di(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.Data
         - BDaysToExp: number of business days to ExpirationDate.
         - OpenContracts: number of open contracts at the start of the trading day.
     """
-    df_raw = cm.fetch_past_raw_df(asset_code="DI1", trade_date=trade_date)
+    df_raw = cm.fetch_raw_df(asset_code="DI1", trade_date=trade_date)
     if return_raw or df_raw.empty:
         return df_raw
-    return _process_past_raw_df(df_raw, trade_date)
+    df = cm.pre_process_raw_df(df_raw, trade_date, asset_code="DI1")
+    df = _process_raw_df(df, trade_date)
+    # Filter and order columns
+    df = cm.reorder_columns(df)
+    return df

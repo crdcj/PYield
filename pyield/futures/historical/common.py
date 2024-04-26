@@ -3,29 +3,7 @@ import io
 import pandas as pd
 import requests
 
-from .. import bday
-
-COLUMNS_MAPPING = {
-    "VENCTO": "ExpirationCode",
-    "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
-    "CONTR. FECH.(2)": "OpenContractsEndSession",  # At the end of the day
-    "NÚM. NEGOC.": "TradeCount",
-    "CONTR. NEGOC.": "TradeVolume",
-    "VOL.": "FinancialVolume",
-    "AJUSTE": "SettlementPrice",
-    "AJUSTE ANTER. (3)": "PrevSettlementRate",
-    "AJUSTE CORRIG. (4)": "AdjSettlementRate",
-    "AJUSTE  DE REF.": "SettlementRate",  # FRC
-    "PREÇO MÍN.": "MinRate",
-    "PREÇO MÉD.": "AvgRate",
-    "PREÇO MÁX.": "MaxRate",
-    "PREÇO ABERTU.": "FirstRate",
-    "ÚLT. PREÇO": "CloseRate",
-    "VAR. PTOS.": "PointsVariation",
-    # Attention: bid/ask rates are inverted
-    "ÚLT.OF. COMPRA": "CloseAskRate",
-    "ÚLT.OF. VENDA": "CloseBidRate",
-}
+from ... import bday
 
 
 def get_expiration_date(expiration_code: str) -> pd.Timestamp:
@@ -153,7 +131,7 @@ def get_old_expiration_date(
         return pd.NaT  # type: ignore
 
 
-def fetch_past_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
+def fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetch the historical futures data from B3 for a specific trade date. If the data is
     not available, an empty DataFrame is returned.
@@ -199,60 +177,7 @@ def fetch_past_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame
     return df
 
 
-def fetch_last_raw_df(future_code: str) -> pd.DataFrame:
-    """
-    Fetch the latest data for a given future code from B3 derivatives quotation API.
-
-    Args:
-    future_code (str): The future code to fetch data for.
-
-    Returns:
-    pd.DataFrame: A DataFrame containing the normalized and cleaned data from the API.
-
-    Raises:
-    Exception: An exception is raised if the data fetch operation fails.
-    """
-
-    url = f"https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation/{future_code}"
-
-    try:
-        r = requests.get(url)
-        r.raise_for_status()  # Check for HTTP request errors
-    except requests.exceptions.RequestException:
-        raise Exception(f"Failed to fetch data for {future_code}.") from None
-
-    r.encoding = "utf-8"  # Explicitly set response encoding to utf-8 for consistency
-
-    # Normalize JSON response into a flat table
-    df = pd.json_normalize(r.json()["Scty"])
-
-    # Clean and reformat the DataFrame columns
-    df.columns = (df.columns
-        .str.replace("SctyQtn.", "")
-        .str.replace("asset.AsstSummry.", "")
-    )  # fmt: skip
-    df.drop(columns=["desc", "asset.code", "mkt.cd"], inplace=True)
-
-    # Convert maturity codes to datetime and drop rows with missing values
-    df["mtrtyCode"] = pd.to_datetime(df["mtrtyCode"], errors="coerce")
-    df.dropna(subset=["mtrtyCode"], inplace=True)
-
-    # Sort the DataFrame by maturity code and reset the index
-    df.sort_values("mtrtyCode", inplace=True, ignore_index=True)
-
-    # Get current date and time
-    now = pd.Timestamp.now().round("s")
-    # Subtract 15 minutes from the current time to account for API delay
-    trade_ts = now - pd.Timedelta(minutes=15)
-    df["TradeTimestamp"] = trade_ts
-
-    # Convert DataFrame to use nullable data types for better type consistency
-    df = df.convert_dtypes(dtype_backend="numpy_nullable")
-
-    return df
-
-
-def rename_columns(df: pd.DataFrame):
+def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     all_columns = {
         "VENCTO": "ExpirationCode",
         "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
@@ -279,6 +204,35 @@ def rename_columns(df: pd.DataFrame):
         if col in df.columns:
             rename_dict[col] = all_columns[col]
     return df.rename(columns=rename_dict)
+
+
+def pre_process_raw_df(
+    df: pd.DataFrame, trade_date: pd.Timestamp, asset_code: str
+) -> pd.DataFrame:
+    df = rename_columns(df)
+
+    df["TradeDate"] = trade_date
+    # Convert to datetime64[ns] since it is pandas default type for timestamps
+    df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
+
+    df["TickerSymbol"] = asset_code + df["ExpirationCode"]
+
+    # Contract code format was changed in 22/05/2006
+    if trade_date < pd.Timestamp("2006-05-22"):
+        df["ExpirationDate"] = df["ExpirationCode"].apply(
+            get_old_expiration_date, args=(trade_date,)
+        )
+    else:
+        df["ExpirationDate"] = df["ExpirationCode"].apply(get_expiration_date)
+
+    # Columns where 0 means NaN
+    cols_with_nan = [col for col in df.columns if "Rate" in col]
+    if "SettlementPrice" in df.columns:
+        cols_with_nan.append("SettlementPrice")
+    # Replace 0 with NaN in these columns
+    df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
+
+    return df
 
 
 def reorder_columns(df: pd.DataFrame):

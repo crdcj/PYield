@@ -3,7 +3,7 @@ import pandas as pd
 from . import common as cm
 
 
-def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
+def _process_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Internal function to process and transform raw DI futures data.
 
@@ -40,7 +40,7 @@ def _process_past_data(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFra
     return df
 
 
-def fetch_past_frc(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
+def fetch_frc(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
     """
     Fetchs the DI futures data for a given date from B3.
 
@@ -55,7 +55,7 @@ def fetch_past_frc(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.Dat
     Returns:
         pd.DataFrame: A Pandas pd.DataFrame containing processed DI futures data.
     """
-    df_raw = cm.fetch_past_raw_df(asset_code="FRC", trade_date=trade_date)
+    df_raw = cm.fetch_raw_df(asset_code="FRC", trade_date=trade_date)
     if return_raw or df_raw.empty:
         return df_raw
-    return _process_past_data(df_raw, trade_date)
+    return _process_df(df_raw, trade_date)

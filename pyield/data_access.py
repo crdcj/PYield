@@ -1,9 +1,10 @@
 import pandas as pd
 
-from . import futures as ft
 from . import indicators as it
 from . import projections as pr
 from . import treasuries as tr
+from .futures import historical as fh
+from .futures import intraday as fi
 from .utils import _normalize_date
 
 
@@ -52,13 +53,13 @@ def fetch_asset(
     elif asset_code.lower() == "di1":
         today = pd.Timestamp.today().normalize()
         if normalized_date == today:
-            return ft.fetch_last_di()
+            return fi.fetch_di()
         else:
-            return ft.fetch_past_di(trade_date=normalized_date, return_raw=return_raw)
+            return fh.fetch_di(trade_date=normalized_date, return_raw=return_raw)
     elif asset_code.lower() == "ddi":
-        return ft.fetch_past_ddi(trade_date=normalized_date, return_raw=return_raw)
+        return fh.fetch_ddi(trade_date=normalized_date, return_raw=return_raw)
     elif asset_code.lower() == "frc":
-        return ft.fetch_past_frc(trade_date=normalized_date, return_raw=return_raw)
+        return fh.fetch_frc(trade_date=normalized_date, return_raw=return_raw)
     else:
         raise ValueError("Asset type not supported.")
 
