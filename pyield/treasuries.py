@@ -3,7 +3,7 @@ import io
 import pandas as pd
 import requests
 
-from . import futures as ft
+from .futures import historical as fh
 
 # URL Constants
 ANBIMA_NON_MEMBER_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
@@ -150,7 +150,7 @@ def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
             bond type and maturity date.
     """
     # Fetch DI rates and adjust the maturity date format for compatibility
-    df_di = ft.fetch_past_di(reference_date)[["ExpirationDate", "SettlementRate"]]
+    df_di = fh.fetch_di(reference_date)[["ExpirationDate", "SettlementRate"]]
 
     # Renaming the columns to match the ANBIMA structure
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)

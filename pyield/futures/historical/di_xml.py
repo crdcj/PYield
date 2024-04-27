@@ -7,7 +7,7 @@ import requests
 from lxml import etree
 from pandas import DataFrame, Timestamp
 
-from .. import bday
+from ... import bday
 from . import common as cm
 
 
