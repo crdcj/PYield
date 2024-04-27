@@ -37,3 +37,6 @@ venv.bak/
 # Jupiter Notebook
 .ipynb_checkpoints
 *.ipynb
+
+# Dev folder
+dev/

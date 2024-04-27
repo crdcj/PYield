@@ -25,6 +25,7 @@ def fetch_asset(
             - "DI1": One-day Interbank Deposit Futures (Futuro de DI) from B3.
             - "DDI": DI x U.S. Dollar Spread Futures (Futuro de Cupom Cambial) from B3.
             - "FRC": Forward Rate Agreement (FRA) from B3.
+            - "DAP": DI x IPCA Spread Futures
         reference_date (str | pd.Timestamp | None): The reference date for which data is
             fetched. Defaults to the last business day if None.
         **kwargs: Additional keyword arguments, specifically:
@@ -41,12 +42,11 @@ def fetch_asset(
         >>> fetch_asset('TRB', '2023-04-01')
         >>> fetch_asset('DI1', '2023-04-01', return_raw=True)
     """
-    SUPPORTED_FUTURES = ["di1", "ddi", "frc"]
     return_raw = kwargs.get("return_raw", False)
     normalized_date = _normalize_date(reference_date)
-    today = pd.Timestamp.today().normalize()
 
-    if asset_code.lower() in SUPPORTED_FUTURES and normalized_date == today:
+    today = pd.Timestamp.today().normalize()
+    if normalized_date == today:
         return fi.fetch_intraday(future_code=asset_code.upper())
 
     if asset_code.lower() == "trb":
@@ -64,6 +64,9 @@ def fetch_asset(
 
     if asset_code.lower() == "frc":
         return fh.fetch_frc(trade_date=normalized_date, return_raw=return_raw)
+
+    if asset_code.lower() == "dap":
+        return fh.fetch_dap(trade_date=normalized_date, return_raw=return_raw)
 
     raise ValueError("Asset type not supported.")
 

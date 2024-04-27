@@ -131,6 +131,27 @@ def get_old_expiration_date(
         return pd.NaT  # type: ignore
 
 
+def convert_prices_to_rates(
+    prices: pd.Series, days_to_expiration: pd.Series, count_convention: int
+) -> pd.Series:
+    """
+    Internal function to convert DI futures prices to rates.
+
+    Args:
+        prices (pd.Series): The futures prices to be converted.
+        days_to_expiration (pd.Series): The number of days to expiration for each price.
+        count_convention (int): The count convention for the DI futures contract.
+            Normally, it is 252 business days or 360 calendar days.
+
+    Returns:
+        pd.Series: A pd.Series containing the futures rates.
+    """
+    rates = (100_000 / prices) ** (count_convention / days_to_expiration) - 1
+
+    # Round to 5 (3 in %) dec. places (contract's current max. precision)
+    return rates.round(5)
+
+
 def fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetch the historical futures data from B3 for a specific trade date. If the data is
