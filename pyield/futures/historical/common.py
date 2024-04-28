@@ -10,6 +10,7 @@ COUNT_CONVENTIONS = {
     "DI1": 252,
     "DDI": 360,
     "FRC": None,
+    "DOL": None,
 }
 
 
@@ -246,13 +247,11 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns=rename_dict)
 
 
-def process_raw_df(
+def process_df(
     df: pd.DataFrame,
     trade_date: pd.Timestamp,
     asset_code: str,
 ) -> pd.DataFrame:
-    df = rename_columns(df)
-
     df["TradeDate"] = trade_date
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
@@ -356,5 +355,7 @@ def fetch_futures_df(
     df_raw = fetch_raw_df(asset_code=asset_code, trade_date=trade_date)
     if df_raw.empty:
         return df_raw
-    df = process_raw_df(df_raw, trade_date, asset_code)
-    return reorder_columns(df)
+    df = rename_columns(df_raw)
+    df = process_df(df, trade_date, asset_code)
+    df = reorder_columns(df)
+    return df

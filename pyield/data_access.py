@@ -53,17 +53,10 @@ def fetch_asset(
         df = tr.fetch_bonds(reference_date=normalized_date)
         return df.query(f"BondType == '{asset_code.upper()}'")
 
-    if asset_code.lower() == "di1":
-        return fh.fetch_di(trade_date=normalized_date)
-
-    if asset_code.lower() == "ddi":
-        return fh.fetch_ddi(trade_date=normalized_date)
-
-    if asset_code.lower() == "frc":
-        return fh.fetch_frc(trade_date=normalized_date)
-
-    if asset_code.lower() == "dap":
-        return fh.fetch_dap(trade_date=normalized_date)
+    if asset_code.lower() in ["di1", "ddi", "frc", "dap", "dol"]:
+        return fh.fetch_futures_df(
+            asset_code=asset_code.upper(), trade_date=normalized_date
+        )
 
     raise ValueError("Asset type not supported.")
 
