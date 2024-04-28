@@ -96,7 +96,7 @@ def _process_raw_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     return df[rename_dict.values()]
 
 
-def fetch_intraday(future_code: str) -> pd.DataFrame:
+def fetch_intraday_df(future_code: str) -> pd.DataFrame:
     """
     Fetch the latest DI futures data from B3.
 

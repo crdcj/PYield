@@ -3,7 +3,7 @@ import io
 import pandas as pd
 import requests
 
-from ... import bday
+from .. import bday
 
 COUNT_CONVENTIONS = {
     "DAP": 252,
@@ -11,6 +11,9 @@ COUNT_CONVENTIONS = {
     "DDI": 360,
     "FRC": None,
     "DOL": None,
+    "WDO": None,
+    "IND": None,
+    "WIN": None,
 }
 
 
@@ -333,7 +336,7 @@ def reorder_columns(df: pd.DataFrame):
     return df[reordered_columns]
 
 
-def fetch_futures_df(
+def fetch_historical_df(
     asset_code: str,
     trade_date: pd.Timestamp,
 ) -> pd.DataFrame:

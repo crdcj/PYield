@@ -7,8 +7,8 @@ import requests
 from lxml import etree
 from pandas import DataFrame, Timestamp
 
-from ... import bday
-from . import common as cm
+from ..pyield import bday
+from ..pyield.futures import historical as ht
 
 
 def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
@@ -229,7 +229,7 @@ def _process_di_df(df_raw: DataFrame) -> DataFrame:
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
 
-    expiration = df["TckrSymb"].str[3:].apply(cm.get_expiration_date)
+    expiration = df["TckrSymb"].str[3:].apply(ht.get_expiration_date)
     df.insert(2, "ExpirationDate", expiration)
 
     business_days = bday.count_bdays(df["TradDt"], df["ExpirationDate"])

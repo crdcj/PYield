@@ -120,11 +120,11 @@ NTN-F    2024-04-11    2035-01-01    -1.27
 ```python
 # Obtenha a taxa SELIC meta do BCB em um determinado dia.
 >>> yd.fetch_indicator(indicator_code="SELIC", reference_date='2024-04-12')
-10.75
+0.1075  # 10.75%
 
 # Obtenha a taxa de inflação mensal IPCA do IBGE com base no mês de referência da data.
 >>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-03-18')
-0.16
+0.0016  # 0.16%
 
 # Se o indicador não estiver disponível para a data de referência, o retorno será nulo (None).
 >>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-04-10')

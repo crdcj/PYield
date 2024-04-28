@@ -1,10 +1,10 @@
 import pandas as pd
 
+from . import futures as ft
 from . import indicators as it
 from . import projections as pr
+from . import spreads as sp
 from . import treasuries as tr
-from .futures import historical as fh
-from .futures import intraday as fi
 from .utils import _normalize_date
 
 
@@ -23,7 +23,11 @@ def fetch_asset(
             - "DI1": One-day Interbank Deposit Futures (Futuro de DI) from B3.
             - "DDI": DI x U.S. Dollar Spread Futures (Futuro de Cupom Cambial) from B3.
             - "FRC": Forward Rate Agreement (FRA) from B3.
-            - "DAP": DI x IPCA Spread Futures
+            - "DAP": DI x IPCA Spread Futures.
+            - "DOL": U.S. Dollar Futures from B3.
+            - "WDO": Mini U.S. Dollar Futures from B3.
+            - "IND": Ibovespa Futures from B3.
+            - "WIN": Mini Ibovespa Futures from B3.
         reference_date (str | pd.Timestamp | None): The reference date for which data is
             fetched. Defaults to the last business day if None.
         **kwargs: Additional keyword arguments, specifically:
@@ -40,21 +44,24 @@ def fetch_asset(
         >>> fetch_asset('TRB', '2023-04-01')
         >>> fetch_asset('DI1', '2023-04-01', return_raw=True)
     """
+    SUPPORTED_BONDS = ["LTN", "LFT", "NTN-F", "NTN-B"]
+    SUPPORTED_FUTURES = ["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
+
     normalized_date = _normalize_date(reference_date)
 
     today = pd.Timestamp.today().normalize()
     if normalized_date == today:
-        return fi.fetch_intraday(future_code=asset_code.upper())
+        return ft.fetch_intraday_df(future_code=asset_code.upper())
 
-    if asset_code.lower() == "trb":
+    if asset_code.upper() == "TRB":
         return tr.fetch_bonds(reference_date=normalized_date)
 
-    if asset_code.lower() in ["ltn", "lft", "ntn-f", "ntn-b"]:
+    if asset_code.upper() in SUPPORTED_BONDS:
         df = tr.fetch_bonds(reference_date=normalized_date)
         return df.query(f"BondType == '{asset_code.upper()}'")
 
-    if asset_code.lower() in ["di1", "ddi", "frc", "dap", "dol"]:
-        return fh.fetch_futures_df(
+    if asset_code.upper() in SUPPORTED_FUTURES:
+        return ft.fetch_historical_df(
             asset_code=asset_code.upper(), trade_date=normalized_date
         )
 
@@ -97,13 +104,13 @@ def fetch_indicator(
     """
     normalized_date = _normalize_date(reference_date)
 
-    if indicator_code.lower() == "selic":
+    if indicator_code.upper() == "SELIC":
         return it.fetch_selic_target(reference_date=normalized_date)
-    elif indicator_code.lower() == "ipca":
+    elif indicator_code.upper() == "IPCA":
         return it.fetch_ipca_mr(reference_date=normalized_date)
-    elif indicator_code.lower() == "di":
+    elif indicator_code.upper() == "DI":
         return it.fetch_di(reference_date=normalized_date)
-    elif indicator_code.lower() == "vna_lft":
+    elif indicator_code.upper() == "VNA_LFT":
         return it.fetch_vna_selic(reference_date=normalized_date)
     else:
         raise ValueError("Indicator type not supported.")
@@ -140,7 +147,36 @@ def fetch_projection(projection_code: str) -> pr.IndicatorProjection:
         )
     """
 
-    if projection_code.lower() == "ipca_cm":
+    if projection_code.upper() == "IPCA_CM":
         return pr.fetch_current_month_ipca_projection()
     else:
         raise ValueError("Projection type not supported.")
+
+
+def calculate_spreads(
+    spread_type: str, reference_date: str | pd.Timestamp | None = None
+) -> pd.DataFrame:
+    """
+    Calculates spreads between assets based on the specified spread type.
+    If no reference date is provided, the function uses the previous business day.
+
+    Parameters:
+        spread_type (str): The type of spread to calculate. Available options are:
+            - "DI_vs_PRE": the spread between DI Futures and Treasury Pre-Fixed bonds.
+        reference_date (str | pd.Timestamp, optional): The reference date for the
+            spread calculation. If None or not provided, defaults to the previous
+            business day according to the Brazilian calendar.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the calculated spread in basis points.
+        The data is sorted by asset type and maturity/expiration date.
+
+    Raises:
+        ValueError: If an invalid spread type is provided.
+    """
+    # Normalize the reference date
+    normalized_date = _normalize_date(reference_date)
+    if spread_type.upper() == "DI_VS_PRE":
+        return sp.calculate_di_spreads(normalized_date)
+    else:
+        raise ValueError("Invalid spread type.")
