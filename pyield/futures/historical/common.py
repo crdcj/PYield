@@ -5,6 +5,13 @@ import requests
 
 from ... import bday
 
+COUNT_CONVENTIONS = {
+    "DAP": 252,
+    "DI1": 252,
+    "DDI": 360,
+    "FRC": None,
+}
+
 
 def get_expiration_date(expiration_code: str) -> pd.Timestamp:
     """
@@ -141,12 +148,17 @@ def convert_prices_to_rates(
         prices (pd.Series): The futures prices to be converted.
         days_to_expiration (pd.Series): The number of days to expiration for each price.
         count_convention (int): The count convention for the DI futures contract.
-            Normally, it is 252 business days or 360 calendar days.
+            Can be 252 business days or 360 calendar days.
 
     Returns:
         pd.Series: A pd.Series containing the futures rates.
     """
-    rates = (100_000 / prices) ** (count_convention / days_to_expiration) - 1
+    if count_convention == 252:
+        rates = (100_000 / prices) ** (252 / days_to_expiration) - 1
+    elif count_convention == 360:
+        rates = (100_000 / prices - 1) * (360 / days_to_expiration)
+    else:
+        raise ValueError("Invalid count_convention. Must be 252 or 360.")
 
     # Round to 5 (3 in %) dec. places (contract's current max. precision)
     return rates.round(5)
@@ -198,6 +210,16 @@ def fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     return df
 
 
+def _adjust_older_contracts_rates(df: pd.DataFrame, rate_cols: list) -> pd.DataFrame:
+    for col in rate_cols:
+        df[col] = convert_prices_to_rates(df[col], df["BDaysToExp"], 252)
+
+    # Invert low and high prices
+    df["MinRate"], df["MaxRate"] = df["MaxRate"], df["MinRate"]
+
+    return df
+
+
 def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     all_columns = {
         "VENCTO": "ExpirationCode",
@@ -225,7 +247,9 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def process_raw_df(
-    df: pd.DataFrame, trade_date: pd.Timestamp, asset_code: str
+    df: pd.DataFrame,
+    trade_date: pd.Timestamp,
+    asset_code: str,
 ) -> pd.DataFrame:
     df = rename_columns(df)
 
@@ -243,12 +267,41 @@ def process_raw_df(
     else:
         df["ExpirationDate"] = df["ExpirationCode"].apply(get_expiration_date)
 
+    df["DaysToExp"] = (df["ExpirationDate"] - trade_date).dt.days
+    # Convert to nullable integer, since it is the default type in the library
+    df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
+    # Remove expired contracts
+    df.query("DaysToExp > 0", inplace=True)
+
+    df["BDaysToExp"] = bday.count_bdays(trade_date, df["ExpirationDate"])
+
     # Columns where 0 means NaN
     cols_with_nan = [col for col in df.columns if "Rate" in col]
     if "SettlementPrice" in df.columns:
         cols_with_nan.append("SettlementPrice")
     # Replace 0 with NaN in these columns
     df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
+
+    rate_cols = [col for col in df.columns if "Rate" in col]
+    # Prior to 17/01/2002 (inclusive), DI prices were not converted to rates
+    if trade_date <= pd.Timestamp("2002-01-17") and asset_code == "DI1":
+        df = _adjust_older_contracts_rates(df, rate_cols)
+    else:
+        # Remove % and round to 5 (3 in %) dec. places in rate columns
+        df[rate_cols] = df[rate_cols].div(100).round(5)
+
+    if COUNT_CONVENTIONS[asset_code] == 252:
+        df["SettlementRate"] = convert_prices_to_rates(
+            prices=df["SettlementPrice"],
+            days_to_expiration=df["BDaysToExp"],
+            count_convention=252,
+        )
+    elif COUNT_CONVENTIONS[asset_code] == 360:
+        df["SettlementRate"] = convert_prices_to_rates(
+            prices=df["SettlementPrice"],
+            days_to_expiration=df["DaysToExp"],
+            count_convention=360,
+        )
 
     return df
 
@@ -279,3 +332,29 @@ def reorder_columns(df: pd.DataFrame):
     ]
     reordered_columns = [col for col in all_columns if col in df.columns]
     return df[reordered_columns]
+
+
+def fetch_futures_df(
+    asset_code: str,
+    trade_date: pd.Timestamp,
+) -> pd.DataFrame:
+    """
+    Fetchs the futures data for a given date from B3.
+
+    This function fetches and processes the futures data from B3 for a specific
+    trade date. It's the primary external interface for accessing futures data.
+
+    Args:
+        asset_code (str): The asset code to fetch the futures data.
+        trade_date (pd.Timestamp): The trade date to fetch the futures data.
+        count_convention (int): The count convention for the DI futures contract.
+            Can be 252 business days or 360 calendar days.
+
+    Returns:
+        pd.DataFrame: A Pandas pd.DataFrame containing processed futures data.
+    """
+    df_raw = fetch_raw_df(asset_code=asset_code, trade_date=trade_date)
+    if df_raw.empty:
+        return df_raw
+    df = process_raw_df(df_raw, trade_date, asset_code)
+    return reorder_columns(df)

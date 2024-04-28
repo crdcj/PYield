@@ -9,9 +9,7 @@ from .utils import _normalize_date
 
 
 def fetch_asset(
-    asset_code: str,
-    reference_date: str | pd.Timestamp | None = None,
-    **kwargs,
+    asset_code: str, reference_date: str | pd.Timestamp | None = None
 ) -> pd.DataFrame:
     """
     Fetches data for a specified asset based on type and reference date.
@@ -42,7 +40,6 @@ def fetch_asset(
         >>> fetch_asset('TRB', '2023-04-01')
         >>> fetch_asset('DI1', '2023-04-01', return_raw=True)
     """
-    return_raw = kwargs.get("return_raw", False)
     normalized_date = _normalize_date(reference_date)
 
     today = pd.Timestamp.today().normalize()
@@ -50,23 +47,23 @@ def fetch_asset(
         return fi.fetch_intraday(future_code=asset_code.upper())
 
     if asset_code.lower() == "trb":
-        return tr.fetch_bonds(reference_date=normalized_date, return_raw=return_raw)
+        return tr.fetch_bonds(reference_date=normalized_date)
 
     if asset_code.lower() in ["ltn", "lft", "ntn-f", "ntn-b"]:
         df = tr.fetch_bonds(reference_date=normalized_date)
         return df.query(f"BondType == '{asset_code.upper()}'")
 
     if asset_code.lower() == "di1":
-        return fh.fetch_di(trade_date=normalized_date, return_raw=return_raw)
+        return fh.fetch_di(trade_date=normalized_date)
 
     if asset_code.lower() == "ddi":
-        return fh.fetch_ddi(trade_date=normalized_date, return_raw=return_raw)
+        return fh.fetch_ddi(trade_date=normalized_date)
 
     if asset_code.lower() == "frc":
-        return fh.fetch_frc(trade_date=normalized_date, return_raw=return_raw)
+        return fh.fetch_frc(trade_date=normalized_date)
 
     if asset_code.lower() == "dap":
-        return fh.fetch_dap(trade_date=normalized_date, return_raw=return_raw)
+        return fh.fetch_dap(trade_date=normalized_date)
 
     raise ValueError("Asset type not supported.")
 

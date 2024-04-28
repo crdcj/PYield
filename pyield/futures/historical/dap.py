@@ -1,40 +1,9 @@
 import pandas as pd
 
-from ... import bday as bd
 from . import common as cm
 
 
-def _process_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
-    """
-    Internal function to process and transform raw DI futures data.
-
-    Args:
-        df (pd.DataFrame): the raw DI DataFrame.
-        trade_date: a datetime-like object representing the trade date.
-
-    Returns:
-        pd.DataFrame: Processed and transformed data as a Pandas pd.DataFrame.
-    """
-    df["BDaysToExp"] = bd.count_bdays(trade_date, df["ExpirationDate"])
-
-    # Remove expired contracts
-    df.query("BDaysToExp > 0", inplace=True)
-
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    # Remove % and round to 5 (3 in %) dec. places in rate columns
-    df[rate_cols] = df[rate_cols].div(100).round(5)
-
-    # Calculate SettlementRate
-    df["SettlementRate"] = cm.convert_prices_to_rates(
-        prices=df["SettlementPrice"],
-        days_to_expiration=df["BDaysToExp"],
-        count_convention=252,
-    )
-
-    return df
-
-
-def fetch_dap(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
+def fetch_dap(trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetchs the DI futures data for a given date from B3.
 
@@ -55,8 +24,7 @@ def fetch_dap(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFram
         - OpenContracts: number of open contracts at the start of the trading day.
     """
     df_raw = cm.fetch_raw_df(asset_code="DI1", trade_date=trade_date)
-    if return_raw or df_raw.empty:
+    if df_raw.empty:
         return df_raw
-    df = cm.process_raw_df(df_raw, trade_date, asset_code="DI1")
-    df = _process_df(df, trade_date)
+    df = cm.process_raw_df(df_raw, trade_date, asset_code="DI1", count_convention=252)
     return cm.reorder_columns(df)

@@ -3,40 +3,7 @@ import pandas as pd
 from . import common as cm
 
 
-def _process_frc_df(df: pd.DataFrame, trade_date: pd.Timestamp) -> pd.DataFrame:
-    """
-    Internal function to process and transform raw DI futures data.
-
-    Args:
-        df (pd.DataFrame): the raw DI DataFrame.
-        trade_date: a datetime-like object representing the trade date.
-
-    Returns:
-        pd.DataFrame: Processed and transformed data as a Pandas pd.DataFrame.
-    """
-    df = cm.rename_columns(df)
-
-    df["TradeDate"] = trade_date
-    # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
-
-    # Contract code format was changed in 22/05/2006
-    if trade_date < pd.Timestamp("2006-05-22"):
-        df["ExpirationDate"] = df["ExpirationCode"].apply(
-            cm.get_old_expiration_date, args=(trade_date,)
-        )
-    else:
-        df["ExpirationDate"] = df["ExpirationCode"].apply(cm.get_expiration_date)
-
-    # Replace 0 values in rate columns with pd.NA and remove percentage
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    # Round to 5 decimal places (3 in %) since it is the contract's precision
-    df[rate_cols] = df[rate_cols].replace(0, pd.NA).div(100).round(5)
-
-    return df
-
-
-def fetch_frc(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFrame:
+def fetch_frc(trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetchs the DI futures data for a given date from B3.
 
@@ -52,9 +19,7 @@ def fetch_frc(trade_date: pd.Timestamp, return_raw: bool = False) -> pd.DataFram
         pd.DataFrame: A Pandas pd.DataFrame containing processed DI futures data.
     """
     df_raw = cm.fetch_raw_df(asset_code="FRC", trade_date=trade_date)
-    if return_raw or df_raw.empty:
+    if df_raw.empty:
         return df_raw
-    # Filter and order columns
-    df = cm.process_raw_df(df_raw, trade_date, asset_code="FRC")
-    df = _process_frc_df(df, trade_date)
+    df = cm.process_raw_df(df_raw, trade_date, asset_code="FRC", count_convention=None)
     return cm.reorder_columns(df)
