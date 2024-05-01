@@ -1,6 +1,8 @@
 import pandas as pd
 import requests
 
+from .. import bday
+
 
 def _fetch_raw_df(future_code: str) -> pd.DataFrame:
     """
@@ -50,7 +52,7 @@ def _fetch_raw_df(future_code: str) -> pd.DataFrame:
     now = pd.Timestamp.now().round("s")
     # Subtract 15 minutes from the current time to account for API delay
     trade_ts = now - pd.Timedelta(minutes=15)
-    df["TradeTimestamp"] = trade_ts
+    df["TradeTime"] = trade_ts
 
     # Convert DataFrame to use nullable data types for better type consistency
     df = df.convert_dtypes(dtype_backend="numpy_nullable")
@@ -58,15 +60,19 @@ def _fetch_raw_df(future_code: str) -> pd.DataFrame:
     return df
 
 
-def _process_raw_df(raw_df: pd.DataFrame) -> pd.DataFrame:
-    df = raw_df.copy()
+def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Rename the columns of a DataFrame containing the futures data.
 
-    # Columns to be renamed
+    Args:
+    df (pd.DataFrame): A DataFrame containing futures data.
+
+    Returns:
+    pd.DataFrame: A DataFrame with the columns renamed.
+    """
     all_columns = {
-        "TradeTimestamp": "TradeTimestamp",
         "symb": "TickerSymbol",
         "mtrtyCode": "ExpirationDate",
-        "BDaysToExp": "BDaysToExp",
         "opnCtrcts": "OpenContracts",
         "tradQty": "TradeCount",
         "traddCtrctsQty": "TradeVolume",
@@ -85,15 +91,57 @@ def _process_raw_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     # Check which columns are present in the DataFrame before renaming
     rename_dict = {c: all_columns[c] for c in all_columns if c in df.columns}
     df = df.rename(columns=rename_dict)
+    return df
 
-    # df["BDaysToExp"] = bd.count_bdays(df["TradeTimestamp"], df["ExpirationDate"])
+
+def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
+    df = raw_df.copy()
+
+    df["BDaysToExp"] = bday.count_bdays(df["TradeTime"], df["ExpirationDate"])
+
+    df["DaysToExp"] = (df["ExpirationDate"] - df["TradeTime"]).dt.days
+    # Convert to nullable integer, since it is the default type in the library
+    df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
 
     # Remove percentage in all rate columns
     rate_cols = [col for col in df.columns if "Rate" in col]
-    df[rate_cols] = df[rate_cols] / 100
+    df[rate_cols] = df[rate_cols].div(100).round(5)
 
     # Reorder columns based on the order of the dictionary
-    return df[rename_dict.values()]
+    return df
+
+
+def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Select and reorder columns in the DataFrame.
+
+    Args:
+    df (pd.DataFrame): A DataFrame containing futures data.
+
+    Returns:
+    pd.DataFrame: A DataFrame with the columns selected and reordered.
+    """
+    columns = [
+        "TradeTime",
+        "TickerSymbol",
+        "ExpirationDate",
+        "BDaysToExp",
+        "OpenContracts",
+        "TradeCount",
+        "TradeVolume",
+        "FinancialVolume",
+        "PrevSettlementRate",
+        "MinLimitRate",
+        "MaxLimitRate",
+        "OpenRate",
+        "MinRate",
+        "AvgRate",
+        "MaxRate",
+        "CurrentAskRate",
+        "CurrentBidRate",
+        "CurrentRate",
+    ]
+    return df[columns]
 
 
 def fetch_intraday_df(future_code: str) -> pd.DataFrame:
@@ -104,4 +152,9 @@ def fetch_intraday_df(future_code: str) -> pd.DataFrame:
         pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
     """
     raw_df = _fetch_raw_df(future_code)
-    return _process_raw_df(raw_df)
+    if raw_df.empty:
+        return raw_df
+    df = _rename_columns(raw_df)
+    df = _process_df(df)
+    df = _select_and_reorder_columns(df)
+    return df

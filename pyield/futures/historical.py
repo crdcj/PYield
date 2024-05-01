@@ -185,12 +185,12 @@ def fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     r = requests.get(url)
 
     text = r.text
-    if "AJUSTE" not in text:
+    if "VENCTO" not in text:
         return pd.DataFrame()
 
     df = pd.read_html(
         io.StringIO(text),
-        match="AJUSTE",
+        match="VENCTO",
         header=1,
         thousands=".",
         decimal=",",
@@ -239,7 +239,7 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
         "PREÇO MÍN.": "MinRate",
         "PREÇO MÉD.": "AvgRate",
         "PREÇO MÁX.": "MaxRate",
-        "PREÇO ABERTU.": "FirstRate",
+        "PREÇO ABERTU.": "OpenRate",
         "ÚLT. PREÇO": "CloseRate",
         "VAR. PTOS.": "PointsVariation",
         # Attention: bid/ask rates are inverted
@@ -251,10 +251,9 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def process_df(
-    df: pd.DataFrame,
-    trade_date: pd.Timestamp,
-    asset_code: str,
+    input_df: pd.DataFrame, trade_date: pd.Timestamp, asset_code: str
 ) -> pd.DataFrame:
+    df = input_df.copy()
     df["TradeDate"] = trade_date
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
@@ -308,7 +307,7 @@ def process_df(
     return df
 
 
-def reorder_columns(df: pd.DataFrame):
+def select_and_reorder_columns(df: pd.DataFrame):
     all_columns = [
         "TradeDate",
         "TickerSymbol",
@@ -324,7 +323,7 @@ def reorder_columns(df: pd.DataFrame):
         "FinancialVolume",
         "SettlementPrice",
         "SettlementRate",
-        "FirstRate",
+        "OpenRate",
         "MinRate",
         "AvgRate",
         "MaxRate",
@@ -336,10 +335,7 @@ def reorder_columns(df: pd.DataFrame):
     return df[reordered_columns]
 
 
-def fetch_historical_df(
-    asset_code: str,
-    trade_date: pd.Timestamp,
-) -> pd.DataFrame:
+def fetch_historical_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetchs the futures data for a given date from B3.
 
@@ -360,5 +356,5 @@ def fetch_historical_df(
         return df_raw
     df = rename_columns(df_raw)
     df = process_df(df, trade_date, asset_code)
-    df = reorder_columns(df)
+    df = select_and_reorder_columns(df)
     return df

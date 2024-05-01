@@ -7,8 +7,8 @@ import requests
 from lxml import etree
 from pandas import DataFrame, Timestamp
 
-from ..pyield import bday
-from ..pyield.futures import historical as ht
+import pyield as yd
+from pyield.futures import historical as fh
 
 
 def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
@@ -24,9 +24,9 @@ def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
 
     formatted_date = trade_date.strftime("%y%m%d")
 
-    if source_type == "b3":
+    if source_type == "PR":
         url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{formatted_date}.zip"
-    else:  # source_type == "b3s"
+    else:  # source_type == "SPR"
         url = f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{formatted_date}.zip"
 
     response = requests.get(url)
@@ -97,12 +97,12 @@ def _extract_di_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
         # Extrair a data de negociação
         if price_report is None:
             continue
-        trade_date = price_report.find(".//ns:TradeDate/ns:Dt", namespaces)
+        trade_date = price_report.find(".//ns:TradDt/ns:Dt", namespaces)
 
         # Preparar o dicionário de dados do ticker com a data de negociação
         if trade_date is None:
             continue
-        ticker_data = {"TradeDate": trade_date.text, "TckrSymb": tckr_symb.text}
+        ticker_data = {"TradDt": trade_date.text, "TckrSymb": tckr_symb.text}
 
         # Acessar o elemento FinInstrmAttrbts que contém o TckrSymb
         fin_instrm_attrbts = price_report.find(".//ns:FinInstrmAttrbts", namespaces)
@@ -129,83 +129,25 @@ def _create_df_from_di_data(di1_data: list) -> DataFrame:
     return pd.read_csv(file, dtype_backend="numpy_nullable")
 
 
-def _filter_and_order_pr_df(df: DataFrame) -> DataFrame:
-    selected_columns = [
-        "TradDt",
-        "TckrSymb",
-        # "MktDataStrmId",
-        "OpnIntrst",
-        "FinInstrmQty",
-        "NtlFinVol",
-        # "IntlFinVol",
-        "AdjstdQt",
-        "MinTradLmt",
-        "MaxTradLmt",
-        "BestBidPric",
-        "BestAskPric",
-        "MinPric",
-        "TradAvrgPric",
-        "MaxPric",
-        "FrstPric",
-        "LastPric",
-        "AdjstdQtTax",
-        # "RglrTxsQty",
-        # "RglrTraddCtrcts",
-        # "NtlRglrVol",
-        # "IntlRglrVol",
-        # "AdjstdQtStin",
-        # "PrvsAdjstdQt",
-        # "PrvsAdjstdQtTax",
-        # "PrvsAdjstdQtStin",
-        # "OscnPctg",
-        # "VartnPts",
-        # "AdjstdValCtrct",
-    ]
-
-    return df[selected_columns]
-
-
-def _filter_and_order_sprd_df(df: DataFrame) -> DataFrame:
-    cols = [
-        "TradDt",
-        "TckrSymb",
-        "OpnIntrst",
-        "AdjstdQt",
-        "MinPric",
-        "TradAvrgPric",
-        "MaxPric",
-        "FrstPric",
-        "LastPric",
-        "AdjstdQtTax",
-        # "RglrTxsQty",
-        # "AdjstdQtStin",  # Constant column
-        # "PrvsAdjstdQt",
-        # "PrvsAdjstdQtTax",
-        # "PrvsAdjstdQtStin",  # Constant column
-    ]
-
-    return df[cols]
-
-
-def _standardize_column_names(df: DataFrame) -> DataFrame:
-    rename_dict = {
+def _rename_columns(df: DataFrame) -> DataFrame:
+    all_columns = {
         "TradDt": "TradeDate",
-        "TckrSymb": "Ticker",
+        "TckrSymb": "TickerSymbol",
         # "MktDataStrmId"
         # "IntlFinVol",
         "OpnIntrst": "OpenContracts",
         "FinInstrmQty": "TradeVolume",
         "NtlFinVol": "FinancialVolume",
         "AdjstdQt": "SettlementPrice",
-        "MinTradLmt": "MinTradeLimitRate",
-        "MaxTradLmt": "MaxTradeLimitRate",
+        "MinTradLmt": "MinLimitRate",
+        "MaxTradLmt": "MaxLimitRate",
         # Must invert bid/ask for rates
         "BestAskPric": "BestBidRate",
         "BestBidPric": "BestAskRate",
         "MinPric": "MinRate",
         "TradAvrgPric": "AvgRate",
         "MaxPric": "MaxRate",
-        "FrstPric": "FirstRate",
+        "FrstPric": "OpenRate",
         "LastPric": "CloseRate",
         "AdjstdQtTax": "SettlementRate",
         # "RglrTxsQty"
@@ -220,31 +162,80 @@ def _standardize_column_names(df: DataFrame) -> DataFrame:
         # "VartnPts",
         # "AdjstdValCtrct",
     }
+    all_columns = {c: all_columns[c] for c in all_columns if c in df.columns}
+    return df.rename(columns=all_columns)
 
-    return df.rename(columns=rename_dict)
+
+def _select_and_reorder_columns(df: DataFrame) -> DataFrame:
+    # All SPRD columns are present in PR
+    all_columns = [
+        "TradeDate",
+        "TickerSymbol",
+        "ExpirationDate",
+        "BDaysToExp",
+        "DaysToExp",
+        # "MktDataStrmId",
+        "OpenContracts",
+        "TradeVolume",
+        "FinancialVolume",
+        # "IntlFinVol",
+        "SettlementPrice",
+        "SettlementRate",
+        "MinLimitRate",
+        "MaxLimitRate",
+        "BestBidRate",
+        "BestAskRate",
+        "OpenRate",
+        "MinRate",
+        "AvgRate",
+        "MaxRate",
+        "CloseRate",
+        # "RglrTxsQty",
+        # "RglrTraddCtrcts",
+        # "NtlRglrVol",
+        # "IntlRglrVol",
+        # "AdjstdQtStin",
+        # "PrvsAdjstdQt",
+        # "PrvsAdjstdQtTax",
+        # "PrvsAdjstdQtStin",
+        # "OscnPctg",
+        # "VartnPts",
+        # "AdjstdValCtrct",
+    ]
+    selected_columns = [col for col in all_columns if col in df.columns]
+    return df[selected_columns]
 
 
-def _process_di_df(df_raw: DataFrame) -> DataFrame:
+def _process_df(df_raw: DataFrame) -> DataFrame:
     df = df_raw.copy()
     # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["TradDt"] = df["TradDt"].astype("datetime64[ns]")
+    df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
 
-    expiration = df["TckrSymb"].str[3:].apply(ht.get_expiration_date)
-    df.insert(2, "ExpirationDate", expiration)
+    expiration_code = df["TickerSymbol"].str[3:]
+    df["ExpirationDate"] = expiration_code.apply(fh.get_expiration_date)
 
-    business_days = bday.count_bdays(df["TradDt"], df["ExpirationDate"])
-    df.insert(3, "BDaysToExp", business_days)
-
-    # Convert to nullable integer, since other columns use this data type
-    df["BDaysToExp"] = df["BDaysToExp"].astype(pd.Int64Dtype())
-
+    df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
+    # Convert to nullable integer, since it is the default type in the library
+    df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
     # Remove expired contracts
-    df.query("BDaysToExp > 0", inplace=True)
+    df.query("DaysToExp > 0", inplace=True)
+
+    df["BDaysToExp"] = yd.bday.count_bdays(df["TradeDate"], df["ExpirationDate"])
+
+    rate_cols = [col for col in df.columns if "Rate" in col]
+    # Remove % and round to 5 (3 in %) dec. places in rate columns
+    df[rate_cols] = df[rate_cols].div(100).round(5)
+
+    # Columns where NaN means 0
+    zero_cols = ["OpenContracts", "TradeVolume", "FinancialVolume"]
+    for col in zero_cols:
+        if col in df.columns:
+            df[col] = df[col].fillna(0)
 
     return df.sort_values(by=["ExpirationDate"], ignore_index=True)
 
 
-def read_xml(trade_date: Timestamp, source_type: str, return_raw: bool) -> DataFrame:
+def fetch_di(trade_date: Timestamp, source_type: str) -> DataFrame:
     zip_file = _get_file_from_url(trade_date, source_type)
 
     xml_file = _extract_xml_from_zip(zip_file)
@@ -252,61 +243,33 @@ def read_xml(trade_date: Timestamp, source_type: str, return_raw: bool) -> DataF
     di_data = _extract_di_data_from_xml(xml_file)
 
     df_raw = _create_df_from_di_data(di_data)
-    if return_raw:
-        return df_raw
 
-    # Remove unnecessary columns
-    if source_type == "b3":
-        df_di = _filter_and_order_pr_df(df_raw)
-    elif source_type == "b3s":
-        df_di = _filter_and_order_sprd_df(df_raw)
-    else:
-        raise ValueError("Invalid source type. Must be 'b3' or 'b3s'.")
+    df = _rename_columns(df_raw)
 
-    # Process and transform data
-    df_di = _process_di_df(df_di)
+    df = _process_df(df)
 
-    # Standardize column names
-    df_di = _standardize_column_names(df_di)
+    df = _select_and_reorder_columns(df)
 
-    return df_di
+    return df
 
 
-def read_di(file_path: Path, return_raw: bool = False) -> DataFrame:
-    if file_path:
-        if file_path.exists():
-            content = file_path.read_bytes()
-            zip_file = io.BytesIO(content)
-        else:
-            raise FileNotFoundError(f"No file found at {file_path}.")
+def read_di(file_path: Path) -> DataFrame:
+    content = file_path.read_bytes()
+    zip_file = io.BytesIO(content)
 
-        xml_file = _extract_xml_from_zip(zip_file)
+    xml_file = _extract_xml_from_zip(zip_file)
 
-        di_data = _extract_di_data_from_xml(xml_file)
+    di_data = _extract_di_data_from_xml(xml_file)
 
-        df_raw = _create_df_from_di_data(di_data)
-        if return_raw:
-            return df_raw
+    df_raw = _create_df_from_di_data(di_data)
 
-        # Filename examples: PR231228.zip or SPRD240216.zip
-        file_stem = file_path.stem
-        if "PR" in file_stem:
-            df_di = _filter_and_order_pr_df(df_raw)
-        elif "SPRD" in file_stem:
-            df_di = _filter_and_order_sprd_df(df_raw)
-        else:
-            raise ValueError("Filename must start with 'PR' or 'SPRD'.")
+    df = _rename_columns(df_raw)
 
-        # Process and transform data
-        df_di = _process_di_df(df_di)
+    df = _process_df(df)
 
-        # Standardize column names
-        df_di = _standardize_column_names(df_di)
+    df = _select_and_reorder_columns(df)
 
-        return df_di
-
-    else:
-        raise ValueError("A file path must be provided.")
+    return df
 
 
 def read_file(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
@@ -323,13 +286,13 @@ def read_file(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
         return_raw (bool, optional): If set to True, the function returns the raw data
             without applying any transformation or processing. Useful for cases where
             raw data inspection or custom processing is needed. Defaults to False.
-        source_type (Literal["bmf", "b3", "b3s"], optional): Indicates the source of
+        source_type (Literal["bmf", "PR", "SPR"], optional): Indicates the source of
             the data. Defaults to "bmf". Options include:
                 - "bmf": Fetches data from the old BM&FBOVESPA website. Fastest option.
-                - "b3": Fetches data from the complete Price Report (XML file) provided
+                - "PR": Fetches data from the complete Price Report (XML file) provided
                     by B3.
-                - "b3s": Fetches data from the simplified Price Report (XML file)
-                    provided by B3. Faster than "b3" but less detailed.
+                - "SPR": Fetches data from the simplified Price Report (XML file)
+                    provided by B3. Faster than "PR" but less detailed.
 
     Returns:
         pd.DataFrame: A DataFrame containing the processed or raw DI futures data,
@@ -346,4 +309,9 @@ def read_file(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
         The ability to process and return raw data is primarily intended for advanced
         users who require access to the data in its original form for custom analyses.
     """
+    # Check if a file path was not provided
+    if not isinstance(file_path, Path):
+        raise ValueError("A file path must be provided.")
+    if not file_path.exists():
+        raise FileNotFoundError(f"No file found at {file_path}.")
     return read_di(file_path, return_raw=return_raw)
