@@ -1,6 +1,7 @@
 import io
 import zipfile
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
 import requests
@@ -9,6 +10,17 @@ from pandas import DataFrame, Timestamp
 
 import pyield as yd
 from pyield.futures import historical as fh
+
+
+def _get_file_from_path(file_path: Path) -> io.BytesIO:
+    # Check if a file path was not provided
+    if not isinstance(file_path, Path):
+        raise ValueError("A file path must be provided.")
+    if not file_path.exists():
+        raise FileNotFoundError(f"No file found at {file_path}.")
+
+    content = file_path.read_bytes()
+    return io.BytesIO(content)
 
 
 def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
@@ -22,19 +34,21 @@ def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
         url example: https://www.b3.com.br/pesquisapregao/download?filelist=SPRD240216.zip
     """
 
-    formatted_date = trade_date.strftime("%y%m%d")
+    trade_date_str = trade_date.strftime("%y%m%d")
 
     if source_type == "PR":
-        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{formatted_date}.zip"
-    else:  # source_type == "SPR"
-        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{formatted_date}.zip"
+        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{trade_date_str}.zip"
+    elif source_type == "SPR":
+        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{trade_date_str}.zip"
+    else:
+        raise ValueError("Invalid source type. Must be either 'PR' or 'SPR'.")
 
     response = requests.get(url)
 
     # File will be considered invalid if it is too small
     if response.status_code != 200 or len(response.content) < 1024:
-        formatted_date = trade_date.strftime("%Y-%m-%d")
-        raise ValueError(f"There is no data available for {formatted_date}.")
+        trade_date_str = trade_date.strftime("%Y-%m-%d")
+        raise ValueError(f"There is no data available for {trade_date_str}.")
 
     return io.BytesIO(response.content)
 
@@ -58,7 +72,7 @@ def _extract_xml_from_zip(zip_file: io.BytesIO) -> io.BytesIO:
     return io.BytesIO(inner_file_content)
 
 
-def _extract_di_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
+def _extract_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
     parser = etree.XMLParser(
         ns_clean=True, remove_blank_text=True, remove_comments=True, recover=True
     )
@@ -77,8 +91,7 @@ def _extract_di_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
     ):
         return []
 
-    # Lista para armazenar os dados com type hinting
-    # di_data: list[dict] = []
+    # Lista para armazenar os dados
     di_data = []
 
     # Processar cada TckrSymb encontrado
@@ -120,7 +133,7 @@ def _extract_di_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
     return di_data
 
 
-def _create_df_from_di_data(di1_data: list) -> DataFrame:
+def _create_df_from_data(di1_data: list) -> DataFrame:
     # Criar um DataFrame com os dados coletados
     df = pd.DataFrame(di1_data)
 
@@ -166,6 +179,35 @@ def _rename_columns(df: DataFrame) -> DataFrame:
     return df.rename(columns=all_columns)
 
 
+def _process_df(df_raw: DataFrame) -> DataFrame:
+    df = df_raw.copy()
+    # Convert to datetime64[ns] since it is pandas default type for timestamps
+    df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
+
+    expiration_code = df["TickerSymbol"].str[3:]
+    df["ExpirationDate"] = expiration_code.apply(fh.get_expiration_date)
+
+    df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
+    # Convert to nullable integer, since it is the default type in the library
+    df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
+    # Remove expired contracts
+    df.query("DaysToExp > 0", inplace=True)
+
+    df["BDaysToExp"] = yd.bday.count_bdays(df["TradeDate"], df["ExpirationDate"])
+
+    rate_cols = [col for col in df.columns if "Rate" in col]
+    # Remove % and round to 5 (3 in %) dec. places in rate columns
+    df[rate_cols] = df[rate_cols].div(100).round(5)
+
+    # Columns where NaN means 0
+    zero_cols = ["OpenContracts", "TradeVolume", "FinancialVolume"]
+    for col in zero_cols:
+        if col in df.columns:
+            df[col] = df[col].fillna(0)
+
+    return df.sort_values(by=["ExpirationDate"], ignore_index=True)
+
+
 def _select_and_reorder_columns(df: DataFrame) -> DataFrame:
     # All SPRD columns are present in PR
     all_columns = [
@@ -206,43 +248,12 @@ def _select_and_reorder_columns(df: DataFrame) -> DataFrame:
     return df[selected_columns]
 
 
-def _process_df(df_raw: DataFrame) -> DataFrame:
-    df = df_raw.copy()
-    # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
-
-    expiration_code = df["TickerSymbol"].str[3:]
-    df["ExpirationDate"] = expiration_code.apply(fh.get_expiration_date)
-
-    df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
-    # Convert to nullable integer, since it is the default type in the library
-    df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
-    # Remove expired contracts
-    df.query("DaysToExp > 0", inplace=True)
-
-    df["BDaysToExp"] = yd.bday.count_bdays(df["TradeDate"], df["ExpirationDate"])
-
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    # Remove % and round to 5 (3 in %) dec. places in rate columns
-    df[rate_cols] = df[rate_cols].div(100).round(5)
-
-    # Columns where NaN means 0
-    zero_cols = ["OpenContracts", "TradeVolume", "FinancialVolume"]
-    for col in zero_cols:
-        if col in df.columns:
-            df[col] = df[col].fillna(0)
-
-    return df.sort_values(by=["ExpirationDate"], ignore_index=True)
-
-
-def fetch_di(trade_date: Timestamp, source_type: str) -> DataFrame:
-    zip_file = _get_file_from_url(trade_date, source_type)
-
+def process_zip_file(zip_file: io.BytesIO) -> DataFrame:
     xml_file = _extract_xml_from_zip(zip_file)
 
-    di_data = _extract_di_data_from_xml(xml_file)
+    di_data = _extract_data_from_xml(xml_file)
 
-    df_raw = _create_df_from_di_data(di_data)
+    df_raw = _create_df_from_data(di_data)
 
     df = _rename_columns(df_raw)
 
@@ -250,68 +261,16 @@ def fetch_di(trade_date: Timestamp, source_type: str) -> DataFrame:
 
     df = _select_and_reorder_columns(df)
 
+    return df
+
+
+def fetch_di(trade_date: Timestamp, source_type: Literal["PR", "SPR"]) -> DataFrame:
+    zip_file = _get_file_from_url(trade_date, source_type)
+    df = process_zip_file(zip_file)
     return df
 
 
 def read_di(file_path: Path) -> DataFrame:
-    content = file_path.read_bytes()
-    zip_file = io.BytesIO(content)
-
-    xml_file = _extract_xml_from_zip(zip_file)
-
-    di_data = _extract_di_data_from_xml(xml_file)
-
-    df_raw = _create_df_from_di_data(di_data)
-
-    df = _rename_columns(df_raw)
-
-    df = _process_df(df)
-
-    df = _select_and_reorder_columns(df)
-
+    zip_file = _get_file_from_path(file_path)
+    df = process_zip_file(zip_file)
     return df
-
-
-def read_file(file_path: Path, return_raw: bool = False) -> pd.DataFrame:
-    """
-    Reads DI futures data from a file and returns it as a pandas DataFrame.
-
-    This function opens and reads a DI futures data file, returning the contents as a
-    pandas DataFrame. It supports reading from both XML files provided by B3, wich
-    are the simplified and complete Price Reports.
-
-    Args:
-        file_path (Path): The file path to the DI data file. This should be a valid
-            Path object pointing to the location of the file.
-        return_raw (bool, optional): If set to True, the function returns the raw data
-            without applying any transformation or processing. Useful for cases where
-            raw data inspection or custom processing is needed. Defaults to False.
-        source_type (Literal["bmf", "PR", "SPR"], optional): Indicates the source of
-            the data. Defaults to "bmf". Options include:
-                - "bmf": Fetches data from the old BM&FBOVESPA website. Fastest option.
-                - "PR": Fetches data from the complete Price Report (XML file) provided
-                    by B3.
-                - "SPR": Fetches data from the simplified Price Report (XML file)
-                    provided by B3. Faster than "PR" but less detailed.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the processed or raw DI futures data,
-            depending on the `return_raw` flag.
-
-    Examples:
-        >>> read_di(Path("path/to/di_data_file.xml"))
-        # returns a DataFrame with the DI futures data
-
-        >>> read_di(Path("path/to/di_data_file.xml"), return_raw=True)
-        # returns a DataFrame with the raw DI futures data, without processing
-
-    Note:
-        The ability to process and return raw data is primarily intended for advanced
-        users who require access to the data in its original form for custom analyses.
-    """
-    # Check if a file path was not provided
-    if not isinstance(file_path, Path):
-        raise ValueError("A file path must be provided.")
-    if not file_path.exists():
-        raise FileNotFoundError(f"No file found at {file_path}.")
-    return read_di(file_path, return_raw=return_raw)

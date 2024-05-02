@@ -107,7 +107,6 @@ def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     rate_cols = [col for col in df.columns if "Rate" in col]
     df[rate_cols] = df[rate_cols].div(100).round(5)
 
-    # Reorder columns based on the order of the dictionary
     return df
 
 
@@ -146,7 +145,7 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 def fetch_intraday_df(future_code: str) -> pd.DataFrame:
     """
-    Fetch the latest DI futures data from B3.
+    Fetch the latest futures data from B3.
 
     Returns:
         pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
