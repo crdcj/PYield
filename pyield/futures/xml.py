@@ -72,32 +72,27 @@ def _extract_xml_from_zip(zip_file: io.BytesIO) -> io.BytesIO:
     return io.BytesIO(inner_file_content)
 
 
-def _extract_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
+def _extract_data_from_xml(xml_file: io.BytesIO, asset_code: str) -> list[dict]:
     parser = etree.XMLParser(
         ns_clean=True, remove_blank_text=True, remove_comments=True, recover=True
     )
     tree = etree.parse(xml_file, parser)
+
+    # XPath para encontrar elementos cujo texto começa com código do ativo: DI1, FRC...
     namespaces = {"ns": "urn:bvmf.217.01.xsd"}
+    path = f'//ns:TckrSymb[starts-with(text(), "{asset_code}")]'
+    tickers = tree.xpath(path, namespaces=namespaces)
 
-    # XPath para encontrar elementos cujo texto começa com "DI1"
-    tckr_symbols = tree.xpath(
-        '//ns:TckrSymb[starts-with(text(), "DI1")]', namespaces=namespaces
-    )
-
-    if (
-        tckr_symbols is None
-        or not isinstance(tckr_symbols, list)
-        or len(tckr_symbols) == 0
-    ):
+    if tickers is None or not isinstance(tickers, list) or len(tickers) == 0:
         return []
 
     # Lista para armazenar os dados
     di_data = []
 
     # Processar cada TckrSymb encontrado
-    for tckr_symb in tckr_symbols:
-        if isinstance(tckr_symb, etree._Element):
-            price_report = tckr_symb.getparent()
+    for ticker in tickers:
+        if isinstance(ticker, etree._Element):
+            price_report = ticker.getparent()
             if price_report is not None:
                 price_report = price_report.getparent()
             else:
@@ -115,7 +110,7 @@ def _extract_data_from_xml(xml_file: io.BytesIO) -> list[dict]:
         # Preparar o dicionário de dados do ticker com a data de negociação
         if trade_date is None:
             continue
-        ticker_data = {"TradDt": trade_date.text, "TckrSymb": tckr_symb.text}
+        ticker_data = {"TradDt": trade_date.text, "TckrSymb": ticker.text}
 
         # Acessar o elemento FinInstrmAttrbts que contém o TckrSymb
         fin_instrm_attrbts = price_report.find(".//ns:FinInstrmAttrbts", namespaces)
@@ -163,7 +158,7 @@ def _rename_columns(df: DataFrame) -> DataFrame:
         "FrstPric": "OpenRate",
         "LastPric": "CloseRate",
         "AdjstdQtTax": "SettlementRate",
-        # "RglrTxsQty"
+        "RglrTxsQty": "TradeCount",
         # "RglrTraddCtrcts"
         # "NtlRglrVol"
         # "IntlRglrVol",
@@ -200,7 +195,7 @@ def _process_df(df_raw: DataFrame) -> DataFrame:
     df[rate_cols] = df[rate_cols].div(100).round(5)
 
     # Columns where NaN means 0
-    zero_cols = ["OpenContracts", "TradeVolume", "FinancialVolume"]
+    zero_cols = ["OpenContracts", "TradeCount", "TradeVolume", "FinancialVolume"]
     for col in zero_cols:
         if col in df.columns:
             df[col] = df[col].fillna(0)
@@ -216,11 +211,10 @@ def _select_and_reorder_columns(df: DataFrame) -> DataFrame:
         "ExpirationDate",
         "BDaysToExp",
         "DaysToExp",
-        # "MktDataStrmId",
         "OpenContracts",
+        "TradeCount",
         "TradeVolume",
         "FinancialVolume",
-        # "IntlFinVol",
         "SettlementPrice",
         "SettlementRate",
         "MinLimitRate",
@@ -232,26 +226,15 @@ def _select_and_reorder_columns(df: DataFrame) -> DataFrame:
         "AvgRate",
         "MaxRate",
         "CloseRate",
-        # "RglrTxsQty",
-        # "RglrTraddCtrcts",
-        # "NtlRglrVol",
-        # "IntlRglrVol",
-        # "AdjstdQtStin",
-        # "PrvsAdjstdQt",
-        # "PrvsAdjstdQtTax",
-        # "PrvsAdjstdQtStin",
-        # "OscnPctg",
-        # "VartnPts",
-        # "AdjstdValCtrct",
     ]
     selected_columns = [col for col in all_columns if col in df.columns]
     return df[selected_columns]
 
 
-def process_zip_file(zip_file: io.BytesIO) -> DataFrame:
+def process_zip_file(zip_file: io.BytesIO, asset_code: str) -> DataFrame:
     xml_file = _extract_xml_from_zip(zip_file)
 
-    di_data = _extract_data_from_xml(xml_file)
+    di_data = _extract_data_from_xml(xml_file, asset_code)
 
     df_raw = _create_df_from_data(di_data)
 
@@ -264,13 +247,15 @@ def process_zip_file(zip_file: io.BytesIO) -> DataFrame:
     return df
 
 
-def fetch_di(trade_date: Timestamp, source_type: Literal["PR", "SPR"]) -> DataFrame:
+def fetch_df(
+    trade_date: Timestamp, asset_code: str, source_type: Literal["PR", "SPR"]
+) -> DataFrame:
     zip_file = _get_file_from_url(trade_date, source_type)
-    df = process_zip_file(zip_file)
+    df = process_zip_file(zip_file, asset_code)
     return df
 
 
-def read_di(file_path: Path) -> DataFrame:
+def read_df(file_path: Path, asset_code: str) -> DataFrame:
     zip_file = _get_file_from_path(file_path)
-    df = process_zip_file(zip_file)
+    df = process_zip_file(zip_file, asset_code)
     return df
