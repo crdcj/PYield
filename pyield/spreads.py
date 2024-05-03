@@ -1,6 +1,6 @@
 import pandas as pd
 
-from . import br_bonds as bb
+from . import tn_bonds as tb
 from .futures import historical as fh
 
 # Constant for conversion to basis points
@@ -38,7 +38,7 @@ def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = bb.fetch_bonds(reference_date, False)
+    df_anbima = tb.fetch_bonds(reference_date, False)
     df_anbima.query("BondType in ['LTN', 'NTN-F']", inplace=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads
