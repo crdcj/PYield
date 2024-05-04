@@ -91,32 +91,35 @@ def _extract_data_from_xml(xml_file: io.BytesIO, asset_code: str) -> list[dict]:
 
     # Processar cada TckrSymb encontrado
     for ticker in tickers:
-        if isinstance(ticker, etree._Element):
-            price_report = ticker.getparent()
-            if price_report is not None:
-                price_report = price_report.getparent()
-            else:
-                # Handle the case where tckr_symb doesn't have a parent
-                continue
-        else:
-            # Handle the case where tckr_symb is not an _Element
+        if not isinstance(ticker, etree._Element):
             continue
 
-        # Extrair a data de negociação
+        # A future contract ticker must have 6 characters
+        if ticker.text is None or len(ticker.text) != 6:
+            continue
+
+        # Extract the price report element
+        parent = ticker.getparent()
+        if parent is None:
+            continue
+        price_report = parent.getparent()
         if price_report is None:
             continue
-        trade_date = price_report.find(".//ns:TradDt/ns:Dt", namespaces)
 
-        # Preparar o dicionário de dados do ticker com a data de negociação
+        # Extract the trade date
+        trade_date = price_report.find(".//ns:TradDt/ns:Dt", namespaces)
         if trade_date is None:
             continue
+
+        # Store the data in a dictionary
         ticker_data = {"TradDt": trade_date.text, "TckrSymb": ticker.text}
 
-        # Acessar o elemento FinInstrmAttrbts que contém o TckrSymb
+        # Extract the FinInstrmAttrbts element
         fin_instrm_attrbts = price_report.find(".//ns:FinInstrmAttrbts", namespaces)
         # Verificar se FinInstrmAttrbts existe
         if fin_instrm_attrbts is None:
             continue  # Pular para o próximo TckrSymb se FinInstrmAttrbts não existir
+
         # Extrair os dados de FinInstrmAttrbts
         for attr in fin_instrm_attrbts:
             tag_name = etree.QName(attr).localname
