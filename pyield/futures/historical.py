@@ -304,6 +304,11 @@ def process_df(
             count_convention=360,
         )
 
+    # TODO: Temporarily remove SettlementRate column from DAP contracts
+    # due to data inconsistency issues.
+    if asset_code == "DAP":
+        df.drop(columns="SettlementRate", inplace=True)
+
     return df
 
 

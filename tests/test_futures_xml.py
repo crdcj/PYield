@@ -18,7 +18,15 @@ def prepare_data(asset_code: str, trade_date: str) -> tuple:
     expected_df = expected_df.drop(columns=["AvgRate"])
 
     result_df = yd.fetch_asset(asset_code=asset_code, reference_date=trade_date)
-    result_df = result_df[expected_df.columns].copy()
+
+    # Ensure that both DataFrames have the same columns
+    expected_cols = set(expected_df.columns)
+    result_cols = set(result_df.columns)
+    common_cols = list(expected_cols.intersection(result_cols))
+    result_df = result_df[common_cols].copy()
+    expected_df = expected_df[common_cols].copy()
+
+    # Ensure that the TickerSymbol is the same
     result_df.query("TickerSymbol in @expected_df.TickerSymbol", inplace=True)
     result_df.reset_index(drop=True, inplace=True)
 
