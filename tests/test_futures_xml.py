@@ -36,6 +36,14 @@ def prepare_data(asset_code: str, trade_date: str) -> tuple:
 @pytest.mark.parametrize(
     "asset_code,reference_date",
     [
+        ("DI1", "2023-12-22"),
+        ("FRC", "2023-12-22"),
+        ("DDI", "2023-12-22"),
+        ("DAP", "2023-12-22"),
+        ("DOL", "2023-12-22"),
+        ("WDO", "2023-12-22"),
+        ("IND", "2023-12-22"),
+        ("WIN", "2023-12-22"),
         ("DI1", "2024-04-26"),
         ("FRC", "2024-04-26"),
         ("DDI", "2024-04-26"),
