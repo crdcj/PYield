@@ -9,7 +9,8 @@ from lxml import etree
 from pandas import DataFrame, Timestamp
 
 import pyield as yd
-from pyield.futures import historical as fh
+
+from . import common
 
 
 def _get_file_from_path(file_path: Path) -> io.BytesIO:
@@ -183,7 +184,11 @@ def _process_df(df_raw: DataFrame) -> DataFrame:
     df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
 
     expiration_code = df["TickerSymbol"].str[3:]
-    df["ExpirationDate"] = expiration_code.apply(fh.get_expiration_date)
+    futures_type = df["TickerSymbol"].str[:3].loc[0]
+    expiration_day = 15 if futures_type == "DAP" else 1
+    df["ExpirationDate"] = expiration_code.apply(
+        common.get_expiration_date, args=(expiration_day,)
+    )
 
     df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
     # Convert to nullable integer, since it is the default type in the library

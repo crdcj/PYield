@@ -4,6 +4,7 @@ import pandas as pd
 import requests
 
 from .. import bday
+from . import common
 
 COUNT_CONVENTIONS = {
     "DAP": 252,
@@ -15,70 +16,6 @@ COUNT_CONVENTIONS = {
     "IND": None,
     "WIN": None,
 }
-
-
-def get_expiration_date(expiration_code: str) -> pd.Timestamp:
-    """
-    Converts an expiration code into its corresponding expiration date.
-
-    This function translates an expiration code into a specific expiration date based on
-    a given mapping. The expiration code consists of a letter representing the month and
-    two digits for the year. The function ensures the date returned is a valid business
-    day by adjusting weekends and holidays as necessary.
-
-    Args:
-        expiration_code (str): The expiration code to be converted, where the first
-            letter represents the month and the last two digits represent the year
-            (e.g., "F23" for January 2023).
-
-    Returns:
-        pd.Timestamp: The expiration date corresponding to the code, adjusted to a valid
-            business day. Returns pd.NaT if the code is invalid.
-
-    Examples:
-        >>> get_expiration_date("F23")
-        pd.Timestamp('2023-01-01')
-
-        >>> get_expiration_date("Z33")
-        pd.Timestamp('2033-12-01')
-
-        >>> get_expiration_date("A99")
-        pd.NaT
-
-    Notes:
-        The expiration date is calculated based on the format change introduced by B3 on
-        22-05-2006, where the first letter represents the month and the last two digits
-        represent the year.
-    """
-    month_codes = {
-        "F": 1,
-        "G": 2,
-        "H": 3,
-        "J": 4,
-        "K": 5,
-        "M": 6,
-        "N": 7,
-        "Q": 8,
-        "U": 9,
-        "V": 10,
-        "X": 11,
-        "Z": 12,
-    }
-
-    try:
-        month_code = expiration_code[0]
-        month = month_codes[month_code]
-        year = int("20" + expiration_code[-2:])
-        # The expiration date is always the first business day of the month
-        expiration = pd.Timestamp(year, month, 1)
-
-        # Adjust to the next business day when expiration date is a weekend or a holiday
-        adj_expiration = bday.offset_bdays(expiration, offset=0)
-
-        return adj_expiration
-
-    except (KeyError, ValueError):
-        return pd.NaT  # type: ignore
 
 
 def get_old_expiration_date(
@@ -266,7 +203,10 @@ def process_df(
             get_old_expiration_date, args=(trade_date,)
         )
     else:
-        df["ExpirationDate"] = df["ExpirationCode"].apply(get_expiration_date)
+        expiration_day = 15 if asset_code == "DAP" else 1
+        df["ExpirationDate"] = df["ExpirationCode"].apply(
+            common.get_expiration_date, args=(expiration_day,)
+        )
 
     df["DaysToExp"] = (df["ExpirationDate"] - trade_date).dt.days
     # Convert to nullable integer, since it is the default type in the library
@@ -303,11 +243,6 @@ def process_df(
             days_to_expiration=df["DaysToExp"],
             count_convention=360,
         )
-
-    # TODO: Temporarily remove SettlementRate column from DAP contracts
-    # due to data inconsistency issues.
-    if asset_code == "DAP":
-        df.drop(columns="SettlementRate", inplace=True)
 
     return df
 
