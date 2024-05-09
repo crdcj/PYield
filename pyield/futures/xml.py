@@ -6,7 +6,6 @@ from typing import Literal
 import pandas as pd
 import requests
 from lxml import etree
-from pandas import DataFrame, Timestamp
 
 import pyield as yd
 
@@ -24,7 +23,7 @@ def _get_file_from_path(file_path: Path) -> io.BytesIO:
     return io.BytesIO(content)
 
 
-def _get_file_from_url(trade_date: Timestamp, source_type: str) -> io.BytesIO:
+def _get_file_from_url(trade_date: pd.Timestamp, source_type: str) -> io.BytesIO:
     """
     Types of XML files available:
     Full Price Report (all assets)
@@ -132,7 +131,7 @@ def _extract_data_from_xml(xml_file: io.BytesIO, asset_code: str) -> list[dict]:
     return di_data
 
 
-def _create_df_from_data(di1_data: list) -> DataFrame:
+def _create_df_from_data(di1_data: list) -> pd.DataFrame:
     # Criar um DataFrame com os dados coletados
     df = pd.DataFrame(di1_data)
 
@@ -141,7 +140,7 @@ def _create_df_from_data(di1_data: list) -> DataFrame:
     return pd.read_csv(file, dtype_backend="numpy_nullable")
 
 
-def _rename_columns(df: DataFrame) -> DataFrame:
+def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     all_columns = {
         "TradDt": "TradeDate",
         "TckrSymb": "TickerSymbol",
@@ -178,7 +177,7 @@ def _rename_columns(df: DataFrame) -> DataFrame:
     return df.rename(columns=all_columns)
 
 
-def _process_df(df_raw: DataFrame) -> DataFrame:
+def _process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
@@ -211,7 +210,7 @@ def _process_df(df_raw: DataFrame) -> DataFrame:
     return df.sort_values(by=["ExpirationDate"], ignore_index=True)
 
 
-def _select_and_reorder_columns(df: DataFrame) -> DataFrame:
+def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     # All SPRD columns are present in PR
     all_columns = [
         "TradeDate",
@@ -239,7 +238,7 @@ def _select_and_reorder_columns(df: DataFrame) -> DataFrame:
     return df[selected_columns]
 
 
-def process_zip_file(zip_file: io.BytesIO, asset_code: str) -> DataFrame:
+def process_zip_file(zip_file: io.BytesIO, asset_code: str) -> pd.DataFrame:
     xml_file = _extract_xml_from_zip(zip_file)
 
     di_data = _extract_data_from_xml(xml_file, asset_code)
@@ -256,14 +255,14 @@ def process_zip_file(zip_file: io.BytesIO, asset_code: str) -> DataFrame:
 
 
 def fetch_df(
-    trade_date: Timestamp, asset_code: str, source_type: Literal["PR", "SPR"]
-) -> DataFrame:
+    trade_date: pd.Timestamp, asset_code: str, source_type: Literal["PR", "SPR"]
+) -> pd.DataFrame:
     zip_file = _get_file_from_url(trade_date, source_type)
     df = process_zip_file(zip_file, asset_code)
     return df
 
 
-def read_df(file_path: Path, asset_code: str) -> DataFrame:
+def read_df(file_path: Path, asset_code: str) -> pd.DataFrame:
     zip_file = _get_file_from_path(file_path)
     df = process_zip_file(zip_file, asset_code)
     return df
