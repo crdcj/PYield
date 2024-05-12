@@ -211,10 +211,11 @@ def process_df(
     df["DaysToExp"] = (df["ExpirationDate"] - trade_date).dt.days
     # Convert to nullable integer, since it is the default type in the library
     df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
-    # Remove expired contracts
-    df.query("DaysToExp > 0", inplace=True)
 
     df["BDaysToExp"] = bday.count_bdays(trade_date, df["ExpirationDate"])
+
+    # Remove expired contracts
+    df.query("DaysToExp > 0", inplace=True)
 
     # Columns where 0 means NaN
     cols_with_nan = [col for col in df.columns if "Rate" in col]
