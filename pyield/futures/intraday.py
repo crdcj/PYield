@@ -48,6 +48,10 @@ def _fetch_raw_df(future_code: str) -> pd.DataFrame:
     # Sort the DataFrame by maturity code and reset the index
     df.sort_values("mtrtyCode", inplace=True, ignore_index=True)
 
+    # Get currante date
+    today = pd.Timestamp.now().normalize()
+    df["TradeDate"] = today
+
     # Get current date and time
     now = pd.Timestamp.now().round("s")
     # Subtract 15 minutes from the current time to account for API delay
@@ -97,9 +101,9 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
 def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     df = raw_df.copy()
 
-    df["BDaysToExp"] = bday.count_bdays(df["TradeTime"], df["ExpirationDate"])
+    df["BDaysToExp"] = bday.count_bdays(df["TradeDate"], df["ExpirationDate"])
 
-    df["DaysToExp"] = (df["ExpirationDate"] - df["TradeTime"]).dt.days
+    df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
     # Convert to nullable integer, since it is the default type in the library
     df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
 
@@ -121,10 +125,12 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame: A DataFrame with the columns selected and reordered.
     """
     columns = [
+        "TradeDate",
         "TradeTime",
         "TickerSymbol",
         "ExpirationDate",
         "BDaysToExp",
+        "DaysToExp",
         "OpenContracts",
         "TradeCount",
         "TradeVolume",
