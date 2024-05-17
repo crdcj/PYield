@@ -76,21 +76,21 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     all_columns = {
         "symb": "TickerSymbol",
+        "bottomLmtPric": "MinLimitRate",
+        "prvsDayAdjstmntPric": "PrevSettlementRate",
+        "topLmtPric": "MaxLimitRate",
+        "opngPric": "OpenRate",
+        "minPric": "MinRate",
+        "maxPric": "MaxRate",
+        "avrgPric": "AvgRate",
+        "curPrc": "CurrentRate",
+        "grssAmt": "FinancialVolume",
         "mtrtyCode": "ExpirationDate",
         "opnCtrcts": "OpenContracts",
         "tradQty": "TradeCount",
         "traddCtrctsQty": "TradeVolume",
-        "grssAmt": "FinancialVolume",
-        "prvsDayAdjstmntPric": "PrevSettlementRate",
-        "bottomLmtPric": "MinLimitRate",
-        "topLmtPric": "MaxLimitRate",
-        "opngPric": "OpenRate",
-        "minPric": "MinRate",
-        "avrgPric": "AvgRate",
-        "maxPric": "MaxRate",
         "buyOffer.price": "CurrentAskRate",
         "sellOffer.price": "CurrentBidRate",
-        "curPrc": "CurrentRate",
     }
     # Check which columns are present in the DataFrame before renaming
     rename_dict = {c: all_columns[c] for c in all_columns if c in df.columns}
