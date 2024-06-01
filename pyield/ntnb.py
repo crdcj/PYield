@@ -28,7 +28,12 @@ import pandas as pd
 
 from . import bday
 
-SEMIANNUAL_COUPON = 0.02956301  # round((0.06 + 1) ** 0.5 - 1, 8)
+SEMIANNUAL_COUPON = 2.956301  # round(100 * (0.06 + 1) ** 0.5 - 1, 6)
+
+
+def truncate(number, digits):
+    stepper = 10.0**digits
+    return int(number * stepper) / stepper
 
 
 def calculate_ntnb_quotation(settlement_date, maturity_date, discount_rate):
@@ -42,7 +47,7 @@ def calculate_ntnb_quotation(settlement_date, maturity_date, discount_rate):
 
     # Initialize variables
     cash_flow_date = maturity_date
-    ntnb_quotation = 0.0
+    present_values = []
 
     # Iterate backwards from the maturity date to the settlement date
     while cash_flow_date > settlement_date:
@@ -52,19 +57,19 @@ def calculate_ntnb_quotation(settlement_date, maturity_date, discount_rate):
         # Set the cash flow for the period
         cash_flow = SEMIANNUAL_COUPON
         if cash_flow_date == maturity_date:
-            cash_flow += 1  # Adding principal repayment at maturity
+            cash_flow += 100  # Adding principal repayment at maturity
 
-        # Calculate the discount factor for the period
-        discount_factor = (1 + discount_rate) ** (business_days_count / 252)
+        # Calculate the exponential factor
+        exp_factor = truncate((business_days_count / 252), 14)
 
         # Calculate the present value of the cash flow
-        present_value = round(cash_flow / discount_factor, 10)
+        present_value = cash_flow / ((1 + discount_rate) ** exp_factor)
 
-        # Accumulate the present value into the NTN-B quotation
-        ntnb_quotation += present_value
+        # Store the present value rounded to 10 decimal places
+        present_values.append(round(present_value, 10))
 
         # Move to the previous cash flow date (6 months earlier)
         cash_flow_date -= pd.DateOffset(months=6)
 
-    # Return the final NTNB quotation rounded to 6 decimal places
-    return round(ntnb_quotation, 6)
+    # Return the final NTN-B quotation rounded to 4 decimal places
+    return truncate(sum(present_values), 4)

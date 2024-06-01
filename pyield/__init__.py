@@ -6,6 +6,7 @@ from .data_access import (
     fetch_indicator,
     fetch_projection,
 )
+from .ntnb import calculate_ntnb_quotation
 
 __all__ = [
     "__version__",
@@ -17,4 +18,5 @@ __all__ = [
     "fetch_indicator",
     "fetch_projection",
     "calculate_spreads",
+    "calculate_ntnb_quotation",
 ]
