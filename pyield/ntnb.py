@@ -1,7 +1,6 @@
 import pandas as pd
 
 from . import bday
-from . import data_access as da
 
 
 def truncate(number: float, digits: int) -> float:
@@ -85,22 +84,16 @@ def calculate_ntnb_quotation(
     return truncate(quotation, 4)
 
 
-# Define a função para gerar as datas
-def generate_coupon_dates(reference_date):
+def generate_all_coupon_dates(reference_date, last_coupon_date):
+    # Initialize the first coupon date based on the reference date
     reference_year = reference_date.year
-    first_coupon_date = pd.Timestamp(f"{reference_year}-02-15")
+    first_coupon_date = pd.Timestamp(f"{reference_year}-02-01")
 
-    df_ntnb = da.fetch_asset(asset_code="NTN-B", reference_date="2024-05-28")
-    df_ntnb.sort_values(by="MaturityDate", inplace=True)
-    longest_ntnb = df_ntnb.iloc[-1]
-    last_coupon_date = longest_ntnb["MaturityDate"]
+    # Generate coupon dates
+    dates = pd.date_range(start=first_coupon_date, end=last_coupon_date, freq="3MS")
 
-    # Generate the coupon dates
-    dates = []
-    coupon_date = first_coupon_date
-    while coupon_date <= last_coupon_date:
-        dates.append(coupon_date)
-        coupon_date += pd.DateOffset(months=3)
+    # Offset dates by 14 in order to have day 15 of the month
+    dates = dates + pd.Timedelta(days=14)
 
     # First coupon date must be after the reference date
-    return [date for date in dates if date >= reference_date]
+    return dates[dates > reference_date]
