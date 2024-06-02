@@ -1,6 +1,7 @@
 import pandas as pd
 
 from . import bday
+from . import date_validator as dv
 
 
 def truncate(number: float, digits: int) -> float:
@@ -27,8 +28,10 @@ def calculate_ntnb_quotation(
     Calculate the NTN-B quotation using Anbima rules.
 
     Parameters:
-        settlement_date (str | pd.Timestamp): Settlement date in 'YYYY-MM-DD' format.
-        maturity_date (str | pd.Timestamp): Maturity date in 'YYYY-MM-DD' format.
+        settlement_date (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+            or a pandas Timestamp.
+        maturity_date (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
+            a pandas Timestamp.
         discount_rate (float): The discount rate used to calculate the present value of
          the cash flows, which is the yield to maturity (YTM) of the NTN-B.
 
@@ -47,9 +50,9 @@ def calculate_ntnb_quotation(
         >>> calculate_ntnb_quotation('2024-05-31', '2060-08-15', 0.061878)
         99.5341
     """
-    # Convert dates to pandas datetime format
-    settlement_date = pd.to_datetime(settlement_date)
-    maturity_date = pd.to_datetime(maturity_date)
+    # Validate and normalize dates
+    settlement_date = dv.normalize_date(settlement_date)
+    maturity_date = dv.normalize_date(maturity_date)
 
     # Constants
     SEMIANNUAL_COUPON = 2.956301  # round(100 * ((0.06 + 1) ** 0.5 - 1), 6)
@@ -85,6 +88,10 @@ def calculate_ntnb_quotation(
 
 
 def generate_all_coupon_dates(reference_date, last_coupon_date):
+    # Validate and normalize dates
+    reference_date = dv.normalize_date(reference_date)
+    last_coupon_date = dv.normalize_date(last_coupon_date)
+
     # Initialize the first coupon date based on the reference date
     reference_year = reference_date.year
     first_coupon_date = pd.Timestamp(f"{reference_year}-02-01")

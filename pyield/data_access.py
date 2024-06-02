@@ -1,63 +1,11 @@
 import pandas as pd
 
-from . import bday
+from . import date_validator as dv
 from . import futures as ft
 from . import indicators as it
 from . import projections as pr
 from . import spreads as sp
 from . import tn_bonds as tb
-
-
-def _normalize_date(input_date: str | pd.Timestamp | None = None) -> pd.Timestamp:
-    """
-    Normalizes the given date to ensure it is a past business day at midnight. If no
-    date is provided, it defaults to the last business day.
-
-    Args:
-        reference_date (str | pd.Timestamp | None): The date to normalize. Can be a
-        string, pandas Timestamp or None. If None, it defaults to the last business day.
-
-    Returns:
-        pd.Timestamp: A normalized pandas Timestamp representing a past business day at
-        midnight.
-
-    Raises:
-        ValueError: If the input date format is invalid, if the date is in the future,
-        or if the date is not a business day.
-
-    Notes:
-        - Normalization means setting the time component of the timestamp to midnight.
-        - The function checks if the normalized date is a business day and adjusts
-          accordingly.
-        - Business day calculations consider local market holidays.
-
-    Examples:
-        >>> _normalize_date('2023-04-01')
-        >>> _normalize_date(pd.Timestamp('2023-04-01 15:30'))
-        >>> _normalize_date()
-    """
-    if isinstance(input_date, str):
-        # Convert string date to Timestamp and normalize to midnight
-        normalized_date = pd.Timestamp(input_date).normalize()
-    elif isinstance(input_date, pd.Timestamp):
-        # Normalize Timestamp to midnight
-        normalized_date = input_date.normalize()
-    elif input_date is None:
-        # If no date is provided, use the last available business day
-        today = pd.Timestamp.today().normalize()
-        normalized_date = bday.offset_bdays(dates=today, offset=0, roll="backward")
-    else:
-        raise ValueError(f"Date format not recognized: {input_date}")
-
-    error_date = normalized_date.strftime("%d-%m-%Y")
-    # Validate that the date is not in the future
-    if normalized_date > pd.Timestamp.today().normalize():
-        raise ValueError(f"Date {error_date} is in the future")
-    # Validate that the date is a business day
-    if not bday.is_bday(normalized_date):
-        raise ValueError(f"Date {error_date} is not a business day")
-
-    return normalized_date
 
 
 def fetch_asset(
@@ -81,7 +29,8 @@ def fetch_asset(
             - "IND": Ibovespa Futures from B3.
             - "WIN": Mini Ibovespa Futures from B3.
         reference_date (str | pd.Timestamp | None): The reference date for which data is
-            fetched. Defaults to the last business day if None.
+            fetched. Defaults to the last business day if None. If the reference date is
+            a string, it should be in 'DD-MM-YYYY' format.
         **kwargs: Additional keyword arguments, specifically:
             - return_raw (bool): Whether to return raw data without processing. Defaults
               to False.
@@ -93,13 +42,13 @@ def fetch_asset(
         ValueError: If the asset code is not recognized or supported.
 
     Examples:
-        >>> fetch_asset('TRB', '2023-04-01')
-        >>> fetch_asset('DI1', '2023-04-01', return_raw=True)
+        >>> fetch_asset('TRB', '31-05-2024')
+        >>> fetch_asset('DI1', '31-05-2024')
     """
     SUPPORTED_BONDS = ["LTN", "LFT", "NTN-F", "NTN-B"]
     SUPPORTED_FUTURES = ["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
 
-    normalized_date = _normalize_date(reference_date)
+    normalized_date = dv.normalize_date(reference_date)
 
     today = pd.Timestamp.today().normalize()
     if normalized_date == today:
@@ -109,8 +58,10 @@ def fetch_asset(
         return tb.fetch_bonds(reference_date=normalized_date)
 
     if asset_code.upper() in SUPPORTED_BONDS:
-        df_bonds = tb.fetch_bonds(reference_date=normalized_date)
-        return df_bonds.query(f"BondType == '{asset_code.upper()}'").copy()
+        df_bond = tb.fetch_bonds(reference_date=normalized_date)
+        df_bond.query(f"BondType == '{asset_code.upper()}'", inplace=True)
+        # Return the DataFrame sorted by maturity date
+        return df_bond.sort_values("MaturityDate", ignore_index=True)
 
     if asset_code.upper() in SUPPORTED_FUTURES:
         return ft.fetch_historical_df(
@@ -137,7 +88,8 @@ def fetch_indicator(
             - "VNA_LFT": VNA (Valor Nominal Atualizado) of LFT (Letra Financeira do
               Tesouro), which reflects updated nominal values for these bonds.
         - reference_date (str | pd.Timestamp | None): The reference date for which data
-          is fetched. Defaults to the last business day if None.
+            is fetched. Defaults to the last business day if None. If the reference date
+            is a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:
         float | None: The value of the specified economic indicator for the reference
@@ -147,14 +99,14 @@ def fetch_indicator(
         ValueError: If the indicator code is not recognized or supported.
 
     Examples:
-        >>> fetch_indicator('SELIC', '2023-04-01')
+        >>> fetch_indicator('SELIC', '31-05-2024')
         0.1075  # Indicates a SELIC target rate of 10.75% p.a.
-        >>> fetch_indicator('IPCA', '2023-03-10')
-        0.0016  # Indicates an IPCA monthly rate of 0.16% p.m.
-        >>> fetch_indicator('DI', '2023-04-17')
+        >>> fetch_indicator('IPCA', '01-04-2024')
+        0.0038  # Indicates an IPCA monthly rate of 0.38% p.m.
+        >>> fetch_indicator('DI', '31-05-2024')
         0.00040168  # Indicates a DI daily rate of 0.02% p.d.
     """
-    normalized_date = _normalize_date(reference_date)
+    normalized_date = dv.normalize_date(reference_date)
 
     if indicator_code.upper() == "SELIC":
         return it.fetch_selic_target(reference_date=normalized_date)
@@ -227,7 +179,7 @@ def calculate_spreads(
         ValueError: If an invalid spread type is provided.
     """
     # Normalize the reference date
-    normalized_date = _normalize_date(reference_date)
+    normalized_date = dv.normalize_date(reference_date)
     if spread_type.upper() == "DI_VS_PRE":
         return sp.calculate_di_spreads(normalized_date)
     else:
