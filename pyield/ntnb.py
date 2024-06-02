@@ -3,10 +3,7 @@ import pandas as pd
 from . import bday
 
 
-def truncate(
-    number: float,
-    digits: int,
-) -> float:
+def truncate(number: float, digits: int) -> float:
     """
     Truncate a number to a specified number of decimal places.
 
@@ -27,54 +24,61 @@ def calculate_ntnb_quotation(
     discount_rate: float,
 ) -> float:
     """
-    Calculate the NTN-B quotation in percentage terms using Anbima rules.
+    Calculate the NTN-B quotation using Anbima rules.
 
     Parameters:
-        settlement_date (str): The settlement date in 'YYYY-MM-DD' format.
-        maturity_date (str): The maturity date in 'YYYY-MM-DD' format.
-        discount_rate (float): The discount rate for present value calculations.
+        settlement_date (str | pd.Timestamp): Settlement date in 'YYYY-MM-DD' format.
+        maturity_date (str | pd.Timestamp): Maturity date in 'YYYY-MM-DD' format.
+        discount_rate (float): The yield to maturity (YTM) of the NTN-B, which is the
+            discount rate used to calculate the present value of the cash flows.
 
     Returns:
-        float: The NTN-B quotation, expressed as a %, truncated to 4 decimal places.
+        float: The NTN-B quotation truncated to 4 decimal places.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
-        - The semi-annual coupon is set to 2.956301%, which represents a 6% annual
+        - The semi-annual coupon is set to 2.956301, which represents a 6% annual
           coupon rate compounded semi-annually and rounded to 6 decimal places as per
           Anbima rules.
+
+    Examples:
+        >>> calculate_ntnb_quotation('2024-05-31', '2035-05-15', 0.061490)
+        99.3651
+        >>> calculate_ntnb_quotation('2024-05-31', '2060-08-15', 0.061878)
+        99.5341
     """
-
-    SEMIANNUAL_COUPON = 2.956301  # round(100 * ((0.06 + 1) ** 0.5 - 1), 6)
-
     # Convert dates to pandas datetime format
     settlement_date = pd.to_datetime(settlement_date)
     maturity_date = pd.to_datetime(maturity_date)
 
+    # Constants
+    SEMIANNUAL_COUPON = 2.956301  # round(100 * ((0.06 + 1) ** 0.5 - 1), 6)
+
     # Initialize variables
     cash_flow_date = maturity_date
-    ntnb_quotation = 0.0
+    quotation = 0.0
 
     # Iterate backwards from the maturity date to the settlement date
     while cash_flow_date > settlement_date:
         # Calculate the number of business days between settlement and cash flow dates
-        business_days_count = bday.count_bdays(settlement_date, cash_flow_date)
+        num_of_bdays = bday.count_bdays(settlement_date, cash_flow_date)
 
         # Set the cash flow for the period
         cash_flow = SEMIANNUAL_COUPON
         if cash_flow_date == maturity_date:
             cash_flow += 100  # Adding principal repayment at maturity
 
-        # Calculate the exponential factor
-        exp_factor = truncate((business_days_count / 252), 14)
+        # Calculate the number of periods truncated to 14 decimal places
+        annualized_period = truncate((num_of_bdays / 252), 14)
 
-        # Calculate the present value of the cash flow
-        present_value = cash_flow / ((1 + discount_rate) ** exp_factor)
+        # Calculate the present value of the cash flow (discounted cash flow)
+        present_value = cash_flow / ((1 + discount_rate) ** annualized_period)
 
-        # Store the present value rounded to 10 decimal places
-        ntnb_quotation += round(present_value, 10)
+        # Add the present value for the period to the total quotation
+        quotation += round(present_value, 10)
 
-        # Move to the previous cash flow date (6 months earlier)
+        # Move the cash flow date back 6 months
         cash_flow_date -= pd.DateOffset(months=6)
 
-    # Return the NTN-B quotation truncated to 4 decimal places
-    return truncate(ntnb_quotation, 4)
+    # Return the quotation truncated to 4 decimal places
+    return truncate(quotation, 4)
