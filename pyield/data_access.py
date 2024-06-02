@@ -109,8 +109,8 @@ def fetch_asset(
         return tb.fetch_bonds(reference_date=normalized_date)
 
     if asset_code.upper() in SUPPORTED_BONDS:
-        df = tb.fetch_bonds(reference_date=normalized_date)
-        return df.query(f"BondType == '{asset_code.upper()}'")
+        df_bonds = tb.fetch_bonds(reference_date=normalized_date)
+        return df_bonds.query(f"BondType == '{asset_code.upper()}'").copy()
 
     if asset_code.upper() in SUPPORTED_FUTURES:
         return ft.fetch_historical_df(

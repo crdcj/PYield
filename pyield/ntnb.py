@@ -1,6 +1,7 @@
 import pandas as pd
 
 from . import bday
+from . import data_access as da
 
 
 def truncate(number: float, digits: int) -> float:
@@ -29,8 +30,8 @@ def calculate_ntnb_quotation(
     Parameters:
         settlement_date (str | pd.Timestamp): Settlement date in 'YYYY-MM-DD' format.
         maturity_date (str | pd.Timestamp): Maturity date in 'YYYY-MM-DD' format.
-        discount_rate (float): The yield to maturity (YTM) of the NTN-B, which is the
-            discount rate used to calculate the present value of the cash flows.
+        discount_rate (float): The discount rate used to calculate the present value of
+         the cash flows, which is the yield to maturity (YTM) of the NTN-B.
 
     Returns:
         float: The NTN-B quotation truncated to 4 decimal places.
@@ -55,17 +56,17 @@ def calculate_ntnb_quotation(
     SEMIANNUAL_COUPON = 2.956301  # round(100 * ((0.06 + 1) ** 0.5 - 1), 6)
 
     # Initialize variables
-    cash_flow_date = maturity_date
+    coupon_date = maturity_date
     quotation = 0.0
 
     # Iterate backwards from the maturity date to the settlement date
-    while cash_flow_date > settlement_date:
+    while coupon_date >= settlement_date:
         # Calculate the number of business days between settlement and cash flow dates
-        num_of_bdays = bday.count_bdays(settlement_date, cash_flow_date)
+        num_of_bdays = bday.count_bdays(settlement_date, coupon_date)
 
         # Set the cash flow for the period
         cash_flow = SEMIANNUAL_COUPON
-        if cash_flow_date == maturity_date:
+        if coupon_date == maturity_date:
             cash_flow += 100  # Adding principal repayment at maturity
 
         # Calculate the number of periods truncated to 14 decimal places
@@ -74,11 +75,32 @@ def calculate_ntnb_quotation(
         # Calculate the present value of the cash flow (discounted cash flow)
         present_value = cash_flow / ((1 + discount_rate) ** annualized_period)
 
-        # Add the present value for the period to the total quotation
+        # Add the present value for the period to the quotation
         quotation += round(present_value, 10)
 
-        # Move the cash flow date back 6 months
-        cash_flow_date -= pd.DateOffset(months=6)
+        # Move the coupon date (cash flow date) back 6 months
+        coupon_date -= pd.DateOffset(months=6)
 
     # Return the quotation truncated to 4 decimal places
     return truncate(quotation, 4)
+
+
+# Define a função para gerar as datas
+def generate_coupon_dates(reference_date):
+    reference_year = reference_date.year
+    first_coupon_date = pd.Timestamp(f"{reference_year}-02-15")
+
+    df_ntnb = da.fetch_asset(asset_code="NTN-B", reference_date="2024-05-28")
+    df_ntnb.sort_values(by="MaturityDate", inplace=True)
+    longest_ntnb = df_ntnb.iloc[-1]
+    last_coupon_date = longest_ntnb["MaturityDate"]
+
+    # Generate the coupon dates
+    dates = []
+    coupon_date = first_coupon_date
+    while coupon_date <= last_coupon_date:
+        dates.append(coupon_date)
+        coupon_date += pd.DateOffset(months=3)
+
+    # First coupon date must be after the reference date
+    return [date for date in dates if date >= reference_date]
