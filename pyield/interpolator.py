@@ -8,9 +8,10 @@ def interpolate_flat_forward(
     Realiza a interpolação da taxa de juros usando o método de interpolação flat forward
     considerando uma base de 252 dias úteis.
 
-    A interpolação é realizada entre dois pares de vértices conhecidos (tx_ant, du_ant) e (tx_pos, du_pos),
-    para um terceiro vértice definido pelo número de dias úteis 'du' em que 'du_ant < du < du_pos'.
-    Esse terceiro vértice é o ponto no tempo para o qual a taxa de juros está sendo calculada.
+    A interpolação é realizada entre dois pares de vértices conhecidos (tx_ant, du_ant)
+    e (tx_pos, du_pos), para um terceiro vértice definido pelo número de dias úteis 'du'
+    em que 'du_ant < du < du_pos'. Esse terceiro vértice é o ponto no tempo para o qual
+    a taxa de juros está sendo calculada.
 
     Args:
     - tx_ant (float): Taxa de juros do vértice anterior.

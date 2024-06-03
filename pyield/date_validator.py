@@ -13,12 +13,10 @@ def normalize_date(input_date: str | pd.Timestamp | None = None) -> pd.Timestamp
         string, pandas Timestamp or None. If None, it defaults to the last business day.
 
     Returns:
-        pd.Timestamp: A normalized pandas Timestamp representing a past business day at
-        midnight.
+        pd.Timestamp: A normalized pandas Timestamp.
 
     Raises:
-        ValueError: If the input date format is invalid, if the date is in the future,
-        or if the date is not a business day.
+        ValueError: If the input date format is invalid.
 
     Notes:
         - Normalization means setting the time component of the timestamp to midnight.
@@ -27,9 +25,9 @@ def normalize_date(input_date: str | pd.Timestamp | None = None) -> pd.Timestamp
         - Business day calculations consider local market holidays.
 
     Examples:
-        >>> normalize_date('31-05-2024')
+        >>> normalize_date("31-05-2024")
 
-        >>> normalize_date(pd.Timestamp('2023-04-01 15:30'))
+        >>> normalize_date(pd.Timestamp("2023-04-01 15:30"))
         >>> normalize_date()
     """
     if isinstance(input_date, str):

@@ -34,8 +34,12 @@ Source = "https://github.com/crdcj/PYield"
 [tool.pdm]
 version = { source = "file", path = "pyield/__about__.py" }
 distribution = true
+
 [tool.pdm.dev-dependencies]
 dev = ["ipykernel", "pytest", "mypy"]
+
+[tool.ruff]
+select = ["E", "W", "F", "B", "C", "Q", "S"]
 
 [tool.ruff.format]
 docstring-code-format = true
