@@ -6,7 +6,7 @@ from .data_access import (
     fetch_indicator,
     fetch_projection,
 )
-from .ntnb import calculate_ntnb_quotation, generate_all_coupon_dates
+from .ntnb import calculate_quotation, generate_all_coupon_dates
 
 __all__ = [
     "__version__",
@@ -18,6 +18,6 @@ __all__ = [
     "fetch_indicator",
     "fetch_projection",
     "calculate_spreads",
-    "calculate_ntnb_quotation",
+    "calculate_quotation",
     "generate_all_coupon_dates",
 ]
