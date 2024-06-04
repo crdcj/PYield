@@ -115,8 +115,5 @@ def calculate_quotation(
     # Calculate the present value of the cash flow (discounted cash flow)
     df["DCF"] = (df["CF"] / (1 + discount_rate) ** df["Periods"]).round(10)
 
-    # Round the present value to 10 decimal places
-    df["DCF"] = df["DCF"].round(10)
-
     # Return the quotation truncated to 4 decimal places
     return truncate(df["DCF"].sum(), 4)
