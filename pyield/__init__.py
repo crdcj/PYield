@@ -6,7 +6,7 @@ from .data_access import (
     fetch_indicator,
     fetch_projection,
 )
-from .ntnb import calculate_quotation, generate_all_coupon_dates
+from .ntnb import calculate_quotation, generate_all_payment_dates
 
 __all__ = [
     "__version__",
@@ -19,5 +19,5 @@ __all__ = [
     "fetch_projection",
     "calculate_spreads",
     "calculate_quotation",
-    "generate_all_coupon_dates",
+    "generate_all_payment_dates",
 ]

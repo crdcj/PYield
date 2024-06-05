@@ -20,7 +20,7 @@ def truncate(value, decimal_places):
     return np.trunc(value * factor) / factor
 
 
-def generate_all_coupon_dates(reference_date, last_coupon_date):
+def generate_all_payment_dates(reference_date, last_coupon_date):
     # Validate and normalize dates
     reference_date = dv.normalize_date(reference_date)
     last_coupon_date = dv.normalize_date(last_coupon_date)
@@ -39,7 +39,7 @@ def generate_all_coupon_dates(reference_date, last_coupon_date):
     return dates[dates > reference_date]
 
 
-def generate_coupon_dates(
+def generate_payment_dates(
     settlement_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
 ) -> pd.Series:
@@ -87,9 +87,9 @@ def calculate_quotation(
           Anbima rules.
 
     Examples:
-        >>> calculate_ntnb_quotation("31-05-2024", "15-05-2035", 0.061490)
+        >>> calculate_quotation("31-05-2024", "15-05-2035", 0.061490)
         99.3651
-        >>> calculate_ntnb_quotation("31-05-2024", "15-08-2060", 0.061878)
+        >>> calculate_quotation("31-05-2024", "15-08-2060", 0.061878)
         99.5341
     """
     # Semi-annual coupon value in base 100 and rounded to 6 decimal places
@@ -99,21 +99,20 @@ def calculate_quotation(
     settlement_date = dv.normalize_date(settlement_date)
     maturity_date = dv.normalize_date(maturity_date)
 
-    # Create a dataframe with the coupon dates as a column
-    coupon_dates = generate_coupon_dates(settlement_date, maturity_date)
-    df = pd.DataFrame(coupon_dates, columns=["CouponDate"])
+    # Create a Series with the coupon dates
+    payment_dates = pd.Series(generate_payment_dates(settlement_date, maturity_date))
 
     # Calculate the number of business days between settlement and cash flow dates
-    df["BDays"] = bday.count_bdays(settlement_date, df["CouponDate"])
+    bdays = bday.count_bdays(settlement_date, payment_dates)
 
     # Set the cash flow at maturity to 100, otherwise set it to the coupon
-    df["CF"] = np.where(df["CouponDate"] == maturity_date, COUPON + 100, COUPON)
+    cf = np.where(payment_dates == maturity_date, COUPON + 100, COUPON)
 
     # Calculate the number of periods truncated to 14 decimal places
-    df["Periods"] = truncate(df["BDays"] / 252, 14)
+    n = truncate(bdays / 252, 14)
 
-    # Calculate the present value of the cash flow (discounted cash flow)
-    df["DCF"] = (df["CF"] / (1 + discount_rate) ** df["Periods"]).round(10)
+    # Calculate the present value of each cash flow (discounted cash flow)
+    dcf = (cf / (1 + discount_rate) ** n).round(10)
 
-    # Return the quotation truncated to 4 decimal places
-    return truncate(df["DCF"].sum(), 4)
+    # Return the quotation (the dcf sum) truncated to 4 decimal places
+    return truncate(dcf.sum(), 4)
