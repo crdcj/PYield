@@ -191,8 +191,7 @@ def calculate_spot_rates(
         df_bond = df.query("MaturityDate in @coupon_dates").reset_index(drop=True)
 
         # Create the Series that will be used to calculate the discounted cash flows
-        df_bond["CF"] = COUPON
-        s_cf = df_bond["CF"]
+        s_cf = pd.Series(COUPON, index=df_bond.index)
         s_spot_rate = df_bond["SpotRate"]
         s_periods = df_bond["BDays"] / 252
 
