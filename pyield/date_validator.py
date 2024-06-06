@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from . import bday
@@ -26,9 +27,7 @@ def normalize_date(input_date: str | pd.Timestamp | None = None) -> pd.Timestamp
 
     Examples:
         >>> normalize_date("31-05-2024")
-
         >>> normalize_date(pd.Timestamp("2023-04-01 15:30"))
-        >>> normalize_date()
     """
     if isinstance(input_date, str):
         # Convert string date to Timestamp and normalize to midnight
@@ -36,6 +35,9 @@ def normalize_date(input_date: str | pd.Timestamp | None = None) -> pd.Timestamp
     elif isinstance(input_date, pd.Timestamp):
         # Normalize Timestamp to midnight
         normalized_date = input_date.normalize()
+    elif isinstance(input_date, np.datetime64):
+        # Convert numpy datetime to Timestamp and normalize to midnight
+        normalized_date = pd.Timestamp(input_date).normalize()
     elif input_date is None:
         # If no date is provided, use the last available business day
         today = pd.Timestamp.today().normalize()
