@@ -138,24 +138,30 @@ def calculate_quotation(
     return truncate(dcf.sum(), 4)
 
 
-def calculate_quotation_wrapper(row):
-    settlement_date = row["SettlementDate"]
-    maturity_date = row["MaturityDate"]
-    ytm = row["YTM"]
-    return calculate_quotation(settlement_date, maturity_date, ytm) / 100
-
-
 def calculate_spot_rates(
     settlement_date: str | pd.Timestamp,
     maturity_dates: pd.Series,
     ytm_rates: pd.Series,
 ) -> pd.DataFrame:
     """
+    Calculates the spot rates for NTN-B bonds based on given settlement date, maturity
+    dates and YTM rates.
+
+    Parameters:
+        settlement_date (str | pd.Timestamp): The reference date for settlement.
+        maturity_dates (pd.Series): Series of maturity dates for the bonds.
+        ytm_rates (pd.Series): Series of Yield to Maturity rates corresponding to the
+            maturity dates.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the maturity dates and corresponding spot
+            rates.
+
+    Notes:
     To facilitate code reading, the following naming convention is used:
         - The output DataFrame is named 'df', which is the main DataFrame.
-        - Variable that starts with 's_' are Series
+        - Variables that starts with 's_' are Series
         - Variables that starts with 'df_' are DataFrames
-        - Variables that starts with 'l_' are lists
 
     The calculation of the spot rates for NTN-B bonds considers the following steps:
         - Generate all payment dates for the NTN-B bonds.
@@ -164,60 +170,58 @@ def calculate_spot_rates(
         - Calculate the spot rates for each maturity date.
     """
     COUPON = (1.06) ** 0.5 - 1  # 6% per year (semiannual)
-    # Validate and normalize the reference date
+
+    # Validate and normalize the settlement date
     settlement_date = dv.normalize_date(settlement_date)
 
-    # Create a temporary DataFrame with the input arguments
-    input_bdays = bday.count_bdays(settlement_date, maturity_dates).to_list()
-    df_tmp = pd.DataFrame({"BDays": input_bdays, "YTM": ytm_rates})
+    # Create a temporary DataFrame to sort the input arguments by the number of bdays
+    s_bdays = bday.count_bdays(settlement_date, maturity_dates)
+    df_tmp = pd.DataFrame({"BDays": s_bdays, "YTM": ytm_rates})
 
     # Sort the DataFrame by the number of business days
     df_tmp = df_tmp.sort_values(by="BDays", ignore_index=True)
 
-    # Retrieve the input arguments as lists ordered by the number of business days
+    # Extract ordered lists of business days and rates
     input_bdays = df_tmp["BDays"].to_list()
     input_rates = df_tmp["YTM"].to_list()
 
-    # Create the output dataframe with the dates where the spot rates will be calculated
+    # Generate coupon dates and initialize the main DataFrame
     longest_ntnb = maturity_dates.max()
-    coupon_dates = generate_all_coupon_dates(settlement_date, longest_ntnb)
-    df = pd.DataFrame(coupon_dates, columns=["MaturityDate"])
+    s_coupon_dates = generate_all_coupon_dates(settlement_date, longest_ntnb)
+    df = pd.DataFrame(s_coupon_dates, columns=["MaturityDate"])
 
-    # Create auxiliary columns for the calculations
-    df["SettlementDate"] = settlement_date
+    # Add auxiliary columns for calculations
     df["BDays"] = bday.count_bdays(settlement_date, df["MaturityDate"])
-    df["SpotRate"] = 0.0  # Initialize the spot rate column with zeros
+    df["YTM"] = 0.0
+    df["SpotRate"] = 0.0
 
-    # Interpolate the YTM rates where necessary
-    args = (input_bdays, input_rates)
-    df["YTM"] = df["BDays"].apply(ip.find_and_interpolate_flat_forward, args=args)
+    # Main loop to calculate spot rates
+    for index in df.index:
+        maturity_date = df.at[index, "MaturityDate"]
+        # Get the coupon dates for the bond without the last one (principal + coupon)
+        s_coupon_dates = generate_coupon_dates(settlement_date, maturity_date)[:-1]
 
-    df["Quotation"] = df.apply(calculate_quotation_wrapper, axis=1)
-
-    # Sequentially calculate the spot rates for each maturity date
-    for i in df.index:
-        # Use the maturity date of the current row to get the payment dates
-        row_maturity_date = df.at[i, "MaturityDate"]
-        coupon_dates = generate_coupon_dates(settlement_date, row_maturity_date)
-        # Remove last payment date (maturity date)
-        coupon_dates = coupon_dates[:-1]
-
-        # Create that will be used to calculate the discounted cash flows
-        df_row = df.query("MaturityDate in @coupon_dates").reset_index(drop=True)
+        # Create the dataframe to calculate the discounted cash flows
+        df_index = df.query("MaturityDate in @s_coupon_dates").reset_index(drop=True)
 
         # Create the Series that will be used to calculate the discounted cash flows
-        s_cf = pd.Series(COUPON, index=df_row.index)
-        s_spot_rate = df_row["SpotRate"]
-        s_periods = df_row["BDays"] / 252
+        s_cf = pd.Series(COUPON, index=df_index.index)
+        s_spot_rate = df_index["SpotRate"]
+        s_periods = df_index["BDays"] / 252
 
         # Calculate the present value of the cash flow (discounted cash flow)
         s_dcf = s_cf / (1 + s_spot_rate) ** s_periods
 
-        # Calculate the spot rate
-        quotation = df.at[i, "Quotation"]
-        bd = df.at[i, "BDays"]
-        spot_rate = ((COUPON + 1) / (quotation - s_dcf.sum())) ** (252 / bd) - 1
-        df.at[i, "SpotRate"] = spot_rate
+        # Interpolate YTM and calculate spot rate
+        bdays = df.at[index, "BDays"]
+        ytm = ip.find_and_interpolate_flat_forward(bdays, input_bdays, input_rates)
+        quotation = calculate_quotation(settlement_date, maturity_date, ytm) / 100
+        spot_rate = ((COUPON + 1) / (quotation - s_dcf.sum())) ** (252 / bdays) - 1
 
-    # Remove intermediary rates used in calculation and return the final DataFrame
+        # Update DataFrame with calculated values
+        df.at[index, "SpotRate"] = spot_rate
+        df.at[index, "YTM"] = ytm
+
+    # Drop the BDays column and return the final DataFrame
+    df = df.drop(columns=["BDays"])
     return df.query("MaturityDate in @maturity_dates").reset_index(drop=True)
