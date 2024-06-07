@@ -2,8 +2,22 @@ import numpy as np
 import pandas as pd
 
 from . import bday
+from . import data_access as da
 from . import date_validator as dv
 from . import interpolator as ip
+
+
+def get_ntnb_ytms(reference_date):
+    """
+    Fetch NTN-B Anbima data for the given reference date.
+
+    Parameters:
+    reference_date (str | pd.Timestamp): The reference date for fetching the data.
+
+    Returns:
+    pd.DataFrame: A DataFrame containing the maturity dates and corresponding YTM rates.
+    """
+    return da.fetch_asset(asset_code="NTN-B", reference_date=reference_date)
 
 
 def truncate(value, decimal_places):
