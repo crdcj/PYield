@@ -7,7 +7,7 @@ from . import date_validator as dv
 from . import interpolator as ip
 
 
-def get_ntnb_ytms(reference_date):
+def get_anbima_rates(reference_date):
     """
     Fetch NTN-B Anbima data for the given reference date.
 
@@ -35,26 +35,26 @@ def truncate(value, decimal_places):
     return np.trunc(value * factor) / factor
 
 
-def generate_all_coupon_dates(
-    from_date: str | pd.Timestamp,
-    to_date: str | pd.Timestamp,
+def coupon_dates_map(
+    start: str | pd.Timestamp,
+    end: str | pd.Timestamp,
 ) -> pd.Series:
     """
-    from_date and to_date are inclusive.
-    The dates are generated based on the fact that coupon payments are made on the 15th
-    of the following months: February, May, August, and November (15-02, 15-05, 15-08
-    and 15-11 of each year).
+    Generates a map of all possible coupon dates between the start and end dates.
+    The dates are inclusive.
+    Coupon payments are made on the 15th of February, May, August, and November (15-02,
+    15-05, 15-08, and 15-11 of each year).
     """
     # Validate and normalize dates
-    from_date = dv.normalize_date(from_date)
-    to_date = dv.normalize_date(to_date)
+    start = dv.normalize_date(start)
+    end = dv.normalize_date(end)
 
     # Initialize the first coupon date based on the reference date
-    reference_year = from_date.year
+    reference_year = start.year
     first_coupon_date = pd.Timestamp(f"{reference_year}-02-01")
 
     # Generate coupon dates
-    dates = pd.date_range(start=first_coupon_date, end=to_date, freq="3MS")
+    dates = pd.date_range(start=first_coupon_date, end=end, freq="3MS")
 
     # Convert to pandas Series since pd.date_range returns a DatetimeIndex
     dates = pd.Series(dates)
@@ -63,10 +63,10 @@ def generate_all_coupon_dates(
     dates = dates + pd.Timedelta(days=14)
 
     # First coupon date must be after the reference date
-    return dates[dates >= from_date].reset_index(drop=True)
+    return dates[dates >= start].reset_index(drop=True)
 
 
-def generate_coupon_dates(
+def coupon_dates(
     from_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
 ) -> pd.Series:
@@ -94,7 +94,7 @@ def generate_coupon_dates(
     return coupon_dates.reset_index(drop=True)
 
 
-def calculate_quotation(
+def quotation(
     settlement_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
     discount_rate: float,
@@ -134,7 +134,7 @@ def calculate_quotation(
     maturity_date = dv.normalize_date(maturity_date)
 
     # Create a Series with the coupon dates
-    payment_dates = pd.Series(generate_coupon_dates(settlement_date, maturity_date))
+    payment_dates = pd.Series(coupon_dates(settlement_date, maturity_date))
 
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count_bdays(settlement_date, payment_dates)
@@ -201,7 +201,7 @@ def calculate_spot_rates(
 
     # Generate coupon dates and initialize the main DataFrame
     longest_ntnb = maturity_dates.max()
-    s_coupon_dates = generate_all_coupon_dates(settlement_date, longest_ntnb)
+    s_coupon_dates = coupon_dates_map(settlement_date, longest_ntnb)
     df = pd.DataFrame(s_coupon_dates, columns=["MaturityDate"])
 
     # Add auxiliary columns for calculations
@@ -213,7 +213,7 @@ def calculate_spot_rates(
     for index in df.index:
         maturity_date = df.at[index, "MaturityDate"]
         # Get the coupon dates for the bond without the last one (principal + coupon)
-        s_coupon_dates = generate_coupon_dates(settlement_date, maturity_date)[:-1]
+        s_coupon_dates = coupon_dates(settlement_date, maturity_date)[:-1]
 
         # Create the dataframe to calculate the discounted cash flows
         df_index = df.query("MaturityDate in @s_coupon_dates").reset_index(drop=True)
@@ -229,8 +229,8 @@ def calculate_spot_rates(
         # Interpolate YTM and calculate spot rate
         bdays = df.at[index, "BDays"]
         ytm = ip.find_and_interpolate_flat_forward(bdays, input_bdays, input_rates)
-        quotation = calculate_quotation(settlement_date, maturity_date, ytm) / 100
-        spot_rate = ((COUPON + 1) / (quotation - s_dcf.sum())) ** (252 / bdays) - 1
+        ntnb_quotation = quotation(settlement_date, maturity_date, ytm) / 100
+        spot_rate = ((COUPON + 1) / (ntnb_quotation - s_dcf.sum())) ** (252 / bdays) - 1
 
         # Update DataFrame with calculated values
         df.at[index, "SpotRate"] = spot_rate
