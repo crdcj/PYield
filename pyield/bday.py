@@ -9,7 +9,6 @@ from .holidays import BrHolidays
 SingleDateTypes = str | np.datetime64 | pd.Timestamp | datetime
 SeriesDateTypes = list | tuple | np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex
 
-TO_TIMESTAMP_TYPES = (str, np.datetime64, datetime)
 TO_SERIES_TYPES = (list, tuple, np.ndarray, pd.Series, pd.Index, pd.DatetimeIndex)
 
 # Initialize the BrHolidays class
@@ -33,12 +32,14 @@ def _normalize_input_dates(
 ) -> pd.Timestamp | pd.Series:
     if dates is None:
         return pd.Timestamp.today().normalize()
+    elif isinstance(dates, str):
+        return pd.to_datetime(dates, dayfirst=True).normalize()
     elif isinstance(dates, pd.Timestamp):
         return dates.normalize()
-    elif isinstance(dates, TO_TIMESTAMP_TYPES):
+    elif isinstance(dates, (np.datetime64 | datetime)):
         return pd.Timestamp(dates).normalize()
     elif isinstance(dates, TO_SERIES_TYPES):
-        result = pd.to_datetime(dates)
+        result = pd.to_datetime(dates, dayfirst=True)
         return pd.Series(result).dt.normalize()
     else:
         raise ValueError("Invalid date format.")

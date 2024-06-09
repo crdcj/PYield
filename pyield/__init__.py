@@ -1,3 +1,4 @@
+from . import ntnb
 from .__about__ import __version__
 from .bday import count_bdays, generate_bdays, is_bday, offset_bdays
 from .data_access import (
@@ -17,4 +18,5 @@ __all__ = [
     "fetch_indicator",
     "fetch_projection",
     "calculate_spreads",
+    "ntnb",
 ]
