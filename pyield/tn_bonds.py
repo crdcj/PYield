@@ -15,7 +15,7 @@ def _get_anbima_content(reference_date: pd.Timestamp) -> str:
 
     # Tries to access the member URL first
     try:
-        response = requests.get(member_url)
+        response = requests.get(member_url, timeout=5)
         # Checks if the response was successful (status code 200)
         response.raise_for_status()
         return response.text
@@ -25,7 +25,7 @@ def _get_anbima_content(reference_date: pd.Timestamp) -> str:
 
     # If the member URL fails, tries to access the non-member URL
     try:
-        response = requests.get(non_member_url)
+        response = requests.get(non_member_url, timeout=5)
         response.raise_for_status()  # Checks if the second attempt was successful
         return response.text
     except requests.exceptions.RequestException:

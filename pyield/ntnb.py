@@ -169,17 +169,6 @@ def quotation(
     return truncate(dcf.sum(), 4)
 
 
-def get_interpolation_inputs(settlement_date, maturity_dates, ytm_rates):
-    # Create a temporary DataFrame to sort the input arguments by the number of bdays
-    bdays = bday.count_bdays(settlement_date, maturity_dates)
-    df = pd.DataFrame({"BDays": bdays, "YTM": ytm_rates})
-
-    # Sort the DataFrame by the number of business days
-    df = df.sort_values(by="BDays", ignore_index=True)
-
-    return df["BDays"].to_list(), df["YTM"].to_list()
-
-
 def spot_rates(
     settlement_date: str | pd.Timestamp,
     maturity_dates: pd.Series,
@@ -215,7 +204,16 @@ def spot_rates(
     # Validate and normalize the settlement date
     settlement_date = dv.normalize_date(settlement_date)
 
-    ordered_bdays, ordered_ytms = get_interpolation_inputs(maturity_dates, ytm_rates)
+    # Create a temporary DataFrame to sort the input arguments by the number of bdays
+    bdays = bday.count_bdays(settlement_date, maturity_dates)
+    dft = pd.DataFrame({"BDays": bdays, "YTM": ytm_rates})
+
+    # Sort the DataFrame by the number of business days
+    dft.sort_values(by="BDays", ignore_index=True, inplace=True)
+
+    # Create lists with the ordered bdays and ytms for interpolation
+    ordered_bdays = dft["BDays"].to_list()
+    ordered_ytms = dft["YTM"].to_list()
 
     # Generate coupon dates and initialize the main DataFrame
     longest_ntnb = maturity_dates.max()
@@ -231,29 +229,33 @@ def spot_rates(
     for index in df.index:
         maturity_date = df.at[index, "MaturityDate"]
         # Get the coupon dates for the bond without the last one (principal + coupon)
-        only_coupon_dates = coupon_dates(settlement_date, maturity_date)[:-1]
+        coupon_dates_wo_last = coupon_dates(settlement_date, maturity_date)[:-1]  # noqa
 
-        # Create a temporary DataFrame up
-        df_dcf = df.query("MaturityDate in @only_coupon_dates").reset_index(drop=True)
+        # Create a local DataFrame with a subset of the main DataFrame
+        dfl = df.query("MaturityDate in @coupon_dates_wo_last").reset_index(drop=True)
 
         # Create the Series that will be used to calculate the discounted cash flows
-        cfs = pd.Series(COUPON, index=df_dcf.index)
-        spot_rates = df_dcf["SpotRate"]
-        periods = df_dcf["BDays"] / 252
+        cfs = pd.Series(COUPON, index=dfl.index)
+        spot_rates = dfl["SpotRate"]
+        periods = dfl["BDays"] / 252
 
         # Calculate the present value of the cash flows (discounted cash flows)
         dcfs = cfs / (1 + spot_rates) ** periods
 
         # Interpolate YTM and calculate spot rate
-        bdays = df.at[index, "BDays"]
-        ytm = ip.find_and_interpolate_flat_forward(bdays, ordered_bdays, ordered_ytms)
+        bd = df.at[index, "BDays"]
+        ytm = ip.find_and_interpolate_flat_forward(bd, ordered_bdays, ordered_ytms)
         ntnb_quotation = quotation(settlement_date, maturity_date, ytm) / 100
-        spot_rate = ((COUPON + 1) / (ntnb_quotation - dcfs.sum())) ** (252 / bdays) - 1
+        spot_rate = ((COUPON + 1) / (ntnb_quotation - dcfs.sum())) ** (252 / bd) - 1
 
         # Update DataFrame with calculated values
         df.at[index, "SpotRate"] = spot_rate
         df.at[index, "YTM"] = ytm
 
     # Drop the BDays column and return the final DataFrame
-    df = df.drop(columns=["BDays"])
-    return df.query("MaturityDate in @maturity_dates").reset_index(drop=True)
+    df = (
+        df.drop(columns=["BDays"])
+        .query("MaturityDate in @maturity_dates")
+        .reset_index(drop=True)
+    )
+    return df
