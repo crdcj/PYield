@@ -10,43 +10,42 @@ from . import interpolator as ip
 COUPON = 0.02956301  # round(((0.06 + 1) ** 0.5 - 1), 8)
 
 
-def anbima_data(reference_date):
+def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch NTN-B Anbima data for the given reference date.
 
-    Parameters:
-    reference_date (str | pd.Timestamp): The reference date for fetching the data.
+    Args:
+        reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-    pd.DataFrame: A DataFrame containing the Anbima data for the given reference date.
+        pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
     return da.fetch_asset(asset_code="NTN-B", reference_date=reference_date)
 
 
-def anbima_rates(reference_date):
+def anbima_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch NTN-B Anbima indicative rates for the given reference date.
 
-    Parameters:
-    reference_date (str | pd.Timestamp): The reference date for fetching the data.
+    Args:
+        reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-    pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
+        pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
     """
-    df = anbima_data(reference_date)
-    return df[["MaturityDate", "IndicativeRate"]]
+    return anbima_data(reference_date)[["MaturityDate", "IndicativeRate"]]
 
 
 def truncate(value, decimal_places):
     """
     Truncate a float or a Pandas Series to the specified decimal place.
 
-    Parameters:
-    value (float, pandas.Series): The value(s) to be truncated.
-    decimal_places (int): The number of decimal places to truncate to.
+    Args:
+        value (float or pandas.Series): The value(s) to be truncated.
+        decimal_places (int): The number of decimal places to truncate to.
 
     Returns:
-    float or pandas.Series: The truncated value(s).
+        float or pandas.Series: The truncated value(s).
     """
     factor = 10**decimal_places
     return np.trunc(value * factor) / factor
@@ -57,10 +56,16 @@ def coupon_dates_map(
     end: str | pd.Timestamp,
 ) -> pd.Series:
     """
-    Generates a map of all possible coupon dates between the start and end dates.
-    The dates are inclusive.
-    Coupon payments are made on the 15th of February, May, August, and November (15-02,
-    15-05, 15-08, and 15-11 of each year).
+    Generate a map of all possible coupon dates between the start and end dates.
+    The dates are inclusive. Coupon payments are made on the 15th of February, May,
+    August, and November (15-02, 15-05, 15-08, and 15-11 of each year).
+
+    Args:
+        start (str | pd.Timestamp): The start date.
+        end (str | pd.Timestamp): The end date.
+
+    Returns:
+        pd.Series: Series of coupon dates within the specified range.
     """
     # Validate and normalize dates
     start = dv.normalize_date(start)
@@ -84,11 +89,24 @@ def coupon_dates_map(
 
 
 def coupon_dates(
-    from_date: str | pd.Timestamp,
+    start_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
 ) -> pd.Series:
+    """
+    Generate all remaining coupon dates between a given date and the maturity date.
+    The dates are inclusive. Coupon payments are made on the 15th of February, May,
+    August, and November (15-02, 15-05, 15-08, and 15-11 of each year). The NTN-B
+    bond is determined by its maturity date.
+
+    Args:
+        start_date (str | pd.Timestamp): The date from which to start generating coupon dates.
+        maturity_date (str | pd.Timestamp): The maturity date.
+
+    Returns:
+        pd.Series: Series of coupon dates within the specified range.
+    """
     # Validate and normalize dates
-    from_date = dv.normalize_date(from_date)
+    start_date = dv.normalize_date(start_date)
     maturity_date = dv.normalize_date(maturity_date)
 
     # Initialize loop variables
@@ -96,7 +114,7 @@ def coupon_dates(
     coupon_dates = []
 
     # Iterate backwards from the maturity date to the settlement date
-    while coupon_date >= from_date:
+    while coupon_date >= start_date:
         coupon_dates.append(coupon_date)
         # Move the coupon date back 6 months
         coupon_date -= pd.DateOffset(months=6)
