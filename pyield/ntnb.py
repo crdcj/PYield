@@ -99,7 +99,7 @@ def coupon_dates(
     bond is determined by its maturity date.
 
     Args:
-        start_date (str | pd.Timestamp): The date from which to start generating coupon dates.
+        start_date (str | pd.Timestamp): The date to start generating coupon dates.
         maturity_date (str | pd.Timestamp): The maturity date.
 
     Returns:
@@ -137,13 +137,13 @@ def quotation(
     """
     Calculate the NTN-B quotation in base 100 using Anbima rules.
 
-    Parameters:
+    Args:
         settlement_date (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
             or a pandas Timestamp.
         maturity_date (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
             a pandas Timestamp.
         discount_rate (float): The discount rate used to calculate the present value of
-         the cash flows, which is the yield to maturity (YTM) of the NTN-B.
+            the cash flows, which is the yield to maturity (YTM) of the NTN-B.
 
     Returns:
         float: The NTN-B quotation truncated to 4 decimal places.
@@ -193,10 +193,10 @@ def spot_rates(
     ytm_rates: pd.Series,
 ) -> pd.DataFrame:
     """
-    Calculates the spot rates for NTN-B bonds based on given settlement date, maturity
-    dates and YTM rates.
+    Calculate the spot rates for NTN-B bonds based on given settlement date, maturity
+    dates, and YTM rates.
 
-    Parameters:
+    Args:
         settlement_date (str | pd.Timestamp): The reference date for settlement.
         maturity_dates (pd.Series): Series of maturity dates for the bonds.
         ytm_rates (pd.Series): Series of Yield to Maturity rates corresponding to the
@@ -207,16 +207,11 @@ def spot_rates(
             rates.
 
     Notes:
-    To facilitate code reading, the following naming convention is used:
-        - The output DataFrame is named 'df', which is the main DataFrame.
-        - Variables that starts with 's_' are Series
-        - Variables that starts with 'df_' are DataFrames
-
-    The calculation of the spot rates for NTN-B bonds considers the following steps:
-        - Generate all payment dates for the NTN-B bonds.
-        - Interpolate the YTM rates where necessary.
-        - Calculate the NTN-B quotation for each maturity date.
-        - Calculate the spot rates for each maturity date.
+        The calculation of the spot rates for NTN-B bonds considers the following steps:
+            - Map all all possible payment dates up to the longest maturity date.
+            - Interpolate the YTM rates in the intermediate payment dates.
+            - Calculate the NTN-B quotation for each maturity date.
+            - Calculate the spot rates for each maturity date.
     """
     # COUPON = (1.06) ** 0.5 - 1  # Coupon without rounding
     # Validate and normalize the settlement date
@@ -270,7 +265,7 @@ def spot_rates(
         df.at[index, "SpotRate"] = spot_rate
         df.at[index, "YTM"] = ytm
 
-    # Drop the BDays column and return the final DataFrame
+    # Drop the BDays column and remove intermediate cupon dates.
     df = (
         df.drop(columns=["BDays"])
         .query("MaturityDate in @maturity_dates")
