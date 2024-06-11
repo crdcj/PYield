@@ -40,6 +40,10 @@ dev = ["ipykernel", "pytest", "mypy"]
 
 [tool.ruff]
 select = ["E", "W", "F", "B", "C", "Q", "S"]
+line-length = 88
 
 [tool.ruff.format]
 docstring-code-format = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

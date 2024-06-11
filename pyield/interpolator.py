@@ -2,77 +2,90 @@ import bisect
 
 
 def interpolate_flat_forward(
-    tx_ant: float, du_ant: int, tx_pos: float, du_pos: int, du: int
+    prev_rate: float, prev_bdays: int, next_rate: float, next_bdays: int, bdays: int
 ) -> float:
-    """
-    Realiza a interpolação da taxa de juros usando o método de interpolação flat forward
-    considerando uma base de 252 dias úteis.
+    """Performs interest rate interpolation using the flat forward interpolation method
+    considering a base of 252 business days.
 
-    A interpolação é realizada entre dois pares de vértices conhecidos (tx_ant, du_ant)
-    e (tx_pos, du_pos), para um terceiro vértice definido pelo número de dias úteis 'du'
-    em que 'du_ant < du < du_pos'. Esse terceiro vértice é o ponto no tempo para o qual
-    a taxa de juros está sendo calculada.
+    The interpolation is done between two known pairs of vertices (prev_rate,
+    prev_business_days) and (next_rate, next_business_days), for a third vertex defined
+    by the number of business days 'business_days' where 'prev_business_days <
+    business_days < next_business_days'. This third vertex is the point in time for
+    which the interest rate is being calculated.
 
     Args:
-    - tx_ant (float): Taxa de juros do vértice anterior.
-    - du_ant (int): Número de dias úteis do vértice anterior.
-    - tx_pos (float): Taxa de juros do vértice posterior.
-    - du_pos (int): Número de dias úteis do vértice posterior.
-    - du (int): Dias úteis em que se deseja interpolar a taxa de juros.
+    - prev_rate (float): Interest rate of the previous vertex.
+    - prev_bdays (int): Number of business days of the previous vertex.
+    - next_rate (float): Interest rate of the next vertex.
+    - next_bdays (int): Number of business days of the next vertex.
+    - bdays (int): Number of business days for which the interest rate is to be
+      interpolated.
 
-    Exemplo de uso:
-    taxa_interpolada = interpolate_flat_forward(0.045, 30, 0.05, 60, 45)
+    Example:
+    interpolated_rate = interpolate_flat_forward(0.045, 30, 0.05, 60, 45)
 
-    Retorna:
-        float: A taxa de juros interpolada no `du` fornecido.
+    Returns:
+        float: The interpolated interest rate at the given `business_days`.
     """
-    a = (1 + tx_ant) ** (du_ant / 252)
-    b = (1 + tx_pos) ** (du_pos / 252)
-    c = (du - du_ant) / (du_pos - du_ant)
+    a = (1 + prev_rate) ** (prev_bdays / 252)
+    b = (1 + next_rate) ** (next_bdays / 252)
+    c = (bdays - prev_bdays) / (next_bdays - prev_bdays)
 
-    return (a * (b / a) ** c) ** (252 / du) - 1
+    return (a * (b / a) ** c) ** (252 / bdays) - 1
 
 
 def find_and_interpolate_flat_forward(
-    du: int,
-    dus: list[int],
-    txs: list[float],
+    bdays: int,
+    known_bdays: list[int],
+    known_rates: list[float],
 ) -> float:
     """
-    Encontra o ponto de interpolação apropriado e retorna a taxa interpolada pelo método
-    flat forward desse ponto. Utiliza o módulo `bisect` para busca binária em listas
-    ordenadas.
+    Finds the appropriate interpolation point and returns the interest rate
+    interpolated by the flat forward method from that point. Uses the `bisect` module
+    for binary search in ordered lists.
+
 
     Args:
-        du (int): Número de dias úteis em que se deseja calcular a taxa de juros flat
-        forward. dus (List[int]): Lista com os dias úteis em que as taxas de juros são
-        conhecidas. txs (List[float]): Lista com as taxas de juros conhecidas.
+        business_days (int): Number of business days for which the flat forward interest
+            rate is to be calculated.
+        known_business_days (List[int]): List of business days where interest rates are
+            known.
+        known_rates (List[float]): List of known interest rates.
 
-    Notas:
-        - Presume-se que `dus` e `txs` estão ordenados e têm o mesmo tamanho.
-        - O método utiliza 252 dias úteis por ano na interpolação, que é o padrão do
-          mercado brasileiro.
-        - Casos especiais são tratados para as situações onde `du` é menor que o
-          primeiro DU na lista, maior que o último DU, ou exatamente igual a um DU
-          conhecido, evitando a necessidade de interpolação.
+    Notes:
+        - It is assumed that `known_business_days` and `known_rates` are sorted and have
+          the same size.
+        - The method uses 252 business days per year in the interpolation, which is the
+          standard in the Brazilian market.
+        - Special cases are handled for situations where `business_days` is less than
+          the first known business day, greater than the last known business day, or
+          exactly equal to a known business day, avoiding the need for interpolation.
 
-    Exemplo de uso: taxa_interpolada = find_and_interpolate_flat_forward(45, [30, 60,
-    90], [0.045, 0.05, 0.055])
+    Example:
+    known_bdays = [30, 60, 90]
+    known_rates = [0.045, 0.05, 0.055]
+    interpolated_rate = find_and_interpolate_flat_forward(45, known_bdays, known_rates)
 
-    Retorna:
-        float: A taxa de juros interpolada pelo método flat forward para o número de
-        dias úteis fornecido.
+    Returns:
+        float: The interest rate interpolated by the flat forward method for the given
+            number of business days.
     """
     # Special cases
-    if du <= dus[0]:
-        return txs[0]
-    elif du >= dus[-1]:
-        return txs[-1]
+    if bdays <= known_bdays[0]:
+        return known_rates[0]
+    elif bdays >= known_bdays[-1]:
+        return known_rates[-1]
     # Do not interpolate vertex whose rate is known
-    elif du in dus:
-        return txs[dus.index(du)]
+    elif bdays in known_bdays:
+        return known_rates[known_bdays.index(bdays)]
 
-    # Find i such that du[i-1] < du < du[i]
-    i = bisect.bisect_left(dus, du)
+    # Find i such that known_business_days[i-1] < business_days < known_business_days[i]
+    i = bisect.bisect_left(known_bdays, bdays)
 
-    return interpolate_flat_forward(txs[i - 1], dus[i - 1], txs[i], dus[i], du)
+    return interpolate_flat_forward(
+        known_rates[i - 1],
+        known_bdays[i - 1],
+        known_rates[i],
+        known_bdays[i],
+        bdays,
+    )
