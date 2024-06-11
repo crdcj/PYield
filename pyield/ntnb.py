@@ -265,10 +265,9 @@ def spot_rates(
         df.at[index, "SpotRate"] = spot_rate
         df.at[index, "YTM"] = ytm
 
-    # Drop the BDays column and remove intermediate cupon dates.
-    df = (
+    # Drop the BDays column, remove intermediate cupon dates and reset the index.
+    return (
         df.drop(columns=["BDays"])
         .query("MaturityDate in @maturity_dates")
         .reset_index(drop=True)
     )
-    return df
