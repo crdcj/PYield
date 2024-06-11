@@ -187,6 +187,30 @@ def quotation(
     return truncate(dcf.sum(), 4)
 
 
+def prepare_interpolation_data(
+    settlement_date: pd.Timestamp, maturity_dates: pd.Series, ytm_rates: pd.Series
+) -> tuple:
+    """
+    Prepare the data needed for interpolation by sorting the YTM rates by the number of
+    business days.
+
+    Args:
+        settlement_date (str | pd.Timestamp): The reference date for settlement.
+        maturity_dates (pd.Series): Series of maturity dates for the bonds.
+        ytm_rates (pd.Series): Series of Yield to Maturity rates corresponding to the
+            maturity dates.
+
+    Returns:
+        tuple: Two lists containing the ordered business days and YTM rates.
+    """
+    bdays = bday.count_bdays(settlement_date, maturity_dates)
+    df = pd.DataFrame({"BDays": bdays, "YTM": ytm_rates})
+    df.sort_values(by="BDays", ignore_index=True, inplace=True)
+    ordered_bdays = df["BDays"].to_list()
+    ordered_ytms = df["YTM"].to_list()
+    return ordered_bdays, ordered_ytms
+
+
 def spot_rates(
     settlement_date: str | pd.Timestamp,
     maturity_dates: pd.Series,
@@ -217,17 +241,10 @@ def spot_rates(
     # Validate and normalize the settlement date
     settlement_date = dv.normalize_date(settlement_date)
 
-    # Create a temporary DataFrame to sort the input arguments by the number of bdays
-    bdays = bday.count_bdays(settlement_date, maturity_dates)
-    dft = pd.DataFrame({"BDays": bdays, "YTM": ytm_rates})
-
-    # Sort the DataFrame by the number of business days
-    dft.sort_values(by="BDays", ignore_index=True, inplace=True)
-
-    # Create lists with the ordered bdays and ytms for interpolation
-    ordered_bdays = dft["BDays"].to_list()
-    ordered_ytms = dft["YTM"].to_list()
-
+    # Prepare the data for interpolation
+    ordered_bdays, ordered_ytms = prepare_interpolation_data(
+        settlement_date, maturity_dates, ytm_rates
+    )
     # Generate coupon dates and initialize the main DataFrame
     longest_ntnb = maturity_dates.max()
     coupon_dates_all = coupon_dates_map(settlement_date, longest_ntnb)
