@@ -30,7 +30,7 @@ def fetch_ipca_mr(reference_date: pd.Timestamp) -> float | None:
     api_url = f"https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/{ipca_date}/variaveis/63?localidades=N1[all]"
 
     # Send a GET request to the API
-    response = requests.get(api_url)
+    response = requests.get(api_url, timeout=10)
 
     # Raises HTTPError, if one occurred
     response.raise_for_status()
@@ -50,7 +50,7 @@ def fetch_selic_target(reference_date: pd.Timestamp) -> float | None:
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     selic_date = reference_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial={selic_date}&dataFinal={selic_date}"
-    response = requests.get(api_url)
+    response = requests.get(api_url, timeout=10)
     response.raise_for_status()
 
     if selic_date in response.text:
@@ -64,7 +64,7 @@ def fetch_di(reference_date: pd.Timestamp) -> float | None:
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     di_date = reference_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial={di_date}&dataFinal={di_date}"
-    response = requests.get(api_url)
+    response = requests.get(api_url, timeout=10)
     response.raise_for_status()
 
     if di_date in response.text:
@@ -80,7 +80,7 @@ def fetch_vna_selic(reference_date: pd.Timestamp) -> float | None:
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
     url_file = f"{reference_date.strftime("%Y%m%d")}APC238"
     url_vna = url_base + url_file
-    response = requests.get(url_vna)
+    response = requests.get(url_vna, timeout=10)
     response.raise_for_status()
     file_text = response.text
 
