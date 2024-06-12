@@ -78,8 +78,9 @@ def fetch_vna_selic(reference_date: pd.Timestamp) -> float | None:
     # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
 
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
-    url_file = f"{reference_date.strftime("%Y%m%d")}APC238"
+    url_file = f"{reference_date.strftime('%Y%m%d')}APC238"
     url_vna = url_base + url_file
+
     response = requests.get(url_vna, timeout=10)
     response.raise_for_status()
     file_text = response.text

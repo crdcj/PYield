@@ -188,27 +188,27 @@ def quotation(
 
 
 def prepare_interpolation_data(
-    settlement_date: pd.Timestamp, maturity_dates: pd.Series, ytm_rates: pd.Series
+    reference_date: pd.Timestamp, maturity_dates: pd.Series, rates: pd.Series
 ) -> tuple:
     """
     Prepare the data needed for interpolation by sorting the YTM rates by the number of
     business days.
 
     Args:
-        settlement_date (str | pd.Timestamp): The reference date for settlement.
+        reference_date (str | pd.Timestamp): The reference date for calculating the
+            number of business days.
         maturity_dates (pd.Series): Series of maturity dates for the bonds.
-        ytm_rates (pd.Series): Series of Yield to Maturity rates corresponding to the
-            maturity dates.
+        rates (pd.Series): Series of rates corresponding to the maturity dates.
 
     Returns:
         tuple: Two lists containing the ordered business days and YTM rates.
     """
-    bdays = bday.count_bdays(settlement_date, maturity_dates)
-    df = pd.DataFrame({"BDays": bdays, "YTM": ytm_rates})
+    bdays = bday.count_bdays(reference_date, maturity_dates)
+    df = pd.DataFrame({"BDays": bdays, "Rates": rates})
     df.sort_values(by="BDays", ignore_index=True, inplace=True)
     ordered_bdays = df["BDays"].to_list()
-    ordered_ytms = df["YTM"].to_list()
-    return ordered_bdays, ordered_ytms
+    ordered_rates = df["Rates"].to_list()
+    return ordered_bdays, ordered_rates
 
 
 def spot_rates(
@@ -288,3 +288,55 @@ def spot_rates(
         .query("MaturityDate in @maturity_dates")
         .reset_index(drop=True)
     )
+
+
+def breakeven_inflation(
+    reference_date: str | pd.Timestamp,
+    settlement_date: str | pd.Timestamp,
+    maturity_dates: pd.Series,
+    ytm_rates: pd.Series,
+) -> pd.DataFrame:
+    reference_date = dv.normalize_date(reference_date)
+    settlement_date = dv.normalize_date(settlement_date)
+
+    # NIR = Nominal Interest Rate
+    df_nir = da.fetch_asset(asset_code="DI1", reference_date=reference_date)
+    if "CurrentRate" in df_nir.columns:
+        keep_cols = [
+            "TradeDate",
+            "TradeTime",
+            "TickerSymbol",
+            "ExpirationDate",
+            "BDaysToExp",
+            "CurrentAskRate",
+            "CurrentBidRate",
+            "CurrentRate",
+        ]
+        df_nir = df_nir[keep_cols].copy()
+        df_nir = df_nir.rename(columns={"CurrentRate": "NIR"})
+    else:
+        keep_cols = [
+            "TradeDate",
+            "TickerSymbol",
+            "ExpirationDate",
+            "BDaysToExp",
+            "SettlementRate",
+        ]
+        df_nir = df_nir[keep_cols].copy()
+        df_nir = df_nir.rename(columns={"SettlementRate": "NIR"})
+
+    df_nir = df_nir.dropna(subset=["NIR"])
+    known_bdays = df_nir["BDaysToExp"].to_list()
+    known_rates = df_nir["NIR"].to_list()
+
+    # RIR = Real Interest Rate
+    df_rir = spot_rates(settlement_date, maturity_dates, ytm_rates)
+    df_rir = df_rir.rename(columns={"SpotRate": "RIR"})
+    df_rir["BDays"] = bday.count_bdays(reference_date, df_rir["MaturityDate"])
+    df_rir["NIR"] = df_rir["BDays"].apply(
+        lambda x: ip.find_and_interpolate_flat_forward(x, known_bdays, known_rates)
+    )
+
+    # Calculate the BEI (Breakeven Inflation) for each maturity date
+    df_rir["BEI"] = ((df_rir["NIR"] + 1) / (df_rir["RIR"] + 1)) - 1
+    return df_rir.drop(columns=["BDays", "NIR"])
