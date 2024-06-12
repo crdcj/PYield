@@ -42,8 +42,8 @@ def fetch_asset(
         ValueError: If the asset code is not recognized or supported.
 
     Examples:
-        >>> fetch_asset('TRB', '31-05-2024')
-        >>> fetch_asset('DI1', '31-05-2024')
+        >>> fetch_asset("TRB", "31-05-2024")
+        >>> fetch_asset("DI1", "31-05-2024")
     """
     SUPPORTED_BONDS = ["LTN", "LFT", "NTN-F", "NTN-B"]
     SUPPORTED_FUTURES = ["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
@@ -99,11 +99,11 @@ def fetch_indicator(
         ValueError: If the indicator code is not recognized or supported.
 
     Examples:
-        >>> fetch_indicator('SELIC', '31-05-2024')
+        >>> fetch_indicator("SELIC", "31-05-2024")
         0.1075  # Indicates a SELIC target rate of 10.75% p.a.
-        >>> fetch_indicator('IPCA', '01-04-2024')
+        >>> fetch_indicator("IPCA", "01-04-2024")
         0.0038  # Indicates an IPCA monthly rate of 0.38% p.m.
-        >>> fetch_indicator('DI', '31-05-2024')
+        >>> fetch_indicator("DI", "31-05-2024")
         0.00040168  # Indicates a DI daily rate of 0.02% p.d.
     """
     normalized_date = dv.normalize_date(reference_date)
@@ -142,7 +142,7 @@ def fetch_projection(projection_code: str) -> pr.IndicatorProjection:
         ValueError: If the projection code is not recognized or supported.
 
     Examples:
-        >>> fetch_projection('IPCA_CM')
+        >>> fetch_projection("IPCA_CM")
         IndicatorProjection(
             last_updated=pd.Timestamp('2024-04-19 18:55:00'),
             reference_month_ts=pd.Timestamp('2024-04-01 00:00:00'),
@@ -166,7 +166,7 @@ def calculate_spreads(
 
     Parameters:
         spread_type (str): The type of spread to calculate. Available options are:
-            - "DI_vs_PRE": the spread between DI Futures and Treasury Pre-Fixed bonds.
+            - "DI_PRE": the spread between DI Futures and Treasury Pre-Fixed bonds.
         reference_date (str | pd.Timestamp, optional): The reference date for the
             spread calculation. If None or not provided, defaults to the previous
             business day according to the Brazilian calendar.
@@ -180,7 +180,7 @@ def calculate_spreads(
     """
     # Normalize the reference date
     normalized_date = dv.normalize_date(reference_date)
-    if spread_type.upper() == "DI_VS_PRE":
+    if spread_type.upper() == "DI_PRE":
         return sp.calculate_di_spreads(normalized_date)
     else:
         raise ValueError("Invalid spread type.")
