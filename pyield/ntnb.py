@@ -302,7 +302,7 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     """
     df = da.fetch_asset(asset_code="DI1", reference_date=reference_date)
     if "CurrentRate" in df.columns:
-        df = df.rename(columns={"CurrentRate": "NIR"})
+        df = df.rename(columns={"CurrentRate": "NSR_DI"})
         keep_cols = [
             "TradeDate",
             "TradeTime",
@@ -311,15 +311,21 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
             "BDaysToExp",
             "CurrentAskRate",
             "CurrentBidRate",
-            "NIR",
+            "NSR_DI",
         ]
     elif "SettlementRate" in df.columns:
-        df = df.rename(columns={"SettlementRate": "NIR"})
-        keep_cols = ["TradeDate", "TickerSymbol", "ExpirationDate", "BDaysToExp", "NIR"]
+        df = df.rename(columns={"SettlementRate": "NSR_DI"})
+        keep_cols = [
+            "TradeDate",
+            "TickerSymbol",
+            "ExpirationDate",
+            "BDaysToExp",
+            "NSR_DI",
+        ]
     else:
         raise ValueError("NIR data not found in the DataFrame.")
 
-    df = df[keep_cols].dropna(subset=["NIR"])
+    df = df[keep_cols].dropna(subset=["NSR_DI"])
 
     # Add DI spreads for prefixed bonds (LTN) and adjust NIR
     today = pd.Timestamp.today().normalize()
@@ -334,7 +340,7 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_pre.drop(columns=["BondType"], inplace=True)
 
     df = pd.merge_asof(df, df_pre, left_on="ExpirationDate", right_on="MaturityDate")
-    df["NIRAdj"] = df["NIR"] + df["DISpread"]
+    df["NSR_PRE"] = df["NSR_DI"] + df["DISpread"]
 
     return df
 
@@ -359,7 +365,7 @@ def breakeven_inflation(
 
     Returns:
         pd.DataFrame: DataFrame containing the maturity dates, real interest rates
-            (RIR), nominal interest rates (NIR) and breakeven inflation rates (BEI).
+            (RSR), nominal interest rates (NIR) and breakeven inflation rates (BEI).
     """
     # Normalize input dates
     reference_date = dv.normalize_date(reference_date)
@@ -368,24 +374,34 @@ def breakeven_inflation(
     # Fetch Nominal Interest Rate (NIR) data
     df_nir = _get_nir_df(reference_date)
     known_bdays = df_nir["BDaysToExp"].to_list()
-    known_rates = df_nir["NIR"].to_list()
+    known_rates = df_nir["NSR_DI"].to_list()
 
-    # Calculate Real Interest Rate (RIR)
+    # Calculate Real Interest Rate (RSR)
     df_rir = spot_rates(settlement_date, maturity_dates, ytm_rates)
-    df_rir = df_rir.rename(columns={"SpotRate": "RIR"})
+    df_rir = df_rir.rename(columns={"SpotRate": "RSR"})
     df_rir["BDays"] = bday.count_bdays(reference_date, df_rir["MaturityDate"])
-    df_rir["NIR"] = df_rir["BDays"].apply(
+    df_rir["NSR_DI"] = df_rir["BDays"].apply(
         lambda x: ip.find_and_interpolate_flat_forward(x, known_bdays, known_rates)
     )
 
-    # Calculate Breakeven Inflation (BEI)
-    df_rir["BEI"] = ((df_rir["NIR"] + 1) / (df_rir["RIR"] + 1)) - 1
+    # Calculate Breakeven Inflation (INF)
+    df_rir["INF_DI"] = ((df_rir["NSR_DI"] + 1) / (df_rir["RSR"] + 1)) - 1
 
     # Adjust BEI for DI spread in prefixed bonds
-    known_rates = df_nir["NIRAdj"].to_list()
-    df_rir["NIRAdj"] = df_rir["BDays"].apply(
+    known_rates = df_nir["NSR_PRE"].to_list()
+    df_rir["NSR_PRE"] = df_rir["BDays"].apply(
         lambda x: ip.find_and_interpolate_flat_forward(x, known_bdays, known_rates)
     )
-    df_rir["BEIAdj"] = ((df_rir["NIRAdj"] + 1) / (df_rir["RIR"] + 1)) - 1
+    df_rir["INF_PRE"] = ((df_rir["NSR_PRE"] + 1) / (df_rir["RSR"] + 1)) - 1
 
-    return df_rir.drop(columns=["BDays", "NIR", "NIRAdj"])
+    order_cols = [
+        "MaturityDate",
+        "BDays",
+        "YTM",
+        "RSR",
+        "NSR_DI",
+        "NSR_PRE",
+        "INF_DI",
+        "INF_PRE",
+    ]
+    return df_rir[order_cols].copy()
