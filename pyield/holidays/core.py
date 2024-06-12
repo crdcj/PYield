@@ -16,10 +16,13 @@ class BrHolidays:
         self.old_holidays = self._load_holidays(old_holidays_path)
 
     def _load_holidays(self, file_path: Path) -> pd.Series:
-        """Loads the list of holidays from a text file and returns it as a pd.Series of pd.Timestamp."""
+        """
+        Loads the holidays from a text file and returns it as a Series of Timestamps.
+        """
         df = pd.read_csv(file_path, header=None, names=["date"], comment="#")
         # Convert the dates to a pd.Series of pd.Timestamp
-        return pd.to_datetime(df["date"], format="%d/%m/%Y")
+        holidays = pd.to_datetime(df["date"], format="%d/%m/%Y")
+        return holidays.astype("datetime64[ns]")
 
     def get_applicable_holidays(
         self,
@@ -27,13 +30,14 @@ class BrHolidays:
         holiday_list: Literal["old", "new", "infer"] = "infer",
     ) -> pd.Series:
         """
-        Returns the correct list of holidays to use based on the most recent date in the input.
+        Returns the correct list of holidays to use based on the most recent date in
+        the input.
 
         Args:
             dates (pd.Timestamp | pd.Series): The date(s) to use to infer the holidays.
-            holiday_list (str): The holidays list to use. Valid options are 'old', 'new' or
-                'infer'. If 'infer' is used, the list of holidays is selected based on the
-                earliest (minimum) date in the input.
+            holiday_list (str): The holidays list to use. Valid options are 'old', 'new'
+                or 'infer'. If 'infer' is used, the list of holidays is selected based
+                on the earliest (minimum) date in the input.
 
         Returns:
             pd.Series: The list of holidays to use.

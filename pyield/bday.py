@@ -57,9 +57,9 @@ def is_bday(date: SingleDateTypes | None = None) -> bool:
         bool: True if the input date is a business day, False otherwise.
 
     Examples:
-        >>> yd.is_bday('2023-12-25') # Christmas
+        >>> yd.is_bday("2023-12-25")  # Christmas
         False
-        >>> yd.is_bday() # Check if today is a business day
+        >>> yd.is_bday()  # Check if today is a business day
         True
     """
     normalized_date = _normalize_input_dates(date)
@@ -140,11 +140,11 @@ def offset_bdays(
             `Series` of offset dates.
 
     Examples:
-        >>> date = '2023-12-23' # Saturday before Christmas
+        >>> date = "2023-12-23"  # Saturday before Christmas
         >>> yd.offset_bdays(date, 0)
         Timestamp('2023-12-26')
 
-        >>> date = '2023-12-22' # Friday before Christmas
+        >>> date = "2023-12-22"  # Friday before Christmas
         >>> yd.offset_bdays(date, 0)
         Timestamp('2023-12-22') # No offset because it's a business day
 
@@ -172,10 +172,15 @@ def offset_bdays(
         dates_np, offsets=offset, roll=roll, holidays=selected_holidays_np
     )
     if isinstance(offsetted_dates_np, np.datetime64):
-        return pd.Timestamp(offsetted_dates_np, unit="ns")
+        result = pd.Timestamp(offsetted_dates_np)
+        # Force to datetime[ns] if the input was a single date
+        result = result.as_unit("ns")
     else:
-        result = pd.to_datetime(offsetted_dates_np, unit="ns")
-        return pd.Series(result)
+        result = pd.to_datetime(offsetted_dates_np)
+        # Force the result to be a Series if the input was not a single date
+        result = pd.Series(result).astype("datetime64[ns]")
+
+    return result
 
 
 @overload
@@ -252,11 +257,11 @@ def count_bdays(
           https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
 
     Examples:
-        >>> yd.count_bdays('2023-12-15', '2024-01-01')
+        >>> yd.count_bdays("2023-12-15", "2024-01-01")
         10
 
-        >>> start = '2023-01-01'
-        >>> end = pd.to_datetime(['2023-01-31', '2023-03-01'])
+        >>> start = "2023-01-01"
+        >>> end = pd.to_datetime(["2023-01-31", "2023-03-01"])
         >>> yd.count_bdays(start, end)
         pd.Series([22, 40], dtype='int64')
     """
@@ -315,7 +320,7 @@ def generate_bdays(
             start and end dates, considering the specified holidays.
 
     Examples:
-        >>> yd.generate_bdays(start='2023-12-22', end='2024-01-02')
+        >>> yd.generate_bdays(start="2023-12-22", end="2024-01-02")
         pd.Series(['2023-12-22', '2023-12-26', '2023-12-27', '2023-12-28', '2023-12-29',
             '2024-01-02'], dtype='datetime64[ns]')
 

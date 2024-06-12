@@ -21,14 +21,14 @@ def _fetch_raw_df(future_code: str) -> pd.DataFrame:
     url = f"https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation/{future_code}"
 
     try:
-        r = requests.get(url)
+        r = requests.get(url, timeout=10)
         r.raise_for_status()  # Check for HTTP request errors
     except requests.exceptions.RequestException:
         raise Exception(f"Failed to fetch data for {future_code}.") from None
 
     r.encoding = "utf-8"  # Explicitly set response encoding to utf-8 for consistency
 
-    if "Quotation not available" in r.text:
+    if "Quotation not available" in r.text or "curPrc" not in r.text:
         return pd.DataFrame()
 
     # Normalize JSON response into a flat table

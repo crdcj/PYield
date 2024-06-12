@@ -290,18 +290,19 @@ def spot_rates(
     )
 
 
-def breakeven_inflation(
-    reference_date: str | pd.Timestamp,
-    settlement_date: str | pd.Timestamp,
-    maturity_dates: pd.Series,
-    ytm_rates: pd.Series,
-) -> pd.DataFrame:
-    reference_date = dv.normalize_date(reference_date)
-    settlement_date = dv.normalize_date(settlement_date)
+def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
+    """
+    Fetch the Nominal Interest Rate (NIR) data for NTN-B bonds.
 
-    # NIR = Nominal Interest Rate
-    df_nir = da.fetch_asset(asset_code="DI1", reference_date=reference_date)
-    if "CurrentRate" in df_nir.columns:
+    Args:
+        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the NIR data for NTN-B bonds.
+    """
+    df = da.fetch_asset(asset_code="DI1", reference_date=reference_date)
+    if "CurrentRate" in df.columns:
+        df = df.rename(columns={"CurrentRate": "NIR"})
         keep_cols = [
             "TradeDate",
             "TradeTime",
@@ -310,26 +311,66 @@ def breakeven_inflation(
             "BDaysToExp",
             "CurrentAskRate",
             "CurrentBidRate",
-            "CurrentRate",
+            "NIR",
         ]
-        df_nir = df_nir[keep_cols].copy()
-        df_nir = df_nir.rename(columns={"CurrentRate": "NIR"})
+    elif "SettlementRate" in df.columns:
+        df = df.rename(columns={"SettlementRate": "NIR"})
+        keep_cols = ["TradeDate", "TickerSymbol", "ExpirationDate", "BDaysToExp", "NIR"]
     else:
-        keep_cols = [
-            "TradeDate",
-            "TickerSymbol",
-            "ExpirationDate",
-            "BDaysToExp",
-            "SettlementRate",
-        ]
-        df_nir = df_nir[keep_cols].copy()
-        df_nir = df_nir.rename(columns={"SettlementRate": "NIR"})
+        raise ValueError("NIR data not found in the DataFrame.")
 
-    df_nir = df_nir.dropna(subset=["NIR"])
+    df = df[keep_cols].dropna(subset=["NIR"])
+
+    # Add DI spreads for prefixed bonds (LTN) and adjust NIR
+    today = pd.Timestamp.today().normalize()
+    anbima_date = reference_date
+    if reference_date == today:
+        # If the reference date is today, use the previous business day
+        anbima_date = bday.offset_bdays(reference_date, -1)
+    df_pre = da.calculate_spreads(spread_type="DI_PRE", reference_date=anbima_date)
+    df_pre.query("BondType == 'LTN'", inplace=True)
+    df_pre["MaturityDate"] = bday.offset_bdays(df_pre["MaturityDate"], 0)
+    df_pre["DISpread"] = df_pre["DISpread"] / 10_000
+    df_pre.drop(columns=["BondType"], inplace=True)
+
+    df = pd.merge_asof(df, df_pre, left_on="ExpirationDate", right_on="MaturityDate")
+    df["NIRAdj"] = df["NIR"] + df["DISpread"]
+
+    return df
+
+
+def breakeven_inflation(
+    reference_date: str | pd.Timestamp,
+    settlement_date: str | pd.Timestamp,
+    maturity_dates: pd.Series,
+    ytm_rates: pd.Series,
+) -> pd.DataFrame:
+    """
+    Calculate the Breakeven Inflation (BEI) for NTN-B bonds based on nominal and real
+    interest rates.
+
+    Args:
+        reference_date (str | pd.Timestamp): The reference date for fetching data and
+            calculations.
+        settlement_date (str | pd.Timestamp): The settlement date for the bonds.
+        maturity_dates (pd.Series): Series of maturity dates for the bonds.
+        ytm_rates (pd.Series): Series of Yield to Maturity (YTM) rates corresponding to
+            the maturity dates.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the maturity dates, real interest rates
+            (RIR), nominal interest rates (NIR) and breakeven inflation rates (BEI).
+    """
+    # Normalize input dates
+    reference_date = dv.normalize_date(reference_date)
+    settlement_date = dv.normalize_date(settlement_date)
+
+    # Fetch Nominal Interest Rate (NIR) data
+    df_nir = _get_nir_df(reference_date)
     known_bdays = df_nir["BDaysToExp"].to_list()
     known_rates = df_nir["NIR"].to_list()
 
-    # RIR = Real Interest Rate
+    # Calculate Real Interest Rate (RIR)
     df_rir = spot_rates(settlement_date, maturity_dates, ytm_rates)
     df_rir = df_rir.rename(columns={"SpotRate": "RIR"})
     df_rir["BDays"] = bday.count_bdays(reference_date, df_rir["MaturityDate"])
@@ -337,6 +378,14 @@ def breakeven_inflation(
         lambda x: ip.find_and_interpolate_flat_forward(x, known_bdays, known_rates)
     )
 
-    # Calculate the BEI (Breakeven Inflation) for each maturity date
+    # Calculate Breakeven Inflation (BEI)
     df_rir["BEI"] = ((df_rir["NIR"] + 1) / (df_rir["RIR"] + 1)) - 1
-    return df_rir.drop(columns=["BDays", "NIR"])
+
+    # Adjust BEI for DI spread in prefixed bonds
+    known_rates = df_nir["NIRAdj"].to_list()
+    df_rir["NIRAdj"] = df_rir["BDays"].apply(
+        lambda x: ip.find_and_interpolate_flat_forward(x, known_bdays, known_rates)
+    )
+    df_rir["BEIAdj"] = ((df_rir["NIRAdj"] + 1) / (df_rir["RIR"] + 1)) - 1
+
+    return df_rir.drop(columns=["BDays", "NIR", "NIRAdj"])
