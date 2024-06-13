@@ -43,7 +43,7 @@ def _get_file_from_url(trade_date: pd.Timestamp, source_type: str) -> io.BytesIO
     else:
         raise ValueError("Invalid source type. Must be either 'PR' or 'SPR'.")
 
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
 
     # File will be considered invalid if it is too small
     if response.status_code != 200 or len(response.content) < 1024:
@@ -74,9 +74,15 @@ def _extract_xml_from_zip(zip_file: io.BytesIO) -> io.BytesIO:
 
 def _extract_data_from_xml(xml_file: io.BytesIO, asset_code: str) -> list[dict]:
     parser = etree.XMLParser(
-        ns_clean=True, remove_blank_text=True, remove_comments=True, recover=True
+        ns_clean=True,
+        remove_blank_text=True,
+        remove_comments=True,
+        recover=True,
+        resolve_entities=False,
+        no_network=True,
+        load_dtd=False,  # Disable DTD loading
     )
-    tree = etree.parse(xml_file, parser)
+    tree = etree.parse(xml_file, parser=parser)
 
     # XPath para encontrar elementos cujo texto começa com código do ativo: DI1, FRC...
     namespaces = {"ns": "urn:bvmf.217.01.xsd"}

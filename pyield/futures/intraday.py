@@ -1,10 +1,20 @@
+from io import StringIO
+
 import pandas as pd
 import requests
 
 from .. import bday
 
 
-def _fetch_raw_df(future_code: str) -> pd.DataFrame:
+# Função para salvar DataFrame em CSV e ler com read_csv
+def convert_with_read_csv(df):
+    buffer = StringIO()
+    df.to_csv(buffer, index=False)
+    buffer.seek(0)  # Reposiciona o cursor no início do buffer
+    return pd.read_csv(buffer, dtype_backend="numpy_nullable")
+
+
+def _fetch_b3_df(future_code: str) -> pd.DataFrame:
     """
     Fetch the latest data for a given future code from B3 derivatives quotation API.
 
@@ -34,34 +44,8 @@ def _fetch_raw_df(future_code: str) -> pd.DataFrame:
     # Normalize JSON response into a flat table
     df = pd.json_normalize(r.json()["Scty"])
 
-    # Clean and reformat the DataFrame columns
-    df.columns = (df.columns
-        .str.replace("SctyQtn.", "")
-        .str.replace("asset.AsstSummry.", "")
-    )  # fmt: skip
-    df.drop(columns=["desc", "asset.code", "mkt.cd"], inplace=True)
-
-    # Convert maturity codes to datetime and drop rows with missing values
-    df["mtrtyCode"] = pd.to_datetime(df["mtrtyCode"], errors="coerce")
-    df.dropna(subset=["mtrtyCode"], inplace=True)
-
-    # Sort the DataFrame by maturity code and reset the index
-    df.sort_values("mtrtyCode", inplace=True, ignore_index=True)
-
-    # Get currante date
-    today = pd.Timestamp.now().normalize()
-    df["TradeDate"] = today
-
-    # Get current date and time
-    now = pd.Timestamp.now().round("s")
-    # Subtract 15 minutes from the current time to account for API delay
-    trade_ts = now - pd.Timedelta(minutes=15)
-    df["TradeTime"] = trade_ts
-
     # Convert DataFrame to use nullable data types for better type consistency
-    df = df.convert_dtypes(dtype_backend="numpy_nullable")
-
-    return df
+    return convert_with_read_csv(df)
 
 
 def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -100,6 +84,32 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     df = raw_df.copy()
+
+    # Clean and reformat the DataFrame columns
+    df.columns = (df.columns
+        .str.replace("SctyQtn.", "")
+        .str.replace("asset.AsstSummry.", "")
+    )  # fmt: skip
+    df.drop(columns=["desc", "asset.code", "mkt.cd"], inplace=True)
+
+    df = _rename_columns(df)
+
+    # Convert maturity codes to datetime and drop rows with missing values
+    df["ExpirationDate"] = pd.to_datetime(df["ExpirationDate"], errors="coerce")
+    df.dropna(subset=["ExpirationDate"], inplace=True)
+
+    # Sort the DataFrame by maturity code and reset the index
+    df.sort_values("ExpirationDate", inplace=True, ignore_index=True)
+
+    # Get currante date
+    today = pd.Timestamp.now().normalize()
+    df["TradeDate"] = today
+
+    # Get current date and time
+    now = pd.Timestamp.now().round("s")
+    # Subtract 15 minutes from the current time to account for API delay
+    trade_ts = now - pd.Timedelta(minutes=15)
+    df["TradeTime"] = trade_ts
 
     df["BDaysToExp"] = bday.count_bdays(df["TradeDate"], df["ExpirationDate"])
 
@@ -156,10 +166,9 @@ def fetch_intraday_df(future_code: str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
     """
-    raw_df = _fetch_raw_df(future_code)
+    raw_df = _fetch_b3_df(future_code)
     if raw_df.empty:
         return raw_df
-    df = _rename_columns(raw_df)
-    df = _process_df(df)
+    df = _process_df(raw_df)
     df = _select_and_reorder_columns(df)
     return df

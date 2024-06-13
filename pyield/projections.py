@@ -54,7 +54,7 @@ def fetch_current_month_ipca_projection() -> IndicatorProjection:
     """
     # Define the URL and get the data
     url = "https://www.anbima.com.br/informacoes/indicadores/arqs/indicadores.xls"
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
     excel_data = io.BytesIO(response.content)
 
     # Load the workbook and select the first sheet
