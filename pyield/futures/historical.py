@@ -119,7 +119,7 @@ def fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     url_date = trade_date.strftime("%d/%m/%Y")
     # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
     url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={url_date}&Mercadoria={asset_code}&XLS=false"
-    r = requests.get(url)
+    r = requests.get(url, timeout=10)
 
     text = r.text
     if "VENCTO" not in text:
