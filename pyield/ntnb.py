@@ -352,31 +352,32 @@ def breakeven_inflation(
     ytm_rates: pd.Series,
 ) -> pd.DataFrame:
     """
-    Calculate the Breakeven Inflation (BEI) for NTN-B bonds based on nominal and real
+    Calculate the Breakeven Inflation (INF) for NTN-B bonds based on nominal and real
     interest rates.
 
     Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching data and
-            calculations.
-        settlement_date (str | pd.Timestamp): The settlement date for the bonds.
-        maturity_dates (pd.Series): Series of maturity dates for the bonds.
-        ytm_rates (pd.Series): Series of Yield to Maturity (YTM) rates corresponding to
-            the maturity dates.
+        reference_date (str or pd.Timestamp): The reference date for fetching data and
+            performing calculations.
+        settlement_date (str or pd.Timestamp): The settlement date for the bonds.
+        maturity_dates (pd.Series): A series of maturity dates for the bonds.
+        ytm_rates (pd.Series): A series of Yield to Maturity (YTM) rates corresponding
+            to the maturity dates.
 
     Returns:
-        pd.DataFrame: DataFrame containing the maturity dates, real interest rates
-            (RSR), nominal interest rates (NIR) and breakeven inflation rates (BEI).
+        pd.DataFrame: DataFrame containing the maturity dates, business days to maturity
+            (BDays), Yield to Maturity (YTM), real spot rates (RSR), nominal spot rates
+            (NSR_DI and NSR_PRE), and breakeven inflation rates (INF_DI and INF_PRE).
     """
     # Normalize input dates
     reference_date = dv.normalize_date(reference_date)
     settlement_date = dv.normalize_date(settlement_date)
 
-    # Fetch Nominal Interest Rate (NIR) data
+    # Fetch Nominal Spot Rate (NSR) data
     df_nir = _get_nir_df(reference_date)
     known_bdays = df_nir["BDaysToExp"].to_list()
     known_rates = df_nir["NSR_DI"].to_list()
 
-    # Calculate Real Interest Rate (RSR)
+    # Calculate Real Spot Rate (RSR)
     df_rir = spot_rates(settlement_date, maturity_dates, ytm_rates)
     df_rir = df_rir.rename(columns={"SpotRate": "RSR"})
     df_rir["BDays"] = bday.count_bdays(reference_date, df_rir["MaturityDate"])
