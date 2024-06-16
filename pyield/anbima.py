@@ -8,14 +8,15 @@ ANBIMA_NON_MEMBER_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
 ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs/"
 
 
-def _get_anbima_content(reference_date: pd.Timestamp) -> str:
+def _get_file_content(reference_date: pd.Timestamp, headers: dict = None) -> str:
+    headers = headers or {}  # Default empty headers
     url_date = reference_date.strftime("%y%m%d")
     member_url = f"{ANBIMA_MEMBER_URL}ms{url_date}.txt"
     non_member_url = f"{ANBIMA_NON_MEMBER_URL}ms{url_date}.txt"
 
     # Tries to access the member URL first
     try:
-        response = requests.get(member_url, timeout=5)
+        response = requests.get(member_url, headers=headers, timeout=5)
         # Checks if the response was successful (status code 200)
         response.raise_for_status()
         return response.text
@@ -33,14 +34,9 @@ def _get_anbima_content(reference_date: pd.Timestamp) -> str:
         return ""
 
 
-def _get_raw_df(reference_date: pd.Timestamp) -> pd.DataFrame:
-    url_content = _get_anbima_content(reference_date)
-    if url_content == "":
-        date_str = reference_date.strftime("%d-%m-%Y")
-        raise ValueError(f"Could not fetch ANBIMA data for {date_str}.")
-
-    df = pd.read_csv(
-        io.StringIO(url_content),
+def _read_raw_df(file_content: str) -> pd.DataFrame:
+    return pd.read_csv(
+        io.StringIO(file_content),
         sep="@",
         encoding="latin-1",
         skiprows=2,
@@ -49,7 +45,6 @@ def _get_raw_df(reference_date: pd.Timestamp) -> pd.DataFrame:
         na_values=["--"],
         dtype_backend="numpy_nullable",
     )
-    return df
 
 
 def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
@@ -95,31 +90,27 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def fetch_bonds(reference_date: pd.Timestamp, return_raw=False) -> pd.DataFrame:
+def fetch_bonds(reference_date: pd.Timestamp, headers: dict = None) -> pd.DataFrame:
     """
     Fetches indicative treasury rates from ANBIMA for a specified reference date.
 
     This function retrieves the indicative rates for Brazilian treasury securities
     from ANBIMA, processing them into a structured pandas DataFrame.
-    There is an option to return raw data directly from the source without processing.
 
     Parameters:
-        reference_date (str | pd.Timestamp, optional): The date for which to fetch the
-            indicative rates. If None or not provided, the function defaults to the
-            previous business day.
-        return_raw (bool, optional): Flag to return raw data without processing.
-            Defaults to False.
+        reference_date (pd.Timestamp): The date for which to fetch the indicative rates.
 
     Returns:
         pd.DataFrame: A DataFrame containing the processed indicative rates for the
-            given reference date, or raw data if `return_raw` is True. The processed
-            data includes bond type, reference date, maturity date and various rates
-            (bid, ask, indicative) among others, depending on the `return_raw` flag.
+            given reference date.
 
     """
-    df = _get_raw_df(reference_date)
+    file_content = _get_file_content(reference_date, headers)
 
-    if not return_raw:
-        df = _process_raw_df(df)
+    if file_content == "":
+        date_str = reference_date.strftime("%d-%m-%Y")
+        raise ValueError(f"Could not fetch ANBIMA data for {date_str}.")
 
-    return df
+    df = _read_raw_df(file_content)
+
+    return _process_raw_df(df)

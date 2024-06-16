@@ -1,11 +1,11 @@
 import pandas as pd
 
+from . import anbima as an
 from . import date_validator as dv
 from . import futures as ft
 from . import indicators as it
 from . import projections as pr
 from . import spreads as sp
-from . import tn_bonds as tb
 
 
 def fetch_asset(
@@ -55,10 +55,10 @@ def fetch_asset(
         return ft.fetch_intraday_df(future_code=asset_code.upper())
 
     if asset_code.upper() == "TRB":
-        return tb.fetch_bonds(reference_date=normalized_date)
+        return an.fetch_bonds(reference_date=normalized_date)
 
     if asset_code.upper() in SUPPORTED_BONDS:
-        df_bond = tb.fetch_bonds(reference_date=normalized_date)
+        df_bond = an.fetch_bonds(reference_date=normalized_date)
         df_bond.query(f"BondType == '{asset_code.upper()}'", inplace=True)
         # Return the DataFrame sorted by maturity date
         return df_bond.sort_values("MaturityDate", ignore_index=True)
