@@ -60,8 +60,8 @@ def fetch_asset(
     if asset_code.upper() in SUPPORTED_BONDS:
         df_bond = an.fetch_data(reference_date=normalized_date)
         df_bond.query(f"BondType == '{asset_code.upper()}'", inplace=True)
-        # Return the DataFrame sorted by maturity date
-        return df_bond.sort_values("MaturityDate", ignore_index=True)
+        # Return the DataFrame with the index reset
+        return df_bond.reset_index(drop=True)
 
     if asset_code.upper() in SUPPORTED_FUTURES:
         return ft.fetch_historical_df(

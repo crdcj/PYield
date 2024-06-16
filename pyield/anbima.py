@@ -50,14 +50,13 @@ def _read_raw_df(file_content: str) -> pd.DataFrame:
 
 def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     """
-    Process raw data from ANBIMA by filtering selected columns, renaming them and
-    adjusting data formats.
+    Process raw data from ANBIMA by renaming columns and adjusting data formats.
 
     Parameters:
-    - df (pd.DataFrame): Raw data DataFrame to process.
+        df (pd.DataFrame): Raw DataFrame to process.
 
     Returns:
-    - pd.DataFrame: Processed DataFrame.
+        pd.DataFrame: Processed DataFrame.
     """
     # Filter selected columns and rename them
     selected_columns_dict = {
@@ -77,16 +76,14 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
         "Interv. Ind. Sup. (D+1)": "UpperBoundRateD1",
         "Criterio": "Criteria",
     }
-    select_columns = list(selected_columns_dict.keys())
-    df = df_raw[select_columns].copy()
-    df = df.rename(columns=selected_columns_dict)
+    df = df_raw.rename(columns=selected_columns_dict)
 
     # Remove percentage from rates
     rate_cols = [col for col in df.columns if "Rate" in col]
     df[rate_cols] = (df[rate_cols] / 100).round(6)
 
-    df["ReferenceDate"] = pd.to_datetime(df["ReferenceDate"], format="%Y/%m/%d")
-    df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%Y/%m/%d")
+    df["ReferenceDate"] = pd.to_datetime(df["ReferenceDate"], format="%Y%m%d")
+    df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%Y%m%d")
 
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
