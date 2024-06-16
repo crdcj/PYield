@@ -17,7 +17,7 @@ def fetch_asset(
     Args:
         asset_code (str): The asset code identifying the type of financial asset.
         Supported options:
-            - "TRB": Treasury bonds (indicative rates from ANBIMA).
+            - "TRB": Brazilian treasury bonds (indicative rates from ANBIMA).
             - "LTN", "LFT", "NTN-F", "NTN-B": Specific types of Brazilian treasury bonds
                   (indicative rates from ANBIMA).
             - "DI1": One-day Interbank Deposit Futures (Futuro de DI) from B3.
@@ -42,7 +42,7 @@ def fetch_asset(
         ValueError: If the asset code is not recognized or supported.
 
     Examples:
-        >>> fetch_asset("TRB", "31-05-2024")
+        >>> fetch_asset("LTN", "31-05-2024")
         >>> fetch_asset("DI1", "31-05-2024")
     """
     SUPPORTED_BONDS = ["LTN", "LFT", "NTN-F", "NTN-B"]
@@ -55,10 +55,10 @@ def fetch_asset(
         return ft.fetch_intraday_df(future_code=asset_code.upper())
 
     if asset_code.upper() == "TRB":
-        return an.fetch_bonds(reference_date=normalized_date)
+        return an.fetch_data(reference_date=normalized_date)
 
     if asset_code.upper() in SUPPORTED_BONDS:
-        df_bond = an.fetch_bonds(reference_date=normalized_date)
+        df_bond = an.fetch_data(reference_date=normalized_date)
         df_bond.query(f"BondType == '{asset_code.upper()}'", inplace=True)
         # Return the DataFrame sorted by maturity date
         return df_bond.sort_values("MaturityDate", ignore_index=True)

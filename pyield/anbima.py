@@ -12,6 +12,7 @@ def _get_file_content(reference_date: pd.Timestamp, headers: dict = None) -> str
     headers = headers or {}  # Default empty headers
     url_date = reference_date.strftime("%y%m%d")
     member_url = f"{ANBIMA_MEMBER_URL}ms{url_date}.txt"
+    # Non member url example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
     non_member_url = f"{ANBIMA_NON_MEMBER_URL}ms{url_date}.txt"
 
     # Tries to access the member URL first
@@ -62,35 +63,35 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     selected_columns_dict = {
         "Titulo": "BondType",
         "Data Referencia": "ReferenceDate",
-        # "Codigo SELIC": "SelicCode",
-        # "Data Base/Emissao": "IssueBaseDate",
+        "Codigo SELIC": "SelicCode",
+        "Data Base/Emissao": "IssueBaseDate",
         "Data Vencimento": "MaturityDate",
         "Tx. Compra": "BidRate",
         "Tx. Venda": "AskRate",
         "Tx. Indicativas": "IndicativeRate",
         "PU": "Price",
-        # "Desvio padrao": "StdDev",
-        # "Interv. Ind. Inf. (D0)",
-        # "Interv. Ind. Sup. (D0)",
-        # "Interv. Ind. Inf. (D+1)",
-        # "Interv. Ind. Sup. (D+1)",
-        # "Criterio": "Criteria",
+        "Desvio padrao": "StdDev",
+        "Interv. Ind. Inf. (D0)": "LowerBoundRateD0",
+        "Interv. Ind. Sup. (D0)": "UpperBoundRateD0",
+        "Interv. Ind. Inf. (D+1)": "LowerBoundRateD1",
+        "Interv. Ind. Sup. (D+1)": "UpperBoundRateD1",
+        "Criterio": "Criteria",
     }
     select_columns = list(selected_columns_dict.keys())
     df = df_raw[select_columns].copy()
     df = df.rename(columns=selected_columns_dict)
 
     # Remove percentage from rates
-    rate_cols = ["BidRate", "AskRate", "IndicativeRate"]
-    df[rate_cols] = df[rate_cols] / 100
+    rate_cols = [col for col in df.columns if "Rate" in col]
+    df[rate_cols] = (df[rate_cols] / 100).round(6)
 
-    df["ReferenceDate"] = pd.to_datetime(df["ReferenceDate"], format="%Y%m%d")
-    df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%Y%m%d")
+    df["ReferenceDate"] = pd.to_datetime(df["ReferenceDate"], format="%Y/%m/%d")
+    df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%Y/%m/%d")
 
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def fetch_bonds(reference_date: pd.Timestamp, headers: dict = None) -> pd.DataFrame:
+def fetch_data(reference_date: pd.Timestamp, headers: dict = None) -> pd.DataFrame:
     """
     Fetches indicative treasury rates from ANBIMA for a specified reference date.
 
@@ -114,3 +115,22 @@ def fetch_bonds(reference_date: pd.Timestamp, headers: dict = None) -> pd.DataFr
     df = _read_raw_df(file_content)
 
     return _process_raw_df(df)
+
+
+def fetch_rates(reference_date: pd.Timestamp, headers: dict = None) -> pd.DataFrame:
+    """
+    Fetches indicative treasury rates from ANBIMA for a specified reference date.
+
+    This function retrieves the indicative rates for Brazilian treasury securities
+    from ANBIMA, processing them into a structured pandas DataFrame.
+
+    Parameters:
+        reference_date (pd.Timestamp): The date for which to fetch the indicative rates.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the processed indicative rates for the
+            given reference date.
+
+    """
+    df = fetch_data(reference_date, headers)
+    return df[["BondType", "MaturityDate", "IndicativeRate"]].copy()
