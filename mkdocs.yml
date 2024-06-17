@@ -1,0 +1,16 @@
+site_name: PYield
+theme:
+  name: material
+  palette:
+    scheme: slate
+  font:
+    text: "Roboto"
+    code: "Roboto Mono"
+  
+plugins:
+  - search
+  - mkdocstrings      
+
+nav:
+  - Home: index.md
+  

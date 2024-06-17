@@ -38,7 +38,7 @@ def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = an.fetch_bonds(reference_date, False)
+    df_anbima = an.fetch_data(reference_date, False)
     df_anbima.query("BondType in ['LTN', 'NTN-F']", inplace=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads

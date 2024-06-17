@@ -36,7 +36,14 @@ version = { source = "file", path = "pyield/__about__.py" }
 distribution = true
 
 [tool.pdm.dev-dependencies]
-dev = ["ipykernel", "pytest", "mypy"]
+dev = [
+    "ipykernel",
+    "pytest",
+    "mypy",
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings[python]",
+]
 
 [tool.ruff]
 select = ["E", "W", "F", "B", "C", "Q", "S"]
