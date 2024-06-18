@@ -1,6 +1,5 @@
 import pandas as pd
 
-from . import anbima as an
 from . import date_validator as dv
 from . import futures as ft
 
@@ -42,7 +41,7 @@ def fetch_asset(
         >>> fetch_asset("LTN", "31-05-2024")
         >>> fetch_asset("DI1", "31-05-2024")
     """
-    SUPPORTED_BONDS = ["LTN", "LFT", "NTN-F", "NTN-B"]
+
     SUPPORTED_FUTURES = ["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
 
     normalized_date = dv.normalize_date(reference_date)
@@ -50,15 +49,6 @@ def fetch_asset(
     today = pd.Timestamp.today().normalize()
     if normalized_date == today:
         return ft.fetch_intraday_df(future_code=asset_code.upper())
-
-    if asset_code.upper() == "TRB":
-        return an.fetch_data(reference_date=normalized_date)
-
-    if asset_code.upper() in SUPPORTED_BONDS:
-        df_bond = an.fetch_data(reference_date=normalized_date)
-        df_bond.query(f"BondType == '{asset_code.upper()}'", inplace=True)
-        # Return the DataFrame with the index reset
-        return df_bond.reset_index(drop=True)
 
     if asset_code.upper() in SUPPORTED_FUTURES:
         return ft.fetch_historical_df(

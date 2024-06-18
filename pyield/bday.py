@@ -45,7 +45,7 @@ def _normalize_input_dates(
         raise ValueError("Invalid date format.")
 
 
-def is_bday(date: SingleDateTypes | None = None) -> bool:
+def is_business_day(date: SingleDateTypes | None = None) -> bool:
     """
     Checks if the input date is a business day.
 
