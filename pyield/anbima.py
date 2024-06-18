@@ -4,20 +4,25 @@ import pandas as pd
 import requests
 
 # URL Constants
-ANBIMA_NON_MEMBER_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
-ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs/"
+ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
+# URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 
 
-def _get_file_content(reference_date: pd.Timestamp, headers: dict = None) -> str:
-    headers = headers or {}  # Default empty headers
+def _get_file_content(reference_date: pd.Timestamp, remote_access: dict = None) -> str:
     url_date = reference_date.strftime("%y%m%d")
-    member_url = f"{ANBIMA_MEMBER_URL}ms{url_date}.txt"
-    # Non member url example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
-    non_member_url = f"{ANBIMA_NON_MEMBER_URL}ms{url_date}.txt"
+    filename = f"ms{url_date}.txt"
 
     # Tries to access the member URL first
     try:
-        response = requests.get(member_url, headers=headers, timeout=5)
+        if remote_access:
+            anbima_url = f'{remote_access["anbima_url"]}/merc_sec/arqs/'
+            headers = remote_access["headers_dict"]
+        else:
+            anbima_url = "http://www.anbima.associados.rtm/merc_sec/arqs/"
+            headers = None
+
+        file_url = f"{anbima_url}{filename}"
+        response = requests.get(file_url, headers=headers, timeout=5)
         # Checks if the response was successful (status code 200)
         response.raise_for_status()
         return response.text
@@ -27,7 +32,8 @@ def _get_file_content(reference_date: pd.Timestamp, headers: dict = None) -> str
 
     # If the member URL fails, tries to access the non-member URL
     try:
-        response = requests.get(non_member_url, timeout=5)
+        file_url = f"{ANBIMA_URL}{filename}"
+        response = requests.get(file_url, timeout=5)
         response.raise_for_status()  # Checks if the second attempt was successful
         return response.text
     except requests.exceptions.RequestException:
@@ -88,7 +94,9 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def fetch_data(reference_date: pd.Timestamp, headers: dict = None) -> pd.DataFrame:
+def fetch_data(
+    reference_date: pd.Timestamp, remote_access: dict = None
+) -> pd.DataFrame:
     """
     Fetches indicative treasury rates from ANBIMA for a specified reference date.
 
@@ -103,7 +111,7 @@ def fetch_data(reference_date: pd.Timestamp, headers: dict = None) -> pd.DataFra
             given reference date.
 
     """
-    file_content = _get_file_content(reference_date, headers)
+    file_content = _get_file_content(reference_date, remote_access)
 
     if file_content == "":
         date_str = reference_date.strftime("%d-%m-%Y")
@@ -114,7 +122,9 @@ def fetch_data(reference_date: pd.Timestamp, headers: dict = None) -> pd.DataFra
     return _process_raw_df(df)
 
 
-def fetch_rates(reference_date: pd.Timestamp, headers: dict = None) -> pd.DataFrame:
+def fetch_rates(
+    reference_date: pd.Timestamp, remote_access: dict = None
+) -> pd.DataFrame:
     """
     Fetches indicative treasury rates from ANBIMA for a specified reference date.
 
@@ -129,5 +139,5 @@ def fetch_rates(reference_date: pd.Timestamp, headers: dict = None) -> pd.DataFr
             given reference date.
 
     """
-    df = fetch_data(reference_date, headers)
+    df = fetch_data(reference_date, remote_access)
     return df[["BondType", "MaturityDate", "IndicativeRate"]].copy()
