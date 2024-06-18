@@ -59,7 +59,7 @@ def get_expiration_date(expiration_code: str, expiration_day: int = 1) -> pd.Tim
         expiration = pd.Timestamp(year, month, expiration_day)
 
         # Adjust to the next business day when expiration date is not a business day
-        adj_expiration = bday.offset_bdays(expiration, offset=0)
+        adj_expiration = bday.offset(expiration, offset=0)
 
         return adj_expiration
 

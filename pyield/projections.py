@@ -15,7 +15,7 @@ class IndicatorProjection:
     projected_value: float  # Projected value
 
 
-def fetch_current_month_ipca_projection() -> IndicatorProjection:
+def ipca_current_month() -> IndicatorProjection:
     """
     Fetches the current month's IPCA projection from the ANBIMA website and returns it
     as an IndicatorProjection instance.
@@ -45,6 +45,7 @@ def fetch_current_month_ipca_projection() -> IndicatorProjection:
             reference_month_br='ABR/2024',
             projected_value=0.35
         )
+
 
     Data file format example after parsing:
         - ['Data e Hora da Última Atualização: 19/04/2024 - 18:55 h', '', '']

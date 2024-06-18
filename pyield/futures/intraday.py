@@ -111,7 +111,7 @@ def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     trade_ts = now - pd.Timedelta(minutes=15)
     df["TradeTime"] = trade_ts
 
-    df["BDaysToExp"] = bday.count_bdays(df["TradeDate"], df["ExpirationDate"])
+    df["BDaysToExp"] = bday.count(df["TradeDate"], df["ExpirationDate"])
 
     df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
     # Convert to nullable integer, since it is the default type in the library

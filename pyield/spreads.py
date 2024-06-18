@@ -7,7 +7,7 @@ from .futures import historical as fh
 BPS_CONVERSION_FACTOR = 10_000
 
 
-def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
+def di_pre(reference_date: pd.Timestamp) -> pd.DataFrame:
     """
     Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on
     ANBIMA's indicative rates.
@@ -18,12 +18,13 @@ def calculate_di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     provided, the function uses the previous business day.
 
     Parameters:
-        reference_date (str | pd.Timestamp, optional): The reference date for the DI
-            spread calculation.
+        reference_date (str | pd.Timestamp, optional): The reference date for the
+            spread calculation. If None or not provided, defaults to the previous
+            business day according to the Brazilian calendar.
 
     Returns:
         pd.DataFrame: A DataFrame containing the bond type, reference date, maturity
-            date, and the calculated DI spread in basis points. The data is sorted by
+            date, and the calculated spread in basis points. The data is sorted by
             bond type and maturity date.
     """
     # Fetch DI rates for the reference date

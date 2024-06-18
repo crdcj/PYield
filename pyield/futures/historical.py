@@ -73,7 +73,7 @@ def get_old_expiration_date(
         expiration_date = pd.Timestamp(year, month, 1)
         # Adjust to the next business day when the date is a weekend or a holiday.
         # Must use old holiday list, since this contract code was used until 2006.
-        return bday.offset_bdays(expiration_date, offset=0, holiday_list="old")
+        return bday.offset(expiration_date, offset=0, holiday_list="old")
 
     except (KeyError, ValueError):
         return pd.NaT  # type: ignore
@@ -212,7 +212,7 @@ def process_df(
     # Convert to nullable integer, since it is the default type in the library
     df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
 
-    df["BDaysToExp"] = bday.count_bdays(trade_date, df["ExpirationDate"])
+    df["BDaysToExp"] = bday.count(trade_date, df["ExpirationDate"])
 
     # Remove expired contracts
     df.query("DaysToExp > 0", inplace=True)
