@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from . import bday
-from . import data_access as da
+from . import anbima, bday, futures, spread
 from . import date_validator as dv
 from . import interpolator as ip
 
@@ -20,7 +19,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
-    return da.fetch_asset(asset_code="NTN-B", reference_date=reference_date)
+    return anbima.data(bond_type="NTN-B", reference_date=reference_date)
 
 
 def ytm_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
@@ -33,7 +32,7 @@ def ytm_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
     """
-    df = anbima_data(reference_date)[["MaturityDate", "IndicativeRate"]]
+    df = anbima.rates(reference_date, bond_type="NTN-B")
     # Rename IndicativeRate to YTM for consistency
     return df.rename(columns={"IndicativeRate": "YTM"})
 
@@ -302,7 +301,7 @@ def _get_nsr_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame containing the NIR data for NTN-B bonds.
     """
-    df = da.fetch_asset(asset_code="DI1", reference_date=reference_date)
+    df = futures.data(contract_code="DI1", reference_date=reference_date)
     if "CurrentRate" in df.columns:
         df = df.rename(columns={"CurrentRate": "NSR_DI"})
         keep_cols = [
@@ -335,7 +334,7 @@ def _get_nsr_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     if reference_date == today:
         # If the reference date is today, use the previous business day
         anbima_date = bday.offset(reference_date, -1)
-    df_pre = da.calculate_spreads(spread_type="DI_PRE", reference_date=anbima_date)
+    df_pre = spread.di_pre(reference_date=anbima_date)
     df_pre.query("BondType == 'LTN'", inplace=True)
     df_pre["MaturityDate"] = bday.offset(df_pre["MaturityDate"], 0)
     df_pre["DISpread"] = df_pre["DISpread"] / 10_000

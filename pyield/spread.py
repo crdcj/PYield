@@ -1,13 +1,12 @@
 import pandas as pd
 
-from . import anbima as an
-from .futures import historical as fh
+from . import anbima, futures
 
 # Constant for conversion to basis points
 BPS_CONVERSION_FACTOR = 10_000
 
 
-def di_pre(reference_date: pd.Timestamp) -> pd.DataFrame:
+def di_pre(reference_date: str | pd.Timestamp | None = None) -> pd.DataFrame:
     """
     Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on
     ANBIMA's indicative rates.
@@ -28,9 +27,7 @@ def di_pre(reference_date: pd.Timestamp) -> pd.DataFrame:
             bond type and maturity date.
     """
     # Fetch DI rates for the reference date
-    df_di = fh.fetch_historical_df(asset_code="DI1", trade_date=reference_date)[
-        ["ExpirationDate", "SettlementRate"]
-    ]
+    df_di = futures.data("DI1", reference_date)[["ExpirationDate", "SettlementRate"]]
 
     # Renaming the columns to match the ANBIMA structure
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
@@ -39,7 +36,7 @@ def di_pre(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = an.data(reference_date, False)
+    df_anbima = anbima.rates(reference_date, False)
     df_anbima.query("BondType in ['LTN', 'NTN-F']", inplace=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads
