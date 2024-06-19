@@ -7,6 +7,14 @@ import python_calamine as pc
 import requests
 
 
+def projection(projection_type: str) -> float | None:
+    projection_type = projection_type.upper()
+    if projection_type == "IPCA_CM":
+        return ipca_current_month()
+    else:
+        raise ValueError(f"Invalid projection type: {projection_type}")
+
+
 @dataclass
 class IndicatorProjection:
     last_updated: pd.Timestamp  # Date and time of the last update

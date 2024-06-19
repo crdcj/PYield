@@ -1,7 +1,24 @@
 import pandas as pd
 import requests
 
-from . import date_validator as dv
+from .. import date_validator as dv
+
+
+def indicator(
+    indicator_type: str,
+    reference_date: str | pd.Timestamp | None = None,
+) -> float | None:
+    indicator_type = indicator_type.upper()
+    if indicator_type == "IPCA_MR":
+        return ipca_monthly_rate(reference_date)
+    elif indicator_type == "SELIC_TARGET":
+        return selic_target(reference_date)
+    elif indicator_type == "DI":
+        return di(reference_date)
+    elif indicator_type == "VNA_LFT":
+        return vna_lft(reference_date)
+    else:
+        raise ValueError(f"Invalid indicator type: {indicator_type}")
 
 
 def ipca_monthly_rate(reference_date: str | pd.Timestamp | None = None) -> float | None:

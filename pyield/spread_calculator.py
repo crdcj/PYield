@@ -1,13 +1,49 @@
 import pandas as pd
 
-from .anbima_data import anbima
-from .futures_data import futures
+from . import date_validator as dv
+from .data_sources.anbima import anbima
+from .data_sources.futures import futures
 
 # Constant for conversion to basis points
 BPS_CONVERSION_FACTOR = 10_000
 
 
-def di_pre(reference_date: str | pd.Timestamp | None = None) -> pd.DataFrame:
+def spread(
+    spread_type: str, reference_date: str | pd.Timestamp | None = None
+) -> pd.DataFrame:
+    """
+    Calculate the spread between different types of rates for a specified reference date.
+
+    This function calculates the spread between different types of rates for a specified
+    reference date. The available spread types are:
+    - 'DI': The spread between the indicative rate for Brazilian treasury bonds (LTN and
+      NTN-F) and the DI futures rate.
+
+    Parameters:
+        spread_type (str): The type of spread to calculate. Must be one of 'DI_PRE'.
+        reference_date (str | pd.Timestamp, optional): The reference date for the spread
+            calculation. If None or not provided, defaults to the previous business day
+            according to the Brazilian calendar.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the calculated spread for the specified
+            reference date. The data is sorted by bond type and maturity date.
+
+    Raises:
+        ValueError: If an unsupported spread type is provided.
+
+    Example:
+        >>> spread("DI_PRE", "2024-06-18")
+    """
+    spread_type = spread_type.upper()
+    normalized_date = dv.normalize_date(reference_date)
+    if spread_type == "DI_PRE":
+        return di_pre(normalized_date)
+    else:
+        raise ValueError(f"Unsupported spread type: {spread_type}")
+
+
+def di_pre(reference_date: pd.Timestamp) -> pd.DataFrame:
     """
     Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on
     ANBIMA's indicative rates.

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .. import bday
+from ... import bday
 
 
 def get_expiration_date(expiration_code: str, expiration_day: int = 1) -> pd.Timestamp:

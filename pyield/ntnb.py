@@ -1,11 +1,12 @@
 import numpy as np
 import pandas as pd
 
-from . import bday, spread
+from . import bday
 from . import date_validator as dv
 from . import interpolator as ip
-from .anbima_data import anbima
-from .futures_data import futures
+from .data_sources.anbima import anbima
+from .data_sources.futures import futures
+from .spread_calculator import spread
 
 # 6% per year compounded semi-annually and rounded to 8 decimal places
 COUPON = 0.02956301  # round(((0.06 + 1) ** 0.5 - 1), 8)

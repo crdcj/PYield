@@ -3,7 +3,7 @@ import io
 import pandas as pd
 import requests
 
-from . import date_validator as dv
+from .. import date_validator as dv
 
 # URL Constants
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"

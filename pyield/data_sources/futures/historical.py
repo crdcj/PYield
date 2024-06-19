@@ -3,7 +3,7 @@ import io
 import pandas as pd
 import requests
 
-from .. import bday
+from ... import bday
 from . import common
 
 COUNT_CONVENTIONS = {
