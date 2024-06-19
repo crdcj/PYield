@@ -73,13 +73,13 @@ def get_old_expiration_date(
         expiration_date = pd.Timestamp(year, month, 1)
         # Adjust to the next business day when the date is a weekend or a holiday.
         # Must use old holiday list, since this contract code was used until 2006.
-        return bday.offset_bdays(expiration_date, offset=0, holiday_list="old")
+        return bday.offset(expiration_date, offset=0, holiday_list="old")
 
     except (KeyError, ValueError):
         return pd.NaT  # type: ignore
 
 
-def convert_prices_to_rates(
+def _convert_prices_to_rates(
     prices: pd.Series, days_to_expiration: pd.Series, count_convention: int
 ) -> pd.Series:
     """
@@ -105,7 +105,7 @@ def convert_prices_to_rates(
     return rates.round(5)
 
 
-def fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
+def _fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetch the historical futures data from B3 for a specific trade date. If the data is
     not available, an empty DataFrame is returned.
@@ -153,7 +153,7 @@ def fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
 
 def _adjust_older_contracts_rates(df: pd.DataFrame, rate_cols: list) -> pd.DataFrame:
     for col in rate_cols:
-        df[col] = convert_prices_to_rates(df[col], df["BDaysToExp"], 252)
+        df[col] = _convert_prices_to_rates(df[col], df["BDaysToExp"], 252)
 
     # Invert low and high prices
     df["MinRate"], df["MaxRate"] = df["MaxRate"], df["MinRate"]
@@ -161,7 +161,7 @@ def _adjust_older_contracts_rates(df: pd.DataFrame, rate_cols: list) -> pd.DataF
     return df
 
 
-def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     all_columns = {
         "VENCTO": "ExpirationCode",
         "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
@@ -212,7 +212,7 @@ def process_df(
     # Convert to nullable integer, since it is the default type in the library
     df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
 
-    df["BDaysToExp"] = bday.count_bdays(trade_date, df["ExpirationDate"])
+    df["BDaysToExp"] = bday.count(trade_date, df["ExpirationDate"])
 
     # Remove expired contracts
     df.query("DaysToExp > 0", inplace=True)
@@ -233,13 +233,13 @@ def process_df(
         df[rate_cols] = df[rate_cols].div(100).round(5)
 
     if COUNT_CONVENTIONS[asset_code] == 252:
-        df["SettlementRate"] = convert_prices_to_rates(
+        df["SettlementRate"] = _convert_prices_to_rates(
             prices=df["SettlementPrice"],
             days_to_expiration=df["BDaysToExp"],
             count_convention=252,
         )
     elif COUNT_CONVENTIONS[asset_code] == 360:
-        df["SettlementRate"] = convert_prices_to_rates(
+        df["SettlementRate"] = _convert_prices_to_rates(
             prices=df["SettlementPrice"],
             days_to_expiration=df["DaysToExp"],
             count_convention=360,
@@ -248,7 +248,7 @@ def process_df(
     return df
 
 
-def select_and_reorder_columns(df: pd.DataFrame):
+def _select_and_reorder_columns(df: pd.DataFrame):
     all_columns = [
         "TradeDate",
         "TickerSymbol",
@@ -292,10 +292,10 @@ def fetch_historical_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFra
     Returns:
         pd.DataFrame: A Pandas pd.DataFrame containing processed futures data.
     """
-    df_raw = fetch_raw_df(asset_code=asset_code, trade_date=trade_date)
+    df_raw = _fetch_raw_df(asset_code=asset_code, trade_date=trade_date)
     if df_raw.empty:
         return df_raw
-    df = rename_columns(df_raw)
+    df = _rename_columns(df_raw)
     df = process_df(df, trade_date, asset_code)
-    df = select_and_reorder_columns(df)
+    df = _select_and_reorder_columns(df)
     return df

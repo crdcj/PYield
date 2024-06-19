@@ -7,7 +7,7 @@ from .. import bday
 
 
 # Função para salvar DataFrame em CSV e ler com read_csv
-def convert_with_read_csv(df):
+def _convert_with_read_csv(df):
     buffer = StringIO()
     df.to_csv(buffer, index=False)
     buffer.seek(0)  # Reposiciona o cursor no início do buffer
@@ -45,7 +45,7 @@ def _fetch_b3_df(future_code: str) -> pd.DataFrame:
     df = pd.json_normalize(r.json()["Scty"])
 
     # Convert DataFrame to use nullable data types for better type consistency
-    return convert_with_read_csv(df)
+    return _convert_with_read_csv(df)
 
 
 def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -111,7 +111,7 @@ def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     trade_ts = now - pd.Timedelta(minutes=15)
     df["TradeTime"] = trade_ts
 
-    df["BDaysToExp"] = bday.count_bdays(df["TradeDate"], df["ExpirationDate"])
+    df["BDaysToExp"] = bday.count(df["TradeDate"], df["ExpirationDate"])
 
     df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
     # Convert to nullable integer, since it is the default type in the library

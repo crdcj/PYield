@@ -1,16 +1,19 @@
 import pandas as pd
 import requests
 
+from . import date_validator as dv
 
-def fetch_ipca_mr(reference_date: pd.Timestamp) -> float | None:
+
+def ipca_monthly_rate(reference_date: str | pd.Timestamp | None = None) -> float | None:
     """
     Fetches the IPCA (Índice Nacional de Preços ao Consumidor Amplo) monthly rate
     from the IBGE (Instituto Brasileiro de Geografia e Estatística) for a given
     reference date.
 
     Args:
-        reference_date (pd.Timestamp): Reference date for the data. The function expects
-        a pandas Timestamp object.
+        reference_date (str | pd.Timestamp | None): The reference date for which data
+            is fetched. Defaults to the last business day if None. If the reference date
+            is a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:
         float | None: The IPCA monthly rate for the specified date as a float.
@@ -22,9 +25,15 @@ def fetch_ipca_mr(reference_date: pd.Timestamp) -> float | None:
         https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/202403/variaveis/63?localidades=N1[all]
         where '202403' is the reference date in 'YYYYMM' format.
         The API URL is constructed dynamically based on the reference date provided.
+
+    Examples:
+    >>> ipca_monthly_rate("01-04-2024")
+        0.0038  # Indicates an IPCA monthly rate of 0.38% p.m.
+
     """
+    normalized_date = dv.normalize_date(reference_date)
     # Format the date as 'YYYYMM' for the API endpoint
-    ipca_date = reference_date.strftime("%Y%m")
+    ipca_date = normalized_date.strftime("%Y%m")
 
     # Construct the API URL using the formatted date
     api_url = f"https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/{ipca_date}/variaveis/63?localidades=N1[all]"
@@ -46,9 +55,16 @@ def fetch_ipca_mr(reference_date: pd.Timestamp) -> float | None:
         return None
 
 
-def fetch_selic_target(reference_date: pd.Timestamp) -> float | None:
+def selic_target(reference_date: str | pd.Timestamp | None = None) -> float | None:
+    """
+    Examples:
+    >>> selic_taget("31-05-2024")
+    0.1075  # Indicates a SELIC target rate of 10.75% p.a.
+
+    """
+    normalized_date = dv.normalize_date(reference_date)
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    selic_date = reference_date.strftime("%d/%m/%Y")
+    selic_date = normalized_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial={selic_date}&dataFinal={selic_date}"
     response = requests.get(api_url, timeout=10)
     response.raise_for_status()
@@ -60,9 +76,16 @@ def fetch_selic_target(reference_date: pd.Timestamp) -> float | None:
         return None
 
 
-def fetch_di(reference_date: pd.Timestamp) -> float | None:
+def di(reference_date: str | pd.Timestamp | None = None) -> float | None:
+    """
+    Examples:
+    >>> di("31-05-2024")
+        0.00040168  # Indicates a DI daily rate of 0.02% p.d.
+
+    """
+    normalized_date = dv.normalize_date(reference_date)
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    di_date = reference_date.strftime("%d/%m/%Y")
+    di_date = normalized_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial={di_date}&dataFinal={di_date}"
     response = requests.get(api_url, timeout=10)
     response.raise_for_status()
@@ -74,11 +97,11 @@ def fetch_di(reference_date: pd.Timestamp) -> float | None:
         return None
 
 
-def fetch_vna_selic(reference_date: pd.Timestamp) -> float | None:
+def vna_lft(reference_date: str | pd.Timestamp | None = None) -> float | None:
+    normalized_date = dv.normalize_date(reference_date)
     # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
-
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
-    url_file = f"{reference_date.strftime('%Y%m%d')}APC238"
+    url_file = f"{normalized_date.strftime('%Y%m%d')}APC238"
     url_vna = url_base + url_file
 
     response = requests.get(url_vna, timeout=10)

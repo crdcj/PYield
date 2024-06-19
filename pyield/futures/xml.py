@@ -201,7 +201,7 @@ def _process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     # Remove expired contracts
     df.query("DaysToExp > 0", inplace=True)
 
-    df["BDaysToExp"] = yd.bday.count_bdays(df["TradeDate"], df["ExpirationDate"])
+    df["BDaysToExp"] = yd.bday.count(df["TradeDate"], df["ExpirationDate"])
 
     rate_cols = [col for col in df.columns if "Rate" in col]
     # Remove % and round to 5 (3 in %) dec. places in rate columns

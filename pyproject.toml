@@ -46,11 +46,15 @@ dev = [
 ]
 
 [tool.ruff]
-select = ["E", "W", "F", "B", "C", "Q", "S"]
 line-length = 88
+indent-width = 4
+target-version = "py312"
+extend-include = ["*.ipynb"]
+
+[tool.ruff.lint]
+preview = true
+select = ["I", "F", "E", "W", "PL", "PT"]
 
 [tool.ruff.format]
 docstring-code-format = true
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
+docstring-code-line-length = 88

@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from . import bday
-from . import data_access as da
+from . import anbima, bday, futures, spread
 from . import date_validator as dv
 from . import interpolator as ip
 
@@ -20,7 +19,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
-    return da.fetch_asset(asset_code="NTN-B", reference_date=reference_date)
+    return anbima.data(bond_type="NTN-B", reference_date=reference_date)
 
 
 def ytm_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
@@ -33,7 +32,7 @@ def ytm_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
     """
-    df = anbima_data(reference_date)[["MaturityDate", "IndicativeRate"]]
+    df = anbima.rates(reference_date, bond_type="NTN-B")
     # Rename IndicativeRate to YTM for consistency
     return df.rename(columns={"IndicativeRate": "YTM"})
 
@@ -174,7 +173,7 @@ def quotation(
     payment_dates = pd.Series(coupon_dates(settlement_date, maturity_date))
 
     # Calculate the number of business days between settlement and cash flow dates
-    bdays = bday.count_bdays(settlement_date, payment_dates)
+    bdays = bday.count(settlement_date, payment_dates)
 
     # Set the cash flow at maturity to 100, otherwise set it to the coupon
     cf = np.where(payment_dates == maturity_date, FINAL_PMT, INTER_PMT)
@@ -205,7 +204,7 @@ def _prepare_interpolation_data(
     Returns:
         tuple: Two lists containing the ordered business days and YTM rates.
     """
-    bdays = bday.count_bdays(reference_date, maturity_dates)
+    bdays = bday.count(reference_date, maturity_dates)
     df = pd.DataFrame({"BDays": bdays, "Rates": rates})
     df.sort_values(by="BDays", ignore_index=True, inplace=True)
     ordered_bdays = df["BDays"].to_list()
@@ -253,7 +252,7 @@ def spot_rates(
     df = pd.DataFrame(coupon_dates_all, columns=["MaturityDate"])
 
     # Add auxiliary columns for calculations
-    df["BDays"] = bday.count_bdays(settlement_date, df["MaturityDate"])
+    df["BDays"] = bday.count(settlement_date, df["MaturityDate"])
     df["YTM"] = 0.0
     df["RSR"] = 0.0
 
@@ -302,7 +301,7 @@ def _get_nsr_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame containing the NIR data for NTN-B bonds.
     """
-    df = da.fetch_asset(asset_code="DI1", reference_date=reference_date)
+    df = futures.data(contract_code="DI1", reference_date=reference_date)
     if "CurrentRate" in df.columns:
         df = df.rename(columns={"CurrentRate": "NSR_DI"})
         keep_cols = [
@@ -334,10 +333,10 @@ def _get_nsr_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     anbima_date = reference_date
     if reference_date == today:
         # If the reference date is today, use the previous business day
-        anbima_date = bday.offset_bdays(reference_date, -1)
-    df_pre = da.calculate_spreads(spread_type="DI_PRE", reference_date=anbima_date)
+        anbima_date = bday.offset(reference_date, -1)
+    df_pre = spread.di_pre(reference_date=anbima_date)
     df_pre.query("BondType == 'LTN'", inplace=True)
-    df_pre["MaturityDate"] = bday.offset_bdays(df_pre["MaturityDate"], 0)
+    df_pre["MaturityDate"] = bday.offset(df_pre["MaturityDate"], 0)
     df_pre["DISpread"] = df_pre["DISpread"] / 10_000
     df_pre.drop(columns=["BondType"], inplace=True)
 
@@ -390,7 +389,7 @@ def bei_rates(
     # Calculate Real Spot Rate (RSR)
     df = spot_rates(settlement_date, maturity_dates, ytm_rates)
     df = df.rename(columns={"RSR": "RSR"})
-    df["BDays"] = bday.count_bdays(reference_date, df["MaturityDate"])
+    df["BDays"] = bday.count(reference_date, df["MaturityDate"])
     df["NSR_DI"] = df["BDays"].apply(
         lambda x: ip.find_and_interpolate_flat_forward(x, known_bdays, known_rates)
     )

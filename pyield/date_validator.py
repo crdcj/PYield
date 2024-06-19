@@ -41,7 +41,7 @@ def normalize_date(input_date: str | pd.Timestamp | None = None) -> pd.Timestamp
     elif input_date is None:
         # If no date is provided, use the last available business day
         today = pd.Timestamp.today().normalize()
-        normalized_date = bday.offset_bdays(dates=today, offset=0, roll="backward")
+        normalized_date = bday.offset(dates=today, offset=0, roll="backward")
     else:
         raise ValueError(f"Date format not recognized: {input_date}")
 
