@@ -17,7 +17,7 @@ def prepare_data(asset_code: str, trade_date: str) -> tuple:
     expected_df = fx.read_df(file_path=file_path, asset_code=asset_code)
     expected_df = expected_df.drop(columns=["AvgRate"])
 
-    result_df = yd.fetch_asset(asset_code=asset_code, reference_date=trade_date)
+    result_df = yd.futures.data(asset_code, trade_date)
 
     # Ensure that both DataFrames have the same columns
     expected_cols = set(expected_df.columns)
