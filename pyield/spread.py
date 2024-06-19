@@ -1,6 +1,7 @@
 import pandas as pd
 
-from . import anbima, futures
+from .anbima_data import anbima
+from .futures_data import futures
 
 # Constant for conversion to basis points
 BPS_CONVERSION_FACTOR = 10_000
@@ -27,7 +28,7 @@ def di_pre(reference_date: str | pd.Timestamp | None = None) -> pd.DataFrame:
             bond type and maturity date.
     """
     # Fetch DI rates for the reference date
-    df_di = futures.data("DI1", reference_date)[["ExpirationDate", "SettlementRate"]]
+    df_di = futures("DI1", reference_date)[["ExpirationDate", "SettlementRate"]]
 
     # Renaming the columns to match the ANBIMA structure
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
@@ -36,8 +37,10 @@ def di_pre(reference_date: str | pd.Timestamp | None = None) -> pd.DataFrame:
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = anbima.rates(reference_date, False)
-    df_anbima.query("BondType in ['LTN', 'NTN-F']", inplace=True)
+    df_anbima = anbima(reference_date=reference_date, bond_type=["LTN", "NTN-F"])
+    # Keep only the relevant columns for the output
+    keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
+    df_anbima = df_anbima[keep_columns].copy()
 
     # Merge bond and DI rates by maturity date to calculate spreads
     df_final = pd.merge(df_anbima, df_di, how="left", on="MaturityDate")

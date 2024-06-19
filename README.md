@@ -31,23 +31,23 @@ pip install pyield
 
 # Count the number of business days between two dates
 # Start date is included, end date is excluded
->>> yd.count_bdays(start='29-12-2023', end='02-01-2024')
+>>> yd.bday.count(start='29-12-2023', end='02-01-2024')
 1
 
 # Get the next business day after a given date (offset=1)
->>> yd.offset_bdays(dates="29-12-2023", offset=1)
+>>> yd.bday.offset(dates="29-12-2023", offset=1)
 Timestamp('2024-01-02 00:00:00')
 
 # Get the next business day if it is not a business day (offset=0)
->>> yd.offset_bdays(dates="30-12-2023", offset=0)
+>>> yd.bday.offset(dates="30-12-2023", offset=0)
 Timestamp('2024-01-02 00:00:00')
 
 # Since 2023-12-29 is a business day, it returns the same date (offset=0)
->>> yd.offset_bdays(dates="29-12-2023", offset=0)
+>>> yd.bday.offset(dates="29-12-2023", offset=0)
 Timestamp('2023-12-29 00:00:00')
 
 # Generate a pandas series with the business days between two dates
->>> yd.generate_bdays(start='29-12-2023', end='03-01-2024')
+>>> yd.bday.generate(start='29-12-2023', end='03-01-2024')
 0   2023-12-29
 1   2024-01-02
 2   2024-01-03
@@ -57,7 +57,7 @@ dtype: datetime64[ns]
 ### Futures Data
 ```python
 # Fetch current DI Futures data from B3 (15 minutes delay)
->>> yd.fetch_asset(asset_code="DI1")
+>>> yd.futures.data(contract_code="DI1")
 TradeTime      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate LastBidRate CurrentRate
 2024-04-21 13:37:39       DI1K24     2024-05-02          7 ... 0.10660     0.10652     0.10660  0.10660
 2024-04-21 13:37:39       DI1M24     2024-06-03         28 ... 0.10518     0.10510     0.10516  0.10518
@@ -68,7 +68,7 @@ TradeTime      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate La
 2024-04-21 13:37:39       DI1F39     2039-01-03       3683 ...    <NA>        <NA>        <NA>     <NA>
 
 # Fetch historical DI Futures data from B3
->>> yd.fetch_asset(asset_code="DI1", reference_date='08-03-2024')
+>>> yd.futures.data(contract_code="DI1", reference_date='08-03-2024')
 TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastBidRate SettlementRate
 2024-03-08       DI1J24     2024-04-01         15 ...   10.952      10.952      10.956         10.956
 2024-03-08       DI1K24     2024-05-02         37 ...   10.776      10.774      10.780         10.777
@@ -84,7 +84,7 @@ TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastB
 # Fetch a DataFrame with the NTN-B data from ANBIMA
 # Anbima data is available for the last 5 working days
 # Obs: Anbima members have access to the full history
->>> yd.fetch_asset(asset_code="NTN-B", reference_date='12-04-2024')
+>>> yd.anbima.data(asset_code="NTN-B", reference_date='12-04-2024')
 
 BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate       Price
    NTN-B    2024-04-12   2024-08-15 0.07540 0.07504        0.07523 4,271.43565
@@ -99,7 +99,7 @@ BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate       Price
 ### Spreads Calculation
 ```python
 # Calculate the spread between two DI Futures contracts and the pre-fix bonds
->>> yd.calculate_spreads(spread_type="di_pre", reference_date="11-04-2024")
+>>> yd.spreads(spread_type="di_pre", reference_date="11-04-2024")
 
 BondType ReferenceDate MaturityDate  DISpread
      LTN    2024-04-11   2024-07-01    -20.28
@@ -114,22 +114,22 @@ BondType ReferenceDate MaturityDate  DISpread
 ### Indicators Data
 ```python
 # Fetch the SELIC target rate from the Central Bank of Brazil
->>> yd.fetch_indicator(indicator_code="SELIC", reference_date='12-04-2024')
+>>> yd.indicator(indicator_code="SELIC", reference_date='12-04-2024')
 0.1075  # 10.75%
 
 # Fetch the IPCA monthly inflation rate from IBGE
->>> yd.fetch_indicator(indicator_code="IPCA", reference_date='18-03-2024')
+>>> yd.indicator(indicator_code="IPCA", reference_date='18-03-2024')
 0.16  # 0.16%
 
 # If no data is yet available for the indicator, the function returns None
->>> yd.fetch_indicator(indicator_code="IPCA", reference_date='10-04-2024')
+>>> yd.indicator(indicator_code="IPCA", reference_date='10-04-2024')
 None
 ```
 
 ### Projections Data
 ```python
 # Fetch current month projection for IPCA from IBGE API
->>> ipca = yd.fetch_projection(projection_code="IPCA_CM")
+>>> ipca = yd.projection(projection_code="IPCA_CM")
 >>> print(ipca)
 IndicatorProjection(
     last_updated=Timestamp('2024-04-19 18:55:00'),

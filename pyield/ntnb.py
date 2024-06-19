@@ -1,15 +1,17 @@
 import numpy as np
 import pandas as pd
 
-from . import anbima, bday, futures, spread
+from . import bday, spread
 from . import date_validator as dv
 from . import interpolator as ip
+from .anbima_data import anbima
+from .futures_data import futures
 
 # 6% per year compounded semi-annually and rounded to 8 decimal places
 COUPON = 0.02956301  # round(((0.06 + 1) ** 0.5 - 1), 8)
 
 
-def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch NTN-B Anbima data for the given reference date.
 
@@ -19,7 +21,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
-    return anbima.data(bond_type="NTN-B", reference_date=reference_date)
+    return anbima(bond_type="NTN-B", reference_date=reference_date)
 
 
 def ytm_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
@@ -32,7 +34,12 @@ def ytm_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
     """
-    df = anbima.rates(reference_date, bond_type="NTN-B")
+    df = anbima(reference_date, bond_type="NTN-B")
+
+    # Keep only the relevant columns for the output
+    keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
+    df = df[keep_columns].copy()
+
     # Rename IndicativeRate to YTM for consistency
     return df.rename(columns={"IndicativeRate": "YTM"})
 
@@ -83,7 +90,7 @@ def coupon_dates_map(
     dates = pd.Series(dates)
 
     # Offset dates by 14 in order to have day 15 of the month
-    dates = dates + pd.Timedelta(days=14)
+    dates += pd.Timedelta(days=14)
 
     # First coupon date must be after the reference date
     return dates[dates >= start].reset_index(drop=True)
@@ -337,7 +344,7 @@ def _get_nsr_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_pre = spread.di_pre(reference_date=anbima_date)
     df_pre.query("BondType == 'LTN'", inplace=True)
     df_pre["MaturityDate"] = bday.offset(df_pre["MaturityDate"], 0)
-    df_pre["DISpread"] = df_pre["DISpread"] / 10_000
+    df_pre["DISpread"] /= 10_000  # Remove BPS (basis points) from the spread
     df_pre.drop(columns=["BondType"], inplace=True)
 
     df = pd.merge_asof(df, df_pre, left_on="ExpirationDate", right_on="MaturityDate")

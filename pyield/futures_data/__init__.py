@@ -7,7 +7,7 @@ from .intraday import fetch_intraday_df
 SUPPORTED_FUTURES = ["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
 
 
-def data(
+def futures(
     contract_code: str,
     reference_date: str | pd.Timestamp | None = None,
 ) -> pd.DataFrame:
@@ -56,4 +56,4 @@ def data(
     return df
 
 
-__all__ = ["data"]
+__all__ = ["futures"]

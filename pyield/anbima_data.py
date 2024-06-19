@@ -87,9 +87,9 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def data(
+def anbima(
     reference_date: str | pd.Timestamp | None = None,
-    bond_type: str = None,
+    bond_type: str | list | None = None,
     remote_access: dict = None,
 ) -> pd.DataFrame:
     """
@@ -115,8 +115,10 @@ def data(
         an unsupported bond type is provided.
 
     Examples:
-        >>> yd.anbima.data("18-06-2024")
-        >>> yd.anbima.data("18-06-2024", "NTN-B")
+        # Fetch ANBIMA data for all bonds using the last business day available
+        >>> yd.anbima("18-06-2024")
+        # Fetch ANBIMA data for NTN-B bonds using a specific reference date
+        >>> yd.anbima("18-06-2024", "NTN-B")
     """
     # Normalize the reference date
     normalized_date = dv.normalize_date(reference_date)
@@ -130,43 +132,13 @@ def data(
 
     df = _process_raw_df(df)
 
-    # Filter by bond type if specified
-    if bond_type:
-        df = df.query(f"BondType == '{bond_type.upper()}'").reset_index(drop=True)
+    # If bond type is not specified, return the full DataFrame
+    if bond_type is None:
+        return df
 
-    return df
+    # Adjust bond type to uppercase
+    if isinstance(bond_type, str):
+        bond_list = [bond_type]
+    bond_list = [bt.upper() for bt in bond_list]
 
-
-def rates(
-    reference_date: str | pd.Timestamp | None = None,
-    bond_type: str = None,
-    remote_access: dict = None,
-) -> pd.DataFrame:
-    """
-    Fetches indicative treasury rates from ANBIMA for a specified reference date.
-
-    This function retrieves the indicative rates for Brazilian treasury securities
-    from ANBIMA, processing them into a structured pandas DataFrame.
-
-    Args:
-        reference_date (str | pd.Timestamp | None, optional): The date for which to
-            fetch the indicative rates. If a string is provided, it should be in the
-            format 'dd-mm-yyyy'. Defaults to the last business day if None.
-        bond_type (str, optional): The type of bond to filter by. Defaults to None.
-        remote_access (dict, optional): Dictionary containing remote access parameters.
-            Defaults to None.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the processed indicative rates for the
-        given reference date.
-
-    Examples:
-        >>> yd.anbima.rates("18-06-2024")
-        >>> yd.anbima.rates("18-06-2024", "NTN-B")
-    """
-    # Fetch the data from ANBIMA
-    df = data(reference_date, bond_type, remote_access)
-
-    # Keep only the relevant columns for the output
-    keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
-    return df[keep_columns].copy()
+    return df.query(f"BondType in '{bond_list}'").reset_index(drop=True)
