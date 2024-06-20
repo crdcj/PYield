@@ -10,7 +10,10 @@ ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 
 
-def _get_file_content(reference_date: pd.Timestamp, remote_access: dict = None) -> str:
+def _get_file_content(
+    reference_date: pd.Timestamp,
+    remote_access: dict | None = None,
+) -> str:
     url_date = reference_date.strftime("%y%m%d")
     filename = f"ms{url_date}.txt"
 
@@ -90,7 +93,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 def anbima(
     reference_date: str | pd.Timestamp | None = None,
     bond_type: str | list[str] | None = None,
-    remote_access: dict = None,
+    remote_access: dict | None = None,
 ) -> pd.DataFrame:
     """
     Fetches indicative treasury rates from ANBIMA for a specified reference date.

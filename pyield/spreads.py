@@ -38,9 +38,9 @@ def spread(
     Example:
         >>> spread("DI_PRE", "2024-06-18")
     """
-    spread_type = spread_type.upper()
+    spread_type_cap = str(spread_type).upper()
     normalized_date = dv.normalize_date(reference_date)
-    if spread_type == "DI_PRE":
+    if spread_type_cap == "DI_PRE":
         return di_pre(normalized_date)
     else:
         raise ValueError(f"Unsupported spread type: {spread_type}")

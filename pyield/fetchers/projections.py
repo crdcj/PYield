@@ -17,11 +17,11 @@ class IndicatorProjection:
 
 
 def projection(projection_type: Literal["IPCA_CM"]) -> IndicatorProjection:
-    projection_type = projection_type.upper()
-    if projection_type == "IPCA_CM":
+    proj_type = str(projection_type).upper()
+    if proj_type == "IPCA_CM":
         return ipca_current_month()
     else:
-        raise ValueError(f"Invalid projection type: {projection_type}")
+        raise ValueError(f"Invalid projection type: {proj_type}")
 
 
 def ipca_current_month() -> IndicatorProjection:

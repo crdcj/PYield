@@ -176,9 +176,9 @@ def offset(
         # Force to datetime[ns] if the input was a single date
         result = result.as_unit("ns")
     else:
-        result = pd.to_datetime(offsetted_dates_np)
+        result_dti = pd.to_datetime(offsetted_dates_np)
         # Force the result to be a Series if the input was not a single date
-        result = pd.Series(result).astype("datetime64[ns]")
+        result = pd.Series(result_dti).astype("datetime64[ns]")
 
     return result
 

@@ -87,14 +87,12 @@ def coupon_dates_map(
     # Generate coupon dates
     dates = pd.date_range(start=first_coupon_date, end=end, freq="3MS")
 
-    # Convert to pandas Series since pd.date_range returns a DatetimeIndex
-    dates = pd.Series(dates)
-
     # Offset dates by 14 in order to have day 15 of the month
     dates += pd.Timedelta(days=14)
 
     # First coupon date must be after the reference date
-    return dates[dates >= start].reset_index(drop=True)
+    dates = dates[dates >= start]
+    return pd.Series(dates).reset_index(drop=True)
 
 
 def coupon_dates(
@@ -128,14 +126,8 @@ def coupon_dates(
         # Move the coupon date back 6 months
         coupon_date -= pd.DateOffset(months=6)
 
-    # Convert the list to a pandas Series
-    coupon_dates = pd.Series(coupon_dates)
-
-    # Sort the coupon dates in ascending order
-    coupon_dates = coupon_dates.sort_values(ignore_index=True)
-
-    # Force a index reset to avoid issues with the index
-    return coupon_dates.reset_index(drop=True)
+    # Return the coupon dates as a sorted Series
+    return pd.Series(coupon_dates).sort_values(ignore_index=True)
 
 
 def quotation(
@@ -309,7 +301,7 @@ def _get_nsr_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame containing the NIR data for NTN-B bonds.
     """
-    df = futures.data(contract_code="DI1", reference_date=reference_date)
+    df = futures(contract_code="DI1", reference_date=reference_date)
     if "CurrentRate" in df.columns:
         df = df.rename(columns={"CurrentRate": "NSR_DI"})
         keep_cols = [
@@ -342,7 +334,7 @@ def _get_nsr_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     if reference_date == today:
         # If the reference date is today, use the previous business day
         anbima_date = bday.offset(reference_date, -1)
-    df_pre = spread.di_pre(reference_date=anbima_date)
+    df_pre = spread(spread_type="DI_PRE", reference_date=anbima_date)
     df_pre.query("BondType == 'LTN'", inplace=True)
     df_pre["MaturityDate"] = bday.offset(df_pre["MaturityDate"], 0)
     df_pre["DISpread"] /= 10_000  # Remove BPS (basis points) from the spread
