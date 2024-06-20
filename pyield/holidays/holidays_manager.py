@@ -15,7 +15,8 @@ class BrHolidays:
         self.new_holidays = self._load_holidays(new_holidays_path)
         self.old_holidays = self._load_holidays(old_holidays_path)
 
-    def _load_holidays(self, file_path: Path) -> pd.Series:
+    @staticmethod
+    def _load_holidays(file_path: Path) -> pd.Series:
         """
         Loads the holidays from a text file and returns it as a Series of Timestamps.
         """

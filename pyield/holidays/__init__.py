@@ -1,3 +1,3 @@
-from .core import BrHolidays
+from .holidays_manager import BrHolidays
 
 __all__ = ["BrHolidays"]

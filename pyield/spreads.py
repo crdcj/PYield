@@ -1,8 +1,8 @@
 import pandas as pd
 
 from . import date_validator as dv
-from .data_sources.anbima import anbima
-from .data_sources.futures import futures
+from .fetchers.anbima import anbima
+from .fetchers.futures import futures
 
 # Constant for conversion to basis points
 BPS_CONVERSION_FACTOR = 10_000

@@ -57,7 +57,7 @@ dtype: datetime64[ns]
 ### Futures Data
 ```python
 # Fetch current DI Futures data from B3 (15 minutes delay)
->>> yd.futures.data(contract_code="DI1")
+>>> yd.futures(contract_code="DI1")
 TradeTime      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate LastBidRate CurrentRate
 2024-04-21 13:37:39       DI1K24     2024-05-02          7 ... 0.10660     0.10652     0.10660  0.10660
 2024-04-21 13:37:39       DI1M24     2024-06-03         28 ... 0.10518     0.10510     0.10516  0.10518
@@ -68,7 +68,7 @@ TradeTime      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate La
 2024-04-21 13:37:39       DI1F39     2039-01-03       3683 ...    <NA>        <NA>        <NA>     <NA>
 
 # Fetch historical DI Futures data from B3
->>> yd.futures.data(contract_code="DI1", reference_date='08-03-2024')
+>>> yd.futures(contract_code="DI1", reference_date='08-03-2024')
 TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastBidRate SettlementRate
 2024-03-08       DI1J24     2024-04-01         15 ...   10.952      10.952      10.956         10.956
 2024-03-08       DI1K24     2024-05-02         37 ...   10.776      10.774      10.780         10.777
@@ -84,7 +84,7 @@ TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastB
 # Fetch a DataFrame with the NTN-B data from ANBIMA
 # Anbima data is available for the last 5 working days
 # Obs: Anbima members have access to the full history
->>> yd.anbima.data(asset_code="NTN-B", reference_date='12-04-2024')
+>>> yd.anbima(asset_code="NTN-B", reference_date='12-04-2024')
 
 BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate       Price
    NTN-B    2024-04-12   2024-08-15 0.07540 0.07504        0.07523 4,271.43565
@@ -99,7 +99,7 @@ BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate       Price
 ### Spreads Calculation
 ```python
 # Calculate the spread between two DI Futures contracts and the pre-fix bonds
->>> yd.spreads(spread_type="di_pre", reference_date="11-04-2024")
+>>> yd.spread(spread_type="di_pre", reference_date="11-04-2024")
 
 BondType ReferenceDate MaturityDate  DISpread
      LTN    2024-04-11   2024-07-01    -20.28
