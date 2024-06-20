@@ -17,10 +17,10 @@ def _get_file_content(reference_date: pd.Timestamp) -> str:
 
     # Tries to access the member URL first
     try:
-        anbima_base_url = os.getenv("ANBIMA_URL")
+        anbima_base_url = os.getenv("ANBIMA_BASE_URL")
         if anbima_base_url:
             anbima_member_url = f"{anbima_base_url}/merc_sec/arqs/"
-            anbima_headers = {"private-token": os.getenv("ANBIMA_TOEKN")}
+            anbima_headers = {"private-token": os.getenv("ANBIMA_TOKEN")}
         else:
             anbima_member_url = "http://www.anbima.associados.rtm/merc_sec/arqs/"
             anbima_headers = None
