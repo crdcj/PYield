@@ -1,18 +1,11 @@
 import io
 import locale
 from dataclasses import dataclass
+from typing import Literal
 
 import pandas as pd
 import python_calamine as pc
 import requests
-
-
-def projection(projection_type: str) -> float | None:
-    projection_type = projection_type.upper()
-    if projection_type == "IPCA_CM":
-        return ipca_current_month()
-    else:
-        raise ValueError(f"Invalid projection type: {projection_type}")
 
 
 @dataclass
@@ -21,6 +14,14 @@ class IndicatorProjection:
     reference_month_ts: pd.Timestamp  # Timestamp to which the projection applies
     reference_month_br: str  # Brazilian formatted month (e.g., "ABR/2024")
     projected_value: float  # Projected value
+
+
+def projection(projection_type: Literal["IPCA_CM"]) -> IndicatorProjection:
+    projection_type = projection_type.upper()
+    if projection_type == "IPCA_CM":
+        return ipca_current_month()
+    else:
+        raise ValueError(f"Invalid projection type: {projection_type}")
 
 
 def ipca_current_month() -> IndicatorProjection:

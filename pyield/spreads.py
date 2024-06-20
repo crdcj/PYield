@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pandas as pd
 
 from . import date_validator as dv
@@ -9,10 +11,11 @@ BPS_CONVERSION_FACTOR = 10_000
 
 
 def spread(
-    spread_type: str, reference_date: str | pd.Timestamp | None = None
+    spread_type: Literal["DI_PRE"],
+    reference_date: str | pd.Timestamp | None = None,
 ) -> pd.DataFrame:
     """
-    Calculate the spread between different types of rates for a specified reference date.
+    Calculate the spread between different types of rates for a specified date.
 
     This function calculates the spread between different types of rates for a specified
     reference date. The available spread types are:
@@ -73,7 +76,7 @@ def di_pre(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = anbima(reference_date=reference_date, bond_type=["LTN", "NTN-F"])
+    df_anbima = anbima(reference_date, ["LTN", "NTN-F"])
     # Keep only the relevant columns for the output
     keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
     df_anbima = df_anbima[keep_columns].copy()

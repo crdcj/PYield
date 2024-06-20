@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pandas as pd
 import requests
 
@@ -5,7 +7,7 @@ from .. import date_validator as dv
 
 
 def indicator(
-    indicator_type: str,
+    indicator_type: Literal["IPCA_MR", "SELIC_TARGET", "DI", "VNA_LFT"],
     reference_date: str | pd.Timestamp | None = None,
 ) -> float | None:
     indicator_type = indicator_type.upper()

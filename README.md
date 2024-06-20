@@ -84,7 +84,7 @@ TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastB
 # Fetch a DataFrame with the NTN-B data from ANBIMA
 # Anbima data is available for the last 5 working days
 # Obs: Anbima members have access to the full history
->>> yd.anbima(asset_code="NTN-B", reference_date='12-04-2024')
+>>> yd.anbima(reference_date='12-04-2024', bond_type='NTN-B')
 
 BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate       Price
    NTN-B    2024-04-12   2024-08-15 0.07540 0.07504        0.07523 4,271.43565

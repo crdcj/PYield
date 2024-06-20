@@ -89,7 +89,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 
 def anbima(
     reference_date: str | pd.Timestamp | None = None,
-    bond_type: str | list | None = None,
+    bond_type: str | list[str] | None = None,
     remote_access: dict = None,
 ) -> pd.DataFrame:
     """
@@ -136,9 +136,14 @@ def anbima(
     if bond_type is None:
         return df
 
-    # Adjust bond type to uppercase
+    # Format bond type as a list of uppercase strings
     if isinstance(bond_type, str):
         bond_list = [bond_type]
+    elif isinstance(bond_type, list):
+        bond_list = bond_type
+    else:
+        msg = "Invalid bond type format. Must be a string or a list of strings."
+        raise ValueError(msg)
     bond_list = [bt.upper() for bt in bond_list]
 
-    return df.query(f"BondType in '{bond_list}'").reset_index(drop=True)
+    return df.query("BondType in @bond_list").reset_index(drop=True)
