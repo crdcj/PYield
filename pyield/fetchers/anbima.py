@@ -1,4 +1,5 @@
 import io
+import os
 
 import pandas as pd
 import requests
@@ -10,24 +11,22 @@ ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 
 
-def _get_file_content(
-    reference_date: pd.Timestamp,
-    remote_access: dict | None = None,
-) -> str:
+def _get_file_content(reference_date: pd.Timestamp) -> str:
     url_date = reference_date.strftime("%y%m%d")
     filename = f"ms{url_date}.txt"
 
     # Tries to access the member URL first
     try:
-        if remote_access:
-            anbima_url = f'{remote_access["anbima_url"]}/merc_sec/arqs/'
-            headers = remote_access["headers_dict"]
+        anbima_base_url = os.getenv("ANBIMA_URL")
+        if anbima_base_url:
+            anbima_member_url = f"{anbima_base_url}/merc_sec/arqs/"
+            anbima_headers = {"private-token": os.getenv("ANBIMA_TOEKN")}
         else:
-            anbima_url = "http://www.anbima.associados.rtm/merc_sec/arqs/"
-            headers = None
+            anbima_member_url = "http://www.anbima.associados.rtm/merc_sec/arqs/"
+            anbima_headers = None
 
-        file_url = f"{anbima_url}{filename}"
-        response = requests.get(file_url, headers=headers, timeout=5)
+        file_url = f"{anbima_member_url}{filename}"
+        response = requests.get(file_url, headers=anbima_headers, timeout=5)
         # Checks if the response was successful (status code 200)
         response.raise_for_status()
         return response.text
@@ -93,7 +92,6 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 def anbima(
     reference_date: str | pd.Timestamp | None = None,
     bond_type: str | list[str] | None = None,
-    remote_access: dict | None = None,
 ) -> pd.DataFrame:
     """
     Fetches indicative treasury rates from ANBIMA for a specified reference date.
@@ -106,8 +104,6 @@ def anbima(
             fetch the indicative rates. If a string is provided, it should be in the
             format 'dd-mm-yyyy'. Defaults last business day if None.
         bond_type (str, optional): The type of bond to filter by. Defaults to None.
-        remote_access (dict, optional): Dictionary containing remote access parameters.
-            Defaults to None.
 
     Returns:
         pd.DataFrame: A DataFrame containing the processed indicative rates for the
@@ -125,7 +121,7 @@ def anbima(
     """
     # Normalize the reference date
     normalized_date = dv.normalize_date(reference_date)
-    file_content = _get_file_content(normalized_date, remote_access)
+    file_content = _get_file_content(normalized_date)
 
     if not file_content:
         date_str = normalized_date.strftime("%d-%m-%Y")
