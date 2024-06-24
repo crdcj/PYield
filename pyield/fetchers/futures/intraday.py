@@ -167,8 +167,9 @@ def fetch_intraday_df(future_code: str) -> pd.DataFrame:
         pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
     """
     raw_df = _fetch_b3_df(future_code)
-    if raw_df.empty:
-        return raw_df
+    if "buyOffer" not in raw_df.columns:
+        # Return an empty DataFrame if the data is not available
+        return pd.DataFrame()
     df = _process_df(raw_df)
     df = _select_and_reorder_columns(df)
     return df

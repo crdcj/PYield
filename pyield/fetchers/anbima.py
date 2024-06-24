@@ -90,8 +90,8 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 
 
 def anbima(
-    reference_date: str | pd.Timestamp | None = None,
     bond_type: str | list[str] | None = None,
+    reference_date: str | pd.Timestamp | None = None,
 ) -> pd.DataFrame:
     """
     Fetches indicative treasury rates from ANBIMA for a specified reference date.
@@ -100,10 +100,10 @@ def anbima(
     ANBIMA, processing them into a structured pandas DataFrame.
 
     Args:
+        bond_type (str, optional): The type of bond to filter by. Defaults to None.
         reference_date (str | pd.Timestamp | None, optional): The date for which to
             fetch the indicative rates. If a string is provided, it should be in the
             format 'dd-mm-yyyy'. Defaults last business day if None.
-        bond_type (str, optional): The type of bond to filter by. Defaults to None.
 
     Returns:
         pd.DataFrame: A DataFrame containing the processed indicative rates for the
@@ -117,7 +117,7 @@ def anbima(
         # Fetch ANBIMA data for all bonds using the last business day available
         >>> yd.anbima("18-06-2024")
         # Fetch ANBIMA data for NTN-B bonds using a specific reference date
-        >>> yd.anbima("18-06-2024", "NTN-B")
+        >>> yd.anbima("NTN-B", "18-06-2024")
     """
     # Normalize the reference date
     normalized_date = dv.normalize_date(reference_date)

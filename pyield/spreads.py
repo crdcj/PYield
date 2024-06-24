@@ -76,7 +76,7 @@ def di_pre(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = anbima(reference_date, ["LTN", "NTN-F"])
+    df_anbima = anbima(["LTN", "NTN-F"], reference_date)
     # Keep only the relevant columns for the output
     keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
     df_anbima = df_anbima[keep_columns].copy()

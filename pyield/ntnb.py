@@ -35,7 +35,7 @@ def ytm_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
     """
-    df = anbima(reference_date, bond_type="NTN-B")
+    df = anbima("NTN-B", reference_date)
 
     # Keep only the relevant columns for the output
     keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
