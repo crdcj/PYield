@@ -45,24 +45,24 @@ Exemplos Práticos de Uso:
 >>> import pyield as yd
 
 # Contar o número de dias úteis entre duas datas.
-# A data de início é incluída, a data de término é excluída.
->>> yd.count_bdays(start='2023-12-29', end='2024-01-02')
+# A data de início é inclusiva, a data de término é exclusiva.
+>>> yd.bday.count(start='29-12-2023', end='02-01-2024')
 1
 
 # Obtenha o próximo dia útil após uma determinada data (offset=1).
->>> yd.offset_bdays(dates="2023-12-29", offset=1)
+>>> yd.bday.offset(dates="29-12-2023", offset=1)
 Timestamp('2024-01-02 00:00:00')
 
 # Obtenha o próximo dia útil se não for um dia útil (offset=0).
->>> yd.offset_bdays(dates="2023-12-30", offset=0)
+>>> yd.bday.offset(dates="30-12-2023", offset=0)
 Timestamp('2024-01-02 00:00:00')
 
 # Como 2023-12-29 já é um dia útil, a função retorna a mesma data (offset=0).
->>> yd.offset_bdays(dates="2023-12-29", offset=0)
+>>> yd.bday.offset(dates="29-12-2023", offset=0)
 Timestamp('2023-12-29 00:00:00')
 
 # Gerar uma série de dias úteis entre duas datas.
->>> yd.generate_bdays(start='2023-12-29', end='2024-01-03')
+>>> yd.bday.generate(start='2023-12-29', end='2024-01-03')
 0   2023-12-29
 1   2024-01-02
 2   2024-01-03
@@ -72,7 +72,7 @@ dtype: datetime64[ns]
 ## Dados de Futuro de DI
 ```python
 # Obtenha um DataFrame com os dados dos Futuros de DI da B3 de uma data específica.
->>> yd.fetch_asset(asset_code="DI1", reference_date='2024-03-08')
+>>> yd.futures(contract_code="DI1", reference_date='2024-03-08')
 
 TradeDate  ExpirationCode ExpirationDate BDaysToExp  ... LastRate LastAskRate LastBidRate SettlementRate
 2024-03-08 J24            2024-04-01     15              ... 10.952   10.952      10.956      10.956
@@ -89,7 +89,7 @@ TradeDate  ExpirationCode ExpirationDate BDaysToExp  ... LastRate LastAskRate La
 # Obtenha um DataFrame com os dados dos títulos NTN-B da ANBIMA.
 # Os dados da Anbima estão disponíveis para os últimos 5 dias úteis.
 # Obs: Para quem é membro da Anbima, o acesso ao histórico é liberado automaticamente pela biblioteca.
->>> yd.fetch_asset(asset_code="NTN-B", reference_date='2024-04-12')
+>>> yd.anbima(bond_type="NTN-B", reference_date='2024-04-12')
 
 BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate Price
 NTN-B    2024-04-12    2024-08-15   0.07540 0.07504 0.07523        4,271.43565
@@ -104,7 +104,7 @@ NTN-B    2024-04-12    2060-08-15   0.06057 0.06016 0.06036        4,292.26323
 ### Cálculo de spreads
 ```python
 # Calcule o spread entre o futuro de DI e os títulos pré-fixados do Tesouro.
->>> yd.calculate_spreads(spread_type="DI_VS_PRE", reference_date="2024-4-11")
+>>> yd.spreads(spread_type="DI_PRE", reference_date="2024-4-11")
 
 BondType ReferenceDate MaturityDate  DISpread
 LTN      2024-04-11    2024-07-01    -20.28
@@ -119,15 +119,15 @@ NTN-F    2024-04-11    2035-01-01    -1.27
 ### Dados de Indicadores
 ```python
 # Obtenha a taxa SELIC meta do BCB em um determinado dia.
->>> yd.fetch_indicator(indicator_code="SELIC", reference_date='2024-04-12')
+>>> yd.indicator(indicator_code="SELIC", reference_date='2024-04-12')
 0.1075  # 10.75%
 
-# Obtenha a taxa de inflação mensal IPCA do IBGE com base no mês de referência da data.
->>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-03-18')
+# Obtenha a taxa mensal (Monthly Rate) do IPCA do IBGE com base no mês de referência da data.
+>>> yd.indicator(indicator_code="IPCA_MR", reference_date='2024-03-18')
 0.0016  # 0.16%
 
 # Se o indicador não estiver disponível para a data de referência, o retorno será nulo (None).
->>> yd.fetch_indicator(indicator_code="IPCA", reference_date='2024-04-10')
+>>> yd.indicator(indicator_code="IPCA_MR", reference_date='2030-04-10')
 None
 ```
 
