@@ -1,4 +1,4 @@
-from . import bday, interpolators, ntnb
+from . import bday, interpolator, ntnb
 from .__about__ import __version__
 from .fetchers.anbima import anbima
 from .fetchers.futures import futures
@@ -15,6 +15,6 @@ __all__ = [
     "projection",
     "spread",
     "futures",
-    "interpolators",
+    "interpolator",
     "spread",
 ]

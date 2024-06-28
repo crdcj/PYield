@@ -3,7 +3,7 @@ import pandas as pd
 
 from . import bday
 from . import date_validator as dv
-from . import interpolators as ip
+from . import interpolator as ip
 from .fetchers.anbima import anbima
 from .fetchers.futures import futures
 from .spreads import spread
