@@ -42,7 +42,7 @@ Timestamp('2024-01-02 00:00:00')
 >>> yd.bday.offset(dates="30-12-2023", offset=0)
 Timestamp('2024-01-02 00:00:00')
 
-# Since 2023-12-29 is a business day, it returns the same date (offset=0)
+# Since 29-12-2023 is a business day, it returns the same date (offset=0)
 >>> yd.bday.offset(dates="29-12-2023", offset=0)
 Timestamp('2023-12-29 00:00:00')
 
@@ -141,3 +141,22 @@ IndicatorProjection(
 0.0035  # 0.35%
 ```
 
+### Interpolation Tools
+```python
+
+# Interpolate interest rates for specific business days using the Interpolator class.
+
+# Initialize the Interpolator with known business days and interest rates.
+>>> known_bdays = [30, 60, 90]
+>>> known_rates = [0.045, 0.05, 0.055]
+>>> linear_itp = yd.Interpolator("linear", known_bdays, known_rates)
+
+# Interpolate the interest rate for a given number of business days.
+>>> linear_itp.interpolate(45)
+0.0475
+
+# Use the flat forward method for interpolation.
+>>> ff_itp = yd.Interpolator("flat_forward", known_bdays, known_rates)
+>>> ff_itp.interpolate(45)
+0.04833068080970859
+```

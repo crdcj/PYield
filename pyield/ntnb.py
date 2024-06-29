@@ -3,9 +3,9 @@ import pandas as pd
 
 from . import bday
 from . import date_validator as dv
-from . import interpolators as ip
 from .fetchers.anbima import anbima
 from .fetchers.futures import futures
+from .interpolator import Interpolator
 from .spreads import spread
 
 # 6% per year compounded semi-annually and rounded to 8 decimal places
@@ -188,30 +188,6 @@ def quotation(
     return _truncate(dcf.sum(), 4)
 
 
-def _prepare_interpolation_data(
-    reference_date: pd.Timestamp, maturity_dates: pd.Series, rates: pd.Series
-) -> tuple:
-    """
-    Prepare the data needed for interpolation by sorting the YTM rates by the number of
-    business days.
-
-    Args:
-        reference_date (str | pd.Timestamp): The reference date for calculating the
-            number of business days.
-        maturity_dates (pd.Series): Series of maturity dates for the bonds.
-        rates (pd.Series): Series of rates corresponding to the maturity dates.
-
-    Returns:
-        tuple: Two lists containing the ordered business days and YTM rates.
-    """
-    bdays = bday.count(reference_date, maturity_dates)
-    df = pd.DataFrame({"BDays": bdays, "Rates": rates})
-    df.sort_values(by="BDays", ignore_index=True, inplace=True)
-    ordered_bdays = df["BDays"].to_list()
-    ordered_rates = df["Rates"].to_list()
-    return ordered_bdays, ordered_rates
-
-
 def spot_rates(
     settlement_date: str | pd.Timestamp,
     maturity_dates: pd.Series,
@@ -223,37 +199,44 @@ def spot_rates(
 
     Args:
         settlement_date (str | pd.Timestamp): The reference date for settlement.
-        maturity_dates (pd.Series): Series of maturity dates for the bonds.
-        ytm_rates (pd.Series): Series of Yield to Maturity rates corresponding to the
+        maturity_dates (pd.Series): Series of maturity dates for the bonds. ytm_rates
+        (pd.Series): Series of Yield to Maturity rates corresponding to the
             maturity dates.
 
     Returns:
-        pd.DataFrame: DataFrame containing the maturity dates and corresponding spot
-            rates.
+        pd.DataFrame: DataFrame containing the maturity dates and corresponding real
+            spot rates (RSR).
 
     Notes:
         The calculation of the spot rates for NTN-B bonds considers the following steps:
             - Map all all possible payment dates up to the longest maturity date.
             - Interpolate the YTM rates in the intermediate payment dates.
             - Calculate the NTN-B quotation for each maturity date.
-            - Calculate the spot rates for each maturity date.
+            - Calculate the real spot rates (RSR) for each maturity date.
     """
     # COUPON = (1.06) ** 0.5 - 1  # Coupon without rounding
     # Validate and normalize the settlement date
     settlement_date = dv.normalize_date(settlement_date)
 
-    # Prepare the data for interpolation
-    ordered_bdays, ordered_ytms = _prepare_interpolation_data(
-        settlement_date, maturity_dates, ytm_rates
+    # Create the interpolator object
+    flat_fwd = Interpolator(
+        method="flat_forward",
+        known_bdays=bday.count(settlement_date, maturity_dates),
+        known_rates=ytm_rates,
     )
-    # Generate coupon dates and initialize the main DataFrame
-    longest_ntnb = maturity_dates.max()
-    coupon_dates_all = coupon_dates_map(settlement_date, longest_ntnb)
-    df = pd.DataFrame(coupon_dates_all, columns=["MaturityDate"])
+
+    # Generate coupon dates up to the longest maturity date
+    all_coupon_dates = coupon_dates_map(
+        start=settlement_date,
+        end=maturity_dates.max(),
+    )
+
+    # Create a DataFrame with all coupon dates
+    df = pd.DataFrame(all_coupon_dates, columns=["MaturityDate"])
 
     # Add auxiliary columns for calculations
     df["BDays"] = bday.count(settlement_date, df["MaturityDate"])
-    df["YTM"] = 0.0
+    df["YTM"] = df["BDays"].apply(flat_fwd.interpolate)
     df["RSR"] = 0.0
 
     # Main loop to calculate spot rates
@@ -273,15 +256,12 @@ def spot_rates(
         # Calculate the present value of the cash flows (discounted cash flows)
         dcfs = cfs / (1 + spot_rates) ** periods
 
-        # Interpolate YTM and calculate spot rate
+        # Calculate the real spot rate (RSR) for the bond
         bd = df.at[index, "BDays"]
-        ytm = ip.find_and_interpolate_flat_forward(bd, ordered_bdays, ordered_ytms)
+        ytm = df.at[index, "YTM"]
         ntnb_quotation = quotation(settlement_date, maturity_date, ytm) / 100
-        spot_rate = ((COUPON + 1) / (ntnb_quotation - dcfs.sum())) ** (252 / bd) - 1
-
-        # Update DataFrame with calculated values
-        df.at[index, "RSR"] = spot_rate
-        df.at[index, "YTM"] = ytm
+        rsr = ((COUPON + 1) / (ntnb_quotation - dcfs.sum())) ** (252 / bd) - 1
+        df.at[index, "RSR"] = rsr
 
     # Drop the BDays column, remove intermediate cupon dates and reset the index.
     return (
@@ -383,25 +363,28 @@ def bei_rates(
 
     # Fetch Nominal Spot Rate (NSR) data
     df_nsr = _get_nsr_df(reference_date)
-    known_bdays = df_nsr["BDaysToExp"].to_list()
-    known_rates = df_nsr["NSR_DI"].to_list()
 
+    ffwd = Interpolator(
+        method="flat_forward",
+        known_bdays=df_nsr["BDaysToExp"],
+        known_rates=df_nsr["NSR_DI"],
+    )
     # Calculate Real Spot Rate (RSR)
     df = spot_rates(settlement_date, maturity_dates, ytm_rates)
     df = df.rename(columns={"RSR": "RSR"})
     df["BDays"] = bday.count(reference_date, df["MaturityDate"])
-    df["NSR_DI"] = df["BDays"].apply(
-        lambda x: ip.find_and_interpolate_flat_forward(x, known_bdays, known_rates)
-    )
+    df["NSR_DI"] = df["BDays"].apply(ffwd.interpolate)
 
     # Calculate Breakeven Inflation Rate (BIR)
     df["BIR_DI"] = ((df["NSR_DI"] + 1) / (df["RSR"] + 1)) - 1
 
     # Adjust BEI for DI spread in prefixed bonds
-    known_rates = df_nsr["NSR_PRE"].to_list()
-    df["NSR_PRE"] = df["BDays"].apply(
-        lambda x: ip.find_and_interpolate_flat_forward(x, known_bdays, known_rates)
+    ffwd = Interpolator(
+        method="flat_forward",
+        known_bdays=df_nsr["BDaysToExp"],
+        known_rates=df_nsr["NSR_PRE"],
     )
+    df["NSR_PRE"] = df["BDays"].apply(ffwd.interpolate)
     df["BIR_PRE"] = ((df["NSR_PRE"] + 1) / (df["RSR"] + 1)) - 1
 
     cols_reordered = [
