@@ -1,5 +1,5 @@
 [![PyPI version](https://img.shields.io/pypi/v/pyield.svg)](https://pypi.python.org/pypi/pyield)
-[![Made with Python](https://img.shields.io/badge/Python->=3.11-blue?logo=python&logoColor=white)](https://python.org "Go to Python homepage")
+[![Made with Python](https://img.shields.io/badge/Python->=3.12-blue?logo=python&logoColor=white)](https://python.org "Go to Python homepage")
 [![License](https://img.shields.io/badge/License-MIT-blue)](#license)
 
 # PYield: Brazilian Fixed Income Toolkit
@@ -24,6 +24,20 @@ pip install pyield
 ```
 
 ## How to use PYield
+
+### Important Note on Date Formats
+When using date strings in PYield functions, please ensure that the **date format is day-first** (e.g., "31-05-2024"). This format was chosen to be consistent with the Brazilian date convention.
+
+For production code, it is recommended to parse date strings with `pandas.to_datetime` using an **explicit format** to avoid ambiguity and ensure consistency.
+
+For example:
+```python
+import pandas as pd
+
+# Converting a date string to a pandas Timestamp with a specific format
+date = pd.to_datetime("2024/31/05", format="%Y/%d/%m")
+date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
+```
 
 ### Business Days Tools (Brazilian holidays are automatically considered)
 ```python
