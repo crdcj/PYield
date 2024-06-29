@@ -9,8 +9,8 @@ class Interpolator:
     def __init__(
         self,
         method: Literal["flat_forward", "linear"],
-        known_bdays: pd.Series,
-        known_rates: pd.Series,
+        known_bdays: pd.Series | list,
+        known_rates: pd.Series | list,
     ):
         """
         Initialize the Interpolator with given atributes.
@@ -28,8 +28,8 @@ class Interpolator:
             Interpolator: An instance of the Interpolator
 
         Examples:
-            >>> known_bdays = pd.Series([1, 5, 10, 15])
-            >>> known_rates = pd.Series([0.01, 0.015, 0.02, 0.025])
+            >>> known_bdays = [30, 60, 90]
+            >>> known_rates = [0.045, 0.05, 0.055]
             >>> interpolator = Interpolator("linear", known_bdays, known_rates)
         """
         self.known_bdays, self.known_rates = self._process_known_data(
@@ -55,9 +55,8 @@ class Interpolator:
 
     @staticmethod
     def _process_known_data(
-        known_bdays: pd.Series,
-        known_rates: pd.Series,
-    ) -> tuple:
+        known_bdays: pd.Series | list, known_rates: pd.Series | list
+    ) -> tuple[list, list]:
         """
         Process and validate known business days and interest rates.
 
@@ -76,22 +75,17 @@ class Interpolator:
 
         return df["bday"].to_list(), df["rate"].to_list()
 
-    @staticmethod
-    def _flat_forward(
-        bday: int,
-        known_bdays: list,
-        known_rates: list,
-    ) -> float:
+    def _flat_forward(self, bday: int) -> float:
         """Performs the interest rate interpolation using the flat forward method."""
 
         # Find i such that known_bdays[i-1] < bday < known_bdays[i]
-        i = bisect.bisect_left(known_bdays, bday)
+        i = bisect.bisect_left(self.known_bdays, bday)
 
         # Get previous and next known rates and business days
-        prev_rate = known_rates[i - 1]
-        prev_bday = known_bdays[i - 1]
-        next_rate = known_rates[i]
-        next_bday = known_bdays[i]
+        prev_rate = self.known_rates[i - 1]
+        prev_bday = self.known_bdays[i - 1]
+        next_rate = self.known_rates[i]
+        next_bday = self.known_bdays[i]
 
         # Perform flat forward interpolation
         a = (1 + prev_rate) ** (prev_bday / 252)
@@ -99,14 +93,9 @@ class Interpolator:
         c = (bday - prev_bday) / (next_bday - prev_bday)
         return (a * (b / a) ** c) ** (252 / bday) - 1
 
-    @staticmethod
-    def _linear(
-        bday: int,
-        known_bdays: list,
-        known_rates: list,
-    ) -> float:
+    def _linear(self, bday: int) -> float:
         """Performs linear interpolation."""
-        np_float = np.interp(bday, known_bdays, known_rates)
+        np_float = np.interp(bday, self.known_bdays, self.known_rates)
         return float(np_float)
 
     def interpolate(self, bday: int) -> float:
@@ -123,14 +112,14 @@ class Interpolator:
                 number of business days.
 
         Examples:
-                >>> known_bdays = pd.Series([1, 5, 10, 15])
-                >>> known_rates = pd.Series([0.1, 0.2, 0.3, 0.4])
-                >>> linear_interp = Interpolator("linear", known_bdays, known_rates)
-                >>> linear_interp.interpolate(7)
-                0.25
-                >>> ff_interp = Interpolator("flat_forward", known_bdays, known_rates)
-                >>> ff_interp.interpolate(7)
-                0.25
+                >>> known_bdays = [30, 60, 90]
+                >>> known_rates = [0.045, 0.05, 0.055]
+                >>> linear = Interpolator("linear", known_bdays, known_rates)
+                >>> linear.interpolate(45)
+                0.0475
+                >>> ffwd = Interpolator("flat_forward", known_bdays, known_rates)
+                >>> ffwd.interpolate(45)
+                0.04833068080970859
         """
         known_bdays = self.known_bdays
         known_rates = self.known_rates
@@ -144,6 +133,6 @@ class Interpolator:
             return known_rates[known_bdays.index(bday)]
 
         if self.method == "flat_forward":
-            return self._flat_forward(bday, known_bdays, known_rates)
+            return self._flat_forward(bday)
         elif self.method == "linear":
-            return self._linear(bday, known_bdays, known_rates)
+            return self._linear(bday)
