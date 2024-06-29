@@ -136,3 +136,5 @@ class Interpolator:
             return self._flat_forward(bday)
         elif self.method == "linear":
             return self._linear(bday)
+        else:
+            raise ValueError(f"Unknown interpolation method: {self.method}.")
