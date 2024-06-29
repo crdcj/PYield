@@ -17,8 +17,8 @@ class Interpolator:
 
         Args:
             method (Literal["flat_forward", "linear"]): Interpolation method.
-            known_bdays (pd.Series): Series of known business days.
-            known_rates (pd.Series): Series of known interest rates.
+            known_bdays (pd.Series | list): Series of known business days.
+            known_rates (pd.Series | list): Series of known interest rates.
 
         Raises:
             ValueError: If known_bdays and known_rates do not have the same length.
@@ -27,53 +27,31 @@ class Interpolator:
         Returns:
             Interpolator: An instance of the Interpolator
 
+        Note:
+            This class uses a 252 business days per year convention.
         Examples:
             >>> known_bdays = [30, 60, 90]
             >>> known_rates = [0.045, 0.05, 0.055]
             >>> interpolator = Interpolator("linear", known_bdays, known_rates)
         """
-        self.known_bdays, self.known_rates = self._process_known_data(
-            known_bdays, known_rates
-        )
-        self.method = self._validate_method(method)
+        self.method = method
+        self.known_bdays = known_bdays
+        self.known_rates = known_rates
+        self._validate_and_process_inputs()
 
-    @staticmethod
-    def _validate_method(method: str) -> str:
-        """
-        Validate the interpolation method.
+    def _validate_and_process_inputs(self) -> None:
+        """Validate and process the inputs of the Interpolator."""
+        if self.method not in {"flat_forward", "linear"}:
+            raise ValueError(f"Unknown interpolation method: {self.method}.")
 
-        Args:
-            method (str): Interpolation method to validate.
-
-        Returns:
-            str: Validated interpolation method.
-        """
-        valid_methods = ["flat_forward", "linear"]
-        if method not in valid_methods:
-            raise ValueError(f"Unknown interpolation method: {method}.")
-        return method
-
-    @staticmethod
-    def _process_known_data(
-        known_bdays: pd.Series | list, known_rates: pd.Series | list
-    ) -> tuple[list, list]:
-        """
-        Process and validate known business days and interest rates.
-
-        Args:
-            known_bdays (pd.Series): Series of known business days.
-            known_rates (pd.Series): Series of known interest rates.
-
-        Returns:
-            tuple: Processed lists of business days and interest rates.
-        """
-        if len(known_bdays) != len(known_rates):
+        if len(self.known_bdays) != len(self.known_rates):
             raise ValueError("known_bdays and known_rates must have the same length.")
 
-        df = pd.DataFrame({"bday": known_bdays, "rate": known_rates})
+        df = pd.DataFrame({"bday": self.known_bdays, "rate": self.known_rates})
         df = df.dropna().drop_duplicates(subset="bday").sort_values("bday")
 
-        return df["bday"].to_list(), df["rate"].to_list()
+        self.known_bdays = df["bday"].to_list()
+        self.known_rates = df["rate"].to_list()
 
     def _flat_forward(self, bday: int) -> float:
         """Performs the interest rate interpolation using the flat forward method."""
@@ -117,20 +95,17 @@ class Interpolator:
                 >>> linear = Interpolator("linear", known_bdays, known_rates)
                 >>> linear.interpolate(45)
                 0.0475
-                >>> ffwd = Interpolator("flat_forward", known_bdays, known_rates)
-                >>> ffwd.interpolate(45)
+                >>> fforward = Interpolator("flat_forward", known_bdays, known_rates)
+                >>> fforward.interpolate(45)
                 0.04833068080970859
         """
-        known_bdays = self.known_bdays
-        known_rates = self.known_rates
-
-        # Special cases
-        if bday < known_bdays[0]:
-            return known_rates[0]
-        elif bday > known_bdays[-1]:
-            return known_rates[-1]
-        elif bday in known_bdays:
-            return known_rates[known_bdays.index(bday)]
+        # Check for edge cases
+        if bday < self.known_bdays[0]:
+            return self.known_rates[0]
+        elif bday > self.known_bdays[-1]:
+            return self.known_rates[-1]
+        elif bday in self.known_bdays:
+            return self.known_rates[self.known_bdays.index(bday)]
 
         if self.method == "flat_forward":
             return self._flat_forward(bday)

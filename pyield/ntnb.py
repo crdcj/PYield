@@ -245,23 +245,23 @@ def spot_rates(
         # Get the coupon dates for the bond without the last one (principal + coupon)
         coupon_dates_wo_last = coupon_dates(settlement_date, maturity_date)[:-1]  # noqa
 
-        # Create a local DataFrame with a subset of the main DataFrame
-        dfl = df.query("MaturityDate in @coupon_dates_wo_last").reset_index(drop=True)
+        # Create a temporary DataFrame as a subset of the main DataFrame
+        dft = df.query("MaturityDate in @coupon_dates_wo_last").reset_index(drop=True)
 
         # Create the Series that will be used to calculate the discounted cash flows
-        cfs = pd.Series(COUPON, index=dfl.index)
-        spot_rates = dfl["RSR"]
-        periods = dfl["BDays"] / 252
+        cash_flows = pd.Series(COUPON, index=dft.index)
+        spot_rates = dft["RSR"]
+        periods = dft["BDays"] / 252
 
         # Calculate the present value of the cash flows (discounted cash flows)
-        dcfs = cfs / (1 + spot_rates) ** periods
+        discounted_cash_flows = cash_flows / (1 + spot_rates) ** periods
 
-        # Calculate the real spot rate (RSR) for the bond
+        # Calculate the real spot rate (RSR) for the bond using local variables
         bd = df.at[index, "BDays"]
         ytm = df.at[index, "YTM"]
-        ntnb_quotation = quotation(settlement_date, maturity_date, ytm) / 100
-        rsr = ((COUPON + 1) / (ntnb_quotation - dcfs.sum())) ** (252 / bd) - 1
-        df.at[index, "RSR"] = rsr
+        q = quotation(settlement_date, maturity_date, ytm) / 100
+        dcf = discounted_cash_flows.sum()
+        df.at[index, "RSR"] = ((COUPON + 1) / (q - dcf)) ** (252 / bd) - 1
 
     # Drop the BDays column, remove intermediate cupon dates and reset the index.
     return (
