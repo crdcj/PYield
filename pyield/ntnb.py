@@ -12,7 +12,7 @@ from .spreads import spread
 COUPON = 0.02956301  # round(((0.06 + 1) ** 0.5 - 1), 8)
 
 
-def data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch NTN-B Anbima data for the given reference date.
 
@@ -25,7 +25,7 @@ def data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return anbima(bond_type="NTN-B", reference_date=reference_date)
 
 
-def ytm_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch NTN-B Anbima indicative rates for the given reference date.
 
@@ -35,14 +35,11 @@ def ytm_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
     """
-    df = anbima("NTN-B", reference_date)
+    df = anbima_data(reference_date)
 
     # Keep only the relevant columns for the output
     keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
-    df = df[keep_columns].copy()
-
-    # Rename IndicativeRate to YTM for consistency
-    return df.rename(columns={"IndicativeRate": "YTM"})
+    return df[keep_columns].copy()
 
 
 def _truncate(value, decimal_places):
