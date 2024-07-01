@@ -37,7 +37,10 @@ def normalize_date(
 
     def starts_with_year(date_str: str) -> bool:
         """Check if the date string starts with a four-digit year."""
-        return bool(re.match(r"^\d{4}-", date_str))
+        if date_str in {"today", "now"}:
+            return False
+        else:
+            return bool(re.match(r"^\d{4}-", date_str))
 
     if isinstance(input_date, str):
         if starts_with_year(input_date):

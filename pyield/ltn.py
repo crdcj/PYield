@@ -5,7 +5,7 @@ from .fetchers.anbima import anbima
 
 def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
-    Fetch NTN-B Anbima data for the given reference date.
+    Fetch LTN Anbima data for the given reference date.
 
     Args:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
@@ -18,7 +18,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
 def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
-    Fetch NTN-B Anbima indicative rates for the given reference date.
+    Fetch LTN Anbima indicative rates for the given reference date.
 
     Args:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.

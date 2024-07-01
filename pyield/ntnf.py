@@ -15,10 +15,8 @@ def coupon_dates_map(
     The dates are inclusive. Coupon payments are made on the 1st of January and July.
 
     Args:
-        start (str | pd.Timestamp): The start date. If str, it must be in the format
-            'DD-MM-YYYY'.
-        end (str | pd.Timestamp): The end date. If str, it must be in the format
-            'DD-MM-YYYY'.
+        start (str | pd.Timestamp): The start date.
+        end (str | pd.Timestamp): The end date.
         adjust_for_bdays (bool, optional): If True, the coupon dates will be adjusted
             for business days. Defaults to False.
 
@@ -49,7 +47,7 @@ def coupon_dates_map(
 
 def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
-    Fetch NTN-B Anbima data for the given reference date.
+    Fetch NTN-F Anbima data for the given reference date.
 
     Args:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
@@ -62,7 +60,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
 def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
-    Fetch NTN-B Anbima indicative rates for the given reference date.
+    Fetch NTN-F Anbima indicative rates for the given reference date.
 
     Args:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
