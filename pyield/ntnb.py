@@ -173,16 +173,18 @@ def quotation(
     bdays = bday.count(settlement_date, payment_dates)
 
     # Set the cash flow at maturity to 100, otherwise set it to the coupon
-    cf = np.where(payment_dates == maturity_date, FINAL_PMT, INTER_PMT)
+    cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, INTER_PMT)
 
     # Calculate the number of periods truncated to 14 decimal places
-    n = _truncate(bdays / 252, 14)
+    num_periods = _truncate(bdays / 252, 14)
+
+    discount_factor = (1 + discount_rate) ** num_periods
 
     # Calculate the present value of each cash flow (DCF) rounded to 10 decimal places
-    dcf = (cf / (1 + discount_rate) ** n).round(10)
+    discounted_cash_flows = (cash_flows / discount_factor).round(10)
 
     # Return the quotation (the dcf sum) truncated to 4 decimal places
-    return _truncate(dcf.sum(), 4)
+    return _truncate(discounted_cash_flows.sum(), 4)
 
 
 def spot_rates(
