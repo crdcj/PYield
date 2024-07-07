@@ -85,6 +85,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 
     df["ReferenceDate"] = pd.to_datetime(df["ReferenceDate"], format="%Y%m%d")
     df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%Y%m%d")
+    df["IssueBaseDate"] = pd.to_datetime(df["IssueBaseDate"], format="%Y%m%d")
 
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 

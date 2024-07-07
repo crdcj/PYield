@@ -1,5 +1,6 @@
-from . import bday, interpolator, ntnb, ntnf
+from . import bday, interpolator
 from .__about__ import __version__
+from .bonds import ltn, ntnb, ntnf
 from .fetchers.anbima import anbima
 from .fetchers.futures import futures
 from .fetchers.indicators import indicator
@@ -15,6 +16,7 @@ __all__ = [
     "interpolator",
     "ntnb",
     "ntnf",
+    "ltn",
     "projection",
     "spread",
 ]

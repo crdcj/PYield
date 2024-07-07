@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
 
-from . import bday
-from . import date_validator as dv
-from .fetchers.anbima import anbima
-from .fetchers.futures import futures
-from .interpolator import Interpolator
-from .spreads import spread
+from .. import bday
+from .. import date_validator as dv
+from ..fetchers.anbima import anbima
+from ..fetchers.futures import futures
+from ..interpolator import Interpolator
+from ..spreads import spread
+from .utils import truncate
 
 # 6% per year compounded semi-annually and rounded to 8 decimal places
 COUPON = 0.02956301  # round(((0.06 + 1) ** 0.5 - 1), 8)
@@ -40,21 +41,6 @@ def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     # Keep only the relevant columns for the output
     keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
     return df[keep_columns].copy()
-
-
-def _truncate(value, decimal_places):
-    """
-    Truncate a float or a Pandas Series to the specified decimal place.
-
-    Args:
-        value (float or pandas.Series): The value(s) to be truncated.
-        decimal_places (int): The number of decimal places to truncate to.
-
-    Returns:
-        float or pandas.Series: The truncated value(s).
-    """
-    factor = 10**decimal_places
-    return np.trunc(value * factor) / factor
 
 
 def coupon_dates_map(
@@ -176,7 +162,7 @@ def quotation(
     cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, INTER_PMT)
 
     # Calculate the number of periods truncated to 14 decimal places
-    num_periods = _truncate(bdays / 252, 14)
+    num_periods = truncate(bdays / 252, 14)
 
     discount_factor = (1 + discount_rate) ** num_periods
 
@@ -184,7 +170,7 @@ def quotation(
     discounted_cash_flows = (cash_flows / discount_factor).round(10)
 
     # Return the quotation (the dcf sum) truncated to 4 decimal places
-    return _truncate(discounted_cash_flows.sum(), 4)
+    return truncate(discounted_cash_flows.sum(), 4)
 
 
 def spot_rates(

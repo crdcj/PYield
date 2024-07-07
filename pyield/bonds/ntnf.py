@@ -1,28 +1,16 @@
 import numpy as np
 import pandas as pd
 
-from . import bday
-from . import date_validator as dv
-from .fetchers.anbima import anbima
+from .. import bday
+from .. import date_validator as dv
+from ..fetchers.anbima import anbima
+from .utils import truncate
 
-COUPON = 48.81
-INTER_PMT = COUPON
-FINAL_PMT = 1000.0 + INTER_PMT
-
-
-def _truncate(value, decimal_places):
-    """
-    Truncate a float or a Pandas Series to the specified decimal place.
-
-    Args:
-        value (float or pandas.Series): The value(s) to be truncated.
-        decimal_places (int): The number of decimal places to truncate to.
-
-    Returns:
-        float or pandas.Series: The truncated value(s).
-    """
-    factor = 10**decimal_places
-    return np.trunc(value * factor) / factor
+# Constants
+FACE_VALUE = 1000
+SEMI_ANNUAL_RATE = 0.0488088  # round(((0.10 + 1) ** 0.5) - 1, 7)
+INTER_PMT = FACE_VALUE * SEMI_ANNUAL_RATE
+FINAL_PMT = FACE_VALUE + INTER_PMT
 
 
 def coupon_dates(
@@ -65,7 +53,7 @@ def price(
     discount_rate: float,
 ) -> float:
     """
-    Calculate the NTN-B quotation in base 100 using Anbima rules.
+    Calculate the NTN-F price using Anbima rules.
 
     Args:
         settlement_date (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
@@ -73,15 +61,15 @@ def price(
         maturity_date (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
             a pandas Timestamp.
         discount_rate (float): The discount rate used to calculate the present value of
-            the cash flows, which is the yield to maturity (YTM) of the NTN-B.
+            the cash flows, which is the yield to maturity (YTM) of the NTN-F.
 
     Returns:
-        float: The NTN-B quotation truncated to 4 decimal places.
+        float: The NTN-F price truncated to 6 decimal places.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
-        - The semi-annual coupon is set to 2.956301, which represents a 6% annual
-          coupon rate compounded semi-annually and rounded to 6 decimal places as per
+        - The semi-annual coupon is set to 48.81, which represents a 10% annual
+          coupon rate compounded semi-annually and rounded to 5 decimal places as per
           Anbima rules.
 
     Examples:
@@ -105,16 +93,14 @@ def price(
     cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, INTER_PMT)
 
     # Calculate the number of periods truncated to 14 decimal places
-    num_periods = _truncate(bdays / 252, 14)
+    num_periods = truncate(bdays / 252, 14)
 
     discount_factor = (1 + discount_rate) ** num_periods
 
-    # Calculate the present value of each cash flow (DCF) rounded to 10 decimal places
-    discounted_cash_flows = (cash_flows / discount_factor).round(10)
+    # Calculate the present value of each cash flow (DCF)
+    discounted_cash_flows = (cash_flows / discount_factor).round(9)
 
-    # Return the quotation (the dcf sum) truncated to 4 decimal places
-    np_price = _truncate(discounted_cash_flows.sum(), 2)
-    return float(np_price)
+    return truncate(discounted_cash_flows.sum(), 6)
 
 
 def coupon_dates_map(
