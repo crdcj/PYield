@@ -108,13 +108,9 @@ def coupon_dates(
     if maturity_date < start_date:
         raise ValueError("Maturity date must be after the start date.")
 
-    # Check if the maturity date is 15
-    if maturity_date.day != COUPON_DAY:
-        raise ValueError("Maturity date must be the 15th of a month.")
-
-    # Check if month is February, May, August, or November
-    if maturity_date.month not in COUPON_MONTHS:
-        raise ValueError("Maturity months must be February, May, August, or November.")
+    # Check if the maturity date is a valid NTN-B maturity date
+    if maturity_date.day != COUPON_DAY or maturity_date.month not in COUPON_MONTHS:
+        raise ValueError("NTN-B maturity must be 15/02, 15/05, 15/08, or 15/11.")
 
     # Initialize loop variables
     cp_date = maturity_date
@@ -126,7 +122,7 @@ def coupon_dates(
         # Move the coupon date back 6 months
         cp_date -= pd.DateOffset(months=6)
 
-    return pd.Series(cp_dates).sort_values().reset_index(drop=True)
+    return pd.Series(cp_dates).sort_values(ignore_index=True)
 
 
 def quotation(

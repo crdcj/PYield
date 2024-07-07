@@ -8,6 +8,8 @@ from .utils import truncate
 
 # Constants
 FACE_VALUE = 1000
+COUPON_DAY = 1
+COUPON_MONTHS = [1, 7]
 COUPON_RATE = (0.10 + 1) ** 0.5 - 1  # 10% annual rate compounded semi-annually
 COUPON_PMT = round(FACE_VALUE * COUPON_RATE, 5)  # Rounded as per Anbima rules
 FINAL_PMT = FACE_VALUE + COUPON_PMT
@@ -32,6 +34,14 @@ def coupon_dates(
     # Validate and normalize dates
     start_date = dv.normalize_date(start_date)
     maturity_date = dv.normalize_date(maturity_date)
+
+    # Check if maturity date is after the start date
+    if maturity_date < start_date:
+        raise ValueError("Maturity date must be after the start date.")
+
+    # Check if the maturity date is a valid NTN-F maturity date
+    if maturity_date.day != COUPON_DAY or maturity_date.month not in COUPON_MONTHS:
+        raise ValueError("NTN-F maturity date must be the 1st of January or July.")
 
     # Initialize loop variables
     coupon_date = maturity_date
