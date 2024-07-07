@@ -8,9 +8,9 @@ from .utils import truncate
 
 # Constants
 FACE_VALUE = 1000
-SEMI_ANNUAL_RATE = 0.0488088  # round(((0.10 + 1) ** 0.5) - 1, 7)
-INTER_PMT = FACE_VALUE * SEMI_ANNUAL_RATE
-FINAL_PMT = FACE_VALUE + INTER_PMT
+COUPON_RATE = (0.10 + 1) ** 0.5 - 1  # 10% annual rate compounded semi-annually
+COUPON_PMT = round(FACE_VALUE * COUPON_RATE, 5)  # Rounded as per Anbima rules
+FINAL_PMT = FACE_VALUE + COUPON_PMT
 
 
 def coupon_dates(
@@ -64,7 +64,7 @@ def price(
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
 
     Returns:
-        float: The NTN-F price truncated to 6 decimal places.
+        float: The NTN-F price using Anbima rules.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -73,10 +73,8 @@ def price(
           Anbima rules.
 
     Examples:
-        >>> quotation("31-05-2024", "15-05-2035", 0.061490)
-        99.3651
-        >>> quotation("31-05-2024", "15-08-2060", 0.061878)
-        99.5341
+        >>> price("05-07-2024", "01-01-2035", 0.11921)
+        895.359254
     """
 
     # Validate and normalize dates
@@ -89,17 +87,17 @@ def price(
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement_date, payment_dates)
 
-    # Set the cash flow at maturity to 100, otherwise set it to the coupon
-    cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, INTER_PMT)
+    # Set the cash flow at maturity to FINAL_PMT and the others to INTER_PMT
+    cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
 
-    # Calculate the number of periods truncated to 14 decimal places
+    # Calculate the number of periods truncated as per Anbima rules
     num_periods = truncate(bdays / 252, 14)
 
+    # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
     discount_factor = (1 + discount_rate) ** num_periods
-
-    # Calculate the present value of each cash flow (DCF)
     discounted_cash_flows = (cash_flows / discount_factor).round(9)
 
+    # Return the sum of the discounted cash flows truncated as per Anbima rules
     return truncate(discounted_cash_flows.sum(), 6)
 
 

@@ -9,8 +9,10 @@ from ..interpolator import Interpolator
 from ..spreads import spread
 from .utils import truncate
 
-# 6% per year compounded semi-annually and rounded to 8 decimal places
-COUPON = 0.02956301  # round(((0.06 + 1) ** 0.5 - 1), 8)
+COUPON_RATE = (0.06 + 1) ** 0.5 - 1  # 6% annual rate compounded semi-annually
+# Semi-annual payments are in base 100 and rounded using Anbima rules
+COUPON_PMT = round(100 * COUPON_RATE, 6)
+FINAL_PMT = 100 + COUPON_PMT
 
 
 def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
@@ -144,10 +146,6 @@ def quotation(
         >>> quotation("31-05-2024", "15-08-2060", 0.061878)
         99.5341
     """
-    # Semi-annual coupon values are in base 100 and rounded to 6 decimal places
-    INTER_PMT = round(100 * COUPON, 6)
-    FINAL_PMT = round(100 + INTER_PMT, 6)
-
     # Validate and normalize dates
     settlement_date = dv.normalize_date(settlement_date)
     maturity_date = dv.normalize_date(maturity_date)
@@ -159,7 +157,7 @@ def quotation(
     bdays = bday.count(settlement_date, payment_dates)
 
     # Set the cash flow at maturity to 100, otherwise set it to the coupon
-    cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, INTER_PMT)
+    cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
 
     # Calculate the number of periods truncated to 14 decimal places
     num_periods = truncate(bdays / 252, 14)
@@ -234,7 +232,7 @@ def spot_rates(
         dft = df.query("MaturityDate in @coupon_dates_wo_last").reset_index(drop=True)
 
         # Create the Series that will be used to calculate the discounted cash flows
-        cash_flows = pd.Series(COUPON, index=dft.index)
+        cash_flows = pd.Series(COUPON_RATE, index=dft.index)
         spot_rates = dft["RSR"]
         periods = dft["BDays"] / 252
 
@@ -246,7 +244,7 @@ def spot_rates(
         ytm = df.at[index, "YTM"]
         q = quotation(settlement_date, maturity_date, ytm) / 100
         dcf = discounted_cash_flows.sum()
-        df.at[index, "RSR"] = ((COUPON + 1) / (q - dcf)) ** (252 / bd) - 1
+        df.at[index, "RSR"] = ((COUPON_RATE + 1) / (q - dcf)) ** (252 / bd) - 1
 
     # Drop the BDays column, remove intermediate cupon dates and reset the index.
     return (

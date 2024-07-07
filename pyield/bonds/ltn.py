@@ -55,14 +55,14 @@ def price(
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
 
     Returns:
-        float: The LTN price truncated to 6 decimal places.
+        float: The LTN price using Anbima rules.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> price("01-01-2021", "01-07-2021", 0.02)
-        0.980392
+        >>> price("05-07-2024", "01-01-2030", 0.12145)
+        535.279902
     """
 
     # Validate and normalize dates
@@ -72,11 +72,10 @@ def price(
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement_date, maturity_date)
 
-    # Calculate the number of periods truncated to 14 decimal places
+    # Calculate the number of periods truncated as per Anbima rule
     num_periods = truncate(bdays / 252, 14)
 
     discount_factor = (1 + discount_rate) ** num_periods
 
-    pu = FACE_VALUE / discount_factor
-
-    return truncate(pu, 6)
+    # Truncate the price to 6 decimal places as per Anbima rules
+    return truncate(FACE_VALUE / discount_factor, 6)
