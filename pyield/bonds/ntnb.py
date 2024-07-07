@@ -277,8 +277,8 @@ def spot_rates(
         # Get the coupon dates for the bond without the last one (principal + coupon)
         cp_dates = coupon_dates(settlement_date, maturity_date)
 
-        # If there is only one coupon date and it is the first maturity date,
-        # the ytm rate is also a spot rate.
+        # If there is only one coupon date and this date is the first maturity date
+        # of an existing bond, the ytm rate is also a spot rate.
         if len(cp_dates) == 1 and cp_dates[0] == maturity_dates[0]:
             df.at[index, "RSR"] = ytm
             continue
