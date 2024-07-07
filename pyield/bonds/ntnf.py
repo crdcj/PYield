@@ -87,7 +87,7 @@ def price(
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement_date, payment_dates)
 
-    # Set the cash flow at maturity to FINAL_PMT and the others to INTER_PMT
+    # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
     cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
 
     # Calculate the number of periods truncated as per Anbima rules
@@ -154,7 +154,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return anbima(bond_type="NTN-F", reference_date=reference_date)
 
 
-def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def anbima_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch NTN-F Anbima indicative rates for the given reference date.
 

@@ -21,7 +21,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return anbima(bond_type="LTN", reference_date=reference_date)
 
 
-def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def anbima_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch LTN Anbima indicative rates for the given reference date.
 
