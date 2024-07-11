@@ -20,3 +20,11 @@ def truncate(values: float | pd.Series, decimal_places: int) -> float | pd.Serie
     else:
         truncated_values = pd.Series(truncated_values)
     return truncated_values
+
+
+def calculate_present_value(
+    cash_flows: pd.Series,
+    discount_rates: pd.Series,
+    time_periods: pd.Series,
+) -> float:
+    return (cash_flows / (1 + discount_rates) ** time_periods).sum()

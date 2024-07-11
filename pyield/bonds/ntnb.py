@@ -7,7 +7,7 @@ from ..fetchers.anbima import anbima
 from ..fetchers.futures import futures
 from ..interpolator import Interpolator
 from ..spreads import spread
-from .utils import truncate
+from . import utils as bu  # bonds utils
 
 # Constants for NTN-B bonds
 COUPON_DAY = 15
@@ -170,7 +170,7 @@ def quotation(
     cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_periods = truncate(bdays / 252, 14)
+    num_periods = bu.truncate(bdays / 252, 14)
 
     discount_factor = (1 + discount_rate) ** num_periods
 
@@ -178,7 +178,7 @@ def quotation(
     discounted_cash_flows = (cash_flows / discount_factor).round(10)
 
     # Return the quotation (the dcf sum) truncated as per Anbima rules
-    return truncate(discounted_cash_flows.sum(), 4)
+    return bu.truncate(discounted_cash_flows.sum(), 4)
 
 
 def _validate_and_process_inputs(settlement_date, maturity_dates, ytm_rates) -> tuple:
@@ -195,20 +195,6 @@ def _validate_and_process_inputs(settlement_date, maturity_dates, ytm_rates) -> 
     ytm_rates = df["ytm"]
 
     return settlement_date, maturity_dates, ytm_rates
-
-
-def _calculate_discounted_cash_flow(df: pd.DataFrame) -> np.float64:
-    if df.empty:
-        return np.float64(0)
-    # Create the Series that will be used to calculate the discounted cash flows
-    cash_flows = pd.Series(COUPON_RATE, index=df.index)
-    spot_rates = df["RSR"]
-    periods = df["BDays"] / 252
-
-    # Calculate the present value of the cash flows (discounted cash flows)
-    discounted_cash_flows = cash_flows / (1 + spot_rates) ** periods
-
-    return discounted_cash_flows.sum()
 
 
 def spot_rates(
@@ -281,16 +267,22 @@ def spot_rates(
             df.at[maturity, "RSR"] = ytm
             continue
 
-        # Create a subset DataFrame with the coupon dates without the last one
-        cp_dates_wo_last = cp_dates[:-1]  # noqa
-        df_subset = df.query("MaturityDate in @cp_dates_wo_last").reset_index(drop=True)
+        # Create a subset DataFrame with interim coupon dates (without the final one)
+        cp_dates_interim = cp_dates[:-1]  # noqa
+        df_interim = df.query("MaturityDate in @cp_dates_interim").reset_index(
+            drop=True
+        )
 
         # Calculate the present value of the cash flows (discounted cash flows)
-        dcf = _calculate_discounted_cash_flow(df_subset)
+        pv = bu.calculate_present_value(
+            cash_flows=pd.Series(COUPON_RATE, index=df_interim.index),
+            discount_rates=df_interim["RSR"],
+            time_periods=df_interim["BDays"] / 252,
+        )
 
         # Calculate the real spot rate (RSR) for the bond
         q = quotation(settlement_date, maturity, ytm) / 100
-        df.at[maturity, "RSR"] = ((COUPON_RATE + 1) / (q - dcf)) ** (252 / bdays) - 1
+        df.at[maturity, "RSR"] = ((COUPON_RATE + 1) / (q - pv)) ** (252 / bdays) - 1
 
     df.drop(columns=["BDays"], inplace=True)
     # Return the result without the intermediate coupon dates (virtual bonds)
