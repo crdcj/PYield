@@ -229,7 +229,7 @@ def spot_rates(
     )
 
     # Create the interpolator object
-    flat_fwd = Interpolator(
+    flat_forward_interpolator = Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement_date, maturity_dates),
         known_rates=ytm_rates,
@@ -246,7 +246,7 @@ def spot_rates(
 
     # Add auxiliary columns for calculations
     df["BDays"] = bday.count(settlement_date, df["MaturityDate"])
-    df["YTM"] = df["BDays"].apply(flat_fwd.interpolate)
+    df["YTM"] = df["BDays"].apply(flat_forward_interpolator)
     df["RSR"] = 0.0
 
     # Set the MaturityDate as the index to facilitate the calculations
@@ -403,7 +403,7 @@ def bei_rates(
     # Fetch Nominal Spot Rate (NSR) data
     df_nsr = _get_nsr_df(reference_date)
 
-    ffwd = Interpolator(
+    flat_forward_interplator = Interpolator(
         method="flat_forward",
         known_bdays=df_nsr["BDaysToExp"],
         known_rates=df_nsr["NSR_DI"],
@@ -412,18 +412,18 @@ def bei_rates(
     df = spot_rates(settlement_date, maturity_dates, ytm_rates)
     df = df.rename(columns={"RSR": "RSR"})
     df["BDays"] = bday.count(reference_date, df["MaturityDate"])
-    df["NSR_DI"] = df["BDays"].apply(ffwd.interpolate)
+    df["NSR_DI"] = df["BDays"].apply(flat_forward_interplator)
 
     # Calculate Breakeven Inflation Rate (BIR)
     df["BIR_DI"] = ((df["NSR_DI"] + 1) / (df["RSR"] + 1)) - 1
 
     # Adjust BEI for DI spread in prefixed bonds
-    ffwd = Interpolator(
+    flat_forward_interplator = Interpolator(
         method="flat_forward",
         known_bdays=df_nsr["BDaysToExp"],
         known_rates=df_nsr["NSR_PRE"],
     )
-    df["NSR_PRE"] = df["BDays"].apply(ffwd.interpolate)
+    df["NSR_PRE"] = df["BDays"].apply(flat_forward_interplator)
     df["BIR_PRE"] = ((df["NSR_PRE"] + 1) / (df["RSR"] + 1)) - 1
 
     cols_reordered = [

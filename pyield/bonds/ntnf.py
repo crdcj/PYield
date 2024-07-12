@@ -4,7 +4,8 @@ import pandas as pd
 from .. import bday
 from .. import date_validator as dv
 from ..fetchers.anbima import anbima
-from .utils import truncate
+from ..interpolator import Interpolator
+from . import utils as bu
 
 # Constants
 FACE_VALUE = 1000
@@ -101,14 +102,14 @@ def price(
     cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_periods = truncate(bdays / 252, 14)
+    num_periods = bu.truncate(bdays / 252, 14)
 
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
     discount_factor = (1 + discount_rate) ** num_periods
     discounted_cash_flows = (cash_flows / discount_factor).round(9)
 
     # Return the sum of the discounted cash flows truncated as per Anbima rules
-    return truncate(discounted_cash_flows.sum(), 6)
+    return bu.truncate(discounted_cash_flows.sum(), 6)
 
 
 def coupon_dates_map(
@@ -175,7 +176,70 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
     """
     df = anbima_data(reference_date)
-
     # Keep only the relevant columns for the output
     keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
-    return df[keep_columns].copy()
+    # Promote MaturityDate to index
+    return df[keep_columns].set_index("MaturityDate")
+
+
+def spot_rates(
+    settlement_date: str | pd.Timestamp,
+    ltn_rates: pd.Series,
+    ntnf_rates: pd.Series,
+) -> pd.DataFrame:
+    """
+    Fetch NTN-F Anbima spot rates for the given reference date.
+
+    Args:
+        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+        ltn_rates (pd.Series): The LTN known rates, indexed by maturity date.
+        ntnf_rates (pd.Series): The NTN-F known rates, indexed by maturity date.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
+    """
+    ltn_rate_interp = Interpolator(
+        method="flat_forward",
+        known_bdays=bday.count(settlement_date, ltn_rates.index),
+        known_rates=ltn_rates,
+    )
+    ntnf_rate_interp = Interpolator(
+        method="flat_forward",
+        known_bdays=bday.count(settlement_date, ntnf_rates.index),
+        known_rates=ntnf_rates,
+    )
+    last_ltn = ltn_rates.index.max()
+    last_ntnf = ntnf_rates.index.max()
+    all_coupon_dates = coupon_dates_map(settlement_date, last_ntnf)
+
+    df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
+    df["BDays"] = bday.count(start=settlement_date, end=df["MaturityDate"])
+    df["YTM"] = df["BDays"].apply(ntnf_rate_interp)
+    # Promote MaturityDate to index
+    df = df.set_index("MaturityDate")
+    df["SpotRate"] = 0.0
+
+    for maturity in df.index:
+        bdays = df.at[maturity, "BDays"]
+        ytm = df.at[maturity, "YTM"]
+        if maturity <= last_ltn:
+            df.loc[maturity, "SpotRate"] = ltn_rate_interp(bdays)
+        else:
+            cp_dates_wo_last = coupon_dates(settlement_date, maturity)[:-1]  # noqa
+
+            # Create a subset DataFrame without final payment
+            df_inter = df.query("MaturityDate in @cp_dates_wo_last").reset_index(
+                drop=True
+            )
+
+            # Calculate the present value of the cash flows (discounted cash flows)
+            pv = bu.calculate_present_value(
+                cash_flows=pd.Series(COUPON_PMT, index=df_inter.index),
+                discount_rates=df_inter["SpotRate"],
+                time_periods=df_inter["BDays"] / 252,
+            )
+
+            # Calculate the real spot rate (RSR) for the bond
+            bond_price = price(settlement_date, maturity, ytm)
+            spot_rate = ((FINAL_PMT) / (bond_price - pv)) ** (252 / bdays) - 1
+            df.at[maturity, "SpotRate"] = spot_rate

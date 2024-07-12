@@ -32,10 +32,10 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
     """
     df = anbima_data(reference_date)
-
     # Keep only the relevant columns for the output
     keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
-    return df[keep_columns].copy()
+    # Promote MaturityDate to index
+    return df[keep_columns].set_index("MaturityDate")
 
 
 def price(

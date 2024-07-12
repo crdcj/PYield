@@ -113,3 +113,17 @@ class Interpolator:
             return self._linear(bday)
         else:
             raise ValueError(f"Unknown interpolation method: {self.method}.")
+
+    def __call__(self, bday: int) -> float:
+        """
+        Allows the instance to be called as a function to perform interpolation.
+
+        Args:
+            bday (int): Number of business days for which the interest rate is to be
+                calculated.
+
+        Returns:
+            float: The interest rate interpolated by the specified method for the given
+                number of business days.
+        """
+        return self.interpolate(bday)

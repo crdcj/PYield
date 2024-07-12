@@ -163,14 +163,14 @@ IndicatorProjection(
 # Initialize the Interpolator with known business days and interest rates.
 >>> known_bdays = [30, 60, 90]
 >>> known_rates = [0.045, 0.05, 0.055]
->>> linear_itp = yd.Interpolator("linear", known_bdays, known_rates)
+>>> linear_interpolator = yd.Interpolator("linear", known_bdays, known_rates)
 
 # Interpolate the interest rate for a given number of business days.
->>> linear_itp.interpolate(45)
+>>> linear_interpolator(45)
 0.0475
 
 # Use the flat forward method for interpolation.
->>> ff_itp = yd.Interpolator("flat_forward", known_bdays, known_rates)
->>> ff_itp.interpolate(45)
+>>> ff_interpolator = yd.Interpolator("flat_forward", known_bdays, known_rates)
+>>> ff_interpolator(45)
 0.04833068080970859
 ```
