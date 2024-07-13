@@ -9,16 +9,16 @@ class Interpolator:
     def __init__(
         self,
         method: Literal["flat_forward", "linear"],
-        known_bdays: pd.Series | list,
-        known_rates: pd.Series | list,
+        known_bdays: pd.Series | pd.Index | list,
+        known_rates: pd.Series | pd.Index | list,
     ):
         """
         Initialize the Interpolator with given atributes.
 
         Args:
             method (Literal["flat_forward", "linear"]): Interpolation method.
-            known_bdays (pd.Series | list): Series of known business days.
-            known_rates (pd.Series | list): Series of known interest rates.
+            known_bdays (pd.Series | pd.Index | list): Series of known business days.
+            known_rates (pd.Series | pd.Index | list): Series of known interest rates.
 
         Raises:
             ValueError: If known_bdays and known_rates do not have the same length.
@@ -44,10 +44,18 @@ class Interpolator:
         if self.method not in {"flat_forward", "linear"}:
             raise ValueError(f"Unknown interpolation method: {self.method}.")
 
-        if len(self.known_bdays) != len(self.known_rates):
+        known_bdays = self.known_bdays
+        if not isinstance(known_bdays, list):
+            known_bdays = known_bdays.to_list()
+
+        known_rates = self.known_rates
+        if not isinstance(known_rates, list):
+            known_rates = self.known_rates.to_list()
+
+        if len(known_bdays) != len(known_rates):
             raise ValueError("known_bdays and known_rates must have the same length.")
 
-        df = pd.DataFrame({"bday": self.known_bdays, "rate": self.known_rates})
+        df = pd.DataFrame({"bday": known_bdays, "rate": known_rates})
         df = df.dropna().drop_duplicates(subset="bday").sort_values("bday")
 
         self.known_bdays = df["bday"].to_list()

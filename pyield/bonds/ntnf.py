@@ -198,48 +198,52 @@ def spot_rates(
     Returns:
         pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
     """
-    ltn_rate_interp = Interpolator(
+    settlement_date = dv.normalize_date(settlement_date)
+
+    ltn_flat_forward = Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement_date, ltn_rates.index),
         known_rates=ltn_rates,
     )
-    ntnf_rate_interp = Interpolator(
+    ntnf_flat_forward = Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement_date, ntnf_rates.index),
         known_rates=ntnf_rates,
     )
+
     last_ltn = ltn_rates.index.max()
     last_ntnf = ntnf_rates.index.max()
     all_coupon_dates = coupon_dates_map(settlement_date, last_ntnf)
 
+    # Create a DataFrame with all coupon dates and the corresponding YTM
     df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
     df["BDays"] = bday.count(start=settlement_date, end=df["MaturityDate"])
-    df["YTM"] = df["BDays"].apply(ntnf_rate_interp)
-    # Promote MaturityDate to index
-    df = df.set_index("MaturityDate")
-    df["SpotRate"] = 0.0
+    df["YTM"] = df["BDays"].apply(ntnf_flat_forward)
 
-    for maturity in df.index:
-        bdays = df.at[maturity, "BDays"]
-        ytm = df.at[maturity, "YTM"]
+    for index in df.index:
+        maturity = df.at[index, "MaturityDate"]
+        bdays = df.at[index, "BDays"]
+
         if maturity <= last_ltn:
-            df.loc[maturity, "SpotRate"] = ltn_rate_interp(bdays)
-        else:
-            cp_dates_wo_last = coupon_dates(settlement_date, maturity)[:-1]  # noqa
+            df.at[index, "SpotRate"] = ltn_flat_forward(bdays)
+            continue
 
-            # Create a subset DataFrame without final payment
-            df_inter = df.query("MaturityDate in @cp_dates_wo_last").reset_index(
-                drop=True
-            )
+        # Create a subset DataFrame with only the coupon payments (without last payment)
+        cp_dates_wo_last = coupon_dates(settlement_date, maturity)[:-1]  # noqa
+        df_coupons = df.query("MaturityDate in @cp_dates_wo_last").copy()
+        df_coupons["Coupon"] = COUPON_PMT
 
-            # Calculate the present value of the cash flows (discounted cash flows)
-            pv = bu.calculate_present_value(
-                cash_flows=pd.Series(COUPON_PMT, index=df_inter.index),
-                discount_rates=df_inter["SpotRate"],
-                time_periods=df_inter["BDays"] / 252,
-            )
+        # Calculate the present value of the coupon payments
+        pv = bu.calculate_present_value(
+            cash_flows=df_coupons["Coupon"],
+            discount_rates=df_coupons["SpotRate"],
+            time_periods=df_coupons["BDays"] / 252,
+        )
 
-            # Calculate the real spot rate (RSR) for the bond
-            bond_price = price(settlement_date, maturity, ytm)
-            spot_rate = ((FINAL_PMT) / (bond_price - pv)) ** (252 / bdays) - 1
-            df.at[maturity, "SpotRate"] = spot_rate
+        # Calculate the spot rate for the bond
+        ytm = df.at[index, "YTM"]
+        bond_price = price(settlement_date, maturity, ytm)
+        spot_rate = ((FINAL_PMT) / (bond_price - pv)) ** (252 / bdays) - 1
+        df.at[index, "SpotRate"] = spot_rate
+
+    return df
