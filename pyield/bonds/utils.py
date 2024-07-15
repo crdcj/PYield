@@ -28,3 +28,9 @@ def calculate_present_value(
     time_periods: pd.Series,
 ) -> float:
     return (cash_flows / (1 + discount_rates) ** time_periods).sum()
+
+
+def standardize_rates(rates: pd.Series) -> pd.Series:
+    if not isinstance(rates.index, pd.DatetimeIndex):
+        raise ValueError("The rates index must be a DatetimeIndex with maturity dates.")
+    return rates.dropna().sort_index()

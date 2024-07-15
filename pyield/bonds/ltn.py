@@ -21,7 +21,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return anbima(bond_type="LTN", reference_date=reference_date)
 
 
-def anbima_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     """
     Fetch LTN Anbima indicative rates for the given reference date.
 
@@ -29,13 +29,14 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
+        pd.Series: A Series containing the rates indexed by maturity date.
     """
     df = anbima_data(reference_date)
-    # Keep only the relevant columns for the output
-    keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
-    # Promote MaturityDate to index
-    return df[keep_columns].set_index("MaturityDate")
+    # Set MaturityDate as index
+    df = df.set_index("MaturityDate")
+    df.index.name = None
+    # Return as Series
+    return df["IndicativeRate"]
 
 
 def price(
@@ -66,8 +67,8 @@ def price(
     """
 
     # Validate and normalize dates
-    settlement_date = dv.normalize_date(settlement_date)
-    maturity_date = dv.normalize_date(maturity_date)
+    settlement_date = dv.standardize_date(settlement_date)
+    maturity_date = dv.standardize_date(maturity_date)
 
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement_date, maturity_date)

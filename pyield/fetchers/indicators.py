@@ -50,7 +50,7 @@ def ipca_monthly_rate(reference_date: str | pd.Timestamp | None = None) -> float
         0.0038  # Indicates an IPCA monthly rate of 0.38% p.m.
 
     """
-    normalized_date = dv.normalize_date(reference_date)
+    normalized_date = dv.standardize_date(reference_date)
     # Format the date as 'YYYYMM' for the API endpoint
     ipca_date = normalized_date.strftime("%Y%m")
 
@@ -81,7 +81,7 @@ def selic_target(reference_date: str | pd.Timestamp | None = None) -> float | No
     0.1075  # Indicates a SELIC target rate of 10.75% p.a.
 
     """
-    normalized_date = dv.normalize_date(reference_date)
+    normalized_date = dv.standardize_date(reference_date)
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     selic_date = normalized_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial={selic_date}&dataFinal={selic_date}"
@@ -102,7 +102,7 @@ def di(reference_date: str | pd.Timestamp | None = None) -> float | None:
         0.00040168  # Indicates a DI daily rate of 0.02% p.d.
 
     """
-    normalized_date = dv.normalize_date(reference_date)
+    normalized_date = dv.standardize_date(reference_date)
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     di_date = normalized_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial={di_date}&dataFinal={di_date}"
@@ -117,7 +117,7 @@ def di(reference_date: str | pd.Timestamp | None = None) -> float | None:
 
 
 def vna_lft(reference_date: str | pd.Timestamp | None = None) -> float | None:
-    normalized_date = dv.normalize_date(reference_date)
+    normalized_date = dv.standardize_date(reference_date)
     # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
     url_file = f"{normalized_date.strftime('%Y%m%d')}APC238"

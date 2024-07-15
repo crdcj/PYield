@@ -45,7 +45,7 @@ def futures(
     if contract_code not in SUPPORTED_FUTURES:
         raise ValueError("Futures contract not supported.")
 
-    normalized_date = dv.normalize_date(reference_date)
+    normalized_date = dv.standardize_date(reference_date)
 
     today = pd.Timestamp.today().normalize()
     if normalized_date == today:

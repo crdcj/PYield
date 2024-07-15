@@ -39,7 +39,7 @@ def spread(
         >>> spread("DI_PRE", "2024-06-18")
     """
     spread_type_cap = str(spread_type).upper()
-    normalized_date = dv.normalize_date(reference_date)
+    normalized_date = dv.standardize_date(reference_date)
     if spread_type_cap == "DI_PRE":
         return di_pre(normalized_date)
     else:

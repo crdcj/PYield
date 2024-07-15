@@ -31,7 +31,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return anbima(bond_type="NTN-B", reference_date=reference_date)
 
 
-def anbima_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     """
     Fetch NTN-B Anbima indicative rates for the given reference date.
 
@@ -39,13 +39,14 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the maturity dates and corresponding rates.
+        pd.Series: A Series containing the rates indexed by maturity date.
     """
     df = anbima_data(reference_date)
-
-    # Keep only the relevant columns for the output
-    keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
-    return df[keep_columns].copy()
+    # Set MaturityDate as index
+    df = df.set_index("MaturityDate")
+    df.index.name = None
+    # Return as Series
+    return df["IndicativeRate"]
 
 
 def coupon_dates_map(
@@ -65,8 +66,8 @@ def coupon_dates_map(
         pd.Series: Series of coupon dates within the specified range.
     """
     # Validate and normalize dates
-    start = dv.normalize_date(start)
-    end = dv.normalize_date(end)
+    start = dv.standardize_date(start)
+    end = dv.standardize_date(end)
 
     # Initialize the first coupon date based on the reference date
     reference_year = start.year
@@ -101,8 +102,8 @@ def coupon_dates(
         list[pd.Timestamp]: List of coupon dates between start and maturity dates.
     """
     # Validate and normalize dates
-    start_date = dv.normalize_date(start_date)
-    maturity_date = dv.normalize_date(maturity_date)
+    start_date = dv.standardize_date(start_date)
+    maturity_date = dv.standardize_date(maturity_date)
 
     # Check if maturity date is after the start date
     if maturity_date < start_date:
@@ -157,8 +158,8 @@ def quotation(
         99.5341
     """
     # Validate and normalize dates
-    settlement_date = dv.normalize_date(settlement_date)
-    maturity_date = dv.normalize_date(maturity_date)
+    settlement_date = dv.standardize_date(settlement_date)
+    maturity_date = dv.standardize_date(maturity_date)
 
     # Get the coupon dates between the settlement and maturity dates
     payment_dates = coupon_dates(settlement_date, maturity_date)
@@ -181,30 +182,37 @@ def quotation(
     return bu.truncate(discounted_cash_flows.sum(), 4)
 
 
-def _validate_and_process_inputs(settlement_date, maturity_dates, ytm_rates) -> tuple:
-    """Validate and process the inputs for the bootstrap process."""
+def _calculate_coupons_pv(
+    bootstrap_df: pd.DataFrame,
+    settlement_date: pd.Timestamp,
+    maturity_date: pd.Timestamp,
+) -> float:
+    # Create a subset DataFrame with only the coupon payments (without last payment)
+    cp_dates_wo_last = coupon_dates(settlement_date, maturity_date)[:-1]  # noqa
+    df_coupons = bootstrap_df.query("MaturityDate in @cp_dates_wo_last").copy()
+    df_coupons["Coupon"] = COUPON_PMT
 
-    if len(maturity_dates) != len(ytm_rates):
-        raise ValueError("maturity_dates and ytm_rates must have the same length.")
-
-    df = pd.DataFrame({"maturity": maturity_dates, "ytm": ytm_rates})
-    df = df.dropna().drop_duplicates(subset="maturity").sort_values("maturity")
-
-    settlement_date = dv.normalize_date(settlement_date)
-    maturity_dates = df["maturity"]
-    ytm_rates = df["ytm"]
-
-    return settlement_date, maturity_dates, ytm_rates
+    # Calculate the present value of the coupon payments
+    pv = bu.calculate_present_value(
+        cash_flows=df_coupons["Coupon"],
+        discount_rates=df_coupons["RSR"],
+        time_periods=df_coupons["BDays"] / 252,
+    )
+    return pv
 
 
 def spot_rates(
     settlement_date: str | pd.Timestamp,
-    maturity_dates: pd.Series,
     ytm_rates: pd.Series,
 ) -> pd.DataFrame:
     """
-    Calculate the spot rates for NTN-B bonds based on given settlement date, maturity
-    dates, and YTM rates.
+    Calculate the spot rates for NTN-B bonds using the bootstrap method.
+
+    The bootstrap method is a process used to determine spot rates from
+    the yields of a series of bonds. It involves iteratively solving for
+    the spot rates that discount each bond's cash flows to its current
+    price.
+
 
     Args:
         settlement_date (str | pd.Timestamp): The reference date for settlement.
@@ -223,70 +231,53 @@ def spot_rates(
             - Calculate the NTN-B quotation for each maturity date.
             - Calculate the real spot rates (RSR) for each maturity date.
     """
-    # Validate and process the inputs
-    settlement_date, maturity_dates, ytm_rates = _validate_and_process_inputs(
-        settlement_date, maturity_dates, ytm_rates
-    )
+    # Process and validate the input data
+    settlement_date = dv.standardize_date(settlement_date)
+    ytm_rates = bu.standardize_rates(ytm_rates)
 
     # Create the interpolator object
-    flat_forward_interpolator = Interpolator(
+    ytm_rate_interpolator = Interpolator(
         method="flat_forward",
-        known_bdays=bday.count(settlement_date, maturity_dates),
+        known_bdays=bday.count(settlement_date, ytm_rates.index),
         known_rates=ytm_rates,
     )
 
+    last_ntnb = ytm_rates.index.max()
+
     # Generate coupon dates up to the longest maturity date
-    all_coupon_dates = coupon_dates_map(
-        start=settlement_date,
-        end=maturity_dates.max(),
-    )
+    all_coupon_dates = coupon_dates_map(start=settlement_date, end=last_ntnb)
 
-    # Create a DataFrame with all coupon dates
-    df = pd.DataFrame(all_coupon_dates, columns=["MaturityDate"])
+    # Create a DataFrame with all coupon dates and the corresponding YTM
+    df_spot = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
+    df_spot["BDays"] = bday.count(settlement_date, df_spot["MaturityDate"])
+    df_spot["YTM"] = df_spot["BDays"].apply(ytm_rate_interpolator)
 
-    # Add auxiliary columns for calculations
-    df["BDays"] = bday.count(settlement_date, df["MaturityDate"])
-    df["YTM"] = df["BDays"].apply(flat_forward_interpolator)
-    df["RSR"] = 0.0
-
-    # Set the MaturityDate as the index to facilitate the calculations
-    df.set_index("MaturityDate", inplace=True)
-
-    # Main loop to calculate spot rates
-    for maturity in df.index:
+    # The Bootstrap loop to calculate spot rates
+    for index in df_spot.index:
         # Get the row values using the index
-        bdays = df.at[maturity, "BDays"]
-        ytm = df.at[maturity, "YTM"]
+        maturity = df_spot.at[index, "MaturityDate"]
+        bdays = df_spot.at[index, "BDays"]
+        ytm = df_spot.at[index, "YTM"]
 
         # Get the coupon dates for the bond without the last one (principal + coupon)
         cp_dates = coupon_dates(settlement_date, maturity)
 
         # If there is only one coupon date and this date is the first maturity date
         # of an existing bond, the ytm rate is also a spot rate.
-        if len(cp_dates) == 1 and cp_dates[0] == maturity_dates[0]:
-            df.at[maturity, "RSR"] = ytm
+        if len(cp_dates) == 1 and cp_dates[0] == ytm_rates.index[0]:
+            df_spot.at[index, "RSR"] = ytm
             continue
 
-        # Create a subset DataFrame with interim coupon dates (without the final one)
-        cp_dates_interim = cp_dates[:-1]  # noqa
-        df_interim = df.query("MaturityDate in @cp_dates_interim").reset_index(
-            drop=True
-        )
-
-        # Calculate the present value of the cash flows (discounted cash flows)
-        pv = bu.calculate_present_value(
-            cash_flows=pd.Series(COUPON_RATE, index=df_interim.index),
-            discount_rates=df_interim["RSR"],
-            time_periods=df_interim["BDays"] / 252,
-        )
-
         # Calculate the real spot rate (RSR) for the bond
-        q = quotation(settlement_date, maturity, ytm) / 100
-        df.at[maturity, "RSR"] = ((COUPON_RATE + 1) / (q - pv)) ** (252 / bdays) - 1
+        coupons_pv = _calculate_coupons_pv(df_spot, settlement_date, maturity)
+        bond_price = quotation(settlement_date, maturity, ytm)
+        real_spot_rate = (FINAL_PMT / (bond_price - coupons_pv)) ** (252 / bdays) - 1
+        df_spot.at[index, "RSR"] = real_spot_rate
 
-    df.drop(columns=["BDays"], inplace=True)
+    df_spot.drop(columns=["BDays"], inplace=True)
     # Return the result without the intermediate coupon dates (virtual bonds)
-    return df.query("MaturityDate in @maturity_dates").copy()
+    existing_maturities = ytm_rates.index  # noqa
+    return df_spot.query("MaturityDate in @existing_maturities").copy()
 
 
 def anbima_spot_rates(
@@ -397,13 +388,13 @@ def bei_rates(
         - BIR_PRE: Breakeven Inflation Rate for the bond adjusted for DI spread.
     """
     # Normalize input dates
-    reference_date = dv.normalize_date(reference_date)
-    settlement_date = dv.normalize_date(settlement_date)
+    reference_date = dv.standardize_date(reference_date)
+    settlement_date = dv.standardize_date(settlement_date)
 
     # Fetch Nominal Spot Rate (NSR) data
     df_nsr = _get_nsr_df(reference_date)
 
-    flat_forward_interplator = Interpolator(
+    ytm_interplator = Interpolator(
         method="flat_forward",
         known_bdays=df_nsr["BDaysToExp"],
         known_rates=df_nsr["NSR_DI"],
@@ -412,18 +403,18 @@ def bei_rates(
     df = spot_rates(settlement_date, maturity_dates, ytm_rates)
     df = df.rename(columns={"RSR": "RSR"})
     df["BDays"] = bday.count(reference_date, df["MaturityDate"])
-    df["NSR_DI"] = df["BDays"].apply(flat_forward_interplator)
+    df["NSR_DI"] = df["BDays"].apply(ytm_interplator)
 
     # Calculate Breakeven Inflation Rate (BIR)
     df["BIR_DI"] = ((df["NSR_DI"] + 1) / (df["RSR"] + 1)) - 1
 
     # Adjust BEI for DI spread in prefixed bonds
-    flat_forward_interplator = Interpolator(
+    ytm_interplator = Interpolator(
         method="flat_forward",
         known_bdays=df_nsr["BDaysToExp"],
         known_rates=df_nsr["NSR_PRE"],
     )
-    df["NSR_PRE"] = df["BDays"].apply(flat_forward_interplator)
+    df["NSR_PRE"] = df["BDays"].apply(ytm_interplator)
     df["BIR_PRE"] = ((df["NSR_PRE"] + 1) / (df["RSR"] + 1)) - 1
 
     cols_reordered = [

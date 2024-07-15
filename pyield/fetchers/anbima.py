@@ -121,7 +121,7 @@ def anbima(
         >>> yd.anbima("NTN-B", "18-06-2024")
     """
     # Normalize the reference date
-    normalized_date = dv.normalize_date(reference_date)
+    normalized_date = dv.standardize_date(reference_date)
     file_content = _get_file_content(normalized_date)
 
     if not file_content:

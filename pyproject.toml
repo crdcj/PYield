@@ -57,4 +57,4 @@ select = ["I", "F", "E", "W", "PL", "PT"]
 
 [tool.ruff.format]
 docstring-code-format = true
-docstring-code-line-length = 88
+docstring-code-line-length = 79
