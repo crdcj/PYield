@@ -8,8 +8,8 @@ from ..interpolator import Interpolator
 from . import utils as bu
 
 """
-Constants Calculated as per Anbima Rules
-COUPON_RATE = (0.10 + 1) ** 0.5 - 1  # 10% annual rate compounded semi-annually
+Constants calculated as per Anbima Rules
+COUPON_RATE = (0.10 + 1) ** 0.5 - 1  -> 10% annual rate compounded semi-annually
 FACE_VALUE = 1000
 COUPON_PMT = round(FACE_VALUE * COUPON_RATE, 5)
 FINAL_PMT = FACE_VALUE + COUPON_PMT
