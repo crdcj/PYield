@@ -1,16 +1,63 @@
-site_name: PYield
-theme:
-  name: material
-  palette:
-    scheme: slate
-  font:
-    text: "Roboto"
-    code: "Roboto Mono"
-  
-plugins:
-  - search
-  - mkdocstrings      
+site_name: PYield Docs
 
 nav:
   - Home: index.md
+  - Modules:
+      - Business Day: bday.md
+      - Interpolator: interpolator.md
+      - NTN-B: ntnb.md
   
+
+theme:
+  name: 'material'
+  language: 'pt-BR'  
+  palette:
+    - scheme: slate
+      toggle:
+        icon: material/lightbulb-outline
+        name: Modo claro
+    - scheme: default
+      toggle:
+        icon: material/lightbulb
+        name: Modo escuro
+
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.footer
+    - navigation.top
+    - navigation.tracking
+    - toc.follow
+    - toc.integrate
+    - content.code.copy
+    - content.code.select    
+    - header.autohide
+    - search.suggest
+    - search.highlight
+    - search.share    
+ 
+plugins:
+  - search
+  - tags
+  - mkdocstrings:
+      handlers:
+        python:
+          setup_commands:
+            - "import sys; sys.path.insert(0, 'app')"
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+repo_url: 'https://github.com/crdcj/PYield'
+repo_name: 'PYield'
+copyright: '@ 2024 <strong>Carlos Carvalho</strong>. Todos os direitos reservados.'
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/crdcj/PYield
