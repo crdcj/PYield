@@ -167,7 +167,7 @@ def fetch_intraday_df(future_code: str) -> pd.DataFrame:
         pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
     """
     raw_df = _fetch_b3_df(future_code)
-    if "buyOffer" not in raw_df.columns:
+    if "buyOffer.price" not in raw_df.columns:
         raise Exception(f"No data available for {future_code}.")
     df = _process_df(raw_df)
     df = _select_and_reorder_columns(df)
