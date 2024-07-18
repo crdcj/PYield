@@ -2,6 +2,8 @@ site_name: PYield Docs
 
 nav:
   - Home: index.md
+  - Articles:
+      - Introduction to Pyield: articles/pyield_intro.md
   - Modules:
       - Business Day: bday.md
       - Interpolator: interpolator.md
@@ -10,7 +12,7 @@ nav:
 
 theme:
   name: 'material'
-  language: 'pt-BR'  
+  language: 'pt-BR'
   palette:
     - scheme: slate
       toggle:
@@ -24,6 +26,7 @@ theme:
   features:
     - navigation.instant
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.footer
     - navigation.top
     - navigation.tracking
@@ -31,7 +34,6 @@ theme:
     - toc.integrate
     - content.code.copy
     - content.code.select    
-    - header.autohide
     - search.suggest
     - search.highlight
     - search.share    
@@ -43,7 +45,9 @@ plugins:
       handlers:
         python:
           setup_commands:
-            - "import sys; sys.path.insert(0, 'app')"
+            - "import sys; sys.path.insert(0, 'pyield')"
+          options:            
+            show_root_toc_entry: false
 
 markdown_extensions:
   - pymdownx.highlight:

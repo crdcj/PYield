@@ -3,11 +3,10 @@ import pandas as pd
 
 from .. import bday
 from .. import date_validator as dv
-from ..fetchers.anbima import anbima
-from ..fetchers.futures import futures
-from ..interpolator import Interpolator
-from ..spreads import spread
-from . import utils as bu  # bonds utils
+from .. import fetchers as ft
+from .. import interpolator as it
+from .. import spreads as sp
+from . import utils as ut
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -31,7 +30,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
-    return anbima(bond_type="NTN-B", reference_date=reference_date)
+    return ft.anbima(bond_type="NTN-B", reference_date=reference_date)
 
 
 def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -174,7 +173,7 @@ def quotation(
     cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_periods = bu.truncate(bdays / 252, 14)
+    num_periods = ut.truncate(bdays / 252, 14)
 
     discount_factor = (1 + discount_rate) ** num_periods
 
@@ -182,7 +181,7 @@ def quotation(
     discounted_cash_flows = (cash_flows / discount_factor).round(10)
 
     # Return the quotation (the dcf sum) truncated as per Anbima rules
-    return bu.truncate(discounted_cash_flows.sum(), 4)
+    return ut.truncate(discounted_cash_flows.sum(), 4)
 
 
 def _calculate_coupons_pv(
@@ -196,7 +195,7 @@ def _calculate_coupons_pv(
     df_coupons["Coupon"] = COUPON_PMT
 
     # Calculate the present value of the coupon payments
-    pv = bu.calculate_present_value(
+    pv = ut.calculate_present_value(
         cash_flows=df_coupons["Coupon"],
         discount_rates=df_coupons["SpotRate"],
         time_periods=df_coupons["BDays"] / 252,
@@ -219,9 +218,8 @@ def spot_rates(
 
     Args:
         settlement_date (str | pd.Timestamp): The reference date for settlement.
-        maturity_dates (pd.Series): Series of maturity dates for the bonds. ytm_rates
-        (pd.Series): Series of Yield to Maturity rates corresponding to the
-            maturity dates.
+        ytm_rates (pd.Series): Series of yield to maturity rates indexed by the
+            maturity dates of the bonds.
 
     Returns:
         pd.DataFrame: DataFrame containing the maturity dates and corresponding real
@@ -236,10 +234,10 @@ def spot_rates(
     """
     # Process and validate the input data
     settlement_date = dv.standardize_date(settlement_date)
-    ytm_rates = bu.standardize_rates(ytm_rates)
+    ytm_rates = ut.standardize_rates(ytm_rates)
 
     # Create the interpolator object
-    ytm_rate_interpolator = Interpolator(
+    ytm_rate_interpolator = it.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement_date, ytm_rates.index),
         known_rates=ytm_rates,
@@ -314,7 +312,7 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame containing the NIR data for NTN-B bonds.
     """
-    df = futures(contract_code="DI1", reference_date=reference_date)
+    df = ft.futures(contract_code="DI1", reference_date=reference_date)
     if "CurrentRate" in df.columns:
         df = df.rename(columns={"CurrentRate": "NIR_DI"})
         keep_cols = [
@@ -347,7 +345,7 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     if reference_date == today:
         # If the reference date is today, use the previous business day
         anbima_date = bday.offset(reference_date, -1)
-    df_pre = spread(spread_type="DI_PRE", reference_date=anbima_date)
+    df_pre = sp.spread(spread_type="DI_PRE", reference_date=anbima_date)
     df_pre.query("BondType == 'LTN'", inplace=True)
     df_pre["MaturityDate"] = bday.offset(df_pre["MaturityDate"], 0)
     df_pre["DISpread"] /= 10_000  # Remove BPS (basis points) from the spread
@@ -395,7 +393,7 @@ def bei_rates(
     # Fetch Nominal Interest Rate (NIR) data
     df_nir = _get_nir_df(reference_date)
 
-    ytm_interplator = Interpolator(
+    ytm_interplator = it.Interpolator(
         method="flat_forward",
         known_bdays=df_nir["BDaysToExp"],
         known_rates=df_nir["NIR_DI"],
@@ -410,7 +408,7 @@ def bei_rates(
     df["BEI_DI"] = ((df["NIR_DI"] + 1) / (df["RIR"] + 1)) - 1
 
     # Adjust BEI for DI spread in prefixed bonds
-    ytm_interplator = Interpolator(
+    ytm_interplator = it.Interpolator(
         method="flat_forward",
         known_bdays=df_nir["BDaysToExp"],
         known_rates=df_nir["NIR_PRE"],

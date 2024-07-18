@@ -15,9 +15,8 @@ def futures(
     Fetches data for a specified futures contract based on type and reference date.
 
     Args:
-        future_code (str): The futures contract code identifying the type of financial
-        asset.
-        Supported options:
+        contract_code (str): The B3 futures contract code identifying the derivative.
+            Supported contract codes are:
             - "DI1": One-day Interbank Deposit Futures (Futuro de DI) from B3.
             - "DDI": DI x U.S. Dollar Spread Futures (Futuro de Cupom Cambial) from B3.
             - "FRC": Forward Rate Agreement (FRA) from B3.
@@ -27,8 +26,8 @@ def futures(
             - "IND": Ibovespa Futures from B3.
             - "WIN": Mini Ibovespa Futures from B3.
         reference_date (str | None): The reference date for which data is fetched.
-            Defaults to the last business day if None. If the reference date is a
-            string, it should be in 'DD-MM-YYYY' format.
+            Defaults to the last business day avaible if None. If the reference date is
+            a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:
         pd.DataFrame: A DataFrame containing the fetched data for the specified futures
@@ -38,8 +37,8 @@ def futures(
         ValueError: If the futures contract code is not recognized or supported.
 
     Examples:
-        >>> yd.futures.data("DI1", "31-05-2024")
-        >>> yd.futures.data("DDI", "31-05-2024")
+        >>> yd.futures("DI1", "31-05-2024")
+        >>> yd.futures("DDI", "31-05-2024")
     """
     contract_code = contract_code.upper()
     if contract_code not in SUPPORTED_FUTURES:

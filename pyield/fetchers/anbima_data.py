@@ -108,11 +108,11 @@ def anbima(
 
     Returns:
         pd.DataFrame: A DataFrame containing the processed indicative rates for the
-        given reference date.
+            given reference date.
 
     Raises:
         ValueError: If the data could not be fetched for the given reference date or if
-        an unsupported bond type is provided.
+            an unsupported bond type is provided.
 
     Examples:
         # Fetch ANBIMA data for all bonds using the last business day available

@@ -2,7 +2,7 @@ import pandas as pd
 
 from .. import bday
 from .. import date_validator as dv
-from ..fetchers.anbima import anbima
+from .. import fetchers as ft
 from .utils import truncate
 
 FACE_VALUE = 1000
@@ -18,7 +18,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
-    return anbima(bond_type="LTN", reference_date=reference_date)
+    return ft.anbima(bond_type="LTN", reference_date=reference_date)
 
 
 def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:

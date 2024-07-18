@@ -3,9 +3,9 @@ import pandas as pd
 
 from .. import bday
 from .. import date_validator as dv
-from ..fetchers.anbima import anbima
+from .. import fetchers as ft
 from ..interpolator import Interpolator
-from . import utils as bu
+from . import utils as ut
 
 """
 Constants calculated as per Anbima Rules
@@ -106,14 +106,14 @@ def price(
     cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_periods = bu.truncate(bdays / 252, 14)
+    num_periods = ut.truncate(bdays / 252, 14)
 
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
     discount_factor = (1 + discount_rate) ** num_periods
     discounted_cash_flows = (cash_flows / discount_factor).round(9)
 
     # Return the sum of the discounted cash flows truncated as per Anbima rules
-    return bu.truncate(discounted_cash_flows.sum(), 6)
+    return ut.truncate(discounted_cash_flows.sum(), 6)
 
 
 def coupon_dates_map(
@@ -166,7 +166,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
-    return anbima(bond_type="NTN-F", reference_date=reference_date)
+    return ft.anbima(bond_type="NTN-F", reference_date=reference_date)
 
 
 def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -198,7 +198,7 @@ def _calculate_coupons_pv(
     df_coupons["Coupon"] = COUPON_PMT
 
     # Calculate the present value of the coupon payments
-    pv = bu.calculate_present_value(
+    pv = ut.calculate_present_value(
         cash_flows=df_coupons["Coupon"],
         discount_rates=df_coupons["SpotRate"],
         time_periods=df_coupons["BDays"] / 252,
@@ -232,8 +232,8 @@ def spot_rates(
     """
     # Process and validate the input data
     settlement_date = dv.standardize_date(settlement_date)
-    ltn_rates = bu.standardize_rates(ltn_rates)
-    ntnf_rates = bu.standardize_rates(ntnf_rates)
+    ltn_rates = ut.standardize_rates(ltn_rates)
+    ntnf_rates = ut.standardize_rates(ntnf_rates)
 
     # Create flat forward interpolators for LTN and NTN-F rates
     ltn_rate_interpolator = Interpolator(

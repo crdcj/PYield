@@ -3,8 +3,8 @@ from typing import Literal
 import pandas as pd
 
 from . import date_validator as dv
-from .fetchers.anbima import anbima
-from .fetchers.futures import futures
+from .fetchers.anbima_data import anbima
+from .fetchers.futures_data import futures
 
 # Constant for conversion to basis points
 BPS_CONVERSION_FACTOR = 10_000
