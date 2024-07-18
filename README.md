@@ -37,7 +37,6 @@ For production code, it is recommended to parse date strings with `pandas.to_dat
 For example:
 ```python
 import pandas as pd
-
 # Converting a date string to a pandas Timestamp with a specific format
 date = pd.to_datetime("2024/31/05", format="%Y/%d/%m")
 date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
@@ -45,11 +44,13 @@ date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
 ### Brazilian Treasury Bonds Tools
 ```python
 >>> import pyield as yd
+
 # Calculate the quotation of a NTN-B bond as per ANBIMA's rules
 >>> yd.ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
 99.3651
 >>> yd.ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
 99.5341
+
 # Calculate the DI Spread of a LTN bonds in a given date
 >>> yd.ntnf.di_spreads("17-07-2024")
 2025-01-01   -2.31
@@ -59,6 +60,7 @@ date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
 2033-01-01   -3.12
 2035-01-01   -1.00
 Name: DISpread, dtype: Float64
+
 # Get ANBIMA's indicative rates for LTN bonds
 >>> yd.ltn.anbima_rates("17-07-2024")
 2024-10-01    0.104236
@@ -129,7 +131,6 @@ TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastB
 2024-03-08       DI1F39     2039-01-03       3713 ...     <NA>        <NA>        <NA>         10.85
 ```
 
-
 ### Indicators Data
 ```python
 # Fetch the SELIC target rate from the Central Bank of Brazil
@@ -162,7 +163,6 @@ IndicatorProjection(
 
 ### Interpolation Tools
 ```python
-
 # Interpolate interest rates for specific business days using the Interpolator class.
 
 # Initialize the Interpolator with known business days and interest rates.
