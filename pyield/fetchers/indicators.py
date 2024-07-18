@@ -46,7 +46,7 @@ def ipca_monthly_rate(reference_date: str | pd.Timestamp | None = None) -> float
         The API URL is constructed dynamically based on the reference date provided.
 
     Examples:
-    >>> ipca_monthly_rate("01-04-2024")
+        >>> ipca_monthly_rate("01-04-2024")
         0.0038  # Indicates an IPCA monthly rate of 0.38% p.m.
 
     """
@@ -77,9 +77,8 @@ def ipca_monthly_rate(reference_date: str | pd.Timestamp | None = None) -> float
 def selic_target(reference_date: str | pd.Timestamp | None = None) -> float | None:
     """
     Examples:
-    >>> selic_taget("31-05-2024")
-    0.1075  # Indicates a SELIC target rate of 10.75% p.a.
-
+        >>> selic_taget("31-05-2024")
+        0.1075  # Indicates a SELIC target rate of 10.75% p.a.
     """
     normalized_date = dv.standardize_date(reference_date)
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
@@ -98,9 +97,8 @@ def selic_target(reference_date: str | pd.Timestamp | None = None) -> float | No
 def di(reference_date: str | pd.Timestamp | None = None) -> float | None:
     """
     Examples:
-    >>> di("31-05-2024")
+        >>> di("31-05-2024")
         0.00040168  # Indicates a DI daily rate of 0.02% p.d.
-
     """
     normalized_date = dv.standardize_date(reference_date)
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024

@@ -5,11 +5,14 @@ nav:
   - Articles:
       - Introduction to Pyield: articles/pyield_intro.md
   - Modules:
-      - Business Day (bday): bday.md
+      - Business Day Tool (bday): bday.md
       - Interpolator (intepolator): interpolator.md
       - LTN (ltn): ltn.md
       - NTN-B (ntnb): ntnb.md
       - NTN-F (ntnf): ntnf.md
+      - Anbima Data (anbima): anbima.md
+      - Futures Data (futures): futures.md
+      - Indicators (indicator): indicators.md
   
 
 theme:
