@@ -153,9 +153,9 @@ def quotation(
           Anbima rules.
 
     Examples:
-        >>> quotation("31-05-2024", "15-05-2035", 0.061490)
+        >>> ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
         99.3651
-        >>> quotation("31-05-2024", "15-08-2060", 0.061878)
+        >>> ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
         99.5341
     """
     # Validate and normalize dates

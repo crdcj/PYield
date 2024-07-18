@@ -8,6 +8,10 @@
 
 Welcome to PYield, a Python library designed for the analysis of fixed income instruments in Brazil. This library is tailored for financial analysts, researchers, and enthusiasts interested in the Brazilian fixed income market. Leveraging the power of popular Python libraries like Pandas and Requests, PYield simplifies the process of obtaining and processing data from key sources such as ANBIMA, BCB, IBGE and B3.
 
+## Documentation
+
+For the full documentation, visit [here](https://crdcj.github.io/PYield/).
+
 ## Features
 
 - **Data Collection**: Automated fetching of data from ANBIMA and B3.
@@ -38,11 +42,43 @@ import pandas as pd
 date = pd.to_datetime("2024/31/05", format="%Y/%d/%m")
 date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
 ```
+### Brazilian Treasury Bonds Tools
+```python
+>>> import pyield as yd
+# Calculate the quotation of a NTN-B bond as per ANBIMA's rules
+>>> yd.ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
+99.3651
+>>> yd.ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
+99.5341
+# Calculate the DI Spread of a LTN bonds in a given date
+>>> yd.ntnf.di_spreads("17-07-2024")
+2025-01-01   -2.31
+2027-01-01   -1.88
+2029-01-01   -3.26
+2031-01-01    3.61
+2033-01-01   -3.12
+2035-01-01   -1.00
+Name: DISpread, dtype: Float64
+# Get ANBIMA's indicative rates for LTN bonds
+>>> yd.ltn.anbima_rates("17-07-2024")
+2024-10-01    0.104236
+2025-01-01    0.105400
+2025-04-01    0.107454
+2025-07-01    0.108924
+2025-10-01    0.110751
+2026-01-01    0.111753
+2026-04-01    0.112980
+2026-07-01    0.113870
+2026-10-01    0.114592
+2027-07-01    0.116090
+2028-01-01    0.117160
+2028-07-01    0.118335
+2030-01-01    0.120090
+Name: IndicativeRate, dtype: Float64
+```
 
 ### Business Days Tools (Brazilian holidays are automatically considered)
 ```python
->>> import pyield as yd
-
 # Count the number of business days between two dates
 # Start date is included, end date is excluded
 >>> yd.bday.count(start='29-12-2023', end='02-01-2024')
@@ -93,37 +129,6 @@ TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastB
 2024-03-08       DI1F39     2039-01-03       3713 ...     <NA>        <NA>        <NA>         10.85
 ```
 
-### Treasury Bonds Data
-```python
-# Fetch a DataFrame with the NTN-B data from ANBIMA
-# Anbima data is available for the last 5 working days
-# Obs: Anbima members have access to the full history
->>> yd.anbima(bond_type='NTN-B', reference_date='12-04-2024')
-
-BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate       Price
-   NTN-B    2024-04-12   2024-08-15 0.07540 0.07504        0.07523 4,271.43565
-   NTN-B    2024-04-12   2025-05-15 0.05945 0.05913        0.05930 4,361.34391
-   NTN-B    2024-04-12   2026-08-15 0.05927 0.05897        0.05910 4,301.40082
-     ...           ...          ...     ...     ...            ...         ...
-   NTN-B    2024-04-12   2050-08-15 0.06039 0.06006        0.06023 4,299.28233
-   NTN-B    2024-04-12   2055-05-15 0.06035 0.05998        0.06017 4,367.13360
-   NTN-B    2024-04-12   2060-08-15 0.06057 0.06016        0.06036 4,292.26323
-```
-
-### Spreads Calculation
-```python
-# Calculate the spread between two DI Futures contracts and the pre-fix bonds
->>> yd.spread(spread_type="di_pre", reference_date="11-04-2024")
-
-BondType ReferenceDate MaturityDate  DISpread
-     LTN    2024-04-11   2024-07-01    -20.28
-     LTN    2024-04-11   2024-10-01    -10.19
-     LTN    2024-04-11   2025-01-01    -15.05
-   ...      ...           ...           ...
-   NTN-F    2024-04-11   2031-01-01     -0.66
-   NTN-F    2024-04-11   2033-01-01     -5.69
-   NTN-F    2024-04-11   2035-01-01     -1.27
-```
 
 ### Indicators Data
 ```python
