@@ -5,9 +5,11 @@ nav:
   - Articles:
       - Introduction to Pyield: articles/pyield_intro.md
   - Modules:
-      - Business Day: bday.md
-      - Interpolator: interpolator.md
-      - NTN-B: ntnb.md
+      - Business Day (bday): bday.md
+      - Interpolator (intepolator): interpolator.md
+      - LTN (ltn): ltn.md
+      - NTN-B (ntnb): ntnb.md
+      - NTN-F (ntnf): ntnf.md
   
 
 theme:
@@ -44,8 +46,6 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          setup_commands:
-            - "import sys; sys.path.insert(0, 'pyield')"
           options:            
             show_root_toc_entry: false
 

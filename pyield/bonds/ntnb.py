@@ -51,7 +51,7 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     return df["IndicativeRate"]
 
 
-def coupon_dates_map(
+def _coupon_dates_map(
     start: str | pd.Timestamp,
     end: str | pd.Timestamp,
 ) -> pd.Series:
@@ -246,7 +246,7 @@ def spot_rates(
     last_ntnb = ytm_rates.index.max()
 
     # Generate coupon dates up to the longest maturity date
-    all_coupon_dates = coupon_dates_map(start=settlement_date, end=last_ntnb)
+    all_coupon_dates = _coupon_dates_map(start=settlement_date, end=last_ntnb)
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
     df_spot = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])

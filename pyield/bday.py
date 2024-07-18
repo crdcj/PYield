@@ -4,7 +4,7 @@ from typing import Any, Literal, overload
 import numpy as np
 import pandas as pd
 
-from .holidays import BrHolidays
+from . import holidays
 
 SingleDateTypes = str | np.datetime64 | pd.Timestamp | datetime
 SeriesDateTypes = list | tuple | np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex
@@ -12,7 +12,7 @@ SeriesDateTypes = list | tuple | np.ndarray | pd.Series | pd.Index | pd.Datetime
 TO_SERIES_TYPES = (list, tuple, np.ndarray, pd.Series, pd.Index, pd.DatetimeIndex)
 
 # Initialize the BrHolidays class
-br_holidays = BrHolidays()
+br_holidays = holidays.BrHolidays()
 
 
 @overload
@@ -43,29 +43,6 @@ def _normalize_input_dates(
         return pd.Series(result).dt.normalize()
     else:
         raise ValueError("Invalid date format.")
-
-
-def is_business_day(date: SingleDateTypes | None = None) -> bool:
-    """
-    Checks if the input date is a business day.
-
-    Args:
-        date (str | np.datetime64 | pd.Timestamp | datetime, optional): The date to
-            check. If None, the current date is used.
-
-    Returns:
-        bool: True if the input date is a business day, False otherwise.
-
-    Examples:
-        >>> yd.is_bday("2023-12-25")  # Christmas
-        False
-        >>> yd.is_bday()  # Check if today is a business day
-        True
-    """
-    normalized_date = _normalize_input_dates(date)
-    # Shift the date if it is not a business day
-    adjusted_date = offset(normalized_date, 0)
-    return normalized_date == adjusted_date
 
 
 def _convert_to_numpy_date(
@@ -341,3 +318,26 @@ def generate(
         **kwargs,
     )
     return pd.Series(result)
+
+
+def is_business_day(date: SingleDateTypes | None = None) -> bool:
+    """
+    Checks if the input date is a business day.
+
+    Args:
+        date (str | np.datetime64 | pd.Timestamp | datetime, optional): The date to
+            check. If None, the current date is used.
+
+    Returns:
+        bool: True if the input date is a business day, False otherwise.
+
+    Examples:
+        >>> yd.is_bday("2023-12-25")  # Christmas
+        False
+        >>> yd.is_bday()  # Check if today is a business day
+        True
+    """
+    normalized_date = _normalize_input_dates(date)
+    # Shift the date if it is not a business day
+    adjusted_date = offset(normalized_date, 0)
+    return normalized_date == adjusted_date

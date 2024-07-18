@@ -4,7 +4,7 @@ import pandas as pd
 from .. import bday
 from .. import date_validator as dv
 from .. import fetchers as ft
-from ..interpolator import Interpolator
+from .. import interpolator as it
 from . import utils as ut
 
 """
@@ -116,7 +116,7 @@ def price(
     return ut.truncate(discounted_cash_flows.sum(), 6)
 
 
-def coupon_dates_map(
+def _coupon_dates_map(
     start: str | pd.Timestamp,
     end: str | pd.Timestamp,
     adjust_for_bdays: bool = False,
@@ -220,7 +220,7 @@ def spot_rates(
     price.
 
     Args:
-        reference_date (str | pd.Timestamp): The settlement date in as
+        settlement_date (str | pd.Timestamp): The settlement date in as
             a pandas Timestamp or a string in 'DD-MM-YYYY' format.
         ltn_rates (pd.Series): The LTN known rates, indexed by maturity date.
         ntnf_rates (pd.Series): The NTN-F known rates, indexed by maturity
@@ -236,12 +236,12 @@ def spot_rates(
     ntnf_rates = ut.standardize_rates(ntnf_rates)
 
     # Create flat forward interpolators for LTN and NTN-F rates
-    ltn_rate_interpolator = Interpolator(
+    ltn_rate_interpolator = it.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement_date, ltn_rates.index),
         known_rates=ltn_rates,
     )
-    ntnf_rate_interpolator = Interpolator(
+    ntnf_rate_interpolator = it.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement_date, ntnf_rates.index),
         known_rates=ntnf_rates,
@@ -252,7 +252,7 @@ def spot_rates(
     last_ntnf = ntnf_rates.index.max()
 
     # Generate all coupon dates up to the last NTN-F maturity date
-    all_coupon_dates = coupon_dates_map(settlement_date, last_ntnf)
+    all_coupon_dates = _coupon_dates_map(settlement_date, last_ntnf)
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
     df_spot = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
@@ -277,3 +277,51 @@ def spot_rates(
         df_spot.at[index, "SpotRate"] = spot_rate
 
     return df_spot
+
+
+def di_spreads(reference_date: str | pd.Timestamp | None = None) -> pd.DataFrame:
+    """
+    Calculates the DI spread for the NTN-F based on ANBIMA's indicative rates.
+
+    This function fetches the indicative rates for the NTN-F bonds and the DI futures
+    rates and calculates the spread between these rates in basis points.
+    If no reference date is provided, the function uses the last business day available.
+
+    Parameters:
+        reference_date (str | pd.Timestamp, optional): The reference date for the
+            spread calculation. If None or not provided, defaults to the previous
+            business day according to the Brazilian calendar.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the bond type, reference date, maturity
+            date, and the calculated spread in basis points. The data is sorted by
+            bond type and maturity date.
+    """
+    reference_date = dv.standardize_date(reference_date)
+    # Fetch DI rates for the reference date
+    df_di = ft.futures("DI1", reference_date)[["ExpirationDate", "SettlementRate"]]
+
+    # Renaming the columns to match the ANBIMA structure
+    df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
+
+    # Adjusting maturity date to match bond data format
+    df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
+
+    # Fetch ANBIMA data for NTN-F bonds
+    df_anbima = anbima_data(reference_date)
+    # Keep only the relevant columns for the output
+    keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
+    df_anbima = df_anbima[keep_columns].copy()
+
+    # Merge bond and DI rates by maturity date to calculate spreads
+    df_final = pd.merge(df_anbima, df_di, how="left", on="MaturityDate")
+
+    # Calculate the DI spread as the difference between indicative and settlement rates
+    df_final["DISpread"] = df_final["IndicativeRate"] - df_final["SettlementRate"]
+
+    # Convert spread to basis points for clarity
+    df_final["DISpread"] = (10_000 * df_final["DISpread"]).round(2)
+
+    # Prepare and return the final sorted DataFrame
+    select_columns = ["ReferenceDate", "MaturityDate", "DISpread"]
+    return df_final[select_columns].sort_values(["MaturityDate"], ignore_index=True)

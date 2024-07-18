@@ -3,7 +3,7 @@ import pandas as pd
 from .. import bday
 from .. import date_validator as dv
 from .. import fetchers as ft
-from .utils import truncate
+from . import utils as ut
 
 FACE_VALUE = 1000
 
@@ -74,9 +74,9 @@ def price(
     bdays = bday.count(settlement_date, maturity_date)
 
     # Calculate the number of periods truncated as per Anbima rule
-    num_periods = truncate(bdays / 252, 14)
+    num_periods = ut.truncate(bdays / 252, 14)
 
     discount_factor = (1 + discount_rate) ** num_periods
 
     # Truncate the price to 6 decimal places as per Anbima rules
-    return truncate(FACE_VALUE / discount_factor, 6)
+    return ut.truncate(FACE_VALUE / discount_factor, 6)
