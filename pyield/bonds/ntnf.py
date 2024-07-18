@@ -279,7 +279,7 @@ def spot_rates(
     return df_spot
 
 
-def di_spreads(reference_date: str | pd.Timestamp | None = None) -> pd.DataFrame:
+def di_spreads(reference_date: str | pd.Timestamp | None = None) -> pd.Series:
     """
     Calculates the DI spread for the NTN-F based on ANBIMA's indicative rates.
 
@@ -293,35 +293,14 @@ def di_spreads(reference_date: str | pd.Timestamp | None = None) -> pd.DataFrame
             business day according to the Brazilian calendar.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the bond type, reference date, maturity
-            date, and the calculated spread in basis points. The data is sorted by
-            bond type and maturity date.
+        pd.Series: A pandas series containing the calculated spreads in basis points
+            indexed by maturity dates.
     """
     reference_date = dv.standardize_date(reference_date)
-    # Fetch DI rates for the reference date
-    df_di = ft.futures("DI1", reference_date)[["ExpirationDate", "SettlementRate"]]
-
-    # Renaming the columns to match the ANBIMA structure
-    df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
-
-    # Adjusting maturity date to match bond data format
-    df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
-
-    # Fetch ANBIMA data for NTN-F bonds
-    df_anbima = anbima_data(reference_date)
-    # Keep only the relevant columns for the output
-    keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
-    df_anbima = df_anbima[keep_columns].copy()
-
-    # Merge bond and DI rates by maturity date to calculate spreads
-    df_final = pd.merge(df_anbima, df_di, how="left", on="MaturityDate")
-
-    # Calculate the DI spread as the difference between indicative and settlement rates
-    df_final["DISpread"] = df_final["IndicativeRate"] - df_final["SettlementRate"]
-
-    # Convert spread to basis points for clarity
-    df_final["DISpread"] = (10_000 * df_final["DISpread"]).round(2)
-
-    # Prepare and return the final sorted DataFrame
-    select_columns = ["ReferenceDate", "MaturityDate", "DISpread"]
-    return df_final[select_columns].sort_values(["MaturityDate"], ignore_index=True)
+    # Fetch DI Spreads for the reference date
+    df = ut.di_spreads(reference_date)
+    df.query("BondType == 'NTN-F'", inplace=True)
+    df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
+    df.set_index("MaturityDate", inplace=True)
+    df.index.name = None
+    return df["DISpread"]

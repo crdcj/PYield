@@ -5,7 +5,6 @@ from .. import bday
 from .. import date_validator as dv
 from .. import fetchers as ft
 from .. import interpolator as it
-from .. import spreads as sp
 from . import utils as ut
 
 """
@@ -345,7 +344,7 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     if reference_date == today:
         # If the reference date is today, use the previous business day
         anbima_date = bday.offset(reference_date, -1)
-    df_pre = sp.spread(spread_type="DI_PRE", reference_date=anbima_date)
+    df_pre = ut.di_spreads(reference_date=anbima_date)
     df_pre.query("BondType == 'LTN'", inplace=True)
     df_pre["MaturityDate"] = bday.offset(df_pre["MaturityDate"], 0)
     df_pre["DISpread"] /= 10_000  # Remove BPS (basis points) from the spread

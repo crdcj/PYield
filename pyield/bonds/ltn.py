@@ -80,3 +80,30 @@ def price(
 
     # Truncate the price to 6 decimal places as per Anbima rules
     return ut.truncate(FACE_VALUE / discount_factor, 6)
+
+
+def di_spreads(reference_date: str | pd.Timestamp | None = None) -> pd.Series:
+    """
+    Calculates the DI spread for the LTN based on ANBIMA's indicative rates.
+
+    This function fetches the indicative rates for the NTN-F bonds and the DI futures
+    rates and calculates the spread between these rates in basis points.
+    If no reference date is provided, the function uses the last business day available.
+
+    Parameters:
+        reference_date (str | pd.Timestamp, optional): The reference date for the
+            spread calculation. If None or not provided, defaults to the previous
+            business day according to the Brazilian calendar.
+
+    Returns:
+        pd.Series: A pandas series containing the calculated spreads in basis points
+            indexed by maturity dates.
+    """
+    reference_date = dv.standardize_date(reference_date)
+    # Fetch DI Spreads for the reference date
+    df = ut.di_spreads(reference_date)
+    df.query("BondType == 'LTN'", inplace=True)
+    df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
+    df.set_index("MaturityDate", inplace=True)
+    df.index.name = None
+    return df["DISpread"]
