@@ -1,6 +1,6 @@
 from . import bday, interpolator
 from .__about__ import __version__
-from .bonds import ltn, ntnb, ntnf
+from .bonds import lft, ltn, ntnb, ntnf
 from .fetchers import anbima, futures, indicator, projection
 
 __all__ = [
@@ -14,4 +14,5 @@ __all__ = [
     "ntnf",
     "ltn",
     "projection",
+    "lft",
 ]
