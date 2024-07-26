@@ -1,7 +1,7 @@
 import pandas as pd
 
 from .. import bday
-from .. import date_validator as dv
+from .. import date_converter as dc
 from .. import fetchers as ft
 from . import utils as ut
 
@@ -67,16 +67,16 @@ def price(
     """
 
     # Validate and normalize dates
-    settlement_date = dv.standardize_date(settlement_date)
-    maturity_date = dv.standardize_date(maturity_date)
+    settlement_date = dc.convert_date(settlement_date)
+    maturity_date = dc.convert_date(maturity_date)
 
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement_date, maturity_date)
 
     # Calculate the number of periods truncated as per Anbima rule
-    num_periods = ut.truncate(bdays / 252, 14)
+    num_of_years = ut.truncate(bdays / 252, 14)
 
-    discount_factor = (1 + discount_rate) ** num_periods
+    discount_factor = (1 + discount_rate) ** num_of_years
 
     # Truncate the price to 6 decimal places as per Anbima rules
     return ut.truncate(FACE_VALUE / discount_factor, 6)
@@ -99,7 +99,7 @@ def di_spreads(reference_date: str | pd.Timestamp | None = None) -> pd.Series:
         pd.Series: A pandas series containing the calculated spreads in basis points
             indexed by maturity dates.
     """
-    reference_date = dv.standardize_date(reference_date)
+    reference_date = dc.convert_date(reference_date)
     # Fetch DI Spreads for the reference date
     df = ut.di_spreads(reference_date)
     df.query("BondType == 'LTN'", inplace=True)

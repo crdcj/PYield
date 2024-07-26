@@ -14,16 +14,16 @@ def _starts_with_year(date_str: str) -> bool:
         return bool(re.match(r"^\d{4}-", date_str))
 
 
-def standardize_date(
+def convert_date(
     input_date: str | pd.Timestamp | np.datetime64 | None = None,
 ) -> pd.Timestamp:
     """
-    Normalizes the given date to ensure it is a business day at midnight. If no date is
+    Convert a date to pandas Timestamp adjusted to midnight. If no date is
     provided, it defaults to the last business day available.
 
     Args:
         reference_date (str | pd.Timestamp | np.datetime64 | None): The date to
-        normalize. If None, it defaults to the last business day. If str, it should be
+        convert. If None, it defaults to the last business day. If str, it should be
         with day first format (e.g. "31-05-2024").
 
     Returns:
@@ -34,13 +34,11 @@ def standardize_date(
 
     Notes:
         - Normalization means setting the time component of the timestamp to midnight.
-        - The function checks if the normalized date is a business day and adjusts
-          accordingly.
-        - Business day calculations consider local market holidays.
+        - Business day calculations consider Brazilian holidays.
 
     Examples:
-        >>> normalize_date("31-05-2024")
-        >>> normalize_date(pd.Timestamp("2023-04-01 15:30"))
+        >>> convert_date("31-05-2024")
+        Timestamp('2024-05-31 00:00:00')
     """
     match input_date:
         case str():

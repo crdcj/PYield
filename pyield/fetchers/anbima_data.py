@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import requests
 
-from .. import date_validator as dv
+from .. import date_converter as dc
 
 # URL Constants
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
@@ -121,7 +121,7 @@ def anbima(
         >>> yd.anbima("NTN-B", "18-06-2024")
     """
     # Normalize the reference date
-    normalized_date = dv.standardize_date(reference_date)
+    normalized_date = dc.convert_date(reference_date)
     file_content = _get_file_content(normalized_date)
 
     if not file_content:

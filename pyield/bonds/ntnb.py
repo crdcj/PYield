@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from .. import bday
-from .. import date_validator as dv
+from .. import date_converter as dc
 from .. import fetchers as ft
 from .. import interpolator as it
 from . import utils as ut
@@ -67,8 +67,8 @@ def _coupon_dates_map(
         pd.Series: Series of coupon dates within the specified range.
     """
     # Validate and normalize dates
-    start = dv.standardize_date(start)
-    end = dv.standardize_date(end)
+    start = dc.convert_date(start)
+    end = dc.convert_date(end)
 
     # Initialize the first coupon date based on the reference date
     reference_year = start.year
@@ -103,8 +103,8 @@ def coupon_dates(
         list[pd.Timestamp]: List of coupon dates between start and maturity dates.
     """
     # Validate and normalize dates
-    start_date = dv.standardize_date(start_date)
-    maturity_date = dv.standardize_date(maturity_date)
+    start_date = dc.convert_date(start_date)
+    maturity_date = dc.convert_date(maturity_date)
 
     # Check if maturity date is after the start date
     if maturity_date < start_date:
@@ -159,8 +159,8 @@ def quote(
         99.5341
     """
     # Validate and normalize dates
-    settlement_date = dv.standardize_date(settlement_date)
-    maturity_date = dv.standardize_date(maturity_date)
+    settlement_date = dc.convert_date(settlement_date)
+    maturity_date = dc.convert_date(maturity_date)
 
     # Get the coupon dates between the settlement and maturity dates
     payment_dates = coupon_dates(settlement_date, maturity_date)
@@ -172,9 +172,9 @@ def quote(
     cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_periods = ut.truncate(bdays / 252, 14)
+    num_of_years = ut.truncate(bdays / 252, 14)
 
-    discount_factor = (1 + discount_rate) ** num_periods
+    discount_factor = (1 + discount_rate) ** num_of_years
 
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
     discounted_cash_flows = (cash_flows / discount_factor).round(10)
@@ -256,7 +256,7 @@ def spot_rates(
             - Calculate the real spot rates for each maturity date.
     """
     # Process and validate the input data
-    settlement_date = dv.standardize_date(settlement_date)
+    settlement_date = dc.convert_date(settlement_date)
     ytm_rates = ut.standardize_rates(ytm_rates)
 
     # Create the interpolator object
@@ -410,8 +410,8 @@ def bei_rates(
         - BEI_PRE: Breakeven Inflation Rate for the bond adjusted for DI spread.
     """
     # Normalize input dates
-    reference_date = dv.standardize_date(reference_date)
-    settlement_date = dv.standardize_date(settlement_date)
+    reference_date = dc.convert_date(reference_date)
+    settlement_date = dc.convert_date(settlement_date)
 
     # Fetch Nominal Interest Rate (NIR) data
     df_nir = _get_nir_df(reference_date)

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from .. import bday
-from .. import date_validator as dv
+from .. import date_converter as dc
 from .. import fetchers as ft
 from .. import interpolator as it
 from . import utils as ut
@@ -37,8 +37,8 @@ def coupon_dates(
         pd.Series: Series of coupon dates within the specified range.
     """
     # Validate and normalize dates
-    start_date = dv.standardize_date(start_date)
-    maturity_date = dv.standardize_date(maturity_date)
+    start_date = dc.convert_date(start_date)
+    maturity_date = dc.convert_date(maturity_date)
 
     # Check if maturity date is after the start date
     if maturity_date < start_date:
@@ -93,8 +93,8 @@ def price(
     """
 
     # Validate and normalize dates
-    settlement_date = dv.standardize_date(settlement_date)
-    maturity_date = dv.standardize_date(maturity_date)
+    settlement_date = dc.convert_date(settlement_date)
+    maturity_date = dc.convert_date(maturity_date)
 
     # Create a Series with the coupon dates
     payment_dates = pd.Series(coupon_dates(settlement_date, maturity_date))
@@ -106,10 +106,10 @@ def price(
     cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_periods = ut.truncate(bdays / 252, 14)
+    num_of_years = ut.truncate(bdays / 252, 14)
 
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
-    discount_factor = (1 + discount_rate) ** num_periods
+    discount_factor = (1 + discount_rate) ** num_of_years
     discounted_cash_flows = (cash_flows / discount_factor).round(9)
 
     # Return the sum of the discounted cash flows truncated as per Anbima rules
@@ -135,8 +135,8 @@ def _coupon_dates_map(
         pd.Series: Series of coupon dates within the specified range.
     """
     # Validate and normalize dates
-    start = dv.standardize_date(start)
-    end = dv.standardize_date(end)
+    start = dc.convert_date(start)
+    end = dc.convert_date(end)
 
     # Initialize the first coupon date based on the reference date
     reference_year = start.year
@@ -231,7 +231,7 @@ def spot_rates(
             the corresponding spot rates.
     """
     # Process and validate the input data
-    settlement_date = dv.standardize_date(settlement_date)
+    settlement_date = dc.convert_date(settlement_date)
     ltn_rates = ut.standardize_rates(ltn_rates)
     ntnf_rates = ut.standardize_rates(ntnf_rates)
 
@@ -296,7 +296,7 @@ def di_spreads(reference_date: str | pd.Timestamp | None = None) -> pd.Series:
         pd.Series: A pandas series containing the calculated spreads in basis points
             indexed by maturity dates.
     """
-    reference_date = dv.standardize_date(reference_date)
+    reference_date = dc.convert_date(reference_date)
     # Fetch DI Spreads for the reference date
     df = ut.di_spreads(reference_date)
     df.query("BondType == 'NTN-F'", inplace=True)

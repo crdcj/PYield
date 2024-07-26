@@ -34,7 +34,7 @@ def prepare_data(contract_code: str, trade_date: str) -> tuple:
 
 
 @pytest.mark.parametrize(
-    "asset_code,reference_date",
+    ("asset_code", "reference_date"),
     [
         ("DI1", "22-12-2023"),
         ("FRC", "22-12-2023"),
