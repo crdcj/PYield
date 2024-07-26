@@ -51,7 +51,7 @@ date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
 >>> ntnb.quote("31-05-2024", "15-08-2060", 0.061878)
 99.5341
 
-# Calculate the DI Spread of a LTN bonds in a given date
+# Calculate the DI Spread of NTN-F bonds in a given date
 >>> ntnf.di_spreads("17-07-2024")
 2025-01-01   -2.31
 2027-01-01   -1.88
