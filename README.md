@@ -43,16 +43,16 @@ date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
 ```
 ### Brazilian Treasury Bonds Tools
 ```python
->>> import pyield as yd
+>>> from pyield import ntnb, ntnf, ltn
 
 # Calculate the quote of a NTN-B bond as per ANBIMA's rules
->>> yd.ntnb.quote("31-05-2024", "15-05-2035", 0.061490)
+>>> ntnb.quote("31-05-2024", "15-05-2035", 0.061490)
 99.3651
->>> yd.ntnb.quote("31-05-2024", "15-08-2060", 0.061878)
+>>> ntnb.quote("31-05-2024", "15-08-2060", 0.061878)
 99.5341
 
 # Calculate the DI Spread of a LTN bonds in a given date
->>> yd.ntnf.di_spreads("17-07-2024")
+>>> ntnf.di_spreads("17-07-2024")
 2025-01-01   -2.31
 2027-01-01   -1.88
 2029-01-01   -3.26
@@ -62,7 +62,7 @@ date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
 Name: DISpread, dtype: Float64
 
 # Get ANBIMA's indicative rates for LTN bonds
->>> yd.ltn.anbima_rates("17-07-2024")
+>>> ltn.anbima_rates("17-07-2024")
 2024-10-01    0.104236
 2025-01-01    0.105400
 2025-04-01    0.107454
@@ -81,25 +81,26 @@ Name: IndicativeRate, dtype: Float64
 
 ### Business Days Tools (Brazilian holidays are automatically considered)
 ```python
+>>> from pyield import bday
 # Count the number of business days between two dates
 # Start date is included, end date is excluded
->>> yd.bday.count(start='29-12-2023', end='02-01-2024')
+>>> bday.count(start='29-12-2023', end='02-01-2024')
 1
 
 # Get the next business day after a given date (offset=1)
->>> yd.bday.offset(dates="29-12-2023", offset=1)
+>>> bday.offset(dates="29-12-2023", offset=1)
 Timestamp('2024-01-02 00:00:00')
 
 # Get the next business day if it is not a business day (offset=0)
->>> yd.bday.offset(dates="30-12-2023", offset=0)
+>>> bday.offset(dates="30-12-2023", offset=0)
 Timestamp('2024-01-02 00:00:00')
 
 # Since 29-12-2023 is a business day, it returns the same date (offset=0)
->>> yd.bday.offset(dates="29-12-2023", offset=0)
+>>> bday.offset(dates="29-12-2023", offset=0)
 Timestamp('2023-12-29 00:00:00')
 
 # Generate a pandas series with the business days between two dates
->>> yd.bday.generate(start='29-12-2023', end='03-01-2024')
+>>> bday.generate(start='29-12-2023', end='03-01-2024')
 0   2023-12-29
 1   2024-01-02
 2   2024-01-03
@@ -108,6 +109,7 @@ dtype: datetime64[ns]
 
 ### Futures Data
 ```python
+>>> import pyield as yd
 # Fetch current DI Futures data from B3 (15 minutes delay)
 >>> yd.futures(contract_code="DI1")
 TradeTime      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate LastBidRate CurrentRate
@@ -133,6 +135,7 @@ TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastB
 
 ### Indicators Data
 ```python
+>>> import pyield as yd
 # Fetch the SELIC target rate from the Central Bank of Brazil
 >>> yd.indicator(indicator_code="SELIC", reference_date='12-04-2024')
 0.1075  # 10.75%
@@ -148,6 +151,7 @@ None
 
 ### Projections Data
 ```python
+>>> import pyield as yd
 # Fetch current month projection for IPCA from IBGE API
 >>> ipca = yd.projection(projection_code="IPCA_CM")
 >>> print(ipca)
@@ -163,19 +167,20 @@ IndicatorProjection(
 
 ### Interpolation Tools
 ```python
+>>> from pyield import Interpolator
 # Interpolate interest rates for specific business days using the Interpolator class.
 
 # Initialize the Interpolator with known business days and interest rates.
 >>> known_bdays = [30, 60, 90]
 >>> known_rates = [0.045, 0.05, 0.055]
->>> linear_interpolator = yd.Interpolator("linear", known_bdays, known_rates)
+>>> linear_interpolator = Interpolator("linear", known_bdays, known_rates)
 
 # Interpolate the interest rate for a given number of business days.
 >>> linear_interpolator(45)
 0.0475
 
 # Use the flat forward method for interpolation.
->>> ff_interpolator = yd.Interpolator("flat_forward", known_bdays, known_rates)
+>>> ff_interpolator = Interpolator("flat_forward", known_bdays, known_rates)
 >>> ff_interpolator(45)
 0.04833068080970859
 ```
