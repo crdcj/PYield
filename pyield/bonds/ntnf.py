@@ -166,7 +166,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
-    return ft.anbima_data(bond_type="NTN-F", reference_date=reference_date)
+    return ft.anbima_data(reference_date, "NTN-F")
 
 
 def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -179,12 +179,20 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: A Series containing the rates indexed by maturity date.
     """
-    df = anbima_data(reference_date)
-    # Set MaturityDate as index
-    df = df.set_index("MaturityDate")
-    df.index.name = None
-    # Return as Series
-    return df["IndicativeRate"]
+    return ut.get_anbima_rates(reference_date, "NTN-F")
+
+
+def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
+    """
+    Fetch historical NTN-F Anbima indicative rates for the given maturity date.
+
+    Args:
+        maturity_date (str | pd.Timestamp): The maturity date for fetching the data.
+
+    Returns:
+        pd.Series: A Series containing the rates for the given maturity date.
+    """
+    return ut.get_anbima_historical_rates("NTN-F", maturity_date)
 
 
 def _calculate_coupons_pv(

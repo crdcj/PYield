@@ -113,15 +113,11 @@ def anbima_data(
         pd.DataFrame: A DataFrame containing the processed indicative rates for the
             given reference date.
 
-    Raises:
-        ValueError: If the data could not be fetched for the given reference date or if
-            an unsupported bond type is provided.
-
     Examples:
         # Fetch ANBIMA data for all bonds in a specific reference date
-        >>> anbima_data("18-06-2024")
+        >>> anbima_rates("18-06-2024")
         # Fetch ANBIMA data for NTN-B bonds in a specific reference date
-        >>> anbima_data("18-06-2024", "NTN-B")
+        >>> anbima_rates("18-06-2024", "NTN-B")
     """
     # Normalize the reference date
     normalized_date = dc.convert_date(reference_date)
@@ -158,11 +154,12 @@ class RatesData:
     @classmethod
     def rates(
         cls,
-        reference_date: pd.Timestamp,
+        reference_date: pd.Timestamp | None = None,
         bond_type: str | None = None,
     ) -> pd.DataFrame:
         df = cls._get_dataframe()
-        df.query("ReferenceDate == @reference_date", inplace=True)
+        if reference_date is not None:
+            df.query("ReferenceDate == @reference_date", inplace=True)
         if bond_type is not None:
             df.query("BondType == @bond_type", inplace=True)
 
