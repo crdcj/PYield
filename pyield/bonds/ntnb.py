@@ -29,7 +29,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
-    return ft.anbima(bond_type="NTN-B", reference_date=reference_date)
+    return ft.anbima_data(bond_type="NTN-B", reference_date=reference_date)
 
 
 def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:

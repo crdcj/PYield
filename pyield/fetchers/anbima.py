@@ -9,6 +9,9 @@ from .. import date_converter as dc
 # URL Constants
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
+RATES_URL = (
+    "https://raw.githubusercontent.com/crdcj/PYield/main/data/anbima_rates.csv.gz"
+)
 
 
 def _get_file_content(reference_date: pd.Timestamp) -> str:
@@ -90,9 +93,9 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def anbima(
-    bond_type: str | list[str] | None = None,
+def anbima_data(
     reference_date: str | pd.Timestamp | None = None,
+    bond_type: str | None = None,
 ) -> pd.DataFrame:
     """
     Fetches indicative treasury rates from ANBIMA for a specified reference date.
@@ -101,10 +104,10 @@ def anbima(
     ANBIMA, processing them into a structured pandas DataFrame.
 
     Args:
-        bond_type (str, optional): The type of bond to filter by. Defaults to None.
         reference_date (str | pd.Timestamp | None, optional): The date for which to
-            fetch the indicative rates. If a string is provided, it should be in the
-            format 'dd-mm-yyyy'. Defaults last business day if None.
+        fetch the indicative rates. If a string is provided, it should be in the
+        format 'dd-mm-yyyy'. Defaults last business day if None.
+        bond_type (str, optional): The type of bond to filter by. Defaults to None.
 
     Returns:
         pd.DataFrame: A DataFrame containing the processed indicative rates for the
@@ -115,10 +118,10 @@ def anbima(
             an unsupported bond type is provided.
 
     Examples:
-        # Fetch ANBIMA data for all bonds using the last business day available
-        >>> yd.anbima("18-06-2024")
-        # Fetch ANBIMA data for NTN-B bonds using a specific reference date
-        >>> yd.anbima("NTN-B", "18-06-2024")
+        # Fetch ANBIMA data for all bonds in a specific reference date
+        >>> anbima_data("18-06-2024")
+        # Fetch ANBIMA data for NTN-B bonds in a specific reference date
+        >>> anbima_data("18-06-2024", "NTN-B")
     """
     # Normalize the reference date
     normalized_date = dc.convert_date(reference_date)
@@ -132,18 +135,65 @@ def anbima(
 
     df = _process_raw_df(df)
 
-    # If bond type is not specified, return the full DataFrame
     if bond_type is None:
         return df
-
-    # Format bond type as a list of uppercase strings
-    if isinstance(bond_type, str):
-        bond_list = [bond_type]
-    elif isinstance(bond_type, list):
-        bond_list = bond_type
     else:
-        msg = "Invalid bond type format. Must be a string or a list of strings."
-        raise ValueError(msg)
-    bond_list = [bt.upper() for bt in bond_list]
+        df.query("BondType == @bond_type", inplace=True)
+        return df.reset_index(drop=True)
 
-    return df.query("BondType in @bond_list").reset_index(drop=True)
+
+class RatesData:
+    _df = pd.DataFrame()
+
+    @classmethod
+    def _get_dataframe(cls):
+        if cls._df.empty:
+            print("Loading ANBIMA rates data for the first time.")
+            cls._df = pd.read_csv(
+                RATES_URL, parse_dates=["ReferenceDate", "MaturityDate"]
+            )
+
+        return cls._df.copy()
+
+    @classmethod
+    def rates(
+        cls,
+        reference_date: pd.Timestamp,
+        bond_type: str | None = None,
+    ) -> pd.DataFrame:
+        df = cls._get_dataframe()
+        df.query("ReferenceDate == @reference_date", inplace=True)
+        if bond_type is not None:
+            df.query("BondType == @bond_type", inplace=True)
+
+        return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
+
+
+def anbima_rates(
+    reference_date: str | pd.Timestamp | None = None,
+    bond_type: str | None = None,
+) -> pd.DataFrame:
+    """
+    Fetches indicative treasury rates from ANBIMA for a specified reference date.
+
+    This function retrieves the indicative rates for Brazilian treasury securities from
+    ANBIMA, processing them into a structured pandas DataFrame.
+
+    Args:
+        reference_date (str | pd.Timestamp | None, optional): The date for which to
+        fetch the indicative rates. If a string is provided, it should be in the
+        format 'dd-mm-yyyy'. Defaults last business day if None.
+        bond_type (str, optional): The type of bond to filter by. Defaults to None.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the processed indicative rates for the
+            given reference date.
+
+    Examples:
+        # Fetch ANBIMA rates for all bonds using the last business day available
+        >>> yd.anbima("18-06-2024")
+        # Fetch ANBIMA data for NTN-B bonds using a specific reference date
+        >>> yd.anbima("NTN-B", "18-06-2024")
+    """
+    reference_date = dc.convert_date(reference_date)
+    return RatesData.rates(reference_date, bond_type)

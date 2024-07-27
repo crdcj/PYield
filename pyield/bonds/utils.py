@@ -68,7 +68,7 @@ def di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = ft.anbima(["LTN", "NTN-F"], reference_date)
+    df_anbima = ft.anbima_data(["LTN", "NTN-F"], reference_date)
     # Keep only the relevant columns for the output
     keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
     df_anbima = df_anbima[keep_columns].copy()
