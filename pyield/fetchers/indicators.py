@@ -23,7 +23,7 @@ def indicator(
         raise ValueError(f"Invalid indicator type: {ind_type}")
 
 
-def ipca_monthly_rate(reference_date: str | pd.Timestamp | None = None) -> float | None:
+def ipca_monthly_rate(reference_date: str | pd.Timestamp) -> float | None:
     """
     Fetches the IPCA (Índice Nacional de Preços ao Consumidor Amplo) monthly rate
     from the IBGE (Instituto Brasileiro de Geografia e Estatística) for a given
@@ -31,8 +31,7 @@ def ipca_monthly_rate(reference_date: str | pd.Timestamp | None = None) -> float
 
     Args:
         reference_date (str | pd.Timestamp | None): The reference date for which data
-            is fetched. Defaults to the last business day if None. If the reference date
-            is a string, it should be in 'DD-MM-YYYY' format.
+            is fetched. If a string is passed, it should be in 'DD-MM-YYYY' format.
 
     Returns:
         float | None: The IPCA monthly rate for the specified date as a float.

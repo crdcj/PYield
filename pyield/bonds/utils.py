@@ -107,6 +107,11 @@ def get_anbima_historical_rates(
 ) -> pd.Series:
     maturity_date = dc.convert_date(maturity_date)
     df = ft.anbima_rates(bond_type=bond_type)
-    df.drop(columns=["BondType"], inplace=True)
     df.query("MaturityDate == @maturity_date", inplace=True)
-    return df.sort_values(["ReferenceDate"], ignore_index=True)
+    df.drop(columns=["BondType", "MaturityDate"], inplace=True)
+    df.sort_values(["ReferenceDate"], ignore_index=True, inplace=True)
+    # Set ReferenceDate as index
+    df = df.set_index("ReferenceDate")
+    df.index.name = None
+    # Return as Series
+    return df["IndicativeRate"]

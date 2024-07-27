@@ -287,18 +287,16 @@ def spot_rates(
     return df_spot
 
 
-def di_spreads(reference_date: str | pd.Timestamp | None = None) -> pd.Series:
+def di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
     """
     Calculates the DI spread for the NTN-F based on ANBIMA's indicative rates.
 
     This function fetches the indicative rates for the NTN-F bonds and the DI futures
     rates and calculates the spread between these rates in basis points.
-    If no reference date is provided, the function uses the last business day available.
 
     Parameters:
         reference_date (str | pd.Timestamp, optional): The reference date for the
-            spread calculation. If None or not provided, defaults to the previous
-            business day according to the Brazilian calendar.
+            spread calculation.
 
     Returns:
         pd.Series: A pandas series containing the calculated spreads in basis points

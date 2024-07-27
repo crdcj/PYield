@@ -90,13 +90,12 @@ def price(
     return ut.truncate(FACE_VALUE / discount_factor, 6)
 
 
-def di_spreads(reference_date: str | pd.Timestamp | None = None) -> pd.Series:
+def di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
     """
     Calculates the DI spread for the LTN based on ANBIMA's indicative rates.
 
     This function fetches the indicative rates for the NTN-F bonds and the DI futures
     rates and calculates the spread between these rates in basis points.
-    If no reference date is provided, the function uses the last business day available.
 
     Parameters:
         reference_date (str | pd.Timestamp, optional): The reference date for the

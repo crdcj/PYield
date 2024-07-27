@@ -3,8 +3,6 @@ import re
 import numpy as np
 import pandas as pd
 
-from . import bday
-
 
 def _starts_with_year(date_str: str) -> bool:
     """Check if the date string starts with a four-digit year."""
@@ -14,17 +12,13 @@ def _starts_with_year(date_str: str) -> bool:
         return bool(re.match(r"^\d{4}-", date_str))
 
 
-def convert_date(
-    input_date: str | pd.Timestamp | np.datetime64 | None = None,
-) -> pd.Timestamp:
+def convert_date(input_date: str | pd.Timestamp | np.datetime64) -> pd.Timestamp:
     """
-    Convert a date to pandas Timestamp adjusted to midnight. If no date is
-    provided, it defaults to the last business day available.
+    Convert a date to pandas Timestamp adjusted to midnight.
 
     Args:
         reference_date (str | pd.Timestamp | np.datetime64 | None): The date to
-        convert. If None, it defaults to the last business day. If str, it should be
-        with day first format (e.g. "31-05-2024").
+        convert. If str, it should be with day first format (e.g. "31-05-2024").
 
     Returns:
         pd.Timestamp: A normalized pandas Timestamp.
@@ -54,10 +48,6 @@ def convert_date(
         case np.datetime64():
             # Convert numpy datetime to pandas Timestamp
             output_date = pd.Timestamp(input_date)
-        case None:
-            # If no date is provided, use the last business day available
-            today = pd.Timestamp.today()
-            output_date = bday.offset(dates=today, offset=0, roll="backward")
         case _:
             raise ValueError(f"Date format not recognized: {input_date}")
     # Normalize the final date to midnight

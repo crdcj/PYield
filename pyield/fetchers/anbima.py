@@ -94,7 +94,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 
 
 def anbima_data(
-    reference_date: str | pd.Timestamp | None = None,
+    reference_date: str | pd.Timestamp,
     bond_type: str | None = None,
 ) -> pd.DataFrame:
     """
@@ -106,7 +106,7 @@ def anbima_data(
     Args:
         reference_date (str | pd.Timestamp | None, optional): The date for which to
         fetch the indicative rates. If a string is provided, it should be in the
-        format 'dd-mm-yyyy'. Defaults last business day if None.
+        format 'dd-mm-yyyy'.
         bond_type (str, optional): The type of bond to filter by. Defaults to None.
 
     Returns:
@@ -179,7 +179,7 @@ def anbima_rates(
     Args:
         reference_date (str | pd.Timestamp | None, optional): The date for which to
         fetch the indicative rates. If a string is provided, it should be in the
-        format 'dd-mm-yyyy'. Defaults last business day if None.
+        format 'dd-mm-yyyy'.
         bond_type (str, optional): The type of bond to filter by. Defaults to None.
 
     Returns:
@@ -187,10 +187,11 @@ def anbima_rates(
             given reference date.
 
     Examples:
-        # Fetch ANBIMA rates for all bonds using the last business day available
+        # Fetch ANBIMA rates for all bonds in a specific reference date
         >>> yd.anbima("18-06-2024")
-        # Fetch ANBIMA data for NTN-B bonds using a specific reference date
+        # Fetch ANBIMA data for NTN-B bonds in a specific reference date
         >>> yd.anbima("NTN-B", "18-06-2024")
     """
-    reference_date = dc.convert_date(reference_date)
+    if reference_date is not None:
+        reference_date = dc.convert_date(reference_date)
     return RatesData.rates(reference_date, bond_type)

@@ -9,7 +9,7 @@ SUPPORTED_FUTURES = ["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
 
 def futures(
     contract_code: str,
-    reference_date: str | pd.Timestamp | None = None,
+    reference_date: str | pd.Timestamp,
 ) -> pd.DataFrame:
     """
     Fetches data for a specified futures contract based on type and reference date.
@@ -26,8 +26,7 @@ def futures(
             - "IND": Ibovespa Futures from B3.
             - "WIN": Mini Ibovespa Futures from B3.
         reference_date (str | None): The reference date for which data is fetched.
-            Defaults to the last business day avaible if None. If the reference date is
-            a string, it should be in 'DD-MM-YYYY' format.
+            If the reference date is a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:
         pd.DataFrame: A DataFrame containing the fetched data for the specified futures
