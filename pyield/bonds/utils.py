@@ -1,8 +1,18 @@
+from typing import overload
+
 import numpy as np
 import pandas as pd
 
 from .. import date_converter as dc
 from .. import fetchers as ft
+
+
+@overload
+def truncate(values: float, decimal_places: int) -> float: ...
+
+
+@overload
+def truncate(values: pd.Series, decimal_places: int) -> pd.Series: ...
 
 
 def truncate(values: float | pd.Series, decimal_places: int) -> float | pd.Series:
@@ -69,10 +79,9 @@ def di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_anbima = ft.anbima_data(["LTN", "NTN-F"], reference_date)
-    # Keep only the relevant columns for the output
-    keep_columns = ["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate"]
-    df_anbima = df_anbima[keep_columns].copy()
+    df_ltn = ft.anbima_rates(reference_date, "LTN")
+    df_ntnf = ft.anbima_rates(reference_date, "NTN-F")
+    df_anbima = pd.concat([df_ltn, df_ntnf], ignore_index=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads
     df_final = pd.merge(df_anbima, df_di, how="left", on="MaturityDate")
@@ -112,6 +121,5 @@ def get_anbima_historical_rates(
     df.sort_values(["ReferenceDate"], ignore_index=True, inplace=True)
     # Set ReferenceDate as index
     df = df.set_index("ReferenceDate")
-    df.index.name = None
     # Return as Series
     return df["IndicativeRate"]

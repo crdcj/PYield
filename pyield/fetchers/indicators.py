@@ -8,8 +8,9 @@ from .. import date_converter as dc
 
 def indicator(
     indicator_type: Literal["IPCA_MR", "SELIC_TARGET", "DI", "VNA_LFT"],
-    reference_date: str | pd.Timestamp | None = None,
+    reference_date: str | pd.Timestamp,
 ) -> float | None:
+    reference_date = dc.convert_date(reference_date)
     ind_type = str(indicator_type).upper()
     if ind_type == "IPCA_MR":
         return ipca_monthly_rate(reference_date)
@@ -23,7 +24,7 @@ def indicator(
         raise ValueError(f"Invalid indicator type: {ind_type}")
 
 
-def ipca_monthly_rate(reference_date: str | pd.Timestamp) -> float | None:
+def ipca_monthly_rate(reference_date: pd.Timestamp) -> float | None:
     """
     Fetches the IPCA (Índice Nacional de Preços ao Consumidor Amplo) monthly rate
     from the IBGE (Instituto Brasileiro de Geografia e Estatística) for a given
@@ -49,9 +50,8 @@ def ipca_monthly_rate(reference_date: str | pd.Timestamp) -> float | None:
         0.0038  # Indicates an IPCA monthly rate of 0.38% p.m.
 
     """
-    normalized_date = dc.convert_date(reference_date)
     # Format the date as 'YYYYMM' for the API endpoint
-    ipca_date = normalized_date.strftime("%Y%m")
+    ipca_date = reference_date.strftime("%Y%m")
 
     # Construct the API URL using the formatted date
     api_url = f"https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/{ipca_date}/variaveis/63?localidades=N1[all]"
@@ -73,15 +73,14 @@ def ipca_monthly_rate(reference_date: str | pd.Timestamp) -> float | None:
         return None
 
 
-def selic_target(reference_date: str | pd.Timestamp | None = None) -> float | None:
+def selic_target(reference_date: pd.Timestamp) -> float | None:
     """
     Examples:
         >>> selic_taget("31-05-2024")
         0.1075  # Indicates a SELIC target rate of 10.75% p.a.
     """
-    normalized_date = dc.convert_date(reference_date)
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    selic_date = normalized_date.strftime("%d/%m/%Y")
+    selic_date = reference_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial={selic_date}&dataFinal={selic_date}"
     response = requests.get(api_url, timeout=10)
     response.raise_for_status()
@@ -93,15 +92,14 @@ def selic_target(reference_date: str | pd.Timestamp | None = None) -> float | No
         return None
 
 
-def di(reference_date: str | pd.Timestamp | None = None) -> float | None:
+def di(reference_date: pd.Timestamp) -> float | None:
     """
     Examples:
         >>> di("31-05-2024")
         0.00040168  # Indicates a DI daily rate of 0.02% p.d.
     """
-    normalized_date = dc.convert_date(reference_date)
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    di_date = normalized_date.strftime("%d/%m/%Y")
+    di_date = reference_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial={di_date}&dataFinal={di_date}"
     response = requests.get(api_url, timeout=10)
     response.raise_for_status()
@@ -113,11 +111,10 @@ def di(reference_date: str | pd.Timestamp | None = None) -> float | None:
         return None
 
 
-def vna_lft(reference_date: str | pd.Timestamp | None = None) -> float | None:
-    normalized_date = dc.convert_date(reference_date)
+def vna_lft(reference_date: pd.Timestamp) -> float | None:
     # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
-    url_file = f"{normalized_date.strftime('%Y%m%d')}APC238"
+    url_file = f"{reference_date.strftime('%Y%m%d')}APC238"
     url_vna = url_base + url_file
 
     response = requests.get(url_vna, timeout=10)

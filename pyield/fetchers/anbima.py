@@ -142,13 +142,17 @@ class RatesData:
     _df = pd.DataFrame()
 
     @classmethod
-    def _get_dataframe(cls):
+    def _initialize_dataframe(cls):
         if cls._df.empty:
             print("Loading ANBIMA rates data for the first time.")
             cls._df = pd.read_csv(
                 RATES_URL, parse_dates=["ReferenceDate", "MaturityDate"]
             )
+            cls._df["IndicativeRate"] /= 100
 
+    @classmethod
+    def _get_dataframe(cls):
+        cls._initialize_dataframe()
         return cls._df.copy()
 
     @classmethod

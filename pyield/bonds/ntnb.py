@@ -327,10 +327,8 @@ def anbima_spot_rates(
         pd.DataFrame: DataFrame containing the maturity dates and corresponding real
             spot rates.
     """
-    df_ytm = anbima_rates(reference_date)
-    maturity_dates = df_ytm["MaturityDate"]
-    ytm_rates = df_ytm["IndicativeRate"]
-    return spot_rates(settlement_date, maturity_dates, ytm_rates)
+    ytm_rates = anbima_rates(reference_date)
+    return spot_rates(settlement_date, ytm_rates)
 
 
 def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:

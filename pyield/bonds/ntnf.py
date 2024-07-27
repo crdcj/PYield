@@ -149,7 +149,8 @@ def _coupon_dates_map(
     dates = dates[dates >= start]
 
     # Convert to Series and adjust for business days if necessary
-    dates = pd.Series(dates).reset_index(drop=True)
+    dates = pd.Series(dates.values)
+
     if adjust_for_bdays:
         dates = bday.offset(dates, 0)
 
