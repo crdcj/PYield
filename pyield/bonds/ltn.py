@@ -112,5 +112,4 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
     df.query("BondType == 'LTN'", inplace=True)
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
     df.set_index("MaturityDate", inplace=True)
-    df.index.name = None
     return df["DISpread"]

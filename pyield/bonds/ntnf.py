@@ -142,14 +142,14 @@ def _coupon_dates_map(
     reference_year = start.year
     first_coupon_date = pd.Timestamp(f"{reference_year}-01-01")
 
-    # Generate coupon dates
-    dates = pd.date_range(start=first_coupon_date, end=end, freq="6MS")
+    # Generate coupon dates as a DatetimeIndex (dti)
+    dates_dti = pd.date_range(start=first_coupon_date, end=end, freq="6MS")
+
+    # Convert to Series and adjust for business days if necessary
+    dates = pd.Series(dates_dti.values)
 
     # First coupon date must be after the reference date
     dates = dates[dates >= start]
-
-    # Convert to Series and adjust for business days if necessary
-    dates = pd.Series(dates.values)
 
     if adjust_for_bdays:
         dates = bday.offset(dates, 0)
@@ -309,5 +309,4 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
     df.query("BondType == 'NTN-F'", inplace=True)
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
     df.set_index("MaturityDate", inplace=True)
-    df.index.name = None
     return df["DISpread"]

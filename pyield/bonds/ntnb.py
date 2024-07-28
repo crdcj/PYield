@@ -5,6 +5,7 @@ from .. import bday
 from .. import date_converter as dc
 from .. import fetchers as ft
 from .. import interpolator as it
+from . import ltn
 from . import utils as ut
 
 """
@@ -374,13 +375,12 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     if reference_date == today:
         # If the reference date is today, use the previous business day
         anbima_date = bday.offset(reference_date, -1)
-    df_pre = ut.di_spreads(reference_date=anbima_date)
-    df_pre.query("BondType == 'LTN'", inplace=True)
-    df_pre["MaturityDate"] = bday.offset(df_pre["MaturityDate"], 0)
-    df_pre["DISpread"] /= 10_000  # Remove BPS (basis points) from the spread
-    df_pre.drop(columns=["BondType"], inplace=True)
 
-    df = pd.merge_asof(df, df_pre, left_on="ExpirationDate", right_on="MaturityDate")
+    df_ltn = ltn.di_spreads(reference_date=anbima_date).reset_index()
+    df_ltn["MaturityDate"] = bday.offset(df_ltn["MaturityDate"], 0)
+    df_ltn["DISpread"] /= 10_000  # Remove BPS (basis points) from the spread
+
+    df = pd.merge_asof(df, df_ltn, left_on="ExpirationDate", right_on="MaturityDate")
     df["NIR_PRE"] = df["NIR_DI"] + df["DISpread"]
 
     return df

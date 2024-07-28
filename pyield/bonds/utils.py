@@ -81,20 +81,20 @@ def di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     # Fetch bond rates, filtering for LTN and NTN-F types
     df_ltn = ft.anbima_rates(reference_date, "LTN")
     df_ntnf = ft.anbima_rates(reference_date, "NTN-F")
-    df_anbima = pd.concat([df_ltn, df_ntnf], ignore_index=True)
+    df_pre = pd.concat([df_ltn, df_ntnf], ignore_index=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads
-    df_final = pd.merge(df_anbima, df_di, how="left", on="MaturityDate")
+    df_spreads = pd.merge(df_pre, df_di, how="left", on="MaturityDate")
 
     # Calculate the DI spread as the difference between indicative and settlement rates
-    df_final["DISpread"] = df_final["IndicativeRate"] - df_final["SettlementRate"]
+    df_spreads["DISpread"] = df_spreads["IndicativeRate"] - df_spreads["SettlementRate"]
 
     # Convert spread to basis points for clarity
-    df_final["DISpread"] = (10_000 * df_final["DISpread"]).round(2)
+    df_spreads["DISpread"] = (10_000 * df_spreads["DISpread"]).round(2)
 
     # Prepare and return the final sorted DataFrame
     select_columns = ["BondType", "ReferenceDate", "MaturityDate", "DISpread"]
-    return df_final[select_columns].sort_values(["MaturityDate"], ignore_index=True)
+    return df_spreads[select_columns].sort_values(["MaturityDate"], ignore_index=True)
 
 
 def get_anbima_rates(
@@ -105,7 +105,6 @@ def get_anbima_rates(
     df.drop(columns=["BondType"], inplace=True)
     # Set MaturityDate as index
     df = df.set_index("MaturityDate")
-    df.index.name = None
     # Return as Series
     return df["IndicativeRate"]
 

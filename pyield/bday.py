@@ -309,15 +309,16 @@ def generate(
     )
     selected_holidays_list = selected_holidays.to_list()
 
-    result = pd.bdate_range(
-        normalized_start,
-        normalized_end,
+    # Get the result as a DatetimeIndex (dti)
+    result_dti = pd.bdate_range(
+        strar=normalized_start,
+        end=normalized_end,
         freq="C",
-        inclusive=inclusive,
+        inclusive=inclusive.lower(),
         holidays=selected_holidays_list,
         **kwargs,
     )
-    return pd.Series(result)
+    return pd.Series(result_dti.values)
 
 
 def is_business_day(date: SingleDateTypes | None = None) -> bool:

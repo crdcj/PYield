@@ -37,20 +37,30 @@ class Interpolator:
         self.method = method
         self.known_bdays = known_bdays
         self.known_rates = known_rates
-        self._validate_and_process_inputs()
+        self._set_known_bdays_and_rates()
 
-    def _validate_and_process_inputs(self) -> None:
+    def _set_known_bdays_and_rates(self) -> None:
         """Validate and process the inputs of the Interpolator."""
         if self.method not in {"flat_forward", "linear"}:
             raise ValueError(f"Unknown interpolation method: {self.method}.")
 
-        known_bdays = self.known_bdays
-        if not isinstance(known_bdays, list):
-            known_bdays = known_bdays.to_list()
+        if isinstance(self.known_bdays, list):
+            known_bdays = self.known_bdays
+        elif isinstance(self.known_bdays, pd.Series):
+            known_bdays = self.known_bdays.to_list()
+        elif isinstance(self.known_bdays, pd.Index):
+            known_bdays = self.known_bdays.to_list()
+        else:
+            raise ValueError("known_bdays must be a list, pd.Series or pd.Index.")
 
-        known_rates = self.known_rates
-        if not isinstance(known_rates, list):
+        if isinstance(self.known_rates, list):
+            known_rates = self.known_rates
+        elif isinstance(self.known_rates, pd.Series):
             known_rates = self.known_rates.to_list()
+        elif isinstance(self.known_rates, pd.Index):
+            known_rates = self.known_rates.to_list()
+        else:
+            raise ValueError("known_rates must be a list, pd.Series or pd.Index.")
 
         if len(known_bdays) != len(known_rates):
             raise ValueError("known_bdays and known_rates must have the same length.")
@@ -58,20 +68,20 @@ class Interpolator:
         df = pd.DataFrame({"bday": known_bdays, "rate": known_rates})
         df = df.dropna().drop_duplicates(subset="bday").sort_values("bday")
 
-        self.known_bdays = df["bday"].to_list()
-        self.known_rates = df["rate"].to_list()
+        self._known_bdays = df["bday"].to_list()
+        self._known_rates = df["rate"].to_list()
 
     def _flat_forward(self, bday: int) -> float:
         """Performs the interest rate interpolation using the flat forward method."""
 
         # Find i such that known_bdays[i-1] < bday < known_bdays[i]
-        i = bisect.bisect_left(self.known_bdays, bday)
+        i = bisect.bisect_left(self._known_bdays, bday)
 
         # Get previous and next known rates and business days
-        prev_rate = self.known_rates[i - 1]
-        prev_bday = self.known_bdays[i - 1]
-        next_rate = self.known_rates[i]
-        next_bday = self.known_bdays[i]
+        prev_rate = self._known_rates[i - 1]
+        prev_bday = self._known_bdays[i - 1]
+        next_rate = self._known_rates[i]
+        next_bday = self._known_bdays[i]
 
         # Perform flat forward interpolation
         a = (1 + prev_rate) ** (prev_bday / 252)
@@ -81,7 +91,7 @@ class Interpolator:
 
     def _linear(self, bday: int) -> float:
         """Performs linear interpolation."""
-        np_float = np.interp(bday, self.known_bdays, self.known_rates)
+        np_float = np.interp(bday, self._known_bdays, self._known_rates)
         return float(np_float)
 
     def interpolate(self, bday: int) -> float:
@@ -108,12 +118,12 @@ class Interpolator:
                 0.04833068080970859
         """
         # Check for edge cases
-        if bday < self.known_bdays[0]:
-            return self.known_rates[0]
-        elif bday > self.known_bdays[-1]:
-            return self.known_rates[-1]
-        elif bday in self.known_bdays:
-            return self.known_rates[self.known_bdays.index(bday)]
+        if bday < self._known_bdays[0]:
+            return self._known_rates[0]
+        elif bday > self._known_bdays[-1]:
+            return self._known_rates[-1]
+        elif bday in self._known_bdays:
+            return self._known_rates[self._known_bdays.index(bday)]
 
         if self.method == "flat_forward":
             return self._flat_forward(bday)
