@@ -154,7 +154,7 @@ def _coupon_dates_map(
     if adjust_for_bdays:
         dates = bday.offset(dates, 0)
 
-    return dates
+    return dates.reset_index(drop=True)
 
 
 def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:

@@ -9,8 +9,8 @@ class Interpolator:
     def __init__(
         self,
         method: Literal["flat_forward", "linear"],
-        known_bdays: pd.Series | pd.Index | list,
-        known_rates: pd.Series | pd.Index | list,
+        known_bdays: pd.Series | list,
+        known_rates: pd.Series | list,
     ):
         """
         Initialize the Interpolator with given atributes.
@@ -44,23 +44,12 @@ class Interpolator:
         if self.method not in {"flat_forward", "linear"}:
             raise ValueError(f"Unknown interpolation method: {self.method}.")
 
-        if isinstance(self.known_bdays, list):
-            known_bdays = self.known_bdays
-        elif isinstance(self.known_bdays, pd.Series):
-            known_bdays = self.known_bdays.to_list()
-        elif isinstance(self.known_bdays, pd.Index):
-            known_bdays = self.known_bdays.to_list()
-        else:
-            raise ValueError("known_bdays must be a list, pd.Series or pd.Index.")
-
-        if isinstance(self.known_rates, list):
-            known_rates = self.known_rates
-        elif isinstance(self.known_rates, pd.Series):
-            known_rates = self.known_rates.to_list()
-        elif isinstance(self.known_rates, pd.Index):
-            known_rates = self.known_rates.to_list()
-        else:
-            raise ValueError("known_rates must be a list, pd.Series or pd.Index.")
+        known_bdays = self.known_bdays
+        known_rates = self.known_rates
+        if isinstance(known_bdays, pd.Series):
+            known_bdays = known_bdays.to_list()
+        if isinstance(known_rates, pd.Series):
+            known_rates = known_rates.to_list()
 
         if len(known_bdays) != len(known_rates):
             raise ValueError("known_bdays and known_rates must have the same length.")

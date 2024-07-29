@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Literal, overload
+from typing import Literal, overload
 
 import numpy as np
 import pandas as pd
@@ -262,7 +262,6 @@ def generate(
     end: SingleDateTypes | None = None,
     inclusive: Literal["both", "neither", "left", "right"] = "both",
     holiday_list: Literal["old", "new", "infer"] = "infer",
-    **kwargs: dict[str, Any],
 ) -> pd.Series:
     """
     Generates a Series of business days between a `start` and `end` date, considering
@@ -311,12 +310,11 @@ def generate(
 
     # Get the result as a DatetimeIndex (dti)
     result_dti = pd.bdate_range(
-        strar=normalized_start,
+        start=normalized_start,
         end=normalized_end,
         freq="C",
-        inclusive=inclusive.lower(),
+        inclusive=inclusive,
         holidays=selected_holidays_list,
-        **kwargs,
     )
     return pd.Series(result_dti.values)
 
