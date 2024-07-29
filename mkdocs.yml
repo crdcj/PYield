@@ -7,6 +7,7 @@ nav:
   - Modules:
       - Business Day Tool (bday): bday.md
       - Interpolator (intepolator): interpolator.md
+      - LFT (lft): lft.md
       - LTN (ltn): ltn.md
       - NTN-B (ntnb): ntnb.md
       - NTN-F (ntnf): ntnf.md
