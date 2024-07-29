@@ -320,7 +320,7 @@ def is_business_day(date: SingleDateTypes | None = None) -> bool:
 
     Args:
         date (SingleDateTypes | None, optional): The date to check.
-        If None, the current date is used. Defaults to None.
+            If None, the current date is used. Defaults to None.
 
     Returns:
         bool: True if the input date is a business day, False otherwise.

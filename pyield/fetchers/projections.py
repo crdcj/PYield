@@ -75,14 +75,10 @@ def ipca_current_month() -> IndicatorProjection:
     # Extract projection update date and time from the first row
     update_str = str(data[0][0])
     last_update_str = update_str.split("Atualização:")[-1].strip()
-    last_updated = pd.to_datetime(last_update_str, format="%d/%m/%Y - %H:%M h")
 
-    # Find the row containing the IPCA projection and extract its data
+    # Find the text containing the IPCA projection and extract its data
     ipca_data = next(line for line in data if "IPCA1" in line)
     ipca_text = str(ipca_data[-1])
-
-    # Convert the last element of the IPCA data row to float for the projection value
-    ipca_value = round(float(ipca_text) / 100, 4)
 
     # Extract and format the reference month
     projection_text = str(ipca_data[1])
@@ -93,8 +89,8 @@ def ipca_current_month() -> IndicatorProjection:
     locale.setlocale(locale.LC_TIME, "")  # Reset locale to default
 
     return IndicatorProjection(
-        last_updated=last_updated,
+        last_updated=pd.to_datetime(last_update_str, format="%d/%m/%Y - %H:%M h"),
         reference_month_ts=ipca_month_ts,
         reference_month_br=ipca_month_br,
-        projected_value=ipca_value,
+        projected_value=round(float(ipca_text) / 100, 4),
     )

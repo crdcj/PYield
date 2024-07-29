@@ -31,7 +31,7 @@ def ipca_monthly_rate(reference_date: pd.Timestamp) -> float | None:
     reference date.
 
     Args:
-        reference_date (str | pd.Timestamp | None): The reference date for which data
+        reference_date (str | pd.Timestamp): The reference date for which data
             is fetched. If a string is passed, it should be in 'DD-MM-YYYY' format.
 
     Returns:

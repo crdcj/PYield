@@ -17,8 +17,8 @@ def convert_date(input_date: str | pd.Timestamp | np.datetime64) -> pd.Timestamp
     Convert a date to pandas Timestamp adjusted to midnight.
 
     Args:
-        reference_date (str | pd.Timestamp | np.datetime64 | None): The date to
-        convert. If str, it should be with day first format (e.g. "31-05-2024").
+        reference_date (str | pd.Timestamp | np.datetime64): The date to convert.
+            If str, it should be with day first format (e.g. "31-05-2024").
 
     Returns:
         pd.Timestamp: A normalized pandas Timestamp.
@@ -35,6 +35,8 @@ def convert_date(input_date: str | pd.Timestamp | np.datetime64) -> pd.Timestamp
         Timestamp('2024-05-31 00:00:00')
     """
     match input_date:
+        case None:
+            raise ValueError("Date cannot be None.")
         case str():
             if _starts_with_year(input_date):
                 raise ValueError(
