@@ -39,7 +39,7 @@ def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
     Fetch historical LTN Anbima indicative rates for the given maturity date.
 
     Args:
-        maturity_date (str | pd.Timestamp): The maturity date for fetching the data.
+        maturity_date (str | pd.Timestamp): The maturity date of the bond.
 
     Returns:
         pd.Series: A Series containing the rates for the given maturity date.

@@ -147,7 +147,7 @@ class RatesData:
             cls._df = pd.read_csv(
                 RATES_URL, parse_dates=["ReferenceDate", "MaturityDate"]
             )
-            cls._df["IndicativeRate"] /= 100
+            cls._df["IndicativeRate"] = (cls._df["IndicativeRate"] / 100).round(6)
 
     @classmethod
     def _get_dataframe(cls):
