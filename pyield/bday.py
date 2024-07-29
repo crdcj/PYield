@@ -205,10 +205,10 @@ def count(
 
     Args:
         start (SingleDateTypes | SeriesDateTypes | None, optional): The start date(s)
-            for counting. Defaults to the last business day available if None.
+            for counting. If None, the current date is used.
         end (SingleDateTypes | SeriesDateTypes| None, optional): The end date(s) for
-            counting, which are excluded from the count themselves. Defaults to the last
-            business day available if None.
+            counting, which are excluded from the count themselves. If None, the current
+            date is used.
         holiday_list (Literal["old", "new", "infer"], optional):
             Specifies which set of holidays to consider in the count. 'old' or 'new'
             refer to predefined holiday lists, while 'infer' automatically selects the
@@ -232,9 +232,7 @@ def count(
     Examples:
         >>> bday.count("2023-12-15", "2024-01-01")
         10
-        >>> start = "2023-01-01"
-        >>> end = pd.to_datetime(["2023-01-31", "2023-03-01"])
-        >>> bday.count(start, end)
+        >>> bday.count(start="01-01-2023", end=["31-01-2023", "01-03-2023"])
         pd.Series([22, 40], dtype='int64')
     """
     normalized_start = _normalize_input_dates(start)
@@ -270,11 +268,11 @@ def generate(
 
     Args:
         start (SingleDateTypes | None, optional):
-            The start date for generating business days. Defaults to None, using the
-            current date.
-        end (str | np.datetime64 | pd.Timestamp | datetime, optional):
-            The end date for generating business days. Defaults to None, using the
-            current date.
+            The start date for generating business days. If None, the current date is
+            used. Defaults to None.
+        end (SingleDateTypes | None, optional):
+            The end date for generating business days. If None, the current date is
+            used. Defaults to None.
         inclusive (Literal["both", "neither", "left", "right"], optional):
             Determines which of the start and end dates are included in the result.
             Valid options are 'both', 'neither', 'left', 'right'. Defaults to 'both'.
@@ -282,16 +280,13 @@ def generate(
             Specifies the list of holidays to consider. 'old' or 'new' refer to
             predefined lists, 'infer' selects the list based on the most recent date in
             the range. Defaults to "infer".
-        **kwargs:
-            Additional keyword arguments passed to `pandas.bdate_range` for
-            customization.
 
     Returns:
         pd.Series: A Series representing a range of business days between the specified
             start and end dates, considering the specified holidays.
 
     Examples:
-        >>> bday.generate(start="2023-12-22", end="2024-01-02")
+        >>> bday.generate(start="22-12-2023", end="02-01-2024")
         pd.Series(['2023-12-22', '2023-12-26', '2023-12-27', '2023-12-28', '2023-12-29',
             '2024-01-02'], dtype='datetime64[ns]')
 
@@ -324,16 +319,16 @@ def is_business_day(date: SingleDateTypes | None = None) -> bool:
     Checks if the input date is a business day.
 
     Args:
-        date (str | np.datetime64 | pd.Timestamp | datetime, optional): The date to
-            check. If None, the current date is used.
+        date (SingleDateTypes | None, optional): The date to check.
+        If None, the current date is used. Defaults to None.
 
     Returns:
         bool: True if the input date is a business day, False otherwise.
 
     Examples:
-        >>> yd.is_bday("2023-12-25")  # Christmas
+        >>> bday.is_business_day("25-12-2023")  # Christmas
         False
-        >>> yd.is_bday()  # Check if today is a business day
+        >>> bday.is_business_day()  # Check if today is a business day
         True
     """
     normalized_date = _normalize_input_dates(date)
