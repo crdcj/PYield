@@ -1,3 +1,4 @@
+import datetime as dt
 import re
 
 import numpy as np
@@ -12,7 +13,9 @@ def _starts_with_year(date_str: str) -> bool:
         return bool(re.match(r"^\d{4}-", date_str))
 
 
-def convert_date(input_date: str | pd.Timestamp | np.datetime64) -> pd.Timestamp:
+def convert_date(
+    input_date: str | pd.Timestamp | np.datetime64 | dt.date | dt.datetime,
+) -> pd.Timestamp:
     """
     Convert a date to pandas Timestamp adjusted to midnight.
 
@@ -49,6 +52,12 @@ def convert_date(input_date: str | pd.Timestamp | np.datetime64) -> pd.Timestamp
             output_date = input_date
         case np.datetime64():
             # Convert numpy datetime to pandas Timestamp
+            output_date = pd.Timestamp(input_date)
+        case dt.date():
+            # Convert datetime.date to pandas Timestamp
+            output_date = pd.Timestamp(input_date)
+        case dt.datetime():
+            # Convert datetime.datetime to pandas Timestamp
             output_date = pd.Timestamp(input_date)
         case _:
             raise ValueError(f"Date format not recognized: {input_date}")

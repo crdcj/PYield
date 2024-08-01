@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime as dt
 from typing import Literal, overload
 
 import numpy as np
@@ -6,7 +6,7 @@ import pandas as pd
 
 from . import holidays
 
-SingleDateTypes = str | np.datetime64 | pd.Timestamp | datetime
+SingleDateTypes = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
 SeriesDateTypes = list | tuple | np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex
 
 TO_SERIES_TYPES = (list, tuple, np.ndarray, pd.Series, pd.Index, pd.DatetimeIndex)
@@ -36,7 +36,7 @@ def _normalize_input_dates(
         return pd.to_datetime(dates, dayfirst=True).normalize()
     elif isinstance(dates, pd.Timestamp):
         return dates.normalize()
-    elif isinstance(dates, (np.datetime64 | datetime)):
+    elif isinstance(dates, (np.datetime64 | dt.datetime | dt.date)):
         return pd.Timestamp(dates).normalize()
     elif isinstance(dates, TO_SERIES_TYPES):
         result = pd.to_datetime(dates, dayfirst=True)
@@ -65,7 +65,7 @@ def _convert_to_numpy_date(
 
 @overload
 def offset(
-    dates: SingleDateTypes | None = None,
+    dates: SingleDateTypes,
     offset: int = 0,
     roll: Literal["forward", "backward"] = "forward",
     holiday_list: Literal["old", "new", "infer"] = "infer",
@@ -82,7 +82,7 @@ def offset(
 
 
 def offset(
-    dates: SingleDateTypes | SeriesDateTypes | None = None,
+    dates: SingleDateTypes | SeriesDateTypes,
     offset: int = 0,
     roll: Literal["forward", "backward"] = "forward",
     holiday_list: Literal["old", "new", "infer"] = "infer",
@@ -95,7 +95,7 @@ def offset(
     types and holiday adjustments.
 
     Args:
-        dates (SingleDateTypes | SeriesDateTypes | None, optional):
+        dates (SingleDateTypes | SeriesDateTypes):
             The date(s) to offset. Can be a single date in various formats (string,
             `datetime`, `Timestamp`, etc.) or a collection of dates (list, tuple,
             `Series`, etc.). If None, the current date is used.
@@ -161,8 +161,8 @@ def offset(
 
 @overload
 def count(
-    start: SingleDateTypes | None = None,
-    end: SingleDateTypes | None = None,
+    start: SingleDateTypes,
+    end: SingleDateTypes,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> int: ...
 
@@ -170,14 +170,14 @@ def count(
 @overload
 def count(
     start: SeriesDateTypes,
-    end: SingleDateTypes | None,
+    end: SingleDateTypes,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series: ...
 
 
 @overload
 def count(
-    start: SingleDateTypes | None,
+    start: SingleDateTypes,
     end: SeriesDateTypes,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series: ...
@@ -192,19 +192,19 @@ def count(
 
 
 def count(
-    start: SingleDateTypes | SeriesDateTypes | None = None,
-    end: SingleDateTypes | SeriesDateTypes | None = None,
+    start: SingleDateTypes | SeriesDateTypes,
+    end: SingleDateTypes | SeriesDateTypes,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> int | pd.Series:
     """
-    Counts the number of business days between a `start` and `end` date(s), inclusively
-    for the start date and exclusively for the end date. The function can handle single
-    dates, arrays of dates, and mixed inputs, returning either a single integer or a
-    Series depending on the inputs. It accounts for specified holidays, effectively
-    excluding them from the business day count.
+    Counts the number of business days between a `start` date (inclusive) and an `end`
+    date (exclusive). The function can handle single dates, arrays of dates and
+    mixed inputs, returning either a single integer or a series of integers depending
+    on the inputs. It accounts for specified holidays, effectively excluding them from
+    the business day count.
 
     Args:
-        start (SingleDateTypes | SeriesDateTypes | None, optional): The start date(s)
+        start (SingleDateTypes | SeriesDateTypes): The start date(s)
             for counting. If None, the current date is used.
         end (SingleDateTypes | SeriesDateTypes| None, optional): The end date(s) for
             counting, which are excluded from the count themselves. If None, the current
