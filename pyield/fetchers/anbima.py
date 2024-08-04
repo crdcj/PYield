@@ -1,5 +1,6 @@
 import io
 import os
+import zipfile as zp
 
 import pandas as pd
 import requests
@@ -13,10 +14,16 @@ RATES_URL = (
     "https://raw.githubusercontent.com/crdcj/pyield-data/main/anbima_rates.csv.gz"
 )
 
+# Before 13/05/2014 the file was zipped and the endpoint ended with ".exe"
+FORMAT_CHANGE_DATE = pd.to_datetime("13-05-2014", dayfirst=True)
+
 
 def _get_file_content(reference_date: pd.Timestamp) -> str:
     url_date = reference_date.strftime("%y%m%d")
-    filename = f"ms{url_date}.txt"
+    if reference_date < FORMAT_CHANGE_DATE:
+        filename = f"ms{url_date}.exe"
+    else:
+        filename = f"ms{url_date}.txt"
 
     # Tries to access the member URL first
     try:
@@ -29,10 +36,16 @@ def _get_file_content(reference_date: pd.Timestamp) -> str:
             anbima_headers = None
 
         file_url = f"{anbima_member_url}{filename}"
-        response = requests.get(file_url, headers=anbima_headers, timeout=5)
+        r = requests.get(file_url, headers=anbima_headers, timeout=5)
         # Checks if the response was successful (status code 200)
-        response.raise_for_status()
-        return response.text
+        r.raise_for_status()
+
+        if reference_date < FORMAT_CHANGE_DATE:
+            zip_file = zp.ZipFile(io.BytesIO(r.content))
+            file_content = zip_file.read(zip_file.namelist()[0]).decode("latin-1")
+        else:
+            file_content = r.text
+
     except requests.exceptions.RequestException:
         # Blind attempt to access the member URL
         pass
@@ -40,12 +53,14 @@ def _get_file_content(reference_date: pd.Timestamp) -> str:
     # If the member URL fails, tries to access the non-member URL
     try:
         file_url = f"{ANBIMA_URL}{filename}"
-        response = requests.get(file_url, timeout=5)
-        response.raise_for_status()  # Checks if the second attempt was successful
-        return response.text
+        r = requests.get(file_url, timeout=5)
+        r.raise_for_status()  # Checks if the second attempt was successful
+        file_content = r.text
     except requests.exceptions.RequestException:
         # Both URLs failed
-        return ""
+        file_content = ""
+
+    return file_content
 
 
 def _read_raw_df(file_content: str) -> pd.DataFrame:
