@@ -10,7 +10,7 @@ from .. import date_converter as dc
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 RATES_URL = (
-    "https://raw.githubusercontent.com/crdcj/PYield/main/data/anbima_rates.csv.gz"
+    "https://raw.githubusercontent.com/crdcj/pyield-data/main/anbima_rates.csv.gz"
 )
 
 
