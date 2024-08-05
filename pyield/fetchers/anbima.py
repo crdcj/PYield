@@ -47,18 +47,15 @@ def _get_file_content(reference_date: pd.Timestamp) -> str:
             file_content = r.text
 
     except requests.exceptions.RequestException:
-        # Blind attempt to access the member URL
-        pass
-
-    # If the member URL fails, tries to access the non-member URL
-    try:
-        file_url = f"{ANBIMA_URL}{filename}"
-        r = requests.get(file_url, timeout=5)
-        r.raise_for_status()  # Checks if the second attempt was successful
-        file_content = r.text
-    except requests.exceptions.RequestException:
-        # Both URLs failed
-        file_content = ""
+        # If the member URL fails, tries to access the non-member URL
+        try:
+            file_url = f"{ANBIMA_URL}{filename}"
+            r = requests.get(file_url, timeout=5)
+            r.raise_for_status()  # Checks if the second attempt was successful
+            file_content = r.text
+        except requests.exceptions.RequestException:
+            # Both URLs failed
+            file_content = ""
 
     return file_content
 
