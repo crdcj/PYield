@@ -23,6 +23,7 @@ def _fetch_b3_df(future_code: str) -> pd.DataFrame:
 
     Returns:
     pd.DataFrame: A DataFrame containing the normalized and cleaned data from the API.
+        If no data is available, an empty DataFrame is returned.
 
     Raises:
     Exception: An exception is raised if the data fetch operation fails.

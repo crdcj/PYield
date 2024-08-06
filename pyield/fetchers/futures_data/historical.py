@@ -290,7 +290,8 @@ def fetch_historical_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFra
             Can be 252 business days or 360 calendar days.
 
     Returns:
-        pd.DataFrame: A Pandas pd.DataFrame containing processed futures data.
+        pd.DataFrame: A Pandas pd.DataFrame containing processed futures data. If
+            the data is not available, an empty DataFrame is returned.
     """
     df_raw = _fetch_raw_df(asset_code=asset_code, trade_date=trade_date)
     if df_raw.empty:

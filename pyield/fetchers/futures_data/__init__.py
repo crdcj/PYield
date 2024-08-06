@@ -45,11 +45,13 @@ def futures(
 
     normalized_date = dc.convert_date(reference_date)
 
+    # First, try to fetch historical data for the specified date
+    df = fetch_historical_df(contract_code, normalized_date)
+
+    # If there is no historical data available, try to fetch intraday data
     today = pd.Timestamp.today().normalize()
-    if normalized_date == today:
+    if normalized_date == today and df.empty:
         df = fetch_intraday_df(contract_code)
-    else:
-        df = fetch_historical_df(contract_code, normalized_date)
 
     return df
 
