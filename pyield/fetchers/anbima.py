@@ -5,6 +5,7 @@ import zipfile as zp
 import pandas as pd
 import requests
 
+from .. import bday
 from .. import date_converter as dc
 
 # URL Constants
@@ -153,17 +154,32 @@ class RatesData:
     _df = pd.DataFrame()
 
     @classmethod
-    def _initialize_dataframe(cls):
+    def _load_data(cls):
+        # if cls._df.empty or not cls._is_data_up_to_date():
+        print("Loading ANBIMA rates data...")
+        cls._df = pd.read_csv(RATES_URL, parse_dates=["ReferenceDate", "MaturityDate"])
+        cls._df["IndicativeRate"] = (cls._df["IndicativeRate"] / 100).round(6)
+        cls._last_update = pd.Timestamp.today().normalize()
+
+    @classmethod
+    def _is_data_up_to_date(cls) -> bool:
+        """Check if the last date in the file is the last available ANBIMA date."""
         if cls._df.empty:
-            print("Loading ANBIMA rates data for the first time.")
-            cls._df = pd.read_csv(
-                RATES_URL, parse_dates=["ReferenceDate", "MaturityDate"]
-            )
-            cls._df["IndicativeRate"] = (cls._df["IndicativeRate"] / 100).round(6)
+            return False
+        today = pd.Timestamp.today().normalize()
+        last_anbima_date = bday.offset(today, -1)
+        last_file_date = cls._df["ReferenceDate"].max()
+        return last_anbima_date == last_file_date
+
+    @classmethod
+    def _check_for_updates(cls):
+        """Check if the data is up to date. If not, load the latest data."""
+        if cls._df.empty or not cls._is_data_up_to_date():
+            cls._load_data()
 
     @classmethod
     def _get_dataframe(cls):
-        cls._initialize_dataframe()
+        cls._load_data()
         return cls._df.copy()
 
     @classmethod
@@ -172,7 +188,8 @@ class RatesData:
         reference_date: pd.Timestamp | None = None,
         bond_type: str | None = None,
     ) -> pd.DataFrame:
-        df = cls._get_dataframe()
+        cls._check_for_updates()
+        df = cls._df.copy()
         if reference_date is not None:
             df.query("ReferenceDate == @reference_date", inplace=True)
         if bond_type is not None:
