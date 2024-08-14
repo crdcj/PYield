@@ -9,7 +9,8 @@ from .. import bday
 from .. import date_converter as dc
 
 # URL Constants
-ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs/"
+ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
+ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 RATES_URL = (
     "https://raw.githubusercontent.com/crdcj/pyield-data/main/anbima_rates.csv.gz"
@@ -30,13 +31,13 @@ def _get_file_content(reference_date: pd.Timestamp) -> str:
     try:
         anbima_base_url = os.getenv("ANBIMA_BASE_URL")
         if anbima_base_url:
-            anbima_member_url = f"{anbima_base_url}/merc_sec/arqs/"
+            anbima_member_url = f"{anbima_base_url}merc_sec/arqs"
             anbima_headers = {"private-token": os.getenv("ANBIMA_TOKEN")}
         else:
-            anbima_member_url = "http://www.anbima.associados.rtm/merc_sec/arqs/"
+            anbima_member_url = ANBIMA_MEMBER_URL
             anbima_headers = None
 
-        file_url = f"{anbima_member_url}{filename}"
+        file_url = f"{anbima_member_url}/{filename}"
         r = requests.get(file_url, headers=anbima_headers, timeout=5)
         # Checks if the response was successful (status code 200)
         r.raise_for_status()
@@ -50,7 +51,7 @@ def _get_file_content(reference_date: pd.Timestamp) -> str:
     except requests.exceptions.RequestException:
         # If the member URL fails, tries to access the non-member URL
         try:
-            file_url = f"{ANBIMA_URL}{filename}"
+            file_url = f"{ANBIMA_URL}/{filename}"
             r = requests.get(file_url, timeout=5)
             r.raise_for_status()  # Checks if the second attempt was successful
             file_content = r.text
