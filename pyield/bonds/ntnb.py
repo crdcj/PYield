@@ -174,6 +174,9 @@ def quote(
     # Get the coupon dates between the settlement and maturity dates
     payment_dates = coupon_dates(settlement_date, maturity_date)
 
+    # Coupon payment dates must be after the settlement date
+    payment_dates = payment_dates[payment_dates > settlement_date]
+
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement_date, payment_dates)
 
