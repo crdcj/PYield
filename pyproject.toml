@@ -24,7 +24,9 @@ dependencies = [
     "html5lib",
     "lxml",
     "python-calamine>=0.2.0",
+    "scipy",
     "requests>=2.31.0",
+    "pyarrow",
 ]
 dynamic = ["version"]
 

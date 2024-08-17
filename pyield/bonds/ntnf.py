@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from .. import bday
+from .. import bday, di
 from .. import date_converter as dc
 from .. import fetchers as ft
 from .. import interpolator as it
@@ -18,6 +18,8 @@ COUPON_DAY = 1
 COUPON_MONTHS = {1, 7}
 COUPON_PMT = 48.80885
 FINAL_PMT = 1048.80885
+
+di_data = di.DIData()
 
 
 def coupon_dates(
@@ -62,21 +64,59 @@ def coupon_dates(
     return pd.Series(coupon_dates).sort_values(ignore_index=True)
 
 
-def price(
+def cash_flows(
     settlement_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
-    discount_rate: float,
-) -> float:
+) -> pd.Series:
     """
-    Calculate the NTN-F price using Anbima rules.
+    Generate the cash flows for the NTN-F bond between the settlement (exclusive) and
+    maturity dates (inclusive). The cash flows are the coupon payments and the final
+    payment at maturity.
 
     Args:
         settlement_date (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
             or a pandas Timestamp.
         maturity_date (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
             a pandas Timestamp.
-        discount_rate (float): The discount rate used to calculate the present value of
-            the cash flows, which is the yield to maturity (YTM) of the NTN-F.
+
+    Returns:
+        pd.Series: Series of cash flows within the specified range.
+    """
+    # Validate and normalize dates
+    settlement_date = dc.convert_date(settlement_date)
+    maturity_date = dc.convert_date(maturity_date)
+
+    # Get the coupon payment dates between the settlement and maturity dates
+    payment_dates = coupon_dates(settlement_date, maturity_date)
+
+    # Coupon payment dates must be after the settlement date
+    payment_dates = payment_dates[payment_dates > settlement_date]
+
+    # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
+    cfs = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
+
+    df = pd.DataFrame(data=cfs, index=payment_dates, columns=["CashFlow"])
+    df.index.name = "PaymentDate"
+
+    return df["CashFlow"]
+
+
+def price(
+    settlement_date: str | pd.Timestamp,
+    maturity_date: str | pd.Timestamp,
+    ytm_rate: float,
+) -> float:
+    """
+    Calculate the NTN-F price using Anbima rules, which corresponds to the present
+        value of the cash flows discounted at the given yield to maturity rate (YTM).
+
+    Args:
+        settlement_date (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+            or a pandas Timestamp.
+        maturity_date (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
+            a pandas Timestamp.
+        ytm_rate (float): The discount rate used to calculate the present value of
+            the cash flows.
 
     Returns:
         float: The NTN-F price using Anbima rules.
@@ -91,32 +131,14 @@ def price(
         >>> price("05-07-2024", "01-01-2035", 0.11921)
         895.359254
     """
-
-    # Validate and normalize dates
-    settlement_date = dc.convert_date(settlement_date)
-    maturity_date = dc.convert_date(maturity_date)
-
-    # Get the coupon payment dates between the settlement and maturity dates
-    payment_dates = coupon_dates(settlement_date, maturity_date)
-
-    # Coupon payment dates must be after the settlement date
-    payment_dates = payment_dates[payment_dates > settlement_date]
-
-    # Calculate the number of business days between settlement and cash flow dates
-    bdays = bday.count(settlement_date, payment_dates)
-
-    # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
-
-    # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = ut.truncate(bdays / 252, 14)
-
+    cfs = cash_flows(settlement_date, maturity_date)
+    bdays = bday.count(settlement_date, cfs.index)
+    byears = ut.truncate(bdays / 252, 14)
+    discount_factors = (1 + ytm_rate) ** byears
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
-    discount_factor = (1 + discount_rate) ** num_of_years
-    discounted_cash_flows = (cash_flows / discount_factor).round(9)
-
+    dcf = (cfs / discount_factors).round(9)
     # Return the sum of the discounted cash flows truncated as per Anbima rules
-    return ut.truncate(discounted_cash_flows.sum(), 6)
+    return ut.truncate(dcf.sum(), 6)
 
 
 def _coupon_dates_map(
@@ -173,7 +195,10 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return ft.anbima_data(reference_date, "NTN-F")
 
 
-def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
+def indicative_rates(
+    reference_date: str | pd.Timestamp,
+    maturity_date: str | pd.Timestamp | None = None,
+) -> pd.Series | float | None:
     """
     Fetch NTN-F Anbima indicative rates for the given reference date.
 
@@ -183,7 +208,16 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: A Series containing the rates indexed by maturity date.
     """
-    return ut.get_anbima_rates(reference_date, "NTN-F")
+    rates = ut.get_anbima_rates(reference_date, "NTN-F")
+
+    if maturity_date:
+        maturity_date = dc.convert_date(maturity_date)
+        if maturity_date in rates.index:
+            rates = float(rates[maturity_date])
+        else:
+            rates = None
+
+    return rates
 
 
 def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
@@ -313,3 +347,32 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
     df.set_index("MaturityDate", inplace=True)
     return df["DISpread"]
+
+
+def net_di_spread(
+    reference_date: str | pd.Timestamp,
+    maturity_date: str | pd.Timestamp,
+) -> pd.Series:
+    reference_date = dc.convert_date(reference_date)
+    maturity_date = dc.convert_date(maturity_date)
+
+    # Fetch DI rates for the reference date
+    df_di = di_data.settlement_rates(trade_date=reference_date)
+
+    # Fetch NTN-F rates for the reference date
+    df_ytm = indicative_rates(reference_date).reset_index()
+
+    settlement_date = bday.offset(reference_date, 1)
+    df_cf = cash_flows(settlement_date, maturity_date).reset_index()
+
+    df = pd.merge(
+        df_cf,
+        df_di,
+        left_on="PaymentDate",
+        right_on="ExpirationDate",
+        how="left",
+    )
+
+    df["BYearsToExp"] = df["BDaysToExp"] / 252
+
+    ntnf_price = price(settlement_date, maturity_date, df_ytm.at[0, "YTM"])
