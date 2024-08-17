@@ -43,10 +43,10 @@ date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
 ```python
 >>> from pyield import ntnb, ntnf, ltn
 
-# Calculate the quote of a NTN-B bond as per ANBIMA's rules
->>> ntnb.quote("31-05-2024", "15-05-2035", 0.061490)
+# Calculate the quotation of a NTN-B bond as per ANBIMA's rules
+>>> ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
 99.3651
->>> ntnb.quote("31-05-2024", "15-08-2060", 0.061878)
+>>> ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
 99.5341
 
 # Calculate the DI Spread of NTN-F bonds in a given date

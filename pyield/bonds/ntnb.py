@@ -136,13 +136,13 @@ def coupon_dates(
     return pd.Series(cp_dates).sort_values(ignore_index=True)
 
 
-def quote(
+def quotation(
     settlement_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
     discount_rate: float,
 ) -> float:
     """
-    Calculate the NTN-B quote in base 100 using Anbima rules.
+    Calculate the NTN-B quotation in base 100 using Anbima rules.
 
     Args:
         settlement_date (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
@@ -153,7 +153,7 @@ def quote(
             the cash flows, which is the yield to maturity (YTM) of the NTN-B.
 
     Returns:
-        float: The NTN-B quote truncated to 4 decimal places.
+        float: The NTN-B quotation truncated to 4 decimal places.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -162,9 +162,9 @@ def quote(
           Anbima rules.
 
     Examples:
-        >>> ntnb.quote("31-05-2024", "15-05-2035", 0.061490)
+        >>> ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
         99.3651
-        >>> ntnb.quote("31-05-2024", "15-08-2060", 0.061878)
+        >>> ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
         99.5341
     """
     # Validate and normalize dates
@@ -191,20 +191,20 @@ def quote(
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
     discounted_cash_flows = (cash_flows / discount_factor).round(10)
 
-    # Return the quote (the dcf sum) truncated as per Anbima rules
+    # Return the quotation (the dcf sum) truncated as per Anbima rules
     return ut.truncate(discounted_cash_flows.sum(), 4)
 
 
 def price(
     vna: float,
-    quote: float,
+    quotation: float,
 ) -> float:
     """
     Calculate the NTN-B price using Anbima rules.
 
     Args:
         vna (float): The nominal value of the NTN-B bond.
-        quote (float): The NTN-B quote in base 100.
+        quotation (float): The NTN-B quotation in base 100.
 
     Returns:
         float: The NTN-B price truncated to 6 decimal places.
@@ -216,7 +216,7 @@ def price(
         >>> ntnb.price(4299.160173, 99.3651)
         4271.864805
     """
-    return ut.truncate(vna * quote / 100, 6)
+    return ut.truncate(vna * quotation / 100, 6)
 
 
 def _calculate_coupons_pv(
@@ -264,7 +264,7 @@ def spot_rates(
         The calculation of the spot rates for NTN-B bonds considers the following steps:
             - Map all all possible payment dates up to the longest maturity date.
             - Interpolate the YTM rates in the intermediate payment dates.
-            - Calculate the NTN-B quote for each maturity date.
+            - Calculate the NTN-B quotation for each maturity date.
             - Calculate the real spot rates for each maturity date.
     """
     # Process and validate the input data
@@ -306,7 +306,7 @@ def spot_rates(
 
         # Calculate the real spot rate for the bond
         coupons_pv = _calculate_coupons_pv(df_spot, settlement_date, maturity)
-        bond_price = quote(settlement_date, maturity, ytm)
+        bond_price = quotation(settlement_date, maturity, ytm)
         spot_rate = (FINAL_PMT / (bond_price - coupons_pv)) ** (252 / bdays) - 1
         df_spot.at[index, "SpotRate"] = spot_rate
 

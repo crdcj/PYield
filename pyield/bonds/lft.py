@@ -45,13 +45,13 @@ def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
     return ut.get_anbima_historical_rates("LFT", maturity_date)
 
 
-def quote(
+def quotation(
     settlement_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
     yield_rate: float,
 ) -> float:
     """
-    Calculate the quote of a LFT bond using Anbima rules.
+    Calculate the quotation of a LFT bond using Anbima rules.
 
     Args:
         settlement_date (str | pd.Timestamp): The settlement date of the bond.
@@ -59,11 +59,11 @@ def quote(
         yield_rate (float): The annualized yield of the bond
 
     Returns:
-        float: The quote of the bond.
+        float: The quotation of the bond.
 
     Examples:
-        Calculate the quote of a LFT bond with a 0.02 yield rate:
-        >>> lft.quote(
+        Calculate the quotation of a LFT bond with a 0.02 yield rate:
+        >>> lft.quotation(
         ...     settlement_date="24-07-2024",
         ...     maturity_date="01-09-2030",
         ...     yield_rate=0.001717,  # 0.1717%

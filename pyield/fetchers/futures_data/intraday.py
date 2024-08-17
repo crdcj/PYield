@@ -16,7 +16,7 @@ def _convert_with_read_csv(df):
 
 def _fetch_b3_df(future_code: str) -> pd.DataFrame:
     """
-    Fetch the latest data for a given future code from B3 derivatives quote API.
+    Fetch the latest data for a given future code from B3 derivatives quotation API.
 
     Args:
     future_code (str): The future code to fetch data for.
