@@ -31,13 +31,10 @@ def check_maturity_date(maturity_date: pd.Timestamp) -> None:
         maturity_date (pd.Timestamp): The maturity date to be checked.
 
     Raises:
-        ValueError: If the maturity date is not the 1st of January or if the maturity
-            year is not odd.
+        ValueError: If the maturity date is not the 1st of January.
     """
-    if maturity_date.day != 1 or maturity_date.month != 1:
+    if maturity_date.day != 1 or maturity_date.month not in COUPON_MONTHS:
         raise ValueError("NTN-F maturity date must be the 1st of January.")
-    if maturity_date.year % 2 == 0:
-        raise ValueError("NTN-F maturity year must be odd.")
 
 
 def coupon_dates(
@@ -301,7 +298,7 @@ def spot_rates(
     return df_spot
 
 
-def di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
+def gross_di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
     """
     Calculates the DI spread for the NTN-F based on ANBIMA's indicative rates.
 
@@ -328,10 +325,10 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
 def net_di_spread(
     reference_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
-) -> pd.Series:
+) -> float:
     reference_date = dc.convert_date(reference_date)
     maturity_date = dc.convert_date(maturity_date)
-    settlement_date = bday.offset(reference_date, 1)
+    settlement_date = bday.offset(reference_date, 0)
 
     # Fetch DI rates for the reference date
     df_di = di_data.settlement_rates(reference_date, adjust_exp_date=True)
@@ -356,8 +353,12 @@ def net_di_spread(
     def price_difference(p):
         return (bond_cash_flows / (1 + di_rates + p) ** (byears)).sum() - bond_price
 
-    # Encontrar o valor de p que zera a diferença entre os preços
-    # Intervalo de busca de -0.01 a 0.01 (100 bps)
-    p_solution = brentq(price_difference, -0.01, 0.01)
+    try:
+        # Tentar encontrar o valor de p que zera a diferença entre os preços
+        # Intervalo de busca de -0.01 a 0.01 (100 bps)
+        p_solution = brentq(price_difference, -0.01, 0.01, maxiter=100)
+    except (ValueError, RuntimeError):
+        # Se não houver solução, retornar float('nan')
+        p_solution = float("nan")
 
     return p_solution * 10_000
