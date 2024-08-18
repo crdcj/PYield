@@ -229,3 +229,46 @@ def anbima_rates(
     if reference_date is not None:
         reference_date = dc.convert_date(reference_date)
     return RatesData.rates(reference_date, bond_type)
+
+
+def get_anbima_rates(
+    reference_date: str | pd.Timestamp,
+    bond_type: str,
+) -> pd.Series:
+    df = anbima_rates(reference_date, bond_type)
+    df.drop(columns=["BondType"], inplace=True)
+    # Set MaturityDate as index
+    df = df.set_index("MaturityDate")
+    # Return as Series
+    return df["IndicativeRate"]
+
+
+def get_anbima_historical_rates(
+    bond_type: str,
+    maturity_date: str | pd.Timestamp,
+) -> pd.Series:
+    # Normalize maturity date
+    maturity_date = dc.convert_date(maturity_date)
+
+    # Get historical rates for the given bond type
+    df = anbima_rates(bond_type=bond_type)
+
+    # Filter rates for the specified maturity date
+    df.query("MaturityDate == @maturity_date", inplace=True)
+
+    # Drop unnecessary columns and sort by reference date
+    df.drop(columns=["BondType", "MaturityDate"], inplace=True)
+    df.sort_values(["ReferenceDate"], ignore_index=True, inplace=True)
+
+    # Set ReferenceDate as index
+    df = df.set_index("ReferenceDate")
+
+    # Set the indicative rate as the Series to return
+    rates = df["IndicativeRate"]
+
+    # Raise an error if no rates are found
+    if rates.empty:
+        maturity = maturity_date.strftime("%d-%m-%Y")
+        raise ValueError(f"No rates found for {bond_type} with maturity {maturity}.")
+
+    return rates

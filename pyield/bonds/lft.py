@@ -2,7 +2,7 @@ import pandas as pd
 
 from .. import bday
 from .. import date_converter as dc
-from .. import fetchers as ft
+from ..fetchers import anbima as an
 from . import utils as ut
 
 
@@ -16,7 +16,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
-    return ft.anbima_data(reference_date, "LFT")
+    return an.anbima_data(reference_date, "LFT")
 
 
 def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -29,7 +29,7 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: A Series containing the rates indexed by maturity date.
     """
-    return ut.get_anbima_rates(reference_date, "LFT")
+    return an.get_anbima_rates(reference_date, "LFT")
 
 
 def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
@@ -42,7 +42,7 @@ def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: A Series containing the rates indexed by reference date.
     """
-    return ut.get_anbima_historical_rates("LFT", maturity_date)
+    return an.get_anbima_historical_rates("LFT", maturity_date)
 
 
 def quotation(

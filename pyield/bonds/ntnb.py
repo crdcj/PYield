@@ -5,6 +5,7 @@ from .. import bday
 from .. import date_converter as dc
 from .. import fetchers as ft
 from .. import interpolator as it
+from ..fetchers import anbima as an
 from . import ltn
 from . import utils as ut
 
@@ -30,7 +31,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
-    return ft.anbima_data(reference_date, "NTN-B")
+    return an.anbima_data(reference_date, "NTN-B")
 
 
 def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -56,7 +57,7 @@ def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: A Series containing the rates for the given maturity date.
     """
-    return ut.get_anbima_historical_rates("NTN-B", maturity_date)
+    return an.get_anbima_historical_rates("NTN-B", maturity_date)
 
 
 def _coupon_dates_map(

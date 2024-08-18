@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
+from scipy.optimize import brentq
 
 from .. import bday, di
 from .. import date_converter as dc
-from .. import fetchers as ft
-from .. import interpolator as it
+from ..fetchers import anbima as an
+from ..interpolator import Interpolator
 from . import utils as ut
 
 """
@@ -22,40 +23,57 @@ FINAL_PMT = 1048.80885
 di_data = di.DIData()
 
 
+def check_maturity_date(maturity_date: pd.Timestamp) -> None:
+    """
+    Check if the maturity date is a valid NTN-F maturity date.
+
+    Args:
+        maturity_date (pd.Timestamp): The maturity date to be checked.
+
+    Raises:
+        ValueError: If the maturity date is not the 1st of January or if the maturity
+            year is not odd.
+    """
+    if maturity_date.day != 1 or maturity_date.month != 1:
+        raise ValueError("NTN-F maturity date must be the 1st of January.")
+    if maturity_date.year % 2 == 0:
+        raise ValueError("NTN-F maturity year must be odd.")
+
+
 def coupon_dates(
-    start_date: str | pd.Timestamp,
+    settlement_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
 ) -> pd.Series:
     """
-    Generate all remaining coupon dates between a given date and the maturity date.
-    The dates are inclusive. Coupon payments are made on the 1st of January and July.
+    Generate all remaining coupon dates between a settlement date and a maturity date.
+    The dates are exclusive for the settlement date and inclusive for the maturity date.
+    Coupon payments are made on the 1st of January and July.
     The NTN-F bond is determined by its maturity date.
 
     Args:
-        start_date (str | pd.Timestamp): The date to start generating coupon dates.
+        settlement_date (str | pd.Timestamp): The settlement date.
         maturity_date (str | pd.Timestamp): The maturity date.
 
     Returns:
         pd.Series: Series of coupon dates within the specified range.
     """
     # Validate and normalize dates
-    start_date = dc.convert_date(start_date)
+    settlement_date = dc.convert_date(settlement_date)
     maturity_date = dc.convert_date(maturity_date)
 
-    # Check if maturity date is after the start date
-    if maturity_date < start_date:
-        raise ValueError("Maturity date must be after the start date.")
+    # Check if the maturity date is valid
+    check_maturity_date(maturity_date)
 
-    # Check if the maturity date is a valid NTN-F maturity date
-    if maturity_date.day != COUPON_DAY or maturity_date.month not in COUPON_MONTHS:
-        raise ValueError("NTN-F maturity date must be the 1st of January or July.")
+    # Check if maturity date is after the start date
+    if maturity_date <= settlement_date:
+        raise ValueError("Maturity date must be after the start date.")
 
     # Initialize loop variables
     coupon_date = maturity_date
     coupon_dates = []
 
     # Iterate backwards from the maturity date to the settlement date
-    while coupon_date >= start_date:
+    while coupon_date > settlement_date:
         coupon_dates.append(coupon_date)
         # Move the coupon date back 6 months
         coupon_date -= pd.DateOffset(months=6)
@@ -82,15 +100,13 @@ def cash_flows(
     Returns:
         pd.Series: Series of cash flows within the specified range.
     """
-    # Validate and normalize dates
+    # Validate input dates
     settlement_date = dc.convert_date(settlement_date)
     maturity_date = dc.convert_date(maturity_date)
+    check_maturity_date(maturity_date)
 
     # Get the coupon payment dates between the settlement and maturity dates
     payment_dates = coupon_dates(settlement_date, maturity_date)
-
-    # Coupon payment dates must be after the settlement date
-    payment_dates = payment_dates[payment_dates > settlement_date]
 
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
     cfs = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
@@ -131,55 +147,15 @@ def price(
         >>> price("05-07-2024", "01-01-2035", 0.11921)
         895.359254
     """
-    cfs = cash_flows(settlement_date, maturity_date)
-    bdays = bday.count(settlement_date, cfs.index)
+    df_cf = cash_flows(settlement_date, maturity_date).reset_index()
+    cfs = df_cf["CashFlow"]
+    bdays = bday.count(settlement_date, df_cf["PaymentDate"])
     byears = ut.truncate(bdays / 252, 14)
     discount_factors = (1 + ytm_rate) ** byears
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
     dcf = (cfs / discount_factors).round(9)
     # Return the sum of the discounted cash flows truncated as per Anbima rules
     return ut.truncate(dcf.sum(), 6)
-
-
-def _coupon_dates_map(
-    start: str | pd.Timestamp,
-    end: str | pd.Timestamp,
-    adjust_for_bdays: bool = False,
-) -> pd.Series:
-    """
-    Generate a map of all possible coupon dates between the start and end dates.
-    The dates are inclusive. Coupon payments are made on the 1st of January and July.
-
-    Args:
-        start (str | pd.Timestamp): The start date.
-        end (str | pd.Timestamp): The end date.
-        adjust_for_bdays (bool, optional): If True, the coupon dates will be adjusted
-            for business days. Defaults to False.
-
-    Returns:
-        pd.Series: Series of coupon dates within the specified range.
-    """
-    # Validate and normalize dates
-    start = dc.convert_date(start)
-    end = dc.convert_date(end)
-
-    # Initialize the first coupon date based on the reference date
-    reference_year = start.year
-    first_coupon_date = pd.Timestamp(f"{reference_year}-01-01")
-
-    # Generate coupon dates as a DatetimeIndex (dti)
-    dates_dti = pd.date_range(start=first_coupon_date, end=end, freq="6MS")
-
-    # Convert to Series and adjust for business days if necessary
-    dates = pd.Series(dates_dti.values)
-
-    # First coupon date must be after the reference date
-    dates = dates[dates >= start]
-
-    if adjust_for_bdays:
-        dates = bday.offset(dates, 0)
-
-    return dates.reset_index(drop=True)
 
 
 def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
@@ -192,7 +168,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
     """
-    return ft.anbima_data(reference_date, "NTN-F")
+    return an.anbima_data(reference_date, "NTN-F")
 
 
 def indicative_rates(
@@ -208,7 +184,7 @@ def indicative_rates(
     Returns:
         pd.Series: A Series containing the rates indexed by maturity date.
     """
-    rates = ut.get_anbima_rates(reference_date, "NTN-F")
+    rates = an.get_anbima_rates(reference_date, "NTN-F")
 
     if maturity_date:
         maturity_date = dc.convert_date(maturity_date)
@@ -230,7 +206,7 @@ def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: A Series containing the rates for the given maturity date.
     """
-    return ut.get_anbima_historical_rates("NTN-F", maturity_date)
+    return an.get_anbima_historical_rates("NTN-F", maturity_date)
 
 
 def _calculate_coupons_pv(
@@ -282,12 +258,12 @@ def spot_rates(
     ntnf_rates = ut.standardize_rates(ntnf_rates)
 
     # Create flat forward interpolators for LTN and NTN-F rates
-    ltn_rate_interpolator = it.Interpolator(
+    ltn_rate_interpolator = Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement_date, ltn_rates.index),
         known_rates=ltn_rates,
     )
-    ntnf_rate_interpolator = it.Interpolator(
+    ntnf_rate_interpolator = Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement_date, ntnf_rates.index),
         known_rates=ntnf_rates,
@@ -298,7 +274,7 @@ def spot_rates(
     last_ntnf = ntnf_rates.index.max()
 
     # Generate all coupon dates up to the last NTN-F maturity date
-    all_coupon_dates = _coupon_dates_map(settlement_date, last_ntnf)
+    all_coupon_dates = coupon_dates(settlement_date, last_ntnf)
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
     df_spot = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
@@ -355,24 +331,33 @@ def net_di_spread(
 ) -> pd.Series:
     reference_date = dc.convert_date(reference_date)
     maturity_date = dc.convert_date(maturity_date)
+    settlement_date = bday.offset(reference_date, 1)
 
     # Fetch DI rates for the reference date
-    df_di = di_data.settlement_rates(trade_date=reference_date)
+    df_di = di_data.settlement_rates(reference_date, adjust_exp_date=True)
 
-    # Fetch NTN-F rates for the reference date
-    df_ytm = indicative_rates(reference_date).reset_index()
-
-    settlement_date = bday.offset(reference_date, 1)
-    df_cf = cash_flows(settlement_date, maturity_date).reset_index()
-
-    df = pd.merge(
-        df_cf,
-        df_di,
-        left_on="PaymentDate",
-        right_on="ExpirationDate",
-        how="left",
+    ff_interpolator = Interpolator(
+        "flat_forward",
+        bday.count(settlement_date, df_di["ExpirationDate"]),
+        df_di["SettlementRate"],
     )
 
-    df["BYearsToExp"] = df["BDaysToExp"] / 252
+    # Get the corresponding YTM for the NTN-F bond
+    ytm = indicative_rates(reference_date, maturity_date)
 
-    ntnf_price = price(settlement_date, maturity_date, df_ytm.at[0, "YTM"])
+    df = cash_flows(settlement_date, maturity_date).reset_index()
+    df["BDays"] = bday.count(settlement_date, df["PaymentDate"])
+
+    byears = bday.count(settlement_date, df["PaymentDate"]) / 252
+    di_rates = df["BDays"].apply(ff_interpolator)
+    bond_price = price(settlement_date, maturity_date, ytm)
+    bond_cash_flows = df["CashFlow"]
+
+    def price_difference(p):
+        return (bond_cash_flows / (1 + di_rates + p) ** (byears)).sum() - bond_price
+
+    # Encontrar o valor de p que zera a diferença entre os preços
+    # Intervalo de busca de -0.01 a 0.01 (100 bps)
+    p_solution = brentq(price_difference, -0.01, 0.01)
+
+    return p_solution * 10_000
