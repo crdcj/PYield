@@ -171,7 +171,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 def indicative_rates(
     reference_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp | None = None,
-) -> pd.Series | float | None:
+) -> pd.Series | float:
     """
     Fetch NTN-F Anbima indicative rates for the given reference date.
 
@@ -188,7 +188,7 @@ def indicative_rates(
         if maturity_date in rates.index:
             rates = float(rates[maturity_date])
         else:
-            rates = None
+            rates = float("nan")
 
     return rates
 

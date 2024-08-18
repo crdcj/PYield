@@ -44,7 +44,7 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: A Series containing the rates indexed by maturity date.
     """
-    return ut.get_anbima_rates(reference_date, "NTN-B")
+    return an.get_anbima_rates(reference_date, "NTN-B")
 
 
 def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
