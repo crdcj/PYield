@@ -186,10 +186,9 @@ def indicative_rates(
     if maturity_date:
         maturity_date = dc.convert_date(maturity_date)
         if maturity_date in rates.index:
-            rates = float(rates[maturity_date])
+            return float(rates[maturity_date])
         else:
-            rates = float("nan")
-
+            return float("nan")
     return rates
 
 
