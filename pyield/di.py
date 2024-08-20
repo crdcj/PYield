@@ -44,7 +44,7 @@ class DIData:
         adjust_exp_date: bool = False,
     ) -> pd.DataFrame:
         cls._check_for_updates()
-        df = cls._df.copy()
+        df = cls._df[["TradeDate", "ExpirationDate", "SettlementRate"]].copy()
 
         if trade_date:
             trade_date = dc.convert_date(trade_date)
@@ -55,8 +55,6 @@ class DIData:
             # Force the expiration date to be a business day
             expiration_date = bday.offset(expiration_date, 0)
             df.query("ExpirationDate == @expiration_date", inplace=True)
-
-        df = df[["TradeDate", "ExpirationDate", "SettlementRate"]].copy()
 
         if adjust_exp_date:
             df["ExpirationDate"] = (

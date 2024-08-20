@@ -322,42 +322,76 @@ def gross_di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
 
 
 def net_di_spread(
-    reference_date: str | pd.Timestamp,
+    settlement_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
+    ytm: float,
+    di_rates: list[float],
+    di_expirations: list[pd.Timestamp],
 ) -> float:
-    reference_date = dc.convert_date(reference_date)
-    maturity_date = dc.convert_date(maturity_date)
-    settlement_date = bday.offset(reference_date, 0)
+    """
+    Calculate the net DI spread for a bond given the YTM and the DI rates.
 
-    # Fetch DI rates for the reference date
-    df_di = di_data.settlement_rates(reference_date, adjust_exp_date=True)
+    This function determines the spread over the DI curve that equates the present value
+    of the bond's cash flows to its market price. It interpolates the DI rates to match
+    the bond's cash flow payment dates and uses the Brent method to find the spread
+    (in bps) that zeroes the difference between the bond's market price and its
+    discounted cash flows.
+
+    Parameters:
+    ----------
+    settlement_date : pd.Timestamp
+        The date on which the bond is settled.
+    maturity_date : pd.Timestamp
+        The date on which the bond matures.
+    ytm : float
+        The yield to maturity of the bond.
+    di_rates : list[float]
+        A list of DI rates corresponding to the DI expirations.
+    di_expirations : list[pd.Timestamp]
+        A list of DI expiration dates.
+
+    Returns:
+    -------
+    float
+        The net DI spread in basis points. Returns NaN if a solution cannot be found.
+    """
+
+    # Create an interpolator for the DI rates using the flat-forward method
+    settlement_date = dc.convert_date(settlement_date)
+    maturity_date = dc.convert_date(maturity_date)
 
     ff_interpolator = Interpolator(
         "flat_forward",
-        bday.count(settlement_date, df_di["ExpirationDate"]),
-        df_di["SettlementRate"],
+        bday.count(settlement_date, di_expirations),
+        di_rates,
     )
 
-    # Get the corresponding YTM for the NTN-F bond
-    ytm = indicative_rates(reference_date, maturity_date)
+    # Ensure the DI rates and expirations lists are of equal length
+    if len(di_rates) != len(di_expirations):
+        raise ValueError("di_rates and di_expirations must have the same length.")
 
+    # Calculate cash flows and business days between settlement and payment dates
     df = cash_flows(settlement_date, maturity_date).reset_index()
     df["BDays"] = bday.count(settlement_date, df["PaymentDate"])
 
+    # Calculate business years (252 business days per year)
     byears = bday.count(settlement_date, df["PaymentDate"]) / 252
-    di_rates = df["BDays"].apply(ff_interpolator)
+    di_interp = df["BDays"].apply(ff_interpolator)
     bond_price = price(settlement_date, maturity_date, ytm)
     bond_cash_flows = df["CashFlow"]
 
     def price_difference(p):
-        return (bond_cash_flows / (1 + di_rates + p) ** (byears)).sum() - bond_price
+        # Calculate the difference between the bond's price and its disc. cash flows
+        return (bond_cash_flows / (1 + di_interp + p) ** byears).sum() - bond_price
 
     try:
-        # Tentar encontrar o valor de p que zera a diferença entre os preços
-        # Intervalo de busca de -0.01 a 0.01 (100 bps)
+        # Find the spread (p) that zeroes the price difference
+        # Search interval is from -0.01 to 0.01 (i.e., -100 to 100 bps)
         p_solution = brentq(price_difference, -0.01, 0.01, maxiter=100)
+        # Convert the solution to basis points (bps) and round to two decimal places
+        p_solution = round((p_solution * 10_000), 2)
     except (ValueError, RuntimeError):
-        # Se não houver solução, retornar float('nan')
+        # If no solution is found, return NaN
         p_solution = float("nan")
 
-    return p_solution * 10_000
+    return p_solution
