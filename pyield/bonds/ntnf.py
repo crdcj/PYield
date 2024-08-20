@@ -297,7 +297,7 @@ def spot_rates(
     return df_spot
 
 
-def gross_di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
+def di_gross_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
     """
     Calculates the DI spread for the NTN-F based on ANBIMA's indicative rates.
 
@@ -321,7 +321,7 @@ def gross_di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
     return df["DISpread"]
 
 
-def net_di_spread(  # noqa
+def di_net_spread(  # noqa
     settlement_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
     ytm: float,
@@ -367,9 +367,11 @@ def net_di_spread(  # noqa
         di_rates,
     )
 
-    # Ensure the DI rates and expirations lists are of equal length
+    # Ensure the DI data is valid
     if len(di_rates) != len(di_expirations):
         raise ValueError("di_rates and di_expirations must have the same length.")
+    if len(di_rates) == 0:
+        return float("nan")
 
     # Calculate cash flows and business days between settlement and payment dates
     df = cash_flows(settlement_date, maturity_date).reset_index()
