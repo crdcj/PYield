@@ -321,12 +321,13 @@ def gross_di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
     return df["DISpread"]
 
 
-def net_di_spread(
+def net_di_spread(  # noqa
     settlement_date: str | pd.Timestamp,
     maturity_date: str | pd.Timestamp,
     ytm: float,
-    di_rates: list[float],
-    di_expirations: list[pd.Timestamp],
+    di_rates: list[float] | pd.Series,
+    di_expirations: list[pd.Timestamp] | pd.Series,
+    initial_guess: float | None = None,
 ) -> float:
     """
     Calculate the net DI spread for a bond given the YTM and the DI rates.
@@ -385,9 +386,17 @@ def net_di_spread(
         return (bond_cash_flows / (1 + di_interp + p) ** byears).sum() - bond_price
 
     try:
+        if initial_guess:
+            # Search interval is 50 bps above and below the initial guess
+            a = initial_guess - 50 / 10_000  # 50 bps below the initial guess
+            b = initial_guess + 50 / 10_000  # 50 bps above the initial guess
+        else:
+            # Search interval is from -0.01 to 0.01 (i.e., -100 to 100 bps)
+            a = -0.01
+            b = 0.01
+
         # Find the spread (p) that zeroes the price difference
-        # Search interval is from -0.01 to 0.01 (i.e., -100 to 100 bps)
-        p_solution = brentq(price_difference, -0.01, 0.01, maxiter=100)
+        p_solution = brentq(price_difference, a, b, maxiter=100)
         # Convert the solution to basis points (bps) and round to two decimal places
         p_solution = round((p_solution * 10_000), 2)
     except (ValueError, RuntimeError):
