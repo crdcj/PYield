@@ -166,7 +166,7 @@ def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
         list[pd.Timestamp]: A list of NTN-F bond maturities available for the reference
             date.
     """
-    rates = an.get_anbima_rates(reference_date, "NTN-F")
+    rates = indicative_rates(reference_date)
     return rates.index.to_list()
 
 
@@ -206,19 +206,6 @@ def indicative_rates(
         else:
             return float("nan")
     return rates
-
-
-def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
-    """
-    Fetch historical NTN-F Anbima indicative rates for the given maturity date.
-
-    Args:
-        maturity_date (str | pd.Timestamp): The maturity date of the bond.
-
-    Returns:
-        pd.Series: A Series containing the rates for the given maturity date.
-    """
-    return an.get_anbima_historical_rates("NTN-F", maturity_date)
 
 
 def _calculate_coupons_pv(

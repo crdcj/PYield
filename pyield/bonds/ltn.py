@@ -21,7 +21,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return an.anbima_data(reference_date, "LTN")
 
 
-def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
+def indicative_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     """
     Fetch LTN Anbima indicative rates for the given reference date.
 
@@ -34,17 +34,18 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     return an.get_anbima_rates(reference_date, "LTN")
 
 
-def anbima_historical_rates(maturity: str | pd.Timestamp) -> pd.Series:
+def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
     """
-    Fetch historical LTN Anbima indicative rates for the given maturity date.
+    Fetch the bond maturities available for the given reference date.
 
     Args:
-        maturity_date (str | pd.Timestamp): The maturity date of the bond.
+        reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.Series: A Series containing the rates for the given maturity date.
+        list[pd.Timestamp]: A list of bond maturities available for the reference date.
     """
-    return an.get_anbima_historical_rates("LTN", maturity)
+    rates = indicative_rates(reference_date)
+    return rates.index.to_list()
 
 
 def price(
