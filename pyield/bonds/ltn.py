@@ -34,7 +34,7 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     return an.get_anbima_rates(reference_date, "LTN")
 
 
-def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
+def anbima_historical_rates(maturity: str | pd.Timestamp) -> pd.Series:
     """
     Fetch historical LTN Anbima indicative rates for the given maturity date.
 
@@ -44,23 +44,23 @@ def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: A Series containing the rates for the given maturity date.
     """
-    return an.get_anbima_historical_rates("LTN", maturity_date)
+    return an.get_anbima_historical_rates("LTN", maturity)
 
 
 def price(
-    settlement_date: str | pd.Timestamp,
-    maturity_date: str | pd.Timestamp,
-    discount_rate: float,
+    settlement: str | pd.Timestamp,
+    maturity: str | pd.Timestamp,
+    rate: float,
 ) -> float:
     """
     Calculate the LTN price using Anbima rules.
 
     Args:
-        settlement_date (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+        settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
             or a pandas Timestamp.
-        maturity_date (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
+        maturity (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
             a pandas Timestamp.
-        discount_rate (float): The discount rate used to calculate the present value of
+        rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
 
     Returns:
@@ -75,16 +75,16 @@ def price(
     """
 
     # Validate and normalize dates
-    settlement_date = dc.convert_date(settlement_date)
-    maturity_date = dc.convert_date(maturity_date)
+    settlement = dc.convert_date(settlement)
+    maturity = dc.convert_date(maturity)
 
     # Calculate the number of business days between settlement and cash flow dates
-    bdays = bday.count(settlement_date, maturity_date)
+    bdays = bday.count(settlement, maturity)
 
     # Calculate the number of periods truncated as per Anbima rule
     num_of_years = ut.truncate(bdays / 252, 14)
 
-    discount_factor = (1 + discount_rate) ** num_of_years
+    discount_factor = (1 + rate) ** num_of_years
 
     # Truncate the price to 6 decimal places as per Anbima rules
     return ut.truncate(FACE_VALUE / discount_factor, 6)

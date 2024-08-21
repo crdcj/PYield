@@ -47,7 +47,7 @@ def anbima_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     return an.get_anbima_rates(reference_date, "NTN-B")
 
 
-def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
+def anbima_historical_rates(maturity: str | pd.Timestamp) -> pd.Series:
     """
     Fetch historical NTN-B Anbima indicative rates for the given maturity date.
 
@@ -57,7 +57,7 @@ def anbima_historical_rates(maturity_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: A Series containing the rates for the given maturity date.
     """
-    return an.get_anbima_historical_rates("NTN-B", maturity_date)
+    return an.get_anbima_historical_rates("NTN-B", maturity)
 
 
 def _coupon_dates_map(
@@ -96,8 +96,8 @@ def _coupon_dates_map(
 
 
 def coupon_dates(
-    start_date: str | pd.Timestamp,
-    maturity_date: str | pd.Timestamp,
+    start: str | pd.Timestamp,
+    maturity: str | pd.Timestamp,
 ) -> pd.Series:
     """
     Generate all remaining coupon dates between a given date and the maturity date.
@@ -113,23 +113,23 @@ def coupon_dates(
         list[pd.Timestamp]: List of coupon dates between start and maturity dates.
     """
     # Validate and normalize dates
-    start_date = dc.convert_date(start_date)
-    maturity_date = dc.convert_date(maturity_date)
+    start = dc.convert_date(start)
+    maturity = dc.convert_date(maturity)
 
     # Check if maturity date is after the start date
-    if maturity_date < start_date:
+    if maturity < start:
         raise ValueError("Maturity date must be after the start date.")
 
     # Check if the maturity date is a valid NTN-B maturity date
-    if maturity_date.day != COUPON_DAY or maturity_date.month not in COUPON_MONTHS:
+    if maturity.day != COUPON_DAY or maturity.month not in COUPON_MONTHS:
         raise ValueError("NTN-B maturity must be 15/02, 15/05, 15/08, or 15/11.")
 
     # Initialize loop variables
-    cp_date = maturity_date
+    cp_date = maturity
     cp_dates = []
 
     # Iterate backwards from the maturity date to the settlement date
-    while cp_date >= start_date:
+    while cp_date >= start:
         cp_dates.append(cp_date)
         # Move the coupon date back 6 months
         cp_date -= pd.DateOffset(months=6)
@@ -138,19 +138,19 @@ def coupon_dates(
 
 
 def quotation(
-    settlement_date: str | pd.Timestamp,
-    maturity_date: str | pd.Timestamp,
-    discount_rate: float,
+    settlement: str | pd.Timestamp,
+    maturity: str | pd.Timestamp,
+    rate: float,
 ) -> float:
     """
     Calculate the NTN-B quotation in base 100 using Anbima rules.
 
     Args:
-        settlement_date (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+        settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
             or a pandas Timestamp.
-        maturity_date (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
+        maturity (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
             a pandas Timestamp.
-        discount_rate (float): The discount rate used to calculate the present value of
+        rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-B.
 
     Returns:
@@ -169,25 +169,25 @@ def quotation(
         99.5341
     """
     # Validate and normalize dates
-    settlement_date = dc.convert_date(settlement_date)
-    maturity_date = dc.convert_date(maturity_date)
+    settlement = dc.convert_date(settlement)
+    maturity = dc.convert_date(maturity)
 
     # Get the coupon dates between the settlement and maturity dates
-    payment_dates = coupon_dates(settlement_date, maturity_date)
+    payment_dates = coupon_dates(settlement, maturity)
 
     # Coupon payment dates must be after the settlement date
-    payment_dates = payment_dates[payment_dates > settlement_date]
+    payment_dates = payment_dates[payment_dates > settlement]
 
     # Calculate the number of business days between settlement and cash flow dates
-    bdays = bday.count(settlement_date, payment_dates)
+    bdays = bday.count(settlement, payment_dates)
 
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    cash_flows = np.where(payment_dates == maturity_date, FINAL_PMT, COUPON_PMT)
+    cash_flows = np.where(payment_dates == maturity, FINAL_PMT, COUPON_PMT)
 
     # Calculate the number of periods truncated as per Anbima rules
     num_of_years = ut.truncate(bdays / 252, 14)
 
-    discount_factor = (1 + discount_rate) ** num_of_years
+    discount_factor = (1 + rate) ** num_of_years
 
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
     discounted_cash_flows = (cash_flows / discount_factor).round(10)
@@ -222,26 +222,30 @@ def price(
 
 def _calculate_coupons_pv(
     bootstrap_df: pd.DataFrame,
-    settlement_date: pd.Timestamp,
-    maturity_date: pd.Timestamp,
+    settlement: pd.Timestamp,
+    maturity: pd.Timestamp,
 ) -> float:
     # Create a subset DataFrame with only the coupon payments (without last payment)
-    cp_dates_wo_last = coupon_dates(settlement_date, maturity_date)[:-1]  # noqa
+    cp_dates_wo_last = coupon_dates(settlement, maturity)[:-1]  # noqa
+    if len(cp_dates_wo_last) == 0:
+        return 0
+
     df_coupons = bootstrap_df.query("MaturityDate in @cp_dates_wo_last").copy()
     df_coupons["Coupon"] = COUPON_PMT
 
     # Calculate the present value of the coupon payments
     pv = ut.calculate_present_value(
         cash_flows=df_coupons["Coupon"],
-        discount_rates=df_coupons["SpotRate"],
-        time_periods=df_coupons["BDays"] / 252,
+        rates=df_coupons["SpotRate"],
+        periods=df_coupons["BDays"] / 252,
     )
     return pv
 
 
 def spot_rates(
-    settlement_date: str | pd.Timestamp,
-    ytm_rates: pd.Series,
+    settlement: str | pd.Timestamp,
+    rates: list[float] | pd.Series,
+    maturities: list[str | pd.Timestamp],
 ) -> pd.DataFrame:
     """
     Calculate the spot rates for NTN-B bonds using the bootstrap method.
@@ -269,24 +273,24 @@ def spot_rates(
             - Calculate the real spot rates for each maturity date.
     """
     # Process and validate the input data
-    settlement_date = dc.convert_date(settlement_date)
-    ytm_rates = ut.standardize_rates(ytm_rates)
+    settlement = dc.convert_date(settlement)
+    maturities = pd.to_datetime(maturities, errors="coerce", dayfirst=True)
 
     # Create the interpolator object
     ytm_rate_interpolator = it.Interpolator(
         method="flat_forward",
-        known_bdays=bday.count(settlement_date, ytm_rates.index),
-        known_rates=ytm_rates,
+        known_bdays=bday.count(settlement, maturities),
+        known_rates=rates,
     )
 
-    last_ntnb = ytm_rates.index.max()
+    last_ntnb = maturities.max()
 
     # Generate coupon dates up to the longest maturity date
-    all_coupon_dates = _coupon_dates_map(start=settlement_date, end=last_ntnb)
+    all_coupon_dates = _coupon_dates_map(start=settlement, end=last_ntnb)
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
     df_spot = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
-    df_spot["BDays"] = bday.count(settlement_date, df_spot["MaturityDate"])
+    df_spot["BDays"] = bday.count(settlement, df_spot["MaturityDate"])
     df_spot["YTM"] = df_spot["BDays"].apply(ytm_rate_interpolator)
 
     # The Bootstrap loop to calculate spot rates
@@ -297,43 +301,24 @@ def spot_rates(
         ytm = df_spot.at[index, "YTM"]
 
         # Get the coupon dates for the bond without the last one (principal + coupon)
-        cp_dates = coupon_dates(settlement_date, maturity)
+        cp_dates = coupon_dates(settlement, maturity)
 
         # If there is only one coupon date and this date is the first maturity date
         # of an existing bond, the ytm rate is also a spot rate.
-        if len(cp_dates) == 1 and cp_dates[0] == ytm_rates.index[0]:
+        if len(cp_dates) == 1 and cp_dates[0] == rates.index[0]:
             df_spot.at[index, "SpotRate"] = ytm
             continue
 
         # Calculate the real spot rate for the bond
-        coupons_pv = _calculate_coupons_pv(df_spot, settlement_date, maturity)
-        bond_price = quotation(settlement_date, maturity, ytm)
+        coupons_pv = _calculate_coupons_pv(df_spot, settlement, maturity)
+        bond_price = quotation(settlement, maturity, ytm)
         spot_rate = (FINAL_PMT / (bond_price - coupons_pv)) ** (252 / bdays) - 1
         df_spot.at[index, "SpotRate"] = spot_rate
 
     df_spot.drop(columns=["BDays"], inplace=True)
     # Return the result without the intermediate coupon dates (virtual bonds)
-    existing_maturities = ytm_rates.index  # noqa
+    existing_maturities = rates.index  # noqa
     return df_spot.query("MaturityDate in @existing_maturities").reset_index(drop=True)
-
-
-def anbima_spot_rates(
-    reference_date: str | pd.Timestamp,
-    settlement_date: str | pd.Timestamp,
-) -> pd.DataFrame:
-    """
-    Fetch the NTN-B Anbima indicative rates and calculate the spot rates for the bonds.
-
-    Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
-        settlement_date (str | pd.Timestamp): The reference date for settlement.
-
-    Returns:
-        pd.DataFrame: DataFrame containing the maturity dates and corresponding real
-            spot rates.
-    """
-    ytm_rates = anbima_rates(reference_date)
-    return spot_rates(settlement_date, ytm_rates)
 
 
 def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
@@ -355,8 +340,6 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
             "TickerSymbol",
             "ExpirationDate",
             "BDaysToExp",
-            "CurrentAskRate",
-            "CurrentBidRate",
             "NIR_DI",
         ]
     elif "SettlementRate" in df.columns:
@@ -369,7 +352,7 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
             "NIR_DI",
         ]
     else:
-        raise ValueError("NIR data not found in the DataFrame.")
+        raise ValueError("DI data not available.")
 
     df = df[keep_cols].dropna(subset=["NIR_DI"])
 
@@ -392,8 +375,9 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
 
 def bei_rates(
     reference_date: str | pd.Timestamp,
-    settlement_date: str | pd.Timestamp,
-    ytm_rates: pd.Series,
+    settlement: str | pd.Timestamp,
+    rates: list[float] | pd.Series,
+    maturities: list[str | pd.Timestamp] | pd.Series,
 ) -> pd.DataFrame:
     """
     Calculate the Breakeven Inflation (BEI) for NTN-B bonds based on nominal and real
@@ -402,26 +386,27 @@ def bei_rates(
     Args:
         reference_date (str or pd.Timestamp): The reference date for fetching data and
             performing calculations.
-        settlement_date (str or pd.Timestamp): The settlement date for the bonds.
-        ytm_rates (pd.Series): A series of Yield to Maturity (YTM) rates corresponding
+        settlement (str or pd.Timestamp): The settlement date for the bonds.
+        rates (pd.Series): A series of Yield to Maturity (YTM) rates corresponding
             to the maturity dates of the bonds indexed by the maturity dates.
 
     Returns:
         pd.DataFrame: DataFrame containing the breakeven inflation rates.
 
     Returned columns:
-        - MaturityDate: Maturity date of the bond.
+        - MaturityDate: Maturity date of the bonds
         - BDays: Number of business days from the settlement date to the maturity.
-        - YTM: Yield to Maturity rate for the bond.
-        - RIR: Real Interest Rate for the bond.
-        - NIR_DI: Nominal Interest Rate for the bond.
-        - NIR_PRE: Nominal Interest Rate for the bond with DI spread.
-        - BEI_DI: Breakeven Inflation Rate for the bond.
-        - BEI_PRE: Breakeven Inflation Rate for the bond adjusted for DI spread.
+        - YTM: Yield to Maturity rate for the bonds
+        - RIR: Real Interest Rate for the bonds based on the spot rates.
+        - NIR_DI: Nominal Interest Rate based on DI Futures.
+        - NIR_PRE: Nominal Interest Rate for the prefixed bonds.
+        - BEI_DI: Breakeven Inflation Rate calculated with DI Futures.
+        - BEI_PRE: Breakeven Inflation Rate calculated with prefixed bonds.
     """
     # Normalize input dates
     reference_date = dc.convert_date(reference_date)
-    settlement_date = dc.convert_date(settlement_date)
+    settlement = dc.convert_date(settlement)
+    maturities = pd.to_datetime(maturities, errors="coerce", dayfirst=True)
 
     # Fetch Nominal Interest Rate (NIR) data
     df_nir = _get_nir_df(reference_date)
@@ -432,7 +417,7 @@ def bei_rates(
         known_rates=df_nir["NIR_DI"],
     )
     # Calculate Real Interest Rate (RIR)
-    df = spot_rates(settlement_date, ytm_rates)
+    df = spot_rates(settlement, rates, maturities)
     df = df.rename(columns={"SpotRate": "RIR"})
     df["BDays"] = bday.count(reference_date, df["MaturityDate"])
     df["NIR_DI"] = df["BDays"].apply(ytm_interplator)

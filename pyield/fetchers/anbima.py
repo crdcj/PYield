@@ -13,7 +13,7 @@ ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
 ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 RATES_URL = (
-    "https://raw.githubusercontent.com/crdcj/pyield-data/main/anbima_rates.parquet"
+    "https://raw.githubusercontent.com/crdcj/pyield-data/main/anbima_data.parquet"
 )
 
 # Before 13/05/2014 the file was zipped and the endpoint ended with ".exe"
@@ -157,9 +157,8 @@ class RatesData:
     @classmethod
     def _load_data(cls):
         # if cls._df.empty or not cls._is_data_up_to_date():
-        print("Loading ANBIMA rates data...")
+        print("Loading ANBIMA data...")
         cls._df = pd.read_parquet(RATES_URL)
-        cls._df["IndicativeRate"] = (cls._df["IndicativeRate"] / 100).round(6)
         cls._last_update = pd.Timestamp.today().normalize()
 
     @classmethod

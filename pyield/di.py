@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pandas as pd
 
 from . import bday
@@ -8,6 +10,11 @@ DI_URL = "https://raw.githubusercontent.com/crdcj/pyield-data/main/di_data.parqu
 
 class DIData:
     _df = pd.DataFrame()
+
+    def __init__(self):
+        """Initialize the DIData class and load the data."""
+        if self._df.empty or not self._is_data_up_to_date():
+            self._load_data()
 
     @classmethod
     def _load_data(cls):
@@ -36,19 +43,31 @@ class DIData:
         cls._load_data()
         return cls._df.copy()
 
+    @staticmethod
+    def _get_rate_column(rate_type: str) -> str:
+        rate_map = {
+            "settlement": "SettlementRate",
+            "min": "MinRate",
+            "max": "MaxRate",
+            "close": "CloseRate",
+        }
+        if rate_type not in rate_map:
+            raise ValueError(
+                "Invalid rate type. Use 'settlement', 'min', 'max', or 'close'."
+            )
+        return rate_map[rate_type]
+
     @classmethod
-    def settlement_rates(
+    def rates(
         cls,
         trade_date: str | pd.Timestamp | None = None,
         expiration_date: str | pd.Timestamp | None = None,
+        rate_type: Literal["settlement", "min", "max", "close"] = "settlement",
         adjust_exp_date: bool = False,
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | float:
+        rate_col = cls._get_rate_column(rate_type)
         cls._check_for_updates()
-        df = cls._df[["TradeDate", "ExpirationDate", "SettlementRate"]].copy()
-
-        if trade_date:
-            trade_date = dc.convert_date(trade_date)
-            df.query("TradeDate == @trade_date", inplace=True)
+        df = cls._df[["TradeDate", "ExpirationDate", f"{rate_col}"]].copy()
 
         if expiration_date:
             expiration_date = dc.convert_date(expiration_date)
@@ -56,28 +75,16 @@ class DIData:
             expiration_date = bday.offset(expiration_date, 0)
             df.query("ExpirationDate == @expiration_date", inplace=True)
 
+        if trade_date:
+            trade_date = dc.convert_date(trade_date)
+            df.query("TradeDate == @trade_date", inplace=True)
+
         if adjust_exp_date:
-            df["ExpirationDate"] = (
-                df["ExpirationDate"].dt.to_period("M").dt.to_timestamp()
-            )
+            df["ExpirationDate"] = df["ExpirationDate"].dt.to_period("M")
+            df["ExpirationDate"] = df["ExpirationDate"].dt.to_timestamp()
 
-        return df.sort_values(["TradeDate", "ExpirationDate"]).reset_index(drop=True)
-
-    @classmethod
-    def settlement_rate(
-        cls,
-        trade_date: str | pd.Timestamp,
-        expiration_date: str | pd.Timestamp,
-    ) -> float:
-        cls._check_for_updates()
-        df = cls._df.copy()
-
-        trade_date = dc.convert_date(trade_date)
-        df.query("TradeDate == @trade_date", inplace=True)
-
-        expiration_date = dc.convert_date(expiration_date)
-        # Force the expiration date to be a business day
-        expiration_date = bday.offset(expiration_date, 0)
-        df.query("ExpirationDate == @expiration_date", inplace=True)
-
-        return float(df["SettlementRate"].iat[0])
+        df.sort_values(["TradeDate", "ExpirationDate"]).reset_index(drop=True)
+        if len(df.index) == 1:
+            return float(df[f"{rate_col}"].values[0])
+        else:
+            return df

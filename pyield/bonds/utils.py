@@ -36,16 +36,10 @@ def truncate(values: float | pd.Series, decimal_places: int) -> float | pd.Serie
 
 def calculate_present_value(
     cash_flows: pd.Series,
-    discount_rates: pd.Series,
-    time_periods: pd.Series,
+    rates: pd.Series,
+    periods: pd.Series,
 ) -> float:
-    return (cash_flows / (1 + discount_rates) ** time_periods).sum()
-
-
-def standardize_rates(rates: pd.Series) -> pd.Series:
-    if not isinstance(rates.index, pd.DatetimeIndex):
-        raise ValueError("The rates index must be a DatetimeIndex with maturity dates.")
-    return rates.dropna().sort_index()
+    return (cash_flows / (1 + rates) ** periods).sum()
 
 
 def di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
