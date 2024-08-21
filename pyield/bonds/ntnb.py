@@ -36,15 +36,16 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
 def indicative_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     """
-    Fetch NTN-B Anbima indicative rates for the given reference date.
+    Fetch the bond indicative rates for the given reference date.
 
     Args:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.Series: A Series containing the rates indexed by maturity date.
+        pd.Series: A Series containing the bond rates indexed by maturity date.
     """
-    return an.get_anbima_rates(reference_date, "NTN-B")
+    df = an.anbima_rates(reference_date, "NTN-B")
+    return df.set_index("MaturityDate")["IndicativeRate"]
 
 
 def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
@@ -65,7 +66,7 @@ def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
 def _coupon_dates_map(
     start: str | pd.Timestamp,
     end: str | pd.Timestamp,
-) -> pd.Series:
+) -> list[pd.Timestamp]:
     """
     Generate a map of all possible coupon dates between the start and end dates.
     The dates are inclusive. Coupon payments are made on the 15th of February, May,
@@ -87,20 +88,21 @@ def _coupon_dates_map(
     first_coupon_date = pd.Timestamp(f"{reference_year}-02-01")
 
     # Generate coupon dates
-    dates = pd.date_range(start=first_coupon_date, end=end, freq="3MS")
+    coupon_dates = pd.date_range(start=first_coupon_date, end=end, freq="3MS")
 
     # Offset dates by 14 in order to have day 15 of the month
-    dates += pd.Timedelta(days=14)
+    coupon_dates += pd.Timedelta(days=14)
 
     # First coupon date must be after the reference date
-    dates = dates[dates >= start]
-    return pd.Series(dates).reset_index(drop=True)
+    coupon_dates = coupon_dates[coupon_dates >= start]
+    coupon_dates = pd.Series(coupon_dates).reset_index(drop=True)
+    return coupon_dates.to_list()
 
 
 def coupon_dates(
-    start: str | pd.Timestamp,
+    settlement: str | pd.Timestamp,
     maturity: str | pd.Timestamp,
-) -> pd.Series:
+) -> list[pd.Timestamp]:
     """
     Generate all remaining coupon dates between a given date and the maturity date.
     The dates are inclusive. Coupon payments are made on the 15th of February, May,
@@ -108,18 +110,20 @@ def coupon_dates(
     bond is determined by its maturity date.
 
     Args:
-        start_date (str | pd.Timestamp): The date to start generating coupon dates.
+        settlement (str | pd.Timestamp): The settlement date (exlusive) to
+            start generating coupon dates.
         maturity_date (str | pd.Timestamp): The maturity date.
 
     Returns:
-        list[pd.Timestamp]: List of coupon dates between start and maturity dates.
+        list[pd.Timestamp]: List of coupon dates between start and maturity dates
+            sorted in ascending order.
     """
     # Validate and normalize dates
-    start = dc.convert_date(start)
+    settlement = dc.convert_date(settlement)
     maturity = dc.convert_date(maturity)
 
     # Check if maturity date is after the start date
-    if maturity < start:
+    if maturity < settlement:
         raise ValueError("Maturity date must be after the start date.")
 
     # Check if the maturity date is a valid NTN-B maturity date
@@ -127,16 +131,17 @@ def coupon_dates(
         raise ValueError("NTN-B maturity must be 15/02, 15/05, 15/08, or 15/11.")
 
     # Initialize loop variables
-    cp_date = maturity
+    coupon_dates = maturity
     cp_dates = []
 
     # Iterate backwards from the maturity date to the settlement date
-    while cp_date >= start:
-        cp_dates.append(cp_date)
+    while coupon_dates > settlement:
+        cp_dates.append(coupon_dates)
         # Move the coupon date back 6 months
-        cp_date -= pd.DateOffset(months=6)
+        coupon_dates -= pd.DateOffset(months=6)
 
-    return pd.Series(cp_dates).sort_values(ignore_index=True)
+    cp_dates = pd.Series(cp_dates).sort_values(ignore_index=True)
+    return cp_dates.to_list()
 
 
 def quotation(
@@ -175,7 +180,7 @@ def quotation(
     maturity = dc.convert_date(maturity)
 
     # Get the coupon dates between the settlement and maturity dates
-    payment_dates = coupon_dates(settlement, maturity)
+    payment_dates = pd.Series(coupon_dates(settlement, maturity))
 
     # Coupon payment dates must be after the settlement date
     payment_dates = payment_dates[payment_dates > settlement]

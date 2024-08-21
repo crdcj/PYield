@@ -21,15 +21,16 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
 def indicative_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     """
-    Fetch LFT Anbima indicative rates for the given reference date.
+    Fetch the bond indicative rates for the given reference date.
 
     Args:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.Series: A Series containing the rates indexed by maturity date.
+        pd.Series: A Series containing the bond rates indexed by maturity date.
     """
-    return an.get_anbima_rates(reference_date, "LFT")
+    df = an.anbima_rates(reference_date, "LFT")
+    return df.set_index("MaturityDate")["IndicativeRate"]
 
 
 def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:

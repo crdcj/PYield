@@ -23,6 +23,48 @@ FINAL_PMT = 1048.80885
 di_data = di.DIData()
 
 
+def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
+    """
+    Fetch the NTN-F bond maturities available for the given reference date.
+
+    Args:
+        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+
+    Returns:
+        list[pd.Timestamp]: A list of NTN-F bond maturities available for the reference
+            date.
+    """
+    rates = indicative_rates(reference_date)
+    return rates.index.to_list()
+
+
+def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+    """
+    Fetch NTN-F Anbima data for the given reference date.
+
+    Args:
+        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
+    """
+    return an.anbima_data(reference_date, "NTN-F")
+
+
+def indicative_rates(reference_date: str | pd.Timestamp) -> pd.Series:
+    """
+    Fetch the bond indicative rates for the given reference date.
+
+    Args:
+        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+
+    Returns:
+        pd.Series: A Series containing the bond rates indexed by maturity date.
+    """
+    df = an.anbima_rates(reference_date, "NTN-F")
+    return df.set_index("MaturityDate")["IndicativeRate"]
+
+
 def check_maturity_date(maturity: pd.Timestamp) -> None:
     """
     Check if the maturity date is a valid NTN-F maturity date.
@@ -40,7 +82,7 @@ def check_maturity_date(maturity: pd.Timestamp) -> None:
 def coupon_dates(
     settlement: str | pd.Timestamp,
     maturity: str | pd.Timestamp,
-) -> pd.Series:
+) -> list[pd.Timestamp]:
     """
     Generate all remaining coupon dates between a settlement date and a maturity date.
     The dates are exclusive for the settlement date and inclusive for the maturity date.
@@ -153,59 +195,6 @@ def price(
     dcf = (cfs / discount_factors).round(9)
     # Return the sum of the discounted cash flows truncated as per Anbima rules
     return ut.truncate(dcf.sum(), 6)
-
-
-def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
-    """
-    Fetch the NTN-F bond maturities available for the given reference date.
-
-    Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
-
-    Returns:
-        list[pd.Timestamp]: A list of NTN-F bond maturities available for the reference
-            date.
-    """
-    rates = indicative_rates(reference_date)
-    return rates.index.to_list()
-
-
-def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
-    """
-    Fetch NTN-F Anbima data for the given reference date.
-
-    Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
-    """
-    return an.anbima_data(reference_date, "NTN-F")
-
-
-def indicative_rates(
-    reference_date: str | pd.Timestamp,
-    maturity: str | pd.Timestamp | None = None,
-) -> pd.Series | float:
-    """
-    Fetch NTN-F Anbima indicative rates for the given reference date. If a maturity date
-    is provided, the function returns the rate for the given maturity date.
-
-    Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
-        maturity_date (str | pd.Timestamp, optional): The maturity date of the bond.
-
-    Returns:
-        pd.Series: A Series containing the rates indexed by maturity date.
-    """
-    rates = an.get_anbima_rates(reference_date, "NTN-F")
-    if maturity:
-        maturity = dc.convert_date(maturity)
-        if maturity in rates.index:
-            return float(rates[maturity])
-        else:
-            return float("nan")
-    return rates
 
 
 def _calculate_coupons_pv(
