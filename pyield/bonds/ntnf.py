@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from scipy.optimize import brentq
 
 from .. import bday, di
 from .. import date_converter as dc
@@ -377,21 +376,37 @@ def di_net_spread(  # noqa
         # Calculate the difference between the bond's price and its disc. cash flows
         return (bond_cash_flows / (1 + di_interp + p) ** byears).sum() - bond_price
 
+    # Bisection method to find the root
+    def bisection_method(func, a, b, tol=1e-8, maxiter=100):
+        fa, fb = func(a), func(b)
+        if fa * fb > 0:
+            raise ValueError("Function does not change sign in the interval.")
+
+        for _ in range(maxiter):
+            midpoint = (a + b) / 2
+            fmid = func(midpoint)
+            if np.abs(fmid) < tol or (b - a) / 2 < tol:
+                return midpoint
+            if fmid * fa < 0:
+                b, fb = midpoint, fmid
+            else:
+                a, fa = midpoint, fmid
+
+        return (a + b) / 2
+
     try:
-        if initial_guess:
-            # Search interval is 50 bps above and below the initial guess
+        if initial_guess is not None:
             a = initial_guess - 50 / 10_000  # 50 bps below the initial guess
             b = initial_guess + 50 / 10_000  # 50 bps above the initial guess
         else:
-            # Search interval is from -0.01 to 0.01 (i.e., -100 to 100 bps)
-            a = -0.01
-            b = 0.01
+            a = -0.01  # Initial guess of -100 bps
+            b = 0.01  # Initial guess of 100 bps
 
         # Find the spread (p) that zeroes the price difference
-        p_solution = brentq(price_difference, a, b, maxiter=100)
+        p_solution = bisection_method(price_difference, a, b)
         # Convert the solution to basis points (bps) and round to two decimal places
         p_solution = round((p_solution * 10_000), 2)
-    except (ValueError, RuntimeError):
+    except ValueError:
         # If no solution is found, return NaN
         p_solution = float("nan")
 
