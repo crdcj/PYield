@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Office/Business :: Financial :: Investment",
 ]
 dependencies = [
-    "pandas[html]>=2.0.0",
+    "pandas[html,parquet]>=2.0.0",
     "numpy",
     "python-calamine>=0.2.0",    
     "requests>=2.31.0",
