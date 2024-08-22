@@ -21,10 +21,8 @@ dependencies = [
     "pandas>=2.0.0",
     "numpy",
     "beautifulsoup4",
-    "html5lib",
-    "lxml",
-    "python-calamine>=0.2.0",
-    "scipy",
+    "html5lib",    
+    "python-calamine>=0.2.0",    
     "requests>=2.31.0",
     "pyarrow",
 ]
@@ -45,6 +43,7 @@ dev = [
     "mkdocs",
     "mkdocs-material",
     "mkdocstrings[python]",
+    "lxml",
 ]
 
 [tool.ruff]
