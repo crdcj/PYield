@@ -321,9 +321,10 @@ def spot_rates(
 
 
     Args:
-        settlement_date (str | pd.Timestamp): The reference date for settlement.
-        ytm_rates (pd.Series): Series of yield to maturity rates indexed by the
+        settlement (str | pd.Timestamp): The reference date for settlement.
+        rates (pd.Series): Series of yield to maturity rates indexed by the
             maturity dates of the bonds.
+        maturities (pd.Series): Series of maturity dates for the bonds.
 
     Returns:
         pd.DataFrame: DataFrame containing the maturity dates and corresponding real
