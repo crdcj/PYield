@@ -64,7 +64,7 @@ def indicative_rates(reference_date: str | pd.Timestamp) -> pd.Series:
     return df.set_index("MaturityDate")["IndicativeRate"]
 
 
-def check_maturity_date(maturity: pd.Timestamp) -> None:
+def _check_maturity_date(maturity: pd.Timestamp) -> None:
     """
     Check if the maturity date is a valid NTN-F maturity date.
 
@@ -100,7 +100,7 @@ def coupon_dates(
     maturity = dc.convert_date(maturity)
 
     # Check if the maturity date is valid
-    check_maturity_date(maturity)
+    _check_maturity_date(maturity)
 
     # Check if maturity date is after the start date
     if maturity <= settlement:
@@ -141,7 +141,7 @@ def cash_flows(
     # Validate input dates
     settlement = dc.convert_date(settlement)
     maturity = dc.convert_date(maturity)
-    check_maturity_date(maturity)
+    _check_maturity_date(maturity)
 
     # Get the coupon payment dates between the settlement and maturity dates
     payment_dates = coupon_dates(settlement, maturity)

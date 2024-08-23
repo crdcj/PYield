@@ -21,6 +21,39 @@ COUPON_PMT = 2.956301
 FINAL_PMT = 102.956301
 
 
+def _is_maturity_valid(maturity: pd.Timestamp) -> bool:
+    """
+    Check if the maturity date is a valid NTN-B maturity date.
+
+    Args:
+        maturity (pd.Timestamp): The maturity date to be checked.
+
+    Returns:
+        bool: True if the maturity date is valid, False otherwise.
+    """
+    return maturity.day == COUPON_DAY and maturity.month in COUPON_MONTHS
+
+
+def _check_maturities(
+    maturities: pd.Timestamp | list[pd.Timestamp] | pd.Series,
+) -> None:
+    """
+    Check if the maturity dates are valid NTN-B maturities.
+
+    Args:
+        maturities (pd.Timestamp | list[pd.Timestamp] | pd.Series): The maturity
+            date(s) to be checked.
+
+    Raises:
+        ValueError: If the maturity dates are not valid NTN-B maturities.
+    """
+    if isinstance(maturities, pd.Timestamp):
+        maturities = [maturities]
+    for maturity in maturities:
+        if not _is_maturity_valid(maturity):
+            raise ValueError("NTN-B maturity must be 15/02, 15/05, 15/08 or 15/11.")
+
+
 def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch NTN-B Anbima data for the given reference date.
@@ -121,14 +154,11 @@ def coupon_dates(
     # Validate and normalize dates
     settlement = dc.convert_date(settlement)
     maturity = dc.convert_date(maturity)
+    _check_maturities(maturity)
 
     # Check if maturity date is after the start date
     if maturity < settlement:
         raise ValueError("Maturity date must be after the start date.")
-
-    # Check if the maturity date is a valid NTN-B maturity date
-    if maturity.day != COUPON_DAY or maturity.month not in COUPON_MONTHS:
-        raise ValueError("NTN-B maturity must be 15/02, 15/05, 15/08, or 15/11.")
 
     # Initialize loop variables
     coupon_dates = maturity
@@ -142,6 +172,40 @@ def coupon_dates(
 
     cp_dates = pd.Series(cp_dates).sort_values(ignore_index=True)
     return cp_dates.to_list()
+
+
+def cash_flows(
+    settlement: str | pd.Timestamp,
+    maturity: str | pd.Timestamp,
+) -> pd.DataFrame:
+    """
+    Generate the cash flows for NTN-B bonds between the settlement and maturity dates.
+
+    Args:
+        settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+            or a pandas Timestamp.
+        maturity (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
+            a pandas Timestamp.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the cash flows for the NTN-B bond.
+
+    Returned columns:
+        - PaymentDate: The payment date of the cash flow
+        - CashFlow: Cash flow value for the bond
+    """
+    # Validate and normalize dates
+    settlement = dc.convert_date(settlement)
+    maturity = dc.convert_date(maturity)
+
+    # Get the coupon dates between the settlement and maturity dates
+    payment_dates = coupon_dates(settlement, maturity)
+
+    # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
+    cfs = np.where(payment_dates == maturity, FINAL_PMT, COUPON_PMT).tolist()
+
+    # Return a dataframe with the payment dates and cash flows
+    return pd.DataFrame(data={"PaymentDate": payment_dates, "CashFlow": cfs})
 
 
 def quotation(
@@ -178,18 +242,14 @@ def quotation(
     # Validate and normalize dates
     settlement = dc.convert_date(settlement)
     maturity = dc.convert_date(maturity)
+    _check_maturities(maturity)
 
-    # Get the coupon dates between the settlement and maturity dates
-    payment_dates = pd.Series(coupon_dates(settlement, maturity))
-
-    # Coupon payment dates must be after the settlement date
-    payment_dates = payment_dates[payment_dates > settlement]
+    df_cf = cash_flows(settlement, maturity)
+    payment_dates = df_cf["PaymentDate"]
+    cf_values = df_cf["CashFlow"]
 
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement, payment_dates)
-
-    # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    cash_flows = np.where(payment_dates == maturity, FINAL_PMT, COUPON_PMT)
 
     # Calculate the number of periods truncated as per Anbima rules
     num_of_years = ut.truncate(bdays / 252, 14)
@@ -197,7 +257,7 @@ def quotation(
     discount_factor = (1 + rate) ** num_of_years
 
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
-    discounted_cash_flows = (cash_flows / discount_factor).round(10)
+    discounted_cash_flows = (cf_values / discount_factor).round(10)
 
     # Return the quotation (the dcf sum) truncated as per Anbima rules
     return ut.truncate(discounted_cash_flows.sum(), 4)
@@ -282,6 +342,7 @@ def spot_rates(
     # Process and validate the input data
     settlement = dc.convert_date(settlement)
     maturities = pd.to_datetime(maturities, errors="coerce", dayfirst=True)
+    _check_maturities(maturities)
 
     # Create the interpolator object
     ytm_rate_interpolator = it.Interpolator(
