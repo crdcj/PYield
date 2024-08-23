@@ -35,7 +35,7 @@ def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return an.anbima_rates(reference_date, "LTN")[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
+def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
     """
     Fetch the bond maturities available for the given reference date.
 
@@ -43,10 +43,10 @@ def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        list[pd.Timestamp]: A list of bond maturities available for the reference date.
+        pd.Series: A Series of bond maturities available for the reference date.
     """
     rates = indicative_rates(reference_date)
-    return rates["MaturityDate"].to_list()
+    return rates["MaturityDate"]
 
 
 def price(

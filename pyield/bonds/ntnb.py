@@ -308,8 +308,8 @@ def _calculate_coupons_pv(
 
 def spot_rates(
     settlement: str | pd.Timestamp,
-    rates: list[float] | pd.Series,
-    maturities: list[str | pd.Timestamp],
+    rates: pd.Series,
+    maturities: pd.Series,
 ) -> pd.DataFrame:
     """
     Calculate the spot rates for NTN-B bonds using the bootstrap method.
@@ -440,8 +440,8 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
 def bei_rates(
     reference_date: str | pd.Timestamp,
     settlement: str | pd.Timestamp,
-    rates: list[float] | pd.Series,
-    maturities: list[str | pd.Timestamp] | pd.Series,
+    rates: pd.Series,
+    maturities: pd.Series,
 ) -> pd.DataFrame:
     """
     Calculate the Breakeven Inflation (BEI) for NTN-B bonds based on nominal and real

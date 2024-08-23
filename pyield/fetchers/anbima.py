@@ -185,7 +185,7 @@ class RatesData:
     @classmethod
     def rates(
         cls,
-        reference_date: pd.Timestamp | None = None,
+        reference_date: str | pd.Timestamp,
         bond_type: str | None = None,
     ) -> pd.DataFrame:
         cls._check_for_updates()

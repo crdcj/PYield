@@ -48,7 +48,7 @@ def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return an.anbima_rates(reference_date, "NTN-F")[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
+def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
     """
     Fetch the NTN-F bond maturities available for the given reference date.
 
@@ -56,11 +56,10 @@ def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        list[pd.Timestamp]: A list of NTN-F bond maturities available for the reference
-            date.
+        pd.Series: A Series of NTN-F bond maturities available for the reference date.
     """
     rates = indicative_rates(reference_date)
-    return rates["MaturityDate"].to_list()
+    return rates["MaturityDate"]
 
 
 def _check_maturity_date(maturity: pd.Timestamp) -> None:
@@ -80,7 +79,7 @@ def _check_maturity_date(maturity: pd.Timestamp) -> None:
 def coupon_dates(
     settlement: str | pd.Timestamp,
     maturity: str | pd.Timestamp,
-) -> list[pd.Timestamp]:
+) -> pd.Series:
     """
     Generate all remaining coupon dates between a settlement date and a maturity date.
     The dates are exclusive for the settlement date and inclusive for the maturity date.
@@ -92,8 +91,8 @@ def coupon_dates(
         maturity (str | pd.Timestamp): The maturity date.
 
     Returns:
-        list[pd.Timestamp]: A list of coupon dates between the settlement and maturity
-            dates.
+        pd.Series: A Series containing the coupon dates between the settlement and
+            maturity dates.
     """
     # Validate and normalize dates
     settlement = dc.convert_date(settlement)
@@ -104,7 +103,7 @@ def coupon_dates(
 
     # Check if maturity date is after the start date
     if maturity <= settlement:
-        raise ValueError("Maturity date must be after the start date.")
+        raise ValueError("Maturity date must be after the settlement date.")
 
     # Initialize loop variables
     coupon_date = maturity
@@ -215,10 +214,10 @@ def _calculate_coupons_pv(
 
 def spot_rates(
     settlement: str | pd.Timestamp,
-    ltn_rates: list[float] | pd.Series,
-    ltn_maturities: list[pd.Timestamp] | pd.Series,
-    ntnf_rates: list[float] | pd.Series,
-    ntnf_maturities: list[pd.Timestamp] | pd.Series,
+    ltn_rates: pd.Series,
+    ltn_maturities: pd.Series,
+    ntnf_rates: pd.Series,
+    ntnf_maturities: pd.Series,
 ) -> pd.DataFrame:
     """
     Calculate the spot rates for NTN-F bonds using the bootstrap method.
@@ -231,18 +230,17 @@ def spot_rates(
     Args:
         settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
             or a pandas Timestamp.
-        ltn_rates (list[float] | pd.Series): The LTN known rates.
-        ltn_maturities (list[pd.Timestamp] | pd.Series): The LTN known maturities.
-        ntnf_rates (list[float] | pd.Series): The NTN-F known rates.
-        ntnf_maturities (list[pd.Timestamp] | pd.Series): The NTN-F known maturities.
+        ltn_rates (pd.Series): The LTN known rates.
+        ltn_maturities (pd.Series): The LTN known maturities.
+        ntnf_rates (pd.Series): The NTN-F known rates.
+        ntnf_maturities (pd.Series): The NTN-F known maturities.
+
     Returns:
         pd.DataFrame: A DataFrame containing the maturity dates and
             the corresponding spot rates.
     """
     # Process and validate the input data
     settlement = dc.convert_date(settlement)
-    ltn_maturities = pd.to_datetime(ltn_maturities, errors="coerce", dayfirst=True)
-    ntnf_maturities = pd.to_datetime(ntnf_maturities, errors="coerce", dayfirst=True)
 
     # Create flat forward interpolators for LTN and NTN-F rates
     ltn_rate_interpolator = Interpolator(
@@ -316,8 +314,8 @@ def di_net_spread(  # noqa
     settlement: str | pd.Timestamp,
     maturity: str | pd.Timestamp,
     ytm: float,
-    di_rates: list[float] | pd.Series,
-    di_expirations: list[pd.Timestamp] | pd.Series,
+    di_rates: pd.Series,
+    di_expirations: pd.Series,
     initial_guess: float | None = None,
 ) -> float:
     """
@@ -330,16 +328,15 @@ def di_net_spread(  # noqa
     discounted cash flows.
 
     Args:
-        settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+        settlement (str | pd.Timestamp): The bond settlement date in 'DD-MM-YYYY' format
             or a pandas Timestamp.
-        maturity (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY'
+        maturity (str | pd.Timestamp): The bond maturity date in 'DD-MM-YYYY'
             format or a pandas Timestamp.
         ytm (float): The yield to maturity (YTM) of the bond.
-        di_rates (list[float] | pd.Series): A list or Series of DI rates.
-        di_expirations (list[pd.Timestamp] | pd.Series): A list or Series of DI
-            expiration dates.
-        initial_guess (float, optional): An initial guess for the spread.
-            Defaults to None.
+        di_rates (pd.Series): A Series of DI rates.
+        di_expirations (pd.Series): A list or Series of DI expiration dates.
+        initial_guess (float, optional): An initial guess for the spread. Defaults to
+            None.
 
     Returns:
         float: The net DI spread in basis points.
