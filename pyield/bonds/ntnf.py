@@ -3,8 +3,8 @@ import pandas as pd
 
 from .. import bday, di
 from .. import date_converter as dc
+from .. import interpolator as it
 from ..fetchers import anbima as an
-from ..interpolator import Interpolator
 from . import utils as ut
 
 """
@@ -243,12 +243,12 @@ def spot_rates(
     settlement = dc.convert_date(settlement)
 
     # Create flat forward interpolators for LTN and NTN-F rates
-    ltn_rate_interpolator = Interpolator(
+    ltn_rate_interpolator = it.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, ltn_maturities),
         known_rates=ltn_rates,
     )
-    ntnf_rate_interpolator = Interpolator(
+    ntnf_rate_interpolator = it.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, ntnf_maturities),
         known_rates=ntnf_rates,
@@ -345,7 +345,7 @@ def di_net_spread(  # noqa
     settlement = dc.convert_date(settlement)
     maturity = dc.convert_date(maturity)
 
-    ff_interpolator = Interpolator(
+    ff_interpolator = it.Interpolator(
         "flat_forward",
         bday.count(settlement, di_expirations),
         di_rates,
