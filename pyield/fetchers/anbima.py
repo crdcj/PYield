@@ -192,7 +192,7 @@ class RatesData:
         df = cls._df.copy()
         reference_date = dc.convert_date(reference_date)
         df.query("ReferenceDate == @reference_date", inplace=True)
-        if bond_type is not None:
+        if bond_type:
             df.query("BondType == @bond_type", inplace=True)
 
         return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)

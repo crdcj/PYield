@@ -22,21 +22,6 @@ FINAL_PMT = 1048.80885
 di_data = di.DIData()
 
 
-def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
-    """
-    Fetch the NTN-F bond maturities available for the given reference date.
-
-    Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
-
-    Returns:
-        list[pd.Timestamp]: A list of NTN-F bond maturities available for the reference
-            date.
-    """
-    rates = indicative_rates(reference_date)
-    return rates.index.to_list()
-
-
 def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch NTN-F Anbima data for the given reference date.
@@ -50,7 +35,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return an.anbima_data(reference_date, "NTN-F")
 
 
-def indicative_rates(reference_date: str | pd.Timestamp) -> pd.Series:
+def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
@@ -58,10 +43,24 @@ def indicative_rates(reference_date: str | pd.Timestamp) -> pd.Series:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.Series: A Series containing the bond rates indexed by maturity date.
+        pd.DataFrame: A DataFrame containing the maturities and the indicative rates.
     """
-    df = an.anbima_rates(reference_date, "NTN-F")
-    return df.set_index("MaturityDate")["IndicativeRate"]
+    return an.anbima_rates(reference_date, "NTN-F")[["MaturityDate", "IndicativeRate"]]
+
+
+def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
+    """
+    Fetch the NTN-F bond maturities available for the given reference date.
+
+    Args:
+        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+
+    Returns:
+        list[pd.Timestamp]: A list of NTN-F bond maturities available for the reference
+            date.
+    """
+    rates = indicative_rates(reference_date)
+    return rates["MaturityDate"].to_list()
 
 
 def _check_maturity_date(maturity: pd.Timestamp) -> None:
@@ -93,7 +92,8 @@ def coupon_dates(
         maturity (str | pd.Timestamp): The maturity date.
 
     Returns:
-        pd.Series: Series of coupon dates within the specified range.
+        list[pd.Timestamp]: A list of coupon dates between the settlement and maturity
+            dates.
     """
     # Validate and normalize dates
     settlement = dc.convert_date(settlement)
@@ -123,7 +123,7 @@ def coupon_dates(
 def cash_flows(
     settlement: str | pd.Timestamp,
     maturity: str | pd.Timestamp,
-) -> pd.Series:
+) -> pd.DataFrame:
     """
     Generate the cash flows for the NTN-F bond between the settlement (exclusive) and
     maturity dates (inclusive). The cash flows are the coupon payments and the final
@@ -136,7 +136,8 @@ def cash_flows(
             a pandas Timestamp.
 
     Returns:
-        pd.Series: Series of cash flows within the specified range.
+        pd.DataFrame: A DataFrame containing the payment dates and the corresponding
+            cash flows.
     """
     # Validate input dates
     settlement = dc.convert_date(settlement)
@@ -147,12 +148,9 @@ def cash_flows(
     payment_dates = coupon_dates(settlement, maturity)
 
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    cfs = np.where(payment_dates == maturity, FINAL_PMT, COUPON_PMT)
+    cf_values = np.where(payment_dates == maturity, FINAL_PMT, COUPON_PMT)
 
-    df = pd.DataFrame(data=cfs, index=payment_dates, columns=["CashFlow"])
-    df.index.name = "PaymentDate"
-
-    return df["CashFlow"]
+    return pd.DataFrame(data={"PaymentDate": payment_dates, "CashFlow": cf_values})
 
 
 def price(
@@ -185,13 +183,13 @@ def price(
         >>> price("05-07-2024", "01-01-2035", 0.11921)
         895.359254
     """
-    df_cf = cash_flows(settlement, maturity).reset_index()
-    cfs = df_cf["CashFlow"]
+    df_cf = cash_flows(settlement, maturity)
+    cf_values = df_cf["CashFlow"]
     bdays = bday.count(settlement, df_cf["PaymentDate"])
     byears = ut.truncate(bdays / 252, 14)
     discount_factors = (1 + rate) ** byears
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
-    dcf = (cfs / discount_factors).round(9)
+    dcf = (cf_values / discount_factors).round(9)
     # Return the sum of the discounted cash flows truncated as per Anbima rules
     return ut.truncate(dcf.sum(), 6)
 
@@ -231,12 +229,12 @@ def spot_rates(
     price.
 
     Args:
-        settlement_date (str | pd.Timestamp): The settlement date in as
-            a pandas Timestamp or a string in 'DD-MM-YYYY' format.
-        ltn_rates (pd.Series): The LTN known rates, indexed by maturity date.
-        ntnf_rates (pd.Series): The NTN-F known rates, indexed by maturity
-            date.
-
+        settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+            or a pandas Timestamp.
+        ltn_rates (list[float] | pd.Series): The LTN known rates.
+        ltn_maturities (list[pd.Timestamp] | pd.Series): The LTN known maturities.
+        ntnf_rates (list[float] | pd.Series): The NTN-F known rates.
+        ntnf_maturities (list[pd.Timestamp] | pd.Series): The NTN-F known maturities.
     Returns:
         pd.DataFrame: A DataFrame containing the maturity dates and
             the corresponding spot rates.

@@ -49,9 +49,9 @@ def _check_maturities(
     """
     if isinstance(maturities, pd.Timestamp):
         maturities = [maturities]
-    for maturity in maturities:
-        if not _is_maturity_valid(maturity):
-            raise ValueError("NTN-B maturity must be 15/02, 15/05, 15/08 or 15/11.")
+    checked_maturities = [_is_maturity_valid(maturity) for maturity in maturities]
+    if not all(checked_maturities):
+        raise ValueError("NTN-B maturity must be 15/02, 15/05, 15/08 or 15/11.")
 
 
 def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
@@ -67,7 +67,7 @@ def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return an.anbima_data(reference_date, "NTN-B")
 
 
-def indicative_rates(reference_date: str | pd.Timestamp) -> pd.Series:
+def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
@@ -75,31 +75,30 @@ def indicative_rates(reference_date: str | pd.Timestamp) -> pd.Series:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.Series: A Series containing the bond rates indexed by maturity date.
+        pd.DataFrame: DataFrame containing the maturity dates and indicative rates
+            for the NTN-B bonds.
     """
-    df = an.anbima_rates(reference_date, "NTN-B")
-    return df.set_index("MaturityDate")["IndicativeRate"]
+    return an.anbima_rates(reference_date, "NTN-B")[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: str | pd.Timestamp) -> list[pd.Timestamp]:
+def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
     """
-    Fetch the bond maturities available for the given reference date.
+    Get the bond maturities available for the given reference date.
 
     Args:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        list[pd.Timestamp]: A list of bond maturities available for the reference
-            date.
+        pd.Series: Series containing the maturity dates for the NTN-B bonds.
     """
     rates = indicative_rates(reference_date)
-    return rates.index.to_list()
+    return rates["MaturityDate"]
 
 
 def _coupon_dates_map(
     start: str | pd.Timestamp,
     end: str | pd.Timestamp,
-) -> list[pd.Timestamp]:
+) -> pd.Series:
     """
     Generate a map of all possible coupon dates between the start and end dates.
     The dates are inclusive. Coupon payments are made on the 15th of February, May,
@@ -128,14 +127,14 @@ def _coupon_dates_map(
 
     # First coupon date must be after the reference date
     coupon_dates = coupon_dates[coupon_dates >= start]
-    coupon_dates = pd.Series(coupon_dates).reset_index(drop=True)
-    return coupon_dates.to_list()
+
+    return pd.Series(coupon_dates).reset_index(drop=True)
 
 
 def coupon_dates(
     settlement: str | pd.Timestamp,
     maturity: str | pd.Timestamp,
-) -> list[pd.Timestamp]:
+) -> pd.Series:
     """
     Generate all remaining coupon dates between a given date and the maturity date.
     The dates are inclusive. Coupon payments are made on the 15th of February, May,
@@ -145,11 +144,10 @@ def coupon_dates(
     Args:
         settlement (str | pd.Timestamp): The settlement date (exlusive) to
             start generating coupon dates.
-        maturity_date (str | pd.Timestamp): The maturity date.
+        maturity (str | pd.Timestamp): The maturity date.
 
     Returns:
-        list[pd.Timestamp]: List of coupon dates between start and maturity dates
-            sorted in ascending order.
+        pd.Series: Series of coupon dates within the specified range.
     """
     # Validate and normalize dates
     settlement = dc.convert_date(settlement)
@@ -170,8 +168,7 @@ def coupon_dates(
         # Move the coupon date back 6 months
         coupon_dates -= pd.DateOffset(months=6)
 
-    cp_dates = pd.Series(cp_dates).sort_values(ignore_index=True)
-    return cp_dates.to_list()
+    return pd.Series(cp_dates).sort_values(ignore_index=True)
 
 
 def cash_flows(
@@ -373,7 +370,7 @@ def spot_rates(
 
         # If there is only one coupon date and this date is the first maturity date
         # of an existing bond, the ytm rate is also a spot rate.
-        if len(cp_dates) == 1 and cp_dates[0] == rates.index[0]:
+        if len(cp_dates) == 1 and cp_dates[0] == rates[0]:
             df_spot.at[index, "SpotRate"] = ytm
             continue
 
@@ -385,8 +382,7 @@ def spot_rates(
 
     df_spot.drop(columns=["BDays"], inplace=True)
     # Return the result without the intermediate coupon dates (virtual bonds)
-    existing_maturities = rates.index  # noqa
-    return df_spot.query("MaturityDate in @existing_maturities").reset_index(drop=True)
+    return df_spot.query("MaturityDate in @maturities").reset_index(drop=True)
 
 
 def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
