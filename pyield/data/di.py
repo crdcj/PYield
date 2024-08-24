@@ -40,3 +40,14 @@ def data(
         df["ExpirationDate"] = df["ExpirationDate"].dt.to_timestamp()
 
     return df.sort_values(["ExpirationDate"], ignore_index=True)
+
+
+def expirations(
+    trade_date: str | pd.Timestamp,
+    adj_expirations: bool = False,
+    prefixed_filter: bool = False,
+) -> pd.Series:
+    trade_date = dc.convert_date(trade_date)
+    df = data(trade_date, adj_expirations, prefixed_filter)
+
+    return df["ExpirationDate"].drop_duplicates(ignore_index=True)
