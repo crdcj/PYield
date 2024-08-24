@@ -1,1 +1,1 @@
-::: pyield.fetchers.anbima
+::: pyield.data.anbima

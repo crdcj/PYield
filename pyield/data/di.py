@@ -11,6 +11,25 @@ def data(
     adj_expirations: bool = False,
     prefixed_filter: bool = False,
 ) -> pd.DataFrame:
+    """Retrieve DI contract data for a specified trade date.
+
+    This function retrieves DI contract data for the given trade date. If the historical
+    data is not available, it attempts to fetch the data from the B3 website. The
+    function can also filter and adjust expiration dates based on the provided options.
+
+    Args:
+        trade_date (str | pd.Timestamp): The trade date for which the DI data is
+            required.
+        adj_expirations (bool): If True, adjusts the expiration dates to the
+            start of the month.
+        prefixed_filter (bool): If True, filters the DI contracts to match prefixed
+            Anbima bond maturities.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing DI contract data, with columns for
+            expiration dates and selected rates. The DataFrame is sorted by the
+            expiration date.
+    """
     trade_date = dc.convert_date(trade_date)
     df = get_di_dataframe()
     df.query("TradeDate == @trade_date", inplace=True)
@@ -47,6 +66,23 @@ def expirations(
     adj_expirations: bool = False,
     prefixed_filter: bool = False,
 ) -> pd.Series:
+    """Retrieve unique expiration dates for DI contracts on a specified trade date.
+
+    This function returns a Series of unique expiration dates for DI contracts
+    for the given trade date. The expiration dates can be adjusted or filtered
+    based on the provided options.
+
+    Args:
+        trade_date (str | pd.Timestamp): The trade date for which expiration dates are
+            required.
+        adj_expirations (bool): If True, adjusts the expiration dates to the start of
+            the month.
+        prefixed_filter (bool): If True, filters the DI contracts to match prefixed
+            Anbima bond maturities.
+
+    Returns:
+        pd.Series: A Series of unique expiration dates for DI contracts.
+    """
     trade_date = dc.convert_date(trade_date)
     df = data(trade_date, adj_expirations, prefixed_filter)
 
