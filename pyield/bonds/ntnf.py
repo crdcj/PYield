@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from .. import bday, di
+from .. import bday
 from .. import date_converter as dc
 from .. import interpolator as it
 from ..data import anbima as an
@@ -18,8 +18,6 @@ COUPON_DAY = 1
 COUPON_MONTHS = {1, 7}
 COUPON_PMT = 48.80885
 FINAL_PMT = 1048.80885
-
-di_data = di.DIData()
 
 
 def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:

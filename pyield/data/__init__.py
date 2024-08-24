@@ -1,6 +1,6 @@
-from .anbima import anbima_rates, data
+from . import anbima, di
 from .futures_data import futures
 from .indicators import indicator
 from .projections import projection
 
-__all__ = ["futures", "data", "anbima_rates", "indicator", "projection"]
+__all__ = ["futures", "anbima", "indicator", "projection", "di"]

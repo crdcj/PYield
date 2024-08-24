@@ -6,7 +6,7 @@ from .data_cache import get_anbima_dataframe, get_di_dataframe
 from .futures_data import futures
 
 
-def di_data(
+def data(
     trade_date: str | pd.Timestamp,
     adj_expirations: bool = False,
     prefixed_filter: bool = False,
@@ -23,7 +23,9 @@ def di_data(
         # If it is still empty, return an empty DataFrame.
         return pd.DataFrame()
 
-    df.drop(columns=["TradeDate", "DaysToExp"], inplace=True)
+    df.drop(columns=["TradeDate"], inplace=True)
+    if "DaysToExpiration" in df.columns:
+        df.drop(columns=["DaysToExpiration"], inplace=True)
 
     if prefixed_filter:
         df_anb = get_anbima_dataframe()

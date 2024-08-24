@@ -138,6 +138,11 @@ def rates(
     df.query("ReferenceDate == @reference_date", inplace=True)
 
     if df.empty:
+        # Try to fetch the data from the Anbima website
+        df = data(reference_date)
+
+    if df.empty:
+        # If the data is still empty, return an empty DataFrame
         return pd.DataFrame()
 
     if bond_type:

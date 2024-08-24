@@ -3,7 +3,8 @@ from typing import overload
 import numpy as np
 import pandas as pd
 
-from .. import data as ft
+from .. import data
+from ..data import anbima
 
 
 @overload
@@ -63,7 +64,7 @@ def di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
             bond type and maturity date.
     """
     # Fetch DI rates for the reference date
-    df_di = ft.futures("DI1", reference_date)[["ExpirationDate", "SettlementRate"]]
+    df_di = data.futures("DI1", reference_date)[["ExpirationDate", "SettlementRate"]]
 
     # Renaming the columns to match the ANBIMA structure
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
@@ -72,8 +73,8 @@ def di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_ltn = ft.anbima_rates(reference_date, "LTN")
-    df_ntnf = ft.anbima_rates(reference_date, "NTN-F")
+    df_ltn = anbima.rates(reference_date, "LTN")
+    df_ntnf = anbima.rates(reference_date, "NTN-F")
     df_pre = pd.concat([df_ltn, df_ntnf], ignore_index=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads
