@@ -6,8 +6,8 @@ from .. import data as ft
 from .. import date_converter as dc
 from .. import interpolator as it
 from ..data import anbima as an
+from . import bond_tools as bt
 from . import ltn
-from . import utils as ut
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -236,7 +236,7 @@ def quotation(
     bdays = bday.count(settlement, payment_dates)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = ut.truncate(bdays / 252, 14)
+    num_of_years = bt.truncate(bdays / 252, 14)
 
     discount_factor = (1 + rate) ** num_of_years
 
@@ -244,7 +244,7 @@ def quotation(
     discounted_cash_flows = (cf_values / discount_factor).round(10)
 
     # Return the quotation (the dcf sum) truncated as per Anbima rules
-    return ut.truncate(discounted_cash_flows.sum(), 4)
+    return bt.truncate(discounted_cash_flows.sum(), 4)
 
 
 def price(
@@ -268,7 +268,7 @@ def price(
         >>> ntnb.price(4299.160173, 99.3651)
         4271.864805
     """
-    return ut.truncate(vna * quotation / 100, 6)
+    return bt.truncate(vna * quotation / 100, 6)
 
 
 def _calculate_coupons_pv(
@@ -285,7 +285,7 @@ def _calculate_coupons_pv(
     df_coupons["Coupon"] = COUPON_PMT
 
     # Calculate the present value of the coupon payments
-    pv = ut.calculate_present_value(
+    pv = bt.calculate_present_value(
         cash_flows=df_coupons["Coupon"],
         rates=df_coupons["SpotRate"],
         periods=df_coupons["BDays"] / 252,

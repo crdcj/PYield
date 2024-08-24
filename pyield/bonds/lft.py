@@ -3,7 +3,7 @@ import pandas as pd
 from .. import bday
 from .. import date_converter as dc
 from ..data import anbima as an
-from . import utils as ut
+from . import bond_tools as bt
 
 
 def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
@@ -67,8 +67,8 @@ def quotation(
     bdays = bday.count(settlement, maturity)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = ut.truncate(bdays / 252, 14)
+    num_of_years = bt.truncate(bdays / 252, 14)
 
     discount_factor = 1 / (1 + rate) ** num_of_years
 
-    return ut.truncate(100 * discount_factor, 4)
+    return bt.truncate(100 * discount_factor, 4)

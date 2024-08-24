@@ -3,8 +3,8 @@ from typing import overload
 import numpy as np
 import pandas as pd
 
-from .. import data
-from ..data import anbima
+from .. import date_converter as dc
+from ..data import anbima, di
 
 
 @overload
@@ -43,7 +43,7 @@ def calculate_present_value(
     return (cash_flows / (1 + rates) ** periods).sum()
 
 
-def di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
+def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on
     ANBIMA's indicative rates.
@@ -64,13 +64,15 @@ def di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
             bond type and maturity date.
     """
     # Fetch DI rates for the reference date
-    df_di = data.futures("DI1", reference_date)[["ExpirationDate", "SettlementRate"]]
+    reference_date = dc.convert_date(reference_date)
+    df_di = di.data(reference_date, adj_expirations=True)
+    if "SettlementRate" not in df_di.columns:
+        raise ValueError("DI rates data is missing the 'SettlementRate' column.")
+
+    df_di = df_di[["ExpirationDate", "SettlementRate"]].copy()
 
     # Renaming the columns to match the ANBIMA structure
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
-
-    # Adjusting maturity date to match bond data format
-    df_di["MaturityDate"] = df_di["MaturityDate"].dt.to_period("M").dt.to_timestamp()
 
     # Fetch bond rates, filtering for LTN and NTN-F types
     df_ltn = anbima.rates(reference_date, "LTN")
@@ -87,5 +89,6 @@ def di_spreads(reference_date: pd.Timestamp) -> pd.DataFrame:
     df_spreads["DISpread"] = (10_000 * df_spreads["DISpread"]).round(2)
 
     # Prepare and return the final sorted DataFrame
+    df_spreads = df_spreads.sort_values(["BondType", "MaturityDate"], ignore_index=True)
     select_columns = ["BondType", "ReferenceDate", "MaturityDate", "DISpread"]
-    return df_spreads[select_columns].sort_values(["MaturityDate"], ignore_index=True)
+    return df_spreads[select_columns].copy()

@@ -4,8 +4,8 @@ import pandas as pd
 from .. import bday
 from .. import date_converter as dc
 from .. import interpolator as it
-from ..data import anbima as an
-from . import utils as ut
+from ..data import anbima
+from . import bond_tools as bt
 
 """
 Constants calculated as per Anbima Rules
@@ -30,7 +30,7 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the maturities and the indicative rates.
     """
-    return an.rates(reference_date, "NTN-F")[["MaturityDate", "IndicativeRate"]]
+    return anbima.rates(reference_date, "NTN-F")[["MaturityDate", "IndicativeRate"]]
 
 
 def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -170,12 +170,12 @@ def price(
     df_cf = cash_flows(settlement, maturity)
     cf_values = df_cf["CashFlow"]
     bdays = bday.count(settlement, df_cf["PaymentDate"])
-    byears = ut.truncate(bdays / 252, 14)
+    byears = bt.truncate(bdays / 252, 14)
     discount_factors = (1 + rate) ** byears
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
     dcf = (cf_values / discount_factors).round(9)
     # Return the sum of the discounted cash flows truncated as per Anbima rules
-    return ut.truncate(dcf.sum(), 6)
+    return bt.truncate(dcf.sum(), 6)
 
 
 def _calculate_coupons_pv(
@@ -189,7 +189,7 @@ def _calculate_coupons_pv(
     df_coupons["Coupon"] = COUPON_PMT
 
     # Calculate the present value of the coupon payments
-    pv = ut.calculate_present_value(
+    pv = bt.calculate_present_value(
         cash_flows=df_coupons["Coupon"],
         rates=df_coupons["SpotRate"],
         periods=df_coupons["BDays"] / 252,
@@ -271,7 +271,7 @@ def spot_rates(
     return df_spot
 
 
-def di_gross_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
+def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Calculates the DI spread for the NTN-F based on ANBIMA's indicative rates.
 
@@ -286,13 +286,11 @@ def di_gross_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
         pd.Series: A pandas series containing the calculated spreads in basis points
             indexed by maturity dates.
     """
-    reference_date = dc.convert_date(reference_date)
     # Fetch DI Spreads for the reference date
-    df = ut.di_spreads(reference_date)
+    df = bt.di_spreads(reference_date)
     df.query("BondType == 'NTN-F'", inplace=True)
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
-    df.set_index("MaturityDate", inplace=True)
-    return df["DISpread"]
+    return df[["MaturityDate", "DISpread"]]
 
 
 def di_net_spread(  # noqa

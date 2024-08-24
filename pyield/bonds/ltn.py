@@ -2,8 +2,8 @@ import pandas as pd
 
 from .. import bday
 from .. import date_converter as dc
-from ..data import anbima as an
-from . import utils as ut
+from ..data import anbima
+from . import bond_tools as bt
 
 FACE_VALUE = 1000
 
@@ -19,7 +19,7 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         pd.DataFrame: DataFrame containing the maturity dates and indicative rates
             for LTN bonds.
     """
-    return an.rates(reference_date, "LTN")[["MaturityDate", "IndicativeRate"]]
+    return anbima.rates(reference_date, "LTN")[["MaturityDate", "IndicativeRate"]]
 
 
 def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -71,15 +71,15 @@ def price(
     bdays = bday.count(settlement, maturity)
 
     # Calculate the number of periods truncated as per Anbima rule
-    num_of_years = ut.truncate(bdays / 252, 14)
+    num_of_years = bt.truncate(bdays / 252, 14)
 
     discount_factor = (1 + rate) ** num_of_years
 
     # Truncate the price to 6 decimal places as per Anbima rules
-    return ut.truncate(FACE_VALUE / discount_factor, 6)
+    return bt.truncate(FACE_VALUE / discount_factor, 6)
 
 
-def di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
+def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Calculates the DI spread for the LTN based on ANBIMA's indicative rates.
 
@@ -95,10 +95,8 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.Series:
         pd.Series: A pandas series containing the calculated spreads in basis points
             indexed by maturity dates.
     """
-    reference_date = dc.convert_date(reference_date)
     # Fetch DI Spreads for the reference date
-    df = ut.di_spreads(reference_date)
+    df = bt.di_spreads(reference_date)
     df.query("BondType == 'LTN'", inplace=True)
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
-    df.set_index("MaturityDate", inplace=True)
-    return df["DISpread"]
+    return df[["MaturityDate", "DISpread"]]
