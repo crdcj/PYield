@@ -105,7 +105,7 @@ def _convert_prices_to_rates(
     return rates.round(5)
 
 
-def _fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
+def _fetch_raw_df(contract_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetch the historical futures data from B3 for a specific trade date. If the data is
     not available, an empty DataFrame is returned.
@@ -118,7 +118,7 @@ def _fetch_raw_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     url_date = trade_date.strftime("%d/%m/%Y")
     # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
-    url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={url_date}&Mercadoria={asset_code}&XLS=false"
+    url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={url_date}&Mercadoria={contract_code}&XLS=false"
     r = requests.get(url, timeout=10)
 
     text = r.text
@@ -276,7 +276,7 @@ def _select_and_reorder_columns(df: pd.DataFrame):
     return df[reordered_columns]
 
 
-def fetch_historical_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
+def fetch_historical_df(contract_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetchs the futures data for a given date from B3.
 
@@ -293,10 +293,11 @@ def fetch_historical_df(asset_code: str, trade_date: pd.Timestamp) -> pd.DataFra
         pd.DataFrame: A Pandas pd.DataFrame containing processed futures data. If
             the data is not available, an empty DataFrame is returned.
     """
-    df_raw = _fetch_raw_df(asset_code=asset_code, trade_date=trade_date)
+    df_raw = _fetch_raw_df(contract_code, trade_date)
     if df_raw.empty:
         return df_raw
+
     df = _rename_columns(df_raw)
-    df = process_df(df, trade_date, asset_code)
+    df = process_df(df, trade_date, contract_code)
     df = _select_and_reorder_columns(df)
     return df

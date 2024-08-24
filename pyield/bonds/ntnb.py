@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 
 from .. import bday
+from .. import data as ft
 from .. import date_converter as dc
-from .. import fetchers as ft
 from .. import interpolator as it
-from ..fetchers import anbima as an
+from ..data import anbima as an
 from . import ltn
 from . import utils as ut
 
@@ -54,20 +54,7 @@ def _check_maturities(
         raise ValueError("NTN-B maturity must be 15/02, 15/05, 15/08 or 15/11.")
 
 
-def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
-    """
-    Fetch NTN-B Anbima data for the given reference date.
-
-    Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
-    """
-    return an.anbima_data(reference_date, "NTN-B")
-
-
-def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
@@ -78,7 +65,7 @@ def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         pd.DataFrame: DataFrame containing the maturity dates and indicative rates
             for the NTN-B bonds.
     """
-    return an.anbima_rates(reference_date, "NTN-B")[["MaturityDate", "IndicativeRate"]]
+    return an.rates(reference_date, "NTN-B")[["MaturityDate", "IndicativeRate"]]
 
 
 def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -91,8 +78,8 @@ def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: Series containing the maturity dates for the NTN-B bonds.
     """
-    rates = indicative_rates(reference_date)
-    return rates["MaturityDate"]
+    df_rates = rates(reference_date)
+    return df_rates["MaturityDate"]
 
 
 def _coupon_dates_map(
@@ -396,7 +383,7 @@ def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame containing the NIR data for NTN-B bonds.
     """
-    df = ft.futures(contract_code="DI1", reference_date=reference_date)
+    df = ft.futures(contract_code="DI1", trade_date=reference_date)
     if "CurrentRate" in df.columns:
         df = df.rename(columns={"CurrentRate": "NIR_DI"})
         keep_cols = [

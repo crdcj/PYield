@@ -3,7 +3,7 @@ from typing import overload
 import numpy as np
 import pandas as pd
 
-from .. import fetchers as ft
+from .. import data as ft
 
 
 @overload

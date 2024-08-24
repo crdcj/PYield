@@ -1,15 +1,19 @@
+import datetime as dt
+
 import pandas as pd
+from pytz import timezone
 
 from ... import date_converter as dc
 from .historical import fetch_historical_df
 from .intraday import fetch_intraday_df
 
 SUPPORTED_FUTURES = ["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
+TIMEZONE_BZ = timezone("America/Sao_Paulo")
 
 
 def futures(
     contract_code: str,
-    reference_date: str | pd.Timestamp,
+    trade_date: str | pd.Timestamp,
 ) -> pd.DataFrame:
     """
     Fetches data for a specified futures contract based on type and reference date.
@@ -43,14 +47,14 @@ def futures(
     if contract_code not in SUPPORTED_FUTURES:
         raise ValueError("Futures contract not supported.")
 
-    normalized_date = dc.convert_date(reference_date)
+    trade_date = dc.convert_date(trade_date)
 
     # First, try to fetch historical data for the specified date
-    df = fetch_historical_df(contract_code, normalized_date)
+    df = fetch_historical_df(contract_code, trade_date)
 
+    bz_today = dt.datetime.now(TIMEZONE_BZ).date()
     # If there is no historical data available, try to fetch intraday data
-    today = pd.Timestamp.today().normalize()
-    if normalized_date == today and df.empty:
+    if trade_date.date() == bz_today and df.empty:
         df = fetch_intraday_df(contract_code)
 
     return df

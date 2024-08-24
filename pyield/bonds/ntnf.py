@@ -4,7 +4,7 @@ import pandas as pd
 from .. import bday, di
 from .. import date_converter as dc
 from .. import interpolator as it
-from ..fetchers import anbima as an
+from ..data import anbima as an
 from . import utils as ut
 
 """
@@ -22,20 +22,7 @@ FINAL_PMT = 1048.80885
 di_data = di.DIData()
 
 
-def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
-    """
-    Fetch NTN-F Anbima data for the given reference date.
-
-    Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
-    """
-    return an.anbima_data(reference_date, "NTN-F")
-
-
-def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
@@ -45,7 +32,7 @@ def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the maturities and the indicative rates.
     """
-    return an.anbima_rates(reference_date, "NTN-F")[["MaturityDate", "IndicativeRate"]]
+    return an.rates(reference_date, "NTN-F")[["MaturityDate", "IndicativeRate"]]
 
 
 def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -58,8 +45,8 @@ def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: A Series of NTN-F bond maturities available for the reference date.
     """
-    rates = indicative_rates(reference_date)
-    return rates["MaturityDate"]
+    df_rates = rates(reference_date)
+    return df_rates["MaturityDate"]
 
 
 def _check_maturity_date(maturity: pd.Timestamp) -> None:

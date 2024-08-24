@@ -39,6 +39,8 @@ def _fetch_b3_df(future_code: str) -> pd.DataFrame:
 
     r.encoding = "utf-8"  # Explicitly set response encoding to utf-8 for consistency
 
+    # if "buyOffer.price" not in r.text or "sellOffer.price" not in r.text:
+    # Check if the response contains the expected data
     if "Quotation not available" in r.text or "curPrc" not in r.text:
         return pd.DataFrame()
 
@@ -168,8 +170,8 @@ def fetch_intraday_df(future_code: str) -> pd.DataFrame:
         pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
     """
     raw_df = _fetch_b3_df(future_code)
-    if "buyOffer.price" not in raw_df.columns:
-        raise Exception(f"No data available for {future_code}.")
+    if raw_df.empty:
+        return pd.DataFrame()
     df = _process_df(raw_df)
     df = _select_and_reorder_columns(df)
     return df

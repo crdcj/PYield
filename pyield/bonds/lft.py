@@ -2,26 +2,13 @@ import pandas as pd
 
 from .. import bday
 from .. import date_converter as dc
-from ..fetchers import anbima as an
+from ..data import anbima as an
 from . import utils as ut
 
 
-def anbima_data(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
-    Fetch LFT Anbima data for the given reference date.
-
-    Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the Anbima data for the reference date.
-    """
-    return an.anbima_data(reference_date, "LFT")
-
-
-def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
-    """
-    Fetch the bond indicative rates for the given reference date.
+    Fetch the bond Anbima indicative rates for the given reference date.
 
     Args:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
@@ -30,7 +17,7 @@ def indicative_rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         pd.DataFrame: DataFrame containing the maturity dates and indicative rates
             for the bonds.
     """
-    return an.anbima_rates(reference_date, "NTN-F")[["MaturityDate", "IndicativeRate"]]
+    return an.rates(reference_date, "NTN-F")[["MaturityDate", "IndicativeRate"]]
 
 
 def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -43,8 +30,8 @@ def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
     Returns:
         pd.Series: A Series of bond maturities available for the reference date.
     """
-    rates = indicative_rates(reference_date)
-    return rates["MaturityDate"]
+    df_rates = rates(reference_date)
+    return df_rates["MaturityDate"]
 
 
 def quotation(
