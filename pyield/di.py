@@ -4,47 +4,18 @@ import pandas as pd
 
 from . import bday
 from . import date_converter as dc
-
-DI_URL = "https://raw.githubusercontent.com/crdcj/pyield-data/main/di_data.parquet"
+from .data_manager import get_anbima_dataframe, get_di_dataframe
+from .fetchers import futures
 
 
 class DIData:
-    _df = pd.DataFrame()
-
     def __init__(self):
-        """Initialize the DIData class and load the data."""
-        if self._df.empty or not self._is_data_up_to_date():
-            self._load_data()
-
-    @classmethod
-    def _load_data(cls):
-        print("Loading DI dataset...")
-        cls._df = pd.read_parquet(DI_URL)
-        cls._last_update = pd.Timestamp.today().normalize()
-
-    @classmethod
-    def _is_data_up_to_date(cls) -> bool:
-        """Check if the last date in the file is the last available ANBIMA date."""
-        if cls._df.empty:
-            return False
-        today = pd.Timestamp.today().normalize()
-        last_di_date = bday.offset(today, -1)
-        last_file_date = cls._df["TradeDate"].max()
-        return last_di_date == last_file_date
-
-    @classmethod
-    def _check_for_updates(cls):
-        """Check if the data is up to date. If not, load the latest data."""
-        if cls._df.empty or not cls._is_data_up_to_date():
-            cls._load_data()
-
-    @classmethod
-    def _get_dataframe(cls):
-        cls._load_data()
-        return cls._df.copy()
+        """Initialize the DIData class."""
+        pass  # A inicialização não precisa carregar os dados, o cache cuidará disso.
 
     @staticmethod
     def _get_rate_column(rate_type: str) -> str:
+        """Map the rate type to the corresponding column name."""
         rate_map = {
             "settlement": "SettlementRate",
             "min": "MinRate",
@@ -57,34 +28,38 @@ class DIData:
             )
         return rate_map[rate_type]
 
-    @classmethod
     def rates(
-        cls,
-        trade_date: str | pd.Timestamp | None = None,
-        expiration_date: str | pd.Timestamp | None = None,
-        rate_type: Literal["settlement", "min", "max", "close"] = "settlement",
-        adjust_exp_date: bool = False,
-    ) -> pd.DataFrame | float:
-        rate_col = cls._get_rate_column(rate_type)
-        cls._check_for_updates()
-        df = cls._df[["TradeDate", "ExpirationDate", f"{rate_col}"]].copy()
+        self,
+        trade_date: str | pd.Timestamp,
+        rate_type: Literal["settlement", "min", "max", "close", "last"] = "settlement",
+        adj_expirations: bool = False,
+        prefixed_filter: bool = False,
+    ) -> pd.DataFrame:
+        """Retrieve the rates for the specified trade date and rate type."""
+        rate_col = self._get_rate_column(rate_type)
+        bz_last_bday = bday.offset(trade_date, 0, roll="backward")
+        trade_date = dc.convert_date(trade_date)
 
-        if expiration_date:
-            expiration_date = dc.convert_date(expiration_date)
-            # Force the expiration date to be a business day
-            expiration_date = bday.offset(expiration_date, 0)
-            df.query("ExpirationDate == @expiration_date", inplace=True)
-
-        if trade_date:
-            trade_date = dc.convert_date(trade_date)
+        if trade_date == bz_last_bday:
+            # There is no historical data for the last business day.
+            df = futures(contract_code="DI1", trade_date=trade_date)
+        else:
+            df = get_di_dataframe()
+            df = df[["TradeDate", "ExpirationDate", f"{rate_col}"]].copy()
             df.query("TradeDate == @trade_date", inplace=True)
 
-        if adjust_exp_date:
+        df.drop(columns=["TradeDate"], inplace=True)
+
+        if prefixed_filter:
+            df_anb = get_anbima_dataframe()
+            df_anb.query("ReferenceDate == @trade_date", inplace=True)
+            df_pre = df_anb.query("BondType in ['LTN', 'NTN-F']").copy()
+            pre_maturities = df_pre["MaturityDate"].drop_duplicates(ignore_index=True)
+            adj_pre_maturities = bday.offset(pre_maturities, 0)  # noqa
+            df = df.query("ExpirationDate in @adj_pre_maturities")
+
+        if adj_expirations:
             df["ExpirationDate"] = df["ExpirationDate"].dt.to_period("M")
             df["ExpirationDate"] = df["ExpirationDate"].dt.to_timestamp()
 
-        df.sort_values(["TradeDate", "ExpirationDate"]).reset_index(drop=True)
-        if len(df.index) == 1:
-            return float(df[f"{rate_col}"].values[0])
-        else:
-            return df
+        return df.sort_values(["ExpirationDate"], ignore_index=True)

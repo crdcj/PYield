@@ -151,7 +151,7 @@ def anbima_data(
         return df.reset_index(drop=True)
 
 
-class RatesData:
+class AnbimaData:
     _df = pd.DataFrame()
 
     @classmethod
@@ -197,6 +197,19 @@ class RatesData:
 
         return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
+    def pre_maturities(
+        cls,
+        reference_date: str | pd.Timestamp,
+    ) -> pd.Series:
+        cls._check_for_updates()
+        df = cls._df.copy()
+        reference_date = dc.convert_date(reference_date)
+        df.query("ReferenceDate == @reference_date", inplace=True)
+        df.query("BondType in ['LTN', 'NTN-F']", inplace=True)
+        maturity_dates = df["MaturityDate"].drop_duplicates()
+
+        return maturity_dates.sort_values(ignore_index=True)
+
 
 def anbima_rates(
     reference_date: str | pd.Timestamp,
@@ -226,4 +239,4 @@ def anbima_rates(
         >>> anbima_rates("NTN-B", "18-06-2024")
     """
 
-    return RatesData.rates(reference_date, bond_type)
+    return AnbimaData.rates(reference_date, bond_type)
