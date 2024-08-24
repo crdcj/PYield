@@ -16,16 +16,6 @@ ANBIMA_FILE = "anbima_data.parquet"
 ANBIMA_URL = f"{GIT_URL}/{ANBIMA_FILE}"
 
 
-def should_update_dataset(last_date_in_dataset: dt.date) -> bool:
-    bz_now = dt.datetime.now(TIMEZONE_BZ)
-    bz_hour = bz_now.hour
-    bz_today = bz_now.date()
-    bz_last_bday = bday.offset(bz_today, 0, roll="backward").date()
-    condition1 = bz_hour >= UPDATE_HOUR
-    condition2 = bz_last_bday != last_date_in_dataset
-    return condition1 and condition2
-
-
 class DataCache:
     _instance = None
 

@@ -85,5 +85,5 @@ def expirations(
     """
     trade_date = dc.convert_date(trade_date)
     df = data(trade_date, adj_expirations, prefixed_filter)
-
-    return df["ExpirationDate"].drop_duplicates(ignore_index=True)
+    df = df.drop_duplicates(subset=["ExpirationDate"], ignore_index=True)
+    return df["ExpirationDate"]
