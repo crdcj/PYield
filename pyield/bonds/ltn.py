@@ -141,7 +141,7 @@ def historical_premium(
     """
     # Convert input dates to a consistent format
     reference_date = dc.convert_date(reference_date)
-    maturity = bday.offset(maturity, 0)
+    maturity = dc.convert_date(maturity)
 
     # Retrieve LTN rates for the reference date
     df_anbima = rates(reference_date)
@@ -152,7 +152,7 @@ def historical_premium(
     ltn_rates = df_anbima.query("MaturityDate == @maturity")["IndicativeRate"]
     if ltn_rates.empty:
         return float("NaN")
-    ltn_rate = ltn_rates.iloc[0]
+    ltn_rate = float(ltn_rates.iloc[0])
 
     # Retrieve DI rate for the reference date and maturity
     di_rate = di.rate(trade_date=reference_date, expiration=maturity)

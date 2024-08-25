@@ -101,7 +101,7 @@ def historical_premium(
     """
     # Convert input dates to a consistent format
     reference_date = dc.convert_date(reference_date)
-    maturity = bday.offset(maturity, 0)
+    maturity = dc.convert_date(maturity)
 
     # Retrieve LFT rates for the reference date
     df_anbima = rates(reference_date)
