@@ -476,7 +476,7 @@ def historical_premium(
     maturity: str | pd.Timestamp,  # noqa
 ) -> float:
     reference_date = dc.convert_date(reference_date)
-    maturity = dc.convert_date(maturity)
+    maturity = bday.offset(maturity, 0)
 
     df_ntnf = rates(reference_date)
     if df_ntnf.empty:

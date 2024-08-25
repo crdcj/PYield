@@ -116,11 +116,11 @@ def offset(
             `Series` of offset dates.
 
     Examples:
-        >>> date = "2023-12-23"  # Saturday before Christmas
+        >>> date = "23-12-2023"  # Saturday before Christmas
         >>> bday.offset(date, 0)
         Timestamp('2023-12-26')
 
-        >>> date = "2023-12-22"  # Friday before Christmas
+        >>> date = "22-12-2023"  # Friday before Christmas
         >>> bday.offset(date, 0)
         Timestamp('2023-12-22') # No offset because it's a business day
 

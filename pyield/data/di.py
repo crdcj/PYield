@@ -113,8 +113,6 @@ def rate(
     """
     # Convert input dates to consistent format
     trade_date = dc.convert_date(trade_date)
-    expiration = dc.convert_date(expiration)
-
     # Adjust expiration date to the nearest business day
     expiration = bday.offset(expiration, 0)
 
@@ -131,6 +129,11 @@ def rate(
     # Return NaN if no exact match is found and interpolation is not allowed
     if df_exp.empty and not interpolate:
         return float("NaN")
+
+    if expiration in df["ExpirationDate"]:
+        df_exp.set_index("ExpirationDate", inplace=True)
+        # Return the rate if an exact match is found
+        return df_exp.loc[expiration, "SettlementRate"].iloc[0]
 
     # Perform flat forward interpolation if required
     ff_interpolator = interpolator.Interpolator(
