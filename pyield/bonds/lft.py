@@ -81,7 +81,7 @@ def premium(lft_rate: float, di_rate: float) -> float:
     di_factor = (1 + di_rate) ** (1 / 252)
     lft_factor = (1 + lft_rate) ** (1 / 252) * di_factor
 
-    return float((lft_factor - 1) / (di_factor - 1))
+    return (lft_factor - 1) / (di_factor - 1)
 
 
 def historical_premium(
@@ -109,10 +109,10 @@ def historical_premium(
         return float("NaN")
 
     # Extract the LFT rate for the specified maturity date
-    lft_rate = df_anbima.query("MaturityDate == @maturity")["IndicativeRate"]
-    if lft_rate.empty:
+    lft_rates = df_anbima.query("MaturityDate == @maturity")["IndicativeRate"]
+    if lft_rates.empty:
         return float("NaN")
-    lft_rate = lft_rate.iloc[0]
+    lft_rate = float(lft_rates.iloc[0])
 
     # Retrieve DI rate for the reference date and maturity
     di_rate = di.rate(trade_date=reference_date, expiration=maturity)

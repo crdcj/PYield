@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import numpy as np
 import pandas as pd
 
@@ -324,7 +326,7 @@ def _bisection_method(func, a, b, tol=1e-8, maxiter=100):
 
 
 def _solve_spread(
-    price_difference_func: callable,
+    price_difference_func: Callable,
     initial_guess: float | None = None,
     range_width_bps: float = 50,
 ) -> float:
@@ -343,12 +345,10 @@ def _solve_spread(
     """
     try:
         if initial_guess is not None:
-            a = (
-                initial_guess - range_width_bps / 10_000
-            )  # range_width_bps below the initial guess
-            b = (
-                initial_guess + range_width_bps / 10_000
-            )  # range_width_bps above the initial guess
+            # range_width_bps below the initial guess
+            a = initial_guess - range_width_bps / 10_000
+            # range_width_bps above the initial guess
+            b = initial_guess + range_width_bps / 10_000
         else:
             a = -0.01  # Initial guess of -100 bps
             b = 0.01  # Initial guess of 100 bps
@@ -478,14 +478,14 @@ def historical_premium(
     reference_date = dc.convert_date(reference_date)
     maturity = dc.convert_date(maturity)
 
-    ntnf_ytms = rates(reference_date)
-    if ntnf_ytms.empty:
+    df_ntnf = rates(reference_date)
+    if df_ntnf.empty:
         return float("NaN")
 
-    ntnf_ytm = ntnf_ytms.query("MaturityDate == @maturity")
-    if ntnf_ytm.empty:
+    ntnf_ytms = df_ntnf.query("MaturityDate == @maturity")["IndicativeRate"]
+    if ntnf_ytms.empty:
         return float("NaN")
-    ntnf_ytm = ntnf_ytm["IndicativeRate"].values[0]
+    ntnf_ytm = float(ntnf_ytms.iloc[0])
 
     df = cash_flows(reference_date, maturity, adj_payment_dates=True)
     df["BDays"] = bday.count(reference_date, df["PaymentDate"])

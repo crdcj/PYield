@@ -121,7 +121,7 @@ def premium(ltn_rate: float, di_rate: float) -> float:
     di_factor = (1 + di_rate) ** (1 / 252)
 
     # Retorno do cálculo do prêmio
-    return float((ltn_factor - 1) / (di_factor - 1))
+    return (ltn_factor - 1) / (di_factor - 1)
 
 
 def historical_premium(
@@ -149,10 +149,10 @@ def historical_premium(
         return float("NaN")
 
     # Extract the LTN rate for the specified maturity date
-    ltn_rate = df_anbima.query("MaturityDate == @maturity")["IndicativeRate"]
-    if ltn_rate.empty:
+    ltn_rates = df_anbima.query("MaturityDate == @maturity")["IndicativeRate"]
+    if ltn_rates.empty:
         return float("NaN")
-    ltn_rate = ltn_rate.iloc[0]
+    ltn_rate = ltn_rates.iloc[0]
 
     # Retrieve DI rate for the reference date and maturity
     di_rate = di.rate(trade_date=reference_date, expiration=maturity)
