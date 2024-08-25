@@ -130,10 +130,9 @@ def rate(
     if df_exp.empty and not interpolate:
         return float("NaN")
 
-    if expiration in df["ExpirationDate"]:
-        df_exp.set_index("ExpirationDate", inplace=True)
+    if expiration in df_exp["ExpirationDate"]:
         # Return the rate if an exact match is found
-        return df_exp.loc[expiration, "SettlementRate"].iloc[0]
+        return float(df_exp["SettlementRate"].iloc[0])
 
     # Perform flat forward interpolation if required
     ff_interpolator = interpolator.Interpolator(
@@ -142,8 +141,5 @@ def rate(
         known_rates=df["SettlementRate"],
     )
 
-    # Calculate business days between trade date and expiration date
-    bdays = bday.count(trade_date, expiration)
-
     # Return the interpolated rate for the calculated business days
-    return ff_interpolator(bdays)
+    return ff_interpolator(bday.count(trade_date, expiration))
