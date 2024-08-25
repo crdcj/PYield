@@ -2,7 +2,7 @@ import pandas as pd
 
 from .. import bday
 from .. import date_converter as dc
-from ..data import anbima as an
+from ..data import anbima, di
 from . import bond_tools as bt
 
 
@@ -17,7 +17,10 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         pd.DataFrame: DataFrame containing the maturity dates and indicative rates
             for the bonds.
     """
-    return an.rates(reference_date, "NTN-F")[["MaturityDate", "IndicativeRate"]]
+    lft_rates = anbima.rates(reference_date, "LFT")
+    if lft_rates.empty:
+        return pd.DataFrame()
+    return lft_rates[["MaturityDate", "IndicativeRate"]]
 
 
 def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -72,3 +75,49 @@ def quotation(
     discount_factor = 1 / (1 + rate) ** num_of_years
 
     return bt.truncate(100 * discount_factor, 4)
+
+
+def premium(lft_rate: float, di_rate: float) -> float:
+    di_factor = (1 + di_rate) ** (1 / 252)
+    lft_factor = (1 + lft_rate) ** (1 / 252) * di_factor
+
+    return float((lft_factor - 1) / (di_factor - 1))
+
+
+def historical_premium(
+    reference_date: str | pd.Timestamp,
+    maturity: str | pd.Timestamp,
+) -> float:
+    """
+    Calculate the premium of the LFT bond over the DI Future rate for a given date.
+
+    Args:
+        reference_date (str | pd.Timestamp): The reference date to fetch the rates.
+        maturity (str | pd.Timestamp): The maturity date of the LFT bond.
+
+    Returns:
+        float: The premium of the LFT bond over the DI Future rate for the given date.
+               If the data is not available, returns NaN.
+    """
+    # Convert input dates to a consistent format
+    reference_date = dc.convert_date(reference_date)
+    maturity = dc.convert_date(maturity)
+
+    # Retrieve LFT rates for the reference date
+    df_anbima = rates(reference_date)
+    if df_anbima.empty:
+        return float("NaN")
+
+    # Extract the LFT rate for the specified maturity date
+    lft_rate = df_anbima.query("MaturityDate == @maturity")["IndicativeRate"]
+    if lft_rate.empty:
+        return float("NaN")
+    lft_rate = lft_rate.iloc[0]
+
+    # Retrieve DI rate for the reference date and maturity
+    di_rate = di.rate(trade_date=reference_date, expiration=maturity)
+    if pd.isnull(di_rate):  # Check if the DI rate is NaN
+        return float("NaN")
+
+    # Calculate and return the premium using the extracted rates
+    return premium(lft_rate, di_rate)

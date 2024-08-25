@@ -32,7 +32,13 @@ class Interpolator:
         Examples:
             >>> known_bdays = [30, 60, 90]
             >>> known_rates = [0.045, 0.05, 0.055]
-            >>> interpolator = Interpolator("linear", known_bdays, known_rates)
+            >>> lin_interp = Interpolator("linear", known_bdays, known_rates)
+            >>> lin_interp(45)
+            0.0475
+            >>> ffo_interp = Interpolator("flat_forward", known_bdays, known_rates)
+            >>> ffo_interp(45)
+            0.04833068080970859
+
         """
         self.method = method
         self.known_bdays = known_bdays
@@ -95,16 +101,6 @@ class Interpolator:
         Returns:
             float: The interest rate interpolated by the specified method for the given
                 number of business days.
-
-        Examples:
-                >>> known_bdays = [30, 60, 90]
-                >>> known_rates = [0.045, 0.05, 0.055]
-                >>> linear = Interpolator("linear", known_bdays, known_rates)
-                >>> linear.interpolate(45)
-                0.0475
-                >>> fforward = Interpolator("flat_forward", known_bdays, known_rates)
-                >>> fforward.interpolate(45)
-                0.04833068080970859
         """
         # Check for edge cases
         if bday < self._known_bdays[0]:

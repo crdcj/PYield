@@ -4,7 +4,7 @@ import pandas as pd
 from .. import bday
 from .. import date_converter as dc
 from .. import interpolator as it
-from ..data import anbima
+from ..data import anbima, di
 from . import bond_tools as bt
 
 """
@@ -30,7 +30,10 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the maturities and the indicative rates.
     """
-    return anbima.rates(reference_date, "NTN-F")[["MaturityDate", "IndicativeRate"]]
+    ntnf_rates = anbima.rates(reference_date, "NTN-F")
+    if ntnf_rates.empty:
+        return pd.DataFrame()
+    return ntnf_rates[["MaturityDate", "IndicativeRate"]]
 
 
 def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -107,6 +110,7 @@ def coupon_dates(
 def cash_flows(
     settlement: str | pd.Timestamp,
     maturity: str | pd.Timestamp,
+    adj_payment_dates: bool = False,
 ) -> pd.DataFrame:
     """
     Generate the cash flows for the NTN-F bond between the settlement (exclusive) and
@@ -118,6 +122,8 @@ def cash_flows(
             or a pandas Timestamp.
         maturity (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
             a pandas Timestamp.
+        adj_payment_dates (bool): If True, adjust the payment dates to the next
+            business day.
 
     Returns:
         pd.DataFrame: A DataFrame containing the payment dates and the corresponding
@@ -134,7 +140,12 @@ def cash_flows(
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
     cf_values = np.where(payment_dates == maturity, FINAL_PMT, COUPON_PMT)
 
-    return pd.DataFrame(data={"PaymentDate": payment_dates, "CashFlow": cf_values})
+    df = pd.DataFrame(data={"PaymentDate": payment_dates, "CashFlow": cf_values})
+
+    if adj_payment_dates:
+        df["PaymentDate"] = bday.offset(df["PaymentDate"], 0)
+
+    return df
 
 
 def price(
@@ -293,6 +304,64 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return df[["MaturityDate", "DISpread"]]
 
 
+# Bisection method to find the root
+def _bisection_method(func, a, b, tol=1e-8, maxiter=100):
+    fa, fb = func(a), func(b)
+    if fa * fb > 0:
+        raise ValueError("Function does not change sign in the interval.")
+
+    for _ in range(maxiter):
+        midpoint = (a + b) / 2
+        fmid = func(midpoint)
+        if np.abs(fmid) < tol or (b - a) / 2 < tol:
+            return midpoint
+        if fmid * fa < 0:
+            b, fb = midpoint, fmid
+        else:
+            a, fa = midpoint, fmid
+
+    return (a + b) / 2
+
+
+def _solve_spread(
+    price_difference_func: callable,
+    initial_guess: float | None = None,
+    range_width_bps: float = 50,
+) -> float:
+    """
+    Solve for the spread that zeroes the price difference using a bisection method.
+
+    Args:
+        price_difference_func (callable): The function that computes the difference
+            between the bond's market price and its discounted cash flows.
+        initial_guess (float, optional): An initial guess for the spread.
+        range_width_bps (float, optional): The width of the range around the initial
+        guess in bps. Defaults to 50 bps.
+
+    Returns:
+        float: The solution for the spread in bps or NaN if no solution is found.
+    """
+    try:
+        if initial_guess is not None:
+            a = (
+                initial_guess - range_width_bps / 10_000
+            )  # range_width_bps below the initial guess
+            b = (
+                initial_guess + range_width_bps / 10_000
+            )  # range_width_bps above the initial guess
+        else:
+            a = -0.01  # Initial guess of -100 bps
+            b = 0.01  # Initial guess of 100 bps
+
+        # Find the spread (p) that zeroes the price difference
+        p_solution = _bisection_method(price_difference_func, a, b)
+    except ValueError:
+        # If no solution is found, return NaN
+        p_solution = float("NaN")
+
+    return p_solution
+
+
 def di_net_spread(  # noqa
     settlement: str | pd.Timestamp,
     maturity: str | pd.Timestamp,
@@ -338,54 +407,107 @@ def di_net_spread(  # noqa
     if len(di_rates) != len(di_expirations):
         raise ValueError("di_rates and di_expirations must have the same length.")
     if len(di_rates) == 0:
-        return float("nan")
+        return float("NaN")
 
     # Calculate cash flows and business days between settlement and payment dates
     df = cash_flows(settlement, maturity).reset_index()
     df["BDays"] = bday.count(settlement, df["PaymentDate"])
 
-    # Calculate business years (252 business days per year)
     byears = bday.count(settlement, df["PaymentDate"]) / 252
     di_interp = df["BDays"].apply(ff_interpolator)
     bond_price = price(settlement, maturity, ytm)
     bond_cash_flows = df["CashFlow"]
 
     def price_difference(p):
-        # Calculate the difference between the bond's price and its disc. cash flows
+        # Difference between the bond's price and its discounted cash flows
         return (bond_cash_flows / (1 + di_interp + p) ** byears).sum() - bond_price
 
-    # Bisection method to find the root
-    def bisection_method(func, a, b, tol=1e-8, maxiter=100):
-        fa, fb = func(a), func(b)
-        if fa * fb > 0:
-            raise ValueError("Function does not change sign in the interval.")
+    # Solve for the spread that zeroes the price difference using the Brent method
+    p_solution = _solve_spread(price_difference, initial_guess)
+    # Convert the solution to basis points (bps) and round to two decimal places
+    return round((p_solution * 10_000), 2)
 
-        for _ in range(maxiter):
-            midpoint = (a + b) / 2
-            fmid = func(midpoint)
-            if np.abs(fmid) < tol or (b - a) / 2 < tol:
-                return midpoint
-            if fmid * fa < 0:
-                b, fb = midpoint, fmid
-            else:
-                a, fa = midpoint, fmid
 
-        return (a + b) / 2
+def premium(
+    settlement: str | pd.Timestamp,
+    ntnf_rate: float,
+    ntnf_maturity: str | pd.Timestamp,
+    di_rates: pd.Series,
+    di_expirations: pd.Series,
+) -> float:
+    ntnf_maturity = dc.convert_date(ntnf_maturity)
+    settlement = dc.convert_date(settlement)
 
-    try:
-        if initial_guess is not None:
-            a = initial_guess - 50 / 10_000  # 50 bps below the initial guess
-            b = initial_guess + 50 / 10_000  # 50 bps above the initial guess
-        else:
-            a = -0.01  # Initial guess of -100 bps
-            b = 0.01  # Initial guess of 100 bps
+    df = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
+    df["BDays"] = bday.count(settlement, df["PaymentDate"])
+    df["BYears"] = df["BDays"] / 252
 
-        # Find the spread (p) that zeroes the price difference
-        p_solution = bisection_method(price_difference, a, b)
-        # Convert the solution to basis points (bps) and round to two decimal places
-        p_solution = round((p_solution * 10_000), 2)
-    except ValueError:
-        # If no solution is found, return NaN
-        p_solution = float("nan")
+    ff_interpolator = it.Interpolator(
+        "flat_forward",
+        bday.count(settlement, di_expirations),
+        di_rates,
+    )
 
-    return p_solution
+    df["DIRate"] = df["BDays"].apply(ff_interpolator)
+
+    # Calculate the present value of the cash flows using the DI rate
+    bond_price = bt.calculate_present_value(
+        cash_flows=df["CashFlow"],
+        rates=df["DIRate"],
+        periods=df["BDays"] / 252,
+    )
+
+    # Calculate the rate corresponding to this price
+    def price_difference(ytm):
+        # The ytm that zeroes the price difference
+        return (df["CashFlow"] / (1 + ytm) ** df["BYears"]).sum() - bond_price
+
+    # Solve for the YTM that zeroes the price difference
+    di_ytm = _solve_spread(price_difference, ntnf_rate)
+
+    factor_ntnf = (1 + ntnf_rate) ** (1 / 252)
+    factor_di = (1 + di_ytm) ** (1 / 252)
+
+    return float((factor_ntnf - 1) / (factor_di - 1))
+
+
+def historical_premium(
+    reference_date: str | pd.Timestamp,
+    maturity: str | pd.Timestamp,  # noqa
+) -> float:
+    reference_date = dc.convert_date(reference_date)
+    maturity = dc.convert_date(maturity)
+
+    ntnf_ytms = rates(reference_date)
+    if ntnf_ytms.empty:
+        return float("NaN")
+
+    ntnf_ytm = ntnf_ytms.query("MaturityDate == @maturity")
+    if ntnf_ytm.empty:
+        return float("NaN")
+    ntnf_ytm = ntnf_ytm["IndicativeRate"].values[0]
+
+    df = cash_flows(reference_date, maturity, adj_payment_dates=True)
+    df["BDays"] = bday.count(reference_date, df["PaymentDate"])
+    df["BYears"] = df["BDays"] / 252
+    df["DIRate"] = df["PaymentDate"].apply(lambda x: di.rate(reference_date, x))
+
+    # Calculate the present value of the cash flows using the DI rate
+    bond_price = bt.calculate_present_value(
+        cash_flows=df["CashFlow"],
+        rates=df["DIRate"],
+        periods=df["BDays"] / 252,
+    )
+
+    # Calculate the rate corresponding to this price
+    def price_difference(ytm):
+        # The ytm that zeroes the price difference
+        return (df["CashFlow"] / (1 + ytm) ** df["BYears"]).sum() - bond_price
+
+    # Solve for the YTM that zeroes the price difference
+    di_ytm = _solve_spread(price_difference, ntnf_ytm)
+
+    factor_ntnf = (1 + ntnf_ytm) ** (1 / 252)
+    factor_di = (1 + di_ytm) ** (1 / 252)
+
+    return float((factor_ntnf - 1) / (factor_di - 1))

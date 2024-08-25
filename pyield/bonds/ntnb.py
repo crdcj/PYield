@@ -5,7 +5,7 @@ from .. import bday
 from .. import data as ft
 from .. import date_converter as dc
 from .. import interpolator as it
-from ..data import anbima as an
+from ..data import anbima
 from . import bond_tools as bt
 from . import ltn
 
@@ -65,7 +65,10 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         pd.DataFrame: DataFrame containing the maturity dates and indicative rates
             for the NTN-B bonds.
     """
-    return an.rates(reference_date, "NTN-B")[["MaturityDate", "IndicativeRate"]]
+    ntnb_rates = anbima.rates(reference_date, "LTN")
+    if ntnb_rates.empty:
+        return pd.DataFrame()
+    return ntnb_rates[["MaturityDate", "IndicativeRate"]]
 
 
 def maturities(reference_date: str | pd.Timestamp) -> pd.Series:

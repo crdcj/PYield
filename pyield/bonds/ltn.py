@@ -2,7 +2,7 @@ import pandas as pd
 
 from .. import bday
 from .. import date_converter as dc
-from ..data import anbima
+from ..data import anbima, di
 from . import bond_tools as bt
 
 FACE_VALUE = 1000
@@ -19,7 +19,10 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         pd.DataFrame: DataFrame containing the maturity dates and indicative rates
             for LTN bonds.
     """
-    return anbima.rates(reference_date, "LTN")[["MaturityDate", "IndicativeRate"]]
+    ltn_rates = anbima.rates(reference_date, "LTN")
+    if ltn_rates.empty:
+        return pd.DataFrame()
+    return ltn_rates[["MaturityDate", "IndicativeRate"]]
 
 
 def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
@@ -100,3 +103,61 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     df.query("BondType == 'LTN'", inplace=True)
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
     return df[["MaturityDate", "DISpread"]]
+
+
+def premium(ltn_rate: float, di_rate: float) -> float:
+    """
+    Calculate the premium of the LTN bond over the DI Future rate using provided rates.
+
+    Args:
+        ltn_rate (float): The annualized LTN rate.
+        di_future_rate (float): The annualized DI Future rate.
+
+    Returns:
+        float: The premium of the LTN bond over the DI Future rate.
+    """
+    # Cálculo das taxas diárias
+    ltn_factor = (1 + ltn_rate) ** (1 / 252)
+    di_factor = (1 + di_rate) ** (1 / 252)
+
+    # Retorno do cálculo do prêmio
+    return float((ltn_factor - 1) / (di_factor - 1))
+
+
+def historical_premium(
+    reference_date: str | pd.Timestamp,
+    maturity: str | pd.Timestamp,
+) -> float:
+    """
+    Calculate the premium of the LTN bond over the DI Future rate for a given date.
+
+    Args:
+        reference_date (str | pd.Timestamp): The reference date to fetch the rates.
+        maturity (str | pd.Timestamp): The maturity date of the LTN bond.
+
+    Returns:
+        float: The premium of the LTN bond over the DI Future rate for the given date.
+               If the data is not available, returns NaN.
+    """
+    # Convert input dates to a consistent format
+    reference_date = dc.convert_date(reference_date)
+    maturity = dc.convert_date(maturity)
+
+    # Retrieve LTN rates for the reference date
+    df_anbima = rates(reference_date)
+    if df_anbima.empty:
+        return float("NaN")
+
+    # Extract the LTN rate for the specified maturity date
+    ltn_rate = df_anbima.query("MaturityDate == @maturity")["IndicativeRate"]
+    if ltn_rate.empty:
+        return float("NaN")
+    ltn_rate = ltn_rate.iloc[0]
+
+    # Retrieve DI rate for the reference date and maturity
+    di_rate = di.rate(trade_date=reference_date, expiration=maturity)
+    if pd.isnull(di_rate):  # Check if the DI rate is NaN
+        return float("NaN")
+
+    # Calculate and return the premium using the extracted rates
+    return premium(ltn_rate, di_rate)

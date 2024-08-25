@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .. import bday
+from .. import bday, interpolator
 from .. import date_converter as dc
 from .data_cache import get_anbima_dataframe, get_di_dataframe
 from .futures_data import futures
@@ -87,3 +87,60 @@ def expirations(
     df = data(trade_date, adj_expirations, prefixed_filter)
     df = df.drop_duplicates(subset=["ExpirationDate"], ignore_index=True)
     return df["ExpirationDate"]
+
+
+def rate(
+    trade_date: str | pd.Timestamp,
+    expiration: str | pd.Timestamp,
+    interpolate: bool = True,
+) -> float:
+    """Retrieve the DI rate for a specified trade date and expiration date.
+
+    This function returns the DI rate for the given trade date and expiration date.
+    The function uses the SettlementRate column from the DI contract data and
+    interpolates the rate using the flat forward method if required.
+
+    Args:
+        trade_date (str | pd.Timestamp): The trade date for which the DI rate is
+            required.
+        expiration (str | pd.Timestamp): The expiration date for the DI contract.
+        interpolate (bool): If True, interpolates the rate for the provided expiration
+            date.
+
+    Returns:
+        float: The DI rate for the specified trade date and expiration date, or NaN
+               if the rate cannot be determined.
+    """
+    # Convert input dates to consistent format
+    trade_date = dc.convert_date(trade_date)
+    expiration = dc.convert_date(expiration)
+
+    # Adjust expiration date to the nearest business day
+    expiration = bday.offset(expiration, 0)
+
+    # Retrieve the data for the given trade date
+    df = data(trade_date)
+
+    # Return NaN if no data is found for the trade date
+    if df.empty:
+        return float("NaN")
+
+    # Filter data for the specified expiration date
+    df_exp = df.query("ExpirationDate == @expiration")
+
+    # Return NaN if no exact match is found and interpolation is not allowed
+    if df_exp.empty and not interpolate:
+        return float("NaN")
+
+    # Perform flat forward interpolation if required
+    ff_interpolator = interpolator.Interpolator(
+        method="flat_forward",
+        known_bdays=bday.count(trade_date, df["ExpirationDate"]),
+        known_rates=df["SettlementRate"],
+    )
+
+    # Calculate business days between trade date and expiration date
+    bdays = bday.count(trade_date, expiration)
+
+    # Return the interpolated rate for the calculated business days
+    return ff_interpolator(bdays)
