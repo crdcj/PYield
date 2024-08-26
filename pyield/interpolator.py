@@ -11,6 +11,7 @@ class Interpolator:
         method: Literal["flat_forward", "linear"],
         known_bdays: pd.Series | list,
         known_rates: pd.Series | list,
+        extrapolate: bool = False,
     ):
         """
         Initialize the Interpolator with given atributes.
@@ -19,6 +20,7 @@ class Interpolator:
             method (Literal["flat_forward", "linear"]): Interpolation method.
             known_bdays (pd.Series | pd.Index | list): Series of known business days.
             known_rates (pd.Series | pd.Index | list): Series of known interest rates.
+            extrapolate (bool, optional): Whether to extrapolate beyond the known data.
 
         Raises:
             ValueError: If known_bdays and known_rates do not have the same length.
@@ -43,6 +45,7 @@ class Interpolator:
         self.method = method
         self.known_bdays = known_bdays
         self.known_rates = known_rates
+        self.extrapolate = extrapolate
         self._set_known_bdays_and_rates()
 
     def _set_known_bdays_and_rates(self) -> None:
@@ -105,17 +108,18 @@ class Interpolator:
         # Check for edge cases
         if bday < self._known_bdays[0]:
             return self._known_rates[0]
-        elif bday > self._known_bdays[-1]:
-            return self._known_rates[-1]
         elif bday in self._known_bdays:
             return self._known_rates[self._known_bdays.index(bday)]
+        elif bday > self._known_bdays[-1]:
+            if self.extrapolate:
+                return self._known_rates[-1]
+            else:
+                return float("NaN")
 
         if self.method == "flat_forward":
             return self._flat_forward(bday)
         elif self.method == "linear":
             return self._linear(bday)
-        else:
-            raise ValueError(f"Unknown interpolation method: {self.method}.")
 
     def __call__(self, bday: int) -> float:
         """
