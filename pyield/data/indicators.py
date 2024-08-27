@@ -7,15 +7,17 @@ from .. import date_converter as dc
 
 
 def indicator(
-    indicator_type: Literal["IPCA_MR", "SELIC_TARGET", "DI", "VNA_LFT"],
+    indicator_type: Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI", "VNA_LFT"],
     reference_date: str | pd.Timestamp,
-) -> float | None:
+) -> float:
     reference_date = dc.convert_date(reference_date)
     ind_type = str(indicator_type).upper()
     if ind_type == "IPCA_MR":
         return ipca_monthly_rate(reference_date)
     elif ind_type == "SELIC_TARGET":
         return selic_target(reference_date)
+    elif ind_type == "SELIC_OVER":
+        return selic_over(reference_date)
     elif ind_type == "DI":
         return di(reference_date)
     elif ind_type == "VNA_LFT":
@@ -24,7 +26,7 @@ def indicator(
         raise ValueError(f"Invalid indicator type: {ind_type}")
 
 
-def ipca_monthly_rate(reference_date: pd.Timestamp) -> float | None:
+def ipca_monthly_rate(reference_date: pd.Timestamp) -> float:
     """
     Fetches the IPCA (Índice Nacional de Preços ao Consumidor Amplo) monthly rate
     from the IBGE (Instituto Brasileiro de Geografia e Estatística) for a given
@@ -35,7 +37,7 @@ def ipca_monthly_rate(reference_date: pd.Timestamp) -> float | None:
             is fetched. If a string is passed, it should be in 'DD-MM-YYYY' format.
 
     Returns:
-        float | None: The IPCA monthly rate for the specified date as a float.
+        float: The IPCA monthly rate for the specified date as a float.
         Returns None if data is not found or in case of an error.
 
     Notes:
@@ -65,15 +67,14 @@ def ipca_monthly_rate(reference_date: pd.Timestamp) -> float | None:
     # Parse the JSON response
     data = response.json()
 
+    if not data:
+        return float("nan")
     # Extract and return the IPCA monthly growth rate if data is available
-    if data:
-        ipca_str = data[0]["resultados"][0]["series"][0]["serie"][ipca_date]
-        return round(float(ipca_str) / 100, 4)
-    else:
-        return None
+    ipca_str = data[0]["resultados"][0]["series"][0]["serie"][ipca_date]
+    return round(float(ipca_str) / 100, 4)
 
 
-def selic_target(reference_date: pd.Timestamp) -> float | None:
+def selic_target(reference_date: pd.Timestamp) -> float:
     """
     Examples:
         >>> selic_taget("31-05-2024")
@@ -85,14 +86,31 @@ def selic_target(reference_date: pd.Timestamp) -> float | None:
     response = requests.get(api_url, timeout=10)
     response.raise_for_status()
 
-    if selic_date in response.text:
-        data = response.json()
-        return round(float(data[0]["valor"]) / 100, 4)
-    else:
-        return None
+    if selic_date not in response.text:
+        return float("nan")
+    data = response.json()
+    return round(float(data[0]["valor"]) / 100, 4)
 
 
-def di(reference_date: pd.Timestamp) -> float | None:
+def selic_over(reference_date: pd.Timestamp) -> float:
+    """
+    Examples:
+        >>> selic_over("26-08-2024")
+        0.1040  # Indicates a SELIC rate of 10.40% p.a.
+    """
+    # https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
+    formatted_date = reference_date.strftime("%d/%m/%Y")
+    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial={formatted_date}&dataFinal={formatted_date}"
+    response = requests.get(api_url, timeout=10)
+    response.raise_for_status()
+
+    if formatted_date not in response.text:
+        return float("nan")
+    data = response.json()
+    return round(float(data[0]["valor"]) / 100, 4)
+
+
+def di(reference_date: pd.Timestamp) -> float:
     """
     Examples:
         >>> di("31-05-2024")
@@ -104,14 +122,13 @@ def di(reference_date: pd.Timestamp) -> float | None:
     response = requests.get(api_url, timeout=10)
     response.raise_for_status()
 
-    if di_date in response.text:
-        data = response.json()
-        return round(float(data[0]["valor"]) / 100, 8)
-    else:
-        return None
+    if di_date not in response.text:
+        return float("nan")
+    data = response.json()
+    return round(float(data[0]["valor"]) / 100, 8)
 
 
-def vna_lft(reference_date: pd.Timestamp) -> float | None:
+def vna_lft(reference_date: pd.Timestamp) -> float:
     # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
     url_file = f"{reference_date.strftime('%Y%m%d')}APC238"
