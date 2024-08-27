@@ -2,7 +2,7 @@ import pandas as pd
 
 from .. import bday
 from .. import date_converter as dc
-from ..data import anbima, di
+from ..data import anbima
 from . import bond_tools as bt
 
 
@@ -77,47 +77,26 @@ def quotation(
     return bt.truncate(100 * discount_factor, 4)
 
 
-def premium(lft_rate: float, di_rate: float) -> float:
-    di_factor = (1 + di_rate) ** (1 / 252)
-    lft_factor = (1 + lft_rate) ** (1 / 252) * di_factor
-
-    return (lft_factor - 1) / (di_factor - 1)
-
-
-def historical_premium(
-    reference_date: str | pd.Timestamp,
-    maturity: str | pd.Timestamp,
-) -> float:
+def premium(lft_rate: float, selic_over: float) -> float:
     """
-    Calculate the premium of the LFT bond over the DI Future rate for a given date.
+    Calculate the premium of the LFT bond over the Selic rate (overnight).
+    Obs: The Selic rate (overnight) is not the same as the Selic target rate
 
     Args:
-        reference_date (str | pd.Timestamp): The reference date to fetch the rates.
-        maturity (str | pd.Timestamp): The maturity date of the LFT bond.
+        lft_rate (float): The LFT rate for the bond.
+        selic_over (float): The Selic overnight rate.
 
     Returns:
-        float: The premium of the LFT bond over the DI Future rate for the given date.
-               If the data is not available, returns NaN.
+        float: The premium of the LFT bond over the Selic rate.
+
+    Examples:
+        Calculate the premium of a LFT bond with a 0.02 yield rate over the Selic rate:
+        >>> lft_rate = 0.1695 / 100  # 0.1695%
+        >>> selic_over = 10.40 / 100  # 10.40%
+        >>> lft.premium(lft_rate, selic_over)
+        101.71205192837589
     """
-    # Convert input dates to a consistent format
-    reference_date = dc.convert_date(reference_date)
-    maturity = dc.convert_date(maturity)
-
-    # Retrieve LFT rates for the reference date
-    df_anbima = rates(reference_date)
-    if df_anbima.empty:
-        return float("NaN")
-
-    # Extract the LFT rate for the specified maturity date
-    lft_rates = df_anbima.query("MaturityDate == @maturity")["IndicativeRate"]
-    if lft_rates.empty:
-        return float("NaN")
-    lft_rate = float(lft_rates.iloc[0])
-
-    # Retrieve DI rate for the reference date and maturity
-    di_rate = di.rate(trade_date=reference_date, expiration=maturity)
-    if pd.isnull(di_rate):  # Check if the DI rate is NaN
-        return float("NaN")
-
-    # Calculate and return the premium using the extracted rates
-    return premium(lft_rate, di_rate)
+    adjusted_lft_rate = (lft_rate + 1) * (selic_over + 1) - 1
+    f1 = (adjusted_lft_rate + 1) ** (1 / 252) - 1
+    f2 = (selic_over + 1) ** (1 / 252) - 1
+    return f1 / f2
