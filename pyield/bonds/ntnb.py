@@ -65,7 +65,7 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         pd.DataFrame: DataFrame containing the maturity dates and indicative rates
             for the NTN-B bonds.
     """
-    ntnb_rates = anbima.rates(reference_date, "LTN")
+    ntnb_rates = anbima.rates(reference_date, "NTN-B")
     if ntnb_rates.empty:
         return pd.DataFrame()
     return ntnb_rates[["MaturityDate", "IndicativeRate"]]
@@ -121,7 +121,7 @@ def _coupon_dates_map(
     return pd.Series(coupon_dates).reset_index(drop=True)
 
 
-def coupon_dates(
+def payment_dates(
     settlement: str | pd.Timestamp,
     maturity: str | pd.Timestamp,
 ) -> pd.Series:
@@ -186,13 +186,13 @@ def cash_flows(
     maturity = dc.convert_date(maturity)
 
     # Get the coupon dates between the settlement and maturity dates
-    payment_dates = coupon_dates(settlement, maturity)
+    p_dates = payment_dates(settlement, maturity)
 
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    cfs = np.where(payment_dates == maturity, FINAL_PMT, COUPON_PMT).tolist()
+    cfs = np.where(p_dates == maturity, FINAL_PMT, COUPON_PMT).tolist()
 
     # Return a dataframe with the payment dates and cash flows
-    return pd.DataFrame(data={"PaymentDate": payment_dates, "CashFlow": cfs})
+    return pd.DataFrame(data={"PaymentDate": p_dates, "CashFlow": cfs})
 
 
 def quotation(
@@ -231,12 +231,12 @@ def quotation(
     maturity = dc.convert_date(maturity)
     _check_maturities(maturity)
 
-    df_cf = cash_flows(settlement, maturity)
-    payment_dates = df_cf["PaymentDate"]
-    cf_values = df_cf["CashFlow"]
+    cf_df = cash_flows(settlement, maturity)
+    cf_dates = cf_df["PaymentDate"]
+    cf_values = cf_df["CashFlow"]
 
     # Calculate the number of business days between settlement and cash flow dates
-    bdays = bday.count(settlement, payment_dates)
+    bdays = bday.count(settlement, cf_dates)
 
     # Calculate the number of periods truncated as per Anbima rules
     num_of_years = bt.truncate(bdays / 252, 14)
@@ -244,10 +244,10 @@ def quotation(
     discount_factor = (1 + rate) ** num_of_years
 
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
-    discounted_cash_flows = (cf_values / discount_factor).round(10)
+    cf_present_value = (cf_values / discount_factor).round(10)
 
     # Return the quotation (the dcf sum) truncated as per Anbima rules
-    return bt.truncate(discounted_cash_flows.sum(), 4)
+    return bt.truncate(cf_present_value.sum(), 4)
 
 
 def price(
@@ -274,32 +274,10 @@ def price(
     return bt.truncate(vna * quotation / 100, 6)
 
 
-def _calculate_coupons_pv(
-    bootstrap_df: pd.DataFrame,
-    settlement: pd.Timestamp,
-    maturity: pd.Timestamp,
-) -> float:
-    # Create a subset DataFrame with only the coupon payments (without last payment)
-    cp_dates_wo_last = coupon_dates(settlement, maturity)[:-1]  # noqa
-    if len(cp_dates_wo_last) == 0:
-        return 0
-
-    df_coupons = bootstrap_df.query("MaturityDate in @cp_dates_wo_last").copy()
-    df_coupons["Coupon"] = COUPON_PMT
-
-    # Calculate the present value of the coupon payments
-    pv = bt.calculate_present_value(
-        cash_flows=df_coupons["Coupon"],
-        rates=df_coupons["SpotRate"],
-        periods=df_coupons["BDays"] / 252,
-    )
-    return pv
-
-
 def spot_rates(
     settlement: str | pd.Timestamp,
-    rates: pd.Series,
     maturities: pd.Series,
+    rates: pd.Series,
 ) -> pd.DataFrame:
     """
     Calculate the spot rates for NTN-B bonds using the bootstrap method.
@@ -312,9 +290,8 @@ def spot_rates(
 
     Args:
         settlement (str | pd.Timestamp): The reference date for settlement.
-        rates (pd.Series): Series of yield to maturity rates indexed by the
-            maturity dates of the bonds.
         maturities (pd.Series): Series of maturity dates for the bonds.
+        rates (pd.Series): Series of yield to maturity rates.
 
     Returns:
         pd.DataFrame: DataFrame containing the maturity dates and corresponding real
@@ -329,51 +306,55 @@ def spot_rates(
     """
     # Process and validate the input data
     settlement = dc.convert_date(settlement)
-    maturities = pd.to_datetime(maturities, errors="coerce", dayfirst=True)
+    maturities = pd.to_datetime(maturities, errors="raise", dayfirst=True)
     _check_maturities(maturities)
 
     # Create the interpolator object
-    ytm_rate_interpolator = it.Interpolator(
+    ff_interpolator = it.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, maturities),
         known_rates=rates,
     )
 
-    last_ntnb = maturities.max()
-
     # Generate coupon dates up to the longest maturity date
-    all_coupon_dates = _coupon_dates_map(start=settlement, end=last_ntnb)
+    all_coupon_dates = _coupon_dates_map(start=settlement, end=maturities.max())
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
-    df_spot = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
-    df_spot["BDays"] = bday.count(settlement, df_spot["MaturityDate"])
-    df_spot["YTM"] = df_spot["BDays"].apply(ytm_rate_interpolator)
+    df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
+    df["BDays"] = bday.count(settlement, df["MaturityDate"])
+    df["BYears"] = df["BDays"] / 252
+    df["YTM"] = df["BDays"].apply(ff_interpolator)
+    df["Coupon"] = COUPON_PMT
+    df["SpotRate"] = pd.NA
 
     # The Bootstrap loop to calculate spot rates
-    for index in df_spot.index:
-        # Get the row values using the index
-        maturity = df_spot.at[index, "MaturityDate"]
-        bdays = df_spot.at[index, "BDays"]
-        ytm = df_spot.at[index, "YTM"]
-
-        # Get the coupon dates for the bond without the last one (principal + coupon)
-        cp_dates = coupon_dates(settlement, maturity)
+    for index, row in df.iterrows():
+        # Get the cash flow dates for the bond
+        cf_dates = payment_dates(settlement, row["MaturityDate"])
 
         # If there is only one coupon date and this date is the first maturity date
         # of an existing bond, the ytm rate is also a spot rate.
-        if len(cp_dates) == 1 and cp_dates[0] == rates[0]:
-            df_spot.at[index, "SpotRate"] = ytm
+        if len(cf_dates) == 1 and cf_dates[0] == maturities[0]:
+            df.at[index, "SpotRate"] = row["YTM"]
             continue
 
-        # Calculate the real spot rate for the bond
-        coupons_pv = _calculate_coupons_pv(df_spot, settlement, maturity)
-        bond_price = quotation(settlement, maturity, ytm)
-        spot_rate = (FINAL_PMT / (bond_price - coupons_pv)) ** (252 / bdays) - 1
-        df_spot.at[index, "SpotRate"] = spot_rate
+        # Calculate the present value of the cash flows without last payment
+        cf_dates = cf_dates[:-1]
+        cf_df = df.query("MaturityDate in @cf_dates").reset_index(drop=True)
+        cf_present_value = bt.calculate_present_value(
+            cash_flows=cf_df["Coupon"],
+            rates=cf_df["SpotRate"],
+            periods=cf_df["BYears"],
+        )
 
-    df_spot.drop(columns=["BDays"], inplace=True)
+        # Calculate the Spot Rate for the bond
+        bond_price = quotation(settlement, row["MaturityDate"], row["YTM"])
+        price_factor = FINAL_PMT / (bond_price - cf_present_value)
+        df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
+
+    df.drop(columns=["BDays", "BYears", "Coupon"], inplace=True)
     # Return the result without the intermediate coupon dates (virtual bonds)
-    return df_spot.query("MaturityDate in @maturities").reset_index(drop=True)
+    return df.query("MaturityDate in @maturities").reset_index(drop=True)
 
 
 def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:

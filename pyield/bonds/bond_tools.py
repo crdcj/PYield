@@ -40,6 +40,19 @@ def calculate_present_value(
     rates: pd.Series,
     periods: pd.Series,
 ) -> float:
+    # Return 0 if any input is empty
+    if cash_flows.empty or rates.empty or periods.empty:
+        return 0
+
+    # Reset the index to avoid issues with the series alignment
+    cash_flows = cash_flows.reset_index(drop=True)
+    rates = rates.reset_index(drop=True)
+    periods = periods.reset_index(drop=True)
+
+    # Check if data have the same length
+    if len(cash_flows) != len(rates) or len(cash_flows) != len(periods):
+        raise ValueError("All series must have the same length.")
+
     return (cash_flows / (1 + rates) ** periods).sum()
 
 

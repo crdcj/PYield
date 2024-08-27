@@ -180,9 +180,9 @@ def price(
         >>> price("05-07-2024", "01-01-2035", 0.11921)
         895.359254
     """
-    df_cf = cash_flows(settlement, maturity)
-    cf_values = df_cf["CashFlow"]
-    bdays = bday.count(settlement, df_cf["PaymentDate"])
+    cf_df = cash_flows(settlement, maturity)
+    cf_values = cf_df["CashFlow"]
+    bdays = bday.count(settlement, cf_df["PaymentDate"])
     byears = bt.truncate(bdays / 252, 14)
     discount_factors = (1 + rate) ** byears
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
@@ -191,31 +191,12 @@ def price(
     return bt.truncate(dcf.sum(), 6)
 
 
-def _calculate_coupons_pv(
-    bootstrap_df: pd.DataFrame,
-    settlement: pd.Timestamp,
-    maturity: pd.Timestamp,
-) -> float:
-    # Create a subset DataFrame with only the coupon payments (without last payment)
-    cp_dates_wo_last = coupon_dates(settlement, maturity)[:-1]  # noqa
-    df_coupons = bootstrap_df.query("MaturityDate in @cp_dates_wo_last").copy()
-    df_coupons["Coupon"] = COUPON_PMT
-
-    # Calculate the present value of the coupon payments
-    pv = bt.calculate_present_value(
-        cash_flows=df_coupons["Coupon"],
-        rates=df_coupons["SpotRate"],
-        periods=df_coupons["BDays"] / 252,
-    )
-    return pv
-
-
 def spot_rates(
     settlement: str | pd.Timestamp,
-    ltn_rates: pd.Series,
     ltn_maturities: pd.Series,
-    ntnf_rates: pd.Series,
+    ltn_rates: pd.Series,
     ntnf_maturities: pd.Series,
+    ntnf_rates: pd.Series,
 ) -> pd.DataFrame:
     """
     Calculate the spot rates for NTN-F bonds using the bootstrap method.
@@ -252,36 +233,38 @@ def spot_rates(
         known_rates=ntnf_rates,
     )
 
-    # Determine the last maturity dates for LTN and NTN-F rates
-    last_ltn = ltn_maturities.max()
-    last_ntnf = ntnf_maturities.max()
-
     # Generate all coupon dates up to the last NTN-F maturity date
-    all_coupon_dates = coupon_dates(settlement, last_ntnf)
+    all_coupon_dates = coupon_dates(settlement, ntnf_maturities.max())
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
-    df_spot = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
-    df_spot["BDays"] = bday.count(start=settlement, end=df_spot["MaturityDate"])
-    df_spot["YTM"] = df_spot["BDays"].apply(ntnf_rate_interpolator)
+    df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
+    df["BDays"] = bday.count(start=settlement, end=df["MaturityDate"])
+    df["BYears"] = df["BDays"] / 252
+    df["Coupon"] = COUPON_PMT
+    df["YTM"] = df["BDays"].apply(ntnf_rate_interpolator)
 
     # The Bootstrap loop to calculate spot rates
-    for index in df_spot.index:
-        maturity = df_spot.at[index, "MaturityDate"]
-        bdays = df_spot.at[index, "BDays"]
-
-        if maturity <= last_ltn:
+    for index, row in df.iterrows():
+        if row["MaturityDate"] <= ltn_maturities.max():
             # Use LTN rates for maturities before the last LTN maturity date
-            df_spot.at[index, "SpotRate"] = ltn_rate_interpolator(bdays)
+            df.at[index, "SpotRate"] = ltn_rate_interpolator(row["BDays"])
             continue
 
-        # Calculate the spot rate for the bond
-        coupons_pv = _calculate_coupons_pv(df_spot, settlement, maturity)
-        ytm = df_spot.at[index, "YTM"]
-        bond_price = price(settlement, maturity, ytm)
-        spot_rate = (FINAL_PMT / (bond_price - coupons_pv)) ** (252 / bdays) - 1
-        df_spot.at[index, "SpotRate"] = spot_rate
+        # Calculate the present value of the coupon payments
+        cf_dates = coupon_dates(settlement, row["MaturityDate"])[:-1]  # noqa
+        cf_df = df.query("MaturityDate in @cf_dates").reset_index(drop=True)
+        cf_present_value = bt.calculate_present_value(
+            cash_flows=cf_df["Coupon"],
+            rates=cf_df["SpotRate"],
+            periods=cf_df["BDays"] / 252,
+        )
 
-    return df_spot
+        bond_price = price(settlement, row["MaturityDate"], row["YTM"])
+        price_factor = FINAL_PMT / (bond_price - cf_present_value)
+        df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
+
+    # Remove temporary columns and return the spot rates DataFrame
+    return df[["MaturityDate", "BDays", "YTM", "SpotRate"]].copy()
 
 
 def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
@@ -366,8 +349,8 @@ def di_net_spread(  # noqa
     settlement: str | pd.Timestamp,
     maturity: str | pd.Timestamp,
     ytm: float,
-    di_rates: pd.Series,
     di_expirations: pd.Series,
+    di_rates: pd.Series,
     initial_guess: float | None = None,
 ) -> float:
     """
@@ -422,7 +405,7 @@ def di_net_spread(  # noqa
         # Difference between the bond's price and its discounted cash flows
         return (bond_cash_flows / (1 + di_interp + p) ** byears).sum() - bond_price
 
-    # Solve for the spread that zeroes the price difference using the Brent method
+    # Solve for the spread that zeroes the price difference using the bisection method
     p_solution = _solve_spread(price_difference, initial_guess)
     # Convert the solution to basis points (bps) and round to two decimal places
     return round((p_solution * 10_000), 2)
@@ -430,10 +413,10 @@ def di_net_spread(  # noqa
 
 def premium(
     settlement: str | pd.Timestamp,
-    ntnf_rate: float,
     ntnf_maturity: str | pd.Timestamp,
-    di_rates: pd.Series,
+    ntnf_rate: float,
     di_expirations: pd.Series,
+    di_rates: pd.Series,
 ) -> float:
     ntnf_maturity = dc.convert_date(ntnf_maturity)
     settlement = dc.convert_date(settlement)
