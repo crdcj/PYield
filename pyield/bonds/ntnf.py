@@ -447,8 +447,8 @@ def premium(
 
     factor_ntnf = (1 + ntnf_rate) ** (1 / 252)
     factor_di = (1 + di_ytm) ** (1 / 252)
-
-    return float((factor_ntnf - 1) / (factor_di - 1))
+    premium_np = (factor_ntnf - 1) / (factor_di - 1)
+    return round(float(premium_np), 6)
 
 
 def historical_premium(

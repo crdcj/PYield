@@ -121,7 +121,7 @@ def premium(ltn_rate: float, di_rate: float) -> float:
     di_factor = (1 + di_rate) ** (1 / 252)
 
     # Retorno do cálculo do prêmio
-    return (ltn_factor - 1) / (di_factor - 1)
+    return round((ltn_factor - 1) / (di_factor - 1), 6)
 
 
 def historical_premium(
