@@ -311,7 +311,6 @@ def _bisection_method(func, a, b, tol=1e-8, maxiter=100):
 def _solve_spread(
     price_difference_func: Callable,
     initial_guess: float | None = None,
-    range_width_bps: float = 50,
 ) -> float:
     """
     Solve for the spread that zeroes the price difference using a bisection method.
@@ -320,8 +319,6 @@ def _solve_spread(
         price_difference_func (callable): The function that computes the difference
             between the bond's market price and its discounted cash flows.
         initial_guess (float, optional): An initial guess for the spread.
-        range_width_bps (float, optional): The width of the range around the initial
-        guess in bps. Defaults to 50 bps.
 
     Returns:
         float: The solution for the spread in bps or NaN if no solution is found.
@@ -329,9 +326,9 @@ def _solve_spread(
     try:
         if initial_guess is not None:
             # range_width_bps below the initial guess
-            a = initial_guess - range_width_bps / 10_000
+            a = initial_guess - 0.005  # 50 bps
             # range_width_bps above the initial guess
-            b = initial_guess + range_width_bps / 10_000
+            b = initial_guess + 0.005  # 50 bps
         else:
             a = -0.01  # Initial guess of -100 bps
             b = 0.01  # Initial guess of 100 bps
@@ -371,7 +368,7 @@ def di_net_spread(  # noqa
         di_rates (pd.Series): A Series of DI rates.
         di_expirations (pd.Series): A list or Series of DI expiration dates.
         initial_guess (float, optional): An initial guess for the spread. Defaults to
-            None.
+            None. A good initial guess is the DI gross spread for the bond.
 
     Returns:
         float: The net DI spread in basis points.
