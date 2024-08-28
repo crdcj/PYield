@@ -2,12 +2,10 @@ import numpy as np
 import pandas as pd
 
 from .. import bday
-from .. import data as ft
 from .. import date_converter as dc
 from .. import interpolator as it
 from ..data import anbima
 from . import bond_tools as bt
-from . import ltn
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -304,6 +302,10 @@ def spot_rates(
             - Interpolate the YTM rates in the intermediate payment dates.
             - Calculate the NTN-B quotation for each maturity date.
             - Calculate the real spot rates for each maturity date.
+            - Columns in the returned DataFrame:
+                - MaturityDate: The maturity date of the bond.
+                - YTM: The yield to maturity rate for the bond.
+                - SpotRate: The real spot rate for the bond.
     """
     # Process and validate the input data
     settlement = dc.convert_date(settlement)
@@ -328,7 +330,7 @@ def spot_rates(
     df["BYears"] = df["BDays"] / 252
     df["YTM"] = df["BDays"].apply(ff_interpolator)
     df["Coupon"] = COUPON_PMT
-    df["SpotRate"] = pd.NA
+    df["SpotRate"] = np.nan
 
     # The Bootstrap loop to calculate spot rates
     for index, row in df.iterrows():
@@ -356,131 +358,74 @@ def spot_rates(
         df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
 
     df.drop(columns=["BDays", "BYears", "Coupon"], inplace=True)
+    # Force Float64 type in float columns to standardize the output
+    df = df.astype({"YTM": "Float64", "SpotRate": "Float64"})
     # Return the result without the intermediate coupon dates (virtual bonds)
     return df.query("MaturityDate in @maturities").reset_index(drop=True)
 
 
-def _get_nir_df(reference_date: pd.Timestamp) -> pd.DataFrame:
-    """
-    Fetch the Nominal Interest Rate (NIR) data for NTN-B bonds.
-
-    Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
-
-    Returns:
-        pd.DataFrame: DataFrame containing the NIR data for NTN-B bonds.
-    """
-    df = ft.futures(contract_code="DI1", trade_date=reference_date)
-    if "CurrentRate" in df.columns:
-        df = df.rename(columns={"CurrentRate": "NIR_DI"})
-        keep_cols = [
-            "TradeDate",
-            "TradeTime",
-            "TickerSymbol",
-            "ExpirationDate",
-            "BDaysToExp",
-            "NIR_DI",
-        ]
-    elif "SettlementRate" in df.columns:
-        df = df.rename(columns={"SettlementRate": "NIR_DI"})
-        keep_cols = [
-            "TradeDate",
-            "TickerSymbol",
-            "ExpirationDate",
-            "BDaysToExp",
-            "NIR_DI",
-        ]
-    else:
-        raise ValueError("DI data not available.")
-
-    df = df[keep_cols].dropna(subset=["NIR_DI"])
-
-    # Add DI spreads for prefixed bonds (LTN) and adjust NIR
-    today = pd.Timestamp.today().normalize()
-    anbima_date = reference_date
-    if reference_date == today:
-        # If the reference date is today, use the previous business day
-        anbima_date = bday.offset(reference_date, -1)
-
-    df_ltn = ltn.di_spreads(reference_date=anbima_date).reset_index()
-    df_ltn["MaturityDate"] = bday.offset(df_ltn["MaturityDate"], 0)
-    df_ltn["DISpread"] /= 10_000  # Remove BPS (basis points) from the spread
-
-    df = pd.merge_asof(df, df_ltn, left_on="ExpirationDate", right_on="MaturityDate")
-    df["NIR_PRE"] = df["NIR_DI"] + df["DISpread"]
-
-    return df
-
-
 def bei_rates(
-    reference_date: str | pd.Timestamp,
     settlement: str | pd.Timestamp,
-    rates: pd.Series,
-    maturities: pd.Series,
+    real_maturities: pd.Series,
+    real_rates: pd.Series,
+    nominal_maturities: pd.Series,
+    nominal_rates: pd.Series,
 ) -> pd.DataFrame:
     """
     Calculate the Breakeven Inflation (BEI) for NTN-B bonds based on nominal and real
     interest rates.
 
     Args:
-        reference_date (str or pd.Timestamp): The reference date for fetching data and
-            performing calculations.
         settlement (str or pd.Timestamp): The settlement date for the bonds.
-        rates (pd.Series): A series of Yield to Maturity (YTM) rates corresponding
-            to the maturity dates of the bonds indexed by the maturity dates.
+        real_maturities (pd.Series): Series of maturity dates for the inflation-indexed
+            bonds (NTN-B).
+        real_rates (pd.Series): Series of real interest rates (Yield to Maturity - YTM)
+            corresponding to the inflation-indexed bonds' maturity dates.
+        nominal_maturities (pd.Series): Series of maturity dates for the nominal bonds
+            (e.g., DI or prefixed bonds).
+        nominal_rates (pd.Series): Series of nominal interest rates corresponding to the
+            nominal maturity dates.
 
     Returns:
-        pd.DataFrame: DataFrame containing the breakeven inflation rates.
+        pd.DataFrame: A DataFrame containing the calculated breakeven inflation rates.
 
     Returned columns:
-        - MaturityDate: Maturity date of the bonds
-        - BDays: Number of business days from the settlement date to the maturity.
-        - YTM: Yield to Maturity rate for the bonds
-        - RIR: Real Interest Rate for the bonds based on the spot rates.
-        - NIR_DI: Nominal Interest Rate based on DI Futures.
-        - NIR_PRE: Nominal Interest Rate for the prefixed bonds.
-        - BEI_DI: Breakeven Inflation Rate calculated with DI Futures.
-        - BEI_PRE: Breakeven Inflation Rate calculated with prefixed bonds.
+        - MaturityDate: The maturity date of the bonds.
+        - BDays: Number of business days from the settlement date to the maturity date.
+        - RIR: The calculated Real Interest Rate based on the spot rates.
+        - NIR: Nominal Interest Rate interpolated for the corresponding maturity date.
+        - BEI: The calculated Breakeven Inflation Rate, which represents the inflation
+            rate that equalizes the real and nominal yields.
+
+    Notes:
+        The BEI is calculated by comparing the nominal and real interest rates,
+        indicating the market's inflation expectations over the period from the
+        settlement date to the bond's maturity.
     """
     # Normalize input dates
-    reference_date = dc.convert_date(reference_date)
     settlement = dc.convert_date(settlement)
-    maturities = pd.to_datetime(maturities, errors="coerce", dayfirst=True)
+    real_maturities = pd.to_datetime(real_maturities, errors="coerce", dayfirst=True)
 
-    # Fetch Nominal Interest Rate (NIR) data
-    df_nir = _get_nir_df(reference_date)
-
-    ytm_interplator = it.Interpolator(
-        method="flat_forward",
-        known_bdays=df_nir["BDaysToExp"],
-        known_rates=df_nir["NIR_DI"],
-    )
     # Calculate Real Interest Rate (RIR)
-    df = spot_rates(settlement, rates, maturities)
+    df = spot_rates(settlement, real_maturities, real_rates)
+    df["BDays"] = bday.count(settlement, df["MaturityDate"])
     df = df.rename(columns={"SpotRate": "RIR"})
-    df["BDays"] = bday.count(reference_date, df["MaturityDate"])
-    df["NIR_DI"] = df["BDays"].apply(ytm_interplator)
 
-    # Calculate Breakeven Inflation Rate (BEI)
-    df["BEI_DI"] = ((df["NIR_DI"] + 1) / (df["RIR"] + 1)) - 1
-
-    # Adjust BEI for DI spread in prefixed bonds
-    ytm_interplator = it.Interpolator(
+    nir_interplator = it.Interpolator(
         method="flat_forward",
-        known_bdays=df_nir["BDaysToExp"],
-        known_rates=df_nir["NIR_PRE"],
+        known_bdays=bday.count(settlement, nominal_maturities),
+        known_rates=nominal_rates,
     )
-    df["NIR_PRE"] = df["BDays"].apply(ytm_interplator)
-    df["BEI_PRE"] = ((df["NIR_PRE"] + 1) / (df["RIR"] + 1)) - 1
+
+    df["NIR"] = df["BDays"].apply(nir_interplator).astype("Float64")
+    # Calculate Breakeven Inflation Rate (BEI)
+    df["BEI"] = ((df["NIR"] + 1) / (df["RIR"] + 1)) - 1
 
     cols_reordered = [
         "MaturityDate",
-        "BDays",
         "YTM",
         "RIR",
-        "NIR_DI",
-        "NIR_PRE",
-        "BEI_DI",
-        "BEI_PRE",
+        "NIR",
+        "BEI",
     ]
     return df[cols_reordered].copy()
