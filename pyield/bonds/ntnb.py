@@ -85,7 +85,7 @@ def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
     return df_rates["MaturityDate"]
 
 
-def _coupon_dates_map(
+def _generate_coupon_dates_map(
     start: str | pd.Timestamp,
     end: str | pd.Timestamp,
 ) -> pd.Series:
@@ -115,8 +115,9 @@ def _coupon_dates_map(
     # Offset dates by 14 in order to have day 15 of the month
     coupon_dates += pd.Timedelta(days=14)
 
-    # First coupon date must be after the reference date
-    coupon_dates = coupon_dates[coupon_dates >= start]
+    # First coupon date must be after the reference date, otherwise, it can lead to
+    # division by zero where BDays == 0 (bootstrap method for instance)
+    coupon_dates = coupon_dates[coupon_dates > start]
 
     return pd.Series(coupon_dates).reset_index(drop=True)
 
@@ -317,7 +318,9 @@ def spot_rates(
     )
 
     # Generate coupon dates up to the longest maturity date
-    all_coupon_dates = _coupon_dates_map(start=settlement, end=maturities.max())
+    all_coupon_dates = _generate_coupon_dates_map(
+        start=settlement, end=maturities.max()
+    )
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
     df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])

@@ -11,7 +11,7 @@ class Interpolator:
         method: Literal["flat_forward", "linear"],
         known_bdays: pd.Series | list,
         known_rates: pd.Series | list,
-        extrapolate: bool = False,
+        extrapolate: bool = True,
     ):
         """
         Initialize the Interpolator with given atributes.
