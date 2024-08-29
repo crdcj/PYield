@@ -1,2 +1,2 @@
-::: pyield.fetchers.indicators
+::: pyield.data.indicators
 

@@ -1,1 +1,1 @@
-::: pyield.fetchers.futures
+::: pyield.data.futures

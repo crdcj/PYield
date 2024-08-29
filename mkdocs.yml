@@ -12,6 +12,7 @@ nav:
       - NTN-B (ntnb): ntnb.md
       - NTN-F (ntnf): ntnf.md
       - Anbima Data (anbima): anbima.md
+      - DI Data (di): di.md
       - Futures Data (futures): futures.md
       - Indicators (indicator): indicators.md
   

@@ -111,7 +111,7 @@ def premium(ltn_rate: float, di_rate: float) -> float:
 
     Args:
         ltn_rate (float): The annualized LTN rate.
-        di_future_rate (float): The annualized DI Future rate.
+        di_rate (float): The annualized DI Future rate.
 
     Returns:
         float: The premium of the LTN bond over the DI Future rate.
