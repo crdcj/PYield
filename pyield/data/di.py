@@ -143,3 +143,32 @@ def rate(
 
     # Return the interpolated rate for the calculated business days
     return ff_interpolator(bday.count(trade_date, expiration))
+
+
+def trade_dates(
+    start_date: str | pd.Timestamp | None = None,
+    end_date: str | pd.Timestamp | None = None,
+) -> pd.Series:
+    """Retrieve unique trade dates for DI contracts within a specified date range.
+
+    This function returns a Series of unique trade dates for DI contracts within the
+    given date range.
+
+    Args:
+        start_date (str | pd.Timestamp): The start date of the date range. If None,
+            the earliest available date is used.
+        end_date (str | pd.Timestamp): The end date of the date range. If None, the
+            latest available date is used.
+
+    Returns:
+        pd.Series: A Series of unique trade dates for DI contracts.
+    """
+    df = get_di_dataframe()
+    if start_date:
+        start_date = dc.convert_date(start_date)
+        df = df.query("TradeDate >= @start_date")
+    if end_date:
+        end_date = dc.convert_date(end_date)
+        df = df.query("TradeDate <= @end_date")
+
+    return df["TradeDate"].drop_duplicates(ignore_index=True)

@@ -102,8 +102,6 @@ def selic_over(reference_date: pd.Timestamp) -> float:
     formatted_date = reference_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial={formatted_date}&dataFinal={formatted_date}"
     response = requests.get(api_url, timeout=10)
-    response.raise_for_status()
-
     if formatted_date not in response.text:
         return float("nan")
     data = response.json()
