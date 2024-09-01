@@ -52,7 +52,7 @@ def data(
         df_pre = df_anb.query("BondType in ['LTN', 'NTN-F']").copy()
         pre_maturities = df_pre["MaturityDate"].drop_duplicates(ignore_index=True)
         adj_pre_maturities = bday.offset(pre_maturities, 0)  # noqa
-        df = df.query("ExpirationDate in @adj_pre_maturities")
+        df.query("ExpirationDate in @adj_pre_maturities", inplace=True)
 
     if adj_expirations:
         df["ExpirationDate"] = df["ExpirationDate"].dt.to_period("M")
