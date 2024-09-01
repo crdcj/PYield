@@ -344,8 +344,8 @@ def _solve_spread(
 
 def di_net_spread(  # noqa
     settlement: str | pd.Timestamp,
-    maturity: str | pd.Timestamp,
-    ytm: float,
+    ntnf_maturity: str | pd.Timestamp,
+    ntnf_rate: float,
     di_expirations: pd.Series,
     di_rates: pd.Series,
     initial_guess: float | None = None,
@@ -375,7 +375,7 @@ def di_net_spread(  # noqa
     """
     # Create an interpolator for the DI rates using the flat-forward method
     settlement = dc.convert_date(settlement)
-    maturity = dc.convert_date(maturity)
+    ntnf_maturity = dc.convert_date(ntnf_maturity)
 
     ff_interpolator = it.Interpolator(
         "flat_forward",
@@ -390,12 +390,12 @@ def di_net_spread(  # noqa
         return float("NaN")
 
     # Calculate cash flows and business days between settlement and payment dates
-    df = cash_flows(settlement, maturity).reset_index()
+    df = cash_flows(settlement, ntnf_maturity).reset_index()
     df["BDays"] = bday.count(settlement, df["PaymentDate"])
 
     byears = bday.count(settlement, df["PaymentDate"]) / 252
     di_interp = df["BDays"].apply(ff_interpolator)
-    bond_price = price(settlement, maturity, ytm)
+    bond_price = price(settlement, ntnf_maturity, ntnf_rate)
     bond_cash_flows = df["CashFlow"]
 
     def price_difference(p):
