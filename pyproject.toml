@@ -60,3 +60,6 @@ select = ["I", "F", "E", "W", "PL", "PT"]
 [tool.ruff.format]
 docstring-code-format = true
 docstring-code-line-length = 88
+
+[tool.setuptools.exclude-package-data]
+"*" = ["tests/data/*.zip"]
