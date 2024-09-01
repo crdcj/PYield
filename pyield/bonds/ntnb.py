@@ -366,8 +366,8 @@ def spot_rates(
 
 def bei_rates(
     settlement: str | pd.Timestamp,
-    real_maturities: pd.Series,
-    real_rates: pd.Series,
+    ntnb_maturities: pd.Series,
+    ntnb_rates: pd.Series,
     nominal_maturities: pd.Series,
     nominal_rates: pd.Series,
 ) -> pd.DataFrame:
@@ -377,14 +377,14 @@ def bei_rates(
 
     Args:
         settlement (str or pd.Timestamp): The settlement date for the bonds.
-        real_maturities (pd.Series): Series of maturity dates for the inflation-indexed
+        ntnb_maturities (pd.Series): Series of maturity dates for the inflation-indexed
             bonds (NTN-B).
-        real_rates (pd.Series): Series of real interest rates (Yield to Maturity - YTM)
+        ntnb_rates (pd.Series): Series of real interest rates (Yield to Maturity - YTM)
             corresponding to the inflation-indexed bonds' maturity dates.
-        nominal_maturities (pd.Series): Series of maturity dates for the nominal bonds
-            (e.g., DI or prefixed bonds).
-        nominal_rates (pd.Series): Series of nominal interest rates corresponding to the
-            nominal maturity dates.
+        nominal_maturities (pd.Series): Series of maturity dates corresponding to the
+            nominal reates.
+        nominal_rates (pd.Series): Series of nominal interest rates
+            (e.g., DI or prefixed bonds) used as reference for the calculation.
 
     Returns:
         pd.DataFrame: A DataFrame containing the calculated breakeven inflation rates.
@@ -404,10 +404,10 @@ def bei_rates(
     """
     # Normalize input dates
     settlement = dc.convert_date(settlement)
-    real_maturities = pd.to_datetime(real_maturities, errors="coerce", dayfirst=True)
+    ntnb_maturities = pd.to_datetime(ntnb_maturities, errors="coerce", dayfirst=True)
 
     # Calculate Real Interest Rate (RIR)
-    df = spot_rates(settlement, real_maturities, real_rates)
+    df = spot_rates(settlement, ntnb_maturities, ntnb_rates)
     df["BDays"] = bday.count(settlement, df["MaturityDate"])
     df = df.rename(columns={"SpotRate": "RIR"})
 

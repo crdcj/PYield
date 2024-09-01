@@ -362,9 +362,9 @@ def di_net_spread(  # noqa
     Args:
         settlement (str | pd.Timestamp): The bond settlement date in 'DD-MM-YYYY' format
             or a pandas Timestamp.
-        maturity (str | pd.Timestamp): The bond maturity date in 'DD-MM-YYYY'
+        ntnf_maturity (str | pd.Timestamp): The bond maturity date in 'DD-MM-YYYY'
             format or a pandas Timestamp.
-        ytm (float): The yield to maturity (YTM) of the bond.
+        ntnf_rate (float): The yield to maturity (YTM) of the bond.
         di_rates (pd.Series): A Series of DI rates.
         di_expirations (pd.Series): A list or Series of DI expiration dates.
         initial_guess (float, optional): An initial guess for the spread. Defaults to
