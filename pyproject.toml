@@ -36,6 +36,9 @@ Source = "https://github.com/crdcj/PYield"
 version = { source = "file", path = "pyield/__about__.py" }
 distribution = true
 
+[tool.pdm.build]
+excludes = ["tests", "docs"]
+
 [tool.pdm.dev-dependencies]
 dev = [
     "ipykernel",
@@ -43,8 +46,7 @@ dev = [
     "mypy",
     "mkdocs",
     "mkdocs-material",
-    "mkdocstrings[python]",
-    "lxml",
+    "mkdocstrings[python]",    
 ]
 
 [tool.ruff]
@@ -60,6 +62,3 @@ select = ["I", "F", "E", "W", "PL", "PT"]
 [tool.ruff.format]
 docstring-code-format = true
 docstring-code-line-length = 88
-
-[tool.setuptools.exclude-package-data]
-"*" = ["tests/data/*.zip"]
