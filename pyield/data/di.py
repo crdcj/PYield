@@ -93,6 +93,7 @@ def rate(
     trade_date: str | pd.Timestamp,
     expiration: str | pd.Timestamp,
     interpolate: bool = True,
+    extrapolate: bool = False,
 ) -> float:
     """Retrieve the DI rate for a specified trade date and expiration date.
 
@@ -106,6 +107,8 @@ def rate(
         expiration (str | pd.Timestamp): The expiration date for the DI contract.
         interpolate (bool): If True, interpolates the rate for the provided expiration
             date.
+        extrapolate (bool): If True, extrapolates the rate for expiration dates beyond
+            the available data.
 
     Returns:
         float: The DI rate for the specified trade date and expiration date, or NaN
@@ -115,6 +118,10 @@ def rate(
     trade_date = dc.convert_date(trade_date)
     # Adjust expiration date to the nearest business day
     expiration = bday.offset(expiration, 0)
+
+    # Return an error if interpolation is not allowed and extrapolation is required
+    if not interpolate and extrapolate:
+        raise ValueError("Extrapolation is not allowed without interpolation.")
 
     # Retrieve the data for the given trade date
     df = data(trade_date)
@@ -134,11 +141,16 @@ def rate(
         # Return the rate if an exact match is found
         return float(df_exp["SettlementRate"].iloc[0])
 
+    if not interpolate:
+        # Return NaN if no exact match is found and interpolation is not allowed
+        return float("NaN")
+
     # Perform flat forward interpolation if required
     ff_interpolator = interpolator.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(trade_date, df["ExpirationDate"]),
         known_rates=df["SettlementRate"],
+        extrapolate=extrapolate,
     )
 
     # Return the interpolated rate for the calculated business days
