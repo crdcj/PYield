@@ -415,6 +415,7 @@ def bei_rates(
         method="flat_forward",
         known_bdays=bday.count(settlement, nominal_maturities),
         known_rates=nominal_rates,
+        extrapolate=True,
     )
 
     df["NIR"] = df["BDays"].apply(nir_interplator).astype("Float64")
