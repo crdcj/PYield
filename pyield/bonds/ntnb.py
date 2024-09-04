@@ -430,3 +430,18 @@ def bei_rates(
         "BEI",
     ]
     return df[cols_reordered].copy()
+
+
+def duration(
+    settlement: str | pd.Timestamp,
+    maturity: str | pd.Timestamp,
+    rate: float,
+) -> float:
+    settlement = dc.convert_date(settlement)
+    maturity = dc.convert_date(maturity)
+
+    df = cash_flows(settlement, maturity)
+    df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252
+    df["DCF"] = df["CashFlow"] / (1 + rate) ** df["BY"]
+    np_duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
+    return float(np_duration)
