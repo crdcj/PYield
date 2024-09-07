@@ -215,7 +215,7 @@ def spot_rates(
         ntnf_maturities (pd.Series): The NTN-F known maturities.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the maturity dates and
+        pd.DataFrame: A DataFrame containing the NTN-F maturities and
             the corresponding spot rates.
     """
     # Process and validate the input data
@@ -263,8 +263,10 @@ def spot_rates(
         price_factor = FINAL_PMT / (bond_price - cf_present_value)
         df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
 
-    # Remove temporary columns and return the spot rates DataFrame
-    return df[["MaturityDate", "BDays", "YTM", "SpotRate"]].copy()
+    # Filter only the NTN-F maturities
+    df = df.query("MaturityDate in @ntnf_maturities").reset_index(drop=True)
+
+    return df[["MaturityDate", "SpotRate"]].copy()
 
 
 def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
