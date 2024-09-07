@@ -1,4 +1,4 @@
-from . import bday
+from . import bday, calculators
 from .__about__ import __version__
 from .bonds import lft, ltn, ntnb, ntnf
 from .data import anbima, di, futures, indicator, projection
@@ -17,4 +17,5 @@ __all__ = [
     "lft",
     "Interpolator",
     "di",
+    "calculators",
 ]
