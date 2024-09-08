@@ -30,7 +30,7 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the maturities and the indicative rates.
+        pd.DataFrame: A DataFrame with columns "MaturityDate" and "IndicativeRate".
     """
     ntnf_rates = anbima.rates(reference_date, "NTN-F")
     if ntnf_rates.empty:
@@ -81,8 +81,8 @@ def coupon_dates(
         maturity (str | pd.Timestamp): The maturity date.
 
     Returns:
-        pd.Series: A Series containing the coupon dates between the settlement and
-            maturity dates.
+        pd.Series: A Series containing the coupon dates between the settlement
+            (exclusive) and maturity (inclusive) dates.
     """
     # Validate and normalize dates
     settlement = dc.convert_date(settlement)
@@ -128,8 +128,7 @@ def cash_flows(
             business day.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the payment dates and the corresponding
-            cash flows.
+        pd.DataFrame: A DataFrame with columns "PaymentDate" and "CashFlow".
     """
     # Validate input dates
     settlement = dc.convert_date(settlement)
@@ -215,8 +214,7 @@ def spot_rates(
         ntnf_maturities (pd.Series): The NTN-F known maturities.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the NTN-F maturities and
-            the corresponding spot rates.
+        pd.DataFrame: A DataFrame with columns "MaturityDate" and "SpotRate"
     """
     # Process and validate the input data
     settlement = dc.convert_date(settlement)
@@ -281,8 +279,7 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
             spread calculation.
 
     Returns:
-        pd.Series: A pandas series containing the calculated spreads in basis points
-            indexed by maturity dates.
+        pd.DataFrame: A DataFrame with columns "MaturityDate", "DISpread".
     """
     # Fetch DI Spreads for the reference date
     df = bt.di_spreads(reference_date)

@@ -16,8 +16,7 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame containing the maturity dates and indicative rates
-            for LTN bonds.
+        pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
     """
     ltn_rates = anbima.rates(reference_date, "LTN")
     if ltn_rates.empty:
@@ -95,8 +94,7 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
             business day according to the Brazilian calendar.
 
     Returns:
-        pd.Series: A pandas series containing the calculated spreads in basis points
-            indexed by maturity dates.
+        pd.DataFrame: A DataFrame with the columns "MaturityDate" and "DISpread".
     """
     # Fetch DI Spreads for the reference date
     df = bt.di_spreads(reference_date)

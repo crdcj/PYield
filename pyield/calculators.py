@@ -45,10 +45,12 @@ def forward_rates(
     factor1 = (1 + df["next_rate"]) ** (df["next_bday"] / 252)
     factor2 = (1 + df["zero_rates"]) ** (df["bdays"] / 252)
     factor3 = 252 / (df["next_bday"] - df["bdays"])
-    fwd_rates = (factor1 / factor2) ** factor3 - 1
+    df["fwd_rates"] = (factor1 / factor2) ** factor3 - 1
 
     # Replace the last forward rate with the last zero rate
-    mask = df["zero_rates"].notnull() & (fwd_rates.isnull())
-    fwd_rates = np.where(mask, df["zero_rates"], fwd_rates)
+    mask = df["zero_rates"].notnull() & (df["fwd_rates"].isnull())
+    df["fwd_rates"] = np.where(mask, df["zero_rates"], df["fwd_rates"])
 
-    return pd.Series(fwd_rates).astype("Float64")
+    df["fwd_rates"] = df["fwd_rates"].astype("Float64")
+
+    return df["fwd_rates"]

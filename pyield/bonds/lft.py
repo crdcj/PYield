@@ -14,8 +14,7 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame containing the maturity dates and indicative rates
-            for the bonds.
+        pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
     """
     lft_rates = anbima.rates(reference_date, "LFT")
     if lft_rates.empty:

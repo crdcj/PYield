@@ -60,8 +60,7 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame containing the maturity dates and indicative rates
-            for the NTN-B bonds.
+        pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
     """
     ntnb_rates = anbima.rates(reference_date, "NTN-B")
     if ntnb_rates.empty:
@@ -174,7 +173,7 @@ def cash_flows(
             a pandas Timestamp.
 
     Returns:
-        pd.DataFrame: DataFrame containing the cash flows for the NTN-B bond.
+        pd.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
 
     Returned columns:
         - PaymentDate: The payment date of the cash flow
@@ -293,8 +292,7 @@ def spot_rates(
         rates (pd.Series): Series of yield to maturity rates.
 
     Returns:
-        pd.DataFrame: DataFrame containing the maturity dates and corresponding real
-            spot rates.
+        pd.DataFrame: DataFrame with columns "MaturityDate", "SpotRate".
 
     Notes:
         The calculation of the spot rates for NTN-B bonds considers the following steps:
@@ -357,9 +355,9 @@ def spot_rates(
         price_factor = FINAL_PMT / (bond_price - cf_present_value)
         df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
 
-    df.drop(columns=["BDays", "BYears", "Coupon"], inplace=True)
+    df = df[["MaturityDate", "SpotRate"]].copy()
     # Force Float64 type in float columns to standardize the output
-    df = df.astype({"YTM": "Float64", "SpotRate": "Float64"})
+    df["SpotRate"] = df["SpotRate"].astype("Float64")
     # Return the result without the intermediate coupon dates (virtual bonds)
     return df.query("MaturityDate in @maturities").reset_index(drop=True)
 
