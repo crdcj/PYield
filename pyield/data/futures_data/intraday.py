@@ -22,7 +22,7 @@ def _fetch_b3_df(future_code: str) -> pd.DataFrame:
     future_code (str): The future code to fetch data for.
 
     Returns:
-    pd.DataFrame: A DataFrame containing the normalized and cleaned data from the API.
+    pd.DataFrame: DataFrame containing the normalized and cleaned data from the API.
         If no data is available, an empty DataFrame is returned.
 
     Raises:
@@ -59,7 +59,7 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     df (pd.DataFrame): A DataFrame containing futures data.
 
     Returns:
-    pd.DataFrame: A DataFrame with the columns renamed.
+    pd.DataFrame: DataFrame with the columns renamed.
     """
     all_columns = {
         "symb": "TickerSymbol",
@@ -135,7 +135,7 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     df (pd.DataFrame): A DataFrame containing futures data.
 
     Returns:
-    pd.DataFrame: A DataFrame with the columns selected and reordered.
+    pd.DataFrame: DataFrame with the columns selected and reordered.
     """
     columns = [
         "TradeDate",

@@ -72,7 +72,7 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
             business day according to the Brazilian calendar.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the bond type, reference date, maturity
+        pd.DataFrame: DataFrame containing the bond type, reference date, maturity
             date, and the calculated spread in basis points. The data is sorted by
             bond type and maturity date.
     """

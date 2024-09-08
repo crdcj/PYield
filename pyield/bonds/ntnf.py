@@ -30,7 +30,7 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
         reference_date (str | pd.Timestamp): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: A DataFrame with columns "MaturityDate" and "IndicativeRate".
+        pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
     """
     ntnf_rates = anbima.rates(reference_date, "NTN-F")
     if ntnf_rates.empty:
@@ -128,7 +128,7 @@ def cash_flows(
             business day.
 
     Returns:
-        pd.DataFrame: A DataFrame with columns "PaymentDate" and "CashFlow".
+        pd.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
     """
     # Validate input dates
     settlement = dc.convert_date(settlement)
@@ -214,7 +214,7 @@ def spot_rates(
         ntnf_maturities (pd.Series): The NTN-F known maturities.
 
     Returns:
-        pd.DataFrame: A DataFrame with columns "MaturityDate" and "SpotRate"
+        pd.DataFrame: DataFrame with columns "MaturityDate" and "SpotRate"
     """
     # Process and validate the input data
     settlement = dc.convert_date(settlement)
@@ -279,7 +279,7 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
             spread calculation.
 
     Returns:
-        pd.DataFrame: A DataFrame with columns "MaturityDate", "DISpread".
+        pd.DataFrame: DataFrame with columns "MaturityDate", "DISpread".
     """
     # Fetch DI Spreads for the reference date
     df = bt.di_spreads(reference_date)

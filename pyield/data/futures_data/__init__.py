@@ -33,7 +33,7 @@ def futures(
             If the reference date is a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the fetched data for the specified futures
+        pd.DataFrame: DataFrame containing the fetched data for the specified futures
             contract.
 
     Raises:

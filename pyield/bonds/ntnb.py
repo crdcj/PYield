@@ -385,7 +385,7 @@ def bei_rates(
             (e.g., DI or prefixed bonds) used as reference for the calculation.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the calculated breakeven inflation rates.
+        pd.DataFrame: DataFrame containing the calculated breakeven inflation rates.
 
     Returned columns:
         - MaturityDate: The maturity date of the bonds.

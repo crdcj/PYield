@@ -94,7 +94,7 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
             business day according to the Brazilian calendar.
 
     Returns:
-        pd.DataFrame: A DataFrame with the columns "MaturityDate" and "DISpread".
+        pd.DataFrame: DataFrame with the columns "MaturityDate" and "DISpread".
     """
     # Fetch DI Spreads for the reference date
     df = bt.di_spreads(reference_date)

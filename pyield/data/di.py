@@ -26,7 +26,7 @@ def data(
             Anbima bond maturities.
 
     Returns:
-        pd.DataFrame: A DataFrame containing DI contract data, with columns for
+        pd.DataFrame: DataFrame containing DI contract data, with columns for
             expiration dates and selected rates. The DataFrame is sorted by the
             expiration date.
     """
