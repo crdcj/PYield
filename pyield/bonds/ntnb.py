@@ -422,7 +422,6 @@ def bei_rates(
 
     cols_reordered = [
         "MaturityDate",
-        "YTM",
         "RIR",
         "NIR",
         "BEI",

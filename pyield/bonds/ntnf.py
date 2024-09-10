@@ -190,12 +190,13 @@ def price(
     return bt.truncate(dcf.sum(), 6)
 
 
-def spot_rates(
+def spot_rates(  # noqa
     settlement: str | pd.Timestamp,
     ltn_maturities: pd.Series,
     ltn_rates: pd.Series,
     ntnf_maturities: pd.Series,
     ntnf_rates: pd.Series,
+    show_coupon_rates: bool = False,
 ) -> pd.DataFrame:
     """
     Calculate the spot rates for NTN-F bonds using the bootstrap method.
@@ -208,10 +209,13 @@ def spot_rates(
     Args:
         settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
             or a pandas Timestamp.
-        ltn_rates (pd.Series): The LTN known rates.
         ltn_maturities (pd.Series): The LTN known maturities.
-        ntnf_rates (pd.Series): The NTN-F known rates.
+        ltn_rates (pd.Series): The LTN known rates.
         ntnf_maturities (pd.Series): The NTN-F known maturities.
+        ntnf_rates (pd.Series): The NTN-F known rates.
+        show_coupon_rates (bool): If True, show also July rates corresponding to the
+            coupon payments.
+
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "SpotRate"
@@ -261,10 +265,11 @@ def spot_rates(
         price_factor = FINAL_PMT / (bond_price - cf_present_value)
         df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
 
-    # Filter only the NTN-F maturities
-    df = df.query("MaturityDate in @ntnf_maturities").reset_index(drop=True)
-
-    return df[["MaturityDate", "SpotRate"]].copy()
+    df = df[["MaturityDate", "SpotRate"]].copy()
+    if show_coupon_rates:
+        return df
+    else:
+        return df.query("MaturityDate in @ntnf_maturities").reset_index(drop=True)
 
 
 def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
