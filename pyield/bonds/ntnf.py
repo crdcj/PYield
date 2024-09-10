@@ -266,6 +266,7 @@ def spot_rates(  # noqa
         df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
 
     df = df[["MaturityDate", "SpotRate"]].copy()
+    df["SpotRate"] = df["SpotRate"].astype("Float64")
     if show_coupon_rates:
         return df
     else:
