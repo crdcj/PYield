@@ -99,7 +99,8 @@ def offset(
             The date(s) to offset. Can be a single date in various formats (string,
             `datetime`, `Timestamp`, etc.) or a collection of dates (list, tuple,
             `Series`, etc.). If None, the current date is used.
-        offset (int): The number of business days to offset the dates. Positive for
+        offset (int | Series | np.ndarray | list | tuple, optional):
+            The number of business days to offset the dates. Positive for
             future dates, negative for past dates. Zero will return the same date if
             it's a business day, or the next business day otherwise.
         roll (Literal["forward", "backward"], optional): Direction to roll the date if
@@ -117,7 +118,7 @@ def offset(
 
     Examples:
         >>> date = "23-12-2023"  # Saturday before Christmas
-        >>> bday.offset(date, 0)
+        >>> bday.offset(date)  # Offset to the next business day
         Timestamp('2023-12-26')
 
         >>> date = "22-12-2023"  # Friday before Christmas
