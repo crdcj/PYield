@@ -1,9 +1,12 @@
+import time
 from typing import Literal
 
 import pandas as pd
 import requests
 
 from .. import date_converter as dc
+
+TIMEOUT = 10
 
 
 def indicator(
@@ -94,18 +97,58 @@ def selic_target(reference_date: pd.Timestamp) -> float:
 
 def selic_over(reference_date: pd.Timestamp) -> float:
     """
+    Fetches the SELIC Over rate for the given reference date.
+
+    The SELIC Over rate is the daily average interest rate effectively practiced between
+    banks in the interbank market, using public securities as collateral. This rate may
+    vary daily depending on the supply and demand for resources between financial
+    institutions.
+
+    Args:
+        reference_date (pd.Timestamp): Date for which SELIC rate is required.
+
+    Returns:
+        float: SELIC rate for the reference date or NaN if unavailable.
+
     Examples:
-        >>> selic_over("26-08-2024")
+        >>> selic_over(pd.Timestamp("26-08-2024"))
         0.1040  # Indicates a SELIC rate of 10.40% p.a.
     """
-    # https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     formatted_date = reference_date.strftime("%d/%m/%Y")
+    # https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial={formatted_date}&dataFinal={formatted_date}"
-    response = requests.get(api_url, timeout=10)
-    if formatted_date not in response.text:
-        return float("nan")
-    data = response.json()
-    return round(float(data[0]["valor"]) / 100, 4)
+
+    # Implementação interna de retries e timeout
+    retries = 3
+    timeout = 10
+    backoff_factor = 2
+
+    for attempt in range(retries):
+        try:
+            response = requests.get(api_url, timeout=timeout)
+            response.raise_for_status()  # Check for HTTP errors
+
+            if formatted_date not in response.text:
+                return float("nan")
+
+            data = response.json()
+
+            if not data or "valor" not in data[0]:
+                return float("nan")
+            value = data[0]["valor"]
+            return round(float(value) / 100, 4)
+
+        except requests.exceptions.Timeout:
+            print(f"Timeout on attempt {attempt + 1}. Retrying...")
+        except requests.exceptions.ConnectionError as e:
+            print(f"Connection error on attempt {attempt + 1}: {e}. Retrying...")
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred: {e}")
+            return float("nan")
+
+        time.sleep(backoff_factor**attempt)
+
+    return float("nan")
 
 
 def di(reference_date: pd.Timestamp) -> float:

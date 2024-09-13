@@ -6,8 +6,8 @@ import pandas as pd
 
 from . import holidays
 
-SingleDateTypes = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
-SeriesDateTypes = list | tuple | np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex
+SingleDates = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
+SeriesDates = list | tuple | np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex
 
 TO_SERIES_TYPES = (list, tuple, np.ndarray, pd.Series, pd.Index, pd.DatetimeIndex)
 
@@ -17,18 +17,18 @@ br_holidays = holidays.BrHolidays()
 
 @overload
 def _normalize_input_dates(
-    dates: SingleDateTypes | None,
+    dates: SingleDates | None,
 ) -> pd.Timestamp: ...
 
 
 @overload
 def _normalize_input_dates(
-    dates: SeriesDateTypes,
+    dates: SeriesDates,
 ) -> pd.Series: ...
 
 
 def _normalize_input_dates(
-    dates: SingleDateTypes | SeriesDateTypes | None = None,
+    dates: SingleDates | SeriesDates | None = None,
 ) -> pd.Timestamp | pd.Series:
     if dates is None:
         return pd.Timestamp.today().normalize()
@@ -65,25 +65,25 @@ def _convert_to_numpy_date(
 
 @overload
 def offset(
-    dates: SingleDateTypes,
-    offset: int = 0,
+    dates: SingleDates,
+    offset: int = ...,
     roll: Literal["forward", "backward"] = "forward",
-    holiday_list: Literal["old", "new", "infer"] = "infer",
+    holiday_list: Literal["old", "new", "infer"] = ...,
 ) -> pd.Timestamp: ...
 
 
 @overload
 def offset(
-    dates: SeriesDateTypes,
-    offset: int = 0,
+    dates: SeriesDates,
+    offset: int | pd.Series | np.ndarray | list | tuple = ...,
     roll: Literal["forward", "backward"] = "forward",
-    holiday_list: Literal["old", "new", "infer"] = "infer",
+    holiday_list: Literal["old", "new", "infer"] = ...,
 ) -> pd.Series: ...
 
 
 def offset(
-    dates: SingleDateTypes | SeriesDateTypes,
-    offset: int = 0,
+    dates: SingleDates | SeriesDates,
+    offset: int | pd.Series | np.ndarray | list | tuple = 0,
     roll: Literal["forward", "backward"] = "forward",
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Timestamp | pd.Series:
@@ -161,39 +161,39 @@ def offset(
 
 @overload
 def count(
-    start: SingleDateTypes,
-    end: SingleDateTypes,
+    start: SingleDates,
+    end: SingleDates,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> int: ...
 
 
 @overload
 def count(
-    start: SeriesDateTypes,
-    end: SingleDateTypes,
+    start: SeriesDates,
+    end: SingleDates,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series: ...
 
 
 @overload
 def count(
-    start: SingleDateTypes,
-    end: SeriesDateTypes,
+    start: SingleDates,
+    end: SeriesDates,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series: ...
 
 
 @overload
 def count(
-    start: SeriesDateTypes,
-    end: SeriesDateTypes,
+    start: SeriesDates,
+    end: SeriesDates,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series: ...
 
 
 def count(
-    start: SingleDateTypes | SeriesDateTypes,
-    end: SingleDateTypes | SeriesDateTypes,
+    start: SingleDates | SeriesDates,
+    end: SingleDates | SeriesDates,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> int | pd.Series:
     """
@@ -256,8 +256,8 @@ def count(
 
 
 def generate(
-    start: SingleDateTypes | None = None,
-    end: SingleDateTypes | None = None,
+    start: SingleDates | None = None,
+    end: SingleDates | None = None,
     inclusive: Literal["both", "neither", "left", "right"] = "both",
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series:
@@ -314,7 +314,7 @@ def generate(
     return pd.Series(result_dti.values)
 
 
-def is_business_day(date: SingleDateTypes | None = None) -> bool:
+def is_business_day(date: SingleDates | None = None) -> bool:
     """
     Checks if the input date is a business day.
 
