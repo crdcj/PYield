@@ -47,10 +47,13 @@ def data(
         df.drop(columns=["DaysToExpiration"], inplace=True)
 
     if prefixed_filter:
-        df_anb = get_anbima_dataframe()
-        df_anb.query("ReferenceDate == @trade_date", inplace=True)
-        df_pre = df_anb.query("BondType in ['LTN', 'NTN-F']").copy()
-        pre_maturities = df_pre["MaturityDate"].drop_duplicates(ignore_index=True)
+        df_pre = (
+            get_anbima_dataframe()
+            .query("ReferenceDate == @trade_date")
+            .query("BondType in ['LTN', 'NTN-F']")
+            .drop_duplicates(ignore_index=True)
+        )
+        pre_maturities = df_pre["MaturityDate"]
         adj_pre_maturities = bday.offset(pre_maturities, 0)  # noqa
         df.query("ExpirationDate in @adj_pre_maturities", inplace=True)
 
@@ -183,4 +186,5 @@ def trade_dates(
         end_date = dc.convert_date(end_date)
         df = df.query("TradeDate <= @end_date")
 
-    return df["TradeDate"].drop_duplicates(ignore_index=True)
+    df = df.drop_duplicates(subset=["TradeDate"], ignore_index=True)
+    return df["TradeDate"]

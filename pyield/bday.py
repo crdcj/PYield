@@ -6,43 +6,35 @@ import pandas as pd
 
 from . import holidays
 
-SingleDates = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
-SeriesDates = list | tuple | np.ndarray | pd.Series | pd.Index | pd.DatetimeIndex
+type ScalarDateTypes = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
+type PandasArrayDateTypes = pd.Series | pd.DatetimeIndex | pd.Index
+type ArrayDateTypes = PandasArrayDateTypes | np.ndarray | list | tuple
 
-TO_SERIES_TYPES = (list, tuple, np.ndarray, pd.Series, pd.Index, pd.DatetimeIndex)
+type ArrayIntTypes = np.ndarray | pd.Series | list | tuple
+type ScalarIntTypes = int | np.integer
 
 # Initialize the BrHolidays class
 br_holidays = holidays.BrHolidays()
 
 
 @overload
-def _normalize_input_dates(
-    dates: SingleDates | None,
-) -> pd.Timestamp: ...
-
-
+def _convert_input_dates(dates: ScalarDateTypes) -> pd.Timestamp: ...
 @overload
-def _normalize_input_dates(
-    dates: SeriesDates,
-) -> pd.Series: ...
+def _convert_input_dates(dates: ArrayDateTypes) -> pd.Series: ...
 
 
-def _normalize_input_dates(
-    dates: SingleDates | SeriesDates | None = None,
+def _convert_input_dates(
+    dates: ScalarDateTypes | ArrayDateTypes,
 ) -> pd.Timestamp | pd.Series:
-    if dates is None:
-        return pd.Timestamp.today().normalize()
-    elif isinstance(dates, str):
-        return pd.to_datetime(dates, dayfirst=True).normalize()
-    elif isinstance(dates, pd.Timestamp):
-        return dates.normalize()
-    elif isinstance(dates, (np.datetime64 | dt.datetime | dt.date)):
-        return pd.Timestamp(dates).normalize()
-    elif isinstance(dates, TO_SERIES_TYPES):
-        result = pd.to_datetime(dates, dayfirst=True)
-        return pd.Series(result).dt.normalize()
+    result = pd.to_datetime(dates, dayfirst=True)
+    if isinstance(result, (pd.Timestamp, dt.date, dt.datetime, np.datetime64)):
+        result = pd.Timestamp(result).normalize()
+    elif isinstance(result, (pd.Series, pd.DatetimeIndex)):
+        result = pd.Series(result).astype("datetime64[ns]")
     else:
-        raise ValueError("Invalid date format.")
+        raise ValueError("Invalid date input type.")
+
+    return result
 
 
 def _convert_to_numpy_date(
@@ -65,25 +57,43 @@ def _convert_to_numpy_date(
 
 @overload
 def offset(
-    dates: SingleDates,
-    offset: int = ...,
-    roll: Literal["forward", "backward"] = "forward",
+    dates: ScalarDateTypes,
+    offset: ScalarIntTypes,
+    roll: Literal["forward", "backward"] = ...,
     holiday_list: Literal["old", "new", "infer"] = ...,
 ) -> pd.Timestamp: ...
 
 
 @overload
 def offset(
-    dates: SeriesDates,
-    offset: int | pd.Series | np.ndarray | list | tuple = ...,
-    roll: Literal["forward", "backward"] = "forward",
+    dates: ArrayDateTypes,
+    offset: ArrayIntTypes,
+    roll: Literal["forward", "backward"] = ...,
+    holiday_list: Literal["old", "new", "infer"] = ...,
+) -> pd.Series: ...
+
+
+@overload
+def offset(
+    dates: ScalarDateTypes,
+    offset: ArrayIntTypes,
+    roll: Literal["forward", "backward"] = ...,
+    holiday_list: Literal["old", "new", "infer"] = ...,
+) -> pd.Series: ...
+
+
+@overload
+def offset(
+    dates: ArrayDateTypes,
+    offset: ScalarIntTypes,
+    roll: Literal["forward", "backward"] = ...,
     holiday_list: Literal["old", "new", "infer"] = ...,
 ) -> pd.Series: ...
 
 
 def offset(
-    dates: SingleDates | SeriesDates,
-    offset: int | pd.Series | np.ndarray | list | tuple = 0,
+    dates: ScalarDateTypes | ArrayDateTypes,
+    offset: ScalarIntTypes | ArrayIntTypes,
     roll: Literal["forward", "backward"] = "forward",
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Timestamp | pd.Series:
@@ -99,7 +109,7 @@ def offset(
             The date(s) to offset. Can be a single date in various formats (string,
             `datetime`, `Timestamp`, etc.) or a collection of dates (list, tuple,
             `Series`, etc.). If None, the current date is used.
-        offset (int | Series | np.ndarray | list | tuple, optional):
+        offset (int | Series | np.ndarray | list[int] | tuple[int], optional):
             The number of business days to offset the dates. Positive for
             future dates, negative for past dates. Zero will return the same date if
             it's a business day, or the next business day otherwise.
@@ -118,7 +128,7 @@ def offset(
 
     Examples:
         >>> date = "23-12-2023"  # Saturday before Christmas
-        >>> bday.offset(date)  # Offset to the next business day
+        >>> bday.offset(date, 0)  # Offset to the next business day
         Timestamp('2023-12-26')
 
         >>> date = "22-12-2023"  # Friday before Christmas
@@ -131,13 +141,29 @@ def offset(
         >>> bday.offset(date, -1)
         Timestamp('2023-12-21') # Offset to the previous business day
 
+        >>> bday.offset(date, 0, roll="backward")
+        Timestamp('2023-12-22') # No offset because it's a business day
+
+        >>> bday.offset("23-12-2023", 0, roll="backward")
+        Timestamp('2023-12-22') # Offset to the first business day before "23-12-2023"
+
+        >>> bday.offset(["19-09-2024", "20-09-2024"], 1)  # a list of dates
+        0   2024-09-20
+        1   2024-09-23
+        dtype: datetime64[ns]
+
+        >>> bday.offset("19-09-2024", [1, 2]  # a list of offsets
+        0   2024-09-20
+        1   2024-09-23
+        dtype: datetime64[ns]
+
     Note:
         This function uses `numpy.busday_offset` under the hood, which means it follows
         the same conventions and limitations for business day calculations. For detailed
         information on error handling and behavior, refer to the `numpy.busday_offset`
         documentation: https://numpy.org/doc/stable/reference/generated/numpy.busday_offset.html
     """
-    normalized_dates = _normalize_input_dates(dates)
+    normalized_dates = _convert_input_dates(dates)
 
     selected_holidays = br_holidays.get_applicable_holidays(
         normalized_dates, holiday_list
@@ -162,39 +188,39 @@ def offset(
 
 @overload
 def count(
-    start: SingleDates,
-    end: SingleDates,
+    start: ScalarDateTypes,
+    end: ScalarDateTypes,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> int: ...
 
 
 @overload
 def count(
-    start: SeriesDates,
-    end: SingleDates,
+    start: ArrayDateTypes,
+    end: ScalarDateTypes,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series: ...
 
 
 @overload
 def count(
-    start: SingleDates,
-    end: SeriesDates,
+    start: ScalarDateTypes,
+    end: ArrayDateTypes,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series: ...
 
 
 @overload
 def count(
-    start: SeriesDates,
-    end: SeriesDates,
+    start: ArrayDateTypes,
+    end: ArrayDateTypes,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series: ...
 
 
 def count(
-    start: SingleDates | SeriesDates,
-    end: SingleDates | SeriesDates,
+    start: ScalarDateTypes | ArrayDateTypes,
+    end: ScalarDateTypes | ArrayDateTypes,
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> int | pd.Series:
     """
@@ -236,8 +262,8 @@ def count(
         >>> bday.count(start="01-01-2023", end=["31-01-2023", "01-03-2023"])
         pd.Series([22, 40], dtype='int64')
     """
-    normalized_start = _normalize_input_dates(start)
-    normalized_end = _normalize_input_dates(end)
+    normalized_start = _convert_input_dates(start)
+    normalized_end = _convert_input_dates(end)
 
     # Determine which list of holidays to use
     selected_holidays = br_holidays.get_applicable_holidays(
@@ -250,15 +276,15 @@ def count(
     end_np = _convert_to_numpy_date(normalized_end)
 
     result_np = np.busday_count(start_np, end_np, holidays=selected_holidays_np)
-    if isinstance(result_np, np.int64):
+    if isinstance(result_np, np.integer):
         return int(result_np)
     else:
         return pd.Series(result_np, dtype="Int64")
 
 
 def generate(
-    start: SingleDates | None = None,
-    end: SingleDates | None = None,
+    start: ScalarDateTypes | None = None,
+    end: ScalarDateTypes | None = None,
     inclusive: Literal["both", "neither", "left", "right"] = "both",
     holiday_list: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series:
@@ -296,18 +322,24 @@ def generate(
         `pandas.bdate_range` documentation:
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html.
     """
-    normalized_start = _normalize_input_dates(start)
-    normalized_end = _normalize_input_dates(end)
+    if start:
+        converted_start = _convert_input_dates(start)
+    else:
+        converted_start = pd.Timestamp.today()
+    if end:
+        converted_end = _convert_input_dates(end)
+    else:
+        converted_end = pd.Timestamp.today()
 
     selected_holidays = br_holidays.get_applicable_holidays(
-        normalized_start, holiday_list
+        converted_start, holiday_list
     )
     selected_holidays_list = selected_holidays.to_list()
 
     # Get the result as a DatetimeIndex (dti)
     result_dti = pd.bdate_range(
-        start=normalized_start,
-        end=normalized_end,
+        start=converted_start,
+        end=converted_end,
         freq="C",
         inclusive=inclusive,
         holidays=selected_holidays_list,
@@ -315,7 +347,7 @@ def generate(
     return pd.Series(result_dti.values)
 
 
-def is_business_day(date: SingleDates | None = None) -> bool:
+def is_business_day(date: ScalarDateTypes | None = None) -> bool:
     """
     Checks if the input date is a business day.
 
@@ -332,7 +364,12 @@ def is_business_day(date: SingleDates | None = None) -> bool:
         >>> bday.is_business_day()  # Check if today is a business day
         True
     """
-    normalized_date = _normalize_input_dates(date)
+    if date:
+        converted_date = _convert_input_dates(date)
+    else:
+        converted_date = pd.Timestamp.today().normalize()
+
     # Shift the date if it is not a business day
-    adjusted_date = offset(normalized_date, 0)
-    return normalized_date == adjusted_date
+    adjusted_date = offset(converted_date, 0)
+
+    return converted_date == adjusted_date

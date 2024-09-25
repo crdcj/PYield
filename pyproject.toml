@@ -43,7 +43,7 @@ excludes = ["tests", "docs"]
 dev = [
     "ipykernel",
     "pytest",
-    "mypy",
+    "pyright",
     "mkdocs",
     "mkdocs-material",
     "mkdocstrings[python]",    

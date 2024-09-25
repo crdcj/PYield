@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from .. import date_converter as dc
-from ..data import anbima, di
+from ..data_sources import anbima, di
 
 
 @overload
@@ -28,7 +28,7 @@ def truncate(values: float | pd.Series, decimal_places: int) -> float | pd.Serie
     """
     factor = 10**decimal_places
     truncated_values = np.trunc(values * factor) / factor
-    if isinstance(truncated_values, np.float64):
+    if isinstance(truncated_values, np.floating):
         truncated_values = float(truncated_values)
     else:
         truncated_values = pd.Series(truncated_values)

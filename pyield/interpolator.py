@@ -46,15 +46,13 @@ class Interpolator:
         self.known_bdays = known_bdays
         self.known_rates = known_rates
         self.extrapolate = extrapolate
-        self._set_known_bdays_and_rates()
+        self._validate_and_process_inputs()
 
-    def _set_known_bdays_and_rates(self) -> None:
+    def _validate_and_process_inputs(self) -> None:
         """Validate and process the inputs of the Interpolator."""
-        if self.method not in {"flat_forward", "linear"}:
-            raise ValueError(f"Unknown interpolation method: {self.method}.")
-
         known_bdays = self.known_bdays
         known_rates = self.known_rates
+        # Series may have different index, so we convert to list
         if isinstance(known_bdays, pd.Series):
             known_bdays = known_bdays.to_list()
         if isinstance(known_rates, pd.Series):
@@ -105,7 +103,7 @@ class Interpolator:
             float: The interest rate interpolated by the specified method for the given
                 number of business days.
         """
-        # Check for edge cases
+        # Check for cases where interpolation is not needed
         if bday < self._known_bdays[0]:
             return self._known_rates[0]
         elif bday in self._known_bdays:
@@ -114,12 +112,14 @@ class Interpolator:
             if self.extrapolate:
                 return self._known_rates[-1]
             else:
-                return float("NaN")
+                return float("NaN")  # Return NaN if extrapolation is not allowed
 
         if self.method == "flat_forward":
             return self._flat_forward(bday)
         elif self.method == "linear":
             return self._linear(bday)
+        else:
+            raise ValueError(f"Unknown interpolation method: {self.method}.")
 
     def __call__(self, bday: int) -> float:
         """
