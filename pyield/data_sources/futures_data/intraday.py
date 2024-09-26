@@ -137,7 +137,7 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
     pd.DataFrame: DataFrame with the columns selected and reordered.
     """
-    columns = [
+    all_columns = [
         "TradeDate",
         "TradeTime",
         "TickerSymbol",
@@ -159,7 +159,8 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "CurrentBidRate",
         "CurrentRate",
     ]
-    return df[columns]
+    reordered_columns = [col for col in all_columns if col in df.columns]
+    return df[reordered_columns].copy()
 
 
 def fetch_intraday_df(future_code: str) -> pd.DataFrame:
