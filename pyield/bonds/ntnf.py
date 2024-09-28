@@ -85,8 +85,8 @@ def coupon_dates(
             (exclusive) and maturity (inclusive) dates.
     """
     # Validate and normalize dates
-    settlement = dc.convert_date(settlement)
-    maturity = dc.convert_date(maturity)
+    settlement = dc.convert_input_dates(settlement)
+    maturity = dc.convert_input_dates(maturity)
 
     # Check if the maturity date is valid
     _check_maturity_date(maturity)
@@ -131,8 +131,8 @@ def cash_flows(
         pd.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
     """
     # Validate input dates
-    settlement = dc.convert_date(settlement)
-    maturity = dc.convert_date(maturity)
+    settlement = dc.convert_input_dates(settlement)
+    maturity = dc.convert_input_dates(maturity)
     _check_maturity_date(maturity)
 
     # Get the coupon payment dates between the settlement and maturity dates
@@ -221,7 +221,7 @@ def spot_rates(  # noqa
         pd.DataFrame: DataFrame with columns "MaturityDate" and "SpotRate"
     """
     # Process and validate the input data
-    settlement = dc.convert_date(settlement)
+    settlement = dc.convert_input_dates(settlement)
 
     # Create flat forward interpolators for LTN and NTN-F rates
     ltn_rate_interpolator = it.Interpolator(
@@ -379,8 +379,8 @@ def di_net_spread(  # noqa
         float: The net DI spread in basis points.
     """
     # Create an interpolator for the DI rates using the flat-forward method
-    settlement = dc.convert_date(settlement)
-    ntnf_maturity = dc.convert_date(ntnf_maturity)
+    settlement = dc.convert_input_dates(settlement)
+    ntnf_maturity = dc.convert_input_dates(ntnf_maturity)
 
     ff_interpolator = it.Interpolator(
         "flat_forward",
@@ -420,8 +420,8 @@ def premium(
     di_expirations: pd.Series,
     di_rates: pd.Series,
 ) -> float:
-    ntnf_maturity = dc.convert_date(ntnf_maturity)
-    settlement = dc.convert_date(settlement)
+    ntnf_maturity = dc.convert_input_dates(ntnf_maturity)
+    settlement = dc.convert_input_dates(settlement)
 
     df = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
     df["BDays"] = bday.count(settlement, df["PaymentDate"])
@@ -460,8 +460,8 @@ def historical_premium(
     reference_date: str | pd.Timestamp,
     maturity: str | pd.Timestamp,  # noqa
 ) -> float:
-    reference_date = dc.convert_date(reference_date)
-    maturity = dc.convert_date(maturity)
+    reference_date = dc.convert_input_dates(reference_date)
+    maturity = dc.convert_input_dates(maturity)
 
     df_ntnf = rates(reference_date)
     if df_ntnf.empty:
@@ -503,8 +503,8 @@ def duration(
     maturity: str | pd.Timestamp,
     rate: float,
 ) -> float:
-    settlement = dc.convert_date(settlement)
-    maturity = dc.convert_date(maturity)
+    settlement = dc.convert_input_dates(settlement)
+    maturity = dc.convert_input_dates(maturity)
 
     df = cash_flows(settlement, maturity)
     df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252

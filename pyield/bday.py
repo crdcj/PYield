@@ -1,58 +1,17 @@
-import datetime as dt
 from typing import Literal, overload
 
 import numpy as np
 import pandas as pd
 
+from . import date_converter as dc
 from . import holidays
-
-type ScalarDateTypes = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
-type PandasArrayDateTypes = pd.Series | pd.DatetimeIndex | pd.Index
-type ArrayDateTypes = PandasArrayDateTypes | np.ndarray | list | tuple
+from .date_converter import ArrayDateTypes, ScalarDateTypes
 
 type ArrayIntTypes = np.ndarray | pd.Series | list | tuple
 type ScalarIntTypes = int | np.integer
 
 # Initialize the BrHolidays class
 br_holidays = holidays.BrHolidays()
-
-
-@overload
-def _convert_input_dates(dates: ScalarDateTypes) -> pd.Timestamp: ...
-@overload
-def _convert_input_dates(dates: ArrayDateTypes) -> pd.Series: ...
-
-
-def _convert_input_dates(
-    dates: ScalarDateTypes | ArrayDateTypes,
-) -> pd.Timestamp | pd.Series:
-    result = pd.to_datetime(dates, dayfirst=True)
-    if isinstance(result, (pd.Timestamp, dt.date, dt.datetime, np.datetime64)):
-        result = pd.Timestamp(result).normalize()
-    elif isinstance(result, (pd.Series, pd.DatetimeIndex)):
-        result = pd.Series(result).astype("datetime64[ns]")
-    else:
-        raise ValueError("Invalid date input type.")
-
-    return result
-
-
-def _convert_to_numpy_date(
-    dates: pd.Timestamp | pd.Series,
-) -> np.datetime64 | np.ndarray:
-    """
-    Converts the input dates to a numpy datetime64[D] format.
-
-    Args:
-        dates (Timestamp | Series): A single date or a Series of dates.
-
-    Returns:
-        np.datetime64 | np.ndarray: The input dates in a numpy datetime64[D] format.
-    """
-    if isinstance(dates, pd.Timestamp):
-        return np.datetime64(dates, "D")
-    else:
-        return dates.to_numpy().astype("datetime64[D]")
 
 
 @overload
@@ -188,14 +147,14 @@ def offset(
         information on error handling and behavior, refer to the `numpy.busday_offset`
         documentation: https://numpy.org/doc/stable/reference/generated/numpy.busday_offset.html
     """
-    normalized_dates = _convert_input_dates(dates)
+    converted_dates = dc.convert_input_dates(dates)
 
     selected_holidays = br_holidays.get_applicable_holidays(
-        normalized_dates, holiday_list
+        converted_dates, holiday_list
     )
-    selected_holidays_np = _convert_to_numpy_date(selected_holidays)
+    selected_holidays_np = dc.convert_to_numpy_date(selected_holidays)
 
-    dates_np = _convert_to_numpy_date(normalized_dates)
+    dates_np = dc.convert_to_numpy_date(converted_dates)
     offsetted_dates_np = np.busday_offset(
         dates_np, offsets=offset, roll=roll, holidays=selected_holidays_np
     )
@@ -304,18 +263,18 @@ def count(
         1    19
         dtype: Int64
     """
-    normalized_start = _convert_input_dates(start)
-    normalized_end = _convert_input_dates(end)
+    converted_start = dc.convert_input_dates(start)
+    converted_end = dc.convert_input_dates(end)
 
     # Determine which list of holidays to use
     selected_holidays = br_holidays.get_applicable_holidays(
-        normalized_start, holiday_list
+        converted_start, holiday_list
     )
-    selected_holidays_np = _convert_to_numpy_date(selected_holidays)
+    selected_holidays_np = dc.convert_to_numpy_date(selected_holidays)
 
     # Convert inputs to numpy datetime64[D] before calling numpy.busday_count
-    start_np = _convert_to_numpy_date(normalized_start)
-    end_np = _convert_to_numpy_date(normalized_end)
+    start_np = dc.convert_to_numpy_date(converted_start)
+    end_np = dc.convert_to_numpy_date(converted_end)
 
     result_np = np.busday_count(start_np, end_np, holidays=selected_holidays_np)
     if isinstance(result_np, np.integer):
@@ -371,11 +330,12 @@ def generate(
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html.
     """
     if start:
-        converted_start = _convert_input_dates(start)
+        converted_start = dc.convert_input_dates(start)
     else:
         converted_start = pd.Timestamp.today()
+
     if end:
-        converted_end = _convert_input_dates(end)
+        converted_end = dc.convert_input_dates(end)
     else:
         converted_end = pd.Timestamp.today()
 
@@ -410,6 +370,6 @@ def is_business_day(date: ScalarDateTypes) -> bool:
         >>> bday.is_business_day("25-12-2023")  # Christmas
         False
     """
-    converted_date = _convert_input_dates(date)
+    converted_date = dc.convert_input_dates(date)
     shifted_date = offset(converted_date, 0)  # Shift the date if it is not a bus. day
     return converted_date == shifted_date

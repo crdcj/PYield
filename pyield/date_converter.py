@@ -1,65 +1,82 @@
 import datetime as dt
 import re
+from typing import overload
 
 import numpy as np
 import pandas as pd
 
-
-def _starts_with_year(date_str: str) -> bool:
-    """Check if the date string starts with a four-digit year."""
-    if date_str in {"today", "now"}:
-        return False
-    else:
-        return bool(re.match(r"^\d{4}-", date_str))
+type ScalarDateTypes = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
+type PandasArrayDateTypes = pd.Series | pd.DatetimeIndex | pd.Index
+type ArrayDateTypes = PandasArrayDateTypes | np.ndarray | list | tuple
 
 
-def convert_date(
-    input_date: str | pd.Timestamp | np.datetime64 | dt.date | dt.datetime,
-) -> pd.Timestamp:
-    """
-    Convert a date to pandas Timestamp adjusted to midnight.
+def validate_year_format(value):
+    """If the input date is a string, it validates the year format."""
+    if not isinstance(value, str):
+        return
 
-    Args:
-        reference_date (str | pd.Timestamp | np.datetime64): The date to convert.
-            If str, it should be with day first format (e.g. "31-05-2024").
+    value = value.strip().lower()
+    if value in {"today", "now"}:
+        return
 
-    Returns:
-        pd.Timestamp: A normalized pandas Timestamp.
+    if re.match(r"^\d{4}-", value):
+        error_msg = f"Invalid format: {value}. Day first format is required. Example: '31-05-2024'."  # noqa
+        raise ValueError(error_msg)
 
-    Raises:
-        ValueError: If the input date format is invalid.
 
-    Notes:
-        - Normalization means setting the time component of the timestamp to midnight.
-        - Business day calculations consider Brazilian holidays.
-
-    Examples:
-        >>> convert_date("31-05-2024")
-        Timestamp('2024-05-31 00:00:00')
-    """
-    match input_date:
+def check_first_value(dates):
+    match dates:
         case None:
             raise ValueError("Date cannot be None.")
         case str():
-            if _starts_with_year(input_date):
-                raise ValueError(
-                    f"Invalid date format: {input_date}. Day first format is required (e.g. '31-05-2024')."  # noqa
-                )
-            # Parse the date string with day first format
-            output_date = pd.to_datetime(input_date, dayfirst=True)
+            validate_year_format(dates)
+        case list() | tuple() | np.ndarray() | pd.Series():
+            validate_year_format(dates[0])
+
+
+@overload
+def convert_input_dates(dates: ScalarDateTypes) -> pd.Timestamp: ...
+@overload
+def convert_input_dates(dates: ArrayDateTypes) -> pd.Series: ...
+
+
+def convert_input_dates(
+    dates: ScalarDateTypes | ArrayDateTypes,
+) -> pd.Timestamp | pd.Series:
+    check_first_value(dates)
+
+    result = pd.to_datetime(dates, dayfirst=True)
+
+    match result:
         case pd.Timestamp():
-            # Use Timestamp as is
-            output_date = input_date
-        case np.datetime64():
-            # Convert numpy datetime to pandas Timestamp
-            output_date = pd.Timestamp(input_date)
-        case dt.date():
-            # Convert datetime.date to pandas Timestamp
-            output_date = pd.Timestamp(input_date)
-        case dt.datetime():
-            # Convert datetime.datetime to pandas Timestamp
-            output_date = pd.Timestamp(input_date)
+            result = result.normalize()
+        case dt.datetime() | dt.date() | np.datetime64():
+            result = pd.Timestamp(result).normalize()
+        case pd.Series():
+            result = result.astype("datetime64[ns]")
+        case pd.DatetimeIndex():
+            result = pd.Series(result).astype("datetime64[ns]")
+        case None:
+            raise ValueError("Date cannot be None.")
         case _:
-            raise ValueError(f"Date format not recognized: {input_date}")
-    # Normalize the final date to midnight
-    return output_date.normalize()
+            raise ValueError("Invalid date input type.")
+
+    return result
+
+
+def convert_to_numpy_date(
+    dates: pd.Timestamp | pd.Series,
+) -> np.datetime64 | np.ndarray:
+    """
+    Converts the input dates to a numpy datetime64[D] format.
+
+    Args:
+        dates (Timestamp | Series): A single date or a Series of dates.
+
+    Returns:
+        np.datetime64 | np.ndarray: The input dates in a numpy datetime64[D] format.
+    """
+    if isinstance(dates, pd.Timestamp):
+        return np.datetime64(dates, "D")
+    else:
+        return dates.to_numpy().astype("datetime64[D]")

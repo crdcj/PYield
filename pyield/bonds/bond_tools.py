@@ -77,7 +77,7 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
             bond type and maturity date.
     """
     # Fetch DI rates for the reference date
-    reference_date = dc.convert_date(reference_date)
+    reference_date = dc.convert_input_dates(reference_date)
     df_di = di.data(reference_date, adj_expirations=True)
     if "SettlementRate" not in df_di.columns:
         raise ValueError("DI rates data is missing the 'SettlementRate' column.")

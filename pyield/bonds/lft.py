@@ -62,8 +62,8 @@ def quotation(
         98.9645
     """
     # Validate and normalize dates
-    settlement = dc.convert_date(settlement)
-    maturity = dc.convert_date(maturity)
+    settlement = dc.convert_input_dates(settlement)
+    maturity = dc.convert_input_dates(maturity)
 
     # The number of bdays between settlement (inclusive) and the maturity (exclusive)
     bdays = bday.count(settlement, maturity)

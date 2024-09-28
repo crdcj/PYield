@@ -99,8 +99,8 @@ def _generate_coupon_dates_map(
         pd.Series: Series of coupon dates within the specified range.
     """
     # Validate and normalize dates
-    start = dc.convert_date(start)
-    end = dc.convert_date(end)
+    start = dc.convert_input_dates(start)
+    end = dc.convert_input_dates(end)
 
     # Initialize the first coupon date based on the reference date
     reference_year = start.year
@@ -138,8 +138,8 @@ def payment_dates(
         pd.Series: Series of coupon dates within the specified range.
     """
     # Validate and normalize dates
-    settlement = dc.convert_date(settlement)
-    maturity = dc.convert_date(maturity)
+    settlement = dc.convert_input_dates(settlement)
+    maturity = dc.convert_input_dates(maturity)
     _check_maturities(maturity)
 
     # Check if maturity date is after the start date
@@ -180,8 +180,8 @@ def cash_flows(
         - CashFlow: Cash flow value for the bond
     """
     # Validate and normalize dates
-    settlement = dc.convert_date(settlement)
-    maturity = dc.convert_date(maturity)
+    settlement = dc.convert_input_dates(settlement)
+    maturity = dc.convert_input_dates(maturity)
 
     # Get the coupon dates between the settlement and maturity dates
     p_dates = payment_dates(settlement, maturity)
@@ -225,8 +225,8 @@ def quotation(
         99.5341
     """
     # Validate and normalize dates
-    settlement = dc.convert_date(settlement)
-    maturity = dc.convert_date(maturity)
+    settlement = dc.convert_input_dates(settlement)
+    maturity = dc.convert_input_dates(maturity)
     _check_maturities(maturity)
 
     cf_df = cash_flows(settlement, maturity)
@@ -306,7 +306,7 @@ def spot_rates(
                 - SpotRate: The real spot rate for the bond.
     """
     # Process and validate the input data
-    settlement = dc.convert_date(settlement)
+    settlement = dc.convert_input_dates(settlement)
     maturities = pd.to_datetime(maturities, errors="raise", dayfirst=True)
     _check_maturities(maturities)
 
@@ -401,7 +401,7 @@ def bei_rates(
         settlement date to the bond's maturity.
     """
     # Normalize input dates
-    settlement = dc.convert_date(settlement)
+    settlement = dc.convert_input_dates(settlement)
     ntnb_maturities = pd.to_datetime(ntnb_maturities, errors="coerce", dayfirst=True)
 
     # Calculate Real Interest Rate (RIR)
@@ -434,8 +434,8 @@ def duration(
     maturity: str | pd.Timestamp,
     rate: float,
 ) -> float:
-    settlement = dc.convert_date(settlement)
-    maturity = dc.convert_date(maturity)
+    settlement = dc.convert_input_dates(settlement)
+    maturity = dc.convert_input_dates(maturity)
 
     df = cash_flows(settlement, maturity)
     df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252

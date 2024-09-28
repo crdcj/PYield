@@ -47,7 +47,7 @@ def futures(
     if contract_code not in SUPPORTED_FUTURES:
         raise ValueError("Futures contract not supported.")
 
-    trade_date = dc.convert_date(trade_date)
+    trade_date = dc.convert_input_dates(trade_date)
 
     # First, try to fetch historical data for the specified date
     df = fetch_historical_df(contract_code, trade_date)

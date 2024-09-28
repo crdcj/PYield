@@ -66,8 +66,8 @@ def price(
     """
 
     # Validate and normalize dates
-    settlement = dc.convert_date(settlement)
-    maturity = dc.convert_date(maturity)
+    settlement = dc.convert_input_dates(settlement)
+    maturity = dc.convert_input_dates(maturity)
 
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement, maturity)
@@ -138,8 +138,8 @@ def historical_premium(
                If the data is not available, returns NaN.
     """
     # Convert input dates to a consistent format
-    reference_date = dc.convert_date(reference_date)
-    maturity = dc.convert_date(maturity)
+    reference_date = dc.convert_input_dates(reference_date)
+    maturity = dc.convert_input_dates(maturity)
 
     # Retrieve LTN rates for the reference date
     df_anbima = rates(reference_date)

@@ -110,7 +110,7 @@ def data(
     bond_type: str | None = None,
 ) -> pd.DataFrame:
     # Normalize the reference date
-    reference_date = dc.convert_date(reference_date)
+    reference_date = dc.convert_input_dates(reference_date)
     file_content = _get_file_content(reference_date)
 
     if not file_content:
@@ -134,7 +134,7 @@ def rates(
 ) -> pd.DataFrame:
     df = get_anbima_dataframe()
 
-    reference_date = dc.convert_date(reference_date)
+    reference_date = dc.convert_input_dates(reference_date)
     df.query("ReferenceDate == @reference_date", inplace=True)
 
     if df.empty:
@@ -159,7 +159,7 @@ def pre_maturities(
     reference_date: str | pd.Timestamp,
 ) -> pd.Series:
     df = get_anbima_dataframe()
-    reference_date = dc.convert_date(reference_date)
+    reference_date = dc.convert_input_dates(reference_date)
     df.query("ReferenceDate == @reference_date", inplace=True)
     df.query("BondType in ['LTN', 'NTN-F']", inplace=True)
     maturity_dates = df["MaturityDate"].drop_duplicates()

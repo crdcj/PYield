@@ -30,7 +30,7 @@ def data(
             expiration dates and selected rates. The DataFrame is sorted by the
             expiration date.
     """
-    trade_date = dc.convert_date(trade_date)
+    trade_date = dc.convert_input_dates(trade_date)
     df = get_di_dataframe()
     df.query("TradeDate == @trade_date", inplace=True)
 
@@ -86,7 +86,7 @@ def expirations(
     Returns:
         pd.Series: A Series of unique expiration dates for DI contracts.
     """
-    trade_date = dc.convert_date(trade_date)
+    trade_date = dc.convert_input_dates(trade_date)
     df = data(trade_date, adj_expirations, prefixed_filter)
     df = df.drop_duplicates(subset=["ExpirationDate"], ignore_index=True)
     return df["ExpirationDate"]
@@ -118,7 +118,7 @@ def rate(
                if the rate cannot be determined.
     """
     # Convert input dates to consistent format
-    trade_date = dc.convert_date(trade_date)
+    trade_date = dc.convert_input_dates(trade_date)
     # Adjust expiration date to the nearest business day
     expiration = bday.offset(expiration, 0)
 
@@ -180,10 +180,10 @@ def trade_dates(
     """
     df = get_di_dataframe()
     if start_date:
-        start_date = dc.convert_date(start_date)
+        start_date = dc.convert_input_dates(start_date)
         df = df.query("TradeDate >= @start_date")
     if end_date:
-        end_date = dc.convert_date(end_date)
+        end_date = dc.convert_input_dates(end_date)
         df = df.query("TradeDate <= @end_date")
 
     df = df.drop_duplicates(subset=["TradeDate"], ignore_index=True)

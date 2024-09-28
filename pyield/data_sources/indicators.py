@@ -13,7 +13,7 @@ def indicator(
     indicator_type: Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI", "VNA_LFT"],
     reference_date: str | pd.Timestamp,
 ) -> float:
-    reference_date = dc.convert_date(reference_date)
+    reference_date = dc.convert_input_dates(reference_date)
     ind_type = str(indicator_type).upper()
     if ind_type == "IPCA_MR":
         return ipca_monthly_rate(reference_date)
