@@ -1,1 +1,1 @@
-::: pyield.data.anbima
+::: pyield.data_sources.anbima

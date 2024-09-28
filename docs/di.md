@@ -1,1 +1,1 @@
-::: pyield.data.di
+::: pyield.data_sources.di

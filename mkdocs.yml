@@ -15,6 +15,7 @@ nav:
       - DI Data (di): di.md
       - Futures Data (futures): futures.md
       - Indicators (indicator): indicators.md
+      - Tools (tools): tools.md
   
 
 theme:
