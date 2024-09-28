@@ -105,10 +105,10 @@ def offset(
     types and holiday adjustments.
 
     Args:
-        dates (SingleDateTypes | SeriesDateTypes):
+        dates (ScalarDateTypes | ArrayDateTypes):
             The date(s) to offset. Can be a single date in various formats (string,
             `datetime`, `Timestamp`, etc.) or a collection of dates (list, tuple,
-            `Series`, etc.). If None, the current date is used.
+            `Series`, etc.).
         offset (int | Series | np.ndarray | list[int] | tuple[int], optional):
             The number of business days to offset the dates. Positive for
             future dates, negative for past dates. Zero will return the same date if
@@ -127,32 +127,57 @@ def offset(
             `Series` of offset dates.
 
     Examples:
-        >>> date = "23-12-2023"  # Saturday before Christmas
-        >>> bday.offset(date, 0)  # Offset to the next business day
-        Timestamp('2023-12-26')
+        >>> from pandas import Timestamp
+        >>> from pyield import bday
 
-        >>> date = "22-12-2023"  # Friday before Christmas
-        >>> bday.offset(date, 0)
-        Timestamp('2023-12-22') # No offset because it's a business day
+        Offset to the next business day if not a bday (offset=0 and roll="forward")
 
-        >>> bday.offset(date, 1)
-        Timestamp('2023-12-26') # Offset to the next business day
+        # Offset Saturday before Christmas to the next b. day (Tuesday after Christmas)
+        >>> bday.offset("23-12-2023", 0)
+        Timestamp('2023-12-26 00:00:00')
 
-        >>> bday.offset(date, -1)
-        Timestamp('2023-12-21') # Offset to the previous business day
+        # Offset Friday before Christmas (no offset because it's a business day)
+        >>> bday.offset("22-12-2023", 0)
+        Timestamp('2023-12-22 00:00:00')
 
-        >>> bday.offset(date, 0, roll="backward")
-        Timestamp('2023-12-22') # No offset because it's a business day
+        Offset to the previous business day if not a bday (offset=0 and roll="backward")
 
+        # No offset because it's a business day
+        >>> bday.offset("22-12-2023", 0, roll="backward")
+        Timestamp('2023-12-22 00:00:00')
+
+        # Offset to the first business day before "23-12-2023"
         >>> bday.offset("23-12-2023", 0, roll="backward")
-        Timestamp('2023-12-22') # Offset to the first business day before "23-12-2023"
+        Timestamp('2023-12-22 00:00:00')
+
+        Jump to the next business day (1 offset and roll="forward")
+
+        # Offset Friday to the next business day (Friday is jumped -> Monday)
+        >>> bday.offset("27-09-2024", 1)
+        Timestamp('2024-09-30 00:00:00')
+
+        # Offset Saturday to the next business day (Monday is jumped -> Tuesday)
+        >>> bday.offset("28-09-2024", 1)
+        Timestamp('2024-10-01 00:00:00')
+
+        Jump to the previous business day (-1 offset and roll="backward")
+
+        # Offset Friday to the previous business day (Friday is jumped -> Thursday)
+        >>> bday.offset("27-09-2024", -1, roll="backward")
+        Timestamp('2024-09-26 00:00:00')
+
+        # Offset Saturday to the previous business day (Friday is jumped -> Thursday)
+        >>> bday.offset("28-09-2024", -1, roll="backward")
+        Timestamp('2024-09-26 00:00:00')
+
+        List of dates and offsets
 
         >>> bday.offset(["19-09-2024", "20-09-2024"], 1)  # a list of dates
         0   2024-09-20
         1   2024-09-23
         dtype: datetime64[ns]
 
-        >>> bday.offset("19-09-2024", [1, 2]  # a list of offsets
+        >>> bday.offset("19-09-2024", [1, 2])  # a list of offsets
         0   2024-09-20
         1   2024-09-23
         dtype: datetime64[ns]
@@ -231,11 +256,10 @@ def count(
     the business day count.
 
     Args:
-        start (SingleDateTypes | SeriesDateTypes): The start date(s)
-            for counting. If None, the current date is used.
-        end (SingleDateTypes | SeriesDateTypes| None, optional): The end date(s) for
-            counting, which are excluded from the count themselves. If None, the current
-            date is used.
+        start (ScalarDateTypes | ArrayDateTypes): The start date(s)
+            for counting.
+        end (ScalarDateTypes | ArrayDateTypes): The end date(s) for counting, which
+            is excluded from the count themselves.
         holiday_list (Literal["old", "new", "infer"], optional):
             Specifies which set of holidays to consider in the count. 'old' or 'new'
             refer to predefined holiday lists, while 'infer' automatically selects the
@@ -257,10 +281,28 @@ def count(
           https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
 
     Examples:
-        >>> bday.count("2023-12-15", "2024-01-01")
+        >>> from pyield import bday
+
+        >>> bday.count("15-12-2023", "01-01-2024")
         10
-        >>> bday.count(start="01-01-2023", end=["31-01-2023", "01-03-2023"])
-        pd.Series([22, 40], dtype='int64')
+
+        # Total business days in January and February since the start of the year
+        >>> bday.count(start="01-01-2024", end=["01-02-2024", "01-03-2024"])
+        0    22
+        1    41
+        dtype: Int64
+
+        # The remaining business days in January and February to the end of the year
+        >>> bday.count(["01-01-2024", "01-02-2024"], "01-01-2025")
+        0    253
+        1    231
+        dtype: Int64
+
+        # The total business days in January and February of 2024
+        >>> bday.count(["01-01-2024", "01-02-2024"], ["01-02-2024", "01-03-2024"])
+        0    22
+        1    19
+        dtype: Int64
     """
     normalized_start = _convert_input_dates(start)
     normalized_end = _convert_input_dates(end)
@@ -294,10 +336,10 @@ def generate(
     inclusion options for start and end dates. It wraps `pandas.bdate_range`.
 
     Args:
-        start (SingleDateTypes | None, optional):
+        start (ScalarDateTypes | None, optional):
             The start date for generating business days. If None, the current date is
             used. Defaults to None.
-        end (SingleDateTypes | None, optional):
+        end (ScalarDateTypes | None, optional):
             The end date for generating business days. If None, the current date is
             used. Defaults to None.
         inclusive (Literal["both", "neither", "left", "right"], optional):
@@ -313,9 +355,15 @@ def generate(
             start and end dates, considering the specified holidays.
 
     Examples:
+        >>> from pyield import bday
         >>> bday.generate(start="22-12-2023", end="02-01-2024")
-        pd.Series(['2023-12-22', '2023-12-26', '2023-12-27', '2023-12-28', '2023-12-29',
-            '2024-01-02'], dtype='datetime64[ns]')
+        0   2023-12-22
+        1   2023-12-26
+        2   2023-12-27
+        3   2023-12-28
+        4   2023-12-29
+        5   2024-01-02
+        dtype: datetime64[ns]
 
     Note:
         For detailed information on parameters and error handling, refer to
@@ -347,29 +395,21 @@ def generate(
     return pd.Series(result_dti.values)
 
 
-def is_business_day(date: ScalarDateTypes | None = None) -> bool:
+def is_business_day(date: ScalarDateTypes) -> bool:
     """
     Checks if the input date is a business day.
 
     Args:
-        date (SingleDateTypes | None, optional): The date to check.
-            If None, the current date is used. Defaults to None.
+        date (ScalarDateTypes): The date to check.
 
     Returns:
         bool: True if the input date is a business day, False otherwise.
 
     Examples:
+        >>> from pyield import bday
         >>> bday.is_business_day("25-12-2023")  # Christmas
         False
-        >>> bday.is_business_day()  # Check if today is a business day
-        True
     """
-    if date:
-        converted_date = _convert_input_dates(date)
-    else:
-        converted_date = pd.Timestamp.today().normalize()
-
-    # Shift the date if it is not a business day
-    adjusted_date = offset(converted_date, 0)
-
-    return converted_date == adjusted_date
+    converted_date = _convert_input_dates(date)
+    shifted_date = offset(converted_date, 0)  # Shift the date if it is not a bus. day
+    return converted_date == shifted_date
