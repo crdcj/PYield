@@ -3,7 +3,7 @@ from io import StringIO
 import pandas as pd
 import requests
 
-from ... import bday
+from .. import bday
 
 
 # Função para salvar DataFrame em CSV e ler com read_csv

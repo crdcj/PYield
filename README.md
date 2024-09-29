@@ -135,16 +135,12 @@ TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastB
 ```python
 >>> import pyield as yd
 # Fetch the SELIC target rate from the Central Bank of Brazil
->>> yd.indicator(indicator_code="SELIC", reference_date='12-04-2024')
+>>> yd.indicator(indicator_code="SELIC_TARGET", reference_date='12-04-2024')
 0.1075  # 10.75%
 
 # Fetch the IPCA monthly inflation rate from IBGE
->>> yd.indicator(indicator_code="IPCA", reference_date='18-03-2024')
-0.16  # 0.16%
-
-# If no data is yet available for the indicator, the function returns None
->>> yd.indicator(indicator_code="IPCA", reference_date='10-04-2024')
-None
+>>> yd.indicator(indicator_code="IPCA_MR", reference_date='18-03-2024')
+0.0016  # 0.16%
 ```
 
 ### Projections Data

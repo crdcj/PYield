@@ -4,14 +4,14 @@ import numpy as np
 import pandas as pd
 
 from . import date_converter as dc
-from . import holidays
 from .date_converter import ArrayDateTypes, ScalarDateTypes
+from .holidays import BrHolidays
 
 type ArrayIntTypes = np.ndarray | pd.Series | list | tuple
 type ScalarIntTypes = int | np.integer
 
 # Initialize the BrHolidays class
-br_holidays = holidays.BrHolidays()
+br_holidays = BrHolidays()
 
 
 @overload

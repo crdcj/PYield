@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from .. import bday
+from .. import anbima, bday
 from .. import date_converter as dc
-from .. import interpolator as it
-from ..data_sources import anbima
+from ..interpolator import Interpolator
 from . import bond_tools as bt
 
 """
@@ -311,7 +310,7 @@ def spot_rates(
     _check_maturities(maturities)
 
     # Create the interpolator object
-    ff_interpolator = it.Interpolator(
+    ff_interpolator = Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, maturities),
         known_rates=rates,
@@ -409,7 +408,7 @@ def bei_rates(
     df["BDays"] = bday.count(settlement, df["MaturityDate"])
     df = df.rename(columns={"SpotRate": "RIR"})
 
-    nir_interplator = it.Interpolator(
+    nir_interplator = Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, nominal_maturities),
         known_rates=nominal_rates,

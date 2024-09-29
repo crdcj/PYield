@@ -32,11 +32,14 @@ class Interpolator:
         Note:
             This class uses a 252 business days per year convention.
         Examples:
+            >>> from pyield import Interpolator
             >>> known_bdays = [30, 60, 90]
             >>> known_rates = [0.045, 0.05, 0.055]
+
             >>> lin_interp = Interpolator("linear", known_bdays, known_rates)
             >>> lin_interp(45)
             0.0475
+
             >>> ffo_interp = Interpolator("flat_forward", known_bdays, known_rates)
             >>> ffo_interp(45)
             0.04833068080970859

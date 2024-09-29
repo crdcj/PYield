@@ -1,2 +1,2 @@
-::: pyield.data_sources.indicators
+::: pyield.indicators
 

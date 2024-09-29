@@ -1,8 +1,10 @@
-from . import bday, tools
+from . import anbima, bday, di, tools
 from .__about__ import __version__
+from .b3_futures import futures
 from .bonds import lft, ltn, ntnb, ntnf
-from .data_sources import anbima, di, futures, indicator, projection
+from .indicators import indicator
 from .interpolator import Interpolator
+from .projections import projection
 
 __all__ = [
     "__version__",

@@ -10,31 +10,22 @@ import requests
 
 @dataclass
 class IndicatorProjection:
-    last_updated: pd.Timestamp  # Date and time of the last update
-    reference_month_ts: pd.Timestamp  # Timestamp to which the projection applies
-    reference_month_br: str  # Brazilian formatted month (e.g., "ABR/2024")
+    reference_period: pd.Period  # Reference month as a pd.Period object
     projected_value: float  # Projected value
+    last_updated: pd.Timestamp  # Date and time of the last update
 
 
-def projection(projection_type: Literal["IPCA_CM"]) -> IndicatorProjection:
-    proj_type = str(projection_type).upper()
-    if proj_type == "IPCA_CM":
-        return ipca_current_month()
-    else:
-        raise ValueError(f"Invalid projection type: {proj_type}")
-
-
-def ipca_current_month() -> IndicatorProjection:
+def projection(projection_code: Literal["IPCA_CM"]) -> IndicatorProjection:
     """
-    Fetches the current month's IPCA projection from the ANBIMA website and returns it
-    as an IndicatorProjection instance.
+    Fetches the projected value of an economic indicator for the current month.
 
-    This function retrieves and parses the Excel file that contains economic indicators,
-    specifically looking for the IPCA projection. It extracts the date of the last
-    update and the IPCA projection for the reference month.
+    This function retrieves the projected value of an economic indicator for the current
+    month. The correct data source is dynamically chosen based on the projection code
+    provided.
 
     Args:
-        None
+        projection_code (Literal["IPCA_CM"]): The code for the desired projection:
+            - "IPCA_CM": IPCA (monthly inflation) projection for the current month.
 
     Returns:
         IndicatorProjection: An instance of IndicatorProjection containing:
@@ -46,15 +37,26 @@ def ipca_current_month() -> IndicatorProjection:
             - projected_value (float): The projected IPCA value.
 
     Example:
-        >>> projection = fetch_current_month_ipca_projection()
-        >>> print(projection)
+        >>> projection("IPCA_CM")
         IndicatorProjection(
-            last_updated=pd.Timestamp('2024-04-19 18:55:00'),
-            reference_month_ts=pd.Timestamp('2024-04-01 00:00:00'),
-            reference_month_br='ABR/2024',
-            projected_value=0.35
+            reference_period=Period('2024-09', 'M'),
+            projected_value=0.0046,
+            last_updated=Timestamp('2024-09-27 18:42:00')
         )
 
+    """
+    proj_type = str(projection_code).upper()
+    if proj_type == "IPCA_CM":
+        return ipca_current_month()
+    else:
+        raise ValueError(f"Invalid projection type: {proj_type}")
+
+
+def ipca_current_month() -> IndicatorProjection:
+    """
+    This function retrieves and parses the Excel file that contains economic indicators,
+    specifically looking for the IPCA projection. It extracts the date of the last
+    update and the IPCA projection for the reference month.
 
     Data file format example after parsing:
         - ['Data e Hora da Última Atualização: 19/04/2024 - 18:55 h', '', '']
@@ -85,12 +87,11 @@ def ipca_current_month() -> IndicatorProjection:
     month_str = projection_text.split("(")[-1].split(")")[0]
     locale.setlocale(locale.LC_TIME, "pt_BR.UTF-8")
     ipca_month_ts = pd.to_datetime(month_str, format="%b/%y")
-    ipca_month_br = ipca_month_ts.strftime("%b/%Y").upper()
+    reference_period = ipca_month_ts.to_period("M")
     locale.setlocale(locale.LC_TIME, "")  # Reset locale to default
 
     return IndicatorProjection(
         last_updated=pd.to_datetime(last_update_str, format="%d/%m/%Y - %H:%M h"),
-        reference_month_ts=ipca_month_ts,
-        reference_month_br=ipca_month_br,
+        reference_period=reference_period,
         projected_value=round(float(ipca_text) / 100, 4),
     )

@@ -3,7 +3,7 @@ from datetime import datetime as dt
 import pandas as pd
 from pytz import timezone
 
-from .. import bday
+from . import bday
 
 TIMEZONE_BZ = timezone("America/Sao_Paulo")
 UPDATE_HOUR = 21

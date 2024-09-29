@@ -7,7 +7,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 import pyield as yd
-from pyield.data_sources.futures_data import xml as fx
+from pyield.b3_futures import xml as fx
 
 
 def prepare_data(contract_code: str, trade_date: str) -> tuple:

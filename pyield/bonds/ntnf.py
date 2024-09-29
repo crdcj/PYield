@@ -3,10 +3,9 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 
-from .. import bday
+from .. import anbima, bday, di
 from .. import date_converter as dc
-from .. import interpolator as it
-from ..data_sources import anbima, di
+from ..interpolator import Interpolator
 from . import bond_tools as bt
 
 """
@@ -224,12 +223,12 @@ def spot_rates(  # noqa
     settlement = dc.convert_input_dates(settlement)
 
     # Create flat forward interpolators for LTN and NTN-F rates
-    ltn_rate_interpolator = it.Interpolator(
+    ltn_rate_interpolator = Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, ltn_maturities),
         known_rates=ltn_rates,
     )
-    ntnf_rate_interpolator = it.Interpolator(
+    ntnf_rate_interpolator = Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, ntnf_maturities),
         known_rates=ntnf_rates,
@@ -382,7 +381,7 @@ def di_net_spread(  # noqa
     settlement = dc.convert_input_dates(settlement)
     ntnf_maturity = dc.convert_input_dates(ntnf_maturity)
 
-    ff_interpolator = it.Interpolator(
+    ff_interpolator = Interpolator(
         "flat_forward",
         bday.count(settlement, di_expirations),
         di_rates,
@@ -427,7 +426,7 @@ def premium(
     df["BDays"] = bday.count(settlement, df["PaymentDate"])
     df["BYears"] = df["BDays"] / 252
 
-    ff_interpolator = it.Interpolator(
+    ff_interpolator = Interpolator(
         "flat_forward",
         bday.count(settlement, di_expirations),
         di_rates,

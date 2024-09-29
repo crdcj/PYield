@@ -4,56 +4,83 @@ from typing import Literal
 import pandas as pd
 import requests
 
-from .. import date_converter as dc
+from . import date_converter as dc
 
 TIMEOUT = 10
 
 
 def indicator(
-    indicator_type: Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI", "VNA_LFT"],
+    indicator_code: Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI", "VNA_LFT"],
     reference_date: str | pd.Timestamp,
 ) -> float:
+    """
+    Fetches the economic indicator value for a specified reference date.
+
+    This function retrieves the value of a specified economic indicator, such as IPCA
+    (monthly inflation), SELIC (target or overnight rate), DI (interbank deposit rate),
+    or the VNA of LFT (Valor Nominal Atualizado), based on the given reference date. The
+    correct API is dynamically chosen based on the indicator code provided.
+
+    Args:
+        indicator_code (Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI",
+        "VNA_LFT"]):
+            The code for the desired economic indicator:
+            - "IPCA_MR": IPCA Monthly Rate (inflation).
+            - "SELIC_TARGET": SELIC Target rate.
+            - "SELIC_OVER": SELIC Over (overnight) rate.
+            - "DI": DI (interbank deposit rate).
+            - "VNA_LFT": Valor Nominal Atualizado for LFT (Treasury Bills).
+        reference_date (str | pd.Timestamp):
+            The date for which the indicator value is fetched. This can be passed as a
+            string in "DD-MM-YYYY" format or as a `pd.Timestamp`.
+
+    Returns:
+        float: The value of the requested economic indicator for the specified date.
+        Returns NaN if the value cannot be retrieved or an error occurs.
+
+    Raises:
+        ValueError: If an invalid `indicator_code` is provided.
+
+    Examples:
+        >>> indicator("IPCA_MR", "01-04-2024")
+        0.0038
+
+        >>> indicator("SELIC_TARGET", "31-05-2024")
+        0.105
+
+        >>> indicator("DI", "31-05-2024")
+        0.104
+
+        >>> indicator("VNA_LFT", "31-05-2024")
+        14903.01148
+
+        >>> indicator("SELIC_OVER", "31-05-2024")
+        0.104
+
+    """
     reference_date = dc.convert_input_dates(reference_date)
-    ind_type = str(indicator_type).upper()
-    if ind_type == "IPCA_MR":
-        return ipca_monthly_rate(reference_date)
-    elif ind_type == "SELIC_TARGET":
-        return selic_target(reference_date)
-    elif ind_type == "SELIC_OVER":
-        return selic_over(reference_date)
-    elif ind_type == "DI":
-        return di(reference_date)
-    elif ind_type == "VNA_LFT":
-        return vna_lft(reference_date)
-    else:
-        raise ValueError(f"Invalid indicator type: {ind_type}")
+    code = str(indicator_code).upper()
+    match code:
+        case "IPCA_MR":
+            return ipca_monthly_rate(reference_date)
+        case "SELIC_TARGET":
+            return _selic_target(reference_date)
+        case "SELIC_OVER":
+            return _selic_over(reference_date)
+        case "DI":
+            return _di(reference_date)
+        case "VNA_LFT":
+            return _vna_lft(reference_date)
+        case _:
+            raise ValueError(f"Invalid indicator type: {code}")
 
 
 def ipca_monthly_rate(reference_date: pd.Timestamp) -> float:
     """
-    Fetches the IPCA (Índice Nacional de Preços ao Consumidor Amplo) monthly rate
-    from the IBGE (Instituto Brasileiro de Geografia e Estatística) for a given
-    reference date.
-
-    Args:
-        reference_date (str | pd.Timestamp): The reference date for which data
-            is fetched. If a string is passed, it should be in 'DD-MM-YYYY' format.
-
-    Returns:
-        float: The IPCA monthly rate for the specified date as a float.
-        Returns None if data is not found or in case of an error.
-
-    Notes:
-        The function makes an API call to the IBGE's data portal to retrieve the
-        information. An example of the API call:
-        https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/202403/variaveis/63?localidades=N1[all]
-        where '202403' is the reference date in 'YYYYMM' format.
-        The API URL is constructed dynamically based on the reference date provided.
-
-    Examples:
-        >>> ipca_monthly_rate("01-04-2024")
-        0.0038  # Indicates an IPCA monthly rate of 0.38% p.m.
-
+    The function makes an API call to the IBGE's data portal to retrieve the data.
+    An example of the API call: https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/202403/variaveis/63?localidades=N1[all]
+    where '202403' is the reference date in 'YYYYMM' format.
+    The API URL is constructed dynamically based on the reference date provided.
     """
     # Format the date as 'YYYYMM' for the API endpoint
     ipca_date = reference_date.strftime("%Y%m")
@@ -77,12 +104,7 @@ def ipca_monthly_rate(reference_date: pd.Timestamp) -> float:
     return round(float(ipca_str) / 100, 4)
 
 
-def selic_target(reference_date: pd.Timestamp) -> float:
-    """
-    Examples:
-        >>> selic_taget("31-05-2024")
-        0.1075  # Indicates a SELIC target rate of 10.75% p.a.
-    """
+def _selic_target(reference_date: pd.Timestamp) -> float:
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     selic_date = reference_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial={selic_date}&dataFinal={selic_date}"
@@ -95,24 +117,12 @@ def selic_target(reference_date: pd.Timestamp) -> float:
     return round(float(data[0]["valor"]) / 100, 4)
 
 
-def selic_over(reference_date: pd.Timestamp) -> float:
+def _selic_over(reference_date: pd.Timestamp) -> float:
     """
-    Fetches the SELIC Over rate for the given reference date.
-
     The SELIC Over rate is the daily average interest rate effectively practiced between
     banks in the interbank market, using public securities as collateral. This rate may
     vary daily depending on the supply and demand for resources between financial
     institutions.
-
-    Args:
-        reference_date (pd.Timestamp): Date for which SELIC rate is required.
-
-    Returns:
-        float: SELIC rate for the reference date or NaN if unavailable.
-
-    Examples:
-        >>> selic_over(pd.Timestamp("26-08-2024"))
-        0.1040  # Indicates a SELIC rate of 10.40% p.a.
     """
     formatted_date = reference_date.strftime("%d/%m/%Y")
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
@@ -151,12 +161,7 @@ def selic_over(reference_date: pd.Timestamp) -> float:
     return float("nan")
 
 
-def di(reference_date: pd.Timestamp) -> float:
-    """
-    Examples:
-        >>> di("31-05-2024")
-        0.00040168  # Indicates a DI daily rate of 0.02% p.d.
-    """
+def _di(reference_date: pd.Timestamp) -> float:
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     di_date = reference_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial={di_date}&dataFinal={di_date}"
@@ -166,10 +171,12 @@ def di(reference_date: pd.Timestamp) -> float:
     if di_date not in response.text:
         return float("nan")
     data = response.json()
-    return round(float(data[0]["valor"]) / 100, 8)
+    value = float(data[0]["valor"]) / 100  # DI daily rate
+    # Annualize the daily rate
+    return round((1 + value) ** 252 - 1, 4)
 
 
-def vna_lft(reference_date: pd.Timestamp) -> float:
+def _vna_lft(reference_date: pd.Timestamp) -> float:
     # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
     url_file = f"{reference_date.strftime('%Y%m%d')}APC238"

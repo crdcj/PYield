@@ -1,1 +1,1 @@
-::: pyield.data_sources.futures
+::: pyield.futures

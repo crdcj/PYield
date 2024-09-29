@@ -5,8 +5,8 @@ import zipfile as zp
 import pandas as pd
 import requests
 
-from .. import bday
-from .. import date_converter as dc
+from . import bday
+from . import date_converter as dc
 from .data_cache import get_anbima_dataframe
 
 # URL Constants

@@ -3,8 +3,8 @@ from typing import overload
 import numpy as np
 import pandas as pd
 
+from .. import anbima, di
 from .. import date_converter as dc
-from ..data_sources import anbima, di
 
 
 @overload
