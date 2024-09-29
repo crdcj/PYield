@@ -53,6 +53,7 @@ def quotation(
 
     Examples:
         Calculate the quotation of a LFT bond with a 0.02 yield rate:
+        >>> from pyield import lft
         >>> lft.quotation(
         ...     settlement="24-07-2024",
         ...     maturity="01-09-2030",
@@ -89,10 +90,11 @@ def premium(lft_rate: float, selic_over: float) -> float:
 
     Examples:
         Calculate the premium of a LFT bond with a 0.02 yield rate over the Selic rate:
+        >>> from pyield import lft
         >>> lft_rate = 0.1695 / 100  # 0.1695%
         >>> selic_over = 10.40 / 100  # 10.40%
         >>> lft.premium(lft_rate, selic_over)
-        1.017121 # 101.7121%
+        1.017121
     """
     adjusted_lft_rate = (lft_rate + 1) * (selic_over + 1) - 1
     f1 = (adjusted_lft_rate + 1) ** (1 / 252) - 1

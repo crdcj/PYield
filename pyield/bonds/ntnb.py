@@ -135,6 +135,14 @@ def payment_dates(
 
     Returns:
         pd.Series: Series of coupon dates within the specified range.
+
+    Examples:
+        >>> from pyield import ntnb
+        >>> ntnb.payment_dates("10-05-2024", "15-05-2025")
+        0   2024-05-15
+        1   2024-11-15
+        2   2025-05-15
+        dtype: datetime64[ns]
     """
     # Validate and normalize dates
     settlement = dc.convert_input_dates(settlement)
@@ -177,6 +185,15 @@ def cash_flows(
     Returned columns:
         - PaymentDate: The payment date of the cash flow
         - CashFlow: Cash flow value for the bond
+
+    Examples:
+
+        >>> from pyield import ntnb
+        >>> ntnb.cash_flows("10-05-2024", "15-05-2025")
+          PaymentDate    CashFlow
+        0  2024-05-15    2.956301
+        1  2024-11-15    2.956301
+        2  2025-05-15  102.956301
     """
     # Validate and normalize dates
     settlement = dc.convert_input_dates(settlement)
@@ -218,6 +235,7 @@ def quotation(
           Anbima rules.
 
     Examples:
+        >>> from pyield import ntnb
         >>> ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
         99.3651
         >>> ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
@@ -265,6 +283,7 @@ def price(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
+        >>> from pyield import ntnb
         >>> ntnb.price(4299.160173, 99.3651)
         4271.864805
     """

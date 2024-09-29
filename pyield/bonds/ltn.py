@@ -89,11 +89,10 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
     Parameters:
         reference_date (str | pd.Timestamp, optional): The reference date for the
-            spread calculation. If None or not provided, defaults to the previous
-            business day according to the Brazilian calendar.
+            spread calculation.
 
     Returns:
-        pd.DataFrame: DataFrame with the columns "MaturityDate" and "DISpread".
+        pd.DataFrame: DataFrame with the columns "MaturityDate" and "DISpread" (in bps).
     """
     # Fetch DI Spreads for the reference date
     df = bt.di_spreads(reference_date)
@@ -112,6 +111,14 @@ def premium(ltn_rate: float, di_rate: float) -> float:
 
     Returns:
         float: The premium of the LTN bond over the DI Future rate.
+
+    Examples:
+        Reference date: 22-08-2024
+        LTN rate for 01-01-2030: 0.118746
+        DI (JAN30) Settlement rate: 0.11725
+        >>> from pyield.bonds import ltn
+        >>> ltn.premium(0.118746, 0.11725)
+        1.012072
     """
     # Cálculo das taxas diárias
     ltn_factor = (1 + ltn_rate) ** (1 / 252)
