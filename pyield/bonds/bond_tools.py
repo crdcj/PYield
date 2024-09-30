@@ -3,8 +3,8 @@ from typing import overload
 import numpy as np
 import pandas as pd
 
-from .. import anbima, di
-from .. import date_converter as dc
+from pyield import anbima, di
+from pyield import date_converter as dc
 
 
 @overload

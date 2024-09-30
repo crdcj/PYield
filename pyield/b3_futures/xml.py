@@ -7,8 +7,8 @@ import pandas as pd
 import requests
 from lxml import etree
 
-from .. import bday
-from . import common
+from pyield import bday
+from pyield.b3_futures import common
 
 
 def _get_file_from_path(file_path: Path) -> io.BytesIO:

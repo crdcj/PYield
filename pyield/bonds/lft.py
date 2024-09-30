@@ -1,8 +1,8 @@
 import pandas as pd
 
-from .. import anbima, bday
-from .. import date_converter as dc
-from . import bond_tools as bt
+from pyield import anbima, bday
+from pyield import date_converter as dc
+from pyield.bonds import bond_tools as bt
 
 
 def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
@@ -53,8 +53,7 @@ def quotation(
 
     Examples:
         Calculate the quotation of a LFT bond with a 0.02 yield rate:
-        >>> from pyield import lft
-        >>> lft.quotation(
+        >>> yd.lft.quotation(
         ...     settlement="24-07-2024",
         ...     maturity="01-09-2030",
         ...     rate=0.001717,  # 0.1717%
@@ -90,10 +89,9 @@ def premium(lft_rate: float, selic_over: float) -> float:
 
     Examples:
         Calculate the premium of a LFT bond with a 0.02 yield rate over the Selic rate:
-        >>> from pyield import lft
         >>> lft_rate = 0.1695 / 100  # 0.1695%
         >>> selic_over = 10.40 / 100  # 10.40%
-        >>> lft.premium(lft_rate, selic_over)
+        >>> yd.lft.premium(lft_rate, selic_over)
         1.017121
     """
     adjusted_lft_rate = (lft_rate + 1) * (selic_over + 1) - 1

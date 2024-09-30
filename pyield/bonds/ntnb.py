@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 
-from .. import anbima, bday
-from .. import date_converter as dc
-from ..interpolator import Interpolator
-from . import bond_tools as bt
+from pyield import anbima, bday
+from pyield import date_converter as dc
+from pyield.bonds import bond_tools as bt
+from pyield.interpolator import Interpolator
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -137,8 +137,7 @@ def payment_dates(
         pd.Series: Series of coupon dates within the specified range.
 
     Examples:
-        >>> from pyield import ntnb
-        >>> ntnb.payment_dates("10-05-2024", "15-05-2025")
+        >>> yd.ntnb.payment_dates("10-05-2024", "15-05-2025")
         0   2024-05-15
         1   2024-11-15
         2   2025-05-15
@@ -187,9 +186,7 @@ def cash_flows(
         - CashFlow: Cash flow value for the bond
 
     Examples:
-
-        >>> from pyield import ntnb
-        >>> ntnb.cash_flows("10-05-2024", "15-05-2025")
+        >>> yd.ntnb.cash_flows("10-05-2024", "15-05-2025")
           PaymentDate    CashFlow
         0  2024-05-15    2.956301
         1  2024-11-15    2.956301
@@ -235,10 +232,9 @@ def quotation(
           Anbima rules.
 
     Examples:
-        >>> from pyield import ntnb
-        >>> ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
+        >>> yd.ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
         99.3651
-        >>> ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
+        >>> yd.ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
         99.5341
     """
     # Validate and normalize dates
@@ -283,8 +279,7 @@ def price(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> from pyield import ntnb
-        >>> ntnb.price(4299.160173, 99.3651)
+        >>> yd.ntnb.price(4299.160173, 99.3651)
         4271.864805
     """
     return bt.truncate(vna * quotation / 100, 6)

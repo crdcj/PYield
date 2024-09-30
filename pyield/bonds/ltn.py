@@ -1,8 +1,8 @@
 import pandas as pd
 
-from .. import anbima, bday, di
-from .. import date_converter as dc
-from . import bond_tools as bt
+from pyield import anbima, bday, di
+from pyield import date_converter as dc
+from pyield.bonds import bond_tools as bt
 
 FACE_VALUE = 1000
 
@@ -60,7 +60,7 @@ def price(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> price("05-07-2024", "01-01-2030", 0.12145)
+        >>> yd.ltn.price("05-07-2024", "01-01-2030", 0.12145)
         535.279902
     """
 
@@ -116,8 +116,7 @@ def premium(ltn_rate: float, di_rate: float) -> float:
         Reference date: 22-08-2024
         LTN rate for 01-01-2030: 0.118746
         DI (JAN30) Settlement rate: 0.11725
-        >>> from pyield.bonds import ltn
-        >>> ltn.premium(0.118746, 0.11725)
+        >>> yd.ltn.premium(0.118746, 0.11725)
         1.012072
     """
     # Cálculo das taxas diárias

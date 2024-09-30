@@ -1,9 +1,9 @@
 import pandas as pd
 
-from . import bday, interpolator
-from . import date_converter as dc
-from .b3_futures import futures
-from .data_cache import get_anbima_dataframe, get_di_dataframe
+from pyield import bday, interpolator
+from pyield import date_converter as dc
+from pyield.b3_futures import futures
+from pyield.data_cache import get_anbima_dataframe, get_di_dataframe
 
 
 def data(

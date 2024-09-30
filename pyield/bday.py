@@ -3,9 +3,9 @@ from typing import Literal, overload
 import numpy as np
 import pandas as pd
 
-from . import date_converter as dc
-from .date_converter import ArrayDateTypes, ScalarDateTypes
-from .holidays import BrHolidays
+from pyield import date_converter as dc
+from pyield.date_converter import ArrayDateTypes, ScalarDateTypes
+from pyield.holidays import BrHolidays
 
 type ArrayIntTypes = np.ndarray | pd.Series | list | tuple
 type ScalarIntTypes = int | np.integer

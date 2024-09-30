@@ -3,10 +3,10 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 
-from .. import anbima, bday, di
-from .. import date_converter as dc
-from ..interpolator import Interpolator
-from . import bond_tools as bt
+from pyield import anbima, bday, di
+from pyield import date_converter as dc
+from pyield.bonds import bond_tools as bt
+from pyield.interpolator import Interpolator
 
 """
 Constants calculated as per Anbima Rules
@@ -175,7 +175,7 @@ def price(
           Anbima rules.
 
     Examples:
-        >>> price("05-07-2024", "01-01-2035", 0.11921)
+        >>> yd.ntnf.price("05-07-2024", "01-01-2035", 0.11921)
         895.359254
     """
     cf_df = cash_flows(settlement, maturity)

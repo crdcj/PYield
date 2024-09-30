@@ -4,7 +4,7 @@ from typing import Literal
 import pandas as pd
 import requests
 
-from . import date_converter as dc
+from pyield import date_converter as dc
 
 TIMEOUT = 10
 
@@ -42,19 +42,19 @@ def indicator(
         ValueError: If an invalid `indicator_code` is provided.
 
     Examples:
-        >>> indicator("IPCA_MR", "01-04-2024")
+        >>> yd.indicator("IPCA_MR", "01-04-2024")
         0.0038
 
-        >>> indicator("SELIC_TARGET", "31-05-2024")
+        >>> yd.indicator("SELIC_TARGET", "31-05-2024")
         0.105
 
-        >>> indicator("DI", "31-05-2024")
+        >>> yd.indicator("DI", "31-05-2024")
         0.104
 
-        >>> indicator("VNA_LFT", "31-05-2024")
+        >>> yd.indicator("VNA_LFT", "31-05-2024")
         14903.01148
 
-        >>> indicator("SELIC_OVER", "31-05-2024")
+        >>> yd.indicator("SELIC_OVER", "31-05-2024")
         0.104
 
     """

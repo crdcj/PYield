@@ -1,3 +1,3 @@
-from .holidays_manager import BrHolidays
+from pyield.holidays.brholidays import BrHolidays
 
 __all__ = ["BrHolidays"]
