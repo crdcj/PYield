@@ -65,7 +65,7 @@ def _check_maturity_date(maturity: pd.Timestamp) -> None:
         raise ValueError("NTN-F maturity date must be the 1st of January.")
 
 
-def coupon_dates(
+def payment_dates(
     settlement: str | pd.Timestamp,
     maturity: str | pd.Timestamp,
 ) -> pd.Series:
@@ -82,6 +82,13 @@ def coupon_dates(
     Returns:
         pd.Series: A Series containing the coupon dates between the settlement
             (exclusive) and maturity (inclusive) dates.
+
+    Examples:
+
+        >>> yd.ntnf.payment_dates("15-05-2024", "01-01-2025")
+        0   2024-07-01
+        1   2025-01-01
+        dtype: datetime64[ns]
     """
     # Validate and normalize dates
     settlement = dc.convert_input_dates(settlement)
@@ -128,6 +135,12 @@ def cash_flows(
 
     Returns:
         pd.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
+
+    Examples:
+        >>> yd.ntnf.cash_flows("15-05-2024", "01-01-2025")
+          PaymentDate    CashFlow
+        0  2024-07-01    48.80885
+        1  2025-01-01  1048.80885
     """
     # Validate input dates
     settlement = dc.convert_input_dates(settlement)
@@ -135,12 +148,12 @@ def cash_flows(
     _check_maturity_date(maturity)
 
     # Get the coupon payment dates between the settlement and maturity dates
-    payment_dates = coupon_dates(settlement, maturity)
+    pay_dates = payment_dates(settlement, maturity)
 
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    cf_values = np.where(payment_dates == maturity, FINAL_PMT, COUPON_PMT)
+    cf_values = np.where(pay_dates == maturity, FINAL_PMT, COUPON_PMT)
 
-    df = pd.DataFrame(data={"PaymentDate": payment_dates, "CashFlow": cf_values})
+    df = pd.DataFrame(data={"PaymentDate": pay_dates, "CashFlow": cf_values})
 
     if adj_payment_dates:
         df["PaymentDate"] = bday.offset(df["PaymentDate"], 0)
@@ -235,7 +248,7 @@ def spot_rates(  # noqa
     )
 
     # Generate all coupon dates up to the last NTN-F maturity date
-    all_coupon_dates = coupon_dates(settlement, ntnf_maturities.max())
+    all_coupon_dates = payment_dates(settlement, ntnf_maturities.max())
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
     df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
@@ -252,7 +265,7 @@ def spot_rates(  # noqa
             continue
 
         # Calculate the present value of the coupon payments
-        cf_dates = coupon_dates(settlement, row["MaturityDate"])[:-1]  # noqa
+        cf_dates = payment_dates(settlement, row["MaturityDate"])[:-1]  # noqa
         cf_df = df.query("MaturityDate in @cf_dates").reset_index(drop=True)
         cf_present_value = bt.calculate_present_value(
             cash_flows=cf_df["Coupon"],
@@ -457,7 +470,7 @@ def premium(
 
 def historical_premium(
     reference_date: str | pd.Timestamp,
-    maturity: str | pd.Timestamp,  # noqa
+    maturity: str | pd.Timestamp,
 ) -> float:
     reference_date = dc.convert_input_dates(reference_date)
     maturity = dc.convert_input_dates(maturity)
@@ -502,6 +515,27 @@ def duration(
     maturity: str | pd.Timestamp,
     rate: float,
 ) -> float:
+    """
+    Calculate the Macaulay duration for an NTN-F bond.
+
+    The Macaulay duration is a weighted average of the times until each payment is
+    received, with the weights proportional to the present value of the cash flows.
+    It measures the bond's sensitivity to interest rate changes.
+
+    Args:
+        settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+            or a pandas Timestamp.
+        maturity (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format
+            or a pandas Timestamp.
+        rate (float): The yield to maturity (YTM) used to discount the cash flows.
+
+    Returns:
+        float: The Macaulay duration in years.
+
+    Example:
+        >>> yd.ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
+        6.32854218039796
+    """
     settlement = dc.convert_input_dates(settlement)
     maturity = dc.convert_input_dates(maturity)
 
