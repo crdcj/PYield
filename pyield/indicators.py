@@ -6,11 +6,12 @@ import requests
 
 from pyield import date_converter as dc
 
+type IndicatorCode = Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI", "VNA_LFT"]
 TIMEOUT = 10
 
 
 def indicator(
-    indicator_code: Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI", "VNA_LFT"],
+    indicator_code: IndicatorCode,
     reference_date: str | pd.Timestamp,
 ) -> float:
     """
@@ -22,9 +23,8 @@ def indicator(
     correct API is dynamically chosen based on the indicator code provided.
 
     Args:
-        indicator_code (Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI",
-        "VNA_LFT"]):
-            The code for the desired economic indicator:
+        indicator_code (IndicatorCode): The code of the economic indicator to fetch.
+            The available options are:
             - "IPCA_MR": IPCA Monthly Rate (inflation).
             - "SELIC_TARGET": SELIC Target rate.
             - "SELIC_OVER": SELIC Over (overnight) rate.
