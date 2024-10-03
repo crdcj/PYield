@@ -1,25 +1,24 @@
 import datetime as dt
-import re
 from typing import overload
 
 import numpy as np
 import pandas as pd
 
 type ScalarDateTypes = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
-type PandasArrayDateTypes = pd.Series | pd.DatetimeIndex | pd.Index
-type ArrayDateTypes = PandasArrayDateTypes | np.ndarray | list | tuple
+type ArrayDateTypes = pd.Series | pd.DatetimeIndex | np.ndarray | list | tuple
 
 
-def validate_year_format(value) -> None:
-    """If the input date is a string, it validates the year format."""
-    value = str(value)
-    value = value.strip().lower()
-    if value in {"today", "now"}:
-        return
-
-    if re.match(r"^\d{4}-", value):
-        error_msg = f"Invalid format: {value}. Day first format is required. Example: '31-05-2024'."  # noqa
-        raise ValueError(error_msg)
+def validate_date_format(date_str):
+    # Primeiro tenta com hífen (-)
+    for fmt in ["%d-%m-%Y", "%d/%m/%Y"]:
+        try:
+            dt.datetime.strptime(date_str, fmt)
+            return
+        except ValueError:
+            continue
+    raise ValueError(
+        f"Invalid format: {date_str}. Day first is required (e.g. '31-05-2024')."
+    )
 
 
 @overload
@@ -36,25 +35,26 @@ def convert_input_dates(
             raise ValueError("'dates' cannot be None.")
 
         case str():
-            validate_year_format(dates)
+            validate_date_format(dates)
             return pd.to_datetime(dates, dayfirst=True)
 
         case dt.datetime() | dt.date() | np.datetime64() | pd.Timestamp():
             return pd.Timestamp(dates).normalize()
 
-        case pd.Series() | pd.Index() | np.ndarray() | list() | tuple():
+        case pd.Series() | np.ndarray() | list() | tuple():
             result = pd.Series(dates)
 
             if result.empty:
                 raise ValueError("'dates' cannot be an empty Array.")
 
             if pd.api.types.is_string_dtype(result):
-                validate_year_format(result[0])
+                # Check first element to validate date format
+                validate_date_format(result[0])
 
             return pd.to_datetime(result, dayfirst=True).astype("datetime64[ns]")
 
         case pd.DatetimeIndex():
-            return pd.Series(result).astype("datetime64[ns]")
+            return pd.Series(dates).astype("datetime64[ns]")
 
         case _:
             raise ValueError("Invalid input type for 'dates'.")

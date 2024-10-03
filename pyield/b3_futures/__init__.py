@@ -41,7 +41,19 @@ def futures(
 
     Examples:
         >>> futures("DI1", "31-05-2024")
-        >>> futures("DDI", "31-05-2024")
+            TradeDate TickerSymbol  ... CloseBidRate  CloseRate
+        0  2024-05-31       DI1M24  ...      0.10404    0.10404
+        1  2024-05-31       DI1N24  ...       0.1039    0.10386
+        2  2024-05-31       DI1Q24  ...      0.10374    0.10374
+        3  2024-05-31       DI1U24  ...      0.10365    0.10355
+        ...
+        >>> futures("DAP", "31-05-2024")
+            TradeDate TickerSymbol  ... CloseBidRate  CloseRate
+        0  2024-05-31       DAPM24  ...         <NA>       <NA>
+        1  2024-05-31       DAPN24  ...         <NA>       <NA>
+        2  2024-05-31       DAPQ24  ...         <NA>     0.0885
+        3  2024-05-31       DAPU24  ...         <NA>     0.0865
+        ...
     """
     contract_code = contract_code.upper()
     if contract_code not in SUPPORTED_FUTURES:

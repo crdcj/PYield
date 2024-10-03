@@ -37,7 +37,7 @@ def get_old_expiration_date(
 
     Examples:
         >>> get_old_expiration_date("JAN3", pd.Timestamp("2001-05-21"))
-        pd.Timestamp('2003-01-01')
+        Timestamp('2003-01-02 00:00:00')
 
     Notes:
         - In 22-05-2006, B3 changed the format of the DI contract codes. Before that

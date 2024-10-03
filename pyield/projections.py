@@ -38,11 +38,7 @@ def projection(projection_code: Literal["IPCA_CM"]) -> IndicatorProjection:
 
     Example:
         >>> projection("IPCA_CM")
-        IndicatorProjection(
-            reference_period=Period('2024-09', 'M'),
-            projected_value=0.0046,
-            last_updated=Timestamp('2024-09-27 18:42:00')
-        )
+        IndicatorProjection(reference_period=Period(...), projected_value=..., ...)
 
     """
     proj_type = str(projection_code).upper()

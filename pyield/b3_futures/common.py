@@ -23,13 +23,13 @@ def get_expiration_date(expiration_code: str, expiration_day: int = 1) -> pd.Tim
 
     Examples:
         >>> get_expiration_date("F23")
-        pd.Timestamp('2023-01-01')
+        Timestamp('2023-01-02 00:00:00')
 
         >>> get_expiration_date("Z33")
-        pd.Timestamp('2033-12-01')
+        Timestamp('2033-12-01 00:00:00')
 
         >>> get_expiration_date("A99")
-        pd.NaT
+        NaT
 
     Notes:
         The expiration date is calculated based on the format change introduced by B3 on
