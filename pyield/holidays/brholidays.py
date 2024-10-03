@@ -17,46 +17,52 @@ class BrHolidays:
 
     @staticmethod
     def _load_holidays(file_path: Path) -> pd.Series:
-        """
-        Loads the holidays from a text file and returns it as a Series of Timestamps.
-        """
+        """Loads the holidays from a file and returns it as a Series of Timestamps."""
         df = pd.read_csv(file_path, header=None, names=["date"], comment="#")
-        # Convert the dates to a pd.Series of pd.Timestamp
         holidays = pd.to_datetime(df["date"], format="%d/%m/%Y")
         return holidays.astype("datetime64[ns]")
 
-    def get_applicable_holidays(
+    def get_holiday_series(
         self,
-        dates: pd.Timestamp | pd.Series,
-        holiday_list: Literal["old", "new", "infer"] = "infer",
+        holiday_option: Literal["old", "new", "infer"] = "infer",
+        dates: pd.Timestamp | pd.Series | None = None,
     ) -> pd.Series:
         """
         Returns the correct list of holidays to use based on the most recent date in
         the input.
 
         Args:
-            dates (pd.Timestamp | pd.Series): The date(s) to use to infer the holidays.
-            holiday_list (str): The holidays list to use. Valid options are 'old', 'new'
-                or 'infer'. If 'infer' is used, the list of holidays is selected based
-                on the earliest (minimum) date in the input.
+            holiday_list (Literal): The holidays list to use. Valid options are
+                'old', 'new' or 'infer'. If 'infer' is used, the list of holidays is
+                selected based on the earliest (minimum) date in the input.
+            dates (pd.Timestamp | pd.Series | None): The dates to use for inferring
+                the holiday list. If a single date is provided, it is used directly.
+                If a Series of dates is provided, the earliest date is used.
 
         Returns:
-            pd.Series: The list of holidays to use.
+            pd.Series: The list of holidays as a Series of Timestamps.
         """
-        if isinstance(dates, pd.Timestamp):
-            earliest_date = dates
-        else:
-            earliest_date = dates.min()
-
-        match holiday_list:
+        match holiday_option:
             case "old":
-                return self.old_holidays
+                holidays = self.old_holidays
+
             case "new":
                 return self.new_holidays
+
             case "infer":
-                if earliest_date < BrHolidays.TRANSITION_DATE:
-                    return self.old_holidays
+                if dates is None:
+                    msg = "Dates must be provided when using 'infer' option."
+                    raise ValueError(msg)
+                if isinstance(dates, pd.Timestamp):
+                    earliest_date = dates
                 else:
-                    return self.new_holidays
+                    earliest_date = dates.min()
+
+                if earliest_date < BrHolidays.TRANSITION_DATE:
+                    holidays = self.old_holidays
+                else:
+                    holidays = self.new_holidays
             case _:
                 raise ValueError("Invalid holiday list option.")
+
+        return holidays
