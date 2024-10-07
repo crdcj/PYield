@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 
 
@@ -24,20 +25,21 @@ class BrHolidays:
 
     def get_holiday_series(
         self,
-        holiday_option: Literal["old", "new", "infer"] = "infer",
         dates: pd.Timestamp | pd.Series | None = None,
+        holiday_option: Literal["old", "new", "infer"] = "infer",
     ) -> pd.Series:
         """
         Returns the correct list of holidays to use based on the most recent date in
         the input.
 
         Args:
-            holiday_list (Literal): The holidays list to use. Valid options are
-                'old', 'new' or 'infer'. If 'infer' is used, the list of holidays is
-                selected based on the earliest (minimum) date in the input.
             dates (pd.Timestamp | pd.Series | None): The dates to use for inferring
                 the holiday list. If a single date is provided, it is used directly.
                 If a Series of dates is provided, the earliest date is used.
+
+            holiday_option (Literal): The holidays list to use. Valid options are
+                'old', 'new' or 'infer'. If 'infer' is used, the list of holidays is
+                selected based on the earliest (minimum) date in the input.
 
         Returns:
             pd.Series: The list of holidays as a Series of Timestamps.
@@ -66,3 +68,27 @@ class BrHolidays:
                 raise ValueError("Invalid holiday list option.")
 
         return holidays
+
+    def get_holiday_array(
+        self,
+        dates: pd.Timestamp | pd.Series | None = None,
+        holiday_option: Literal["old", "new", "infer"] = "infer",
+    ) -> np.ndarray:
+        """
+        Returns the correct list of holidays to use based on the most recent date in
+        the input.
+
+        Args:
+            dates (pd.Timestamp | pd.Series | None): The dates to use for inferring
+                the holiday list. If a single date is provided, it is used directly.
+                If a Series of dates is provided, the earliest date is used.
+
+            holiday_option (Literal): The holidays list to use. Valid options are
+                'old', 'new' or 'infer'. If 'infer' is used, the list of holidays is
+                selected based on the earliest (minimum) date in the input.
+
+        Returns:
+            np.ndarray: The list of holidays as a NumPy array of datetime64[D].
+        """
+        holidays = self.get_holiday_series(dates, holiday_option)
+        return holidays.to_numpy().astype("datetime64[D]")

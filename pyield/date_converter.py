@@ -60,7 +60,7 @@ def convert_input_dates(
             raise ValueError("Invalid input type for 'dates'.")
 
 
-def convert_to_numpy_date(
+def to_numpy_date_type(
     dates: pd.Timestamp | pd.Series,
 ) -> np.datetime64 | np.ndarray:
     """
@@ -74,5 +74,7 @@ def convert_to_numpy_date(
     """
     if isinstance(dates, pd.Timestamp):
         return np.datetime64(dates, "D")
-    else:
+    elif isinstance(dates, pd.Series):
         return dates.to_numpy().astype("datetime64[D]")
+    else:
+        raise ValueError("Invalid input type for 'dates'.")

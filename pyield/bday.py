@@ -10,8 +10,10 @@ from pyield.holidays import BrHolidays
 type ArrayIntTypes = np.ndarray | pd.Series | list | tuple
 type ScalarIntTypes = int | np.integer
 
-# Initialize the BrHolidays class
+# Initialize Brazilian holidays data
 br_holidays = BrHolidays()
+OLD_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="old")
+NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="new")
 
 
 @overload
@@ -19,7 +21,6 @@ def offset(
     dates: ScalarDateTypes,
     offset: ScalarIntTypes,
     roll: Literal["forward", "backward"] = ...,
-    holiday_option: Literal["old", "new", "infer"] = ...,
 ) -> pd.Timestamp: ...
 
 
@@ -28,7 +29,6 @@ def offset(
     dates: ArrayDateTypes,
     offset: ArrayIntTypes,
     roll: Literal["forward", "backward"] = ...,
-    holiday_option: Literal["old", "new", "infer"] = ...,
 ) -> pd.Series: ...
 
 
@@ -37,7 +37,6 @@ def offset(
     dates: ScalarDateTypes,
     offset: ArrayIntTypes,
     roll: Literal["forward", "backward"] = ...,
-    holiday_option: Literal["old", "new", "infer"] = ...,
 ) -> pd.Series: ...
 
 
@@ -46,7 +45,6 @@ def offset(
     dates: ArrayDateTypes,
     offset: ScalarIntTypes,
     roll: Literal["forward", "backward"] = ...,
-    holiday_option: Literal["old", "new", "infer"] = ...,
 ) -> pd.Series: ...
 
 
@@ -54,14 +52,13 @@ def offset(
     dates: ScalarDateTypes | ArrayDateTypes,
     offset: ScalarIntTypes | ArrayIntTypes,
     roll: Literal["forward", "backward"] = "forward",
-    holiday_option: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Timestamp | pd.Series:
     """
-    Offsets the dates to the next or previous business day, considering brazilian
-    holidays. This function supports both single dates and collections of dates,
-    handling them intelligently to return either a single offset date or a series of
-    offset dates. It is a wrapper for `numpy.busday_offset` adapted for Pandas data
-    types and holiday adjustments.
+    First adjusts the date to fall on a valid day according to the roll rule, then
+    applies offsets to the given dates to the next or previous business day, considering
+    brazilian holidays. This function supports both single dates and collections of
+    dates. It is a wrapper for `numpy.busday_offset` adapted for Pandas data types and
+    brazilian holidays.
 
     Args:
         dates (ScalarDateTypes | ArrayDateTypes):
@@ -69,16 +66,12 @@ def offset(
             `datetime`, `Timestamp`, etc.) or a collection of dates (list, tuple,
             `Series`, etc.).
         offset (int | Series | np.ndarray | list[int] | tuple[int], optional):
-            The number of business days to offset the dates. Positive for
-            future dates, negative for past dates. Zero will return the same date if
-            it's a business day, or the next business day otherwise.
+            The number of business days to offset the dates. Positive for future dates,
+            negative for past dates. Zero will return the same date if it's a business
+            day, or the next business day otherwise.
         roll (Literal["forward", "backward"], optional): Direction to roll the date if
             it falls on a holiday or weekend. 'forward' to the next business day,
             'backward' to the previous. Defaults to 'forward'.
-        holiday_option (Literal["old", "new", "infer"], optional):
-            The list of holidays to consider. 'old' or 'new' use predefined lists, while
-            'infer' determines the most appropriate list based on the input dates.
-            Defaults to "infer".
 
     Returns:
         pd.Timestamp | pd.Series: If a single date is provided, returns a single
@@ -144,27 +137,62 @@ def offset(
         This function uses `numpy.busday_offset` under the hood, which means it follows
         the same conventions and limitations for business day calculations. For detailed
         information on error handling and behavior, refer to the `numpy.busday_offset`
-        documentation: https://numpy.org/doc/stable/reference/generated/numpy.busday_offset.html
+        documentation:
+        https://numpy.org/doc/stable/reference/generated/numpy.busday_offset.html
     """
-    converted_dates = dc.convert_input_dates(dates)
+    dates_pd = dc.convert_input_dates(dates)
 
-    holidays = br_holidays.get_holiday_series(holiday_option, converted_dates)
-    holidays_np = holidays.to_numpy().astype("datetime64[D]")
+    if isinstance(dates_pd, pd.Series):
+        # Divide the input in order to apply the correct holiday list
+        dates1 = dates_pd[dates_pd < br_holidays.TRANSITION_DATE]
+        dates2 = dates_pd[dates_pd >= br_holidays.TRANSITION_DATE]
+        dates3 = dates_pd[dates_pd.isna()]
 
-    dates_np = dc.convert_to_numpy_date(converted_dates)
-    offsetted_dates_np = np.busday_offset(
-        dates_np, offsets=offset, roll=roll, holidays=holidays_np
-    )
-    if isinstance(offsetted_dates_np, np.datetime64):
-        result = pd.Timestamp(offsetted_dates_np)
-        # Force to datetime[ns] if the input was a single date
-        result = result.as_unit("ns")
+        offsetted_dates1 = np.busday_offset(
+            dc.to_numpy_date_type(dates1),
+            offsets=offset,
+            roll=roll,
+            holidays=OLD_HOLIDAYS_ARRAY,
+        )
+
+        offsetted_dates2 = np.busday_offset(
+            dc.to_numpy_date_type(dates2),
+            offsets=offset,
+            roll=roll,
+            holidays=NEW_HOLIDAYS_ARRAY,
+        )
+
+        # Convert from numpy.datetime64 to pandas.Timestamp
+        offsetted_dates1 = pd.to_datetime(offsetted_dates1)
+        offsetted_dates2 = pd.to_datetime(offsetted_dates2)
+
+        # 'pd.to_datetime' does not necessarily return datetime64[ns] Series
+        offsetted_dates1 = pd.Series(offsetted_dates1).astype("datetime64[ns]")
+        offsetted_dates2 = pd.Series(offsetted_dates2).astype("datetime64[ns]")
+
+        # Use old index to rejoin the results
+        offsetted_dates1.index = dates1.index
+        offsetted_dates2.index = dates2.index
+
+        offsetted_dates = pd.concat([offsetted_dates1, offsetted_dates2, dates3])
+
+        # Reorder the result to match the original input order
+        return offsetted_dates.sort_index()
+
+    elif isinstance(dates_pd, pd.Timestamp):
+        offsetted_dates_np = np.busday_offset(
+            dc.to_numpy_date_type(dates_pd),
+            offsets=offset,
+            roll=roll,
+            holidays=br_holidays.get_holiday_array(dates_pd),
+        )
+        if isinstance(offsetted_dates_np, np.datetime64):
+            return pd.Timestamp(offsetted_dates_np).as_unit("ns")
+        else:
+            return pd.Series(offsetted_dates_np).astype("datetime64[ns]")
+
     else:
-        result_dti = pd.to_datetime(offsetted_dates_np)
-        # Force the result to be a Series if the input was not a single date
-        result = pd.Series(result_dti).astype("datetime64[ns]")
-
-    return result
+        raise ValueError("Invalid input type for 'dates'.")
 
 
 @overload
@@ -268,6 +296,7 @@ def count(
         # Divide the input in order to apply the correct holiday list
         start1 = start_pd[start_pd < br_holidays.TRANSITION_DATE]
         start2 = start_pd[start_pd >= br_holidays.TRANSITION_DATE]
+        start3 = start_pd[start_pd.isna()]
 
         # If end is a Series, it must be divided as well
         if isinstance(end_pd, pd.Series):
@@ -277,38 +306,35 @@ def count(
             end1 = end_pd
             end2 = end_pd
 
-        old_holidays = br_holidays.get_holiday_series("old")
-        new_holidays = br_holidays.get_holiday_series("new")
-
         result1 = np.busday_count(
-            begindates=dc.convert_to_numpy_date(start1),
-            enddates=dc.convert_to_numpy_date(end1),
-            holidays=old_holidays.to_numpy().astype("datetime64[D]"),
+            begindates=dc.to_numpy_date_type(start1),
+            enddates=dc.to_numpy_date_type(end1),
+            holidays=OLD_HOLIDAYS_ARRAY,
         )
         result2 = np.busday_count(
-            begindates=dc.convert_to_numpy_date(start2),
-            enddates=dc.convert_to_numpy_date(end2),
-            holidays=new_holidays.to_numpy().astype("datetime64[D]"),
+            begindates=dc.to_numpy_date_type(start2),
+            enddates=dc.to_numpy_date_type(end2),
+            holidays=NEW_HOLIDAYS_ARRAY,
         )
 
+        # Prepare results to be rejoined
         result1 = pd.Series(result1, dtype="Int64")
         result2 = pd.Series(result2, dtype="Int64")
+        # Convert the third result from NaT to NA
+        result3 = pd.Series(pd.NA, index=start3.index, dtype="Int64")
 
+        # Old index is used to rejoin the results
         result1.index = start1.index
         result2.index = start2.index
 
-        result = pd.concat([result1, result2])
         # Reorder the result to match the original input order
-        result = result.sort_index()
+        result = pd.concat([result1, result2, result3]).sort_index()
 
     else:  # Start is a single date
-        # Determine which list of holidays to use
-        holidays = br_holidays.get_holiday_series("infer", start_pd)
-
         result = np.busday_count(
-            begindates=dc.convert_to_numpy_date(start_pd),
-            enddates=dc.convert_to_numpy_date(end_pd),
-            holidays=holidays.to_numpy().astype("datetime64[D]"),
+            begindates=dc.to_numpy_date_type(start_pd),
+            enddates=dc.to_numpy_date_type(end_pd),
+            holidays=br_holidays.get_holiday_array(start_pd),
         )
         result = pd.Series(result, dtype="Int64")
 
@@ -321,7 +347,7 @@ def generate(
     start: ScalarDateTypes | None = None,
     end: ScalarDateTypes | None = None,
     inclusive: Literal["both", "neither", "left", "right"] = "both",
-    holiday_list: Literal["old", "new", "infer"] = "infer",
+    holiday_option: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series:
     """
     Generates a Series of business days between a `start` and `end` date, considering
@@ -338,7 +364,7 @@ def generate(
         inclusive (Literal["both", "neither", "left", "right"], optional):
             Determines which of the start and end dates are included in the result.
             Valid options are 'both', 'neither', 'left', 'right'. Defaults to 'both'.
-        holiday_list (Literal["old", "new", "infer"], optional):
+        holiday_option (Literal["old", "new", "infer"], optional):
             Specifies the list of holidays to consider. 'old' or 'new' refer to
             predefined lists, 'infer' selects the list based on the most recent date in
             the range. Defaults to "infer".
@@ -364,23 +390,21 @@ def generate(
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html.
     """
     if start:
-        converted_start = dc.convert_input_dates(start)
+        start_pd = dc.convert_input_dates(start)
     else:
-        converted_start = pd.Timestamp.today()
+        start_pd = pd.Timestamp.today()
 
     if end:
-        converted_end = dc.convert_input_dates(end)
+        end_pd = dc.convert_input_dates(end)
     else:
-        converted_end = pd.Timestamp.today()
+        end_pd = pd.Timestamp.today()
 
-    holidays_list = br_holidays.get_holiday_series(
-        holiday_list, converted_start
-    ).to_list()
+    holidays_list = br_holidays.get_holiday_series(start_pd).to_list()
 
     # Get the result as a DatetimeIndex (dti)
     result_dti = pd.bdate_range(
-        start=converted_start,
-        end=converted_end,
+        start=start_pd,
+        end=end_pd,
         freq="C",
         inclusive=inclusive,
         holidays=holidays_list,
@@ -403,6 +427,6 @@ def is_business_day(date: ScalarDateTypes) -> bool:
         >>> bday.is_business_day("25-12-2023")  # Christmas
         False
     """
-    converted_date = dc.convert_input_dates(date)
-    shifted_date = offset(converted_date, 0)  # Shift the date if it is not a bus. day
-    return converted_date == shifted_date
+    date_pd = dc.convert_input_dates(date)
+    shifted_date = offset(date_pd, 0)  # Shift the date if it is not a bus. day
+    return date_pd == shifted_date
