@@ -64,9 +64,9 @@ _data_cache = DataCache()
 
 
 # Funções de acesso para os módulos
-def get_di_dataframe():
+def get_di_dataset():
     return _data_cache.get_dataframe("di")
 
 
-def get_anbima_dataframe():
+def get_anbima_dataset():
     return _data_cache.get_dataframe("anbima")

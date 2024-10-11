@@ -7,7 +7,7 @@ import requests
 
 from pyield import bday
 from pyield import date_converter as dc
-from pyield.data_cache import get_anbima_dataframe
+from pyield.data_cache import get_anbima_dataset
 
 # URL Constants
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
@@ -132,7 +132,7 @@ def rates(
     bond_type: str | None = None,
     adj_maturities: bool = False,
 ) -> pd.DataFrame:
-    df = get_anbima_dataframe()
+    df = get_anbima_dataset()
 
     reference_date = dc.convert_input_dates(reference_date)
     df.query("ReferenceDate == @reference_date", inplace=True)
@@ -158,7 +158,7 @@ def rates(
 def pre_maturities(
     reference_date: str | pd.Timestamp,
 ) -> pd.Series:
-    df = get_anbima_dataframe()
+    df = get_anbima_dataset()
     reference_date = dc.convert_input_dates(reference_date)
     df.query("ReferenceDate == @reference_date", inplace=True)
     df.query("BondType in ['LTN', 'NTN-F']", inplace=True)
