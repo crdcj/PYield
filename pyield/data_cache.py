@@ -1,11 +1,12 @@
 from datetime import datetime as dt
+from zoneinfo import ZoneInfo
 
 import pandas as pd
-from pytz import timezone
 
 from pyield import bday
 
-TIMEZONE_BZ = timezone("America/Sao_Paulo")
+TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
+
 UPDATE_HOUR = 21
 GIT_URL = "https://raw.githubusercontent.com/crdcj/pyield-data/main"
 

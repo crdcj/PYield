@@ -1,14 +1,15 @@
 import datetime as dt
+from zoneinfo import ZoneInfo
 
 import pandas as pd
-from pytz import timezone
 
 from .. import date_converter as dc
 from .historical import fetch_historical_df
 from .intraday import fetch_intraday_df
 
 SUPPORTED_FUTURES = ["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
-TIMEZONE_BZ = timezone("America/Sao_Paulo")
+
+TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 
 def futures(
