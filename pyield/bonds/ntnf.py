@@ -3,9 +3,10 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 
-from pyield import anbima, bday, di
+from pyield import anbima, bday
 from pyield import date_converter as dc
 from pyield.bonds import bond_tools as bt
+from pyield.di import DIFutures
 from pyield.interpolator import Interpolator
 
 """
@@ -487,7 +488,8 @@ def historical_premium(
     df = cash_flows(reference_date, maturity, adj_payment_dates=True)
     df["BDays"] = bday.count(reference_date, df["PaymentDate"])
     df["BYears"] = df["BDays"] / 252
-    df["DIRate"] = df["PaymentDate"].apply(lambda x: di.rate(reference_date, x))
+    di = DIFutures(reference_date)
+    df["DIRate"] = df["PaymentDate"].apply(di.rate)
 
     # Calculate the present value of the cash flows using the DI rate
     bond_price = bt.calculate_present_value(

@@ -1,8 +1,9 @@
 import pandas as pd
 
-from pyield import anbima, bday, di
+from pyield import anbima, bday
 from pyield import date_converter as dc
 from pyield.bonds import bond_tools as bt
+from pyield.di import DIFutures
 
 FACE_VALUE = 1000
 
@@ -158,7 +159,8 @@ def historical_premium(
     ltn_rate = float(ltn_rates.iloc[0])
 
     # Retrieve DI rate for the reference date and maturity
-    di_rate = di.rate(trade_date=reference_date, expiration=maturity)
+    di = DIFutures(trade_date=reference_date)
+    di_rate = di.rate(expiration=maturity)
     if pd.isnull(di_rate):  # Check if the DI rate is NaN
         return float("NaN")
 

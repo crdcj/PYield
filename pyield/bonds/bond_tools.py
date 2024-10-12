@@ -3,8 +3,9 @@ from typing import overload
 import numpy as np
 import pandas as pd
 
-from pyield import anbima, di
+from pyield import anbima
 from pyield import date_converter as dc
+from pyield.di import DIFutures
 
 
 @overload
@@ -78,7 +79,8 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     """
     # Fetch DI rates for the reference date
     reference_date = dc.convert_input_dates(reference_date)
-    df_di = di.data(reference_date, adj_expirations=True)
+    di = DIFutures(reference_date, adj_expirations=True)
+    df_di = di.data()
     if "SettlementRate" not in df_di.columns:
         raise ValueError("DI rates data is missing the 'SettlementRate' column.")
 
