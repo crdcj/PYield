@@ -4,6 +4,7 @@ from pyield import bday, interpolator
 from pyield import date_converter as dc
 from pyield.b3_futures import futures
 from pyield.data_cache import get_anbima_dataset, get_di_dataset
+from pyield.tools import forward_rates
 
 
 class DIFutures:
@@ -18,22 +19,6 @@ class DIFutures:
     It does not include the current date. It is updated when `reload_data`
     is called and can be used to check for available historical data.
     """
-
-    @classmethod
-    def reload_data(cls):
-        """
-        Reload the DI and ANBIMA data for the class, including trade_dates.
-
-        This method reloads the data for all instances of the class by refreshing the
-        DI and ANBIMA datasets and recalculating the available trade dates.
-        """
-        cls.df_anbima = get_anbima_dataset()
-        cls.trade_dates = (
-            get_di_dataset()
-            .drop_duplicates(subset=["TradeDate"])["TradeDate"]
-            .sort_values(ascending=True)
-            .reset_index(drop=True)
-        )
 
     def __init__(
         self,
@@ -85,8 +70,9 @@ class DIFutures:
             df.query("ExpirationDate in @adj_pre_maturities", inplace=True)
 
         if self.adj_expirations:
-            df["ExpirationDate"] = df["ExpirationDate"].dt.to_period("M")
-            df["ExpirationDate"] = df["ExpirationDate"].dt.to_timestamp()
+            df["ExpirationDate"] = (
+                df["ExpirationDate"].dt.to_period("M").dt.to_timestamp()
+            )
 
         return df.sort_values(["ExpirationDate"], ignore_index=True)
 
@@ -103,6 +89,34 @@ class DIFutures:
         """
         df = self.data().drop_duplicates(subset=["ExpirationDate"])
         return df["ExpirationDate"].sort_values(ignore_index=True)
+
+    @property
+    def forwards(self) -> pd.DataFrame:
+        """
+        Calculate the DI forward rates for the initialized trade date.
+
+        This property returns a DataFrame with both the SettlementRate and the
+        calculated ForwardRate for DI contracts, based on the instance's trade date and
+        applied filters.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the following columns:
+                - ExpirationDate: The expiration dates of the DI contracts.
+                - SettlementRate: The zero rate (interest rate) for each expiration
+                  date.
+                - ForwardRate: The forward rate calculated between successive expiration
+                  dates.
+        """
+        df = self.data()
+        if df.empty:
+            return pd.DataFrame()
+
+        df["ForwardRate"] = forward_rates(
+            business_days=bday.count(self._trade_date, df["ExpirationDate"]),
+            zero_rates=df["SettlementRate"],
+        )
+
+        return df[["ExpirationDate", "SettlementRate", "ForwardRate"]]
 
     def rate(
         self,
