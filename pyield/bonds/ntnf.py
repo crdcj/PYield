@@ -31,6 +31,16 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
+
+    Examples:
+        >>> yd.ntnf.rates("23-08-2024")
+          MaturityDate  IndicativeRate
+        0   2025-01-01        0.107692
+        1   2027-01-01        0.115109
+        2   2029-01-01        0.116337
+        3   2031-01-01        0.117008
+        4   2033-01-01        0.116307
+        5   2035-01-01        0.116586
     """
     ntnf_rates = anbima.rates(reference_date, "NTN-F")
     if ntnf_rates.empty:
@@ -47,9 +57,22 @@ def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
 
     Returns:
         pd.Series: A Series of NTN-F bond maturities available for the reference date.
+
+    Examples:
+        >>> yd.ntnf.maturities("23-08-2024")
+        0   2025-01-01
+        1   2027-01-01
+        2   2029-01-01
+        3   2031-01-01
+        4   2033-01-01
+        5   2035-01-01
+        dtype: datetime64[ns]
+
     """
     df_rates = rates(reference_date)
-    return df_rates["MaturityDate"]
+    s_maturities = df_rates["MaturityDate"]
+    s_maturities.name = None
+    return s_maturities
 
 
 def _check_maturity_date(maturity: pd.Timestamp) -> None:
@@ -299,11 +322,25 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate", "DISpread".
+
+    Examples:
+        >>> yd.ntnf.di_spreads("23-08-2024")
+          MaturityDate  DISpread
+        0   2025-01-01     -5.38
+        1   2027-01-01      4.39
+        2   2029-01-01      7.37
+        3   2031-01-01     12.58
+        4   2033-01-01      7.67
+        5   2035-01-01     12.76
+
     """
     # Fetch DI Spreads for the reference date
     df = bt.di_spreads(reference_date)
-    df.query("BondType == 'NTN-F'", inplace=True)
-    df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
+    df = (
+        df.query("BondType == 'NTN-F'")
+        .sort_values(["MaturityDate"])
+        .reset_index(drop=True)
+    )
     return df[["MaturityDate", "DISpread"]]
 
 
@@ -390,6 +427,19 @@ def di_net_spread(  # noqa
 
     Returns:
         float: The net DI spread in basis points.
+
+    Example:
+        # Obs: only some of the DI rates will be used in the example.
+        >>> exp_dates = pd.to_datetime(["2025-01-01", "2030-01-01", "2035-01-01"])
+        >>> di_rates = pd.Series([0.10823, 0.11594, 0.11531])
+        >>> di_net_spread(
+        ...     settlement="23-08-2024",
+        ...     ntnf_maturity="01-01-2035",
+        ...     ntnf_rate=0.116586,
+        ...     di_expirations=exp_dates,
+        ...     di_rates=di_rates,
+        ... )
+        12.13
     """
     # Create an interpolator for the DI rates using the flat-forward method
     settlement = dc.convert_input_dates(settlement)
@@ -433,6 +483,47 @@ def premium(
     di_expirations: pd.Series,
     di_rates: pd.Series,
 ) -> float:
+    """
+    Calculate the premium of an NTN-F bond over DI rates.
+
+    This function computes the premium of an NTN-F bond by comparing its implied
+    discount factor with that of the DI curve. It determines the net premium based
+    on the difference between the discount factors of the bond's yield-to-maturity
+    (YTM) and the interpolated DI rates.
+
+    Args:
+        settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+            or a pandas Timestamp.
+        ntnf_maturity (str | pd.Timestamp): The maturity date of the NTN-F bond in
+            'DD-MM-YYYY' format or a pandas Timestamp.
+        ntnf_rate (float): The yield to maturity (YTM) of the NTN-F bond.
+        di_expirations (pd.Series): Series containing the expiration dates for DI
+        rates. di_rates (pd.Series): Series containing the DI rates corresponding to
+        the
+            expiration dates.
+
+    Returns:
+        float: The premium of the NTN-F bond over the DI curve, expressed as a
+        factor.
+
+    Example:
+        # Obs: only some of the DI rates will be used in the example.
+        >>> exp_dates = pd.to_datetime(["2025-01-01", "2030-01-01", "2035-01-01"])
+        >>> di_rates = pd.Series([0.10823, 0.11594, 0.11531])
+        >>> premium(
+        ...     settlement="23-08-2024",
+        ...     ntnf_maturity="01-01-2035",
+        ...     ntnf_rate=0.116586,
+        ...     di_expirations=exp_dates,
+        ...     di_rates=di_rates,
+        ... )
+        1.00996
+
+    Notes:
+        - The function adjusts coupon payment dates to business days and calculates
+          the present value of cash flows for the NTN-F bond using DI rates.
+
+    """
     ntnf_maturity = dc.convert_input_dates(ntnf_maturity)
     settlement = dc.convert_input_dates(settlement)
 

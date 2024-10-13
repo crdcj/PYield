@@ -17,6 +17,24 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
+
+    Examples:
+        >>> yd.ltn.rates("22-08-2024")
+           MaturityDate  IndicativeRate
+        0    2024-10-01        0.104444
+        1    2025-01-01        0.107555
+        2    2025-04-01        0.111592
+        3    2025-07-01         0.11387
+        4    2025-10-01        0.115483
+        5    2026-01-01        0.116013
+        6    2026-04-01        0.116294
+        7    2026-07-01        0.116743
+        8    2026-10-01        0.116767
+        9    2027-07-01        0.116982
+        10   2028-01-01        0.117289
+        11   2028-07-01        0.117948
+        12   2030-01-01        0.118746
+
     """
     ltn_rates = anbima.rates(reference_date, "LTN")
     if ltn_rates.empty:
@@ -33,9 +51,29 @@ def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
 
     Returns:
         pd.Series: A Series of bond maturities available for the reference date.
+
+    Examples:
+        >>> yd.ltn.maturities("22-08-2024")
+        0    2024-10-01
+        1    2025-01-01
+        2    2025-04-01
+        3    2025-07-01
+        4    2025-10-01
+        5    2026-01-01
+        6    2026-04-01
+        7    2026-07-01
+        8    2026-10-01
+        9    2027-07-01
+        10   2028-01-01
+        11   2028-07-01
+        12   2030-01-01
+        dtype: datetime64[ns]
+
     """
     df_rates = rates(reference_date)
-    return df_rates["MaturityDate"]
+    s_maturities = df_rates["MaturityDate"]
+    s_maturities.name = None
+    return s_maturities
 
 
 def price(
@@ -94,6 +132,23 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: DataFrame with the columns "MaturityDate" and "DISpread" (in bps).
+
+    Examples:
+        >>> yd.ltn.di_spreads("22-08-2024")
+           MaturityDate  DISpread
+        0    2024-10-01     -3.06
+        1    2025-01-01     -9.95
+        2    2025-04-01     -8.28
+        3    2025-07-01      -6.1
+        4    2025-10-01     -2.57
+        5    2026-01-01     -1.57
+        6    2026-04-01     -0.86
+        7    2026-07-01      2.83
+        8    2026-10-01      4.17
+        9    2027-07-01      3.72
+        10   2028-01-01      6.19
+        11   2028-07-01      8.68
+        12   2030-01-01     14.96
     """
     # Fetch DI Spreads for the reference date
     df = bt.di_spreads(reference_date)
@@ -142,6 +197,11 @@ def historical_premium(
     Returns:
         float: The premium of the LTN bond over the DI Future rate for the given date.
                If the data is not available, returns NaN.
+
+    Example:
+        >>> yd.ltn.historical_premium("22-08-2024", "01-01-2030")
+        1.012072
+
     """
     # Convert input dates to a consistent format
     reference_date = dc.convert_input_dates(reference_date)

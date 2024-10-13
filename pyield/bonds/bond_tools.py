@@ -73,9 +73,8 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
             business day according to the Brazilian calendar.
 
     Returns:
-        pd.DataFrame: DataFrame containing the bond type, reference date, maturity
-            date, and the calculated spread in basis points. The data is sorted by
-            bond type and maturity date.
+        pd.DataFrame: DataFrame containing the bond type, maturity date and the
+            calculated spread in basis points.
     """
     # Fetch DI rates for the reference date
     reference_date = dc.convert_input_dates(reference_date)
@@ -105,5 +104,5 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
     # Prepare and return the final sorted DataFrame
     df_spreads = df_spreads.sort_values(["BondType", "MaturityDate"], ignore_index=True)
-    select_columns = ["BondType", "ReferenceDate", "MaturityDate", "DISpread"]
+    select_columns = ["BondType", "MaturityDate", "DISpread"]
     return df_spreads[select_columns].copy()
