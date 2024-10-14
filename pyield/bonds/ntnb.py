@@ -60,6 +60,29 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
+
+    Returned columns:
+        - MaturityDate: The maturity date of the bond.
+        - IndicativeRate: The indicative rate for the bond.
+
+    Examples:
+        >>> yd.ntnb.rates("16-08-2024")
+           MaturityDate  IndicativeRate
+        0    2025-05-15        0.063893
+        1    2026-08-15        0.066095
+        2    2027-05-15        0.064164
+        3    2028-08-15        0.063199
+        4    2029-05-15        0.061753
+        5    2030-08-15        0.059997
+        6    2032-08-15        0.060025
+        7    2033-05-15        0.059876
+        8    2035-05-15        0.059557
+        9    2040-08-15        0.058873
+        10   2045-05-15        0.060013
+        11   2050-08-15        0.060247
+        12   2055-05-15        0.059926
+        13   2060-08-15        0.060179
+
     """
     ntnb_rates = anbima.rates(reference_date, "NTN-B")
     if ntnb_rates.empty:
@@ -76,9 +99,31 @@ def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
 
     Returns:
         pd.Series: Series containing the maturity dates for the NTN-B bonds.
+
+    Examples:
+
+        >>> yd.ntnb.maturities("16-08-2024")
+        0    2025-05-15
+        1    2026-08-15
+        2    2027-05-15
+        3    2028-08-15
+        4    2029-05-15
+        5    2030-08-15
+        6    2032-08-15
+        7    2033-05-15
+        8    2035-05-15
+        9    2040-08-15
+        10   2045-05-15
+        11   2050-08-15
+        12   2055-05-15
+        13   2060-08-15
+        dtype: datetime64[ns]
+
     """
     df_rates = rates(reference_date)
-    return df_rates["MaturityDate"]
+    s_maturities = df_rates["MaturityDate"]
+    s_maturities.name = None
+    return s_maturities
 
 
 def _generate_coupon_dates_map(
