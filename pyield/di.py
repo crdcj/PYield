@@ -30,12 +30,11 @@ class DIFutures:
         Initialize the DIFutures instance with a specific trade date.
 
         Args:
-            trade_date (str | pd.Timestamp): The trade date for which DI data is
-                required.
-            adj_expirations (bool): If True, adjusts the expiration dates to
-                the start of the month.
-            prefixed_filter (bool): If True, filters the DI
-                contracts to match LTN and NTN-F bond maturities.
+            trade_date (str | pd.Timestamp): The date to retrieve the contract data.
+            adj_expirations (bool): If True, adjusts the expiration dates to the start
+                of the month.
+            prefixed_filter (bool): If True, filters the DI contracts to match LTN and
+                NTN-F bond maturities.
         """
         self._trade_date = dc.convert_input_dates(trade_date)
         self.adj_expirations = adj_expirations

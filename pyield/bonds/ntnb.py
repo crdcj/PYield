@@ -281,6 +281,8 @@ def quotation(
         99.3651
         >>> yd.ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
         99.5341
+        >>> yd.ntnb.quotation("15-08-2024", "15-08-2032", 0.05929)
+        100.6409
     """
     # Validate and normalize dates
     settlement = dc.convert_input_dates(settlement)
@@ -326,6 +328,8 @@ def price(
     Examples:
         >>> yd.ntnb.price(4299.160173, 99.3651)
         4271.864805
+        >>> yd.ntnb.price(4315.498383, 100.6409)
+        4343.156412
     """
     return bt.truncate(vna * quotation / 100, 6)
 
