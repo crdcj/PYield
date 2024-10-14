@@ -347,7 +347,6 @@ def spot_rates(
     the spot rates that discount each bond's cash flows to its current
     price.
 
-
     Args:
         settlement (str | pd.Timestamp): The reference date for settlement.
         maturities (pd.Series): Series of maturity dates for the bonds.
@@ -355,6 +354,15 @@ def spot_rates(
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate", "SpotRate".
+
+    Examples:
+        >>> maturity_dates = pd.Series(["15-05-2025", "15-08-2026", "15-05-2027"])
+        >>> ytm_rates = pd.Series([0.061748, 0.066049, 0.063873])
+        >>> yd.ntnb.spot_rates("05-09-2024", maturity_dates, ytm_rates)
+          MaturityDate  SpotRate
+        0   2025-05-15  0.061749
+        1   2026-08-15  0.066133
+        2   2027-05-15  0.063816
 
     Notes:
         The calculation of the spot rates for NTN-B bonds considers the following steps:
@@ -364,7 +372,6 @@ def spot_rates(
             - Calculate the real spot rates for each maturity date.
             - Columns in the returned DataFrame:
                 - MaturityDate: The maturity date of the bond.
-                - YTM: The yield to maturity rate for the bond.
                 - SpotRate: The real spot rate for the bond.
     """
     # Process and validate the input data
