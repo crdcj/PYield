@@ -356,7 +356,10 @@ def spot_rates(
         pd.DataFrame: DataFrame with columns "MaturityDate", "SpotRate".
 
     Examples:
+        # Get the NTN-B rates for a specific reference date
         >>> df_rates = yd.ntnb.rates("16-08-2024")
+
+        # Calculate the spot rates considering the settlement at the reference date
         >>> yd.ntnb.spot_rates(
         ...     settlement="16-08-2024",
         ...     maturities=df_rates["MaturityDate"],
