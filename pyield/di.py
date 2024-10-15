@@ -37,11 +37,12 @@ class DIFutures:
                 NTN-F bond maturities.
         """
         self._trade_date = dc.convert_input_dates(trade_date)
-        self.adj_expirations = adj_expirations
-        self.prefixed_filter = prefixed_filter
+        self._adj_expirations = adj_expirations
+        self._prefixed_filter = prefixed_filter
 
+    @property
     def data(self) -> pd.DataFrame:
-        """Retrieve DI contract data for the initialized trade date."""
+        """Retrieve DI contract DataFrame for the initialized trade date."""
         df = (
             get_di_dataset()
             .query("TradeDate == @self.trade_date")
@@ -57,10 +58,10 @@ class DIFutures:
         if "DaysToExpiration" in df.columns:
             df.drop(columns=["DaysToExpiration"], inplace=True)
 
-        if self.prefixed_filter:
+        if self._prefixed_filter:
             df_pre = (
                 get_anbima_dataset()
-                .query("ReferenceDate == @self.trade_date")
+                .query("ReferenceDate == @self._trade_date")
                 .query("BondType in ['LTN', 'NTN-F']")
                 .drop_duplicates(ignore_index=True)
             )
@@ -68,7 +69,7 @@ class DIFutures:
             adj_pre_maturities = bday.offset(pre_maturities, 0)  # noqa
             df.query("ExpirationDate in @adj_pre_maturities", inplace=True)
 
-        if self.adj_expirations:
+        if self._adj_expirations:
             df["ExpirationDate"] = (
                 df["ExpirationDate"].dt.to_period("M").dt.to_timestamp()
             )
@@ -86,7 +87,7 @@ class DIFutures:
         Returns:
             pd.Series: A Series of unique expiration dates for DI contracts.
         """
-        df = self.data().drop_duplicates(subset=["ExpirationDate"])
+        df = self.data.drop_duplicates(subset=["ExpirationDate"])
         return df["ExpirationDate"].sort_values(ignore_index=True)
 
     @property
@@ -106,7 +107,7 @@ class DIFutures:
                 - ForwardRate: The forward rate calculated between successive expiration
                   dates.
         """
-        df = self.data()
+        df = self.data
         if df.empty:
             return pd.DataFrame()
 
@@ -129,7 +130,7 @@ class DIFutures:
         if not interpolate and extrapolate:
             raise ValueError("Extrapolation is not allowed without interpolation.")
 
-        df = self.data()
+        df = self.data
         if df.empty:
             return float("NaN")
 
@@ -165,7 +166,6 @@ class DIFutures:
     @trade_date.setter
     def trade_date(self, value: str | pd.Timestamp):
         self._trade_date = dc.convert_input_dates(value)
-        return self._trade_date
 
     @property
     def adj_expirations(self) -> bool:
