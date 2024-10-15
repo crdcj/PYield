@@ -356,13 +356,27 @@ def spot_rates(
         pd.DataFrame: DataFrame with columns "MaturityDate", "SpotRate".
 
     Examples:
-        >>> maturity_dates = pd.Series(["15-05-2025", "15-08-2026", "15-05-2027"])
-        >>> ytm_rates = pd.Series([0.061748, 0.066049, 0.063873])
-        >>> yd.ntnb.spot_rates("05-09-2024", maturity_dates, ytm_rates)
-          MaturityDate  SpotRate
-        0   2025-05-15  0.061749
-        1   2026-08-15  0.066133
-        2   2027-05-15  0.063816
+        >>> df_rates = yd.ntnb.rates("16-08-2024")
+        >>> yd.ntnb.spot_rates(
+        ...     settlement="16-08-2024",
+        ...     maturities=df_rates["MaturityDate"],
+        ...     rates=df_rates["IndicativeRate"],
+        ... )
+           MaturityDate  SpotRate
+        0    2025-05-15  0.063894
+        1    2026-08-15  0.066141
+        2    2027-05-15  0.064087
+        3    2028-08-15  0.063057
+        4    2029-05-15  0.061458
+        5    2030-08-15  0.059491
+        6    2032-08-15  0.059652
+        7    2033-05-15  0.059497
+        8    2035-05-15  0.059151
+        9    2040-08-15  0.058326
+        10   2045-05-15  0.060371
+        11   2050-08-15  0.060772
+        12   2055-05-15  0.059909
+        13   2060-08-15  0.060652
 
     Notes:
         The calculation of the spot rates for NTN-B bonds considers the following steps:

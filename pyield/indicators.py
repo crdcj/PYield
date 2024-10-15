@@ -1,8 +1,10 @@
-import time
+import logging
 from typing import Literal
 
 import pandas as pd
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 from pyield import date_converter as dc
 
@@ -105,60 +107,92 @@ def ipca_monthly_rate(reference_date: pd.Timestamp) -> float:
 
 
 def _selic_target(reference_date: pd.Timestamp) -> float:
+    """
+    Fetches the SELIC Target rate for a specific reference date.
+
+    The SELIC Target rate is the official rate set by the Central Bank of Brazil.
+
+    Args:
+        reference_date (pd.Timestamp): The date for which to fetch the SELIC Target.
+
+    Returns:
+        float: The SELIC Target rate as a float rounded to 4 decimal places or NaN if
+        the rate is not available.
+    """
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     selic_date = reference_date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial={selic_date}&dataFinal={selic_date}"
-    response = requests.get(api_url, timeout=10)
-    response.raise_for_status()
 
-    if selic_date not in response.text:
+    s = requests.Session()
+    retries = Retry(
+        total=5,  # Retry 5 times
+        backoff_factor=1,  # Exponential backoff: 1, 2, 4, 8, 16 seconds
+        status_forcelist=[500, 502, 503, 504],  # Retry on these HTTP status codes
+    )
+    s.mount("https://", HTTPAdapter(max_retries=retries))
+
+    try:
+        response = s.get(api_url, timeout=(5, 20))
+        response.raise_for_status()  # Raise an error for bad HTTP response
+
+        if selic_date not in response.text:
+            return float("nan")
+
+        data = response.json()
+        if not data or "valor" not in data[0]:
+            return float("nan")
+
+        value = data[0]["valor"]
+        return round(float(value) / 100, 4)
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching SELIC Target rate: {e}")
         return float("nan")
-    data = response.json()
-    return round(float(data[0]["valor"]) / 100, 4)
 
 
 def _selic_over(reference_date: pd.Timestamp) -> float:
     """
-    The SELIC Over rate is the daily average interest rate effectively practiced between
-    banks in the interbank market, using public securities as collateral. This rate may
-    vary daily depending on the supply and demand for resources between financial
-    institutions.
+    Fetches the SELIC Over rate for a specific reference date.
+
+    The SELIC Over rate is the daily average interest rate effectively practiced
+    between banks in the interbank market, using public securities as collateral.
+
+    Args:
+        reference_date (pd.Timestamp): The date for which to fetch the SELIC Over rate.
+
+    Returns:
+        float: The SELIC Over rate as a float rounded to 4 decimal places or NaN if
+        the rate is not available.
     """
+
     formatted_date = reference_date.strftime("%d/%m/%Y")
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial={formatted_date}&dataFinal={formatted_date}"
 
-    # Implementação interna de retries e timeout
-    retries = 3
-    timeout = 10
-    backoff_factor = 2
+    s = requests.Session()
+    retries = Retry(
+        total=5,
+        backoff_factor=1,
+        status_forcelist=[500, 502, 503, 504],
+    )
+    s.mount("https://", HTTPAdapter(max_retries=retries))
+    try:
+        response = s.get(api_url, timeout=(5, 20))
+        response.raise_for_status()  # Raise an error for bad HTTP response
 
-    for attempt in range(retries):
-        try:
-            response = requests.get(api_url, timeout=timeout)
-            response.raise_for_status()  # Check for HTTP errors
-
-            if formatted_date not in response.text:
-                return float("nan")
-
-            data = response.json()
-
-            if not data or "valor" not in data[0]:
-                return float("nan")
-            value = data[0]["valor"]
-            return round(float(value) / 100, 4)
-
-        except requests.exceptions.Timeout:
-            print(f"Timeout on attempt {attempt + 1}. Retrying...")
-        except requests.exceptions.ConnectionError as e:
-            print(f"Connection error on attempt {attempt + 1}: {e}. Retrying...")
-        except requests.exceptions.RequestException as e:
-            print(f"An error occurred: {e}")
+        if formatted_date not in response.text:
             return float("nan")
 
-        time.sleep(backoff_factor**attempt)
+        data = response.json()
+        if not data or "valor" not in data[0]:
+            return float("nan")
 
-    return float("nan")
+        value = data[0]["valor"]
+        return round(float(value) / 100, 4)
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching SELIC Over rate: {e}")
+        return float("nan")
 
 
 def _di(reference_date: pd.Timestamp) -> float:
