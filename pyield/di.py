@@ -51,6 +51,7 @@ class DIFutures:
 
         if df.empty:
             df = futures(contract_code="DI1", trade_date=self._trade_date)
+
         if df.empty:
             return pd.DataFrame()
 
@@ -59,9 +60,17 @@ class DIFutures:
             df.drop(columns=["DaysToExpiration"], inplace=True)
 
         if self._prefixed_filter:
+            df_anbima = get_anbima_dataset()
+
+            # Find the closest Anbima reference date to the trade date
+            anbima_dates = (
+                df_anbima["ReferenceDate"].drop_duplicates().reset_index(drop=True)
+            )
+            dates_diff = (anbima_dates - self._trade_date).abs()
+            closest_date = anbima_dates[dates_diff.idxmin()]  # noqa
+
             df_pre = (
-                get_anbima_dataset()
-                .query("ReferenceDate == @self._trade_date")
+                df_anbima.query("ReferenceDate == @closest_date")
                 .query("BondType in ['LTN', 'NTN-F']")
                 .drop_duplicates(ignore_index=True)
             )
@@ -125,21 +134,30 @@ class DIFutures:
         extrapolate: bool = False,
     ) -> float:
         """Retrieve the DI rate for a specified expiration date."""
-        expiration = bday.offset(expiration, 0)
+        expiration = dc.convert_input_dates(expiration)
+
+        if self._adj_expirations:
+            # Force the expiration date to be the start of the month
+            expiration = expiration.to_period("M").to_timestamp()
+        else:
+            # Force the expiration date to be a business day
+            expiration = bday.offset(expiration, 0)
 
         if not interpolate and extrapolate:
             raise ValueError("Extrapolation is not allowed without interpolation.")
 
         df = self.data
+
         if df.empty:
             return float("NaN")
 
         df_exp = df.query("ExpirationDate == @expiration")
+
         if df_exp.empty and not interpolate:
             return float("NaN")
 
         if expiration in df_exp["ExpirationDate"].values:
-            return float(df_exp["SettlementRate"].iloc[0])
+            return float(df_exp["SettlementRate"].iat[0])
 
         if not interpolate:
             return float("NaN")

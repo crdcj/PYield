@@ -79,7 +79,7 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     # Fetch DI rates for the reference date
     reference_date = dc.convert_input_dates(reference_date)
     di = DIFutures(reference_date, adj_expirations=True)
-    df_di = di.data()
+    df_di = di.data
     if "SettlementRate" not in df_di.columns:
         raise ValueError("DI rates data is missing the 'SettlementRate' column.")
 
