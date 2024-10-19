@@ -497,10 +497,9 @@ def premium(
         ntnf_maturity (str | pd.Timestamp): The maturity date of the NTN-F bond in
             'DD-MM-YYYY' format or a pandas Timestamp.
         ntnf_rate (float): The yield to maturity (YTM) of the NTN-F bond.
-        di_expirations (pd.Series): Series containing the expiration dates for DI
-        rates. di_rates (pd.Series): Series containing the DI rates corresponding to
-        the
-            expiration dates.
+        di_expirations (pd.Series): Series containing the expiration dates for DI rates.
+        di_rates (pd.Series): Series containing the DI rates corresponding to
+            the expiration dates.
 
     Returns:
         float: The premium of the NTN-F bond over the DI curve, expressed as a

@@ -239,10 +239,6 @@ def count(
             for counting.
         end (ScalarDateTypes | ArrayDateTypes): The end date(s) for counting, which
             is excluded from the count themselves.
-        holiday_option (Literal["old", "new", "infer"], optional):
-            Specifies which set of holidays to consider in the count. 'old' or 'new'
-            refer to predefined holiday lists, while 'infer' automatically selects the
-            list based on the most recent date in the input. Defaults to "infer".
 
     Returns:
         int | pd.Series: Returns an integer if `start` and `end` are single dates,
