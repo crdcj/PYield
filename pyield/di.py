@@ -1,13 +1,46 @@
 import pandas as pd
 
+import pyield.b3_futures as b3
+import pyield.date_converter as dc
+import pyield.tools as tl
 from pyield import bday, interpolator
-from pyield import date_converter as dc
-from pyield.b3_futures import futures
 from pyield.data_cache import get_anbima_dataset, get_di_dataset
-from pyield.tools import forward_rates
 
 
 class DIFutures:
+    """
+    Class to retrieve and manipulate DI futures contract data.
+
+    This class provides access to DI futures data for a specified trade date, and
+    includes options to adjust expiration dates and apply filters based on LTN and
+    NTN-F bond maturities.
+
+    Example:
+        To create a `DIFutures` instance and retrieve data:
+        >>> di = yd.DIFutures(trade_date="16-10-2024", adj_expirations=True)
+        >>> df = di.data  # Retrieve DI contract dataframe for the specified date
+        >>> df.iloc[:5, :5]  # Display the first 5 rows and 5 columns
+          TickerSymbol ExpirationDate  BDaysToExp  OpenContracts  TradeCount
+        0       DI1X24     2024-11-01          12        1744269         635
+        1       DI1Z24     2024-12-01          31        1429375        1012
+        2       DI1F25     2025-01-01          52        5423969        6812
+        3       DI1G25     2025-02-01          74         279491          97
+        4       DI1H25     2025-03-01          94         344056         221
+
+        You can also retrieve forward rates for the DI contracts:
+        >>> di.forwards.iloc[:5]  # Display the first 5 rows
+          ExpirationDate  SettlementRate  ForwardRate
+        0     2024-11-01         0.10653      0.10653
+        1     2024-12-01          0.1091     0.110726
+        2     2025-01-01         0.11164       0.1154
+        3     2025-02-01         0.11362     0.118314
+        4     2025-03-01          0.1157      0.12343
+
+    Attributes:
+        trade_dates (pd.Series): Sorted series of unique trade dates available in the
+            DI dataset.
+    """
+
     trade_dates = (
         get_di_dataset()
         .drop_duplicates(subset=["TradeDate"])["TradeDate"]
@@ -50,7 +83,7 @@ class DIFutures:
         )
 
         if df.empty:
-            df = futures(contract_code="DI1", trade_date=self._trade_date)
+            df = b3.futures(contract_code="DI1", trade_date=self._trade_date)
 
         if df.empty:
             return pd.DataFrame()
@@ -120,7 +153,7 @@ class DIFutures:
         if df.empty:
             return pd.DataFrame()
 
-        df["ForwardRate"] = forward_rates(
+        df["ForwardRate"] = tl.forward_rates(
             business_days=bday.count(self._trade_date, df["ExpirationDate"]),
             zero_rates=df["SettlementRate"],
         )
@@ -174,11 +207,15 @@ class DIFutures:
     @property
     def trade_date(self) -> pd.Timestamp:
         """
-        Get or set the trade date for this DIFutures instance.
+        The trade date to retrieve the DI contract data.
+
+        This property can be both read and set. When setting a value, it automatically
+        converts the input date format to a `pd.Timestamp`.
 
         Returns:
             pd.Timestamp: The trade date set for this instance.
         """
+
         return self._trade_date
 
     @trade_date.setter
@@ -188,7 +225,11 @@ class DIFutures:
     @property
     def adj_expirations(self) -> bool:
         """
-        Get or set the adj_expirations flag for this DIFutures instance.
+        Adjusts the expiration dates to the start of the month.
+
+        This property can be both read and set. When set to `True`, all expiration dates
+        are adjusted to the first day of the month. For example, an expiration date of
+        02/01/2025 will be adjusted to 01/01/2025.
 
         Returns:
             bool: Whether expiration dates are adjusted to the start of the month.
@@ -202,7 +243,10 @@ class DIFutures:
     @property
     def prefixed_filter(self) -> bool:
         """
-        Get or set the prefixed_filter flag for this DIFutures instance.
+        Filters DI Futures to match prefixed TN bond maturities.
+
+        This property can be both read and set. When set to `True`, DI Futures will be
+        filtered to match the maturities of LTN and NTN-F bonds from the Anbima dataset.
 
         Returns:
             bool: Whether DI Futures are filtered to match prefixed Anbima bond
