@@ -16,10 +16,10 @@ class DIFutures:
     NTN-F bond maturities.
 
     Example:
-        To create a `DIFutures` instance and retrieve data:
+        To create a `DIFutures` instance and retrieve data.
+        Showing the first five rows and columns of the DI contract dataframe:
         >>> di = yd.DIFutures(trade_date="16-10-2024", adj_expirations=True)
         >>> df = di.data  # Retrieve DI contract dataframe for the specified date
-        Display the first 5 rows and 5 columns
         >>> df.iloc[:5, :5]
           TickerSymbol ExpirationDate  BDaysToExp  OpenContracts  TradeCount
         0       DI1X24     2024-11-01          12        1744269         635
@@ -28,7 +28,8 @@ class DIFutures:
         3       DI1G25     2025-02-01          74         279491          97
         4       DI1H25     2025-03-01          94         344056         221
 
-        You can also retrieve forward rates for the DI contracts:
+        You can also retrieve forward rates for the DI contracts.
+        Showing only the first five rows:
         >>> di.forwards.iloc[:5]
           ExpirationDate  SettlementRate  ForwardRate
         0     2024-11-01         0.10653      0.10653
