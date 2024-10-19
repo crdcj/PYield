@@ -36,9 +36,6 @@ class DIFutures:
         3     2025-02-01         0.11362     0.118314
         4     2025-03-01          0.1157      0.12343
 
-    Attributes:
-        trade_dates (pd.Series): Sorted series of unique trade dates available in the
-            DI dataset.
     """
 
     trade_dates = (

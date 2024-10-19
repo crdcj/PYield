@@ -49,6 +49,7 @@ theme:
 plugins:
   - search
   - tags
+  - autorefs
   - mkdocstrings:
       handlers:
         python:

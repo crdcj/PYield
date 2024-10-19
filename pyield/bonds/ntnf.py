@@ -3,11 +3,10 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 
-from pyield import anbima, bday
+from pyield import anbima, bday, di
 from pyield import date_converter as dc
+from pyield import interpolator as ip
 from pyield.bonds import bond_tools as bt
-from pyield.di import DIFutures
-from pyield.interpolator import Interpolator
 
 """
 Constants calculated as per Anbima Rules
@@ -260,12 +259,12 @@ def spot_rates(  # noqa
     settlement = dc.convert_input_dates(settlement)
 
     # Create flat forward interpolators for LTN and NTN-F rates
-    ltn_rate_interpolator = Interpolator(
+    ltn_rate_interpolator = ip.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, ltn_maturities),
         known_rates=ltn_rates,
     )
-    ntnf_rate_interpolator = Interpolator(
+    ntnf_rate_interpolator = ip.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, ntnf_maturities),
         known_rates=ntnf_rates,
@@ -445,7 +444,7 @@ def di_net_spread(  # noqa
     settlement = dc.convert_input_dates(settlement)
     ntnf_maturity = dc.convert_input_dates(ntnf_maturity)
 
-    ff_interpolator = Interpolator(
+    ff_interpolator = ip.Interpolator(
         "flat_forward",
         bday.count(settlement, di_expirations),
         di_rates,
@@ -530,7 +529,7 @@ def premium(
     df["BDays"] = bday.count(settlement, df["PaymentDate"])
     df["BYears"] = df["BDays"] / 252
 
-    ff_interpolator = Interpolator(
+    ff_interpolator = ip.Interpolator(
         "flat_forward",
         bday.count(settlement, di_expirations),
         di_rates,
@@ -578,8 +577,8 @@ def historical_premium(
     df = cash_flows(reference_date, maturity, adj_payment_dates=True)
     df["BDays"] = bday.count(reference_date, df["PaymentDate"])
     df["BYears"] = df["BDays"] / 252
-    di = DIFutures(reference_date)
-    df["DIRate"] = df["PaymentDate"].apply(di.rate)
+    dif = di.DIFutures(reference_date)
+    df["DIRate"] = df["PaymentDate"].apply(dif.rate)
 
     # Calculate the present value of the cash flows using the DI rate
     bond_price = bt.calculate_present_value(

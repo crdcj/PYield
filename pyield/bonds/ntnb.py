@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 
+import pyield.bonds.bond_tools as bt
+import pyield.date_converter as dc
+import pyield.interpolator as ip
 from pyield import anbima, bday
-from pyield import date_converter as dc
-from pyield.bonds import bond_tools as bt
-from pyield.interpolator import Interpolator
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -397,7 +397,7 @@ def spot_rates(
     _check_maturities(maturities)
 
     # Create the interpolator object
-    ff_interpolator = Interpolator(
+    ff_interpolator = ip.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, maturities),
         known_rates=rates,
@@ -495,7 +495,7 @@ def bei_rates(
     df["BDays"] = bday.count(settlement, df["MaturityDate"])
     df = df.rename(columns={"SpotRate": "RIR"})
 
-    nir_interplator = Interpolator(
+    nir_interplator = ip.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, nominal_maturities),
         known_rates=nominal_rates,
