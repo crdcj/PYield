@@ -3,15 +3,15 @@ from typing import Literal, overload
 import numpy as np
 import pandas as pd
 
-from pyield import date_converter as dc
+import pyield.date_converter as dc
+import pyield.holidays as hl
 from pyield.date_converter import ArrayDateTypes, ScalarDateTypes
-from pyield.holidays import BrHolidays
 
 type ArrayIntTypes = np.ndarray | pd.Series | list | tuple
 type ScalarIntTypes = int | np.integer
 
 # Initialize Brazilian holidays data
-br_holidays = BrHolidays()
+br_holidays = hl.BrHolidays()
 OLD_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="old")
 NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="new")
 
