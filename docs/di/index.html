@@ -877,7 +877,8 @@ NTN-F bond maturities.</p>
 <blockquote>
 <p>di = yd.DIFutures(trade_date="16-10-2024", adj_expirations=True)
 df = di.data  # Retrieve DI contract dataframe for the specified date
-df.iloc[:5, :5]  # Display the first 5 rows and 5 columns
+Display the first 5 rows and 5 columns
+df.iloc[:5, :5]
   TickerSymbol ExpirationDate  BDaysToExp  OpenContracts  TradeCount
 0       DI1X24     2024-11-01          12        1744269         635
 1       DI1Z24     2024-12-01          31        1429375        1012
@@ -891,7 +892,7 @@ df.iloc[:5, :5]  # Display the first 5 rows and 5 columns
 <blockquote>
 <blockquote>
 <blockquote>
-<p>di.forwards.iloc[:5]  # Display the first 5 rows
+<p>di.forwards.iloc[:5]
   ExpirationDate  SettlementRate  ForwardRate
 0     2024-11-01         0.10653      0.10653
 1     2024-12-01          0.1091     0.110726
@@ -1162,23 +1163,23 @@ df.iloc[:5, :5]  # Display the first 5 rows and 5 columns
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="sd">        To create a `DIFutures` instance and retrieve data:</span>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="sd">        &gt;&gt;&gt; di = yd.DIFutures(trade_date=&quot;16-10-2024&quot;, adj_expirations=True)</span>
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="sd">        &gt;&gt;&gt; df = di.data  # Retrieve DI contract dataframe for the specified date</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="sd">        &gt;&gt;&gt; df.iloc[:5, :5]  # Display the first 5 rows and 5 columns</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="sd">          TickerSymbol ExpirationDate  BDaysToExp  OpenContracts  TradeCount</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">        0       DI1X24     2024-11-01          12        1744269         635</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">        1       DI1Z24     2024-12-01          31        1429375        1012</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">        2       DI1F25     2025-01-01          52        5423969        6812</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">        3       DI1G25     2025-02-01          74         279491          97</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">        4       DI1H25     2025-03-01          94         344056         221</span>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29"></a>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">        You can also retrieve forward rates for the DI contracts:</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">        &gt;&gt;&gt; di.forwards.iloc[:5]  # Display the first 5 rows</span>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">          ExpirationDate  SettlementRate  ForwardRate</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">        0     2024-11-01         0.10653      0.10653</span>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">        1     2024-12-01          0.1091     0.110726</span>
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        2     2025-01-01         0.11164       0.1154</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        3     2025-02-01         0.11362     0.118314</span>
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">        4     2025-03-01          0.1157      0.12343</span>
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="sd">        Display the first 5 rows and 5 columns</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="sd">        &gt;&gt;&gt; df.iloc[:5, :5]</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">          TickerSymbol ExpirationDate  BDaysToExp  OpenContracts  TradeCount</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">        0       DI1X24     2024-11-01          12        1744269         635</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">        1       DI1Z24     2024-12-01          31        1429375        1012</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">        2       DI1F25     2025-01-01          52        5423969        6812</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">        3       DI1G25     2025-02-01          74         279491          97</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">        4       DI1H25     2025-03-01          94         344056         221</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30"></a>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">        You can also retrieve forward rates for the DI contracts:</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">        &gt;&gt;&gt; di.forwards.iloc[:5]</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">          ExpirationDate  SettlementRate  ForwardRate</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">        0     2024-11-01         0.10653      0.10653</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        1     2024-12-01          0.1091     0.110726</span>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        2     2025-01-01         0.11164       0.1154</span>
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">        3     2025-02-01         0.11362     0.118314</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        4     2025-03-01          0.1157      0.12343</span>
 </span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40"></a>
 </span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="n">trade_dates</span> <span class="o">=</span> <span class="p">(</span>
