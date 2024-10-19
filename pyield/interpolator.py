@@ -6,6 +6,39 @@ import pandas as pd
 
 
 class Interpolator:
+    """
+    Interpolator class for interest rate interpolation.
+
+    Args:
+        method (Literal["flat_forward", "linear"]): The interpolation method to use.
+        known_bdays (pd.Series | pd.Index | list): Series of known business days.
+        known_rates (pd.Series | pd.Index | list): Series of known interest rates.
+        extrapolate (bool, optional): Whether to extrapolate beyond known business days.
+
+    Raises:
+        ValueError: If known_bdays and known_rates do not have the same length.
+        ValueError: If the interpolation method is not recognized
+
+    Returns:
+        Interpolator: An instance of the Interpolator
+
+    Note:
+        This class uses a 252 business days per year convention.
+
+    Examples:
+        >>> from pyield import Interpolator
+        >>> known_bdays = [30, 60, 90]
+        >>> known_rates = [0.045, 0.05, 0.055]
+
+        >>> lin_interp = Interpolator("linear", known_bdays, known_rates)
+        >>> lin_interp(45)
+        0.0475
+
+        >>> ffo_interp = Interpolator("flat_forward", known_bdays, known_rates)
+        >>> ffo_interp(45)
+        0.04833068080970859
+    """
+
     def __init__(
         self,
         method: Literal["flat_forward", "linear"],
@@ -13,38 +46,6 @@ class Interpolator:
         known_rates: pd.Series | list,
         extrapolate: bool = False,
     ):
-        """
-        Initialize the Interpolator with given atributes.
-
-        Args:
-            method (Literal["flat_forward", "linear"]): Interpolation method.
-            known_bdays (pd.Series | pd.Index | list): Series of known business days.
-            known_rates (pd.Series | pd.Index | list): Series of known interest rates.
-            extrapolate (bool, optional): Whether to extrapolate beyond the known data.
-
-        Raises:
-            ValueError: If known_bdays and known_rates do not have the same length.
-            ValueError: If the interpolation method is not recognized
-
-        Returns:
-            Interpolator: An instance of the Interpolator
-
-        Note:
-            This class uses a 252 business days per year convention.
-        Examples:
-            >>> from pyield import Interpolator
-            >>> known_bdays = [30, 60, 90]
-            >>> known_rates = [0.045, 0.05, 0.055]
-
-            >>> lin_interp = Interpolator("linear", known_bdays, known_rates)
-            >>> lin_interp(45)
-            0.0475
-
-            >>> ffo_interp = Interpolator("flat_forward", known_bdays, known_rates)
-            >>> ffo_interp(45)
-            0.04833068080970859
-
-        """
         self.method = method
         self.known_bdays = known_bdays
         self.known_rates = known_rates
