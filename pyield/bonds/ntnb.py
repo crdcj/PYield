@@ -457,34 +457,67 @@ def bei_rates(
 ) -> pd.DataFrame:
     """
     Calculate the Breakeven Inflation (BEI) for NTN-B bonds based on nominal and real
-    interest rates.
+    interest rates. The BEI represents the inflation rate that equalizes the real and
+    nominal yields. The calculation is based on the spot rates for NTN-B bonds.
 
     Args:
-        settlement (str or pd.Timestamp): The settlement date for the bonds.
-        ntnb_maturities (pd.Series): Series of maturity dates for the inflation-indexed
-            bonds (NTN-B).
-        ntnb_rates (pd.Series): Series of real interest rates (Yield to Maturity - YTM)
-            corresponding to the inflation-indexed bonds' maturity dates.
-        nominal_maturities (pd.Series): Series of maturity dates corresponding to the
+        settlement (str or pd.Timestamp): The settlement date of the operation.
+        ntnb_maturities (pd.Series): The maturity dates for the NTN-B bonds.
+        ntnb_rates (pd.Series): The real interest rates (Yield to Maturity - YTM)
+            corresponding to the given NTN-B maturities.
+        nominal_maturities (pd.Series): The maturity dates to be used as reference for
             nominal reates.
-        nominal_rates (pd.Series): Series of nominal interest rates
-            (e.g., DI or prefixed bonds) used as reference for the calculation.
+        nominal_rates (pd.Series): The nominal interest rates (e.g. DI Futures or
+             zero prefixed bonds rates) used as reference for the calculation.
 
     Returns:
         pd.DataFrame: DataFrame containing the calculated breakeven inflation rates.
 
     Returned columns:
         - MaturityDate: The maturity date of the bonds.
-        - BDays: Number of business days from the settlement date to the maturity date.
-        - RIR: The calculated Real Interest Rate based on the spot rates.
-        - NIR: Nominal Interest Rate interpolated for the corresponding maturity date.
-        - BEI: The calculated Breakeven Inflation Rate, which represents the inflation
-            rate that equalizes the real and nominal yields.
+        - RIR: The calculated Real Interest Rates based on the spot rates.
+        - NIR: The Nominal Interest Rates interpolated for the maturity date.
+        - BEI: The calculated Breakeven Inflation Rates.
 
     Notes:
         The BEI is calculated by comparing the nominal and real interest rates,
         indicating the market's inflation expectations over the period from the
         settlement date to the bond's maturity.
+
+    Examples:
+        Get the NTN-B rates for a specific reference date.
+        These are YTM rates and the spot rates are calculated based on them
+        >>> df_ntnb = yd.ntnb.rates("05-09-2024")
+
+        Get the DI Futures settlement rates for the same reference date to be used as
+        reference for the nominal rates:
+        >>> di = yd.DIFutures("05-09-2024")
+        >>> df_di = di.data
+
+        Calculate the BEI rates considering the settlement at the reference date:
+        >>> yd.ntnb.bei_rates(
+        ...     settlement="05-09-2024",
+        ...     ntnb_maturities=df_ntnb["MaturityDate"],
+        ...     ntnb_rates=df_ntnb["IndicativeRate"],
+        ...     nominal_maturities=df_di["ExpirationDate"],
+        ...     nominal_rates=df_di["SettlementRate"],
+        ... )
+           MaturityDate       RIR       NIR       BEI
+        0    2025-05-15  0.061749  0.113836  0.049058
+        1    2026-08-15  0.066133  0.117126   0.04783
+        2    2027-05-15  0.063816  0.117169  0.050152
+        3    2028-08-15  0.063635   0.11828  0.051376
+        4    2029-05-15  0.062532   0.11838  0.052561
+        5    2030-08-15  0.061809  0.118499   0.05339
+        6    2032-08-15  0.062135  0.118084  0.052676
+        7    2033-05-15  0.061897   0.11787   0.05271
+        8    2035-05-15  0.061711  0.117713  0.052747
+        9    2040-08-15  0.060468   0.11759  0.053865
+        10   2045-05-15    0.0625   0.11759   0.05185
+        11   2050-08-15  0.063016   0.11759  0.051339
+        12   2055-05-15  0.062252   0.11759  0.052095
+        13   2060-08-15  0.063001   0.11759  0.051354
+
     """
     # Normalize input dates
     settlement = dc.convert_input_dates(settlement)

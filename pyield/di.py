@@ -15,9 +15,15 @@ class DIFutures:
     includes options to adjust expiration dates and apply filters based on LTN and
     NTN-F bond maturities.
 
+    Args:
+        trade_date (str | pd.Timestamp): The date to retrieve the contract data.
+        adj_expirations (bool): If True, adjusts the expiration dates to the start
+            of the month.
+        prefixed_filter (bool): If True, filters the DI contracts to match only
+            expirations with existing LTN and NTN-F bond maturities.
+
     Examples:
         To create a `DIFutures` instance and retrieve data:
-
         >>> di = yd.DIFutures(trade_date="16-10-2024", adj_expirations=True)
         >>> df = di.data  # Retrieve DI contract dataframe for the specified date
         >>> df.iloc[:5, :5]  # Show the first five rows and columns
@@ -29,7 +35,6 @@ class DIFutures:
         4       DI1H25     2025-03-01          94         344056         221
 
         You can also retrieve forward rates for the DI contracts:
-
         >>> di.forwards.iloc[:5]  # Show the first five rows
           ExpirationDate  SettlementRate  ForwardRate
         0     2024-11-01         0.10653      0.10653
@@ -59,13 +64,6 @@ class DIFutures:
     ):
         """
         Initialize the DIFutures instance with a specific trade date.
-
-        Args:
-            trade_date (str | pd.Timestamp): The date to retrieve the contract data.
-            adj_expirations (bool): If True, adjusts the expiration dates to the start
-                of the month.
-            prefixed_filter (bool): If True, filters the DI contracts to match LTN and
-                NTN-F bond maturities.
         """
         self._trade_date = dc.convert_input_dates(trade_date)
         self._adj_expirations = adj_expirations
