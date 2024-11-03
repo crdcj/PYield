@@ -25,6 +25,9 @@ MANIFEST
 pdm.lock
 .pdm-python
 
+# uv
+uv.lock
+
 # Environments
 .env
 .venv

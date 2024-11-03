@@ -1,17 +1,7 @@
-from io import StringIO
-
 import pandas as pd
 import requests
 
 from pyield import bday
-
-
-# Função para salvar DataFrame em CSV e ler com read_csv
-def _convert_with_read_csv(df):
-    buffer = StringIO()
-    df.to_csv(buffer, index=False)
-    buffer.seek(0)  # Reposiciona o cursor no início do buffer
-    return pd.read_csv(buffer, dtype_backend="numpy_nullable")
 
 
 def _fetch_b3_df(future_code: str) -> pd.DataFrame:
@@ -47,8 +37,8 @@ def _fetch_b3_df(future_code: str) -> pd.DataFrame:
     # Normalize JSON response into a flat table
     df = pd.json_normalize(r.json()["Scty"])
 
-    # Convert DataFrame to use nullable data types for better type consistency
-    return _convert_with_read_csv(df)
+    # Convert columns to the most appropriate data type
+    return df.convert_dtypes()
 
 
 def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:

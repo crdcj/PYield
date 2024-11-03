@@ -1,7 +1,3 @@
-[build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
-
 [project]
 name = "PYield"
 authors = [{ name = "Carlos Carvalho", email = "cr.cj@outlook.com" }]
@@ -19,27 +15,16 @@ classifiers = [
 ]
 dependencies = [
     "pandas[html,parquet]>=2.0.0",
-    "numpy",
+    "numpy>=2.0.0",
     "python-calamine>=0.2.0",    
     "requests>=2.31.0",
-    # install stubs
-    "pandas-stubs",
-    "lxml-stubs",
-    "types-requests",
 ]
 dynamic = ["version"]
 
 [project.urls]
 Source = "https://github.com/crdcj/PYield"
 
-[tool.pdm]
-version = { source = "file", path = "pyield/__about__.py" }
-distribution = true
-
-[tool.pdm.build]
-excludes = ["tests", "docs"]
-
-[tool.pdm.dev-dependencies]
+[dependency-groups]
 dev = [
     "ipykernel",
     "pytest",
@@ -48,7 +33,30 @@ dev = [
     "mkdocs-material",
     "mkdocstrings[python]",
     "mkdocs-autorefs",
+    "pandas-stubs",
+    "lxml-stubs",
+    "types-requests",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "pyield/__about__.py"
+
+[tool.hatch.build.targets.sdist]
+only-include = ["pyield"]
+
+[tool.pdm]
+version = { source = "file", path = "pyield/__about__.py" }
+distribution = true
+
+[tool.pdm.build]
+excludes = ["tests", "docs"]
+
+[tool.uv]
+package = true
 
 [tool.ruff]
 line-length = 88
@@ -63,3 +71,4 @@ select = ["I", "F", "E", "W", "PL", "PT"]
 [tool.ruff.format]
 docstring-code-format = true
 docstring-code-line-length = 88
+
