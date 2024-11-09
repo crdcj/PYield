@@ -7,8 +7,8 @@ import pyield.date_converter as dc
 import pyield.holidays as hl
 from pyield.date_converter import ArrayDateTypes, ScalarDateTypes
 
-type ArrayIntTypes = np.ndarray | pd.Series | list | tuple
-type ScalarIntTypes = int | np.integer
+ArrayIntTypes = np.ndarray | pd.Series | list | tuple
+ScalarIntTypes = int | np.integer
 
 # Initialize Brazilian holidays data
 br_holidays = hl.BrHolidays()

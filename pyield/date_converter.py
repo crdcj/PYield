@@ -4,8 +4,8 @@ from typing import overload
 import numpy as np
 import pandas as pd
 
-type ScalarDateTypes = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
-type ArrayDateTypes = pd.Series | pd.DatetimeIndex | np.ndarray | list | tuple
+ScalarDateTypes = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
+ArrayDateTypes = pd.Series | pd.DatetimeIndex | np.ndarray | list | tuple
 
 
 def validate_date_format(date_str):

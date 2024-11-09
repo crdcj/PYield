@@ -44,6 +44,7 @@ def indicator(
 
     Raises:
         ValueError: If an invalid `indicator_code` is provided.
+        ValueError: After all retries, if the indicator value cannot be fetched.
 
     Examples:
         >>> yd.indicator("IPCA_MR", "01-04-2024")
@@ -102,7 +103,7 @@ def ipca_monthly_rate(reference_date: pd.Timestamp) -> float:
     data = response.json()
 
     if not data:
-        return float("nan")
+        raise ValueError("No data available for the specified date")
     # Extract and return the IPCA monthly growth rate if data is available
     ipca_str = data[0]["resultados"][0]["series"][0]["serie"][ipca_date]
     return round(float(ipca_str) / 100, 4)
@@ -146,8 +147,8 @@ def _selic_target(reference_date: pd.Timestamp) -> float:
         attempt += 1
         time.sleep(1.5**attempt)  # Exponential backoff: 1.5, 2.3, 3.9, 5.1, 7.6 seconds
 
-    # After all retries, return NaN
-    return float("nan")
+    # After all retries, raise an error
+    raise ValueError("Failed to fetch SELIC Target rate after maximum attempts")
 
 
 def _selic_over(reference_date: pd.Timestamp) -> float:
@@ -191,8 +192,8 @@ def _selic_over(reference_date: pd.Timestamp) -> float:
         attempt += 1
         time.sleep(1.5**attempt)  # Exponential backoff: 1.5, 2.3, 3.9, 5.1, 7.6 seconds
 
-    # After all retries, return NaN
-    return float("nan")
+    # After all retries, raise an error
+    raise ValueError("Failed to fetch SELIC Over rate after maximum attempts")
 
 
 def _di(reference_date: pd.Timestamp) -> float:
@@ -210,22 +211,13 @@ def _di(reference_date: pd.Timestamp) -> float:
     return round((1 + value) ** 252 - 1, 4)
 
 
-def _vna_lft(reference_date: pd.Timestamp) -> float:
-    # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
-    url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
-    url_file = f"{reference_date.strftime('%Y%m%d')}APC238"
-    url_vna = url_base + url_file
-
-    response = requests.get(url_vna, timeout=TIMEOUT)
-    response.raise_for_status()
-    file_text = response.text
-
+def _extract_vna_value(text: str) -> float:
     # Finding the part that contains the table
-    start_of_table = file_text.find("EMISSAO")
-    end_of_table = file_text.find("99999999*")
+    start_of_table = text.find("EMISSAO")
+    end_of_table = text.find("99999999*")
 
     # Extracting the table
-    table_text = file_text[start_of_table:end_of_table].strip()
+    table_text = text[start_of_table:end_of_table].strip()
     table_lines = table_text.splitlines()
 
     # Remove empty lines
@@ -246,3 +238,29 @@ def _vna_lft(reference_date: pd.Timestamp) -> float:
         raise ValueError(f"VNA values are not the same. Please check data at {bcb_url}")
 
     return vna_value
+
+
+def _vna_lft(reference_date: pd.Timestamp) -> float:
+    # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
+    url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
+    url_file = f"{reference_date.strftime('%Y%m%d')}APC238"
+    url_vna = url_base + url_file
+    session = requests.Session()
+
+    attempt = 0
+    while attempt < MAX_ATTEMPTS:
+        try:
+            response = session.get(url_vna, timeout=TIMEOUT)
+            response.raise_for_status()
+            return _extract_vna_value(response.text)
+
+        except (RequestException, KeyError, IndexError, ValueError) as e:
+            msg = f"Error fetching SELIC Over rate (attempt {attempt + 1}): {e}"
+            logging.error(msg)
+
+        # Increment attempt count and add backoff delay
+        attempt += 1
+        time.sleep(1.5**attempt)  # Exponential backoff: 1.5, 2.3, 3.9, 5.1, 7.6 seconds
+
+    # After all retries, raise an error
+    raise ValueError("Failed to fetch VNA LFT value after maximum attempts")
