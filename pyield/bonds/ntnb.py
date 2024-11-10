@@ -5,6 +5,7 @@ import pyield.bonds.bond_tools as bt
 import pyield.date_converter as dc
 import pyield.interpolator as ip
 from pyield import anbima, bday
+from pyield.date_converter import ScalarDateTypes
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -51,12 +52,12 @@ def _check_maturities(
         raise ValueError("NTN-B maturity must be 15/02, 15/05, 15/08 or 15/11.")
 
 
-def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def rates(reference_date: ScalarDateTypes) -> pd.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
     Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+        reference_date (ScalarDateTypes): The reference date for fetching the data.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -90,12 +91,12 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return ntnb_rates[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
+def maturities(reference_date: ScalarDateTypes) -> pd.Series:
     """
     Get the bond maturities available for the given reference date.
 
     Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+        reference_date (ScalarDateTypes): The reference date for fetching the data.
 
     Returns:
         pd.Series: Series containing the maturity dates for the NTN-B bonds.
@@ -127,8 +128,8 @@ def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
 
 
 def _generate_coupon_dates_map(
-    start: str | pd.Timestamp,
-    end: str | pd.Timestamp,
+    start: ScalarDateTypes,
+    end: ScalarDateTypes,
 ) -> pd.Series:
     """
     Generate a map of all possible coupon dates between the start and end dates.
@@ -136,8 +137,8 @@ def _generate_coupon_dates_map(
     August, and November (15-02, 15-05, 15-08, and 15-11 of each year).
 
     Args:
-        start (str | pd.Timestamp): The start date.
-        end (str | pd.Timestamp): The end date.
+        start (ScalarDateTypes): The start date.
+        end (ScalarDateTypes): The end date.
 
     Returns:
         pd.Series: Series of coupon dates within the specified range.
@@ -164,8 +165,8 @@ def _generate_coupon_dates_map(
 
 
 def payment_dates(
-    settlement: str | pd.Timestamp,
-    maturity: str | pd.Timestamp,
+    settlement: ScalarDateTypes,
+    maturity: ScalarDateTypes,
 ) -> pd.Series:
     """
     Generate all remaining coupon dates between a given date and the maturity date.
@@ -174,9 +175,9 @@ def payment_dates(
     bond is determined by its maturity date.
 
     Args:
-        settlement (str | pd.Timestamp): The settlement date (exlusive) to
+        settlement (ScalarDateTypes): The settlement date (exlusive) to
             start generating coupon dates.
-        maturity (str | pd.Timestamp): The maturity date.
+        maturity (ScalarDateTypes): The maturity date.
 
     Returns:
         pd.Series: Series of coupon dates within the specified range.
@@ -211,16 +212,16 @@ def payment_dates(
 
 
 def cash_flows(
-    settlement: str | pd.Timestamp,
-    maturity: str | pd.Timestamp,
+    settlement: ScalarDateTypes,
+    maturity: ScalarDateTypes,
 ) -> pd.DataFrame:
     """
     Generate the cash flows for NTN-B bonds between the settlement and maturity dates.
 
     Args:
-        settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+        settlement (ScalarDateTypes): The settlement date in 'DD-MM-YYYY' format
             or a pandas Timestamp.
-        maturity (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
+        maturity (ScalarDateTypes): The maturity date in 'DD-MM-YYYY' format or
             a pandas Timestamp.
 
     Returns:
@@ -252,17 +253,17 @@ def cash_flows(
 
 
 def quotation(
-    settlement: str | pd.Timestamp,
-    maturity: str | pd.Timestamp,
+    settlement: ScalarDateTypes,
+    maturity: ScalarDateTypes,
     rate: float,
 ) -> float:
     """
     Calculate the NTN-B quotation in base 100 using Anbima rules.
 
     Args:
-        settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+        settlement (ScalarDateTypes): The settlement date in 'DD-MM-YYYY' format
             or a pandas Timestamp.
-        maturity (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
+        maturity (ScalarDateTypes): The maturity date in 'DD-MM-YYYY' format or
             a pandas Timestamp.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-B.
@@ -335,7 +336,7 @@ def price(
 
 
 def spot_rates(
-    settlement: str | pd.Timestamp,
+    settlement: ScalarDateTypes,
     maturities: pd.Series,
     rates: pd.Series,
 ) -> pd.DataFrame:
@@ -348,7 +349,7 @@ def spot_rates(
     price.
 
     Args:
-        settlement (str | pd.Timestamp): The reference date for settlement.
+        settlement (ScalarDateTypes): The reference date for settlement.
         maturities (pd.Series): Series of maturity dates for the bonds.
         rates (pd.Series): Series of yield to maturity rates.
 
@@ -449,7 +450,7 @@ def spot_rates(
 
 
 def bei_rates(
-    settlement: str | pd.Timestamp,
+    settlement: ScalarDateTypes,
     ntnb_maturities: pd.Series,
     ntnb_rates: pd.Series,
     nominal_maturities: pd.Series,
@@ -549,8 +550,8 @@ def bei_rates(
 
 
 def duration(
-    settlement: str | pd.Timestamp,
-    maturity: str | pd.Timestamp,
+    settlement: ScalarDateTypes,
+    maturity: ScalarDateTypes,
     rate: float,
 ) -> float:
     settlement = dc.convert_input_dates(settlement)

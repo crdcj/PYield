@@ -3,16 +3,17 @@ import pandas as pd
 from pyield import anbima, bday, di
 from pyield import date_converter as dc
 from pyield.bonds import bond_tools as bt
+from pyield.date_converter import ScalarDateTypes
 
 FACE_VALUE = 1000
 
 
-def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def rates(reference_date: ScalarDateTypes) -> pd.DataFrame:
     """
     Fetch the LTN Anbima indicative rates for the given reference date.
 
     Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+        reference_date (ScalarDateTypes): The reference date for fetching the data.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -41,12 +42,12 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return ltn_rates[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
+def maturities(reference_date: ScalarDateTypes) -> pd.Series:
     """
     Fetch the bond maturities available for the given reference date.
 
     Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+        reference_date (ScalarDateTypes): The reference date for fetching the data.
 
     Returns:
         pd.Series: A Series of bond maturities available for the reference date.
@@ -76,17 +77,17 @@ def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
 
 
 def price(
-    settlement: str | pd.Timestamp,
-    maturity: str | pd.Timestamp,
+    settlement: ScalarDateTypes,
+    maturity: ScalarDateTypes,
     rate: float,
 ) -> float:
     """
     Calculate the LTN price using Anbima rules.
 
     Args:
-        settlement (str | pd.Timestamp): The settlement date in 'DD-MM-YYYY' format
+        settlement (ScalarDateTypes): The settlement date in 'DD-MM-YYYY' format
             or a pandas Timestamp.
-        maturity (str | pd.Timestamp): The maturity date in 'DD-MM-YYYY' format or
+        maturity (ScalarDateTypes): The maturity date in 'DD-MM-YYYY' format or
             a pandas Timestamp.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
@@ -118,7 +119,7 @@ def price(
     return bt.truncate(FACE_VALUE / discount_factor, 6)
 
 
-def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def di_spreads(reference_date: ScalarDateTypes) -> pd.DataFrame:
     """
     Calculates the DI spread for the LTN based on ANBIMA's indicative rates.
 
@@ -126,7 +127,7 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     rates and calculates the spread between these rates in basis points.
 
     Parameters:
-        reference_date (str | pd.Timestamp, optional): The reference date for the
+        reference_date (ScalarDateTypes, optional): The reference date for the
             spread calculation.
 
     Returns:
@@ -183,15 +184,15 @@ def premium(ltn_rate: float, di_rate: float) -> float:
 
 
 def historical_premium(
-    reference_date: str | pd.Timestamp,
-    maturity: str | pd.Timestamp,
+    reference_date: ScalarDateTypes,
+    maturity: ScalarDateTypes,
 ) -> float:
     """
     Calculate the premium of the LTN bond over the DI Future rate for a given date.
 
     Args:
-        reference_date (str | pd.Timestamp): The reference date to fetch the rates.
-        maturity (str | pd.Timestamp): The maturity date of the LTN bond.
+        reference_date (ScalarDateTypes): The reference date to fetch the rates.
+        maturity (ScalarDateTypes): The maturity date of the LTN bond.
 
     Returns:
         float: The premium of the LTN bond over the DI Future rate for the given date.

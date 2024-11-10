@@ -1,5 +1,3 @@
-# arquivo: test_data_fetching.py
-
 from pathlib import Path
 
 import pandas as pd
@@ -7,17 +5,21 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 import pyield as yd
+from pyield.b3_futures import ContractOptions
 from pyield.b3_futures import xml as fx
 
 
-def prepare_data(contract_code: str, trade_date: str) -> tuple:
+def prepare_data(
+    contract_code: ContractOptions,
+    trade_date: str,
+) -> tuple:
     """Prepares the data for comparison."""
     file_date = pd.Timestamp(trade_date).strftime("%y%m%d")
     file_path = Path(f"./tests/data/SPRD{file_date}.zip")
     expected_df = fx.read_df(file_path=file_path, asset_code=contract_code)
     expected_df = expected_df.drop(columns=["AvgRate"])
 
-    result_df = yd.futures(contract_code, trade_date)
+    result_df = yd.futures(contract_code=contract_code, trade_date=trade_date)
 
     # Ensure that both DataFrames have the same columns
     expected_cols = set(expected_df.columns)

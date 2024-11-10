@@ -7,16 +7,15 @@ import requests
 from requests.exceptions import RequestException
 
 from pyield import date_converter as dc
-
-type IndicatorCode = Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI", "VNA_LFT"]
+from pyield.date_converter import ScalarDateTypes
 
 TIMEOUT = (5, 20)
 MAX_ATTEMPTS = 5
 
 
 def indicator(
-    indicator_code: IndicatorCode,
-    reference_date: str | pd.Timestamp,
+    indicator_code: Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI", "VNA_LFT"],
+    reference_date: ScalarDateTypes,
 ) -> float:
     """
     Fetches the economic indicator value for a specified reference date.
@@ -34,9 +33,8 @@ def indicator(
             - "SELIC_OVER": SELIC Over (overnight) rate.
             - "DI": DI (interbank deposit rate).
             - "VNA_LFT": Valor Nominal Atualizado for LFT (Treasury Bills).
-        reference_date (str | pd.Timestamp):
-            The date for which the indicator value is fetched. This can be passed as a
-            string in "DD-MM-YYYY" format or as a `pd.Timestamp`.
+        reference_date (ScalarDateTypes): The date for which the indicator value is
+            fetched. If passed as a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:
         float: The value of the requested economic indicator for the specified date.
@@ -63,21 +61,21 @@ def indicator(
         0.104
 
     """
-    reference_date = dc.convert_input_dates(reference_date)
-    code = str(indicator_code).upper()
-    match code:
+    converted_date = dc.convert_input_dates(reference_date)
+    selected_indicator_code = str(indicator_code).upper()
+    match selected_indicator_code:
         case "IPCA_MR":
-            return ipca_monthly_rate(reference_date)
+            return ipca_monthly_rate(converted_date)
         case "SELIC_TARGET":
-            return _selic_target(reference_date)
+            return _selic_target(converted_date)
         case "SELIC_OVER":
-            return _selic_over(reference_date)
+            return _selic_over(converted_date)
         case "DI":
-            return _di(reference_date)
+            return _di(converted_date)
         case "VNA_LFT":
-            return _vna_lft(reference_date)
+            return _vna_lft(converted_date)
         case _:
-            raise ValueError(f"Invalid indicator type: {code}")
+            raise ValueError("Invalid indicator code provided")
 
 
 def ipca_monthly_rate(reference_date: pd.Timestamp) -> float:

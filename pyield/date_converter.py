@@ -31,9 +31,6 @@ def convert_input_dates(
     dates: ScalarDateTypes | ArrayDateTypes,
 ) -> pd.Timestamp | pd.Series:
     match dates:
-        case None:
-            raise ValueError("'dates' cannot be None.")
-
         case str():
             validate_date_format(dates)
             return pd.to_datetime(dates, dayfirst=True)
@@ -56,7 +53,7 @@ def convert_input_dates(
         case pd.DatetimeIndex():
             return pd.Series(dates).astype("datetime64[ns]")
 
-        case _:
+        case _:  # unreachable code
             raise ValueError("Invalid input type for 'dates'.")
 
 

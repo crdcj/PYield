@@ -3,14 +3,15 @@ import pandas as pd
 from pyield import anbima, bday
 from pyield import date_converter as dc
 from pyield.bonds import bond_tools as bt
+from pyield.date_converter import ScalarDateTypes
 
 
-def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def rates(reference_date: ScalarDateTypes) -> pd.DataFrame:
     """
     Fetch the bond Anbima indicative rates for the given reference date.
 
     Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+        reference_date (ScalarDateTypes): The reference date for fetching the data.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -21,12 +22,12 @@ def rates(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     return lft_rates[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
+def maturities(reference_date: ScalarDateTypes) -> pd.Series:
     """
     Fetch the bond maturities available for the given reference date.
 
     Args:
-        reference_date (str | pd.Timestamp): The reference date for fetching the data.
+        reference_date (ScalarDateTypes): The reference date for fetching the data.
 
     Returns:
         pd.Series: A Series of bond maturities available for the reference date.
@@ -36,16 +37,16 @@ def maturities(reference_date: str | pd.Timestamp) -> pd.Series:
 
 
 def quotation(
-    settlement: str | pd.Timestamp,
-    maturity: str | pd.Timestamp,
+    settlement: ScalarDateTypes,
+    maturity: ScalarDateTypes,
     rate: float,
 ) -> float:
     """
     Calculate the quotation of a LFT bond using Anbima rules.
 
     Args:
-        settlement (str | pd.Timestamp): The settlement date of the bond.
-        maturity (str | pd.Timestamp): The maturity date of the bond.
+        settlement (ScalarDateTypes): The settlement date of the bond.
+        maturity (ScalarDateTypes): The maturity date of the bond.
         rate (float): The annualized yield rate of the bond
 
     Returns:

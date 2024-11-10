@@ -5,6 +5,7 @@ import pandas as pd
 
 from pyield import anbima
 from pyield import date_converter as dc
+from pyield.date_converter import ScalarDateTypes
 from pyield.di import DIFutures
 
 
@@ -57,7 +58,7 @@ def calculate_present_value(
     return (cash_flows / (1 + rates) ** periods).sum()
 
 
-def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
+def di_spreads(reference_date: ScalarDateTypes) -> pd.DataFrame:
     """
     Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on
     ANBIMA's indicative rates.
@@ -68,7 +69,7 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     provided, the function uses the previous business day.
 
     Parameters:
-        reference_date (str | pd.Timestamp, optional): The reference date for the
+        reference_date (ScalarDateTypes): The reference date for the
             spread calculation. If None or not provided, defaults to the previous
             business day according to the Brazilian calendar.
 
@@ -77,8 +78,8 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
             calculated spread in basis points.
     """
     # Fetch DI rates for the reference date
-    reference_date = dc.convert_input_dates(reference_date)
-    di = DIFutures(reference_date, adj_expirations=True)
+    converted_date = dc.convert_input_dates(reference_date)
+    di = DIFutures(converted_date, adj_expirations=True)
     df_di = di.data
     if "SettlementRate" not in df_di.columns:
         raise ValueError("DI rates data is missing the 'SettlementRate' column.")
@@ -89,8 +90,8 @@ def di_spreads(reference_date: str | pd.Timestamp) -> pd.DataFrame:
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_ltn = anbima.rates(reference_date, "LTN")
-    df_ntnf = anbima.rates(reference_date, "NTN-F")
+    df_ltn = anbima.rates(converted_date, "LTN")
+    df_ntnf = anbima.rates(converted_date, "NTN-F")
     df_pre = pd.concat([df_ltn, df_ntnf], ignore_index=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads

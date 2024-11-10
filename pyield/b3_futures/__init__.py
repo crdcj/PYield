@@ -1,20 +1,21 @@
 import datetime as dt
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from .. import date_converter as dc
-from .historical import fetch_historical_df
-from .intraday import fetch_intraday_df
-
-SUPPORTED_FUTURES = ["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
+from pyield import date_converter as dc
+from pyield.b3_futures.historical import fetch_historical_df
+from pyield.b3_futures.intraday import fetch_intraday_df
+from pyield.date_converter import ScalarDateTypes
 
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
+ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
 
 
 def futures(
-    contract_code: str,
-    trade_date: str | pd.Timestamp,
+    contract_code: ContractOptions,
+    trade_date: ScalarDateTypes,
 ) -> pd.DataFrame:
     """
     Fetches data for a specified futures contract based on type and reference date.
@@ -30,7 +31,7 @@ def futures(
             - "WDO": Mini U.S. Dollar Futures from B3.
             - "IND": Ibovespa Futures from B3.
             - "WIN": Mini Ibovespa Futures from B3.
-        trade_date (str | pd.Timestamp): The date for which to fetch the data.
+        trade_date (ScalarDateTypes): The date for which to fetch the data.
             If the reference date is a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:
@@ -56,21 +57,18 @@ def futures(
         3  2024-05-31       DAPU24  ...         <NA>     0.0865
         ...
     """
-    contract_code = contract_code.upper()
-    if contract_code not in SUPPORTED_FUTURES:
-        raise ValueError("Futures contract not supported.")
-
-    trade_date = dc.convert_input_dates(trade_date)
+    selected_contract = str(contract_code).upper()
+    converted_trade_date = dc.convert_input_dates(trade_date)
 
     # First, try to fetch historical data for the specified date
-    df = fetch_historical_df(contract_code, trade_date)
+    df = fetch_historical_df(selected_contract, converted_trade_date)
 
     bz_today = dt.datetime.now(TIMEZONE_BZ).date()
     # If there is no historical data available, try to fetch intraday data
-    if trade_date.date() == bz_today and df.empty:
-        df = fetch_intraday_df(contract_code)
+    if converted_trade_date.date() == bz_today and df.empty:
+        df = fetch_intraday_df(selected_contract)
 
     return df
 
 
-__all__ = ["futures"]
+__all__ = ["futures", "ContractOptions"]
