@@ -5,7 +5,7 @@ import pyield.date_converter as dc
 import pyield.tools as tl
 from pyield import bday, interpolator
 from pyield.data_cache import get_anbima_dataset, get_di_dataset
-from pyield.date_converter import ScalarDateTypes
+from pyield.date_converter import DateScalar
 
 
 class DIFutures:
@@ -17,7 +17,7 @@ class DIFutures:
     NTN-F bond maturities.
 
     Args:
-        trade_date (ScalarDateTypes): The date to retrieve the contract data.
+        trade_date (DateScalar): The date to retrieve the contract data.
         adj_expirations (bool): If True, adjusts the expiration dates to the start
             of the month.
         prefixed_filter (bool): If True, filters the DI contracts to match only
@@ -59,7 +59,7 @@ class DIFutures:
 
     def __init__(
         self,
-        trade_date: ScalarDateTypes,
+        trade_date: DateScalar,
         adj_expirations: bool = False,
         prefixed_filter: bool = False,
     ):
@@ -159,7 +159,7 @@ class DIFutures:
 
     def rate(
         self,
-        expiration: ScalarDateTypes,
+        expiration: DateScalar,
         interpolate: bool = True,
         extrapolate: bool = False,
     ) -> float:
@@ -216,7 +216,7 @@ class DIFutures:
         return self._trade_date
 
     @trade_date.setter
-    def trade_date(self, value: ScalarDateTypes):
+    def trade_date(self, value: DateScalar):
         self._trade_date = dc.convert_input_dates(value)
 
     @property

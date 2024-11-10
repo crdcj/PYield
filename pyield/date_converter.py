@@ -4,8 +4,10 @@ from typing import overload
 import numpy as np
 import pandas as pd
 
-ScalarDateTypes = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
-ArrayDateTypes = pd.Series | pd.DatetimeIndex | np.ndarray | list | tuple
+DateScalar = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
+DateArray = (
+    pd.Series | pd.DatetimeIndex | np.ndarray | list[DateScalar] | tuple[DateScalar]
+)
 
 
 def validate_date_format(date_str):
@@ -22,13 +24,13 @@ def validate_date_format(date_str):
 
 
 @overload
-def convert_input_dates(dates: ScalarDateTypes) -> pd.Timestamp: ...
+def convert_input_dates(dates: DateScalar) -> pd.Timestamp: ...
 @overload
-def convert_input_dates(dates: ArrayDateTypes) -> pd.Series: ...
+def convert_input_dates(dates: DateArray) -> pd.Series: ...
 
 
 def convert_input_dates(
-    dates: ScalarDateTypes | ArrayDateTypes,
+    dates: DateScalar | DateArray,
 ) -> pd.Timestamp | pd.Series:
     match dates:
         case str():

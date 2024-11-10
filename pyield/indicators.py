@@ -7,7 +7,7 @@ import requests
 from requests.exceptions import RequestException
 
 from pyield import date_converter as dc
-from pyield.date_converter import ScalarDateTypes
+from pyield.date_converter import DateScalar
 
 TIMEOUT = (5, 20)
 MAX_ATTEMPTS = 5
@@ -15,7 +15,7 @@ MAX_ATTEMPTS = 5
 
 def indicator(
     indicator_code: Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI", "VNA_LFT"],
-    reference_date: ScalarDateTypes,
+    reference_date: DateScalar,
 ) -> float:
     """
     Fetches the economic indicator value for a specified reference date.
@@ -33,7 +33,7 @@ def indicator(
             - "SELIC_OVER": SELIC Over (overnight) rate.
             - "DI": DI (interbank deposit rate).
             - "VNA_LFT": Valor Nominal Atualizado for LFT (Treasury Bills).
-        reference_date (ScalarDateTypes): The date for which the indicator value is
+        reference_date (DateScalar): The date for which the indicator value is
             fetched. If passed as a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:

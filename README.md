@@ -24,21 +24,40 @@ You can install PYield using pip:
 ```sh
 pip install pyield
 ```
+## Custom Types
 
-## How to use PYield
+### DateScalar
+`DateScalar` and `DateArray` are a type alias used across PYield to represent different types of date inputs. It includes several common date formats, allowing for flexible date handling within the library. 
+
+The accepted formats in `DateScalar` are:
+
+- `datetime.date`
+- `datetime.datetime`
+- `str` (in the format `DD-MM-YYYY` as used in Brazil)
+- `np.datetime64`
+- `pd.Timestamp`
+
+### DateArray
+The accepted formats in `DateArray` are:
+- `pd.Series`
+- `pd.DatetimeIndex`
+- `np.ndarray`
+- `list[DateScalar]`
+- `tuple[DateScalar]`
+
+Referencing `DateScalar` and `DateArray` in function arguments simplifies the code by allowing any of these date formats to be used interchangeably.
 
 ### Important Note on Date Formats
 When using date strings in PYield functions, please ensure that the **date format is day-first** (e.g., "31-05-2024"). This format was chosen to be consistent with the Brazilian date convention.
 
-For production code, it is recommended to parse date strings with `pandas.to_datetime` using an **explicit format** to avoid ambiguity and ensure consistency.
-
-For example:
+For production code, it is recommended to parse date strings with `pandas.to_datetime` using an **explicit format** to avoid ambiguity and ensure consistency. For example:
 ```python
 import pandas as pd
 # Converting a date string to a pandas Timestamp with a specific format
 date = pd.to_datetime("2024/31/05", format="%Y/%d/%m")
 date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
 ```
+## How to use PYield
 ### Brazilian Treasury Bonds Tools
 ```python
 >>> from pyield import ntnb, ntnf, ltn

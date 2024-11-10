@@ -7,7 +7,7 @@ import pandas as pd
 from pyield import date_converter as dc
 from pyield.b3_futures.historical import fetch_historical_df
 from pyield.b3_futures.intraday import fetch_intraday_df
-from pyield.date_converter import ScalarDateTypes
+from pyield.date_converter import DateScalar
 
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
@@ -15,7 +15,7 @@ ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"
 
 def futures(
     contract_code: ContractOptions,
-    trade_date: ScalarDateTypes,
+    trade_date: DateScalar,
 ) -> pd.DataFrame:
     """
     Fetches data for a specified futures contract based on type and reference date.
@@ -31,7 +31,7 @@ def futures(
             - "WDO": Mini U.S. Dollar Futures from B3.
             - "IND": Ibovespa Futures from B3.
             - "WIN": Mini Ibovespa Futures from B3.
-        trade_date (ScalarDateTypes): The date for which to fetch the data.
+        trade_date (DateScalar): The date for which to fetch the data.
             If the reference date is a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:

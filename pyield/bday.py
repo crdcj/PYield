@@ -5,10 +5,11 @@ import pandas as pd
 
 import pyield.date_converter as dc
 import pyield.holidays as hl
-from pyield.date_converter import ArrayDateTypes, ScalarDateTypes
+from pyield.date_converter import DateArray, DateScalar
 
-ArrayIntTypes = np.ndarray | pd.Series | list | tuple
-ScalarIntTypes = int | np.integer
+IntegerScalar = int | np.integer
+IntegerArray = np.ndarray | pd.Series | list | tuple
+
 
 # Initialize Brazilian holidays data
 br_holidays = hl.BrHolidays()
@@ -18,39 +19,39 @@ NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="new")
 
 @overload
 def offset(
-    dates: ScalarDateTypes,
-    offset: ScalarIntTypes,
+    dates: DateScalar,
+    offset: IntegerScalar,
     roll: Literal["forward", "backward"] = ...,
 ) -> pd.Timestamp: ...
 
 
 @overload
 def offset(
-    dates: ArrayDateTypes,
-    offset: ArrayIntTypes,
+    dates: DateArray,
+    offset: IntegerArray,
     roll: Literal["forward", "backward"] = ...,
 ) -> pd.Series: ...
 
 
 @overload
 def offset(
-    dates: ScalarDateTypes,
-    offset: ArrayIntTypes,
+    dates: DateScalar,
+    offset: IntegerArray,
     roll: Literal["forward", "backward"] = ...,
 ) -> pd.Series: ...
 
 
 @overload
 def offset(
-    dates: ArrayDateTypes,
-    offset: ScalarIntTypes,
+    dates: DateArray,
+    offset: IntegerScalar,
     roll: Literal["forward", "backward"] = ...,
 ) -> pd.Series: ...
 
 
 def offset(
-    dates: ScalarDateTypes | ArrayDateTypes,
-    offset: ScalarIntTypes | ArrayIntTypes,
+    dates: DateScalar | DateArray,
+    offset: IntegerScalar | IntegerArray,
     roll: Literal["forward", "backward"] = "forward",
 ) -> pd.Timestamp | pd.Series:
     """
@@ -61,10 +62,8 @@ def offset(
     brazilian holidays.
 
     Args:
-        dates (ScalarDateTypes | ArrayDateTypes):
-            The date(s) to offset. Can be a single date in various formats (string,
-            `datetime`, `Timestamp`, etc.) or a collection of dates (list, tuple,
-            `Series`, etc.).
+        dates (DateScalar | DateArray): The date(s) to offset. Can be a scalar date type
+            or a collection of dates.
         offset (int | Series | np.ndarray | list[int] | tuple[int], optional):
             The number of business days to offset the dates. Positive for future dates,
             negative for past dates. Zero will return the same date if it's a business
@@ -197,35 +196,35 @@ def offset(
 
 @overload
 def count(
-    start: ScalarDateTypes,
-    end: ScalarDateTypes,
+    start: DateScalar,
+    end: DateScalar,
 ) -> int: ...
 
 
 @overload
 def count(
-    start: ArrayDateTypes,
-    end: ScalarDateTypes,
+    start: DateArray,
+    end: DateScalar,
 ) -> pd.Series: ...
 
 
 @overload
 def count(
-    start: ScalarDateTypes,
-    end: ArrayDateTypes,
+    start: DateScalar,
+    end: DateArray,
 ) -> pd.Series: ...
 
 
 @overload
 def count(
-    start: ArrayDateTypes,
-    end: ArrayDateTypes,
+    start: DateArray,
+    end: DateArray,
 ) -> pd.Series: ...
 
 
 def count(
-    start: ScalarDateTypes | ArrayDateTypes,
-    end: ScalarDateTypes | ArrayDateTypes,
+    start: DateScalar | DateArray,
+    end: DateScalar | DateArray,
 ) -> int | pd.Series:
     """
     Counts the number of business days between a `start` date (inclusive) and an `end`
@@ -235,9 +234,8 @@ def count(
     the business day count.
 
     Args:
-        start (ScalarDateTypes | ArrayDateTypes): The start date(s)
-            for counting.
-        end (ScalarDateTypes | ArrayDateTypes): The end date(s) for counting, which
+        start (DateScalar | DateArray): The start date(s) for counting.
+        end (DateScalar | DateArray): The end date(s) for counting, which
             is excluded from the count themselves.
 
     Returns:
@@ -340,8 +338,8 @@ def count(
 
 
 def generate(
-    start: ScalarDateTypes | None = None,
-    end: ScalarDateTypes | None = None,
+    start: DateScalar | None = None,
+    end: DateScalar | None = None,
     inclusive: Literal["both", "neither", "left", "right"] = "both",
     holiday_option: Literal["old", "new", "infer"] = "infer",
 ) -> pd.Series:
@@ -351,12 +349,10 @@ def generate(
     inclusion options for start and end dates. It wraps `pandas.bdate_range`.
 
     Args:
-        start (ScalarDateTypes | None, optional):
-            The start date for generating business days. If None, the current date is
-            used. Defaults to None.
-        end (ScalarDateTypes | None, optional):
-            The end date for generating business days. If None, the current date is
-            used. Defaults to None.
+        start (DateScalar | None, optional): The start date for generating the dates.
+             If None, the current date is used. Defaults to None.
+        end (DateScalar | None, optional): The end date for generating business days.
+            If None, the current date is used. Defaults to None.
         inclusive (Literal["both", "neither", "left", "right"], optional):
             Determines which of the start and end dates are included in the result.
             Valid options are 'both', 'neither', 'left', 'right'. Defaults to 'both'.
@@ -395,7 +391,9 @@ def generate(
     else:
         end_pd = pd.Timestamp.today()
 
-    holidays_list = br_holidays.get_holiday_series(start_pd).to_list()
+    holidays_list = br_holidays.get_holiday_series(
+        dates=start_pd, holiday_option=holiday_option
+    ).to_list()
 
     # Get the result as a DatetimeIndex (dti)
     result_dti = pd.bdate_range(
@@ -408,12 +406,12 @@ def generate(
     return pd.Series(result_dti.values)
 
 
-def is_business_day(date: ScalarDateTypes) -> bool:
+def is_business_day(date: DateScalar) -> bool:
     """
     Checks if the input date is a business day.
 
     Args:
-        date (ScalarDateTypes): The date to check.
+        date (DateScalar): The date to check.
 
     Returns:
         bool: True if the input date is a business day, False otherwise.

@@ -7,7 +7,7 @@ from pyield import anbima, bday, di
 from pyield import date_converter as dc
 from pyield import interpolator as ip
 from pyield.bonds import bond_tools as bt
-from pyield.date_converter import ScalarDateTypes
+from pyield.date_converter import DateScalar
 
 """
 Constants calculated as per Anbima Rules
@@ -22,12 +22,12 @@ COUPON_PMT = 48.80885
 FINAL_PMT = 1048.80885
 
 
-def rates(reference_date: ScalarDateTypes) -> pd.DataFrame:
+def rates(reference_date: DateScalar) -> pd.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
     Args:
-        reference_date (ScalarDateTypes): The reference date for fetching the data.
+        reference_date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -48,12 +48,12 @@ def rates(reference_date: ScalarDateTypes) -> pd.DataFrame:
     return ntnf_rates[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: ScalarDateTypes) -> pd.Series:
+def maturities(reference_date: DateScalar) -> pd.Series:
     """
     Fetch the NTN-F bond maturities available for the given reference date.
 
     Args:
-        reference_date (ScalarDateTypes): The reference date for fetching the data.
+        reference_date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.Series: A Series of NTN-F bond maturities available for the reference date.
@@ -90,8 +90,8 @@ def _check_maturity_date(maturity: pd.Timestamp) -> None:
 
 
 def payment_dates(
-    settlement: ScalarDateTypes,
-    maturity: ScalarDateTypes,
+    settlement: DateScalar,
+    maturity: DateScalar,
 ) -> pd.Series:
     """
     Generate all remaining coupon dates between a settlement date and a maturity date.
@@ -100,8 +100,8 @@ def payment_dates(
     The NTN-F bond is determined by its maturity date.
 
     Args:
-        settlement (ScalarDateTypes): The settlement date.
-        maturity (ScalarDateTypes): The maturity date.
+        settlement (DateScalar): The settlement date.
+        maturity (DateScalar): The maturity date.
 
     Returns:
         pd.Series: A Series containing the coupon dates between the settlement
@@ -140,8 +140,8 @@ def payment_dates(
 
 
 def cash_flows(
-    settlement: ScalarDateTypes,
-    maturity: ScalarDateTypes,
+    settlement: DateScalar,
+    maturity: DateScalar,
     adj_payment_dates: bool = False,
 ) -> pd.DataFrame:
     """
@@ -150,10 +150,8 @@ def cash_flows(
     payment at maturity.
 
     Args:
-        settlement (ScalarDateTypes): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
-        maturity (ScalarDateTypes): The maturity date in 'DD-MM-YYYY' format or
-            a pandas Timestamp.
+        settlement (DateScalar): The date (exclusive) for starting the cash flows.
+        maturity (DateScalar): The maturity date of the bond.
         adj_payment_dates (bool): If True, adjust the payment dates to the next
             business day.
 
@@ -186,8 +184,8 @@ def cash_flows(
 
 
 def price(
-    settlement: ScalarDateTypes,
-    maturity: ScalarDateTypes,
+    settlement: DateScalar,
+    maturity: DateScalar,
     rate: float,
 ) -> float:
     """
@@ -195,10 +193,8 @@ def price(
         value of the cash flows discounted at the given yield to maturity rate (YTM).
 
     Args:
-        settlement (ScalarDateTypes): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
-        maturity (ScalarDateTypes): The maturity date in 'DD-MM-YYYY' format or
-            a pandas Timestamp.
+        settlement (DateScalar): The settlement date to calculate the price.
+        maturity (DateScalar): The maturity date of the bond.
         rate (float): The discount rate (yield to maturity) used to calculate the
             present value of the cash flows.
 
@@ -227,7 +223,7 @@ def price(
 
 
 def spot_rates(  # noqa
-    settlement: ScalarDateTypes,
+    settlement: DateScalar,
     ltn_maturities: pd.Series,
     ltn_rates: pd.Series,
     ntnf_maturities: pd.Series,
@@ -243,8 +239,7 @@ def spot_rates(  # noqa
     price.
 
     Args:
-        settlement (ScalarDateTypes): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
+        settlement (DateScalar): The settlement date for the spot rates calculation.
         ltn_maturities (pd.Series): The LTN known maturities.
         ltn_rates (pd.Series): The LTN known rates.
         ntnf_maturities (pd.Series): The NTN-F known maturities.
@@ -309,7 +304,7 @@ def spot_rates(  # noqa
         return df.query("MaturityDate in @ntnf_maturities").reset_index(drop=True)
 
 
-def di_spreads(reference_date: ScalarDateTypes) -> pd.DataFrame:
+def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
     """
     Calculates the DI spread for the NTN-F based on ANBIMA's indicative rates.
 
@@ -317,8 +312,7 @@ def di_spreads(reference_date: ScalarDateTypes) -> pd.DataFrame:
     rates and calculates the spread between these rates in basis points.
 
     Parameters:
-        reference_date (ScalarDateTypes, optional): The reference date for the
-            spread calculation.
+        reference_date (DateScalar): The reference date for the spread calculation.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate", "DISpread".
@@ -398,8 +392,8 @@ def _solve_spread(
 
 
 def di_net_spread(  # noqa
-    settlement: ScalarDateTypes,
-    ntnf_maturity: ScalarDateTypes,
+    settlement: DateScalar,
+    ntnf_maturity: DateScalar,
     ntnf_rate: float,
     di_expirations: pd.Series,
     di_rates: pd.Series,
@@ -415,10 +409,8 @@ def di_net_spread(  # noqa
     discounted cash flows.
 
     Args:
-        settlement (ScalarDateTypes): The bond settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
-        ntnf_maturity (ScalarDateTypes): The bond maturity date in 'DD-MM-YYYY'
-            format or a pandas Timestamp.
+        settlement (DateScalar): The settlement date to calculate the spread.
+        ntnf_maturity (DateScalar): The bond maturity date.
         ntnf_rate (float): The yield to maturity (YTM) of the bond.
         di_rates (pd.Series): A Series of DI rates.
         di_expirations (pd.Series): A list or Series of DI expiration dates.
@@ -477,8 +469,8 @@ def di_net_spread(  # noqa
 
 
 def premium(
-    settlement: ScalarDateTypes,
-    ntnf_maturity: ScalarDateTypes,
+    settlement: DateScalar,
+    ntnf_maturity: DateScalar,
     ntnf_rate: float,
     di_expirations: pd.Series,
     di_rates: pd.Series,
@@ -492,10 +484,8 @@ def premium(
     (YTM) and the interpolated DI rates.
 
     Args:
-        settlement (ScalarDateTypes): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
-        ntnf_maturity (ScalarDateTypes): The maturity date of the NTN-F bond in
-            'DD-MM-YYYY' format or a pandas Timestamp.
+        settlement (DateScalar): The settlement date to calculate the premium.
+        ntnf_maturity (DateScalar): The maturity date of the NTN-F bond.
         ntnf_rate (float): The yield to maturity (YTM) of the NTN-F bond.
         di_expirations (pd.Series): Series containing the expiration dates for DI rates.
         di_rates (pd.Series): Series containing the DI rates corresponding to
@@ -560,8 +550,8 @@ def premium(
 
 
 def historical_premium(
-    reference_date: ScalarDateTypes,
-    maturity: ScalarDateTypes,
+    reference_date: DateScalar,
+    maturity: DateScalar,
 ) -> float:
     reference_date = dc.convert_input_dates(reference_date)
     maturity = dc.convert_input_dates(maturity)
@@ -603,8 +593,8 @@ def historical_premium(
 
 
 def duration(
-    settlement: ScalarDateTypes,
-    maturity: ScalarDateTypes,
+    settlement: DateScalar,
+    maturity: DateScalar,
     rate: float,
 ) -> float:
     """
@@ -615,10 +605,8 @@ def duration(
     It measures the bond's sensitivity to interest rate changes.
 
     Args:
-        settlement (ScalarDateTypes): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
-        maturity (ScalarDateTypes): The maturity date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
+        settlement (DateScalar): The settlement date to calculate the duration.
+        maturity (DateScalar): The maturity date of the bond.
         rate (float): The yield to maturity (YTM) used to discount the cash flows.
 
     Returns:

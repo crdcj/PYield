@@ -3,15 +3,15 @@ import pandas as pd
 from pyield import anbima, bday
 from pyield import date_converter as dc
 from pyield.bonds import bond_tools as bt
-from pyield.date_converter import ScalarDateTypes
+from pyield.date_converter import DateScalar
 
 
-def rates(reference_date: ScalarDateTypes) -> pd.DataFrame:
+def rates(reference_date: DateScalar) -> pd.DataFrame:
     """
     Fetch the bond Anbima indicative rates for the given reference date.
 
     Args:
-        reference_date (ScalarDateTypes): The reference date for fetching the data.
+        reference_date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -22,12 +22,12 @@ def rates(reference_date: ScalarDateTypes) -> pd.DataFrame:
     return lft_rates[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: ScalarDateTypes) -> pd.Series:
+def maturities(reference_date: DateScalar) -> pd.Series:
     """
     Fetch the bond maturities available for the given reference date.
 
     Args:
-        reference_date (ScalarDateTypes): The reference date for fetching the data.
+        reference_date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.Series: A Series of bond maturities available for the reference date.
@@ -37,16 +37,16 @@ def maturities(reference_date: ScalarDateTypes) -> pd.Series:
 
 
 def quotation(
-    settlement: ScalarDateTypes,
-    maturity: ScalarDateTypes,
+    settlement: DateScalar,
+    maturity: DateScalar,
     rate: float,
 ) -> float:
     """
     Calculate the quotation of a LFT bond using Anbima rules.
 
     Args:
-        settlement (ScalarDateTypes): The settlement date of the bond.
-        maturity (ScalarDateTypes): The maturity date of the bond.
+        settlement (DateScalar): The settlement date of the bond.
+        maturity (DateScalar): The maturity date of the bond.
         rate (float): The annualized yield rate of the bond
 
     Returns:

@@ -5,7 +5,7 @@ import pandas as pd
 
 from pyield import anbima
 from pyield import date_converter as dc
-from pyield.date_converter import ScalarDateTypes
+from pyield.date_converter import DateScalar
 from pyield.di import DIFutures
 
 
@@ -58,7 +58,7 @@ def calculate_present_value(
     return (cash_flows / (1 + rates) ** periods).sum()
 
 
-def di_spreads(reference_date: ScalarDateTypes) -> pd.DataFrame:
+def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
     """
     Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on
     ANBIMA's indicative rates.
@@ -69,9 +69,7 @@ def di_spreads(reference_date: ScalarDateTypes) -> pd.DataFrame:
     provided, the function uses the previous business day.
 
     Parameters:
-        reference_date (ScalarDateTypes): The reference date for the
-            spread calculation. If None or not provided, defaults to the previous
-            business day according to the Brazilian calendar.
+        reference_date (DateScalar): The reference date for the spread calculation.
 
     Returns:
         pd.DataFrame: DataFrame containing the bond type, maturity date and the

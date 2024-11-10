@@ -8,7 +8,7 @@ import requests
 from pyield import bday
 from pyield import date_converter as dc
 from pyield.data_cache import get_anbima_dataset
-from pyield.date_converter import ScalarDateTypes
+from pyield.date_converter import DateScalar
 
 # URL Constants
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
@@ -106,7 +106,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def data(reference_date: ScalarDateTypes, bond_type: str | None = None) -> pd.DataFrame:
+def data(reference_date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
     # Normalize the reference date
     reference_date = dc.convert_input_dates(reference_date)
     file_content = _get_file_content(reference_date)
@@ -126,7 +126,7 @@ def data(reference_date: ScalarDateTypes, bond_type: str | None = None) -> pd.Da
 
 
 def rates(
-    reference_date: ScalarDateTypes,
+    reference_date: DateScalar,
     bond_type: str | None = None,
     adj_maturities: bool = False,
 ) -> pd.DataFrame:
@@ -153,7 +153,7 @@ def rates(
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def pre_maturities(reference_date: ScalarDateTypes) -> pd.Series:
+def pre_maturities(reference_date: DateScalar) -> pd.Series:
     df = get_anbima_dataset()
     reference_date = dc.convert_input_dates(reference_date)
     df.query("ReferenceDate == @reference_date", inplace=True)
