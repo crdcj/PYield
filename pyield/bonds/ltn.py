@@ -198,7 +198,7 @@ def historical_premium(
         float: The premium of the LTN bond over the DI Future rate for the given date.
                If the data is not available, returns NaN.
 
-    Example:
+    Examples:
         >>> yd.ltn.historical_premium("22-08-2024", "01-01-2030")
         1.012072
 

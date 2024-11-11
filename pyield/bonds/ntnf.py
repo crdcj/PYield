@@ -420,7 +420,7 @@ def di_net_spread(  # noqa
     Returns:
         float: The net DI spread in basis points.
 
-    Example:
+    Examples:
         # Obs: only some of the DI rates will be used in the example.
         >>> exp_dates = pd.to_datetime(["2025-01-01", "2030-01-01", "2035-01-01"])
         >>> di_rates = pd.Series([0.10823, 0.11594, 0.11531])
@@ -495,7 +495,7 @@ def premium(
         float: The premium of the NTN-F bond over the DI curve, expressed as a
         factor.
 
-    Example:
+    Examples:
         # Obs: only some of the DI rates will be used in the example.
         >>> exp_dates = pd.to_datetime(["2025-01-01", "2030-01-01", "2035-01-01"])
         >>> di_rates = pd.Series([0.10823, 0.11594, 0.11531])
@@ -612,7 +612,7 @@ def duration(
     Returns:
         float: The Macaulay duration in years.
 
-    Example:
+    Examples:
         >>> yd.ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
         6.32854218039796
     """

@@ -36,7 +36,7 @@ def projection(projection_code: Literal["IPCA_CM"]) -> IndicatorProjection:
               (e.g., "ABR/2024") using the pt_BR locale.
             - projected_value (float): The projected IPCA value.
 
-    Example:
+    Examples:
         >>> projection("IPCA_CM")
         IndicatorProjection(reference_period=Period(...), projected_value=..., ...)
 

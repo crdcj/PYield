@@ -36,6 +36,7 @@ dev = [
     "pandas-stubs",
     "lxml-stubs",
     "types-requests",
+    "black",
 ]
 
 [build-system]
