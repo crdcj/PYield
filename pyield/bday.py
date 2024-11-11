@@ -19,33 +19,25 @@ NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="new")
 
 @overload
 def offset(
-    dates: DateScalar,
-    offset: IntegerScalar,
-    roll: Literal["forward", "backward"] = ...,
+    dates: DateScalar, offset: IntegerScalar, roll: Literal["forward", "backward"] = ...
 ) -> pd.Timestamp: ...
 
 
 @overload
 def offset(
-    dates: DateArray,
-    offset: IntegerArray,
-    roll: Literal["forward", "backward"] = ...,
+    dates: DateArray, offset: IntegerArray, roll: Literal["forward", "backward"] = ...
 ) -> pd.Series: ...
 
 
 @overload
 def offset(
-    dates: DateScalar,
-    offset: IntegerArray,
-    roll: Literal["forward", "backward"] = ...,
+    dates: DateScalar, offset: IntegerArray, roll: Literal["forward", "backward"] = ...
 ) -> pd.Series: ...
 
 
 @overload
 def offset(
-    dates: DateArray,
-    offset: IntegerScalar,
-    roll: Literal["forward", "backward"] = ...,
+    dates: DateArray, offset: IntegerScalar, roll: Literal["forward", "backward"] = ...
 ) -> pd.Series: ...
 
 
@@ -195,31 +187,19 @@ def offset(
 
 
 @overload
-def count(
-    start: DateScalar,
-    end: DateScalar,
-) -> int: ...
+def count(start: DateScalar, end: DateScalar) -> int: ...
 
 
 @overload
-def count(
-    start: DateArray,
-    end: DateScalar,
-) -> pd.Series: ...
+def count(start: DateArray, end: DateScalar) -> pd.Series: ...
 
 
 @overload
-def count(
-    start: DateScalar,
-    end: DateArray,
-) -> pd.Series: ...
+def count(start: DateScalar, end: DateArray) -> pd.Series: ...
 
 
 @overload
-def count(
-    start: DateArray,
-    end: DateArray,
-) -> pd.Series: ...
+def count(start: DateArray, end: DateArray) -> pd.Series: ...
 
 
 def count(
