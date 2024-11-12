@@ -231,12 +231,16 @@ def spot_rates(  # noqa
     show_coupon_rates: bool = False,
 ) -> pd.DataFrame:
     """
-    Calculate the spot rates for NTN-F bonds using the bootstrap method.
+    Calculate the spot rates (zero coupon rates) for NTN-F bonds using the bootstrap
+    method.
 
     The bootstrap method is a process used to determine spot rates from
     the yields of a series of bonds. It involves iteratively solving for
     the spot rates that discount each bond's cash flows to its current
-    price.
+    price. It uses the LTN rates, which are zero coupon bonds, up to the
+    last LTN maturity available. For maturities after the last LTN maturity,
+    it calculates the spot rates using the bootstrap method.
+
 
     Args:
         settlement (DateScalar): The settlement date for the spot rates calculation.
@@ -245,11 +249,30 @@ def spot_rates(  # noqa
         ntnf_maturities (pd.Series): The NTN-F known maturities.
         ntnf_rates (pd.Series): The NTN-F known rates.
         show_coupon_rates (bool): If True, show also July rates corresponding to the
-            coupon payments.
-
+            coupon payments. Defaults to False.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "SpotRate"
+
+    Examples:
+
+        >>> df_ltn = yd.ltn.rates("03-09-2024")
+        >>> df_ntnf = yd.ntnf.rates("03-09-2024")
+        >>> yd.ntnf.spot_rates(
+        ...     settlement="03-09-2024",
+        ...     ltn_maturities=df_ltn["MaturityDate"],
+        ...     ltn_rates=df_ltn["IndicativeRate"],
+        ...     ntnf_maturities=df_ntnf["MaturityDate"],
+        ...     ntnf_rates=df_ntnf["IndicativeRate"],
+        ... )
+          MaturityDate  SpotRate
+        0   2025-01-01  0.108837
+        1   2027-01-01  0.119981
+        2   2029-01-01  0.122113
+        3   2031-01-01  0.122231
+        4   2033-01-01  0.121355
+        5   2035-01-01  0.121398
+
     """
     # Process and validate the input data
     settlement = dc.convert_input_dates(settlement)
