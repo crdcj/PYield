@@ -26,7 +26,7 @@ class DIFutures:
 
     Examples:
         To create a `DIFutures` instance and retrieve data:
-        >>> di = yd.DIFutures(trade_dates="16-10-2024", adj_expirations=True)
+        >>> di = yd.DIFutures(trade_dates="16-10-2024", month_start=True)
         >>> df = di.data  # Retrieve DI contract dataframe for the specified date
         >>> df.iloc[:5, :5]  # Show the first five rows and columns
            TradeDate ExpirationDate TickerSymbol  BDaysToExp  OpenContracts
