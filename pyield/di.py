@@ -18,10 +18,11 @@ class DIFutures:
 
     Args:
         trade_date (DateScalar): The date to retrieve the contract data.
-        adj_expirations (bool): If True, adjusts the expiration dates to the start
+        month_start (bool): If True, adjusts the expiration dates to the start
             of the month.
-        prefixed_filter (bool): If True, filters the DI contracts to match only
-            expirations with existing LTN and NTN-F bond maturities.
+        prefixed (bool): If True, filters the DI contracts to match only
+            expirations with existing prefixed TN bond maturities (LTN and NTN-F).
+        all_columns (bool): If True, returns all available columns in the DI dataset.
 
     Examples:
         To create a `DIFutures` instance and retrieve data:
@@ -43,7 +44,6 @@ class DIFutures:
         2 2024-10-16     2025-01-01         0.11164       0.1154
         3 2024-10-16     2025-02-01         0.11362     0.118314
         4 2024-10-16     2025-03-01          0.1157      0.12343
-
     """
 
     historical_trade_dates = (
@@ -61,16 +61,16 @@ class DIFutures:
     def __init__(
         self,
         trade_dates: DateScalar | DateArray | None = None,
-        adj_expirations: bool = False,
-        prefixed_filter: bool = False,
+        month_start: bool = False,
+        prefixed: bool = False,
         all_columns: bool = True,
     ):
         """
         Initialize the DIFutures instance with a specific trade date.
         """
         self.trade_dates = trade_dates
-        self.adj_expirations = adj_expirations
-        self.prefixed_filter = prefixed_filter
+        self.month_start = month_start
+        self.prefixed = prefixed
         self.all_columns = all_columns
 
     @property
@@ -93,7 +93,7 @@ class DIFutures:
         if "DaysToExpiration" in df.columns:
             df.drop(columns=["DaysToExpiration"], inplace=True)
 
-        if self._prefixed_filter:
+        if self._prefixed:
             df_pre = (
                 get_anbima_dataset()
                 .query("BondType in ['LTN', 'NTN-F']")
@@ -113,7 +113,7 @@ class DIFutures:
 
             df = df.merge(df_pre, how="inner")
 
-        if self._adj_expirations:
+        if self._month_start:
             df["ExpirationDate"] = (
                 df["ExpirationDate"].dt.to_period("M").dt.to_timestamp()
             )
@@ -167,8 +167,8 @@ class DIFutures:
     @staticmethod
     def interpolate_rates(
         reference_dates: DateScalar | DateArray,
-        maturities: DateScalar | DateArray,
-        allow_extrapolation: bool = True,
+        maturity_dates: DateScalar | DateArray,
+        extrapolate: bool = True,
     ) -> pd.Series:
         """
         Interpolates DI rates for specified reference dates and maturities.
@@ -177,11 +177,15 @@ class DIFutures:
         dates and maturities using a flat-forward interpolation method. If no DI
         rates are available for a reference date, the interpolated rate is set to NaN.
 
+        If reference dates is provided as a scalar and maturities as an array, the
+        method assumes the scalar value is the same for all maturities. The same logic
+        applies when the maturities are scalar and the reference dates are an array.
+
         Args:
             reference_dates (DateScalar | DateArray): The reference dates for the rates.
-            maturities (DateScalar | DateArray): The maturity dates corresponding to the
+            maturity_dates (DateScalar | DateArray): The maturities corresponding to the
                 reference dates.
-            allow_extrapolation (bool): Whether to allow extrap. beyond known DI rates.
+            extrapolate (bool): Whether to allow extrapolation beyond known DI rates.
 
         Returns:
             pd.Series: A Series containing the interpolated DI rates.
@@ -191,21 +195,25 @@ class DIFutures:
         """
         # Convert input dates to a consistent format
         reference_dates = dc.convert_input_dates(reference_dates)
-        maturities = dc.convert_input_dates(maturities)
+        maturity_dates = dc.convert_input_dates(maturity_dates)
 
         # Ensure the lengths of input arrays are consistent
-        if type(reference_dates) is pd.Timestamp and type(maturities) is pd.Series:
-            dfi = pd.DataFrame({"mat": maturities})
-            dfi["ref"] = reference_dates
+        match (reference_dates, maturity_dates):
+            case pd.Timestamp(), pd.Series():
+                dfi = pd.DataFrame({"mat": maturity_dates})
+                dfi["ref"] = reference_dates
 
-        if type(reference_dates) is pd.Series and type(maturities) is pd.Timestamp:
-            dfi = pd.DataFrame({"ref": reference_dates})
-            dfi["mat"] = maturities
+            case pd.Series(), pd.Timestamp():
+                dfi = pd.DataFrame({"ref": reference_dates})
+                dfi["mat"] = maturity_dates
 
-        if type(reference_dates) is pd.Series and type(maturities) is pd.Series:
-            if len(reference_dates) != len(maturities):
-                raise ValueError("Ref. dates and maturities must have the same length.")
-            dfi = pd.DataFrame({"ref": reference_dates, "mat": maturities})
+            case pd.Series(), pd.Series():
+                if len(reference_dates) != len(maturity_dates):
+                    raise ValueError("Args. should have the same length.")
+                dfi = pd.DataFrame({"ref": reference_dates, "mat": maturity_dates})
+
+            case pd.Timestamp(), pd.Timestamp():
+                dfi = pd.DataFrame({"ref": [reference_dates], "mat": [maturity_dates]})
 
         # Compute business days between reference dates and maturities
         dfi["bdays"] = bday.count(dfi["ref"], dfi["mat"])
@@ -239,15 +247,17 @@ class DIFutures:
                 method="flat_forward",
                 known_bdays=dfr_subset["BDaysToExp"],
                 known_rates=dfr_subset["SettlementRate"],
-                extrapolate=allow_extrapolation,
+                extrapolate=extrapolate,
             )
 
             # Apply interpolation to rows matching the current reference date
             mask = dfi["ref"] == date
             dfi.loc[mask, "irate"] = dfi.loc[mask, "bdays"].apply(interp)
 
-        # Return the DataFrame with interpolated rates
-        return dfi["irate"]
+        # Return the Series with interpolated rates
+        s_irates = dfi["irate"]
+        s_irates.name = "InterpolatedRates"
+        return s_irates
 
     def rate(
         self,
@@ -258,7 +268,7 @@ class DIFutures:
         """Retrieve the DI rate for a specified expiration date."""
         expiration = dc.convert_input_dates(expiration)
 
-        if self._adj_expirations:
+        if self._month_start:
             # Force the expiration date to be the start of the month
             expiration = expiration.to_period("M").to_timestamp()
         else:
@@ -320,7 +330,7 @@ class DIFutures:
             self._trade_dates = trade_dates.drop_duplicates().sort_values().to_list()
 
     @property
-    def adj_expirations(self) -> bool:
+    def month_start(self) -> bool:
         """
         Adjusts the expiration dates to the start of the month.
 
@@ -331,29 +341,29 @@ class DIFutures:
         Returns:
             bool: Whether expiration dates are adjusted to the start of the month.
         """
-        return self._adj_expirations
+        return self._month_start
 
-    @adj_expirations.setter
-    def adj_expirations(self, value: bool):
-        self._adj_expirations = value
+    @month_start.setter
+    def month_start(self, value: bool):
+        self._month_start = value
 
     @property
-    def prefixed_filter(self) -> bool:
+    def prefixed(self) -> bool:
         """
         Filters DI Futures to match prefixed TN bond maturities.
 
-        This property can be both read and set. When set to `True`, DI Futures will be
-        filtered to match the maturities of LTN and NTN-F bonds from the Anbima dataset.
+        This property can be both read and set. When set to `True`, only contracts that
+        match the maturities of LTN and NTN-F bonds will be shown.
 
         Returns:
-            bool: Whether DI Futures are filtered to match prefixed Anbima bond
-                maturities.
+            bool: Whether the contracts are filtered to match prefixed TN bond
+                maturities from the ANBIMA dataset.
         """
-        return self._prefixed_filter
+        return self._prefixed
 
-    @prefixed_filter.setter
-    def prefixed_filter(self, value: bool):
-        self._prefixed_filter = value
+    @prefixed.setter
+    def prefixed(self, value: bool):
+        self._prefixed = value
 
     @property
     def all_columns(self) -> bool:

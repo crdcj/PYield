@@ -592,14 +592,13 @@ def historical_premium(
     df["BDays"] = bday.count(reference_date, df["PaymentDate"])
     df["BYears"] = df["BDays"] / 252
     df["ReferenceDate"] = reference_date
-    # Instantiate the DI Futures class
-    dif = di.DIFutures()
+
+    dif = di.DIFutures()  # Instantiate the DI Futures class
     df["DIRate"] = dif.interpolate_rates(
         reference_dates=df["ReferenceDate"],
-        maturities=df["PaymentDate"],
-        allow_extrapolation=False,
+        maturity_dates=df["PaymentDate"],
+        extrapolate=False,
     )
-    # df["DIRate"] = df["PaymentDate"].apply(dif.rate)
 
     # Calculate the present value of the cash flows using the DI rate
     bond_price = bt.calculate_present_value(
