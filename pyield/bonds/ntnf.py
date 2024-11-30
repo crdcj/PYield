@@ -352,7 +352,7 @@ def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
 
     """
     # Fetch DI Spreads for the reference date
-    df = bt.di_spreads(reference_date)
+    df = bt.pre_spreads(reference_date)
     df = (
         df.query("BondType == 'NTN-F'")
         .sort_values(["MaturityDate"])
@@ -591,8 +591,15 @@ def historical_premium(
     df = cash_flows(reference_date, maturity, adj_payment_dates=True)
     df["BDays"] = bday.count(reference_date, df["PaymentDate"])
     df["BYears"] = df["BDays"] / 252
-    dif = di.DIFutures(reference_date)
-    df["DIRate"] = df["PaymentDate"].apply(dif.rates)
+    df["ReferenceDate"] = reference_date
+    # Instantiate the DI Futures class
+    dif = di.DIFutures()
+    df["DIRate"] = dif.interpolate_rates(
+        reference_dates=df["ReferenceDate"],
+        maturities=df["PaymentDate"],
+        allow_extrapolation=False,
+    )
+    # df["DIRate"] = df["PaymentDate"].apply(dif.rate)
 
     # Calculate the present value of the cash flows using the DI rate
     bond_price = bt.calculate_present_value(

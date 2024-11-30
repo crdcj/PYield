@@ -151,7 +151,7 @@ def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
         12   2030-01-01     14.96
     """
     # Fetch DI Spreads for the reference date
-    df = bt.di_spreads(reference_date)
+    df = bt.pre_spreads(reference_date)
     df.query("BondType == 'LTN'", inplace=True)
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
     return df[["MaturityDate", "DISpread"]]
@@ -220,7 +220,7 @@ def historical_premium(
 
     # Retrieve DI rate for the reference date and maturity
     dif = di.DIFutures(trade_dates=reference_date)
-    di_rate = dif.rates(expirations=maturity)
+    di_rate = dif.rate(expiration=maturity, interpolate=True, extrapolate=False)
     if pd.isnull(di_rate):  # Check if the DI rate is NaN
         return float("NaN")
 

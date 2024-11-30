@@ -1,5 +1,8 @@
 import pandas as pd
 
+# Expose pre_spreads function from pyield.bonds.bond_tools
+# from pyield.bonds.bond_tools import pre_spreads  # noqa
+
 
 def forward_rates(
     business_days: pd.Series,

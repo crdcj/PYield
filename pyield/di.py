@@ -25,24 +25,25 @@ class DIFutures:
 
     Examples:
         To create a `DIFutures` instance and retrieve data:
-        >>> di = yd.DIFutures(trade_date="16-10-2024", adj_expirations=True)
+        >>> di = yd.DIFutures(trade_dates="16-10-2024", adj_expirations=True)
         >>> df = di.data  # Retrieve DI contract dataframe for the specified date
         >>> df.iloc[:5, :5]  # Show the first five rows and columns
-          TickerSymbol ExpirationDate  bdays_to_mat  OpenContracts  TradeCount
-        0       DI1X24     2024-11-01          12        1744269         635
-        1       DI1Z24     2024-12-01          31        1429375        1012
-        2       DI1F25     2025-01-01          52        5423969        6812
-        3       DI1G25     2025-02-01          74         279491          97
-        4       DI1H25     2025-03-01          94         344056         221
+           TradeDate ExpirationDate TickerSymbol  BDaysToExp  OpenContracts
+        0 2024-10-16     2024-11-01       DI1X24          12        1744269
+        1 2024-10-16     2024-12-01       DI1Z24          31        1429375
+        2 2024-10-16     2025-01-01       DI1F25          52        5423969
+        3 2024-10-16     2025-02-01       DI1G25          74         279491
+        4 2024-10-16     2025-03-01       DI1H25          94         344056
 
         You can also retrieve forward rates for the DI contracts:
         >>> di.forwards.iloc[:5]  # Show the first five rows
-          ExpirationDate  SettlementRate  ForwardRate
-        0     2024-11-01         0.10653      0.10653
-        1     2024-12-01          0.1091     0.110726
-        2     2025-01-01         0.11164       0.1154
-        3     2025-02-01         0.11362     0.118314
-        4     2025-03-01          0.1157      0.12343
+           TradeDate ExpirationDate  SettlementRate  ForwardRate
+        0 2024-10-16     2024-11-01         0.10653      0.10653
+        1 2024-10-16     2024-12-01          0.1091     0.110726
+        2 2024-10-16     2025-01-01         0.11164       0.1154
+        3 2024-10-16     2025-02-01         0.11362     0.118314
+        4 2024-10-16     2025-03-01          0.1157      0.12343
+
     """
 
     historical_trade_dates = (
@@ -156,7 +157,7 @@ class DIFutures:
             return pd.DataFrame()
 
         df["ForwardRate"] = tl.forward_rates(
-            business_days=bday.count(self._trade_dates, df["ExpirationDate"]),
+            business_days=bday.count(df["TradeDate"], df["ExpirationDate"]),
             zero_rates=df["SettlementRate"],
             groupby_dates=df["TradeDate"],
         )
@@ -168,49 +169,122 @@ class DIFutures:
         reference_dates: DateScalar | DateArray,
         maturities: DateScalar | DateArray,
         allow_extrapolation: bool = True,
-    ) -> pd.DataFrame:
+    ) -> pd.Series:
         """
-        dfi: Input DataFrame with reference dates and maturities
-        dfr: Rates DataFrame with DI rates for each reference date
-        dfo: Ouput DataFrame with interpolated rates
+        Interpolates DI rates for specified reference dates and maturities.
+
+        This method calculates interpolated DI rates for a given set of reference
+        dates and maturities using a flat-forward interpolation method. If no DI
+        rates are available for a reference date, the interpolated rate is set to NaN.
+
+        Args:
+            reference_dates (DateScalar | DateArray): The reference dates for the rates.
+            maturities (DateScalar | DateArray): The maturity dates corresponding to the
+                reference dates.
+            allow_extrapolation (bool): Whether to allow extrap. beyond known DI rates.
+
+        Returns:
+            pd.Series: A Series containing the interpolated DI rates.
+
+        Raises:
+            ValueError: If `reference_dates` and `maturities` have different lengths.
         """
+        # Convert input dates to a consistent format
         reference_dates = list(dc.convert_input_dates(reference_dates))
         maturities = list(dc.convert_input_dates(maturities))
 
+        # Ensure the lengths of input arrays are consistent
         if len(reference_dates) != len(maturities):
             raise ValueError("Dates and maturities must have the same length.")
 
+        # Create a DataFrame with reference dates and maturities
         dfi = pd.DataFrame({"reference_date": reference_dates, "maturity": maturities})
+
+        # Compute business days between reference dates and maturities
         dfi["bdays"] = bday.count(dfi["reference_date"], dfi["maturity"])
+
+        # Initialize the interpolated rate column with NaN
         dfi["interpolated_rate"] = pd.NA
         dfi["interpolated_rate"] = dfi["interpolated_rate"].astype("Float64")
 
-        df_di = (
+        # Load DI rates dataset filtered by the provided reference dates
+        dfr = (
             get_di_dataset()
             .query("TradeDate in @reference_dates")
             .reset_index(drop=True)
         )
 
-        if df_di.empty:
+        # Return an empty DataFrame if no rates are found
+        if dfr.empty:
             return pd.DataFrame()
 
         # Iterate over each unique reference date
         for date in set(reference_dates):
-            dfr_subset = df_di.query("TradeDate == @date").copy()
-            if not dfr_subset.empty:
-                interp = interpolator.Interpolator(
-                    method="flat_forward",
-                    known_bdays=dfr_subset["BDaysToExp"],
-                    known_rates=dfr_subset["SettlementRate"],
-                    extrapolate=allow_extrapolation,
-                )
-                # Apply interpolation only to the subset of the DataFrame
-                mask = dfi["reference_date"] == date
-                dfi.loc[mask, "interpolated_rate"] = dfi.loc[mask, "bdays"].apply(
-                    interp
-                )
+            # Filter DI rates for the current reference date
+            dfr_subset = dfr.query("TradeDate == @date").copy()
 
-        return dfi
+            # Skip processing if no rates are available for the current date
+            if dfr_subset.empty:
+                continue
+
+            # Initialize the interpolator with known rates and business days
+            interp = interpolator.Interpolator(
+                method="flat_forward",
+                known_bdays=dfr_subset["BDaysToExp"],
+                known_rates=dfr_subset["SettlementRate"],
+                extrapolate=allow_extrapolation,
+            )
+
+            # Apply interpolation to rows matching the current reference date
+            mask = dfi["reference_date"] == date
+            dfi.loc[mask, "interpolated_rate"] = dfi.loc[mask, "bdays"].apply(interp)
+
+        # Return the DataFrame with interpolated rates
+        return dfi["interpolated_rate"]
+
+    def rate(
+        self,
+        expiration: DateScalar,
+        interpolate: bool = True,
+        extrapolate: bool = False,
+    ) -> float:
+        """Retrieve the DI rate for a specified expiration date."""
+        expiration = dc.convert_input_dates(expiration)
+
+        if self._adj_expirations:
+            # Force the expiration date to be the start of the month
+            expiration = expiration.to_period("M").to_timestamp()
+        else:
+            # Force the expiration date to be a business day
+            expiration = bday.offset(expiration, 0)
+
+        if not interpolate and extrapolate:
+            raise ValueError("Extrapolation is not allowed without interpolation.")
+
+        df = self.data
+
+        if df.empty:
+            return float("NaN")
+
+        df_exp = df.query("ExpirationDate == @expiration")
+
+        if df_exp.empty and not interpolate:
+            return float("NaN")
+
+        if expiration in df_exp["ExpirationDate"].values:
+            return float(df_exp["SettlementRate"].iat[0])
+
+        if not interpolate:
+            return float("NaN")
+
+        ff_interpolator = interpolator.Interpolator(
+            method="flat_forward",
+            known_bdays=bday.count(self._trade_date, df["ExpirationDate"]),
+            known_rates=df["SettlementRate"],
+            extrapolate=extrapolate,
+        )
+
+        return ff_interpolator(bday.count(self._trade_date, expiration))
 
     @property
     def trade_dates(self) -> list:
