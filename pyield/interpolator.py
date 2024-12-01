@@ -22,7 +22,9 @@ class Interpolator:
         ValueError: If the interpolation method is not recognized
 
     Note:
-        This class uses a 252 business days per year convention.
+        - This class uses a 252 business days per year convention.
+        - Instances of this class are **immutable**. To modify the interpolation
+          settings, create a new instance.
 
     Examples:
         >>> from pyield import Interpolator
@@ -77,11 +79,6 @@ class Interpolator:
         c = (bday - prev_bday) / (next_bday - prev_bday)
         return (a * (b / a) ** c) ** (252 / bday) - 1
 
-    def _linear(self, bday: int) -> float:
-        """Performs linear interpolation."""
-        np_float = np.interp(bday, self._known_bdays, self._known_rates)
-        return float(np_float)
-
     def interpolate(self, bday: int) -> float:
         """
         Finds the appropriate interpolation point and returns the interest rate
@@ -101,15 +98,12 @@ class Interpolator:
         elif bday in self._known_bdays:
             return self._known_rates[self._known_bdays.index(bday)]
         elif bday > self._known_bdays[-1]:
-            if self._extrapolate:
-                return self._known_rates[-1]
-            else:
-                return float("NaN")  # Return NaN if extrapolation is not allowed
+            return self._known_rates[-1] if self._extrapolate else float("NaN")
 
         if self._method == "flat_forward":
             return self._flat_forward(bday)
         elif self._method == "linear":
-            return self._linear(bday)
+            return float(np.interp(bday, self._known_bdays, self._known_rates))
         else:
             raise ValueError(f"Unknown interpolation method: {self._method}.")
 
