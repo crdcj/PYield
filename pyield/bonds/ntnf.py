@@ -3,7 +3,7 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 
-from pyield import anbima, bday, di
+from pyield import anbima, bday, data_cache, di
 from pyield import date_converter as dc
 from pyield import interpolator as ip
 from pyield.bonds import bond_tools as bt
@@ -20,6 +20,17 @@ COUPON_DAY = 1
 COUPON_MONTHS = {1, 7}
 COUPON_PMT = 48.80885
 FINAL_PMT = 1048.80885
+
+
+def reference_dates() -> pd.Series:
+    """
+    Fetch the NTN-F bond reference dates available in the Anbima database.
+
+    Returns:
+        pd.Series: A Series of NTN-F bond reference dates.
+    """
+    df = data_cache.get_anbima_dataset().query("BondType == 'NTN-F'")
+    return df["ReferenceDate"].drop_duplicates().sort_values().reset_index(drop=True)
 
 
 def rates(reference_date: DateScalar) -> pd.DataFrame:

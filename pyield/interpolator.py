@@ -43,34 +43,21 @@ class Interpolator:
     def __init__(
         self,
         method: Literal["flat_forward", "linear"],
-        known_bdays: pd.Series | list[int],
-        known_rates: pd.Series | list[float],
+        known_bdays: pd.Series | np.ndarray | tuple[int] | list[int],
+        known_rates: pd.Series | np.ndarray | tuple[float] | list[float],
         extrapolate: bool = False,
     ):
-        self.method = method
-        self.known_bdays = known_bdays
-        self.known_rates = known_rates
-        self.extrapolate = extrapolate
-        self._validate_and_process_inputs()
-
-    def _validate_and_process_inputs(self) -> None:
-        """Validate and process the inputs of the Interpolator."""
-        known_bdays = self.known_bdays
-        known_rates = self.known_rates
-        # Series may have different index, so we convert to list
-        if isinstance(known_bdays, pd.Series):
-            known_bdays = known_bdays.to_list()
-        if isinstance(known_rates, pd.Series):
-            known_rates = known_rates.to_list()
-
-        if len(known_bdays) != len(known_rates):
-            raise ValueError("known_bdays and known_rates must have the same length.")
-
-        df = pd.DataFrame({"bday": known_bdays, "rate": known_rates})
-        df = df.dropna().drop_duplicates(subset="bday").sort_values("bday")
-
-        self._known_bdays = df["bday"].to_list()
-        self._known_rates = df["rate"].to_list()
+        df = (
+            pd.DataFrame({"bday": known_bdays, "rate": known_rates})
+            .dropna()
+            .drop_duplicates(subset="bday")
+            .sort_values("bday", ignore_index=True)
+        )
+        self._df = df
+        self._method = method
+        self._known_bdays = tuple(df["bday"])
+        self._known_rates = tuple(df["rate"])
+        self._extrapolate = bool(extrapolate)
 
     def _flat_forward(self, bday: int) -> float:
         """Performs the interest rate interpolation using the flat forward method."""
@@ -114,17 +101,17 @@ class Interpolator:
         elif bday in self._known_bdays:
             return self._known_rates[self._known_bdays.index(bday)]
         elif bday > self._known_bdays[-1]:
-            if self.extrapolate:
+            if self._extrapolate:
                 return self._known_rates[-1]
             else:
                 return float("NaN")  # Return NaN if extrapolation is not allowed
 
-        if self.method == "flat_forward":
+        if self._method == "flat_forward":
             return self._flat_forward(bday)
-        elif self.method == "linear":
+        elif self._method == "linear":
             return self._linear(bday)
         else:
-            raise ValueError(f"Unknown interpolation method: {self.method}.")
+            raise ValueError(f"Unknown interpolation method: {self._method}.")
 
     def __call__(self, bday: int) -> float:
         """
@@ -139,3 +126,10 @@ class Interpolator:
                 number of business days.
         """
         return self.interpolate(bday)
+
+    def __repr__(self) -> str:
+        """
+        Textual representation, used in terminal or scripts.
+        """
+
+        return repr(self._df)
