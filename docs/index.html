@@ -14,7 +14,7 @@
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.42">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.45">
     
     
       
@@ -390,14 +390,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-to-use-pyield" class="md-nav__link">
+  <a href="#custom-types" class="md-nav__link">
     <span class="md-ellipsis">
-      How to use PYield
+      Custom Types
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="How to use PYield">
+    <nav class="md-nav" aria-label="Custom Types">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#datescalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      DateScalar
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datearray" class="md-nav__link">
+    <span class="md-ellipsis">
+      DateArray
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#important-note-on-date-formats" class="md-nav__link">
@@ -407,6 +425,21 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-use-pyield" class="md-nav__link">
+    <span class="md-ellipsis">
+      How to use PYield
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How to use PYield">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#brazilian-treasury-bonds-tools" class="md-nav__link">
@@ -854,16 +887,34 @@
 <p>You can install PYield using pip:
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>pyield
 </span></code></pre></div></p>
-<h2 id="how-to-use-pyield">How to use PYield</h2>
+<h2 id="custom-types">Custom Types</h2>
+<h3 id="datescalar">DateScalar</h3>
+<p><code>DateScalar</code> and <code>DateArray</code> are a type alias used across PYield to represent different types of date inputs. It includes several common date formats, allowing for flexible date handling within the library. </p>
+<p>The accepted formats in <code>DateScalar</code> are:</p>
+<ul>
+<li><code>datetime.date</code></li>
+<li><code>datetime.datetime</code></li>
+<li><code>str</code> (in the format <code>DD-MM-YYYY</code> as used in Brazil)</li>
+<li><code>np.datetime64</code></li>
+<li><code>pd.Timestamp</code></li>
+</ul>
+<h3 id="datearray">DateArray</h3>
+<p>The accepted formats in <code>DateArray</code> are:
+- <code>pd.Series</code>
+- <code>pd.DatetimeIndex</code>
+- <code>np.ndarray</code>
+- <code>list[DateScalar]</code>
+- <code>tuple[DateScalar]</code></p>
+<p>Referencing <code>DateScalar</code> and <code>DateArray</code> in function arguments simplifies the code by allowing any of these date formats to be used interchangeably.</p>
 <h3 id="important-note-on-date-formats">Important Note on Date Formats</h3>
 <p>When using date strings in PYield functions, please ensure that the <strong>date format is day-first</strong> (e.g., "31-05-2024"). This format was chosen to be consistent with the Brazilian date convention.</p>
-<p>For production code, it is recommended to parse date strings with <code>pandas.to_datetime</code> using an <strong>explicit format</strong> to avoid ambiguity and ensure consistency.</p>
-<p>For example:
+<p>For production code, it is recommended to parse date strings with <code>pandas.to_datetime</code> using an <strong>explicit format</strong> to avoid ambiguity and ensure consistency. For example:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># Converting a date string to a pandas Timestamp with a specific format</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">date</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="s2">&quot;2024/31/05&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;%Y/</span><span class="si">%d</span><span class="s2">/%m&quot;</span><span class="p">)</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">date</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="s2">&quot;05-31-2024&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;%m-</span><span class="si">%d</span><span class="s2">-%Y&quot;</span><span class="p">)</span>
 </span></code></pre></div></p>
+<h2 id="how-to-use-pyield">How to use PYield</h2>
 <h3 id="brazilian-treasury-bonds-tools">Brazilian Treasury Bonds Tools</h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">pyield</span> <span class="kn">import</span> <span class="n">ntnb</span><span class="p">,</span> <span class="n">ntnf</span><span class="p">,</span> <span class="n">ltn</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
