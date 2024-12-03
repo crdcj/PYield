@@ -17,7 +17,9 @@ class DIFutures:
     NTN-F bond maturities.
 
     Args:
-        trade_date (DateScalar): The date to retrieve the contract data.
+        trade_dates (DateScalar | DateArray | None): The trade date(s) to retrieve the
+            DI contract data. If None, the latest available historical trade date is
+            used.
         month_start (bool): If True, adjusts the expiration dates to the start
             of the month.
         prefixed (bool): If True, filters the DI contracts to match only
