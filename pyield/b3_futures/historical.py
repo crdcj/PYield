@@ -94,9 +94,9 @@ def _convert_prices_to_rates(
     Returns:
         pd.Series: A pd.Series containing the futures rates.
     """
-    if count_convention == 252:
+    if count_convention == 252:  # noqa
         rates = (100_000 / prices) ** (252 / days_to_expiration) - 1
-    elif count_convention == 360:
+    elif count_convention == 360:  # noqa
         rates = (100_000 / prices - 1) * (360 / days_to_expiration)
     else:
         raise ValueError("Invalid count_convention. Must be 252 or 360.")
@@ -210,7 +210,7 @@ def process_df(
 
     df["DaysToExp"] = (df["ExpirationDate"] - trade_date).dt.days
     # Convert to nullable integer, since it is the default type in the library
-    df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
+    df["DaysToExp"] = df["DaysToExp"].astype("Int64")
 
     df["BDaysToExp"] = bday.count(trade_date, df["ExpirationDate"])
 
@@ -232,18 +232,24 @@ def process_df(
         # Remove % and round to 5 (3 in %) dec. places in rate columns
         df[rate_cols] = df[rate_cols].div(100).round(5)
 
-    if COUNT_CONVENTIONS[asset_code] == 252:
+    if COUNT_CONVENTIONS[asset_code] == 252:  # noqa
         df["SettlementRate"] = _convert_prices_to_rates(
             prices=df["SettlementPrice"],
             days_to_expiration=df["BDaysToExp"],
             count_convention=252,
         )
-    elif COUNT_CONVENTIONS[asset_code] == 360:
+    elif COUNT_CONVENTIONS[asset_code] == 360:  # noqa
         df["SettlementRate"] = _convert_prices_to_rates(
             prices=df["SettlementPrice"],
             days_to_expiration=df["DaysToExp"],
             count_convention=360,
         )
+
+    # Calculate DV01 for DI1 contracts
+    if asset_code == "DI1":
+        byears = df["BDaysToExp"] / 252
+        dv01_price = 100_000 / ((1 + df["SettlementRate"] + 0.0001) ** byears)
+        df["DV01"] = (df["SettlementPrice"] - dv01_price).astype("Float64")
 
     return df
 
@@ -262,6 +268,7 @@ def _select_and_reorder_columns(df: pd.DataFrame):
         "TradeCount",
         "TradeVolume",
         "FinancialVolume",
+        "DV01",
         "SettlementPrice",
         "SettlementRate",
         "OpenRate",

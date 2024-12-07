@@ -150,14 +150,18 @@ class DIFutures:
                 "TickerSymbol",
                 "OpenContracts",
                 "TradeVolume",
+                "DV01",
                 "OpenRate",
                 "MinRate",
                 "MaxRate",
                 "CloseRate",
                 "SettlementRate",
+                "CurrentRate",
                 "SettlementPrice",
+                "CurrentPrice",
             ]
-            df = df[cols].copy()
+            selected_cols = [col for col in cols if col in df.columns]
+            df = df[selected_cols].copy()
 
         return df.sort_values(by=["TradeDate", "ExpirationDate"]).reset_index(drop=True)
 

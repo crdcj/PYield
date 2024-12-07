@@ -9,14 +9,14 @@ def _fetch_b3_df(future_code: str) -> pd.DataFrame:
     Fetch the latest data for a given future code from B3 derivatives quotation API.
 
     Args:
-    future_code (str): The future code to fetch data for.
+        future_code (str): The future code to fetch data for.
 
     Returns:
-    pd.DataFrame: DataFrame containing the normalized and cleaned data from the API.
-        If no data is available, an empty DataFrame is returned.
+        pd.DataFrame: DataFrame containing the normalized and cleaned data from the API.
+            If no data is available, an empty DataFrame is returned.
 
     Raises:
-    Exception: An exception is raised if the data fetch operation fails.
+        Exception: An exception is raised if the data fetch operation fails.
     """
 
     url = f"https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation/{future_code}"
@@ -46,10 +46,10 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     Rename the columns of a DataFrame containing the futures data.
 
     Args:
-    df (pd.DataFrame): A DataFrame containing futures data.
+        df (pd.DataFrame): A DataFrame containing futures data.
 
     Returns:
-    pd.DataFrame: DataFrame with the columns renamed.
+        pd.DataFrame: DataFrame with the columns renamed.
     """
     all_columns = {
         "symb": "TickerSymbol",
@@ -108,11 +108,19 @@ def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
 
     df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
     # Convert to nullable integer, since it is the default type in the library
-    df["DaysToExp"] = df["DaysToExp"].astype(pd.Int64Dtype())
+    df["DaysToExp"] = df["DaysToExp"].astype("Int64")
 
     # Remove percentage in all rate columns
     rate_cols = [col for col in df.columns if "Rate" in col]
     df[rate_cols] = df[rate_cols].div(100).round(5)
+
+    # Adjust DI1 futures contracts
+    if "DI1" in df["TickerSymbol"].iloc[0]:
+        byears = df["BDaysToExp"] / 252
+        df["CurrentPrice"] = 100_000 / ((1 + df["CurrentRate"]) ** (byears))
+        df["CurrentPrice"] = df["CurrentPrice"].round(2).astype("Float64")
+        dv01_price = 100_000 / ((1 + df["CurrentRate"] + 0.0001) ** byears)
+        df["DV01"] = (df["CurrentPrice"] - dv01_price).astype("Float64")
 
     return df
 
@@ -122,10 +130,10 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     Select and reorder columns in the DataFrame.
 
     Args:
-    df (pd.DataFrame): A DataFrame containing futures data.
+        df (pd.DataFrame): A DataFrame containing futures data.
 
     Returns:
-    pd.DataFrame: DataFrame with the columns selected and reordered.
+        pd.DataFrame: DataFrame with the columns selected and reordered.
     """
     all_columns = [
         "TradeDate",
@@ -138,6 +146,7 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "TradeCount",
         "TradeVolume",
         "FinancialVolume",
+        "DV01",
         "PrevSettlementRate",
         "MinLimitRate",
         "MaxLimitRate",
@@ -148,6 +157,7 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "CurrentAskRate",
         "CurrentBidRate",
         "CurrentRate",
+        "CurrentPrice",
     ]
     reordered_columns = [col for col in all_columns if col in df.columns]
     return df[reordered_columns].copy()
