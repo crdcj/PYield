@@ -22,14 +22,14 @@ class DIFutures:
             used.
         month_start (bool): If True, adjusts the expiration dates to the start
             of the month.
-        prefixed (bool): If True, filters the DI contracts to match only
+        pre_filter (bool): If True, filters the DI contracts to match only
             expirations with existing prefixed TN bond maturities (LTN and NTN-F).
         all_columns (bool): If True, returns all available columns in the DI dataset.
 
     Examples:
         To create a `DIFutures` instance and retrieve data:
-        >>> di = yd.DIFutures(trade_dates="16-10-2024", month_start=True)
-        >>> df = di.data  # Retrieve DI contract dataframe for the specified date
+        >>> dif = yd.DIFutures(trade_dates="16-10-2024", month_start=True)
+        >>> df = dif.df  # Retrieve DI contract dataframe for the specified date
         >>> df.iloc[:5, :5]  # Show the first five rows and columns
            TradeDate ExpirationDate TickerSymbol  BDaysToExp  OpenContracts
         0 2024-10-16     2024-11-01       DI1X24          12        1744269
@@ -39,7 +39,7 @@ class DIFutures:
         4 2024-10-16     2025-03-01       DI1H25          94         344056
 
         You can also retrieve forward rates for the DI contracts:
-        >>> di.forwards.iloc[:5]  # Show the first five rows
+        >>> dif.forwards.iloc[:5]  # Show the first five rows
            TradeDate ExpirationDate  SettlementRate  ForwardRate
         0 2024-10-16     2024-11-01         0.10653      0.10653
         1 2024-10-16     2024-12-01          0.1091     0.110726
@@ -64,19 +64,42 @@ class DIFutures:
         self,
         trade_dates: DateScalar | DateArray | None = None,
         month_start: bool = False,
-        prefixed: bool = False,
+        pre_filter: bool = False,
         all_columns: bool = True,
     ):
         """
-        Initialize the DIFutures instance with a specific trade date.
+        Initialize the DIFutures instance with the specified parameters.
+
+        Note:
+            The DI contract DataFrame is not loaded during initialization. It will be
+            automatically loaded the first time the df() method is accessed.
         """
+        self._df = pd.DataFrame()
+        self._dirty = True  # Attribute to track if the df needs updating
+
         self.trade_dates = trade_dates
         self.month_start = month_start
-        self.prefixed = prefixed
+        self.pre_filter = pre_filter
         self.all_columns = all_columns
 
     @property
-    def data(self) -> pd.DataFrame:
+    def df(self) -> pd.DataFrame:
+        """
+        The DI contracts DataFrame for the instance's trade dates and applied filters.
+
+        If the internal state is marked as 'dirty', the DataFrame will be (re)loaded
+        before returning, ensuring that the returned data reflects the latest attribute
+        values.
+
+        Returns:
+            pd.DataFrame: The DI contract data.
+        """
+        if self._dirty:
+            self._df = self._update_df()
+            self._dirty = False
+        return self._df
+
+    def _update_df(self) -> pd.DataFrame:
         """Retrieve DI contract DataFrame for the initialized trade date."""
         df = (
             get_di_dataset()
@@ -95,7 +118,7 @@ class DIFutures:
         if "DaysToExpiration" in df.columns:
             df.drop(columns=["DaysToExpiration"], inplace=True)
 
-        if self._prefixed:
+        if self._pre_filter:
             df_pre = (
                 get_anbima_dataset()
                 .query("BondType in ['LTN', 'NTN-F']")
@@ -108,7 +131,7 @@ class DIFutures:
             df_pre["MaturityDate"] = bday.offset(df_pre["MaturityDate"], 0)
             df_pre = df_pre.rename(
                 columns={
-                    "ReferenceDate": "ExpirationDate",
+                    "ReferenceDate": "TradeDate",
                     "MaturityDate": "ExpirationDate",
                 }
             )
@@ -132,6 +155,7 @@ class DIFutures:
                 "MaxRate",
                 "CloseRate",
                 "SettlementRate",
+                "SettlementPrice",
             ]
             df = df[cols].copy()
 
@@ -154,7 +178,7 @@ class DIFutures:
                 - ForwardRate: The forward rate calculated between successive expiration
                   dates.
         """
-        df = self.data
+        df = self.df
         if df.empty:
             return pd.DataFrame()
 
@@ -280,7 +304,7 @@ class DIFutures:
         if not interpolate and extrapolate:
             raise ValueError("Extrapolation is not allowed without interpolation.")
 
-        df = self.data
+        df = self.df
 
         if df.empty:
             return float("NaN")
@@ -331,6 +355,8 @@ class DIFutures:
         elif isinstance(trade_dates, pd.Series):
             self._trade_dates = trade_dates.drop_duplicates().sort_values().to_list()
 
+        self._dirty = True
+
     @property
     def month_start(self) -> bool:
         """
@@ -348,9 +374,10 @@ class DIFutures:
     @month_start.setter
     def month_start(self, value: bool):
         self._month_start = value
+        self._dirty = True
 
     @property
-    def prefixed(self) -> bool:
+    def pre_filter(self) -> bool:
         """
         Filters DI Futures to match prefixed TN bond maturities.
 
@@ -361,11 +388,12 @@ class DIFutures:
             bool: Whether the contracts are filtered to match prefixed TN bond
                 maturities from the ANBIMA dataset.
         """
-        return self._prefixed
+        return self._pre_filter
 
-    @prefixed.setter
-    def prefixed(self, value: bool):
-        self._prefixed = value
+    @pre_filter.setter
+    def pre_filter(self, value: bool):
+        self._pre_filter = value
+        self._dirty = True
 
     @property
     def all_columns(self) -> bool:
@@ -374,3 +402,4 @@ class DIFutures:
     @all_columns.setter
     def all_columns(self, value: bool):
         self._all_columns = value
+        self._dirty = True
