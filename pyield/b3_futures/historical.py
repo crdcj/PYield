@@ -247,9 +247,10 @@ def process_df(
 
     # Calculate DV01 for DI1 contracts
     if asset_code == "DI1":
-        byears = df["BDaysToExp"] / 252
-        dv01_price = 100_000 / ((1 + df["SettlementRate"] + 0.0001) ** byears)
-        df["DV01"] = (df["SettlementPrice"] - dv01_price).astype("Float64")
+        duration = df["BDaysToExp"] / 252
+        modified_duration = duration / (1 + df["SettlementRate"])
+        df["DV01"] = 0.0001 * modified_duration * df["SettlementPrice"]
+        df["DV01"] = df["DV01"].astype("Float64")
 
     return df
 

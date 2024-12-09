@@ -156,9 +156,9 @@ class DIFutures:
                 "MaxRate",
                 "CloseRate",
                 "SettlementRate",
-                "CurrentRate",
+                "LastRate",
                 "SettlementPrice",
-                "CurrentPrice",
+                "LastPrice",
             ]
             selected_cols = [col for col in cols if col in df.columns]
             df = df[selected_cols].copy()

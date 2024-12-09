@@ -60,14 +60,14 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
         "minPric": "MinRate",
         "maxPric": "MaxRate",
         "avrgPric": "AvgRate",
-        "curPrc": "CurrentRate",
+        "curPrc": "LastRate",
         "grssAmt": "FinancialVolume",
         "mtrtyCode": "ExpirationDate",
         "opnCtrcts": "OpenContracts",
         "tradQty": "TradeCount",
         "traddCtrctsQty": "TradeVolume",
-        "buyOffer.price": "CurrentAskRate",
-        "sellOffer.price": "CurrentBidRate",
+        "buyOffer.price": "LastAskRate",
+        "sellOffer.price": "LastBidRate",
     }
     # Check which columns are present in the DataFrame before renaming
     rename_dict = {c: all_columns[c] for c in all_columns if c in df.columns}
@@ -115,12 +115,17 @@ def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     df[rate_cols] = df[rate_cols].div(100).round(5)
 
     # Adjust DI1 futures contracts
-    if "DI1" in df["TickerSymbol"].iloc[0]:
+    contract_type = df["TickerSymbol"].iloc[0][:3]
+    if contract_type in {"DI1", "DAP"}:
         byears = df["BDaysToExp"] / 252
-        df["CurrentPrice"] = 100_000 / ((1 + df["CurrentRate"]) ** (byears))
-        df["CurrentPrice"] = df["CurrentPrice"].round(2).astype("Float64")
-        dv01_price = 100_000 / ((1 + df["CurrentRate"] + 0.0001) ** byears)
-        df["DV01"] = (df["CurrentPrice"] - dv01_price).astype("Float64")
+        df["LastPrice"] = 100_000 / ((1 + df["LastRate"]) ** (byears))
+        df["LastPrice"] = df["LastPrice"].round(2).astype("Float64")
+
+    if contract_type == "DI1":
+        duration = df["BDaysToExp"] / 252
+        modified_duration = duration / (1 + df["LastRate"])
+        df["DV01"] = 0.0001 * modified_duration * df["LastPrice"]
+        df["DV01"] = df["DV01"].astype("Float64")
 
     return df
 
@@ -154,10 +159,10 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "MinRate",
         "AvgRate",
         "MaxRate",
-        "CurrentAskRate",
-        "CurrentBidRate",
-        "CurrentRate",
-        "CurrentPrice",
+        "LastAskRate",
+        "LastBidRate",
+        "LastRate",
+        "LastPrice",
     ]
     reordered_columns = [col for col in all_columns if col in df.columns]
     return df[reordered_columns].copy()
