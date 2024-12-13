@@ -127,7 +127,7 @@ def maturities(reference_date: DateScalar) -> pd.Series:
     return s_maturities
 
 
-def _generate_coupon_dates_map(
+def _generate_all_coupon_dates(
     start: DateScalar,
     end: DateScalar,
 ) -> pd.Series:
@@ -398,7 +398,7 @@ def spot_rates(
     maturities = pd.to_datetime(maturities, errors="raise", dayfirst=True)
     _check_maturities(maturities)
 
-    # Create the interpolator object
+    # Create the interpolator to calculate the YTM rates for intermediate dates
     ff_interpolator = ip.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, maturities),
@@ -406,7 +406,7 @@ def spot_rates(
     )
 
     # Generate coupon dates up to the longest maturity date
-    all_coupon_dates = _generate_coupon_dates_map(
+    all_coupon_dates = _generate_all_coupon_dates(
         start=settlement, end=maturities.max()
     )
 
@@ -423,9 +423,9 @@ def spot_rates(
         # Get the cash flow dates for the bond
         cf_dates = payment_dates(settlement, row["MaturityDate"])
 
-        # If there is only one coupon date and this date is the first maturity date
-        # of an existing bond, the ytm rate is also a spot rate.
-        if len(cf_dates) == 1 and cf_dates[0] == maturities[0]:
+        # If there is only one cash flow date, it means the bond is a single payment
+        # bond, so the spot rate is equal to the YTM rate
+        if len(cf_dates) == 1:
             df.at[index, "SpotRate"] = row["YTM"]
             continue
 
