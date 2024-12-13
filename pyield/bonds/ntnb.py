@@ -336,6 +336,7 @@ def spot_rates(
     settlement: DateScalar,
     maturities: pd.Series,
     rates: pd.Series,
+    show_coupons: bool = False,
 ) -> pd.DataFrame:
     """
     Calculate the spot rates for NTN-B bonds using the bootstrap method.
@@ -349,6 +350,8 @@ def spot_rates(
         settlement (DateScalar): The reference date for settlement.
         maturities (pd.Series): Series of maturity dates for the bonds.
         rates (pd.Series): Series of yield to maturity rates.
+        show_coupons (bool, optional): If True, the result will include the
+            intermediate coupon dates. Defaults to False.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate", "SpotRate".
@@ -363,21 +366,21 @@ def spot_rates(
         ...     maturities=df_rates["MaturityDate"],
         ...     rates=df_rates["IndicativeRate"],
         ... )
-           MaturityDate  SpotRate
-        0    2025-05-15  0.063894
-        1    2026-08-15  0.066141
-        2    2027-05-15  0.064087
-        3    2028-08-15  0.063057
-        4    2029-05-15  0.061458
-        5    2030-08-15  0.059491
-        6    2032-08-15  0.059652
-        7    2033-05-15  0.059497
-        8    2035-05-15  0.059151
-        9    2040-08-15  0.058326
-        10   2045-05-15  0.060371
-        11   2050-08-15  0.060772
-        12   2055-05-15  0.059909
-        13   2060-08-15  0.060652
+           MaturityDate  BDToMat  SpotRate
+        0    2025-05-15      185  0.063894
+        1    2026-08-15      502  0.066141
+        2    2027-05-15      687  0.064087
+        3    2028-08-15     1002  0.063057
+        4    2029-05-15     1186  0.061458
+        5    2030-08-15     1500  0.059491
+        6    2032-08-15     2004  0.059652
+        7    2033-05-15     2191  0.059497
+        8    2035-05-15     2690  0.059151
+        9    2040-08-15     4009  0.058326
+        10   2045-05-15     5196  0.060371
+        11   2050-08-15     6511  0.060772
+        12   2055-05-15     7700  0.059909
+        13   2060-08-15     9017  0.060652
 
     Notes:
         The calculation of the spot rates for NTN-B bonds considers the following steps:
@@ -387,6 +390,7 @@ def spot_rates(
             - Calculate the real spot rates for each maturity date.
             - Columns in the returned DataFrame:
                 - MaturityDate: The maturity date of the bond.
+                - BDToMat: The number of business days from settlement to maturities.
                 - SpotRate: The real spot rate for the bond.
     """
     # Process and validate the input data
@@ -408,9 +412,9 @@ def spot_rates(
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
     df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
-    df["BDays"] = bday.count(settlement, df["MaturityDate"])
-    df["BYears"] = df["BDays"] / 252
-    df["YTM"] = df["BDays"].apply(ff_interpolator)
+    df["BDToMat"] = bday.count(settlement, df["MaturityDate"])
+    df["BYears"] = df["BDToMat"] / 252
+    df["YTM"] = df["BDToMat"].apply(ff_interpolator)
     df["Coupon"] = COUPON_PMT
     df["SpotRate"] = np.nan
 
@@ -439,11 +443,14 @@ def spot_rates(
         price_factor = FINAL_PMT / (bond_price - cf_present_value)
         df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
 
-    df = df[["MaturityDate", "SpotRate"]].copy()
+    df = df[["MaturityDate", "BDToMat", "SpotRate"]].copy()
     # Force Float64 type in float columns to standardize the output
     df["SpotRate"] = df["SpotRate"].astype("Float64")
-    # Return the result without the intermediate coupon dates (virtual bonds)
-    return df.query("MaturityDate in @maturities").reset_index(drop=True)
+
+    # Filter the result without the intermediate coupon dates (virtual bonds)
+    if not show_coupons:
+        df = df.query("MaturityDate in @maturities").reset_index(drop=True)
+    return df
 
 
 def bei_rates(
@@ -473,6 +480,7 @@ def bei_rates(
 
     Returned columns:
         - MaturityDate: The maturity date of the bonds.
+        - BDToMat: The number of business days from the settlement to the maturity.
         - RIR: The calculated Real Interest Rates based on the spot rates.
         - NIR: The Nominal Interest Rates interpolated for the maturity date.
         - BEI: The calculated Breakeven Inflation Rates.
@@ -500,21 +508,21 @@ def bei_rates(
         ...     nominal_maturities=df_di["ExpirationDate"],
         ...     nominal_rates=df_di["SettlementRate"],
         ... )
-           MaturityDate       RIR       NIR       BEI
-        0    2025-05-15  0.061749  0.113836  0.049058
-        1    2026-08-15  0.066133  0.117126   0.04783
-        2    2027-05-15  0.063816  0.117169  0.050152
-        3    2028-08-15  0.063635   0.11828  0.051376
-        4    2029-05-15  0.062532   0.11838  0.052561
-        5    2030-08-15  0.061809  0.118499   0.05339
-        6    2032-08-15  0.062135  0.118084  0.052676
-        7    2033-05-15  0.061897   0.11787   0.05271
-        8    2035-05-15  0.061711  0.117713  0.052747
-        9    2040-08-15  0.060468   0.11759  0.053865
-        10   2045-05-15    0.0625   0.11759   0.05185
-        11   2050-08-15  0.063016   0.11759  0.051339
-        12   2055-05-15  0.062252   0.11759  0.052095
-        13   2060-08-15  0.063001   0.11759  0.051354
+           MaturityDate  BDToMat       RIR       NIR       BEI
+        0    2025-05-15      171  0.061749  0.113836  0.049058
+        1    2026-08-15      488  0.066133  0.117126   0.04783
+        2    2027-05-15      673  0.063816  0.117169  0.050152
+        3    2028-08-15      988  0.063635   0.11828  0.051376
+        4    2029-05-15     1172  0.062532   0.11838  0.052561
+        5    2030-08-15     1486  0.061809  0.118499   0.05339
+        6    2032-08-15     1990  0.062135  0.118084  0.052676
+        7    2033-05-15     2177  0.061897   0.11787   0.05271
+        8    2035-05-15     2676  0.061711  0.117713  0.052747
+        9    2040-08-15     3995  0.060468   0.11759  0.053865
+        10   2045-05-15     5182    0.0625   0.11759   0.05185
+        11   2050-08-15     6497  0.063016   0.11759  0.051339
+        12   2055-05-15     7686  0.062252   0.11759  0.052095
+        13   2060-08-15     9003  0.063001   0.11759  0.051354
 
     """
     # Normalize input dates
@@ -523,7 +531,7 @@ def bei_rates(
 
     # Calculate Real Interest Rate (RIR)
     df = spot_rates(settlement, ntnb_maturities, ntnb_rates)
-    df["BDays"] = bday.count(settlement, df["MaturityDate"])
+    df["BDToMat"] = bday.count(settlement, df["MaturityDate"])
     df = df.rename(columns={"SpotRate": "RIR"})
 
     nir_interplator = ip.Interpolator(
@@ -533,12 +541,13 @@ def bei_rates(
         extrapolate=True,
     )
 
-    df["NIR"] = df["BDays"].apply(nir_interplator).astype("Float64")
+    df["NIR"] = df["BDToMat"].apply(nir_interplator).astype("Float64")
     # Calculate Breakeven Inflation Rate (BEI)
     df["BEI"] = ((df["NIR"] + 1) / (df["RIR"] + 1)) - 1
 
     cols_reordered = [
         "MaturityDate",
+        "BDToMat",
         "RIR",
         "NIR",
         "BEI",

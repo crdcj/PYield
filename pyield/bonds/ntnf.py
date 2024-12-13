@@ -239,7 +239,7 @@ def spot_rates(  # noqa
     ltn_rates: pd.Series,
     ntnf_maturities: pd.Series,
     ntnf_rates: pd.Series,
-    show_coupon_rates: bool = False,
+    show_coupons: bool = False,
 ) -> pd.DataFrame:
     """
     Calculate the spot rates (zero coupon rates) for NTN-F bonds using the bootstrap
@@ -259,11 +259,12 @@ def spot_rates(  # noqa
         ltn_rates (pd.Series): The LTN known rates.
         ntnf_maturities (pd.Series): The NTN-F known maturities.
         ntnf_rates (pd.Series): The NTN-F known rates.
-        show_coupon_rates (bool): If True, show also July rates corresponding to the
+        show_coupons (bool): If True, show also July rates corresponding to the
             coupon payments. Defaults to False.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "MaturityDate" and "SpotRate"
+        pd.DataFrame: DataFrame with columns "BDToMat", "MaturityDate" and "SpotRate".
+            "BDToMat" is the business days from the settlement date to the maturities.
 
     Examples:
 
@@ -276,14 +277,13 @@ def spot_rates(  # noqa
         ...     ntnf_maturities=df_ntnf["MaturityDate"],
         ...     ntnf_rates=df_ntnf["IndicativeRate"],
         ... )
-          MaturityDate  SpotRate
-        0   2025-01-01  0.108837
-        1   2027-01-01  0.119981
-        2   2029-01-01  0.122113
-        3   2031-01-01  0.122231
-        4   2033-01-01  0.121355
-        5   2035-01-01  0.121398
-
+          MaturityDate  BDToMat  SpotRate
+        0   2025-01-01       83  0.108837
+        1   2027-01-01      584  0.119981
+        2   2029-01-01     1083  0.122113
+        3   2031-01-01     1584  0.122231
+        4   2033-01-01     2088  0.121355
+        5   2035-01-01     2587  0.121398
     """
     # Process and validate the input data
     settlement = dc.convert_input_dates(settlement)
@@ -305,16 +305,16 @@ def spot_rates(  # noqa
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
     df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
-    df["BDays"] = bday.count(start=settlement, end=df["MaturityDate"])
-    df["BYears"] = df["BDays"] / 252
+    df["BDToMat"] = bday.count(start=settlement, end=df["MaturityDate"])
+    df["BYears"] = df["BDToMat"] / 252
     df["Coupon"] = COUPON_PMT
-    df["YTM"] = df["BDays"].apply(ntnf_rate_interpolator)
+    df["YTM"] = df["BDToMat"].apply(ntnf_rate_interpolator)
 
     # The Bootstrap loop to calculate spot rates
     for index, row in df.iterrows():
         if row["MaturityDate"] <= ltn_maturities.max():
             # Use LTN rates for maturities before the last LTN maturity date
-            df.at[index, "SpotRate"] = ltn_rate_interpolator(row["BDays"])
+            df.at[index, "SpotRate"] = ltn_rate_interpolator(row["BDToMat"])
             continue
 
         # Calculate the present value of the coupon payments
@@ -323,19 +323,20 @@ def spot_rates(  # noqa
         cf_present_value = bt.calculate_present_value(
             cash_flows=cf_df["Coupon"],
             rates=cf_df["SpotRate"],
-            periods=cf_df["BDays"] / 252,
+            periods=cf_df["BDToMat"] / 252,
         )
 
         bond_price = price(settlement, row["MaturityDate"], row["YTM"])
         price_factor = FINAL_PMT / (bond_price - cf_present_value)
         df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
 
-    df = df[["MaturityDate", "SpotRate"]].copy()
+    df = df[["MaturityDate", "BDToMat", "SpotRate"]].copy()
     df["SpotRate"] = df["SpotRate"].astype("Float64")
-    if show_coupon_rates:
-        return df
-    else:
-        return df.query("MaturityDate in @ntnf_maturities").reset_index(drop=True)
+
+    if not show_coupons:
+        df = df.query("MaturityDate in @ntnf_maturities").reset_index(drop=True)
+
+    return df
 
 
 def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
@@ -485,10 +486,10 @@ def di_net_spread(  # noqa
 
     # Calculate cash flows and business days between settlement and payment dates
     df = cash_flows(settlement, ntnf_maturity).reset_index()
-    df["BDays"] = bday.count(settlement, df["PaymentDate"])
+    df["BDToMat"] = bday.count(settlement, df["PaymentDate"])
 
     byears = bday.count(settlement, df["PaymentDate"]) / 252
-    di_interp = df["BDays"].apply(ff_interpolator)
+    di_interp = df["BDToMat"].apply(ff_interpolator)
     bond_price = price(settlement, ntnf_maturity, ntnf_rate)
     bond_cash_flows = df["CashFlow"]
 
@@ -551,8 +552,8 @@ def premium(
     settlement = dc.convert_input_dates(settlement)
 
     df = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
-    df["BDays"] = bday.count(settlement, df["PaymentDate"])
-    df["BYears"] = df["BDays"] / 252
+    df["BDToMat"] = bday.count(settlement, df["PaymentDate"])
+    df["BYears"] = df["BDToMat"] / 252
 
     ff_interpolator = ip.Interpolator(
         "flat_forward",
@@ -560,13 +561,13 @@ def premium(
         di_rates,
     )
 
-    df["DIRate"] = df["BDays"].apply(ff_interpolator)
+    df["DIRate"] = df["BDToMat"].apply(ff_interpolator)
 
     # Calculate the present value of the cash flows using the DI rate
     bond_price = bt.calculate_present_value(
         cash_flows=df["CashFlow"],
         rates=df["DIRate"],
-        periods=df["BDays"] / 252,
+        periods=df["BDToMat"] / 252,
     )
 
     # Calculate the rate corresponding to this price
@@ -600,8 +601,8 @@ def historical_premium(
     ntnf_ytm = float(ntnf_ytms.iloc[0])
 
     df = cash_flows(reference_date, maturity, adj_payment_dates=True)
-    df["BDays"] = bday.count(reference_date, df["PaymentDate"])
-    df["BYears"] = df["BDays"] / 252
+    df["BDToMat"] = bday.count(reference_date, df["PaymentDate"])
+    df["BYears"] = df["BDToMat"] / 252
     df["ReferenceDate"] = reference_date
 
     dif = di.DIFutures()  # Instantiate the DI Futures class
@@ -615,7 +616,7 @@ def historical_premium(
     bond_price = bt.calculate_present_value(
         cash_flows=df["CashFlow"],
         rates=df["DIRate"],
-        periods=df["BDays"] / 252,
+        periods=df["BDToMat"] / 252,
     )
 
     # Calculate the rate corresponding to this price
