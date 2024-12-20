@@ -1,7 +1,12 @@
+from zoneinfo import ZoneInfo
+
 import pandas as pd
 import requests
 
 from pyield import bday
+
+# Timezone for Brazil
+TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 
 def _fetch_b3_df(future_code: str) -> pd.DataFrame:
@@ -94,15 +99,13 @@ def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     # Sort the DataFrame by maturity code and reset the index
     df.sort_values("ExpirationDate", inplace=True, ignore_index=True)
 
-    # Get currante date
-    today = pd.Timestamp.now().normalize()
-    df["TradeDate"] = today
+    # Get currante date in Brazil
+    df["TradeDate"] = bday.last_business_day()
 
     # Get current date and time
-    now = pd.Timestamp.now().round("s")
+    now = pd.Timestamp.now(TIMEZONE_BZ).round("s").tz_localize(None)
     # Subtract 15 minutes from the current time to account for API delay
-    trade_ts = now - pd.Timedelta(minutes=15)
-    df["TradeTime"] = trade_ts
+    df["LastUpdate"] = now - pd.Timedelta(minutes=15)
 
     df["BDaysToExp"] = bday.count(df["TradeDate"], df["ExpirationDate"])
 
@@ -142,7 +145,7 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     all_columns = [
         "TradeDate",
-        "TradeTime",
+        "LastUpdate",
         "TickerSymbol",
         "ExpirationDate",
         "BDaysToExp",
