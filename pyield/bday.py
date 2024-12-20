@@ -1,4 +1,5 @@
 from typing import Literal, overload
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -6,6 +7,9 @@ import pandas as pd
 import pyield.date_converter as dc
 import pyield.holidays as hl
 from pyield.date_converter import DateArray, DateScalar
+
+# Timezone for Brazil
+TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 IntegerScalar = int | np.integer
 IntegerArray = np.ndarray | pd.Series | list | tuple
@@ -404,3 +408,18 @@ def is_business_day(date: DateScalar) -> bool:
     date_pd = dc.convert_input_dates(date)
     shifted_date = offset(date_pd, 0)  # Shift the date if it is not a bus. day
     return date_pd == shifted_date
+
+
+def last_business_day() -> pd.Timestamp:
+    """
+    Returns the last business day in Brazil. If the current date is a business day, it
+    returns the current date. If it is a weekend or holiday, it returns the last
+    business day before the current date.
+
+    Returns:
+        pd.Timestamp: The last business day in Brazil.
+
+    """
+    # Get the current date in Brazil without timezone information
+    bz_today = pd.Timestamp.now(TIMEZONE_BZ).normalize().tz_localize(None)
+    return offset(bz_today, 0, roll="backward")
