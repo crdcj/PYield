@@ -113,6 +113,9 @@ def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     # Convert to nullable integer, since it is the default type in the library
     df["DaysToExp"] = df["DaysToExp"].astype("Int64")
 
+    # The "FinancialVolume" column is in BRL, so we need to round it to cents
+    df["FinancialVolume"] = df["FinancialVolume"].round(2)
+
     # Remove percentage in all rate columns
     rate_cols = [col for col in df.columns if "Rate" in col]
     df[rate_cols] = df[rate_cols].div(100).round(5)

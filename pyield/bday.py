@@ -57,9 +57,12 @@ def offset(
     dates. It is a wrapper for `numpy.busday_offset` adapted for Pandas data types and
     brazilian holidays.
 
+    **Important Note:** The `dates` parameter is used to determine which list of
+    holidays applies to the calculation.
+
     Args:
         dates (DateScalar | DateArray): The date(s) to offset. Can be a scalar date type
-            or a collection of dates.
+            or a collection of dates. The holiday list is determined based on this date.
         offset (int | Series | np.ndarray | list[int] | tuple[int], optional):
             The number of business days to offset the dates. Positive for future dates,
             negative for past dates. Zero will return the same date if it's a business
@@ -217,8 +220,12 @@ def count(
     on the inputs. It accounts for specified holidays, effectively excluding them from
     the business day count.
 
+    **Important Note:** The `start` date is used to determine which list of holidays
+    applies to the calculation.
+
     Args:
-        start (DateScalar | DateArray): The start date(s) for counting.
+        start (DateScalar | DateArray): The start date(s) for counting. The holiday list
+            is selected based on this date.
         end (DateScalar | DateArray): The end date(s) for counting, which
             is excluded from the count themselves.
 
@@ -233,6 +240,8 @@ def count(
           more, for both `start` and `end` parameters.
         - The return type depends on the input types: single dates return an int, while
           arrays of dates return a pd.Series with the count for each date range.
+        - The `start` date determines the holiday list, ensuring consistency with the
+          applicable calendar at the time.
         - See `numpy.busday_count` documentation for more details on how holidays are
           handled and how business day counts are calculated:
           https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
