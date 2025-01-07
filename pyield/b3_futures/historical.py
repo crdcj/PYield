@@ -135,18 +135,15 @@ def _fetch_raw_df(contract_code: str, trade_date: pd.Timestamp) -> pd.DataFrame:
         dtype_backend="numpy_nullable",
     )[0]
 
-    # Remove rows with all NaN values
-    df = df.dropna(how="all")
-
-    # Remove columns with all NaN values
-    df = df.dropna(axis=1, how="all")
+    # Remove rows and columns with all NaN values
+    df = df.dropna(axis=0, how="all").dropna(axis=1, how="all").copy()
 
     # Force "VAR. PTOS." to be string, since it can also be read as float
-    df["VAR. PTOS."] = df["VAR. PTOS."].astype(pd.StringDtype())
+    df["VAR. PTOS."] = df["VAR. PTOS."].astype("string")
 
     # Force "AJUSTE CORRIG. (4)" to be float, since it can be also read as int
     if "AJUSTE CORRIG. (4)" in df.columns:
-        df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype(pd.Float64Dtype())
+        df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype("Float64")
 
     return df
 
