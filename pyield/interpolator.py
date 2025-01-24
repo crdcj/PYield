@@ -61,13 +61,8 @@ class Interpolator:
         self._known_rates = tuple(df["rate"])
         self._extrapolate = bool(extrapolate)
 
-    def _flat_forward(self, bday: int) -> float:
+    def _flat_forward(self, bday: int, i: int) -> float:
         """Performs the interest rate interpolation using the flat forward method."""
-
-        # Find i such that known_bdays[i-1] < bday < known_bdays[i]
-        i = bisect.bisect_left(self._known_bdays, bday)
-
-        # Get previous and next known rates and business days
         prev_rate = self._known_rates[i - 1]
         prev_bday = self._known_bdays[i - 1]
         next_rate = self._known_rates[i]
@@ -92,20 +87,31 @@ class Interpolator:
             float: The interest rate interpolated by the specified method for the given
                 number of business days.
         """
-        # Check for cases where interpolation is not needed
-        if bday < self._known_bdays[0]:
-            return self._known_rates[0]
-        elif bday in self._known_bdays:
-            return self._known_rates[self._known_bdays.index(bday)]
-        elif bday > self._known_bdays[-1]:
-            return self._known_rates[-1] if self._extrapolate else float("NaN")
+        # Create local references to facilitate code readability
+        known_bdays = self._known_bdays
+        known_rates = self._known_rates
+        extrapolate = self._extrapolate
+        method = self._method
 
-        if self._method == "flat_forward":
-            return self._flat_forward(bday)
-        elif self._method == "linear":
-            return float(np.interp(bday, self._known_bdays, self._known_rates))
-        else:
-            raise ValueError(f"Unknown interpolation method: {self._method}.")
+        # Check for cases where interpolation is not needed
+        if bday < known_bdays[0]:
+            return known_rates[0]
+        elif bday > known_bdays[-1]:
+            return known_rates[-1] if extrapolate else float("NaN")
+
+        # Early return for linear interpolation
+        if method == "linear":
+            return float(np.interp(bday, known_bdays, known_rates))
+
+        # Find i such that known_bdays[i-1] < bday < known_bdays[i]
+        idx = bisect.bisect_left(known_bdays, bday)
+
+        # Check if the interpolation point is known
+        if idx < len(known_bdays) and known_bdays[idx] == bday:
+            return known_rates[idx]
+
+        # Perform flat forward interpolation
+        return self._flat_forward(bday, idx)
 
     def __call__(self, bday: int) -> float:
         """
