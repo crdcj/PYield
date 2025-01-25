@@ -1,1 +1,1 @@
-::: pyield.bonds.ntnb
+::: pyield.tpf.ntnb

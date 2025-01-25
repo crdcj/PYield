@@ -2,8 +2,8 @@ import pandas as pd
 
 from pyield import anbima, bday
 from pyield import date_converter as dc
-from pyield.bonds import bond_tools as bt
 from pyield.date_converter import DateScalar
+from pyield.tpf import tools as tt
 
 
 def rates(reference_date: DateScalar) -> pd.DataFrame:
@@ -69,11 +69,11 @@ def quotation(
     bdays = bday.count(settlement, maturity)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = bt.truncate(bdays / 252, 14)
+    num_of_years = tt.truncate(bdays / 252, 14)
 
     discount_factor = 1 / (1 + rate) ** num_of_years
 
-    return bt.truncate(100 * discount_factor, 4)
+    return tt.truncate(100 * discount_factor, 4)
 
 
 def premium(lft_rate: float, selic_over: float) -> float:

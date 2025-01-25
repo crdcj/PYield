@@ -6,8 +6,8 @@ import pandas as pd
 from pyield import anbima, bday, data_cache, di
 from pyield import date_converter as dc
 from pyield import interpolator as ip
-from pyield.bonds import bond_tools as bt
 from pyield.date_converter import DateScalar
+from pyield.tpf import tools as tt
 
 """
 Constants calculated as per Anbima Rules
@@ -225,12 +225,12 @@ def price(
     cf_df = cash_flows(settlement, maturity)
     cf_values = cf_df["CashFlow"]
     bdays = bday.count(settlement, cf_df["PaymentDate"])
-    byears = bt.truncate(bdays / 252, 14)
+    byears = tt.truncate(bdays / 252, 14)
     discount_factors = (1 + rate) ** byears
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
     dcf = (cf_values / discount_factors).round(9)
     # Return the sum of the discounted cash flows truncated as per Anbima rules
-    return bt.truncate(dcf.sum(), 6)
+    return tt.truncate(dcf.sum(), 6)
 
 
 def spot_rates(  # noqa
@@ -320,7 +320,7 @@ def spot_rates(  # noqa
         # Calculate the present value of the coupon payments
         cf_dates = payment_dates(settlement, row["MaturityDate"])[:-1]  # noqa
         cf_df = df.query("MaturityDate in @cf_dates").reset_index(drop=True)
-        cf_present_value = bt.calculate_present_value(
+        cf_present_value = tt.calculate_present_value(
             cash_flows=cf_df["Coupon"],
             rates=cf_df["SpotRate"],
             periods=cf_df["BDToMat"] / 252,
@@ -364,7 +364,7 @@ def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
 
     """
     # Fetch DI Spreads for the reference date
-    df = bt.pre_spreads(reference_date)
+    df = tt.pre_spreads(reference_date)
     df = (
         df.query("BondType == 'NTN-F'")
         .sort_values(["MaturityDate"])
@@ -564,7 +564,7 @@ def premium(
     df["DIRate"] = df["BDToMat"].apply(ff_interpolator)
 
     # Calculate the present value of the cash flows using the DI rate
-    bond_price = bt.calculate_present_value(
+    bond_price = tt.calculate_present_value(
         cash_flows=df["CashFlow"],
         rates=df["DIRate"],
         periods=df["BDToMat"] / 252,
@@ -607,13 +607,13 @@ def historical_premium(
 
     dif = di.DIFutures()  # Instantiate the DI Futures class
     df["DIRate"] = dif.interpolate_rates(
-        reference_dates=df["ReferenceDate"],
-        maturity_dates=df["PaymentDate"],
+        trade_dates=df["ReferenceDate"],
+        expirations=df["PaymentDate"],
         extrapolate=False,
     )
 
     # Calculate the present value of the cash flows using the DI rate
-    bond_price = bt.calculate_present_value(
+    bond_price = tt.calculate_present_value(
         cash_flows=df["CashFlow"],
         rates=df["DIRate"],
         periods=df["BDToMat"] / 252,

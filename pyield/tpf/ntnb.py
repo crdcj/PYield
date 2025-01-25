@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-import pyield.bonds.bond_tools as bt
 import pyield.date_converter as dc
 import pyield.interpolator as ip
+import pyield.tpf.tools as bt
 from pyield import anbima, bday
 from pyield.date_converter import DateScalar
 

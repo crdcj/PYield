@@ -2,8 +2,8 @@ import pandas as pd
 
 from pyield import anbima, bday, di
 from pyield import date_converter as dc
-from pyield.bonds import bond_tools as bt
 from pyield.date_converter import DateScalar
+from pyield.tpf import tools as tt
 
 FACE_VALUE = 1000
 
@@ -111,12 +111,12 @@ def price(
     bdays = bday.count(settlement, maturity)
 
     # Calculate the number of periods truncated as per Anbima rule
-    num_of_years = bt.truncate(bdays / 252, 14)
+    num_of_years = tt.truncate(bdays / 252, 14)
 
     discount_factor = (1 + rate) ** num_of_years
 
     # Truncate the price to 6 decimal places as per Anbima rules
-    return bt.truncate(FACE_VALUE / discount_factor, 6)
+    return tt.truncate(FACE_VALUE / discount_factor, 6)
 
 
 def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
@@ -151,7 +151,7 @@ def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
         12   2030-01-01     14.96
     """
     # Fetch DI Spreads for the reference date
-    df = bt.pre_spreads(reference_date)
+    df = tt.pre_spreads(reference_date)
     df.query("BondType == 'LTN'", inplace=True)
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
     return df[["MaturityDate", "DISpread"]]
@@ -219,7 +219,7 @@ def historical_premium(
     ltn_rate = float(ltn_rates.iloc[0])
 
     # Retrieve DI rate for the reference date and maturity
-    dif = di.DIFutures(trade_dates=reference_date)
+    dif = di.DIFutures(trade_date=reference_date)
     di_rate = dif.rate(expiration=maturity, interpolate=True, extrapolate=False)
     if pd.isnull(di_rate):  # Check if the DI rate is NaN
         return float("NaN")
