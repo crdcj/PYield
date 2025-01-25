@@ -56,7 +56,7 @@ class Interpolator:
             .sort_values("bday", ignore_index=True)
         )
         self._df = df
-        self._method = method
+        self._method = str(method)
         self._known_bdays = tuple(df["bday"])
         self._known_rates = tuple(df["rate"])
         self._extrapolate = bool(extrapolate)
@@ -93,9 +93,10 @@ class Interpolator:
         extrapolate = self._extrapolate
         method = self._method
 
-        # Check for cases where interpolation is not needed
+        # Lower bound extrapolation is always the first known rate
         if bday < known_bdays[0]:
             return known_rates[0]
+        # Upper bound extrapolation depends on the extrapolate flag
         elif bday > known_bdays[-1]:
             return known_rates[-1] if extrapolate else float("NaN")
 
