@@ -109,7 +109,7 @@ class DIFutures:
 
         bz_today = pd.Timestamp.today(tz="America/Sao_Paulo").normalize()
         if bz_today in self.trade_dates:
-            df_today = b3.futures(contract_code="DI1", trade_date=self._trade_dates)
+            df_today = b3.futures(contract_code="DI1", trade_date=bz_today)
             df = pd.concat([df, df_today], ignore_index=True)
 
         if df.empty:
@@ -231,22 +231,24 @@ class DIFutures:
         match (reference_dates, maturity_dates):
             case pd.Timestamp(), pd.Series():
                 dfi = pd.DataFrame({"mat": maturity_dates})
-                dfi["ref"] = reference_dates
+                dfi["rdate"] = reference_dates
 
             case pd.Series(), pd.Timestamp():
-                dfi = pd.DataFrame({"ref": reference_dates})
+                dfi = pd.DataFrame({"rdate": reference_dates})
                 dfi["mat"] = maturity_dates
 
             case pd.Series(), pd.Series():
                 if len(reference_dates) != len(maturity_dates):
                     raise ValueError("Args. should have the same length.")
-                dfi = pd.DataFrame({"ref": reference_dates, "mat": maturity_dates})
+                dfi = pd.DataFrame({"rdate": reference_dates, "mat": maturity_dates})
 
             case pd.Timestamp(), pd.Timestamp():
-                dfi = pd.DataFrame({"ref": [reference_dates], "mat": [maturity_dates]})
+                dfi = pd.DataFrame(
+                    {"rdate": [reference_dates], "mat": [maturity_dates]}
+                )
 
         # Compute business days between reference dates and maturities
-        dfi["bdays"] = bday.count(dfi["ref"], dfi["mat"])
+        dfi["bdays"] = bday.count(dfi["rdate"], dfi["mat"])
 
         # Initialize the interpolated rate column with NaN
         dfi["irate"] = pd.NA
@@ -261,12 +263,12 @@ class DIFutures:
 
         # Return an empty DataFrame if no rates are found
         if dfr.empty:
-            return pd.DataFrame()
+            return pd.Series()
 
         # Iterate over each unique reference date
-        for date in dfi["ref"].unique():
+        for date in dfi["rdate"].unique():
             # Filter DI rates for the current reference date
-            dfr_subset = dfr.query("TradeDate == @date").copy()
+            dfr_subset = dfr.query("TradeDate == @date").reset_index(drop=True)
 
             # Skip processing if no rates are available for the current date
             if dfr_subset.empty:
@@ -281,7 +283,8 @@ class DIFutures:
             )
 
             # Apply interpolation to rows matching the current reference date
-            mask = dfi["ref"] == date
+            # mask = dfi["rdate"] == date
+            mask: pd.Series = dfi["rdate"] == date
             dfi.loc[mask, "irate"] = dfi.loc[mask, "bdays"].apply(interp)
 
         # Return the Series with interpolated rates

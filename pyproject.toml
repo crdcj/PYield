@@ -36,7 +36,6 @@ dev = [
     "pandas-stubs",
     "lxml-stubs",
     "types-requests",
-    "black",
 ]
 
 [build-system]
@@ -48,13 +47,6 @@ path = "pyield/__about__.py"
 
 [tool.hatch.build.targets.sdist]
 only-include = ["pyield"]
-
-[tool.pdm]
-version = { source = "file", path = "pyield/__about__.py" }
-distribution = true
-
-[tool.pdm.build]
-excludes = ["tests", "docs"]
 
 [tool.uv]
 package = true
