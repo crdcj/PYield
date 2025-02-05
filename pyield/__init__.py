@@ -1,7 +1,7 @@
 from pyield import anbima, bday
 from pyield.__about__ import __version__
 from pyield.b3_futures import futures
-from pyield.di import DIFutures
+from pyield.b3_futures.di import DIFutures
 from pyield.ima import ima
 from pyield.indicators import indicator
 from pyield.interpolator import Interpolator

@@ -1,7 +1,8 @@
 import pandas as pd
 
-from pyield import anbima, bday, di
+from pyield import anbima, bday
 from pyield import date_converter as dc
+from pyield.b3_futures import di
 from pyield.date_converter import DateScalar
 from pyield.tpf import tools as tt
 

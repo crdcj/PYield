@@ -5,8 +5,8 @@ import pandas as pd
 
 from pyield import anbima
 from pyield import date_converter as dc
+from pyield.b3_futures.di import DIFutures
 from pyield.date_converter import DateScalar
-from pyield.di import DIFutures
 
 
 @overload

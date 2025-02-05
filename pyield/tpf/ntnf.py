@@ -3,9 +3,10 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 
-from pyield import anbima, bday, data_cache, di
+from pyield import anbima, bday, data_cache
 from pyield import date_converter as dc
 from pyield import interpolator as ip
+from pyield.b3_futures import di
 from pyield.date_converter import DateScalar
 from pyield.tpf import tools as tt
 
