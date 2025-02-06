@@ -35,8 +35,8 @@ COLUMN_MAPPING = {
     "financeiro": "TotalValue",  # = FR + SR (in millions)
     "quantidadeOfertada": "OfferedQuantity",
     "quantidadeAceita": "AcceptedQuantity",
-    "quantidadeOfertadaSegundaRodada": "SROfferedQuantity",
-    "quantidadeAceitaSegundaRodada": "SRAcceptedQuantity",
+    "quantidadeOfertadaSegundaRodada": "OfferedQuantitySR",
+    "quantidadeAceitaSegundaRodada": "AcceptedQuantitySR",
     "cotacaoMedia": "AvgPrice",
     "cotacaoCorte": "CutPrice",
     "taxaMedia": "AvgRate",
@@ -67,11 +67,11 @@ def _pre_process_df(df: pd.DataFrame) -> pd.DataFrame:
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     # Second Round (SR) columns can be null -> remove nulls to avoid propagation
-    df["SRAcceptedQuantity"] = df["SRAcceptedQuantity"].fillna(0)
-    df["SROfferedQuantity"] = df["SROfferedQuantity"].fillna(0)
+    df["AcceptedQuantitySR"] = df["AcceptedQuantitySR"].fillna(0)
+    df["OfferedQuantitySR"] = df["OfferedQuantitySR"].fillna(0)
 
     # Calcular o financeiro só do leilão
-    total_accepted_quantity = df["AcceptedQuantity"] + df["SRAcceptedQuantity"]
+    total_accepted_quantity = df["AcceptedQuantity"] + df["AcceptedQuantitySR"]
     first_round_ratio = df["AcceptedQuantity"] / total_accepted_quantity
     first_round_ratio = df["AcceptedQuantity"] / total_accepted_quantity
     first_round_ratio = first_round_ratio.where(df["AcceptedQuantity"] != 0, 0)
@@ -82,10 +82,10 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df["Value"] = (df["Value"] * 1_000_000).astype("Int64")
 
     # Calcular o financeiro só da SV
-    second_round_ratio = df["SRAcceptedQuantity"] / total_accepted_quantity
-    second_round_ratio = second_round_ratio.where(df["SRAcceptedQuantity"] != 0, 0)
-    df["SRValue"] = (second_round_ratio * df["TotalValue"]).round(1)
-    df["SRValue"] = (df["SRValue"] * 1_000_000).astype("Int64")
+    second_round_ratio = df["AcceptedQuantitySR"] / total_accepted_quantity
+    second_round_ratio = second_round_ratio.where(df["AcceptedQuantitySR"] != 0, 0)
+    df["ValueSR"] = (second_round_ratio * df["TotalValue"]).round(1)
+    df["ValueSR"] = (df["ValueSR"] * 1_000_000).astype("Int64")
 
     bond_mappping = {
         100000: "LTN",
@@ -159,60 +159,120 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
     df["DV01"] *= df["AcceptedQuantity"]
     df["DV01"] = df["DV01"].round(0).astype("Int64")
 
-    # Remover as colunas de cálculo do DV01
-    df = df.drop(columns=["BDToMat", "Duration", "MDuration"])
-
-    return df.reset_index(drop=True)
-
-
-def _fetch_df_from_url(url: str) -> pd.DataFrame:
-    try:
-        df = _load_from_url(url)
-        df = _pre_process_df(df)
-        df = _adjust_null_values(df)
-        df = _process_df(df)
-        df = _add_dv01(df)
-        sort_columns = ["Date", "AuctionType", "BondType", "Maturity"]
-        return df.sort_values(by=sort_columns).reset_index(drop=True)
-    except Exception as e:
-        logging.error(f"Error on fetching auction data from BC: {e}")
-        return pd.DataFrame()
-
-
-def get_all_auctions() -> pd.DataFrame:
-    # URL com toda a série de leilões de títulos públicos do Tesouro Nacional
-    url = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?$format=text/csv"
-    return _fetch_df_from_url(url)
+    return df
 
 
 def _filter_auction_by_type(
     df: pd.DataFrame, auction_type: Literal["Sell", "Buy"]
 ) -> pd.DataFrame:
     auction_type_mapping = {"Venda": "Sell", "Compra": "Buy"}
-    auction_type = auction_type_mapping.get(auction_type_mapping)
+    auction_type = auction_type_mapping.get(auction_type)
     if auction_type:
         df = df.query(f"AuctionType == '{auction_type}'").reset_index(drop=True)
     return df
 
 
-def get_auctions_in_range(
-    start: DateScalar,
-    end: DateScalar,
-    auction_type: Literal["Sell", "Buy"] = "Sell",
+def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
+    column_sequence = [
+        "Date",
+        "Settlement",
+        "AuctionType",
+        "Ordinance",
+        "Buyer",
+        "BondType",
+        "Maturity",
+        "SelicCode",
+        "TotalValue",
+        "Value",
+        "ValueSR",
+        "OfferedQuantity",
+        "OfferedQuantitySR",
+        "AcceptedQuantity",
+        "AcceptedQuantitySR",
+        "AvgPrice",
+        "CutPrice",
+        "AvgRate",
+        "CutRate",
+        "BDToMat",
+        "Duration",
+        "MDuration",
+        "DV01",
+    ]
+
+    primary_sort_keys = ["Date", "AuctionType", "BondType", "Maturity"]
+    return df[column_sequence].sort_values(by=primary_sort_keys).reset_index(drop=True)
+
+
+def _fetch_df_from_url(
+    url: str,
+    auction_type: Literal["Sell", "Buy"] = None,
 ) -> pd.DataFrame:
-    start = dc.convert_input_Dates(start)
-    end = dc.convert_input_Dates(end)
+    try:
+        df = _load_from_url(url)
+        df = _pre_process_df(df)
+        df = _adjust_null_values(df)
+        df = _process_df(df)
+        df = _add_dv01(df)
+        df = _filter_auction_by_type(df, auction_type)
+        df = _sort_and_reorder_columns(df)
+        return df
+    except Exception as e:
+        logging.error(f"Error on fetching auction data from BC: {e}")
+        return pd.DataFrame()
+
+
+def get_all_auctions() -> pd.DataFrame:
+    """
+    Retrieves a DataFrame containing all public auction data from the BC.
+
+    This function fetches the complete series of public auctions conducted by the
+    National Treasury via the BC API and processes it to a standardized DataFrame.
+
+    Returns:
+        pd.DataFrame: A DataFrame sorted by Date, AuctionType, BondType, and Maturity
+            containing auction data. In case of an error during data retrieval, an empty
+            DataFrame is returned and an error message is logged.
+    """
+    # URL com toda a série de leilões de títulos públicos do Tesouro Nacional
+    url = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?$format=text/csv"
+    return _fetch_df_from_url(url)
+
+
+def auctions(
+    start: DateScalar,
+    end: DateScalar | None = None,
+    auction_type: Literal["Sell", "Buy"] = None,
+) -> pd.DataFrame:
+    """
+    Retrieves auction data for a given date range and auction type.
+
+    It fetches auction data from the BC API for the specified start and end dates.
+    If the end date is not provided, it defaults to the start date.
+    The resulting data is then filtered by the specified auction type ("Sell" or "Buy").
+    "Sell" auctions are those where the National Treasury sells bonds to the market.
+    "Buy" auctions are those where the National Treasury buys bonds from the market.
+
+    Args:
+        start (DateScalar): The start date for the auction data query.
+        end (DateScalar | None, optional): The end date for the auction data query.
+            If None, the start date is used. Defaults to None.
+        auction_type (Literal["Sell", "Buy"], optional): The type of auction to filter
+            by. Defaults to "Sell".
+
+    Returns:
+        pd.DataFrame: A DataFrame containing auction data for the specified date range
+            and auction type. In case of an error during data retrieval, an empty
+            DataFrame is returned and an error message is logged.
+    """
+
+    start = dc.convert_input_dates(start)
+    if end:
+        end = dc.convert_input_dates(end)
+    else:
+        end = start
+
     start_str = start.strftime("%Y-%m-%d")
     end_str = end.strftime("%Y-%m-%d")
+    url = f"https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='{start_str}'&@dataMovimentoFim='{end_str}'&$format=text/csv"
 
-    url = f"https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataMaturity=@dataMaturity,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='{start_str}'&@dataMovimentoFim='{end_str}'&$format=text/csv"
-    df = _fetch_df_from_url(url)
-
-    return _filter_auction_by_type(df, auction_type)
-
-
-def retrieve_auction_on_date(
-    date: DateScalar,
-    auction_type: Literal["Sell", "Buy"] = "Sell",
-) -> pd.DataFrame:
-    return get_auctions_in_range(date, date, auction_type)
+    return _fetch_df_from_url(url, auction_type)
