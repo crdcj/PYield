@@ -73,7 +73,7 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df["OfferedQuantity"] = df["OfferedQuantityFR"] + df["OfferedQuantitySR"]
     df["AcceptedQuantity"] = df["AcceptedQuantityFR"] + df["AcceptedQuantitySR"]
 
-    # Calcular o financeiro só da FR
+    # Calculate the financial value of the first round
     first_round_ratio = df["AcceptedQuantityFR"] / df["AcceptedQuantity"]
     # Force 0 when AcceptedQuantityFR is 0 to avoid division by zero
     first_round_ratio = first_round_ratio.where(df["AcceptedQuantityFR"] != 0, 0)
@@ -82,7 +82,7 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df["ValueFR"] = (first_round_ratio * df["Value"]).round(1)
     df["ValueFR"] = (df["ValueFR"] * 1_000_000).astype("Int64")
 
-    # Calcular o financeiro só da SV
+    # Calculate the financial value of the second round
     second_round_ratio = df["AcceptedQuantitySR"] / df["AcceptedQuantity"]
     second_round_ratio = second_round_ratio.where(df["AcceptedQuantitySR"] != 0, 0)
     df["ValueSR"] = (second_round_ratio * df["Value"]).round(1)
@@ -219,8 +219,8 @@ def _fetch_df_from_url(
         df = _filter_auction_by_type(df, auction_type)
         df = _sort_and_reorder_columns(df)
         return df
-    except Exception as e:
-        logging.error(f"Error on fetching auction data from BC: {e}")
+    except Exception:
+        logging.exception("Error fetching auction data from BC API.")
         return pd.DataFrame()
 
 
