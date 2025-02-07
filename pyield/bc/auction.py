@@ -70,6 +70,7 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df["AcceptedQuantitySR"] = df["AcceptedQuantitySR"].fillna(0)
     df["OfferedQuantitySR"] = df["OfferedQuantitySR"].fillna(0)
 
+    df["OfferedQuantity"] = df["OfferedQuantityFR"] + df["OfferedQuantitySR"]
     df["AcceptedQuantity"] = df["AcceptedQuantityFR"] + df["AcceptedQuantitySR"]
 
     # Calcular o financeiro só da FR
