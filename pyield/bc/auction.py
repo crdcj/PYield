@@ -43,6 +43,8 @@ COLUMN_MAPPING = {
     "taxaCorte": "CutRate",
 }
 
+BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
+
 
 def _load_from_url(url: str) -> pd.DataFrame:
     response = requests.get(url, timeout=10)
@@ -72,6 +74,13 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
 
     df["OfferedQuantity"] = df["OfferedQuantityFR"] + df["OfferedQuantitySR"]
     df["AcceptedQuantity"] = df["AcceptedQuantityFR"] + df["AcceptedQuantitySR"]
+    # Total value of the auction in R$ millions -> convert it to unit value
+    df["Value"] = (1_000_000 * df["Value"]).round(0).astype("Int64")
+
+    # Remove the percentage sign and round to 6 decimal places (4 decimal places in %)
+    # Before 25/08/2015, there were no rounding rules for the rates in the BC API
+    df["AvgRate"] = (df["AvgRate"] / 100).round(6)
+    df["CutRate"] = (df["CutRate"] / 100).round(6)
 
     # Calculate the financial value of the first round
     first_round_ratio = df["AcceptedQuantityFR"] / df["AcceptedQuantity"]
@@ -79,14 +88,12 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     first_round_ratio = first_round_ratio.where(df["AcceptedQuantityFR"] != 0, 0)
     # O dado do financeiro do BC está em milhões com uma casa decimal de precisão
     # Portanto, podemos converter para inteiro sem perda de informação
-    df["ValueFR"] = (first_round_ratio * df["Value"]).round(1)
-    df["ValueFR"] = (df["ValueFR"] * 1_000_000).astype("Int64")
+    df["ValueFR"] = (first_round_ratio * df["Value"]).round(0).astype("Int64")
 
     # Calculate the financial value of the second round
     second_round_ratio = df["AcceptedQuantitySR"] / df["AcceptedQuantity"]
     second_round_ratio = second_round_ratio.where(df["AcceptedQuantitySR"] != 0, 0)
-    df["ValueSR"] = (second_round_ratio * df["Value"]).round(1)
-    df["ValueSR"] = (df["ValueSR"] * 1_000_000).astype("Int64")
+    df["ValueSR"] = (second_round_ratio * df["Value"]).round(0).astype("Int64")
 
     bond_mappping = {
         100000: "LTN",
@@ -132,27 +139,27 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
     df_ltn = df_is_accepted.query("BondType == 'LTN'").reset_index(drop=True)
     if not df_ltn.empty:
         df_ltn["Duration"] = df_ltn["BDToMat"] / 252
-        df_ltn["MDuration"] = df_ltn["Duration"] / (1 + df_ltn["AvgRate"] / 100)
+        df_ltn["MDuration"] = df_ltn["Duration"] / (1 + df_ltn["AvgRate"])
         df_ltn["DV01FR"] = 0.0001 * df_ltn["MDuration"] * df_ltn["AvgPrice"]
 
     def compute_f_duration(row):
-        return duration_f(row["Date"], row["Maturity"], row["CutRate"] / 100)
+        return duration_f(row["Date"], row["Maturity"], row["CutRate"])
 
     df_ntnf = df_is_accepted.query("BondType == 'NTN-F'").reset_index(drop=True)
     if not df_ntnf.empty:
         df_ntnf["Duration"] = df_ntnf.apply(compute_f_duration, axis=1)
         df_ntnf["Duration"] = df_ntnf["Duration"].astype("Float64")
-        df_ntnf["MDuration"] = df_ntnf["Duration"] / (1 + df_ntnf["AvgRate"] / 100)
+        df_ntnf["MDuration"] = df_ntnf["Duration"] / (1 + df_ntnf["AvgRate"])
         df_ntnf["DV01FR"] = 0.0001 * df_ntnf["MDuration"] * df_ntnf["AvgPrice"]
 
     def compute_b_duration(row):
-        return duration_b(row["Date"], row["Maturity"], row["CutRate"] / 100)
+        return duration_b(row["Date"], row["Maturity"], row["CutRate"])
 
     df_ntnb = df_is_accepted.query("BondType == 'NTN-B'").reset_index(drop=True)
     if not df_ntnb.empty:
         df_ntnb["Duration"] = df_ntnb.apply(compute_b_duration, axis=1)
         df_ntnb["Duration"] = df_ntnb["Duration"].astype("Float64")
-        df_ntnb["MDuration"] = df_ntnb["Duration"] / (1 + df_ntnb["AvgRate"] / 100)
+        df_ntnb["MDuration"] = df_ntnb["Duration"] / (1 + df_ntnb["AvgRate"])
         df_ntnb["DV01FR"] = 0.0001 * df_ntnb["MDuration"] * df_ntnb["AvgPrice"]
 
     df = pd.concat([df_not_accepted, df_lft, df_ltn, df_ntnf, df_ntnb])
@@ -237,7 +244,8 @@ def get_all_auctions() -> pd.DataFrame:
             DataFrame is returned and an error message is logged.
     """
     # URL com toda a série de leilões de títulos públicos do Tesouro Nacional
-    url = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?$format=text/csv"
+    url = f"{BASE_API_URL}$format=text/csv"
+
     return _fetch_df_from_url(url)
 
 
@@ -280,15 +288,15 @@ def auctions(
             - BondType: Category of the bond (e.g., "LTN", "LFT", "NTN-B", "NTN-F").
             - Maturity: Bond maturity date.
             - SelicCode: Bond code in the Selic system.
-            - Value: Total value of the auction: FR + SR.
-            - ValueFR: First round (FR) value of the auction.
-            - ValueSR: Value in the second round.
-            - OfferedQuantity: Total quantity offered in the auction.
-            - OfferedQuantityFR: Quantity offered in the first round.
-            - OfferedQuantitySR: Quantity offered in the second round.
-            - AcceptedQuantity: Total quantity accepted in the auction.
-            - AcceptedQuantityFR: Quantity accepted in the first round.
-            - AcceptedQuantitySR: Quantity accepted in the second round.
+            - Value: Total value of the auction in R$ (FR + SR).
+            - ValueFR: First round (FR) value of the auction in R$.
+            - ValueSR: Value in the second round (SR) in R$.
+            - OfferedQuantity: Total quantity offered in the auction (FR + SR).
+            - OfferedQuantityFR: Quantity offered in the first round (FR).
+            - OfferedQuantitySR: Quantity offered in the second round (SR).
+            - AcceptedQuantity: Total quantity accepted in the auction (FR + SR).
+            - AcceptedQuantityFR: Quantity accepted in the first round (FR).
+            - AcceptedQuantitySR: Quantity accepted in the second round (SR).
             - AvgPrice: Average price in the auction.
             - CutPrice: Cut-off price.
             - AvgRate: Average interest rate.
@@ -296,7 +304,7 @@ def auctions(
             - BDToMat: Business days to maturity.
             - Duration: Duration of the bond.
             - MDuration: Modified duration of the bond.
-            - DV01FR: First Round dollar value of a 1 bp change in yield in R$.
+            - DV01FR: First Round (FR) dollar value of a 1 bp change in yield in R$.
 
     """
 
@@ -308,6 +316,7 @@ def auctions(
 
     start_str = start.strftime("%Y-%m-%d")
     end_str = end.strftime("%Y-%m-%d")
-    url = f"https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='{start_str}'&@dataMovimentoFim='{end_str}'&$format=text/csv"
+    # url = f"https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='{start_str}'&@dataMovimentoFim='{end_str}'&$format=text/csv"
+    url = f"{BASE_API_URL}@dataMovimentoInicio='{start_str}'&@dataMovimentoFim='{end_str}'&$format=text/csv"  # noqa
 
     return _fetch_df_from_url(url, auction_type)
