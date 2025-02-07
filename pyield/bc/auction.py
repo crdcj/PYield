@@ -32,9 +32,9 @@ COLUMN_MAPPING = {
     # "prazo": "...", # N. de DC entre a data de liquidação e a data de vencimento
     "codigoTitulo": "SelicCode",  # [100000, 210100, 450000, 760199, 950199]
     "dataVencimento": "Maturity",
-    "financeiro": "TotalValue",  # = FR + SR (in millions)
-    "quantidadeOfertada": "OfferedQuantity",
-    "quantidadeAceita": "AcceptedQuantity",
+    "financeiro": "Value",  # = FR + SR (in millions)
+    "quantidadeOfertada": "OfferedQuantityFR",
+    "quantidadeAceita": "AcceptedQuantityFR",
     "quantidadeOfertadaSegundaRodada": "OfferedQuantitySR",
     "quantidadeAceitaSegundaRodada": "AcceptedQuantitySR",
     "cotacaoMedia": "AvgPrice",
@@ -70,21 +70,21 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df["AcceptedQuantitySR"] = df["AcceptedQuantitySR"].fillna(0)
     df["OfferedQuantitySR"] = df["OfferedQuantitySR"].fillna(0)
 
-    # Calcular o financeiro só do leilão
-    total_accepted_quantity = df["AcceptedQuantity"] + df["AcceptedQuantitySR"]
-    first_round_ratio = df["AcceptedQuantity"] / total_accepted_quantity
-    first_round_ratio = df["AcceptedQuantity"] / total_accepted_quantity
-    first_round_ratio = first_round_ratio.where(df["AcceptedQuantity"] != 0, 0)
+    df["AcceptedQuantity"] = df["AcceptedQuantityFR"] + df["AcceptedQuantitySR"]
+
+    # Calcular o financeiro só da FR
+    first_round_ratio = df["AcceptedQuantityFR"] / df["AcceptedQuantity"]
+    # Force 0 when AcceptedQuantityFR is 0 to avoid division by zero
+    first_round_ratio = first_round_ratio.where(df["AcceptedQuantityFR"] != 0, 0)
     # O dado do financeiro do BC está em milhões com uma casa decimal de precisão
     # Portanto, podemos converter para inteiro sem perda de informação
-    df["Value"] = (first_round_ratio * df["TotalValue"]).round(1)
-    df["Value"] = (first_round_ratio * df["TotalValue"]).round(1)
-    df["Value"] = (df["Value"] * 1_000_000).astype("Int64")
+    df["ValueFR"] = (first_round_ratio * df["Value"]).round(1)
+    df["ValueFR"] = (df["ValueFR"] * 1_000_000).astype("Int64")
 
     # Calcular o financeiro só da SV
-    second_round_ratio = df["AcceptedQuantitySR"] / total_accepted_quantity
+    second_round_ratio = df["AcceptedQuantitySR"] / df["AcceptedQuantity"]
     second_round_ratio = second_round_ratio.where(df["AcceptedQuantitySR"] != 0, 0)
-    df["ValueSR"] = (second_round_ratio * df["TotalValue"]).round(1)
+    df["ValueSR"] = (second_round_ratio * df["Value"]).round(1)
     df["ValueSR"] = (df["ValueSR"] * 1_000_000).astype("Int64")
 
     bond_mappping = {
@@ -99,7 +99,7 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     # Em 11/06/2024 o BC passou a informar nas colunas de cotacao os valores dos PUs
     # Isso afeta somente os títulos LFT e NTN-B
     change_Date = pd.Timestamp("2024-06-11")
-    adjusted_price = (df["Value"] / df["AcceptedQuantity"]).round(6)
+    adjusted_price = (df["ValueFR"] / df["AcceptedQuantityFR"]).round(6)
     is_after_change_Date = df["Date"] >= change_Date
     is_ltn_or_ntnf = df["BondType"].isin(["LTN", "NTN-F"])
     keep_avg_price = is_after_change_Date | is_ltn_or_ntnf
@@ -110,7 +110,7 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
 
 def _adjust_null_values(df: pd.DataFrame) -> pd.DataFrame:
     # Onde não há quantidade aceita, não há nem taxa e nem PU definidos.
-    is_accepted = df["AcceptedQuantity"] != 0
+    is_accepted = df["AcceptedQuantityFR"] != 0
     df["AvgRate"] = df["AvgRate"].where(is_accepted, pd.NA)
     df["CutRate"] = df["CutRate"].where(is_accepted, pd.NA)
     df["AvgPrice"] = df["AvgPrice"].where(is_accepted, pd.NA)
@@ -122,7 +122,7 @@ def _adjust_null_values(df: pd.DataFrame) -> pd.DataFrame:
 def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
     df["BDToMat"] = yd.bday.count(start=df["Date"], end=df["Maturity"])
 
-    is_accepted = df["AcceptedQuantity"] != 0  # noqa
+    is_accepted = df["AcceptedQuantityFR"] != 0  # noqa
     df_not_accepted = df.query("~@is_accepted").reset_index(drop=True)
     df_is_accepted = df.query("@is_accepted").reset_index(drop=True)
 
@@ -132,7 +132,7 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
     if not df_ltn.empty:
         df_ltn["Duration"] = df_ltn["BDToMat"] / 252
         df_ltn["MDuration"] = df_ltn["Duration"] / (1 + df_ltn["AvgRate"] / 100)
-        df_ltn["DV01"] = 0.0001 * df_ltn["MDuration"] * df_ltn["AvgPrice"]
+        df_ltn["DV01FR"] = 0.0001 * df_ltn["MDuration"] * df_ltn["AvgPrice"]
 
     def compute_f_duration(row):
         return duration_f(row["Date"], row["Maturity"], row["CutRate"] / 100)
@@ -142,7 +142,7 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
         df_ntnf["Duration"] = df_ntnf.apply(compute_f_duration, axis=1)
         df_ntnf["Duration"] = df_ntnf["Duration"].astype("Float64")
         df_ntnf["MDuration"] = df_ntnf["Duration"] / (1 + df_ntnf["AvgRate"] / 100)
-        df_ntnf["DV01"] = 0.0001 * df_ntnf["MDuration"] * df_ntnf["AvgPrice"]
+        df_ntnf["DV01FR"] = 0.0001 * df_ntnf["MDuration"] * df_ntnf["AvgPrice"]
 
     def compute_b_duration(row):
         return duration_b(row["Date"], row["Maturity"], row["CutRate"] / 100)
@@ -152,12 +152,12 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
         df_ntnb["Duration"] = df_ntnb.apply(compute_b_duration, axis=1)
         df_ntnb["Duration"] = df_ntnb["Duration"].astype("Float64")
         df_ntnb["MDuration"] = df_ntnb["Duration"] / (1 + df_ntnb["AvgRate"] / 100)
-        df_ntnb["DV01"] = 0.0001 * df_ntnb["MDuration"] * df_ntnb["AvgPrice"]
+        df_ntnb["DV01FR"] = 0.0001 * df_ntnb["MDuration"] * df_ntnb["AvgPrice"]
 
     df = pd.concat([df_not_accepted, df_lft, df_ltn, df_ntnf, df_ntnb])
 
-    df["DV01"] *= df["AcceptedQuantity"]
-    df["DV01"] = df["DV01"].round(0).astype("Int64")
+    df["DV01FR"] *= df["AcceptedQuantityFR"]
+    df["DV01FR"] = df["DV01FR"].round(0).astype("Int64")
 
     return df
 
@@ -182,12 +182,14 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "BondType",
         "Maturity",
         "SelicCode",
-        "TotalValue",
         "Value",
+        "ValueFR",
         "ValueSR",
         "OfferedQuantity",
+        "OfferedQuantityFR",
         "OfferedQuantitySR",
         "AcceptedQuantity",
+        "AcceptedQuantityFR",
         "AcceptedQuantitySR",
         "AvgPrice",
         "CutPrice",
@@ -196,7 +198,7 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "BDToMat",
         "Duration",
         "MDuration",
-        "DV01",
+        "DV01FR",
     ]
 
     primary_sort_keys = ["Date", "AuctionType", "BondType", "Maturity"]
@@ -263,6 +265,38 @@ def auctions(
         pd.DataFrame: A DataFrame containing auction data for the specified date range
             and auction type. In case of an error during data retrieval, an empty
             DataFrame is returned and an error message is logged.
+
+    Notes:
+        FR = First Round
+        SR = Second Round
+
+        The DataFrame has the following columns:
+            - Date: Date of the auction.
+            - Settlement: Settlement date of the auction.
+            - AuctionType: Type of auction (e.g., "Sell" or "Buy").
+            - Ordinance: Normative ordinance associated with the auction.
+            - Buyer: Buyer category (e.g., "TodoMercado", "SomenteDealerApto").
+            - BondType: Category of the bond (e.g., "LTN", "LFT", "NTN-B", "NTN-F").
+            - Maturity: Bond maturity date.
+            - SelicCode: Bond code in the Selic system.
+            - Value: Total value of the auction: FR + SR.
+            - ValueFR: First round (FR) value of the auction.
+            - ValueSR: Value in the second round.
+            - OfferedQuantity: Total quantity offered in the auction.
+            - OfferedQuantityFR: Quantity offered in the first round.
+            - OfferedQuantitySR: Quantity offered in the second round.
+            - AcceptedQuantity: Total quantity accepted in the auction.
+            - AcceptedQuantityFR: Quantity accepted in the first round.
+            - AcceptedQuantitySR: Quantity accepted in the second round.
+            - AvgPrice: Average price in the auction.
+            - CutPrice: Cut-off price.
+            - AvgRate: Average interest rate.
+            - CutRate: Cut-off rate.
+            - BDToMat: Business days to maturity.
+            - Duration: Duration of the bond.
+            - MDuration: Modified duration of the bond.
+            - DV01FR: First Round dollar value of a 1 bp change in yield in R$.
+
     """
 
     start = dc.convert_input_dates(start)
