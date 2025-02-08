@@ -1,6 +1,8 @@
 """
 Documentação da API do BC
-https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/aplicacao#!/recursos/leiloesTitulosPublicos#eyJmb3JtdWxhcmlvIjp7IiRmb3JtYXQiOiJqc29uIiwiJHRvcCI6MTAwfX0=
+    https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/aplicacao#!/recursos/leiloesTitulosPublicos#eyJmb3JtdWxhcmlvIjp7IiRmb3JtYXQiOiJqc29uIiwiJHRvcCI6MTAwfX0=
+Exemplo de chamada:
+    https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='2025-01-30'&@dataMovimentoFim='2025-01-30'&@tipoOferta='Venda'&$top=100&$format=json
 """
 
 import io
@@ -10,7 +12,7 @@ from typing import Literal
 import pandas as pd
 import requests
 
-import pyield as yd
+from pyield import bday
 from pyield import date_converter as dc
 from pyield.date_converter import DateScalar
 from pyield.tpf.ntnb import duration as duration_b
@@ -128,7 +130,7 @@ def _adjust_null_values(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
-    df["BDToMat"] = yd.bday.count(start=df["Date"], end=df["Maturity"])
+    df["BDToMat"] = bday.count(start=df["Date"], end=df["Maturity"])
 
     is_accepted = df["AcceptedQuantityFR"] != 0  # noqa
     df_not_accepted = df.query("~@is_accepted").reset_index(drop=True)
@@ -170,16 +172,6 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _filter_auction_by_type(
-    df: pd.DataFrame, auction_type: Literal["Sell", "Buy"]
-) -> pd.DataFrame:
-    auction_type_mapping = {"Venda": "Sell", "Compra": "Buy"}
-    auction_type = auction_type_mapping.get(auction_type)
-    if auction_type:
-        df = df.query(f"AuctionType == '{auction_type}'").reset_index(drop=True)
-    return df
-
-
 def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     column_sequence = [
         "Date",
@@ -213,17 +205,16 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df[column_sequence].sort_values(by=primary_sort_keys).reset_index(drop=True)
 
 
-def _fetch_df_from_url(
-    url: str,
-    auction_type: Literal["Sell", "Buy"] = None,
-) -> pd.DataFrame:
+def _fetch_df_from_url(url: str) -> pd.DataFrame:
     try:
         df = _load_from_url(url)
+        if df.empty:
+            logging.warning("No auction data found for the specified period.")
+            return pd.DataFrame()
         df = _pre_process_df(df)
         df = _adjust_null_values(df)
         df = _process_df(df)
         df = _add_dv01(df)
-        df = _filter_auction_by_type(df, auction_type)
         df = _sort_and_reorder_columns(df)
         return df
     except Exception:
@@ -231,92 +222,109 @@ def _fetch_df_from_url(
         return pd.DataFrame()
 
 
-def get_all_auctions() -> pd.DataFrame:
-    """
-    Retrieves a DataFrame containing all public auction data from the BC.
-
-    This function fetches the complete series of public auctions conducted by the
-    National Treasury via the BC API and processes it to a standardized DataFrame.
-
-    Returns:
-        pd.DataFrame: A DataFrame sorted by Date, AuctionType, BondType, and Maturity
-            containing auction data. In case of an error during data retrieval, an empty
-            DataFrame is returned and an error message is logged.
-    """
-    # URL com toda a série de leilões de títulos públicos do Tesouro Nacional
-    url = f"{BASE_API_URL}$format=text/csv"
-
-    return _fetch_df_from_url(url)
-
-
 def auctions(
-    start: DateScalar,
+    start: DateScalar | None = None,
     end: DateScalar | None = None,
     auction_type: Literal["Sell", "Buy"] = None,
 ) -> pd.DataFrame:
     """
-    Retrieves auction data for a given date range and auction type.
+    Recupera dados de leilões para um determinado período e tipo de leilão da API do BC.
 
-    It fetches auction data from the BC API for the specified start and end dates.
-    If the end date is not provided, it defaults to the start date.
-    The resulting data is then filtered by the specified auction type ("Sell" or "Buy").
-    "Sell" auctions are those where the National Treasury sells bonds to the market.
-    "Buy" auctions are those where the National Treasury buys bonds from the market.
+    **Consultas de Período:**
+    - Para consultar dados de um intervalo de datas, forneça as datas de `start` e `end`.
+      Exemplo: `auctions(start='2024-10-20', end='2024-10-27')`
+    - Se apenas `start` for fornecido, a API do BC retornará dados de leilão a partir
+      da data de `start` **até a data mais recente disponível**.
+      Exemplo: `auctions(start='2024-10-20')`
+    - Se apenas `end` for fornecido, a API do BC retornará dados de leilão **desde a
+      data mais antiga disponível até a data de `end`**.
+      Exemplo: `auctions(end='2024-10-27')`
+
+    **Série Histórica Completa:**
+    - Para recuperar a série histórica completa de leilões (desde 12/11/2012 até o
+      último dia útil), chame a função sem fornecer os parâmetros `start` e `end`.
+      Exemplo: `auctions()`
+
+    Busca dados de leilões da API do BC para as datas de início e fim especificadas,
+    filtrando os resultados diretamente na API pelo tipo de leilão, se especificado.
+    O comportamento da função em relação aos parâmetros `start` e `end` agora segue
+    o padrão da API do Banco Central:
+    - Se `start` for fornecido e `end` não, a API retorna dados de `start` até o fim.
+    - Se `end` for fornecido e `start` não, a API retorna dados do início até `end`.
+    - Se ambos `start` e `end` forem omitidos, a API retorna a série histórica completa.
+
+    Os dados podem ser filtrados pelo tipo de leilão especificado ("Sell" ou "Buy").
+    Leilões de "Sell" são aqueles em que o Tesouro Nacional vende títulos ao mercado.
+    Leilões de "Buy" são aqueles em que o Tesouro Nacional compra títulos do mercado.
 
     Args:
-        start (DateScalar): The start date for the auction data query.
-        end (DateScalar | None, optional): The end date for the auction data query.
-            If None, the start date is used. Defaults to None.
-        auction_type (Literal["Sell", "Buy"], optional): The type of auction to filter
-            by. Defaults to "Sell".
+        start (DateScalar, opcional): A data de início para a consulta dos leilões.
+            Se `start` for fornecido e `end` for `None`, a API retornará dados de
+            leilão a partir de `start` até a data mais recente disponível.
+            Se `start` e `end` forem `None`, a série histórica completa será retornada.
+            Padrão é `None`.
+        end (DateScalar, opcional): A data de fim para a consulta de dados de leilão.
+            Se `end` for fornecido e `start` for `None`, a API retornará dados de
+            leilão desde a data mais antiga disponível até a data de `end`.
+            Se `start` e `end` forem `None`, a série histórica completa será retornada.
+            Padrão é `None`.
+        auction_type (Literal["Sell", "Buy"], opcional): O tipo de leilão para filtrar
+            diretamente na API. Padrão é `None` (retorna todos os tipos de leilão).
 
     Returns:
-        pd.DataFrame: A DataFrame containing auction data for the specified date range
-            and auction type. In case of an error during data retrieval, an empty
-            DataFrame is returned and an error message is logged.
+        pd.DataFrame: Um DataFrame contendo dados de leilões para o período e tipo
+            especificados. Em caso de erro ao buscar os dados, um DataFrame vazio
+            é retornado e uma mensagem de erro é registrada no log.
 
     Notes:
-        FR = First Round
-        SR = Second Round
+        FR = First Round (Primeira Rodada)
+        SR = Second Round (Segunda Rodada)
 
-        The DataFrame has the following columns:
-            - Date: Date of the auction.
-            - Settlement: Settlement date of the auction.
-            - AuctionType: Type of auction (e.g., "Sell" or "Buy").
-            - Ordinance: Normative ordinance associated with the auction.
-            - Buyer: Buyer category (e.g., "TodoMercado", "SomenteDealerApto").
-            - BondType: Category of the bond (e.g., "LTN", "LFT", "NTN-B", "NTN-F").
-            - Maturity: Bond maturity date.
-            - SelicCode: Bond code in the Selic system.
-            - Value: Total value of the auction in R$ (FR + SR).
-            - ValueFR: First round (FR) value of the auction in R$.
-            - ValueSR: Value in the second round (SR) in R$.
-            - OfferedQuantity: Total quantity offered in the auction (FR + SR).
-            - OfferedQuantityFR: Quantity offered in the first round (FR).
-            - OfferedQuantitySR: Quantity offered in the second round (SR).
-            - AcceptedQuantity: Total quantity accepted in the auction (FR + SR).
-            - AcceptedQuantityFR: Quantity accepted in the first round (FR).
-            - AcceptedQuantitySR: Quantity accepted in the second round (SR).
-            - AvgPrice: Average price in the auction.
-            - CutPrice: Cut-off price.
-            - AvgRate: Average interest rate.
-            - CutRate: Cut-off rate.
-            - BDToMat: Business days to maturity.
-            - Duration: Duration of the bond.
-            - MDuration: Modified duration of the bond.
-            - DV01FR: First Round (FR) dollar value of a 1 bp change in yield in R$.
-
+        O DataFrame possui as seguintes colunas:
+            - Date: Data do leilão.
+            - Settlement: Data de liquidação do leilão.
+            - AuctionType: Tipo de leilão (ex: "Sell" ou "Buy").
+            - Ordinance: Edital normativo associado ao leilão.
+            - Buyer: Categoria do comprador (ex: "TodoMercado", "SomenteDealerApto").
+            - BondType: Categoria do título (ex: "LTN", "LFT", "NTN-B", "NTN-F").
+            - Maturity: Data de vencimento do título.
+            - SelicCode: Código do título no sistema Selic.
+            - Value: Valor total do leilão em R$ (FR + SR).
+            - ValueFR: Valor da primeira rodada (FR) do leilão em R$.
+            - ValueSR: Valor da segunda rodada (SR) em R$.
+            - OfferedQuantity: Quantidade total ofertada no leilão (FR + SR).
+            - OfferedQuantityFR: Quantidade ofertada na primeira rodada (FR).
+            - OfferedQuantitySR: Quantidade ofertada na segunda rodada (SR).
+            - AcceptedQuantity: Quantidade total aceita no leilão (FR + SR).
+            - AcceptedQuantityFR: Quantidade aceita na primeira rodada (FR).
+            - AcceptedQuantitySR: Quantidade aceita na segunda rodada (SR).
+            - AvgPrice: Preço médio no leilão.
+            - CutPrice: Preço de corte.
+            - AvgRate: Taxa de juros média.
+            - CutRate: Taxa de corte.
+            - BDToMat: Dias úteis até o vencimento.
+            - Duration: Duration (Duração) do título.
+            - MDuration: Modified Duration (Duração Modificada) do título.
+            - DV01FR: Dollar Value of 1 bp change in yield - Primeira Rodada (FR) em R$.
     """
+    url = BASE_API_URL
+    if start:
+        start = dc.convert_input_dates(start)
+        start_str = start.strftime("%Y-%m-%d")
+        url += f"@dataMovimentoInicio='{start_str}'"
 
-    start = dc.convert_input_dates(start)
     if end:
         end = dc.convert_input_dates(end)
-    else:
-        end = start
+        end_str = end.strftime("%Y-%m-%d")
+        url += f"&@dataMovimentoFim='{end_str}'"
 
-    start_str = start.strftime("%Y-%m-%d")
-    end_str = end.strftime("%Y-%m-%d")
-    # url = f"https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='{start_str}'&@dataMovimentoFim='{end_str}'&$format=text/csv"
-    url = f"{BASE_API_URL}@dataMovimentoInicio='{start_str}'&@dataMovimentoFim='{end_str}'&$format=text/csv"  # noqa
+    # Mapeamento do auction_type para o valor esperado pela API
+    auction_type_mapping = {"Sell": "Venda", "Buy": "Compra"}
+    auction_type_api_value = auction_type_mapping.get(auction_type)
+    # Adiciona o parâmetro tipoOferta à URL se auction_type for fornecido
+    if auction_type_api_value:
+        url += f"&@tipoOferta='{auction_type_api_value}'"
 
-    return _fetch_df_from_url(url, auction_type)
+    url += "&$format=text/csv"  # Adiciona o formato CSV ao final
+
+    return _fetch_df_from_url(url)
