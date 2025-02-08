@@ -231,7 +231,7 @@ def auctions(
     Recupera dados de leilões para um determinado período e tipo de leilão da API do BC.
 
     **Consultas de Período:**
-    - Para consultar dados de um intervalo de datas, forneça as datas de `start` e `end`.
+    - Para consultar dados de um intervalo, forneça as datas de `start` e `end`.
       Exemplo: `auctions(start='2024-10-20', end='2024-10-27')`
     - Se apenas `start` for fornecido, a API do BC retornará dados de leilão a partir
       da data de `start` **até a data mais recente disponível**.
@@ -247,9 +247,9 @@ def auctions(
 
     Busca dados de leilões da API do BC para as datas de início e fim especificadas,
     filtrando os resultados diretamente na API pelo tipo de leilão, se especificado.
-    O comportamento da função em relação aos parâmetros `start` e `end` agora segue
-    o padrão da API do Banco Central:
-    - Se `start` for fornecido e `end` não, a API retorna dados de `start` até o fim.
+    O comportamento da função em relação aos parâmetros `start` e `end` segue o padrão
+    da API do Banco Central:
+    - Se `start` for fornecido e `end` não, a função retorna dados de `start` até o fim.
     - Se `end` for fornecido e `start` não, a API retorna dados do início até `end`.
     - Se ambos `start` e `end` forem omitidos, a API retorna a série histórica completa.
 
