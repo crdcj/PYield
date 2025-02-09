@@ -77,6 +77,8 @@ def _process_last_ima(df: pd.DataFrame) -> pd.DataFrame:
     # Since DV01 and MarketValue are total stock values, we round them to integers
     df["MarketDV01"] = dv01.round(0).astype("Int64")
     df["MarketValue"] = (1000 * df["MarketValue"]).round(0).astype("Int64")
+    # LFT DV01 is zero
+    df["MarketDV01"] = df["MarketDV01"].where(df["BondType"] != "LFT", 0)
     return df
 
 
