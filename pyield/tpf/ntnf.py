@@ -3,9 +3,10 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 
-from pyield import anbima, bday, data_cache
+from pyield import bday, data_cache
 from pyield import date_converter as dc
 from pyield import interpolator as ip
+from pyield.anbima import tpf
 from pyield.b3_futures import di
 from pyield.date_converter import DateScalar
 from pyield.tpf import tools as tt
@@ -54,7 +55,7 @@ def rates(reference_date: DateScalar) -> pd.DataFrame:
         4   2033-01-01        0.116307
         5   2035-01-01        0.116586
     """
-    ntnf_rates = anbima.rates(reference_date, "NTN-F")
+    ntnf_rates = tpf.anbima_tpf_rates(reference_date, "NTN-F")
     if ntnf_rates.empty:
         return pd.DataFrame()
     return ntnf_rates[["MaturityDate", "IndicativeRate"]]
@@ -92,7 +93,7 @@ def _check_maturity_date(maturity: pd.Timestamp) -> None:
     Check if the maturity date is a valid NTN-F maturity date.
 
     Args:
-        maturity_date (pd.Timestamp): The maturity date to be checked.
+        maturity (pd.Timestamp): The maturity date to be checked.
 
     Raises:
         ValueError: If the maturity date is not the 1st of January.

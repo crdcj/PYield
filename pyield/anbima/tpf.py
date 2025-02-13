@@ -106,7 +106,25 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def data(reference_date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
+def anbima_tpf_data(
+    reference_date: DateScalar, bond_type: str | None = None
+) -> pd.DataFrame:
+    """Fetch and process TPF market data from ANBIMA.
+
+    This function retrieves bond market data from the ANBIMA website for a
+    specified reference date. It handles different file formats based on the date
+    and attempts to download the data from both member and non-member URLs.
+
+    Args:
+        reference_date (DateScalar): The reference date for the data.
+        bond_type (str, optional):  Filter data by bond type.
+            Defaults to None, which returns data for all bond types.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing bond market data.
+            Returns an empty DataFrame if data is not available for the
+            specified date.
+    """
     # Normalize the reference date
     reference_date = dc.convert_input_dates(reference_date)
     file_content = _get_file_content(reference_date)
@@ -125,11 +143,30 @@ def data(reference_date: DateScalar, bond_type: str | None = None) -> pd.DataFra
         return df.reset_index(drop=True)
 
 
-def rates(
+def anbima_tpf_rates(
     reference_date: DateScalar,
     bond_type: str | None = None,
     adj_maturities: bool = False,
 ) -> pd.DataFrame:
+    """Retrieve indicative rates for bonds from ANBIMA data.
+
+    This function fetches indicative interest rates for bonds from ANBIMA,
+    initially attempting to retrieve data from a cached dataset. If the data
+    is not available in the cache, it fetches it directly from the ANBIMA
+    website using the :func:`data` function.
+
+    Args:
+        reference_date (DateScalar): The reference date for the rates.
+        bond_type (str, optional): Filter rates by bond type.
+            Defaults to None, which returns rates for all bond types.
+        adj_maturities (bool, optional): Adjust maturity dates to the next
+            business day. Defaults to False.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing bond types, maturity dates, and
+            indicative rates. Returns an empty DataFrame if data is not
+            available for the specified date.
+    """
     df = get_anbima_dataset()
 
     reference_date = dc.convert_input_dates(reference_date)
@@ -137,7 +174,7 @@ def rates(
 
     if df.empty:
         # Try to fetch the data from the Anbima website
-        df = data(reference_date)
+        df = anbima_tpf_data(reference_date)
 
     if df.empty:
         # If the data is still empty, return an empty DataFrame
@@ -153,11 +190,25 @@ def rates(
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def pre_maturities(reference_date: DateScalar) -> pd.Series:
-    df = get_anbima_dataset()
-    reference_date = dc.convert_input_dates(reference_date)
-    df.query("ReferenceDate == @reference_date", inplace=True)
-    df.query("BondType in ['LTN', 'NTN-F']", inplace=True)
-    maturity_dates = df["MaturityDate"].drop_duplicates()
+def tpf_pre_maturities(reference_date: DateScalar) -> pd.Series:
+    """Retrieve pre-defined maturity dates for LTN and NTN-F bonds.
 
-    return maturity_dates.sort_values(ignore_index=True)
+    This function fetches pre-defined maturity dates for 'LTN' (prefixadas) and
+    'NTN-F' (indexadas ao CDI) bond types from the cached ANBIMA dataset
+    for a given reference date.
+
+    Args:
+        reference_date (DateScalar): The reference date for maturity dates.
+
+    Returns:
+        pd.Series: A Series containing unique maturity dates for 'LTN' and
+            'NTN-F' bonds, sorted in ascending order.
+    """
+    maturity_dates = (
+        anbima_tpf_rates(reference_date)
+        .query("BondType in ['LTN', 'NTN-F']")["MaturityDate"]
+        .drop_duplicates()
+        .sort_values(ignore_index=True)
+        .reset_index(drop=True)
+    )
+    return maturity_dates

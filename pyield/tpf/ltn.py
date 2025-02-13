@@ -1,7 +1,8 @@
 import pandas as pd
 
-from pyield import anbima, bday
+from pyield import bday
 from pyield import date_converter as dc
+from pyield.anbima import tpf
 from pyield.b3_futures import di
 from pyield.date_converter import DateScalar
 from pyield.tpf import tools as tt
@@ -37,7 +38,7 @@ def rates(reference_date: DateScalar) -> pd.DataFrame:
         12   2030-01-01        0.118746
 
     """
-    ltn_rates = anbima.rates(reference_date, "LTN")
+    ltn_rates = tpf.anbima_tpf_rates(reference_date, "LTN")
     if ltn_rates.empty:
         return pd.DataFrame()
     return ltn_rates[["MaturityDate", "IndicativeRate"]]

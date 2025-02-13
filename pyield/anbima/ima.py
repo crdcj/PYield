@@ -69,14 +69,14 @@ def _process_last_ima(df: pd.DataFrame) -> pd.DataFrame:
     df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
     df["Maturity"] = pd.to_datetime(df["Maturity"], format="%d/%m/%Y")
     df["MarketQuantity"] = (1000 * df["MarketQuantity"]).astype("Int64")
+    df["MarketValue"] = (1000 * df["MarketValue"]).round(0).astype("Int64")
     df["Price"] = df["Price"].round(6)
     # Duration is in business days, convert to years
     df["Duration"] /= 252
     mduration = df["Duration"] / (1 + df["IndicativeRate"])
-    dv01 = 0.0001 * df["Price"] * mduration * df["MarketQuantity"]
-    # Since DV01 and MarketValue are total stock values, we round them to integers
-    df["MarketDV01"] = dv01.round(0).astype("Int64")
-    df["MarketValue"] = (1000 * df["MarketValue"]).round(0).astype("Int64")
+    df["DV01"] = 0.0001 * df["Price"] * mduration * df["MarketQuantity"]
+    # Since MarketDV01 is the total stock value, we round them to integer
+    df["MarketDV01"] = df["DV01"].round(0).astype("Int64")
     # LFT DV01 is zero
     df["MarketDV01"] = df["MarketDV01"].where(df["BondType"] != "LFT", 0)
     return df
@@ -95,6 +95,7 @@ def _reorder_last_ima(df: pd.DataFrame) -> pd.DataFrame:
         "Price",
         "BDToMat",
         "Duration",
+        "DV01",
         "PMR",
         "Convexity",
         "TheoreticalQuantity",

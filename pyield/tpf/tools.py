@@ -3,8 +3,8 @@ from typing import overload
 import numpy as np
 import pandas as pd
 
-from pyield import anbima
 from pyield import date_converter as dc
+from pyield.anbima import tpf
 from pyield.b3_futures.di import DIFutures
 from pyield.date_converter import DateScalar
 
@@ -88,8 +88,8 @@ def pre_spreads(reference_date: DateScalar) -> pd.DataFrame:
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_ltn = anbima.rates(converted_date, "LTN")
-    df_ntnf = anbima.rates(converted_date, "NTN-F")
+    df_ltn = tpf.anbima_tpf_rates(converted_date, "LTN")
+    df_ntnf = tpf.anbima_tpf_rates(converted_date, "NTN-F")
     df_pre = pd.concat([df_ltn, df_ntnf], ignore_index=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads
