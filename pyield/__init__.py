@@ -1,3 +1,5 @@
+import logging
+
 from pyield import bday
 from pyield.__about__ import __version__
 from pyield.anbima.ima import ima
@@ -32,3 +34,7 @@ __all__ = [
     "ntnf",
     "projection",
 ]
+
+
+# Configura o logger do pacote principal com um NullHandler
+logging.getLogger(__name__).addHandler(logging.NullHandler())

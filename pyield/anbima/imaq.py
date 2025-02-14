@@ -10,6 +10,10 @@ from bs4 import XMLParsedAsHTMLWarning
 from pyield import date_converter as dc
 from pyield.date_converter import DateScalar
 
+# Configura o logger do módulo
+logger = logging.getLogger(__name__)
+
+
 IMA_URL = "https://www.anbima.com.br/informacoes/ima/ima-quantidade-mercado.asp"
 COLUMN_MAPPING = {
     "Data Referência": "Date",
@@ -42,7 +46,7 @@ def _fetch_url_tables(target_date: pd.Timestamp) -> pd.DataFrame:
     r.raise_for_status()
     r.encoding = "iso-8859-1"
     if "Não há dados disponíveis" in r.text:
-        logging.warning("No data found. Returning empty DataFrame.")
+        logger.warning(f"No data for {target_date_str}. Returning empty DataFrame.")
         return pd.DataFrame()
 
     string_io_buffer = io.StringIO(r.text)
@@ -80,7 +84,7 @@ def _fetch_url_tables(target_date: pd.Timestamp) -> pd.DataFrame:
         anbima_date_str = match.group(1)
         anbima_date = pd.to_datetime(anbima_date_str, format="%d/%m/%Y")
     else:
-        logging.warning("No date found. Returning empty DataFrame.")
+        logger.warning(f"No data for {target_date_str}. Returning empty DataFrame.")
         return pd.DataFrame()
 
     df["Data Referência"] = anbima_date
@@ -133,10 +137,11 @@ def imaq(date: DateScalar) -> pd.DataFrame:
     try:
         date = dc.convert_input_dates(date)
         df = _fetch_url_tables(date)
-        df = _process_df(df)
-        return df
-    except Exception as e:
+        if df.empty:
+            return df
+        return _process_df(df)
+    except Exception:  # Erro inesperado
         date_str = date.strftime("%d/%m/%Y")
-        logging.error(f"Error fetching IMA for {date_str}. Returning empty DataFrame.")
-        logging.error(f"Error message: {e}", exc_info=True)
+        msg = f"Error fetching IMA for {date_str}. Returning empty DataFrame."
+        logger.exception(msg)
         return pd.DataFrame()
