@@ -11,29 +11,27 @@ import logging
 import pandas as pd
 import requests
 
+from pyield import bday
 from pyield import date_converter as dc
 from pyield.date_converter import DateScalar
 
 """Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
 Chaves com comentário serão descartadas ao final do processamento
-A ordem das chaves será a ordem das colunas no DataFrame final
-FR = First Round and SR = Second Round
-"""
-
+A ordem das chaves será a ordem das colunas no DataFrame final"""
 COLUMN_MAPPING = {
     # "id": "ID",
-    "dataMovimento": "MovementDate",
+    "dataMovimento": "Date",
     "horaInicio": "StartTime",
     "publicoPermitidoLeilao": "AllowedParticipants",  # ['SomenteDealer', 'TodoMercado']
     "numeroComunicado": "CommunicationNumber",
     "nomeTipoOferta": "OfferType",
     # "ofertante": "Offerer", # Only Banco Central can offer
-    "prazoDiasCorridos": "DaysToSettlement",
-    "dataLiquidacao": "SettlementDate",
-    "dataRetorno": "ReturnDate",
+    "prazoDiasCorridos": "CDToMat",
+    "dataLiquidacao": "Settlement",
+    "dataRetorno": "Maturity",
     "volumeAceito": "AcceptedVolume",
     "taxaCorte": "CutRate",
-    "percentualCorte": "CutPercentage",
+    "percentualCorte": "CutPct",
 }
 
 BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloes_compromissadas(dataLancamentoInicio=@dataLancamentoInicio,dataLancamentoFim=@dataLancamentoFim,horaInicio=@horaInicio,dataLiquidacao=@dataLiquidacao,dataRetorno=@dataRetorno,publicoPermitidoLeilao=@publicoPermitidoLeilao,nomeTipoOferta=@nomeTipoOferta)?"
@@ -64,7 +62,8 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
 
     # Remove the percentage sign and round to 6 decimal places (4 decimal places in %)
     df["CutRate"] = (df["CutRate"] / 100).round(6)
-
+    # df["BDtoReturn"] = bday.count(df["Date"], df["ReturnDate"])
+    df["BDtoMat"] = bday.count(df["Date"], df["Maturity"])
     return df
 
 
@@ -72,26 +71,27 @@ def _adjust_null_values(df: pd.DataFrame) -> pd.DataFrame:
     # Onde não há volume aceito, os valores de corte devem ser nulos
     is_accepted = df["AcceptedVolume"] != 0
     df["CutRate"] = df["CutRate"].where(is_accepted, pd.NA)
-    df["CutPercentage"] = df["CutPercentage"].where(is_accepted, pd.NA)
+    df["CutPct"] = df["CutPct"].where(is_accepted, pd.NA)
     return df
 
 
 def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     column_sequence = [
-        "MovementDate",
-        "SettlementDate",
-        "ReturnDate",
+        "Date",
+        "Settlement",
+        "Maturity",
+        "CDToMat",
+        "BDtoMat",
         "StartTime",
         "AllowedParticipants",
         "CommunicationNumber",
         "OfferType",
-        "DaysToSettlement",
         "AcceptedVolume",
         "CutRate",
-        "CutPercentage",
+        "CutPct",
     ]
 
-    primary_sort_keys = ["MovementDate", "StartTime", "OfferType"]
+    primary_sort_keys = ["Date", "StartTime", "OfferType"]
     return df[column_sequence].sort_values(by=primary_sort_keys).reset_index(drop=True)
 
 
@@ -164,17 +164,18 @@ def repos(
 
     Notes:
         O DataFrame possui as seguintes colunas:
-            - MovementDate: Data do leilão.
-            - SettlementDate: Data de liquidação do leilão.
-            - ReturnDate: Data de retorno do leilão.
+            - Date: Data do leilão.
+            - Settlement: Data de liquidação do leilão.
+            - Maturity: Data de retorno do leilão.
+            - CDToMat: Prazo em dias corridos até o vencimento.
+            - BDtoMat: Prazo em dias úteis até o vencimento.
             - StartTime: Hora de início do leilão.
             - AllowedParticipants: Participantes permitidos no leilão.
             - CommunicationNumber: Número do comunicado.
             - OfferType: Tipo de oferta do leilão.
-            - DaysToSettlement: Dias corridos até a liquidação.
             - AcceptedVolume: Volume aceito no leilão (em R$).
             - CutRate: Taxa de corte do leilão.
-            - CutPercentage: Percentual de corte do leilão.
+            - CutPct: Percentual de corte do leilão.
 
     """
     url = BASE_API_URL

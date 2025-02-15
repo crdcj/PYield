@@ -141,8 +141,8 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
     df_ltn = df_is_accepted.query("BondType == 'LTN'").reset_index(drop=True)
     if not df_ltn.empty:
         df_ltn["Duration"] = df_ltn["BDToMat"] / 252
-        df_ltn["MDuration"] = df_ltn["Duration"] / (1 + df_ltn["AvgRate"])
-        df_ltn["DV01FR"] = 0.0001 * df_ltn["MDuration"] * df_ltn["AvgPrice"]
+        mduration = df_ltn["Duration"] / (1 + df_ltn["AvgRate"])
+        df_ltn["DV01FR"] = 0.0001 * mduration * df_ltn["AvgPrice"]
 
     def compute_f_duration(row):
         return duration_f(row["Date"], row["Maturity"], row["CutRate"])
@@ -151,8 +151,8 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
     if not df_ntnf.empty:
         df_ntnf["Duration"] = df_ntnf.apply(compute_f_duration, axis=1)
         df_ntnf["Duration"] = df_ntnf["Duration"].astype("Float64")
-        df_ntnf["MDuration"] = df_ntnf["Duration"] / (1 + df_ntnf["AvgRate"])
-        df_ntnf["DV01FR"] = 0.0001 * df_ntnf["MDuration"] * df_ntnf["AvgPrice"]
+        mduration = df_ntnf["Duration"] / (1 + df_ntnf["AvgRate"])
+        df_ntnf["DV01FR"] = 0.0001 * mduration * df_ntnf["AvgPrice"]
 
     def compute_b_duration(row):
         return duration_b(row["Date"], row["Maturity"], row["CutRate"])
@@ -161,8 +161,8 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
     if not df_ntnb.empty:
         df_ntnb["Duration"] = df_ntnb.apply(compute_b_duration, axis=1)
         df_ntnb["Duration"] = df_ntnb["Duration"].astype("Float64")
-        df_ntnb["MDuration"] = df_ntnb["Duration"] / (1 + df_ntnb["AvgRate"])
-        df_ntnb["DV01FR"] = 0.0001 * df_ntnb["MDuration"] * df_ntnb["AvgPrice"]
+        mduration = df_ntnb["Duration"] / (1 + df_ntnb["AvgRate"])
+        df_ntnb["DV01FR"] = 0.0001 * mduration * df_ntnb["AvgPrice"]
 
     df = pd.concat([df_not_accepted, df_lft, df_ltn, df_ntnf, df_ntnb])
 
@@ -181,6 +181,8 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "Buyer",
         "BondType",
         "Maturity",
+        "BDToMat",
+        "Duration",
         "SelicCode",
         "Value",
         "ValueFR",
@@ -191,14 +193,11 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "AcceptedQuantity",
         "AcceptedQuantityFR",
         "AcceptedQuantitySR",
+        "DV01FR",
         "AvgPrice",
         "CutPrice",
         "AvgRate",
         "CutRate",
-        "BDToMat",
-        "Duration",
-        "MDuration",
-        "DV01FR",
     ]
 
     primary_sort_keys = ["Date", "AuctionType", "BondType", "Maturity"]
@@ -304,7 +303,6 @@ def auctions(
             - CutRate: Taxa de corte.
             - BDToMat: Dias úteis até o vencimento.
             - Duration: Duration (Duração) do título.
-            - MDuration: Modified Duration (Duração Modificada) do título.
             - DV01FR: Dollar Value of 1 bp change in yield - Primeira Rodada (FR) em R$.
     """
     url = BASE_API_URL

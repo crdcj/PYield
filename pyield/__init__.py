@@ -8,6 +8,7 @@ from pyield.anbima.tpf import anbima_tpf_data, anbima_tpf_rates, tpf_pre_maturit
 from pyield.b3_futures import futures
 from pyield.b3_futures.di import DIFutures
 from pyield.bc.auction import auctions
+from pyield.bc.repos import repos
 from pyield.indicators import indicator
 from pyield.interpolator import Interpolator
 from pyield.projections import projection
@@ -20,6 +21,7 @@ __all__ = [
     "anbima_tpf_rates",
     "tpf_pre_maturities",
     "auctions",
+    "repos",
     "bday",
     "DIFutures",
     "forward_rates",
