@@ -1,16 +1,17 @@
+import io
 import logging
 import time
-from typing import Literal
+from typing import Callable, Literal, TypeVar
 
 import pandas as pd
 import requests
-from requests.exceptions import RequestException
 
 from pyield import date_converter as dc
 from pyield.date_converter import DateScalar
 
 TIMEOUT = (5, 20)
-MAX_ATTEMPTS = 5
+MAX_ATTEMPTS = 10
+RT = TypeVar("RT")  # Return Type
 
 
 def indicator(
@@ -91,20 +92,11 @@ def ipca_monthly_rate(reference_date: pd.Timestamp) -> float:
     # Construct the API URL using the formatted date
     api_url = f"https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/{ipca_date}/variaveis/63?localidades=N1[all]"
 
-    # Send a GET request to the API
-    response = requests.get(api_url, timeout=TIMEOUT)
+    def process_ipca_response(data):
+        ipca_str = data[0]["resultados"][0]["series"][0]["serie"][ipca_date]
+        return round(float(ipca_str) / 100, 4)
 
-    # Raises HTTPError, if one occurred
-    response.raise_for_status()
-
-    # Parse the JSON response
-    data = response.json()
-
-    if not data:
-        raise ValueError("No data available for the specified date")
-    # Extract and return the IPCA monthly growth rate if data is available
-    ipca_str = data[0]["resultados"][0]["series"][0]["serie"][ipca_date]
-    return round(float(ipca_str) / 100, 4)
+    return _fetch_with_retry(api_url, "IPCA Monthly Rate", process_ipca_response, True)
 
 
 def _selic_target(reference_date: pd.Timestamp) -> float:
@@ -122,31 +114,19 @@ def _selic_target(reference_date: pd.Timestamp) -> float:
     """
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     selic_date = reference_date.strftime("%d/%m/%Y")
-    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial={selic_date}&dataFinal={selic_date}"
+    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=csv&dataInicial={selic_date}&dataFinal={selic_date}"
 
-    attempt = 0
-    while attempt < MAX_ATTEMPTS:
-        try:
-            response = requests.get(api_url, timeout=TIMEOUT)
-            response.raise_for_status()  # Raise an error for bad HTTP response
+    def process_selic_target_response(data):
+        csv_data = io.StringIO(data)
+        df = pd.read_csv(csv_data, sep=";", decimal=",")
+        if df.empty or "valor" not in df.columns:
+            return float("nan")
+        value = float(df["valor"].iloc[0] / 100)  # SELIC Target rate
+        return round(float(value), 4)
 
-            # Try parsing JSON, raises an error if response is not valid JSON
-            data = response.json()
-
-            # Access the value directly, any issue will raise an exception
-            value = data[0]["valor"]
-            return round(float(value) / 100, 4)
-
-        except (RequestException, KeyError, IndexError, ValueError) as e:
-            msg = f"Error fetching SELIC Target rate (attempt {attempt + 1}): {e}"
-            logging.error(msg)
-
-        # Increment attempt count and add backoff delay
-        attempt += 1
-        time.sleep(1.5**attempt)  # Exponential backoff: 1.5, 2.3, 3.9, 5.1, 7.6 seconds
-
-    # After all retries, raise an error
-    raise ValueError("Failed to fetch SELIC Target rate after maximum attempts")
+    return _fetch_with_retry(
+        api_url, "SELIC Target", process_selic_target_response, False
+    )
 
 
 def _selic_over(reference_date: pd.Timestamp) -> float:
@@ -166,76 +146,33 @@ def _selic_over(reference_date: pd.Timestamp) -> float:
 
     formatted_date = reference_date.strftime("%d/%m/%Y")
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial={formatted_date}&dataFinal={formatted_date}"
+    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=csv&dataInicial={formatted_date}&dataFinal={formatted_date}"
 
-    attempt = 0
+    def process_selic_over_response(data):
+        csv_data = io.StringIO(data)
+        df = pd.read_csv(csv_data, sep=";", decimal=",")
+        if df.empty or "valor" not in df.columns:
+            return float("nan")
+        value = float(df["valor"].iloc[0] / 100)  # SELIC Over daily rate
+        return round(value, 4)
 
-    while attempt < MAX_ATTEMPTS:
-        try:
-            response = requests.get(api_url, timeout=TIMEOUT)
-            response.raise_for_status()  # Handle 4xx/5xx HTTP errors
-
-            # Try parsing JSON, raises an error if response is not valid JSON
-            data = response.json()
-
-            # Access the value directly, any issue will raise an exception
-            value = data[0]["valor"]
-            return round(float(value) / 100, 4)
-
-        except (RequestException, KeyError, IndexError, ValueError) as e:
-            msg = f"Error fetching SELIC Over rate (attempt {attempt + 1}): {e}"
-            logging.error(msg)
-
-        # Increment attempt count and add backoff delay
-        attempt += 1
-        time.sleep(1.5**attempt)  # Exponential backoff: 1.5, 2.3, 3.9, 5.1, 7.6 seconds
-
-    # After all retries, raise an error
-    raise ValueError("Failed to fetch SELIC Over rate after maximum attempts")
+    return _fetch_with_retry(api_url, "SELIC Over", process_selic_over_response, False)
 
 
 def _di(reference_date: pd.Timestamp) -> float:
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     di_date = reference_date.strftime("%d/%m/%Y")
-    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial={di_date}&dataFinal={di_date}"
-    response = requests.get(api_url, timeout=TIMEOUT)
-    response.raise_for_status()
+    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial={di_date}&dataFinal={di_date}"
 
-    if di_date not in response.text:
-        return float("nan")
-    data = response.json()
-    value = float(data[0]["valor"]) / 100  # DI daily rate
-    # Annualize the daily rate
-    return round((1 + value) ** 252 - 1, 4)
+    def process_di_response(data):
+        csv_data = io.StringIO(data)
+        df = pd.read_csv(csv_data, sep=";", decimal=",")
+        if df.empty or "valor" not in df.columns:
+            return float("nan")
+        value = float(df["valor"].iloc[0] / 100)  # DI daily rate
+        return round((1 + value) ** 252 - 1, 4)  # Annualize the daily rate
 
-
-def _extract_vna_value(text: str) -> float:
-    # Finding the part that contains the table
-    start_of_table = text.find("EMISSAO")
-    end_of_table = text.find("99999999*")
-
-    # Extracting the table
-    table_text = text[start_of_table:end_of_table].strip()
-    table_lines = table_text.splitlines()
-
-    # Remove empty lines
-    table_lines = [line.strip() for line in table_lines if line.strip()]
-
-    # Remove first line
-    body_lines = table_lines[1:]
-
-    vnas = []
-    for line in body_lines:
-        vna_str = line.split()[-1].replace(",", ".")
-        vnas.append(float(vna_str))
-
-    # Raise error if all values are not the same
-    vna_value = vnas[0]
-    if any(vna_value != vna for vna in vnas):
-        bcb_url = "https://www.bcb.gov.br/estabilidadefinanceira/selicbaixar"
-        raise ValueError(f"VNA values are not the same. Please check data at {bcb_url}")
-
-    return vna_value
+    return _fetch_with_retry(api_url, "DI Over", process_di_response, False)
 
 
 def _vna_lft(reference_date: pd.Timestamp) -> float:
@@ -243,22 +180,82 @@ def _vna_lft(reference_date: pd.Timestamp) -> float:
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
     url_file = f"{reference_date.strftime('%Y%m%d')}APC238"
     url_vna = url_base + url_file
-    session = requests.Session()
 
+    def _process_vna_response(text: str) -> float:
+        # Finding the part that contains the table
+        start_of_table = text.find("EMISSAO")
+        end_of_table = text.find("99999999*")
+
+        # Extracting the table
+        table_text = text[start_of_table:end_of_table].strip()
+        table_lines = table_text.splitlines()
+
+        # Remove empty lines
+        table_lines = [line.strip() for line in table_lines if line.strip()]
+
+        # Remove first line
+        body_lines = table_lines[1:]
+
+        vnas = []
+        for line in body_lines:
+            vna_str = line.split()[-1].replace(",", ".")
+            vnas.append(float(vna_str))
+
+        # Raise error if all values are not the same
+        vna_value = vnas[0]
+        if any(vna_value != vna for vna in vnas):
+            bcb_url = "https://www.bcb.gov.br/estabilidadefinanceira/selicbaixar"
+            raise ValueError(
+                f"VNA values are not the same. Please check data at {bcb_url}"
+            )
+
+        return vna_value
+
+    return _fetch_with_retry(url_vna, "VNA LFT", _process_vna_response, False)
+
+
+def _fetch_with_retry(
+    api_url: str,
+    error_message: str,
+    process_response: Callable[[requests.Response], RT],
+    use_json: bool = True,
+) -> RT:
+    """
+    Função genérica para fazer requisições HTTP com retentativas e tratamento de erro.
+
+    Args:
+        api_url (str): URL da API a ser chamada.
+        error_message (str): Mensagem de erro específica para a função que está usando.
+        process_response (Callable[[requests.Response], RT]): Função para processar a resposta da requisição.
+        use_json (bool): Se True, tenta decodificar a resposta como JSON, senão usa response.text.
+
+    Returns:
+        RT: O resultado do processamento da resposta.
+
+    Raises:
+        ValueError: Se a requisição falhar após o número máximo de tentativas.
+    """
     attempt = 0
     while attempt < MAX_ATTEMPTS:
         try:
-            response = session.get(url_vna, timeout=TIMEOUT)
-            response.raise_for_status()
-            return _extract_vna_value(response.text)
+            response = requests.get(api_url, timeout=TIMEOUT)
+            response.raise_for_status()  # Levanta uma exceção para códigos de erro HTTP
 
-        except (RequestException, KeyError, IndexError, ValueError) as e:
-            msg = f"Error fetching SELIC Over rate (attempt {attempt + 1}): {e}"
+            if use_json:
+                data = response.json()
+            else:
+                data = response.text
+
+            if not data:
+                raise ValueError(f"Sem dados disponíveis para {error_message}")
+
+            return process_response(data)
+
+        except Exception as e:
+            msg = f"Erro ao buscar {error_message} (tentativa {attempt + 1}): {e}"
             logging.error(msg)
 
-        # Increment attempt count and add backoff delay
         attempt += 1
-        time.sleep(1.5**attempt)  # Exponential backoff: 1.5, 2.3, 3.9, 5.1, 7.6 seconds
+        time.sleep(1.2**attempt)  # Backoff exponencial
 
-    # After all retries, raise an error
-    raise ValueError("Failed to fetch VNA LFT value after maximum attempts")
+    raise ValueError(f"Falha ao buscar {error_message} após {MAX_ATTEMPTS} tentativas")
