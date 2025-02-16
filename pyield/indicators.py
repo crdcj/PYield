@@ -1,17 +1,20 @@
 import io
 import logging
 import time
-from typing import Callable, Literal, TypeVar
+from typing import Callable, Literal
 
 import pandas as pd
 import requests
+from requests.exceptions import RequestException
 
 from pyield import date_converter as dc
 from pyield.date_converter import DateScalar
 
+logger = logging.getLogger(__name__)
+
+# Timeout para as requisições HTTP (conexão e leitura)
 TIMEOUT = (5, 20)
 MAX_ATTEMPTS = 10
-RT = TypeVar("RT")  # Return Type
 
 
 def indicator(
@@ -93,6 +96,10 @@ def ipca_monthly_rate(reference_date: pd.Timestamp) -> float:
     api_url = f"https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/{ipca_date}/variaveis/63?localidades=N1[all]"
 
     def process_ipca_response(data):
+        if not data:
+            msg = f"No data available for IPCA Monthly Rate on {reference_date}"
+            logger.warning(msg)
+            return float("nan")
         ipca_str = data[0]["resultados"][0]["series"][0]["serie"][ipca_date]
         return round(float(ipca_str) / 100, 4)
 
@@ -120,6 +127,8 @@ def _selic_target(reference_date: pd.Timestamp) -> float:
         csv_data = io.StringIO(data)
         df = pd.read_csv(csv_data, sep=";", decimal=",")
         if df.empty or "valor" not in df.columns:
+            msg = f"No data available for SELIC Target rate on {reference_date}"
+            logger.warning(msg)
             return float("nan")
         value = float(df["valor"].iloc[0] / 100)  # SELIC Target rate
         return round(float(value), 4)
@@ -152,6 +161,8 @@ def _selic_over(reference_date: pd.Timestamp) -> float:
         csv_data = io.StringIO(data)
         df = pd.read_csv(csv_data, sep=";", decimal=",")
         if df.empty or "valor" not in df.columns:
+            msg = f"No data available for SELIC Over rate on {reference_date}"
+            logger.warning(msg)
             return float("nan")
         value = float(df["valor"].iloc[0] / 100)  # SELIC Over daily rate
         return round(value, 4)
@@ -168,6 +179,7 @@ def _di(reference_date: pd.Timestamp) -> float:
         csv_data = io.StringIO(data)
         df = pd.read_csv(csv_data, sep=";", decimal=",")
         if df.empty or "valor" not in df.columns:
+            logger.warning(f"No data available for DI rate on {reference_date}")
             return float("nan")
         value = float(df["valor"].iloc[0] / 100)  # DI daily rate
         return round((1 + value) ** 252 - 1, 4)  # Annualize the daily rate
@@ -205,9 +217,8 @@ def _vna_lft(reference_date: pd.Timestamp) -> float:
         vna_value = vnas[0]
         if any(vna_value != vna for vna in vnas):
             bcb_url = "https://www.bcb.gov.br/estabilidadefinanceira/selicbaixar"
-            raise ValueError(
-                f"VNA values are not the same. Please check data at {bcb_url}"
-            )
+            msg = f"VNA values are not the same. Please check data at {bcb_url}"
+            raise ValueError(msg)
 
         return vna_value
 
@@ -217,20 +228,23 @@ def _vna_lft(reference_date: pd.Timestamp) -> float:
 def _fetch_with_retry(
     api_url: str,
     error_message: str,
-    process_response: Callable[[requests.Response], RT],
+    process_response: Callable[[requests.Response], float],
     use_json: bool = True,
-) -> RT:
+) -> float:
     """
     Função genérica para fazer requisições HTTP com retentativas e tratamento de erro.
 
     Args:
         api_url (str): URL da API a ser chamada.
         error_message (str): Mensagem de erro específica para a função que está usando.
-        process_response (Callable[[requests.Response], RT]): Função para processar a resposta da requisição.
-        use_json (bool): Se True, tenta decodificar a resposta como JSON, senão usa response.text.
+        process_response (Callable[[str], float]): Função para processar os dados da
+            resposta (JSON decodificado ou texto, dependendo de 'use_json').
+            Deve retornar um float.
+        use_json (bool): Se True, tenta decodificar a resposta como JSON antes de passar
+            para `process_response`. Se False, passa a resposta como texto.
 
     Returns:
-        RT: O resultado do processamento da resposta.
+        float: O resultado do processamento da resposta.
 
     Raises:
         ValueError: Se a requisição falhar após o número máximo de tentativas.
@@ -246,14 +260,15 @@ def _fetch_with_retry(
             else:
                 data = response.text
 
-            if not data:
-                raise ValueError(f"Sem dados disponíveis para {error_message}")
-
             return process_response(data)
 
-        except Exception as e:
+        except RequestException as e:
             msg = f"Erro ao buscar {error_message} (tentativa {attempt + 1}): {e}"
-            logging.error(msg)
+            logger.error(msg)
+
+        except Exception as unhandled_error:  # Outros erros - LÓGICA INESPERADA!
+            msg = f"Erro INESPERADO ao buscar {error_message}: {unhandled_error}"
+            logger.exception(msg)  # Loga stack trace completo para debug
 
         attempt += 1
         time.sleep(1.2**attempt)  # Backoff exponencial
