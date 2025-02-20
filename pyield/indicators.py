@@ -263,14 +263,34 @@ def _fetch_with_retry(
             return process_response(data)
 
         except RequestException as e:
-            msg = f"Erro ao buscar {error_message} (tentativa {attempt + 1}): {e}"
+            msg = f"Erro ao buscar {error_message} (tentativa {attempt + 1}): "
+
+            if hasattr(e, "response"):
+                response = e.response
+                if response is not None:  # Verificação extra se response não é None
+                    status_code = response.status_code
+                    msg += f"Status Code: {status_code}, "
+                    if status_code == requests.codes.not_found:
+                        msg = f"Sem dado para {error_message} na data solicitada."
+                        msg += f"API URL é: {api_url}"
+                        logger.warning(msg)
+                        return float("nan")
+            else:
+                status_code = "N/A (response is None ou response attribute não existe)"
+
+            msg += f"Exceção: {e}, Tipo da Exceção: {type(e)}"
+            msg += f" , Response Object Existe? {hasattr(e, 'response')}"
+
             logger.error(msg)
 
-        except Exception as unhandled_error:  # Outros erros - LÓGICA INESPERADA!
+        except Exception as unhandled_error:
             msg = f"Erro INESPERADO ao buscar {error_message}: {unhandled_error}"
             logger.exception(msg)  # Loga stack trace completo para debug
+            break
 
         attempt += 1
         time.sleep(1.2**attempt)  # Backoff exponencial
 
-    raise ValueError(f"Falha ao buscar {error_message} após {MAX_ATTEMPTS} tentativas")
+    msg = f"Falha ao buscar {error_message} após {MAX_ATTEMPTS} tentativas."
+    msg += f" API URL: {api_url}"
+    raise ValueError(msg)

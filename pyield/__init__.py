@@ -2,7 +2,7 @@ import logging
 
 from pyield import bday
 from pyield.__about__ import __version__
-from pyield.anbima.ima import ima
+from pyield.anbima.ima import last_ima
 from pyield.anbima.imaq import imaq
 from pyield.anbima.tpf import anbima_tpf_data, anbima_tpf_rates, tpf_pre_maturities
 from pyield.b3_futures import futures
@@ -26,7 +26,7 @@ __all__ = [
     "DIFutures",
     "forward_rates",
     "futures",
-    "ima",
+    "last_ima",
     "imaq",
     "indicator",
     "Interpolator",

@@ -5,6 +5,8 @@ from typing import Literal
 import pandas as pd
 import requests
 
+logger = logging.getLogger(__name__)
+
 ima_types = Literal[
     "IRF-M 1",
     "IRF-M 1+",
@@ -74,11 +76,12 @@ def _process_last_ima(df: pd.DataFrame) -> pd.DataFrame:
     # Duration is in business days, convert to years
     df["Duration"] /= 252
     mduration = df["Duration"] / (1 + df["IndicativeRate"])
-    df["DV01"] = 0.0001 * df["Price"] * mduration * df["MarketQuantity"]
-    # Since MarketDV01 is the total stock value, we round them to integer
-    df["MarketDV01"] = df["DV01"].round(0).astype("Int64")
+    df["DV01"] = 0.0001 * mduration * df["Price"]
     # LFT DV01 is zero
-    df["MarketDV01"] = df["MarketDV01"].where(df["BondType"] != "LFT", 0)
+    df["DV01"] = df["DV01"].where(df["BondType"] != "LFT", 0)
+    # Since MarketDV01 is the total stock value, we round them to integer
+    df["MarketDV01"] = (df["DV01"] * df["MarketQuantity"]).round(0).astype("Int64")
+
     return df
 
 
@@ -91,14 +94,14 @@ def _reorder_last_ima(df: pd.DataFrame) -> pd.DataFrame:
         "SelicCode",
         "ISIN",
         "Weight",
-        "IndicativeRate",
-        "Price",
-        "BDToMat",
-        "Duration",
-        "DV01",
+        "TheoreticalQuantity",
         "PMR",
         "Convexity",
-        "TheoreticalQuantity",
+        "BDToMat",
+        "Duration",
+        "IndicativeRate",
+        "Price",
+        "DV01",
         "MarketDV01",
         "MarketQuantity",
         "MarketValue",
@@ -106,7 +109,7 @@ def _reorder_last_ima(df: pd.DataFrame) -> pd.DataFrame:
     return df[col_order].reset_index(drop=True)
 
 
-def ima(ima_type: ima_types | None = None) -> pd.DataFrame:
+def last_ima(ima_type: ima_types | None = None) -> pd.DataFrame:
     """
     Fetch and process the last IMA market data available from ANBIMA.
 
@@ -121,23 +124,24 @@ def ima(ima_type: ima_types | None = None) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: A DataFrame containing the IMA data with the following columns:
-            - Date: Reference date of the data.
-            - Index: IMA index.
-            - BondType: Type of bond.
-            - Maturity: Bond maturity date.
-            - SelicCode: Code representing the SELIC rate.
-            - ISIN: International Securities Identification Number.
-            - Price: Bond price.
-            - Weight: Weight of the bond in the index.
-            - BDToMat: Business days to maturity.
-            - Duration: Duration of the bond in years.
-            - PMR: Average repurchase term.
-            - Convexity: Convexity of the bond.
-            - TheoreticalQuantity: Theoretical quantity.
-            - MarketDV01: Market DV01 in R$.
-            - MarketQuantity: Market quantity.
-            - MarketValue: Market value in R$.
-
+            - Date: reference date of the data.
+            - IMAType: type of IMA index.
+            - BondType: type of bond.
+            - Maturity: bond maturity date.
+            - SelicCode: bond code in the SELIC system.
+            - ISIN: international Securities Identification Number.
+            - Weight: weight of the bond in the index.
+            - TheoreticalQuantity: theoretical quantity.
+            - PMR: average repurchase term.
+            - Convexity: convexity of the bond.
+            - BDToMat: business days to maturity.
+            - Duration: duration of the bond in years.
+            - IndicativeRate: indicative rate in percentage
+            - Price: bond price.
+            - DV01: DV01 in R$.
+            - MarketDV01: market DV01 in R$.
+            - MarketQuantity: market quantity.
+            - MarketValue: market value in R$.
 
     Raises:
         Exception: Logs error and returns an empty DataFrame if any error occurs during
@@ -153,5 +157,5 @@ def ima(ima_type: ima_types | None = None) -> pd.DataFrame:
         df = df.sort_values(["IMAType", "BondType", "Maturity"]).reset_index(drop=True)
         return df
     except Exception as e:
-        logging.exception(f"Error fetching or processing the last IMA data: {e}")
+        logger.exception(f"Error fetching or processing the last IMA data: {e}")
         return pd.DataFrame()
