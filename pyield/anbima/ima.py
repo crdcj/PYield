@@ -60,6 +60,7 @@ def _fetch_last_ima() -> pd.DataFrame:
         decimal=",",
         thousands=".",
         dtype_backend="numpy_nullable",
+        na_values="--",
     )
 
     return df
