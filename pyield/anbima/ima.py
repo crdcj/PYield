@@ -19,7 +19,7 @@ ima_types = Literal[
     "IMA-GERAL",
 ]
 
-LAST_IMA_COL_MAPPING = {
+IMA_COL_MAPPING = {
     # "2",
     "Data de Referência": "Date",
     "INDICE": "IMAType",
@@ -29,17 +29,17 @@ LAST_IMA_COL_MAPPING = {
     "Código ISIN": "ISIN",
     "Taxa Indicativa (% a.a.)": "IndicativeRate",
     "PU (R$)": "Price",
-    # "PU de Juros (R$)": "InterestPrice",
+    "PU de Juros (R$)": "InterestPrice",
     "Quantidade (1.000 títulos)": "MarketQuantity",
     "Quantidade Teórica (1.000 títulos)": "TheoreticalQuantity",
     "Carteira a Mercado (R$ mil)": "MarketValue",
     "Peso (%)": "Weight",
     "Prazo (d.u.)": "BDToMat",
     "Duration (d.u.)": "Duration",
-    # "Número de Operações *": "NumberOfOperations",
-    # "Quant. Negociada (1.000 títulos) *": "NegotiatedQuantity",
-    # "Valor Negociado (R$ mil) *": "NegotiatedValue",
-    "PMR": "PMR",  # Prazmo médio de repactuação
+    "Número de Operações *": "NumberOfOperations",
+    "Quant. Negociada (1.000 títulos) *": "NegotiatedQuantity",
+    "Valor Negociado (R$ mil) *": "NegotiatedValue",
+    "PMR": "PMR",  # Prazo médio de repactuação
     "Convexidade": "Convexity",
 }
 
@@ -66,7 +66,7 @@ def _fetch_last_ima() -> pd.DataFrame:
 
 
 def _process_last_ima(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.rename(columns=LAST_IMA_COL_MAPPING)[LAST_IMA_COL_MAPPING.values()]
+    df = df.rename(columns=IMA_COL_MAPPING)[IMA_COL_MAPPING.values()]
     df["IndicativeRate"] = (df["IndicativeRate"] / 100).round(6)
     df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
     df["Maturity"] = pd.to_datetime(df["Maturity"], format="%d/%m/%Y")
@@ -93,15 +93,19 @@ def _reorder_last_ima(df: pd.DataFrame) -> pd.DataFrame:
         "Maturity",
         "SelicCode",
         "ISIN",
-        "Weight",
-        "TheoreticalQuantity",
-        "PMR",
-        "Convexity",
         "BDToMat",
         "Duration",
         "IndicativeRate",
         "Price",
+        "InterestPrice",
         "DV01",
+        "PMR",
+        "Weight",
+        "Convexity",
+        "TheoreticalQuantity",
+        "NumberOfOperations",
+        "NegotiatedQuantity",
+        "NegotiatedValue",
         "MarketDV01",
         "MarketQuantity",
         "MarketValue",
@@ -130,23 +134,26 @@ def last_ima(ima_type: ima_types | None = None) -> pd.DataFrame:
             - Maturity: bond maturity date.
             - SelicCode: bond code in the SELIC system.
             - ISIN: international Securities Identification Number.
-            - Weight: weight of the bond in the index.
-            - TheoreticalQuantity: theoretical quantity.
-            - PMR: average repurchase term.
-            - Convexity: convexity of the bond.
             - BDToMat: business days to maturity.
-            - Duration: duration of the bond in years.
-            - IndicativeRate: indicative rate in percentage
+            - Duration: duration of the bond in business years (252 days/year).
+            - IndicativeRate: indicative rate.
             - Price: bond price.
+            - InterestPrice: interest price.
             - DV01: DV01 in R$.
-            - MarketDV01: market DV01 in R$.
+            - PMR: average repurchase term.
+            - Weight: weight of the bond in the index.
+            - Convexity: convexity of the bond.
+            - TheoreticalQuantity: theoretical quantity.
+            - NumberOfOperations: number of operations.
+            - NegotiatedQuantity: negotiated quantity.
+            - NegotiatedValue: negotiated value.
             - MarketQuantity: market quantity.
+            - MarketDV01: market DV01 in R$.
             - MarketValue: market value in R$.
 
     Raises:
         Exception: Logs error and returns an empty DataFrame if any error occurs during
             fetching or processing.
-
     """
     try:
         df = _fetch_last_ima()
