@@ -286,7 +286,6 @@ def _fetch_with_retry(
         except Exception as unhandled_error:
             msg = f"Erro INESPERADO ao buscar {error_message}: {unhandled_error}"
             logger.exception(msg)  # Loga stack trace completo para debug
-            break
 
         attempt += 1
         time.sleep(1.2**attempt)  # Backoff exponencial
