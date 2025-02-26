@@ -17,7 +17,7 @@ class DIFutures:
     NTN-F bond maturities.
 
     Args:
-        trade_date (DateScalar | None): The trade date to retrieve the
+        date (DateScalar | None): The trade date to retrieve the
             DI contract data. If None, the latest available historical trade date is
             used.
         month_start (bool): If True, adjusts the expirations to the start of the month.
@@ -28,7 +28,7 @@ class DIFutures:
 
     Examples:
         To create a `DIFutures` instance and retrieve data:
-        >>> dif = yd.DIFutures(trade_date="16-10-2024", month_start=True)
+        >>> dif = yd.DIFutures(date="16-10-2024", month_start=True)
         >>> df = dif.df  # Retrieve DI contract dataframe for the specified date
         >>> df.iloc[:5, :5]  # Show the first five rows and columns
            TradeDate ExpirationDate TickerSymbol  BDaysToExp  OpenContracts
@@ -48,7 +48,7 @@ class DIFutures:
         4 2024-10-16     2025-03-01          0.1157      0.12343
     """
 
-    historical_trade_dates = (
+    historical_dates = (
         get_di_dataset()
         .drop_duplicates(subset=["TradeDate"])["TradeDate"]
         .sort_values(ascending=True)
@@ -62,7 +62,7 @@ class DIFutures:
 
     def __init__(
         self,
-        trade_date: DateScalar | None = None,
+        date: DateScalar | None = None,
         month_start: bool = False,
         pre_filter: bool = False,
         all_columns: bool = True,
@@ -77,7 +77,7 @@ class DIFutures:
         self._df = pd.DataFrame()
         self._dirty = True  # Attribute to track if the df needs updating
 
-        self.trade_date = trade_date
+        self.date = date
         self.month_start = month_start
         self.pre_filter = pre_filter
         self.all_columns = all_columns
@@ -102,14 +102,14 @@ class DIFutures:
     def _update_df(self) -> pd.DataFrame:
         """Retrieve DI contract DataFrame for the initialized trade date."""
         bz_today = pd.Timestamp.today(tz="America/Sao_Paulo").normalize()
-        if bz_today == self.trade_date:
+        if bz_today == self.date:
             # Try to get intraday data
-            df = b3.futures(contract_code="DI1", trade_date=bz_today)
+            df = b3.futures(contract_code="DI1", date=bz_today)
         else:
             # Get historical data
             df = (
                 get_di_dataset()
-                .query("TradeDate == @self._trade_date")
+                .query("TradeDate == @self._date")
                 .reset_index(drop=True)
             )
 
@@ -123,7 +123,7 @@ class DIFutures:
             df_pre = (
                 get_anbima_dataset()
                 .query("BondType in ['LTN', 'NTN-F']")
-                .query("ReferenceDate == @self._trade_date")[
+                .query("ReferenceDate == @self._date")[
                     ["ReferenceDate", "MaturityDate"]
                 ]
                 .drop_duplicates()
@@ -197,7 +197,7 @@ class DIFutures:
 
     @staticmethod
     def interpolate_rates(
-        trade_dates: DateScalar | DateArray,
+        dates: DateScalar | DateArray,
         expirations: DateScalar | DateArray,
         extrapolate: bool = True,
     ) -> pd.Series:
@@ -209,12 +209,12 @@ class DIFutures:
         dates and maturities using a flat-forward interpolation method. If no DI
         rates are available for a reference date, the interpolated rate is set to NaN.
 
-        If trade_dates is provided as a scalar and expirations as an array, the
+        If dates is provided as a scalar and expirations as an array, the
         method assumes the scalar value is the same for all maturities. The same logic
         applies when the maturities are scalar and the trade dates are an array.
 
         Args:
-            trade_dates (DateScalar | DateArray): The trade dates for the rates.
+            dates (DateScalar | DateArray): The trade dates for the rates.
             expirations (DateScalar | DateArray): The expirations corresponding to the
                 trade dates.
             extrapolate (bool): Whether to allow extrapolation beyond known DI rates.
@@ -223,29 +223,29 @@ class DIFutures:
             pd.Series: A Series containing the interpolated DI rates.
 
         Raises:
-            ValueError: If `reference_dates` and `maturities` have different lengths.
+            ValueError: If `dates` and `maturities` have different lengths.
         """
         # Convert input dates to a consistent format
-        trade_dates = dc.convert_input_dates(trade_dates)
+        dates = dc.convert_input_dates(dates)
         expirations = dc.convert_input_dates(expirations)
 
         # Ensure the lengths of input arrays are consistent
-        match (trade_dates, expirations):
+        match (dates, expirations):
             case pd.Timestamp(), pd.Series():
                 dfi = pd.DataFrame({"mat": expirations})
-                dfi["tdate"] = trade_dates
+                dfi["tdate"] = dates
 
             case pd.Series(), pd.Timestamp():
-                dfi = pd.DataFrame({"tdate": trade_dates})
+                dfi = pd.DataFrame({"tdate": dates})
                 dfi["mat"] = expirations
 
             case pd.Series(), pd.Series():
-                if len(trade_dates) != len(expirations):
+                if len(dates) != len(expirations):
                     raise ValueError("Args. should have the same length.")
-                dfi = pd.DataFrame({"tdate": trade_dates, "mat": expirations})
+                dfi = pd.DataFrame({"tdate": dates, "mat": expirations})
 
             case pd.Timestamp(), pd.Timestamp():
-                dfi = pd.DataFrame({"tdate": [trade_dates], "mat": [expirations]})
+                dfi = pd.DataFrame({"tdate": [dates], "mat": [expirations]})
 
         # Compute business days between reference dates and maturities
         dfi["bdays"] = bday.count(dfi["tdate"], dfi["mat"])
@@ -332,11 +332,11 @@ class DIFutures:
             known_rates=df["SettlementRate"],
             extrapolate=extrapolate,
         )
-        bd = bday.count(self._trade_date, expiration)
+        bd = bday.count(self._date, expiration)
         return ff_interp(bd)
 
     @property
-    def trade_date(self) -> pd.Timestamp:
+    def date(self) -> pd.Timestamp:
         """
         The trade date to retrieve the DI contract data.
 
@@ -347,14 +347,14 @@ class DIFutures:
             pd.Timestamp: The trade date set for this instance.
         """
 
-        return self._trade_date
+        return self._date
 
-    @trade_date.setter
-    def trade_date(self, value: DateScalar | None):
+    @date.setter
+    def date(self, value: DateScalar | None):
         if value:
-            self._trade_date = dc.convert_input_dates(value)
+            self._date = dc.convert_input_dates(value)
         else:
-            self._trade_date = self.historical_trade_dates.max()
+            self._date = self.historical_dates.max()
 
         self._dirty = True
 

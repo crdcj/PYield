@@ -11,15 +11,15 @@ from pyield.b3_futures import xml as fx
 
 def prepare_data(
     contract_code: ContractOptions,
-    trade_date: str,
+    date: str,
 ) -> tuple:
     """Prepares the data for comparison."""
-    file_date = pd.Timestamp(trade_date).strftime("%y%m%d")
+    file_date = pd.Timestamp(date).strftime("%y%m%d")
     file_path = Path(f"./tests/data/SPRD{file_date}.zip")
     expected_df = fx.read_df(file_path=file_path, asset_code=contract_code)
     expected_df = expected_df.drop(columns=["AvgRate"])
 
-    result_df = yd.futures(contract_code=contract_code, trade_date=trade_date)
+    result_df = yd.futures(contract_code=contract_code, date=date)
 
     # Ensure that both DataFrames have the same columns
     expected_cols = set(expected_df.columns)
@@ -36,7 +36,7 @@ def prepare_data(
 
 
 @pytest.mark.parametrize(
-    ("asset_code", "reference_date"),
+    ("asset_code", "date"),
     [
         ("DI1", "22-12-2023"),
         ("FRC", "22-12-2023"),
@@ -56,7 +56,7 @@ def prepare_data(
         ("WIN", "26-04-2024"),
     ],
 )
-def test_fetch_and_prepare_data(asset_code, reference_date):
+def test_fetch_and_prepare_data(asset_code, date):
     """Tests if the asset data fetched matches the expected data read from file."""
-    result_df, expected_df = prepare_data(asset_code, reference_date)
+    result_df, expected_df = prepare_data(asset_code, date)
     assert_frame_equal(result_df, expected_df)

@@ -3,7 +3,7 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 
-from pyield import bday, data_cache
+from pyield import bday
 from pyield import date_converter as dc
 from pyield import interpolator as ip
 from pyield.anbima import tpf
@@ -24,23 +24,12 @@ COUPON_PMT = 48.80885
 FINAL_PMT = 1048.80885
 
 
-def reference_dates() -> pd.Series:
-    """
-    Fetch the NTN-F bond reference dates available in the Anbima database.
-
-    Returns:
-        pd.Series: A Series of NTN-F bond reference dates.
-    """
-    df = data_cache.get_anbima_dataset().query("BondType == 'NTN-F'")
-    return df["ReferenceDate"].drop_duplicates().sort_values().reset_index(drop=True)
-
-
-def rates(reference_date: DateScalar) -> pd.DataFrame:
+def rates(date: DateScalar) -> pd.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
     Args:
-        reference_date (DateScalar): The reference date for fetching the data.
+        date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -55,18 +44,18 @@ def rates(reference_date: DateScalar) -> pd.DataFrame:
         4   2033-01-01        0.116307
         5   2035-01-01        0.116586
     """
-    ntnf_rates = tpf.anbima_tpf_rates(reference_date, "NTN-F")
+    ntnf_rates = tpf.anbima_tpf_rates(date, "NTN-F")
     if ntnf_rates.empty:
         return pd.DataFrame()
     return ntnf_rates[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: DateScalar) -> pd.Series:
+def maturities(date: DateScalar) -> pd.Series:
     """
     Fetch the NTN-F bond maturities available for the given reference date.
 
     Args:
-        reference_date (DateScalar): The reference date for fetching the data.
+        date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.Series: A Series of NTN-F bond maturities available for the reference date.
@@ -82,7 +71,7 @@ def maturities(reference_date: DateScalar) -> pd.Series:
         dtype: datetime64[ns]
 
     """
-    df_rates = rates(reference_date)
+    df_rates = rates(date)
     s_maturities = df_rates["MaturityDate"]
     s_maturities.name = None
     return s_maturities
@@ -341,7 +330,7 @@ def spot_rates(  # noqa
     return df
 
 
-def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
+def di_spreads(date: DateScalar) -> pd.DataFrame:
     """
     Calculates the DI spread for the NTN-F based on ANBIMA's indicative rates.
 
@@ -349,7 +338,7 @@ def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
     rates and calculates the spread between these rates in basis points.
 
     Parameters:
-        reference_date (DateScalar): The reference date for the spread calculation.
+        date (DateScalar): The reference date for the spread calculation.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate", "DISpread".
@@ -366,7 +355,7 @@ def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
 
     """
     # Fetch DI Spreads for the reference date
-    df = tt.pre_spreads(reference_date)
+    df = tt.pre_spreads(date)
     df = (
         df.query("BondType == 'NTN-F'")
         .sort_values(["MaturityDate"])
@@ -587,13 +576,13 @@ def premium(
 
 
 def historical_premium(
-    reference_date: DateScalar,
+    date: DateScalar,
     maturity: DateScalar,
 ) -> float:
-    reference_date = dc.convert_input_dates(reference_date)
+    date = dc.convert_input_dates(date)
     maturity = dc.convert_input_dates(maturity)
 
-    df_ntnf = rates(reference_date)
+    df_ntnf = rates(date)
     if df_ntnf.empty:
         return float("NaN")
 
@@ -602,14 +591,14 @@ def historical_premium(
         return float("NaN")
     ntnf_ytm = float(ntnf_ytms.iloc[0])
 
-    df = cash_flows(reference_date, maturity, adj_payment_dates=True)
-    df["BDToMat"] = bday.count(reference_date, df["PaymentDate"])
+    df = cash_flows(date, maturity, adj_payment_dates=True)
+    df["BDToMat"] = bday.count(date, df["PaymentDate"])
     df["BYears"] = df["BDToMat"] / 252
-    df["ReferenceDate"] = reference_date
+    df["ReferenceDate"] = date
 
     dif = di.DIFutures()  # Instantiate the DI Futures class
     df["DIRate"] = dif.interpolate_rates(
-        trade_dates=df["ReferenceDate"],
+        dates=df["ReferenceDate"],
         expirations=df["PaymentDate"],
         extrapolate=False,
     )

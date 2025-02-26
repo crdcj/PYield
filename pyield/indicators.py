@@ -19,7 +19,7 @@ MAX_ATTEMPTS = 10
 
 def indicator(
     indicator_code: Literal["IPCA_MR", "SELIC_TARGET", "SELIC_OVER", "DI", "VNA_LFT"],
-    reference_date: DateScalar,
+    date: DateScalar,
 ) -> float:
     """
     Fetches the economic indicator value for a specified reference date.
@@ -37,7 +37,7 @@ def indicator(
             - "SELIC_OVER": SELIC Over (overnight) rate.
             - "DI": DI (interbank deposit rate).
             - "VNA_LFT": Valor Nominal Atualizado for LFT (Treasury Bills).
-        reference_date (DateScalar): The date for which the indicator value is
+        date (DateScalar): The date for which the indicator value is
             fetched. If passed as a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:
@@ -65,7 +65,7 @@ def indicator(
         0.104
 
     """
-    converted_date = dc.convert_input_dates(reference_date)
+    converted_date = dc.convert_input_dates(date)
     selected_indicator_code = str(indicator_code).upper()
     match selected_indicator_code:
         case "IPCA_MR":
@@ -82,7 +82,7 @@ def indicator(
             raise ValueError("Invalid indicator code provided")
 
 
-def ipca_monthly_rate(reference_date: pd.Timestamp) -> float:
+def ipca_monthly_rate(date: pd.Timestamp) -> float:
     """
     The function makes an API call to the IBGE's data portal to retrieve the data.
     An example of the API call: https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/202403/variaveis/63?localidades=N1[all]
@@ -90,14 +90,14 @@ def ipca_monthly_rate(reference_date: pd.Timestamp) -> float:
     The API URL is constructed dynamically based on the reference date provided.
     """
     # Format the date as 'YYYYMM' for the API endpoint
-    ipca_date = reference_date.strftime("%Y%m")
+    ipca_date = date.strftime("%Y%m")
 
     # Construct the API URL using the formatted date
     api_url = f"https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/{ipca_date}/variaveis/63?localidades=N1[all]"
 
     def process_ipca_response(data):
         if not data:
-            msg = f"No data available for IPCA Monthly Rate on {reference_date}"
+            msg = f"No data available for IPCA Monthly Rate on {date}"
             logger.warning(msg)
             return float("nan")
         ipca_str = data[0]["resultados"][0]["series"][0]["serie"][ipca_date]
@@ -106,28 +106,28 @@ def ipca_monthly_rate(reference_date: pd.Timestamp) -> float:
     return _fetch_with_retry(api_url, "IPCA Monthly Rate", process_ipca_response, True)
 
 
-def _selic_target(reference_date: pd.Timestamp) -> float:
+def _selic_target(date: pd.Timestamp) -> float:
     """
     Fetches the SELIC Target rate for a specific reference date.
 
     The SELIC Target rate is the official rate set by the Central Bank of Brazil.
 
     Args:
-        reference_date (pd.Timestamp): The date for which to fetch the SELIC Target.
+        date (pd.Timestamp): The date for which to fetch the SELIC Target.
 
     Returns:
         float: The SELIC Target rate as a float rounded to 4 decimal places or NaN if
         the rate is not available.
     """
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    selic_date = reference_date.strftime("%d/%m/%Y")
+    selic_date = date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=csv&dataInicial={selic_date}&dataFinal={selic_date}"
 
     def process_selic_target_response(data):
         csv_data = io.StringIO(data)
         df = pd.read_csv(csv_data, sep=";", decimal=",")
         if df.empty or "valor" not in df.columns:
-            msg = f"No data available for SELIC Target rate on {reference_date}"
+            msg = f"No data available for SELIC Target rate on {date}"
             logger.warning(msg)
             return float("nan")
         value = float(df["valor"].iloc[0] / 100)  # SELIC Target rate
@@ -138,7 +138,7 @@ def _selic_target(reference_date: pd.Timestamp) -> float:
     )
 
 
-def _selic_over(reference_date: pd.Timestamp) -> float:
+def _selic_over(date: pd.Timestamp) -> float:
     """
     Fetches the SELIC Over rate for a specific reference date.
 
@@ -146,14 +146,14 @@ def _selic_over(reference_date: pd.Timestamp) -> float:
     between banks in the interbank market, using public securities as collateral.
 
     Args:
-        reference_date (pd.Timestamp): The date for which to fetch the SELIC Over rate.
+        date (pd.Timestamp): The date for which to fetch the SELIC Over rate.
 
     Returns:
         float: The SELIC Over rate as a float rounded to 4 decimal places or NaN if
         the rate is not available.
     """
 
-    formatted_date = reference_date.strftime("%d/%m/%Y")
+    formatted_date = date.strftime("%d/%m/%Y")
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=csv&dataInicial={formatted_date}&dataFinal={formatted_date}"
 
@@ -161,7 +161,7 @@ def _selic_over(reference_date: pd.Timestamp) -> float:
         csv_data = io.StringIO(data)
         df = pd.read_csv(csv_data, sep=";", decimal=",")
         if df.empty or "valor" not in df.columns:
-            msg = f"No data available for SELIC Over rate on {reference_date}"
+            msg = f"No data available for SELIC Over rate on {date}"
             logger.warning(msg)
             return float("nan")
         value = float(df["valor"].iloc[0] / 100)  # SELIC Over daily rate
@@ -170,16 +170,16 @@ def _selic_over(reference_date: pd.Timestamp) -> float:
     return _fetch_with_retry(api_url, "SELIC Over", process_selic_over_response, False)
 
 
-def _di(reference_date: pd.Timestamp) -> float:
+def _di(date: pd.Timestamp) -> float:
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    di_date = reference_date.strftime("%d/%m/%Y")
+    di_date = date.strftime("%d/%m/%Y")
     api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial={di_date}&dataFinal={di_date}"
 
     def process_di_response(data):
         csv_data = io.StringIO(data)
         df = pd.read_csv(csv_data, sep=";", decimal=",")
         if df.empty or "valor" not in df.columns:
-            logger.warning(f"No data available for DI rate on {reference_date}")
+            logger.warning(f"No data available for DI rate on {date}")
             return float("nan")
         value = float(df["valor"].iloc[0] / 100)  # DI daily rate
         return round((1 + value) ** 252 - 1, 4)  # Annualize the daily rate
@@ -187,10 +187,10 @@ def _di(reference_date: pd.Timestamp) -> float:
     return _fetch_with_retry(api_url, "DI Over", process_di_response, False)
 
 
-def _vna_lft(reference_date: pd.Timestamp) -> float:
+def _vna_lft(date: pd.Timestamp) -> float:
     # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
-    url_file = f"{reference_date.strftime('%Y%m%d')}APC238"
+    url_file = f"{date.strftime('%Y%m%d')}APC238"
     url_vna = url_base + url_file
 
     def _process_vna_response(text: str) -> float:

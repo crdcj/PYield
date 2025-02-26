@@ -15,7 +15,7 @@ ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"
 
 def futures(
     contract_code: ContractOptions,
-    trade_date: DateScalar,
+    date: DateScalar,
 ) -> pd.DataFrame:
     """
     Fetches data for a specified futures contract based on type and reference date.
@@ -31,7 +31,7 @@ def futures(
             - "WDO": Mini U.S. Dollar Futures from B3.
             - "IND": Ibovespa Futures from B3.
             - "WIN": Mini Ibovespa Futures from B3.
-        trade_date (DateScalar): The date for which to fetch the data.
+        date (DateScalar): The date for which to fetch the data.
             If the reference date is a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:
@@ -58,14 +58,14 @@ def futures(
         ...
     """
     selected_contract = str(contract_code).upper()
-    converted_trade_date = dc.convert_input_dates(trade_date)
+    converted_date = dc.convert_input_dates(date)
 
     # First, try to fetch historical data for the specified date
-    df = fetch_historical_df(selected_contract, converted_trade_date)
+    df = fetch_historical_df(selected_contract, converted_date)
 
     bz_today = dt.datetime.now(TIMEZONE_BZ).date()
     # If there is no historical data available, try to fetch intraday data
-    if converted_trade_date.date() == bz_today and df.empty:
+    if converted_date.date() == bz_today and df.empty:
         df = fetch_intraday_df(selected_contract)
 
     return df

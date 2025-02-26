@@ -22,7 +22,7 @@ def _get_file_from_path(file_path: Path) -> io.BytesIO:
     return io.BytesIO(content)
 
 
-def _get_file_from_url(trade_date: pd.Timestamp, source_type: str) -> io.BytesIO:
+def _get_file_from_url(date: pd.Timestamp, source_type: str) -> io.BytesIO:
     """
     Types of XML files available:
     Full Price Report (all assets)
@@ -33,12 +33,14 @@ def _get_file_from_url(trade_date: pd.Timestamp, source_type: str) -> io.BytesIO
         url example: https://www.b3.com.br/pesquisapregao/download?filelist=SPRD240216.zip
     """
 
-    trade_date_str = trade_date.strftime("%y%m%d")
+    date_str = date.strftime("%y%m%d")
 
     if source_type == "PR":
-        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{trade_date_str}.zip"
+        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{date_str}.zip"
     elif source_type == "SPR":
-        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{trade_date_str}.zip"
+        url = (
+            f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{date_str}.zip"
+        )
     else:
         raise ValueError("Invalid source type. Must be either 'PR' or 'SPR'.")
 
@@ -46,8 +48,8 @@ def _get_file_from_url(trade_date: pd.Timestamp, source_type: str) -> io.BytesIO
 
     # File will be considered invalid if it is too small
     if response.status_code != 200 or len(response.content) < 1024:
-        trade_date_str = trade_date.strftime("%Y-%m-%d")
-        raise ValueError(f"There is no data available for {trade_date_str}.")
+        date_str = date.strftime("%Y-%m-%d")
+        raise ValueError(f"There is no data available for {date_str}.")
 
     return io.BytesIO(response.content)
 
@@ -112,12 +114,12 @@ def _extract_data_from_xml(xml_file: io.BytesIO, asset_code: str) -> list[dict]:
             continue
 
         # Extract the trade date
-        trade_date = price_report.find(".//ns:TradDt/ns:Dt", namespaces)
-        if trade_date is None:
+        date = price_report.find(".//ns:TradDt/ns:Dt", namespaces)
+        if date is None:
             continue
 
         # Store the data in a dictionary
-        ticker_data = {"TradDt": trade_date.text, "TckrSymb": ticker.text}
+        ticker_data = {"TradDt": date.text, "TckrSymb": ticker.text}
 
         # Extract the FinInstrmAttrbts element
         fin_instrm_attrbts = price_report.find(".//ns:FinInstrmAttrbts", namespaces)
@@ -260,9 +262,9 @@ def process_zip_file(zip_file: io.BytesIO, asset_code: str) -> pd.DataFrame:
 
 
 def fetch_df(
-    trade_date: pd.Timestamp, asset_code: str, source_type: Literal["PR", "SPR"]
+    date: pd.Timestamp, asset_code: str, source_type: Literal["PR", "SPR"]
 ) -> pd.DataFrame:
-    zip_file = _get_file_from_url(trade_date, source_type)
+    zip_file = _get_file_from_url(date, source_type)
     df = process_zip_file(zip_file, asset_code)
     return df
 

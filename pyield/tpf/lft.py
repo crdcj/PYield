@@ -7,33 +7,33 @@ from pyield.date_converter import DateScalar
 from pyield.tpf import tools as tt
 
 
-def rates(reference_date: DateScalar) -> pd.DataFrame:
+def rates(date: DateScalar) -> pd.DataFrame:
     """
     Fetch the bond Anbima indicative rates for the given reference date.
 
     Args:
-        reference_date (DateScalar): The reference date for fetching the data.
+        date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
     """
-    lft_rates = tpf.anbima_tpf_rates(reference_date, "LFT")
+    lft_rates = tpf.anbima_tpf_rates(date, "LFT")
     if lft_rates.empty:
         return pd.DataFrame()
     return lft_rates[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: DateScalar) -> pd.Series:
+def maturities(date: DateScalar) -> pd.Series:
     """
     Fetch the bond maturities available for the given reference date.
 
     Args:
-        reference_date (DateScalar): The reference date for fetching the data.
+        date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.Series: A Series of bond maturities available for the reference date.
     """
-    df_rates = rates(reference_date)
+    df_rates = rates(date)
     return df_rates["MaturityDate"]
 
 

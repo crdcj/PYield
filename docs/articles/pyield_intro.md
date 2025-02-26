@@ -72,7 +72,7 @@ dtype: datetime64[ns]
 ## Dados de Futuro de DI
 ```python
 # Obtenha um DataFrame com os dados dos Futuros de DI da B3 de uma data específica.
->>> yd.futures(contract_code="DI1", reference_date='2024-03-08')
+>>> yd.futures(contract_code="DI1", date='2024-03-08')
 
 TradeDate  ExpirationCode ExpirationDate BDaysToExp  ... LastRate LastAskRate LastBidRate SettlementRate
 2024-03-08 J24            2024-04-01     15              ... 10.952   10.952      10.956      10.956
@@ -89,7 +89,7 @@ TradeDate  ExpirationCode ExpirationDate BDaysToExp  ... LastRate LastAskRate La
 # Obtenha um DataFrame com os dados dos títulos NTN-B da ANBIMA.
 # Os dados da Anbima estão disponíveis para os últimos 5 dias úteis.
 # Obs: Para quem é membro da Anbima, o acesso ao histórico é liberado automaticamente pela biblioteca.
->>> yd.anbima(bond_type="NTN-B", reference_date='2024-04-12')
+>>> yd.anbima(bond_type="NTN-B", date='2024-04-12')
 
 BondType ReferenceDate MaturityDate BidRate AskRate IndicativeRate Price
 NTN-B    2024-04-12    2024-08-15   0.07540 0.07504 0.07523        4,271.43565
@@ -104,7 +104,7 @@ NTN-B    2024-04-12    2060-08-15   0.06057 0.06016 0.06036        4,292.26323
 ### Cálculo de spreads
 ```python
 # Calcule o spread entre o futuro de DI e os títulos pré-fixados do Tesouro.
->>> yd.spreads(spread_type="DI_PRE", reference_date="2024-4-11")
+>>> yd.spreads(spread_type="DI_PRE", date="2024-4-11")
 
 BondType ReferenceDate MaturityDate  DISpread
 LTN      2024-04-11    2024-07-01    -20.28
@@ -119,15 +119,15 @@ NTN-F    2024-04-11    2035-01-01    -1.27
 ### Dados de Indicadores
 ```python
 # Obtenha a taxa SELIC meta do BCB em um determinado dia.
->>> yd.indicator(indicator_code="SELIC", reference_date='2024-04-12')
+>>> yd.indicator(indicator_code="SELIC", date='2024-04-12')
 0.1075  # 10.75%
 
 # Obtenha a taxa mensal (Monthly Rate) do IPCA do IBGE com base no mês de referência da data.
->>> yd.indicator(indicator_code="IPCA_MR", reference_date='2024-03-18')
+>>> yd.indicator(indicator_code="IPCA_MR", date='2024-03-18')
 0.0016  # 0.16%
 
 # Se o indicador não estiver disponível para a data de referência, o retorno será nulo (None).
->>> yd.indicator(indicator_code="IPCA_MR", reference_date='2030-04-10')
+>>> yd.indicator(indicator_code="IPCA_MR", date='2030-04-10')
 None
 ```
 

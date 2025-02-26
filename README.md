@@ -139,7 +139,7 @@ LastUpdatee      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate 
 2024-04-21 13:37:39       DI1F39     2039-01-03       3683 ...    <NA>        <NA>        <NA>     <NA>
 
 # Fetch historical DI Futures data from B3
->>> yd.futures(contract_code="DI1", reference_date='08-03-2024')
+>>> yd.futures(contract_code="DI1", date='08-03-2024')
 TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastBidRate SettlementRate
 2024-03-08       DI1J24     2024-04-01         15 ...   10.952      10.952      10.956         10.956
 2024-03-08       DI1K24     2024-05-02         37 ...   10.776      10.774      10.780         10.777
@@ -154,11 +154,11 @@ TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastB
 ```python
 >>> import pyield as yd
 # Fetch the SELIC target rate from the Central Bank of Brazil
->>> yd.indicator(indicator_code="SELIC_TARGET", reference_date='12-04-2024')
+>>> yd.indicator(indicator_code="SELIC_TARGET", date='12-04-2024')
 0.1075  # 10.75%
 
 # Fetch the IPCA monthly inflation rate from IBGE
->>> yd.indicator(indicator_code="IPCA_MR", reference_date='18-03-2024')
+>>> yd.indicator(indicator_code="IPCA_MR", date='18-03-2024')
 0.0016  # 0.16%
 ```
 

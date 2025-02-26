@@ -8,7 +8,7 @@ def test_settlement_rate_with_old_holiday_list():
     }
 
     # 22-12-2023 is before the new holiday calendar
-    df = yd.futures(contract_code="DI1", trade_date="22-12-2023")
+    df = yd.futures(contract_code="DI1", date="22-12-2023")
     tickers = list(settlement_rates.keys())  # noqa: F841
     result = df.query("TickerSymbol in @tickers")["SettlementRate"].to_list()
     assert result == list(settlement_rates.values())
@@ -32,7 +32,7 @@ def test_settlement_rates_with_current_holiday_list():
         "DI1F31": 0.10240,
         "DI1F33": 0.10331,
     }
-    df = yd.futures(contract_code="DI1", trade_date="26-12-2023")
+    df = yd.futures(contract_code="DI1", date="26-12-2023")
     tickers = list(settlement_rates.keys())  # noqa: F841
     results = df.query("TickerSymbol in @tickers")["SettlementRate"].to_list()
     assert results == list(settlement_rates.values())

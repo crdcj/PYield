@@ -19,9 +19,9 @@ ANBIMA_MEMBER_URL = "http://www.anbima.associados.rtm/merc_sec/arqs"
 FORMAT_CHANGE_DATE = pd.to_datetime("13-05-2014", dayfirst=True)
 
 
-def _get_file_content(reference_date: pd.Timestamp) -> str:
-    url_date = reference_date.strftime("%y%m%d")
-    if reference_date < FORMAT_CHANGE_DATE:
+def _get_file_content(date: pd.Timestamp) -> str:
+    url_date = date.strftime("%y%m%d")
+    if date < FORMAT_CHANGE_DATE:
         filename = f"ms{url_date}.exe"
     else:
         filename = f"ms{url_date}.txt"
@@ -41,7 +41,7 @@ def _get_file_content(reference_date: pd.Timestamp) -> str:
         # Checks if the response was successful (status code 200)
         r.raise_for_status()
 
-        if reference_date < FORMAT_CHANGE_DATE:
+        if date < FORMAT_CHANGE_DATE:
             zip_file = zp.ZipFile(io.BytesIO(r.content))
             file_content = zip_file.read(zip_file.namelist()[0]).decode("latin-1")
         else:
@@ -106,9 +106,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def anbima_tpf_data(
-    reference_date: DateScalar, bond_type: str | None = None
-) -> pd.DataFrame:
+def anbima_tpf_data(date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
     """Fetch and process TPF market data from ANBIMA.
 
     This function retrieves bond market data from the ANBIMA website for a
@@ -116,7 +114,7 @@ def anbima_tpf_data(
     and attempts to download the data from both member and non-member URLs.
 
     Args:
-        reference_date (DateScalar): The reference date for the data.
+        date (DateScalar): The reference date for the data.
         bond_type (str, optional):  Filter data by bond type.
             Defaults to None, which returns data for all bond types.
 
@@ -126,8 +124,8 @@ def anbima_tpf_data(
             specified date.
     """
     # Normalize the reference date
-    reference_date = dc.convert_input_dates(reference_date)
-    file_content = _get_file_content(reference_date)
+    date = dc.convert_input_dates(date)
+    file_content = _get_file_content(date)
 
     if not file_content:
         return pd.DataFrame()
@@ -144,7 +142,7 @@ def anbima_tpf_data(
 
 
 def anbima_tpf_rates(
-    reference_date: DateScalar,
+    date: DateScalar,
     bond_type: str | None = None,
     adj_maturities: bool = False,
 ) -> pd.DataFrame:
@@ -156,7 +154,7 @@ def anbima_tpf_rates(
     website using the :func:`data` function.
 
     Args:
-        reference_date (DateScalar): The reference date for the rates.
+        date (DateScalar): The reference date for the rates.
         bond_type (str, optional): Filter rates by bond type.
             Defaults to None, which returns rates for all bond types.
         adj_maturities (bool, optional): Adjust maturity dates to the next
@@ -169,12 +167,12 @@ def anbima_tpf_rates(
     """
     df = get_anbima_dataset()
 
-    reference_date = dc.convert_input_dates(reference_date)
-    df.query("ReferenceDate == @reference_date", inplace=True)
+    date = dc.convert_input_dates(date)
+    df.query("ReferenceDate == @date", inplace=True)
 
     if df.empty:
         # Try to fetch the data from the Anbima website
-        df = anbima_tpf_data(reference_date)
+        df = anbima_tpf_data(date)
 
     if df.empty:
         # If the data is still empty, return an empty DataFrame
@@ -190,7 +188,7 @@ def anbima_tpf_rates(
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def tpf_pre_maturities(reference_date: DateScalar) -> pd.Series:
+def tpf_pre_maturities(date: DateScalar) -> pd.Series:
     """Retrieve pre-defined maturity dates for LTN and NTN-F bonds.
 
     This function fetches pre-defined maturity dates for 'LTN' (prefixadas) and
@@ -198,14 +196,14 @@ def tpf_pre_maturities(reference_date: DateScalar) -> pd.Series:
     for a given reference date.
 
     Args:
-        reference_date (DateScalar): The reference date for maturity dates.
+        date (DateScalar): The reference date for maturity dates.
 
     Returns:
         pd.Series: A Series containing unique maturity dates for 'LTN' and
             'NTN-F' bonds, sorted in ascending order.
     """
     maturity_dates = (
-        anbima_tpf_rates(reference_date)
+        anbima_tpf_rates(date)
         .query("BondType in ['LTN', 'NTN-F']")["MaturityDate"]
         .drop_duplicates()
         .sort_values(ignore_index=True)

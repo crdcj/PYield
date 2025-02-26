@@ -53,12 +53,12 @@ def _check_maturities(
         raise ValueError("NTN-B maturity must be 15/02, 15/05, 15/08 or 15/11.")
 
 
-def rates(reference_date: DateScalar) -> pd.DataFrame:
+def rates(date: DateScalar) -> pd.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
     Args:
-        reference_date (DateScalar): The reference date for fetching the data.
+        date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -86,18 +86,18 @@ def rates(reference_date: DateScalar) -> pd.DataFrame:
         13   2060-08-15        0.060179
 
     """
-    ntnb_rates = tpf.anbima_tpf_rates(reference_date, "NTN-B")
+    ntnb_rates = tpf.anbima_tpf_rates(date, "NTN-B")
     if ntnb_rates.empty:
         return pd.DataFrame()
     return ntnb_rates[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: DateScalar) -> pd.Series:
+def maturities(date: DateScalar) -> pd.Series:
     """
     Get the bond maturities available for the given reference date.
 
     Args:
-        reference_date (DateScalar): The reference date for fetching the data.
+        date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.Series: Series containing the maturity dates for the NTN-B bonds.
@@ -122,7 +122,7 @@ def maturities(reference_date: DateScalar) -> pd.Series:
         dtype: datetime64[ns]
 
     """
-    df_rates = rates(reference_date)
+    df_rates = rates(date)
     s_maturities = df_rates["MaturityDate"]
     s_maturities.name = None
     return s_maturities

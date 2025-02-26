@@ -10,12 +10,12 @@ from pyield.tpf import tools as tt
 FACE_VALUE = 1000
 
 
-def rates(reference_date: DateScalar) -> pd.DataFrame:
+def rates(date: DateScalar) -> pd.DataFrame:
     """
     Fetch the LTN Anbima indicative rates for the given reference date.
 
     Args:
-        reference_date (DateScalar): The reference date for fetching the data.
+        date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -38,18 +38,18 @@ def rates(reference_date: DateScalar) -> pd.DataFrame:
         12   2030-01-01        0.118746
 
     """
-    ltn_rates = tpf.anbima_tpf_rates(reference_date, "LTN")
+    ltn_rates = tpf.anbima_tpf_rates(date, "LTN")
     if ltn_rates.empty:
         return pd.DataFrame()
     return ltn_rates[["MaturityDate", "IndicativeRate"]]
 
 
-def maturities(reference_date: DateScalar) -> pd.Series:
+def maturities(date: DateScalar) -> pd.Series:
     """
     Fetch the bond maturities available for the given reference date.
 
     Args:
-        reference_date (DateScalar): The reference date for fetching the data.
+        date (DateScalar): The reference date for fetching the data.
 
     Returns:
         pd.Series: A Series of bond maturities available for the reference date.
@@ -72,7 +72,7 @@ def maturities(reference_date: DateScalar) -> pd.Series:
         dtype: datetime64[ns]
 
     """
-    df_rates = rates(reference_date)
+    df_rates = rates(date)
     s_maturities = df_rates["MaturityDate"]
     s_maturities.name = None
     return s_maturities
@@ -121,7 +121,7 @@ def price(
     return tt.truncate(FACE_VALUE / discount_factor, 6)
 
 
-def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
+def di_spreads(date: DateScalar) -> pd.DataFrame:
     """
     Calculates the DI spread for the LTN based on ANBIMA's indicative rates.
 
@@ -129,7 +129,7 @@ def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
     rates and calculates the spread between these rates in basis points.
 
     Parameters:
-        reference_date (DateScalar, optional): The reference date for the
+        date (DateScalar, optional): The reference date for the
             spread calculation.
 
     Returns:
@@ -153,7 +153,7 @@ def di_spreads(reference_date: DateScalar) -> pd.DataFrame:
         12   2030-01-01     14.96
     """
     # Fetch DI Spreads for the reference date
-    df = tt.pre_spreads(reference_date)
+    df = tt.pre_spreads(date)
     df.query("BondType == 'LTN'", inplace=True)
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
     return df[["MaturityDate", "DISpread"]]
@@ -186,14 +186,14 @@ def premium(ltn_rate: float, di_rate: float) -> float:
 
 
 def historical_premium(
-    reference_date: DateScalar,
+    date: DateScalar,
     maturity: DateScalar,
 ) -> float:
     """
     Calculate the premium of the LTN bond over the DI Future rate for a given date.
 
     Args:
-        reference_date (DateScalar): The reference date to fetch the rates.
+        date (DateScalar): The reference date to fetch the rates.
         maturity (DateScalar): The maturity date of the LTN bond.
 
     Returns:
@@ -206,11 +206,11 @@ def historical_premium(
 
     """
     # Convert input dates to a consistent format
-    reference_date = dc.convert_input_dates(reference_date)
+    date = dc.convert_input_dates(date)
     maturity = dc.convert_input_dates(maturity)
 
     # Retrieve LTN rates for the reference date
-    df_anbima = rates(reference_date)
+    df_anbima = rates(date)
     if df_anbima.empty:
         return float("NaN")
 
@@ -221,7 +221,7 @@ def historical_premium(
     ltn_rate = float(ltn_rates.iloc[0])
 
     # Retrieve DI rate for the reference date and maturity
-    dif = di.DIFutures(trade_date=reference_date)
+    dif = di.DIFutures(date=date)
     di_rate = dif.rate(expiration=maturity, interpolate=True, extrapolate=False)
     if pd.isnull(di_rate):  # Check if the DI rate is NaN
         return float("NaN")

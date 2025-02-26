@@ -58,7 +58,7 @@ def calculate_present_value(
     return (cash_flows / (1 + rates) ** periods).sum()
 
 
-def pre_spreads(reference_date: DateScalar) -> pd.DataFrame:
+def pre_spreads(date: DateScalar) -> pd.DataFrame:
     """
     Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on
     ANBIMA's indicative rates.
@@ -69,15 +69,15 @@ def pre_spreads(reference_date: DateScalar) -> pd.DataFrame:
     provided, the function uses the previous business day.
 
     Parameters:
-        reference_date (DateScalar): The reference date for the spread calculation.
+        date (DateScalar): The reference date for the spread calculation.
 
     Returns:
         pd.DataFrame: DataFrame containing the bond type, maturity date and the
             calculated spread in basis points.
     """
     # Fetch DI rates for the reference date
-    converted_date = dc.convert_input_dates(reference_date)
-    di = DIFutures(trade_date=converted_date, month_start=True)
+    converted_date = dc.convert_input_dates(date)
+    di = DIFutures(date=converted_date, month_start=True)
     df_di = di.df
     if "SettlementRate" not in df_di.columns:
         raise ValueError("DI rates data is missing the 'SettlementRate' column.")
