@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.2">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.4">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.d7758b05.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.8608ea7d.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
@@ -1862,7 +1862,7 @@ the cash flows.</p>
 
 
 <h2 id="pyield.tpf.ntnb.maturities" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">maturities</span><span class="p">(</span><span class="n">reference_date</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">maturities</span><span class="p">(</span><span class="n">date</span><span class="p">)</span></code>
 
 </h2>
 
@@ -1885,7 +1885,7 @@ the cash flows.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>reference_date</code>
+                <code>date</code>
             </td>
             <td>
                   <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
@@ -1978,12 +1978,12 @@ dtype: datetime64[ns]
 <span class="normal"><a href="#__codelineno-0-125">125</a></span>
 <span class="normal"><a href="#__codelineno-0-126">126</a></span>
 <span class="normal"><a href="#__codelineno-0-127">127</a></span>
-<span class="normal"><a href="#__codelineno-0-128">128</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="k">def</span><span class="w"> </span><span class="nf">maturities</span><span class="p">(</span><span class="n">reference_date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-128">128</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="k">def</span><span class="w"> </span><span class="nf">maturities</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
 </span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="sd">    Get the bond maturities available for the given reference date.</span>
 </span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>
 </span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">        reference_date (DateScalar): The reference date for fetching the data.</span>
+</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">        date (DateScalar): The reference date for fetching the data.</span>
 </span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>
 </span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="sd">    Returns:</span>
 </span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="sd">        pd.Series: Series containing the maturity dates for the NTN-B bonds.</span>
@@ -2008,7 +2008,7 @@ dtype: datetime64[ns]
 </span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="sd">        dtype: datetime64[ns]</span>
 </span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a>
 </span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a>    <span class="n">df_rates</span> <span class="o">=</span> <span class="n">rates</span><span class="p">(</span><span class="n">reference_date</span><span class="p">)</span>
+</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a>    <span class="n">df_rates</span> <span class="o">=</span> <span class="n">rates</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
 </span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a>    <span class="n">s_maturities</span> <span class="o">=</span> <span class="n">df_rates</span><span class="p">[</span><span class="s2">&quot;MaturityDate&quot;</span><span class="p">]</span>
 </span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a>    <span class="n">s_maturities</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a>    <span class="k">return</span> <span class="n">s_maturities</span>
@@ -2601,7 +2601,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-B.</p>
 
 
 <h2 id="pyield.tpf.ntnb.rates" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">rates</span><span class="p">(</span><span class="n">reference_date</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">rates</span><span class="p">(</span><span class="n">date</span><span class="p">)</span></code>
 
 </h2>
 
@@ -2624,7 +2624,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-B.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>reference_date</code>
+                <code>date</code>
             </td>
             <td>
                   <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
@@ -2730,12 +2730,12 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-B.</p>
 <span class="normal"><a href="#__codelineno-0-89">89</a></span>
 <span class="normal"><a href="#__codelineno-0-90">90</a></span>
 <span class="normal"><a href="#__codelineno-0-91">91</a></span>
-<span class="normal"><a href="#__codelineno-0-92">92</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="k">def</span><span class="w"> </span><span class="nf">rates</span><span class="p">(</span><span class="n">reference_date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-92">92</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="k">def</span><span class="w"> </span><span class="nf">rates</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 </span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">    Fetch the bond indicative rates for the given reference date.</span>
 </span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 </span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        reference_date (DateScalar): The reference date for fetching the data.</span>
+</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        date (DateScalar): The reference date for fetching the data.</span>
 </span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a>
 </span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    Returns:</span>
 </span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">        pd.DataFrame: DataFrame with columns &quot;MaturityDate&quot; and &quot;IndicativeRate&quot;.</span>
@@ -2763,7 +2763,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-B.</p>
 </span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">        13   2060-08-15        0.060179</span>
 </span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a>
 </span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a>    <span class="n">ntnb_rates</span> <span class="o">=</span> <span class="n">tpf</span><span class="o">.</span><span class="n">anbima_tpf_rates</span><span class="p">(</span><span class="n">reference_date</span><span class="p">,</span> <span class="s2">&quot;NTN-B&quot;</span><span class="p">)</span>
+</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a>    <span class="n">ntnb_rates</span> <span class="o">=</span> <span class="n">tpf</span><span class="o">.</span><span class="n">anbima_tpf_rates</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="s2">&quot;NTN-B&quot;</span><span class="p">)</span>
 </span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a>    <span class="k">if</span> <span class="n">ntnb_rates</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
 </span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a>        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
 </span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a>    <span class="k">return</span> <span class="n">ntnb_rates</span><span class="p">[[</span><span class="s2">&quot;MaturityDate&quot;</span><span class="p">,</span> <span class="s2">&quot;IndicativeRate&quot;</span><span class="p">]]</span>
@@ -3300,7 +3300,7 @@ intermediate coupon dates. Defaults to False.</p>
     <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "toc.integrate", "content.code.copy", "content.code.select", "search.suggest", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.f13b1293.min.js"></script>
+      <script src="../assets/javascripts/bundle.f1b6f286.min.js"></script>
       
     
   </body>

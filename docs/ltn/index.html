@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.2">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.4">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.d7758b05.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.8608ea7d.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
@@ -843,7 +843,7 @@
 
 
 <h2 id="pyield.tpf.ltn.di_spreads" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">di_spreads</span><span class="p">(</span><span class="n">reference_date</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">di_spreads</span><span class="p">(</span><span class="n">date</span><span class="p">)</span></code>
 
 </h2>
 
@@ -868,7 +868,7 @@ rates and calculates the spread between these rates in basis points.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>reference_date</code>
+                <code>date</code>
             </td>
             <td>
                   <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
@@ -965,7 +965,7 @@ spread calculation.</p>
 <span class="normal"><a href="#__codelineno-0-156">156</a></span>
 <span class="normal"><a href="#__codelineno-0-157">157</a></span>
 <span class="normal"><a href="#__codelineno-0-158">158</a></span>
-<span class="normal"><a href="#__codelineno-0-159">159</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="k">def</span><span class="w"> </span><span class="nf">di_spreads</span><span class="p">(</span><span class="n">reference_date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-159">159</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="k">def</span><span class="w"> </span><span class="nf">di_spreads</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 </span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="sd">    Calculates the DI spread for the LTN based on ANBIMA&#39;s indicative rates.</span>
 </span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a>
@@ -973,7 +973,7 @@ spread calculation.</p>
 </span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a><span class="sd">    rates and calculates the spread between these rates in basis points.</span>
 </span><span id="__span-0-130"><a id="__codelineno-0-130" name="__codelineno-0-130"></a>
 </span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a><span class="sd">    Parameters:</span>
-</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><span class="sd">        reference_date (DateScalar, optional): The reference date for the</span>
+</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><span class="sd">        date (DateScalar, optional): The reference date for the</span>
 </span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a><span class="sd">            spread calculation.</span>
 </span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a>
 </span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135"></a><span class="sd">    Returns:</span>
@@ -997,7 +997,7 @@ spread calculation.</p>
 </span><span id="__span-0-153"><a id="__codelineno-0-153" name="__codelineno-0-153"></a><span class="sd">        12   2030-01-01     14.96</span>
 </span><span id="__span-0-154"><a id="__codelineno-0-154" name="__codelineno-0-154"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-155"><a id="__codelineno-0-155" name="__codelineno-0-155"></a>    <span class="c1"># Fetch DI Spreads for the reference date</span>
-</span><span id="__span-0-156"><a id="__codelineno-0-156" name="__codelineno-0-156"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">tt</span><span class="o">.</span><span class="n">pre_spreads</span><span class="p">(</span><span class="n">reference_date</span><span class="p">)</span>
+</span><span id="__span-0-156"><a id="__codelineno-0-156" name="__codelineno-0-156"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">tt</span><span class="o">.</span><span class="n">pre_spreads</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
 </span><span id="__span-0-157"><a id="__codelineno-0-157" name="__codelineno-0-157"></a>    <span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;BondType == &#39;LTN&#39;&quot;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span><span id="__span-0-158"><a id="__codelineno-0-158" name="__codelineno-0-158"></a>    <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s2">&quot;MaturityDate&quot;</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span><span id="__span-0-159"><a id="__codelineno-0-159" name="__codelineno-0-159"></a>    <span class="k">return</span> <span class="n">df</span><span class="p">[[</span><span class="s2">&quot;MaturityDate&quot;</span><span class="p">,</span> <span class="s2">&quot;DISpread&quot;</span><span class="p">]]</span>
@@ -1011,7 +1011,7 @@ spread calculation.</p>
 
 
 <h2 id="pyield.tpf.ltn.historical_premium" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">historical_premium</span><span class="p">(</span><span class="n">reference_date</span><span class="p">,</span> <span class="n">maturity</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">historical_premium</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">maturity</span><span class="p">)</span></code>
 
 </h2>
 
@@ -1034,7 +1034,7 @@ spread calculation.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>reference_date</code>
+                <code>date</code>
             </td>
             <td>
                   <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
@@ -1142,14 +1142,14 @@ spread calculation.</p>
 <span class="normal"><a href="#__codelineno-0-228">228</a></span>
 <span class="normal"><a href="#__codelineno-0-229">229</a></span>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-188"><a id="__codelineno-0-188" name="__codelineno-0-188"></a><span class="k">def</span><span class="w"> </span><span class="nf">historical_premium</span><span class="p">(</span>
-</span><span id="__span-0-189"><a id="__codelineno-0-189" name="__codelineno-0-189"></a>    <span class="n">reference_date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
+</span><span id="__span-0-189"><a id="__codelineno-0-189" name="__codelineno-0-189"></a>    <span class="n">date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-190"><a id="__codelineno-0-190" name="__codelineno-0-190"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-191"><a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 </span><span id="__span-0-192"><a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-193"><a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">    Calculate the premium of the LTN bond over the DI Future rate for a given date.</span>
 </span><span id="__span-0-194"><a id="__codelineno-0-194" name="__codelineno-0-194"></a>
 </span><span id="__span-0-195"><a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-196"><a id="__codelineno-0-196" name="__codelineno-0-196"></a><span class="sd">        reference_date (DateScalar): The reference date to fetch the rates.</span>
+</span><span id="__span-0-196"><a id="__codelineno-0-196" name="__codelineno-0-196"></a><span class="sd">        date (DateScalar): The reference date to fetch the rates.</span>
 </span><span id="__span-0-197"><a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="sd">        maturity (DateScalar): The maturity date of the LTN bond.</span>
 </span><span id="__span-0-198"><a id="__codelineno-0-198" name="__codelineno-0-198"></a>
 </span><span id="__span-0-199"><a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="sd">    Returns:</span>
@@ -1162,11 +1162,11 @@ spread calculation.</p>
 </span><span id="__span-0-206"><a id="__codelineno-0-206" name="__codelineno-0-206"></a>
 </span><span id="__span-0-207"><a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-208"><a id="__codelineno-0-208" name="__codelineno-0-208"></a>    <span class="c1"># Convert input dates to a consistent format</span>
-</span><span id="__span-0-209"><a id="__codelineno-0-209" name="__codelineno-0-209"></a>    <span class="n">reference_date</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">reference_date</span><span class="p">)</span>
+</span><span id="__span-0-209"><a id="__codelineno-0-209" name="__codelineno-0-209"></a>    <span class="n">date</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
 </span><span id="__span-0-210"><a id="__codelineno-0-210" name="__codelineno-0-210"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-211"><a id="__codelineno-0-211" name="__codelineno-0-211"></a>
 </span><span id="__span-0-212"><a id="__codelineno-0-212" name="__codelineno-0-212"></a>    <span class="c1"># Retrieve LTN rates for the reference date</span>
-</span><span id="__span-0-213"><a id="__codelineno-0-213" name="__codelineno-0-213"></a>    <span class="n">df_anbima</span> <span class="o">=</span> <span class="n">rates</span><span class="p">(</span><span class="n">reference_date</span><span class="p">)</span>
+</span><span id="__span-0-213"><a id="__codelineno-0-213" name="__codelineno-0-213"></a>    <span class="n">df_anbima</span> <span class="o">=</span> <span class="n">rates</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
 </span><span id="__span-0-214"><a id="__codelineno-0-214" name="__codelineno-0-214"></a>    <span class="k">if</span> <span class="n">df_anbima</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
 </span><span id="__span-0-215"><a id="__codelineno-0-215" name="__codelineno-0-215"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;NaN&quot;</span><span class="p">)</span>
 </span><span id="__span-0-216"><a id="__codelineno-0-216" name="__codelineno-0-216"></a>
@@ -1177,7 +1177,7 @@ spread calculation.</p>
 </span><span id="__span-0-221"><a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="n">ltn_rate</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ltn_rates</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </span><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a>
 </span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a>    <span class="c1"># Retrieve DI rate for the reference date and maturity</span>
-</span><span id="__span-0-224"><a id="__codelineno-0-224" name="__codelineno-0-224"></a>    <span class="n">dif</span> <span class="o">=</span> <span class="n">di</span><span class="o">.</span><span class="n">DIFutures</span><span class="p">(</span><span class="n">trade_date</span><span class="o">=</span><span class="n">reference_date</span><span class="p">)</span>
+</span><span id="__span-0-224"><a id="__codelineno-0-224" name="__codelineno-0-224"></a>    <span class="n">dif</span> <span class="o">=</span> <span class="n">di</span><span class="o">.</span><span class="n">DIFutures</span><span class="p">(</span><span class="n">date</span><span class="o">=</span><span class="n">date</span><span class="p">)</span>
 </span><span id="__span-0-225"><a id="__codelineno-0-225" name="__codelineno-0-225"></a>    <span class="n">di_rate</span> <span class="o">=</span> <span class="n">dif</span><span class="o">.</span><span class="n">rate</span><span class="p">(</span><span class="n">expiration</span><span class="o">=</span><span class="n">maturity</span><span class="p">,</span> <span class="n">interpolate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span><span id="__span-0-226"><a id="__codelineno-0-226" name="__codelineno-0-226"></a>    <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">di_rate</span><span class="p">):</span>  <span class="c1"># Check if the DI rate is NaN</span>
 </span><span id="__span-0-227"><a id="__codelineno-0-227" name="__codelineno-0-227"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;NaN&quot;</span><span class="p">)</span>
@@ -1194,7 +1194,7 @@ spread calculation.</p>
 
 
 <h2 id="pyield.tpf.ltn.maturities" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">maturities</span><span class="p">(</span><span class="n">reference_date</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">maturities</span><span class="p">(</span><span class="n">date</span><span class="p">)</span></code>
 
 </h2>
 
@@ -1217,7 +1217,7 @@ spread calculation.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>reference_date</code>
+                <code>date</code>
             </td>
             <td>
                   <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
@@ -1309,12 +1309,12 @@ spread calculation.</p>
 <span class="normal"><a href="#__codelineno-0-75">75</a></span>
 <span class="normal"><a href="#__codelineno-0-76">76</a></span>
 <span class="normal"><a href="#__codelineno-0-77">77</a></span>
-<span class="normal"><a href="#__codelineno-0-78">78</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="k">def</span><span class="w"> </span><span class="nf">maturities</span><span class="p">(</span><span class="n">reference_date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-78">78</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="k">def</span><span class="w"> </span><span class="nf">maturities</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
 </span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">    Fetch the bond maturities available for the given reference date.</span>
 </span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a>
 </span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">        reference_date (DateScalar): The reference date for fetching the data.</span>
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">        date (DateScalar): The reference date for fetching the data.</span>
 </span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a>
 </span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">    Returns:</span>
 </span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">        pd.Series: A Series of bond maturities available for the reference date.</span>
@@ -1337,7 +1337,7 @@ spread calculation.</p>
 </span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">        dtype: datetime64[ns]</span>
 </span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a>
 </span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a>    <span class="n">df_rates</span> <span class="o">=</span> <span class="n">rates</span><span class="p">(</span><span class="n">reference_date</span><span class="p">)</span>
+</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a>    <span class="n">df_rates</span> <span class="o">=</span> <span class="n">rates</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
 </span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a>    <span class="n">s_maturities</span> <span class="o">=</span> <span class="n">df_rates</span><span class="p">[</span><span class="s2">&quot;MaturityDate&quot;</span><span class="p">]</span>
 </span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a>    <span class="n">s_maturities</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="k">return</span> <span class="n">s_maturities</span>
@@ -1702,7 +1702,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-F.</p>
 
 
 <h2 id="pyield.tpf.ltn.rates" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">rates</span><span class="p">(</span><span class="n">reference_date</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">rates</span><span class="p">(</span><span class="n">date</span><span class="p">)</span></code>
 
 </h2>
 
@@ -1725,7 +1725,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-F.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>reference_date</code>
+                <code>date</code>
             </td>
             <td>
                   <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
@@ -1817,12 +1817,12 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-F.</p>
 <span class="normal"><a href="#__codelineno-0-41">41</a></span>
 <span class="normal"><a href="#__codelineno-0-42">42</a></span>
 <span class="normal"><a href="#__codelineno-0-43">43</a></span>
-<span class="normal"><a href="#__codelineno-0-44">44</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">rates</span><span class="p">(</span><span class="n">reference_date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-44">44</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">rates</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><span class="sd">    Fetch the LTN Anbima indicative rates for the given reference date.</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="sd">        reference_date (DateScalar): The reference date for fetching the data.</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="sd">        date (DateScalar): The reference date for fetching the data.</span>
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="sd">    Returns:</span>
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="sd">        pd.DataFrame: DataFrame with columns &quot;MaturityDate&quot; and &quot;IndicativeRate&quot;.</span>
@@ -1845,7 +1845,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-F.</p>
 </span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        12   2030-01-01        0.118746</span>
 </span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a>
 </span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="n">ltn_rates</span> <span class="o">=</span> <span class="n">tpf</span><span class="o">.</span><span class="n">anbima_tpf_rates</span><span class="p">(</span><span class="n">reference_date</span><span class="p">,</span> <span class="s2">&quot;LTN&quot;</span><span class="p">)</span>
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="n">ltn_rates</span> <span class="o">=</span> <span class="n">tpf</span><span class="o">.</span><span class="n">anbima_tpf_rates</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="s2">&quot;LTN&quot;</span><span class="p">)</span>
 </span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42"></a>    <span class="k">if</span> <span class="n">ltn_rates</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
 </span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43"></a>        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
 </span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44"></a>    <span class="k">return</span> <span class="n">ltn_rates</span><span class="p">[[</span><span class="s2">&quot;MaturityDate&quot;</span><span class="p">,</span> <span class="s2">&quot;IndicativeRate&quot;</span><span class="p">]]</span>
@@ -1976,7 +1976,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-F.</p>
     <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "toc.integrate", "content.code.copy", "content.code.select", "search.suggest", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.f13b1293.min.js"></script>
+      <script src="../assets/javascripts/bundle.f1b6f286.min.js"></script>
       
     
   </body>

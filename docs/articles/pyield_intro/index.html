@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.2">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.4">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.d7758b05.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.8608ea7d.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -911,7 +911,7 @@ Este comando instala a última versão do PYield, deixando você pronto para com
 </span></code></pre></div>
 <h2 id="dados-de-futuro-de-di">Dados de Futuro de DI</h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Obtenha um DataFrame com os dados dos Futuros de DI da B3 de uma data específica.</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">futures</span><span class="p">(</span><span class="n">contract_code</span><span class="o">=</span><span class="s2">&quot;DI1&quot;</span><span class="p">,</span> <span class="n">reference_date</span><span class="o">=</span><span class="s1">&#39;2024-03-08&#39;</span><span class="p">)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">futures</span><span class="p">(</span><span class="n">contract_code</span><span class="o">=</span><span class="s2">&quot;DI1&quot;</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s1">&#39;2024-03-08&#39;</span><span class="p">)</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">TradeDate</span>  <span class="n">ExpirationCode</span> <span class="n">ExpirationDate</span> <span class="n">BDaysToExp</span>  <span class="o">...</span> <span class="n">LastRate</span> <span class="n">LastAskRate</span> <span class="n">LastBidRate</span> <span class="n">SettlementRate</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="mi">2024</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">08</span> <span class="n">J24</span>            <span class="mi">2024</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">01</span>     <span class="mi">15</span>              <span class="o">...</span> <span class="mf">10.952</span>   <span class="mf">10.952</span>      <span class="mf">10.956</span>      <span class="mf">10.956</span>
@@ -926,7 +926,7 @@ Este comando instala a última versão do PYield, deixando você pronto para com
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Obtenha um DataFrame com os dados dos títulos NTN-B da ANBIMA.</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># Os dados da Anbima estão disponíveis para os últimos 5 dias úteis.</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Obs: Para quem é membro da Anbima, o acesso ao histórico é liberado automaticamente pela biblioteca.</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">anbima</span><span class="p">(</span><span class="n">bond_type</span><span class="o">=</span><span class="s2">&quot;NTN-B&quot;</span><span class="p">,</span> <span class="n">reference_date</span><span class="o">=</span><span class="s1">&#39;2024-04-12&#39;</span><span class="p">)</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">anbima</span><span class="p">(</span><span class="n">bond_type</span><span class="o">=</span><span class="s2">&quot;NTN-B&quot;</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s1">&#39;2024-04-12&#39;</span><span class="p">)</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">BondType</span> <span class="n">ReferenceDate</span> <span class="n">MaturityDate</span> <span class="n">BidRate</span> <span class="n">AskRate</span> <span class="n">IndicativeRate</span> <span class="n">Price</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">NTN</span><span class="o">-</span><span class="n">B</span>    <span class="mi">2024</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">12</span>    <span class="mi">2024</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">15</span>   <span class="mf">0.07540</span> <span class="mf">0.07504</span> <span class="mf">0.07523</span>        <span class="mi">4</span><span class="p">,</span><span class="mf">271.43565</span>
@@ -939,7 +939,7 @@ Este comando instala a última versão do PYield, deixando você pronto para com
 </span></code></pre></div>
 <h3 id="calculo-de-spreads">Cálculo de spreads</h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Calcule o spread entre o futuro de DI e os títulos pré-fixados do Tesouro.</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">spreads</span><span class="p">(</span><span class="n">spread_type</span><span class="o">=</span><span class="s2">&quot;DI_PRE&quot;</span><span class="p">,</span> <span class="n">reference_date</span><span class="o">=</span><span class="s2">&quot;2024-4-11&quot;</span><span class="p">)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">spreads</span><span class="p">(</span><span class="n">spread_type</span><span class="o">=</span><span class="s2">&quot;DI_PRE&quot;</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s2">&quot;2024-4-11&quot;</span><span class="p">)</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">BondType</span> <span class="n">ReferenceDate</span> <span class="n">MaturityDate</span>  <span class="n">DISpread</span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">LTN</span>      <span class="mi">2024</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">11</span>    <span class="mi">2024</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">01</span>    <span class="o">-</span><span class="mf">20.28</span>
@@ -952,15 +952,15 @@ Este comando instala a última versão do PYield, deixando você pronto para com
 </span></code></pre></div>
 <h3 id="dados-de-indicadores">Dados de Indicadores</h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Obtenha a taxa SELIC meta do BCB em um determinado dia.</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">indicator</span><span class="p">(</span><span class="n">indicator_code</span><span class="o">=</span><span class="s2">&quot;SELIC&quot;</span><span class="p">,</span> <span class="n">reference_date</span><span class="o">=</span><span class="s1">&#39;2024-04-12&#39;</span><span class="p">)</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">indicator</span><span class="p">(</span><span class="n">indicator_code</span><span class="o">=</span><span class="s2">&quot;SELIC&quot;</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s1">&#39;2024-04-12&#39;</span><span class="p">)</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="mf">0.1075</span>  <span class="c1"># 10.75%</span>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># Obtenha a taxa mensal (Monthly Rate) do IPCA do IBGE com base no mês de referência da data.</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">indicator</span><span class="p">(</span><span class="n">indicator_code</span><span class="o">=</span><span class="s2">&quot;IPCA_MR&quot;</span><span class="p">,</span> <span class="n">reference_date</span><span class="o">=</span><span class="s1">&#39;2024-03-18&#39;</span><span class="p">)</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">indicator</span><span class="p">(</span><span class="n">indicator_code</span><span class="o">=</span><span class="s2">&quot;IPCA_MR&quot;</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s1">&#39;2024-03-18&#39;</span><span class="p">)</span>
 </span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="mf">0.0016</span>  <span class="c1"># 0.16%</span>
 </span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
 </span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># Se o indicador não estiver disponível para a data de referência, o retorno será nulo (None).</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">indicator</span><span class="p">(</span><span class="n">indicator_code</span><span class="o">=</span><span class="s2">&quot;IPCA_MR&quot;</span><span class="p">,</span> <span class="n">reference_date</span><span class="o">=</span><span class="s1">&#39;2030-04-10&#39;</span><span class="p">)</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">indicator</span><span class="p">(</span><span class="n">indicator_code</span><span class="o">=</span><span class="s2">&quot;IPCA_MR&quot;</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s1">&#39;2030-04-10&#39;</span><span class="p">)</span>
 </span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="kc">None</span>
 </span></code></pre></div>
 <h2 id="conclusao">Conclusão</h2>
@@ -1084,7 +1084,7 @@ Este comando instala a última versão do PYield, deixando você pronto para com
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "toc.integrate", "content.code.copy", "content.code.select", "search.suggest", "search.highlight", "search.share"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.f13b1293.min.js"></script>
+      <script src="../../assets/javascripts/bundle.f1b6f286.min.js"></script>
       
     
   </body>

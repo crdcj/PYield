@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.2">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.4">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.d7758b05.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.8608ea7d.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
@@ -669,6 +669,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#pyield.b3_futures.di.DIFutures.date" class="md-nav__link">
+    <span class="md-ellipsis">
+      date
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pyield.b3_futures.di.DIFutures.df" class="md-nav__link">
     <span class="md-ellipsis">
       df
@@ -687,9 +696,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#pyield.b3_futures.di.DIFutures.historical_trade_dates" class="md-nav__link">
+  <a href="#pyield.b3_futures.di.DIFutures.historical_dates" class="md-nav__link">
     <span class="md-ellipsis">
-      historical_trade_dates
+      historical_dates
     </span>
   </a>
   
@@ -708,15 +717,6 @@
   <a href="#pyield.b3_futures.di.DIFutures.pre_filter" class="md-nav__link">
     <span class="md-ellipsis">
       pre_filter
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pyield.b3_futures.di.DIFutures.trade_date" class="md-nav__link">
-    <span class="md-ellipsis">
-      trade_date
     </span>
   </a>
   
@@ -885,7 +885,7 @@
 
 
 <h2 id="pyield.b3_futures.di.DIFutures" class="doc doc-heading">
-              <code class="highlight language-python"><span class="n">DIFutures</span><span class="p">(</span><span class="n">trade_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">month_start</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pre_filter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">all_columns</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+              <code class="highlight language-python"><span class="n">DIFutures</span><span class="p">(</span><span class="n">date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">month_start</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pre_filter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">all_columns</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
 
 </h2>
 
@@ -912,7 +912,7 @@ NTN-F bond maturities.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>trade_date</code>
+                <code>date</code>
             </td>
             <td>
                   <code><span title="pyield.date_converter.DateScalar">DateScalar</span> | None</code>
@@ -984,7 +984,7 @@ If False, only the most common columns are returned.</p>
 
 <p><span class="doc-section-title">Examples:</span></p>
     <p>To create a <code>DIFutures</code> instance and retrieve data:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dif</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">DIFutures</span><span class="p">(</span><span class="n">trade_date</span><span class="o">=</span><span class="s2">&quot;16-10-2024&quot;</span><span class="p">,</span> <span class="n">month_start</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dif</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">DIFutures</span><span class="p">(</span><span class="n">date</span><span class="o">=</span><span class="s2">&quot;16-10-2024&quot;</span><span class="p">,</span> <span class="n">month_start</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">dif</span><span class="o">.</span><span class="n">df</span>  <span class="c1"># Retrieve DI contract dataframe for the specified date</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">5</span><span class="p">,</span> <span class="p">:</span><span class="mi">5</span><span class="p">]</span>  <span class="c1"># Show the first five rows and columns</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">   TradeDate ExpirationDate TickerSymbol  BDaysToExp  OpenContracts</span>
@@ -1040,7 +1040,7 @@ automatically loaded the first time the df() method is accessed.</p>
 <span class="normal"><a href="#__codelineno-0-82">82</a></span>
 <span class="normal"><a href="#__codelineno-0-83">83</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
 </span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a>    <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a>    <span class="n">trade_date</span><span class="p">:</span> <span class="n">DateScalar</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a>    <span class="n">date</span><span class="p">:</span> <span class="n">DateScalar</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="n">month_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="n">pre_filter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="n">all_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -1055,7 +1055,7 @@ automatically loaded the first time the df() method is accessed.</p>
 </span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
 </span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Attribute to track if the df needs updating</span>
 </span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a>
-</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">trade_date</span> <span class="o">=</span> <span class="n">trade_date</span>
+</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">date</span>
 </span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">month_start</span> <span class="o">=</span> <span class="n">month_start</span>
 </span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">pre_filter</span> <span class="o">=</span> <span class="n">pre_filter</span>
 </span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">all_columns</span> <span class="o">=</span> <span class="n">all_columns</span>
@@ -1071,6 +1071,53 @@ automatically loaded the first time the df() method is accessed.</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="pyield.b3_futures.di.DIFutures.date" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">date</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The trade date to retrieve the DI contract data.</p>
+<p>This property can be both read and set. When setting a value, it automatically
+converts the input date format to a <code>pd.Timestamp</code>.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pandas.Timestamp">Timestamp</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>pd.Timestamp: The trade date set for this instance.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -1173,8 +1220,8 @@ applied filters.</p>
 
 
 
-<h3 id="pyield.b3_futures.di.DIFutures.historical_trade_dates" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">historical_trade_dates</span> <span class="o">=</span> <span class="n">get_di_dataset</span><span class="p">()</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;TradeDate&#39;</span><span class="p">])[</span><span class="s1">&#39;TradeDate&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+<h3 id="pyield.b3_futures.di.DIFutures.historical_dates" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">historical_dates</span> <span class="o">=</span> <span class="n">get_di_dataset</span><span class="p">()</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;TradeDate&#39;</span><span class="p">])[</span><span class="s1">&#39;TradeDate&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
@@ -1289,53 +1336,6 @@ maturities from the ANBIMA dataset.</p>
 
 </div>
 
-<div class="doc doc-object doc-attribute">
-
-
-
-<h3 id="pyield.b3_futures.di.DIFutures.trade_date" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">trade_date</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-property"><code>property</code></small>
-      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
-  </span>
-
-</h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>The trade date to retrieve the DI contract data.</p>
-<p>This property can be both read and set. When setting a value, it automatically
-converts the input date format to a <code>pd.Timestamp</code>.</p>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="pandas.Timestamp">Timestamp</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>pd.Timestamp: The trade date set for this instance.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-    </div>
-
-</div>
-
 
 
 <div class="doc doc-object doc-function">
@@ -1423,14 +1423,14 @@ converts the input date format to a <code>pd.Timestamp</code>.</p>
 <span class="normal"><a href="#__codelineno-0-169">169</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="k">def</span><span class="w"> </span><span class="nf">_update_df</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 </span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve DI contract DataFrame for the initialized trade date.&quot;&quot;&quot;</span>
 </span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a>    <span class="n">bz_today</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">today</span><span class="p">(</span><span class="n">tz</span><span class="o">=</span><span class="s2">&quot;America/Sao_Paulo&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">normalize</span><span class="p">()</span>
-</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="k">if</span> <span class="n">bz_today</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_date</span><span class="p">:</span>
+</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="k">if</span> <span class="n">bz_today</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">date</span><span class="p">:</span>
 </span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>        <span class="c1"># Try to get intraday data</span>
-</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a>        <span class="n">df</span> <span class="o">=</span> <span class="n">b3</span><span class="o">.</span><span class="n">futures</span><span class="p">(</span><span class="n">contract_code</span><span class="o">=</span><span class="s2">&quot;DI1&quot;</span><span class="p">,</span> <span class="n">trade_date</span><span class="o">=</span><span class="n">bz_today</span><span class="p">)</span>
+</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a>        <span class="n">df</span> <span class="o">=</span> <span class="n">b3</span><span class="o">.</span><span class="n">futures</span><span class="p">(</span><span class="n">contract_code</span><span class="o">=</span><span class="s2">&quot;DI1&quot;</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="n">bz_today</span><span class="p">)</span>
 </span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a>    <span class="k">else</span><span class="p">:</span>
 </span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a>        <span class="c1"># Get historical data</span>
 </span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a>        <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
 </span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a>            <span class="n">get_di_dataset</span><span class="p">()</span>
-</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a>            <span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;TradeDate == @self._trade_date&quot;</span><span class="p">)</span>
+</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a>            <span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;TradeDate == @self._date&quot;</span><span class="p">)</span>
 </span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a>            <span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="p">)</span>
 </span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a>
@@ -1444,7 +1444,7 @@ converts the input date format to a <code>pd.Timestamp</code>.</p>
 </span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a>        <span class="n">df_pre</span> <span class="o">=</span> <span class="p">(</span>
 </span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a>            <span class="n">get_anbima_dataset</span><span class="p">()</span>
 </span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a>            <span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;BondType in [&#39;LTN&#39;, &#39;NTN-F&#39;]&quot;</span><span class="p">)</span>
-</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a>            <span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;ReferenceDate == @self._trade_date&quot;</span><span class="p">)[</span>
+</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a>            <span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;ReferenceDate == @self._date&quot;</span><span class="p">)[</span>
 </span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a>                <span class="p">[</span><span class="s2">&quot;ReferenceDate&quot;</span><span class="p">,</span> <span class="s2">&quot;MaturityDate&quot;</span><span class="p">]</span>
 </span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a>            <span class="p">]</span>
 </span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a>            <span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span>
@@ -1498,7 +1498,7 @@ converts the input date format to a <code>pd.Timestamp</code>.</p>
 
 
 <h3 id="pyield.b3_futures.di.DIFutures.interpolate_rates" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">interpolate_rates</span><span class="p">(</span><span class="n">trade_dates</span><span class="p">,</span> <span class="n">expirations</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">interpolate_rates</span><span class="p">(</span><span class="n">dates</span><span class="p">,</span> <span class="n">expirations</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
@@ -1514,7 +1514,7 @@ is recomended to be used in datasets calculations with multiple dates.</p>
 <p>This method calculates interpolated DI rates for a given set of trade
 dates and maturities using a flat-forward interpolation method. If no DI
 rates are available for a reference date, the interpolated rate is set to NaN.</p>
-<p>If trade_dates is provided as a scalar and expirations as an array, the
+<p>If dates is provided as a scalar and expirations as an array, the
 method assumes the scalar value is the same for all maturities. The same logic
 applies when the maturities are scalar and the trade dates are an array.</p>
 
@@ -1532,7 +1532,7 @@ applies when the maturities are scalar and the trade dates are an array.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>trade_dates</code>
+                <code>dates</code>
             </td>
             <td>
                   <code><span title="pyield.date_converter.DateScalar">DateScalar</span> | <span title="pyield.date_converter.DateArray">DateArray</span></code>
@@ -1621,7 +1621,7 @@ trade dates.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>If <code>reference_dates</code> and <code>maturities</code> have different lengths.</p>
+                <p>If <code>dates</code> and <code>maturities</code> have different lengths.</p>
               </div>
             </td>
           </tr>
@@ -1726,7 +1726,7 @@ trade dates.</p>
 <span class="normal"><a href="#__codelineno-0-291">291</a></span>
 <span class="normal"><a href="#__codelineno-0-292">292</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-198"><a id="__codelineno-0-198" name="__codelineno-0-198"></a><span class="nd">@staticmethod</span>
 </span><span id="__span-0-199"><a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="k">def</span><span class="w"> </span><span class="nf">interpolate_rates</span><span class="p">(</span>
-</span><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a>    <span class="n">trade_dates</span><span class="p">:</span> <span class="n">DateScalar</span> <span class="o">|</span> <span class="n">DateArray</span><span class="p">,</span>
+</span><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a>    <span class="n">dates</span><span class="p">:</span> <span class="n">DateScalar</span> <span class="o">|</span> <span class="n">DateArray</span><span class="p">,</span>
 </span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a>    <span class="n">expirations</span><span class="p">:</span> <span class="n">DateScalar</span> <span class="o">|</span> <span class="n">DateArray</span><span class="p">,</span>
 </span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a>    <span class="n">extrapolate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-203"><a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
@@ -1738,12 +1738,12 @@ trade dates.</p>
 </span><span id="__span-0-209"><a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">    dates and maturities using a flat-forward interpolation method. If no DI</span>
 </span><span id="__span-0-210"><a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">    rates are available for a reference date, the interpolated rate is set to NaN.</span>
 </span><span id="__span-0-211"><a id="__codelineno-0-211" name="__codelineno-0-211"></a>
-</span><span id="__span-0-212"><a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">    If trade_dates is provided as a scalar and expirations as an array, the</span>
+</span><span id="__span-0-212"><a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">    If dates is provided as a scalar and expirations as an array, the</span>
 </span><span id="__span-0-213"><a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">    method assumes the scalar value is the same for all maturities. The same logic</span>
 </span><span id="__span-0-214"><a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="sd">    applies when the maturities are scalar and the trade dates are an array.</span>
 </span><span id="__span-0-215"><a id="__codelineno-0-215" name="__codelineno-0-215"></a>
 </span><span id="__span-0-216"><a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-217"><a id="__codelineno-0-217" name="__codelineno-0-217"></a><span class="sd">        trade_dates (DateScalar | DateArray): The trade dates for the rates.</span>
+</span><span id="__span-0-217"><a id="__codelineno-0-217" name="__codelineno-0-217"></a><span class="sd">        dates (DateScalar | DateArray): The trade dates for the rates.</span>
 </span><span id="__span-0-218"><a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">        expirations (DateScalar | DateArray): The expirations corresponding to the</span>
 </span><span id="__span-0-219"><a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">            trade dates.</span>
 </span><span id="__span-0-220"><a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">        extrapolate (bool): Whether to allow extrapolation beyond known DI rates.</span>
@@ -1752,29 +1752,29 @@ trade dates.</p>
 </span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a><span class="sd">        pd.Series: A Series containing the interpolated DI rates.</span>
 </span><span id="__span-0-224"><a id="__codelineno-0-224" name="__codelineno-0-224"></a>
 </span><span id="__span-0-225"><a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-226"><a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="sd">        ValueError: If `reference_dates` and `maturities` have different lengths.</span>
+</span><span id="__span-0-226"><a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="sd">        ValueError: If `dates` and `maturities` have different lengths.</span>
 </span><span id="__span-0-227"><a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-228"><a id="__codelineno-0-228" name="__codelineno-0-228"></a>    <span class="c1"># Convert input dates to a consistent format</span>
-</span><span id="__span-0-229"><a id="__codelineno-0-229" name="__codelineno-0-229"></a>    <span class="n">trade_dates</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">trade_dates</span><span class="p">)</span>
+</span><span id="__span-0-229"><a id="__codelineno-0-229" name="__codelineno-0-229"></a>    <span class="n">dates</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span>
 </span><span id="__span-0-230"><a id="__codelineno-0-230" name="__codelineno-0-230"></a>    <span class="n">expirations</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">expirations</span><span class="p">)</span>
 </span><span id="__span-0-231"><a id="__codelineno-0-231" name="__codelineno-0-231"></a>
 </span><span id="__span-0-232"><a id="__codelineno-0-232" name="__codelineno-0-232"></a>    <span class="c1"># Ensure the lengths of input arrays are consistent</span>
-</span><span id="__span-0-233"><a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="k">match</span> <span class="p">(</span><span class="n">trade_dates</span><span class="p">,</span> <span class="n">expirations</span><span class="p">):</span>
+</span><span id="__span-0-233"><a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="k">match</span> <span class="p">(</span><span class="n">dates</span><span class="p">,</span> <span class="n">expirations</span><span class="p">):</span>
 </span><span id="__span-0-234"><a id="__codelineno-0-234" name="__codelineno-0-234"></a>        <span class="k">case</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">():</span>
 </span><span id="__span-0-235"><a id="__codelineno-0-235" name="__codelineno-0-235"></a>            <span class="n">dfi</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;mat&quot;</span><span class="p">:</span> <span class="n">expirations</span><span class="p">})</span>
-</span><span id="__span-0-236"><a id="__codelineno-0-236" name="__codelineno-0-236"></a>            <span class="n">dfi</span><span class="p">[</span><span class="s2">&quot;tdate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">trade_dates</span>
+</span><span id="__span-0-236"><a id="__codelineno-0-236" name="__codelineno-0-236"></a>            <span class="n">dfi</span><span class="p">[</span><span class="s2">&quot;tdate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dates</span>
 </span><span id="__span-0-237"><a id="__codelineno-0-237" name="__codelineno-0-237"></a>
 </span><span id="__span-0-238"><a id="__codelineno-0-238" name="__codelineno-0-238"></a>        <span class="k">case</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">():</span>
-</span><span id="__span-0-239"><a id="__codelineno-0-239" name="__codelineno-0-239"></a>            <span class="n">dfi</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;tdate&quot;</span><span class="p">:</span> <span class="n">trade_dates</span><span class="p">})</span>
+</span><span id="__span-0-239"><a id="__codelineno-0-239" name="__codelineno-0-239"></a>            <span class="n">dfi</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;tdate&quot;</span><span class="p">:</span> <span class="n">dates</span><span class="p">})</span>
 </span><span id="__span-0-240"><a id="__codelineno-0-240" name="__codelineno-0-240"></a>            <span class="n">dfi</span><span class="p">[</span><span class="s2">&quot;mat&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">expirations</span>
 </span><span id="__span-0-241"><a id="__codelineno-0-241" name="__codelineno-0-241"></a>
 </span><span id="__span-0-242"><a id="__codelineno-0-242" name="__codelineno-0-242"></a>        <span class="k">case</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">():</span>
-</span><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">trade_dates</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">expirations</span><span class="p">):</span>
+</span><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">expirations</span><span class="p">):</span>
 </span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Args. should have the same length.&quot;</span><span class="p">)</span>
-</span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a>            <span class="n">dfi</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;tdate&quot;</span><span class="p">:</span> <span class="n">trade_dates</span><span class="p">,</span> <span class="s2">&quot;mat&quot;</span><span class="p">:</span> <span class="n">expirations</span><span class="p">})</span>
+</span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a>            <span class="n">dfi</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;tdate&quot;</span><span class="p">:</span> <span class="n">dates</span><span class="p">,</span> <span class="s2">&quot;mat&quot;</span><span class="p">:</span> <span class="n">expirations</span><span class="p">})</span>
 </span><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a>
 </span><span id="__span-0-247"><a id="__codelineno-0-247" name="__codelineno-0-247"></a>        <span class="k">case</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">():</span>
-</span><span id="__span-0-248"><a id="__codelineno-0-248" name="__codelineno-0-248"></a>            <span class="n">dfi</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;tdate&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">trade_dates</span><span class="p">],</span> <span class="s2">&quot;mat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">expirations</span><span class="p">]})</span>
+</span><span id="__span-0-248"><a id="__codelineno-0-248" name="__codelineno-0-248"></a>            <span class="n">dfi</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;tdate&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">dates</span><span class="p">],</span> <span class="s2">&quot;mat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">expirations</span><span class="p">]})</span>
 </span><span id="__span-0-249"><a id="__codelineno-0-249" name="__codelineno-0-249"></a>
 </span><span id="__span-0-250"><a id="__codelineno-0-250" name="__codelineno-0-250"></a>    <span class="c1"># Compute business days between reference dates and maturities</span>
 </span><span id="__span-0-251"><a id="__codelineno-0-251" name="__codelineno-0-251"></a>    <span class="n">dfi</span><span class="p">[</span><span class="s2">&quot;bdays&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">dfi</span><span class="p">[</span><span class="s2">&quot;tdate&quot;</span><span class="p">],</span> <span class="n">dfi</span><span class="p">[</span><span class="s2">&quot;mat&quot;</span><span class="p">])</span>
@@ -1923,7 +1923,7 @@ trade dates.</p>
 </span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a>        <span class="n">known_rates</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;SettlementRate&quot;</span><span class="p">],</span>
 </span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a>        <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span>
 </span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a>    <span class="p">)</span>
-</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a>    <span class="n">bd</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_trade_date</span><span class="p">,</span> <span class="n">expiration</span><span class="p">)</span>
+</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a>    <span class="n">bd</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_date</span><span class="p">,</span> <span class="n">expiration</span><span class="p">)</span>
 </span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a>    <span class="k">return</span> <span class="n">ff_interp</span><span class="p">(</span><span class="n">bd</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
@@ -2061,7 +2061,7 @@ trade dates.</p>
     <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "toc.integrate", "content.code.copy", "content.code.select", "search.suggest", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.f13b1293.min.js"></script>
+      <script src="../assets/javascripts/bundle.f1b6f286.min.js"></script>
       
     
   </body>
