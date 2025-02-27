@@ -14,9 +14,8 @@ classifiers = [
     "Topic :: Office/Business :: Financial :: Investment",
 ]
 dependencies = [
-    "pandas[html,parquet]>=2.0.0",
-    "numpy>=2.0.0",
-    "python-calamine>=0.2.0",    
+    "pandas[html,parquet,excel]>=2.0.0",
+    "numpy>=2.0.0",    
     "requests>=2.31.0",
 ]
 dynamic = ["version"]

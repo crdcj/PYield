@@ -1,11 +1,8 @@
-import io
 import locale
 from dataclasses import dataclass
 from typing import Literal
 
 import pandas as pd
-import python_calamine as pc
-import requests
 
 
 @dataclass
@@ -62,32 +59,23 @@ def ipca_current_month() -> IndicatorProjection:
     """
     # Define the URL and get the data
     url = "https://www.anbima.com.br/informacoes/indicadores/arqs/indicadores.xls"
-    response = requests.get(url, timeout=10)
-    excel_data = io.BytesIO(response.content)
+    df = pd.read_excel(url)
 
-    # Load the workbook and select the first sheet
-    workbook = pc.load_workbook(excel_data)
-    first_sheet = workbook.sheet_names[0]
-    data = workbook.get_sheet_by_name(first_sheet).to_python(skip_empty_area=True)
+    last_update_str = df.columns[0].split("Atualização:")[-1].strip()
 
-    # Extract projection update date and time from the first row
-    update_str = str(data[0][0])
-    last_update_str = update_str.split("Atualização:")[-1].strip()
-
-    # Find the text containing the IPCA projection and extract its data
-    ipca_data = next(line for line in data if "IPCA1" in line)
-    ipca_text = str(ipca_data[-1])
+    ipca_row = df[df.iloc[:, 0] == "IPCA1"]
+    ipca_date = ipca_row.iloc[0, 1]
+    ipca_value = ipca_row.iloc[0, 2]
 
     # Extract and format the reference month
-    projection_text = str(ipca_data[1])
-    month_str = projection_text.split("(")[-1].split(")")[0]
+    ipca_date = ipca_date.split("(")[-1].split(")")[0]
     locale.setlocale(locale.LC_TIME, "pt_BR.UTF-8")
-    ipca_month_ts = pd.to_datetime(month_str, format="%b/%y")
-    reference_period = ipca_month_ts.to_period("M")
+    ipca_date = pd.to_datetime(ipca_date, format="%b/%y")
+    reference_period = ipca_date.to_period("M")
     locale.setlocale(locale.LC_TIME, "")  # Reset locale to default
 
     return IndicatorProjection(
         last_updated=pd.to_datetime(last_update_str, format="%d/%m/%Y - %H:%M h"),
         reference_period=reference_period,
-        projected_value=round(float(ipca_text) / 100, 4),
+        projected_value=round(float(ipca_value) / 100, 4),
     )
