@@ -86,7 +86,7 @@ def rates(date: DateScalar) -> pd.DataFrame:
         13   2060-08-15        0.060179
 
     """
-    ntnb_rates = tpf.anbima_tpf_rates(date, "NTN-B")
+    ntnb_rates = tpf.tpf_rates(date, "NTN-B")
     if ntnb_rates.empty:
         return pd.DataFrame()
     return ntnb_rates[["MaturityDate", "IndicativeRate"]]

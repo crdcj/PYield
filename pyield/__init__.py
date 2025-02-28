@@ -1,15 +1,12 @@
 import logging
+import urllib.error
 
-from pyield import bday
+import tenacity
+
+from pyield import anbima, bc, bday
 from pyield.__about__ import __version__
-from pyield.anbima.ima import last_ima
-from pyield.anbima.imaq import imaq
-from pyield.anbima.tpf import anbima_tpf_data, anbima_tpf_rates, tpf_pre_maturities
 from pyield.b3_futures import futures
 from pyield.b3_futures.di import DIFutures
-from pyield.bc.auction import auctions
-from pyield.bc.ptax import ptax
-from pyield.bc.repos import repos
 from pyield.indicators import indicator
 from pyield.interpolator import Interpolator
 from pyield.projections import projection
@@ -18,18 +15,11 @@ from pyield.tpf import lft, ltn, ntnb, ntnf
 
 __all__ = [
     "__version__",
-    "anbima_tpf_data",
-    "anbima_tpf_rates",
-    "tpf_pre_maturities",
-    "auctions",
-    "repos",
-    "ptax",
+    "anbima",
     "bday",
     "DIFutures",
     "forward_rates",
     "futures",
-    "last_ima",
-    "imaq",
     "indicator",
     "Interpolator",
     "lft",
@@ -37,8 +27,17 @@ __all__ = [
     "ntnb",
     "ntnf",
     "projection",
+    "bc",
 ]
-
 
 # Configura o logger do pacote principal com um NullHandler
 logging.getLogger(__name__).addHandler(logging.NullHandler())
+
+global_logger = logging.getLogger("pyield")
+
+global_retry = tenacity.retry(
+    retry=tenacity.retry_if_exception_type(urllib.error.URLError),
+    stop=tenacity.stop_after_attempt(5),
+    wait=tenacity.wait_exponential(multiplier=1, min=1, max=10),
+    before_sleep=tenacity.before_sleep_log(global_logger, logging.WARNING),
+)

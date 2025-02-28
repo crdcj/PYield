@@ -106,7 +106,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def anbima_tpf_data(date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
+def tpf_data(date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
     """Fetch and process TPF market data from ANBIMA.
 
     This function retrieves bond market data from the ANBIMA website for a
@@ -141,7 +141,7 @@ def anbima_tpf_data(date: DateScalar, bond_type: str | None = None) -> pd.DataFr
         return df.reset_index(drop=True)
 
 
-def anbima_tpf_rates(
+def tpf_rates(
     date: DateScalar,
     bond_type: str | None = None,
     adj_maturities: bool = False,
@@ -172,7 +172,7 @@ def anbima_tpf_rates(
 
     if df.empty:
         # Try to fetch the data from the Anbima website
-        df = anbima_tpf_data(date)
+        df = tpf_data(date)
 
     if df.empty:
         # If the data is still empty, return an empty DataFrame
@@ -203,7 +203,7 @@ def tpf_pre_maturities(date: DateScalar) -> pd.Series:
             'NTN-F' bonds, sorted in ascending order.
     """
     maturity_dates = (
-        anbima_tpf_rates(date)
+        tpf_rates(date)
         .query("BondType in ['LTN', 'NTN-F']")["MaturityDate"]
         .drop_duplicates()
         .sort_values(ignore_index=True)
