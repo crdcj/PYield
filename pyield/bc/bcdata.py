@@ -6,28 +6,23 @@ from pyield.config import global_retry
 from pyield.date_converter import DateScalar, convert_input_dates
 
 logger = logging.getLogger(__name__)
+BASE_URL = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
 
 
-def _build_download_url(date: DateScalar) -> str:
+def _build_download_url(code: int, date: DateScalar) -> str:
     date = convert_input_dates(date)
-    fdate = date.strftime("%d/%m/%Y")
-    # https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=csv&dataInicial={fdate}&dataFinal={fdate}"
+    formatted_date = date.strftime("%d/%m/%Y")
+
+    api_url = BASE_URL
+    api_url += f"{code}/dados?formato=csv"
+    api_url += f"&dataInicial={formatted_date}&dataFinal={formatted_date}"
+
     return api_url
 
 
 @global_retry
 def _fetch_data_from_url(file_url: str) -> pd.DataFrame:
     return pd.read_csv(file_url, sep=";", decimal=",")
-
-
-def _process_selic_over_df(df: pd.DataFrame) -> float:
-    if df.empty or "valor" not in df.columns:
-        msg = "No data available for SELIC Over rate"
-        logger.warning(msg)
-        return float("nan")
-    value = float(df["valor"].iloc[0] / 100)  # SELIC Over daily rate
-    return round(value, 4)
 
 
 def selic_over(date: DateScalar) -> float:
@@ -44,14 +39,22 @@ def selic_over(date: DateScalar) -> float:
         float: The SELIC Over rate as a float rounded to 4 decimal places or NaN if
         the rate is not available.
 
+    https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
+
     Examples:
         >>> yd.indicator("31-05-2024")
         0.104
 
     """
-    api_url = _build_download_url(date)
+    api_url = _build_download_url(1178, date)
     df = _fetch_data_from_url(api_url)
-    return _process_selic_over_df(df)
+
+    if df.empty or "valor" not in df.columns:
+        msg = "No data available for SELIC Over rate"
+        logger.warning(msg)
+        return float("nan")
+    value = float(df["valor"].iloc[0] / 100)  # SELIC Over daily rate
+    return round(value, 4)
 
 
 def selic_target(date: pd.Timestamp) -> float:
@@ -70,11 +73,12 @@ def selic_target(date: pd.Timestamp) -> float:
     Examples:
         >>> yd.indicator("31-05-2024")
         0.105
+
+    https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     """
-    # https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    date_str = date.strftime("%d/%m/%Y")
-    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=csv&dataInicial={date_str}&dataFinal={date_str}"
-    df = pd.read_csv(api_url, sep=";", decimal=",")
+    api_url = _build_download_url(432, date)
+    df = _fetch_data_from_url(api_url)
+
     if df.empty or "valor" not in df.columns:
         msg = f"No data available for SELIC Target rate on {date}"
         logger.warning(msg)
@@ -90,12 +94,12 @@ def di_over(date: pd.Timestamp) -> float:
     Example:
         >>> yd.indicator("31-05-2024")
         0.104
-    """
 
-    # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    di_date = date.strftime("%d/%m/%Y")
-    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial={di_date}&dataFinal={di_date}"
-    df = pd.read_csv(api_url, sep=";", decimal=",")
+    https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
+    """
+    api_url = _build_download_url(11, date)
+    df = _fetch_data_from_url(api_url)
+
     if df.empty or "valor" not in df.columns:
         logger.warning(f"No data available for DI rate on {date}")
         return float("nan")

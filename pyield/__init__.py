@@ -1,10 +1,9 @@
 import logging
 
-from pyield import anbima, bc, bday
+from pyield import anbima, bc, bday, ibge
 from pyield.__about__ import __version__
 from pyield.b3_futures import futures
 from pyield.b3_futures.di import DIFutures
-from pyield.indicators import indicator
 from pyield.interpolator import Interpolator
 from pyield.tools import forward_rates
 from pyield.tpf import lft, ltn, ntnb, ntnf
@@ -16,7 +15,7 @@ __all__ = [
     "DIFutures",
     "forward_rates",
     "futures",
-    "indicator",
+    "ibge",
     "Interpolator",
     "lft",
     "ltn",
