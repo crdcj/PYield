@@ -14,6 +14,7 @@ import requests
 
 from pyield import bday
 from pyield import date_converter as dc
+from pyield.config import default_retry
 from pyield.date_converter import DateScalar
 from pyield.tpf.ntnb import duration as duration_b
 from pyield.tpf.ntnf import duration as duration_f
@@ -48,6 +49,7 @@ COLUMN_MAPPING = {
 BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
 
 
+@default_retry
 def _load_from_url(url: str) -> pd.DataFrame:
     response = requests.get(url, timeout=10)
     response.raise_for_status()
@@ -318,8 +320,7 @@ def auctions(
 
     # Mapeamento do auction_type para o valor esperado pela API
     auction_type_mapping = {"Sell": "Venda", "Buy": "Compra"}
-    auction_type = str(auction_type)  # Since Literal is not string typed
-    auction_type_api_value = auction_type_mapping.get(auction_type)
+    auction_type_api_value = auction_type_mapping.get(str(auction_type))
     # Adiciona o parâmetro tipoOferta à URL se auction_type for fornecido
     if auction_type_api_value:
         url += f"&@tipoOferta='{auction_type_api_value}'"

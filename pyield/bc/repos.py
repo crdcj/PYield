@@ -13,6 +13,7 @@ import requests
 
 from pyield import bday
 from pyield import date_converter as dc
+from pyield.config import default_retry
 from pyield.date_converter import DateScalar
 
 """Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
@@ -37,6 +38,7 @@ COLUMN_MAPPING = {
 BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloes_compromissadas(dataLancamentoInicio=@dataLancamentoInicio,dataLancamentoFim=@dataLancamentoFim,horaInicio=@horaInicio,dataLiquidacao=@dataLiquidacao,dataRetorno=@dataRetorno,publicoPermitidoLeilao=@publicoPermitidoLeilao,nomeTipoOferta=@nomeTipoOferta)?"
 
 
+@default_retry
 def _load_from_url(url: str) -> pd.DataFrame:
     response = requests.get(url, timeout=10)
     response.raise_for_status()
