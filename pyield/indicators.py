@@ -72,12 +72,8 @@ def indicator(
             return ipca_monthly_rate(converted_date)
         case "SELIC_TARGET":
             return _selic_target(converted_date)
-        case "SELIC_OVER":
-            return _selic_over(converted_date)
         case "DI":
             return _di(converted_date)
-        case "VNA_LFT":
-            return _vna_lft(converted_date)
         case _:
             raise ValueError("Invalid indicator code provided")
 
@@ -138,38 +134,6 @@ def _selic_target(date: pd.Timestamp) -> float:
     )
 
 
-def _selic_over(date: pd.Timestamp) -> float:
-    """
-    Fetches the SELIC Over rate for a specific reference date.
-
-    The SELIC Over rate is the daily average interest rate effectively practiced
-    between banks in the interbank market, using public securities as collateral.
-
-    Args:
-        date (pd.Timestamp): The date for which to fetch the SELIC Over rate.
-
-    Returns:
-        float: The SELIC Over rate as a float rounded to 4 decimal places or NaN if
-        the rate is not available.
-    """
-
-    formatted_date = date.strftime("%d/%m/%Y")
-    # https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=csv&dataInicial={formatted_date}&dataFinal={formatted_date}"
-
-    def process_selic_over_response(data):
-        csv_data = io.StringIO(data)
-        df = pd.read_csv(csv_data, sep=";", decimal=",")
-        if df.empty or "valor" not in df.columns:
-            msg = f"No data available for SELIC Over rate on {date}"
-            logger.warning(msg)
-            return float("nan")
-        value = float(df["valor"].iloc[0] / 100)  # SELIC Over daily rate
-        return round(value, 4)
-
-    return _fetch_with_retry(api_url, "SELIC Over", process_selic_over_response, False)
-
-
 def _di(date: pd.Timestamp) -> float:
     # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
     di_date = date.strftime("%d/%m/%Y")
@@ -185,44 +149,6 @@ def _di(date: pd.Timestamp) -> float:
         return round((1 + value) ** 252 - 1, 4)  # Annualize the daily rate
 
     return _fetch_with_retry(api_url, "DI Over", process_di_response, False)
-
-
-def _vna_lft(date: pd.Timestamp) -> float:
-    # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
-    url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
-    url_file = f"{date.strftime('%Y%m%d')}APC238"
-    url_vna = url_base + url_file
-
-    def _process_vna_response(text: str) -> float:
-        # Finding the part that contains the table
-        start_of_table = text.find("EMISSAO")
-        end_of_table = text.find("99999999*")
-
-        # Extracting the table
-        table_text = text[start_of_table:end_of_table].strip()
-        table_lines = table_text.splitlines()
-
-        # Remove empty lines
-        table_lines = [line.strip() for line in table_lines if line.strip()]
-
-        # Remove first line
-        body_lines = table_lines[1:]
-
-        vnas = []
-        for line in body_lines:
-            vna_str = line.split()[-1].replace(",", ".")
-            vnas.append(float(vna_str))
-
-        # Raise error if all values are not the same
-        vna_value = vnas[0]
-        if any(vna_value != vna for vna in vnas):
-            bcb_url = "https://www.bcb.gov.br/estabilidadefinanceira/selicbaixar"
-            msg = f"VNA values are not the same. Please check data at {bcb_url}"
-            raise ValueError(msg)
-
-        return vna_value
-
-    return _fetch_with_retry(url_vna, "VNA LFT", _process_vna_response, False)
 
 
 def _fetch_with_retry(

@@ -2,7 +2,7 @@ import logging
 
 import pandas as pd
 
-from pyield import global_retry
+from pyield.config import global_retry
 from pyield.date_converter import DateScalar, convert_input_dates
 
 logger = logging.getLogger(__name__)
