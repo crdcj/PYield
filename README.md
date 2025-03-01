@@ -152,21 +152,23 @@ TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastB
 
 ### Indicators Data
 ```python
->>> import pyield as yd
+>>> from pyield import bc
 # Fetch the SELIC target rate from the Central Bank of Brazil
->>> yd.indicator(indicator_code="SELIC_TARGET", date='12-04-2024')
-0.1075  # 10.75%
-
-# Fetch the IPCA monthly inflation rate from IBGE
->>> yd.indicator(indicator_code="IPCA_MR", date='18-03-2024')
-0.0016  # 0.16%
+>>> bc.selic_over("26-01-2025")  # No data on 26-01-2025 (sunday)
+        Date   Value
+0 2025-01-27  0.1215
+1 2025-01-28  0.1215
+2 2025-01-29  0.1215
+3 2025-01-30  0.1315
+4 2025-01-31  0.1315
+...
 ```
 
 ### Projections Data
 ```python
->>> import pyield as yd
+>>> from pyield import anbima
 # Fetch current month projection for IPCA from IBGE API
->>> ipca = yd.projection(projection_code="IPCA_CM")
+>>> ipca = anbima.ipca_projection()
 >>> print(ipca)
 IndicatorProjection(
     last_updated=Timestamp('2024-04-19 18:55:00'),

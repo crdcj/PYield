@@ -2,6 +2,7 @@ from pyield.bc.auction import auctions
 from pyield.bc.bcdata import di_over, selic_over, selic_target
 from pyield.bc.ptax import ptax
 from pyield.bc.repos import repos
+from pyield.bc.sec import sec
 from pyield.bc.vna import vna_lft
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "selic_over",
     "selic_target",
     "di_over",
+    "sec",
 ]
