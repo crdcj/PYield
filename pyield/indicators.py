@@ -1,4 +1,3 @@
-import io
 import logging
 import time
 from typing import Callable, Literal
@@ -51,29 +50,12 @@ def indicator(
     Examples:
         >>> yd.indicator("IPCA_MR", "01-04-2024")
         0.0038
-
-        >>> yd.indicator("SELIC_TARGET", "31-05-2024")
-        0.105
-
-        >>> yd.indicator("DI", "31-05-2024")
-        0.104
-
-        >>> yd.indicator("VNA_LFT", "31-05-2024")
-        14903.01148
-
-        >>> yd.indicator("SELIC_OVER", "31-05-2024")
-        0.104
-
     """
     converted_date = dc.convert_input_dates(date)
     selected_indicator_code = str(indicator_code).upper()
     match selected_indicator_code:
         case "IPCA_MR":
             return ipca_monthly_rate(converted_date)
-        case "SELIC_TARGET":
-            return _selic_target(converted_date)
-        case "DI":
-            return _di(converted_date)
         case _:
             raise ValueError("Invalid indicator code provided")
 
@@ -100,55 +82,6 @@ def ipca_monthly_rate(date: pd.Timestamp) -> float:
         return round(float(ipca_str) / 100, 4)
 
     return _fetch_with_retry(api_url, "IPCA Monthly Rate", process_ipca_response, True)
-
-
-def _selic_target(date: pd.Timestamp) -> float:
-    """
-    Fetches the SELIC Target rate for a specific reference date.
-
-    The SELIC Target rate is the official rate set by the Central Bank of Brazil.
-
-    Args:
-        date (pd.Timestamp): The date for which to fetch the SELIC Target.
-
-    Returns:
-        float: The SELIC Target rate as a float rounded to 4 decimal places or NaN if
-        the rate is not available.
-    """
-    # https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    selic_date = date.strftime("%d/%m/%Y")
-    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=csv&dataInicial={selic_date}&dataFinal={selic_date}"
-
-    def process_selic_target_response(data):
-        csv_data = io.StringIO(data)
-        df = pd.read_csv(csv_data, sep=";", decimal=",")
-        if df.empty or "valor" not in df.columns:
-            msg = f"No data available for SELIC Target rate on {date}"
-            logger.warning(msg)
-            return float("nan")
-        value = float(df["valor"].iloc[0] / 100)  # SELIC Target rate
-        return round(float(value), 4)
-
-    return _fetch_with_retry(
-        api_url, "SELIC Target", process_selic_target_response, False
-    )
-
-
-def _di(date: pd.Timestamp) -> float:
-    # https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-    di_date = date.strftime("%d/%m/%Y")
-    api_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial={di_date}&dataFinal={di_date}"
-
-    def process_di_response(data):
-        csv_data = io.StringIO(data)
-        df = pd.read_csv(csv_data, sep=";", decimal=",")
-        if df.empty or "valor" not in df.columns:
-            logger.warning(f"No data available for DI rate on {date}")
-            return float("nan")
-        value = float(df["valor"].iloc[0] / 100)  # DI daily rate
-        return round((1 + value) ** 252 - 1, 4)  # Annualize the daily rate
-
-    return _fetch_with_retry(api_url, "DI Over", process_di_response, False)
 
 
 def _fetch_with_retry(
