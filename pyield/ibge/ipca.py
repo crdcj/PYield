@@ -4,12 +4,12 @@ import pandas as pd
 import requests
 
 from pyield import date_converter as dc
-from pyield.config import global_retry
+from pyield.config import default_retry
 
 logger = logging.getLogger(__name__)
 
 
-@global_retry
+@default_retry
 def ipca_monthly_rate(date: pd.Timestamp) -> float:
     """
     The function makes an API call to the IBGE's data portal to retrieve the data.

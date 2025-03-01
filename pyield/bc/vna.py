@@ -1,10 +1,10 @@
 import requests
 
-from pyield.config import global_retry
+from pyield.config import default_retry
 from pyield.date_converter import DateScalar, convert_input_dates
 
 
-@global_retry
+@default_retry
 def _get_text(date: DateScalar) -> str:
     # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"

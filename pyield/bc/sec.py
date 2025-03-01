@@ -2,7 +2,7 @@ import logging
 
 import pandas as pd
 
-from pyield.config import global_retry
+from pyield.config import default_retry
 from pyield.date_converter import DateScalar, convert_input_dates
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def _build_download_url(target_date: DateScalar) -> str:
     return f"{base_url}/{file_name}"
 
 
-@global_retry
+@default_retry
 def _fetch_data_from_url(file_url: str) -> pd.DataFrame:
     df = pd.read_csv(
         file_url,
