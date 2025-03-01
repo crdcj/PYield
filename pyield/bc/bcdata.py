@@ -184,10 +184,12 @@ def di_over(
     API URL Example:
         https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
         https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial=12/04/2024&dataFinal=12/04/2024
-        https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial=25/02/2025&dataFinal=25/02/2025
 
     Args:
-        date: The date for which to fetch the DI rate.
+        start: The start date for the data to fetch
+        end: The end date for the data to fetch
+        annualized: If True, returns the annualized rate (252 trading
+            days per year), otherwise returns the daily rate.
 
     Returns:
         DataFrame containing Date and Value columns with the DI rate,

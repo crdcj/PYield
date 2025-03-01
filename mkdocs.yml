@@ -5,17 +5,18 @@ nav:
   - Articles:
       - Introduction to Pyield: articles/pyield_intro.md
   - Modules:
+      - Anbima Data (anbima): anbima.md
       - Business Day Tool (bday): bday.md
+      - BC Data (bc): bc.md
+      - IBGE Data (ibge): ibge.md
       - Interpolator (intepolator): interpolator.md
       - LFT (lft): lft.md
       - LTN (ltn): ltn.md
       - NTN-B (ntnb): ntnb.md
-      - NTN-F (ntnf): ntnf.md
-      - Anbima Data (anbima): anbima.md
+      - NTN-F (ntnf): ntnf.md      
       - DI Data (di): di.md
-      - Futures Data (futures): futures.md
-      - Indicators (indicator): indicators.md
-      - Tools (tools): tools.md
+      - Futures Data (futures): futures.md      
+      - Forwards (tools): forwards.md
   
 
 theme:
