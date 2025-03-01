@@ -71,9 +71,8 @@ def vna_lft(date: DateScalar) -> float:
         float: The VNA (Valor Nominal Atualizado) value for the specified date.
 
     Examples:
-        >>> bc.vna_lft("31-05-2024")
+        >>> yd.bc.vna_lft("31-05-2024")
         14903.01148
-
 
     Raises:
         ValueError: If the extracted VNA values from the BCB website are

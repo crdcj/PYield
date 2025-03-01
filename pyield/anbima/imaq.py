@@ -134,8 +134,8 @@ def imaq(date: DateScalar) -> pd.DataFrame:
             fetching or processing.
 
     """
+    date = dc.convert_input_dates(date)
     try:
-        date = dc.convert_input_dates(date)
         df = _fetch_url_tables(date)
         if df.empty:
             return df

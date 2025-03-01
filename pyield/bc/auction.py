@@ -224,7 +224,7 @@ def _fetch_df_from_url(url: str) -> pd.DataFrame:
 def auctions(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
-    auction_type: Literal["Sell", "Buy"] = None,
+    auction_type: Literal["Sell", "Buy"] | None = None,
 ) -> pd.DataFrame:
     """
     Recupera dados de leilões para um determinado período e tipo de leilão da API do BC.
@@ -318,6 +318,7 @@ def auctions(
 
     # Mapeamento do auction_type para o valor esperado pela API
     auction_type_mapping = {"Sell": "Venda", "Buy": "Compra"}
+    auction_type = str(auction_type)  # Since Literal is not string typed
     auction_type_api_value = auction_type_mapping.get(auction_type)
     # Adiciona o parâmetro tipoOferta à URL se auction_type for fornecido
     if auction_type_api_value:
