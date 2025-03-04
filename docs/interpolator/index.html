@@ -9,14 +9,14 @@
       
       
       
-        <link rel="prev" href="../bday/">
+        <link rel="prev" href="../ibge/">
       
       
         <link rel="next" href="../lft/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.7">
     
     
       
@@ -257,7 +257,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../bday/" class="md-tabs__link">
+        <a href="../anbima/" class="md-tabs__link">
           
   
   Modules
@@ -461,11 +461,77 @@
   
   
     <li class="md-nav__item">
+      <a href="../anbima/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Anbima Data (anbima)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../bday/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     Business Day Tool (bday)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    BC Data (bc)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ibge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IBGE Data (ibge)
     
   </span>
   
@@ -681,28 +747,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../anbima/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Anbima Data (anbima)
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../di/" class="md-nav__link">
         
   
@@ -747,33 +791,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../indicators/" class="md-nav__link">
+      <a href="../forwards/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Indicators (indicator)
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tools/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Tools (tools)
+    Forwards (tools)
     
   </span>
   
@@ -883,7 +905,7 @@
                 <code>known_bdays</code>
             </td>
             <td>
-                  <code><span title="pandas.Series">Series</span> | list[int]</code>
+                  <code><span title="pandas.Series">Series</span> | <span title="list">list</span>[<span title="int">int</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -899,7 +921,7 @@
                 <code>known_rates</code>
             </td>
             <td>
-                  <code><span title="pandas.Series">Series</span> | list[float]</code>
+                  <code><span title="pandas.Series">Series</span> | <span title="list">list</span>[<span title="float">float</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -915,7 +937,7 @@
                 <code>extrapolate</code>
             </td>
             <td>
-                  <code>bool</code>
+                  <code><span title="bool">bool</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -943,7 +965,7 @@ out-of-range values.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>ValueError</code>
+                  <code><span title="ValueError">ValueError</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -953,7 +975,7 @@ out-of-range values.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                  <code>ValueError</code>
+                  <code><span title="ValueError">ValueError</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1077,7 +1099,7 @@ out-of-range values.</p>
                 <code>bday</code>
             </td>
             <td>
-                  <code>int</code>
+                  <code><span title="int">int</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1104,7 +1126,7 @@ calculated.</p>
       <tbody>
           <tr class="doc-section-item">
 <td><code>float</code></td>            <td>
-                  <code>float</code>
+                  <code><span title="float">float</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1256,7 +1278,7 @@ interpolated by the specified method from that point.</p>
                 <code>bday</code>
             </td>
             <td>
-                  <code>int</code>
+                  <code><span title="int">int</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1283,7 +1305,7 @@ calculated.</p>
       <tbody>
           <tr class="doc-section-item">
 <td><code>float</code></td>            <td>
-                  <code>float</code>
+                  <code><span title="float">float</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1431,7 +1453,7 @@ number of business days.</p>
       <nav class="md-footer__inner md-grid" aria-label="Rodapé" >
         
           
-          <a href="../bday/" class="md-footer__link md-footer__link--prev" aria-label="Anterior: Business Day Tool (bday)">
+          <a href="../ibge/" class="md-footer__link md-footer__link--prev" aria-label="Anterior: IBGE Data (ibge)">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1441,7 +1463,7 @@ number of business days.</p>
                 Anterior
               </span>
               <div class="md-ellipsis">
-                Business Day Tool (bday)
+                IBGE Data (ibge)
               </div>
             </div>
           </a>
@@ -1510,7 +1532,7 @@ number of business days.</p>
     <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "toc.integrate", "content.code.copy", "content.code.select", "search.suggest", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.f1b6f286.min.js"></script>
+      <script src="../assets/javascripts/bundle.c8b220af.min.js"></script>
       
     
   </body>

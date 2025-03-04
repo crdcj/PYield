@@ -14,7 +14,7 @@
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.7">
     
     
       
@@ -255,7 +255,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="bday/" class="md-tabs__link">
+        <a href="anbima/" class="md-tabs__link">
           
   
   Modules
@@ -624,11 +624,77 @@
   
   
     <li class="md-nav__item">
+      <a href="anbima/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Anbima Data (anbima)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="bday/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     Business Day Tool (bday)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="bc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    BC Data (bc)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ibge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IBGE Data (ibge)
     
   </span>
   
@@ -756,28 +822,6 @@
   
   
     <li class="md-nav__item">
-      <a href="anbima/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Anbima Data (anbima)
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="di/" class="md-nav__link">
         
   
@@ -822,33 +866,11 @@
   
   
     <li class="md-nav__item">
-      <a href="indicators/" class="md-nav__link">
+      <a href="forwards/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Indicators (indicator)
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="tools/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Tools (tools)
+    Forwards (tools)
     
   </span>
   
@@ -1019,19 +1041,21 @@
 </span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="mi">2024</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">08</span>       <span class="n">DI1F39</span>     <span class="mi">2039</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">03</span>       <span class="mi">3713</span> <span class="o">...</span>     <span class="o">&lt;</span><span class="n">NA</span><span class="o">&gt;</span>        <span class="o">&lt;</span><span class="n">NA</span><span class="o">&gt;</span>        <span class="o">&lt;</span><span class="n">NA</span><span class="o">&gt;</span>         <span class="mf">10.85</span>
 </span></code></pre></div>
 <h3 id="indicators-data">Indicators Data</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">yd</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">bc</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># Fetch the SELIC target rate from the Central Bank of Brazil</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">indicator</span><span class="p">(</span><span class="n">indicator_code</span><span class="o">=</span><span class="s2">&quot;SELIC_TARGET&quot;</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s1">&#39;12-04-2024&#39;</span><span class="p">)</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="mf">0.1075</span>  <span class="c1"># 10.75%</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Fetch the IPCA monthly inflation rate from IBGE</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">yd</span><span class="o">.</span><span class="n">indicator</span><span class="p">(</span><span class="n">indicator_code</span><span class="o">=</span><span class="s2">&quot;IPCA_MR&quot;</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s1">&#39;18-03-2024&#39;</span><span class="p">)</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="mf">0.0016</span>  <span class="c1"># 0.16%</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">bc</span><span class="o">.</span><span class="n">selic_over</span><span class="p">(</span><span class="s2">&quot;26-01-2025&quot;</span><span class="p">)</span>  <span class="c1"># No data on 26-01-2025 (sunday)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="n">Date</span>   <span class="n">Value</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="mi">0</span> <span class="mi">2025</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">27</span>  <span class="mf">0.1215</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="mi">1</span> <span class="mi">2025</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">28</span>  <span class="mf">0.1215</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="mi">2</span> <span class="mi">2025</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">29</span>  <span class="mf">0.1215</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="mi">3</span> <span class="mi">2025</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">30</span>  <span class="mf">0.1315</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="mi">4</span> <span class="mi">2025</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">31</span>  <span class="mf">0.1315</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="o">...</span>
 </span></code></pre></div>
 <h3 id="projections-data">Projections Data</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">yd</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">anbima</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># Fetch current month projection for IPCA from IBGE API</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">ipca</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">projection</span><span class="p">(</span><span class="n">projection_code</span><span class="o">=</span><span class="s2">&quot;IPCA_CM&quot;</span><span class="p">)</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">ipca</span> <span class="o">=</span> <span class="n">anbima</span><span class="o">.</span><span class="n">ipca_projection</span><span class="p">()</span>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">print</span><span class="p">(</span><span class="n">ipca</span><span class="p">)</span>
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">IndicatorProjection</span><span class="p">(</span>
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">last_updated</span><span class="o">=</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2024-04-19 18:55:00&#39;</span><span class="p">),</span>
@@ -1158,7 +1182,7 @@
     <script id="__config" type="application/json">{"base": ".", "features": ["navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "toc.integrate", "content.code.copy", "content.code.select", "search.suggest", "search.highlight", "search.share"], "search": "assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}}</script>
     
     
-      <script src="assets/javascripts/bundle.f1b6f286.min.js"></script>
+      <script src="assets/javascripts/bundle.c8b220af.min.js"></script>
       
     
   </body>
