@@ -5,19 +5,19 @@ nav:
   - Articles:
       - Introduction to Pyield: articles/pyield_intro.md
   - Modules:
-      - Anbima Data (anbima): anbima.md
-      - Business Day Tool (bday): bday.md
-      - BC Data (bc): bc.md
-      - IBGE Data (ibge): ibge.md
-      - Interpolator (intepolator): interpolator.md
-      - LFT (lft): lft.md
-      - LTN (ltn): ltn.md
-      - NTN-B (ntnb): ntnb.md
-      - NTN-F (ntnf): ntnf.md      
-      - DI Data (di): di.md
-      - Futures Data (futures): futures.md      
-      - Forwards (tools): forwards.md
-  
+      - Anbima Data: anbima.md
+      - Business Day Tools: bday.md
+      - BC Data: bc.md
+      - IBGE Data: ibge.md
+      - Interpolator: interpolator.md
+      - LFT: lft.md
+      - LTN: ltn.md
+      - NTN-B: ntnb.md
+      - NTN-F: ntnf.md      
+      - DI Data: di.md
+      - B3 Data: b3.md
+      - Futures Data: futures.md      
+      - Forwards: forwards.md  
 
 theme:
   name: 'material'

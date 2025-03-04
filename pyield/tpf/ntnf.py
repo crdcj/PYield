@@ -7,7 +7,7 @@ from pyield import bday
 from pyield import date_converter as dc
 from pyield import interpolator as ip
 from pyield.anbima import tpf
-from pyield.b3_futures import di
+from pyield.b3 import di
 from pyield.date_converter import DateScalar
 from pyield.tpf import tools as tt
 

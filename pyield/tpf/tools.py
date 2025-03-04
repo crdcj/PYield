@@ -5,7 +5,7 @@ import pandas as pd
 
 from pyield import date_converter as dc
 from pyield.anbima import tpf
-from pyield.b3_futures.di import DIFutures
+from pyield.b3.di import DIFutures
 from pyield.date_converter import DateScalar
 
 

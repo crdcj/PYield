@@ -1,9 +1,8 @@
 import pandas as pd
 
-import pyield.b3_futures as b3
 import pyield.date_converter as dc
 import pyield.forwards as tl
-from pyield import bday, interpolator
+from pyield import b3, bday, interpolator
 from pyield.data_cache import get_anbima_dataset, get_di_dataset
 from pyield.date_converter import DateArray, DateScalar
 

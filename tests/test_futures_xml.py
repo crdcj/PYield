@@ -5,8 +5,8 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 import pyield as yd
-from pyield.b3_futures import ContractOptions
-from pyield.b3_futures import xml as fx
+from pyield.b3.futures import ContractOptions
+from pyield.b3.futures.xml import xml as fx
 
 
 def prepare_data(

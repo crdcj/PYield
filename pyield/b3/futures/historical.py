@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 
 from pyield import bday
-from pyield.b3_futures import common
+from pyield.b3.futures import common
 
 COUNT_CONVENTIONS = {
     "DAP": 252,

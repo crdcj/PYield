@@ -2,8 +2,8 @@ import logging
 
 from pyield import anbima, bc, bday, ibge
 from pyield.__about__ import __version__
-from pyield.b3_futures import futures
-from pyield.b3_futures.di import DIFutures
+from pyield.b3 import futures
+from pyield.b3.di import DIFutures
 from pyield.forwards import forward_rates
 from pyield.interpolator import Interpolator
 from pyield.tpf import lft, ltn, ntnb, ntnf

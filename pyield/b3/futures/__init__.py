@@ -5,8 +5,8 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from pyield import date_converter as dc
-from pyield.b3_futures.historical import fetch_historical_df
-from pyield.b3_futures.intraday import fetch_intraday_df
+from pyield.b3.futures.historical import fetch_historical_df
+from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield.date_converter import DateScalar
 
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
