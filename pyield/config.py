@@ -6,6 +6,9 @@ import tenacity
 
 logger = logging.getLogger(__name__)
 
+# Default timeout values for HTTP requests (connect_timeout, read_timeout)
+DEFAULT_TIMEOUT = (3.05, 30)
+
 
 def retry_if_not_404(exception):
     """
