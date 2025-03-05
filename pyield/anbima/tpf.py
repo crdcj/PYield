@@ -1,25 +1,32 @@
+import logging
+from urllib.error import HTTPError
+
 import pandas as pd
 
 from pyield import bday
-from pyield import date_converter as dc
 from pyield.config import default_retry
 from pyield.data_cache import get_anbima_dataset
-from pyield.date_converter import DateScalar
+from pyield.date_converter import DateScalar, convert_input_dates
 
-# URL Constants
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 
+logger = logging.getLogger(__name__)
 
-@default_retry
-def _read_raw_df(date: pd.Timestamp) -> pd.DataFrame:
+
+def _build_file_url(date: pd.Timestamp) -> str:
     url_date = date.strftime("%y%m%d")
     filename = f"ms{url_date}.txt"
     file_url = f"{ANBIMA_URL}/{filename}"
+    return file_url
+
+
+@default_retry
+def _read_raw_df(file_url: str) -> pd.DataFrame:
     df = pd.read_csv(
         file_url,
         sep="@",
-        encoding="latin-1",
+        encoding="latin1",
         skiprows=2,
         decimal=",",
         thousands=".",
@@ -52,7 +59,8 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 
     # Remove percentage from rates
     rate_cols = [col for col in df.columns if "Rate" in col]
-    df[rate_cols] = (df[rate_cols] / 100).round(6)
+    # Data has 6 decimal places, so we round to 7 decimal places
+    df[rate_cols] = (df[rate_cols] / 100).round(7)
 
     df["ReferenceDate"] = pd.to_datetime(df["ReferenceDate"], format="%Y%m%d")
     df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%Y%m%d")
@@ -62,7 +70,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 
 
 def tpf_data(date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
-    """Fetch and process TPF market data from ANBIMA.
+    """Fetch and process TPF secondary market data from ANBIMA.
 
     This function retrieves bond market data from the ANBIMA website for a
     specified reference date. It handles different file formats based on the date
@@ -76,22 +84,34 @@ def tpf_data(date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing bond market data.
             Returns an empty DataFrame if data is not available for the
-            specified date.
+            specified date (weekends, holidays, or unavailable data).
     """
-    # Normalize the reference date
-    date = dc.convert_input_dates(date)
-
-    df = _read_raw_df(date)
-    if df.empty:
+    try:
+        date = convert_input_dates(date)
+        date_log = date.strftime("%d/%m/%Y")
+        file_url = _build_file_url(date)
+        df = _read_raw_df(file_url)
+        if df.empty:
+            logger.info(
+                f"No TPF secondary market data from ANBIMA for {date_log}. "
+                "Returning empty DataFrame."
+            )
+            return df
+        df = _process_raw_df(df)
+        if bond_type:
+            df = df.query("BondType == @bond_type").reset_index(drop=True)
         return df
-
-    df = _process_raw_df(df)
-
-    if bond_type is None:
-        return df
-    else:
-        df.query("BondType == @bond_type", inplace=True)
-        return df.reset_index(drop=True)
+    except HTTPError as e:
+        if e.code == 404:  # noqa
+            logger.info(
+                f"No TPF secondary market data from ANBIMA for {date_log}. "
+                "Returning empty DataFrame."
+            )
+            return pd.DataFrame()
+        raise  # Propagate other HTTP errors
+    except Exception as e:
+        logger.error(f"Error fetching TPF data for {date_log}: {e}")
+        raise
 
 
 def tpf_rates(
@@ -119,9 +139,8 @@ def tpf_rates(
             available for the specified date.
     """
     df = get_anbima_dataset()
-
-    date = dc.convert_input_dates(date)
-    df.query("ReferenceDate == @date", inplace=True)
+    date = convert_input_dates(date)
+    df = df.query("ReferenceDate == @date").reset_index(drop=True)
 
     if df.empty:
         # Try to fetch the data from the Anbima website
@@ -132,13 +151,13 @@ def tpf_rates(
         return pd.DataFrame()
 
     if bond_type:
-        df.query("BondType == @bond_type", inplace=True)
+        df = df.query("BondType == @bond_type").reset_index(drop=True)
 
     if adj_maturities:
         df["MaturityDate"] = bday.offset(df["MaturityDate"], 0)
 
     df = df[["BondType", "MaturityDate", "IndicativeRate"]].copy()
-    return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
+    return df.sort_values(["BondType", "MaturityDate"]).reset_index(drop=True)
 
 
 def tpf_pre_maturities(date: DateScalar) -> pd.Series:
