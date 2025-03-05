@@ -1,6 +1,6 @@
 import logging
 
-from pyield import anbima, bc, bday, ibge
+from pyield import anbima, b3, bc, bday, ibge
 from pyield.__about__ import __version__
 from pyield.b3 import futures
 from pyield.b3.di import DIFutures
@@ -22,6 +22,7 @@ __all__ = [
     "ntnb",
     "ntnf",
     "bc",
+    "b3",
 ]
 
 # Configura o logger do pacote principal com um NullHandler

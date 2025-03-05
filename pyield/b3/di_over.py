@@ -12,6 +12,15 @@ def di_over(date: DateScalar) -> float:
 
     Returns:
         float: DI rate for the specified date
+
+    Raises:
+        ValueError: If date is not in the correct format
+        ftplib.error_perm: If the file is not found or there is a permission error
+        Exception: For any other unexpected error
+
+    Examples:
+        >>> di_over("28/02/2025")
+        0.1315
     """
     ftp = None
     try:
