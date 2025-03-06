@@ -1,6 +1,21 @@
+"""
+This module provides functions to fetch various financial indicators from
+the Brazilian Central Bank's API.
+
+Implementation Notes:
+    - Values are retrieved in percentage format and converted to decimal format
+      (divided by 100).
+    - Each rate type is rounded to maintain the same precision as provided by
+      the Central Bank:
+        - SELIC Over and SELIC Target: 4 decimal places (from 2 decimal places
+          in percentage format)
+        - DI Over: 8 decimal places for daily rates (from 6 decimal places in % format).
+          For annualized rates, the value is rounded to 4 decimal places.
+
+"""
+
 import logging
 from enum import Enum
-from functools import lru_cache
 from urllib.error import HTTPError
 
 import pandas as pd
@@ -9,7 +24,10 @@ from pyield.config import default_retry
 from pyield.date_converter import DateScalar, convert_input_dates
 
 logger = logging.getLogger(__name__)
+
 BASE_URL = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
+DECIMAL_PLACES_ANNUALIZED = 4  # 2 decimal places in percentage format
+DECIMAL_PLACES_DAILY = 8  # 6 decimal places in percentage format
 
 
 class BCSerie(Enum):
@@ -100,12 +118,11 @@ def _fetch_data_from_url(
         raise
 
 
-@lru_cache(maxsize=128)
 def selic_over(
     start: DateScalar | None = None, end: DateScalar | None = None
 ) -> pd.DataFrame:
     """
-    Fetches the SELIC Over rate for a specific reference date.
+    Fetches the SELIC Over rate from the Brazilian Central Bank.
 
     The SELIC Over rate is the daily average interest rate effectively practiced
     between banks in the interbank market, using public securities as collateral.
@@ -114,20 +131,23 @@ def selic_over(
         https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
 
     Args:
-        start: The start date for the data to fetch
-        end: The end date for the data to fetch
+        start: The start date for the data to fetch. If None, returns data from
+              the earliest available date.
+        end: The end date for the data to fetch. If None, returns data up to
+             the latest available date.
 
     Returns:
         DataFrame containing Date and Value columns with the SELIC Over rate,
         or empty DataFrame if data is not available.
 
     Examples:
-        >>> yd.bc.selic_over("31-05-2024", "31-05-2024")
+        >>> from pyield import bc
+        >>> bc.selic_over("31-05-2024", "31-05-2024")
                 Date  Value
         0 2024-05-31  0.104
 
-        # Rate changed due to Copom meeting
-        >>> yd.bc.selic_over("26-01-2025")  # No data on 26-01-2025 (sunday)
+        # No data on 26-01-2025 (sunday). Rate changed due to Copom meeting.
+        >>> bc.selic_over("26-01-2025")  # Returns sall data from start = 26-01-2025
                 Date   Value
         0 2025-01-27  0.1215
         1 2025-01-28  0.1215
@@ -138,29 +158,53 @@ def selic_over(
 
     """
     df = _fetch_data_from_url(BCSerie.SELIC_OVER, start, end)
-    df["Value"] = df["Value"].round(4)
+    df["Value"] = df["Value"].round(DECIMAL_PLACES_ANNUALIZED)
     return df
 
 
-@lru_cache(maxsize=128)
+def selic_over_value(date: DateScalar) -> float:
+    """
+    Fetches the SELIC Over rate value for a specific date.
+
+    This is a convenience function that returns only the value (not the DataFrame)
+    for the specified date.
+
+    Args:
+        date: The reference date to fetch the SELIC Over rate for.
+
+    Returns:
+        The SELIC Over rate as a float.
+
+    Examples:
+        >>> from pyield import bc
+        >>> bc.selic_over_value("31-05-2024")
+        0.104
+    """
+    df = selic_over(date, date)
+    return float(df.at[0, "Value"])
+
+
 def selic_target(
     start: DateScalar | None = None, end: DateScalar | None = None
 ) -> pd.DataFrame:
     """
-    Fetches the SELIC Target rate for a specific reference date.
+    Fetches the SELIC Target rate from the Brazilian Central Bank.
 
-    The SELIC Target rate is the official rate set by the Central Bank of Brazil.
+    The SELIC Target rate is the official interest rate set by the
+    Central Bank of Brazil's Monetary Policy Committee (COPOM).
 
     API URL Example:
         https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
 
     Args:
-        start: The start date for the data to fetch
-        end: The end date for the data to fetch
+        start: The start date for the data to fetch. If None, returns data from
+              the earliest available date.
+        end: The end date for the data to fetch. If None, returns data up to
+             the latest available date.
 
     Returns:
         DataFrame containing Date and Value columns with the SELIC Target rate,
-        or empty DataFrame if data is not available.
+        or empty DataFrame if data is not available
 
     Examples:
         >>> yd.bc.selic_target("31-05-2024", "31-05-2024")
@@ -168,26 +212,51 @@ def selic_target(
         0 2024-05-31  0.105
     """
     df = _fetch_data_from_url(BCSerie.SELIC_TARGET, start, end)
-    df["Value"] = df["Value"].round(4)
+    df["Value"] = df["Value"].round(DECIMAL_PLACES_ANNUALIZED)
     return df
 
 
-@lru_cache(maxsize=128)
+def selic_target_value(date: DateScalar) -> float:
+    """
+    Fetches the SELIC Target rate value for a specific date.
+
+    This is a convenience function that returns only the value (not the DataFrame)
+    for the specified date.
+
+    Args:
+        date: The reference date to fetch the SELIC Target rate for.
+
+    Returns:
+        The SELIC Target rate as a float.
+
+    Examples:
+        >>> from pyield import bc
+        >>> bc.selic_target_value("31-05-2024")
+        0.105
+    """
+    df = selic_target(date, date)
+    return float(df.at[0, "Value"])
+
+
 def di_over(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
     annualized: bool = True,
 ) -> pd.DataFrame:
     """
-    Fetches the DI (Interbank Deposit) rate for a specific reference date.
+    Fetches the DI (Interbank Deposit) rate from the Brazilian Central Bank.
+
+    The DI rate represents the average interest rate of interbank loans.
 
     API URL Example:
         https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
         https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial=12/04/2024&dataFinal=12/04/2024
 
     Args:
-        start: The start date for the data to fetch
-        end: The end date for the data to fetch
+        start: The start date for the data to fetch. If None, returns data from
+              the earliest available date.
+        end: The end date for the data to fetch. If None, returns data up to
+             the latest available date.
         annualized: If True, returns the annualized rate (252 trading
             days per year), otherwise returns the daily rate.
 
@@ -196,12 +265,47 @@ def di_over(
         or empty DataFrame if data is not available.
 
     Examples:
-        >>> yd.bc.di_over("31-05-2024", "31-05-2024")
-                Date  Value
-        0 2024-05-31  0.104
+        >>> from pyield import bc
+        >>> bc.di_over("29-01-2025")
+                Date   Value
+        0  2025-01-29  0.1215
+        1  2025-01-30  0.1315
+        2  2025-01-31  0.1315
+        3  2025-02-03  0.1315
+        ...
+
     """
     df = _fetch_data_from_url(BCSerie.DI_OVER, start, end)
     if annualized:
         df["Value"] = (df["Value"] + 1) ** 252 - 1
-        df["Value"] = df["Value"].round(4)
+        df["Value"] = df["Value"].round(DECIMAL_PLACES_ANNUALIZED)
+    else:
+        df["Value"] = df["Value"].round(DECIMAL_PLACES_DAILY)
     return df
+
+
+def di_over_value(date: DateScalar, annualized: bool = True) -> float:
+    """
+    Fetches the DI Over rate value for a specific date.
+
+    This is a convenience function that returns only the value (not the DataFrame)
+    for the specified date.
+
+    Args:
+        date: The reference date to fetch the DI Over rate for.
+        annualized: If True, returns the annualized rate (252 trading
+            days per year), otherwise returns the daily rate.
+
+    Returns:
+        The DI Over rate as a float.
+
+    Examples:
+        >>> from pyield import bc
+        >>> bc.di_over_value("31-05-2024")
+        0.104
+
+        >>> bc.di_over_value("28-01-2025", annualized=False)
+        0.00045513
+    """
+    df = di_over(date, date, annualized)
+    return float(df.at[0, "Value"])
