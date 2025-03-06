@@ -118,7 +118,7 @@ def _fetch_data_from_url(
         raise
 
 
-def selic_over(
+def selic_over_series(
     start: DateScalar | None = None, end: DateScalar | None = None
 ) -> pd.DataFrame:
     """
@@ -142,12 +142,12 @@ def selic_over(
 
     Examples:
         >>> from pyield import bc
-        >>> bc.selic_over("31-05-2024", "31-05-2024")
+        >>> bc.selic_over_series("31-05-2024", "31-05-2024")
                 Date  Value
         0 2024-05-31  0.104
 
         # No data on 26-01-2025 (sunday). Rate changed due to Copom meeting.
-        >>> bc.selic_over("26-01-2025")  # Returns sall data from start = 26-01-2025
+        >>> bc.selic_over_series("26-01-2025")  # Returns all data since 26-01-2025
                 Date   Value
         0 2025-01-27  0.1215
         1 2025-01-28  0.1215
@@ -162,7 +162,7 @@ def selic_over(
     return df
 
 
-def selic_over_value(date: DateScalar) -> float:
+def selic_over(date: DateScalar) -> float:
     """
     Fetches the SELIC Over rate value for a specific date.
 
@@ -177,14 +177,14 @@ def selic_over_value(date: DateScalar) -> float:
 
     Examples:
         >>> from pyield import bc
-        >>> bc.selic_over_value("31-05-2024")
+        >>> bc.selic_over("31-05-2024")
         0.104
     """
-    df = selic_over(date, date)
+    df = selic_over_series(date, date)
     return float(df.at[0, "Value"])
 
 
-def selic_target(
+def selic_target_series(
     start: DateScalar | None = None, end: DateScalar | None = None
 ) -> pd.DataFrame:
     """
@@ -207,7 +207,7 @@ def selic_target(
         or empty DataFrame if data is not available
 
     Examples:
-        >>> yd.bc.selic_target("31-05-2024", "31-05-2024")
+        >>> yd.bc.selic_target_series("31-05-2024", "31-05-2024")
                 Date  Value
         0 2024-05-31  0.105
     """
@@ -216,7 +216,7 @@ def selic_target(
     return df
 
 
-def selic_target_value(date: DateScalar) -> float:
+def selic_target(date: DateScalar) -> float:
     """
     Fetches the SELIC Target rate value for a specific date.
 
@@ -231,14 +231,14 @@ def selic_target_value(date: DateScalar) -> float:
 
     Examples:
         >>> from pyield import bc
-        >>> bc.selic_target_value("31-05-2024")
+        >>> bc.selic_target("31-05-2024")
         0.105
     """
-    df = selic_target(date, date)
+    df = selic_target_series(date, date)
     return float(df.at[0, "Value"])
 
 
-def di_over(
+def di_over_series(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
     annualized: bool = True,
@@ -266,7 +266,7 @@ def di_over(
 
     Examples:
         >>> from pyield import bc
-        >>> bc.di_over("29-01-2025")
+        >>> bc.di_over_series("29-01-2025")
                 Date   Value
         0  2025-01-29  0.1215
         1  2025-01-30  0.1315
@@ -284,7 +284,7 @@ def di_over(
     return df
 
 
-def di_over_value(date: DateScalar, annualized: bool = True) -> float:
+def di_over(date: DateScalar, annualized: bool = True) -> float:
     """
     Fetches the DI Over rate value for a specific date.
 
@@ -301,11 +301,11 @@ def di_over_value(date: DateScalar, annualized: bool = True) -> float:
 
     Examples:
         >>> from pyield import bc
-        >>> bc.di_over_value("31-05-2024")
+        >>> bc.di_over("31-05-2024")
         0.104
 
-        >>> bc.di_over_value("28-01-2025", annualized=False)
+        >>> bc.di_over("28-01-2025", annualized=False)
         0.00045513
     """
-    df = di_over(date, date, annualized)
+    df = di_over_series(date, date, annualized)
     return float(df.at[0, "Value"])

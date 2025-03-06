@@ -78,7 +78,7 @@ def _fetch_df_from_url(url: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def ptax(
+def ptax_series(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
 ) -> pd.DataFrame:
