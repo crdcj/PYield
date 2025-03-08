@@ -9,7 +9,7 @@ from pyield import bday
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 
-def _fetch_b3_df(future_code: str) -> pd.DataFrame:
+def _fetch_b3_df(contract_code: str) -> pd.DataFrame:
     """
     Fetch the latest data for a given future code from B3 derivatives quotation API.
 
@@ -24,13 +24,13 @@ def _fetch_b3_df(future_code: str) -> pd.DataFrame:
         Exception: An exception is raised if the data fetch operation fails.
     """
 
-    url = f"https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation/{future_code}"
+    url = f"https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation/{contract_code}"
 
     try:
         r = requests.get(url, timeout=10)
         r.raise_for_status()  # Check for HTTP request errors
     except requests.exceptions.RequestException:
-        raise Exception(f"Failed to fetch data for {future_code}.") from None
+        raise Exception(f"Failed to fetch data for {contract_code}.") from None
 
     r.encoding = "utf-8"  # Explicitly set response encoding to utf-8 for consistency
 
