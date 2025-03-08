@@ -14,8 +14,8 @@ import requests
 
 from pyield import bday
 from pyield import date_converter as dc
-from pyield.config import default_retry
 from pyield.date_converter import DateScalar
+from pyield.retry import default_retry
 from pyield.tpf.ntnb import duration as duration_b
 from pyield.tpf.ntnf import duration as duration_f
 

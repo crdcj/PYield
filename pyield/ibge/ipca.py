@@ -3,8 +3,8 @@ import logging
 import pandas as pd
 import requests
 
-from pyield.config import default_retry
 from pyield.date_converter import DateScalar, convert_input_dates
+from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
 IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"

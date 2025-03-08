@@ -13,8 +13,8 @@ import requests
 
 from pyield import bday
 from pyield import date_converter as dc
-from pyield.config import default_retry
 from pyield.date_converter import DateScalar
+from pyield.retry import default_retry
 
 """Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
 Chaves com comentário serão descartadas ao final do processamento

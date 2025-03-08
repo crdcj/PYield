@@ -4,9 +4,9 @@ from urllib.error import HTTPError
 import pandas as pd
 
 from pyield import bday
-from pyield.config import default_retry
 from pyield.data_cache import get_anbima_dataset
 from pyield.date_converter import DateScalar, convert_input_dates
+from pyield.retry import default_retry
 
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
