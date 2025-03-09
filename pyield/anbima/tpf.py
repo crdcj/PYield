@@ -78,7 +78,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def tpf_data(date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
+def tpf_data(date: DateScalar, bond_type: BOND_TYPES | None = None) -> pd.DataFrame:
     """Fetch and process TPF secondary market data from ANBIMA.
 
     This function retrieves bond market data from the ANBIMA website for a
@@ -109,8 +109,8 @@ def tpf_data(date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
             return df
         df = _process_raw_df(df)
         if bond_type:
-            bond_type = _bond_type_mapping(bond_type)
-            df = df.query("BondType == @bond_type").reset_index(drop=True)
+            norm_bond_type = _bond_type_mapping(bond_type)  # noqa
+            df = df.query("BondType == @norm_bond_type").reset_index(drop=True)
         return df.sort_values(["BondType", "MaturityDate"]).reset_index(drop=True)
     except HTTPError as e:
         if e.code == 404:  # noqa
