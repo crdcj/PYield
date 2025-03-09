@@ -1,6 +1,9 @@
 import ftplib
+import logging
 
 from pyield.date_converter import DateScalar, convert_input_dates
+
+logger = logging.getLogger(__name__)
 
 
 def di_over(date: DateScalar) -> float:
@@ -46,14 +49,18 @@ def di_over(date: DateScalar) -> float:
             rate = int(raw_rate) / 10000
             return round(rate, 5)
         else:
-            return "Empty file or no data"
+            logger.error(f"No data found for date {date}")
+            return float("nan")
 
     except ValueError as e:
-        return f"Date format error: {e}"
+        logger.error(f"Date format error: {e}")
+        raise
     except ftplib.error_perm as e:
-        return f"File access error: {e}"
-    except Exception as e:
-        return f"Unexpected error: {e}"
+        logger.error(f"File access error: {e}")
+        raise
+    except Exception:
+        logger.exception("Unexpected error")
+        raise
     finally:
         # Ensure FTP connection is closed
         if ftp:
@@ -61,10 +68,3 @@ def di_over(date: DateScalar) -> float:
                 ftp.quit()
             except:  # noqa
                 pass
-
-
-# Example usage
-if __name__ == "__main__":
-    date = "28/02/2025"
-    rate = di_over(date)
-    print(f"DI Rate for {date}: {rate}")

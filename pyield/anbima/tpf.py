@@ -95,9 +95,10 @@ def tpf_data(date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
             Returns an empty DataFrame if data is not available for the
             specified date (weekends, holidays, or unavailable data).
     """
+    date = convert_input_dates(date)
+    date_log = date.strftime("%d/%m/%Y")
+
     try:
-        date = convert_input_dates(date)
-        date_log = date.strftime("%d/%m/%Y")
         file_url = _build_file_url(date)
         df = _read_raw_df(file_url)
         if df.empty:
@@ -119,8 +120,8 @@ def tpf_data(date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
             )
             return pd.DataFrame()
         raise  # Propagate other HTTP errors
-    except Exception as e:
-        logger.error(f"Error fetching TPF data for {date_log}: {e}")
+    except Exception:
+        logger.exception(f"Error fetching TPF data for {date_log}")
         raise
 
 
