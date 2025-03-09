@@ -94,9 +94,9 @@ def premium(lft_rate: float, selic_over: float) -> float:
         >>> lft_rate = 0.1695 / 100  # 0.1695%
         >>> selic_over = 10.40 / 100  # 10.40%
         >>> yd.lft.premium(lft_rate, selic_over)
-        1.017121
+        1.017120519283759
     """
     adjusted_lft_rate = (lft_rate + 1) * (selic_over + 1) - 1
     f1 = (adjusted_lft_rate + 1) ** (1 / 252) - 1
     f2 = (selic_over + 1) ** (1 / 252) - 1
-    return round(f1 / f2, 6)
+    return f1 / f2

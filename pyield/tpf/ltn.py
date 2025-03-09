@@ -175,14 +175,14 @@ def premium(ltn_rate: float, di_rate: float) -> float:
         LTN rate for 01-01-2030: 0.118746
         DI (JAN30) Settlement rate: 0.11725
         >>> yd.ltn.premium(0.118746, 0.11725)
-        1.012072
+        1.0120718007994287
     """
     # Cálculo das taxas diárias
     ltn_factor = (1 + ltn_rate) ** (1 / 252)
     di_factor = (1 + di_rate) ** (1 / 252)
 
     # Retorno do cálculo do prêmio
-    return round((ltn_factor - 1) / (di_factor - 1), 6)
+    return (ltn_factor - 1) / (di_factor - 1)
 
 
 def historical_premium(
@@ -202,7 +202,7 @@ def historical_premium(
 
     Examples:
         >>> yd.ltn.historical_premium("22-08-2024", "01-01-2030")
-        1.012072
+        1.0120718007994287
 
     """
     # Convert input dates to a consistent format

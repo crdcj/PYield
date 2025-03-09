@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 from urllib.error import HTTPError
 
 import pandas as pd
@@ -8,10 +9,17 @@ from pyield.data_cache import get_anbima_dataset
 from pyield.date_converter import DateScalar, convert_input_dates
 from pyield.retry import default_retry
 
+BOND_TYPES = Literal["LTN", "NTN-B", "NTN-C", "NTN-F", "LFT"]
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 
 logger = logging.getLogger(__name__)
+
+
+def _bond_type_mapping(bond_type: str) -> str:
+    bond_type = bond_type.upper()
+    bond_type_mapping = {"NTNB": "NTN-B", "NTNC": "NTN-C", "NTNF": "NTN-F"}
+    return bond_type_mapping.get(bond_type, bond_type)
 
 
 def _build_file_url(date: pd.Timestamp) -> str:
@@ -59,8 +67,9 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 
     # Remove percentage from rates
     rate_cols = [col for col in df.columns if "Rate" in col]
-    # Data has 6 decimal places, so we round to 7 decimal places
-    df[rate_cols] = (df[rate_cols] / 100).round(7)
+    # Rate columns have percentage values with 4 decimal places in percentage values
+    # We will round to 6 decimal places to avoid floating point errors
+    df[rate_cols] = (df[rate_cols] / 100).round(6)
 
     df["ReferenceDate"] = pd.to_datetime(df["ReferenceDate"], format="%Y%m%d")
     df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%Y%m%d")
@@ -99,8 +108,9 @@ def tpf_data(date: DateScalar, bond_type: str | None = None) -> pd.DataFrame:
             return df
         df = _process_raw_df(df)
         if bond_type:
+            bond_type = _bond_type_mapping(bond_type)
             df = df.query("BondType == @bond_type").reset_index(drop=True)
-        return df
+        return df.sort_values(["BondType", "MaturityDate"]).reset_index(drop=True)
     except HTTPError as e:
         if e.code == 404:  # noqa
             logger.info(

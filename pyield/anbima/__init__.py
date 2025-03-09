@@ -1,3 +1,4 @@
+from pyield.anbima.ettj import last_ettj
 from pyield.anbima.ima import last_ima
 from pyield.anbima.imaq import imaq
 from pyield.anbima.ipca import ipca_projection
@@ -10,4 +11,5 @@ __all__ = [
     "tpf_data",
     "tpf_rates",
     "tpf_pre_maturities",
+    "last_ettj",
 ]

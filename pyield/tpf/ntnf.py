@@ -532,7 +532,7 @@ def premium(
         ...     di_expirations=exp_dates,
         ...     di_rates=di_rates,
         ... )
-        1.00996
+        1.0099602136954626
 
     Notes:
         - The function adjusts coupon payment dates to business days and calculates
@@ -572,7 +572,7 @@ def premium(
     factor_ntnf = (1 + ntnf_rate) ** (1 / 252)
     factor_di = (1 + di_ytm) ** (1 / 252)
     premium_np = (factor_ntnf - 1) / (factor_di - 1)
-    return round(float(premium_np), 6)
+    return float(premium_np)
 
 
 def historical_premium(
