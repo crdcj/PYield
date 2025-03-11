@@ -25,12 +25,12 @@ def ipca_projection() -> IndicatorProjection:
     containing economic indicators, and specifically processes the IPCA projection data.
 
     Process:
-    1. Accesses the ANBIMA indicators webpage
-    2. Extracts the third table that contains the IPCA projection
-    3. Locates the row labeled as "IPCA1"
-    4. Extracts the projection value and converts it to decimal format
-    5. Extracts and formats the reference month of the projection
-    6. Extracts the date and time of the last update
+        1. Accesses the ANBIMA indicators webpage
+        2. Extracts the third table that contains the IPCA projection
+        3. Locates the row labeled as "IPCA1"
+        4. Extracts the projection value and converts it to decimal format
+        5. Extracts and formats the reference month of the projection
+        6. Extracts the date and time of the last update
 
     Returns:
         IndicatorProjection: An object containing:

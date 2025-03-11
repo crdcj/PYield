@@ -5,6 +5,9 @@ from pyield.date_converter import DateScalar, convert_input_dates
 
 logger = logging.getLogger(__name__)
 
+# 4 decimal places in rate = 2 decimal places in percentage
+DI_OVER_DECIMAL_PLACES = 4
+
 
 def di_over(date: DateScalar) -> float:
     """
@@ -14,7 +17,7 @@ def di_over(date: DateScalar) -> float:
         date (str): Date in DD/MM/YYYY format
 
     Returns:
-        float: DI rate for the specified date
+        float: DI rate for the specified date or NaN (Not a Number) if no data is found.
 
     Raises:
         ValueError: If date is not in the correct format
@@ -47,7 +50,7 @@ def di_over(date: DateScalar) -> float:
         if lines:
             raw_rate = lines[0].strip()
             rate = int(raw_rate) / 10000
-            return round(rate, 5)
+            return round(rate, DI_OVER_DECIMAL_PLACES)
         else:
             logger.error(f"No data found for date {date}")
             return float("nan")
@@ -62,8 +65,7 @@ def di_over(date: DateScalar) -> float:
         logger.exception("Unexpected error")
         raise
     finally:
-        # Ensure FTP connection is closed
-        if ftp:
+        if ftp and ftp.sock:  # Ensure FTP connection is closed AND socket exists
             try:
                 ftp.quit()
             except:  # noqa

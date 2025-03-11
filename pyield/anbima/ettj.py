@@ -117,15 +117,17 @@ def last_ettj() -> pd.DataFrame:
     calculated and included in the returned DataFrame.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the following columns:
-            - date: Reference date of the yield curve
-            - vertex: Time point in business days
-            - nominal_rate: Zero-coupon nominal interest rate
-            - real_rate: Zero-coupon real interest rate (IPCA-indexed)
-            - implied_inflation: Implied inflation rate (break-even inflation)
-            - nominal_rate_fwd: Forward nominal interest rate
-            - real_rate_fwd: Forward real interest rate
-            - implied_inflation_fwd: Forward implied inflation rate
+        pd.DataFrame: A DataFrame containing the latest ETTJ data.
+
+    DataFrame columns:
+        - date: Reference date of the yield curve
+        - vertex: Time point in business days
+        - nominal_rate: Zero-coupon nominal interest rate
+        - real_rate: Zero-coupon real interest rate (IPCA-indexed)
+        - implied_inflation: Implied inflation rate (break-even inflation)
+        - nominal_rate_fwd: Forward nominal interest rate
+        - real_rate_fwd: Forward real interest rate
+        - implied_inflation_fwd: Forward implied inflation rate
 
     Note:
         All rates are expressed in decimal format (e.g., 0.12 for 12%).

@@ -128,29 +128,31 @@ def last_ima(ima_type: ima_types | None = None) -> pd.DataFrame:
             IMA indexes are returned. Defaults to None.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the IMA data with the following columns:
-            - Date: reference date of the data.
-            - IMAType: type of IMA index.
-            - BondType: type of bond.
-            - Maturity: bond maturity date.
-            - SelicCode: bond code in the SELIC system.
-            - ISIN: international Securities Identification Number.
-            - BDToMat: business days to maturity.
-            - Duration: duration of the bond in business years (252 days/year).
-            - IndicativeRate: indicative rate.
-            - Price: bond price.
-            - InterestPrice: interest price.
-            - DV01: DV01 in R$.
-            - PMR: average repurchase term.
-            - Weight: weight of the bond in the index.
-            - Convexity: convexity of the bond.
-            - TheoreticalQuantity: theoretical quantity.
-            - NumberOfOperations: number of operations.
-            - NegotiatedQuantity: negotiated quantity.
-            - NegotiatedValue: negotiated value.
-            - MarketQuantity: market quantity.
-            - MarketDV01: market DV01 in R$.
-            - MarketValue: market value in R$.
+        pd.DataFrame: A DataFrame containing the IMA data.
+
+    DataFrame columns:
+        - Date: reference date of the data.
+        - IMAType: type of IMA index.
+        - BondType: type of bond.
+        - Maturity: bond maturity date.
+        - SelicCode: bond code in the SELIC system.
+        - ISIN: international Securities Identification Number.
+        - BDToMat: business days to maturity.
+        - Duration: duration of the bond in business years (252 days/year).
+        - IndicativeRate: indicative rate.
+        - Price: bond price.
+        - InterestPrice: interest price.
+        - DV01: DV01 in R$.
+        - PMR: average repurchase term.
+        - Weight: weight of the bond in the index.
+        - Convexity: convexity of the bond.
+        - TheoreticalQuantity: theoretical quantity.
+        - NumberOfOperations: number of operations.
+        - NegotiatedQuantity: negotiated quantity.
+        - NegotiatedValue: negotiated value.
+        - MarketQuantity: market quantity.
+        - MarketDV01: market DV01 in R$.
+        - MarketValue: market value in R$.
 
     Raises:
         Exception: Logs error and returns an empty DataFrame if any error occurs during

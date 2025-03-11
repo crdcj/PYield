@@ -62,22 +62,42 @@ def _fetch_data_from_url(file_url: str) -> pd.DataFrame:
 
 
 def sec(target_date: DateScalar) -> pd.DataFrame:
-    """Fetches bond trading data for a specific date from the Brazilian Central Bank.
+    """Fetches secondary market trading data for all Federal Public Securities (TPF)
+    registered on SELIC for the *month* of the specified date.
 
-    Downloads the daily bond trading data from the Brazilian Central Bank
-    website for the given target date.  The data is downloaded as a ZIP file,
-    extracted, and read into a Pandas DataFrame.  The columns are then
-    renamed to English names for easier use.
+    Downloads the monthly bond trading data from the Brazilian Central Bank (BCB)
+    website for the month corresponding to the provided date. The data is downloaded as
+    a ZIP file, extracted, and loaded into a Pandas DataFrame.
+    The data contains all trades executed during the month, separated by settlement day
+    ('SettlementDate').
 
     Args:
-        target_date (DateScalar): The date for which to fetch the bond
-            trading data.  This can be a date-like object understood by
-            `pyield.date_converter.convert_input_dates`.
+        target_date (DateScalar): The date for which to fetch the bond trading data.
+            This can be any date-like object understood by
+            `pyield.date_converter.convert_input_dates`. Only the year and month
+            of this date will be used to download the corresponding monthly file.
 
     Returns:
         pd.DataFrame: A DataFrame containing the bond trading data for the
-            specified date.  Columns are renamed according to `COLUMN_MAPPING`
-            for English readability.
+            specified month.
+
+    DataFrame columns:
+        - SettlementDate: Date when the trade settled
+        - BondType: Security type abbreviation
+        - SelicCode: Unique code in the SELIC system
+        - ISIN: International Securities Identification Number
+        - IssueDate: Date when the security was issued
+        - Maturity: Security's maturity date
+        - TradeCount: Number of trades executed
+        - TradeQuantity: Quantity traded
+        - TradeValue: Total value traded
+        - AvgPrice: Average price
+        - AvgRate: Average rate
+        And additional trading metrics like min/max prices and rates.
+
+    Examples:
+        >>> from pyield import bc
+        >>> df = bc.sec("07-01-2025")  # Returns all trades for January 2025
     """
     url = _build_download_url(target_date)
     df = _fetch_data_from_url(url)

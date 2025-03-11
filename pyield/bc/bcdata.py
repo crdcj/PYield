@@ -146,7 +146,7 @@ def selic_over_series(
                 Date  Value
         0 2024-05-31  0.104
 
-        # No data on 26-01-2025 (sunday). Rate changed due to Copom meeting.
+        >>> # No data on 26-01-2025 (sunday). Rate changed due to Copom meeting.
         >>> bc.selic_over_series("26-01-2025")  # Returns all data since 26-01-2025
                 Date   Value
         0 2025-01-27  0.1215

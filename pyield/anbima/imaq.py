@@ -117,17 +117,19 @@ def imaq(date: DateScalar) -> pd.DataFrame:
             the data.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the IMA data with the following columns:
-            - Date: Reference date of the data.
-            - BondType: Type of bond.
-            - Maturity: Bond maturity date.
-            - SelicCode: Code representing the SELIC rate.
-            - ISIN: International Securities Identification Number.
-            - Price: Bond price.
-            - MarketQuantity: Market quantity (in units of 1000 bonds).
-            - MarketValue: Market value (in units of 1000 reais).
-            - QuantityVariation: Variation in quantity (in units of 1000 bonds).
-            - BondStatus: Status of the bond.
+        pd.DataFrame: A DataFrame containing the IMA data.
+
+    DataFrame columns:
+        - Date: Reference date of the data.
+        - BondType: Type of bond.
+        - Maturity: Bond maturity date.
+        - SelicCode: Code representing the SELIC rate.
+        - ISIN: International Securities Identification Number.
+        - Price: Bond price.
+        - MarketQuantity: Market quantity (in units of 1000 bonds).
+        - MarketValue: Market value (in units of 1000 reais).
+        - QuantityVariation: Variation in quantity (in units of 1000 bonds).
+        - BondStatus: Status of the bond.
 
     Raises:
         Exception: Logs error and returns an empty DataFrame if any error occurs during

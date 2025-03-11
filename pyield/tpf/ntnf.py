@@ -258,7 +258,6 @@ def spot_rates(  # noqa
             "BDToMat" is the business days from the settlement date to the maturities.
 
     Examples:
-
         >>> df_ltn = yd.ltn.rates("03-09-2024")
         >>> df_ntnf = yd.ntnf.rates("03-09-2024")
         >>> yd.ntnf.spot_rates(
@@ -522,7 +521,7 @@ def premium(
         factor.
 
     Examples:
-        # Obs: only some of the DI rates will be used in the example.
+        >>> # Obs: only some of the DI rates will be used in the example.
         >>> exp_dates = pd.to_datetime(["2025-01-01", "2030-01-01", "2035-01-01"])
         >>> di_rates = pd.Series([0.10823, 0.11594, 0.11531])
         >>> premium(
