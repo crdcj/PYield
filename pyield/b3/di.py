@@ -358,7 +358,8 @@ class DIFutures:
     @date.setter
     def date(self, value: DateScalar):
         self._date = dc.convert_input_dates(value)
-        bz_today = pd.Timestamp.today(tz="America/Sao_Paulo").normalize()
+        bz_today = pd.Timestamp.today(tz="America/Sao_Paulo")
+        bz_today = bz_today.normalize().tz_localize(None)
         if self._date > bz_today:
             raise ValueError("Trade date cannot be in the future.")
         self._dirty = True
