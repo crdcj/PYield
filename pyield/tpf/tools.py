@@ -79,8 +79,8 @@ def pre_spreads(date: DateScalar) -> pd.DataFrame:
     converted_date = dc.convert_input_dates(date)
     di = DIFutures(date=converted_date, month_start=True)
     df_di = di.df
-    if "SettlementRate" not in df_di.columns:
-        raise ValueError("DI rates data is missing the 'SettlementRate' column.")
+    if "SettlementRate" not in df_di.columns or df_di.empty:
+        raise ValueError("DI data is missing the 'SettlementRate' column or is empty.")
 
     df_di = df_di[["ExpirationDate", "SettlementRate"]].copy()
 

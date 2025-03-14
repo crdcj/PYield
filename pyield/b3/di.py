@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 
 import pyield.date_converter as dc
@@ -5,6 +7,8 @@ import pyield.forwards as tl
 from pyield import b3, bday, interpolator
 from pyield.data_cache import get_anbima_dataset, get_di_dataset
 from pyield.date_converter import DateArray, DateScalar
+
+logger = logging.getLogger(__name__)
 
 
 class DIFutures:
@@ -61,7 +65,7 @@ class DIFutures:
 
     def __init__(
         self,
-        date: DateScalar | None = None,
+        date: DateScalar,
         month_start: bool = False,
         pre_filter: bool = False,
         all_columns: bool = True,
@@ -100,19 +104,22 @@ class DIFutures:
 
     def _update_df(self) -> pd.DataFrame:
         """Retrieve DI contract DataFrame for the initialized trade date."""
-        bz_today = pd.Timestamp.today(tz="America/Sao_Paulo").normalize()
-        if bz_today == self.date:
-            # Try to get intraday data
-            df = b3.futures(contract_code="DI1", date=bz_today)
-        else:
-            # Get historical data
-            df = (
-                get_di_dataset()
-                .query("TradeDate == @self._date")
-                .reset_index(drop=True)
-            )
+        # Return an empty DataFrame if the trade date is a holiday
+        if not bday.is_business_day(self._date):
+            logger.warning("Specified date is not a business day.")
+            logger.warning("Returning empty DataFrame.")
+            return pd.DataFrame()
+
+        # Get historical data
+        df = get_di_dataset().query("TradeDate == @self._date").reset_index(drop=True)
 
         if df.empty:
+            logger.info("No historical data found. Trying real-time data.")
+            df = b3.futures(contract_code="DI1", date=self._date)
+
+        if df.empty:
+            logger.warning("No DI Futures data found for the specified date.")
+            logger.warning("Returning empty DataFrame.")
             return pd.DataFrame()
 
         if "DaysToExpiration" in df.columns:
@@ -349,12 +356,11 @@ class DIFutures:
         return self._date
 
     @date.setter
-    def date(self, value: DateScalar | None):
-        if value:
-            self._date = dc.convert_input_dates(value)
-        else:
-            self._date = self.historical_dates.max()
-
+    def date(self, value: DateScalar):
+        self._date = dc.convert_input_dates(value)
+        bz_today = pd.Timestamp.today(tz="America/Sao_Paulo").normalize()
+        if self._date > bz_today:
+            raise ValueError("Trade date cannot be in the future.")
         self._dirty = True
 
     @property
