@@ -21,8 +21,7 @@ class DIFutures:
 
     Args:
         date (DateScalar | None): The trade date to retrieve the
-            DI contract data. If None, the latest available historical trade date is
-            used.
+            DI contract data. If None, an empty DataFrame is returned.
         month_start (bool): If True, adjusts the expirations to the start of the month.
         pre_filter (bool): If True, filters the DI contracts to match only
             expirations with existing prefixed TN bond maturities (LTN and NTN-F).
@@ -65,7 +64,7 @@ class DIFutures:
 
     def __init__(
         self,
-        date: DateScalar,
+        date: DateScalar | None = None,
         month_start: bool = False,
         pre_filter: bool = False,
         all_columns: bool = True,
@@ -104,6 +103,9 @@ class DIFutures:
 
     def _update_df(self) -> pd.DataFrame:
         """Retrieve DI contract DataFrame for the initialized trade date."""
+        if self._date is None:
+            logger.info("No date specified. Returning empty DataFrame.")
+            return pd.DataFrame()
         # Return an empty DataFrame if the trade date is a holiday
         if not bday.is_business_day(self._date):
             logger.warning("Specified date is not a business day.")
@@ -189,7 +191,9 @@ class DIFutures:
                 - SettlementRate: The zero rate (interest rate) for each expiration.
                 - ForwardRate: The fwd rate calculated between successive expirations.
         """
+        # Use a local copy of the DI DataFrame
         df = self.df
+
         if df.empty:
             return pd.DataFrame()
 
@@ -356,12 +360,13 @@ class DIFutures:
         return self._date
 
     @date.setter
-    def date(self, value: DateScalar):
-        self._date = dc.convert_input_dates(value)
-        bz_today = pd.Timestamp.today(tz="America/Sao_Paulo")
-        bz_today = bz_today.normalize().tz_localize(None)
-        if self._date > bz_today:
-            raise ValueError("Trade date cannot be in the future.")
+    def date(self, value: DateScalar | None):
+        if value:
+            self._date = dc.convert_input_dates(value)
+            bz_today = pd.Timestamp.today(tz="America/Sao_Paulo")
+            bz_today = bz_today.normalize().tz_localize(None)
+            if self._date > bz_today:
+                raise ValueError("Trade date cannot be in the future.")
         self._dirty = True
 
     @property
@@ -380,7 +385,7 @@ class DIFutures:
 
     @month_start.setter
     def month_start(self, value: bool):
-        self._month_start = value
+        self._month_start = bool(value)
         self._dirty = True
 
     @property
@@ -399,7 +404,7 @@ class DIFutures:
 
     @pre_filter.setter
     def pre_filter(self, value: bool):
-        self._pre_filter = value
+        self._pre_filter = bool(value)
         self._dirty = True
 
     @property
@@ -408,5 +413,5 @@ class DIFutures:
 
     @all_columns.setter
     def all_columns(self, value: bool):
-        self._all_columns = value
+        self._all_columns = bool(value)
         self._dirty = True
