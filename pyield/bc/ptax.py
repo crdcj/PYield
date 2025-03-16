@@ -88,27 +88,40 @@ def ptax_series(
     - Unidade: R$
 
     Documentação da API do BCB:
+
         https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/documentacao
+
     Exemplo de chamada à API:
-        https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?
-        @dataInicial='08-01-2025'&@dataFinalCotacao='08-05-2025'&$format=text/csv
 
-    **Consultas de Período:**
+        https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='08-01-2025'&@dataFinalCotacao='08-05-2025'&$format=text/csv
+
+    Consultas de Período:
+
     - Para consultar dados de um intervalo, forneça as datas de `start` e `end`.
-    Exemplo: `ptax(start='2024-10-20', end='2024-10-27')`
-    - Se apenas `start` for fornecido, a API do BC retornará dados a partir
-    da data de `start` **até a data mais recente disponível**.
-    Exemplo: `ptax(start='2024-10-20')`
-    - Se apenas `end` for fornecido, a API do BC retornará dados **desde a
-    data mais antiga disponível até a data de `end`**.
-    Exemplo: `ptax(end='2024-10-27')`
+    Exemplo:
 
-    **Série Histórica Completa:**
+            `ptax_series(start='2024-10-20', end='2024-10-27')`
+
+    - Se apenas `start` for fornecido, a API do BC retornará dados a partir
+    da data de `start` até a data mais recente disponível. Exemplo:
+
+            `ptax_series(start='2024-10-20')`
+
+    - Se apenas `end` for fornecido, a API do BC retornará dados desde a data mais
+    antiga disponível até a data de `end`. Exemplo:
+
+        `ptax_series(end='2024-10-27')`
+
+    Série Histórica Completa:
+
     - Para recuperar a série histórica completa de leilões (desde 28.11.1984
     até o último dia útil), chame a função sem fornecer os parâmetros `start` e `end`.
-    Exemplo: `ptax()`
+    Exemplo:
+
+            `ptax_series()`
 
     Busca dados de cotações de dólar PTAX (taxa de câmbio) para o período:
+
     - Se `start` for fornecido e `end` não, a função retorna dados de `start` até o fim.
     - Se `end` for fornecido e `start` não, a API retorna dados do início até `end`.
     - Se ambos `start` e `end` forem omitidos, a API retorna a série histórica completa.
@@ -130,6 +143,15 @@ def ptax_series(
         Se não houver dados disponíveis para o período especificado, um DataFrame vazio
         será retornado.
 
+    Examples:
+        >>> from pyield import bc
+        >>> df = yd.bc.ptax_series(start="01-01-2025", end="05-01-2025")
+        >>> selected_columns = ["Date", "BuyRate", "SellRate", "MidRate"]
+        >>> df[selected_columns]
+                Date  BuyRate  SellRate  MidRate
+        0 2025-01-02    6.208    6.2086   6.2083
+        1 2025-01-03   6.1557    6.1563    6.156
+
     Notes:
         Disponível desde 28.11.1984, refere-se às taxas administradas até março de 1990
         e às taxas livres a partir de então (Resolução 1690, de 18.3.1990). As taxas
@@ -143,15 +165,19 @@ def ptax_series(
         o boletim de fechamento PTAX corresponde à média aritmética das taxas dos
         boletins do dia.
 
-        O DataFrame possui as seguintes colunas:
-            - Date: Data da cotação.
-            - Time: Hora da cotação.
-            - DateTime: Data e hora da cotação.
-            - BuyRate: Taxa de compra.
-            - SellRate: Taxa de venda.
-            - MidRate: Taxa média entre a taxa de compra e venda.
         - Primeira data disponível: 28.11.1984
         - Última data disponível: data atual
+
+        O DataFrame possui as seguintes colunas:
+
+        - Date: Data da cotação.
+        - Time: Hora da cotação.
+        - DateTime: Data e hora da cotação.
+        - BuyRate: Taxa de compra.
+        - SellRate: Taxa de venda.
+        - MidRate: Taxa média entre a taxa de compra e venda.
+
+
     """
     if start:
         start = dc.convert_input_dates(start)

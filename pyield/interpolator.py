@@ -129,8 +129,10 @@ class Interpolator:
         return self.interpolate(bday)
 
     def __repr__(self) -> str:
-        """
-        Textual representation, used in terminal or scripts.
-        """
+        """Textual representation, used in terminal or scripts."""
 
         return repr(self._df)
+
+    def __len__(self) -> int:
+        """Returns the number of known business days."""
+        return len(self._df)

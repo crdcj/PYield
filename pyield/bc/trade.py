@@ -61,20 +61,19 @@ def _fetch_data_from_url(file_url: str) -> pd.DataFrame:
     return df
 
 
-def sec(target_date: DateScalar) -> pd.DataFrame:
-    """Fetches secondary market trading data for all Federal Public Securities (TPF)
-    registered on SELIC for the *month* of the specified date.
+def tpf_trades(target_date: DateScalar) -> pd.DataFrame:
+    """Fetches monthly secondary trading data for the 'títulos públicos federais' (TPF)
+    registered in the Brazilian Central Bank (BCB) system.
 
     Downloads the monthly bond trading data from the Brazilian Central Bank (BCB)
     website for the month corresponding to the provided date. The data is downloaded as
-    a ZIP file, extracted, and loaded into a Pandas DataFrame.
-    The data contains all trades executed during the month, separated by settlement day
-    ('SettlementDate').
+    a ZIP file, extracted, and loaded into a Pandas DataFrame. The data contains all
+    trades executed during the month, separated by each 'SettlementDate'.
 
     Args:
-        target_date (DateScalar): The date for which to fetch the bond trading data.
-            This can be any date-like object understood by
-            `pyield.date_converter.convert_input_dates`. Only the year and month
+        target_date (DateScalar): The date for which the monthly trading data will be
+            fetched. This date can be a string, datetime, or pandas Timestamp object.
+            It will be converted to a pandas Timestamp object. Only the year and month
             of this date will be used to download the corresponding monthly file.
 
     Returns:
@@ -97,7 +96,7 @@ def sec(target_date: DateScalar) -> pd.DataFrame:
 
     Examples:
         >>> from pyield import bc
-        >>> df = bc.sec("07-01-2025")  # Returns all trades for January 2025
+        >>> df = bc.tpf_trades("07-01-2025")  # Returns all trades for January 2025
     """
     url = _build_download_url(target_date)
     df = _fetch_data_from_url(url)

@@ -207,7 +207,8 @@ def selic_target_series(
         or empty DataFrame if data is not available
 
     Examples:
-        >>> yd.bc.selic_target_series("31-05-2024", "31-05-2024")
+        >>> from pyield import bc
+        >>> bc.selic_target_series("31-05-2024", "31-05-2024")
                 Date  Value
         0 2024-05-31  0.105
     """
