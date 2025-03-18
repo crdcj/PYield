@@ -14,7 +14,7 @@ ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"
 
 
 def futures(
-    contract_code: ContractOptions,
+    contract_code: ContractOptions | str,
     date: DateScalar,
 ) -> pd.DataFrame:
     """

@@ -4,11 +4,14 @@ import pandas as pd
 import requests
 
 from pyield import bday
+from pyield.retry import default_retry
 
 # Timezone for Brazil
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
+BASE_URL = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
 
 
+@default_retry
 def _fetch_b3_df(contract_code: str) -> pd.DataFrame:
     """
     Fetch the latest data for a given future code from B3 derivatives quotation API.
@@ -24,17 +27,12 @@ def _fetch_b3_df(contract_code: str) -> pd.DataFrame:
         Exception: An exception is raised if the data fetch operation fails.
     """
 
-    url = f"https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation/{contract_code}"
+    url = f"{BASE_URL}/{contract_code}"
 
-    try:
-        r = requests.get(url, timeout=10)
-        r.raise_for_status()  # Check for HTTP request errors
-    except requests.exceptions.RequestException:
-        raise Exception(f"Failed to fetch data for {contract_code}.") from None
-
+    r = requests.get(url, timeout=10)
+    r.raise_for_status()  # Check for HTTP request errors
     r.encoding = "utf-8"  # Explicitly set response encoding to utf-8 for consistency
 
-    # if "buyOffer.price" not in r.text or "sellOffer.price" not in r.text:
     # Check if the response contains the expected data
     if "Quotation not available" in r.text or "curPrc" not in r.text:
         return pd.DataFrame()
