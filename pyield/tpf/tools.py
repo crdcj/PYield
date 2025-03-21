@@ -88,8 +88,8 @@ def pre_spreads(date: DateScalar) -> pd.DataFrame:
     df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_ltn = tpf.tpf_rates(converted_date, "LTN")
-    df_ntnf = tpf.tpf_rates(converted_date, "NTN-F")
+    df_ltn = tpf.tpf_data(converted_date, "LTN")
+    df_ntnf = tpf.tpf_data(converted_date, "NTN-F")
     df_pre = pd.concat([df_ltn, df_ntnf], ignore_index=True)
 
     # Merge bond and DI rates by maturity date to calculate spreads

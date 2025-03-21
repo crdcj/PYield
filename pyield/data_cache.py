@@ -10,10 +10,10 @@ TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 UPDATE_HOUR = 21
 GIT_URL = "https://raw.githubusercontent.com/crdcj/pyield-data/main"
 
-DI_FILE = "di_data.parquet"
+DI_FILE = "data/b3_di.pkl.gz"
 DI_URL = f"{GIT_URL}/{DI_FILE}"
 
-ANBIMA_FILE = "anbima_data.parquet"
+ANBIMA_FILE = "data/anbima_tpf.pkl.gz"
 ANBIMA_URL = f"{GIT_URL}/{ANBIMA_FILE}"
 
 
@@ -28,7 +28,7 @@ class DataCache:
     def __init__(self):
         self._datasets = {
             "di": {"url": DI_URL, "df": None, "last_date": None},
-            "anbima": {"url": ANBIMA_URL, "df": None, "last_date": None},
+            "tpf": {"url": ANBIMA_URL, "df": None, "last_date": None},
         }
 
     def _should_update_dataset(self, key) -> bool:
@@ -44,11 +44,11 @@ class DataCache:
 
     def _load_dataset(self, key: str):
         dataset_info = self._datasets[key]
-        df = pd.read_parquet(dataset_info["url"])
+        df = pd.read_pickle(dataset_info["url"])
         dataset_info["df"] = df
         if key == "di":
             dataset_info["last_date"] = df["TradeDate"].max().date()
-        elif key == "anbima":
+        elif key == "tpf":
             dataset_info["last_date"] = df["ReferenceDate"].max().date()
 
     def get_dataframe(self, key: str) -> pd.DataFrame:
@@ -70,4 +70,4 @@ def get_di_dataset():
 
 
 def get_anbima_dataset():
-    return _data_cache.get_dataframe("anbima")
+    return _data_cache.get_dataframe("tpf")

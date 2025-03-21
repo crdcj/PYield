@@ -78,10 +78,10 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def tpf_data(
+def tpf_web_data(
     date: DateScalar, bond_type: str | BOND_TYPES | None = None
 ) -> pd.DataFrame:
-    """Fetch and process TPF secondary market data from ANBIMA.
+    """Fetch and process TPF secondary market data from ANBIMA website.
 
     This function retrieves bond market data from the ANBIMA website for a
     specified reference date. It handles different file formats based on the date
@@ -105,7 +105,7 @@ def tpf_data(
         df = _read_raw_df(file_url)
         if df.empty:
             logger.info(
-                f"No TPF secondary market data from ANBIMA for {date_log}. "
+                f"No Anbima TPF secondary market data ANBIMA for {date_log}."
                 "Returning empty DataFrame."
             )
             return df
@@ -117,7 +117,7 @@ def tpf_data(
     except HTTPError as e:
         if e.code == 404:  # noqa
             logger.info(
-                f"No TPF secondary market data from ANBIMA for {date_log}. "
+                f"No Anbima TPF secondary market data for {date_log}. "
                 "Returning empty DataFrame."
             )
             return pd.DataFrame()
@@ -127,17 +127,16 @@ def tpf_data(
         raise
 
 
-def tpf_rates(
+def tpf_data(
     date: DateScalar,
     bond_type: str | None = None,
     adj_maturities: bool = False,
 ) -> pd.DataFrame:
     """Retrieve indicative rates for bonds from ANBIMA data.
 
-    This function fetches indicative interest rates for bonds from ANBIMA,
+    This function fetches indicative rates for bonds from ANBIMA,
     initially attempting to retrieve data from a cached dataset. If the data
-    is not available in the cache, it fetches it directly from the ANBIMA
-    website using the :func:`data` function.
+    is not available in the cache, it fetches it directly from the ANBIMA website.
 
     Args:
         date (DateScalar): The reference date for the rates.
@@ -147,17 +146,20 @@ def tpf_rates(
             business day. Defaults to False.
 
     Returns:
-        pd.DataFrame: A DataFrame containing bond types, maturity dates, and
-            indicative rates. Returns an empty DataFrame if data is not
-            available for the specified date.
+        pd.DataFrame: A DataFrame with the following columns:
+            - BondType: The type of bond.
+            - MaturityDate: The maturity date of the bond.
+            - IndicativeRate: The indicative rate of the bond.
+            - Price: The price (PU) of the bond.
     """
+
     df = get_anbima_dataset()
     date = convert_input_dates(date)
     df = df.query("ReferenceDate == @date").reset_index(drop=True)
 
     if df.empty:
         # Try to fetch the data from the Anbima website
-        df = tpf_data(date)
+        df = tpf_web_data(date)
 
     if df.empty:
         # If the data is still empty, return an empty DataFrame
@@ -169,11 +171,14 @@ def tpf_rates(
     if adj_maturities:
         df["MaturityDate"] = bday.offset(df["MaturityDate"], 0)
 
-    df = df[["BondType", "MaturityDate", "IndicativeRate"]].copy()
-    return df.sort_values(["BondType", "MaturityDate"]).reset_index(drop=True)
+    return (
+        df[["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate", "Price"]]
+        .sort_values(["BondType", "MaturityDate"])
+        .reset_index(drop=True)
+    )
 
 
-def tpf_pre_maturities(date: DateScalar) -> pd.Series:
+def tpf_fixed_rate_maturities(date: DateScalar) -> pd.Series:
     """Retrieve pre-defined maturity dates for LTN and NTN-F bonds.
 
     This function fetches pre-defined maturity dates for 'LTN' (prefixadas) and
@@ -188,7 +193,7 @@ def tpf_pre_maturities(date: DateScalar) -> pd.Series:
             'NTN-F' bonds, sorted in ascending order.
     """
     maturity_dates = (
-        tpf_rates(date)
+        tpf_data(date)
         .query("BondType in ['LTN', 'NTN-F']")["MaturityDate"]
         .drop_duplicates()
         .sort_values(ignore_index=True)

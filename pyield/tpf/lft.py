@@ -1,40 +1,46 @@
 import pandas as pd
 
-from pyield import bday
+from pyield import anbima, bday
 from pyield import date_converter as dc
-from pyield.anbima import tpf
 from pyield.date_converter import DateScalar
 from pyield.tpf import tools as tt
 
 
-def rates(date: DateScalar) -> pd.DataFrame:
+def data(date: DateScalar) -> pd.DataFrame:
     """
-    Fetch the bond Anbima indicative rates for the given reference date.
+    Fetch the LFT indicative rates for the given reference date from ANBIMA.
 
     Args:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
+        pd.DataFrame: DataFrame containing the following columns:
+            - ReferenceDate: The reference date for the data.
+            - BondType: The type of bond.
+            - MaturityDate: The maturity date of the LFT bond.
+            - IndicativeRate: The Anbima indicative rate for the LFT bond.
+            - Price: The price of the LFT bond.
+
+    Examples:
+
+        >>> yd.lft.data("23-08-2024")
+           ReferenceDate BondType MaturityDate  IndicativeRate         Price
+        0     2024-08-23      LFT   2024-09-01        0.000272  15252.158852
+        1     2024-08-23      LFT   2025-03-01       -0.000418  15255.605864
+        2     2024-08-23      LFT   2025-09-01        -0.00023  15255.819395
+        3     2024-08-23      LFT   2026-03-01        0.000075  15250.526859
+        4     2024-08-23      LFT   2026-09-01        0.000114  15248.757596
+        5     2024-08-23      LFT   2027-03-01        0.000669  15226.824838
+        6     2024-08-23      LFT   2027-09-01        0.000948  15208.842417
+        7     2024-08-23      LFT   2028-03-01        0.001172  15189.853347
+        8     2024-08-23      LFT   2028-09-01        0.001328  15171.352348
+        9     2024-08-23      LFT   2029-03-01        0.001491  15150.700781
+        10    2024-08-23      LFT   2029-09-01        0.001587  15131.894737
+        11    2024-08-23      LFT   2030-03-01        0.001591  15119.952213
+        12    2024-08-23      LFT   2030-06-01        0.001641  15109.717943
+        13    2024-08-23      LFT   2030-09-01        0.001687  15099.285393
     """
-    lft_rates = tpf.tpf_rates(date, "LFT")
-    if lft_rates.empty:
-        return pd.DataFrame()
-    return lft_rates[["MaturityDate", "IndicativeRate"]]
-
-
-def maturities(date: DateScalar) -> pd.Series:
-    """
-    Fetch the bond maturities available for the given reference date.
-
-    Args:
-        date (DateScalar): The reference date for fetching the data.
-
-    Returns:
-        pd.Series: A Series of bond maturities available for the reference date.
-    """
-    df_rates = rates(date)
-    return df_rates["MaturityDate"]
+    return anbima.tpf_data(date, "LFT")
 
 
 def quotation(

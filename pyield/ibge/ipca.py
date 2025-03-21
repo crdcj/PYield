@@ -12,7 +12,7 @@ IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"
 
 @default_retry
 def _fetch_series_data(url: str) -> dict[str, str]:
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
     response.raise_for_status()  # Raises an exception for HTTP error codes
     data = response.json()
     if not data:

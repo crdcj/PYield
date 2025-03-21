@@ -4,8 +4,7 @@ import pandas as pd
 import pyield.date_converter as dc
 import pyield.interpolator as ip
 import pyield.tpf.tools as bt
-from pyield import bday
-from pyield.anbima import tpf
+from pyield import anbima, bday
 from pyield.date_converter import DateScalar
 
 """
@@ -13,47 +12,14 @@ Constants calculated as per Anbima Rules and in base 100
 COUPON_RATE = (0.06 + 1) ** 0.5 - 1  # 6% annual rate compounded semi-annually
 COUPON_PMT = round(100 * COUPON_RATE, 6) -> 2.956301
 FINAL_PMT = principal + last coupon payment = 100 + 2.956301
-"""
 COUPON_DAY = 15
 COUPON_MONTHS = {2, 5, 8, 11}
+"""
 COUPON_PMT = 2.956301
 FINAL_PMT = 102.956301
 
 
-def _is_maturity_valid(maturity: pd.Timestamp) -> bool:
-    """
-    Check if the maturity date is a valid NTN-B maturity date.
-
-    Args:
-        maturity (pd.Timestamp): The maturity date to be checked.
-
-    Returns:
-        bool: True if the maturity date is valid, False otherwise.
-    """
-    return maturity.day == COUPON_DAY and maturity.month in COUPON_MONTHS
-
-
-def _check_maturities(
-    maturities: pd.Timestamp | list[pd.Timestamp] | pd.Series,
-) -> None:
-    """
-    Check if the maturity dates are valid NTN-B maturities.
-
-    Args:
-        maturities (pd.Timestamp | list[pd.Timestamp] | pd.Series): The maturity
-            date(s) to be checked.
-
-    Raises:
-        ValueError: If the maturity dates are not valid NTN-B maturities.
-    """
-    if isinstance(maturities, pd.Timestamp):
-        maturities = [maturities]
-    checked_maturities = [_is_maturity_valid(maturity) for maturity in maturities]
-    if not all(checked_maturities):
-        raise ValueError("NTN-B maturity must be 15/02, 15/05, 15/08 or 15/11.")
-
-
-def rates(date: DateScalar) -> pd.DataFrame:
+def data(date: DateScalar) -> pd.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
@@ -68,28 +34,25 @@ def rates(date: DateScalar) -> pd.DataFrame:
         - IndicativeRate: The indicative rate for the bond.
 
     Examples:
-        >>> yd.ntnb.rates("16-08-2024")
-           MaturityDate  IndicativeRate
-        0    2025-05-15        0.063893
-        1    2026-08-15        0.066095
-        2    2027-05-15        0.064164
-        3    2028-08-15        0.063199
-        4    2029-05-15        0.061753
-        5    2030-08-15        0.059997
-        6    2032-08-15        0.060025
-        7    2033-05-15        0.059876
-        8    2035-05-15        0.059557
-        9    2040-08-15        0.058873
-        10   2045-05-15        0.060013
-        11   2050-08-15        0.060247
-        12   2055-05-15        0.059926
-        13   2060-08-15        0.060179
+        >>> yd.ntnb.data("23-08-2024")
+           ReferenceDate BondType MaturityDate  IndicativeRate        Price
+        0     2024-08-23    NTN-B   2025-05-15        0.063804  4377.008543
+        1     2024-08-23    NTN-B   2026-08-15        0.065795  4278.316344
+        2     2024-08-23    NTN-B   2027-05-15        0.063794   4350.54878
+        3     2024-08-23    NTN-B   2028-08-15        0.063094  4281.186307
+        4     2024-08-23    NTN-B   2029-05-15          0.0621  4358.101314
+        5     2024-08-23    NTN-B   2030-08-15        0.060298  4324.468801
+        6     2024-08-23    NTN-B   2032-08-15          0.0604  4320.153067
+        7     2024-08-23    NTN-B   2033-05-15        0.060403  4384.189924
+        8     2024-08-23    NTN-B   2035-05-15        0.060375  4386.002533
+        9     2024-08-23    NTN-B   2040-08-15        0.059797  4345.119587
+        10    2024-08-23    NTN-B   2045-05-15        0.060923  4358.235102
+        11    2024-08-23    NTN-B   2050-08-15         0.06114  4279.434119
+        12    2024-08-23    NTN-B   2055-05-15        0.060892  4355.145036
+        13    2024-08-23    NTN-B   2060-08-15        0.061005  4282.308398
 
     """
-    ntnb_rates = tpf.tpf_rates(date, "NTN-B")
-    if ntnb_rates.empty:
-        return pd.DataFrame()
-    return ntnb_rates[["MaturityDate", "IndicativeRate"]]
+    return anbima.tpf_data(date, "NTN-B")
 
 
 def maturities(date: DateScalar) -> pd.Series:
@@ -122,7 +85,7 @@ def maturities(date: DateScalar) -> pd.Series:
         dtype: datetime64[ns]
 
     """
-    df_rates = rates(date)
+    df_rates = data(date)
     s_maturities = df_rates["MaturityDate"]
     s_maturities.name = None
     return s_maturities
@@ -193,7 +156,6 @@ def payment_dates(
     # Validate and normalize dates
     settlement = dc.convert_input_dates(settlement)
     maturity = dc.convert_input_dates(maturity)
-    _check_maturities(maturity)
 
     # Check if maturity date is after the start date
     if maturity < settlement:
@@ -286,7 +248,6 @@ def quotation(
     # Validate and normalize dates
     settlement = dc.convert_input_dates(settlement)
     maturity = dc.convert_input_dates(maturity)
-    _check_maturities(maturity)
 
     cf_df = cash_flows(settlement, maturity)
     cf_dates = cf_df["PaymentDate"]
@@ -359,13 +320,13 @@ def spot_rates(
 
     Examples:
         # Get the NTN-B rates for a specific reference date
-        >>> df_rates = yd.ntnb.rates("16-08-2024")
+        >>> df = yd.ntnb.data("16-08-2024")
 
         # Calculate the spot rates considering the settlement at the reference date
         >>> yd.ntnb.spot_rates(
         ...     settlement="16-08-2024",
-        ...     maturities=df_rates["MaturityDate"],
-        ...     rates=df_rates["IndicativeRate"],
+        ...     maturities=df["MaturityDate"],
+        ...     rates=df["IndicativeRate"],
         ... )
            MaturityDate  BDToMat  SpotRate
         0    2025-05-15      185  0.063894
@@ -397,7 +358,6 @@ def spot_rates(
     # Process and validate the input data
     settlement = dc.convert_input_dates(settlement)
     maturities = pd.to_datetime(maturities, errors="raise", dayfirst=True)
-    _check_maturities(maturities)
 
     # Create the interpolator to calculate the YTM rates for intermediate dates
     ff_interpolator = ip.Interpolator(
@@ -494,7 +454,7 @@ def bei_rates(
     Examples:
         Get the NTN-B rates for a specific reference date.
         These are YTM rates and the spot rates are calculated based on them
-        >>> df_ntnb = yd.ntnb.rates("05-09-2024")
+        >>> df_ntnb = yd.ntnb.data("05-09-2024")
 
         Get the DI Futures settlement rates for the same reference date to be used as
         reference for the nominal rates:

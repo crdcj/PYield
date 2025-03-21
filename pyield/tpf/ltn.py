@@ -1,8 +1,7 @@
 import pandas as pd
 
-from pyield import bday
+from pyield import anbima, bday
 from pyield import date_converter as dc
-from pyield.anbima import tpf
 from pyield.b3 import di
 from pyield.date_converter import DateScalar
 from pyield.tpf import tools as tt
@@ -10,7 +9,7 @@ from pyield.tpf import tools as tt
 FACE_VALUE = 1000
 
 
-def rates(date: DateScalar) -> pd.DataFrame:
+def data(date: DateScalar) -> pd.DataFrame:
     """
     Fetch the LTN Anbima indicative rates for the given reference date.
 
@@ -21,27 +20,24 @@ def rates(date: DateScalar) -> pd.DataFrame:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
 
     Examples:
-        >>> yd.ltn.rates("22-08-2024")
-           MaturityDate  IndicativeRate
-        0    2024-10-01        0.104444
-        1    2025-01-01        0.107555
-        2    2025-04-01        0.111592
-        3    2025-07-01         0.11387
-        4    2025-10-01        0.115483
-        5    2026-01-01        0.116013
-        6    2026-04-01        0.116294
-        7    2026-07-01        0.116743
-        8    2026-10-01        0.116767
-        9    2027-07-01        0.116982
-        10   2028-01-01        0.117289
-        11   2028-07-01        0.117948
-        12   2030-01-01        0.118746
+        >>> yd.ltn.data("23-08-2024")
+           ReferenceDate BondType MaturityDate  IndicativeRate       Price
+        0     2024-08-23      LTN   2024-10-01        0.104416  989.415342
+        1     2024-08-23      LTN   2025-01-01        0.107171  964.293046
+        2     2024-08-23      LTN   2025-04-01        0.110866  938.943013
+        3     2024-08-23      LTN   2025-07-01        0.113032  913.849158
+        4     2024-08-23      LTN   2025-10-01        0.114374  887.394285
+        5     2024-08-23      LTN   2026-01-01        0.114654  863.026594
+        6     2024-08-23      LTN   2026-04-01        0.114997  840.232741
+        7     2024-08-23      LTN   2026-07-01        0.115265  818.020491
+        8     2024-08-23      LTN   2026-10-01        0.115357  795.185488
+        9     2024-08-23      LTN   2027-07-01        0.115335  733.981131
+        10    2024-08-23      LTN   2028-01-01        0.115694  693.647778
+        11    2024-08-23      LTN   2028-07-01        0.116417    655.6398
+        12    2024-08-23      LTN   2030-01-01        0.117436  554.331151
 
     """
-    ltn_rates = tpf.tpf_rates(date, "LTN")
-    if ltn_rates.empty:
-        return pd.DataFrame()
-    return ltn_rates[["MaturityDate", "IndicativeRate"]]
+    return anbima.tpf_data(date, "LTN")
 
 
 def maturities(date: DateScalar) -> pd.Series:
@@ -72,7 +68,7 @@ def maturities(date: DateScalar) -> pd.Series:
         dtype: datetime64[ns]
 
     """
-    df_rates = rates(date)
+    df_rates = data(date)
     s_maturities = df_rates["MaturityDate"]
     s_maturities.name = None
     return s_maturities
@@ -210,7 +206,7 @@ def historical_premium(
     maturity = dc.convert_input_dates(maturity)
 
     # Retrieve LTN rates for the reference date
-    df_anbima = rates(date)
+    df_anbima = data(date)
     if df_anbima.empty:
         return float("NaN")
 

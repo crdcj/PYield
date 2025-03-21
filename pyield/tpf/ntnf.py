@@ -3,10 +3,9 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 
-from pyield import bday
+from pyield import anbima, bday
 from pyield import date_converter as dc
 from pyield import interpolator as ip
-from pyield.anbima import tpf
 from pyield.b3 import di
 from pyield.date_converter import DateScalar
 from pyield.tpf import tools as tt
@@ -24,7 +23,7 @@ COUPON_PMT = 48.80885
 FINAL_PMT = 1048.80885
 
 
-def rates(date: DateScalar) -> pd.DataFrame:
+def data(date: DateScalar) -> pd.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
@@ -35,19 +34,16 @@ def rates(date: DateScalar) -> pd.DataFrame:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
 
     Examples:
-        >>> yd.ntnf.rates("23-08-2024")
-          MaturityDate  IndicativeRate
-        0   2025-01-01        0.107692
-        1   2027-01-01        0.115109
-        2   2029-01-01        0.116337
-        3   2031-01-01        0.117008
-        4   2033-01-01        0.116307
-        5   2035-01-01        0.116586
+        >>> yd.ntnf.data("23-08-2024")
+          ReferenceDate BondType MaturityDate  IndicativeRate        Price
+        0    2024-08-23    NTN-F   2025-01-01        0.107692  1011.189166
+        1    2024-08-23    NTN-F   2027-01-01        0.115109   985.834842
+        2    2024-08-23    NTN-F   2029-01-01        0.116337   964.126325
+        3    2024-08-23    NTN-F   2031-01-01        0.117008   945.416939
+        4    2024-08-23    NTN-F   2033-01-01        0.116307   934.776692
+        5    2024-08-23    NTN-F   2035-01-01        0.116586   923.239406
     """
-    ntnf_rates = tpf.tpf_rates(date, "NTN-F")
-    if ntnf_rates.empty:
-        return pd.DataFrame()
-    return ntnf_rates[["MaturityDate", "IndicativeRate"]]
+    return anbima.tpf_data(date, "NTN-F")
 
 
 def maturities(date: DateScalar) -> pd.Series:
@@ -71,7 +67,7 @@ def maturities(date: DateScalar) -> pd.Series:
         dtype: datetime64[ns]
 
     """
-    df_rates = rates(date)
+    df_rates = data(date)
     s_maturities = df_rates["MaturityDate"]
     s_maturities.name = None
     return s_maturities
@@ -258,8 +254,8 @@ def spot_rates(  # noqa
             "BDToMat" is the business days from the settlement date to the maturities.
 
     Examples:
-        >>> df_ltn = yd.ltn.rates("03-09-2024")
-        >>> df_ntnf = yd.ntnf.rates("03-09-2024")
+        >>> df_ltn = yd.ltn.data("03-09-2024")
+        >>> df_ntnf = yd.ntnf.data("03-09-2024")
         >>> yd.ntnf.spot_rates(
         ...     settlement="03-09-2024",
         ...     ltn_maturities=df_ltn["MaturityDate"],
@@ -581,7 +577,7 @@ def historical_premium(
     date = dc.convert_input_dates(date)
     maturity = dc.convert_input_dates(maturity)
 
-    df_ntnf = rates(date)
+    df_ntnf = data(date)
     if df_ntnf.empty:
         return float("NaN")
 
