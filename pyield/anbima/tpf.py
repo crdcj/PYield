@@ -81,7 +81,8 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 def tpf_web_data(
     date: DateScalar, bond_type: str | BOND_TYPES | None = None
 ) -> pd.DataFrame:
-    """Fetch and process TPF secondary market data from ANBIMA website.
+    """Fetch and process TPF secondary market data directly from the ANBIMA website.
+    Only the last 5 days of data are available in the ANBIMA website.
 
     This function retrieves bond market data from the ANBIMA website for a
     specified reference date. It handles different file formats based on the date

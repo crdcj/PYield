@@ -8,7 +8,7 @@ from pyield import date_converter as dc
 from pyield import interpolator as ip
 from pyield.b3 import di
 from pyield.date_converter import DateScalar
-from pyield.tpf import tools as tt
+from pyield.tpf import tools
 
 """
 Constants calculated as per Anbima Rules
@@ -34,7 +34,8 @@ def data(date: DateScalar) -> pd.DataFrame:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
 
     Examples:
-        >>> yd.ntnf.data("23-08-2024")
+        >>> from pyield import ntnf
+        >>> ntnf.data("23-08-2024")
           ReferenceDate BondType MaturityDate  IndicativeRate        Price
         0    2024-08-23    NTN-F   2025-01-01        0.107692  1011.189166
         1    2024-08-23    NTN-F   2027-01-01        0.115109   985.834842
@@ -57,7 +58,8 @@ def maturities(date: DateScalar) -> pd.Series:
         pd.Series: A Series of NTN-F bond maturities available for the reference date.
 
     Examples:
-        >>> yd.ntnf.maturities("23-08-2024")
+        >>> from pyield import ntnf
+        >>> ntnf.maturities("23-08-2024")
         0   2025-01-01
         1   2027-01-01
         2   2029-01-01
@@ -65,7 +67,6 @@ def maturities(date: DateScalar) -> pd.Series:
         4   2033-01-01
         5   2035-01-01
         dtype: datetime64[ns]
-
     """
     df_rates = data(date)
     s_maturities = df_rates["MaturityDate"]
@@ -106,8 +107,8 @@ def payment_dates(
             (exclusive) and maturity (inclusive) dates.
 
     Examples:
-
-        >>> yd.ntnf.payment_dates("15-05-2024", "01-01-2025")
+        >>> from pyield import ntnf
+        >>> ntnf.payment_dates("15-05-2024", "01-01-2025")
         0   2024-07-01
         1   2025-01-01
         dtype: datetime64[ns]
@@ -157,7 +158,8 @@ def cash_flows(
         pd.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
 
     Examples:
-        >>> yd.ntnf.cash_flows("15-05-2024", "01-01-2025")
+        >>> from pyield import ntnf
+        >>> ntnf.cash_flows("15-05-2024", "01-01-2025")
           PaymentDate    CashFlow
         0  2024-07-01    48.80885
         1  2025-01-01  1048.80885
@@ -206,18 +208,19 @@ def price(
           Anbima rules.
 
     Examples:
-        >>> yd.ntnf.price("05-07-2024", "01-01-2035", 0.11921)
+        >>> from pyield import ntnf
+        >>> ntnf.price("05-07-2024", "01-01-2035", 0.11921)
         895.359254
     """
     cf_df = cash_flows(settlement, maturity)
     cf_values = cf_df["CashFlow"]
     bdays = bday.count(settlement, cf_df["PaymentDate"])
-    byears = tt.truncate(bdays / 252, 14)
+    byears = tools.truncate(bdays / 252, 14)
     discount_factors = (1 + rate) ** byears
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
     dcf = (cf_values / discount_factors).round(9)
     # Return the sum of the discounted cash flows truncated as per Anbima rules
-    return tt.truncate(dcf.sum(), 6)
+    return tools.truncate(dcf.sum(), 6)
 
 
 def spot_rates(  # noqa
@@ -254,9 +257,10 @@ def spot_rates(  # noqa
             "BDToMat" is the business days from the settlement date to the maturities.
 
     Examples:
-        >>> df_ltn = yd.ltn.data("03-09-2024")
-        >>> df_ntnf = yd.ntnf.data("03-09-2024")
-        >>> yd.ntnf.spot_rates(
+        >>> from pyield import ntnf, ltn
+        >>> df_ltn = ltn.data("03-09-2024")
+        >>> df_ntnf = ntnf.data("03-09-2024")
+        >>> ntnf.spot_rates(
         ...     settlement="03-09-2024",
         ...     ltn_maturities=df_ltn["MaturityDate"],
         ...     ltn_rates=df_ltn["IndicativeRate"],
@@ -306,7 +310,7 @@ def spot_rates(  # noqa
         # Calculate the present value of the coupon payments
         cf_dates = payment_dates(settlement, row["MaturityDate"])[:-1]  # noqa
         cf_df = df.query("MaturityDate in @cf_dates").reset_index(drop=True)
-        cf_present_value = tt.calculate_present_value(
+        cf_present_value = tools.calculate_present_value(
             cash_flows=cf_df["Coupon"],
             rates=cf_df["SpotRate"],
             periods=cf_df["BDToMat"] / 252,
@@ -339,7 +343,8 @@ def di_spreads(date: DateScalar) -> pd.DataFrame:
         pd.DataFrame: DataFrame with columns "MaturityDate", "DISpread".
 
     Examples:
-        >>> yd.ntnf.di_spreads("23-08-2024")
+        >>> from pyield import ntnf
+        >>> ntnf.di_spreads("23-08-2024")
           MaturityDate  DISpread
         0   2025-01-01     -5.38
         1   2027-01-01      4.39
@@ -350,7 +355,7 @@ def di_spreads(date: DateScalar) -> pd.DataFrame:
 
     """
     # Fetch DI Spreads for the reference date
-    df = tt.pre_spreads(date)
+    df = tools.pre_spreads(date)
     df = (
         df.query("BondType == 'NTN-F'")
         .sort_values(["MaturityDate"])
@@ -550,7 +555,7 @@ def premium(
     df["DIRate"] = df["BDToMat"].apply(ff_interpolator)
 
     # Calculate the present value of the cash flows using the DI rate
-    bond_price = tt.calculate_present_value(
+    bond_price = tools.calculate_present_value(
         cash_flows=df["CashFlow"],
         rates=df["DIRate"],
         periods=df["BDToMat"] / 252,
@@ -599,7 +604,7 @@ def historical_premium(
     )
 
     # Calculate the present value of the cash flows using the DI rate
-    bond_price = tt.calculate_present_value(
+    bond_price = tools.calculate_present_value(
         cash_flows=df["CashFlow"],
         rates=df["DIRate"],
         periods=df["BDToMat"] / 252,
@@ -640,7 +645,8 @@ def duration(
         float: The Macaulay duration in years.
 
     Examples:
-        >>> yd.ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
+        >>> from pyield import ntnf
+        >>> ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
         6.32854218039796
     """
     settlement = dc.convert_input_dates(settlement)

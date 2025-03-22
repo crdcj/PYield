@@ -3,7 +3,7 @@ import pandas as pd
 from pyield import anbima, bday
 from pyield import date_converter as dc
 from pyield.date_converter import DateScalar
-from pyield.tpf import tools as tt
+from pyield.tpf import tools
 
 
 def data(date: DateScalar) -> pd.DataFrame:
@@ -22,8 +22,8 @@ def data(date: DateScalar) -> pd.DataFrame:
             - Price: The price of the LFT bond.
 
     Examples:
-
-        >>> yd.lft.data("23-08-2024")
+        >>> from pyield import lft
+        >>> lft.data("23-08-2024")
            ReferenceDate BondType MaturityDate  IndicativeRate         Price
         0     2024-08-23      LFT   2024-09-01        0.000272  15252.158852
         1     2024-08-23      LFT   2025-03-01       -0.000418  15255.605864
@@ -61,7 +61,8 @@ def quotation(
 
     Examples:
         Calculate the quotation of a LFT bond with a 0.02 yield rate:
-        >>> yd.lft.quotation(
+        >>> from pyield import lft
+        >>> lft.quotation(
         ...     settlement="24-07-2024",
         ...     maturity="01-09-2030",
         ...     rate=0.001717,  # 0.1717%
@@ -76,11 +77,11 @@ def quotation(
     bdays = bday.count(settlement, maturity)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = tt.truncate(bdays / 252, 14)
+    num_of_years = tools.truncate(bdays / 252, 14)
 
     discount_factor = 1 / (1 + rate) ** num_of_years
 
-    return tt.truncate(100 * discount_factor, 4)
+    return tools.truncate(100 * discount_factor, 4)
 
 
 def premium(lft_rate: float, selic_over: float) -> float:

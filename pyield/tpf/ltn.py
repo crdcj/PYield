@@ -4,7 +4,7 @@ from pyield import anbima, bday
 from pyield import date_converter as dc
 from pyield.b3 import di
 from pyield.date_converter import DateScalar
-from pyield.tpf import tools as tt
+from pyield.tpf import tools
 
 FACE_VALUE = 1000
 
@@ -20,7 +20,8 @@ def data(date: DateScalar) -> pd.DataFrame:
         pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
 
     Examples:
-        >>> yd.ltn.data("23-08-2024")
+        >>> from pyield import ltn
+        >>> ltn.data("23-08-2024")
            ReferenceDate BondType MaturityDate  IndicativeRate       Price
         0     2024-08-23      LTN   2024-10-01        0.104416  989.415342
         1     2024-08-23      LTN   2025-01-01        0.107171  964.293046
@@ -51,7 +52,8 @@ def maturities(date: DateScalar) -> pd.Series:
         pd.Series: A Series of bond maturities available for the reference date.
 
     Examples:
-        >>> yd.ltn.maturities("22-08-2024")
+        >>> from pyield import ltn
+        >>> ltn.maturities("22-08-2024")
         0    2024-10-01
         1    2025-01-01
         2    2025-04-01
@@ -97,7 +99,8 @@ def price(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> yd.ltn.price("05-07-2024", "01-01-2030", 0.12145)
+        >>> from pyield import ltn
+        >>> ltn.price("05-07-2024", "01-01-2030", 0.12145)
         535.279902
     """
 
@@ -109,12 +112,12 @@ def price(
     bdays = bday.count(settlement, maturity)
 
     # Calculate the number of periods truncated as per Anbima rule
-    num_of_years = tt.truncate(bdays / 252, 14)
+    num_of_years = tools.truncate(bdays / 252, 14)
 
     discount_factor = (1 + rate) ** num_of_years
 
     # Truncate the price to 6 decimal places as per Anbima rules
-    return tt.truncate(FACE_VALUE / discount_factor, 6)
+    return tools.truncate(FACE_VALUE / discount_factor, 6)
 
 
 def di_spreads(date: DateScalar) -> pd.DataFrame:
@@ -132,7 +135,8 @@ def di_spreads(date: DateScalar) -> pd.DataFrame:
         pd.DataFrame: DataFrame with the columns "MaturityDate" and "DISpread" (in bps).
 
     Examples:
-        >>> yd.ltn.di_spreads("22-08-2024")
+        >>> from pyield import ltn
+        >>> ltn.di_spreads("22-08-2024")
            MaturityDate  DISpread
         0    2024-10-01     -3.06
         1    2025-01-01     -9.95
@@ -149,7 +153,7 @@ def di_spreads(date: DateScalar) -> pd.DataFrame:
         12   2030-01-01     14.96
     """
     # Fetch DI Spreads for the reference date
-    df = tt.pre_spreads(date)
+    df = tools.pre_spreads(date)
     df.query("BondType == 'LTN'", inplace=True)
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
     return df[["MaturityDate", "DISpread"]]
@@ -170,7 +174,8 @@ def premium(ltn_rate: float, di_rate: float) -> float:
         Reference date: 22-08-2024
         LTN rate for 01-01-2030: 0.118746
         DI (JAN30) Settlement rate: 0.11725
-        >>> yd.ltn.premium(0.118746, 0.11725)
+        >>> from pyield import ltn
+        >>> ltn.premium(0.118746, 0.11725)
         1.0120718007994287
     """
     # Cálculo das taxas diárias
@@ -197,7 +202,8 @@ def historical_premium(
                If the data is not available, returns NaN.
 
     Examples:
-        >>> yd.ltn.historical_premium("22-08-2024", "01-01-2030")
+        >>> from pyield import ltn
+        >>> ltn.historical_premium("22-08-2024", "01-01-2030")
         1.0120718007994287
 
     """

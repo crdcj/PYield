@@ -34,7 +34,8 @@ def data(date: DateScalar) -> pd.DataFrame:
         - IndicativeRate: The indicative rate for the bond.
 
     Examples:
-        >>> yd.ntnb.data("23-08-2024")
+        >>> from pyield import ntnb
+        >>> ntnb.data("23-08-2024")
            ReferenceDate BondType MaturityDate  IndicativeRate        Price
         0     2024-08-23    NTN-B   2025-05-15        0.063804  4377.008543
         1     2024-08-23    NTN-B   2026-08-15        0.065795  4278.316344
@@ -66,8 +67,8 @@ def maturities(date: DateScalar) -> pd.Series:
         pd.Series: Series containing the maturity dates for the NTN-B bonds.
 
     Examples:
-
-        >>> yd.ntnb.maturities("16-08-2024")
+        >>> from pyield import ntnb
+        >>> ntnb.maturities("16-08-2024")
         0    2025-05-15
         1    2026-08-15
         2    2027-05-15
@@ -147,7 +148,8 @@ def payment_dates(
         pd.Series: Series of coupon dates within the specified range.
 
     Examples:
-        >>> yd.ntnb.payment_dates("10-05-2024", "15-05-2025")
+        >>> from pyield import ntnb
+        >>> ntnb.payment_dates("10-05-2024", "15-05-2025")
         0   2024-05-15
         1   2024-11-15
         2   2025-05-15
@@ -194,7 +196,8 @@ def cash_flows(
         - CashFlow: Cash flow value for the bond
 
     Examples:
-        >>> yd.ntnb.cash_flows("10-05-2024", "15-05-2025")
+        >>> from pyield import ntnb
+        >>> ntnb.cash_flows("10-05-2024", "15-05-2025")
           PaymentDate    CashFlow
         0  2024-05-15    2.956301
         1  2024-11-15    2.956301
@@ -238,11 +241,12 @@ def quotation(
           Anbima rules.
 
     Examples:
-        >>> yd.ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
+        >>> from pyield import ntnb
+        >>> ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
         99.3651
-        >>> yd.ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
+        >>> ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
         99.5341
-        >>> yd.ntnb.quotation("15-08-2024", "15-08-2032", 0.05929)
+        >>> ntnb.quotation("15-08-2024", "15-08-2032", 0.05929)
         100.6409
     """
     # Validate and normalize dates
@@ -286,9 +290,10 @@ def price(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> yd.ntnb.price(4299.160173, 99.3651)
+        >>> from pyield import ntnb
+        >>> ntnb.price(4299.160173, 99.3651)
         4271.864805
-        >>> yd.ntnb.price(4315.498383, 100.6409)
+        >>> ntnb.price(4315.498383, 100.6409)
         4343.156412
     """
     return bt.truncate(vna * quotation / 100, 6)
@@ -319,11 +324,11 @@ def spot_rates(
         pd.DataFrame: DataFrame with columns "MaturityDate", "SpotRate".
 
     Examples:
-        # Get the NTN-B rates for a specific reference date
-        >>> df = yd.ntnb.data("16-08-2024")
-
-        # Calculate the spot rates considering the settlement at the reference date
-        >>> yd.ntnb.spot_rates(
+        >>> from pyield import ntnb
+        >>> # Get the NTN-B rates for a specific reference date
+        >>> df = ntnb.data("16-08-2024")
+        >>> # Calculate the spot rates considering the settlement at the reference date
+        >>> ntnb.spot_rates(
         ...     settlement="16-08-2024",
         ...     maturities=df["MaturityDate"],
         ...     rates=df["IndicativeRate"],

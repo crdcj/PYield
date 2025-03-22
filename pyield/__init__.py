@@ -6,7 +6,7 @@ from pyield.b3 import futures
 from pyield.b3.di import DIFutures
 from pyield.forwards import forward_rates
 from pyield.interpolator import Interpolator
-from pyield.tpf import lft, ltn, ntnb, ntnf
+from pyield.tpf import lft, ltn, ntnb, ntnc, ntnf
 
 __all__ = [
     "__version__",
@@ -20,6 +20,7 @@ __all__ = [
     "lft",
     "ltn",
     "ntnb",
+    "ntnc",
     "ntnf",
     "bc",
     "b3",
