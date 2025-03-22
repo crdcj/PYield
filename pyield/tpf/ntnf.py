@@ -630,11 +630,7 @@ def duration(
     rate: float,
 ) -> float:
     """
-    Calculate the Macaulay duration for an NTN-F bond.
-
-    The Macaulay duration is a weighted average of the times until each payment is
-    received, with the weights proportional to the present value of the cash flows.
-    It measures the bond's sensitivity to interest rate changes.
+    Calculate the Macaulay duration for an NTN-F bond in business years.
 
     Args:
         settlement (DateScalar): The settlement date to calculate the duration.
@@ -642,7 +638,7 @@ def duration(
         rate (float): The yield to maturity (YTM) used to discount the cash flows.
 
     Returns:
-        float: The Macaulay duration in years.
+        float: The Macaulay duration in business business years.
 
     Examples:
         >>> from pyield import ntnf

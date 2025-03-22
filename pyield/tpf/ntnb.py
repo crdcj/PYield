@@ -526,6 +526,22 @@ def duration(
     maturity: DateScalar,
     rate: float,
 ) -> float:
+    """
+    Calculate the Macaulay duration of the NTN-B bond in business years.
+
+    Args:
+        settlement (DateScalar): The settlement date of the operation.
+        maturity (DateScalar): The maturity date of the NTN-B bond.
+        rate (float): The discount rate used to calculate the duration.
+
+    Returns:
+        float: The Macaulay duration of the NTN-B bond in business years.
+
+    Examples:
+        >>> from pyield import ntnb
+        >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
+        15.083054313130464
+    """
     settlement = dc.convert_input_dates(settlement)
     maturity = dc.convert_input_dates(maturity)
 

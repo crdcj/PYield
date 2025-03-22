@@ -251,7 +251,7 @@ def duration(
     rate: float,
 ) -> float:
     """
-    Calculate the Macaulay duration of the NTN-C bond according to Anbima rules.
+    Calculate the Macaulay duration of the NTN-C bond in business years.
 
     Args:
         settlement (DateScalar): The settlement date of the operation.
@@ -259,7 +259,7 @@ def duration(
         rate (float): The discount rate used to calculate the duration.
 
     Returns:
-        float: The Macaulay duration of the NTN-C bond in years.
+        float: The Macaulay duration of the NTN-C bond in business years.
 
     Examples:
         >>> from pyield import ntnc
