@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.8608ea7d.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.4af4bdda.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
@@ -630,15 +630,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#pyield.interpolator.Interpolator._flat_forward" class="md-nav__link">
-    <span class="md-ellipsis">
-      _flat_forward
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#pyield.interpolator.Interpolator.interpolate" class="md-nav__link">
     <span class="md-ellipsis">
       interpolate
@@ -717,6 +708,28 @@
   
   <span class="md-ellipsis">
     NTN-B
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ntnc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    NTN-C
     
   </span>
   
@@ -1255,51 +1268,6 @@ number of business days.</p>
 </span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Textual representation, used in terminal or scripts.&quot;&quot;&quot;</span>
 </span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a>
 </span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a>    <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">)</span>
-</span></code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="pyield.interpolator.Interpolator._flat_forward" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_flat_forward</span><span class="p">(</span><span class="n">bday</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span></code>
-
-</h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Performs the interest rate interpolation using the flat forward method.</p>
-
-
-            <details class="quote">
-              <summary>Source code in <code>pyield/interpolator.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-64">64</a></span>
-<span class="normal"><a href="#__codelineno-0-65">65</a></span>
-<span class="normal"><a href="#__codelineno-0-66">66</a></span>
-<span class="normal"><a href="#__codelineno-0-67">67</a></span>
-<span class="normal"><a href="#__codelineno-0-68">68</a></span>
-<span class="normal"><a href="#__codelineno-0-69">69</a></span>
-<span class="normal"><a href="#__codelineno-0-70">70</a></span>
-<span class="normal"><a href="#__codelineno-0-71">71</a></span>
-<span class="normal"><a href="#__codelineno-0-72">72</a></span>
-<span class="normal"><a href="#__codelineno-0-73">73</a></span>
-<span class="normal"><a href="#__codelineno-0-74">74</a></span>
-<span class="normal"><a href="#__codelineno-0-75">75</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="k">def</span><span class="w"> </span><span class="nf">_flat_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bday</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs the interest rate interpolation using the flat forward method.&quot;&quot;&quot;</span>
-</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="n">prev_rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_known_rates</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
-</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="n">prev_bday</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_known_bdays</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
-</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="n">next_rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_known_rates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="n">next_bday</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_known_bdays</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a>
-</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="c1"># Perform flat forward interpolation</span>
-</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">prev_rate</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">prev_bday</span> <span class="o">/</span> <span class="mi">252</span><span class="p">)</span>
-</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a>    <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">next_rate</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">next_bday</span> <span class="o">/</span> <span class="mi">252</span><span class="p">)</span>
-</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a>    <span class="n">c</span> <span class="o">=</span> <span class="p">(</span><span class="n">bday</span> <span class="o">-</span> <span class="n">prev_bday</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">next_bday</span> <span class="o">-</span> <span class="n">prev_bday</span><span class="p">)</span>
-</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="p">(</span><span class="n">b</span> <span class="o">/</span> <span class="n">a</span><span class="p">)</span> <span class="o">**</span> <span class="n">c</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mi">252</span> <span class="o">/</span> <span class="n">bday</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
