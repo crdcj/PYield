@@ -8,8 +8,6 @@ PYield is a Python library designed for the analysis of Brazilian fixed income i
 
 Documentation: [https://crdcj.github.io/PYield/](https://crdcj.github.io/PYield/)
 
-Source Code: [https://github.com/crdcj/PYield](https://github.com/crdcj/PYield)
-
 ## Key Features
 
 - **Data Collection**: Automated fetching of data from ANBIMA and B3.
