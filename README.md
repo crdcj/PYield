@@ -60,38 +60,39 @@ date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
 ```python
 >>> from pyield import ntnb, ntnf, ltn
 
+# Get ANBIMA data for a given date
+>>> ltn.data("23-08-2024")
+    ReferenceDate BondType MaturityDate  IndicativeRate       Price
+0     2024-08-23      LTN   2024-10-01        0.104416  989.415342
+1     2024-08-23      LTN   2025-01-01        0.107171  964.293046
+2     2024-08-23      LTN   2025-04-01        0.110866  938.943013
+3     2024-08-23      LTN   2025-07-01        0.113032  913.849158
+4     2024-08-23      LTN   2025-10-01        0.114374  887.394285
+5     2024-08-23      LTN   2026-01-01        0.114654  863.026594
+6     2024-08-23      LTN   2026-04-01        0.114997  840.232741
+7     2024-08-23      LTN   2026-07-01        0.115265  818.020491
+8     2024-08-23      LTN   2026-10-01        0.115357  795.185488
+9     2024-08-23      LTN   2027-07-01        0.115335  733.981131
+10    2024-08-23      LTN   2028-01-01        0.115694  693.647778
+11    2024-08-23      LTN   2028-07-01        0.116417    655.6398
+12    2024-08-23      LTN   2030-01-01        0.117436  554.331151
+
 # Calculate the quotation of a NTN-B bond as per ANBIMA's rules
 >>> ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
 99.3651
 >>> ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
 99.5341
 
-# Calculate the DI Spread of NTN-F bonds in a given date
->>> ntnf.di_spreads("17-07-2024")
-2025-01-01   -2.31
-2027-01-01   -1.88
-2029-01-01   -3.26
-2031-01-01    3.61
-2033-01-01   -3.12
-2035-01-01   -1.00
-Name: DISpread, dtype: Float64
+# Calculate the DI Spread of NTN-F and LTN bonds in a given date
+>>> ntnf.di_spreads("23-08-2024")
+    MaturityDate  DISpread
+0   2025-01-01     -5.38
+1   2027-01-01      4.39
+2   2029-01-01      7.37
+3   2031-01-01     12.58
+4   2033-01-01      7.67
+5   2035-01-01     12.76
 
-# Get ANBIMA's indicative rates for LTN bonds
->>> ltn.anbima_rates("17-07-2024")
-2024-10-01    0.104236
-2025-01-01    0.105400
-2025-04-01    0.107454
-2025-07-01    0.108924
-2025-10-01    0.110751
-2026-01-01    0.111753
-2026-04-01    0.112980
-2026-07-01    0.113870
-2026-10-01    0.114592
-2027-07-01    0.116090
-2028-01-01    0.117160
-2028-07-01    0.118335
-2030-01-01    0.120090
-Name: IndicativeRate, dtype: Float64
 ```
 
 ### Business Days Tools (Brazilian holidays are automatically considered)
@@ -119,22 +120,11 @@ Timestamp('2023-12-29 00:00:00')
 0   2023-12-29
 1   2024-01-02
 2   2024-01-03
-dtype: datetime64[ns]
 ```
 
 ### Futures Data
 ```python
 >>> import pyield as yd
-# Fetch current DI Futures data from B3 (15 minutes delay)
->>> yd.futures(contract_code="DI1")
-LastUpdatee      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate LastBidRate LastRate
-2024-04-21 13:37:39       DI1K24     2024-05-02          7 ... 0.10660     0.10652     0.10660  0.10660
-2024-04-21 13:37:39       DI1M24     2024-06-03         28 ... 0.10518     0.10510     0.10516  0.10518
-2024-04-21 13:37:39       DI1N24     2024-07-01         48 ... 0.10480     0.10456     0.10462  0.10460
-                ...          ...            ...        ... ...     ...         ...         ...      ...
-2024-04-21 13:37:39       DI1F37     2037-01-02       3183 ...    <NA>        <NA>     0.11600     <NA>
-2024-04-21 13:37:39       DI1F38     2038-01-04       3432 ...    <NA>        <NA>     0.11600     <NA>
-2024-04-21 13:37:39       DI1F39     2039-01-03       3683 ...    <NA>        <NA>        <NA>     <NA>
 
 # Fetch historical DI Futures data from B3
 >>> yd.futures(contract_code="DI1", date='08-03-2024')
@@ -146,20 +136,35 @@ TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastB
 2024-03-08       DI1F37     2037-01-02       3213 ...     <NA>        <NA>        <NA>         10.859
 2024-03-08       DI1F38     2038-01-04       3462 ...     <NA>        <NA>        <NA>         10.859
 2024-03-08       DI1F39     2039-01-03       3713 ...     <NA>        <NA>        <NA>         10.85
+
+# Fetch current DI Futures data from B3 (15 minutes delay)
+>>> yd.futures(contract_code="DI1", date="21-03-2024")  # when the date used is the current date and market is open
+LastUpdatee      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate LastBidRate LastRate
+2024-04-21 13:37:39       DI1K24     2024-05-02          7 ... 0.10660     0.10652     0.10660  0.10660
+2024-04-21 13:37:39       DI1M24     2024-06-03         28 ... 0.10518     0.10510     0.10516  0.10518
+2024-04-21 13:37:39       DI1N24     2024-07-01         48 ... 0.10480     0.10456     0.10462  0.10460
+                ...          ...            ...        ... ...     ...         ...         ...      ...
+2024-04-21 13:37:39       DI1F37     2037-01-02       3183 ...    <NA>        <NA>     0.11600     <NA>
+2024-04-21 13:37:39       DI1F38     2038-01-04       3432 ...    <NA>        <NA>     0.11600     <NA>
+2024-04-21 13:37:39       DI1F39     2039-01-03       3683 ...    <NA>        <NA>        <NA>     <NA>
 ```
 
 ### Indicators Data
 ```python
 >>> from pyield import bc
-# Fetch the SELIC target rate from the Central Bank of Brazil
->>> bc.selic_over("26-01-2025")  # No data on 26-01-2025 (sunday)
+
+# Fetch the SELIC target rates from the Central Bank of Brazil
+>>> bc.selic_over_series("26-01-2025", "30-01-2025")  # No data on 26-01-2025 (sunday)
         Date   Value
 0 2025-01-27  0.1215
 1 2025-01-28  0.1215
 2 2025-01-29  0.1215
 3 2025-01-30  0.1315
-4 2025-01-31  0.1315
-...
+
+# Fetch the SELIC target rate for a specific date
+>>> bc.selic_over("27-01-2025")
+        Date   Value
+0.1215  # 12.15%
 ```
 
 ### Projections Data
