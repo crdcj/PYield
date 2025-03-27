@@ -550,3 +550,38 @@ def duration(
     df["DCF"] = df["CashFlow"] / (1 + rate) ** df["BY"]
     np_duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
     return float(np_duration)
+
+
+def dv01(
+    settlement: DateScalar,
+    maturity: DateScalar,
+    rate: float,
+    vna: float,
+) -> float:
+    """
+    Calculate the DV01 (Dollar Value of 01) for an NTN-B in R$.
+
+    Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.
+
+    Args:
+        settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
+            or a pandas Timestamp.
+        maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
+            a pandas Timestamp.
+        rate (float): The discount rate used to calculate the present value of
+            the cash flows, which is the yield to maturity (YTM) of the NTN-B.
+
+    Returns:
+        float: The DV01 value, representing the price change for a 1 basis point
+            increase in yield.
+
+    Examples:
+        >>> from pyield import ntnb
+        >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, 4470.979474)
+        4.640875999999935
+    """
+    quotation1 = quotation(settlement, maturity, rate)
+    quotation2 = quotation(settlement, maturity, rate + 0.0001)
+    price1 = price(vna, quotation1)
+    price2 = price(vna, quotation2)
+    return price1 - price2
