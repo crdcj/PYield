@@ -137,8 +137,10 @@ def intraday_ettj() -> pd.DataFrame:
     Note:
         All rates are expressed in decimal format (e.g., 0.12 for 12%).
     """
-    text = requests.get(INTRADAY_ETTJ_URL).text
-    text_parts = text.split("ETTJ IPCA (%a.a./252)")
+
+    request_payload = {"Dt_Ref": "", "saida": "csv"}
+    response = requests.post(INTRADAY_ETTJ_URL, data=request_payload)
+    text_parts = response.text.split("ETTJ IPCA (%a.a./252)")
 
     nominal_text = text_parts[0]
     lines = nominal_text.splitlines()
