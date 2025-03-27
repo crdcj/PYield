@@ -9,6 +9,9 @@ from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
 LAST_ETTJ_URL = "https://www.anbima.com.br/informacoes/est-termo/CZ-down.asp"
+INTRADAY_ETTJ_URL = (
+    "https://www.anbima.com.br/informacoes/curvas-intradiarias/cIntra-down.asp"
+)
 
 # Anbima ETTJ data has 4 decimal places in percentage values
 # We will round to 6 decimal places to avoid floating point errors
@@ -135,3 +138,37 @@ def last_ettj() -> pd.DataFrame:
     text = _get_last_content()
     df = _convert_text_to_df(text)
     return _process_df(df)
+
+
+def intraday_ettj() -> pd.DataFrame:
+    text = requests.get(INTRADAY_ETTJ_URL).text
+    parts = text.split("ETTJ IPCA (%a.a./252)")
+
+    nominal_text = parts[0]
+    lines = nominal_text.splitlines()
+    date_str = lines[1]
+    date = pd.to_datetime(date_str, format="%d/%m/%Y")
+    df_text = "\n".join(lines[2:])
+    df_nominal = pd.read_csv(StringIO(df_text), sep=";", decimal=",", thousands=".")
+    df_nominal = df_nominal.drop(columns=["Fechamento D -1"])
+    df_nominal = df_nominal.rename(columns={"D0": "nominal_rate"})
+
+    real_text = parts[1]
+    lines = real_text.splitlines()
+    df_text = "\n".join(lines[2:])
+    df_real = pd.read_csv(StringIO(df_text), sep=";", decimal=",", thousands=".")
+    df_real = df_real.drop(columns=["Fechamento D -1"])
+    df_real = df_real.rename(columns={"D0": "real_rate"})
+
+    df = pd.merge(df_nominal, df_real, on="Vertices", how="right")
+    df = df.rename(columns={"Vertices": "vertex"})
+
+    # Divide float columns by 100 and round to 6 decimal places
+    df["real_rate"] = (df["real_rate"] / 100).round(ROUND_DIGITS)
+    df["nominal_rate"] = (df["nominal_rate"] / 100).round(ROUND_DIGITS)
+    df["implied_inflation"] = (df["nominal_rate"] + 1) / (df["real_rate"] + 1) - 1
+    df["implied_inflation"] = (df["implied_inflation"] / 100).round(ROUND_DIGITS)
+
+    df["date"] = date
+    column_order = ["date", "vertex", "nominal_rate", "real_rate", "implied_inflation"]
+    return df[column_order].copy()
