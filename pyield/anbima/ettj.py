@@ -163,7 +163,7 @@ def intraday_ettj() -> pd.DataFrame:
     df["real_rate"] = (df["real_rate"] / 100).round(ROUND_DIGITS)
     df["nominal_rate"] = (df["nominal_rate"] / 100).round(ROUND_DIGITS)
     df["implied_inflation"] = (df["nominal_rate"] + 1) / (df["real_rate"] + 1) - 1
-    df["implied_inflation"] = (df["implied_inflation"] / 100).round(ROUND_DIGITS)
+    df["implied_inflation"] = df["implied_inflation"].round(ROUND_DIGITS)
 
     df["date"] = date
     column_order = ["date", "vertex", "nominal_rate", "real_rate", "implied_inflation"]
