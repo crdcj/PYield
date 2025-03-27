@@ -4,7 +4,6 @@ from io import StringIO
 import pandas as pd
 import requests
 
-from pyield.forwards import forward_rates
 from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
@@ -79,31 +78,12 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df["nominal_rate"] = (df["nominal_rate"] / 100).round(ROUND_DIGITS)
     df["implied_inflation"] = (df["implied_inflation"] / 100).round(ROUND_DIGITS)
 
-    df["real_rate_fwd"] = forward_rates(
-        business_days=df["vertex"],
-        zero_rates=df["real_rate"],
-        groupby_dates=df["date"],
-    )
-    df["nominal_rate_fwd"] = forward_rates(
-        business_days=df["vertex"],
-        zero_rates=df["nominal_rate"],
-        groupby_dates=df["date"],
-    )
-    df["implied_inflation_fwd"] = forward_rates(
-        business_days=df["vertex"],
-        zero_rates=df["implied_inflation"],
-        groupby_dates=df["date"],
-    )
-
     column_order = [
         "date",
         "vertex",
         "nominal_rate",
         "real_rate",
         "implied_inflation",
-        "nominal_rate_fwd",
-        "real_rate_fwd",
-        "implied_inflation_fwd",
     ]
     df = df[column_order].copy()
 
@@ -116,8 +96,7 @@ def last_ettj() -> pd.DataFrame:
 
     This function fetches the most recent yield curve data published by ANBIMA,
     containing real rates (IPCA-indexed), nominal rates, and implied inflation
-    at various vertices (time points). Both spot rates and forward rates are
-    calculated and included in the returned DataFrame.
+    at various vertices (time points).
 
     Returns:
         pd.DataFrame: A DataFrame containing the latest ETTJ data.
@@ -128,9 +107,6 @@ def last_ettj() -> pd.DataFrame:
         - nominal_rate: Zero-coupon nominal interest rate
         - real_rate: Zero-coupon real interest rate (IPCA-indexed)
         - implied_inflation: Implied inflation rate (break-even inflation)
-        - nominal_rate_fwd: Forward nominal interest rate
-        - real_rate_fwd: Forward real interest rate
-        - implied_inflation_fwd: Forward implied inflation rate
 
     Note:
         All rates are expressed in decimal format (e.g., 0.12 for 12%).
@@ -141,10 +117,30 @@ def last_ettj() -> pd.DataFrame:
 
 
 def intraday_ettj() -> pd.DataFrame:
-    text = requests.get(INTRADAY_ETTJ_URL).text
-    parts = text.split("ETTJ IPCA (%a.a./252)")
+    """
+    Retrieves and processes the intraday Brazilian yield curve data from ANBIMA.
 
-    nominal_text = parts[0]
+    This function fetches the most recent intraday yield curve data published by ANBIMA,
+    containing real rates (IPCA-indexed), nominal rates, and implied inflation
+    at various vertices (time points). The curve is published at around 12:30 PM BRT.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the intraday ETTJ data.
+
+    DataFrame columns:
+        - date: Reference date of the yield curve
+        - vertex: Time point in business days
+        - nominal_rate: Zero-coupon nominal interest rate
+        - real_rate: Zero-coupon real interest rate (IPCA-indexed)
+        - implied_inflation: Implied inflation rate (break-even inflation)
+
+    Note:
+        All rates are expressed in decimal format (e.g., 0.12 for 12%).
+    """
+    text = requests.get(INTRADAY_ETTJ_URL).text
+    text_parts = text.split("ETTJ IPCA (%a.a./252)")
+
+    nominal_text = text_parts[0]
     lines = nominal_text.splitlines()
     date_str = lines[1]
     date = pd.to_datetime(date_str, format="%d/%m/%Y")
@@ -153,7 +149,7 @@ def intraday_ettj() -> pd.DataFrame:
     df_nominal = df_nominal.drop(columns=["Fechamento D -1"])
     df_nominal = df_nominal.rename(columns={"D0": "nominal_rate"})
 
-    real_text = parts[1]
+    real_text = text_parts[1]
     lines = real_text.splitlines()
     df_text = "\n".join(lines[2:])
     df_real = pd.read_csv(StringIO(df_text), sep=";", decimal=",", thousands=".")
