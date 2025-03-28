@@ -3,9 +3,9 @@ import logging
 import pandas as pd
 
 import pyield.date_converter as dc
-import pyield.forwards as tl
+import pyield.forward as fw
 from pyield import b3, bday, interpolator
-from pyield.data_cache import get_anbima_dataset, get_di_dataset
+from pyield.data_cache import get_di_dataset, get_tpf_dataset
 from pyield.date_converter import DateArray, DateScalar
 
 logger = logging.getLogger(__name__)
@@ -50,18 +50,6 @@ class DIFutures:
         4 2024-10-16     2025-03-01          0.1157      0.12343
     """
 
-    historical_dates = (
-        get_di_dataset()
-        .drop_duplicates(subset=["TradeDate"])["TradeDate"]
-        .sort_values(ascending=True)
-        .reset_index(drop=True)
-    )
-    """
-    pd.Series: Sorted series of unique trade dates available in the DI dataset.
-    It does not include the intraday date. It can be used to check for available
-    historical data.
-    """
-
     def __init__(
         self,
         date: DateScalar | None = None,
@@ -71,10 +59,6 @@ class DIFutures:
     ):
         """
         Initialize the DIFutures instance with the specified parameters.
-
-        Note:
-            The DI contract DataFrame is not loaded during initialization. It will be
-            automatically loaded the first time the df() method is accessed.
         """
         self._df = pd.DataFrame()
         self._dirty = True  # Attribute to track if the df needs updating
@@ -83,6 +67,25 @@ class DIFutures:
         self.month_start = month_start
         self.pre_filter = pre_filter
         self.all_columns = all_columns
+
+    @staticmethod
+    def _get_historical_dates():
+        """
+        Returns a sorted series of unique trade dates available in the DI dataset.
+        """
+        return (
+            get_di_dataset()
+            .drop_duplicates(subset=["TradeDate"])["TradeDate"]
+            .sort_values(ascending=True)
+            .reset_index(drop=True)
+        )
+
+    @property
+    def historical_dates(self):
+        """
+        pd.Series: Sorted series of unique trade dates available in the DI dataset.
+        """
+        return self._get_historical_dates()
 
     @property
     def df(self) -> pd.DataFrame:
@@ -129,7 +132,7 @@ class DIFutures:
 
         if self._pre_filter:
             df_pre = (
-                get_anbima_dataset()
+                get_tpf_dataset()
                 .query("BondType in ['LTN', 'NTN-F']")
                 .query("ReferenceDate == @self._date")[
                     ["ReferenceDate", "MaturityDate"]
@@ -197,7 +200,7 @@ class DIFutures:
         if df.empty:
             return pd.DataFrame()
 
-        df["ForwardRate"] = tl.forward_rates(
+        df["ForwardRate"] = fw.forwards(
             business_days=bday.count(df["TradeDate"], df["ExpirationDate"]),
             zero_rates=df["SettlementRate"],
             groupby_dates=df["TradeDate"],

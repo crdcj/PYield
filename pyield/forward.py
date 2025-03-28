@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def forward_rates(
+def forwards(
     business_days: pd.Series,
     zero_rates: pd.Series,
     groupby_dates: pd.Series | None = None,

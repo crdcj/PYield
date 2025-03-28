@@ -5,7 +5,7 @@ from urllib.error import HTTPError
 import pandas as pd
 
 from pyield import bday
-from pyield.data_cache import get_anbima_dataset
+from pyield.data_cache import get_tpf_dataset
 from pyield.date_converter import DateScalar, convert_input_dates
 from pyield.retry import default_retry
 
@@ -154,7 +154,7 @@ def tpf_data(
             - Price: The price (PU) of the bond.
     """
 
-    df = get_anbima_dataset()
+    df = get_tpf_dataset()
     date = convert_input_dates(date)
     df = df.query("ReferenceDate == @date").reset_index(drop=True)
 
