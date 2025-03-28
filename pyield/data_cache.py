@@ -4,7 +4,6 @@ Fornece acesso a dados DI e TPF com atualizações automáticas.
 """
 
 import logging
-from datetime import datetime as dt
 from functools import wraps
 from typing import Any, Dict
 from zoneinfo import ZoneInfo
@@ -19,9 +18,8 @@ logger = logging.getLogger(__name__)
 
 # Configurações
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
-UPDATE_HOUR = 21
-GIT_URL = "https://raw.githubusercontent.com/crdcj/pyield-data/main"
 
+GIT_URL = "https://raw.githubusercontent.com/crdcj/pyield-data/main"
 DI_URL = f"{GIT_URL}/data/b3_di.pkl.gz"
 TPF_URL = f"{GIT_URL}/data/anbima_tpf.pkl.gz"
 
@@ -82,14 +80,11 @@ class DataCache:
         if last_date_in_dataset is None:
             return True
 
-        bz_now = dt.now(TIMEZONE_BZ)
-        bz_hour = bz_now.hour
         bz_last_bday = bday.last_business_day().date()
-        # Atualiza se após horário de atualização e dataset não tiver o último dia útil
-        condition1 = bz_hour >= UPDATE_HOUR
-        condition2 = bz_last_bday != last_date_in_dataset
+        n_bdays = bday.count(last_date_in_dataset, bz_last_bday)
 
-        return condition1 and condition2
+        # Atualizar se houver mais de 1 dia útil de diferença
+        return n_bdays > 1  # noqa
 
     def _load_dataset(self, key: str) -> None:
         """

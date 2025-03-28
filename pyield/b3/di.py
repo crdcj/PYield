@@ -1,4 +1,6 @@
 import logging
+from datetime import datetime as dt
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -9,6 +11,8 @@ from pyield.data_cache import get_di_dataset, get_tpf_dataset
 from pyield.date_converter import DateArray, DateScalar
 
 logger = logging.getLogger(__name__)
+
+TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 
 class DIFutures:
@@ -366,10 +370,13 @@ class DIFutures:
     def date(self, value: DateScalar | None):
         if value:
             self._date = dc.convert_input_dates(value)
-            bz_today = pd.Timestamp.today(tz="America/Sao_Paulo")
-            bz_today = bz_today.normalize().tz_localize(None)
-            if self._date > bz_today:
-                raise ValueError("Trade date cannot be in the future.")
+            bz_today = dt.now(TIMEZONE_BZ).date()
+            if self._date.date() > bz_today:
+                raise ValueError(
+                    f"DI date ({self._date}) after current date {bz_today}"
+                )
+        else:
+            self._date = None
         self._dirty = True
 
     @property
