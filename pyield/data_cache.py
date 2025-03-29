@@ -4,12 +4,11 @@ Fornece acesso a dados DI e TPF com atualizações automáticas.
 """
 
 import logging
-from functools import wraps
+import threading
 from typing import Any, Dict
 from zoneinfo import ZoneInfo
 
 import pandas as pd
-import requests
 
 from pyield import bday
 
@@ -20,8 +19,8 @@ logger = logging.getLogger(__name__)
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 GIT_URL = "https://raw.githubusercontent.com/crdcj/pyield-data/main"
-DI_URL = f"{GIT_URL}/data/b3_di.pkl.gz"
-TPF_URL = f"{GIT_URL}/data/anbima_tpf.pkl.gz"
+DI_URL = f"{GIT_URL}/data/b3_di.parquet"
+TPF_URL = f"{GIT_URL}/data/anbima_tpf.parquet"
 
 # Configuração de datasets
 DATASETS_CONFIG = {
@@ -30,29 +29,13 @@ DATASETS_CONFIG = {
 }
 
 
-def singleton(cls):
-    """Decorator para implementar o padrão Singleton."""
-    instances = {}
-
-    @wraps(cls)
-    def get_instance(*args, **kwargs):
-        if cls not in instances:
-            instances[cls] = cls(*args, **kwargs)
-        return instances[cls]
-
-    return get_instance
-
-
-@singleton
 class DataCache:
-    """
-    Classe para gerenciar o cache de datasets financeiros.
-    Implementa o padrão Singleton para garantir uma única instância.
-    """
+    """Classe para gerenciar o cache dos datasets DI e TPF."""
 
     def __init__(self):
         """Inicializa o cache de dados vazio."""
         self._datasets: Dict[str, Dict[str, Any]] = {}
+        self._locks: Dict[str, threading.Lock] = {}  # Trava por dataset
 
         # Inicializar configurações de datasets
         for key, config in DATASETS_CONFIG.items():
@@ -62,6 +45,8 @@ class DataCache:
                 "df": None,
                 "last_date": None,
             }
+            # Inicializa uma trava para cada dataset
+            self._locks[key] = threading.Lock()
 
     def _should_update_dataset(self, key: str) -> bool:
         """
@@ -80,8 +65,8 @@ class DataCache:
         if last_date_in_dataset is None:
             return True
 
-        bz_last_bday = bday.last_business_day().date()
-        n_bdays = bday.count(last_date_in_dataset, bz_last_bday)
+        last_bday_in_bz = bday.last_business_day().date()
+        n_bdays = bday.count(last_date_in_dataset, last_bday_in_bz)
 
         # Atualizar se houver mais de 1 dia útil de diferença
         return n_bdays > 1  # noqa
@@ -94,21 +79,19 @@ class DataCache:
             key: Identificador do dataset
 
         Raises:
-            requests.RequestException: Se ocorrer erro ao fazer download dos dados
-            ValueError: Se o formato dos dados for inválido
+            ValueError: Se o dataset não estiver configurado
+            Exception: Se ocorrer erro ao carregar os dados
         """
         dataset_info = self._datasets[key]
 
         try:
             logger.info(f"Carregando dataset {key} de {dataset_info['url']}")
-            df = pd.read_pickle(dataset_info["url"])
+            df = pd.read_parquet(dataset_info["url"])
 
             # Validar se o DataFrame tem a coluna de data esperada
             date_column = dataset_info["date_column"]
             if date_column not in df.columns:
-                raise ValueError(
-                    f"Coluna de data '{date_column}' não encontrada no dataset '{key}'"
-                )
+                raise ValueError(f"Coluna '{date_column}' não encontrada em '{key}'")
 
             dataset_info["df"] = df
             dataset_info["last_date"] = df[date_column].max().date()
@@ -117,12 +100,12 @@ class DataCache:
                 f"Dataset {key} atualizado. Última data: {dataset_info['last_date']}"
             )
 
-        except requests.RequestException as e:
-            logger.error(f"Erro ao fazer download do dataset {key}: {str(e)}")
-            raise
         except Exception as e:
-            logger.error(f"Erro ao processar dataset {key}: {str(e)}")
-            raise
+            logger.error(f"Erro ao carregar/processar dataset {key}: {str(e)}")
+            # Considere invalidar o cache em caso de erro
+            dataset_info["df"] = None
+            dataset_info["last_date"] = None
+            raise  # Re-lança para o chamador saber do erro
 
     def get_dataframe(self, key: str) -> pd.DataFrame:
         """
@@ -144,21 +127,30 @@ class DataCache:
             logger.error(f"Dataset '{key}' não está configurado")
             raise ValueError(f"Dataset '{key}' não está configurado")
 
-        try:
-            if dataset_info["df"] is None or self._should_update_dataset(key):
-                self._load_dataset(key)
+        lock = self._locks[key]
+        with lock:  # Garante thread safety
+            try:
+                # Verifica se precisa carregar/atualizar DENTRO do lock
+                if dataset_info["df"] is None or self._should_update_dataset(key):
+                    self._load_dataset(key)
+                # Retorna cópia DENTRO do lock para segurança
+                # (ou fora se a cópia for *muito* lenta e o risco for aceitável)
+                if dataset_info["df"] is not None:
+                    return dataset_info["df"].copy()
+                else:
+                    # Se _load_dataset falhou e deixou df como None
+                    msg = f"Dataset {key} é None após tentativa de carregamento."
+                    logger.error(msg)
+                    # O erro original de _load_dataset (ou outro) será propagado
+                    raise RuntimeError(msg)
 
-            return dataset_info["df"].copy()
-        except Exception as e:
-            logger.error(f"Erro ao obter dataset {key}: {str(e)}")
-            raise e
+            except Exception as e:
+                logger.error(f"Erro final ao tentar obter dataframe {key}: {str(e)}")
+                # O erro original de _load_dataset (ou outro) será propagado
+                raise
 
 
-# Instância única da classe para uso interno da biblioteca
-_data_cache = DataCache()
-
-
-def get_di_dataset() -> pd.DataFrame:
+def get_di_dataset(cache: DataCache) -> pd.DataFrame:
     """
     Obtém o dataset de DI (Depósito Interfinanceiro).
 
@@ -168,10 +160,10 @@ def get_di_dataset() -> pd.DataFrame:
     Raises:
         Exception: Se ocorrer erro ao carregar os dados
     """
-    return _data_cache.get_dataframe("di")
+    return cache.get_dataframe("di")
 
 
-def get_tpf_dataset() -> pd.DataFrame:
+def get_tpf_dataset(cache: DataCache) -> pd.DataFrame:
     """
     Obtém o dataset de TPF (Títulos Públicos Federais).
 
@@ -181,4 +173,4 @@ def get_tpf_dataset() -> pd.DataFrame:
     Raises:
         Exception: Se ocorrer erro ao carregar os dados
     """
-    return _data_cache.get_dataframe("tpf")
+    return cache.get_dataframe("tpf")
