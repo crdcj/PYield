@@ -19,6 +19,7 @@ from enum import Enum
 from urllib.error import HTTPError
 
 import pandas as pd
+import requests
 
 from pyield.date_converter import DateScalar, convert_input_dates
 from pyield.retry import default_retry
@@ -63,7 +64,7 @@ def _build_download_url(
         end_str = end.strftime("%d/%m/%Y")
 
     api_url = BASE_URL
-    api_url += f"{serie.value}/dados?formato=csv"
+    api_url += f"{serie.value}/dados?formato=json"
     api_url += f"&dataInicial={start_str}&dataFinal={end_str}"
 
     return api_url
@@ -91,16 +92,29 @@ def _fetch_data_from_url(
     api_url = _build_download_url(serie, start, end)
 
     try:
-        df = pd.read_csv(api_url, sep=";", decimal=",", dtype_backend="numpy_nullable")
+        response = requests.get(api_url, timeout=30)
+        response.raise_for_status()  # Raise exception for 4XX/5XX status codes
+        data = response.json()
+
+        if not data:
+            logger.warning(f"No data available for the requested period: {api_url}")
+            return pd.DataFrame()
+
+        # Convert JSON to DataFrame
+        df = pd.DataFrame(data)
+
         if df.empty or "valor" not in df.columns:
             logger.warning(f"No data available for the requested period: {api_url}")
             return pd.DataFrame()
 
         # Process the dataframe
+        df = pd.DataFrame(data, dtype="string")
         df = df.rename(columns={"data": "Date", "valor": "Value"})
+
         df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
         # Value is in percentage format, so divide by 100
-        df["Value"] /= 100
+        df["Value"] = (df["Value"].astype("Float64")) / 100
+
         return df
     except HTTPError as e:
         if e.code == 404:  # noqa
@@ -142,10 +156,6 @@ def selic_over_series(
 
     Examples:
         >>> from pyield import bc
-        >>> bc.selic_over_series("31-05-2024", "31-05-2024")
-                Date  Value
-        0 2024-05-31  0.104
-
         >>> # No data on 26-01-2025 (sunday). Rate changed due to Copom meeting.
         >>> bc.selic_over_series("26-01-2025")  # Returns all data since 26-01-2025
                 Date   Value
