@@ -110,11 +110,11 @@ class DIFutures:
 
     def _update_df(self) -> pd.DataFrame:
         """Retrieve DI contract DataFrame for the initialized trade date."""
-        if self._date is None:
+        if self.date is None:
             logger.info("No date specified. Returning empty DataFrame.")
             return pd.DataFrame()
         # Return an empty DataFrame if the trade date is a holiday
-        if not bday.is_business_day(self._date):
+        if not bday.is_business_day(self.date):
             logger.warning("Specified date is not a business day.")
             logger.warning("Returning empty DataFrame.")
             return pd.DataFrame()
@@ -122,13 +122,13 @@ class DIFutures:
         # Get historical data
         df = (
             get_cached_dataset("DI")
-            .query("TradeDate == @self._date")
+            .query("TradeDate == @self.date")
             .reset_index(drop=True)
         )
 
         if df.empty:
             logger.info("No historical data found. Trying real-time data.")
-            df = b3.futures(contract_code="DI1", date=self._date)
+            df = b3.futures(contract_code="DI1", date=self.date)
 
         if df.empty:
             logger.warning("No DI Futures data found for the specified date.")
@@ -138,13 +138,11 @@ class DIFutures:
         if "DaysToExpiration" in df.columns:
             df.drop(columns=["DaysToExpiration"], inplace=True)
 
-        if self._pre_filter:
+        if self.pre_filter:
             df_pre = (
                 get_cached_dataset("TPF")
                 .query("BondType in ['LTN', 'NTN-F']")
-                .query("ReferenceDate == @self._date")[
-                    ["ReferenceDate", "MaturityDate"]
-                ]
+                .query("ReferenceDate == @self.date")[["ReferenceDate", "MaturityDate"]]
                 .drop_duplicates()
                 .reset_index(drop=True)
             )
@@ -159,12 +157,12 @@ class DIFutures:
 
             df = df.merge(df_pre, how="inner")
 
-        if self._month_start:
+        if self.month_start:
             df["ExpirationDate"] = (
                 df["ExpirationDate"].dt.to_period("M").dt.to_timestamp()
             )
 
-        if not self._all_columns:
+        if not self.all_columns:
             cols = [
                 "TradeDate",
                 "TickerSymbol",
@@ -320,8 +318,10 @@ class DIFutures:
     ) -> float:
         """Retrieve the DI rate for a specified expiration date."""
         expiration = dc.convert_input_dates(expiration)
+        if not self.date:
+            return float("NaN")
 
-        if self._month_start:
+        if self.month_start:
             # Force the expiration date to be the start of the month
             expiration = expiration.to_period("M").to_timestamp()
         else:
@@ -353,11 +353,11 @@ class DIFutures:
             known_rates=df["SettlementRate"],
             extrapolate=extrapolate,
         )
-        bd = bday.count(self._date, expiration)
+        bd = bday.count(self.date, expiration)
         return ff_interp(bd)
 
     @property
-    def date(self) -> pd.Timestamp:
+    def date(self) -> pd.Timestamp | None:
         """
         The trade date to retrieve the DI contract data.
 
@@ -367,7 +367,6 @@ class DIFutures:
         Returns:
             pd.Timestamp: The trade date set for this instance.
         """
-
         return self._date
 
     @date.setter

@@ -8,7 +8,6 @@ import pyield.date_converter as dc
 import pyield.holidays as hl
 from pyield.date_converter import DateArray, DateScalar
 
-# Timezone for Brazil
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 IntegerScalar = int | np.integer
