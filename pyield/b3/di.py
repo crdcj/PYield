@@ -7,7 +7,7 @@ import pandas as pd
 import pyield.date_converter as dc
 import pyield.forward as fw
 from pyield import b3, bday, interpolator
-from pyield.data_cache import get_di_dataset, get_tpf_dataset
+from pyield.data_cache import get_cached_dataset
 from pyield.date_converter import DateArray, DateScalar
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ class DIFutures:
         Returns a sorted series of unique trade dates available in the DI dataset.
         """
         return (
-            get_di_dataset()
+            get_cached_dataset("DI")
             .drop_duplicates(subset=["TradeDate"])["TradeDate"]
             .sort_values(ascending=True)
             .reset_index(drop=True)
@@ -120,7 +120,11 @@ class DIFutures:
             return pd.DataFrame()
 
         # Get historical data
-        df = get_di_dataset().query("TradeDate == @self._date").reset_index(drop=True)
+        df = (
+            get_cached_dataset("DI")
+            .query("TradeDate == @self._date")
+            .reset_index(drop=True)
+        )
 
         if df.empty:
             logger.info("No historical data found. Trying real-time data.")
@@ -136,7 +140,7 @@ class DIFutures:
 
         if self._pre_filter:
             df_pre = (
-                get_tpf_dataset()
+                get_cached_dataset("TPF")
                 .query("BondType in ['LTN', 'NTN-F']")
                 .query("ReferenceDate == @self._date")[
                     ["ReferenceDate", "MaturityDate"]
@@ -273,7 +277,7 @@ class DIFutures:
 
         # Load DI rates dataset filtered by the provided reference dates
         dfr = (
-            get_di_dataset()
+            get_cached_dataset("DI")
             .query("TradeDate in @dfi['tdate'].unique()")
             .reset_index(drop=True)
         )
