@@ -71,11 +71,6 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
-        
-        <a href="#pyield.forwards.forward_rates" class="md-skip">
-          Pular para conteúdo
-        </a>
-      
     </div>
     <div data-md-component="announce">
       
@@ -752,18 +747,6 @@
       
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Forwards
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -774,32 +757,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Índice">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Índice
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#pyield.forwards.forward_rates" class="md-nav__link">
-    <span class="md-ellipsis">
-      forward_rates
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -834,41 +791,12 @@
 
   <h1>Forwards</h1>
 
-<div class="doc doc-object doc-module">
+<div class="doc doc-object doc-function">
 
 
 
 
     <div class="doc doc-contents first">
-
-
-
-
-
-
-
-
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="pyield.forwards.forward_rates" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">forward_rates</span><span class="p">(</span><span class="n">business_days</span><span class="p">,</span> <span class="n">zero_rates</span><span class="p">,</span> <span class="n">groupby_dates</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
-
-</h2>
-
-
-    <div class="doc doc-contents ">
 
         <p>Calculates forward rates from zero rates.</p>
 
@@ -962,7 +890,7 @@ corresponding zero rate.</p>
 
 
             <details class="quote">
-              <summary>Source code in <code>pyield/forwards.py</code></summary>
+              <summary>Source code in <code>pyield/forward.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
 <span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
 <span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
@@ -1015,7 +943,7 @@ corresponding zero rate.</p>
 <span class="normal"><a href="#__codelineno-0-53">53</a></span>
 <span class="normal"><a href="#__codelineno-0-54">54</a></span>
 <span class="normal"><a href="#__codelineno-0-55">55</a></span>
-<span class="normal"><a href="#__codelineno-0-56">56</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">forward_rates</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-56">56</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">forwards</span><span class="p">(</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a>    <span class="n">business_days</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a>    <span class="n">zero_rates</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a>    <span class="n">groupby_dates</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1070,14 +998,6 @@ corresponding zero rate.</p>
 </span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a>    <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;fwd_rate&quot;</span><span class="p">]</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
-    </div>
-
-</div>
-
-
-
-  </div>
-
     </div>
 
 </div>
