@@ -61,7 +61,12 @@ def offset(
 
     Args:
         dates (DateScalar | DateArray): The date(s) to offset. Can be a scalar date type
-            or a collection of dates. The holiday list is determined based on this date.
+            or a collection of dates. **Transition Handling:** Due to a change in
+            Brazilian national holidays effective from 2023-12-26 (`TRANSITION_DATE`),
+            this function automatically selects the appropriate holiday list
+            (old or new) based on **each individual date** in the `dates` input.
+            Dates before 2023-12-26 use the old list for their offset calculation,
+            while dates on or after 2023-12-26 use the new list.
         offset (int | Series | np.ndarray | list[int] | tuple[int], optional):
             The number of business days to offset the dates. Positive for future dates,
             negative for past dates. Zero will return the same date if it's a business
@@ -141,37 +146,40 @@ def offset(
 
     if isinstance(dates_pd, pd.Series):
         # Divide the input in order to apply the correct holiday list
-        dates1 = dates_pd[dates_pd < br_holidays.TRANSITION_DATE]
-        dates2 = dates_pd[dates_pd >= br_holidays.TRANSITION_DATE]
-        dates3 = dates_pd[dates_pd.isna()]
+        old_dates = dates_pd[dates_pd < br_holidays.TRANSITION_DATE]
+        new_dates = dates_pd[dates_pd >= br_holidays.TRANSITION_DATE]
+        # nat = NaT = Not a Time = missing value
+        nat_dates = dates_pd[dates_pd.isna()]
 
-        offsetted_dates1 = np.busday_offset(
-            dc.to_numpy_date_type(dates1),
+        offsetted_old_dates = np.busday_offset(
+            dc.to_numpy_date_type(old_dates),
             offsets=offset,
             roll=roll,
             holidays=OLD_HOLIDAYS_ARRAY,
         )
 
-        offsetted_dates2 = np.busday_offset(
-            dc.to_numpy_date_type(dates2),
+        offsetted_new_dates = np.busday_offset(
+            dc.to_numpy_date_type(new_dates),
             offsets=offset,
             roll=roll,
             holidays=NEW_HOLIDAYS_ARRAY,
         )
 
         # Convert from numpy.datetime64 to pandas.Timestamp
-        offsetted_dates1 = pd.to_datetime(offsetted_dates1)
-        offsetted_dates2 = pd.to_datetime(offsetted_dates2)
+        offsetted_old_dates = pd.to_datetime(offsetted_old_dates)
+        offsetted_new_dates = pd.to_datetime(offsetted_new_dates)
 
         # 'pd.to_datetime' does not necessarily return datetime64[ns] Series
-        offsetted_dates1 = pd.Series(offsetted_dates1).astype("datetime64[ns]")
-        offsetted_dates2 = pd.Series(offsetted_dates2).astype("datetime64[ns]")
+        offsetted_old_dates = pd.Series(offsetted_old_dates).astype("datetime64[ns]")
+        offsetted_new_dates = pd.Series(offsetted_new_dates).astype("datetime64[ns]")
 
         # Use old index to rejoin the results
-        offsetted_dates1.index = dates1.index
-        offsetted_dates2.index = dates2.index
+        offsetted_old_dates.index = old_dates.index
+        offsetted_new_dates.index = new_dates.index
 
-        offsetted_dates = pd.concat([offsetted_dates1, offsetted_dates2, dates3])
+        offsetted_dates = pd.concat(
+            [offsetted_old_dates, offsetted_new_dates, nat_dates]
+        )
 
         # Reorder the result to match the original input order
         return offsetted_dates.sort_index()
@@ -223,10 +231,13 @@ def count(
     applies to the calculation.
 
     Args:
-        start (DateScalar | DateArray): The start date(s) for counting. The holiday list
-            is selected based on this date.
-        end (DateScalar | DateArray): The end date(s) for counting, which
-            is excluded from the count themselves.
+        start (DateScalar | DateArray): The start date(s) for counting (inclusive).
+            **Transition Handling:** The holiday list used for the *entire* counting
+            period between `start` and `end` is determined solely by the `start` date's
+            relation to the holiday transition date (2023-12-26). If `start` is before
+            this date, the old holiday list is used for the whole count, even if `end`
+            is after it. If `start` is on or after this date, new holiday list is used.
+        end (DateScalar | DateArray): The end date(s) for counting (exclusive).
 
     Returns:
         int | pd.Series: Returns an integer if `start` and `end` are single dates,
@@ -234,20 +245,19 @@ def count(
 
     Notes:
         - This function is a wrapper around `numpy.busday_count`, adapted to work
-          directly with various Pandas and Numpy date formats.
+            directly with various Pandas and Numpy date formats.
         - It supports flexible date inputs, including single dates, lists, Series, and
-          more, for both `start` and `end` parameters.
+            more, for both `start` and `end` parameters.
         - The return type depends on the input types: single dates return an int, while
-          arrays of dates return a pd.Series with the count for each date range.
+            arrays of dates return a pd.Series with the count for each date range.
         - The `start` date determines the holiday list, ensuring consistency with the
-          applicable calendar at the time.
+            applicable calendar at the time.
         - See `numpy.busday_count` documentation for more details on how holidays are
-          handled and how business day counts are calculated:
-          https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
+            handled and how business day counts are calculated:
+            https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
 
     Examples:
         >>> from pyield import bday
-
         >>> bday.count("15-12-2023", "01-01-2024")
         10
 
@@ -333,7 +343,7 @@ def generate(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
     inclusive: Literal["both", "neither", "left", "right"] = "both",
-    holiday_option: Literal["old", "new", "infer"] = "infer",
+    holiday_option: Literal["old", "new", "infer"] = "new",
 ) -> pd.Series:
     """
     Generates a Series of business days between a `start` and `end` date, considering
@@ -349,9 +359,14 @@ def generate(
             Determines which of the start and end dates are included in the result.
             Valid options are 'both', 'neither', 'left', 'right'. Defaults to 'both'.
         holiday_option (Literal["old", "new", "infer"], optional):
-            Specifies the list of holidays to consider. 'old' or 'new' refer to
-            predefined lists, 'infer' selects the list based on the most recent date in
-            the range. Defaults to "infer".
+            Specifies the list of holidays to consider. Defaults to "new".
+            - **'old'**: Uses the holiday list effective *before* the transition date
+            of 2023-12-26.
+            - **'new'**: Uses the holiday list effective *on and after* the transition
+            date of 2023-12-26.
+            - **'infer'**: Automatically selects the holiday list ('old' or 'new') based
+            on the `start` date relative to the transition date (2023-12-26). If `start`
+            is before the transition, 'old' is used; otherwise, 'new' is used.
 
     Returns:
         pd.Series: A Series representing a range of business days between the specified
@@ -383,7 +398,7 @@ def generate(
     else:
         end_pd = pd.Timestamp.today()
 
-    holidays_list = br_holidays.get_holiday_series(
+    applicable_holidays = br_holidays.get_holiday_series(
         dates=start_pd, holiday_option=holiday_option
     ).to_list()
 
@@ -393,8 +408,9 @@ def generate(
         end=end_pd,
         freq="C",
         inclusive=inclusive,
-        holidays=holidays_list,
+        holidays=applicable_holidays,
     )
+
     return pd.Series(result_dti.values)
 
 
@@ -412,9 +428,14 @@ def is_business_day(date: DateScalar) -> bool:
         >>> from pyield import bday
         >>> bday.is_business_day("25-12-2023")  # Christmas
         False
+
+    Notes:
+        - This function correctly identifies business days according to the applicable
+        Brazilian holiday list (before or after the 2023-12-26 transition), based
+        on the input `date`.
     """
     date_pd = dc.convert_input_dates(date)
-    shifted_date = offset(date_pd, 0)  # Shift the date if it is not a bus. day
+    shifted_date = offset(date_pd, 0)  # Shift the date if it is not a business day
     return date_pd == shifted_date
 
 
@@ -426,6 +447,11 @@ def last_business_day() -> pd.Timestamp:
 
     Returns:
         pd.Timestamp: The last business day in Brazil.
+
+    Notes:
+        - The determination of the last business day considers the correct Brazilian
+        holiday list (before or after the 2023-12-26 transition) applicable to
+        the current date.
 
     """
     # Get the current date in Brazil without timezone information
