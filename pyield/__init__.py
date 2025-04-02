@@ -4,7 +4,7 @@ from pyield import anbima, b3, bc, bday, ibge
 from pyield.__about__ import __version__
 from pyield.b3 import futures
 from pyield.b3.di import DIFutures
-from pyield.forward import forwards
+from pyield.fwd import forward, forwards
 from pyield.interpolator import Interpolator
 from pyield.tpf import lft, ltn, ntnb, ntnc, ntnf
 
@@ -14,6 +14,7 @@ __all__ = [
     "bday",
     "DIFutures",
     "forwards",
+    "forward",
     "futures",
     "ibge",
     "Interpolator",

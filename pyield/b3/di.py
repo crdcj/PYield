@@ -5,8 +5,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 import pyield.date_converter as dc
-import pyield.forward as fw
-from pyield import b3, bday, interpolator
+from pyield import b3, bday, fwd, interpolator
 from pyield.data_cache import get_cached_dataset
 from pyield.date_converter import DateArray, DateScalar
 
@@ -206,9 +205,9 @@ class DIFutures:
         if df.empty:
             return pd.DataFrame()
 
-        df["ForwardRate"] = fw.forwards(
-            business_days=bday.count(df["TradeDate"], df["ExpirationDate"]),
-            zero_rates=df["SettlementRate"],
+        df["ForwardRate"] = fwd.forwards(
+            bdays=bday.count(df["TradeDate"], df["ExpirationDate"]),
+            rates=df["SettlementRate"],
             groupby_dates=df["TradeDate"],
         )
 

@@ -18,7 +18,7 @@ nav:
       - DI Data: di.md
       - B3 Data: b3.md
       - Futures Data: futures.md      
-      - Forwards: forwards.md  
+      - Forwards: fwd.md  
 
 theme:
   name: 'material'
