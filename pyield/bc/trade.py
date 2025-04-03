@@ -101,4 +101,7 @@ def tpf_trades(target_date: DateScalar) -> pd.DataFrame:
     url = _build_download_url(target_date)
     df = _fetch_data_from_url(url)
     df = df.rename(columns=COLUMN_MAPPING)
+
+    # TradeValue are empty in the original BCB file, so we calculate it
+    df["TradeValue"] = (df["TradeQuantity"] * df["AvgPrice"]).round(2)
     return df
