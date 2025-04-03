@@ -56,8 +56,8 @@ def forwards(
         dtype: Float64
     """
     # Reset Series indexes to avoid misalignment issues during calculations
-    bdays = bdays.reset_index(drop=True)
-    rates = rates.reset_index(drop=True)
+    bdays = bdays.reset_index(drop=True).astype("Int64")
+    rates = rates.reset_index(drop=True).astype("Float64")
     if groupby_dates is not None:
         groupby_dates = groupby_dates.reset_index(drop=True)
 
@@ -91,8 +91,8 @@ def forwards(
     # Set the first forward rate of each group to the zero rate
     df.loc[first_indices, "f1_2"] = df.loc[first_indices, "r2"]
 
-    # Return the forward rates as a Series converting to Float64 to handle NaN values
-    f1_2 = df["f1_2"].astype("Float64")
+    # Return the forward rates as a Series
+    f1_2 = df["f1_2"]
     f1_2.name = None
     return f1_2
 
