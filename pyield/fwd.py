@@ -7,33 +7,53 @@ def forwards(
     groupby_dates: pd.Series | None = None,
 ) -> pd.Series:
     """
-    Calculates forward rates from zero rates using the formula:
-        f₁→₂ = ((1 + r₂)^(du₂/252) / (1 + r₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
+    Calcula taxas a termo (forward rates) a partir de taxas zero (spot rates).
 
-    Since du/252 = t, the formula can be simplified to:
-        f₁→₂ = ((1 + r₂)^t₂ / (1 + r₁)^t₁)^(1/(t₂ - t₁)) - 1
+    Utiliza a fórmula:
+        f_{1→2} = ((1 + r₂)^(du₂/252) / (1 + r₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
 
-    where:
-        - r₁ is the zero rate for the previous period
-        - r₂ is the zero rate for the current period
-        - t₁ is the time in years for the previous period
-        - t₂ is the time in years for the current period
+    Como du/252 = t (tempo em anos úteis), a fórmula pode ser simplificada para:
+        f_{1→2} = ((1 + r₂)^t₂ / (1 + r₁)^t₁)^(1/(t₂ - t₁)) - 1
 
-    The first forward rate is set to the corresponding zero rate.
-    This function can also handle grouping of the input data based on the
-    `groupby_dates` parameter. If provided, the calculations will be performed
-    separately for each group, allowing for different forward rate calculations
-    based on the grouping criteria.
+    Onde:
+        - r₁ é a taxa zero para o vértice anterior.
+        - r₂ é a taxa zero para o vértice atual.
+        - t₁ é o prazo em anos para o vértice anterior (calculado como du₁/252).
+        - t₂ é o prazo em anos para o vértice atual (calculado como du₂/252).
+        - A constante 252 representa o número de dias úteis no ano.
+
+    A primeira taxa a termo de cada sequência (ou grupo) é definida como a
+    taxa zero correspondente (f_{0→1} = r₁).
+
+    A função lida internamente com o alinhamento dos índices das Séries de
+    entrada através de `reset_index`. Os cálculos são realizados após ordenar
+    os dados pelos prazos (`bdays`) dentro de cada grupo definido por
+    `groupby_dates` (ou como um único grupo se `groupby_dates` não for
+    fornecido), garantindo a ordem cronológica correta para a fórmula.
+
+    Valores NaN nas taxas ou prazos de entrada resultarão em NaN na saída,
+    exceto para o primeiro ponto de cada grupo, que é tratado separadamente.
 
     Args:
-        bdays (pd.Series): Number of business days for each zero rate.
-        rates (pd.Series): Zero rates corresponding to the business days.
-        groupby_dates (pd.Series | None, optional): Optional grouping criteria to
-            segment calculations. If not provided, calculations will not be grouped.
+        bdays (pd.Series): Número de dias úteis para cada taxa zero.
+        rates (pd.Series): Taxas zero correspondentes aos dias úteis.
+        groupby_dates (pd.Series | None, optional): Critério de agrupamento
+            opcional para segmentar os cálculos (ex: por data de referência).
+            Se None, todos os dados são tratados como um único grupo.
+            Default None.
 
     Returns:
-        pd.Series: Series of calculated forward rates with the first rate set to the
-            corresponding zero rate.
+        pd.Series: Série contendo as taxas a termo calculadas (tipo Float64).
+            A primeira taxa de cada grupo corresponde à taxa zero inicial.
+
+    Example:
+        >>> bdays = pd.Series([10, 20, 30])
+        >>> rates = pd.Series([0.05, 0.06, 0.07])
+        >>> yd.forwards(bdays, rates)
+        0        0.05
+        1    0.070095
+        2    0.090284
+        dtype: Float64
     """
     # Reset Series indexes to avoid misalignment issues during calculations
     bdays = bdays.reset_index(drop=True)
@@ -51,10 +71,10 @@ def forwards(
     else:
         df["groupby_date"] = 0  # Dummy value to group the DataFrame
 
-    # Sort by the groupby_dates and bd columns to ensure proper chronological order
+    # Sort by the groupby_dates and t2 columns to ensure proper chronological order
     df.sort_values(by=["groupby_date", "t2"], inplace=True)
 
-    # GetCalculate the next zero rate and business day for each group
+    # Calculate the next zero rate and business day for each group
     df["r1"] = df.groupby("groupby_date")["r2"].shift(1)
     df["t1"] = df.groupby("groupby_date")["t2"].shift(1)
 
@@ -72,7 +92,9 @@ def forwards(
     df.loc[first_indices, "f1_2"] = df.loc[first_indices, "r2"]
 
     # Return the forward rates as a Series converting to Float64 to handle NaN values
-    return df["f1_2"].astype("Float64")
+    f1_2 = df["f1_2"].astype("Float64")
+    f1_2.name = None
+    return f1_2
 
 
 def forward(
@@ -82,34 +104,52 @@ def forward(
     rate2: float,
 ) -> float:
     """
-    Calculates the forward rate between two business days using the formula:
-        f₁→₂ = ((1 + r₂)^(du₂/252) / (1 + r₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
+    Calcula a taxa a termo (forward rate) entre dois prazos (dias úteis).
 
-    where:
-        - r₁ is the zero rate for the previous period
-        - r₂ is the zero rate for the current period
-        - du₁ is the number of business days until the first date
-        - du₂ is the number of business days until the second date
+    Utiliza a fórmula:
+        f_{1→2} = ((1 + r₂)^(du₂/252) / (1 + r₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
+
+    Onde:
+        - r₁ é a taxa zero para o primeiro prazo (du₁).
+        - r₂ é a taxa zero para o segundo prazo (du₂).
+        - du₁ é o número de dias úteis até a primeira data.
+        - du₂ é o número de dias úteis até a segunda data.
+        - A constante 252 representa o número de dias úteis no ano.
 
     Args:
-        bday1 (int): Number of business days until the first date.
-        bday2 (int): Number of business days until the second date.
-        rate1 (float): Zero rate for the first date.
-        rate2 (float): Zero rate for the second date.
+        bday1 (int): Número de dias úteis do primeiro ponto (prazo menor).
+        bday2 (int): Número de dias úteis do segundo ponto (prazo maior).
+        rate1 (float): Taxa zero (spot rate) para o prazo `bday1`.
+        rate2 (float): Taxa zero (spot rate) para o prazo `bday2`.
 
     Returns:
-        float: The calculated forward rate.
+        float: A taxa a termo calculada entre `bday1` e `bday2`. Retorna
+            `float('nan')` se `bday2 <= bday1` ou se qualquer um dos
+            argumentos de entrada for NaN.
 
     Example:
-        >>> forward(10, 20, 0.05, 0.06)
+        >>> # Exemplo correto: bday2 > bday1
+        >>> yd.forward(10, 20, 0.05, 0.06)
         0.0700952380952371
+        >>> # Exemplo inválido: bday2 <= bday1
+        >>> yd.forward(20, 10, 0.06, 0.05)
+        nan
+        >>> yd.forward(10, 10, 0.05, 0.05)
+        nan
+        >>> # Exemplo com NaN na entrada
+        >>> yd.forward(10, 20, 0.05, pd.NA)
+        nan
+
+    Note:
+        É fundamental que `bday2` seja estritamente maior que `bday1` para que
+        o cálculo da taxa a termo seja matematicamente válido.
     """
     if pd.isna(rate1) or pd.isna(rate2) or pd.isna(bday1) or pd.isna(bday2):
         # If any of the inputs are NaN, return NaN
         return float("nan")
 
     # Handle the case where the two dates are the same
-    if bday1 == bday2:
+    if bday2 <= bday1:
         return float("nan")
 
     # Convert business days to business years

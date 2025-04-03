@@ -1,3 +1,4 @@
+import pandas
 import pytest
 
 import pyield
@@ -6,6 +7,7 @@ import pyield
 @pytest.fixture(autouse=True)
 def add_np(doctest_namespace):
     doctest_namespace["yd"] = pyield
+    doctest_namespace["pd"] = pandas
 
 
 def pytest_configure(config):
