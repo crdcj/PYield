@@ -14,11 +14,11 @@ nav:
       - LTN: ltn.md
       - NTN-B: ntnb.md
       - NTN-C: ntnc.md
-      - NTN-F: ntnf.md      
+      - NTN-F: ntnf.md
       - DI Data: di.md
       - B3 Data: b3.md
       - Futures Data: futures.md      
-      - Forwards: fwd.md  
+      - Forwards: forwards.md  
 
 theme:
   name: 'material'
