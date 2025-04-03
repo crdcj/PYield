@@ -10,10 +10,10 @@ def forwards(
     Calcula taxas a termo (forward rates) a partir de taxas zero (spot rates).
 
     Utiliza a fórmula:
-        f_{1→2} = ((1 + r₂)^(du₂/252) / (1 + r₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
+        f₁→₂ = ((1 + r₂)^(du₂/252) / (1 + r₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
 
     Como du/252 = t (tempo em anos úteis), a fórmula pode ser simplificada para:
-        f_{1→2} = ((1 + r₂)^t₂ / (1 + r₁)^t₁)^(1/(t₂ - t₁)) - 1
+        f₁→₂ = ((1 + r₂)^t₂ / (1 + r₁)^t₁)^(1/(t₂ - t₁)) - 1
 
     Onde:
         - r₁ é a taxa zero para o vértice anterior.
@@ -23,7 +23,8 @@ def forwards(
         - A constante 252 representa o número de dias úteis no ano.
 
     A primeira taxa a termo de cada sequência (ou grupo) é definida como a
-    taxa zero correspondente (f_{0→1} = r₁).
+    taxa zero desse primeiro vértice (f₁→₂ = r₂), dado que não existe um vértice
+    anterior (r₁) para se calcular a taxa a termo do primeiro ponto.
 
     A função lida internamente com o alinhamento dos índices das Séries de
     entrada através de `reset_index`. Os cálculos são realizados após ordenar
@@ -107,7 +108,7 @@ def forward(
     Calcula a taxa a termo (forward rate) entre dois prazos (dias úteis).
 
     Utiliza a fórmula:
-        f_{1→2} = ((1 + r₂)^(du₂/252) / (1 + r₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
+        f₁→₂ = ((1 + r₂)^(du₂/252) / (1 + r₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
 
     Onde:
         - r₁ é a taxa zero para o primeiro prazo (du₁).
@@ -115,6 +116,9 @@ def forward(
         - du₁ é o número de dias úteis até a primeira data.
         - du₂ é o número de dias úteis até a segunda data.
         - A constante 252 representa o número de dias úteis no ano.
+
+    Como du/252 = t (tempo em anos úteis), a fórmula pode ser simplificada para:
+        f₁→₂ = ((1 + r₂)^t₂ / (1 + r₁)^t₁)^(1/(t₂ - t₁)) - 1
 
     Args:
         bday1 (int): Número de dias úteis do primeiro ponto (prazo menor).
