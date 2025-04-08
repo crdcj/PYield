@@ -6,34 +6,43 @@ def forwards(
     rates: pd.Series,
     groupby_dates: pd.Series | None = None,
 ) -> pd.Series:
-    """
+    r"""
     Calcula taxas a termo (forward rates) a partir de taxas zero (spot rates).
 
-    Utiliza a fórmula:
-        f₁→₂ = ((1 + r₂)^(du₂/252) / (1 + r₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
+    A taxa a termo no vértice 'n' é definida como:
+        fwdₙ = fwdₙ₋₁→ₙ (a taxa a termo de n-1 para n)
+
+    A fórmula utilizada é:
+        fwdₙ = ((1 + rₙ)^(duₙ/252) / (1 + rₙ₋₁)^(duₙ₋₁/252))^(252/(duₙ - duₙ₋₁)) - 1
 
     Como du/252 = t (tempo em anos úteis), a fórmula pode ser simplificada para:
-        f₁→₂ = ((1 + r₂)^t₂ / (1 + r₁)^t₁)^(1/(t₂ - t₁)) - 1
+
+        fwdₙ = ((1 + rₙ)^tₙ / (1 + rₙ₋₁)^tₙ₋₁)^(1/(tₙ - tₙ₋₁)) - 1
+
+    Em LaTeX, a fórmula é representada como:
+    $$
+    fwd_{n} = \left( \frac{(1 + r_n)^{t_n}}{(1 + r_{n-1})^{t_{n-1}}} \right)^{\frac{1}{t_n - t_{n-1}}} - 1
+    $$
 
     Onde:
-        - r₁ é a taxa zero para o vértice anterior.
-        - r₂ é a taxa zero para o vértice atual.
-        - t₁ é o prazo em anos para o vértice anterior (calculado como du₁/252).
-        - t₂ é o prazo em anos para o vértice atual (calculado como du₂/252).
+        - rₙ₋₁ é a taxa zero para o vértice anterior.
+        - rₙ é a taxa zero para o vértice atual.
+        - tₙ₋₁ é o prazo em anos para o vértice anterior (calculado como duₙ₋₁/252).
+        - tₙ é o prazo em anos para o vértice atual (calculado como duₙ/252).
         - A constante 252 representa o número de dias úteis no ano.
 
-    A primeira taxa a termo de cada sequência (ou grupo) é definida como a
-    taxa zero desse primeiro vértice (f₁→₂ = r₂), dado que não existe um vértice
-    anterior (r₁) para se calcular a taxa a termo do primeiro ponto.
+    A primeira taxa a termo de cada grupo é definida como a
+    taxa zero desse primeiro vértice (fwd₁ = r₁), dado que não existe um vértice
+    anterior a r₁ para se calcular a taxa a termo no primeiro ponto.
 
-    A função lida internamente com o alinhamento dos índices das Séries de
-    entrada através de `reset_index`. Os cálculos são realizados após ordenar
-    os dados pelos prazos (`bdays`) dentro de cada grupo definido por
-    `groupby_dates` (ou como um único grupo se `groupby_dates` não for
-    fornecido), garantindo a ordem cronológica correta para a fórmula.
-
-    Valores NaN nas taxas ou prazos de entrada resultarão em NaN na saída,
-    exceto para o primeiro ponto de cada grupo, que é tratado separadamente.
+    Valores nulos nas taxas ou prazos de entrada resultarão em valores nulos
+    nas taxas a termo calculadas. A função também lida com agrupamentos
+    opcionais, permitindo calcular taxas a termo para diferentes grupos de
+    datas. O agrupamento é feito com base na coluna `groupby_dates`, que
+    deve ser fornecida como uma série de pandas. Se `groupby_dates` for None,
+    todos os dados serão tratados como um único grupo.
+    A função calcula as taxas a termo para todos os pontos, exceto o primeiro
+    de cada grupo, que é tratado separadamente.
 
     Args:
         bdays (pd.Series): Número de dias úteis para cada taxa zero.
@@ -47,7 +56,7 @@ def forwards(
         pd.Series: Série contendo as taxas a termo calculadas (tipo Float64).
             A primeira taxa de cada grupo corresponde à taxa zero inicial.
 
-    Example:
+    Examples:
         >>> bdays = pd.Series([10, 20, 30])
         >>> rates = pd.Series([0.05, 0.06, 0.07])
         >>> yd.forwards(bdays, rates)
@@ -55,7 +64,7 @@ def forwards(
         1    0.070095
         2    0.090284
         dtype: Float64
-    """
+    """  # noqa: E501
     # Reset Series indexes to avoid misalignment issues during calculations
     bdays = bdays.reset_index(drop=True).astype("Int64")
     rates = rates.reset_index(drop=True).astype("Float64")
@@ -104,7 +113,7 @@ def forward(
     rate1: float,
     rate2: float,
 ) -> float:
-    """
+    r"""
     Calcula a taxa a termo (forward rate) entre dois prazos (dias úteis).
 
     Utiliza a fórmula:
@@ -118,6 +127,7 @@ def forward(
         - A constante 252 representa o número de dias úteis no ano.
 
     Como du/252 = t (tempo em anos úteis), a fórmula pode ser simplificada para:
+
         f₁→₂ = ((1 + r₂)^t₂ / (1 + r₁)^t₁)^(1/(t₂ - t₁)) - 1
 
     Args:
@@ -131,8 +141,8 @@ def forward(
             `float('nan')` se `bday2 <= bday1` ou se qualquer um dos
             argumentos de entrada for NaN.
 
-    Example:
-        >>> # Exemplo correto: bday2 > bday1
+    Examples:
+        >>> # Exemplo válido: bday2 > bday1
         >>> yd.forward(10, 20, 0.05, 0.06)
         0.0700952380952371
         >>> # Exemplo inválido: bday2 <= bday1
@@ -147,7 +157,12 @@ def forward(
     Note:
         É fundamental que `bday2` seja estritamente maior que `bday1` para que
         o cálculo da taxa a termo seja matematicamente válido.
-    """
+
+    A fórmula utilizada é derivada da relação entre taxas zero (spot rates) é:
+    $$
+    f_{1 \rightarrow 2} = \left( \frac{(1 + r_2)^{t_2}}{(1 + r_1)^{t_1}} \right)^{\frac{1}{t_2 - t_1}} - 1
+    $$
+    """  # noqa: E501
     if pd.isna(rate1) or pd.isna(rate2) or pd.isna(bday1) or pd.isna(bday2):
         # If any of the inputs are NaN, return NaN
         return float("nan")

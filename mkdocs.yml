@@ -71,6 +71,8 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
 
 repo_url: 'https://github.com/crdcj/PYield'
 repo_name: 'PYield'
@@ -79,3 +81,7 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/crdcj/PYield
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
