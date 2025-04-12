@@ -70,7 +70,10 @@ def futures(
         # from the B3 site
         try:
             df = fetch_xml_report(converted_date, selected_contract, "PR")
-            logger.info(f"Using B3 XML report data for {selected_contract}")
+            logger.info(
+                f"No data found at BMF for {selected_contract}."
+                "Using B3 XML report data instead."
+            )
         except ValueError as e:
             logger.error(f"Failed to fetch data for {selected_contract}: {e}")
             raise

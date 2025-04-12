@@ -10,6 +10,7 @@ from lxml import etree
 
 from pyield import bday
 from pyield.b3.futures import common
+from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ def _get_file_from_path(file_path: Path) -> io.BytesIO:
     return io.BytesIO(content)
 
 
+@default_retry
 def _get_file_from_url(date: pd.Timestamp, source_type: str) -> io.BytesIO:
     """
     Types of XML files available:
@@ -49,13 +51,9 @@ def _get_file_from_url(date: pd.Timestamp, source_type: str) -> io.BytesIO:
 
     response = requests.get(url, timeout=10)
 
-    # File will be considered invalid if it is too small
-    if response.status_code != 200 or len(response.content) < 1024:  # noqa
+    # When a the date has no data, the file has less than 22 bytes
+    if len(response.content) < 1024:  # noqa
         date_str = date.strftime("%Y-%m-%d")
-        logger.warning(
-            f"File not found or too small ({len(response.content)} bytes) "
-            f"for {source_type} on {date_str}. Returning empty file."
-        )
         return io.BytesIO()
 
     return io.BytesIO(response.content)
@@ -254,7 +252,7 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 def process_zip_file(zip_file: io.BytesIO, asset_code: str) -> pd.DataFrame:
     if zip_file is None or zip_file.getbuffer().nbytes == 0:
-        logger.warning("Empty XML zip file. Returning empty DataFrame.")
+        logger.warning("Empty XML zip file. Probably the date has no data.")
         return pd.DataFrame()
 
     xml_file = _extract_xml_from_zip(zip_file)
