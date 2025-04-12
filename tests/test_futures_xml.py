@@ -16,7 +16,7 @@ def prepare_data(
     """Prepares the data for comparison."""
     file_date = pd.Timestamp(date).strftime("%y%m%d")
     file_path = Path(f"./tests/data/SPRD{file_date}.zip")
-    expected_df = fx.read_df(file_path=file_path, asset_code=contract_code)
+    expected_df = fx.read_xml_report(file_path=file_path, asset_code=contract_code)
     expected_df = expected_df.drop(columns=["AvgRate"])
 
     result_df = yd.futures(contract_code=contract_code, date=date)

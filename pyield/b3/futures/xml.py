@@ -1,4 +1,5 @@
 import io
+import logging
 import zipfile
 from pathlib import Path
 from typing import Literal
@@ -9,6 +10,8 @@ from lxml import etree
 
 from pyield import bday
 from pyield.b3.futures import common
+
+logger = logging.getLogger(__name__)
 
 
 def _get_file_from_path(file_path: Path) -> io.BytesIO:
@@ -49,7 +52,11 @@ def _get_file_from_url(date: pd.Timestamp, source_type: str) -> io.BytesIO:
     # File will be considered invalid if it is too small
     if response.status_code != 200 or len(response.content) < 1024:  # noqa
         date_str = date.strftime("%Y-%m-%d")
-        raise ValueError(f"There is no data available for {date_str}.")
+        logger.warning(
+            f"File not found or too small ({len(response.content)} bytes) "
+            f"for {source_type} on {date_str}. Returning empty file."
+        )
+        return io.BytesIO()
 
     return io.BytesIO(response.content)
 
@@ -246,6 +253,10 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def process_zip_file(zip_file: io.BytesIO, asset_code: str) -> pd.DataFrame:
+    if zip_file is None or zip_file.getbuffer().nbytes == 0:
+        logger.warning("Empty XML zip file. Returning empty DataFrame.")
+        return pd.DataFrame()
+
     xml_file = _extract_xml_from_zip(zip_file)
 
     di_data = _extract_data_from_xml(xml_file, asset_code)
@@ -258,22 +269,61 @@ def process_zip_file(zip_file: io.BytesIO, asset_code: str) -> pd.DataFrame:
 
     df = _select_and_reorder_columns(df)
 
-    return df
-
-
-def fetch_df(
-    date: pd.Timestamp, asset_code: str, source_type: Literal["PR", "SPR"]
-) -> pd.DataFrame:
-    zip_file = _get_file_from_url(date, source_type)
-    df = process_zip_file(zip_file, asset_code)
     if asset_code == "DI1":
         duration = df["BDaysToExp"] / 252
         modified_duration = duration / (1 + df["SettlementRate"])
         df["DV01"] = 0.0001 * modified_duration * df["SettlementPrice"]
+
     return df
 
 
-def read_df(file_path: Path, asset_code: str) -> pd.DataFrame:
+def fetch_xml_report(
+    date: pd.Timestamp, asset_code: str, source_type: Literal["PR", "SPR"]
+) -> pd.DataFrame:
+    """Fetches and processes an XML report from B3's website.
+
+    Downloads a zipped XML report for a specific date and asset code
+    from B3's website, extracts the relevant data, and returns it as a
+    Pandas DataFrame.
+
+    Args:
+        date: The date of the report to fetch.
+        asset_code: The asset code to filter the report for (e.g., 'DI1').
+        source_type: The type of report to fetch, either 'PR' (Full Price
+            Report) or 'SPR' (Simplified Price Report).
+
+    Returns:
+        A Pandas DataFrame containing the processed data.
+        For 'DI1' asset codes, an additional 'DV01' column is calculated.
+
+    Raises:
+        ValueError: If the `source_type` is invalid or if no data is
+            available for the given date.
+    """
+    zip_file = _get_file_from_url(date, source_type)
+    df = process_zip_file(zip_file, asset_code)
+
+    return df
+
+
+def read_xml_report(file_path: Path, asset_code: str) -> pd.DataFrame:
+    """Reads and processes an XML report from a local file.
+
+    Reads a zipped XML report from the specified file path, extracts the
+    relevant data, and returns it as a Pandas DataFrame.
+
+    Args:
+        file_path: The path to the zipped XML report file.
+        asset_code: The asset code to filter the report for (e.g., 'DI1').
+
+    Returns:
+        A Pandas DataFrame containing the processed data.
+        For 'DI1' asset codes, an additional 'DV01' column is calculated.
+
+    Raises:
+        ValueError: If the provided `file_path` is not a Path object.
+        FileNotFoundError: If no file is found at the specified `file_path`.
+    """
     zip_file = _get_file_from_path(file_path)
     df = process_zip_file(zip_file, asset_code)
     return df

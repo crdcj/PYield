@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 from typing import Literal
 from zoneinfo import ZoneInfo
 
@@ -7,10 +8,12 @@ import pandas as pd
 from pyield import date_converter as dc
 from pyield.b3.futures.historical import fetch_historical_df
 from pyield.b3.futures.intraday import fetch_intraday_df
+from pyield.b3.futures.xml import fetch_xml_report
 from pyield.date_converter import DateScalar
 
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
+logger = logging.getLogger(__name__)
 
 
 def futures(
@@ -60,13 +63,25 @@ def futures(
     selected_contract = str(contract_code).upper()
     converted_date = dc.convert_input_dates(date)
 
-    # First, try to fetch historical data for the specified date
+    # First, try to fetch historical data from BMF site
     df = fetch_historical_df(selected_contract, converted_date)
+    if df.empty:
+        # If historical data is not available, try to fetch the full XML report
+        # from the B3 site
+        try:
+            df = fetch_xml_report(converted_date, selected_contract, "PR")
+            logger.info(f"Using B3 XML report data for {selected_contract}")
+        except ValueError as e:
+            logger.error(f"Failed to fetch data for {selected_contract}: {e}")
+            raise
+    else:
+        logger.info(f"Using BMF historical data for {selected_contract}")
 
     bz_today = dt.datetime.now(TIMEZONE_BZ).date()
     # If there is no historical data available, try to fetch intraday data
     if converted_date.date() == bz_today and df.empty:
         df = fetch_intraday_df(selected_contract)
+        logger.info(f"Using B3 intraday data for {selected_contract}")
 
     return df
 
