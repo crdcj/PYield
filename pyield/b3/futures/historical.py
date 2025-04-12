@@ -245,7 +245,6 @@ def process_df(
         duration = df["BDaysToExp"] / 252
         modified_duration = duration / (1 + df["SettlementRate"])
         df["DV01"] = 0.0001 * modified_duration * df["SettlementPrice"]
-        df["DV01"] = df["DV01"].astype("Float64")
 
     return df
 

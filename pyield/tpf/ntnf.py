@@ -20,7 +20,7 @@ FINAL_PMT = FACE_VALUE + COUPON_PMT
 COUPON_DAY = 1
 COUPON_MONTHS = {1, 7}
 COUPON_PMT = 48.80885
-FINAL_PMT = 1048.80885
+FINAL_PMT = 1048.80885  # 1000 + 48.80885
 
 
 def data(date: DateScalar) -> pd.DataFrame:
@@ -364,8 +364,8 @@ def di_spreads(date: DateScalar) -> pd.DataFrame:
     return df[["MaturityDate", "DISpread"]]
 
 
-# Bisection method to find the root
 def _bisection_method(func, a, b, tol=1e-8, maxiter=100):
+    """Bisection method for root finding."""
     fa, fb = func(a), func(b)
     if fa * fb > 0:
         raise ValueError("Function does not change sign in the interval.")

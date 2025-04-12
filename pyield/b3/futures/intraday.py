@@ -129,7 +129,6 @@ def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
         duration = df["BDaysToExp"] / 252
         modified_duration = duration / (1 + df["LastRate"])
         df["DV01"] = 0.0001 * modified_duration * df["LastPrice"]
-        df["DV01"] = df["DV01"].astype("Float64")
 
     return df
 

@@ -47,7 +47,7 @@ def _get_file_from_url(date: pd.Timestamp, source_type: str) -> io.BytesIO:
     response = requests.get(url, timeout=10)
 
     # File will be considered invalid if it is too small
-    if response.status_code != 200 or len(response.content) < 1024:
+    if response.status_code != 200 or len(response.content) < 1024:  # noqa
         date_str = date.strftime("%Y-%m-%d")
         raise ValueError(f"There is no data available for {date_str}.")
 
@@ -102,7 +102,7 @@ def _extract_data_from_xml(xml_file: io.BytesIO, asset_code: str) -> list[dict]:
             continue
 
         # A future contract ticker must have 6 characters
-        if ticker.text is None or len(ticker.text) != 6:
+        if ticker.text is None or len(ticker.text) != 6:  # noqa
             continue
 
         # Extract the price report element
@@ -266,6 +266,10 @@ def fetch_df(
 ) -> pd.DataFrame:
     zip_file = _get_file_from_url(date, source_type)
     df = process_zip_file(zip_file, asset_code)
+    if asset_code == "DI1":
+        duration = df["BDaysToExp"] / 252
+        modified_duration = duration / (1 + df["SettlementRate"])
+        df["DV01"] = 0.0001 * modified_duration * df["SettlementPrice"]
     return df
 
 
