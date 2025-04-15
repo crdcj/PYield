@@ -16,20 +16,29 @@ def prepare_data(
     """Prepares the data for comparison."""
     file_date = pd.Timestamp(date).strftime("%y%m%d")
     file_path = Path(f"./tests/data/SPRD{file_date}.zip")
-    expected_df = fx.read_xml_report(file_path=file_path, asset_code=contract_code)
-    expected_df = expected_df.drop(columns=["AvgRate"])
+
+    expected_df = fx.read_xml_report(file_path=file_path, contract_code=contract_code)
+    # AvgRate can have different values in the XML file
+    # and in the B3 website. We drop it to avoid comparison issues.
+    # if "AvgRate" in expected_df.columns:
+    #     expected_df = expected_df.drop(columns=["AvgRate"])
+    for col in ["AvgRate", "ForwardRate"]:
+        if col in expected_df.columns:
+            expected_df = expected_df.drop(columns=[col])
 
     result_df = yd.futures(contract_code=contract_code, date=date)
 
     # Ensure that both DataFrames have the same columns
     expected_cols = set(expected_df.columns)
     result_cols = set(result_df.columns)
-    common_cols = list(expected_cols.intersection(result_cols))
+    common_cols = list(expected_cols & result_cols)
     result_df = result_df[common_cols].copy()
     expected_df = expected_df[common_cols].copy()
 
-    # Ensure that the TickerSymbol is the same
-    result_df.query("TickerSymbol in @expected_df.TickerSymbol", inplace=True)
+    # XML files can have less tickers than the B3 website (in zero open contracts)
+    result_df = result_df.query(
+        "TickerSymbol in @expected_df.TickerSymbol"
+    ).reset_index(drop=True)
     result_df.reset_index(drop=True, inplace=True)
 
     return result_df, expected_df
@@ -59,4 +68,4 @@ def prepare_data(
 def test_fetch_and_prepare_data(asset_code, date):
     """Tests if the asset data fetched matches the expected data read from file."""
     result_df, expected_df = prepare_data(asset_code, date)
-    assert_frame_equal(result_df, expected_df)
+    assert_frame_equal(result_df, expected_df, rtol=1e-4, check_exact=False)

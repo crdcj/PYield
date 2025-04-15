@@ -1,11 +1,14 @@
 import io
+import logging
 
 import pandas as pd
 import requests
 
 from pyield import bday
 from pyield.b3.futures import common
+from pyield.fwd import forwards
 
+logger = logging.getLogger(__name__)
 COUNT_CONVENTIONS = {
     "DAP": 252,
     "DI1": 252,
@@ -103,7 +106,7 @@ def _convert_prices_to_rates(
     return rates.round(5)
 
 
-def _fetch_raw_df(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
+def _fetch_url_data(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetch the historical futures data from B3 for a specific trade date. If the data is
     not available, an empty DataFrame is returned.
@@ -183,14 +186,14 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def process_df(
-    input_df: pd.DataFrame, date: pd.Timestamp, asset_code: str
+    input_df: pd.DataFrame, date: pd.Timestamp, contract_code: str
 ) -> pd.DataFrame:
     df = input_df.copy()
     df["TradeDate"] = date
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
 
-    df["TickerSymbol"] = asset_code + df["ExpirationCode"]
+    df["TickerSymbol"] = contract_code + df["ExpirationCode"]
 
     # Contract code format was changed in 22/05/2006
     if date < pd.Timestamp("2006-05-22"):
@@ -198,7 +201,7 @@ def process_df(
             get_old_expiration_date, args=(date,)
         )
     else:
-        expiration_day = 15 if asset_code == "DAP" else 1
+        expiration_day = 15 if contract_code == "DAP" else 1
         df["ExpirationDate"] = df["ExpirationCode"].apply(
             common.get_expiration_date, args=(expiration_day,)
         )
@@ -221,30 +224,32 @@ def process_df(
 
     rate_cols = [col for col in df.columns if "Rate" in col]
     # Prior to 17/01/2002 (inclusive), DI prices were not converted to rates
-    if date <= pd.Timestamp("2002-01-17") and asset_code == "DI1":
+    if date <= pd.Timestamp("2002-01-17") and contract_code == "DI1":
         df = _adjust_older_contracts_rates(df, rate_cols)
     else:
         # Remove % and round to 5 (3 in %) dec. places in rate columns
         df[rate_cols] = df[rate_cols].div(100).round(5)
 
-    if COUNT_CONVENTIONS[asset_code] == 252:  # noqa
+    if COUNT_CONVENTIONS[contract_code] == 252:  # noqa
         df["SettlementRate"] = _convert_prices_to_rates(
             prices=df["SettlementPrice"],
             days_to_expiration=df["BDaysToExp"],
             count_convention=252,
         )
-    elif COUNT_CONVENTIONS[asset_code] == 360:  # noqa
+    elif COUNT_CONVENTIONS[contract_code] == 360:  # noqa
         df["SettlementRate"] = _convert_prices_to_rates(
             prices=df["SettlementPrice"],
             days_to_expiration=df["DaysToExp"],
             count_convention=360,
         )
 
-    # Calculate DV01 for DI1 contracts
-    if asset_code == "DI1":
+    if contract_code == "DI1":  # Calculate DV01 for DI1 contracts
         duration = df["BDaysToExp"] / 252
         modified_duration = duration / (1 + df["SettlementRate"])
         df["DV01"] = 0.0001 * modified_duration * df["SettlementPrice"]
+
+    if contract_code in {"DI1", "DAP"}:  # Calculate forwards for DI1 and DAP contracts
+        df["ForwardRate"] = forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
 
     return df
 
@@ -265,7 +270,6 @@ def _select_and_reorder_columns(df: pd.DataFrame):
         "FinancialVolume",
         "DV01",
         "SettlementPrice",
-        "SettlementRate",
         "OpenRate",
         "MinRate",
         "AvgRate",
@@ -273,12 +277,14 @@ def _select_and_reorder_columns(df: pd.DataFrame):
         "CloseAskRate",
         "CloseBidRate",
         "CloseRate",
+        "SettlementRate",
+        "ForwardRate",
     ]
     reordered_columns = [col for col in all_columns if col in df.columns]
     return df[reordered_columns]
 
 
-def fetch_historical_df(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
+def fetch_bmf_data(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
     """
     Fetchs the futures data for a given date from B3.
 
@@ -295,9 +301,13 @@ def fetch_historical_df(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
         pd.DataFrame: A Pandas pd.DataFrame containing processed futures data. If
             the data is not available, an empty DataFrame is returned.
     """
-    df_raw = _fetch_raw_df(contract_code, date)
+    df_raw = _fetch_url_data(contract_code, date)
     if df_raw.empty:
-        return df_raw
+        logger.warning(
+            f"No data found for {contract_code} on {date.strftime('%d-%m-%Y')}."
+            f" Returning an empty DataFrame."
+        )
+        return pd.DataFrame()
 
     df = _rename_columns(df_raw)
     df = process_df(df, date, contract_code)

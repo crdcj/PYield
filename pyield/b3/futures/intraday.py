@@ -1,14 +1,25 @@
+import datetime as dt
+import logging
 from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
 
 from pyield import bday
+from pyield.fwd import forwards
 from pyield.retry import default_retry
 
-# Timezone for Brazil
-TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 BASE_URL = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
+
+# Timezone for Brazil
+BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
+
+# Pregão abre às 9:00, porém os dados têm atraso de 15 minutos.
+# Esperar 1 minuto adicional para garantir que estejam disponíveis (9:16h).
+INTRADAY_START_TIME = dt.time(9, 16)
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 
 @default_retry
@@ -78,7 +89,8 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
+def _process_df(raw_df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
+    """Process the raw DataFrame from B3 API."""
     df = raw_df.copy()
 
     # Clean and reformat the DataFrame columns
@@ -101,7 +113,7 @@ def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     df["TradeDate"] = bday.last_business_day()
 
     # Get current date and time
-    now = pd.Timestamp.now(TIMEZONE_BZ).round("s").tz_localize(None)
+    now = pd.Timestamp.now(BZ_TIMEZONE).round("s").tz_localize(None)
     # Subtract 15 minutes from the current time to account for API delay
     df["LastUpdate"] = now - pd.Timedelta(minutes=15)
 
@@ -118,14 +130,13 @@ def _process_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     rate_cols = [col for col in df.columns if "Rate" in col]
     df[rate_cols] = df[rate_cols].div(100).round(5)
 
-    # Adjust DI1 futures contracts
-    contract_type = df["TickerSymbol"].iloc[0][:3]
-    if contract_type in {"DI1", "DAP"}:
+    if contract_code in {"DI1", "DAP"}:  # Add LastPrice for DI1 and DAP
         byears = df["BDaysToExp"] / 252
-        df["LastPrice"] = 100_000 / ((1 + df["LastRate"]) ** (byears))
+        df["LastPrice"] = 100_000 / ((1 + df["LastRate"]) ** byears)
         df["LastPrice"] = df["LastPrice"].round(2).astype("Float64")
+        df["ForwardRate"] = forwards(bdays=df["BDaysToExp"], rates=df["LastRate"])
 
-    if contract_type == "DI1":
+    if contract_code == "DI1":  # Add DV01 for DI1
         duration = df["BDaysToExp"] / 252
         modified_duration = duration / (1 + df["LastRate"])
         df["DV01"] = 0.0001 * modified_duration * df["LastPrice"]
@@ -155,6 +166,7 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "TradeVolume",
         "FinancialVolume",
         "DV01",
+        "LastPrice",
         "PrevSettlementRate",
         "MinLimitRate",
         "MaxLimitRate",
@@ -165,22 +177,28 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "LastAskRate",
         "LastBidRate",
         "LastRate",
-        "LastPrice",
+        "ForwardRate",
     ]
     reordered_columns = [col for col in all_columns if col in df.columns]
     return df[reordered_columns].copy()
 
 
-def fetch_intraday_df(future_code: str) -> pd.DataFrame:
+def fetch_intraday_df(contract_code: str) -> pd.DataFrame:
     """
     Fetch the latest futures data from B3.
 
     Returns:
         pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
     """
-    raw_df = _fetch_b3_df(future_code)
+    raw_df = _fetch_b3_df(contract_code)
     if raw_df.empty:
+        date_str = dt.datetime.now(BZ_TIMEZONE).strftime("%d-%m-%Y %H:%M")
+        logger.warning(
+            f"No data available for {contract_code} on {date_str}. "
+            f"Returning an empty DataFrame."
+        )
+
         return pd.DataFrame()
-    df = _process_df(raw_df)
+    df = _process_df(raw_df, contract_code)
     df = _select_and_reorder_columns(df)
     return df

@@ -10,6 +10,7 @@ from lxml import etree
 
 from pyield import bday
 from pyield.b3.futures import common
+from pyield.fwd import forwards
 from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
@@ -195,8 +196,8 @@ def _process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
 
     expiration_code = df["TickerSymbol"].str[3:]
-    futures_type = df["TickerSymbol"].str[:3].loc[0]
-    expiration_day = 15 if futures_type == "DAP" else 1
+    contract_code = df["TickerSymbol"].str[:3].loc[0]
+    expiration_day = 15 if contract_code == "DAP" else 1
     df["ExpirationDate"] = expiration_code.apply(
         common.get_expiration_date, args=(expiration_day,)
     )
@@ -219,6 +220,14 @@ def _process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = df[col].fillna(0)
 
+    if contract_code == "DI1":  # Calculate DV01 for DI1 contracts
+        duration = df["BDaysToExp"] / 252
+        modified_duration = duration / (1 + df["SettlementRate"])
+        df["DV01"] = 0.0001 * modified_duration * df["SettlementPrice"]
+
+    if contract_code in {"DI1", "DAP"}:  # Calculate forwards for DI1 and DAP contracts
+        df["ForwardRate"] = forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
+
     return df.sort_values(by=["ExpirationDate"], ignore_index=True)
 
 
@@ -234,8 +243,8 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "TradeCount",
         "TradeVolume",
         "FinancialVolume",
+        "DV01",
         "SettlementPrice",
-        "SettlementRate",
         "MinLimitRate",
         "MaxLimitRate",
         "BestBidRate",
@@ -245,19 +254,21 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "AvgRate",
         "MaxRate",
         "CloseRate",
+        "SettlementRate",
+        "ForwardRate",
     ]
     selected_columns = [col for col in all_columns if col in df.columns]
     return df[selected_columns]
 
 
-def process_zip_file(zip_file: io.BytesIO, asset_code: str) -> pd.DataFrame:
+def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pd.DataFrame:
     if zip_file is None or zip_file.getbuffer().nbytes == 0:
         logger.warning("Empty XML zip file. Probably the date has no data.")
         return pd.DataFrame()
 
     xml_file = _extract_xml_from_zip(zip_file)
 
-    di_data = _extract_data_from_xml(xml_file, asset_code)
+    di_data = _extract_data_from_xml(xml_file, contract_code)
 
     df_raw = _create_df_from_data(di_data)
 
@@ -267,16 +278,11 @@ def process_zip_file(zip_file: io.BytesIO, asset_code: str) -> pd.DataFrame:
 
     df = _select_and_reorder_columns(df)
 
-    if asset_code == "DI1":
-        duration = df["BDaysToExp"] / 252
-        modified_duration = duration / (1 + df["SettlementRate"])
-        df["DV01"] = 0.0001 * modified_duration * df["SettlementPrice"]
-
     return df
 
 
-def fetch_xml_report(
-    date: pd.Timestamp, asset_code: str, source_type: Literal["PR", "SPR"]
+def fetch_xml_data(
+    date: pd.Timestamp, contract_code: str, source_type: Literal["PR", "SPR"]
 ) -> pd.DataFrame:
     """Fetches and processes an XML report from B3's website.
 
@@ -298,13 +304,17 @@ def fetch_xml_report(
         ValueError: If the `source_type` is invalid or if no data is
             available for the given date.
     """
-    zip_file = _get_file_from_url(date, source_type)
-    df = process_zip_file(zip_file, asset_code)
+    try:
+        zip_file = _get_file_from_url(date, source_type)
+        df = process_zip_file(zip_file, contract_code)
+    except ValueError as e:
+        logger.warning(f"Error fetching XML data: {e}. Returning empty DataFrame.")
+        return pd.DataFrame()
 
     return df
 
 
-def read_xml_report(file_path: Path, asset_code: str) -> pd.DataFrame:
+def read_xml_report(file_path: Path, contract_code: str) -> pd.DataFrame:
     """Reads and processes an XML report from a local file.
 
     Reads a zipped XML report from the specified file path, extracts the
@@ -323,5 +333,5 @@ def read_xml_report(file_path: Path, asset_code: str) -> pd.DataFrame:
         FileNotFoundError: If no file is found at the specified `file_path`.
     """
     zip_file = _get_file_from_path(file_path)
-    df = process_zip_file(zip_file, asset_code)
+    df = process_zip_file(zip_file, contract_code)
     return df
