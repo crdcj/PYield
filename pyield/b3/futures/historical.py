@@ -9,16 +9,7 @@ from pyield.b3.futures import common
 from pyield.fwd import forwards
 
 logger = logging.getLogger(__name__)
-COUNT_CONVENTIONS = {
-    "DAP": 252,
-    "DI1": 252,
-    "DDI": 360,
-    "FRC": None,
-    "DOL": None,
-    "WDO": None,
-    "IND": None,
-    "WIN": None,
-}
+COUNT_CONVENTIONS = {"DAP": 252, "DI1": 252, "DDI": 360}
 
 
 def get_old_expiration_date(expiration_code: str, date: pd.Timestamp) -> pd.Timestamp:
@@ -213,7 +204,7 @@ def process_df(
     df["BDaysToExp"] = bday.count(date, df["ExpirationDate"])
 
     # Remove expired contracts
-    df.query("DaysToExp > 0", inplace=True)
+    df = df.query("DaysToExp > 0").reset_index(drop=True)
 
     # Columns where 0 means NaN
     cols_with_nan = [col for col in df.columns if "Rate" in col]
@@ -230,13 +221,14 @@ def process_df(
         # Remove % and round to 5 (3 in %) dec. places in rate columns
         df[rate_cols] = df[rate_cols].div(100).round(5)
 
-    if COUNT_CONVENTIONS[contract_code] == 252:  # noqa
+    count_convention = COUNT_CONVENTIONS.get(contract_code)
+    if count_convention == 252:  # noqa
         df["SettlementRate"] = _convert_prices_to_rates(
             prices=df["SettlementPrice"],
             days_to_expiration=df["BDaysToExp"],
             count_convention=252,
         )
-    elif COUNT_CONVENTIONS[contract_code] == 360:  # noqa
+    elif count_convention == 360:  # noqa
         df["SettlementRate"] = _convert_prices_to_rates(
             prices=df["SettlementPrice"],
             days_to_expiration=df["DaysToExp"],

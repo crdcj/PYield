@@ -179,11 +179,11 @@ def premium(ltn_rate: float, di_rate: float) -> float:
         1.0120718007994287
     """
     # Cálculo das taxas diárias
-    ltn_factor = (1 + ltn_rate) ** (1 / 252)
-    di_factor = (1 + di_rate) ** (1 / 252)
+    ltn_daily_rate = (1 + ltn_rate) ** (1 / 252) - 1
+    di_daily_rate = (1 + di_rate) ** (1 / 252) - 1
 
     # Retorno do cálculo do prêmio
-    return (ltn_factor - 1) / (di_factor - 1)
+    return ltn_daily_rate / di_daily_rate
 
 
 def historical_premium(

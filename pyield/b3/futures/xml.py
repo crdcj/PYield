@@ -206,7 +206,7 @@ def _process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     # Convert to nullable integer, since it is the default type in the library
     df["DaysToExp"] = df["DaysToExp"].astype("Int64")
     # Remove expired contracts
-    df.query("DaysToExp > 0", inplace=True)
+    df = df.query("DaysToExp > 0").reset_index(drop=True)
 
     df["BDaysToExp"] = bday.count(df["TradeDate"], df["ExpirationDate"])
 

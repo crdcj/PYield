@@ -123,6 +123,9 @@ def _process_df(raw_df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
     # Convert to nullable integer, since it is the default type in the library
     df["DaysToExp"] = df["DaysToExp"].astype("Int64")
 
+    # Remove expired contracts
+    df = df.query("DaysToExp >= 0").reset_index(drop=True)
+
     # The "FinancialVolume" column is in BRL, so we need to round it to cents
     df["FinancialVolume"] = df["FinancialVolume"].round(2)
 

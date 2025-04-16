@@ -26,14 +26,14 @@ HISTORICAL_START_TIME = dt.time(20, 0)
 INTRADAY_START_TIME = dt.time(9, 16)
 
 
-def _is_intraday_date(date: pd.Timestamp) -> bool:
-    """Verifica se os dados intraday estão disponíveis."""
+def _should_attempt_intraday_fetch(date: pd.Timestamp) -> bool:
+    """Check if the current date is a trading day and if the market is open."""
 
     last_bday = bday.last_business_day().date()
     if date.date() != last_bday:
         return False
 
-    # Pregão não abre em feriados ou datas especiais
+    # Pregão não abre na véspera de Natal e Ano Novo
     today = dt.datetime.now(BZ_TIMEZONE).date()
     special_closed_dates = {  # Datas especiais
         dt.date(today.year, 12, 24),  # Véspera de Natal
@@ -42,6 +42,8 @@ def _is_intraday_date(date: pd.Timestamp) -> bool:
     if today in special_closed_dates:
         return False
 
+    # Se não retornou False até aqui, é porque o dia é um dia de negociação
+    # e o mercado está aberto.
     return True
 
 
@@ -53,13 +55,10 @@ def _get_historical_data(
     # First, try to fetch the data from BMF legacy service
     df = fetch_bmf_data(contract_code, date)
     if not df.empty:
-        # If data is available from BMF, return it
-        return df
+        return df  # If data is available from BMF, return it
 
     # If BMF data is not available, try to fetch the full XML report
-    df = fetch_xml_data(date, contract_code, "PR")
-
-    return df
+    return fetch_xml_data(date, contract_code, "PR")
 
 
 def futures(
@@ -107,30 +106,28 @@ def futures(
         3  2024-05-31       DAPU24  ...         0.0855     0.078171
         ...
     """
-    selected_contract = str(contract_code).upper()
     converted_date = dc.convert_input_dates(date)
+    selected_contract = str(contract_code).upper()
 
-    if _is_intraday_date(converted_date):
-        # É um dia de negociação intraday
-        # Verificar se o mercado está aberto
+    if _should_attempt_intraday_fetch(
+        converted_date
+    ):  # É um dia de negociação intraday
         time = dt.datetime.now(BZ_TIMEZONE).time()
         if time < INTRADAY_START_TIME:  # Mercado não está aberto ainda
-            logger.warning("Market is not open yet. Returning empty DataFrame. ")
+            logger.warning("Market is not open yet. Returning an empty DataFrame. ")
             return pd.DataFrame()
 
-        # Mercado está aberto, verificar se os dados intraday estão disponíveis
-        df = fetch_intraday_df(selected_contract)
-
-        # Existe a chance de que os dados históricos estejam disponíveis após as 20:00h
+        # Existe a chance de que os dados consolidados estejam disponíveis após as 20h
         if time >= HISTORICAL_START_TIME:
-            # If historical data is available, we can use it instead of intraday data
             df_hist = _get_historical_data(selected_contract, converted_date)
             if not df_hist.empty:
                 logger.info("Consolidated data is already available and will be used.")
-                df = df_hist
-        return df
-    else:
-        # Historical path
+                return df_hist
+
+        # Mercado está aberto e não há dados consolidados disponíveis ainda
+        return fetch_intraday_df(selected_contract)
+
+    else:  # É um dia histórico
         return _get_historical_data(selected_contract, converted_date)
 
 

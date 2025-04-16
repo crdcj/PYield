@@ -56,6 +56,10 @@ def forwards(
         pd.Series: Série contendo as taxas a termo calculadas (tipo Float64).
             A primeira taxa de cada grupo corresponde à taxa zero inicial.
 
+    Raises:
+        ValueError: Se os índices de `bdays` e `rates` não forem iguais.
+        ValueError: Se `groupby_dates` não for None e não tiver o mesmo tamanho
+
     Examples:
         >>> bdays = pd.Series([10, 20, 30])
         >>> rates = pd.Series([0.05, 0.06, 0.07])
@@ -65,11 +69,16 @@ def forwards(
         2    0.090284
         dtype: Float64
     """  # noqa: E501
-    # Reset Series indexes to avoid misalignment issues during calculations
-    bdays = bdays.reset_index(drop=True).astype("Int64")
-    rates = rates.reset_index(drop=True).astype("Float64")
-    if groupby_dates is not None:
-        groupby_dates = groupby_dates.reset_index(drop=True)
+    bdays = bdays.astype("Int64")
+    rates = rates.astype("Float64")
+
+    # Check if indexes are the same
+    if not bdays.index.equals(rates.index):
+        raise ValueError("The indexes of bdays and rates must be the same.")
+
+    if groupby_dates:
+        if groupby_dates.index.equals(bdays.index):
+            raise ValueError("groupby_dates index must be the same as bdays and rates.")
 
     # Create a DataFrame to work with the given series
     df = pd.DataFrame({"du2": bdays, "r2": rates})
