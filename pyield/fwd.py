@@ -10,25 +10,25 @@ def forwards(
     Calcula taxas a termo (forward rates) a partir de taxas zero (spot rates).
 
     A taxa a termo no vértice 'n' é definida como:
-        fwdₙ = fwdₙ₋₁→ₙ (a taxa a termo de n-1 para n)
+        fwdₖ = fwdⱼ→ₖ (a taxa a termo de j para k)
 
     A fórmula utilizada é:
-        fwdₙ = ((1 + rₙ)^(duₙ/252) / (1 + rₙ₋₁)^(duₙ₋₁/252))^(252/(duₙ - duₙ₋₁)) - 1
+        fwdₖ = ((1 + rₖ)^(duₖ/252) / (1 + rⱼ)^(duⱼ/252))^(252/(duₖ - duⱼ)) - 1
 
     Como du/252 = t (tempo em anos úteis), a fórmula pode ser simplificada para:
 
-        fwdₙ = ((1 + rₙ)^tₙ / (1 + rₙ₋₁)^tₙ₋₁)^(1/(tₙ - tₙ₋₁)) - 1
+        fwdₖ = ((1 + rₖ)^tₖ / (1 + rⱼ)^tⱼ)^(1/(tₖ - tⱼ)) - 1
 
     Em LaTeX, a fórmula é representada como:
     $$
-    fwd_{n} = \left( \frac{(1 + r_n)^{t_n}}{(1 + r_{n-1})^{t_{n-1}}} \right)^{\frac{1}{t_n - t_{n-1}}} - 1
+    fwd_k = \left( \frac{(1 + r_k)^{t_k}}{(1 + r_j)^{t_j}} \right)^{\frac{1}{t_k - t_j}} - 1
     $$
 
     Onde:
-        - rₙ₋₁ é a taxa zero para o vértice anterior.
-        - rₙ é a taxa zero para o vértice atual.
-        - tₙ₋₁ é o prazo em anos para o vértice anterior (calculado como duₙ₋₁/252).
-        - tₙ é o prazo em anos para o vértice atual (calculado como duₙ/252).
+        - rⱼ é a taxa zero para o vértice anterior.
+        - rₖ é a taxa zero para o vértice atual.
+        - tⱼ é o prazo em anos para o vértice anterior (calculado como duⱼ/252).
+        - tₖ é o prazo em anos para o vértice atual (calculado como duₖ/252).
         - A constante 252 representa o número de dias úteis no ano.
 
     A primeira taxa a termo de cada grupo é definida como a
@@ -68,6 +68,9 @@ def forwards(
         1    0.070095
         2    0.090284
         dtype: Float64
+
+    Note:
+        A função retorna uma série com o mesmo índice que `bdays` e `rates`.
     """  # noqa: E501
     bdays = bdays.astype("Int64")
     rates = rates.astype("Float64")
@@ -76,44 +79,38 @@ def forwards(
     if not bdays.index.equals(rates.index):
         raise ValueError("The indexes of bdays and rates must be the same.")
 
-    if groupby_dates:
-        if groupby_dates.index.equals(bdays.index):
-            raise ValueError("groupby_dates index must be the same as bdays and rates.")
-
     # Create a DataFrame to work with the given series
-    df = pd.DataFrame({"du2": bdays, "r2": rates})
-    df["t2"] = df["du2"] / 252
+    df = pd.DataFrame({"duk": bdays, "rk": rates})
+    df["tk"] = df["duk"] / 252
 
-    # If no groupby_dates is provided, create a dummy column to group the DataFrame
-    if groupby_dates is not None:
+    if isinstance(groupby_dates, pd.Series):
+        if not groupby_dates.index.equals(bdays.index):
+            raise ValueError("groupby_dates index must be the same as bdays and rates.")
         df["groupby_date"] = groupby_dates
     else:
         df["groupby_date"] = 0  # Dummy value to group the DataFrame
 
     # Sort by the groupby_dates and t2 columns to ensure proper chronological order
-    df.sort_values(by=["groupby_date", "t2"], inplace=True)
+    df.sort_values(by=["groupby_date", "tk"], inplace=True)
 
     # Calculate the next zero rate and business day for each group
-    df["r1"] = df.groupby("groupby_date")["r2"].shift(1)
-    df["t1"] = df.groupby("groupby_date")["t2"].shift(1)
+    df["rj"] = df.groupby("groupby_date")["rk"].shift(1)
+    df["tj"] = df.groupby("groupby_date")["tk"].shift(1)
 
     # Calculate the formula components
-    factor_r2 = (1 + df["r2"]) ** df["t2"]  # (1 + r₂)^t₂
-    factor_r1 = (1 + df["r1"]) ** df["t1"]  # (1 + r₁)^t₁
-    time_exp = 1 / (df["t2"] - df["t1"])  # 1/(t₂ - t₁)
-
-    # f₁→₂ = ((1 + r₂)^t₂ / (1 + r₁)^t₁)^(1/(t₂ - t₁)) - 1
-    df["f1_2"] = (factor_r2 / factor_r1) ** time_exp - 1
+    # fₖ = fⱼ→ₖ = ((1 + rₖ)^tₖ / (1 + rⱼ)^tⱼ) ^ (1/(tₖ - tⱼ)) - 1
+    factor_rk = (1 + df["rk"]) ** df["tk"]  # (1 + rₖ)^tₖ
+    factor_rj = (1 + df["rj"]) ** df["tj"]  # (1 + rⱼ)^tⱼ
+    time_factor = 1 / (df["tk"] - df["tj"])  # 1/(tₖ - tⱼ)
+    df["fwd"] = (factor_rk / factor_rj) ** time_factor - 1
 
     # Identifify the first index of each group of dates
     first_indices = df.groupby("groupby_date").head(1).index
     # Set the first forward rate of each group to the zero rate
-    df.loc[first_indices, "f1_2"] = df.loc[first_indices, "r2"]
+    df.loc[first_indices, "fwd"] = df.loc[first_indices, "rk"]
 
-    # Return the forward rates as a Series
-    f1_2 = df["f1_2"]
-    f1_2.name = None
-    return f1_2
+    # Return the forward rates as a Series with no name
+    return df.loc[:, "fwd"]
 
 
 def forward(

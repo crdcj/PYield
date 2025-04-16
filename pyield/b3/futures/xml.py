@@ -205,6 +205,7 @@ def _process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
     # Convert to nullable integer, since it is the default type in the library
     df["DaysToExp"] = df["DaysToExp"].astype("Int64")
+
     # Remove expired contracts
     df = df.query("DaysToExp > 0").reset_index(drop=True)
 
