@@ -109,9 +109,8 @@ def futures(
     converted_date = dc.convert_input_dates(date)
     selected_contract = str(contract_code).upper()
 
-    if _should_attempt_intraday_fetch(
-        converted_date
-    ):  # É um dia de negociação intraday
+    if _should_attempt_intraday_fetch(converted_date):
+        # É um dia de negociação intraday
         time = dt.datetime.now(BZ_TIMEZONE).time()
         if time < INTRADAY_START_TIME:  # Mercado não está aberto ainda
             logger.warning("Market is not open yet. Returning an empty DataFrame. ")

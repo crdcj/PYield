@@ -110,7 +110,8 @@ def forwards(
     df.loc[first_indices, "fwd"] = df.loc[first_indices, "rk"]
 
     # Return the forward rates as a Series with no name
-    return df.loc[:, "fwd"]
+    df["fwd"].name = None
+    return df["fwd"]
 
 
 def forward(

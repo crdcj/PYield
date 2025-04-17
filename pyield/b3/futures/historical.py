@@ -110,21 +110,22 @@ def _fetch_url_data(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
     """
     url_date = date.strftime("%d/%m/%Y")
     # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
-    url = f"https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data={url_date}&Mercadoria={contract_code}&XLS=false"
-    r = requests.get(url, timeout=10)
+    url_base = "https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp"
+    params = {"Data": url_date, "Mercadoria": contract_code, "XLS": "true"}
+    r = requests.get(url_base, params=params, timeout=10)
 
-    text = r.text
-    if "VENCTO" not in text:
+    if "VENCTO" not in r.text:
         return pd.DataFrame()
 
     df = pd.read_html(
-        io.StringIO(text),
+        io.StringIO(r.text),
         match="VENCTO",
         header=1,
         thousands=".",
         decimal=",",
         na_values=["-"],
         dtype_backend="numpy_nullable",
+        encoding="iso-8859-1",
     )[0]
 
     # Remove rows and columns with all NaN values
