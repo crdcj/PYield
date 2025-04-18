@@ -26,24 +26,28 @@ HISTORICAL_START_TIME = dt.time(20, 0)
 INTRADAY_START_TIME = dt.time(9, 16)
 
 
-def _should_attempt_intraday_fetch(date: pd.Timestamp) -> bool:
-    """Check if the current date is a trading day and if the market is open."""
+def _is_trading_day(check_date_pd: pd.Timestamp) -> bool:
+    """Check if a date is a trading day."""
+    check_date = check_date_pd.date()
 
-    last_bday = bday.last_business_day().date()
-    if date.date() != last_bday:
+    # Só existe dado intraday se for o dia de hoje
+    today = dt.datetime.now(BZ_TIMEZONE).date()
+    if check_date != today:
+        return False
+
+    # Só existe dado intraday se for um dia de útil
+    if not bday.is_business_day(check_date):
         return False
 
     # Pregão não abre na véspera de Natal e Ano Novo
-    today = dt.datetime.now(BZ_TIMEZONE).date()
     special_closed_dates = {  # Datas especiais
-        dt.date(today.year, 12, 24),  # Véspera de Natal
-        dt.date(today.year, 12, 31),  # Véspera de Ano Novo
+        dt.date(check_date.year, 12, 24),  # Véspera de Natal
+        dt.date(check_date.year, 12, 31),  # Véspera de Ano Novo
     }
-    if today in special_closed_dates:
+    if check_date in special_closed_dates:
         return False
 
-    # Se não retornou False até aqui, é porque o dia é um dia de negociação
-    # e o mercado está aberto.
+    # Se não retornou False até aqui, é porque é um dia de negociação
     return True
 
 
@@ -109,7 +113,7 @@ def futures(
     converted_date = dc.convert_input_dates(date)
     selected_contract = str(contract_code).upper()
 
-    if _should_attempt_intraday_fetch(converted_date):
+    if _is_trading_day(converted_date):
         # É um dia de negociação intraday
         time = dt.datetime.now(BZ_TIMEZONE).time()
         if time < INTRADAY_START_TIME:  # Mercado não está aberto ainda
