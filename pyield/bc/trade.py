@@ -7,6 +7,8 @@ from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
 
+BASE_URL = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
+
 COLUMN_MAPPING = {
     "DATA MOV": "SettlementDate",
     "SIGLA": "BondType",
@@ -30,7 +32,7 @@ COLUMN_MAPPING = {
 }
 
 
-def _build_download_url(target_date: DateScalar) -> str:
+def _build_filename(target_date: DateScalar, all_operations: bool) -> str:
     """
     URL com todos os arquivos disponíveis:
     https://www4.bcb.gov.br/pom/demab/negociacoes/apresentacao.asp?frame=1
@@ -38,13 +40,13 @@ def _build_download_url(target_date: DateScalar) -> str:
     Exemplo de URL para download:
     https://www4.bcb.gov.br/pom/demab/negociacoes/download/NegE202409.ZIP
 
-    File format: NegEYYYYMM.ZIP
+    All Operations File format: NegTYYYYMM.ZIP
+    Only Extra Group File format: NegEYYYYMM.ZIP
     """
     target_date = convert_input_dates(target_date)
     file_date = target_date.strftime("%Y%m")
-    file_name = f"NegE{file_date}.ZIP"
-    base_url = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
-    return f"{base_url}/{file_name}"
+    operation_acronym = "T" if all_operations else "E"
+    return f"Neg{operation_acronym}{file_date}.ZIP"
 
 
 @default_retry
@@ -61,24 +63,26 @@ def _fetch_data_from_url(file_url: str) -> pd.DataFrame:
     return df
 
 
-def tpf_trades(target_date: DateScalar) -> pd.DataFrame:
+def tpf_trades(target_date: DateScalar, all_operations: bool = True) -> pd.DataFrame:
     """Fetches monthly secondary trading data for the 'títulos públicos federais' (TPF)
     registered in the Brazilian Central Bank (BCB) system.
 
     Downloads the monthly bond trading data from the Brazilian Central Bank (BCB)
-    website for the month corresponding to the provided date. The data is downloaded as
-    a ZIP file, extracted, and loaded into a Pandas DataFrame. The data contains all
-    trades executed during the month, separated by each 'SettlementDate'.
+    website for the month corresponding to the provided date. The data is downloaded
+    as a ZIP file, extracted, and loaded into a Pandas DataFrame. The data contains
+    all trades executed during the month, separated by each 'SettlementDate'.
 
     Args:
         target_date (DateScalar): The date for which the monthly trading data will be
             fetched. This date can be a string, datetime, or pandas Timestamp object.
             It will be converted to a pandas Timestamp object. Only the year and month
             of this date will be used to download the corresponding monthly file.
+        all_operations (bool): If True, fetches all operations. If False, fetches only
+            the extra group operations. Defaults to True.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the bond trading data for the
-            specified month.
+        pd.DataFrame: A DataFrame containing the bond trading data for the specified
+            month.
 
     DataFrame columns:
         - SettlementDate: Date when the trade settled
@@ -97,11 +101,19 @@ def tpf_trades(target_date: DateScalar) -> pd.DataFrame:
     Examples:
         >>> from pyield import bc
         >>> df = bc.tpf_trades("07-01-2025")  # Returns all trades for January 2025
+
+    Notes:
+        Transactions are considered off-group when the transferring counterparty's
+        conglomerate is different from the receiving counterparty's conglomerate,
+        or when at least one of the counterparties does not belong to a conglomerate.
+        In the case of funds, the conglomerate considered is that of the administrator.
+
     """
-    url = _build_download_url(target_date)
+    filename = _build_filename(target_date, all_operations)
+    logger.info(f"Fetching TPF trades for {target_date} from BCB")
+    url = f"{BASE_URL}/{filename}"
     df = _fetch_data_from_url(url)
     df = df.rename(columns=COLUMN_MAPPING)
-
     # TradeValue are empty in the original BCB file, so we calculate it
     df["TradeValue"] = (df["TradeQuantity"] * df["AvgPrice"]).round(2)
     return df
