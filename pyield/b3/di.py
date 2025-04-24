@@ -107,6 +107,22 @@ class DIFutures:
             self._dirty = False
         return self._df.copy()
 
+    @staticmethod
+    def _find_nearest_date(
+        target_date: pd.Timestamp, date_series: pd.Series
+    ) -> pd.Timestamp:
+        if date_series.empty or target_date is None:
+            return pd.NaT
+        # The result will be a Series of positive Timedeltas (durations)
+        abs_differences = (date_series - target_date).abs()
+
+        # Find the index of the minimum difference in the differences Series
+        # idxmin() returns the index label where the minimum value occurs
+        closest_index = abs_differences.idxmin()
+
+        # Use the found index to get the corresponding date from the original Series
+        return date_series.loc[closest_index]  # or date_series[closest_index]
+
     def _update_df(self) -> pd.DataFrame:
         """Retrieve DI contract DataFrame for the initialized trade date."""
         if self.date is None:
@@ -141,20 +157,24 @@ class DIFutures:
             df_pre = (
                 get_cached_dataset("TPF")
                 .query("BondType in ['LTN', 'NTN-F']")
-                .query("ReferenceDate == @self.date")[["ReferenceDate", "MaturityDate"]]
+                .reset_index(drop=True)[["ReferenceDate", "MaturityDate"]]
+            )
+
+            nearest_date = self._find_nearest_date(self.date, df_pre["ReferenceDate"])
+            if nearest_date is pd.NaT:
+                logger.warning("No matching reference date found in TPF dataset.")
+                return pd.DataFrame()
+
+            # Filter the TPF dataset for the nearest reference date
+            pre_maturities = (
+                df_pre.query("ReferenceDate == @nearest_date")["MaturityDate"]
                 .drop_duplicates()
                 .reset_index(drop=True)
             )
-            # Force the expiration date to be a business day as DI contracts
-            df_pre["MaturityDate"] = bday.offset(df_pre["MaturityDate"], 0)
-            df_pre = df_pre.rename(
-                columns={
-                    "ReferenceDate": "TradeDate",
-                    "MaturityDate": "ExpirationDate",
-                }
-            )
 
-            df = df.merge(df_pre, how="inner")
+            # Force the expirations to be a business day as DI contracts
+            pre_maturities = bday.offset(pre_maturities, 0)
+            df = df.query("ExpirationDate in @pre_maturities").reset_index(drop=True)
 
         if self.month_start:
             df["ExpirationDate"] = (
