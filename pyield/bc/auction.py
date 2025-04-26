@@ -2,7 +2,7 @@
 Documentação da API do BC
     https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/aplicacao#!/recursos/leiloesTitulosPublicos#eyJmb3JtdWxhcmlvIjp7IiRmb3JtYXQiOiJqc29uIiwiJHRvcCI6MTAwfX0=
 Exemplo de chamada:
-    https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='2025-01-30'&@dataMovimentoFim='2025-01-30'&@tipoOferta='Venda'&$top=100&$format=json
+    "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='2025-04-08'&@dataMovimentoFim='2025-04-08'&$top=100&$format=json"
 """
 
 import io
@@ -19,9 +19,9 @@ from pyield.retry import default_retry
 from pyield.tpf.ntnb import duration as duration_b
 from pyield.tpf.ntnf import duration as duration_f
 
-"""Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
+"""
+Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
 Chaves com comentário serão descartadas ao final do processamento
-A ordem das chaves será a ordem das colunas no DataFrame final
 FR = First Round and SR = Second Round
 """
 COLUMN_MAPPING = {
@@ -72,7 +72,11 @@ def _pre_process_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    # Second Round (SR) columns can be null -> remove nulls to avoid propagation
+    """
+    A API retorna somente os valores de SR e FR
+    Assim, vamos ter que somar SR com FR para obter os valores totais
+    Por isso, vamos remover valores nulos de SR e FR para o nulo não ser propagado
+    """
     df["AcceptedQuantitySR"] = df["AcceptedQuantitySR"].fillna(0)
     df["OfferedQuantitySR"] = df["OfferedQuantitySR"].fillna(0)
 
@@ -117,6 +121,9 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     keep_avg_price = is_after_change_Date | is_ltn_or_ntnf
     df["AvgPrice"] = df["AvgPrice"].where(keep_avg_price, adjusted_price)
 
+    # Usar a data de liquidação para calcular o número de dias úteis até o vencimento
+    df["BDToMat"] = bday.count(start=df["Settlement"], end=df["Maturity"])
+
     return df
 
 
@@ -132,44 +139,52 @@ def _adjust_null_values(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
-    df["BDToMat"] = bday.count(start=df["Date"], end=df["Maturity"])
-
-    is_accepted = df["AcceptedQuantityFR"] != 0  # noqa
+    # DV01 irá armazenar o valor do DV01 por título até o final da função
+    # Ao final, o DV01 será multiplicado pela quantidade aceita
+    df["DV01"] = 0
+    is_accepted = df["AcceptedQuantity"] != 0  # noqa
     df_not_accepted = df.query("~@is_accepted").reset_index(drop=True)
-    df_is_accepted = df.query("@is_accepted").reset_index(drop=True)
+    df_accepted = df.query("@is_accepted").reset_index(drop=True)
 
-    df_lft = df_is_accepted.query("BondType == 'LFT'").reset_index(drop=True)
+    df_lft = df_accepted.query("BondType == 'LFT'").reset_index(drop=True)
 
-    df_ltn = df_is_accepted.query("BondType == 'LTN'").reset_index(drop=True)
+    df_ltn = df_accepted.query("BondType == 'LTN'").reset_index(drop=True)
     if not df_ltn.empty:
         df_ltn["Duration"] = df_ltn["BDToMat"] / 252
         mduration = df_ltn["Duration"] / (1 + df_ltn["AvgRate"])
-        df_ltn["DV01FR"] = 0.0001 * mduration * df_ltn["AvgPrice"]
+        df_ltn["DV01"] = 0.0001 * mduration * df_ltn["AvgPrice"]
 
     def compute_f_duration(row):
         return duration_f(row["Date"], row["Maturity"], row["CutRate"])
 
-    df_ntnf = df_is_accepted.query("BondType == 'NTN-F'").reset_index(drop=True)
+    df_ntnf = df_accepted.query("BondType == 'NTN-F'").reset_index(drop=True)
     if not df_ntnf.empty:
         df_ntnf["Duration"] = df_ntnf.apply(compute_f_duration, axis=1)
         df_ntnf["Duration"] = df_ntnf["Duration"].astype("Float64")
         mduration = df_ntnf["Duration"] / (1 + df_ntnf["AvgRate"])
-        df_ntnf["DV01FR"] = 0.0001 * mduration * df_ntnf["AvgPrice"]
+        df_ntnf["DV01"] = 0.0001 * mduration * df_ntnf["AvgPrice"]
 
     def compute_b_duration(row):
         return duration_b(row["Date"], row["Maturity"], row["CutRate"])
 
-    df_ntnb = df_is_accepted.query("BondType == 'NTN-B'").reset_index(drop=True)
+    df_ntnb = df_accepted.query("BondType == 'NTN-B'").reset_index(drop=True)
     if not df_ntnb.empty:
         df_ntnb["Duration"] = df_ntnb.apply(compute_b_duration, axis=1)
         df_ntnb["Duration"] = df_ntnb["Duration"].astype("Float64")
         mduration = df_ntnb["Duration"] / (1 + df_ntnb["AvgRate"])
-        df_ntnb["DV01FR"] = 0.0001 * mduration * df_ntnb["AvgPrice"]
+        df_ntnb["DV01"] = 0.0001 * mduration * df_ntnb["AvgPrice"]
 
     df = pd.concat([df_not_accepted, df_lft, df_ltn, df_ntnf, df_ntnb])
 
-    df["DV01FR"] *= df["AcceptedQuantityFR"]
+    df["DV01FR"] = df["DV01"] * df["AcceptedQuantityFR"]
     df["DV01FR"] = df["DV01FR"].round(0).astype("Int64")
+
+    df["DV01SR"] = df["DV01"] * df["AcceptedQuantitySR"]
+    df["DV01SR"] = df["DV01SR"].round(0).astype("Int64")
+
+    # DV01 irá armazenar o valor total do leilão
+    df["DV01"] *= df["AcceptedQuantity"]
+    df["DV01"] = df["DV01"].round(0).astype("Int64")
 
     return df
 
@@ -195,7 +210,9 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "AcceptedQuantity",
         "AcceptedQuantityFR",
         "AcceptedQuantitySR",
+        "DV01",
         "DV01FR",
+        "DV01SR",
         "AvgPrice",
         "CutPrice",
         "AvgRate",
@@ -305,7 +322,9 @@ def auctions(
             - CutRate: Taxa de corte.
             - BDToMat: Dias úteis até o vencimento.
             - Duration: Duration (Duração) do título.
-            - DV01FR: Dollar Value of 1 bp change in yield - Primeira Rodada (FR) em R$.
+            - DV01: Valor do DV01 total do leilão em R$.
+            - DV01FR: DV01 da Primeira Rodada (FR) em R$.
+            - DV01SR: DV01 da Segunda Rodada (SR) em R$.
     """
     url = BASE_API_URL
     if start:
