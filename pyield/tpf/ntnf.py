@@ -596,11 +596,10 @@ def historical_premium(
     df["BYears"] = df["BDToMat"] / 252
     df["ReferenceDate"] = date
 
-    dif = di.DIFutures()  # Instantiate the DI Futures class
-    df["DIRate"] = dif.interpolate_rates(
+    df["DIRate"] = di.interpolate_rates(
         dates=df["ReferenceDate"],
         expirations=df["PaymentDate"],
-        extrapolate=False,
+        extrapolate=True,
     )
 
     # Calculate the present value of the cash flows using the DI rate

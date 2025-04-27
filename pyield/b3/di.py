@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 import pyield.date_converter as dc
-from pyield import b3, bday, fwd, interpolator
+from pyield import b3, bday, interpolator
 from pyield.data_cache import get_cached_dataset
 from pyield.date_converter import DateArray, DateScalar
 
@@ -14,27 +14,32 @@ logger = logging.getLogger(__name__)
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 
-class DIFutures:
+def data(
+    date: DateScalar,
+    month_start: bool = False,
+    pre_filter: bool = False,
+    all_columns: bool = True,
+) -> pd.DataFrame:
     """
-    Class to retrieve and manipulate DI futures contract data.
+    Function to retrieve DI Futures contract data.
 
-    This class provides access to DI futures data for a specified trade date, and
+    This Function provides access to DI futures data for a specified trade date, and
     includes options to adjust expiration dates and apply filters based on LTN and
     NTN-F bond maturities.
 
     Args:
         date (DateScalar | None): The trade date to retrieve the
             DI contract data. If None, an empty DataFrame is returned.
-        month_start (bool): If True, adjusts the expirations to the start of the month.
+            month_start (bool): If True, all expiration dates are adjusted to the first
+            day of the month. For example, an expiration date of 02/01/2025 will be
+            adjusted to 01/01/2025.
         pre_filter (bool): If True, filters the DI contracts to match only
             expirations with existing prefixed TN bond maturities (LTN and NTN-F).
         all_columns (bool): If True, returns all available columns in the DI dataset.
             If False, only the most common columns are returned.
 
     Examples:
-        To create a `DIFutures` instance and retrieve data:
-        >>> dif = yd.DIFutures(date="16-10-2024", month_start=True)
-        >>> df = dif.df  # Retrieve DI contract dataframe for the specified date
+        >>> df = yd.di.data(date="16-10-2024", month_start=True)
         >>> df.iloc[:5, :5]  # Show the first five rows and columns
            TradeDate ExpirationDate TickerSymbol  BDaysToExp  OpenContracts
         0 2024-10-16     2024-11-01       DI1X24          12        1744269
@@ -43,407 +48,253 @@ class DIFutures:
         3 2024-10-16     2025-02-01       DI1G25          74         279491
         4 2024-10-16     2025-03-01       DI1H25          94         344056
 
-        You can also retrieve forward rates for the DI contracts:
-        >>> dif.forwards.iloc[:5]  # Show the first five rows
-           TradeDate ExpirationDate  SettlementRate  ForwardRate
-        0 2024-10-16     2024-11-01         0.10653      0.10653
-        1 2024-10-16     2024-12-01          0.1091     0.110726
-        2 2024-10-16     2025-01-01         0.11164       0.1154
-        3 2024-10-16     2025-02-01         0.11362     0.118314
-        4 2024-10-16     2025-03-01          0.1157      0.12343
     """
-
-    def __init__(
-        self,
-        date: DateScalar | None = None,
-        month_start: bool = False,
-        pre_filter: bool = False,
-        all_columns: bool = True,
-    ):
-        """
-        Initialize the DIFutures instance with the specified parameters.
-        """
-        self._df = pd.DataFrame()
-        self._dirty = True  # Attribute to track if the df needs updating
-
-        self.date = date
-        self.month_start = month_start
-        self.pre_filter = pre_filter
-        self.all_columns = all_columns
-
-    @staticmethod
-    def _get_historical_dates():
-        """
-        Returns a sorted series of unique trade dates available in the DI dataset.
-        """
-        return (
-            get_cached_dataset("DI")
-            .drop_duplicates(subset=["TradeDate"])["TradeDate"]
-            .sort_values(ascending=True)
-            .reset_index(drop=True)
-        )
-
-    @property
-    def historical_dates(self):
-        """
-        pd.Series: Sorted series of unique trade dates available in the DI dataset.
-        """
-        return self._get_historical_dates()
-
-    @property
-    def df(self) -> pd.DataFrame:
-        """
-        Returns a copy of the DI contract DataFrame for the initialized trade date.
-
-        If the internal state is marked as 'dirty', the DataFrame will be (re)loaded
-        before returning, ensuring that the returned data reflects the latest attribute
-        values.
-
-        Returns:
-            pd.DataFrame: The DI contract data.
-        """
-        if self._dirty:
-            self._df = self._update_df()
-            self._dirty = False
-        return self._df.copy()
-
-    @staticmethod
-    def _find_nearest_date(
-        target_date: pd.Timestamp, date_series: pd.Series
-    ) -> pd.Timestamp:
-        if date_series.empty or target_date is None:
-            return pd.NaT
-        # The result will be a Series of positive Timedeltas (durations)
-        abs_differences = (date_series - target_date).abs()
-
-        # Find the index of the minimum difference in the differences Series
-        # idxmin() returns the index label where the minimum value occurs
-        closest_index = abs_differences.idxmin()
-
-        # Use the found index to get the corresponding date from the original Series
-        return date_series.loc[closest_index]  # or date_series[closest_index]
-
-    def _update_df(self) -> pd.DataFrame:
-        """Retrieve DI contract DataFrame for the initialized trade date."""
-        if self.date is None:
-            logger.info("No date specified. Returning empty DataFrame.")
-            return pd.DataFrame()
-        # Return an empty DataFrame if the trade date is a holiday
-        if not bday.is_business_day(self.date):
-            logger.warning("Specified date is not a business day.")
+    if date:
+        date = dc.convert_input_dates(date)
+        bz_today = dt.now(TIMEZONE_BZ).date()
+        if date.date() > bz_today:
+            logger.warning(f"DI date ({date}) after current date {bz_today}")
             logger.warning("Returning empty DataFrame.")
             return pd.DataFrame()
+    else:
+        logger.info("No date specified. Returning empty DataFrame.")
+        return pd.DataFrame()
+    # Return an empty DataFrame if the trade date is a holiday
+    if not bday.is_business_day(date):
+        logger.warning("Specified date is not a business day.")
+        logger.warning("Returning empty DataFrame.")
+        return pd.DataFrame()
 
-        # Get historical data
-        df = (
-            get_cached_dataset("DI")
-            .query("TradeDate == @self.date")
+    # Get historical data
+    df = get_cached_dataset("DI").query("TradeDate == @date").reset_index(drop=True)
+
+    if df.empty:
+        logger.info("No historical data found. Trying real-time data.")
+        df = b3.futures(contract_code="DI1", date=date)
+
+    if df.empty:
+        logger.warning("No DI Futures data found for the specified date.")
+        logger.warning("Returning empty DataFrame.")
+        return pd.DataFrame()
+
+    if "DaysToExpiration" in df.columns:
+        df.drop(columns=["DaysToExpiration"], inplace=True)
+
+    if pre_filter:
+        df_pre = (
+            get_cached_dataset("TPF")
+            .query("BondType in ['LTN', 'NTN-F']")
+            .reset_index(drop=True)[["ReferenceDate", "MaturityDate"]]
+        )
+
+        nearest_date = _find_nearest_date(date, df_pre["ReferenceDate"])
+        if nearest_date is pd.NaT:
+            logger.warning("No matching reference date found in TPF dataset.")
+            return pd.DataFrame()
+
+        # Filter the TPF dataset for the nearest reference date
+        pre_maturities = (
+            df_pre.query("ReferenceDate == @nearest_date")["MaturityDate"]
+            .drop_duplicates()
             .reset_index(drop=True)
         )
 
-        if df.empty:
-            logger.info("No historical data found. Trying real-time data.")
-            df = b3.futures(contract_code="DI1", date=self.date)
+        # Force the expirations to be a business day as DI contracts
+        pre_maturities = bday.offset(pre_maturities, 0)
+        df = df.query("ExpirationDate in @pre_maturities").reset_index(drop=True)
 
-        if df.empty:
-            logger.warning("No DI Futures data found for the specified date.")
-            logger.warning("Returning empty DataFrame.")
-            return pd.DataFrame()
+    if month_start:
+        df["ExpirationDate"] = df["ExpirationDate"].dt.to_period("M").dt.to_timestamp()
 
-        if "DaysToExpiration" in df.columns:
-            df.drop(columns=["DaysToExpiration"], inplace=True)
+    if not all_columns:
+        cols = [
+            "TradeDate",
+            "TickerSymbol",
+            "ExpirationDate",
+            "BDaysToExp",
+            "OpenContracts",
+            "TradeVolume",
+            "DV01",
+            "SettlementPrice",
+            "LastPrice",
+            "OpenRate",
+            "MinRate",
+            "MaxRate",
+            "CloseRate",
+            "SettlementRate",
+            "LastRate",
+            "ForwardRate",
+        ]
+        selected_cols = [col for col in cols if col in df.columns]
+        df = df[selected_cols].copy()
 
-        if self.pre_filter:
-            df_pre = (
-                get_cached_dataset("TPF")
-                .query("BondType in ['LTN', 'NTN-F']")
-                .reset_index(drop=True)[["ReferenceDate", "MaturityDate"]]
-            )
+    return df.sort_values(by=["TradeDate", "ExpirationDate"]).reset_index(drop=True)
 
-            nearest_date = self._find_nearest_date(self.date, df_pre["ReferenceDate"])
-            if nearest_date is pd.NaT:
-                logger.warning("No matching reference date found in TPF dataset.")
-                return pd.DataFrame()
 
-            # Filter the TPF dataset for the nearest reference date
-            pre_maturities = (
-                df_pre.query("ReferenceDate == @nearest_date")["MaturityDate"]
-                .drop_duplicates()
-                .reset_index(drop=True)
-            )
+def _find_nearest_date(
+    target_date: pd.Timestamp, date_series: pd.Series
+) -> pd.Timestamp:
+    if date_series.empty or target_date is None:
+        return pd.NaT
+    # The result will be a Series of positive Timedeltas (durations)
+    abs_differences = (date_series - target_date).abs()
 
-            # Force the expirations to be a business day as DI contracts
-            pre_maturities = bday.offset(pre_maturities, 0)
-            df = df.query("ExpirationDate in @pre_maturities").reset_index(drop=True)
+    # Find the index of the minimum difference in the differences Series
+    # idxmin() returns the index label where the minimum value occurs
+    closest_index = abs_differences.idxmin()
 
-        if self.month_start:
-            df["ExpirationDate"] = (
-                df["ExpirationDate"].dt.to_period("M").dt.to_timestamp()
-            )
+    # Use the found index to get the corresponding date from the original Series
+    return date_series.loc[closest_index]  # or date_series[closest_index]
 
-        if not self.all_columns:
-            cols = [
-                "TradeDate",
-                "TickerSymbol",
-                "ExpirationDate",
-                "BDaysToExp",
-                "OpenContracts",
-                "TradeVolume",
-                "DV01",
-                "OpenRate",
-                "MinRate",
-                "MaxRate",
-                "CloseRate",
-                "SettlementRate",
-                "LastRate",
-                "SettlementPrice",
-                "LastPrice",
-            ]
-            selected_cols = [col for col in cols if col in df.columns]
-            df = df[selected_cols].copy()
 
-        return df.sort_values(by=["TradeDate", "ExpirationDate"]).reset_index(drop=True)
+def interpolate_rates(
+    dates: DateScalar | DateArray,
+    expirations: DateScalar | DateArray,
+    extrapolate: bool = True,
+) -> pd.Series:
+    """
+    Interpolates DI rates for specified trade dates and maturities. The method
+    is recomended to be used in datasets calculations with multiple dates.
 
-    @property
-    def forwards(self) -> pd.DataFrame:
-        """
-        Calculate the DI forward rates for the initialized trade date.
+    This method calculates interpolated DI rates for a given set of trade
+    dates and maturities using a flat-forward interpolation method. If no DI
+    rates are available for a reference date, the interpolated rate is set to NaN.
 
-        This property returns a DataFrame with both the SettlementRate and the
-        calculated ForwardRate for DI contracts, based on the instance's trade date and
-        applied filters.
+    If dates is provided as a scalar and expirations as an array, the
+    method assumes the scalar value is the same for all maturities. The same logic
+    applies when the maturities are scalar and the trade dates are an array.
 
-        Returns:
-            pd.DataFrame: A DataFrame containing the following columns:
-                - ExpirationDate: The expiration dates of the DI contracts.
-                - SettlementRate: The zero rate (interest rate) for each expiration.
-                - ForwardRate: The fwd rate calculated between successive expirations.
-        """
-        # Use a local copy of the DI DataFrame
-        df = self.df
+    Args:
+        dates (DateScalar | DateArray): The trade dates for the rates.
+        expirations (DateScalar | DateArray): The expirations corresponding to the
+            trade dates.
+        extrapolate (bool): Whether to allow extrapolation beyond known DI rates.
 
-        if df.empty:
-            return pd.DataFrame()
+    Returns:
+        pd.Series: A Series containing the interpolated DI rates.
 
-        df["ForwardRate"] = fwd.forwards(
-            bdays=bday.count(df["TradeDate"], df["ExpirationDate"]),
-            rates=df["SettlementRate"],
-            groupby_dates=df["TradeDate"],
-        )
+    Raises:
+        ValueError: If `dates` and `maturities` have different lengths.
+    """
+    # Convert input dates to a consistent format
+    dates = dc.convert_input_dates(dates)
+    expirations = dc.convert_input_dates(expirations)
 
-        return df[["TradeDate", "ExpirationDate", "SettlementRate", "ForwardRate"]]
+    # Ensure the lengths of input arrays are consistent
+    match (dates, expirations):
+        case pd.Timestamp(), pd.Series():
+            dfi = pd.DataFrame({"mat": expirations})
+            dfi["tdate"] = dates
 
-    @staticmethod
-    def interpolate_rates(
-        dates: DateScalar | DateArray,
-        expirations: DateScalar | DateArray,
-        extrapolate: bool = True,
-    ) -> pd.Series:
-        """
-        Interpolates DI rates for specified trade dates and maturities. The method
-        is recomended to be used in datasets calculations with multiple dates.
+        case pd.Series(), pd.Timestamp():
+            dfi = pd.DataFrame({"tdate": dates})
+            dfi["mat"] = expirations
 
-        This method calculates interpolated DI rates for a given set of trade
-        dates and maturities using a flat-forward interpolation method. If no DI
-        rates are available for a reference date, the interpolated rate is set to NaN.
+        case pd.Series(), pd.Series():
+            if len(dates) != len(expirations):
+                raise ValueError("Args. should have the same length.")
+            dfi = pd.DataFrame({"tdate": dates, "mat": expirations})
 
-        If dates is provided as a scalar and expirations as an array, the
-        method assumes the scalar value is the same for all maturities. The same logic
-        applies when the maturities are scalar and the trade dates are an array.
+        case pd.Timestamp(), pd.Timestamp():
+            dfi = pd.DataFrame({"tdate": [dates], "mat": [expirations]})
 
-        Args:
-            dates (DateScalar | DateArray): The trade dates for the rates.
-            expirations (DateScalar | DateArray): The expirations corresponding to the
-                trade dates.
-            extrapolate (bool): Whether to allow extrapolation beyond known DI rates.
+    # Compute business days between reference dates and maturities
+    dfi["bdays"] = bday.count(dfi["tdate"], dfi["mat"])
 
-        Returns:
-            pd.Series: A Series containing the interpolated DI rates.
+    # Initialize the interpolated rate column with NaN
+    dfi["irate"] = pd.NA
+    dfi["irate"] = dfi["irate"].astype("Float64")
 
-        Raises:
-            ValueError: If `dates` and `maturities` have different lengths.
-        """
-        # Convert input dates to a consistent format
-        dates = dc.convert_input_dates(dates)
-        expirations = dc.convert_input_dates(expirations)
+    # Load DI rates dataset filtered by the provided reference dates
+    dfr = (
+        get_cached_dataset("DI")
+        .query("TradeDate in @dfi['tdate'].unique()")
+        .reset_index(drop=True)
+    )
 
-        # Ensure the lengths of input arrays are consistent
-        match (dates, expirations):
-            case pd.Timestamp(), pd.Series():
-                dfi = pd.DataFrame({"mat": expirations})
-                dfi["tdate"] = dates
+    # Return an empty DataFrame if no rates are found
+    if dfr.empty:
+        return pd.Series()
 
-            case pd.Series(), pd.Timestamp():
-                dfi = pd.DataFrame({"tdate": dates})
-                dfi["mat"] = expirations
+    # Iterate over each unique reference date
+    for date in dfi["tdate"].unique():
+        # Filter DI rates for the current reference date
+        dfr_subset = dfr.query("TradeDate == @date").reset_index(drop=True)
 
-            case pd.Series(), pd.Series():
-                if len(dates) != len(expirations):
-                    raise ValueError("Args. should have the same length.")
-                dfi = pd.DataFrame({"tdate": dates, "mat": expirations})
+        # Skip processing if no rates are available for the current date
+        if dfr_subset.empty:
+            continue
 
-            case pd.Timestamp(), pd.Timestamp():
-                dfi = pd.DataFrame({"tdate": [dates], "mat": [expirations]})
-
-        # Compute business days between reference dates and maturities
-        dfi["bdays"] = bday.count(dfi["tdate"], dfi["mat"])
-
-        # Initialize the interpolated rate column with NaN
-        dfi["irate"] = pd.NA
-        dfi["irate"] = dfi["irate"].astype("Float64")
-
-        # Load DI rates dataset filtered by the provided reference dates
-        dfr = (
-            get_cached_dataset("DI")
-            .query("TradeDate in @dfi['tdate'].unique()")
-            .reset_index(drop=True)
-        )
-
-        # Return an empty DataFrame if no rates are found
-        if dfr.empty:
-            return pd.Series()
-
-        # Iterate over each unique reference date
-        for date in dfi["tdate"].unique():
-            # Filter DI rates for the current reference date
-            dfr_subset = dfr.query("TradeDate == @date").reset_index(drop=True)
-
-            # Skip processing if no rates are available for the current date
-            if dfr_subset.empty:
-                continue
-
-            # Initialize the interpolator with known rates and business days
-            interp = interpolator.Interpolator(
-                method="flat_forward",
-                known_bdays=dfr_subset["BDaysToExp"],
-                known_rates=dfr_subset["SettlementRate"],
-                extrapolate=extrapolate,
-            )
-
-            # Apply interpolation to rows matching the current reference date
-            mask: pd.Series = dfi["tdate"] == date
-            dfi.loc[mask, "irate"] = dfi.loc[mask, "bdays"].apply(interp)
-
-        # Return the Series with interpolated rates
-        s_irates = dfi["irate"]
-        s_irates.name = "InterpolatedRates"
-        return s_irates
-
-    def rate(
-        self,
-        expiration: DateScalar,
-        interpolate: bool = True,
-        extrapolate: bool = False,
-    ) -> float:
-        """Retrieve the DI rate for a specified expiration date."""
-        expiration = dc.convert_input_dates(expiration)
-        if not self.date:
-            return float("NaN")
-
-        if self.month_start:
-            # Force the expiration date to be the start of the month
-            expiration = expiration.to_period("M").to_timestamp()
-        else:
-            # Force the expiration date to be a business day
-            expiration = bday.offset(expiration, 0)
-
-        if not interpolate and extrapolate:
-            raise ValueError("Extrapolation is not allowed without interpolation.")
-        # Get the DI contract DataFrame
-        df = self.df
-
-        if df.empty:
-            return float("NaN")
-
-        df_exp = df.query("ExpirationDate == @expiration")
-
-        if df_exp.empty and not interpolate:
-            return float("NaN")
-
-        if expiration in df_exp["ExpirationDate"].values:
-            return float(df_exp["SettlementRate"].iat[0])
-
-        if not interpolate:
-            return float("NaN")
-
-        ff_interp = interpolator.Interpolator(
+        # Initialize the interpolator with known rates and business days
+        interp = interpolator.Interpolator(
             method="flat_forward",
-            known_bdays=df["BDaysToExp"],
-            known_rates=df["SettlementRate"],
+            known_bdays=dfr_subset["BDaysToExp"],
+            known_rates=dfr_subset["SettlementRate"],
             extrapolate=extrapolate,
         )
-        bd = bday.count(self.date, expiration)
-        return ff_interp(bd)
 
-    @property
-    def date(self) -> pd.Timestamp | None:
-        """
-        The trade date to retrieve the DI contract data.
+        # Apply interpolation to rows matching the current reference date
+        mask: pd.Series = dfi["tdate"] == date
+        dfi.loc[mask, "irate"] = dfi.loc[mask, "bdays"].apply(interp)
 
-        This property can be both read and set. When setting a value, it automatically
-        converts the input date format to a `pd.Timestamp`.
+    # Return the Series with interpolated rates
+    dfi["irate"].name = None
+    return dfi["irate"]
 
-        Returns:
-            pd.Timestamp: The trade date set for this instance.
-        """
-        return self._date
 
-    @date.setter
-    def date(self, value: DateScalar | None):
-        if value:
-            self._date = dc.convert_input_dates(value)
-            bz_today = dt.now(TIMEZONE_BZ).date()
-            if self._date.date() > bz_today:
-                raise ValueError(
-                    f"DI date ({self._date}) after current date {bz_today}"
-                )
-        else:
-            self._date = None
-        self._dirty = True
+def interpolate_rate(
+    date: DateScalar,
+    expiration: DateScalar,
+    extrapolate: bool = False,
+) -> float:
+    """Retrieve the DI rate for a specified expiration date."""
+    expiration = dc.convert_input_dates(expiration)
+    if not date:
+        return float("NaN")
 
-    @property
-    def month_start(self) -> bool:
-        """
-        Adjusts the expiration dates to the start of the month.
+    # Get the DI contract DataFrame
+    df = data(date=date)
 
-        This property can be both read and set. When set to `True`, all expiration dates
-        are adjusted to the first day of the month. For example, an expiration date of
-        02/01/2025 will be adjusted to 01/01/2025.
+    if df.empty:
+        return float("NaN")
 
-        Returns:
-            bool: Whether expiration dates are adjusted to the start of the month.
-        """
-        return self._month_start
+    max_exp = df["ExpirationDate"].max()
 
-    @month_start.setter
-    def month_start(self, value: bool):
-        self._month_start = bool(value)
-        self._dirty = True
+    if expiration > max_exp and not extrapolate:
+        logger.warning(
+            f"Expiration date ({expiration}) is greater than the maximum expiration "
+            f"date ({max_exp}) and extrapolation is not allowed. Returning NaN."
+        )
+        return float("NaN")
 
-    @property
-    def pre_filter(self) -> bool:
-        """
-        Filters DI Futures to match prefixed TN bond maturities.
+    if expiration in df["ExpirationDate"]:
+        rate = df.query("ExpirationDate == @expiration")["SettlementRate"]
+        return float(rate.iloc[0]) if not rate.empty else float("NaN")
 
-        This property can be both read and set. When set to `True`, only contracts that
-        match the maturities of LTN and NTN-F bonds will be shown.
+    ff_interp = interpolator.Interpolator(
+        method="flat_forward",
+        known_bdays=df["BDaysToExp"],
+        known_rates=df["SettlementRate"],
+        extrapolate=extrapolate,
+    )
+    bd = bday.count(date, expiration)
+    return ff_interp(bd)
 
-        Returns:
-            bool: Whether the contracts are filtered to match prefixed TN bond
-                maturities from the ANBIMA dataset.
-        """
-        return self._pre_filter
 
-    @pre_filter.setter
-    def pre_filter(self, value: bool):
-        self._pre_filter = bool(value)
-        self._dirty = True
+def eod_dates() -> pd.Series:
+    """
+    Retorna as datas de negociação disponíveis no dataset Futuro de DI.
 
-    @property
-    def all_columns(self) -> bool:
-        return self._all_columns
+    Busca todas as datas únicas de `TradeDate` presentes no dataset "DI".
 
-    @all_columns.setter
-    def all_columns(self, value: bool):
-        self._all_columns = bool(value)
-        self._dirty = True
+    Returns:
+        pd.Series: Uma série de Timestamps contendo todas as datas de negociação
+        (pregões) únicas, ordenadas ascendentemente, para as quais existem dados de DI.
+        Retorna uma Series vazia se o cache estiver vazio.
+    """
+    return (
+        get_cached_dataset("DI")
+        .drop_duplicates(subset=["TradeDate"])["TradeDate"]
+        .sort_values(ascending=True)
+        .reset_index(drop=True)
+    )

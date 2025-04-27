@@ -223,8 +223,7 @@ def historical_premium(
     ltn_rate = float(ltn_rates.iloc[0])
 
     # Retrieve DI rate for the reference date and maturity
-    dif = di.DIFutures(date=date)
-    di_rate = dif.rate(expiration=maturity, interpolate=True, extrapolate=False)
+    di_rate = di.interpolate_rate(date=date, expiration=maturity, extrapolate=True)
     if pd.isnull(di_rate):  # Check if the DI rate is NaN
         return float("NaN")
 

@@ -5,7 +5,7 @@ import pandas as pd
 
 from pyield import date_converter as dc
 from pyield.anbima import tpf
-from pyield.b3.di import DIFutures
+from pyield.b3 import di
 from pyield.date_converter import DateScalar
 
 
@@ -77,8 +77,7 @@ def pre_spreads(date: DateScalar) -> pd.DataFrame:
     """
     # Fetch DI rates for the reference date
     converted_date = dc.convert_input_dates(date)
-    di = DIFutures(date=converted_date, month_start=True)
-    df_di = di.df
+    df_di = di.data(date=converted_date, month_start=True)
     if "SettlementRate" not in df_di.columns or df_di.empty:
         raise ValueError("DI data is missing the 'SettlementRate' column or is empty.")
 

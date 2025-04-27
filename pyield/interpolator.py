@@ -95,10 +95,10 @@ class Interpolator:
 
         # Lower bound extrapolation is always the first known rate
         if bday < known_bdays[0]:
-            return known_rates[0]
+            return float(known_rates[0])
         # Upper bound extrapolation depends on the extrapolate flag
         elif bday > known_bdays[-1]:
-            return known_rates[-1] if extrapolate else float("NaN")
+            return float(known_rates[-1]) if extrapolate else float("NaN")
 
         # Early return for linear interpolation
         if method == "linear":
@@ -109,10 +109,10 @@ class Interpolator:
 
         # Check if the interpolation point is known
         if idx < len(known_bdays) and known_bdays[idx] == bday:
-            return known_rates[idx]
+            return float(known_rates[idx])
 
         # Perform flat forward interpolation
-        return self._flat_forward(bday, idx)
+        return float(self._flat_forward(bday, idx))
 
     def __call__(self, bday: int) -> float:
         """

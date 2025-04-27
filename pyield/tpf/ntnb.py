@@ -463,8 +463,7 @@ def bei_rates(
 
         Get the DI Futures settlement rates for the same reference date to be used as
         reference for the nominal rates:
-        >>> di = yd.DIFutures("05-09-2024")
-        >>> df_di = di.df
+        >>> df_di = yd.di.data("05-09-2024")
 
         Calculate the BEI rates considering the settlement at the reference date:
         >>> yd.ntnb.bei_rates(
