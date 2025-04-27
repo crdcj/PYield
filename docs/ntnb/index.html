@@ -834,35 +834,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../di/" class="md-nav__link">
+      <a href="../dif/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    DI Data
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../b3/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    B3 Data
+    DI Futures Data
     
   </span>
   
@@ -1134,8 +1111,7 @@ These are YTM rates and the spot rates are calculated based on them</p>
 </span></code></pre></div>
     <p>Get the DI Futures settlement rates for the same reference date to be used as
 reference for the nominal rates:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">di</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">DIFutures</span><span class="p">(</span><span class="s2">&quot;05-09-2024&quot;</span><span class="p">)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df_di</span> <span class="o">=</span> <span class="n">di</span><span class="o">.</span><span class="n">df</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df_di</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">dif</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="s2">&quot;05-09-2024&quot;</span><span class="p">)</span>
 </span></code></pre></div>
     <p>Calculate the BEI rates considering the settlement at the reference date:</p>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">bei_rates</span><span class="p">(</span>
@@ -1263,8 +1239,7 @@ reference for the nominal rates:</p>
 <span class="normal"><a href="#__codelineno-0-517">517</a></span>
 <span class="normal"><a href="#__codelineno-0-518">518</a></span>
 <span class="normal"><a href="#__codelineno-0-519">519</a></span>
-<span class="normal"><a href="#__codelineno-0-520">520</a></span>
-<span class="normal"><a href="#__codelineno-0-521">521</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-422"><a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="k">def</span><span class="w"> </span><span class="nf">bei_rates</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-520">520</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-422"><a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="k">def</span><span class="w"> </span><span class="nf">bei_rates</span><span class="p">(</span>
 </span><span id="__span-0-423"><a id="__codelineno-0-423" name="__codelineno-0-423"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-424"><a id="__codelineno-0-424" name="__codelineno-0-424"></a>    <span class="n">ntnb_maturities</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
 </span><span id="__span-0-425"><a id="__codelineno-0-425" name="__codelineno-0-425"></a>    <span class="n">ntnb_rates</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -1308,62 +1283,61 @@ reference for the nominal rates:</p>
 </span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a>
 </span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a><span class="sd">        Get the DI Futures settlement rates for the same reference date to be used as</span>
 </span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a><span class="sd">        reference for the nominal rates:</span>
-</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a><span class="sd">        &gt;&gt;&gt; di = yd.DIFutures(&quot;05-09-2024&quot;)</span>
-</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a><span class="sd">        &gt;&gt;&gt; df_di = di.df</span>
-</span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a>
-</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a><span class="sd">        Calculate the BEI rates considering the settlement at the reference date:</span>
-</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a><span class="sd">        &gt;&gt;&gt; yd.ntnb.bei_rates(</span>
-</span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a><span class="sd">        ...     settlement=&quot;05-09-2024&quot;,</span>
-</span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a><span class="sd">        ...     ntnb_maturities=df_ntnb[&quot;MaturityDate&quot;],</span>
-</span><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a><span class="sd">        ...     ntnb_rates=df_ntnb[&quot;IndicativeRate&quot;],</span>
-</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a><span class="sd">        ...     nominal_maturities=df_di[&quot;ExpirationDate&quot;],</span>
-</span><span id="__span-0-475"><a id="__codelineno-0-475" name="__codelineno-0-475"></a><span class="sd">        ...     nominal_rates=df_di[&quot;SettlementRate&quot;],</span>
-</span><span id="__span-0-476"><a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="sd">        ... )</span>
-</span><span id="__span-0-477"><a id="__codelineno-0-477" name="__codelineno-0-477"></a><span class="sd">           MaturityDate  BDToMat       RIR       NIR       BEI</span>
-</span><span id="__span-0-478"><a id="__codelineno-0-478" name="__codelineno-0-478"></a><span class="sd">        0    2025-05-15      171  0.061749  0.113836  0.049058</span>
-</span><span id="__span-0-479"><a id="__codelineno-0-479" name="__codelineno-0-479"></a><span class="sd">        1    2026-08-15      488  0.066133  0.117126   0.04783</span>
-</span><span id="__span-0-480"><a id="__codelineno-0-480" name="__codelineno-0-480"></a><span class="sd">        2    2027-05-15      673  0.063816  0.117169  0.050152</span>
-</span><span id="__span-0-481"><a id="__codelineno-0-481" name="__codelineno-0-481"></a><span class="sd">        3    2028-08-15      988  0.063635   0.11828  0.051376</span>
-</span><span id="__span-0-482"><a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="sd">        4    2029-05-15     1172  0.062532   0.11838  0.052561</span>
-</span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a><span class="sd">        5    2030-08-15     1486  0.061809  0.118499   0.05339</span>
-</span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="sd">        6    2032-08-15     1990  0.062135  0.118084  0.052676</span>
-</span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a><span class="sd">        7    2033-05-15     2177  0.061897   0.11787   0.05271</span>
-</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a><span class="sd">        8    2035-05-15     2676  0.061711  0.117713  0.052747</span>
-</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a><span class="sd">        9    2040-08-15     3995  0.060468   0.11759  0.053865</span>
-</span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="sd">        10   2045-05-15     5182    0.0625   0.11759   0.05185</span>
-</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a><span class="sd">        11   2050-08-15     6497  0.063016   0.11759  0.051339</span>
-</span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a><span class="sd">        12   2055-05-15     7686  0.062252   0.11759  0.052095</span>
-</span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a><span class="sd">        13   2060-08-15     9003  0.063001   0.11759  0.051354</span>
-</span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a>
-</span><span id="__span-0-493"><a id="__codelineno-0-493" name="__codelineno-0-493"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-494"><a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="c1"># Normalize input dates</span>
-</span><span id="__span-0-495"><a id="__codelineno-0-495" name="__codelineno-0-495"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-496"><a id="__codelineno-0-496" name="__codelineno-0-496"></a>    <span class="n">ntnb_maturities</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">ntnb_maturities</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">,</span> <span class="n">dayfirst</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a>
-</span><span id="__span-0-498"><a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="c1"># Calculate Real Interest Rate (RIR)</span>
-</span><span id="__span-0-499"><a id="__codelineno-0-499" name="__codelineno-0-499"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">spot_rates</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">ntnb_maturities</span><span class="p">,</span> <span class="n">ntnb_rates</span><span class="p">)</span>
-</span><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BDToMat&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;MaturityDate&quot;</span><span class="p">])</span>
-</span><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;SpotRate&quot;</span><span class="p">:</span> <span class="s2">&quot;RIR&quot;</span><span class="p">})</span>
-</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a>
-</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="n">nir_interplator</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">Interpolator</span><span class="p">(</span>
-</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a>        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span>
-</span><span id="__span-0-505"><a id="__codelineno-0-505" name="__codelineno-0-505"></a>        <span class="n">known_bdays</span><span class="o">=</span><span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">nominal_maturities</span><span class="p">),</span>
-</span><span id="__span-0-506"><a id="__codelineno-0-506" name="__codelineno-0-506"></a>        <span class="n">known_rates</span><span class="o">=</span><span class="n">nominal_rates</span><span class="p">,</span>
-</span><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a>        <span class="n">extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a>    <span class="p">)</span>
-</span><span id="__span-0-509"><a id="__codelineno-0-509" name="__codelineno-0-509"></a>
-</span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;NIR&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BDToMat&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">nir_interplator</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;Float64&quot;</span><span class="p">)</span>
-</span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a>    <span class="c1"># Calculate Breakeven Inflation Rate (BEI)</span>
-</span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BEI&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;NIR&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;RIR&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span>
-</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a>
-</span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a>    <span class="n">cols_reordered</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a>        <span class="s2">&quot;MaturityDate&quot;</span><span class="p">,</span>
-</span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a>        <span class="s2">&quot;BDToMat&quot;</span><span class="p">,</span>
-</span><span id="__span-0-517"><a id="__codelineno-0-517" name="__codelineno-0-517"></a>        <span class="s2">&quot;RIR&quot;</span><span class="p">,</span>
-</span><span id="__span-0-518"><a id="__codelineno-0-518" name="__codelineno-0-518"></a>        <span class="s2">&quot;NIR&quot;</span><span class="p">,</span>
-</span><span id="__span-0-519"><a id="__codelineno-0-519" name="__codelineno-0-519"></a>        <span class="s2">&quot;BEI&quot;</span><span class="p">,</span>
-</span><span id="__span-0-520"><a id="__codelineno-0-520" name="__codelineno-0-520"></a>    <span class="p">]</span>
-</span><span id="__span-0-521"><a id="__codelineno-0-521" name="__codelineno-0-521"></a>    <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="n">cols_reordered</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a><span class="sd">        &gt;&gt;&gt; df_di = yd.dif.data(&quot;05-09-2024&quot;)</span>
+</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a>
+</span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a><span class="sd">        Calculate the BEI rates considering the settlement at the reference date:</span>
+</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a><span class="sd">        &gt;&gt;&gt; yd.ntnb.bei_rates(</span>
+</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a><span class="sd">        ...     settlement=&quot;05-09-2024&quot;,</span>
+</span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a><span class="sd">        ...     ntnb_maturities=df_ntnb[&quot;MaturityDate&quot;],</span>
+</span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a><span class="sd">        ...     ntnb_rates=df_ntnb[&quot;IndicativeRate&quot;],</span>
+</span><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a><span class="sd">        ...     nominal_maturities=df_di[&quot;ExpirationDate&quot;],</span>
+</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a><span class="sd">        ...     nominal_rates=df_di[&quot;SettlementRate&quot;],</span>
+</span><span id="__span-0-475"><a id="__codelineno-0-475" name="__codelineno-0-475"></a><span class="sd">        ... )</span>
+</span><span id="__span-0-476"><a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="sd">           MaturityDate  BDToMat       RIR       NIR       BEI</span>
+</span><span id="__span-0-477"><a id="__codelineno-0-477" name="__codelineno-0-477"></a><span class="sd">        0    2025-05-15      171  0.061749  0.113836  0.049058</span>
+</span><span id="__span-0-478"><a id="__codelineno-0-478" name="__codelineno-0-478"></a><span class="sd">        1    2026-08-15      488  0.066133  0.117126   0.04783</span>
+</span><span id="__span-0-479"><a id="__codelineno-0-479" name="__codelineno-0-479"></a><span class="sd">        2    2027-05-15      673  0.063816  0.117169  0.050152</span>
+</span><span id="__span-0-480"><a id="__codelineno-0-480" name="__codelineno-0-480"></a><span class="sd">        3    2028-08-15      988  0.063635   0.11828  0.051376</span>
+</span><span id="__span-0-481"><a id="__codelineno-0-481" name="__codelineno-0-481"></a><span class="sd">        4    2029-05-15     1172  0.062532   0.11838  0.052561</span>
+</span><span id="__span-0-482"><a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="sd">        5    2030-08-15     1486  0.061809  0.118499   0.05339</span>
+</span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a><span class="sd">        6    2032-08-15     1990  0.062135  0.118084  0.052676</span>
+</span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="sd">        7    2033-05-15     2177  0.061897   0.11787   0.05271</span>
+</span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a><span class="sd">        8    2035-05-15     2676  0.061711  0.117713  0.052747</span>
+</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a><span class="sd">        9    2040-08-15     3995  0.060468   0.11759  0.053865</span>
+</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a><span class="sd">        10   2045-05-15     5182    0.0625   0.11759   0.05185</span>
+</span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="sd">        11   2050-08-15     6497  0.063016   0.11759  0.051339</span>
+</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a><span class="sd">        12   2055-05-15     7686  0.062252   0.11759  0.052095</span>
+</span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a><span class="sd">        13   2060-08-15     9003  0.063001   0.11759  0.051354</span>
+</span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a>
+</span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-493"><a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="c1"># Normalize input dates</span>
+</span><span id="__span-0-494"><a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-495"><a id="__codelineno-0-495" name="__codelineno-0-495"></a>    <span class="n">ntnb_maturities</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">ntnb_maturities</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">,</span> <span class="n">dayfirst</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-0-496"><a id="__codelineno-0-496" name="__codelineno-0-496"></a>
+</span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a>    <span class="c1"># Calculate Real Interest Rate (RIR)</span>
+</span><span id="__span-0-498"><a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">spot_rates</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">ntnb_maturities</span><span class="p">,</span> <span class="n">ntnb_rates</span><span class="p">)</span>
+</span><span id="__span-0-499"><a id="__codelineno-0-499" name="__codelineno-0-499"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BDToMat&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;MaturityDate&quot;</span><span class="p">])</span>
+</span><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;SpotRate&quot;</span><span class="p">:</span> <span class="s2">&quot;RIR&quot;</span><span class="p">})</span>
+</span><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a>
+</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a>    <span class="n">nir_interplator</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">Interpolator</span><span class="p">(</span>
+</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a>        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span>
+</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a>        <span class="n">known_bdays</span><span class="o">=</span><span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">nominal_maturities</span><span class="p">),</span>
+</span><span id="__span-0-505"><a id="__codelineno-0-505" name="__codelineno-0-505"></a>        <span class="n">known_rates</span><span class="o">=</span><span class="n">nominal_rates</span><span class="p">,</span>
+</span><span id="__span-0-506"><a id="__codelineno-0-506" name="__codelineno-0-506"></a>        <span class="n">extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a>    <span class="p">)</span>
+</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a>
+</span><span id="__span-0-509"><a id="__codelineno-0-509" name="__codelineno-0-509"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;NIR&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BDToMat&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">nir_interplator</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;Float64&quot;</span><span class="p">)</span>
+</span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a>    <span class="c1"># Calculate Breakeven Inflation Rate (BEI)</span>
+</span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BEI&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;NIR&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;RIR&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a>
+</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a>    <span class="n">cols_reordered</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a>        <span class="s2">&quot;MaturityDate&quot;</span><span class="p">,</span>
+</span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a>        <span class="s2">&quot;BDToMat&quot;</span><span class="p">,</span>
+</span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a>        <span class="s2">&quot;RIR&quot;</span><span class="p">,</span>
+</span><span id="__span-0-517"><a id="__codelineno-0-517" name="__codelineno-0-517"></a>        <span class="s2">&quot;NIR&quot;</span><span class="p">,</span>
+</span><span id="__span-0-518"><a id="__codelineno-0-518" name="__codelineno-0-518"></a>        <span class="s2">&quot;BEI&quot;</span><span class="p">,</span>
+</span><span id="__span-0-519"><a id="__codelineno-0-519" name="__codelineno-0-519"></a>    <span class="p">]</span>
+</span><span id="__span-0-520"><a id="__codelineno-0-520" name="__codelineno-0-520"></a>    <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="n">cols_reordered</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -1841,7 +1815,8 @@ the cash flows.</p>
 
             <details class="quote">
               <summary>Source code in <code>pyield/tpf/ntnb.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-524">524</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-523">523</a></span>
+<span class="normal"><a href="#__codelineno-0-524">524</a></span>
 <span class="normal"><a href="#__codelineno-0-525">525</a></span>
 <span class="normal"><a href="#__codelineno-0-526">526</a></span>
 <span class="normal"><a href="#__codelineno-0-527">527</a></span>
@@ -1868,36 +1843,35 @@ the cash flows.</p>
 <span class="normal"><a href="#__codelineno-0-548">548</a></span>
 <span class="normal"><a href="#__codelineno-0-549">549</a></span>
 <span class="normal"><a href="#__codelineno-0-550">550</a></span>
-<span class="normal"><a href="#__codelineno-0-551">551</a></span>
-<span class="normal"><a href="#__codelineno-0-552">552</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-524"><a id="__codelineno-0-524" name="__codelineno-0-524"></a><span class="k">def</span><span class="w"> </span><span class="nf">duration</span><span class="p">(</span>
-</span><span id="__span-0-525"><a id="__codelineno-0-525" name="__codelineno-0-525"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
-</span><span id="__span-0-526"><a id="__codelineno-0-526" name="__codelineno-0-526"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
-</span><span id="__span-0-527"><a id="__codelineno-0-527" name="__codelineno-0-527"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-</span><span id="__span-0-528"><a id="__codelineno-0-528" name="__codelineno-0-528"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="__span-0-529"><a id="__codelineno-0-529" name="__codelineno-0-529"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-530"><a id="__codelineno-0-530" name="__codelineno-0-530"></a><span class="sd">    Calculate the Macaulay duration of the NTN-B bond in business years.</span>
-</span><span id="__span-0-531"><a id="__codelineno-0-531" name="__codelineno-0-531"></a>
-</span><span id="__span-0-532"><a id="__codelineno-0-532" name="__codelineno-0-532"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-533"><a id="__codelineno-0-533" name="__codelineno-0-533"></a><span class="sd">        settlement (DateScalar): The settlement date of the operation.</span>
-</span><span id="__span-0-534"><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="sd">        maturity (DateScalar): The maturity date of the NTN-B bond.</span>
-</span><span id="__span-0-535"><a id="__codelineno-0-535" name="__codelineno-0-535"></a><span class="sd">        rate (float): The discount rate used to calculate the duration.</span>
-</span><span id="__span-0-536"><a id="__codelineno-0-536" name="__codelineno-0-536"></a>
-</span><span id="__span-0-537"><a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-538"><a id="__codelineno-0-538" name="__codelineno-0-538"></a><span class="sd">        float: The Macaulay duration of the NTN-B bond in business years.</span>
-</span><span id="__span-0-539"><a id="__codelineno-0-539" name="__codelineno-0-539"></a>
-</span><span id="__span-0-540"><a id="__codelineno-0-540" name="__codelineno-0-540"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-541"><a id="__codelineno-0-541" name="__codelineno-0-541"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnb</span>
-</span><span id="__span-0-542"><a id="__codelineno-0-542" name="__codelineno-0-542"></a><span class="sd">        &gt;&gt;&gt; ntnb.duration(&quot;23-08-2024&quot;, &quot;15-08-2060&quot;, 0.061005)</span>
-</span><span id="__span-0-543"><a id="__codelineno-0-543" name="__codelineno-0-543"></a><span class="sd">        15.083054313130464</span>
-</span><span id="__span-0-544"><a id="__codelineno-0-544" name="__codelineno-0-544"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-545"><a id="__codelineno-0-545" name="__codelineno-0-545"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-546"><a id="__codelineno-0-546" name="__codelineno-0-546"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
-</span><span id="__span-0-547"><a id="__codelineno-0-547" name="__codelineno-0-547"></a>
-</span><span id="__span-0-548"><a id="__codelineno-0-548" name="__codelineno-0-548"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">cash_flows</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">)</span>
-</span><span id="__span-0-549"><a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;PaymentDate&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mi">252</span>
-</span><span id="__span-0-550"><a id="__codelineno-0-550" name="__codelineno-0-550"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;CashFlow&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span><span class="p">)</span> <span class="o">**</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">]</span>
-</span><span id="__span-0-551"><a id="__codelineno-0-551" name="__codelineno-0-551"></a>    <span class="n">np_duration</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-</span><span id="__span-0-552"><a id="__codelineno-0-552" name="__codelineno-0-552"></a>    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np_duration</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-551">551</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-523"><a id="__codelineno-0-523" name="__codelineno-0-523"></a><span class="k">def</span><span class="w"> </span><span class="nf">duration</span><span class="p">(</span>
+</span><span id="__span-0-524"><a id="__codelineno-0-524" name="__codelineno-0-524"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
+</span><span id="__span-0-525"><a id="__codelineno-0-525" name="__codelineno-0-525"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
+</span><span id="__span-0-526"><a id="__codelineno-0-526" name="__codelineno-0-526"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-0-527"><a id="__codelineno-0-527" name="__codelineno-0-527"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-0-528"><a id="__codelineno-0-528" name="__codelineno-0-528"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-529"><a id="__codelineno-0-529" name="__codelineno-0-529"></a><span class="sd">    Calculate the Macaulay duration of the NTN-B bond in business years.</span>
+</span><span id="__span-0-530"><a id="__codelineno-0-530" name="__codelineno-0-530"></a>
+</span><span id="__span-0-531"><a id="__codelineno-0-531" name="__codelineno-0-531"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-532"><a id="__codelineno-0-532" name="__codelineno-0-532"></a><span class="sd">        settlement (DateScalar): The settlement date of the operation.</span>
+</span><span id="__span-0-533"><a id="__codelineno-0-533" name="__codelineno-0-533"></a><span class="sd">        maturity (DateScalar): The maturity date of the NTN-B bond.</span>
+</span><span id="__span-0-534"><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="sd">        rate (float): The discount rate used to calculate the duration.</span>
+</span><span id="__span-0-535"><a id="__codelineno-0-535" name="__codelineno-0-535"></a>
+</span><span id="__span-0-536"><a id="__codelineno-0-536" name="__codelineno-0-536"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-537"><a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="sd">        float: The Macaulay duration of the NTN-B bond in business years.</span>
+</span><span id="__span-0-538"><a id="__codelineno-0-538" name="__codelineno-0-538"></a>
+</span><span id="__span-0-539"><a id="__codelineno-0-539" name="__codelineno-0-539"></a><span class="sd">    Examples:</span>
+</span><span id="__span-0-540"><a id="__codelineno-0-540" name="__codelineno-0-540"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnb</span>
+</span><span id="__span-0-541"><a id="__codelineno-0-541" name="__codelineno-0-541"></a><span class="sd">        &gt;&gt;&gt; ntnb.duration(&quot;23-08-2024&quot;, &quot;15-08-2060&quot;, 0.061005)</span>
+</span><span id="__span-0-542"><a id="__codelineno-0-542" name="__codelineno-0-542"></a><span class="sd">        15.083054313130464</span>
+</span><span id="__span-0-543"><a id="__codelineno-0-543" name="__codelineno-0-543"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-544"><a id="__codelineno-0-544" name="__codelineno-0-544"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-545"><a id="__codelineno-0-545" name="__codelineno-0-545"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-546"><a id="__codelineno-0-546" name="__codelineno-0-546"></a>
+</span><span id="__span-0-547"><a id="__codelineno-0-547" name="__codelineno-0-547"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">cash_flows</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-548"><a id="__codelineno-0-548" name="__codelineno-0-548"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;PaymentDate&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mi">252</span>
+</span><span id="__span-0-549"><a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;CashFlow&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span><span class="p">)</span> <span class="o">**</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">]</span>
+</span><span id="__span-0-550"><a id="__codelineno-0-550" name="__codelineno-0-550"></a>    <span class="n">np_duration</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</span><span id="__span-0-551"><a id="__codelineno-0-551" name="__codelineno-0-551"></a>    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np_duration</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2018,7 +1992,8 @@ increase in yield.</p>
 
             <details class="quote">
               <summary>Source code in <code>pyield/tpf/ntnb.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-555">555</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-554">554</a></span>
+<span class="normal"><a href="#__codelineno-0-555">555</a></span>
 <span class="normal"><a href="#__codelineno-0-556">556</a></span>
 <span class="normal"><a href="#__codelineno-0-557">557</a></span>
 <span class="normal"><a href="#__codelineno-0-558">558</a></span>
@@ -2049,40 +2024,39 @@ increase in yield.</p>
 <span class="normal"><a href="#__codelineno-0-583">583</a></span>
 <span class="normal"><a href="#__codelineno-0-584">584</a></span>
 <span class="normal"><a href="#__codelineno-0-585">585</a></span>
-<span class="normal"><a href="#__codelineno-0-586">586</a></span>
-<span class="normal"><a href="#__codelineno-0-587">587</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-555"><a id="__codelineno-0-555" name="__codelineno-0-555"></a><span class="k">def</span><span class="w"> </span><span class="nf">dv01</span><span class="p">(</span>
-</span><span id="__span-0-556"><a id="__codelineno-0-556" name="__codelineno-0-556"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
-</span><span id="__span-0-557"><a id="__codelineno-0-557" name="__codelineno-0-557"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
-</span><span id="__span-0-558"><a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-</span><span id="__span-0-559"><a id="__codelineno-0-559" name="__codelineno-0-559"></a>    <span class="n">vna</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-</span><span id="__span-0-560"><a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="__span-0-561"><a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-562"><a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="sd">    Calculate the DV01 (Dollar Value of 01) for an NTN-B in R$.</span>
-</span><span id="__span-0-563"><a id="__codelineno-0-563" name="__codelineno-0-563"></a>
-</span><span id="__span-0-564"><a id="__codelineno-0-564" name="__codelineno-0-564"></a><span class="sd">    Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.</span>
-</span><span id="__span-0-565"><a id="__codelineno-0-565" name="__codelineno-0-565"></a>
-</span><span id="__span-0-566"><a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-567"><a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">        settlement (DateScalar): The settlement date in &#39;DD-MM-YYYY&#39; format</span>
-</span><span id="__span-0-568"><a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">            or a pandas Timestamp.</span>
-</span><span id="__span-0-569"><a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">        maturity (DateScalar): The maturity date in &#39;DD-MM-YYYY&#39; format or</span>
-</span><span id="__span-0-570"><a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">            a pandas Timestamp.</span>
-</span><span id="__span-0-571"><a id="__codelineno-0-571" name="__codelineno-0-571"></a><span class="sd">        rate (float): The discount rate used to calculate the present value of</span>
-</span><span id="__span-0-572"><a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="sd">            the cash flows, which is the yield to maturity (YTM) of the NTN-B.</span>
-</span><span id="__span-0-573"><a id="__codelineno-0-573" name="__codelineno-0-573"></a>
-</span><span id="__span-0-574"><a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-575"><a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">        float: The DV01 value, representing the price change for a 1 basis point</span>
-</span><span id="__span-0-576"><a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="sd">            increase in yield.</span>
-</span><span id="__span-0-577"><a id="__codelineno-0-577" name="__codelineno-0-577"></a>
-</span><span id="__span-0-578"><a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-579"><a id="__codelineno-0-579" name="__codelineno-0-579"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnb</span>
-</span><span id="__span-0-580"><a id="__codelineno-0-580" name="__codelineno-0-580"></a><span class="sd">        &gt;&gt;&gt; ntnb.dv01(&quot;26-03-2025&quot;, &quot;15-08-2060&quot;, 0.074358, 4470.979474)</span>
-</span><span id="__span-0-581"><a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">        4.640875999999935</span>
-</span><span id="__span-0-582"><a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-583"><a id="__codelineno-0-583" name="__codelineno-0-583"></a>    <span class="n">quotation1</span> <span class="o">=</span> <span class="n">quotation</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span><span class="p">)</span>
-</span><span id="__span-0-584"><a id="__codelineno-0-584" name="__codelineno-0-584"></a>    <span class="n">quotation2</span> <span class="o">=</span> <span class="n">quotation</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span> <span class="o">+</span> <span class="mf">0.0001</span><span class="p">)</span>
-</span><span id="__span-0-585"><a id="__codelineno-0-585" name="__codelineno-0-585"></a>    <span class="n">price1</span> <span class="o">=</span> <span class="n">price</span><span class="p">(</span><span class="n">vna</span><span class="p">,</span> <span class="n">quotation1</span><span class="p">)</span>
-</span><span id="__span-0-586"><a id="__codelineno-0-586" name="__codelineno-0-586"></a>    <span class="n">price2</span> <span class="o">=</span> <span class="n">price</span><span class="p">(</span><span class="n">vna</span><span class="p">,</span> <span class="n">quotation2</span><span class="p">)</span>
-</span><span id="__span-0-587"><a id="__codelineno-0-587" name="__codelineno-0-587"></a>    <span class="k">return</span> <span class="n">price1</span> <span class="o">-</span> <span class="n">price2</span>
+<span class="normal"><a href="#__codelineno-0-586">586</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-554"><a id="__codelineno-0-554" name="__codelineno-0-554"></a><span class="k">def</span><span class="w"> </span><span class="nf">dv01</span><span class="p">(</span>
+</span><span id="__span-0-555"><a id="__codelineno-0-555" name="__codelineno-0-555"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
+</span><span id="__span-0-556"><a id="__codelineno-0-556" name="__codelineno-0-556"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
+</span><span id="__span-0-557"><a id="__codelineno-0-557" name="__codelineno-0-557"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-0-558"><a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="n">vna</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-0-559"><a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-0-560"><a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-561"><a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="sd">    Calculate the DV01 (Dollar Value of 01) for an NTN-B in R$.</span>
+</span><span id="__span-0-562"><a id="__codelineno-0-562" name="__codelineno-0-562"></a>
+</span><span id="__span-0-563"><a id="__codelineno-0-563" name="__codelineno-0-563"></a><span class="sd">    Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.</span>
+</span><span id="__span-0-564"><a id="__codelineno-0-564" name="__codelineno-0-564"></a>
+</span><span id="__span-0-565"><a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-566"><a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">        settlement (DateScalar): The settlement date in &#39;DD-MM-YYYY&#39; format</span>
+</span><span id="__span-0-567"><a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">            or a pandas Timestamp.</span>
+</span><span id="__span-0-568"><a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">        maturity (DateScalar): The maturity date in &#39;DD-MM-YYYY&#39; format or</span>
+</span><span id="__span-0-569"><a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">            a pandas Timestamp.</span>
+</span><span id="__span-0-570"><a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">        rate (float): The discount rate used to calculate the present value of</span>
+</span><span id="__span-0-571"><a id="__codelineno-0-571" name="__codelineno-0-571"></a><span class="sd">            the cash flows, which is the yield to maturity (YTM) of the NTN-B.</span>
+</span><span id="__span-0-572"><a id="__codelineno-0-572" name="__codelineno-0-572"></a>
+</span><span id="__span-0-573"><a id="__codelineno-0-573" name="__codelineno-0-573"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-574"><a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">        float: The DV01 value, representing the price change for a 1 basis point</span>
+</span><span id="__span-0-575"><a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">            increase in yield.</span>
+</span><span id="__span-0-576"><a id="__codelineno-0-576" name="__codelineno-0-576"></a>
+</span><span id="__span-0-577"><a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="sd">    Examples:</span>
+</span><span id="__span-0-578"><a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnb</span>
+</span><span id="__span-0-579"><a id="__codelineno-0-579" name="__codelineno-0-579"></a><span class="sd">        &gt;&gt;&gt; ntnb.dv01(&quot;26-03-2025&quot;, &quot;15-08-2060&quot;, 0.074358, 4470.979474)</span>
+</span><span id="__span-0-580"><a id="__codelineno-0-580" name="__codelineno-0-580"></a><span class="sd">        4.640875999999935</span>
+</span><span id="__span-0-581"><a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-582"><a id="__codelineno-0-582" name="__codelineno-0-582"></a>    <span class="n">quotation1</span> <span class="o">=</span> <span class="n">quotation</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span><span class="p">)</span>
+</span><span id="__span-0-583"><a id="__codelineno-0-583" name="__codelineno-0-583"></a>    <span class="n">quotation2</span> <span class="o">=</span> <span class="n">quotation</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span> <span class="o">+</span> <span class="mf">0.0001</span><span class="p">)</span>
+</span><span id="__span-0-584"><a id="__codelineno-0-584" name="__codelineno-0-584"></a>    <span class="n">price1</span> <span class="o">=</span> <span class="n">price</span><span class="p">(</span><span class="n">vna</span><span class="p">,</span> <span class="n">quotation1</span><span class="p">)</span>
+</span><span id="__span-0-585"><a id="__codelineno-0-585" name="__codelineno-0-585"></a>    <span class="n">price2</span> <span class="o">=</span> <span class="n">price</span><span class="p">(</span><span class="n">vna</span><span class="p">,</span> <span class="n">quotation2</span><span class="p">)</span>
+</span><span id="__span-0-586"><a id="__codelineno-0-586" name="__codelineno-0-586"></a>    <span class="k">return</span> <span class="n">price1</span> <span class="o">-</span> <span class="n">price2</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

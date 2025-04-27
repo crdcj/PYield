@@ -12,7 +12,7 @@
         <link rel="prev" href="../ntnc/">
       
       
-        <link rel="next" href="../di/">
+        <link rel="next" href="../dif/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -858,35 +858,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../di/" class="md-nav__link">
+      <a href="../dif/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    DI Data
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../b3/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    B3 Data
+    DI Futures Data
     
   </span>
   
@@ -1924,7 +1901,8 @@ rates and calculates the spread between these rates in basis points.</p>
 
             <details class="quote">
               <summary>Source code in <code>pyield/tpf/ntnf.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-627">627</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-626">626</a></span>
+<span class="normal"><a href="#__codelineno-0-627">627</a></span>
 <span class="normal"><a href="#__codelineno-0-628">628</a></span>
 <span class="normal"><a href="#__codelineno-0-629">629</a></span>
 <span class="normal"><a href="#__codelineno-0-630">630</a></span>
@@ -1951,36 +1929,35 @@ rates and calculates the spread between these rates in basis points.</p>
 <span class="normal"><a href="#__codelineno-0-651">651</a></span>
 <span class="normal"><a href="#__codelineno-0-652">652</a></span>
 <span class="normal"><a href="#__codelineno-0-653">653</a></span>
-<span class="normal"><a href="#__codelineno-0-654">654</a></span>
-<span class="normal"><a href="#__codelineno-0-655">655</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-627"><a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="k">def</span><span class="w"> </span><span class="nf">duration</span><span class="p">(</span>
-</span><span id="__span-0-628"><a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
-</span><span id="__span-0-629"><a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
-</span><span id="__span-0-630"><a id="__codelineno-0-630" name="__codelineno-0-630"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-</span><span id="__span-0-631"><a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="__span-0-632"><a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-633"><a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="sd">    Calculate the Macaulay duration for an NTN-F bond in business years.</span>
-</span><span id="__span-0-634"><a id="__codelineno-0-634" name="__codelineno-0-634"></a>
-</span><span id="__span-0-635"><a id="__codelineno-0-635" name="__codelineno-0-635"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-636"><a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">        settlement (DateScalar): The settlement date to calculate the duration.</span>
-</span><span id="__span-0-637"><a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">        maturity (DateScalar): The maturity date of the bond.</span>
-</span><span id="__span-0-638"><a id="__codelineno-0-638" name="__codelineno-0-638"></a><span class="sd">        rate (float): The yield to maturity (YTM) used to discount the cash flows.</span>
-</span><span id="__span-0-639"><a id="__codelineno-0-639" name="__codelineno-0-639"></a>
-</span><span id="__span-0-640"><a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-641"><a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">        float: The Macaulay duration in business business years.</span>
-</span><span id="__span-0-642"><a id="__codelineno-0-642" name="__codelineno-0-642"></a>
-</span><span id="__span-0-643"><a id="__codelineno-0-643" name="__codelineno-0-643"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-644"><a id="__codelineno-0-644" name="__codelineno-0-644"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnf</span>
-</span><span id="__span-0-645"><a id="__codelineno-0-645" name="__codelineno-0-645"></a><span class="sd">        &gt;&gt;&gt; ntnf.duration(&quot;02-09-2024&quot;, &quot;01-01-2035&quot;, 0.121785)</span>
-</span><span id="__span-0-646"><a id="__codelineno-0-646" name="__codelineno-0-646"></a><span class="sd">        6.32854218039796</span>
-</span><span id="__span-0-647"><a id="__codelineno-0-647" name="__codelineno-0-647"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-648"><a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-649"><a id="__codelineno-0-649" name="__codelineno-0-649"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
-</span><span id="__span-0-650"><a id="__codelineno-0-650" name="__codelineno-0-650"></a>
-</span><span id="__span-0-651"><a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">cash_flows</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">)</span>
-</span><span id="__span-0-652"><a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;PaymentDate&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mi">252</span>
-</span><span id="__span-0-653"><a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;CashFlow&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span><span class="p">)</span> <span class="o">**</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">]</span>
-</span><span id="__span-0-654"><a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="n">np_duration</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-</span><span id="__span-0-655"><a id="__codelineno-0-655" name="__codelineno-0-655"></a>    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np_duration</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-654">654</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-626"><a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="k">def</span><span class="w"> </span><span class="nf">duration</span><span class="p">(</span>
+</span><span id="__span-0-627"><a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
+</span><span id="__span-0-628"><a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
+</span><span id="__span-0-629"><a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-0-630"><a id="__codelineno-0-630" name="__codelineno-0-630"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-0-631"><a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-632"><a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="sd">    Calculate the Macaulay duration for an NTN-F bond in business years.</span>
+</span><span id="__span-0-633"><a id="__codelineno-0-633" name="__codelineno-0-633"></a>
+</span><span id="__span-0-634"><a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-635"><a id="__codelineno-0-635" name="__codelineno-0-635"></a><span class="sd">        settlement (DateScalar): The settlement date to calculate the duration.</span>
+</span><span id="__span-0-636"><a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">        maturity (DateScalar): The maturity date of the bond.</span>
+</span><span id="__span-0-637"><a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">        rate (float): The yield to maturity (YTM) used to discount the cash flows.</span>
+</span><span id="__span-0-638"><a id="__codelineno-0-638" name="__codelineno-0-638"></a>
+</span><span id="__span-0-639"><a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-640"><a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">        float: The Macaulay duration in business business years.</span>
+</span><span id="__span-0-641"><a id="__codelineno-0-641" name="__codelineno-0-641"></a>
+</span><span id="__span-0-642"><a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="sd">    Examples:</span>
+</span><span id="__span-0-643"><a id="__codelineno-0-643" name="__codelineno-0-643"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnf</span>
+</span><span id="__span-0-644"><a id="__codelineno-0-644" name="__codelineno-0-644"></a><span class="sd">        &gt;&gt;&gt; ntnf.duration(&quot;02-09-2024&quot;, &quot;01-01-2035&quot;, 0.121785)</span>
+</span><span id="__span-0-645"><a id="__codelineno-0-645" name="__codelineno-0-645"></a><span class="sd">        6.32854218039796</span>
+</span><span id="__span-0-646"><a id="__codelineno-0-646" name="__codelineno-0-646"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-647"><a id="__codelineno-0-647" name="__codelineno-0-647"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-648"><a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-649"><a id="__codelineno-0-649" name="__codelineno-0-649"></a>
+</span><span id="__span-0-650"><a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">cash_flows</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-651"><a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;PaymentDate&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mi">252</span>
+</span><span id="__span-0-652"><a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;CashFlow&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span><span class="p">)</span> <span class="o">**</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">]</span>
+</span><span id="__span-0-653"><a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="n">np_duration</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DCF&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</span><span id="__span-0-654"><a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np_duration</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2101,7 +2078,8 @@ increase in yield.</p>
 
             <details class="quote">
               <summary>Source code in <code>pyield/tpf/ntnf.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-658">658</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-657">657</a></span>
+<span class="normal"><a href="#__codelineno-0-658">658</a></span>
 <span class="normal"><a href="#__codelineno-0-659">659</a></span>
 <span class="normal"><a href="#__codelineno-0-660">660</a></span>
 <span class="normal"><a href="#__codelineno-0-661">661</a></span>
@@ -2129,37 +2107,36 @@ increase in yield.</p>
 <span class="normal"><a href="#__codelineno-0-683">683</a></span>
 <span class="normal"><a href="#__codelineno-0-684">684</a></span>
 <span class="normal"><a href="#__codelineno-0-685">685</a></span>
-<span class="normal"><a href="#__codelineno-0-686">686</a></span>
-<span class="normal"><a href="#__codelineno-0-687">687</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-658"><a id="__codelineno-0-658" name="__codelineno-0-658"></a><span class="k">def</span><span class="w"> </span><span class="nf">dv01</span><span class="p">(</span>
-</span><span id="__span-0-659"><a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
-</span><span id="__span-0-660"><a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
-</span><span id="__span-0-661"><a id="__codelineno-0-661" name="__codelineno-0-661"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-</span><span id="__span-0-662"><a id="__codelineno-0-662" name="__codelineno-0-662"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="__span-0-663"><a id="__codelineno-0-663" name="__codelineno-0-663"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-664"><a id="__codelineno-0-664" name="__codelineno-0-664"></a><span class="sd">    Calculate the DV01 (Dollar Value of 01) for an NTN-F in R$.</span>
-</span><span id="__span-0-665"><a id="__codelineno-0-665" name="__codelineno-0-665"></a>
-</span><span id="__span-0-666"><a id="__codelineno-0-666" name="__codelineno-0-666"></a><span class="sd">    Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.</span>
-</span><span id="__span-0-667"><a id="__codelineno-0-667" name="__codelineno-0-667"></a>
-</span><span id="__span-0-668"><a id="__codelineno-0-668" name="__codelineno-0-668"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-669"><a id="__codelineno-0-669" name="__codelineno-0-669"></a><span class="sd">        settlement (DateScalar): The settlement date in &#39;DD-MM-YYYY&#39; format</span>
-</span><span id="__span-0-670"><a id="__codelineno-0-670" name="__codelineno-0-670"></a><span class="sd">            or a pandas Timestamp.</span>
-</span><span id="__span-0-671"><a id="__codelineno-0-671" name="__codelineno-0-671"></a><span class="sd">        maturity (DateScalar): The maturity date in &#39;DD-MM-YYYY&#39; format or</span>
-</span><span id="__span-0-672"><a id="__codelineno-0-672" name="__codelineno-0-672"></a><span class="sd">            a pandas Timestamp.</span>
-</span><span id="__span-0-673"><a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="sd">        rate (float): The discount rate used to calculate the present value of</span>
-</span><span id="__span-0-674"><a id="__codelineno-0-674" name="__codelineno-0-674"></a><span class="sd">            the cash flows, which is the yield to maturity (YTM) of the NTN-F.</span>
-</span><span id="__span-0-675"><a id="__codelineno-0-675" name="__codelineno-0-675"></a>
-</span><span id="__span-0-676"><a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-677"><a id="__codelineno-0-677" name="__codelineno-0-677"></a><span class="sd">        float: The DV01 value, representing the price change for a 1 basis point</span>
-</span><span id="__span-0-678"><a id="__codelineno-0-678" name="__codelineno-0-678"></a><span class="sd">            increase in yield.</span>
-</span><span id="__span-0-679"><a id="__codelineno-0-679" name="__codelineno-0-679"></a>
-</span><span id="__span-0-680"><a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-681"><a id="__codelineno-0-681" name="__codelineno-0-681"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnf</span>
-</span><span id="__span-0-682"><a id="__codelineno-0-682" name="__codelineno-0-682"></a><span class="sd">        &gt;&gt;&gt; ntnf.dv01(&quot;26-03-2025&quot;, &quot;01-01-2035&quot;, 0.151375)</span>
-</span><span id="__span-0-683"><a id="__codelineno-0-683" name="__codelineno-0-683"></a><span class="sd">        0.39025200000003224</span>
-</span><span id="__span-0-684"><a id="__codelineno-0-684" name="__codelineno-0-684"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-685"><a id="__codelineno-0-685" name="__codelineno-0-685"></a>    <span class="n">price1</span> <span class="o">=</span> <span class="n">price</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span><span class="p">)</span>
-</span><span id="__span-0-686"><a id="__codelineno-0-686" name="__codelineno-0-686"></a>    <span class="n">price2</span> <span class="o">=</span> <span class="n">price</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span> <span class="o">+</span> <span class="mf">0.0001</span><span class="p">)</span>
-</span><span id="__span-0-687"><a id="__codelineno-0-687" name="__codelineno-0-687"></a>    <span class="k">return</span> <span class="n">price1</span> <span class="o">-</span> <span class="n">price2</span>
+<span class="normal"><a href="#__codelineno-0-686">686</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-657"><a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="k">def</span><span class="w"> </span><span class="nf">dv01</span><span class="p">(</span>
+</span><span id="__span-0-658"><a id="__codelineno-0-658" name="__codelineno-0-658"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
+</span><span id="__span-0-659"><a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
+</span><span id="__span-0-660"><a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-0-661"><a id="__codelineno-0-661" name="__codelineno-0-661"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-0-662"><a id="__codelineno-0-662" name="__codelineno-0-662"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-663"><a id="__codelineno-0-663" name="__codelineno-0-663"></a><span class="sd">    Calculate the DV01 (Dollar Value of 01) for an NTN-F in R$.</span>
+</span><span id="__span-0-664"><a id="__codelineno-0-664" name="__codelineno-0-664"></a>
+</span><span id="__span-0-665"><a id="__codelineno-0-665" name="__codelineno-0-665"></a><span class="sd">    Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.</span>
+</span><span id="__span-0-666"><a id="__codelineno-0-666" name="__codelineno-0-666"></a>
+</span><span id="__span-0-667"><a id="__codelineno-0-667" name="__codelineno-0-667"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-668"><a id="__codelineno-0-668" name="__codelineno-0-668"></a><span class="sd">        settlement (DateScalar): The settlement date in &#39;DD-MM-YYYY&#39; format</span>
+</span><span id="__span-0-669"><a id="__codelineno-0-669" name="__codelineno-0-669"></a><span class="sd">            or a pandas Timestamp.</span>
+</span><span id="__span-0-670"><a id="__codelineno-0-670" name="__codelineno-0-670"></a><span class="sd">        maturity (DateScalar): The maturity date in &#39;DD-MM-YYYY&#39; format or</span>
+</span><span id="__span-0-671"><a id="__codelineno-0-671" name="__codelineno-0-671"></a><span class="sd">            a pandas Timestamp.</span>
+</span><span id="__span-0-672"><a id="__codelineno-0-672" name="__codelineno-0-672"></a><span class="sd">        rate (float): The discount rate used to calculate the present value of</span>
+</span><span id="__span-0-673"><a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="sd">            the cash flows, which is the yield to maturity (YTM) of the NTN-F.</span>
+</span><span id="__span-0-674"><a id="__codelineno-0-674" name="__codelineno-0-674"></a>
+</span><span id="__span-0-675"><a id="__codelineno-0-675" name="__codelineno-0-675"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-676"><a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">        float: The DV01 value, representing the price change for a 1 basis point</span>
+</span><span id="__span-0-677"><a id="__codelineno-0-677" name="__codelineno-0-677"></a><span class="sd">            increase in yield.</span>
+</span><span id="__span-0-678"><a id="__codelineno-0-678" name="__codelineno-0-678"></a>
+</span><span id="__span-0-679"><a id="__codelineno-0-679" name="__codelineno-0-679"></a><span class="sd">    Examples:</span>
+</span><span id="__span-0-680"><a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnf</span>
+</span><span id="__span-0-681"><a id="__codelineno-0-681" name="__codelineno-0-681"></a><span class="sd">        &gt;&gt;&gt; ntnf.dv01(&quot;26-03-2025&quot;, &quot;01-01-2035&quot;, 0.151375)</span>
+</span><span id="__span-0-682"><a id="__codelineno-0-682" name="__codelineno-0-682"></a><span class="sd">        0.39025200000003224</span>
+</span><span id="__span-0-683"><a id="__codelineno-0-683" name="__codelineno-0-683"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-684"><a id="__codelineno-0-684" name="__codelineno-0-684"></a>    <span class="n">price1</span> <span class="o">=</span> <span class="n">price</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span><span class="p">)</span>
+</span><span id="__span-0-685"><a id="__codelineno-0-685" name="__codelineno-0-685"></a>    <span class="n">price2</span> <span class="o">=</span> <span class="n">price</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span> <span class="o">+</span> <span class="mf">0.0001</span><span class="p">)</span>
+</span><span id="__span-0-686"><a id="__codelineno-0-686" name="__codelineno-0-686"></a>    <span class="k">return</span> <span class="n">price1</span> <span class="o">-</span> <span class="n">price2</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3493,13 +3470,13 @@ coupon payments. Defaults to False.</p>
         
         
           
-          <a href="../di/" class="md-footer__link md-footer__link--next" aria-label="Próximo: DI Data">
+          <a href="../dif/" class="md-footer__link md-footer__link--next" aria-label="Próximo: DI Futures Data">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Próximo
               </span>
               <div class="md-ellipsis">
-                DI Data
+                DI Futures Data
               </div>
             </div>
             <div class="md-footer__button md-icon">
