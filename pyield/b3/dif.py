@@ -21,25 +21,34 @@ def data(
     all_columns: bool = True,
 ) -> pd.DataFrame:
     """
-    Function to retrieve DI Futures contract data.
+    Retrieves DI Futures contract data for a specific trade date.
 
-    This Function provides access to DI futures data for a specified trade date, and
-    includes options to adjust expiration dates and apply filters based on LTN and
-    NTN-F bond maturities.
+    Provides access to DI futures data, allowing adjustments to expiration dates
+    (to month start) and optional filtering based on LTN and NTN-F bond maturities.
 
     Args:
-        date (DateScalar | None): The trade date to retrieve the
-            DI contract data. If None, an empty DataFrame is returned.
-            month_start (bool): If True, all expiration dates are adjusted to the first
-            day of the month. For example, an expiration date of 02/01/2025 will be
-            adjusted to 01/01/2025.
-        pre_filter (bool): If True, filters the DI contracts to match only
-            expirations with existing prefixed TN bond maturities (LTN and NTN-F).
-        all_columns (bool): If True, returns all available columns in the DI dataset.
-            If False, only the most common columns are returned.
+        date (DateScalar): The trade date for which to retrieve DI contract data.
+            If the date is invalid, a holiday, in the future, or None, an empty
+            DataFrame is returned with appropriate logging.
+        month_start (bool, optional): If True, adjusts all expiration dates to the
+            first day of their respective month (e.g., 2025-02-01 becomes
+            2025-01-01). Defaults to False.
+        pre_filter (bool, optional): If True, filters DI contracts to include only
+            those whose expiration dates match known prefixed Treasury bond (LTN, NTN-F)
+            maturities from the TPF dataset nearest to the given trade date.
+            Defaults to False.
+        all_columns (bool, optional): If True, returns all available columns from
+            the DI dataset. If False, returns a subset of the most common columns.
+            Defaults to True.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the DI futures contract data for the
+            specified date, sorted by expiration date. Returns an empty DataFrame
+            if no data is found, the date is invalid, a holiday, or in the future.
 
     Examples:
-        >>> df = yd.di.data(date="16-10-2024", month_start=True)
+        >>> from pyield import dif
+        >>> df = dif.data(date="16-10-2024", month_start=True)
         >>> df.iloc[:5, :5]  # Show the first five rows and columns
            TradeDate ExpirationDate TickerSymbol  BDaysToExp  OpenContracts
         0 2024-10-16     2024-11-01       DI1X24          12        1744269
@@ -47,7 +56,6 @@ def data(
         2 2024-10-16     2025-01-01       DI1F25          52        5423969
         3 2024-10-16     2025-02-01       DI1G25          74         279491
         4 2024-10-16     2025-03-01       DI1H25          94         344056
-
     """
     if date:
         date = dc.convert_input_dates(date)
@@ -134,6 +142,17 @@ def data(
 def _find_nearest_date(
     target_date: pd.Timestamp, date_series: pd.Series
 ) -> pd.Timestamp:
+    """Finds the date in a Series closest to the target date.
+
+    Args:
+        target_date (pd.Timestamp): The reference date.
+        date_series (pd.Series): A Series of dates to search within.
+
+    Returns:
+        pd.Timestamp: The date from `date_series` that is closest in time
+            to `target_date`. Returns pd.NaT if the series is empty or
+            target_date is None.
+    """
     if date_series.empty or target_date is None:
         return pd.NaT
     # The result will be a Series of positive Timedeltas (durations)
@@ -153,28 +172,33 @@ def interpolate_rates(
     extrapolate: bool = True,
 ) -> pd.Series:
     """
-    Interpolates DI rates for specified trade dates and maturities. The method
-    is recomended to be used in datasets calculations with multiple dates.
+    Interpolates DI rates for specified trade dates and expiration dates.
 
-    This method calculates interpolated DI rates for a given set of trade
-    dates and maturities using a flat-forward interpolation method. If no DI
-    rates are available for a reference date, the interpolated rate is set to NaN.
+    Calculates interpolated DI rates using the flat-forward method for given
+    sets of trade dates and expiration dates. This function is well-suited
+    for vectorized calculations across multiple date pairs.
 
-    If dates is provided as a scalar and expirations as an array, the
-    method assumes the scalar value is the same for all maturities. The same logic
-    applies when the maturities are scalar and the trade dates are an array.
+    If DI rates are unavailable for a given trade date, the corresponding
+    interpolated rate(s) will be NaN.
+
+    Handles broadcasting: If one argument is a scalar and the other is an array,
+    the scalar value is applied to all elements of the array.
 
     Args:
-        dates (DateScalar | DateArray): The trade dates for the rates.
-        expirations (DateScalar | DateArray): The expirations corresponding to the
-            trade dates.
-        extrapolate (bool): Whether to allow extrapolation beyond known DI rates.
+        dates (DateScalar | DateArray): The trade date(s) for the rates.
+        expirations (DateScalar | DateArray): The corresponding expiration date(s).
+            Must be compatible in length with `dates` if both are arrays.
+        extrapolate (bool, optional): Whether to allow extrapolation beyond the
+            range of known DI rates for a given trade date. Defaults to True.
 
     Returns:
-        pd.Series: A Series containing the interpolated DI rates.
+        pd.Series: A Series containing the interpolated DI rates (as floats).
+            Values will be NaN where interpolation is not possible
+            (e.g., no DI data for the trade date).
 
     Raises:
-        ValueError: If `dates` and `maturities` have different lengths.
+        ValueError: If `dates` and `expirations` are both array-like but have
+            different lengths.
     """
     # Convert input dates to a consistent format
     dates = dc.convert_input_dates(dates)
@@ -247,7 +271,44 @@ def interpolate_rate(
     expiration: DateScalar,
     extrapolate: bool = False,
 ) -> float:
-    """Retrieve the DI rate for a specified expiration date."""
+    """
+    Interpolates or retrieves the DI rate for a single expiration date.
+
+    Fetches DI contract data for the specified trade `date` and determines the
+    settlement rate for the given `expiration`. If an exact match for the
+    expiration date exists, its rate is returned. Otherwise, the rate is
+    interpolated using the flat-forward method based on the rates of surrounding
+    contracts.
+
+    Args:
+        date (DateScalar): The trade date for which to retrieve DI data.
+        expiration (DateScalar): The target expiration date for the rate.
+        extrapolate (bool, optional): If True, allows extrapolation if the
+            `expiration` date falls outside the range of available contract
+            expirations for the given `date`. Defaults to False.
+
+    Returns:
+        float: The exact or interpolated DI settlement rate for the specified
+            date and expiration. Returns `float('NaN')` if:
+                - No DI data is found for the `date`.
+                - The `expiration` is outside range and `extrapolate` is False.
+                - An interpolation calculation fails.
+
+    Examples:
+        >>> from pyield import dif
+        >>> # Get rate for an existing contract expiration
+        >>> dif.interpolate_rate("25-04-2025", "01-01-2027")
+        0.13901
+
+        >>> # Get rate for a non-existing contract expiration
+        >>> dif.interpolate_rate("25-04-2025", "01-11-2027")
+        0.13576348733268917
+
+        >>> # Extrapolate rate for a future expiration date
+        >>> dif.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
+        0.13881
+    """
+
     expiration = dc.convert_input_dates(expiration)
     if not date:
         return float("NaN")
@@ -283,18 +344,31 @@ def interpolate_rate(
 
 def eod_dates() -> pd.Series:
     """
-    Retorna as datas de negociação disponíveis no dataset Futuro de DI.
+    Returns all unique end-of-day trade dates available in the DI dataset.
 
-    Busca todas as datas únicas de `TradeDate` presentes no dataset "DI".
+    Retrieves and lists all distinct 'TradeDate' values present in the
+    historical DI futures data cache, sorted chronologically.
 
     Returns:
-        pd.Series: Uma série de Timestamps contendo todas as datas de negociação
-        (pregões) únicas, ordenadas ascendentemente, para as quais existem dados de DI.
-        Retorna uma Series vazia se o cache estiver vazio.
+        pd.Series: A sorted Series of unique trade dates (pd.Timestamp)
+                   for which DI data is available.
+
+    Examples:
+        >>> from pyield import dif
+        >>> # DI Futures series starts from 1995-01-02
+        >>> dif.eod_dates().head(5)
+        0   1995-01-02
+        1   1995-01-03
+        2   1995-01-04
+        3   1995-01-05
+        4   1995-01-06
+        dtype: datetime64[ns]
     """
-    return (
+    available_dates = (
         get_cached_dataset("DI")
         .drop_duplicates(subset=["TradeDate"])["TradeDate"]
         .sort_values(ascending=True)
         .reset_index(drop=True)
     )
+    available_dates.name = None
+    return available_dates

@@ -2,7 +2,7 @@ import pandas as pd
 
 from pyield import anbima, bday
 from pyield import date_converter as dc
-from pyield.b3 import di
+from pyield.b3 import dif
 from pyield.date_converter import DateScalar
 from pyield.tpf import tools
 
@@ -223,7 +223,7 @@ def historical_premium(
     ltn_rate = float(ltn_rates.iloc[0])
 
     # Retrieve DI rate for the reference date and maturity
-    di_rate = di.interpolate_rate(date=date, expiration=maturity, extrapolate=True)
+    di_rate = dif.interpolate_rate(date=date, expiration=maturity, extrapolate=True)
     if pd.isnull(di_rate):  # Check if the DI rate is NaN
         return float("NaN")
 

@@ -6,7 +6,7 @@ import pandas as pd
 from pyield import anbima, bday
 from pyield import date_converter as dc
 from pyield import interpolator as ip
-from pyield.b3 import di
+from pyield.b3 import dif
 from pyield.date_converter import DateScalar
 from pyield.tpf import tools
 
@@ -596,7 +596,7 @@ def historical_premium(
     df["BYears"] = df["BDToMat"] / 252
     df["ReferenceDate"] = date
 
-    df["DIRate"] = di.interpolate_rates(
+    df["DIRate"] = dif.interpolate_rates(
         dates=df["ReferenceDate"],
         expirations=df["PaymentDate"],
         extrapolate=True,
