@@ -84,26 +84,27 @@ def quotation(
     return tools.truncate(100 * discount_factor, 4)
 
 
-def premium(lft_rate: float, selic_over: float) -> float:
+def premium(lft_rate: float, di_rate: float) -> float:
     """
-    Calculate the premium of the LFT bond over the Selic rate (overnight).
-    Obs: The Selic rate (overnight) is not the same as the Selic target rate
+    Calculate the premium of the LFT bond over the DI Futures rate.
 
     Args:
-        lft_rate (float): The LFT rate for the bond.
-        selic_over (float): The Selic overnight rate.
+        lft_rate (float): The annualized trading rate over the selic rate for the bond.
+        di_rate (float): The DI Futures annualized yield rate (interpolated to the same
+            maturity as the LFT).
 
     Returns:
-        float: The premium of the LFT bond over the Selic rate.
+        float: The premium of the LFT bond over the DI Futures rate.
 
     Examples:
-        Calculate the premium of a LFT bond with a 0.02 yield rate over the Selic rate:
-        >>> lft_rate = 0.1695 / 100  # 0.1695%
-        >>> selic_over = 10.40 / 100  # 10.40%
-        >>> yd.lft.premium(lft_rate, selic_over)
-        1.017120519283759
+        Calculate the premium of a LFT in 28/04/2025
+        >>> from pyield import lft
+        >>> lft_rate = 0.001124  # 0.1124%
+        >>> di_rate = 0.13967670224373396  # 13.967670224373396%
+        >>> lft.premium(lft_rate, di_rate)
+        1.008594331960501
     """
-    adjusted_lft_rate = (lft_rate + 1) * (selic_over + 1) - 1
-    f1 = (adjusted_lft_rate + 1) ** (1 / 252) - 1
-    f2 = (selic_over + 1) ** (1 / 252) - 1
-    return f1 / f2
+    # daily rate
+    ltt_factor = (lft_rate + 1) ** (1 / 252)
+    di_factor = (di_rate + 1) ** (1 / 252)
+    return (ltt_factor * di_factor - 1) / (di_factor - 1)
