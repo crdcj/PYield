@@ -62,17 +62,57 @@ class Interpolator:
         self._extrapolate = bool(extrapolate)
 
     def _flat_forward(self, bday: int, i: int) -> float:
-        """Performs the interest rate interpolation using the flat forward method."""
-        prev_rate = self._known_rates[i - 1]
-        prev_bday = self._known_bdays[i - 1]
-        next_rate = self._known_rates[i]
-        next_bday = self._known_bdays[i]
+        r"""
+        Performs the interest rate interpolation using the flat forward method.
+
+        This method calculates the interpolated interest rate for a given
+        number of business days (`bday`) using the flat forward methodology,
+        based on two known points: a previous point (index j) and a next point
+        (index k) from the known data sequence.
+
+        Assuming interest rates are in decimal form, the interpolated rate
+        is calculated. Time is measured in years based on a 252-business-day year.
+
+        The interpolated rate is given by the formula:
+        $$
+        \left(c_j*\left(\frac{c_k}{c_j}\right)^{f_t}\right)^{\frac{1}{time}}-1
+        $$
+
+        Where:
+        * `time = bday/252` is the time in years for the interpolated point. `bday` is
+         the number of business days for the interpolated point (input to this method).
+        * `j` is the index of the previous known point (`i - 1`).
+        * `k` is the index of the next known point (`i`).
+        * `rate_j` is the known interest rate (decimal) at point `j`,
+        * `time_j = bday_j/252` is the time in years of point `j`
+        * `rate_k` is the known interest rate (decimal) at point `k`.
+        * `time_k = bday_k/252` is the time in years of point `k`.
+
+        And intermediate terms used in the formula are defined as:
+        * `c_j = (1 + rate_j)^time_j` is the compounding factor at point `j`.
+        * `c_k = (1 + rate_k)^time_k` is the compounding factor at point `k`.
+        * `f_t = (time - time_j)/(time_k - time_j)` is the time factor.
+
+        Args:
+            bday (int): Number of bus. days for which the rate is to be interpolated.
+            i (int): The index in the known_bdays and known_rates arrays such that
+                     known_bdays[i-1] < bday < known_bdays[i]. This `i` corresponds
+                     to the index of the next known point (k).
+
+        Returns:
+            float: The interpolated interest rate in decimal form.
+        """
+        rate_j = self._known_rates[i - 1]
+        time_j = self._known_bdays[i - 1] / 252
+        rate_k = self._known_rates[i]
+        time_k = self._known_bdays[i] / 252
+        time = bday / 252
 
         # Perform flat forward interpolation
-        a = (1 + prev_rate) ** (prev_bday / 252)
-        b = (1 + next_rate) ** (next_bday / 252)
-        c = (bday - prev_bday) / (next_bday - prev_bday)
-        return (a * (b / a) ** c) ** (252 / bday) - 1
+        c_j = (1 + rate_j) ** time_j
+        c_k = (1 + rate_k) ** time_k
+        f_t = (time - time_j) / (time_k - time_j)
+        return (c_j * (c_k / c_j) ** f_t) ** (1 / time) - 1
 
     def interpolate(self, bday: int) -> float:
         """
