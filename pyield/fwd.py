@@ -94,8 +94,8 @@ def forwards(
     original_index = bdays.index
 
     # Create a DataFrame to work with the given series
-    df = pd.DataFrame({"duk": bdays, "rk": rates})
-    df["tk"] = df["duk"] / 252
+    df = pd.DataFrame({"du_k": bdays, "rate_k": rates})
+    df["time_k"] = df["du_k"] / 252
 
     if isinstance(groupby_dates, pd.Series):
         if not groupby_dates.index.equals(bdays.index):
@@ -105,23 +105,23 @@ def forwards(
         df["groupby_date"] = 0  # Dummy value to group the DataFrame
 
     # Sort by the groupby_dates and t2 columns to ensure proper chronological order
-    df = df.sort_values(by=["groupby_date", "tk"])
+    df = df.sort_values(by=["groupby_date", "time_k"])
 
     # Calculate the next zero rate and business day for each group
-    df["rj"] = df.groupby("groupby_date")["rk"].shift(1)
-    df["tj"] = df.groupby("groupby_date")["tk"].shift(1)
+    df["rate_j"] = df.groupby("groupby_date")["rate_k"].shift(1)
+    df["time_j"] = df.groupby("groupby_date")["time_k"].shift(1)
 
     # Calculate the formula components
     # fₖ = fⱼ→ₖ = ((1 + rₖ)^tₖ / (1 + rⱼ)^tⱼ) ^ (1/(tₖ - tⱼ)) - 1
-    factor_rk = (1 + df["rk"]) ** df["tk"]  # (1 + rₖ)^tₖ
-    factor_rj = (1 + df["rj"]) ** df["tj"]  # (1 + rⱼ)^tⱼ
-    time_factor = 1 / (df["tk"] - df["tj"])  # 1/(tₖ - tⱼ)
-    df["fwd"] = (factor_rk / factor_rj) ** time_factor - 1
+    factor_k = (1 + df["rate_k"]) ** df["time_k"]  # (1 + rₖ)^tₖ
+    factor_j = (1 + df["rate_j"]) ** df["time_j"]  # (1 + rⱼ)^tⱼ
+    factor_t = 1 / (df["time_k"] - df["time_j"])  # 1/(tₖ - tⱼ)
+    df["fwd"] = (factor_k / factor_j) ** factor_t - 1
 
     # Identifify the first index of each group of dates
     first_indices = df.groupby("groupby_date").head(1).index
     # Set the first forward rate of each group to the zero rate
-    df.loc[first_indices, "fwd"] = df.loc[first_indices, "rk"]
+    df.loc[first_indices, "fwd"] = df.loc[first_indices, "rate_k"]
 
     # Reindex the result to match the original input order
     result_fwd = df["fwd"].reindex(original_index)
