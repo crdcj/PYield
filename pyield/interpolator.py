@@ -32,13 +32,13 @@ class Interpolator:
         >>> known_rates = [0.045, 0.05, 0.055]
 
         Linear interpolation example:
-        >>> lin_interp = Interpolator("linear", known_bdays, known_rates)
-        >>> lin_interp(45)
+        >>> linear = Interpolator("linear", known_bdays, known_rates)
+        >>> linear(45)
         0.0475
 
         Flat forward interpolation example:
-        >>> ffo_interp = Interpolator("flat_forward", known_bdays, known_rates)
-        >>> ffo_interp(45)
+        >>> fforward = Interpolator("flat_forward", known_bdays, known_rates)
+        >>> fforward(45)
         0.04833068080970859
     """
 
@@ -61,58 +61,60 @@ class Interpolator:
         self._known_rates = tuple(df["rate"])
         self._extrapolate = bool(extrapolate)
 
-    def _flat_forward(self, bday: int, i: int) -> float:
+    def flat_forward(self, bday: int, k: int) -> float:
         r"""
         Performs the interest rate interpolation using the flat forward method.
 
         This method calculates the interpolated interest rate for a given
         number of business days (`bday`) using the flat forward methodology,
-        based on two known points: a previous point (index j) and a next point
-        (index k) from the known data sequence.
+        based on two known points: the current point (`k`) and the previous point (`j`).
 
         Assuming interest rates are in decimal form, the interpolated rate
         is calculated. Time is measured in years based on a 252-business-day year.
 
         The interpolated rate is given by the formula:
+
         $$
-        \left(c_j*\left(\frac{c_k}{c_j}\right)^{f_t}\right)^{\frac{1}{time}}-1
+        \left(f_j*\left(\frac{f_k}{f_j}\right)^{f_t}\right)^{\frac{1}{time}}-1
         $$
 
-        Where:
+        Where the factors used in the formula are defined as:
+
+        * `fⱼ = (1 + rateⱼ)^timeⱼ` is the compounding factor at point `j`.
+        * `fₖ = (1 + rateₖ)^timeₖ` is the compounding factor at point `k`.
+        * `fₜ = (time - timeⱼ)/(timeₖ - timeⱼ)` is the time factor.
+
+        And the variables are defined as:
+
         * `time = bday/252` is the time in years for the interpolated point. `bday` is
          the number of business days for the interpolated point (input to this method).
-        * `j` is the index of the previous known point (`i - 1`).
-        * `k` is the index of the next known point (`i`).
-        * `rate_j` is the known interest rate (decimal) at point `j`,
-        * `time_j = bday_j/252` is the time in years of point `j`
-        * `rate_k` is the known interest rate (decimal) at point `k`.
-        * `time_k = bday_k/252` is the time in years of point `k`.
-
-        And intermediate terms used in the formula are defined as:
-        * `c_j = (1 + rate_j)^time_j` is the compounding factor at point `j`.
-        * `c_k = (1 + rate_k)^time_k` is the compounding factor at point `k`.
-        * `f_t = (time - time_j)/(time_k - time_j)` is the time factor.
+        * `k` is the index of the current known point.
+        * `timeₖ = bdayₖ/252` is the time in years of point `k`.
+        * `rateₖ` is the interest rate (decimal) at point `k`.
+        * `j` is the index of the previous known point (`k - 1`).
+        * `timeⱼ = bdayⱼ/252` is the time in years of point `j`.
+        * `rateⱼ` is the interest rate (decimal) at point `j`.
 
         Args:
             bday (int): Number of bus. days for which the rate is to be interpolated.
-            i (int): The index in the known_bdays and known_rates arrays such that
-                     known_bdays[i-1] < bday < known_bdays[i]. This `i` corresponds
-                     to the index of the next known point (k).
+            k (int): The index in the known_bdays and known_rates arrays such that
+                     known_bdays[k-1] < bday < known_bdays[k]. This `k` corresponds
+                     to the index of the next known point after `bday`.
 
         Returns:
             float: The interpolated interest rate in decimal form.
         """
-        rate_j = self._known_rates[i - 1]
-        time_j = self._known_bdays[i - 1] / 252
-        rate_k = self._known_rates[i]
-        time_k = self._known_bdays[i] / 252
+        rate_j = self._known_rates[k - 1]
+        time_j = self._known_bdays[k - 1] / 252
+        rate_k = self._known_rates[k]
+        time_k = self._known_bdays[k] / 252
         time = bday / 252
 
         # Perform flat forward interpolation
-        c_j = (1 + rate_j) ** time_j
-        c_k = (1 + rate_k) ** time_k
+        f_j = (1 + rate_j) ** time_j
+        f_k = (1 + rate_k) ** time_k
         f_t = (time - time_j) / (time_k - time_j)
-        return (c_j * (c_k / c_j) ** f_t) ** (1 / time) - 1
+        return (f_j * (f_k / f_j) ** f_t) ** (1 / time) - 1
 
     def interpolate(self, bday: int) -> float:
         """
@@ -144,15 +146,15 @@ class Interpolator:
         if method == "linear":
             return float(np.interp(bday, known_bdays, known_rates))
 
-        # Find i such that known_bdays[i-1] < bday < known_bdays[i]
-        idx = bisect.bisect_left(known_bdays, bday)
+        # Find k such that known_bdays[k-1] < bday < known_bdays[k]
+        k = bisect.bisect_left(known_bdays, bday)
 
         # Check if the interpolation point is known
-        if idx < len(known_bdays) and known_bdays[idx] == bday:
-            return float(known_rates[idx])
+        if k < len(known_bdays) and known_bdays[k] == bday:
+            return float(known_rates[k])
 
         # Perform flat forward interpolation
-        return float(self._flat_forward(bday, idx))
+        return float(self.flat_forward(bday, k))
 
     def __call__(self, bday: int) -> float:
         """
@@ -170,7 +172,6 @@ class Interpolator:
 
     def __repr__(self) -> str:
         """Textual representation, used in terminal or scripts."""
-
         return repr(self._df)
 
     def __len__(self) -> int:
