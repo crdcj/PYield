@@ -69,8 +69,19 @@ def forwards(
         2    0.090284
         dtype: Float64
 
+        >>> # Exemplo com agrupamento (a última está isolada em outro grupo)
+        >>> groupby_dates = pd.Series([1, 1, 2])
+        >>> yd.forwards(bdays, rates, groupby_dates)
+        0    0.05
+        1    0.070095
+        2    0.07
+        dtype: Float64
+
     Note:
-        A função retorna uma série com o mesmo índice que `bdays` e `rates`.
+        - A função ordena os dados de entrada primeiro por `groupby_dates`,
+        se for fornecido, e depois por `bdays` para garantir a ordem cronológica
+        correta no cálculo das taxas a termo.
+        - Os resultados são retornados na mesma ordem dos dados de entrada.
     """  # noqa: E501
     bdays = bdays.astype("Int64")
     rates = rates.astype("Float64")
@@ -78,6 +89,9 @@ def forwards(
     # Check if indexes are the same
     if not bdays.index.equals(rates.index):
         raise ValueError("The indexes of bdays and rates must be the same.")
+
+    # Store original index
+    original_index = bdays.index
 
     # Create a DataFrame to work with the given series
     df = pd.DataFrame({"duk": bdays, "rk": rates})
@@ -91,7 +105,7 @@ def forwards(
         df["groupby_date"] = 0  # Dummy value to group the DataFrame
 
     # Sort by the groupby_dates and t2 columns to ensure proper chronological order
-    df.sort_values(by=["groupby_date", "tk"], inplace=True)
+    df = df.sort_values(by=["groupby_date", "tk"])
 
     # Calculate the next zero rate and business day for each group
     df["rj"] = df.groupby("groupby_date")["rk"].shift(1)
@@ -109,9 +123,12 @@ def forwards(
     # Set the first forward rate of each group to the zero rate
     df.loc[first_indices, "fwd"] = df.loc[first_indices, "rk"]
 
+    # Reindex the result to match the original input order
+    result_fwd = df["fwd"].reindex(original_index)
+
     # Return the forward rates as a Series with no name
-    df["fwd"].name = None
-    return df["fwd"]
+    result_fwd.name = None
+    return result_fwd
 
 
 def forward(
