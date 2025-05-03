@@ -20,7 +20,7 @@ test_file = Path("/home/crcj/github/PYield/dev/negocios-registrados.csv")
 
 def _fetch_csv_from_url() -> str:
     FILE_URL = "https://www3.bcb.gov.br/novoselic/NegociosRegistradosDownload"
-    r = requests.get(FILE_URL)
+    r = requests.get(FILE_URL, timeout=30)  # API usually takes 10s to respond
     r.raise_for_status()
     r.encoding = "iso-8859-15"
     return r.text
@@ -48,7 +48,7 @@ def _convert_csv_to_df(text: str) -> pd.DataFrame:
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     col_names_by_index = {
         0: "RowType",  # column indicating row type (filtered with "1")
-        1: "SecurityCode",  # código título
+        1: "SelicCode",  # código título
         2: "MaturityDate",  # data vencimento
         3: "BondType",  # sigla
         4: "LastPrice",  # pu último (mercado à vista)
@@ -79,10 +79,16 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
         29: "ForwardVolume",  # financeiro (mercado a termo)
     }
     df = df.rename(columns=col_names_by_index)
+
     df["BondType"] = df["BondType"].str.strip()
     df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%d-%m-%Y")
     today = dt.datetime.now(BZ_TIMEZONE).date()
     df["SettlementDate"] = pd.Timestamp(today)
+
+    # Remove percentage from rate columns
+    rate_cols = [col for col in df.columns if "Rate" in col]
+    for col in rate_cols:
+        df[col] = (df[col] / 100).round(6)
 
     return df
 
@@ -92,28 +98,28 @@ def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         # "RowType",
         "SettlementDate",
         "BondType",
-        "SecurityCode",
+        "SelicCode",
         "MaturityDate",
-        "LastPrice",
-        "LastRate",
         "MinPrice",
-        "MinRate",
         "AvgPrice",
-        "AvgRate",
         "MaxPrice",
+        "LastPrice",
+        "MinRate",
+        "AvgRate",
         "MaxRate",
+        "LastRate",
         "Trades",
         "Quantity",
         "Volume",
         "BrokeredTrades",
         "BrokeredQuantity",
-        "ForwardLastPrice",
-        "ForwardLastRate",
         "ForwardMinPrice",
-        "ForwardMinRate",
         "ForwardAvgPrice",
-        "ForwardAvgRate",
+        "ForwardLastPrice",
         "ForwardMaxPrice",
+        "ForwardLastRate",
+        "ForwardMinRate",
+        "ForwardAvgRate",
         "ForwardMaxRate",
         "ForwardTrades",
         "ForwardQuantity",
@@ -137,8 +143,11 @@ def is_selic_open() -> bool:
     return is_last_bday and is_trading_time
 
 
-def tpf_intraday_trades() -> pd.DataFrame:
-    """Fetches the TPF intraday data from BCB and returns it as a DataFrame."""
+def fpd_intraday_trades() -> pd.DataFrame:
+    """Fetches real-time secondary trading data for domestic Federal Public Debt (FDP)
+    from the Central Bank of Brazil (BCB).
+    Returns a DataFrame with the latest trades.
+    """
     if not is_selic_open():
         logger.info("Market is closed. Returning empty DataFrame.")
         # return pd.DataFrame()
@@ -148,11 +157,13 @@ def tpf_intraday_trades() -> pd.DataFrame:
         raw_text = test_file.read_text(encoding="iso-8859-15")
         cleaned_text = _clean_csv(raw_text)
         if not cleaned_text:
-            logger.warning("No data found in the CSV file. Returning empty DataFrame.")
+            logger.warning("No data found in the FPD intraday trades.")
             return pd.DataFrame()
         df = _convert_csv_to_df(cleaned_text)
         df = _process_df(df)
         df = _reorder_columns(df)
+        volume = df["Volume"].sum() / 10**9
+        logger.info(f"Fetched {volume:,.1f} billion BRL in FPD intraday trades.")
         return df
     except Exception:
         logger.exception("Error fetching data from BCB. Returning empty DataFrame.")
