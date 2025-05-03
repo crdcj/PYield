@@ -143,9 +143,59 @@ def is_selic_open() -> bool:
 
 
 def fpd_intraday_trades() -> pd.DataFrame:
-    """Fetches real-time secondary trading data for domestic Federal Public Debt (FDP)
+    """Fetches real-time secondary trading data for domestic Federal Public Debt (FPD)
     from the Central Bank of Brazil (BCB).
-    Returns a DataFrame with the latest trades.
+
+    This function checks if the SELIC market is currently open based on Brazil/Sao_Paulo
+    timezone business days and trading hours (defined by REALTIME_START_TIME and
+    REALTIME_END_TIME). If the market is closed, or if no data is available from the
+    source, or if an error occurs during fetching or processing, an empty DataFrame
+    is returned. Otherwise, it retrieves, cleans, and processes the intraday trade
+    data provided by BCB for Brazilian government bonds.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the latest intraday trades for FPD
+            securities. Returns an empty DataFrame if the market is closed, no data
+            is found, or an error occurs. The DataFrame includes the following columns:
+
+            *   `SettlementDate`: The reference date for the spot market
+                trading activity reported in this dataset (the current
+                business day). Forward trades listed have future settlement dates
+                not specified here.
+            *   `BondType`: Abbreviation/ticker for the bond type (e.g., LFT,
+                LTN, NTN-B).
+            *   `SelicCode`: The unique SELIC code identifying the specific bond issue.
+            *   `MaturityDate`: The maturity date of the bond.
+
+            **Spot Market Data:**
+            *   `MinPrice`: Minimum traded price.
+            *   `AvgPrice`: Average traded price.
+            *   `MaxPrice`: Maximum traded price.
+            *   `LastPrice`: Last traded price.
+            *   `MinRate`: Minimum traded yield/rate (as a decimal, e.g., 0.11 for 11%).
+            *   `AvgRate`: Average traded yield/rate (as a decimal).
+            *   `MaxRate`: Maximum traded yield/rate (as a decimal).
+            *   `LastRate`: Last traded yield/rate (as a decimal).
+            *   `Trades`: Total number of trades settled.
+            *   `Quantity`: Total number of bonds traded (quantity).
+            *   `Volume`: Total financial volume traded (in BRL).
+            *   `BrokeredTrades`: Number of brokered trades settled.
+            *   `BrokeredQuantity`: Quantity of bonds traded via brokers.
+
+            **Forward Market Data:**
+            *   `ForwardMinPrice`: Minimum traded price.
+            *   `ForwardAvgPrice`: Average traded price.
+            *   `ForwardMaxPrice`: Maximum traded price.
+            *   `ForwardLastPrice`: Last traded price.
+            *   `ForwardMinRate`: Minimum traded yield/rate (decimal).
+            *   `ForwardAvgRate`: Average traded yield/rate (decimal).
+            *   `ForwardMaxRate`: Maximum traded yield/rate (decimal).
+            *   `ForwardLastRate`: Last traded yield/rate (decimal).
+            *   `ForwardTrades`: Total number of trades contracted.
+            *   `ForwardQuantity`: Total number of bonds traded (quantity).
+            *   `ForwardVolume`: Total financial volume traded (in BRL).
+            *   `ForwardBrokeredTrades`: Number of brokered trades contracted.
+            *   `ForwardBrokeredQuantity`: Quantity of bonds traded via brokers.
     """
     if not is_selic_open():
         logger.info("Market is closed. Returning empty DataFrame.")
