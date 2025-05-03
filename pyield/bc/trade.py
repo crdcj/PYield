@@ -15,10 +15,10 @@ COLUMN_MAPPING = {
     "CODIGO": "SelicCode",
     "CODIGO ISIN": "ISIN",
     "EMISSAO": "IssueDate",
-    "VENCIMENTO": "Maturity",
-    "NUM DE OPER": "TradeCount",
-    "QUANT NEGOCIADA": "TradeQuantity",
-    "VALOR NEGOCIADO": "TradeValue",
+    "VENCIMENTO": "MaturityDate",
+    "NUM DE OPER": "Trades",
+    "QUANT NEGOCIADA": "Quantity",
+    "VALOR NEGOCIADO": "Volume",
     "PU MIN": "MinPrice",
     "PU MED": "AvgPrice",
     "PU MAX": "MaxPrice",
@@ -27,8 +27,8 @@ COLUMN_MAPPING = {
     "TAXA MIN": "MinRate",
     "TAXA MED": "AvgRate",
     "TAXA MAX": "MaxRate",
-    "NUM OPER COM CORRETAGEM": "BrokerageTradeCount",
-    "QUANT NEG COM CORRETAGEM": "BrokerageTradeQuantity",
+    "NUM OPER COM CORRETAGEM": "BrokerageTrades",
+    "QUANT NEG COM CORRETAGEM": "BrokerageQuantity",
 }
 
 
@@ -90,10 +90,10 @@ def tpf_trades(target_date: DateScalar, all_operations: bool = True) -> pd.DataF
         - SelicCode: Unique code in the SELIC system
         - ISIN: International Securities Identification Number
         - IssueDate: Date when the security was issued
-        - Maturity: Security's maturity date
-        - TradeCount: Number of trades executed
-        - TradeQuantity: Quantity traded
-        - TradeValue: Total value traded
+        - MaturityDate: Security's maturity date
+        - Trades: Number of trades executed
+        - Quantity: Quantity traded
+        - Volume: Total value traded
         - AvgPrice: Average price
         - AvgRate: Average rate
         And additional trading metrics like min/max prices and rates.
@@ -114,6 +114,6 @@ def tpf_trades(target_date: DateScalar, all_operations: bool = True) -> pd.DataF
     url = f"{BASE_URL}/{filename}"
     df = _fetch_data_from_url(url)
     df = df.rename(columns=COLUMN_MAPPING)
-    # TradeValue are empty in the original BCB file, so we calculate it
-    df["TradeValue"] = (df["TradeQuantity"] * df["AvgPrice"]).round(2)
+    # Volume are empty in the original BCB file, so we calculate it
+    df["Volume"] = (df["Quantity"] * df["AvgPrice"]).round(2)
     return df

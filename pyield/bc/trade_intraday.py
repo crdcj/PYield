@@ -29,8 +29,8 @@ def _fetch_csv_from_url() -> str:
 def _clean_csv(text: str) -> str:
     """Clean the CSV text data by removing unnecessary rows."""
     rows = text.splitlines()
-    clean_rows = [row for row in rows if row.startswith("1;")]
-    return "\n".join(clean_rows)
+    valid_rows = [row for row in rows if row.startswith("1;")]
+    return "\n".join(valid_rows)
 
 
 def _convert_csv_to_df(text: str) -> pd.DataFrame:
@@ -46,80 +46,80 @@ def _convert_csv_to_df(text: str) -> pd.DataFrame:
 
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    col_names = {
-        0: "codigo_negociacao",
-        1: "codigo_titulo",
-        2: "vencimento",
-        3: "titulo",
-        4: "pu_ultimo",
-        5: "tx_ultima",
-        6: "pu_min",
-        7: "tx_min",
-        8: "pu_medio",
-        9: "tx_media",
-        10: "pu_max",
-        11: "tx_max",
-        12: "negocios",
-        13: "negocios_corretagem",
-        14: "quantidade",
-        15: "quantidade_corretagem",
-        16: "financeiro",
-        17: "pu_ultimo_termo",
-        18: "tx_ultima_termo",
-        19: "pu_min_termo",
-        20: "tx_min_termo",
-        21: "pu_medio_termo",
-        22: "tx_media_termo",
-        23: "pu_max_termo",
-        24: "tx_max_termo",
-        25: "negocios_termo",
-        26: "negocios_corretagem_termo",
-        27: "quantidade_termo",
-        28: "quantidade_corretagem_termo",
-        29: "financeiro_termo",
+    col_names_by_index = {
+        0: "RowType",  # column indicating row type (filtered with "1")
+        1: "SecurityCode",  # código título
+        2: "MaturityDate",  # data vencimento
+        3: "BondType",  # sigla
+        4: "LastPrice",  # pu último (mercado à vista)
+        5: "LastRate",  # tx último (mercado à vista)
+        6: "MinPrice",  # pu mínimo (mercado à vista)
+        7: "MinRate",  # tx mínimo (mercado à vista)
+        8: "AvgPrice",  # pu médio (mercado à vista)
+        9: "AvgRate",  # tx médio (mercado à vista)
+        10: "MaxPrice",  # pu máximo (mercado à vista)
+        11: "MaxRate",  # tx máximo (mercado à vista)
+        12: "Trades",  # totais liquidados operações (mercado à vista)
+        13: "BrokeredTrades",  # corretagem liquidados operações (merc, à vista)
+        14: "Quantity",  # títulos (mercado à vista)
+        15: "BrokeredQuantity",  # corretagem títulos (mercado à vista)
+        16: "Volume",  # financeiro (mercado à vista)
+        17: "ForwardLastPrice",  # pu último (mercado a termo)
+        18: "ForwardLastRate",  # tx último (mercado a termo)
+        19: "ForwardMinPrice",  # pu mínimo (mercado a termo)
+        20: "ForwardMinRate",  # tx mínimo (mercado a termo)
+        21: "ForwardAvgPrice",  # pu médio (mercado a termo)
+        22: "ForwardAvgRate",  # tx médio (mercado a termo)
+        23: "ForwardMaxPrice",  # pu máximo (mercado a termo)
+        24: "ForwardMaxRate",  # tx máximo (mercado a termo)
+        25: "ForwardTrades",  # totais contratados operações (mercado a termo)
+        26: "ForwardBrokeredTrades",  # corretagem contratados operações (merc. a termo)
+        27: "ForwardQuantity",  # títulos (mercado a termo)
+        28: "ForwardBrokeredQuantity",  # corretagem titulos (mercado a termo)
+        29: "ForwardVolume",  # financeiro (mercado a termo)
     }
-    df = df.rename(columns=col_names)
-    df["titulo"] = df["titulo"].str.strip()
-    df["vencimento"] = pd.to_datetime(df["vencimento"], format="%d-%m-%Y")
+    df = df.rename(columns=col_names_by_index)
+    df["BondType"] = df["BondType"].str.strip()
+    df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%d-%m-%Y")
     today = dt.datetime.now(BZ_TIMEZONE).date()
-    df["data"] = pd.Timestamp(today)
+    df["SettlementDate"] = pd.Timestamp(today)
 
     return df
 
 
 def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     reorder_columns = [
-        # "codigo_negociacao",
-        "data",
-        "titulo",
-        "codigo_titulo",
-        "vencimento",
-        "negocios",
-        "negocios_corretagem",
-        "negocios_termo",
-        "negocios_corretagem_termo",
-        "quantidade",
-        "quantidade_corretagem",
-        "quantidade_termo",
-        "quantidade_corretagem_termo",
-        "financeiro",
-        "financeiro_termo",
-        "tx_ultima",
-        "tx_min",
-        "tx_media",
-        "tx_max",
-        "tx_ultima_termo",
-        "tx_min_termo",
-        "tx_media_termo",
-        "tx_max_termo",
-        "pu_min",
-        "pu_medio",
-        "pu_max",
-        "pu_ultimo",
-        "pu_ultimo_termo",
-        "pu_min_termo",
-        "pu_medio_termo",
-        "pu_max_termo",
+        # "RowType",
+        "SettlementDate",
+        "BondType",
+        "SecurityCode",
+        "MaturityDate",
+        "LastPrice",
+        "LastRate",
+        "MinPrice",
+        "MinRate",
+        "AvgPrice",
+        "AvgRate",
+        "MaxPrice",
+        "MaxRate",
+        "Trades",
+        "Quantity",
+        "Volume",
+        "BrokeredTrades",
+        "BrokeredQuantity",
+        "ForwardLastPrice",
+        "ForwardLastRate",
+        "ForwardMinPrice",
+        "ForwardMinRate",
+        "ForwardAvgPrice",
+        "ForwardAvgRate",
+        "ForwardMaxPrice",
+        "ForwardMaxRate",
+        "ForwardTrades",
+        "ForwardQuantity",
+        "ForwardVolume",
+        "ForwardBrokeredTrades",
+        "ForwardBrokeredQuantity",
     ]
 
     column_order = [col for col in reorder_columns if col in df.columns]
@@ -138,14 +138,14 @@ def is_selic_open() -> bool:
 
 
 def tpf_intraday_trades() -> pd.DataFrame:
-    """Fetches the intraday data from BCB and returns it as a DataFrame."""
+    """Fetches the TPF intraday data from BCB and returns it as a DataFrame."""
     if not is_selic_open():
         logger.info("Market is closed. Returning empty DataFrame.")
-        return pd.DataFrame()
+        # return pd.DataFrame()
 
     try:
-        raw_text = _fetch_csv_from_url()
-        # raw_text = test_file.read_text(encoding="iso-8859-15")
+        # raw_text = _fetch_csv_from_url()
+        raw_text = test_file.read_text(encoding="iso-8859-15")
         cleaned_text = _clean_csv(raw_text)
         if not cleaned_text:
             logger.warning("No data found in the CSV file. Returning empty DataFrame.")
