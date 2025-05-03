@@ -14,8 +14,7 @@ REALTIME_START_TIME = dt.time(9, 0, 0)
 REALTIME_END_TIME = dt.time(22, 0, 0)
 
 logger = logging.getLogger(__name__)
-
-test_file = Path("/home/crcj/github/PYield/dev/negocios-registrados.csv")
+test_file = Path(__file__).parent.parent.parent / "tests/data/negocios-registrados.csv"
 
 
 def _fetch_csv_from_url() -> str:
@@ -150,11 +149,11 @@ def fpd_intraday_trades() -> pd.DataFrame:
     """
     if not is_selic_open():
         logger.info("Market is closed. Returning empty DataFrame.")
-        # return pd.DataFrame()
+        return pd.DataFrame()
 
     try:
-        # raw_text = _fetch_csv_from_url()
-        raw_text = test_file.read_text(encoding="iso-8859-15")
+        raw_text = _fetch_csv_from_url()
+        # raw_text = test_file.read_text(encoding="iso-8859-15")
         cleaned_text = _clean_csv(raw_text)
         if not cleaned_text:
             logger.warning("No data found in the FPD intraday trades.")
