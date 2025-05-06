@@ -32,7 +32,7 @@ COLUMN_MAPPING = {
 }
 
 
-def _build_filename(target_date: DateScalar, all_operations: bool) -> str:
+def _build_filename(target_date: DateScalar, extragoup: bool) -> str:
     """
     URL com todos os arquivos disponíveis:
     https://www4.bcb.gov.br/pom/demab/negociacoes/apresentacao.asp?frame=1
@@ -45,7 +45,7 @@ def _build_filename(target_date: DateScalar, all_operations: bool) -> str:
     """
     target_date = convert_input_dates(target_date)
     file_date = target_date.strftime("%Y%m")
-    operation_acronym = "T" if all_operations else "E"
+    operation_acronym = "E" if extragoup else "T"
     return f"Neg{operation_acronym}{file_date}.ZIP"
 
 
@@ -117,4 +117,6 @@ def fpd_monthly_trades(
     df = df.rename(columns=COLUMN_MAPPING)
     # Volume are empty in the original BCB file, so we calculate it
     df["Volume"] = (df["Quantity"] * df["AvgPrice"]).round(2)
+    sort_cols = ["SettlementDate", "BondType", "MaturityDate"]
+    df = df.sort_values(by=sort_cols).reset_index(drop=True)
     return df
