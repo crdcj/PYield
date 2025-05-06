@@ -64,7 +64,7 @@ def _fetch_data_from_url(file_url: str) -> pd.DataFrame:
 
 
 def fpd_monthly_trades(
-    target_date: DateScalar, all_operations: bool = True
+    target_date: DateScalar, extragroup: bool = False
 ) -> pd.DataFrame:
     """Fetches monthly secondary trading data for the domestic 'Federal Public Debt'
     (FPD) registered in the Brazilian Central Bank (BCB) Selic system.
@@ -79,8 +79,14 @@ def fpd_monthly_trades(
             fetched. This date can be a string, datetime, or pandas Timestamp object.
             It will be converted to a pandas Timestamp object. Only the year and month
             of this date will be used to download the corresponding monthly file.
-        all_operations (bool): If True, fetches all operations. If False, fetches only
-            the extra group operations. Defaults to True.
+            extragroup (bool): If True, fetches only the trades that are considered
+            'extragroup' (between different economic groups)".
+            If False, fetches all trades. Default is False.
+            Extragroup trades are those where the transferring counterparty's
+            conglomerate is different from the receiving counterparty's conglomerate, or
+            when at least one of the counterparties does not belong to a conglomerate.
+            In the case of funds, the conglomerate considered is that of the
+            administrator.
 
     Returns:
         pd.DataFrame: A DataFrame containing the bond trading data for the specified
@@ -103,14 +109,8 @@ def fpd_monthly_trades(
     Examples:
         >>> from pyield import bc
         >>> df = bc.fpd_monthly_trades("07-01-2025")  # Returns all trades for Jan/2025
-
-    Notes:
-        Transactions are considered off-group when the transferring counterparty's
-        conglomerate is different from the receiving counterparty's conglomerate,
-        or when at least one of the counterparties does not belong to a conglomerate.
-        In the case of funds, the conglomerate considered is that of the administrator.
     """
-    filename = _build_filename(target_date, all_operations)
+    filename = _build_filename(target_date, extragroup)
     logger.info(f"Fetching FPD trades for {target_date} from BCB")
     url = f"{BASE_URL}/{filename}"
     df = _fetch_data_from_url(url)
