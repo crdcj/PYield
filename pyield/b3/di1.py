@@ -95,7 +95,9 @@ def data(
         df_pre = df_pre.rename(
             columns={"ReferenceDate": "TradeDate", "MaturityDate": "ExpirationDate"}
         )
-
+        # merge_asof will be used to filter the most recent LTN and NTN-F
+        # maturities for the given trade date. Therefore, the intraday data
+        # will use LTN and NTN-F maturities from the previous day.
         df = pd.merge_asof(
             df, df_pre, on="TradeDate", by="ExpirationDate", direction="backward"
         )
