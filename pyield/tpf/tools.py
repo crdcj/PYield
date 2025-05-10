@@ -77,7 +77,7 @@ def pre_spreads(date: DateScalar) -> pd.DataFrame:
     """
     # Fetch DI rates for the reference date
     converted_date = dc.convert_input_dates(date)
-    df_di = di1.data(date=converted_date, month_start=True)
+    df_di = di1.data(dates=converted_date, month_start=True)
     if "SettlementRate" not in df_di.columns or df_di.empty:
         raise ValueError("DI data is missing the 'SettlementRate' column or is empty.")
 

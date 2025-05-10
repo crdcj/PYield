@@ -15,7 +15,7 @@ TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 
 def data(
-    date: DateScalar,
+    dates: DateScalar | DateArray,
     month_start: bool = False,
     pre_filter: bool = False,
     all_columns: bool = True,
@@ -27,9 +27,7 @@ def data(
     (to month start) and optional filtering based on LTN and NTN-F bond maturities.
 
     Args:
-        date (DateScalar): The trade date for which to retrieve DI contract data.
-            If the date is invalid, a holiday, in the future, or None, an empty
-            DataFrame is returned with appropriate logging.
+        dates (DateScalar): The trade dates for which to retrieve DI contract data.
         month_start (bool, optional): If True, adjusts all expiration dates to the
             first day of their respective month (e.g., 2025-02-01 becomes
             2025-01-01). Defaults to False.
@@ -43,12 +41,12 @@ def data(
 
     Returns:
         pd.DataFrame: A DataFrame containing the DI futures contract data for the
-            specified date, sorted by expiration date. Returns an empty DataFrame
-            if no data is found, the date is invalid, a holiday, or in the future.
+            specified dates, sorted by trade dates and expiration dates.
+            Returns an empty DataFrame if no data is found
 
     Examples:
         >>> from pyield import di1
-        >>> df = di1.data(date="16-10-2024", month_start=True)
+        >>> df = di1.data(dates="16-10-2024", month_start=True)
         >>> df.iloc[:5, :5]  # Show the first five rows and columns
            TradeDate ExpirationDate TickerSymbol  BDaysToExp  OpenContracts
         0 2024-10-16     2024-11-01       DI1X24          12        1744269
@@ -57,31 +55,25 @@ def data(
         3 2024-10-16     2025-02-01       DI1G25          74         279491
         4 2024-10-16     2025-03-01       DI1H25          94         344056
     """
-    if date:
-        date = dc.convert_input_dates(date)
-        bz_today = dt.now(TIMEZONE_BZ).date()
-        if date.date() > bz_today:
-            logger.warning(f"DI date ({date}) after current date {bz_today}")
-            logger.warning("Returning empty DataFrame.")
-            return pd.DataFrame()
-    else:
-        logger.info("No date specified. Returning empty DataFrame.")
-        return pd.DataFrame()
-    # Return an empty DataFrame if the trade date is a holiday
-    if not bday.is_business_day(date):
-        logger.warning("Specified date is not a business day.")
-        logger.warning("Returning empty DataFrame.")
-        return pd.DataFrame()
 
-    # Get historical data
-    df = get_cached_dataset("DI").query("TradeDate == @date").reset_index(drop=True)
+    dates = dc.convert_input_dates(dates)
+    # Force dates to be a Series for consistency
+    dates = pd.Series(dates) if isinstance(dates, pd.Timestamp) else dates
+    # Remove duplicates and sort dates
+    dates = dates.drop_duplicates().sort_values().reset_index(drop=True)
+
+    df = get_cached_dataset("DI").query("TradeDate in @dates").reset_index(drop=True)
+
+    today = dt.now(TIMEZONE_BZ)
+    last_bday = bday.last_business_day()
+    is_trading_day = today.date() == last_bday.date()
+    if is_trading_day and last_bday in df["TradeDate"]:
+        logger.info("Trying to get DI Futures data for today.")
+        df_intraday = b3.futures(contract_code="DI1", date=last_bday)
+        df = pd.concat([df, df_intraday]).reset_index(drop=True)
 
     if df.empty:
-        logger.info("No historical data found. Trying real-time data.")
-        df = b3.futures(contract_code="DI1", date=date)
-
-    if df.empty:
-        logger.warning("No DI Futures data found for the specified date.")
+        logger.warning("No DI Futures data found for the specified dates.")
         logger.warning("Returning empty DataFrame.")
         return pd.DataFrame()
 
@@ -92,24 +84,35 @@ def data(
         df_pre = (
             get_cached_dataset("TPF")
             .query("BondType in ['LTN', 'NTN-F']")
-            .reset_index(drop=True)[["ReferenceDate", "MaturityDate"]]
+            .drop_duplicates(subset=["ReferenceDate", "MaturityDate"])
+            .sort_values(["ReferenceDate", "MaturityDate"])
+            .reset_index(drop=True)[["ReferenceDate", "MaturityDate", "BondType"]]
+        )
+        # Assure that the MaturityDate is a business day
+        df_pre["MaturityDate"] = bday.offset(df_pre["MaturityDate"], 0)
+
+        # Rename columns for merging
+        df_pre = df_pre.rename(
+            columns={"ReferenceDate": "TradeDate", "MaturityDate": "ExpirationDate"}
         )
 
-        nearest_date = _find_nearest_date(date, df_pre["ReferenceDate"])
-        if nearest_date is pd.NaT:
-            logger.warning("No matching reference date found in TPF dataset.")
-            return pd.DataFrame()
+        df = pd.merge_asof(
+            df, df_pre, on="TradeDate", by="ExpirationDate", direction="backward"
+        )
 
-        # Filter the TPF dataset for the nearest reference date
-        pre_maturities = (
-            df_pre.query("ReferenceDate == @nearest_date")["MaturityDate"]
-            .drop_duplicates()
+        # BondType was used as flag to filter the maturities
+        df = (
+            df.query("BondType.notna()")
+            .drop(columns=["BondType"])
             .reset_index(drop=True)
         )
 
-        # Force the expirations to be a business day as DI contracts
-        pre_maturities = bday.offset(pre_maturities, 0)
-        df = df.query("ExpirationDate in @pre_maturities").reset_index(drop=True)
+        if df.empty:
+            logger.warning(
+                "No DI Futures data found for the specified dates after pre-filtering."
+                "Returning empty DataFrame."
+            )
+            return pd.DataFrame()
 
     if month_start:
         df["ExpirationDate"] = df["ExpirationDate"].dt.to_period("M").dt.to_timestamp()
@@ -137,33 +140,6 @@ def data(
         df = df[selected_cols].copy()
 
     return df.sort_values(by=["TradeDate", "ExpirationDate"]).reset_index(drop=True)
-
-
-def _find_nearest_date(
-    target_date: pd.Timestamp, date_series: pd.Series
-) -> pd.Timestamp:
-    """Finds the date in a Series closest to the target date.
-
-    Args:
-        target_date (pd.Timestamp): The reference date.
-        date_series (pd.Series): A Series of dates to search within.
-
-    Returns:
-        pd.Timestamp: The date from `date_series` that is closest in time
-            to `target_date`. Returns pd.NaT if the series is empty or
-            target_date is None.
-    """
-    if date_series.empty or target_date is None:
-        return pd.NaT
-    # The result will be a Series of positive Timedeltas (durations)
-    abs_differences = (date_series - target_date).abs()
-
-    # Find the index of the minimum difference in the differences Series
-    # idxmin() returns the index label where the minimum value occurs
-    closest_index = abs_differences.idxmin()
-
-    # Use the found index to get the corresponding date from the original Series
-    return date_series.loc[closest_index]  # or date_series[closest_index]
 
 
 def interpolate_rates(
@@ -230,11 +206,7 @@ def interpolate_rates(
     dfi["irate"] = dfi["irate"].astype("Float64")
 
     # Load DI rates dataset filtered by the provided reference dates
-    dfr = (
-        get_cached_dataset("DI")
-        .query("TradeDate in @dfi['tdate'].unique()")
-        .reset_index(drop=True)
-    )
+    dfr = data(dates=dates)
 
     # Return an empty DataFrame if no rates are found
     if dfr.empty:
@@ -314,7 +286,7 @@ def interpolate_rate(
         return float("NaN")
 
     # Get the DI contract DataFrame
-    df = data(date=date)
+    df = data(dates=date)
 
     if df.empty:
         return float("NaN")
