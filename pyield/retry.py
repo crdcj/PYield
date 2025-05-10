@@ -19,66 +19,65 @@ from tenacity import RetryCallState
 # --- Configuração do Logger ---
 logger = logging.getLogger(__name__)
 
-# --- Constantes ---
-DEFAULT_TIMEOUT = (2, 10)
-RETRYABLE_NETWORK_ERRORS = (URLError,)
-RETRYABLE_PARSING_ERRORS = (pd.errors.EmptyDataError, pd.errors.ParserError)
-
 
 # --- Funções Auxiliares para Tenacity ---
-
-
 def _log_before_sleep(retry_state: RetryCallState):
     """
     Loga uma mensagem ANTES de o Tenacity entrar em espera (sleep) entre tentativas.
-
-    Simplificada para confiar no contrato do Tenacity e usar asserções
-    para verificar o estado esperado.
     """
-    # 1. Verificar o resultado (outcome)
     outcome = retry_state.outcome
-    assert outcome is not None, "before_sleep chamada sem 'outcome'"
-    # Adicionado: Garantir que realmente falhou antes de logar como falha
-    assert outcome.failed, "before_sleep chamada para 'outcome' bem-sucedido"
+    if not outcome or not outcome.failed:
+        logger.debug(
+            "before_sleep chamada sem 'outcome' ou para 'outcome' bem-sucedido."
+        )
+        return
 
-    exception = outcome.exception
-    # Adicionado: Garantir que a exceção existe quando falhou
-    assert exception is not None, "before_sleep chamada sem 'exception' no outcome"
+    exception = outcome.exception()
+    if not exception:
+        logger.debug("before_sleep chamada sem 'exception' real no outcome.")
+        return
 
-    # 2. Verificar a próxima ação (next_action)
     next_action = retry_state.next_action
-    assert next_action is not None, "before_sleep chamada sem 'next_action'"
+    if not next_action or not hasattr(next_action, "sleep"):
+        logger.debug(
+            "before_sleep chamada sem 'next_action' ou 'sleep' em next_action."
+        )
+        return
 
-    # 3. Acessar a duração do sono (sleep)
-    # Confiamos que 'next_action' terá '.sleep' neste contexto, pois é antes de dormir.
     sleep_duration = next_action.sleep
 
-    # Log principal
     logger.warning(
         f"Tentativa {retry_state.attempt_number} falhou com "
-        f"{type(exception).__name__}: {exception}. Tentando novamente em "
+        f"{type(exception).__name__}: {str(exception)[:150]}. Tentando novamente em "
         f"{sleep_duration:.2f} segundos..."
     )
 
 
 def should_retry_exception(retry_state: RetryCallState) -> bool:
-    """Determina se uma exceção capturada justifica uma nova tentativa."""
+    """Determina se uma exceção capturada justifica uma nova tentativa"""
     if not retry_state.outcome or not retry_state.outcome.failed:
         return False
 
-    # Usar o atributo .exception
-    exception = retry_state.outcome.exception
-    assert exception is not None, (
-        "should_retry_exception processando um outcome sem exceção?"
-    )
+    exception = retry_state.outcome.exception()
+
+    if exception is None:
+        # Isso não deveria acontecer se outcome.failed é True.
+        logger.error(
+            "should_retry_exception: outcome.failed é True,"
+            "mas exception() retornou None."
+        )
+        return False
 
     attempt_number = retry_state.attempt_number
+    # getattr é mais seguro caso a exceção não tenha 'url'
     url = getattr(exception, "url", "N/A")
 
     retry_decision = False
-    log_message = ""
-    log_level = logging.ERROR
+    # Inicializar como None para evitar log default se nenhum case corresponder
+    log_message = None
+    log_level = logging.ERROR  # Default para não retentativa
 
+    # Usando match/case como originalmente preferido
     match exception:
         case HTTPError(code=404):
             log_message = (
@@ -88,6 +87,15 @@ def should_retry_exception(retry_state: RetryCallState) -> bool:
             retry_decision = False
             log_level = logging.INFO
 
+        case HTTPError(code=429):  # ADICIONADO: Tratamento para Too Many Requests
+            log_message = (
+                f"Tentativa {attempt_number}: Too Many Requests (429) da API em {url}. "
+                f"API pediu para aguardar. Tentando novamente."
+            )
+            retry_decision = True
+            log_level = logging.WARNING
+
+        # Gateway Timeout, primeira tentativa
         case HTTPError(code=504) if attempt_number == 1:
             log_message = (
                 f"Tentativa {attempt_number}: Gateway Timeout (504) da API em {url}. "
@@ -96,7 +104,7 @@ def should_retry_exception(retry_state: RetryCallState) -> bool:
             retry_decision = True
             log_level = logging.WARNING
 
-        case HTTPError(code=504):
+        case HTTPError(code=504):  # Gateway Timeout, tentativas subsequentes
             log_message = (
                 f"Tentativa {attempt_number}: Gateway Timeout (504) persistiu em {url}."
                 f"API parece indisponível. Desistindo."
@@ -104,41 +112,52 @@ def should_retry_exception(retry_state: RetryCallState) -> bool:
             retry_decision = False
             log_level = logging.ERROR
 
-        case HTTPError() as http_err:
+        case HTTPError() as http_err:  # Outros erros HTTP
+            # Esta regra genérica para HTTPError retentará outros códigos HTTP.
+            # Por exemplo, 500, 502, 503 (geralmente bom para retry)
+            # mas também 400, 401, 403 (geralmente não bom para retry).
+            # Se precisar de mais granularidade, adicione cases específicos acima deste.
             log_message = (
-                f"Tentativa {attempt_number}: Erro HTTP {http_err.code} encontrado "
-                f"para {url}. Pode ser transitório. Tentando novamente."
+                f"Tentativa {attempt_number}: Erro HTTP {http_err.code} "
+                f"({http_err.reason}) encontrado para {url}. "
+                "Pode ser transitório. Tentando novamente."
             )
             retry_decision = True
             log_level = logging.WARNING
 
+        # Erros de rede mais genéricos (e.g., DNS falhou, conexão recusada)
         case URLError():
             log_message = (
                 f"Tentativa {attempt_number}: Erro de rede recuperável "
-                f"({type(exception).__name__}). Tentando novamente."
+                f"({type(exception).__name__}: {str(exception)[:100]}) para {url}. "
+                f"Tentando novamente."
             )
             retry_decision = True
             log_level = logging.WARNING
 
+        # Usando o operador | para combinar tipos de exceção no case
         case pd.errors.EmptyDataError() | pd.errors.ParserError():
             log_message = (
-                f"Tentativa {attempt_number}: Erro de parsing "
+                f"Tentativa {attempt_number}: Erro de parsing de dados "
                 f"({type(exception).__name__}). Tentando novamente."
             )
             retry_decision = True
             log_level = logging.WARNING
 
-        case _:
+        case _:  # Exceção não mapeada/inesperada
+            # Mensagem para o log de exceção
             log_message_exc = (
                 f"Tentativa {attempt_number}: Erro não recuperável/inesperado "
-                f"({type(exception).__name__}). Desistindo."
+                f"({type(exception).__name__}: {str(exception)[:100]}) "
+                f"ao processar {url}. Desistindo."
             )
-            retry_decision = False
-            log_level = logging.ERROR
+            # Sempre incluir traceback para erros inesperados
             logger.exception(log_message_exc)
-            log_message = None
+            log_message = None  # Evita log duplicado pela seção logger.log abaixo
+            retry_decision = False
+            log_level = logging.ERROR  # Já é o default, mas explícito aqui
 
-    if log_message:
+    if log_message:  # Loga a mensagem formatada se uma foi definida
         logger.log(log_level, log_message)
 
     return retry_decision
@@ -147,8 +166,9 @@ def should_retry_exception(retry_state: RetryCallState) -> bool:
 # --- Decorador Tenacity Principal ---
 default_retry = tenacity.retry(
     retry=should_retry_exception,
+    # Backoff exponencial é bom para 429
     wait=tenacity.wait_exponential(multiplier=1, min=1, max=10),
     stop=(tenacity.stop_after_attempt(3) | tenacity.stop_after_delay(15)),
     before_sleep=_log_before_sleep,
-    reraise=True,
+    reraise=True,  # Importante para propagar o erro final se as tentativas falharem
 )

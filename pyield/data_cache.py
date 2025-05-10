@@ -5,6 +5,8 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from pyield.retry import default_retry
+
 # --- Configurações Centralizadas ---
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
@@ -40,6 +42,12 @@ def _get_today_date_key():
     return datetime.now(TIMEZONE_BZ).strftime("%Y-%m-%d")
 
 
+@default_retry
+def _load_github_file(file_url: str) -> pd.DataFrame:
+    """Carrega um arquivo do GitHub e retorna um DataFrame."""
+    return pd.read_parquet(file_url)
+
+
 @functools.lru_cache(maxsize=len(DATASET_CONFIGS))
 def _get_dataset_with_ttl(dataset_id: str, date_key: str) -> pd.DataFrame:
     """Carrega o dataset a partir do ID e da chave de data. Cache expira diariamente."""
@@ -55,7 +63,7 @@ def _get_dataset_with_ttl(dataset_id: str, date_key: str) -> pd.DataFrame:
     full_url = f"{BASE_DATA_URL}/{filename}"
 
     try:
-        df = pd.read_parquet(full_url)
+        df = _load_github_file(full_url)
         last_date = df[date_column].max().date()
         logger.info(f"Dataset {dataset_name} carregado. Última data: {last_date}")
         return df.copy()

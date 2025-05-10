@@ -47,8 +47,8 @@ def data(
             if no data is found, the date is invalid, a holiday, or in the future.
 
     Examples:
-        >>> from pyield import dif
-        >>> df = dif.data(date="16-10-2024", month_start=True)
+        >>> from pyield import di1
+        >>> df = di1.data(date="16-10-2024", month_start=True)
         >>> df.iloc[:5, :5]  # Show the first five rows and columns
            TradeDate ExpirationDate TickerSymbol  BDaysToExp  OpenContracts
         0 2024-10-16     2024-11-01       DI1X24          12        1744269
@@ -295,17 +295,17 @@ def interpolate_rate(
                 - An interpolation calculation fails.
 
     Examples:
-        >>> from pyield import dif
+        >>> from pyield import di1
         >>> # Get rate for an existing contract expiration
-        >>> dif.interpolate_rate("25-04-2025", "01-01-2027")
+        >>> di1.interpolate_rate("25-04-2025", "01-01-2027")
         0.13901
 
         >>> # Get rate for a non-existing contract expiration
-        >>> dif.interpolate_rate("25-04-2025", "01-11-2027")
+        >>> di1.interpolate_rate("25-04-2025", "01-11-2027")
         0.13576348733268917
 
         >>> # Extrapolate rate for a future expiration date
-        >>> dif.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
+        >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
 
@@ -354,9 +354,9 @@ def eod_dates() -> pd.Series:
                    for which DI data is available.
 
     Examples:
-        >>> from pyield import dif
+        >>> from pyield import di1
         >>> # DI Futures series starts from 1995-01-02
-        >>> dif.eod_dates().head(5)
+        >>> di1.eod_dates().head(5)
         0   1995-01-02
         1   1995-01-03
         2   1995-01-04
