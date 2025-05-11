@@ -55,7 +55,6 @@ def data(
         3 2024-10-16     2025-02-01       DI1G25          74         279491
         4 2024-10-16     2025-03-01       DI1H25          94         344056
     """
-
     dates = dc.convert_input_dates(dates)
     # Force dates to be a Series for consistency
     dates = pd.Series(dates) if isinstance(dates, pd.Timestamp) else dates
@@ -152,7 +151,7 @@ def interpolate_rates(
     """
     Interpolates DI rates for specified trade dates and expiration dates.
 
-    Calculates interpolated DI rates using the flat-forward method for given
+    Calculates interpolated DI rates using the **flat-forward** method for given
     sets of trade dates and expiration dates. This function is well-suited
     for vectorized calculations across multiple date pairs.
 
@@ -177,6 +176,52 @@ def interpolate_rates(
     Raises:
         ValueError: If `dates` and `expirations` are both array-like but have
             different lengths.
+
+    Examples:
+        >>> from pyield import di1
+        >>> # Note: by default, pandas shows floats with 6 decimal places
+        >>> # Interpolate rates for multiple trade and expiration dates
+        >>> # There is a contract with expiration 01-01-2027 in 08-05-2025
+        >>> # The rate is not interpolated (settlement rate is used)
+        >>> # There is no contract with expiration 25-11-2027 in 09-05-2025
+        >>> # The rate is interpolated (flat-forward method)
+        >>> # There is no data for trade date 10-05-2025 (Saturday) -> NaN
+        >>> # Note: 0.13461282461562996 is shown as 0.134613
+        >>> di1.interpolate_rates(
+        ...     dates=["08-05-2025", "09-05-2025", "10-05-2025"],
+        ...     expirations=["01-01-2027", "25-11-2027", "01-01-2030"],
+        ... )
+        0    0.13972
+        1    0.134613
+        2    <NA>
+        dtype: Float64
+
+        >>> # Interpolate rates for a single trade date and multiple expiration dates
+        >>> # There is no DI Contract in 09-05-2025 with expiration 01-01-2050
+        >>> # The longest available contract is used to extrapolate the rate
+        >>> # Note: extrapolation is allowed by default
+        >>> di1.interpolate_rates(
+        ...     dates="25-04-2025",
+        ...     expirations=["01-01-2027", "01-01-2050"],
+        ... )
+        0    0.13901
+        1    0.13881
+        dtype: Float64
+
+        >>> # With extrapolation set to False, the second rate will be NaN
+        >>> # Note: 0.13576348733268917 is shown as 0.135763
+        >>> di1.interpolate_rates(
+        ...     dates="25-04-2025",
+        ...     expirations=["01-11-2027", "01-01-2050"],
+        ...     extrapolate=False,
+        ... )
+        0    0.135763
+        1    <NA>
+        dtype: Float64
+
+    Notes:
+        - All available settlement rates are used for the flat-forward interpolation.
+        - The function handles broadcasting of scalar and array-like inputs.
     """
     # Convert input dates to a consistent format
     dates = dc.convert_input_dates(dates)
@@ -282,7 +327,6 @@ def interpolate_rate(
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
-
     expiration = dc.convert_input_dates(expiration)
     if not date:
         return float("NaN")
