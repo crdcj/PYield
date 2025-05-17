@@ -136,7 +136,9 @@ def di_spreads(date: DateScalar) -> pd.DataFrame:
 
     Examples:
         >>> from pyield import ltn
-        >>> ltn.di_spreads("22-08-2024")
+        >>> spreads = ltn.di_spreads("22-08-2024")
+        >>> spreads["DISpread"] = spreads["DISpread"] * 10000  # Convert to bps
+        >>> spreads
            MaturityDate  DISpread
         0    2024-10-01     -3.06
         1    2025-01-01     -9.95

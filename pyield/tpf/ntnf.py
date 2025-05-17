@@ -344,7 +344,9 @@ def di_spreads(date: DateScalar) -> pd.DataFrame:
 
     Examples:
         >>> from pyield import ntnf
-        >>> ntnf.di_spreads("23-08-2024")
+        >>> df_spreads = ntnf.di_spreads("23-08-2024")
+        >>> df_spreads["DISpread"] = df_spreads["DISpread"] * 10_000  # Convert to bps
+        >>> df_spreads
           MaturityDate  DISpread
         0   2025-01-01     -5.38
         1   2027-01-01      4.39
@@ -444,19 +446,20 @@ def di_net_spread(  # noqa
             None. A good initial guess is the DI gross spread for the bond.
 
     Returns:
-        float: The net DI spread in basis points.
+        float: The net DI spread in decimal format (e.g., 0.0012 for 12 bps).
 
     Examples:
         # Obs: only some of the DI rates will be used in the example.
         >>> exp_dates = pd.to_datetime(["2025-01-01", "2030-01-01", "2035-01-01"])
         >>> di_rates = pd.Series([0.10823, 0.11594, 0.11531])
-        >>> di_net_spread(
+        >>> spread = di_net_spread(
         ...     settlement="23-08-2024",
         ...     ntnf_maturity="01-01-2035",
         ...     ntnf_rate=0.116586,
         ...     di_expirations=exp_dates,
         ...     di_rates=di_rates,
         ... )
+        >>> round(spread * 10_000, 2)  # Convert to bps for display
         12.13
     """
     # Create an interpolator for the DI rates using the flat-forward method
@@ -489,9 +492,7 @@ def di_net_spread(  # noqa
         return (bond_cash_flows / (1 + di_interp + p) ** byears).sum() - bond_price
 
     # Solve for the spread that zeroes the price difference using the bisection method
-    p_solution = _solve_spread(price_difference, initial_guess)
-    # Convert the solution to basis points (bps) and round to two decimal places
-    return round((p_solution * 10_000), 2)
+    return _solve_spread(price_difference, initial_guess)
 
 
 def premium(

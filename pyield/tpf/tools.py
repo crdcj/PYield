@@ -97,9 +97,6 @@ def pre_spreads(date: DateScalar) -> pd.DataFrame:
     # Calculate the DI spread as the difference between indicative and settlement rates
     df_spreads["DISpread"] = df_spreads["IndicativeRate"] - df_spreads["SettlementRate"]
 
-    # Convert spread to basis points for clarity
-    df_spreads["DISpread"] = (10_000 * df_spreads["DISpread"]).round(2)
-
     # Prepare and return the final sorted DataFrame
     df_spreads = df_spreads.sort_values(["BondType", "MaturityDate"], ignore_index=True)
     return df_spreads[["BondType", "MaturityDate", "DISpread"]].copy()
