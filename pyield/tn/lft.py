@@ -3,7 +3,7 @@ import pandas as pd
 from pyield import anbima, bday
 from pyield import date_converter as dc
 from pyield.date_converter import DateScalar
-from pyield.tpf import tools
+from pyield.tn import tools
 
 
 def data(date: DateScalar) -> pd.DataFrame:

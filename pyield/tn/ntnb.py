@@ -3,7 +3,7 @@ import pandas as pd
 
 import pyield.date_converter as dc
 import pyield.interpolator as ip
-import pyield.tpf.tools as bt
+import pyield.tn.tools as bt
 from pyield import anbima, bday
 from pyield.date_converter import DateScalar
 
@@ -541,14 +541,20 @@ def duration(
         >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
         15.083054313130464
     """
+    # Return NaN if any input is NaN
+    if any(pd.isna(x) for x in [settlement, maturity, rate]):
+        return float("NaN")
+
+    # Validate and normalize dates
     settlement = dc.convert_input_dates(settlement)
     maturity = dc.convert_input_dates(maturity)
 
     df = cash_flows(settlement, maturity)
     df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252
     df["DCF"] = df["CashFlow"] / (1 + rate) ** df["BY"]
-    np_duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
-    return float(np_duration)
+    duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
+    # Return the duration as native float
+    return float(duration)
 
 
 def dv01(

@@ -16,8 +16,8 @@ from pyield import bday
 from pyield import date_converter as dc
 from pyield.date_converter import DateScalar
 from pyield.retry import default_retry
-from pyield.tpf.ntnb import duration as duration_b
-from pyield.tpf.ntnf import duration as duration_f
+from pyield.tn.ntnb import duration as duration_b
+from pyield.tn.ntnf import duration as duration_f
 
 """
 Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
@@ -72,18 +72,17 @@ def _pre_process_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    A API retorna somente os valores de SR e FR
-    Assim, vamos ter que somar SR com FR para obter os valores totais
-    Por isso, vamos remover valores nulos de SR e FR para o nulo não ser propagado
-    """
+    # A API retorna somente os valores de SR e FR
+    # Assim, vamos ter que somar SR com FR para obter os valores totais
+
+    # Remover valores nulos de SR e FR para o nulo não ser propagado
     df["AcceptedQuantitySR"] = df["AcceptedQuantitySR"].fillna(0)
     df["OfferedQuantitySR"] = df["OfferedQuantitySR"].fillna(0)
 
     df["OfferedQuantity"] = df["OfferedQuantityFR"] + df["OfferedQuantitySR"]
     df["AcceptedQuantity"] = df["AcceptedQuantityFR"] + df["AcceptedQuantitySR"]
-    # Total value of the auction in R$ millions -> convert it to unit value
-    df["Value"] = (1_000_000 * df["Value"]).round(0).astype("Int64")
+    # Total value of the auction in R$ millions -> convert to R$
+    df["Value"] = (1_000_000 * df["Value"]).round(2)
 
     # Remove the percentage sign and round to 6 decimal places (4 decimal places in %)
     # Before 25/08/2015, there were no rounding rules for the rates in the BC API
@@ -96,12 +95,12 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     first_round_ratio = first_round_ratio.where(df["AcceptedQuantityFR"] != 0, 0)
     # O dado do financeiro do BC está em milhões com uma casa decimal de precisão
     # Portanto, podemos converter para inteiro sem perda de informação
-    df["ValueFR"] = (first_round_ratio * df["Value"]).round(0).astype("Int64")
+    df["ValueFR"] = (first_round_ratio * df["Value"]).round(2)
 
     # Calculate the financial value of the second round
     second_round_ratio = df["AcceptedQuantitySR"] / df["AcceptedQuantity"]
     second_round_ratio = second_round_ratio.where(df["AcceptedQuantitySR"] != 0, 0)
-    df["ValueSR"] = (second_round_ratio * df["Value"]).round(0).astype("Int64")
+    df["ValueSR"] = (second_round_ratio * df["Value"]).round(2)
 
     bond_mappping = {
         100000: "LTN",
@@ -114,9 +113,9 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
 
     # Em 11/06/2024 o BC passou a informar nas colunas de cotacao os valores dos PUs
     # Isso afeta somente os títulos LFT e NTN-B
-    change_Date = pd.Timestamp("2024-06-11")
+    change_date = pd.Timestamp("2024-06-11")
     adjusted_price = (df["ValueFR"] / df["AcceptedQuantityFR"]).round(6)
-    is_after_change_Date = df["Date"] >= change_Date
+    is_after_change_Date = df["Date"] >= change_date
     is_ltn_or_ntnf = df["BondType"].isin(["LTN", "NTN-F"])
     keep_avg_price = is_after_change_Date | is_ltn_or_ntnf
     df["AvgPrice"] = df["AvgPrice"].where(keep_avg_price, adjusted_price)
@@ -128,63 +127,69 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _adjust_null_values(df: pd.DataFrame) -> pd.DataFrame:
-    # Onde não há quantidade aceita, não há nem taxa e nem PU definidos.
+    # Onde não há quantidade aceita na primeira volta, não há taxa ou PU definidos.
     is_accepted = df["AcceptedQuantityFR"] != 0
-    df["AvgRate"] = df["AvgRate"].where(is_accepted, pd.NA)
-    df["CutRate"] = df["CutRate"].where(is_accepted, pd.NA)
-    df["AvgPrice"] = df["AvgPrice"].where(is_accepted, pd.NA)
-    df["CutPrice"] = df["CutPrice"].where(is_accepted, pd.NA)
+    cols_to_update = ["AvgRate", "CutRate", "AvgPrice", "CutPrice"]
+    df[cols_to_update] = df[cols_to_update].where(is_accepted, pd.NA)
+
+    return df
+
+
+def _add_duration(df: pd.DataFrame) -> pd.DataFrame:
+    df["Duration"] = 0.0
+    df_lft = df.query("BondType in ['LFT']").reset_index(drop=True)
+
+    df_ltn = df.query("BondType == 'LTN'").reset_index(drop=True)
+    if not df_ltn.empty:
+        df_ltn["Duration"] = df_ltn["BDToMat"] / 252
+
+    df_ntnf = df.query("BondType == 'NTN-F'").reset_index(drop=True)
+    if not df_ntnf.empty:
+        df_ntnf["Duration"] = df_ntnf.apply(
+            lambda row: duration_f(row["Settlement"], row["Maturity"], row["AvgRate"]),
+            axis=1,
+        )
+
+    df_ntnb = df.query("BondType == 'NTN-B'").reset_index(drop=True)
+    if not df_ntnb.empty:
+        df_ntnb["Duration"] = df_ntnb.apply(
+            lambda row: duration_b(row["Settlement"], row["Maturity"], row["AvgRate"]),
+            axis=1,
+        )
+
+    df = pd.concat([df_lft, df_ltn, df_ntnf, df_ntnb]).reset_index(drop=True)
+    df["Duration"] = df["Duration"].astype("Float64")
 
     return df
 
 
 def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
-    # DV01 irá armazenar o valor do DV01 por título até o final da função
-    # Ao final, o DV01 será multiplicado pela quantidade aceita
-    df["DV01"] = 0
-    is_accepted = df["AcceptedQuantity"] != 0  # noqa
-    df_not_accepted = df.query("~@is_accepted").reset_index(drop=True)
-    df_accepted = df.query("@is_accepted").reset_index(drop=True)
+    # DV01 por título calculado com base nos valores da primeira rodada
+    mduration = df["Duration"] / (1 + df["AvgRate"])
+    dv01 = 0.0001 * mduration * df["AvgPrice"]
 
-    df_lft = df_accepted.query("BondType == 'LFT'").reset_index(drop=True)
+    # Valores totais de DV01 para o leilão
+    df["DV01"] = dv01 * df["AcceptedQuantity"]
+    df["DV01FR"] = dv01 * df["AcceptedQuantityFR"]
+    df["DV01SR"] = dv01 * df["AcceptedQuantitySR"]
 
-    df_ltn = df_accepted.query("BondType == 'LTN'").reset_index(drop=True)
-    if not df_ltn.empty:
-        df_ltn["Duration"] = df_ltn["BDToMat"] / 252
-        mduration = df_ltn["Duration"] / (1 + df_ltn["AvgRate"])
-        df_ltn["DV01"] = 0.0001 * mduration * df_ltn["AvgPrice"]
+    for col in ["DV01", "DV01FR", "DV01SR"]:
+        # Definiri DV01 nulos do leilão como 0
+        df[col] = df[col].fillna(0).round(2)
 
-    def compute_f_duration(row):
-        return duration_f(row["Date"], row["Maturity"], row["CutRate"])
+    # Forçar 0 nas LFT, pois não há DV01
+    df.loc[df["BondType"] == "LFT", ["DV01", "DV01FR", "DV01SR"]] = 0.0
 
-    df_ntnf = df_accepted.query("BondType == 'NTN-F'").reset_index(drop=True)
-    if not df_ntnf.empty:
-        df_ntnf["Duration"] = df_ntnf.apply(compute_f_duration, axis=1)
-        df_ntnf["Duration"] = df_ntnf["Duration"].astype("Float64")
-        mduration = df_ntnf["Duration"] / (1 + df_ntnf["AvgRate"])
-        df_ntnf["DV01"] = 0.0001 * mduration * df_ntnf["AvgPrice"]
+    return df
 
-    def compute_b_duration(row):
-        return duration_b(row["Date"], row["Maturity"], row["CutRate"])
 
-    df_ntnb = df_accepted.query("BondType == 'NTN-B'").reset_index(drop=True)
-    if not df_ntnb.empty:
-        df_ntnb["Duration"] = df_ntnb.apply(compute_b_duration, axis=1)
-        df_ntnb["Duration"] = df_ntnb["Duration"].astype("Float64")
-        mduration = df_ntnb["Duration"] / (1 + df_ntnb["AvgRate"])
-        df_ntnb["DV01"] = 0.0001 * mduration * df_ntnb["AvgPrice"]
+def _add_avg_maturity(df: pd.DataFrame) -> pd.DataFrame:
+    # Na metodolgia do Tesouro Nacional, a maturidade média é a mesma que a duração
+    df["AvgMaturity"] = df["Duration"]
 
-    df = pd.concat([df_not_accepted, df_lft, df_ltn, df_ntnf, df_ntnb])
-
-    df["DV01FR"] = df["DV01"] * df["AcceptedQuantityFR"]
-    df["DV01FR"] = df["DV01FR"].round(0).astype("Int64")
-
-    df["DV01SR"] = df["DV01"] * df["AcceptedQuantitySR"]
-    df["DV01SR"] = df["DV01SR"].round(0).astype("Int64")
-
-    # DV01 irá armazenar o valor total do leilão
-    df["DV01"] *= df["AcceptedQuantity"]
-    df["DV01"] = df["DV01"].round(0).astype("Int64")
+    # Para LFT, a maturidade média é calculada como o n. de dias úteis até o vencimento
+    is_lft = df["BondType"] == "LFT"
+    df.loc[is_lft, "AvgMaturity"] = df.loc[is_lft, "BDToMat"] / 252
 
     return df
 
@@ -197,10 +202,11 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "Ordinance",
         "Buyer",
         "BondType",
+        "SelicCode",
         "Maturity",
         "BDToMat",
         "Duration",
-        "SelicCode",
+        "AvgMaturity",
         "Value",
         "ValueFR",
         "ValueSR",
@@ -232,7 +238,9 @@ def _fetch_df_from_url(url: str) -> pd.DataFrame:
         df = _pre_process_df(df)
         df = _adjust_null_values(df)
         df = _process_df(df)
+        df = _add_duration(df)
         df = _add_dv01(df)
+        df = _add_avg_maturity(df)
         df = _sort_and_reorder_columns(df)
         return df
     except Exception:
@@ -243,7 +251,7 @@ def _fetch_df_from_url(url: str) -> pd.DataFrame:
 def auctions(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
-    auction_type: Literal["Sell", "Buy"] | None = None,
+    auction_type: Literal["sell", "buy"] | None = None,
 ) -> pd.DataFrame:
     """
     Recupera dados de leilões para um determinado período e tipo de leilão da API do BC.
@@ -286,7 +294,7 @@ def auctions(
             leilão desde a data mais antiga disponível até a data de `end`.
             Se `start` e `end` forem `None`, a série histórica completa será retornada.
             Padrão é `None`.
-        auction_type (Literal["Sell", "Buy"], opcional): O tipo de leilão para filtrar
+        auction_type (Literal["sell", "buy"], opcional): O tipo de leilão para filtrar
             diretamente na API. Padrão é `None` (retorna todos os tipos de leilão).
 
     Returns:
@@ -305,8 +313,12 @@ def auctions(
             - Ordinance: Edital normativo associado ao leilão.
             - Buyer: Categoria do comprador (ex: "TodoMercado", "SomenteDealerApto").
             - BondType: Categoria do título (ex: "LTN", "LFT", "NTN-B", "NTN-F").
-            - Maturity: Data de vencimento do título.
             - SelicCode: Código do título no sistema Selic.
+            - Maturity: Data de vencimento do título.
+            - DV01: Valor do DV01 total do leilão em R$.
+            - DV01FR: DV01 da Primeira Rodada (FR) em R$.
+            - DV01SR: DV01 da Segunda Rodada (SR) em R$.
+            - AvgMaturity: Maturidade média do título (em anos).
             - Value: Valor total do leilão em R$ (FR + SR).
             - ValueFR: Valor da primeira rodada (FR) do leilão em R$.
             - ValueSR: Valor da segunda rodada (SR) em R$.
@@ -322,9 +334,6 @@ def auctions(
             - CutRate: Taxa de corte.
             - BDToMat: Dias úteis até o vencimento.
             - Duration: Duration (Duração) do título.
-            - DV01: Valor do DV01 total do leilão em R$.
-            - DV01FR: DV01 da Primeira Rodada (FR) em R$.
-            - DV01SR: DV01 da Segunda Rodada (SR) em R$.
     """
     url = BASE_API_URL
     if start:
@@ -338,8 +347,8 @@ def auctions(
         url += f"&@dataMovimentoFim='{end_str}'"
 
     # Mapeamento do auction_type para o valor esperado pela API
-    auction_type_mapping = {"Sell": "Venda", "Buy": "Compra"}
-    auction_type_api_value = auction_type_mapping.get(str(auction_type))
+    auction_type_mapping = {"sell": "Venda", "buy": "Compra"}
+    auction_type_api_value = auction_type_mapping.get(str(auction_type.lower()))
     # Adiciona o parâmetro tipoOferta à URL se auction_type for fornecido
     if auction_type_api_value:
         url += f"&@tipoOferta='{auction_type_api_value}'"

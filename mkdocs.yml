@@ -10,6 +10,7 @@ nav:
       - BC Data: bc.md
       - IBGE Data: ibge.md
       - Interpolator: interpolator.md
+      - Tesouro Data: tn.md
       - LFT: lft.md
       - LTN: ltn.md
       - NTN-B: ntnb.md

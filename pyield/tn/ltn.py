@@ -4,7 +4,7 @@ from pyield import anbima, bday
 from pyield import date_converter as dc
 from pyield.b3 import di1
 from pyield.date_converter import DateScalar
-from pyield.tpf import tools
+from pyield.tn import tools
 
 FACE_VALUE = 1000
 
