@@ -21,10 +21,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# pdm
-pdm.lock
-.pdm-python
-
 # uv
 uv.lock
 
@@ -34,8 +30,6 @@ uv.lock
 env/
 venv/
 ENV/
-env.bak/
-venv.bak/
 
 # Jupiter Notebook
 .ipynb_checkpoints

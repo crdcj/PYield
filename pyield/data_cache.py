@@ -1,6 +1,7 @@
 import functools
 import logging
 from datetime import datetime
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -16,12 +17,12 @@ BASE_DATA_URL = f"{GIT_URL}/data"
 
 # Dicionário global para configurações dos datasets usando 'filename'
 DATASET_CONFIGS = {
-    "DI": {
+    "di1": {
         "filename": "b3_di.parquet",  # Apenas o nome do arquivo
         "date_column": "TradeDate",
         "name": "Futuro de DI (B3)",
     },
-    "TPF": {
+    "tpf": {
         "filename": "anbima_tpf.parquet",  # Apenas o nome do arquivo
         "date_column": "ReferenceDate",
         "name": "TPF (ANBIMA)",
@@ -73,6 +74,6 @@ def _get_dataset_with_ttl(dataset_id: str, date_key: str) -> pd.DataFrame:
         raise  # Re-raise a exceção para que o chamador saiba que falhou
 
 
-def get_cached_dataset(dataset_id: str) -> pd.DataFrame:
+def get_cached_dataset(dataset_id: Literal["di1", "tpf"]) -> pd.DataFrame:
     """Obtém um dataset configurado pelo seu ID. O cache expira diariamente."""
-    return _get_dataset_with_ttl(dataset_id, _get_today_date_key())
+    return _get_dataset_with_ttl(dataset_id.lower(), _get_today_date_key())

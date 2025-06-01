@@ -61,7 +61,7 @@ def data(
     # Remove duplicates and sort dates
     dates = dates.drop_duplicates().sort_values().reset_index(drop=True)
 
-    df = get_cached_dataset("DI").query("TradeDate in @dates").reset_index(drop=True)
+    df = get_cached_dataset("di1").query("TradeDate in @dates").reset_index(drop=True)
 
     today = dt.now(TIMEZONE_BZ)
     last_bday = bday.last_business_day()
@@ -383,7 +383,7 @@ def eod_dates() -> pd.Series:
         dtype: datetime64[ns]
     """
     available_dates = (
-        get_cached_dataset("DI")
+        get_cached_dataset("di1")
         .drop_duplicates(subset=["TradeDate"])["TradeDate"]
         .sort_values(ascending=True)
         .reset_index(drop=True)
