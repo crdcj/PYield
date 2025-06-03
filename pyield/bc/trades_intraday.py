@@ -1,3 +1,8 @@
+"""
+Fetches real-time secondary trading data for domestic Federal Public Debt (FPD)
+https://www.bcb.gov.br/htms/selic/selicprecos.asp?frame=1
+"""
+
 import datetime as dt
 import io
 import logging
@@ -18,7 +23,13 @@ test_file = Path(__file__).parent.parent.parent / "tests/data/negocios-registrad
 
 
 def _fetch_csv_from_url() -> str:
-    FILE_URL = "https://www3.bcb.gov.br/novoselic/NegociosRegistradosDownload"
+    """
+    Example URL for the CSV file containing intraday trades data:
+        https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/02-06-2025
+    """
+    today = dt.datetime.now(BZ_TIMEZONE).date()
+    formatted_date = today.strftime("%d-%m-%Y")
+    FILE_URL = f"https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/{formatted_date}"
     r = requests.get(FILE_URL, timeout=30)  # API usually takes 10s to respond
     r.raise_for_status()
     r.encoding = "iso-8859-15"
