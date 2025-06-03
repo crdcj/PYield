@@ -32,7 +32,7 @@ def _fetch_csv_from_url() -> str:
     FILE_URL = f"https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/{formatted_date}"
     r = requests.get(FILE_URL, timeout=30)  # API usually takes 10s to respond
     r.raise_for_status()
-    r.encoding = "iso-8859-15"
+    r.encoding = "utf-8-sig"  # Handle BOM for UTF-8
     return r.text
 
 
@@ -91,7 +91,7 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns=col_names_by_index)
 
     df["BondType"] = df["BondType"].str.strip()
-    df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%d-%m-%Y")
+    df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%d/%m/%Y")
     today = dt.datetime.now(BZ_TIMEZONE).date()
     df["SettlementDate"] = pd.Timestamp(today)
 
