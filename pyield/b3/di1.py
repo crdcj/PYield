@@ -63,9 +63,9 @@ def data(
 
     df = get_cached_dataset("di1").query("TradeDate in @dates").reset_index(drop=True)
 
-    today = dt.now(TIMEZONE_BZ)
+    today = dt.now(TIMEZONE_BZ).date()
     last_bday = bday.last_business_day()
-    is_trading_day = today.date() == last_bday.date()
+    is_trading_day = today == last_bday.date()
     if is_trading_day and last_bday in df["TradeDate"]:
         logger.info("Trying to get DI Futures data for today.")
         df_intraday = b3.futures(contract_code="DI1", date=last_bday)

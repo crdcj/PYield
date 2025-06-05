@@ -1,13 +1,13 @@
-"""
-Manual da API: https://portal-conhecimento.tesouro.gov.br/catalogo-componentes/api-leil%C3%B5es
-Financeiro é sempre o financeiro aceito.
-Os dados do BCB só existem na API do TN.
-"""
-
 import logging
+from datetime import datetime as dt
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
+
+logger = logging.getLogger(__name__)
+
+TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 BENCHMARKS_COLUMN_MAPPING = {
     "BENCHMARK": "Benchmark",
@@ -18,7 +18,10 @@ BENCHMARKS_COLUMN_MAPPING = {
 }
 
 
-API_URL = "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/benchmarks?incluir_historico="
+API_BASE_URL = (
+    "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/benchmarks"
+)
+API_HISTORY_PARAM = "incluir_historico"
 
 
 def benchmarks(include_history: bool = False) -> pd.DataFrame:
@@ -51,12 +54,12 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
         *   Rows with any `NaN` values are dropped before returning the DataFrame.
 
     Examples:
-        >>> # Get current benchmarks
+        >>> # Get current benchmarks (default behavior)
         >>> from pyield import tn
         >>> df_current = tn.benchmarks()
 
         >>> # Get historical benchmarks
-        >>> df_history = benchmarks(include_history=True)
+        >>> df_history = tn.benchmarks(include_history=True)
         >>> df_history.head()
             Benchmark MaturityDate BondType  StartDate    EndDate
         0  LFT 6 anos   2020-03-01      LFT 2014-01-01 2014-06-30
@@ -66,26 +69,62 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
         4   LFT 1 ano   2022-03-01      LFT 2020-10-15 2021-03-31
     """
     session = requests.Session()
-    include_history_param = "S" if include_history else "N"
-    api_endpoint = API_URL + include_history_param
+    include_history_param_value = "S" if include_history else "N"
+    api_endpoint = f"{API_BASE_URL}?{API_HISTORY_PARAM}={include_history_param_value}"
+
     try:
         stn_benchmarks = session.get(api_endpoint)
+        stn_benchmarks.raise_for_status()
     except requests.exceptions.SSLError as e:
-        logging.error(
+        logger.error(
             f"SSL error encountered: {e}. Retrying without certificate verification."
         )
         stn_benchmarks = session.get(api_endpoint, verify=False)
+        stn_benchmarks.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error fetching benchmarks from API: {e}")
+        return pd.DataFrame()
+
     response_dict = stn_benchmarks.json()
+
+    # 1a verificação: Verifica se a resposta da API contém dados válidos de registros
+    if not response_dict or not response_dict.get("registros"):
+        logger.warning("API response did not contain 'registros' key or it was empty.")
+        return pd.DataFrame()
+
+    # Tenta criar o DataFrame. O .dropna() pode resultar em um DF vazio.
     df = pd.DataFrame(response_dict["registros"]).dropna()
     df = df.convert_dtypes()
-    # A API pode retornar vazio, então é necessário verificar
-    if not df.empty:
-        df["VENCIMENTO"] = pd.to_datetime(df["VENCIMENTO"])
-        df["TERMINO"] = pd.to_datetime(df["TERMINO"])
-        df["INÍCIO"] = pd.to_datetime(df["INÍCIO"])
-        df["BENCHMARK"] = df["BENCHMARK"].str.strip()
-        df["TÍTULO"] = df["TÍTULO"].str.strip()
-    else:
-        logging.warning("Não foi possível obter os benchmarks do STN.")
+
+    # 2a verificação: Verifica se o DataFrame resultante (pós-dropna) está vazio
+    # Esta verificação é importante porque .dropna() pode remover todas as linhas.
+    if df.empty:
+        logger.warning(
+            "No valid benchmark data found after initial processing"
+            "(e.g., all rows had NaNs and were dropped).",
+        )
+        return pd.DataFrame()
+
+    # Se chegamos até aqui, o DataFrame tem dados e pode ser processado.
+    df["VENCIMENTO"] = pd.to_datetime(df["VENCIMENTO"])
+    df["TERMINO"] = pd.to_datetime(df["TERMINO"])
+    df["INÍCIO"] = pd.to_datetime(df["INÍCIO"])
+    df["BENCHMARK"] = df["BENCHMARK"].str.strip()
+    df["TÍTULO"] = df["TÍTULO"].str.strip()
+
+    if not include_history:
+        # Em tese, a API já retorna apenas benchmarks ativos,
+        # mas vamos garantir que o DataFrame só contenha benchmarks ativos
+        # considerando o período atual.
+        today = dt.now(TIMEZONE_BZ).date()
+        today = pd.Timestamp(today)
+        df = df.query("INÍCIO <= @today <= TERMINO").reset_index(drop=True)
+
+    # Verifica novamente se o DataFrame ficou vazio *após o filtro condicional*
+    # (apenas se `include_history` for False)
+    if df.empty and not include_history:
+        logger.warning(
+            "No current benchmark data found after filtering by active period."
+        )
 
     return df.rename(columns=BENCHMARKS_COLUMN_MAPPING)

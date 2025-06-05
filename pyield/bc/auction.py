@@ -348,7 +348,9 @@ def auctions(
 
     # Mapeamento do auction_type para o valor esperado pela API
     auction_type_mapping = {"sell": "Venda", "buy": "Compra"}
-    auction_type_api_value = auction_type_mapping.get(str(auction_type.lower()))
+    if auction_type:
+        auction_type = auction_type.lower()
+    auction_type_api_value = auction_type_mapping.get(auction_type)
     # Adiciona o parâmetro tipoOferta à URL se auction_type for fornecido
     if auction_type_api_value:
         url += f"&@tipoOferta='{auction_type_api_value}'"
