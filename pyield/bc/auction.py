@@ -19,6 +19,8 @@ from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
 
+logger = logging.getLogger(__name__)
+
 """
 Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
 Chaves com comentário serão descartadas ao final do processamento
@@ -233,7 +235,7 @@ def _fetch_df_from_url(url: str) -> pd.DataFrame:
     try:
         df = _load_from_url(url)
         if df.empty:
-            logging.warning("No auction data found for the specified period.")
+            logger.warning("No auction data found for the specified period.")
             return pd.DataFrame()
         df = _pre_process_df(df)
         df = _adjust_null_values(df)
@@ -244,7 +246,7 @@ def _fetch_df_from_url(url: str) -> pd.DataFrame:
         df = _sort_and_reorder_columns(df)
         return df
     except Exception:
-        logging.exception("Error fetching auction data from BC API.")
+        logger.exception("Error fetching auction data from BC API.")
         return pd.DataFrame()
 
 
