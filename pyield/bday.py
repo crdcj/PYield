@@ -135,6 +135,21 @@ def offset(
         1   2024-09-23
         dtype: datetime64[ns]
 
+        Null values are propagated
+
+        >>> bday.offset(pd.NaT, 1)  # NaT input
+        NaT
+
+        >>> bday.offset(pd.NaT, [1, 2])  # NaT input with a list of offsets
+        0   NaT
+        1   NaT
+        dtype: datetime64[ns]
+
+        >>> bday.offset(["19-09-2024", pd.NaT], 1)  # NaT in a list of dates
+        0   2024-09-20
+        1   NaT
+        dtype: datetime64[ns]
+
     Note:
         This function uses `numpy.busday_offset` under the hood, which means it follows
         the same conventions and limitations for business day calculations. For detailed
@@ -143,6 +158,14 @@ def offset(
         https://numpy.org/doc/stable/reference/generated/numpy.busday_offset.html
     """
     dates_pd = dc.convert_input_dates(dates)
+
+    # Antecipate NaT handling
+    if dates_pd is pd.NaT:
+        if isinstance(offset, (list, tuple, np.ndarray, pd.Series)):
+            # If offset is a list, return a Series of NaT with the same length
+            return pd.Series([pd.NaT] * len(offset), dtype="datetime64[ns]")
+        else:
+            return pd.NaT
 
     if isinstance(dates_pd, pd.Series):
         # Divide the input in order to apply the correct holiday list
@@ -216,7 +239,7 @@ def count(start: DateScalar, end: DateArray) -> pd.Series: ...
 def count(start: DateArray, end: DateArray) -> pd.Series: ...
 
 
-def count(
+def count(  # noqa
     start: DateScalar | DateArray,
     end: DateScalar | DateArray,
 ) -> int | pd.Series:
@@ -278,65 +301,111 @@ def count(
         0    22
         1    19
         dtype: Int64
+
+        Null values are propagated
+
+        >>> bday.count(pd.NaT, "01-01-2024")  # NaT start
+        <NA>
+
+        >>> bday.count("01-01-2024", pd.NaT)  # NaT end
+        <NA>
+
+        >>> bday.count("01-01-2024", ["01-02-2024", pd.NaT])  # NaT in end array
+        0    22
+        1    <NA>
+        dtype: Int64
     """
     start_pd = dc.convert_input_dates(start)
     end_pd = dc.convert_input_dates(end)
 
-    # If inputs are Series, check if they have different lengths
+    # 1. VALIDAÇÃO ESTRUTURAL
     if isinstance(start_pd, pd.Series) and isinstance(end_pd, pd.Series):
         if start_pd.size != end_pd.size:
             raise ValueError("Input Series must have the same length.")
+        if not start_pd.index.equals(end_pd.index):
+            # O que deve ser feito se os índices não forem iguais?
+            # Juntar as séries gerando uma série nova na saída?
+            # Melhor lançar um erro!
+            raise ValueError("Input dates have different indices!")
 
-    # Only start is used to determine the holiday list
-    if isinstance(start_pd, pd.Series):
-        # Divide the input in order to apply the correct holiday list
-        start1 = start_pd[start_pd < br_holidays.TRANSITION_DATE]
-        start2 = start_pd[start_pd >= br_holidays.TRANSITION_DATE]
-        start3 = start_pd[start_pd.isna()]
+    # 2. CLÁUSULA DE GUARDA PARA NULOS ESCALARES
+    if start_pd is pd.NaT or end_pd is pd.NaT:
+        is_start_array = isinstance(start_pd, pd.Series)
+        is_end_array = isinstance(end_pd, pd.Series)
 
-        # If end is a Series, it must be divided as well
+        if is_start_array or is_end_array:
+            # Pelo menos um é array. O resultado é uma Série de NAs.
+            # O "shaper" determina o tamanho e o índice da saída.
+            shaper = start_pd if is_start_array else end_pd
+            # Como nenhum valor foi fornecido, o resultado é uma Série de NAs
+            return pd.Series(index=shaper.index, dtype="Int64")
+        else:
+            # Ambos são escalares, e um deles é NaT. O resultado é um NA escalar.
+            return pd.NA
+
+    # 3. LÓGICA PRINCIPAL
+
+    if isinstance(start_pd, pd.Series) or isinstance(end_pd, pd.Series):
+        is_start_series = isinstance(start_pd, pd.Series)
+        original_index = start_pd.index if is_start_series else end_pd.index
+
+        # Only start is used to determine the holiday list
+        # Create masks for the transition date
+        null_mask = pd.isna(start_pd) | pd.isna(end_pd)
+        not_null_mask = ~null_mask
+        mask1 = (start_pd < br_holidays.TRANSITION_DATE) & not_null_mask
+        mask2 = (start_pd >= br_holidays.TRANSITION_DATE) & not_null_mask
+
+        if isinstance(start_pd, pd.Series):
+            start1 = start_pd[mask1]
+            start2 = start_pd[mask2]
+            start3 = start_pd[null_mask]
+            res1_index = start1.index
+            res2_index = start2.index
+            res3_index = start3.index
+        else:
+            start1 = start_pd
+            start2 = start_pd
+
         if isinstance(end_pd, pd.Series):
-            end1 = end_pd[start1.index]
-            end2 = end_pd[start2.index]
+            end1 = end_pd[mask1]
+            end2 = end_pd[mask2]
+            end3 = end_pd[null_mask]
+            res1_index = end1.index
+            res2_index = end2.index
+            res3_index = end3.index
         else:
             end1 = end_pd
             end2 = end_pd
 
-        result1 = np.busday_count(
+        res1 = np.busday_count(
             begindates=dc.to_numpy_date_type(start1),
             enddates=dc.to_numpy_date_type(end1),
             holidays=OLD_HOLIDAYS_ARRAY,
         )
-        result2 = np.busday_count(
+
+        res2 = np.busday_count(
             begindates=dc.to_numpy_date_type(start2),
             enddates=dc.to_numpy_date_type(end2),
             holidays=NEW_HOLIDAYS_ARRAY,
         )
 
         # Prepare results to be rejoined
-        result1 = pd.Series(result1, dtype="Int64")
-        result2 = pd.Series(result2, dtype="Int64")
-        # Convert the third result from NaT to NA
-        result3 = pd.Series(pd.NA, index=start3.index, dtype="Int64")
-
-        # Old index is used to rejoin the results
-        result1.index = start1.index
-        result2.index = start2.index
+        res1 = pd.Series(res1, dtype="Int64", index=res1_index)
+        res2 = pd.Series(res2, dtype="Int64", index=res2_index)
+        # Create a Series for NaT values where the index matches start3
+        res3 = pd.Series(index=res3_index, dtype="Int64")
 
         # Reorder the result to match the original input order
-        result = pd.concat([result1, result2, result3]).sort_index()
+        return pd.concat([res1, res2, res3]).reindex(original_index)
 
-    else:  # Start is a single date
-        result = np.busday_count(
+    else:  # start and end are both scalars
+        res = np.busday_count(
             begindates=dc.to_numpy_date_type(start_pd),
             enddates=dc.to_numpy_date_type(end_pd),
             holidays=br_holidays.get_holiday_array(start_pd),
         )
-        result = pd.Series(result, dtype="Int64")
-
-    if result.size == 1:
-        return int(result[0])
-    return result
+        return int(res[0])
 
 
 def generate(

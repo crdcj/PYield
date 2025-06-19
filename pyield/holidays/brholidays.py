@@ -58,7 +58,8 @@ class BrHolidays:
                 if isinstance(dates, pd.Timestamp):
                     earliest_date = dates
                 else:
-                    earliest_date = dates.min()
+                    # NaN values will be ignored for min date calculation
+                    earliest_date = dates.min(skipna=True)
 
                 if earliest_date < BrHolidays.TRANSITION_DATE:
                     holidays = self.old_holidays

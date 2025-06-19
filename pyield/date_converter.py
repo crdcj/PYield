@@ -32,6 +32,12 @@ def convert_input_dates(dates: DateArray) -> pd.Series: ...
 def convert_input_dates(
     dates: DateScalar | DateArray,
 ) -> pd.Timestamp | pd.Series:
+    # Capturar apenas escalares nulos: a verificação `is True` é crucial,
+    # pois `pd.isna()` retorna um array booleano para entradas de array,
+    # e um array nunca é idêntico ao objeto singleton `True`.
+    if pd.isna(dates) is True:
+        return pd.NaT
+
     match dates:
         case str():
             validate_date_format(dates)
@@ -41,6 +47,7 @@ def convert_input_dates(
             return pd.Timestamp(dates).normalize()
 
         case pd.Series() | np.ndarray() | list() | tuple():
+            # Preserve input values making a copy
             result = pd.Series(dates)
 
             if result.empty:
@@ -55,7 +62,7 @@ def convert_input_dates(
         case pd.DatetimeIndex():
             return pd.Series(dates).astype("datetime64[ns]")
 
-        case _:  # unreachable code
+        case _:
             raise ValueError("Invalid input type for 'dates'.")
 
 
@@ -71,7 +78,9 @@ def to_numpy_date_type(
     Returns:
         np.datetime64 | np.ndarray: The input dates in a numpy datetime64[D] format.
     """
-    if isinstance(dates, pd.Timestamp):
+    if pd.isna(dates) is True:
+        return np.datetime64("NaT")
+    elif isinstance(dates, pd.Timestamp) or dates is pd.NaT:
         return np.datetime64(dates, "D")
     elif isinstance(dates, pd.Series):
         return dates.to_numpy().astype("datetime64[D]")
