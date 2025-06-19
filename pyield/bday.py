@@ -44,7 +44,7 @@ def offset(
 ) -> pd.Series: ...
 
 
-def offset(
+def offset(  # noqa
     dates: DateScalar | DateArray,
     offset: IntegerScalar | IntegerArray,
     roll: Literal["forward", "backward"] = "forward",
@@ -56,8 +56,11 @@ def offset(
     dates. It is a wrapper for `numpy.busday_offset` adapted for Pandas data types and
     brazilian holidays.
 
-    **Important Note:** The `dates` parameter is used to determine which list of
-    holidays applies to the calculation.
+    **Important Note:** Each date in the `dates` input is evaluated individually to
+    determine which list of holidays applies to the calculation. Transition date
+    is 2023-12-26, which means:
+    - Dates before 2023-12-26 use the old holiday list.
+    - Dates on or after 2023-12-26 use the new holiday list.
 
     Args:
         dates (DateScalar | DateArray): The date(s) to offset. Can be a scalar date type
@@ -150,6 +153,18 @@ def offset(
         1   NaT
         dtype: datetime64[ns]
 
+        Original pandas index is preserved
+
+        >>> dates = pd.Series(
+        ...     ["19-09-2024", "20-09-2024", "21-09-2024"],
+        ...     index=["a", "b", "c"],
+        ... )
+        >>> bday.offset(dates, 1)
+        a   2024-09-20
+        b   2024-09-23
+        c   2024-09-24
+        dtype: datetime64[ns]
+
     Note:
         This function uses `numpy.busday_offset` under the hood, which means it follows
         the same conventions and limitations for business day calculations. For detailed
@@ -157,70 +172,89 @@ def offset(
         documentation:
         https://numpy.org/doc/stable/reference/generated/numpy.busday_offset.html
     """
+    # Padroniza as entradas para objetos do Pandas
     dates_pd = dc.convert_input_dates(dates)
+    offset_pd = pd.Series(offset) if isinstance(offset, IntegerArray) else offset
 
-    # Antecipate NaT handling
-    if dates_pd is pd.NaT:
-        if isinstance(offset, (list, tuple, np.ndarray, pd.Series)):
-            # If offset is a list, return a Series of NaT with the same length
-            return pd.Series([pd.NaT] * len(offset), dtype="datetime64[ns]")
-        else:
+    # 1. VALIDAÇÃO ESTRUTURAL
+    if isinstance(dates_pd, pd.Series) and isinstance(offset_pd, pd.Series):
+        if not dates_pd.index.equals(offset_pd.index):
+            raise ValueError("Input dates have different indices!")
+
+    is_scalar_input = not (
+        isinstance(dates_pd, pd.Series) or isinstance(offset_pd, pd.Series)
+    )
+
+    # 2. LÓGICA PRINCIPAL
+
+    # --- CASO 1: AMBOS OS INPUTS SÃO ESCALARES
+    if is_scalar_input:
+        if pd.isna(dates_pd) or pd.isna(offset_pd):
             return pd.NaT
 
-    if isinstance(dates_pd, pd.Series):
-        # Divide the input in order to apply the correct holiday list
-        old_dates = dates_pd[dates_pd < br_holidays.TRANSITION_DATE]
-        new_dates = dates_pd[dates_pd >= br_holidays.TRANSITION_DATE]
-        # nat = NaT = Not a Time = missing value
-        nat_dates = dates_pd[dates_pd.isna()]
-
-        offsetted_old_dates = np.busday_offset(
-            dc.to_numpy_date_type(old_dates),
-            offsets=offset,
-            roll=roll,
-            holidays=OLD_HOLIDAYS_ARRAY,
-        )
-
-        offsetted_new_dates = np.busday_offset(
-            dc.to_numpy_date_type(new_dates),
-            offsets=offset,
-            roll=roll,
-            holidays=NEW_HOLIDAYS_ARRAY,
-        )
-
-        # Convert from numpy.datetime64 to pandas.Timestamp
-        offsetted_old_dates = pd.to_datetime(offsetted_old_dates)
-        offsetted_new_dates = pd.to_datetime(offsetted_new_dates)
-
-        # 'pd.to_datetime' does not necessarily return datetime64[ns] Series
-        offsetted_old_dates = pd.Series(offsetted_old_dates).astype("datetime64[ns]")
-        offsetted_new_dates = pd.Series(offsetted_new_dates).astype("datetime64[ns]")
-
-        # Use old index to rejoin the results
-        offsetted_old_dates.index = old_dates.index
-        offsetted_new_dates.index = new_dates.index
-
-        offsetted_dates = pd.concat(
-            [offsetted_old_dates, offsetted_new_dates, nat_dates]
-        )
-
-        # Reorder the result to match the original input order
-        return offsetted_dates.sort_index()
-
-    elif isinstance(dates_pd, pd.Timestamp):
-        offsetted_dates_np = np.busday_offset(
+        offsetted_date_np = np.busday_offset(
             dc.to_numpy_date_type(dates_pd),
-            offsets=offset,
+            offsets=offset_pd,
             roll=roll,
             holidays=br_holidays.get_holiday_array(dates_pd),
         )
-        if isinstance(offsetted_dates_np, np.datetime64):
-            return pd.Timestamp(offsetted_dates_np).as_unit("ns")
-        else:
-            return pd.Series(offsetted_dates_np).astype("datetime64[ns]")
 
-    else:
-        raise ValueError("Invalid input type for 'dates'.")
+        return pd.Timestamp(offsetted_date_np).as_unit("ns")
+
+    # --- CASO 2: PELO MENOS UM DOS INPUTS É UMA SÉRIE ---
+    if isinstance(dates_pd, pd.Series) or isinstance(offset_pd, pd.Series):
+        # Garante que ambas as variáveis sejam Series para alinhamento automático.
+        # O Pandas faz o "broadcast" do escalar para o tamanho da Series.
+        if not isinstance(dates_pd, pd.Series):
+            # dates escalar e offset Series -> Series de dates com o índice de offset.
+            dates_pd = pd.Series(dates_pd, index=offset_pd.index)
+        if not isinstance(offset_pd, pd.Series):
+            # offset escalar e dates Series -> Series de offset com o índice de dates.
+            offset_pd = pd.Series(offset_pd, index=dates_pd.index)
+
+        # Inicializa a série de resultados com o índice correto e tipo que suporta NaT.
+        result = pd.Series(index=dates_pd.index, dtype="datetime64[ns]")
+
+        # Divide the input in order to apply the correct holiday list
+        mask_not_null = dates_pd.notna() & offset_pd.notna()
+        mask_old_holidays = mask_not_null & (dates_pd < br_holidays.TRANSITION_DATE)
+        mask_new_holidays = mask_not_null & (dates_pd >= br_holidays.TRANSITION_DATE)
+
+        if mask_old_holidays.any():
+            np_offset_values = np.busday_offset(
+                dates=dc.to_numpy_date_type(dates_pd[mask_old_holidays]),
+                offsets=offset_pd[mask_old_holidays],
+                roll=roll,
+                holidays=OLD_HOLIDAYS_ARRAY,
+            )
+            pd_offset_values = pd.to_datetime(np_offset_values).astype("datetime64[ns]")
+            result.loc[mask_old_holidays] = pd_offset_values
+
+        if mask_new_holidays.any():
+            np_offset_values = np.busday_offset(
+                dates=dc.to_numpy_date_type(dates_pd[mask_new_holidays]),
+                offsets=offset_pd[mask_new_holidays],
+                roll=roll,
+                holidays=NEW_HOLIDAYS_ARRAY,
+            )
+            pd_offset_values = pd.to_datetime(np_offset_values).astype("datetime64[ns]")
+            result.loc[mask_new_holidays] = pd_offset_values
+
+        return result
+
+    # --- CASO 3: A ENTRADA 'dates' É UM ESCALAR E 'offset' É UMA SÉRIE ---
+    result = pd.Series(index=offset_pd.index, dtype="datetime64[ns]")
+    offset_dates_np = np.busday_offset(
+        dates=dc.to_numpy_date_type(dates_pd),
+        offsets=offset_pd,
+        roll=roll,
+        holidays=br_holidays.get_holiday_array(dates_pd),
+    )
+    # Convert from numpy.datetime64 to datetime64[ns] (pandas format)
+    offset_dates_pd = pd.to_datetime(offset_dates_np).astype("datetime64[ns]")
+    return pd.Series(
+        offset_dates_pd.values, index=offset_pd.index, dtype="datetime64[ns]"
+    )
 
 
 @overload
@@ -250,8 +284,11 @@ def count(  # noqa
     on the inputs. It accounts for specified holidays, effectively excluding them from
     the business day count.
 
-    **Important Note:** The `start` date is used to determine which list of holidays
-    applies to the calculation.
+    **Important Note:** Each date in the `start` input is evaluated individually to
+    determine which list of holidays (old or new) applies to the calculation. The
+    transition date is 2023-12-26, which means:
+    - Dates before 2023-12-26 use the old holiday list.
+    - Dates on or after 2023-12-26 use the new holiday list.
 
     Args:
         start (DateScalar | DateArray): The start date(s) for counting (inclusive).
@@ -333,8 +370,6 @@ def count(  # noqa
 
     # 1. VALIDAÇÃO ESTRUTURAL
     if isinstance(start_pd, pd.Series) and isinstance(end_pd, pd.Series):
-        if len(start_pd) != len(end_pd):
-            raise ValueError("Input Series must have the same length.")
         if not start_pd.index.equals(end_pd.index):
             raise ValueError("Input dates have different indices!")
 
@@ -348,53 +383,51 @@ def count(  # noqa
         if pd.isna(start_pd) or pd.isna(end_pd):
             return pd.NA
 
-        holidays = br_holidays.get_holiday_array(start_pd)
         result = np.busday_count(
             begindates=dc.to_numpy_date_type(start_pd),
             enddates=dc.to_numpy_date_type(end_pd),
-            holidays=holidays,
+            holidays=br_holidays.get_holiday_array(start_pd),
         )
         return int(result)
 
     # --- CASO 2: PELO MENOS UMA ENTRADA É UMA SÉRIE ---
-    else:
-        # Garante que ambas as variáveis sejam Series para alinhamento automático.
-        # O Pandas faz o "broadcast" do escalar para o tamanho da Series.
-        if not isinstance(start_pd, pd.Series):
-            # start escalar e end Series: cria uma Series de start com o índice de end.
-            start_pd = pd.Series(start_pd, index=end_pd.index)
-        if not isinstance(end_pd, pd.Series):
-            # end escalar e start Series: cria uma Series de end com o índice de start.
-            end_pd = pd.Series(end_pd, index=start_pd.index)
+    # Garante que ambas as variáveis sejam Series para alinhamento automático.
+    # O Pandas faz o "broadcast" do escalar para o tamanho da Series.
+    if not isinstance(start_pd, pd.Series):
+        # start escalar e end Series: cria uma Series de start com o índice de end.
+        start_pd = pd.Series(start_pd, index=end_pd.index)
+    if not isinstance(end_pd, pd.Series):
+        # end escalar e start Series: cria uma Series de end com o índice de start.
+        end_pd = pd.Series(end_pd, index=start_pd.index)
 
-        # Inicializa a série de resultados com o índice correto e tipo que suporta NA.
-        # Nulos nas entradas (start_pd ou end_pd) resultarão em NA aqui.
-        result = pd.Series(index=start_pd.index, dtype="Int64")
+    # Inicializa a série de resultados com o índice correto e tipo que suporta NA.
+    # Nulos nas entradas (start_pd ou end_pd) resultarão em NA aqui.
+    result = pd.Series(index=start_pd.index, dtype="Int64")
 
-        # Cria máscaras para linhas não-nulas, divididas pelo calendário de feriados.
-        # A lógica de feriados depende APENAS da data de início.
-        not_null_mask = start_pd.notna() & end_pd.notna()
-        mask_old_holidays = not_null_mask & (start_pd < br_holidays.TRANSITION_DATE)
-        mask_new_holidays = not_null_mask & (start_pd >= br_holidays.TRANSITION_DATE)
+    # Cria máscaras para linhas não-nulas, divididas pelo calendário de feriados.
+    # A lógica de feriados depende APENAS da data de início.
+    not_null_mask = start_pd.notna() & end_pd.notna()
+    mask_old_holidays = not_null_mask & (start_pd < br_holidays.TRANSITION_DATE)
+    mask_new_holidays = not_null_mask & (start_pd >= br_holidays.TRANSITION_DATE)
 
-        # Calcula e atribui os resultados para o subconjunto "OLD"
-        if mask_old_holidays.any():
-            result.loc[mask_old_holidays] = np.busday_count(
-                begindates=dc.to_numpy_date_type(start_pd[mask_old_holidays]),
-                enddates=dc.to_numpy_date_type(end_pd[mask_old_holidays]),
-                holidays=OLD_HOLIDAYS_ARRAY,
-            )
+    # Calcula e atribui os resultados para o subconjunto "OLD"
+    if mask_old_holidays.any():
+        result.loc[mask_old_holidays] = np.busday_count(
+            begindates=dc.to_numpy_date_type(start_pd[mask_old_holidays]),
+            enddates=dc.to_numpy_date_type(end_pd[mask_old_holidays]),
+            holidays=OLD_HOLIDAYS_ARRAY,
+        )
 
-        # Calcula e atribui os resultados para o subconjunto "NEW"
-        if mask_new_holidays.any():
-            result.loc[mask_new_holidays] = np.busday_count(
-                begindates=dc.to_numpy_date_type(start_pd[mask_new_holidays]),
-                enddates=dc.to_numpy_date_type(end_pd[mask_new_holidays]),
-                holidays=NEW_HOLIDAYS_ARRAY,
-            )
+    # Calcula e atribui os resultados para o subconjunto "NEW"
+    if mask_new_holidays.any():
+        result.loc[mask_new_holidays] = np.busday_count(
+            begindates=dc.to_numpy_date_type(start_pd[mask_new_holidays]),
+            enddates=dc.to_numpy_date_type(end_pd[mask_new_holidays]),
+            holidays=NEW_HOLIDAYS_ARRAY,
+        )
 
-        # As linhas onde not_null_mask era False já contêm o valor <NA> default.
-        return result
+    # As linhas onde not_null_mask era False já contêm o valor <NA> default.
+    return result
 
 
 def generate(
