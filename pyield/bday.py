@@ -314,98 +314,87 @@ def count(  # noqa
         0    22
         1    <NA>
         dtype: Int64
+
+        Original pandas index is preserved
+
+        >>> start_dates = pd.Series(
+        ...     ["01-01-2024", "01-02-2024", "01-03-2024"],
+        ...     index=["a", "b", "c"],
+        ... )
+        >>> bday.count(start_dates, "01-01-2025")
+        a    253
+        b    231
+        c    212
+        dtype: Int64
     """
+    # Padroniza as entradas para objetos do Pandas
     start_pd = dc.convert_input_dates(start)
     end_pd = dc.convert_input_dates(end)
 
     # 1. VALIDAÇÃO ESTRUTURAL
     if isinstance(start_pd, pd.Series) and isinstance(end_pd, pd.Series):
-        if start_pd.size != end_pd.size:
+        if len(start_pd) != len(end_pd):
             raise ValueError("Input Series must have the same length.")
         if not start_pd.index.equals(end_pd.index):
-            # O que deve ser feito se os índices não forem iguais?
-            # Juntar as séries gerando uma série nova na saída?
-            # Melhor lançar um erro!
             raise ValueError("Input dates have different indices!")
 
-    # 2. CLÁUSULA DE GUARDA PARA NULOS ESCALARES
-    if start_pd is pd.NaT or end_pd is pd.NaT:
-        is_start_array = isinstance(start_pd, pd.Series)
-        is_end_array = isinstance(end_pd, pd.Series)
+    # 2. LÓGICA PRINCIPAL
+    is_scalar_input = not (
+        isinstance(start_pd, pd.Series) or isinstance(end_pd, pd.Series)
+    )
 
-        if is_start_array or is_end_array:
-            # Pelo menos um é array. O resultado é uma Série de NAs.
-            # O "shaper" determina o tamanho e o índice da saída.
-            shaper = start_pd if is_start_array else end_pd
-            # Como nenhum valor foi fornecido, o resultado é uma Série de NAs
-            return pd.Series(index=shaper.index, dtype="Int64")
-        else:
-            # Ambos são escalares, e um deles é NaT. O resultado é um NA escalar.
+    # --- CASO 1: AMBAS AS ENTRADAS SÃO ESCALARES ---
+    if is_scalar_input:
+        if pd.isna(start_pd) or pd.isna(end_pd):
             return pd.NA
 
-    # 3. LÓGICA PRINCIPAL
-
-    if isinstance(start_pd, pd.Series) or isinstance(end_pd, pd.Series):
-        is_start_series = isinstance(start_pd, pd.Series)
-        original_index = start_pd.index if is_start_series else end_pd.index
-
-        # Only start is used to determine the holiday list
-        # Create masks for the transition date
-        null_mask = pd.isna(start_pd) | pd.isna(end_pd)
-        not_null_mask = ~null_mask
-        mask1 = (start_pd < br_holidays.TRANSITION_DATE) & not_null_mask
-        mask2 = (start_pd >= br_holidays.TRANSITION_DATE) & not_null_mask
-
-        if isinstance(start_pd, pd.Series):
-            start1 = start_pd[mask1]
-            start2 = start_pd[mask2]
-            start3 = start_pd[null_mask]
-            res1_index = start1.index
-            res2_index = start2.index
-            res3_index = start3.index
-        else:
-            start1 = start_pd
-            start2 = start_pd
-
-        if isinstance(end_pd, pd.Series):
-            end1 = end_pd[mask1]
-            end2 = end_pd[mask2]
-            end3 = end_pd[null_mask]
-            res1_index = end1.index
-            res2_index = end2.index
-            res3_index = end3.index
-        else:
-            end1 = end_pd
-            end2 = end_pd
-
-        res1 = np.busday_count(
-            begindates=dc.to_numpy_date_type(start1),
-            enddates=dc.to_numpy_date_type(end1),
-            holidays=OLD_HOLIDAYS_ARRAY,
-        )
-
-        res2 = np.busday_count(
-            begindates=dc.to_numpy_date_type(start2),
-            enddates=dc.to_numpy_date_type(end2),
-            holidays=NEW_HOLIDAYS_ARRAY,
-        )
-
-        # Prepare results to be rejoined
-        res1 = pd.Series(res1, dtype="Int64", index=res1_index)
-        res2 = pd.Series(res2, dtype="Int64", index=res2_index)
-        # Create a Series for NaT values where the index matches start3
-        res3 = pd.Series(index=res3_index, dtype="Int64")
-
-        # Reorder the result to match the original input order
-        return pd.concat([res1, res2, res3]).reindex(original_index)
-
-    else:  # start and end are both scalars
-        res = np.busday_count(
+        holidays = br_holidays.get_holiday_array(start_pd)
+        result = np.busday_count(
             begindates=dc.to_numpy_date_type(start_pd),
             enddates=dc.to_numpy_date_type(end_pd),
-            holidays=br_holidays.get_holiday_array(start_pd),
+            holidays=holidays,
         )
-        return int(res[0])
+        return int(result)
+
+    # --- CASO 2: PELO MENOS UMA ENTRADA É UMA SÉRIE ---
+    else:
+        # Garante que ambas as variáveis sejam Series para alinhamento automático.
+        # O Pandas faz o "broadcast" do escalar para o tamanho da Series.
+        if not isinstance(start_pd, pd.Series):
+            # start escalar e end Series: cria uma Series de start com o índice de end.
+            start_pd = pd.Series(start_pd, index=end_pd.index)
+        if not isinstance(end_pd, pd.Series):
+            # end escalar e start Series: cria uma Series de end com o índice de start.
+            end_pd = pd.Series(end_pd, index=start_pd.index)
+
+        # Inicializa a série de resultados com o índice correto e tipo que suporta NA.
+        # Nulos nas entradas (start_pd ou end_pd) resultarão em NA aqui.
+        result = pd.Series(index=start_pd.index, dtype="Int64")
+
+        # Cria máscaras para linhas não-nulas, divididas pelo calendário de feriados.
+        # A lógica de feriados depende APENAS da data de início.
+        not_null_mask = start_pd.notna() & end_pd.notna()
+        mask_old_holidays = not_null_mask & (start_pd < br_holidays.TRANSITION_DATE)
+        mask_new_holidays = not_null_mask & (start_pd >= br_holidays.TRANSITION_DATE)
+
+        # Calcula e atribui os resultados para o subconjunto "OLD"
+        if mask_old_holidays.any():
+            result.loc[mask_old_holidays] = np.busday_count(
+                begindates=dc.to_numpy_date_type(start_pd[mask_old_holidays]),
+                enddates=dc.to_numpy_date_type(end_pd[mask_old_holidays]),
+                holidays=OLD_HOLIDAYS_ARRAY,
+            )
+
+        # Calcula e atribui os resultados para o subconjunto "NEW"
+        if mask_new_holidays.any():
+            result.loc[mask_new_holidays] = np.busday_count(
+                begindates=dc.to_numpy_date_type(start_pd[mask_new_holidays]),
+                enddates=dc.to_numpy_date_type(end_pd[mask_new_holidays]),
+                holidays=NEW_HOLIDAYS_ARRAY,
+            )
+
+        # As linhas onde not_null_mask era False já contêm o valor <NA> default.
+        return result
 
 
 def generate(

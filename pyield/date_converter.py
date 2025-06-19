@@ -55,7 +55,7 @@ def convert_input_dates(
 
             if pd.api.types.is_string_dtype(result):
                 # Check first element to validate date format
-                validate_date_format(result[0])
+                validate_date_format(result.iloc[0])
 
             return pd.to_datetime(result, dayfirst=True).astype("datetime64[ns]")
 

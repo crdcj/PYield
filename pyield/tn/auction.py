@@ -61,12 +61,12 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
         >>> # Get historical benchmarks
         >>> df_history = tn.benchmarks(include_history=True)
         >>> df_history.head()
-            Benchmark MaturityDate BondType  StartDate    EndDate
+            Benchmark   MaturityDate BondType  StartDate    EndDate
         0  LFT 6 anos   2020-03-01      LFT 2014-01-01 2014-06-30
         1  LFT 6 anos   2020-09-01      LFT 2014-07-01 2014-12-31
         2  LFT 6 anos   2021-03-01      LFT 2015-01-01 2015-04-30
         3  LFT 6 anos   2021-09-01      LFT 2015-05-01 2015-12-31
-        4   LFT 1 ano   2022-03-01      LFT 2020-10-15 2021-03-31
+        4  LFT 6 anos   2022-03-01      LFT 2016-01-01 2016-06-30
     """
     session = requests.Session()
     include_history_param_value = "S" if include_history else "N"
