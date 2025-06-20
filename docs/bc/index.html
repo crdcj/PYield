@@ -881,6 +881,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../pre/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    PRE
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../di1/" class="md-nav__link">
         
   
@@ -1273,9 +1296,7 @@ SR = Second Round (Segunda Rodada)</p>
 <span class="normal"><a href="#__codelineno-0-357">357</a></span>
 <span class="normal"><a href="#__codelineno-0-358">358</a></span>
 <span class="normal"><a href="#__codelineno-0-359">359</a></span>
-<span class="normal"><a href="#__codelineno-0-360">360</a></span>
-<span class="normal"><a href="#__codelineno-0-361">361</a></span>
-<span class="normal"><a href="#__codelineno-0-362">362</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-253"><a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="k">def</span><span class="w"> </span><span class="nf">auctions</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-360">360</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-253"><a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="k">def</span><span class="w"> </span><span class="nf">auctions</span><span class="p">(</span>
 </span><span id="__span-0-254"><a id="__codelineno-0-254" name="__codelineno-0-254"></a>    <span class="n">start</span><span class="p">:</span> <span class="n">DateScalar</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a>    <span class="n">end</span><span class="p">:</span> <span class="n">DateScalar</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a>    <span class="n">auction_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;sell&quot;</span><span class="p">,</span> <span class="s2">&quot;buy&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1376,15 +1397,13 @@ SR = Second Round (Segunda Rodada)</p>
 </span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a>    <span class="c1"># Mapeamento do auction_type para o valor esperado pela API</span>
 </span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a>    <span class="n">auction_type_mapping</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;sell&quot;</span><span class="p">:</span> <span class="s2">&quot;Venda&quot;</span><span class="p">,</span> <span class="s2">&quot;buy&quot;</span><span class="p">:</span> <span class="s2">&quot;Compra&quot;</span><span class="p">}</span>
 </span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a>    <span class="k">if</span> <span class="n">auction_type</span><span class="p">:</span>
-</span><span id="__span-0-354"><a id="__codelineno-0-354" name="__codelineno-0-354"></a>        <span class="n">auction_type</span> <span class="o">=</span> <span class="n">auction_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-</span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a>    <span class="n">auction_type_api_value</span> <span class="o">=</span> <span class="n">auction_type_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">auction_type</span><span class="p">)</span>
-</span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a>    <span class="c1"># Adiciona o parâmetro tipoOferta à URL se auction_type for fornecido</span>
-</span><span id="__span-0-357"><a id="__codelineno-0-357" name="__codelineno-0-357"></a>    <span class="k">if</span> <span class="n">auction_type_api_value</span><span class="p">:</span>
-</span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a>        <span class="n">url</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;&amp;@tipoOferta=&#39;</span><span class="si">{</span><span class="n">auction_type_api_value</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+</span><span id="__span-0-354"><a id="__codelineno-0-354" name="__codelineno-0-354"></a>        <span class="n">auction_type_api_value</span> <span class="o">=</span> <span class="n">auction_type_mapping</span><span class="p">[</span><span class="n">auction_type</span><span class="p">]</span>
+</span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a>        <span class="c1"># Adiciona o parâmetro tipoOferta à URL se auction_type for fornecido</span>
+</span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a>        <span class="n">url</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;&amp;@tipoOferta=&#39;</span><span class="si">{</span><span class="n">auction_type_api_value</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+</span><span id="__span-0-357"><a id="__codelineno-0-357" name="__codelineno-0-357"></a>
+</span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a>    <span class="n">url</span> <span class="o">+=</span> <span class="s2">&quot;&amp;$format=text/csv&quot;</span>  <span class="c1"># Adiciona o formato CSV ao final</span>
 </span><span id="__span-0-359"><a id="__codelineno-0-359" name="__codelineno-0-359"></a>
-</span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a>    <span class="n">url</span> <span class="o">+=</span> <span class="s2">&quot;&amp;$format=text/csv&quot;</span>  <span class="c1"># Adiciona o formato CSV ao final</span>
-</span><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a>
-</span><span id="__span-0-362"><a id="__codelineno-0-362" name="__codelineno-0-362"></a>    <span class="k">return</span> <span class="n">_fetch_df_from_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+</span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a>    <span class="k">return</span> <span class="n">_fetch_df_from_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
