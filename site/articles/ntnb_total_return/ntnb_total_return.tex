@@ -1,0 +1,330 @@
+\documentclass[10pt]{report}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{bm}
+\usepackage[margin=1in]{geometry}  % or any other size like 2cm, 25mm, etc.
+\usepackage[backend=biber,style=numeric,citestyle=nature]{biblatex}
+\usepackage{parskip}  % This automatically sets paragraph spacing
+% \usepackage{showframe}
+\setlength{\parindent}{20pt}
+\setlength{\parskip}{1em}  % Sets paragraph spacing to 1em
+
+\addbibresource{references_ntnb.bib}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}[theorem]{Definition}
+
+\newcommand{\DOI}{https://github.com/fe-lipe-c}
+\newcommand{\monthyear}{Month Year}
+
+\newenvironment{exercise}[1]
+    {\vspace{0.5cm}\hrule\vspace{0.5cm}\noindent\fbox{#1}\\}
+    {\vspace{0.5cm}}
+
+\newenvironment{response}
+{\vspace{0.2cm}\noindent\colorbox{red}{resolution}}
+    {\vspace{0.5cm}}
+
+\emergencystretch=1em
+
+\begin{document}
+
+\begin{titlepage}
+	\begin{flushright}
+		\LARGE{\textbf{Brazilian Federal Government Bonds}}\\
+		\vfill
+		\Huge{\textbf{NTN-B - Return Decomposition}}\\
+		\vfill
+		\large Felipe Costa\\
+		\vfill
+		\normalsize Related material at:\\
+		\DOI
+		\vfill
+	\end{flushright}
+\end{titlepage}
+
+% \begin{center}
+% 	\tableofcontents
+% \end{center}
+
+\pagebreak
+
+\section*{NTN-B}
+
+The price of a National Treasury Note Series B (NTN-B) can be determined by the following equation \cite{jose_valentim}:
+\begin{equation}
+	P_{t,T} = \left[\sum_{i=1}^{n} \frac{\text{VNA}_{t} \times \left[(1.06)^{\frac{1}{2}}-1\right]}{(1+y_{t})^\frac{(t_{i}-t)}{252}}\right] + \frac{\text{VNA}_{t}}{(1+y_{t})^\frac{(T-t)}{252}}
+\end{equation}
+where VNA is the updated nominal value, $t$ is the reference date, $t_{i}$ is the payment date of coupon $i$, $T$ is the maturity date, $y_{t}$ is the real interest rate at $t$, and $n$ is the number of coupons.
+
+The nominal value of a government bond is the value that the investor will receive on the bond's maturity date. For example, in the case of an National Treasury Bill (LTN) or National Treasury Note Series F (NTN-F), the nominal value is fixed at R\$ 1,000.00. In the case of an NTN-B, the nominal value is adjusted by the variation of the IPCA (Extended National Consumer Price Index). On 07/15/2000, the nominal value of an NTN-B started at R\$ 1,000.00, and from that date, the nominal value has been updated, reaching the amount of R\$ 4,405 on 02/15/2025. This is why the nominal value of an NTN-B is called VNA (Updated Nominal Value).
+
+NTN-Bs have maturity dates that vary according to the year: those with maturity in even years mature on August 15, while those with maturity in odd years mature on May 15. The bond pays semi-annual interest coupons, calculated at a fixed rate of 6\% per year on the VNA. The coupon payment dates also follow a pattern: for bonds maturing in even years, payments occur on February 15 and August 15; for those maturing in odd years, payments are made on May 15 and November 15.
+
+The VNA update is based on the IPCA, which is published every month by IBGE. According to IBGE, "the IPCA aims to measure the inflation of a set of products and services sold at retail, related to personal consumption of families, whose income varies between 1 and 40 minimum wages, regardless of the source of income. This income range was created with the objective of ensuring coverage of 90\% of families belonging to urban areas covered by the National System of Consumer Price Indices - SNIPC". \cite{ibge_ipca}
+
+At date $t$, with $t_k<t \leq t_{k+1}$, the VNA is calculated as follows:
+
+\begin{equation}
+	\text{VNA}_{t} = \text{VNA}_{t_k} \times \left(1 + i_{t}\right)^{\frac{t - t_{k}}{t_{k+1}- t_{k}}},
+\end{equation}
+
+where:
+\begin{itemize}
+	\item $t_k$ represents the most recent 15th day of the month prior to date $t$,
+	\item $t_{k+1}$ represents the next upcoming 15th day of the month after date $t$,
+	\item $i_{t}$ denotes the IPCA inflation rate for the month corresponding to date $t_k$. This value can be the effective rate or the projected rate published by Anbima \cite{jose_valentim}.
+\end{itemize}
+
+This formula applies a pro-rata adjustment of the inflation rate based on the position of date $t$ between two consecutive 15th-day reference points.
+
+\section*{Return Decomposition}
+
+From equation (1):
+\begin{align*}
+	P_{t,T} & = \left[\sum_{i=1}^{n} \frac{\text{VNA}_{t} \times \left[(1.06)^{\frac{1}{2}}-1\right]}{(1+y_{t})^\frac{(t_{i}-t)}{252}}\right] + \frac{\text{VNA}_{t}}{(1+y_{t})^\frac{(T-t)}{252}} \\
+	        & = \left[\sum_{i=1}^{n} \frac{(1.06)^{\frac{1}{2}}-1}{(1+y_{t})^\frac{(t_{i}-t)}{252}} + \frac{1}{(1+y_{t})^\frac{(T-t)}{252}}\right] \times \text{VNA}_{t}                           \\
+	        & = D_{t,T}(y_{t}) \times \text{VNA}_{t}
+\end{align*}
+where $D_{t,T}(y_{t})$ is the discount factor for the bond, which is a function of the yield $y_{t}$ and the time to maturity. Thus, deriving the total return from the bond price at the beginning and end of the period:
+\begin{align*}
+	R_{t} & = \frac{P_{t_1}}{P_{t_0}} - 1                                                                      \\
+	      & = \frac{D_{t_1,T}(y_{t_1}) \times \text{VNA}_{t_1}}{D_{t_0,T}(y_{t_0}) \times \text{VNA}_{t_0}} -1 \\
+\end{align*}
+
+We can further develop this expression by noting that $\text{VNA}_{t_1}$ is related to $\text{VNA}_{t_0}$ through the inflation adjustment over the period. If we denote the inflation rate between $t_0$ and $t_1$ as $\pi_{t_0,t_1}$, then:
+\begin{align*}
+	\text{VNA}_{t_1} = \text{VNA}_{t_0} \times (1 + \pi_{t_0,t_1})
+\end{align*}
+Substituting this into our return equation:
+\begin{align*}
+	R_{t} & = \frac{D_{t_1,T}(y_{t_1}) \times \text{VNA}_{t_0} \times (1 + \pi_{t_0,t_1})}{D_{t_0,T}(y_{t_0}) \times \text{VNA}_{t_0}} -1 \\
+	      & = \frac{D_{t_1,T}(y_{t_1})}{D_{t_0,T}(y_{t_0})} \times (1 + \pi_{t_0,t_1}) -1
+\end{align*}
+The first term represents the return due to changes in the yield curve (price effect), while the second term captures the return from inflation indexation. We can introduce an intermediate discount factor $D_{t_1,T}(y_{t_0})$ which represents what the discount factor would be at time $t_1$ if the yield had remained constant at $y_{t_0}$. This allows us to write:
+$$\frac{D_{t_1,T}(y_{t_1})}{D_{t_0,T}(y_{t_0})} = \frac{D_{t_1,T}(y_{t_1})}{D_{t_1,T}(y_{t_0})} \times \frac{D_{t_1,T}(y_{t_0})}{D_{t_0,T}(y_{t_0})}$$
+This decomposition gives us:
+
+1. $\frac{D_{t_1,T}(y_{t_0})}{D_{t_0,T}(y_{t_0})}$: The change in the discount factor due solely to the passage of time, with yield held constant (Real Yield Component)
+
+2. $\frac{D_{t_1,T}(y_{t_1})}{D_{t_1,T}(y_{t_0})}$: The change in the discount factor due to changes in market yield (Mark-to-Market Component)
+
+Thus, the total return decomposes into three components:
+\begin{align}
+	R_{t} & = \underbrace{\frac{D_{t_1,T}(y_{t_1})}{D_{t_1,T}(y_{t_0})}}_{\text{Mark-to-Market}} \times \underbrace{\frac{D_{t_1,T}(y_{t_0})}{D_{t_0,T}(y_{t_0})}}_{\text{Real Yield}} \times \underbrace{(1 + \pi_{t_0,t_1})}_{\text{Inflation}} - 1
+\end{align}
+
+\fbox{
+	\begin{minipage}{0.85\textwidth}
+		\textbf{Example: NTN-B Return Q1 2025}
+		\vspace{0.5cm}
+
+		We examine the performance of an NTN-B with maturity on 05/15/2055 (B55), over the first quarter of 2025, specifically from 01/02/2025, to 03/31/2025.
+		\vspace{0.25cm}
+
+		To calculate each component, we use the following data:
+		\begin{align*}
+			 & \text{Start VNA}               = \text{R\$}~4387.86
+			\text{,}\quad \text{End VNA}                 = \text{R\$}~4474.04 \\
+			 & \text{Start Price}             = \text{R\$}~3716.65
+			\text{,}\quad \text{End Price}               = \text{R\$}~3867.52 \\
+			 & \text{Initial Rate } (y_{t_0}) = 7.40\%
+			\text{,}\quad \text{Final Rate } (y_{t_1})   = 7.38\%             \\
+			 & D_{t_0,T}(y_{t_0})         = 0.8470
+			\text{,}\quad D_{t_1,T}(y_{t_1})           = 0.8644
+			\text{,}\quad D_{t_1,T}(y_{t_0})           = 0.8616               \\
+		\end{align*}
+
+		Thus, the total return is:
+		\begin{equation*}
+			R_{t} = \frac{P_{t_1}}{P_{t_0}} - 1
+			= \frac{3867.52}{3716.64} - 1
+			= 0.04059 \text{ or } 4.06\%
+		\end{equation*}
+		\vspace{0.25cm}
+
+		We can decompose this return into three components using (3).
+		\vspace{0.25cm}
+
+		\textbf{1. Inflation Component}
+
+		The inflation component captures the effect of inflation on the nominal value of the bond:
+
+		\begin{equation*}
+			R_{i} = \frac{\text{VNA}_{t_1}}{\text{VNA}_{t_0}} = \frac{4474.04}{4387.86} = 1.01964 \text{ or } 1.96\%
+		\end{equation*}
+		\vspace{0.25cm}
+
+		\textbf{2. Real Yield Component}
+
+		The real yield component represents the return from accrual of the real yield over the holding period:
+		\begin{align*}
+			R_{y} = \frac{D_{t_1,T}(y_{t_0})}{D_{t_0,T}(y_{t_0})} & = \frac{0.86156}{0.84703}
+			= 1.01715 \text{ or } 1.72\%
+		\end{align*}
+		\vspace{0.25cm}
+
+		\textbf{3. Mark-to-Market Component}
+
+		The mark-to-market component captures the effect of changes in market yields:
+		\begin{align*}
+			R_{m} = \frac{D_{t_1,T}(y_{t_1})}{D_{t_1,T}(y_{t_0})} & = \frac{0.86444}{0.86156}
+			= 1.00334 \text{ or } 0.33\%
+		\end{align*}
+		\vspace{0.25cm}
+
+		We can verify our decomposition by multiplying the three components:
+		\begin{align*}
+			R_t & = 1.0196 \times 1.0172 \times 1.0033 - 1
+			= 1.04055 - 1
+			= 0.04055 \text{ or } 4.06\%
+		\end{align*}
+
+		Considering some rounding error, this confirms our total return calculation and demonstrates how the B55 performance during Q1 2025 was driven primarily by inflation (1.96\%) and real yield accrual (1.72\%), with a smaller contribution from favorable yield movements (0.33\%).
+	\end{minipage}
+}
+
+It's worth noting that in the example above no coupon payments occurred during this period, simplifying our analysis. If there had been coupon payments, we would need to adjust our calculations to account for the those coupons.
+
+When calculating the return of a bond investment over a specific holding period, investors can employ two primary methodologies to account for coupon payments:
+
+1. \textbf{Simple Method}: This approach adds the sum of all coupon payments received during the holding period to the final bond price, then calculates the percentage return relative to the initial investment. This method assumes coupons are held as cash without generating additional returns.
+\begin{align}
+	R_{t}^ {s}  = \frac{P_{t} + \sum_{i=1}^{k} C_i}{P_{0}} - 1,
+\end{align}
+where $C_i$ represents the value of the $i$-th coupon paid.
+
+2. \textbf{Total Return Method (Reinvestment)}: This approach assumes that each coupon payment is immediately reinvested to purchase additional units of the same bond at the prevailing market price. The final value includes both the original bond's value and the accumulated value of all reinvested coupons.
+\begin{align}
+	R_{t}^{c} = \frac{P_{t} \times \prod_{i=1}^{k} \left(1 + \frac{C_i}{P_i}\right)}{P_0} - 1
+\end{align}
+where $P_{i}$ is the price of the bond at the time of coupon payment $C_i$.
+
+We'll proceed with the total return method, since it provides a more precise measure of the bond's intrinsic performance. For that, we'll prove that (5) is indeed the bond's total return, using induction.
+
+\textbf{1. Base Case: k=1 (One coupon payment)}
+
+With one coupon payment $C_1$ at time $t_1$: (i) we start with 1 unit of the bond at price $P_0$; (ii) at time $t_1$, we receive coupon $C_1$ and reinvest to buy $\frac{C_1}{P_1}$ additional units of the bond; (iii) and at time $t$, we have $1 + \frac{C_1}{P_1}$ units, each worth $P_t$.
+
+The total return is:
+$$R_t = \frac{P_t \times \left(1 + \frac{C_1}{P_1}\right)}{P_0} - 1 = \frac{P_t \times \prod_{i=1}^{1} \left(1 + \frac{C_i}{P_i}\right)}{P_0} - 1$$
+This matches (5).
+
+\textbf{2. Inductive Step}
+
+Assume our formula is correct for k coupons:
+$$R_t(k) = \frac{P_{t} \times \prod_{i=1}^{k} \left(1 + \frac{C_i}{P_i}\right)}{P_0} - 1$$
+Now we need to prove it's correct for k+1 coupons. With k+1 coupons, we have one additional coupon payment $C_{k+1}$ at time $t_{k+1}$. At time $t_{k+1}$, we have accumulated $\prod_{i=1}^{k} \left(1 + \frac{C_i}{P_i}\right)$ units according to our induction hypothesis.
+
+These units receive a coupon payment of $C_{k+1} \times \prod_{i=1}^{k} \left(1 + \frac{C_i}{P_i}\right)$, which allows us to purchase an additional $\frac{C_{k+1}}{P_{k+1}} \times \prod_{i=1}^{k} \left(1 + \frac{C_i}{P_i}\right)$ units.
+
+Define $B_{t}$ the quantity the investor holds of the bond at time $t$. Then we have:
+\begin{align*}
+	B_{t} = \prod_{i=1}^{k} \left(1 + \frac{C_i}{P_i}\right) + \frac{C_{k+1}}{P_{k+1}} \times \prod_{i=1}^{k} \left(1 + \frac{C_i}{P_i}\right) = \prod_{i=1}^{k} \left(1 + \frac{C_i}{P_i}\right) \times \left(1 + \frac{C_{k+1}}{P_{k+1}}\right) = \prod_{i=1}^{k+1} \left(1 + \frac{C_i}{P_i}\right)
+\end{align*}
+
+The total return is:
+
+$$R_t(k+1) = \frac{P_{t} \times \prod_{i=1}^{k+1} \left(1 + \frac{C_i}{P_i}\right)}{P_0} - 1$$
+
+This matches our formula for k+1 coupons, completing the induction.
+
+Now we return to the decomposition of the total return when there are coupon payments. From (5), we can rearrange the formula:
+\begin{align*}
+	R_{t}^{c} & = \frac{P_{t} \times \prod_{i=1}^{k} \left(1 + \frac{C_i}{P_i}\right)}{P_0} - 1
+	= \frac{P_{t}}{P_0} \times \left(1 + \frac{C_1}{P_1} \right) \times \dots \times \left(1 + \frac{C_k}{P_k} \right) -1                                                                                                                                                \\
+	          & = \frac{P_{t}}{P_0} \times \left(\frac{P_1 + C_1}{P_1} \right) \times \dots \times \left(\frac{P_k + C_k}{P_k} \right) - 1 = \frac{P_{t}}{P_k} \times \left(\frac{P_k + C_k}{P_{k-1}} \right) \times \dots \times \left(\frac{P_1 + C_1}{P_0} \right) -1
+\end{align*}
+\begin{equation}
+	R_{t}^{c} = \frac{P_{t}}{P_k} \prod_{i=1}^{k} \left(\frac{P_i + C_i}{P_{i-1}} \right) - 1
+\end{equation}
+While we could interpret (5) as the compounding effect of reinvestment, where each term $ \left( 1 + \frac{C_i}{P_i} \right) $ represented a growth factor into the bond holdings, in (6) we can think of a investor that sells his holdinds right before the coupon payment, and buys them back right after the coupon payment, in a cenario where the price of the bond does not change between the two transactions.
+
+Note that, for a payment at date $ s $,
+\begin{align*}
+	P_{s,T} + C_s & = D_{s,T}(y_s) \text{VNA}_{s} + C_s                                                                                                                                                                              \\
+	              & = \left[\sum_{i=s+1}^{T} \frac{(1.06)^{\frac{1}{2}}-1}{(1+y_{s})^\frac{(t_{i}-t_s)}{252}} + \frac{1}{(1+y_{s})^\frac{(T-t_s)}{252}}\right] \text{VNA}_{s} + \left[(1.06)^{\frac{1}{2}} -1 \right] \text{VNA}_{s} \\
+	              & = \left[\sum_{i=s+1}^{T} \frac{(1.06)^{\frac{1}{2}}-1}{(1+y_{s})^\frac{(t_{i}-t_s)}{252}} + \frac{1}{(1+y_{s})^\frac{(T-t_s)}{252}}+ (1.06)^{\frac{1}{2}}-1\right] \text{VNA}_{s}                                \\
+	              & = \left[\sum_{i=s}^{T} \frac{(1.06)^{\frac{1}{2}}-1}{(1+y_{s})^\frac{(t_{i}-t_s)}{252}} + \frac{1}{(1+y_{s})^\frac{(T-t_s)}{252}}\right] \text{VNA}_{s} = D_{s,T}^{c_{s}}(y_{s}) \text{VNA}_{s}                  \\
+\end{align*}
+where $D_{s,T}^{c_{s}}(y_{s})$ is the discount factor for the bond at time $ s $ (coupon payment date) with the coupon payment added.
+
+This reformulation demonstrates that $P_{s,T} + C_s$ can be expressed as a sum of discounted cash flows with the same structure as $P_{s-1}$, differing only in the discount factors and reference date. Specifically, both expressions contain ($T-s+1$) coupon payments plus one principal payment, creating a one-to-one correspondence between their respective cash flows, represent the same underlying financial instrument evaluated at different times. Proceeding with the same reasoning as before, we can combine equations (3) and (6) to decompose the total return into three components:
+
+\begin{align*}
+	R_{t}^{c} & = \frac{D_{t,T}(y_{t})}{D_{t,T}(y_{k})}  \frac{D_{t,T}(y_{k})}{D_{k,T}(y_{k})}  \left(1 + \pi_{k,t}\right)  \prod_{i=1}^{k}\left( \frac{D_{i,T}^{c_i}(y_{i})}{D_{i,T}^{c_i}(y_{i-1})}  \frac{D_{i,T}^{c_i}(y_{i-1})}{D_{i-1,T}(y_{i-1})}  \left(1 + \pi_{i-1,i}\right)\right) - 1
+\end{align*}
+
+\begin{align*}
+	R_{t}^{c} & = \underbrace{\frac{D_{t,T}(y_{t})}{D_{t,T}(y_{k})}\prod_{i=1}^{k}\left( \frac{D_{i,T}^{c_i}(y_{i})}{D_{i,T}^{c_i}(y_{i-1})} \right)}_{\text{Mark-to-Market}} \underbrace{\frac{D_{t,T}(y_{k})}{D_{k,T}(y_{k})}\prod_{i=1}^{k}\left( \frac{D_{i,T}^{c_i}(y_{i-1})}{D_{i-1,T}(y_{i-1})} \right)}_{\text{Real Yield}} \underbrace{\left(1 + \pi_{k,t}\right) \prod_{i=1}^{k}\left(1 + \pi_{i-1,i}\right)}_{\text{Inflation}}
+\end{align*}
+
+\fbox{
+	\begin{minipage}{0.85\textwidth}
+		\textbf{Example: NTN-B Return 2024}
+		\vspace{0.5cm}
+
+		We examine the performance of some NTN-Bs, all covering the period from 01/02/2024 to 11/04/2025. The plots shows the evolution of the return and its components.
+		\vspace{0.25cm}
+
+		---------------------------------------------------------------------------------------------------------------
+
+		Maturity: 05/15/2025
+
+		Initial rate: 5.50\%
+
+		Final rate: 8.09\%
+		\vspace{0.25cm}
+		\begin{center}
+			\includegraphics[width=0.8\textwidth]{img/return_B25.png}
+		\end{center}
+
+		---------------------------------------------------------------------------------------------------------------
+
+		Maturity: 08/15/2030
+
+		Initial rate: 5.21\%
+
+		Final rate: 7.81\%
+		\vspace{0.25cm}
+		\begin{center}
+			\includegraphics[width=0.8\textwidth]{img/return_B30.png}
+		\end{center}
+
+		---------------------------------------------------------------------------------------------------------------
+
+		Maturity: 05/15/2045
+
+		Initial rate: 5.48\%
+
+		Final rate: 7.48\%
+		\vspace{0.25cm}
+		\begin{center}
+			\includegraphics[width=0.8\textwidth]{img/return_B45.png}
+		\end{center}
+
+		---------------------------------------------------------------------------------------------------------------
+
+		Maturity: 08/15/2060
+
+		Initial rate: 5.49\%
+
+		Final rate: 7.32\%
+		\vspace{0.25cm}
+		\begin{center}
+			\includegraphics[width=0.8\textwidth]{img/return_B60.png}
+		\end{center}
+
+		\vspace{0.5cm}
+
+
+	\end{minipage}}
+
+
+\pagebreak
+\printbibliography
+
+\end{document}
+
