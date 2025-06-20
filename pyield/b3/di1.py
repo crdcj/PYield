@@ -327,8 +327,9 @@ def interpolate_rate(
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
+    date = dc.convert_input_dates(date)
     expiration = dc.convert_input_dates(expiration)
-    if not date:
+    if not date or not expiration:
         return float("NaN")
 
     # Get the DI contract DataFrame
@@ -357,6 +358,8 @@ def interpolate_rate(
         extrapolate=extrapolate,
     )
     bd = bday.count(date, expiration)
+    if pd.isna(bd):
+        return float("NaN")
     return ff_interp(bd)
 
 

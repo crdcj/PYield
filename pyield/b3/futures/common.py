@@ -1,9 +1,12 @@
 import pandas as pd
+from pandas.api.typing import NaTType
 
 from pyield import bday
 
 
-def get_expiration_date(expiration_code: str, expiration_day: int = 1) -> pd.Timestamp:
+def get_expiration_date(
+    expiration_code: str, expiration_day: int = 1
+) -> pd.Timestamp | NaTType:
     """
     Converts an expiration code into its corresponding expiration date.
 
@@ -64,4 +67,4 @@ def get_expiration_date(expiration_code: str, expiration_day: int = 1) -> pd.Tim
         return adj_expiration
 
     except (KeyError, ValueError):
-        return pd.NaT  # type: ignore
+        return pd.NaT

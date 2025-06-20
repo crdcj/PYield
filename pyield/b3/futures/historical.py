@@ -3,6 +3,7 @@ import logging
 
 import pandas as pd
 import requests
+from pandas.api.typing import NaTType
 
 from pyield import bday
 from pyield.b3.futures import common
@@ -12,7 +13,9 @@ logger = logging.getLogger(__name__)
 COUNT_CONVENTIONS = {"DAP": 252, "DI1": 252, "DDI": 360}
 
 
-def get_old_expiration_date(expiration_code: str, date: pd.Timestamp) -> pd.Timestamp:
+def get_old_expiration_date(
+    expiration_code: str, date: pd.Timestamp
+) -> pd.Timestamp | NaTType:
     """
     Internal function to convert an old DI contract code into its ExpirationDate date.
     Valid for contract codes up to 21-05-2006.
@@ -68,7 +71,7 @@ def get_old_expiration_date(expiration_code: str, date: pd.Timestamp) -> pd.Time
         return bday.offset(dates=expiration_date, offset=0)
 
     except (KeyError, ValueError):
-        return pd.NaT  # type: ignore
+        return pd.NaT
 
 
 def _convert_prices_to_rates(
@@ -184,19 +187,18 @@ def process_df(
     df["TradeDate"] = date
     # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
-
     df["TickerSymbol"] = contract_code + df["ExpirationCode"]
 
     # Contract code format was changed in 22/05/2006
     if date < pd.Timestamp("2006-05-22"):
         df["ExpirationDate"] = df["ExpirationCode"].apply(
-            get_old_expiration_date, args=(date,)
-        )
+            lambda code: get_old_expiration_date(code, date)
+        )  # type: ignore
     else:
         expiration_day = 15 if contract_code == "DAP" else 1
         df["ExpirationDate"] = df["ExpirationCode"].apply(
-            common.get_expiration_date, args=(expiration_day,)
-        )
+            lambda code: common.get_expiration_date(code, expiration_day)
+        )  # type: ignore
 
     df["DaysToExp"] = (df["ExpirationDate"] - date).dt.days
     # Convert to nullable integer, since it is the default type in the library

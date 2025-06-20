@@ -3,6 +3,7 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
+from pandas.api.typing import NaTType, NAType
 
 import pyield.date_converter as dc
 import pyield.holidays as hl
@@ -23,7 +24,7 @@ NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="new")
 @overload
 def offset(
     dates: DateScalar, offset: IntegerScalar, roll: Literal["forward", "backward"] = ...
-) -> pd.Timestamp: ...
+) -> pd.Timestamp | NaTType: ...
 @overload
 def offset(
     dates: DateArray,
@@ -40,7 +41,7 @@ def offset(  # noqa
     dates: DateScalar | DateArray,
     offset: IntegerScalar | IntegerArray,
     roll: Literal["forward", "backward"] = "forward",
-) -> pd.Timestamp | pd.Series:
+) -> pd.Timestamp | pd.Series | NaTType:
     """
     First adjusts the date to fall on a valid day according to the roll rule, then
     applies offsets to the given dates to the next or previous business day, considering
@@ -170,80 +171,79 @@ def offset(  # noqa
         if not dates_pd.index.equals(offset_pd.index):
             raise ValueError("Input dates have different indices!")
 
-    is_scalar_input = not (
-        isinstance(dates_pd, pd.Series) or isinstance(offset_pd, pd.Series)
-    )
-
     # 2. LÓGICA PRINCIPAL
 
-    # --- CASO 1: AMBOS OS INPUTS SÃO ESCALARES
-    if is_scalar_input:
+    # --- CASO 1: AMBOS OS INPUTS SÃO ESCALARES ---
+    if not isinstance(dates_pd, pd.Series) and not isinstance(offset_pd, pd.Series):
         if pd.isna(dates_pd) or pd.isna(offset_pd):
             return pd.NaT
 
         offsetted_date_np = np.busday_offset(
-            dc.to_numpy_date_type(dates_pd),
+            dates=dc.to_numpy_date_type(dates_pd),
             offsets=offset_pd,
             roll=roll,
             holidays=br_holidays.get_holiday_array(dates_pd),
         )
 
+        assert isinstance(offsetted_date_np, np.datetime64), (
+            "Assumption violated: np.busday_offset did not return a scalar "
+            f"np.datetime64 for scalar inputs. Got: {type(offsetted_date_np)}"
+        )
         return pd.Timestamp(offsetted_date_np).as_unit("ns")
 
     # --- CASO 2: PELO MENOS UM DOS INPUTS É UMA SÉRIE ---
-    if isinstance(dates_pd, pd.Series) or isinstance(offset_pd, pd.Series):
-        # Garante que ambas as variáveis sejam Series para alinhamento automático.
-        # O Pandas faz o "broadcast" do escalar para o tamanho da Series.
-        if not isinstance(dates_pd, pd.Series):
-            # dates escalar e offset Series -> Series de dates com o índice de offset.
-            dates_pd = pd.Series(dates_pd, index=offset_pd.index)
-        if not isinstance(offset_pd, pd.Series):
-            # offset escalar e dates Series -> Series de offset com o índice de dates.
-            offset_pd = pd.Series(offset_pd, index=dates_pd.index)
 
-        # Inicializa a série de resultados com o índice correto e tipo que suporta NaT.
-        result = pd.Series(index=dates_pd.index, dtype="datetime64[ns]")
+    # Garante que ambas as variáveis sejam Series para alinhamento automático.
+    # O Pandas faz o "broadcast" do escalar para o tamanho da Series.
+    if isinstance(offset_pd, pd.Series):
+        dates_pd = pd.Series(dates_pd, index=offset_pd.index)
+    else:
+        assert isinstance(dates_pd, pd.Series)  # Linter satisfaction
+        offset_pd = pd.Series(offset_pd, index=dates_pd.index)
 
-        # Divide the input in order to apply the correct holiday list
-        mask_not_null = dates_pd.notna() & offset_pd.notna()
-        mask_old_holidays = mask_not_null & (dates_pd < br_holidays.TRANSITION_DATE)
-        mask_new_holidays = mask_not_null & (dates_pd >= br_holidays.TRANSITION_DATE)
+    # Inicializa a série de resultados com o índice correto e tipo que suporta NaT.
+    result = pd.Series(index=dates_pd.index, dtype="datetime64[ns]")
 
-        if mask_old_holidays.any():
-            np_offset_values = np.busday_offset(
-                dates=dc.to_numpy_date_type(dates_pd[mask_old_holidays]),
-                offsets=offset_pd[mask_old_holidays],
-                roll=roll,
-                holidays=OLD_HOLIDAYS_ARRAY,
-            )
-            pd_offset_values = pd.to_datetime(np_offset_values).astype("datetime64[ns]")
-            result.loc[mask_old_holidays] = pd_offset_values
+    # Divide the input in order to apply the correct holiday list
+    mask_not_null = dates_pd.notna() & offset_pd.notna()
+    mask_old_holidays = mask_not_null & (dates_pd < br_holidays.TRANSITION_DATE)
+    mask_new_holidays = mask_not_null & (dates_pd >= br_holidays.TRANSITION_DATE)
 
-        if mask_new_holidays.any():
-            np_offset_values = np.busday_offset(
-                dates=dc.to_numpy_date_type(dates_pd[mask_new_holidays]),
-                offsets=offset_pd[mask_new_holidays],
-                roll=roll,
-                holidays=NEW_HOLIDAYS_ARRAY,
-            )
-            pd_offset_values = pd.to_datetime(np_offset_values).astype("datetime64[ns]")
-            result.loc[mask_new_holidays] = pd_offset_values
+    if mask_old_holidays.any():
+        np_offset_values = np.busday_offset(
+            dates=dc.to_numpy_date_type(dates_pd[mask_old_holidays]),
+            offsets=offset_pd[mask_old_holidays],
+            roll=roll,
+            holidays=OLD_HOLIDAYS_ARRAY,
+        )
+        pd_offset_values = pd.to_datetime(np_offset_values).astype("datetime64[ns]")
+        result.loc[mask_old_holidays] = pd_offset_values
 
-        return result
+    if mask_new_holidays.any():
+        np_offset_values = np.busday_offset(
+            dates=dc.to_numpy_date_type(dates_pd[mask_new_holidays]),
+            offsets=offset_pd[mask_new_holidays],
+            roll=roll,
+            holidays=NEW_HOLIDAYS_ARRAY,
+        )
+        pd_offset_values = pd.to_datetime(np_offset_values).astype("datetime64[ns]")
+        result.loc[mask_new_holidays] = pd_offset_values
+
+    return result
 
 
 @overload
-def count(start: DateScalar, end: DateScalar) -> int: ...
+def count(start: DateScalar, end: DateScalar) -> int | NAType: ...
 @overload
 def count(start: DateArray, end: DateScalar | DateArray) -> pd.Series: ...
 @overload
 def count(start: DateScalar, end: DateArray) -> pd.Series: ...
 
 
-def count(  # noqa
+def count(
     start: DateScalar | DateArray,
     end: DateScalar | DateArray,
-) -> int | pd.Series:
+) -> int | pd.Series | NAType:
     """
     Counts the number of business days between a `start` date (inclusive) and an `end`
     date (exclusive). The function can handle single dates, arrays of dates and
@@ -339,12 +339,9 @@ def count(  # noqa
             raise ValueError("Input dates have different indices!")
 
     # 2. LÓGICA PRINCIPAL
-    is_scalar_input = not (
-        isinstance(start_pd, pd.Series) or isinstance(end_pd, pd.Series)
-    )
 
     # --- CASO 1: AMBAS AS ENTRADAS SÃO ESCALARES ---
-    if is_scalar_input:
+    if not isinstance(start_pd, pd.Series) and not isinstance(end_pd, pd.Series):
         if pd.isna(start_pd) or pd.isna(end_pd):
             return pd.NA
 
@@ -356,13 +353,13 @@ def count(  # noqa
         return int(result)
 
     # --- CASO 2: PELO MENOS UMA ENTRADA É UMA SÉRIE ---
+
     # Garante que ambas as variáveis sejam Series para alinhamento automático.
     # O Pandas faz o "broadcast" do escalar para o tamanho da Series.
-    if not isinstance(start_pd, pd.Series):
-        # start escalar e end Series: cria uma Series de start com o índice de end.
+    if isinstance(end_pd, pd.Series):
         start_pd = pd.Series(start_pd, index=end_pd.index)
-    if not isinstance(end_pd, pd.Series):
-        # end escalar e start Series: cria uma Series de end com o índice de start.
+    else:
+        assert isinstance(start_pd, pd.Series)  # Linter satisfaction
         end_pd = pd.Series(end_pd, index=start_pd.index)
 
     # Inicializa a série de resultados com o índice correto e tipo que suporta NA.
@@ -512,4 +509,8 @@ def last_business_day() -> pd.Timestamp:
     """
     # Get the current date in Brazil without timezone information
     bz_today = pd.Timestamp.now(TIMEZONE_BZ).normalize().tz_localize(None)
-    return offset(bz_today, 0, roll="backward")
+    result = offset(bz_today, 0, roll="backward")
+    assert isinstance(result, pd.Timestamp), (
+        "Assumption violated: offset did not return a Timestamp for the current date."
+    )
+    return result
