@@ -24,23 +24,15 @@ NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="new")
 def offset(
     dates: DateScalar, offset: IntegerScalar, roll: Literal["forward", "backward"] = ...
 ) -> pd.Timestamp: ...
-
-
 @overload
 def offset(
-    dates: DateArray, offset: IntegerArray, roll: Literal["forward", "backward"] = ...
+    dates: DateArray,
+    offset: IntegerArray | IntegerScalar,
+    roll: Literal["forward", "backward"] = ...,
 ) -> pd.Series: ...
-
-
 @overload
 def offset(
     dates: DateScalar, offset: IntegerArray, roll: Literal["forward", "backward"] = ...
-) -> pd.Series: ...
-
-
-@overload
-def offset(
-    dates: DateArray, offset: IntegerScalar, roll: Literal["forward", "backward"] = ...
 ) -> pd.Series: ...
 
 
@@ -88,46 +80,45 @@ def offset(  # noqa
 
         Offset to the next business day if not a bday (offset=0 and roll="forward")
 
-        # Offset Saturday before Christmas to the next b. day (Tuesday after Christmas)
+        Offset Saturday before Christmas to the next b. day (Tuesday after Christmas)
         >>> bday.offset("23-12-2023", 0)
         Timestamp('2023-12-26 00:00:00')
 
-        # Offset Friday before Christmas (no offset because it's a business day)
+        Offset Friday before Christmas (no offset because it's a business day)
         >>> bday.offset("22-12-2023", 0)
         Timestamp('2023-12-22 00:00:00')
 
         Offset to the previous business day if not a bday (offset=0 and roll="backward")
 
-        # No offset because it's a business day
+        No offset because it's a business day
         >>> bday.offset("22-12-2023", 0, roll="backward")
         Timestamp('2023-12-22 00:00:00')
 
-        # Offset to the first business day before "23-12-2023"
+        Offset to the first business day before "23-12-2023"
         >>> bday.offset("23-12-2023", 0, roll="backward")
         Timestamp('2023-12-22 00:00:00')
 
         Jump to the next business day (1 offset and roll="forward")
 
-        # Offset Friday to the next business day (Friday is jumped -> Monday)
+        Offset Friday to the next business day (Friday is jumped -> Monday)
         >>> bday.offset("27-09-2024", 1)
         Timestamp('2024-09-30 00:00:00')
 
-        # Offset Saturday to the next business day (Monday is jumped -> Tuesday)
+        Offset Saturday to the next business day (Monday is jumped -> Tuesday)
         >>> bday.offset("28-09-2024", 1)
         Timestamp('2024-10-01 00:00:00')
 
         Jump to the previous business day (-1 offset and roll="backward")
 
-        # Offset Friday to the previous business day (Friday is jumped -> Thursday)
+        Offset Friday to the previous business day (Friday is jumped -> Thursday)
         >>> bday.offset("27-09-2024", -1, roll="backward")
         Timestamp('2024-09-26 00:00:00')
 
-        # Offset Saturday to the previous business day (Friday is jumped -> Thursday)
+        Offset Saturday to the previous business day (Friday is jumped -> Thursday)
         >>> bday.offset("28-09-2024", -1, roll="backward")
         Timestamp('2024-09-26 00:00:00')
 
         List of dates and offsets
-
         >>> bday.offset(["19-09-2024", "20-09-2024"], 1)  # a list of dates
         0   2024-09-20
         1   2024-09-23
@@ -139,7 +130,6 @@ def offset(  # noqa
         dtype: datetime64[ns]
 
         Null values are propagated
-
         >>> bday.offset(pd.NaT, 1)  # NaT input
         NaT
 
@@ -154,7 +144,6 @@ def offset(  # noqa
         dtype: datetime64[ns]
 
         Original pandas index is preserved
-
         >>> dates = pd.Series(
         ...     ["19-09-2024", "20-09-2024", "21-09-2024"],
         ...     index=["a", "b", "c"],
@@ -242,35 +231,13 @@ def offset(  # noqa
 
         return result
 
-    # --- CASO 3: A ENTRADA 'dates' É UM ESCALAR E 'offset' É UMA SÉRIE ---
-    result = pd.Series(index=offset_pd.index, dtype="datetime64[ns]")
-    offset_dates_np = np.busday_offset(
-        dates=dc.to_numpy_date_type(dates_pd),
-        offsets=offset_pd,
-        roll=roll,
-        holidays=br_holidays.get_holiday_array(dates_pd),
-    )
-    # Convert from numpy.datetime64 to datetime64[ns] (pandas format)
-    offset_dates_pd = pd.to_datetime(offset_dates_np).astype("datetime64[ns]")
-    return pd.Series(
-        offset_dates_pd.values, index=offset_pd.index, dtype="datetime64[ns]"
-    )
-
 
 @overload
 def count(start: DateScalar, end: DateScalar) -> int: ...
-
-
 @overload
-def count(start: DateArray, end: DateScalar) -> pd.Series: ...
-
-
+def count(start: DateArray, end: DateScalar | DateArray) -> pd.Series: ...
 @overload
 def count(start: DateScalar, end: DateArray) -> pd.Series: ...
-
-
-@overload
-def count(start: DateArray, end: DateArray) -> pd.Series: ...
 
 
 def count(  # noqa
@@ -321,26 +288,25 @@ def count(  # noqa
         >>> bday.count("15-12-2023", "01-01-2024")
         10
 
-        # Total business days in January and February since the start of the year
+        Total business days in January and February since the start of the year
         >>> bday.count(start="01-01-2024", end=["01-02-2024", "01-03-2024"])
         0    22
         1    41
         dtype: Int64
 
-        # The remaining business days in January and February to the end of the year
+        The remaining business days in January and February to the end of the year
         >>> bday.count(["01-01-2024", "01-02-2024"], "01-01-2025")
         0    253
         1    231
         dtype: Int64
 
-        # The total business days in January and February of 2024
+        The total business days in January and February of 2024
         >>> bday.count(["01-01-2024", "01-02-2024"], ["01-02-2024", "01-03-2024"])
         0    22
         1    19
         dtype: Int64
 
         Null values are propagated
-
         >>> bday.count(pd.NaT, "01-01-2024")  # NaT start
         <NA>
 
@@ -353,7 +319,6 @@ def count(  # noqa
         dtype: Int64
 
         Original pandas index is preserved
-
         >>> start_dates = pd.Series(
         ...     ["01-01-2024", "01-02-2024", "01-03-2024"],
         ...     index=["a", "b", "c"],
