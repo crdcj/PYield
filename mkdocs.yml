@@ -1,4 +1,9 @@
+
+# --- Metadados para SEO e publicação ---
 site_name: PYield Docs
+site_url: https://crdcj.github.io/PYield/
+site_description: Biblioteca financeira para o mercado brasileiro.
+site_author: Carlos Carvalho
 
 nav:
   - Home: index.md
@@ -56,12 +61,14 @@ plugins:
       handlers:
         python:
           options:            
-            show_root_toc_entry: false
+            show_root_toc_entry: false            
             docstring_style: google
             docstring_section_style: table
             docstring_options:
               ignore_init_summary: true
             merge_init_into_class: true
+            show_overloads: false
+            
 
 markdown_extensions:
   - pymdownx.highlight:
