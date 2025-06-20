@@ -154,7 +154,7 @@ def tpf_data(
             - Price: The price (PU) of the bond.
     """
 
-    df = get_cached_dataset("TPF")
+    df = get_cached_dataset("tpf")
     date = convert_input_dates(date)
     df = df.query("ReferenceDate == @date").reset_index(drop=True)
 

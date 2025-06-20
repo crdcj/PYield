@@ -81,7 +81,7 @@ def data(
 
     if pre_filter:
         df_pre = (
-            get_cached_dataset("TPF")
+            get_cached_dataset("tpf")
             .query("BondType in ['LTN', 'NTN-F']")
             .drop_duplicates(subset=["ReferenceDate", "MaturityDate"])
             .sort_values(["ReferenceDate", "MaturityDate"])
