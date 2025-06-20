@@ -1,7 +1,8 @@
 import pandas as pd
-from pyield import bday
-from pyield import anbima, ntnf
+
+from pyield import anbima, bday
 from pyield.date_converter import DateScalar
+from pyield.tn import ntnf
 
 
 def spot_rates(date: DateScalar) -> pd.DataFrame:
@@ -19,7 +20,8 @@ def spot_rates(date: DateScalar) -> pd.DataFrame:
                      Contains zero coupon rates for all available maturities.
 
     Raises:
-        ValueError: If any maturity date cannot be processed or business days cannot be calculated.
+        ValueError: If any maturity date cannot be processed or business days cannot be
+            calculated.
 
     Examples:
         >>> from pyield import pre
@@ -117,12 +119,14 @@ def _process_additional_ltn(
             bdays = bday.count(date, maturity)
             if pd.isna(bdays):
                 raise ValueError(
-                    f"Business days calculation returned NaN for additional LTN maturity {maturity}"
+                    f"Business days calculation returned NaN for additional LTN"
+                    f"maturity {maturity}"
                 )
             bdays_list.append(bdays)
         except Exception as e:
             raise ValueError(
-                f"Failed to calculate business days for additional LTN maturity {maturity}: {str(e)}"
+                "Failed to calculate business days for additional LTN"
+                f" maturity {maturity}: {str(e)}"
             )
 
     # Create result DataFrame (avoiding the warning by working with a proper copy)
