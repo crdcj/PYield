@@ -327,6 +327,19 @@ def auctions(
             especificados. Em caso de erro ao buscar os dados, um DataFrame vazio
             é retornado e uma mensagem de erro é registrada no log.
 
+    Examples:
+        >>> import pandas as pd
+        >>> from pyield import bc
+        >>> df = bc.auctions(start="03-06-2025", end="03-06-2025")
+        >>> df
+                Date Settlement AuctionType  ...      CutPrice   AvgRate   CutRate
+        0 2025-06-03 2025-06-04       Venda  ...  16653.010815  0.000589  0.000589
+        1 2025-06-03 2025-06-04       Venda  ...  16572.063672   0.00109   0.00109
+        2 2025-06-03 2025-06-04       Venda  ...   4314.142451   0.07569   0.07569
+        3 2025-06-03 2025-06-04       Venda  ...    4140.47255   0.07312   0.07312
+        4 2025-06-03 2025-06-04       Venda  ...   3960.619508   0.07157   0.07157
+        ...
+
     Notes:
         FR = First Round (Primeira Rodada)
 
