@@ -60,6 +60,7 @@ def _fetch_url_tables(target_date: pd.Timestamp) -> pd.DataFrame:
         decimal=",",
         displayed_only=True,
         dtype_backend="numpy_nullable",
+        na_values="--",
     )
 
     df = (
@@ -95,8 +96,14 @@ def _fetch_url_tables(target_date: pd.Timestamp) -> pd.DataFrame:
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns=COLUMN_MAPPING)[COLUMN_MAPPING.values()]
     df["Maturity"] = pd.to_datetime(df["Maturity"], format="%d/%m/%Y")
-    # Remove the thousands unit from numeric columns
+
     for col in ["MarketQuantity", "MarketValue", "QuantityVariation"]:
+        # Fallback to string conversion in case conversion failed during read_csv
+        if df[col].dtype == "string" or df[col].dtype == "object":
+            df[col] = df[col].str.replace(".", "", regex=False).replace(",", ".")
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+        # Remove the thousands unit from numeric columns
         df[col] = (1000 * df[col]).astype("Int64")
 
     return df
