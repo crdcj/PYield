@@ -14,6 +14,7 @@ import requests
 
 from pyield import bday
 from pyield import date_converter as dc
+from pyield.bc import ptax
 from pyield.date_converter import DateScalar
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
@@ -176,13 +177,31 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
     df["DV01SR"] = dv01 * df["AcceptedQuantitySR"]
 
     for col in ["DV01", "DV01FR", "DV01SR"]:
-        # Definiri DV01 nulos do leilão como 0
+        # Definrir DV01 nulos do leilão como 0
         df[col] = df[col].fillna(0).round(2)
 
     # Forçar 0 nas LFT, pois não há DV01
     df.loc[df["BondType"] == "LFT", ["DV01", "DV01FR", "DV01SR"]] = 0.0
 
     return df
+
+
+def _get_ptax_df(start_date: pd.Timestamp | None = None) -> pd.DataFrame:
+    # A série de leilões começa em 2007
+    df = ptax.ptax_series(start=start_date)[["Date", "MidRate"]]
+    df = df.rename(columns={"MidRate": "PTAX"})
+    return df
+
+
+def _add_usd_dv01(df: pd.DataFrame) -> pd.DataFrame:
+    ptax_start_date = df["Date"].min()
+    df_ptax = _get_ptax_df(start_date=ptax_start_date)
+    df = pd.merge_asof(left=df, right=df_ptax)
+    dv01_cols = [c for c in df.columns if c.startswith("DV01")]
+    for col in dv01_cols:
+        df[f"{col}USD"] = df[col] / df["PTAX"]
+
+    return df.drop(columns=["PTAX"])
 
 
 def _add_avg_maturity(df: pd.DataFrame) -> pd.DataFrame:
@@ -221,6 +240,9 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "DV01",
         "DV01FR",
         "DV01SR",
+        "DV01USD",
+        "DV01FRUSD",
+        "DV01SRUSD",
         "AvgPrice",
         "CutPrice",
         "AvgRate",
@@ -242,6 +264,7 @@ def _fetch_df_from_url(url: str) -> pd.DataFrame:
         df = _process_df(df)
         df = _add_duration(df)
         df = _add_dv01(df)
+        df = _add_usd_dv01(df)
         df = _add_avg_maturity(df)
         df = _sort_and_reorder_columns(df)
         return df
@@ -304,38 +327,57 @@ def auctions(
             especificados. Em caso de erro ao buscar os dados, um DataFrame vazio
             é retornado e uma mensagem de erro é registrada no log.
 
+    Examples:
+        >>> import pandas as pd
+        >>> from pyield import bc
+        >>> df = bc.auctions(start="03-06-2025", end="03-06-2025")
+        >>> df
+                Date Settlement AuctionType  ...      CutPrice   AvgRate   CutRate
+        0 2025-06-03 2025-06-04       Venda  ...  16653.010815  0.000589  0.000589
+        1 2025-06-03 2025-06-04       Venda  ...  16572.063672   0.00109   0.00109
+        2 2025-06-03 2025-06-04       Venda  ...   4314.142451   0.07569   0.07569
+        3 2025-06-03 2025-06-04       Venda  ...    4140.47255   0.07312   0.07312
+        4 2025-06-03 2025-06-04       Venda  ...   3960.619508   0.07157   0.07157
+        ...
+
     Notes:
         FR = First Round (Primeira Rodada)
+
         SR = Second Round (Segunda Rodada)
 
-        O DataFrame possui as seguintes colunas:
-            - Date: Data do leilão.
-            - Settlement: Data de liquidação do leilão.
-            - AuctionType: Tipo de leilão (ex: "Sell" ou "Buy").
-            - Ordinance: Edital normativo associado ao leilão.
-            - Buyer: Categoria do comprador (ex: "TodoMercado", "SomenteDealerApto").
-            - BondType: Categoria do título (ex: "LTN", "LFT", "NTN-B", "NTN-F").
-            - SelicCode: Código do título no sistema Selic.
-            - Maturity: Data de vencimento do título.
-            - DV01: Valor do DV01 total do leilão em R$.
-            - DV01FR: DV01 da Primeira Rodada (FR) em R$.
-            - DV01SR: DV01 da Segunda Rodada (SR) em R$.
-            - AvgMaturity: Maturidade média do título (em anos).
-            - Value: Valor total do leilão em R$ (FR + SR).
-            - ValueFR: Valor da primeira rodada (FR) do leilão em R$.
-            - ValueSR: Valor da segunda rodada (SR) em R$.
-            - OfferedQuantity: Quantidade total ofertada no leilão (FR + SR).
-            - OfferedQuantityFR: Quantidade ofertada na primeira rodada (FR).
-            - OfferedQuantitySR: Quantidade ofertada na segunda rodada (SR).
-            - AcceptedQuantity: Quantidade total aceita no leilão (FR + SR).
-            - AcceptedQuantityFR: Quantidade aceita na primeira rodada (FR).
-            - AcceptedQuantitySR: Quantidade aceita na segunda rodada (SR).
-            - AvgPrice: Preço médio no leilão.
-            - CutPrice: Preço de corte.
-            - AvgRate: Taxa de juros média.
-            - CutRate: Taxa de corte.
-            - BDToMat: Dias úteis até o vencimento.
-            - Duration: Duration (Duração) do título.
+    DataFrame Columns:
+        - Date: Data do leilão.
+        - Settlement: Data de liquidação do leilão.
+        - AuctionType: Tipo de leilão (ex: "Sell" ou "Buy").
+        - Ordinance: Edital normativo associado ao leilão.
+        - Buyer: Categoria do comprador (ex: "TodoMercado", "SomenteDealerApto").
+        - BondType: Categoria do título (ex: "LTN", "LFT", "NTN-B", "NTN-F").
+        - SelicCode: Código do título no sistema Selic.
+        - Maturity: Data de vencimento do título.
+        - DV01: Valor do DV01 total do leilão em R$.
+        - DV01FR: DV01 da Primeira Rodada (FR) em R$.
+        - DV01SR: DV01 da Segunda Rodada (SR) em R$.
+        - DV01USD: DV01 total do leilão em dólares (USD).
+        - DV01FRUSD: DV01 da Primeira Rodada (FR) em dólares (USD).
+        - DV01SRUSD: DV01 da Segunda Rodada (SR) em dólares (USD).
+        - AvgMaturity: Maturidade média do título (em anos).
+        - Value: Valor total do leilão em R$ (FR + SR).
+        - ValueFR: Valor da primeira rodada (FR) do leilão em R$.
+        - ValueSR: Valor da segunda rodada (SR) em R$.
+        - OfferedQuantity: Quantidade total ofertada no leilão (FR + SR).
+        - OfferedQuantityFR: Quantidade ofertada na primeira rodada (FR).
+        - OfferedQuantitySR: Quantidade ofertada na segunda rodada (SR).
+        - AcceptedQuantity: Quantidade total aceita no leilão (FR + SR).
+        - AcceptedQuantityFR: Quantidade aceita na primeira rodada (FR).
+        - AcceptedQuantitySR: Quantidade aceita na segunda rodada (SR).
+        - AvgPrice: Preço médio no leilão.
+        - CutPrice: Preço de corte.
+        - AvgRate: Taxa de juros média.
+        - CutRate: Taxa de corte.
+        - BDToMat: Dias úteis entre a data de liquidação da 1R e a data de
+            vencimento do título.
+        - Duration: Duration (Duração) calculada com base na data de
+            liquidação da 1R e na data de vencimento do título.
     """
     url = BASE_API_URL
     if start:

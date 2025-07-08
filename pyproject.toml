@@ -15,7 +15,7 @@ classifiers = [
 ]
 dependencies = [
     "pandas[html, parquet]>=2.0.0",
-    "numpy>=2.0.0",    
+    "numpy>=2.0.0",
     "requests>=2.31.0",
     "tenacity>=9.0.0",
 ]
@@ -32,8 +32,8 @@ dev = [
     "mkdocs",
     "mkdocs-material",
     "mkdocstrings[python]",
-    "mkdocs-autorefs",    
-    "types-requests", 
+    "mkdocs-autorefs",
+    "types-requests",
     "pandas-stubs",
     "lxml-stubs",
     "ruff",
@@ -51,18 +51,3 @@ only-include = ["pyield"]
 
 [tool.uv]
 package = true
-
-[tool.ruff]
-line-length = 88
-indent-width = 4
-target-version = "py312"
-extend-include = ["*.ipynb"]
-
-[tool.ruff.lint]
-preview = true
-select = ["I", "F", "E", "W", "PL", "PT"]
-
-[tool.ruff.format]
-docstring-code-format = true
-docstring-code-line-length = 88
-

@@ -9,12 +9,12 @@ logger = logging.getLogger(__name__)
 
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
-BENCHMARKS_COLUMN_MAPPING = {
-    "BENCHMARK": "Benchmark",
-    "VENCIMENTO": "MaturityDate",
-    "TÍTULO": "BondType",
+COLUMN_MAPPING = {
     "INÍCIO": "StartDate",
     "TERMINO": "EndDate",
+    "TÍTULO": "BondType",
+    "VENCIMENTO": "MaturityDate",
+    "BENCHMARK": "Benchmark",
 }
 
 
@@ -61,12 +61,12 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
         >>> # Get historical benchmarks
         >>> df_history = tn.benchmarks(include_history=True)
         >>> df_history.head()
-            Benchmark   MaturityDate BondType  StartDate    EndDate
-        0  LFT 6 anos   2020-03-01      LFT 2014-01-01 2014-06-30
-        1  LFT 6 anos   2020-09-01      LFT 2014-07-01 2014-12-31
-        2  LFT 6 anos   2021-03-01      LFT 2015-01-01 2015-04-30
-        3  LFT 6 anos   2021-09-01      LFT 2015-05-01 2015-12-31
-        4  LFT 6 anos   2022-03-01      LFT 2016-01-01 2016-06-30
+           StartDate    EndDate BondType MaturityDate     Benchmark
+        0 2014-01-01 2014-06-30      LFT   2020-03-01    LFT 6 anos
+        1 2014-01-01 2014-06-01      LTN   2014-10-01   LTN 6 meses
+        2 2014-01-01 2014-06-30      LTN   2015-04-01  LTN 12 meses
+        3 2014-01-01 2014-06-30      LTN   2016-04-01  LTN 24 meses
+        4 2014-01-01 2014-06-30      LTN   2018-01-01  LTN 48 meses
     """
     session = requests.Session()
     include_history_param_value = "S" if include_history else "N"
@@ -127,4 +127,10 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
             "No current benchmark data found after filtering by active period."
         )
 
-    return df.rename(columns=BENCHMARKS_COLUMN_MAPPING)
+    column_order = [c for c in COLUMN_MAPPING if c in df.columns]
+    return (
+        df[column_order]
+        .rename(columns=COLUMN_MAPPING)
+        .sort_values(["StartDate", "BondType", "MaturityDate"])
+        .reset_index(drop=True)
+    )
