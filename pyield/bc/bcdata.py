@@ -15,7 +15,9 @@ Implementation Notes:
 """
 
 import logging
+from datetime import datetime
 from enum import Enum
+from functools import lru_cache
 from urllib.error import HTTPError
 
 import pandas as pd
@@ -29,6 +31,12 @@ logger = logging.getLogger(__name__)
 BASE_URL = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
 DECIMAL_PLACES_ANNUALIZED = 4  # 2 decimal places in percentage format
 DECIMAL_PLACES_DAILY = 8  # 6 decimal places in percentage format
+
+# 404 Not Found error code for resource not found in the API
+ERROR_CODE_NOT_FOUND = 404
+
+# 400 Bad Request error code for invalid requests
+ERROR_CODE_BAD_REQUEST = 400
 
 
 class BCSerie(Enum):
@@ -70,12 +78,80 @@ def _build_download_url(
     return api_url
 
 
+@lru_cache(maxsize=128)
 @default_retry
+def _cached_fetch_worker(
+    serie: BCSerie,
+    start: DateScalar | None,
+    end: DateScalar | None,
+    hourly_timestamp_hash: str,
+) -> pd.DataFrame:
+    """
+    Worker function that fetches data from the API.
+    This function is decorated with lru_cache. The hourly_timestamp_hash argument
+    is a string in 'yymmddHH' format, used to invalidate the cache hourly.
+    """
+    api_url = _build_download_url(serie, start, end)
+    logger.debug(
+        f"CACHE MISS for hash {hourly_timestamp_hash}. Fetching from URL: {api_url}"
+    )
+
+    try:
+        response = requests.get(api_url, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+
+        if not data:
+            logger.warning(f"No data available for the requested period: {api_url}")
+            return pd.DataFrame()
+
+        df = pd.DataFrame(data, dtype="string")
+        df = df.rename(columns={"data": "Date", "valor": "Value"})
+        df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
+        df["Value"] = (df["Value"].astype("Float64")) / 100
+
+        # Return a copy to ensure the cached object is not mutated externally
+        return df.copy()
+
+    except HTTPError as e:
+        if e.response.status_code == ERROR_CODE_NOT_FOUND:
+            logger.warning(f"Resource not found (404): {api_url}")
+            return pd.DataFrame()
+        if (
+            e.response.status_code == ERROR_CODE_BAD_REQUEST
+            and "janela de consulta" in e.response.text
+        ):
+            logger.error(
+                "API request exceeded the 10-year limit. "
+                "This should have been handled by the chunking logic. URL: %s",
+                api_url,
+            )
+        else:
+            logger.error(f"HTTP error accessing Central Bank API: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching data from Central Bank API: {e}")
+        raise
+
+
+def _fetch_single_request(
+    serie: BCSerie, start: DateScalar | None = None, end: DateScalar | None = None
+) -> pd.DataFrame:
+    """
+    Wrapper that provides an hourly time-based cache invalidation for the worker.
+    It computes a readable hash based on the current hour ('yymmddHH') and
+    passes it to the cached worker function.
+    """
+    hourly_timestamp_hash = datetime.now().strftime("%y%m%d%H")
+    return _cached_fetch_worker(serie, start, end, hourly_timestamp_hash)
+
+
 def _fetch_data_from_url(
     serie: BCSerie, start: DateScalar | None = None, end: DateScalar | None = None
 ) -> pd.DataFrame:
     """
-    Fetches data from the Central Bank API with retry mechanism.
+    Orchestrates fetching data from the Central Bank API, handling requests longer
+    than 10 years by splitting them into smaller chunks using pandas DateOffset.
 
     Args:
         serie: The series enum to fetch
@@ -84,52 +160,46 @@ def _fetch_data_from_url(
 
     Returns:
         DataFrame with the requested data
-
-    Raises:
-        HTTPError: If the resource is not found (404) or other HTTP error
-        Various exceptions: For other errors after retry attempts are exhausted
     """
-    api_url = _build_download_url(serie, start, end)
+    # 1. Converter datas usando a função auxiliar existente e o pandas
+    start_date = convert_input_dates(start) if start else None
+    # Se a data final não for fornecida, usar a data de hoje para o cálculo do período
+    end_date = convert_input_dates(end) if end else pd.to_datetime("today").normalize()
 
-    try:
-        response = requests.get(api_url, timeout=30)
-        response.raise_for_status()  # Raise exception for 4XX/5XX status codes
-        data = response.json()
+    # Se não houver data de início, a API já limita a 10 anos. Chamada direta é segura.
+    if not start_date:
+        return _fetch_single_request(serie, start, end)
 
-        if not data:
-            logger.warning(f"No data available for the requested period: {api_url}")
-            return pd.DataFrame()
+    # 2. Verificar se o período é maior que 10 anos usando pd.DateOffset
+    if end_date < start_date + pd.DateOffset(years=10):
+        return _fetch_single_request(serie, start_date, end_date)
 
-        # Convert JSON to DataFrame
-        df = pd.DataFrame(data)
+    # 3. Se for maior, quebrar em pedaços (chunking)
+    logger.info("Date range exceeds 10 years. Fetching data in chunks.")
+    all_dfs = []
+    current_start = start_date
 
-        if df.empty or "valor" not in df.columns:
-            logger.warning(f"No data available for the requested period: {api_url}")
-            return pd.DataFrame()
+    while current_start < end_date:
+        # Fim do chunk é 10 anos à frente, menos 1 dia.
+        chunk_end = current_start + pd.DateOffset(years=10) - pd.DateOffset(days=1)
 
-        # Process the dataframe
-        df = pd.DataFrame(data, dtype="string")
-        df = df.rename(columns={"data": "Date", "valor": "Value"})
+        # Garantir que o fim do chunk não ultrapasse a data final solicitada
+        chunk_end = min(chunk_end, end_date)
 
-        df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
-        # Value is in percentage format, so divide by 100
-        df["Value"] = (df["Value"].astype("Float64")) / 100
+        # Buscar os dados para este chunk
+        df_chunk = _fetch_single_request(serie, current_start, chunk_end)
+        if not df_chunk.empty:
+            all_dfs.append(df_chunk)
 
-        return df
-    except HTTPError as e:
-        if e.code == 404:  # noqa
-            logger.warning(f"Resource not found (404): {api_url}")
-            return pd.DataFrame()
-        else:
-            logger.error(f"HTTP error accessing Central Bank API: {e}")
-            raise
-    except pd.errors.ParserError as e:
-        # For parsing errors, log and re-raise to allow retry
-        logger.warning(f"CSV parsing error (possibly HTML or invalid format): {e}")
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching data from Central Bank API: {e}")
-        raise
+        # Preparar o início do próximo chunk
+        current_start = chunk_end + pd.DateOffset(days=1)
+
+    if not all_dfs:
+        return pd.DataFrame()
+
+    # 4. Concatenar todos os DataFrames e retornar o resultado
+    final_df = pd.concat(all_dfs, ignore_index=True)
+    return final_df
 
 
 def selic_over_series(

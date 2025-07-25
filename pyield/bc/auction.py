@@ -195,8 +195,18 @@ def _get_ptax_df(start_date: pd.Timestamp | None = None) -> pd.DataFrame:
 
 def _add_usd_dv01(df: pd.DataFrame) -> pd.DataFrame:
     ptax_start_date = df["Date"].min()
-    df_ptax = _get_ptax_df(start_date=ptax_start_date)
-    df = pd.merge_asof(left=df, right=df_ptax)
+
+    # 1. Garanta que o DataFrame 'right' esteja ordenado pela chave de merge.
+    df_ptax = (
+        _get_ptax_df(start_date=ptax_start_date)
+        .sort_values(by="Date")
+        .reset_index(drop=True)
+    )
+
+    # 2. Garanta que o DataFrame 'left' esteja ordenado pela chave de merge.
+    df = df.sort_values(by="Date").reset_index(drop=True)
+    df = pd.merge_asof(left=df, right=df_ptax, on="Date", direction="backward")
+
     dv01_cols = [c for c in df.columns if c.startswith("DV01")]
     for col in dv01_cols:
         df[f"{col}USD"] = df[col] / df["PTAX"]
