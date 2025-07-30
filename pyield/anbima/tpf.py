@@ -1,6 +1,8 @@
+import datetime as dt
 import logging
 from typing import Literal
 from urllib.error import HTTPError
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -9,9 +11,16 @@ from pyield.data_cache import get_cached_dataset
 from pyield.date_converter import DateScalar, convert_input_dates
 from pyield.retry import default_retry
 
+BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
+
 BOND_TYPES = Literal["LTN", "NTN-B", "NTN-C", "NTN-F", "LFT"]
+
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
+ANBIMA_RTM_URL = "http://www.anbima.associados.rtm/merc_sec/arqs"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
+
+# Before 13/05/2014 the file was zipped and the endpoint ended with ".exe"
+FORMAT_CHANGE_DATE = pd.to_datetime("13-05-2014", dayfirst=True)
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +31,24 @@ def _bond_type_mapping(bond_type: str) -> str:
     return bond_type_mapping.get(bond_type, bond_type)
 
 
-def _build_file_url(date: pd.Timestamp) -> str:
+def _build_file_name(date: pd.Timestamp) -> str:
     url_date = date.strftime("%y%m%d")
-    filename = f"ms{url_date}.txt"
-    file_url = f"{ANBIMA_URL}/{filename}"
+    if date < FORMAT_CHANGE_DATE:
+        file_name = f"ms{url_date}.exe"
+    else:
+        file_name = f"ms{url_date}.txt"
+    return file_name
+
+
+def _build_file_url(date: pd.Timestamp) -> str:
+    today = dt.datetime.now(BZ_TIMEZONE).date()
+    business_days_count = bday.count(date, today)
+    if business_days_count > 5:  # noqa
+        # For dates older than 5 business days, only the RTM data is available
+        logger.info(f"Trying to fetch RTM data for {date.strftime('%d/%m/%Y')}")
+        file_url = f"{ANBIMA_RTM_URL}/{_build_file_name(date)}"
+    else:
+        file_url = f"{ANBIMA_URL}/{_build_file_name(date)}"
     return file_url
 
 
@@ -106,7 +129,7 @@ def tpf_web_data(
         df = _read_raw_df(file_url)
         if df.empty:
             logger.info(
-                f"No Anbima TPF secondary market data ANBIMA for {date_log}."
+                f"Anbima TPF secondary market data for {date_log} not available."
                 "Returning empty DataFrame."
             )
             return df
