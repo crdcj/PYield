@@ -53,114 +53,36 @@ def _log_before_sleep(retry_state: RetryCallState):
     )
 
 
-def should_retry_exception(retry_state: RetryCallState) -> bool:
-    """Determina se uma exceção capturada justifica uma nova tentativa"""
+def should_retry_exception(retry_state: RetryCallState) -> bool:  # noqa
+    """Determina se uma exceção capturada justifica uma nova tentativa."""
     if not retry_state.outcome or not retry_state.outcome.failed:
         return False
 
     exception = retry_state.outcome.exception()
-
     if exception is None:
-        # Isso não deveria acontecer se outcome.failed é True.
-        logger.error(
-            "should_retry_exception: outcome.failed é True,"
-            "mas exception() retornou None."
-        )
         return False
 
-    attempt_number = retry_state.attempt_number
-    # getattr é mais seguro caso a exceção não tenha 'url'
-    url = getattr(exception, "url", "N/A")
-
-    retry_decision = False
-    # Inicializar como None para evitar log default se nenhum case corresponder
-    log_message = None
-    log_level = logging.ERROR  # Default para não retentativa
-
-    # Usando match/case como originalmente preferido
+    # A decisão de retentativa pode ser muito mais concisa
     match exception:
+        # CASOS ONDE NÃO DEVEMOS TENTAR NOVAMENTE
         case HTTPError(code=404):
-            log_message = (
-                f"Tentativa {attempt_number}: Recurso não encontrado (404) em {url}. "
-                f"Não tentará novamente."
-            )
-            retry_decision = False
-            log_level = logging.INFO
+            return False  # Erro permanente
+        case HTTPError(code=504) if retry_state.attempt_number > 1:
+            return False  # Já tentamos uma vez para Gateway Timeout
 
-        case HTTPError(code=429):  # ADICIONADO: Tratamento para Too Many Requests
-            log_message = (
-                f"Tentativa {attempt_number}: Too Many Requests (429) da API em {url}. "
-                f"API pediu para aguardar. Tentando novamente."
-            )
-            retry_decision = True
-            log_level = logging.WARNING
-
-        # Gateway Timeout, primeira tentativa
-        case HTTPError(code=504) if attempt_number == 1:
-            log_message = (
-                f"Tentativa {attempt_number}: Gateway Timeout (504) da API em {url}. "
-                f"Tentará novamente uma vez."
-            )
-            retry_decision = True
-            log_level = logging.WARNING
-
-        case HTTPError(code=504):  # Gateway Timeout, tentativas subsequentes
-            log_message = (
-                f"Tentativa {attempt_number}: Gateway Timeout (504) persistiu em {url}."
-                f"API parece indisponível. Desistindo."
-            )
-            retry_decision = False
-            log_level = logging.ERROR
-
-        case HTTPError() as http_err:  # Outros erros HTTP
-            # Esta regra genérica para HTTPError retentará outros códigos HTTP.
-            # Por exemplo, 500, 502, 503 (geralmente bom para retry)
-            # mas também 400, 401, 403 (geralmente não bom para retry).
-            # Se precisar de mais granularidade, adicione cases específicos acima deste.
-            log_message = (
-                f"Tentativa {attempt_number}: Erro HTTP {http_err.code} "
-                f"({http_err.reason}) encontrado para {url}. "
-                "Pode ser transitório. Tentando novamente."
-            )
-            retry_decision = True
-            log_level = logging.WARNING
-
-        # Erros de rede mais genéricos (e.g., DNS falhou, conexão recusada)
+        # CASOS ONDE DEVEMOS TENTAR NOVAMENTE
+        case HTTPError(code=429):
+            return True  # Too Many Requests, vale a pena esperar
+        case HTTPError() if getattr(exception, "code", 0) >= 500:  # noqa
+            return True  # Erros de servidor (500, 502, 503, 504 na 1a vez)
         case URLError():
-            log_message = (
-                f"Tentativa {attempt_number}: Erro de rede recuperável "
-                f"({type(exception).__name__}: {str(exception)[:100]}) para {url}. "
-                f"Tentando novamente."
-            )
-            retry_decision = True
-            log_level = logging.WARNING
-
-        # Usando o operador | para combinar tipos de exceção no case
+            return True  # Erros de rede genéricos
         case pd.errors.EmptyDataError() | pd.errors.ParserError():
-            log_message = (
-                f"Tentativa {attempt_number}: Erro de parsing de dados "
-                f"({type(exception).__name__}). Tentando novamente."
-            )
-            retry_decision = True
-            log_level = logging.WARNING
+            return True  # Talvez o arquivo foi baixado corrompido, tente de novo
 
-        case _:  # Exceção não mapeada/inesperada
-            # Mensagem para o log de exceção
-            log_message_exc = (
-                f"Tentativa {attempt_number}: Erro não recuperável/inesperado "
-                f"({type(exception).__name__}: {str(exception)[:100]}) "
-                f"ao processar {url}. Desistindo."
-            )
-            # Sempre incluir traceback para erros inesperados
-            logger.exception(log_message_exc)
-            log_message = None  # Evita log duplicado pela seção logger.log abaixo
-            retry_decision = False
-            log_level = logging.ERROR  # Já é o default, mas explícito aqui
-
-    if log_message:  # Loga a mensagem formatada se uma foi definida
-        logger.log(log_level, log_message)
-
-    return retry_decision
+        # CASO PADRÃO: Erros inesperados ou erros de cliente (4xx) não especificados
+        case _:
+            return False
 
 
 # --- Decorador Tenacity Principal ---

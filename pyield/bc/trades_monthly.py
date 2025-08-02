@@ -1,4 +1,5 @@
 import logging
+from urllib.error import HTTPError
 
 import pandas as pd
 
@@ -57,9 +58,20 @@ def _fetch_data_from_url(file_url: str) -> pd.DataFrame:
         decimal=",",
         dtype_backend="numpy_nullable",
     )
+    return df
+
+
+def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     for col in ["DATA MOV", "EMISSAO", "VENCIMENTO"]:
         df[col] = pd.to_datetime(df[col], format="%d/%m/%Y", errors="coerce")
 
+    df = df.rename(columns=COLUMN_MAPPING)
+
+    # Volume are empty in the original BCB file, so we calculate it
+    df["Volume"] = (df["Quantity"] * df["AvgPrice"]).round(2)
+
+    sort_cols = ["SettlementDate", "BondType", "MaturityDate"]
+    df = df.sort_values(by=sort_cols).reset_index(drop=True)
     return df
 
 
@@ -110,13 +122,34 @@ def fpd_monthly_trades(
         >>> from pyield import bc
         >>> df = bc.fpd_monthly_trades("07-01-2025")  # Returns all trades for Jan/2025
     """
-    filename = _build_filename(target_date, extragroup)
     logger.info(f"Fetching FPD trades for {target_date} from BCB")
+    filename = _build_filename(target_date, extragroup)
     url = f"{BASE_URL}/{filename}"
-    df = _fetch_data_from_url(url)
-    df = df.rename(columns=COLUMN_MAPPING)
-    # Volume are empty in the original BCB file, so we calculate it
-    df["Volume"] = (df["Quantity"] * df["AvgPrice"]).round(2)
-    sort_cols = ["SettlementDate", "BondType", "MaturityDate"]
-    df = df.sort_values(by=sort_cols).reset_index(drop=True)
-    return df
+
+    try:
+        df = _fetch_data_from_url(url)
+    except HTTPError as e:
+        if e.code == 404:  # noqa
+            # LOG ÚNICO E CONTEXTUAL PARA 404
+            logger.warning(
+                f"Recurso não encontrado (404) em {url}. Retornando DataFrame vazio."
+            )
+            return pd.DataFrame()
+        else:
+            # LOG ÚNICO E COMPLETO PARA OUTROS ERROS HTTP
+            logger.exception(f"Erro HTTP inesperado ({e.code}) ao acessar a URL.")
+            raise e
+
+    except Exception:
+        # LOG ÚNICO E COMPLETO PARA QUALQUER OUTRO ERRO
+        logger.exception(
+            "Ocorreu um erro não previsto durante o processamento dos dados."
+        )
+        raise
+
+    # LOG DE SUCESSO
+    logger.info(
+        f"Dados de {url} processados com sucesso. {len(df)} registros encontrados."
+    )
+
+    return _process_df(df)
