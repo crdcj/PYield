@@ -15,9 +15,7 @@ Implementation Notes:
 """
 
 import logging
-from datetime import datetime
 from enum import Enum
-from functools import lru_cache
 from urllib.error import HTTPError
 
 import pandas as pd
@@ -78,24 +76,16 @@ def _build_download_url(
     return api_url
 
 
-@lru_cache(maxsize=128)
 @default_retry
-def _cached_fetch_worker(
+def _fetch_request(
     serie: BCSerie,
     start: DateScalar | None,
     end: DateScalar | None,
-    hourly_timestamp_hash: str,
 ) -> pd.DataFrame:
     """
     Worker function that fetches data from the API.
-    This function is decorated with lru_cache. The hourly_timestamp_hash argument
-    is a string in 'yymmddHH' format, used to invalidate the cache hourly.
     """
     api_url = _build_download_url(serie, start, end)
-    logger.debug(
-        f"CACHE MISS for hash {hourly_timestamp_hash}. Fetching from URL: {api_url}"
-    )
-
     try:
         response = requests.get(api_url, timeout=30)
         response.raise_for_status()
@@ -110,8 +100,7 @@ def _cached_fetch_worker(
         df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
         df["Value"] = (df["Value"].astype("Float64")) / 100
 
-        # Return a copy to ensure the cached object is not mutated externally
-        return df.copy()
+        return df
 
     except HTTPError as e:
         if e.response.status_code == ERROR_CODE_NOT_FOUND:
@@ -132,18 +121,6 @@ def _cached_fetch_worker(
     except Exception as e:
         logger.error(f"Error fetching data from Central Bank API: {e}")
         raise
-
-
-def _fetch_single_request(
-    serie: BCSerie, start: DateScalar | None = None, end: DateScalar | None = None
-) -> pd.DataFrame:
-    """
-    Wrapper that provides an hourly time-based cache invalidation for the worker.
-    It computes a readable hash based on the current hour ('yymmddHH') and
-    passes it to the cached worker function.
-    """
-    hourly_timestamp_hash = datetime.now().strftime("%y%m%d%H")
-    return _cached_fetch_worker(serie, start, end, hourly_timestamp_hash)
 
 
 def _fetch_data_from_url(
@@ -168,11 +145,11 @@ def _fetch_data_from_url(
 
     # Se não houver data de início, a API já limita a 10 anos. Chamada direta é segura.
     if not start_date:
-        return _fetch_single_request(serie, start, end)
+        return _fetch_request(serie, start, end)
 
     # 2. Verificar se o período é maior que 10 anos usando pd.DateOffset
     if end_date < start_date + pd.DateOffset(years=10):
-        return _fetch_single_request(serie, start_date, end_date)
+        return _fetch_request(serie, start_date, end_date)
 
     # 3. Se for maior, quebrar em pedaços (chunking)
     logger.info("Date range exceeds 10 years. Fetching data in chunks.")
@@ -187,7 +164,7 @@ def _fetch_data_from_url(
         chunk_end = min(chunk_end, end_date)
 
         # Buscar os dados para este chunk
-        df_chunk = _fetch_single_request(serie, current_start, chunk_end)
+        df_chunk = _fetch_request(serie, current_start, chunk_end)
         if not df_chunk.empty:
             all_dfs.append(df_chunk)
 
@@ -261,6 +238,8 @@ def selic_over(date: DateScalar) -> float:
         0.104
     """
     df = selic_over_series(date, date)
+    if df.empty:
+        return float("nan")
     return float(df.at[0, "Value"])
 
 
@@ -316,6 +295,8 @@ def selic_target(date: DateScalar) -> float:
         0.105
     """
     df = selic_target_series(date, date)
+    if df.empty:
+        return float("nan")
     return float(df.at[0, "Value"])
 
 
@@ -389,4 +370,6 @@ def di_over(date: DateScalar, annualized: bool = True) -> float:
         0.00045513
     """
     df = di_over_series(date, date, annualized)
+    if df.empty:
+        return float("nan")
     return float(df.at[0, "Value"])
