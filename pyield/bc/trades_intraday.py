@@ -39,7 +39,8 @@ def _fetch_csv_from_url() -> str:
 def _clean_csv(text: str) -> str:
     """Clean the CSV text data by removing unnecessary rows."""
     rows = text.splitlines()
-    valid_rows = [row for row in rows if row.startswith("1;")]
+    header = rows[0]
+    valid_rows = [header] + [row for row in rows if row.startswith("1;")]
     return "\n".join(valid_rows)
 
 
@@ -49,51 +50,56 @@ def _convert_csv_to_df(text: str) -> pd.DataFrame:
         sep=";",
         decimal=",",
         thousands=".",
-        dtype_backend="numpy_nullable",
-        header=None,
+        dtype_backend="pyarrow",
         na_values="-",
     )
 
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    col_names_by_index = {
-        0: "RowType",  # column indicating row type (filtered with "1")
-        1: "SelicCode",  # código título
-        2: "MaturityDate",  # data vencimento
-        3: "BondType",  # sigla
-        4: "LastPrice",  # pu último (mercado à vista)
-        5: "LastRate",  # tx último (mercado à vista)
-        6: "MinPrice",  # pu mínimo (mercado à vista)
-        7: "MinRate",  # tx mínimo (mercado à vista)
-        8: "AvgPrice",  # pu médio (mercado à vista)
-        9: "AvgRate",  # tx médio (mercado à vista)
-        10: "MaxPrice",  # pu máximo (mercado à vista)
-        11: "MaxRate",  # tx máximo (mercado à vista)
-        12: "Trades",  # totais liquidados operações (mercado à vista)
-        13: "BrokeredTrades",  # corretagem liquidados operações (merc, à vista)
-        14: "Quantity",  # títulos (mercado à vista)
-        15: "BrokeredQuantity",  # corretagem títulos (mercado à vista)
-        16: "Volume",  # financeiro (mercado à vista)
-        17: "ForwardLastPrice",  # pu último (mercado a termo)
-        18: "ForwardLastRate",  # tx último (mercado a termo)
-        19: "ForwardMinPrice",  # pu mínimo (mercado a termo)
-        20: "ForwardMinRate",  # tx mínimo (mercado a termo)
-        21: "ForwardAvgPrice",  # pu médio (mercado a termo)
-        22: "ForwardAvgRate",  # tx médio (mercado a termo)
-        23: "ForwardMaxPrice",  # pu máximo (mercado a termo)
-        24: "ForwardMaxRate",  # tx máximo (mercado a termo)
-        25: "ForwardTrades",  # totais contratados operações (mercado a termo)
-        26: "ForwardBrokeredTrades",  # corretagem contratados operações (merc. a termo)
-        27: "ForwardQuantity",  # títulos (mercado a termo)
-        28: "ForwardBrokeredQuantity",  # corretagem titulos (mercado a termo)
-        29: "ForwardVolume",  # financeiro (mercado a termo)
+    col_mapping = {
+        "//1": "RowType",
+        "código título": "SelicCode",
+        " data vencimento": "MaturityDate",
+        " sigla": "BondType",
+        " mercado à vista pu último": "LastPrice",
+        " tx último": "LastRate",
+        " pu mínimo": "MinPrice",
+        " tx mínimo": "MinRate",
+        " pu médio": "AvgPrice",
+        " tx médio": "AvgRate",
+        " pu máximo": "MaxPrice",
+        " tx máximo": "MaxRate",
+        " totais liquidados operações": "Trades",
+        " corretagem liquidados operações": "BrokeredTrades",
+        " títulos": "Quantity",
+        " corretagem títulos": "BrokeredQuantity",
+        " financeiro": "Volume",
+        " mercado a termo pu último": "ForwardLastPrice",
+        " tx último.1": "ForwardLastRate",
+        " pu mínimo.1": "ForwardMinPrice",
+        " tx mínimo.1": "ForwardMinRate",
+        " pu médio.1": "ForwardAvgPrice",
+        " tx médio.1": "ForwardAvgRate",
+        " pu máximo.1": "ForwardMaxPrice",
+        " tx máximo.1": "ForwardMaxRate",
+        " totais contratados operações": "ForwardTrades",
+        " corretagem contratados operações": "ForwardBrokeredTrades",
+        " títulos.1": "ForwardQuantity",
+        " corretagem títulos.1": "ForwardBrokeredQuantity",
+        " financeiro.1": "ForwardVolume",
     }
-    df = df.rename(columns=col_names_by_index)
 
+    df = df.rename(columns=col_mapping)
+    df = df.drop(columns=["RowType"], errors="ignore")
     df["BondType"] = df["BondType"].str.strip()
     df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%d/%m/%Y")
-    today = dt.datetime.now(BZ_TIMEZONE).date()
-    df["SettlementDate"] = pd.Timestamp(today)
+    now = dt.datetime.now(BZ_TIMEZONE)
+    df["SettlementDate"] = pd.Timestamp(now.date())
+    df["CollectedAt"] = pd.Timestamp(now)
+    df["CollectedAt"] = df["CollectedAt"].astype("timestamp[ns][pyarrow]")
+
+    for col in [c for c in df.columns if c.endswith("Date")]:
+        df[col] = df[col].astype("date32[pyarrow]")
 
     # Remove percentage from rate columns
     rate_cols = [col for col in df.columns if "Rate" in col]
@@ -106,6 +112,7 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
 def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     reorder_columns = [
         # "RowType",
+        "CollectedAt",
         "SettlementDate",
         "BondType",
         "SelicCode",
@@ -207,6 +214,13 @@ def fpd_intraday_trades() -> pd.DataFrame:
             *   `ForwardVolume`: Total financial volume traded (in BRL).
             *   `ForwardBrokeredTrades`: Number of brokered trades contracted.
             *   `ForwardBrokeredQuantity`: Quantity of bonds traded via brokers.
+    # Arrow note usage in data types
+    Note:
+        - The DataFrame returned by this function may be empty if the market is closed,
+          no data is found, or an error occurs.
+        - Arrow data types are used for better performance and compatibility with other
+          libraries.
+
     """
     if not is_selic_open():
         logger.info("Market is closed. Returning empty DataFrame.")
