@@ -54,7 +54,6 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
         *   Rows with any `NaN` values are dropped before returning the DataFrame.
 
     Examples:
-        >>> # Get current benchmarks (default behavior)
         >>> from pyield import tn
         >>> df_current = tn.benchmarks()
 
