@@ -28,7 +28,31 @@ Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
 Chaves com comentário serão descartadas ao final do processamento
 FR = First Round and SR = Second Round
 """
-COLUMN_MAPPING = {
+
+DTYPE_MAPPING = {
+    # Datas já são tratadas pelo `parse_dates`, mas podemos forçar o tipo final.
+    "dataMovimento": "date32[pyarrow]",
+    "dataLiquidacao": "date32[pyarrow]",
+    "dataVencimento": "date32[pyarrow]",
+    # Colunas de texto
+    "tipoOferta": "string[pyarrow]",
+    "tipoPublico": "string[pyarrow]",
+    # Colunas numéricas (inteiros)
+    "edital": "int64[pyarrow]",
+    "codigoTitulo": "int64[pyarrow]",
+    "quantidadeOfertada": "int64[pyarrow]",
+    "quantidadeAceita": "int64[pyarrow]",
+    "quantidadeOfertadaSegundaRodada": "int64[pyarrow]",
+    "quantidadeAceitaSegundaRodada": "int64[pyarrow]",
+    # Colunas numéricas (ponto flutuante)
+    "financeiro": "float64[pyarrow]",
+    "cotacaoMedia": "float64[pyarrow]",
+    "cotacaoCorte": "float64[pyarrow]",
+    "taxaMedia": "float64[pyarrow]",
+    "taxaCorte": "float64[pyarrow]",
+}
+
+NAME_MAPPING = {
     # "id": "ID",
     "dataMovimento": "Date",
     "dataLiquidacao": "Settlement",
@@ -57,6 +81,8 @@ BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1
 def _load_from_url(url: str) -> pd.DataFrame:
     response = requests.get(url, timeout=10)
     response.raise_for_status()
+
+    # 1. Leitura inicial dos dados
     df = pd.read_csv(
         io.StringIO(response.text),
         dtype_backend="pyarrow",
@@ -65,19 +91,18 @@ def _load_from_url(url: str) -> pd.DataFrame:
         parse_dates=["dataMovimento", "dataLiquidacao", "dataVencimento"],
     )
 
-    for date_col in ["dataMovimento", "dataLiquidacao", "dataVencimento"]:
-        df[date_col] = df[date_col].astype("date32[pyarrow]")
+    # 2. Aplica todos os tipos de uma só vez usando o dicionário
+    df = df.astype(DTYPE_MAPPING)
 
-    return df
-
-
-def _pre_process_df(df: pd.DataFrame) -> pd.DataFrame:
-    # Only Tesouro Nacional auctions are considered
     df = df.query("ofertante == 'Tesouro Nacional'").reset_index(drop=True)
 
-    # Remover colunas que não serão utilizadas
-    keep_columns = [col for col in COLUMN_MAPPING.keys() if col in df.columns]
-    return df[keep_columns].rename(columns=COLUMN_MAPPING)
+    # 3. Renomeia as colunas para o padrão desejado
+    df = df.rename(columns=NAME_MAPPING)
+
+    # 4. Seleciona apenas as colunas que foram mapeadas (descartando as comentadas)
+    final_columns = [col for col in NAME_MAPPING.values() if col in df.columns]
+
+    return df[final_columns].reset_index(drop=True)
 
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -274,7 +299,7 @@ def _fetch_df_from_url(url: str) -> pd.DataFrame:
         if df.empty:
             logger.warning("No auction data found for the specified period.")
             return pd.DataFrame()
-        df = _pre_process_df(df)
+
         df = _adjust_null_values(df)
         df = _process_df(df)
         df = _add_duration(df)
