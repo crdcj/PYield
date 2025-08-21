@@ -61,12 +61,12 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
         >>> # Get historical benchmarks
         >>> df_history = tn.benchmarks(include_history=True)
         >>> df_history.head()
-           StartDate    EndDate BondType MaturityDate     Benchmark
-        0 2014-01-01 2014-06-30      LFT   2020-03-01    LFT 6 anos
-        1 2014-01-01 2014-06-01      LTN   2014-10-01   LTN 6 meses
-        2 2014-01-01 2014-06-30      LTN   2015-04-01  LTN 12 meses
-        3 2014-01-01 2014-06-30      LTN   2016-04-01  LTN 24 meses
-        4 2014-01-01 2014-06-30      LTN   2018-01-01  LTN 48 meses
+              StartDate     EndDate BondType MaturityDate      Benchmark
+        0    2014-01-01  2014-06-30      LFT   2020-03-01     LFT 6 anos
+        1    2014-07-01  2014-12-31      LFT   2020-09-01     LFT 6 anos
+        2    2015-01-01  2015-04-30      LFT   2021-03-01     LFT 6 anos
+        3    2015-05-01  2015-12-31      LFT   2021-09-01     LFT 6 anos
+        4    2016-01-01  2016-06-30      LFT   2022-03-01     LFT 6 anos
     """
     session = requests.Session()
     include_history_param_value = "S" if include_history else "N"
@@ -92,9 +92,12 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
         logger.warning("API response did not contain 'registros' key or it was empty.")
         return pd.DataFrame()
 
-    # Tenta criar o DataFrame. O .dropna() pode resultar em um DF vazio.
-    df = pd.DataFrame(response_dict["registros"]).dropna()
-    df = df.convert_dtypes()
+    # Tenta criar o DataFrame.
+    df = (
+        pd.DataFrame(response_dict["registros"])
+        .dropna()
+        .convert_dtypes(dtype_backend="pyarrow")
+    )
 
     # 2a verificação: Verifica se o DataFrame resultante (pós-dropna) está vazio
     # Esta verificação é importante porque .dropna() pode remover todas as linhas.
@@ -106,9 +109,9 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
         return pd.DataFrame()
 
     # Se chegamos até aqui, o DataFrame tem dados e pode ser processado.
-    df["VENCIMENTO"] = pd.to_datetime(df["VENCIMENTO"])
-    df["TERMINO"] = pd.to_datetime(df["TERMINO"])
-    df["INÍCIO"] = pd.to_datetime(df["INÍCIO"])
+    for col in ["VENCIMENTO", "TERMINO", "INÍCIO"]:
+        df[col] = pd.to_datetime(df[col]).astype("date32[pyarrow]")
+
     df["BENCHMARK"] = df["BENCHMARK"].str.strip()
     df["TÍTULO"] = df["TÍTULO"].str.strip()
 
@@ -116,8 +119,7 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
         # Em tese, a API já retorna apenas benchmarks ativos,
         # mas vamos garantir que o DataFrame só contenha benchmarks ativos
         # considerando o período atual.
-        today = dt.now(TIMEZONE_BZ).date()
-        today = pd.Timestamp(today)
+        today = dt.now(TIMEZONE_BZ).date()  # noqa
         df = df.query("INÍCIO <= @today <= TERMINO").reset_index(drop=True)
 
     # Verifica novamente se o DataFrame ficou vazio *após o filtro condicional*
@@ -131,6 +133,6 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
     return (
         df[column_order]
         .rename(columns=COLUMN_MAPPING)
-        .sort_values(["StartDate", "BondType", "MaturityDate"])
+        .sort_values(["BondType", "MaturityDate"])
         .reset_index(drop=True)
     )

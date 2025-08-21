@@ -5,6 +5,7 @@ Exemplo de chamada:
     "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='2025-04-08'&@dataMovimentoFim='2025-04-08'&$top=100&$format=json"
 """
 
+import datetime as dt
 import io
 import logging
 from typing import Literal
@@ -56,13 +57,18 @@ BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1
 def _load_from_url(url: str) -> pd.DataFrame:
     response = requests.get(url, timeout=10)
     response.raise_for_status()
-    return pd.read_csv(
+    df = pd.read_csv(
         io.StringIO(response.text),
-        dtype_backend="numpy_nullable",
+        dtype_backend="pyarrow",
         decimal=",",
         date_format="%Y-%m-%d %H:%M:%S",
         parse_dates=["dataMovimento", "dataLiquidacao", "dataVencimento"],
     )
+
+    for date_col in ["dataMovimento", "dataLiquidacao", "dataVencimento"]:
+        df[date_col] = df[date_col].astype("date32[pyarrow]")
+
+    return df
 
 
 def _pre_process_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -84,8 +90,9 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
 
     df["OfferedQuantity"] = df["OfferedQuantityFR"] + df["OfferedQuantitySR"]
     df["AcceptedQuantity"] = df["AcceptedQuantityFR"] + df["AcceptedQuantitySR"]
-    # Total value of the auction in R$ millions -> convert to R$
-    df["Value"] = (1_000_000 * df["Value"]).round(2)
+    # Total value of the auction in R$ millions
+    # Convert to R$ and use int since there is no decimal value after conversion
+    df["Value"] = (1_000_000 * df["Value"]).round(0).astype("int64[pyarrow]")
 
     # Remove the percentage sign and round to 6 decimal places (4 decimal places in %)
     # Before 25/08/2015, there were no rounding rules for the rates in the BC API
@@ -98,12 +105,8 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     first_round_ratio = first_round_ratio.where(df["AcceptedQuantityFR"] != 0, 0)
     # O dado do financeiro do BC está em milhões com uma casa decimal de precisão
     # Portanto, podemos converter para inteiro sem perda de informação
-    df["ValueFR"] = (first_round_ratio * df["Value"]).round(2)
-
-    # Calculate the financial value of the second round
-    second_round_ratio = df["AcceptedQuantitySR"] / df["AcceptedQuantity"]
-    second_round_ratio = second_round_ratio.where(df["AcceptedQuantitySR"] != 0, 0)
-    df["ValueSR"] = (second_round_ratio * df["Value"]).round(2)
+    df["ValueFR"] = (first_round_ratio * df["Value"]).round(0).astype("int64[pyarrow]")
+    df["ValueSR"] = df["Value"] - df["ValueFR"]
 
     bond_mappping = {
         100000: "LTN",
@@ -112,19 +115,23 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
         760199: "NTN-B",
         950199: "NTN-F",
     }
-    df["BondType"] = df["SelicCode"].map(bond_mappping).astype("string")
+    df["BondType"] = df["SelicCode"].map(bond_mappping).astype("string[pyarrow]")
 
     # Em 11/06/2024 o BC passou a informar nas colunas de cotacao os valores dos PUs
     # Isso afeta somente os títulos LFT e NTN-B
-    change_date = pd.Timestamp("2024-06-11")
-    adjusted_price = (df["ValueFR"] / df["AcceptedQuantityFR"]).round(6)
-    is_after_change_Date = df["Date"] >= change_date
+    change_date = dt.datetime.strptime("11-06-2024", "%d-%m-%Y").date()
+    adjusted_avg_price = (df["ValueFR"] / df["AcceptedQuantityFR"]).round(6)
+    is_date_after_change = df["Date"] >= change_date
     is_ltn_or_ntnf = df["BondType"].isin(["LTN", "NTN-F"])
-    keep_avg_price = is_after_change_Date | is_ltn_or_ntnf
-    df["AvgPrice"] = df["AvgPrice"].where(keep_avg_price, adjusted_price)
+    # Se for depois da data de mudança ou for LTN/NTN-F, manter o preço médio
+    keep_avg_price = is_date_after_change | is_ltn_or_ntnf
+    df["AvgPrice"] = df["AvgPrice"].where(keep_avg_price, adjusted_avg_price)
 
     # Usar a data de liquidação para calcular o número de dias úteis até o vencimento
-    df["BDToMat"] = bday.count(start=df["Settlement"], end=df["Maturity"])
+    df["BDToMat"] = bday.count(
+        start=df["Settlement"],
+        end=df["Maturity"],
+    ).astype("int64[pyarrow]")
 
     return df
 
@@ -161,7 +168,7 @@ def _add_duration(df: pd.DataFrame) -> pd.DataFrame:
         )
 
     df = pd.concat([df_lft, df_ltn, df_ntnf, df_ntnb]).reset_index(drop=True)
-    df["Duration"] = df["Duration"].astype("Float64")
+    df["Duration"] = df["Duration"].astype("float64[pyarrow]")
 
     return df
 
@@ -186,26 +193,24 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _get_ptax_df(start_date: pd.Timestamp | None = None) -> pd.DataFrame:
+def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pd.DataFrame:
     # A série de leilões começa em 2007
-    df = ptax.ptax_series(start=start_date)[["Date", "MidRate"]]
+    df = ptax.ptax_series(start=start_date, end=end_date)[["Date", "MidRate"]]
     df = df.rename(columns={"MidRate": "PTAX"})
-    return df
+    df["Date"] = df["Date"].astype("date32[pyarrow]")
+    return df.sort_values(by="Date").reset_index(drop=True)
 
 
 def _add_usd_dv01(df: pd.DataFrame) -> pd.DataFrame:
     ptax_start_date = df["Date"].min()
+    ptax_end_date = df["Date"].max()
 
     # 1. Garanta que o DataFrame 'right' esteja ordenado pela chave de merge.
-    df_ptax = (
-        _get_ptax_df(start_date=ptax_start_date)
-        .sort_values(by="Date")
-        .reset_index(drop=True)
-    )
+    df_ptax = _get_ptax_df(start_date=ptax_start_date, end_date=ptax_end_date)
 
     # 2. Garanta que o DataFrame 'left' esteja ordenado pela chave de merge.
     df = df.sort_values(by="Date").reset_index(drop=True)
-    df = pd.merge_asof(left=df, right=df_ptax, on="Date", direction="backward")
+    df = df.merge(right=df_ptax, on="Date", how="left")
 
     dv01_cols = [c for c in df.columns if c.startswith("DV01")]
     for col in dv01_cols:
@@ -238,25 +243,25 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "BDToMat",
         "Duration",
         "AvgMaturity",
-        "Value",
-        "ValueFR",
-        "ValueSR",
-        "OfferedQuantity",
-        "OfferedQuantityFR",
-        "OfferedQuantitySR",
-        "AcceptedQuantity",
-        "AcceptedQuantityFR",
-        "AcceptedQuantitySR",
-        "DV01",
-        "DV01FR",
-        "DV01SR",
-        "DV01USD",
-        "DV01FRUSD",
-        "DV01SRUSD",
         "AvgPrice",
         "CutPrice",
         "AvgRate",
         "CutRate",
+        "DV01FR",
+        "DV01SR",
+        "DV01",
+        "DV01FRUSD",
+        "DV01SRUSD",
+        "DV01USD",
+        "OfferedQuantityFR",
+        "OfferedQuantitySR",
+        "OfferedQuantity",
+        "AcceptedQuantityFR",
+        "AcceptedQuantitySR",
+        "AcceptedQuantity",
+        "ValueFR",
+        "ValueSR",
+        "Value",
     ]
 
     primary_sort_keys = ["Date", "AuctionType", "BondType", "Maturity"]
@@ -338,17 +343,16 @@ def auctions(
             é retornado e uma mensagem de erro é registrada no log.
 
     Examples:
-        >>> import pandas as pd
         >>> from pyield import bc
-        >>> df = bc.auctions(start="03-06-2025", end="03-06-2025")
+        >>> df = bc.auctions(start="19-08-2025", end="19-08-2025")
         >>> df
-                Date Settlement AuctionType  ...      CutPrice   AvgRate   CutRate
-        0 2025-06-03 2025-06-04       Venda  ...  16653.010815  0.000589  0.000589
-        1 2025-06-03 2025-06-04       Venda  ...  16572.063672   0.00109   0.00109
-        2 2025-06-03 2025-06-04       Venda  ...   4314.142451   0.07569   0.07569
-        3 2025-06-03 2025-06-04       Venda  ...    4140.47255   0.07312   0.07312
-        4 2025-06-03 2025-06-04       Venda  ...   3960.619508   0.07157   0.07157
-        ...
+                Date Settlement AuctionType  ...     ValueFR  ValueSR       Value
+        0 2025-08-19 2025-08-20       Venda  ...  2572400000        0  2572400000
+        1 2025-08-19 2025-08-20       Venda  ... 12804476147 17123853 12821600000
+        2 2025-08-19 2025-08-20       Venda  ...  1289936461  3263539  1293200000
+        3 2025-08-19 2025-08-20       Venda  ...  2071654327  2245673  2073900000
+        4 2025-08-19 2025-08-20       Venda  ...  2010700000        0  2010700000
+        [5 rows x 30 columns]
 
     Notes:
         FR = First Round (Primeira Rodada)
