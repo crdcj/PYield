@@ -26,6 +26,7 @@ Source = "https://github.com/crdcj/PYield"
 
 [dependency-groups]
 dev = [
+    "dotenv",
     "ipykernel",
     "pytest",
     "pyright",
