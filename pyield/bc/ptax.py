@@ -30,7 +30,7 @@ def _load_from_url(url: str) -> pd.DataFrame:
     response.raise_for_status()
     return pd.read_csv(
         io.StringIO(response.text),
-        dtype_backend="numpy_nullable",
+        dtype_backend="pyarrow",
         decimal=",",
         date_format="%Y-%m-%d %H:%M:%S.%f",
         parse_dates=["dataHoraCotacao"],
@@ -44,8 +44,8 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    df["Date"] = df["DateTime"].dt.normalize()
-    df["Time"] = df["DateTime"].dt.time
+    df["Date"] = df["DateTime"].astype("date32[pyarrow]")
+    df["DateTime"] = df["DateTime"].astype("timestamp[ns][pyarrow]")
     df["BuyRate"] = df["BuyRate"].round(4)  # BC API retorna com 4 casas decimais
     df["SellRate"] = df["SellRate"].round(4)  # BC API retorna com 4 casas decimais
 
@@ -56,8 +56,8 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _reorder_and_sort_columns(df: pd.DataFrame) -> pd.DataFrame:
-    column_sequence = ["Date", "Time", "DateTime", "BuyRate", "SellRate", "MidRate"]
-    return df[column_sequence].sort_values(by=["DateTime"]).reset_index(drop=True)
+    ordered_columns = ["Date", "DateTime", "BuyRate", "SellRate", "MidRate"]
+    return df[ordered_columns].sort_values(by=["DateTime"]).reset_index(drop=True)
 
 
 def _fetch_df_from_url(url: str) -> pd.DataFrame:
@@ -146,11 +146,10 @@ def ptax_series(
     Examples:
         >>> from pyield import bc
         >>> df = yd.bc.ptax_series(start="01-01-2025", end="05-01-2025")
-        >>> selected_columns = ["Date", "BuyRate", "SellRate", "MidRate"]
-        >>> df[selected_columns]
-                Date  BuyRate  SellRate  MidRate
-        0 2025-01-02    6.208    6.2086   6.2083
-        1 2025-01-03   6.1557    6.1563    6.156
+        >>> df
+                 Date                    DateTime  BuyRate  SellRate  MidRate
+        0  2025-01-02  2025-01-02 13:09:42.489000    6.208    6.2086   6.2083
+        1  2025-01-03  2025-01-03 13:07:30.503000   6.1557    6.1563    6.156
 
     Notes:
         Disponível desde 28.11.1984, refere-se às taxas administradas até março de 1990
@@ -171,7 +170,6 @@ def ptax_series(
         O DataFrame possui as seguintes colunas:
 
         - Date: Data da cotação.
-        - Time: Hora da cotação.
         - DateTime: Data e hora da cotação.
         - BuyRate: Taxa de compra.
         - SellRate: Taxa de venda.

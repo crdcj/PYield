@@ -220,22 +220,19 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
 
 def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pd.DataFrame:
     # A série de leilões começa em 2007
-    df = ptax.ptax_series(start=start_date, end=end_date)[["Date", "MidRate"]]
-    df = df.rename(columns={"MidRate": "PTAX"})
-    df["Date"] = df["Date"].astype("date32[pyarrow]")
-    return df.sort_values(by="Date").reset_index(drop=True)
+    df = ptax.ptax_series(start=start_date, end=end_date)
+    return df[["Date", "MidRate"]].rename(columns={"MidRate": "PTAX"})
 
 
 def _add_usd_dv01(df: pd.DataFrame) -> pd.DataFrame:
-    ptax_start_date = df["Date"].min()
-    ptax_end_date = df["Date"].max()
-
     # 1. Garanta que o DataFrame 'right' esteja ordenado pela chave de merge.
-    df_ptax = _get_ptax_df(start_date=ptax_start_date, end_date=ptax_end_date)
+    df_ptax = _get_ptax_df(start_date=df["Date"].min(), end_date=df["Date"].max())
 
     # 2. Garanta que o DataFrame 'left' esteja ordenado pela chave de merge.
     df = df.sort_values(by="Date").reset_index(drop=True)
-    df = df.merge(right=df_ptax, on="Date", how="left")
+    df = pd.merge_ordered(left=df, right=df_ptax, on="Date", how="left")
+    # Se não houver PTAX, preencher com o último valor conhecido
+    df["PTAX"] = df["PTAX"].ffill()
 
     dv01_cols = [c for c in df.columns if c.startswith("DV01")]
     for col in dv01_cols:
