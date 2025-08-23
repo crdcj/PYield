@@ -1,7 +1,8 @@
 import datetime as dt
 import logging
+import socket
 from typing import Literal
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -16,7 +17,8 @@ BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 BOND_TYPES = Literal["LTN", "NTN-B", "NTN-C", "NTN-F", "LFT"]
 
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
-ANBIMA_RTM_URL = "http://www.anbima.associados.rtm/merc_sec/arqs"
+ANBIMA_RTM_HOSTNAME = "www.anbima.associados.rtm"
+ANBIMA_RTM_URL = f"http://{ANBIMA_RTM_HOSTNAME}/merc_sec/arqs"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 
 # Before 13/05/2014 the file was zipped and the endpoint ended with ".exe"
@@ -41,8 +43,8 @@ def _build_file_name(date: pd.Timestamp) -> str:
 
 
 def _build_file_url(date: pd.Timestamp) -> str:
-    today = dt.datetime.now(BZ_TIMEZONE).date()
-    business_days_count = bday.count(date, today)
+    last_bday = bday.last_business_day()
+    business_days_count = bday.count(date, last_bday)
     if business_days_count > 5:  # noqa
         # For dates older than 5 business days, only the RTM data is available
         logger.info(f"Trying to fetch RTM data for {date.strftime('%d/%m/%Y')}")
@@ -101,11 +103,15 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
 
 
-def tpf_web_data(
+def fetch_tpf_data(
     date: DateScalar, bond_type: str | BOND_TYPES | None = None
 ) -> pd.DataFrame:
     """Fetch and process TPF secondary market data directly from the ANBIMA website.
-    Only the last 5 days of data are available in the ANBIMA website.
+    This is a low-level function intended for internal use or specific backend
+    jobs. For general use, prefer `tpf_data` which includes caching logic.
+
+    Only the last 5 days of data are available in the ANBIMA website. Data older
+    than 5 business days is only available through the RTM network.
 
     This function retrieves bond market data from the ANBIMA website for a
     specified reference date. It handles different file formats based on the date
@@ -119,17 +125,42 @@ def tpf_web_data(
     Returns:
         pd.DataFrame: A DataFrame containing bond market data.
             Returns an empty DataFrame if data is not available for the
-            specified date (weekends, holidays, or unavailable data).
+            specified date (weekends, holidays, unavailable data, or lack of
+            RTM access for older data).
     """
     date = convert_input_dates(date)
     date_log = date.strftime("%d/%m/%Y")
+    today = dt.datetime.now(BZ_TIMEZONE).date()
+    if date.date() > today:
+        logger.info(
+            f"Cannot fetch data for a future date ({date_log}). "
+            "Returning empty DataFrame."
+        )
+        return pd.DataFrame()
+
+    file_url = _build_file_url(date)
+
+    # --- "FAIL-FAST" PARA EVITAR RETRIES DESNECESSÁRIOS NA RTM ---
+    if ANBIMA_RTM_URL in file_url:
+        try:
+            # Tenta resolver o hostname da RTM. É uma verificação de rede rápida.
+            socket.gethostbyname(ANBIMA_RTM_HOSTNAME)
+        except socket.gaierror:
+            # Se falhar (gaierror = get address info error), não estamos na RTM.
+            # Não adianta prosseguir para a função com retry.
+            logger.warning(
+                f"Could not resolve RTM host for {date_log}. This is expected if "
+                "you are not on the RTM network. Historical data requires RTM access. "
+                "Returning empty DataFrame."
+            )
+            return pd.DataFrame()
 
     try:
-        file_url = _build_file_url(date)
+        # Se passamos pela verificação da RTM, agora podemos chamar a função com retry.
         df = _read_raw_df(file_url)
         if df.empty:
             logger.info(
-                f"Anbima TPF secondary market data for {date_log} not available."
+                f"Anbima TPF secondary market data for {date_log} not available. "
                 "Returning empty DataFrame."
             )
             return df
@@ -138,16 +169,25 @@ def tpf_web_data(
             norm_bond_type = _bond_type_mapping(bond_type)  # noqa
             df = df.query("BondType == @norm_bond_type").reset_index(drop=True)
         return df.sort_values(["BondType", "MaturityDate"]).reset_index(drop=True)
+
     except HTTPError as e:
         if e.code == 404:  # noqa
             logger.info(
-                f"No Anbima TPF secondary market data for {date_log}. "
+                f"No Anbima TPF secondary market data for {date_log} (HTTP 404). "
                 "Returning empty DataFrame."
             )
             return pd.DataFrame()
-        raise  # Propagate other HTTP errors
+        logger.error(f"HTTP Error fetching data for {date_log} from {file_url}: {e}")
+        raise
+
+    # Este bloco ainda é útil para outros URLErrors (ex: timeout genuíno na URL pública)
+    except URLError:
+        logger.exception(f"Network error (URLError) fetching TPF data for {date_log}")
+        raise
+
     except Exception:
-        logger.exception(f"Error fetching TPF data for {date_log}")
+        msg = f"An unexpected error occurred fetching TPF data for {date_log}"
+        logger.exception(msg)
         raise
 
 
@@ -183,7 +223,7 @@ def tpf_data(
 
     if df.empty:
         # Try to fetch the data from the Anbima website
-        df = tpf_web_data(date)
+        df = fetch_tpf_data(date)
 
     if df.empty:
         # If the data is still empty, return an empty DataFrame

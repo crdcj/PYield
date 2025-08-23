@@ -44,7 +44,6 @@ def _build_filename(target_date: DateScalar, extragoup: bool) -> str:
     All Operations File format: NegTYYYYMM.ZIP
     Only Extra Group File format: NegEYYYYMM.ZIP
     """
-    target_date = convert_input_dates(target_date)
     file_date = target_date.strftime("%Y%m")
     operation_acronym = "E" if extragoup else "T"
     return f"Neg{operation_acronym}{file_date}.ZIP"
@@ -56,7 +55,7 @@ def _fetch_data_from_url(file_url: str) -> pd.DataFrame:
         file_url,
         sep=";",
         decimal=",",
-        dtype_backend="numpy_nullable",
+        dtype_backend="pyarrow",
     )
     return df
 
@@ -64,6 +63,7 @@ def _fetch_data_from_url(file_url: str) -> pd.DataFrame:
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     for col in ["DATA MOV", "EMISSAO", "VENCIMENTO"]:
         df[col] = pd.to_datetime(df[col], format="%d/%m/%Y", errors="coerce")
+        df[col] = df[col].astype("date32[pyarrow]")
 
     df = df.rename(columns=COLUMN_MAPPING)
 
@@ -75,11 +75,12 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def fpd_monthly_trades(
+def tpf_monthly_trades(
     target_date: DateScalar, extragroup: bool = False
 ) -> pd.DataFrame:
     """Fetches monthly secondary trading data for the domestic 'Federal Public Debt'
-    (FPD) registered in the Brazilian Central Bank (BCB) Selic system.
+    (TPF - títulos públicos federais) registered in the Brazilian Central Bank (BCB)
+    Selic system.
 
     Downloads the monthly bond trading data from the Brazilian Central Bank (BCB)
     website for the month corresponding to the provided date. The data is downloaded
@@ -120,9 +121,11 @@ def fpd_monthly_trades(
 
     Examples:
         >>> from pyield import bc
-        >>> df = bc.fpd_monthly_trades("07-01-2025")  # Returns all trades for Jan/2025
+        >>> df = bc.tpf_monthly_trades("07-01-2025")  # Returns all trades for Jan/2025
     """
-    logger.info(f"Fetching FPD trades for {target_date} from BCB")
+    target_date = convert_input_dates(target_date)
+    msg = f"Fetching TPF trades for {target_date.strftime('%b/%Y')} from BCB"
+    logger.info(msg)
     filename = _build_filename(target_date, extragroup)
     url = f"{BASE_URL}/{filename}"
 
@@ -130,26 +133,23 @@ def fpd_monthly_trades(
         df = _fetch_data_from_url(url)
     except HTTPError as e:
         if e.code == 404:  # noqa
-            # LOG ÚNICO E CONTEXTUAL PARA 404
-            logger.warning(
-                f"Recurso não encontrado (404) em {url}. Retornando DataFrame vazio."
-            )
+            msg = f"Resource not found (404) at {url}. Returning an empty DataFrame."
+            logger.warning(msg)
             return pd.DataFrame()
         else:
-            # LOG ÚNICO E COMPLETO PARA OUTROS ERROS HTTP
-            logger.exception(f"Erro HTTP inesperado ({e.code}) ao acessar a URL.")
+            # Captures the full traceback for unexpected HTTP errors
+            msg = f"Unexpected HTTP error ({e.code}) while accessing URL: {url}"
+            logger.exception(msg)
             raise e
 
     except Exception:
-        # LOG ÚNICO E COMPLETO PARA QUALQUER OUTRO ERRO
-        logger.exception(
-            "Ocorreu um erro não previsto durante o processamento dos dados."
-        )
+        # Captures the full traceback for any other errors
+        msg = f"An unexpected error occurred while processing data from {url}."
+        logger.exception(msg)
         raise
 
     # LOG DE SUCESSO
-    logger.info(
-        f"Dados de {url} processados com sucesso. {len(df)} registros encontrados."
-    )
+    msg = f"Successfully processed data from {url}. Found {len(df)} records."
+    logger.info(msg)
 
     return _process_df(df)

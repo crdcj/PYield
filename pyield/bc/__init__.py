@@ -9,8 +9,8 @@ from pyield.bc.bcdata import (
 )
 from pyield.bc.ptax import ptax_series
 from pyield.bc.repo import repos
-from pyield.bc.trades_intraday import fpd_intraday_trades
-from pyield.bc.trades_monthly import fpd_monthly_trades
+from pyield.bc.trades_intraday import tpf_intraday_trades
+from pyield.bc.trades_monthly import tpf_monthly_trades
 from pyield.bc.vna import vna_lft
 
 __all__ = [
@@ -19,8 +19,8 @@ __all__ = [
     "di_over_series",
     "ptax_series",
     "repos",
-    "fpd_monthly_trades",
-    "fpd_intraday_trades",
+    "tpf_monthly_trades",
+    "tpf_intraday_trades",
     "selic_over",
     "selic_over_series",
     "selic_target",

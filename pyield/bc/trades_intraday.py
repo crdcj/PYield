@@ -160,9 +160,9 @@ def is_selic_open() -> bool:
     return is_last_bday and is_trading_time
 
 
-def fpd_intraday_trades() -> pd.DataFrame:
-    """Fetches real-time secondary trading data for domestic Federal Public Debt (FPD)
-    from the Central Bank of Brazil (BCB).
+def tpf_intraday_trades() -> pd.DataFrame:
+    """Fetches real-time secondary trading data for domestic Federal Public Debt
+    (TPF - títulos públicos federais) from the Central Bank of Brazil (BCB).
 
     This function checks if the SELIC market is currently open based on Brazil/Sao_Paulo
     timezone business days and trading hours (defined by REALTIME_START_TIME and

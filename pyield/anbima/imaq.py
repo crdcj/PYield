@@ -59,7 +59,7 @@ def _fetch_url_tables(target_date: pd.Timestamp) -> pd.DataFrame:
         thousands=".",
         decimal=",",
         displayed_only=True,
-        dtype_backend="numpy_nullable",
+        dtype_backend="pyarrow",
         na_values="--",
     )
 
@@ -73,7 +73,7 @@ def _fetch_url_tables(target_date: pd.Timestamp) -> pd.DataFrame:
 
     # Convert to CSV and then back to pandas to get automatic type conversion
     csv_buffer = io.StringIO(df.to_csv(index=False))
-    df = pd.read_csv(csv_buffer, dtype_backend="numpy_nullable")
+    df = pd.read_csv(csv_buffer, dtype_backend="pyarrow", engine="pyarrow")
 
     # Expressão regular para datas no formato dd/mm/ano
     date_pattern = r"\b(\d{2}/\d{2}/\d{4})\b"
@@ -96,15 +96,17 @@ def _fetch_url_tables(target_date: pd.Timestamp) -> pd.DataFrame:
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns=COLUMN_MAPPING)[COLUMN_MAPPING.values()]
     df["Maturity"] = pd.to_datetime(df["Maturity"], format="%d/%m/%Y")
+    df["Maturity"] = df["Maturity"].astype("date32[pyarrow]")
+    df["Date"] = df["Date"].astype("date32[pyarrow]")
 
     for col in ["MarketQuantity", "MarketValue", "QuantityVariation"]:
         # Fallback to string conversion in case conversion failed during read_csv
-        if df[col].dtype == "string" or df[col].dtype == "object":
+        if pd.api.types.is_string_dtype(df[col].dtype):
             df[col] = df[col].str.replace(".", "", regex=False).replace(",", ".")
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
         # Remove the thousands unit from numeric columns
-        df[col] = (1000 * df[col]).astype("Int64")
+        df[col] = (1000 * df[col]).round(0).astype("int64[pyarrow]")
 
     return df
 
