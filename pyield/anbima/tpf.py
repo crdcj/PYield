@@ -73,6 +73,39 @@ def _read_raw_df(file_url: str) -> pd.DataFrame:
     return df
 
 
+def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
+    # Filter selected columns and rename them
+    selected_columns_dict = {
+        "Titulo": "BondType",
+        "Data Referencia": "ReferenceDate",
+        "Codigo SELIC": "SelicCode",
+        "Data Base/Emissao": "IssueBaseDate",
+        "Data Vencimento": "MaturityDate",
+        "Tx. Compra": "BidRate",
+        "Tx. Venda": "AskRate",
+        "Tx. Indicativas": "IndicativeRate",
+        "PU": "Price",
+        "Desvio padrao": "StdDev",
+        "Interv. Ind. Inf. (D0)": "LowerBoundRateD0",
+        "Interv. Ind. Sup. (D0)": "UpperBoundRateD0",
+        "Interv. Ind. Inf. (D+1)": "LowerBoundRateD1",
+        "Interv. Ind. Sup. (D+1)": "UpperBoundRateD1",
+        "Criterio": "Criteria",
+    }
+    df = df_raw.rename(columns=selected_columns_dict)
+
+    # Remove percentage from rates
+    rate_cols = [col for col in df.columns if "Rate" in col]
+    # Rate columns have percentage values with 4 decimal places in percentage values
+    # We will round to 6 decimal places to avoid floating point errors
+    df[rate_cols] = (df[rate_cols] / 100).round(6)
+
+    for col in ["ReferenceDate", "MaturityDate", "IssueBaseDate"]:
+        df[col] = pd.to_datetime(df[col], format="%Y%m%d").astype("date32[pyarrow]")
+
+    return df
+
+
 def _process_dv01(df: pd.DataFrame) -> pd.DataFrame:
     df["BDToMat"] = bday.count(
         start=df["ReferenceDate"], end=df["MaturityDate"]
@@ -122,45 +155,21 @@ def _process_dv01(df: pd.DataFrame) -> pd.DataFrame:
     mduration = df["Duration"] / (1 + df["IndicativeRate"])
     df["DV01"] = 0.0001 * mduration * df["Price"]
 
-    ptax_rate = ptax(date=df["ReferenceDate"].iloc[0])
-    df["DV01USD"] = df["DV01"] / ptax_rate
     return df
 
 
-def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
-    # Filter selected columns and rename them
-    selected_columns_dict = {
-        "Titulo": "BondType",
-        "Data Referencia": "ReferenceDate",
-        "Codigo SELIC": "SelicCode",
-        "Data Base/Emissao": "IssueBaseDate",
-        "Data Vencimento": "MaturityDate",
-        "Tx. Compra": "BidRate",
-        "Tx. Venda": "AskRate",
-        "Tx. Indicativas": "IndicativeRate",
-        "PU": "Price",
-        "Desvio padrao": "StdDev",
-        "Interv. Ind. Inf. (D0)": "LowerBoundRateD0",
-        "Interv. Ind. Sup. (D0)": "UpperBoundRateD0",
-        "Interv. Ind. Inf. (D+1)": "LowerBoundRateD1",
-        "Interv. Ind. Sup. (D+1)": "UpperBoundRateD1",
-        "Criterio": "Criteria",
-    }
-    df = df_raw.rename(columns=selected_columns_dict)
-
-    # Remove percentage from rates
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    # Rate columns have percentage values with 4 decimal places in percentage values
-    # We will round to 6 decimal places to avoid floating point errors
-    df[rate_cols] = (df[rate_cols] / 100).round(6)
-
-    for col in ["ReferenceDate", "MaturityDate", "IssueBaseDate"]:
-        df[col] = pd.to_datetime(df[col], format="%Y%m%d").astype("date32[pyarrow]")
-
+def _add_usd_dv01(df: pd.DataFrame) -> pd.DataFrame:
+    """Add the USD DV01 column to the DataFrame."""
+    try:
+        reference_date = df["ReferenceDate"].iloc[0]
+        ptax_rate = ptax(date=reference_date)
+        df["DV01USD"] = df["DV01"] / ptax_rate
+    except Exception as e:
+        logger.error(f"Error adding USD DV01: {e}")
     return df
 
 
-def reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Reorder the columns of the DataFrame according to the specified order."""
     column_order = [
         "BondType",
@@ -183,11 +192,11 @@ def reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "UpperBoundRateD1",
         "Criteria",
     ]
-
+    column_order = [col for col in column_order if col in df.columns]
     return df[column_order].copy()
 
 
-def select_main_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _select_main_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Select only the main columns from the DataFrame."""
     main_columns = [
         "BondType",
@@ -202,6 +211,7 @@ def select_main_columns(df: pd.DataFrame) -> pd.DataFrame:
         "AskRate",
         "IndicativeRate",
     ]
+    main_columns = [col for col in main_columns if col in df.columns]
     return df[main_columns].copy()
 
 
@@ -272,10 +282,11 @@ def fetch_tpf_data(
             return df
         df = _process_raw_df(df)
         df = _process_dv01(df)
-        df = reorder_columns(df)
+        df = _add_usd_dv01(df)
+        df = _reorder_columns(df)
 
         if not all_columns:
-            df = select_main_columns(df)
+            df = _select_main_columns(df)
 
         if bond_type:
             norm_bond_type = _bond_type_mapping(bond_type)  # noqa
@@ -327,8 +338,18 @@ def tpf_data(
             - MaturityDate: The maturity date of the bond.
             - IndicativeRate: The indicative rate of the bond.
             - Price: The price (PU) of the bond.
-    """
 
+    Examples:
+        >>> from pyield import anbima
+        >>> anbima.tpf_data(date="22-08-2025")
+           ReferenceDate BondType MaturityDate  IndicativeRate         Price
+        0     2025-08-22      LFT   2025-09-01        0.000165  17200.957952
+        1     2025-08-22      LFT   2026-03-01       -0.000116  17202.058818
+        2     2025-08-22      LFT   2026-09-01       -0.000107  17202.901668
+        3     2025-08-22      LFT   2027-03-01        0.000302  17193.200289
+        4     2025-08-22      LFT   2027-09-01        0.000411  17186.767105
+        ...
+    """
     df = get_cached_dataset("tpf")
     date = convert_input_dates(date)
     df = df.query("ReferenceDate == @date").reset_index(drop=True)

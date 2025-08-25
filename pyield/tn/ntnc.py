@@ -90,7 +90,7 @@ def payment_dates(
         9    2030-01-01
         10   2030-07-01
         11   2031-01-01
-        dtype: datetime64[ns]
+        dtype: date32[day][pyarrow]
     """
     # Validate and normalize dates
     settlement = dc.convert_input_dates(settlement)
@@ -101,16 +101,17 @@ def payment_dates(
         raise ValueError("Maturity date must be after the start date.")
 
     # Initialize loop variables
-    coupon_dates = maturity
-    cp_dates = []
+    coupon_date = maturity
+    coupon_dates = []
 
     # Iterate backwards from the maturity date to the settlement date
-    while coupon_dates > settlement:
-        cp_dates.append(coupon_dates)
+    while coupon_date > settlement:
+        coupon_dates.append(coupon_date)
         # Move the coupon date back 6 months
-        coupon_dates -= pd.DateOffset(months=6)
+        coupon_date -= pd.DateOffset(months=6)
 
-    return pd.Series(cp_dates).sort_values(ignore_index=True)
+    coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
+    return coupon_dates.sort_values().reset_index(drop=True)
 
 
 def cash_flows(

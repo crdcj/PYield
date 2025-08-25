@@ -67,7 +67,7 @@ def maturities(date: DateScalar) -> pd.Series:
         10   2028-01-01
         11   2028-07-01
         12   2030-01-01
-        dtype: datetime64[ns]
+        dtype: date32[day][pyarrow]
 
     """
     df_rates = data(date)

@@ -18,12 +18,12 @@ BASE_DATA_URL = f"{GIT_URL}/data"
 # Dicionário global para configurações dos datasets usando 'filename'
 DATASET_CONFIGS = {
     "di1": {
-        "filename": "b3_di.parquet",  # Apenas o nome do arquivo
+        "filename": "b3_di.parquet",
         "date_column": "TradeDate",
         "name": "Futuro de DI (B3)",
     },
     "tpf": {
-        "filename": "anbima_tpf.parquet",  # Apenas o nome do arquivo
+        "filename": "anbima_tpf.parquet",
         "date_column": "ReferenceDate",
         "name": "TPF (ANBIMA)",
     },
@@ -51,29 +51,34 @@ def _load_github_file(file_url: str) -> pd.DataFrame:
 
 @functools.lru_cache(maxsize=len(DATASET_CONFIGS))
 def _get_dataset_with_ttl(dataset_id: str, date_key: str) -> pd.DataFrame:
-    """Carrega o dataset a partir do ID e da chave de data. Cache expira diariamente."""
+    """
+    Função interna e cacheada. Sua única responsabilidade é carregar os dados
+    e colocá-los no cache.
+    """
     if dataset_id not in DATASET_CONFIGS:
         raise ValueError(f"Dataset com ID '{dataset_id}' não encontrado.")
 
     config = DATASET_CONFIGS[dataset_id]
     filename = config["filename"]
-    date_column = config["date_column"]
-    dataset_name = config.get("name", dataset_id)
-
-    # Constrói a URL completa
     full_url = f"{BASE_DATA_URL}/{filename}"
 
     try:
+        # Apenas carrega e retorna. O .copy() aqui é opcional, mas inofensivo.
         df = _load_github_file(full_url)
-        last_date = df[date_column].max().date()
-        logger.info(f"Dataset {dataset_name} carregado. Última data: {last_date}")
-        return df.copy()
-
+        return df
     except Exception:
-        logger.exception(f"Erro ao carregar dataset {dataset_name} ({dataset_id})")
-        raise  # Re-raise a exceção para que o chamador saiba que falhou
+        logger.exception(f"Erro ao carregar dataset {dataset_id}")
+        raise
 
 
 def get_cached_dataset(dataset_id: Literal["di1", "tpf"]) -> pd.DataFrame:
-    """Obtém um dataset configurado pelo seu ID. O cache expira diariamente."""
-    return _get_dataset_with_ttl(dataset_id.lower(), _get_today_date_key())
+    """
+    Obtém um dataset configurado pelo seu ID, garantindo que o cache
+    não seja modificado pelo chamador.
+    O cache expira diariamente.
+    """
+    # 1. Pega o DataFrame do cache (ou aciona o carregamento)
+    df_from_cache = _get_dataset_with_ttl(dataset_id.lower(), _get_today_date_key())
+
+    # 2. Retorna uma CÓPIA para o usuário. Este é o passo crucial de proteção.
+    return df_from_cache.copy()

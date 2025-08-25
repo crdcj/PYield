@@ -83,8 +83,7 @@ def maturities(date: DateScalar) -> pd.Series:
         11   2050-08-15
         12   2055-05-15
         13   2060-08-15
-        dtype: datetime64[ns]
-
+        dtype: date32[day][pyarrow]
     """
     df_rates = data(date)
     s_maturities = df_rates["MaturityDate"]
@@ -125,8 +124,8 @@ def _generate_all_coupon_dates(
     # First coupon date must be after the reference date, otherwise, it can lead to
     # division by zero where BDays == 0 (bootstrap method for instance)
     coupon_dates = coupon_dates[coupon_dates > start]
-
-    return pd.Series(coupon_dates).reset_index(drop=True)
+    coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
+    return coupon_dates.reset_index(drop=True)
 
 
 def payment_dates(
@@ -153,7 +152,7 @@ def payment_dates(
         0   2024-05-15
         1   2024-11-15
         2   2025-05-15
-        dtype: datetime64[ns]
+        dtype: date32[day][pyarrow]
     """
     # Validate and normalize dates
     settlement = dc.convert_input_dates(settlement)
@@ -164,16 +163,17 @@ def payment_dates(
         raise ValueError("Maturity date must be after the start date.")
 
     # Initialize loop variables
-    coupon_dates = maturity
-    cp_dates = []
+    coupon_date = maturity
+    coupon_dates = []
 
     # Iterate backwards from the maturity date to the settlement date
-    while coupon_dates > settlement:
-        cp_dates.append(coupon_dates)
+    while coupon_date > settlement:
+        coupon_dates.append(coupon_date)
         # Move the coupon date back 6 months
-        coupon_dates -= pd.DateOffset(months=6)
+        coupon_date -= pd.DateOffset(months=6)
 
-    return pd.Series(cp_dates).sort_values(ignore_index=True)
+    coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
+    return coupon_dates.sort_values().reset_index(drop=True)
 
 
 def cash_flows(

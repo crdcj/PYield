@@ -66,7 +66,7 @@ def maturities(date: DateScalar) -> pd.Series:
         3   2031-01-01
         4   2033-01-01
         5   2035-01-01
-        dtype: datetime64[ns]
+        dtype: date32[day][pyarrow]
     """
     df_rates = data(date)
     s_maturities = df_rates["MaturityDate"]
@@ -111,7 +111,7 @@ def payment_dates(
         >>> ntnf.payment_dates("15-05-2024", "01-01-2025")
         0   2024-07-01
         1   2025-01-01
-        dtype: datetime64[ns]
+        dtype: date32[day][pyarrow]
     """
     # Validate and normalize dates
     settlement = dc.convert_input_dates(settlement)
@@ -135,7 +135,8 @@ def payment_dates(
         coupon_date -= pd.DateOffset(months=6)
 
     # Return the coupon dates as a sorted Series
-    return pd.Series(coupon_dates).sort_values(ignore_index=True)
+    coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
+    return coupon_dates.sort_values().reset_index(drop=True)
 
 
 def cash_flows(
@@ -276,7 +277,7 @@ def spot_rates(  # noqa
         5   2035-01-01     2587  0.121398
     """
     # Process and validate the input data
-    settlement = dc.convert_input_dates(settlement)
+    settlement = dc.convert_input_dates(settlement).date()
 
     # Create flat forward interpolators for LTN and NTN-F rates
     ltn_rate_interpolator = ip.Interpolator(

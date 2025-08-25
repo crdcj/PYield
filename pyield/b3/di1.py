@@ -116,7 +116,7 @@ def data(
             return pd.DataFrame()
 
     if month_start:
-        df["ExpirationDate"] = df["ExpirationDate"].dt.to_period("M").dt.to_timestamp()
+        df["ExpirationDate"] = df["ExpirationDate"].dt.floor("MS")
 
     if not all_columns:
         cols = [
@@ -327,8 +327,8 @@ def interpolate_rate(
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
-    date = dc.convert_input_dates(date)
-    expiration = dc.convert_input_dates(expiration)
+    date = dc.convert_input_dates(date).date()
+    expiration = dc.convert_input_dates(expiration).date()
     if not date or not expiration:
         return float("NaN")
 
@@ -383,7 +383,7 @@ def eod_dates() -> pd.Series:
         2   1995-01-04
         3   1995-01-05
         4   1995-01-06
-        dtype: datetime64[ns]
+        dtype: date32[day][pyarrow]
     """
     available_dates = (
         get_cached_dataset("di1")
