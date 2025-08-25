@@ -15,7 +15,7 @@ import requests
 
 from pyield import bday
 from pyield import date_converter as dc
-from pyield.bc import ptax
+from pyield.bc import ptax_api as pt
 from pyield.date_converter import DateScalar
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
@@ -220,7 +220,7 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
 
 def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pd.DataFrame:
     # A série de leilões começa em 2007
-    df = ptax.ptax_series(start=start_date, end=end_date)
+    df = pt.ptax_series(start=start_date, end=end_date)
     return df[["Date", "MidRate"]].rename(columns={"MidRate": "PTAX"})
 
 

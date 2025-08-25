@@ -100,17 +100,17 @@ def ptax_series(
     - Para consultar dados de um intervalo, forneça as datas de `start` e `end`.
     Exemplo:
 
-            `ptax_series(start='2024-10-20', end='2024-10-27')`
+            `ptax_series(start='20-10-2024', end='27-10-2024')`
 
     - Se apenas `start` for fornecido, a API do BC retornará dados a partir
     da data de `start` até a data mais recente disponível. Exemplo:
 
-            `ptax_series(start='2024-10-20')`
+            `ptax_series(start='20-10-2024')`
 
     - Se apenas `end` for fornecido, a API do BC retornará dados desde a data mais
     antiga disponível até a data de `end`. Exemplo:
 
-        `ptax_series(end='2024-10-27')`
+        `ptax_series(end='27-10-2024')`
 
     Série Histórica Completa:
 
@@ -197,3 +197,44 @@ def ptax_series(
     url += "&$format=text/csv"  # Adiciona o formato CSV ao final
 
     return _fetch_df_from_url(url)
+
+
+def ptax(date: DateScalar) -> float:
+    """Busca a cotação PTAX média de fechamento para uma data específica.
+
+    Esta função é um wrapper para a função `ptax_series`, otimizada para
+    buscar o valor de um único dia.
+
+    Args:
+        date (DateScalar): A data para a qual a cotação PTAX é desejada.
+            Pode ser uma string no formato "dd-mm-aaaa" ou um objeto date/datetime.
+
+    Returns:
+        float: O valor da PTAX (taxa média) para a data especificada.
+               Retorna `np.nan` se não houver cotação para a data
+               (ex: feriado, fim de semana ou data futura).
+
+    Examples:
+        >>> from pyield import bc
+        >>> # Busca a PTAX para um dia útil
+        >>> bc.ptax("22-08-2025")
+        5.4389
+
+        >>> # Busca a PTAX para um fim de semana (sem dados)
+        >>> ptax_rate_weekend = bc.ptax("23-08-2025")
+        >>> pd.isna(ptax_rate_weekend)
+        True
+    """
+    # Reutiliza a função ptax_series para buscar os dados para o dia específico.
+    # Definir start e end com a mesma data busca a cotação para aquele dia.
+    df_ptax = ptax_series(start=date, end=date)
+
+    # Se o DataFrame estiver vazio, significa que não há cotação para a data.
+    # Isso ocorre em fins de semana, feriados ou datas futuras.
+    if df_ptax.empty:
+        logger.warning(f"No PTAX data found for date: {date}")
+        return float("nan")
+
+    # A API retorna uma única linha para a cotação de fechamento de um dia.
+    # A coluna "MidRate" representa a PTAX de fechamento.
+    return df_ptax["MidRate"].iloc[0]

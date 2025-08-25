@@ -43,7 +43,10 @@ def convert_input_dates(
             validate_date_format(dates)
             return pd.to_datetime(dates, dayfirst=True)
 
-        case dt.datetime() | dt.date() | np.datetime64() | pd.Timestamp():
+        case dt.date():
+            return pd.Timestamp(dates)
+
+        case dt.datetime() | np.datetime64() | pd.Timestamp():
             return pd.Timestamp(dates).normalize()
 
         case pd.Series() | np.ndarray() | list() | tuple():
