@@ -322,7 +322,7 @@ def spot_rates(  # noqa
         df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
 
     df = df[["MaturityDate", "BDToMat", "SpotRate"]].copy()
-    df["SpotRate"] = df["SpotRate"].astype("Float64")
+    df["SpotRate"] = df["SpotRate"].astype("float64[pyarrow]")
 
     if not show_coupons:
         df = df.query("MaturityDate in @ntnf_maturities").reset_index(drop=True)

@@ -46,7 +46,7 @@ def _process_ipca_dataframe(
     else:
         df["Value"] = df["Value"].round(2)
 
-    df["Value"] = df["Value"].astype("Float64")
+    df["Value"] = df["Value"].astype("float64[pyarrow]")
     df["Period"] = pd.to_datetime(df["Period"], format="%Y%m").dt.to_period("M")
 
     return df

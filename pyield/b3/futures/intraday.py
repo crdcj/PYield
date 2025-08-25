@@ -123,11 +123,8 @@ def _process_df(df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
     df["LastUpdate"] = now - pd.Timedelta(minutes=15)
 
     df["BDaysToExp"] = bday.count(df["TradeDate"], df["ExpirationDate"])
-    df["BDaysToExp"] = df["BDaysToExp"].astype("int64[pyarrow]")
 
     df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
-    # Convert to nullable integer, since it is the default type in the library
-    df["DaysToExp"] = df["DaysToExp"].astype("int64[pyarrow]")
 
     # Remove expired contracts
     df = df.query("DaysToExp >= 0").reset_index(drop=True)
@@ -142,9 +139,8 @@ def _process_df(df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
     if contract_code in {"DI1", "DAP"}:  # Add LastPrice for DI1 and DAP
         byears = df["BDaysToExp"] / 252
         df["LastPrice"] = 100_000 / ((1 + df["LastRate"]) ** byears)
-        df["LastPrice"] = df["LastPrice"].round(2).astype("float64[pyarrow]")
+        df["LastPrice"] = df["LastPrice"].round(2)
         df["ForwardRate"] = forwards(bdays=df["BDaysToExp"], rates=df["LastRate"])
-        # df["ForwardRate"] = df["ForwardRate"].astype("float64[pyarrow]")
 
     if contract_code == "DI1":  # Add DV01 for DI1
         duration = df["BDaysToExp"] / 252

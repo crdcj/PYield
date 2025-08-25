@@ -107,9 +107,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 
 
 def _process_dv01(df: pd.DataFrame) -> pd.DataFrame:
-    df["BDToMat"] = bday.count(
-        start=df["ReferenceDate"], end=df["MaturityDate"]
-    ).astype("int64[pyarrow]")
+    df["BDToMat"] = bday.count(start=df["ReferenceDate"], end=df["MaturityDate"])
 
     df["Duration"] = 0.0
     df["Duration"] = df["Duration"].astype("float64[pyarrow]")

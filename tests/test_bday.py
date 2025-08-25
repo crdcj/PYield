@@ -61,7 +61,7 @@ def test_count_old_and_new_holidays_lists():
     start = ["20-11-2020", "20-11-2024"]
     end = ["21-11-2020", "21-11-2024"]
     expected_result = pd.Series([1, 0])
-    expected_result = expected_result.astype("Int64")
+    expected_result = expected_result.astype("int64[pyarrow]")
     result = bday.count(start, end)
     are_series_equal = result.equals(expected_result)
     assert are_series_equal, f"Expected {expected_result}, but got {result}"

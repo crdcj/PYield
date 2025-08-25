@@ -150,7 +150,7 @@ def _create_df_from_data(di1_data: list) -> pd.DataFrame:
 
     # Convert to CSV and then back to pandas to get automatic type conversion
     file = io.StringIO(df.to_csv(index=False))
-    return pd.read_csv(file, dtype_backend="numpy_nullable")
+    return pd.read_csv(file, dtype_backend="pyarrow")
 
 
 def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -193,18 +193,18 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
 def _process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
     # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
+    df["TradeDate"] = df["TradeDate"].astype("date32[pyarrow]")
 
     expiration_code = df["TickerSymbol"].str[3:]
     contract_code = df["TickerSymbol"].str[:3].loc[0]
     expiration_day = 15 if contract_code == "DAP" else 1
     df["ExpirationDate"] = expiration_code.apply(
         common.get_expiration_date, args=(expiration_day,)
-    )
+    ).astype("date32[pyarrow]")
 
     df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
     # Convert to nullable integer, since it is the default type in the library
-    df["DaysToExp"] = df["DaysToExp"].astype("Int64")
+    df["DaysToExp"] = df["DaysToExp"].astype("int64[pyarrow]")
 
     # Remove expired contracts
     df = df.query("DaysToExp > 0").reset_index(drop=True)

@@ -153,10 +153,7 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df["AvgPrice"] = df["AvgPrice"].where(keep_avg_price, adjusted_avg_price)
 
     # Usar a data de liquidação para calcular o número de dias úteis até o vencimento
-    df["BDToMat"] = bday.count(
-        start=df["Settlement"],
-        end=df["Maturity"],
-    ).astype("int64[pyarrow]")
+    df["BDToMat"] = bday.count(start=df["Settlement"], end=df["Maturity"])
 
     return df
 

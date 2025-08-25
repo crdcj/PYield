@@ -87,14 +87,14 @@ def spot_rates(date: DateScalar) -> pd.DataFrame:
         ltn_subset = _process_additional_ltn(date, ltn_not_in_ntnf)
 
         # Ensure consistent data types
-        ltn_subset["BDToMat"] = ltn_subset["BDToMat"].astype("int64")
-        df_spots["BDToMat"] = df_spots["BDToMat"].astype("int64")
+        ltn_subset["BDToMat"] = ltn_subset["BDToMat"].astype("int64[pyarrow]")
+        df_spots["BDToMat"] = df_spots["BDToMat"].astype("int64[pyarrow]")
 
         # Combine LTN and NTN-F derived spot rates
         df_combined = pd.concat([df_spots, ltn_subset], ignore_index=True)
     else:
         df_combined = df_spots.copy()
-        df_combined["BDToMat"] = df_combined["BDToMat"].astype("int64")
+        df_combined["BDToMat"] = df_combined["BDToMat"].astype("int64[pyarrow]")
 
     # Final validation - ensure no NaN values in the result
     _validate_final_result(df_combined)

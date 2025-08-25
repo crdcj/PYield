@@ -409,8 +409,8 @@ def spot_rates(
         df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
 
     df = df[["MaturityDate", "BDToMat", "SpotRate"]].copy()
-    # Force Float64 type in float columns to standardize the output
-    df["SpotRate"] = df["SpotRate"].astype("Float64")
+    # Force float64 type in float columns to standardize the output
+    df["SpotRate"] = df["SpotRate"].astype("float64[pyarrow]")
 
     # Filter the result without the intermediate coupon dates (virtual bonds)
     if not show_coupons:
@@ -505,7 +505,7 @@ def bei_rates(
         extrapolate=True,
     )
 
-    df["NIR"] = df["BDToMat"].apply(nir_interplator).astype("Float64")
+    df["NIR"] = df["BDToMat"].apply(nir_interplator).astype("float64[pyarrow]")
     # Calculate Breakeven Inflation Rate (BEI)
     df["BEI"] = ((df["NIR"] + 1) / (df["RIR"] + 1)) - 1
 

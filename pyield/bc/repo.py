@@ -44,7 +44,7 @@ def _load_from_url(url: str) -> pd.DataFrame:
     response.raise_for_status()
     return pd.read_csv(
         io.StringIO(response.text),
-        dtype_backend="numpy_nullable",
+        dtype_backend="pyarrow",
         decimal=",",
         date_format="%Y-%m-%d",
         parse_dates=["dataMovimento", "dataLiquidacao", "dataRetorno"],
@@ -58,9 +58,13 @@ def _pre_process_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
+    df["Date"] = df["Date"].astype("date32[pyarrow]")
+    df["Settlement"] = df["Settlement"].astype("date32[pyarrow]")
     df["StartTime"] = pd.to_datetime(df["StartTime"], format="%H:%M").dt.time
     # AcceptedVolume é em milhares de reais -> converter para reais
-    df["AcceptedVolume"] = (1_000 * df["AcceptedVolume"]).round(0).astype("Int64")
+    df["AcceptedVolume"] = (
+        (1_000 * df["AcceptedVolume"]).round(0).astype("int64[pyarrow]")
+    )
 
     # Remove the percentage sign and round to 6 decimal places (4 decimal places in %)
     df["CutRate"] = (df["CutRate"] / 100).round(6)

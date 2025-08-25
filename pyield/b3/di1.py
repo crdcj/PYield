@@ -194,7 +194,7 @@ def interpolate_rates(
         0    0.13972
         1    0.134613
         2    <NA>
-        dtype: Float64
+        dtype: double[pyarrow]
 
         >>> # Interpolate rates for a single trade date and multiple expiration dates
         >>> # There is no DI Contract in 09-05-2025 with expiration 01-01-2050
@@ -206,7 +206,7 @@ def interpolate_rates(
         ... )
         0    0.13901
         1    0.13881
-        dtype: Float64
+        dtype: double[pyarrow]
 
         >>> # With extrapolation set to False, the second rate will be NaN
         >>> # Note: 0.13576348733268917 is shown as 0.135763
@@ -217,7 +217,7 @@ def interpolate_rates(
         ... )
         0    0.135763
         1    <NA>
-        dtype: Float64
+        dtype: double[pyarrow]
 
     Notes:
         - All available settlement rates are used for the flat-forward interpolation.
@@ -250,7 +250,7 @@ def interpolate_rates(
 
     # Initialize the interpolated rate column with NaN
     dfi["irate"] = pd.NA
-    dfi["irate"] = dfi["irate"].astype("Float64")
+    dfi["irate"] = dfi["irate"].astype("float64[pyarrow]")
 
     # Load DI rates dataset filtered by the provided reference dates
     dfr = data(dates=dates)

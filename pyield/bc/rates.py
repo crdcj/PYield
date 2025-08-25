@@ -97,8 +97,10 @@ def _fetch_request(
 
         df = pd.DataFrame(data, dtype="string")
         df = df.rename(columns={"data": "Date", "valor": "Value"})
-        df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
-        df["Value"] = (df["Value"].astype("Float64")) / 100
+        df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y").astype(
+            "date32[pyarrow]"
+        )
+        df["Value"] = (df["Value"].astype("float64[pyarrow]")) / 100
 
         return df
 
@@ -240,7 +242,7 @@ def selic_over(date: DateScalar) -> float:
     df = selic_over_series(date, date)
     if df.empty:
         return float("nan")
-    return float(df.at[0, "Value"])
+    return round(df.at[0, "Value"], 4)
 
 
 def selic_target_series(

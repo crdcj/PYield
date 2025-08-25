@@ -59,7 +59,7 @@ def _fetch_last_ima() -> pd.DataFrame:
         sep="@",
         decimal=",",
         thousands=".",
-        dtype_backend="numpy_nullable",
+        dtype_backend="pyarrow",
         na_values="--",
     )
 
@@ -69,10 +69,12 @@ def _fetch_last_ima() -> pd.DataFrame:
 def _process_last_ima(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns=IMA_COL_MAPPING)[IMA_COL_MAPPING.values()]
     df["IndicativeRate"] = (df["IndicativeRate"] / 100).round(6)
-    df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
-    df["Maturity"] = pd.to_datetime(df["Maturity"], format="%d/%m/%Y")
-    df["MarketQuantity"] = (1000 * df["MarketQuantity"]).astype("Int64")
-    df["MarketValue"] = (1000 * df["MarketValue"]).round(0).astype("Int64")
+    df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y").astype("date32[pyarrow]")
+    df["Maturity"] = pd.to_datetime(df["Maturity"], format="%d/%m/%Y").astype(
+        "date32[pyarrow]"
+    )
+    df["MarketQuantity"] = (1000 * df["MarketQuantity"]).astype("int64[pyarrow]")
+    df["MarketValue"] = (1000 * df["MarketValue"]).round(0).astype("int64[pyarrow]")
     df["Price"] = df["Price"].round(6)
     # Duration is in business days, convert to years
     df["Duration"] /= 252
@@ -81,7 +83,9 @@ def _process_last_ima(df: pd.DataFrame) -> pd.DataFrame:
     # LFT DV01 is zero
     df["DV01"] = df["DV01"].where(df["BondType"] != "LFT", 0)
     # Since MarketDV01 is the total stock value, we round them to integer
-    df["MarketDV01"] = (df["DV01"] * df["MarketQuantity"]).round(0).astype("Int64")
+    df["MarketDV01"] = (
+        (df["DV01"] * df["MarketQuantity"]).round(0).astype("int64[pyarrow]")
+    )
 
     return df
 
