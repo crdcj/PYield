@@ -52,7 +52,7 @@ def _fetch_b3_df(contract_code: str) -> pd.DataFrame:
     df = pd.json_normalize(r.json()["Scty"])
 
     # Convert columns to the most appropriate data type
-    return df.convert_dtypes()
+    return df.convert_dtypes(dtype_backend="pyarrow")
 
 
 def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -89,10 +89,8 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _process_df(raw_df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
+def _process_df(df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
     """Process the raw DataFrame from B3 API."""
-    df = raw_df.copy()
-
     # Clean and reformat the DataFrame columns
     df.columns = (df.columns
         .str.replace("SctyQtn.", "")
@@ -103,25 +101,33 @@ def _process_df(raw_df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
     df = _rename_columns(df)
 
     # Convert maturity codes to datetime and drop rows with missing values
-    df["ExpirationDate"] = pd.to_datetime(df["ExpirationDate"], errors="coerce")
-    df.dropna(subset=["ExpirationDate"], inplace=True)
+    df["ExpirationDate"] = pd.to_datetime(df["ExpirationDate"], errors="coerce").astype(
+        "date32[pyarrow]"
+    )
 
     # Sort the DataFrame by maturity code and reset the index
-    df.sort_values("ExpirationDate", inplace=True, ignore_index=True)
+    df = (
+        df.dropna(subset=["ExpirationDate"])
+        .sort_values("ExpirationDate")
+        .reset_index(drop=True)
+    )
 
     # Get currante date in Brazil
     df["TradeDate"] = bday.last_business_day()
+    df["TradeDate"] = df["TradeDate"].astype("date32[pyarrow]")
 
     # Get current date and time
-    now = pd.Timestamp.now(BZ_TIMEZONE).round("s").tz_localize(None)
+    # now = pd.Timestamp.now(BZ_TIMEZONE).round("s").tz_localize(None)
+    now = dt.datetime.now(BZ_TIMEZONE)
     # Subtract 15 minutes from the current time to account for API delay
     df["LastUpdate"] = now - pd.Timedelta(minutes=15)
 
     df["BDaysToExp"] = bday.count(df["TradeDate"], df["ExpirationDate"])
+    df["BDaysToExp"] = df["BDaysToExp"].astype("int64[pyarrow]")
 
     df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
     # Convert to nullable integer, since it is the default type in the library
-    df["DaysToExp"] = df["DaysToExp"].astype("Int64")
+    df["DaysToExp"] = df["DaysToExp"].astype("int64[pyarrow]")
 
     # Remove expired contracts
     df = df.query("DaysToExp >= 0").reset_index(drop=True)
@@ -136,8 +142,9 @@ def _process_df(raw_df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
     if contract_code in {"DI1", "DAP"}:  # Add LastPrice for DI1 and DAP
         byears = df["BDaysToExp"] / 252
         df["LastPrice"] = 100_000 / ((1 + df["LastRate"]) ** byears)
-        df["LastPrice"] = df["LastPrice"].round(2).astype("Float64")
+        df["LastPrice"] = df["LastPrice"].round(2).astype("float64[pyarrow]")
         df["ForwardRate"] = forwards(bdays=df["BDaysToExp"], rates=df["LastRate"])
+        # df["ForwardRate"] = df["ForwardRate"].astype("float64[pyarrow]")
 
     if contract_code == "DI1":  # Add DV01 for DI1
         duration = df["BDaysToExp"] / 252

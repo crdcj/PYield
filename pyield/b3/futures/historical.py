@@ -127,19 +127,19 @@ def _fetch_url_data(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
         thousands=".",
         decimal=",",
         na_values=["-"],
-        dtype_backend="numpy_nullable",
+        dtype_backend="pyarrow",
         encoding="iso-8859-1",
     )[0]
 
     # Remove rows and columns with all NaN values
-    df = df.dropna(axis=0, how="all").dropna(axis=1, how="all").copy()
+    df = df.dropna(axis=0, how="all").dropna(axis=1, how="all").reset_index(drop=True)
 
     # Force "VAR. PTOS." to be string, since it can also be read as float
-    df["VAR. PTOS."] = df["VAR. PTOS."].astype("string")
+    df["VAR. PTOS."] = df["VAR. PTOS."].astype("string[pyarrow]")
 
     # Force "AJUSTE CORRIG. (4)" to be float, since it can be also read as int
     if "AJUSTE CORRIG. (4)" in df.columns:
-        df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype("Float64")
+        df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype("float64[pyarrow]")
 
     return df
 
@@ -180,29 +180,32 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns=rename_dict)
 
 
-def process_df(
-    input_df: pd.DataFrame, date: pd.Timestamp, contract_code: str
+def _process_df(
+    df: pd.DataFrame, date: pd.Timestamp, contract_code: str
 ) -> pd.DataFrame:
-    df = input_df.copy()
     df["TradeDate"] = date
-    # Convert to datetime64[ns] since it is pandas default type for timestamps
-    df["TradeDate"] = df["TradeDate"].astype("datetime64[ns]")
+    df["TradeDate"] = df["TradeDate"].astype("date32[pyarrow]")
     df["TickerSymbol"] = contract_code + df["ExpirationCode"]
 
     # Contract code format was changed in 22/05/2006
-    if date < pd.Timestamp("2006-05-22"):
-        df["ExpirationDate"] = df["ExpirationCode"].apply(
-            lambda code: get_old_expiration_date(code, date)
-        )  # type: ignore
+    code_format_change = pd.to_datetime("22-05-2006", dayfirst=True)
+    if date < code_format_change:
+        df["ExpirationDate"] = (
+            df["ExpirationCode"]
+            .apply(lambda code: get_old_expiration_date(code, date))
+            .astype("date32[pyarrow]")
+        )
     else:
         expiration_day = 15 if contract_code == "DAP" else 1
-        df["ExpirationDate"] = df["ExpirationCode"].apply(
-            lambda code: common.get_expiration_date(code, expiration_day)
-        )  # type: ignore
+        df["ExpirationDate"] = (
+            df["ExpirationCode"]
+            .apply(lambda code: common.get_expiration_date(code, expiration_day))
+            .astype("date32[pyarrow]")
+        )
 
     df["DaysToExp"] = (df["ExpirationDate"] - date).dt.days
     # Convert to nullable integer, since it is the default type in the library
-    df["DaysToExp"] = df["DaysToExp"].astype("Int64")
+    df["DaysToExp"] = df["DaysToExp"].astype("int64[pyarrow]")
 
     df["BDaysToExp"] = bday.count(date, df["ExpirationDate"])
 
@@ -218,7 +221,8 @@ def process_df(
 
     rate_cols = [col for col in df.columns if "Rate" in col]
     # Prior to 17/01/2002 (inclusive), DI prices were not converted to rates
-    if date <= pd.Timestamp("2002-01-17") and contract_code == "DI1":
+    switch_date = pd.to_datetime("17-01-2002", dayfirst=True)
+    if date <= switch_date and contract_code == "DI1":
         df = _adjust_older_contracts_rates(df, rate_cols)
     else:
         # Remove % and round to 5 (3 in %) dec. places in rate columns
@@ -244,7 +248,10 @@ def process_df(
         df["DV01"] = 0.0001 * modified_duration * df["SettlementPrice"]
 
     if contract_code in {"DI1", "DAP"}:  # Calculate forwards for DI1 and DAP contracts
-        df["ForwardRate"] = forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
+        df["ForwardRate"] = forwards(
+            bdays=df["BDaysToExp"],
+            rates=df["SettlementRate"],
+        )
 
     return df
 
@@ -276,7 +283,7 @@ def _select_and_reorder_columns(df: pd.DataFrame):
         "ForwardRate",
     ]
     reordered_columns = [col for col in all_columns if col in df.columns]
-    return df[reordered_columns]
+    return df[reordered_columns].copy()
 
 
 def fetch_bmf_data(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
@@ -305,6 +312,6 @@ def fetch_bmf_data(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
         return pd.DataFrame()
 
     df = _rename_columns(df_raw)
-    df = process_df(df, date, contract_code)
+    df = _process_df(df, date, contract_code)
     df = _select_and_reorder_columns(df)
     return df

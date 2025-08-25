@@ -51,7 +51,6 @@ def data(date: DateScalar) -> pd.DataFrame:
         11    2024-08-23    NTN-B   2050-08-15         0.06114  4279.434119
         12    2024-08-23    NTN-B   2055-05-15        0.060892  4355.145036
         13    2024-08-23    NTN-B   2060-08-15        0.061005  4282.308398
-
     """
     return anbima.tpf_data(date, "NTN-B")
 

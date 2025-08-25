@@ -292,19 +292,19 @@ def count(
         >>> bday.count(start="01-01-2024", end=["01-02-2024", "01-03-2024"])
         0    22
         1    41
-        dtype: Int64
+        dtype: int64[pyarrow]
 
         The remaining business days in January and February to the end of the year
         >>> bday.count(["01-01-2024", "01-02-2024"], "01-01-2025")
         0    253
         1    231
-        dtype: Int64
+        dtype: int64[pyarrow]
 
         The total business days in January and February of 2024
         >>> bday.count(["01-01-2024", "01-02-2024"], ["01-02-2024", "01-03-2024"])
         0    22
         1    19
-        dtype: Int64
+        dtype: int64[pyarrow]
 
         Null values are propagated
         >>> bday.count(pd.NaT, "01-01-2024")  # NaT start
@@ -316,7 +316,7 @@ def count(
         >>> bday.count("01-01-2024", ["01-02-2024", pd.NaT])  # NaT in end array
         0    22
         1    <NA>
-        dtype: Int64
+        dtype: int64[pyarrow]
 
         Original pandas index is preserved
         >>> start_dates = pd.Series(
@@ -327,7 +327,7 @@ def count(
         a    253
         b    231
         c    212
-        dtype: Int64
+        dtype: int64[pyarrow]
     """
     # Padroniza as entradas para objetos do Pandas
     start_pd = dc.convert_input_dates(start)
@@ -364,7 +364,7 @@ def count(
 
     # Inicializa a série de resultados com o índice correto e tipo que suporta NA.
     # Nulos nas entradas (start_pd ou end_pd) resultarão em NA aqui.
-    result = pd.Series(index=start_pd.index, dtype="Int64")
+    result = pd.Series(index=start_pd.index, dtype="int64[pyarrow]")
 
     # Cria máscaras para linhas não-nulas, divididas pelo calendário de feriados.
     # A lógica de feriados depende APENAS da data de início.

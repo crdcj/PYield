@@ -67,7 +67,7 @@ def forwards(
         0        0.05
         1    0.070095
         2    0.090284
-        dtype: Float64
+        dtype: double[pyarrow]
 
         >>> # Exemplo com agrupamento (a última está isolada em outro grupo)
         >>> groupby_dates = pd.Series([1, 1, 2])
@@ -75,7 +75,7 @@ def forwards(
         0    0.05
         1    0.070095
         2    0.07
-        dtype: Float64
+        dtype: double[pyarrow]
 
     Note:
         - A função ordena os dados de entrada primeiro por `groupby_dates`,
@@ -83,8 +83,8 @@ def forwards(
         correta no cálculo das taxas a termo.
         - Os resultados são retornados na mesma ordem dos dados de entrada.
     """  # noqa: E501
-    bdays = bdays.astype("Int64")
-    rates = rates.astype("Float64")
+    bdays = bdays.astype("int64[pyarrow]")
+    rates = rates.astype("float64[pyarrow]")
 
     # Check if indexes are the same
     if not bdays.index.equals(rates.index):
