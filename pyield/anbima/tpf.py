@@ -8,9 +8,13 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from pyield import bday
+from pyield.bc.ptax_api import ptax
 from pyield.data_cache import get_cached_dataset
 from pyield.date_converter import DateScalar, convert_input_dates
 from pyield.retry import default_retry
+from pyield.tn.ntnb import duration as duration_b
+from pyield.tn.ntnc import duration as duration_c
+from pyield.tn.ntnf import duration as duration_f
 
 BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
@@ -64,8 +68,62 @@ def _read_raw_df(file_url: str) -> pd.DataFrame:
         decimal=",",
         thousands=".",
         na_values=["--"],
-        dtype_backend="numpy_nullable",
+        dtype_backend="pyarrow",
     )
+    return df
+
+
+def _process_dv01(df: pd.DataFrame) -> pd.DataFrame:
+    df["BDToMat"] = bday.count(
+        start=df["ReferenceDate"], end=df["MaturityDate"]
+    ).astype("int64[pyarrow]")
+
+    df["Duration"] = 0.0
+    df["Duration"] = df["Duration"].astype("float64[pyarrow]")
+
+    df_others = df.query(
+        "BondType not in ['LTN', 'NTN-F', 'NTN-B', 'NTN-C']"
+    ).reset_index(drop=True)
+
+    df_ltn = df.query("BondType == 'LTN'").reset_index(drop=True)
+    if not df_ltn.empty:
+        df_ltn["Duration"] = df_ltn["BDToMat"] / 252
+
+    df_ntnf = df.query("BondType == 'NTN-F'").reset_index(drop=True)
+    if not df_ntnf.empty:
+        df_ntnf["Duration"] = df_ntnf.apply(
+            lambda row: duration_f(
+                row["ReferenceDate"], row["MaturityDate"], row["IndicativeRate"]
+            ),
+            axis=1,
+        )
+
+    df_ntnb = df.query("BondType == 'NTN-B'").reset_index(drop=True)
+    if not df_ntnb.empty:
+        df_ntnb["Duration"] = df_ntnb.apply(
+            lambda row: duration_b(
+                row["ReferenceDate"], row["MaturityDate"], row["IndicativeRate"]
+            ),
+            axis=1,
+        )
+
+    df_ntnc = df.query("BondType == 'NTN-C'").reset_index(drop=True)
+    if not df_ntnc.empty:
+        df_ntnc["Duration"] = df_ntnc.apply(
+            lambda row: duration_c(
+                row["ReferenceDate"], row["MaturityDate"], row["IndicativeRate"]
+            ),
+            axis=1,
+        )
+
+    df = pd.concat([df_others, df_ltn, df_ntnf, df_ntnb, df_ntnc])
+    df["Duration"] = df["Duration"].astype("float64[pyarrow]")
+
+    mduration = df["Duration"] / (1 + df["IndicativeRate"])
+    df["DV01"] = 0.0001 * mduration * df["Price"]
+
+    ptax_rate = ptax(date=df["ReferenceDate"].iloc[0])
+    df["DV01USD"] = df["DV01"] / ptax_rate
     return df
 
 
@@ -96,15 +154,61 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     # We will round to 6 decimal places to avoid floating point errors
     df[rate_cols] = (df[rate_cols] / 100).round(6)
 
-    df["ReferenceDate"] = pd.to_datetime(df["ReferenceDate"], format="%Y%m%d")
-    df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%Y%m%d")
-    df["IssueBaseDate"] = pd.to_datetime(df["IssueBaseDate"], format="%Y%m%d")
+    for col in ["ReferenceDate", "MaturityDate", "IssueBaseDate"]:
+        df[col] = pd.to_datetime(df[col], format="%Y%m%d").astype("date32[pyarrow]")
 
-    return df.sort_values(["BondType", "MaturityDate"], ignore_index=True)
+    return df
+
+
+def reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Reorder the columns of the DataFrame according to the specified order."""
+    column_order = [
+        "BondType",
+        "ReferenceDate",
+        "SelicCode",
+        "IssueBaseDate",
+        "MaturityDate",
+        "BDToMat",
+        "Duration",
+        "DV01",
+        "DV01USD",
+        "Price",
+        "BidRate",
+        "AskRate",
+        "IndicativeRate",
+        "StdDev",
+        "LowerBoundRateD0",
+        "UpperBoundRateD0",
+        "LowerBoundRateD1",
+        "UpperBoundRateD1",
+        "Criteria",
+    ]
+
+    return df[column_order].copy()
+
+
+def select_main_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Select only the main columns from the DataFrame."""
+    main_columns = [
+        "BondType",
+        "ReferenceDate",
+        "MaturityDate",
+        "BDToMat",
+        "Duration",
+        "DV01",
+        "DV01USD",
+        "Price",
+        "BidRate",
+        "AskRate",
+        "IndicativeRate",
+    ]
+    return df[main_columns].copy()
 
 
 def fetch_tpf_data(
-    date: DateScalar, bond_type: str | BOND_TYPES | None = None
+    date: DateScalar,
+    bond_type: str | BOND_TYPES | None = None,
+    all_columns: bool = True,
 ) -> pd.DataFrame:
     """Fetch and process TPF secondary market data directly from the ANBIMA website.
     This is a low-level function intended for internal use or specific backend
@@ -121,6 +225,8 @@ def fetch_tpf_data(
         date (DateScalar): The reference date for the data.
         bond_type (str, optional):  Filter data by bond type.
             Defaults to None, which returns data for all bond types.
+        all_columns (bool, optional):  If True, all columns are returned.
+            Defaults to True. If False, only the main columns are returned.
 
     Returns:
         pd.DataFrame: A DataFrame containing bond market data.
@@ -165,6 +271,12 @@ def fetch_tpf_data(
             )
             return df
         df = _process_raw_df(df)
+        df = _process_dv01(df)
+        df = reorder_columns(df)
+
+        if not all_columns:
+            df = select_main_columns(df)
+
         if bond_type:
             norm_bond_type = _bond_type_mapping(bond_type)  # noqa
             df = df.query("BondType == @norm_bond_type").reset_index(drop=True)
