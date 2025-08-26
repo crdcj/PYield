@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from pyield import bday
+from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
 from pyield.data_cache import get_cached_dataset
 from pyield.date_converter import DateScalar, convert_input_dates
@@ -106,7 +107,7 @@ def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _process_dv01(df: pd.DataFrame) -> pd.DataFrame:
+def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
     df["BDToMat"] = bday.count(start=df["ReferenceDate"], end=df["MaturityDate"])
 
     df["Duration"] = 0.0
@@ -167,6 +168,17 @@ def _add_usd_dv01(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _add_di_rate(df: pd.DataFrame, target_date: pd.Timestamp) -> pd.DataFrame:
+    """Add the DI rate column to the DataFrame."""
+    # INSERIR OS DADOS DO DI INTERPOLADO ###
+    df["DIRate"] = di1.interpolate_rates(
+        dates=target_date,
+        expirations=df["MaturityDate"],
+        extrapolate=True,
+    )
+    return df
+
+
 def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Reorder the columns of the DataFrame according to the specified order."""
     column_order = [
@@ -183,6 +195,7 @@ def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "BidRate",
         "AskRate",
         "IndicativeRate",
+        "DIRate",
         "StdDev",
         "LowerBoundRateD0",
         "UpperBoundRateD0",
@@ -194,29 +207,23 @@ def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df[column_order].copy()
 
 
-def _select_main_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _drop_detail_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Select only the main columns from the DataFrame."""
-    main_columns = [
-        "BondType",
-        "ReferenceDate",
-        "MaturityDate",
-        "BDToMat",
-        "Duration",
-        "DV01",
-        "DV01USD",
-        "Price",
-        "BidRate",
-        "AskRate",
-        "IndicativeRate",
+    detail_columns = [
+        "StdDev",
+        "LowerBoundRateD0",
+        "UpperBoundRateD0",
+        "LowerBoundRateD1",
+        "UpperBoundRateD1",
+        "Criteria",
     ]
-    main_columns = [col for col in main_columns if col in df.columns]
-    return df[main_columns].copy()
+    return df.drop(columns=detail_columns, errors="ignore")
 
 
 def fetch_tpf_data(
     date: DateScalar,
     bond_type: str | BOND_TYPES | None = None,
-    all_columns: bool = True,
+    include_details: bool = False,
 ) -> pd.DataFrame:
     """Fetch and process TPF secondary market data directly from the ANBIMA website.
     This is a low-level function intended for internal use or specific backend
@@ -233,14 +240,43 @@ def fetch_tpf_data(
         date (DateScalar): The reference date for the data.
         bond_type (str, optional):  Filter data by bond type.
             Defaults to None, which returns data for all bond types.
-        all_columns (bool, optional):  If True, all columns are returned.
-            Defaults to True. If False, only the main columns are returned.
+        include_details (bool, optional):  If True, all columns are returned.
+            Defaults to False. If True, detail columns are included in the output.
 
     Returns:
         pd.DataFrame: A DataFrame containing bond market data.
             Returns an empty DataFrame if data is not available for the
             specified date (weekends, holidays, unavailable data, or lack of
             RTM access for older data).
+
+    DataFrame columns:
+        - BondType: Tipo do título público (e.g., 'LTN', 'NTN-B').
+        - ReferenceDate: Data de referência dos dados.
+        - SelicCode: Código do título no SELIC.
+        - IssueBaseDate: Data base ou de emissão do título.
+        - MaturityDate: Data de vencimento do título.
+        - BDToMat: Número de dias úteis entre a data de referência e o vencimento.
+        - Duration: Macaulay Duration do título em anos.
+        - DV01: Variação financeira no preço do título (em BRL) para uma
+            mudança de 1 basis point (0,01%) na taxa de juros.
+        - DV01USD: O mesmo que DV01, mas convertido para USD pela PTAX do dia.
+        - Price: Preço Unitário (PU) do título na data de referência.
+        - BidRate: Taxa de compra em formato decimal (e.g., 0.10 para 10%).
+        - AskRate: Taxa de venda em formato decimal.
+        - IndicativeRate: Taxa indicativa em formato decimal.
+        - DIRate: Taxa DI interpolada para o vencimento do título.
+        - StdDev: Desvio padrão da taxa indicativa. (Apenas se include_details=True)
+        - LowerBoundRateD0: Limite inferior do intervalo indicativo para D+0.
+            (Apenas se include_details=True)
+        - UpperBoundRateD0: Limite superior do intervalo indicativo para D+0.
+            (Apenas se include_details=True)
+        - LowerBoundRateD1: Limite inferior do intervalo indicativo para D+1.
+            (Apenas se include_details=True)
+        - UpperBoundRateD1: Limite superior do intervalo indicativo para D+1.
+            (Apenas se include_details=True)
+        - Criteria: Critério utilizado pela ANBIMA para o cálculo.
+            (Apenas se include_details=True)
+
     """
     date = convert_input_dates(date)
     date_log = date.strftime("%d/%m/%Y")
@@ -279,12 +315,13 @@ def fetch_tpf_data(
             )
             return df
         df = _process_raw_df(df)
-        df = _process_dv01(df)
+        df = _add_dv01(df)
         df = _add_usd_dv01(df)
+        df = _add_di_rate(df, target_date=date)
         df = _reorder_columns(df)
 
-        if not all_columns:
-            df = _select_main_columns(df)
+        if not include_details:
+            df = _drop_detail_columns(df)
 
         if bond_type:
             norm_bond_type = _bond_type_mapping(bond_type)  # noqa
