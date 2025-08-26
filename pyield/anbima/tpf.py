@@ -207,47 +207,111 @@ def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df[column_order].copy()
 
 
-def _drop_detail_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Select only the main columns from the DataFrame."""
-    detail_columns = [
-        "StdDev",
-        "LowerBoundRateD0",
-        "UpperBoundRateD0",
-        "LowerBoundRateD1",
-        "UpperBoundRateD1",
-        "Criteria",
-    ]
-    return df.drop(columns=detail_columns, errors="ignore")
+def _fetch_tpf_data(date: pd.Timestamp) -> pd.DataFrame:
+    """Fetch and process TPF secondary market data directly from the ANBIMA source.
 
-
-def fetch_tpf_data(
-    date: DateScalar,
-    bond_type: str | BOND_TYPES | None = None,
-    include_details: bool = False,
-) -> pd.DataFrame:
-    """Fetch and process TPF secondary market data directly from the ANBIMA website.
-    This is a low-level function intended for internal use or specific backend
-    jobs. For general use, prefer `tpf_data` which includes caching logic.
-
-    Only the last 5 days of data are available in the ANBIMA website. Data older
-    than 5 business days is only available through the RTM network.
-
-    This function retrieves bond market data from the ANBIMA website for a
-    specified reference date. It handles different file formats based on the date
-    and attempts to download the data from both member and non-member URLs.
+    This is a low-level function intended for internal use. It handles the logic
+    of building the correct URL (public or RTM), downloading the data with retries,
+    and processing it into a structured DataFrame.
 
     Args:
-        date (DateScalar): The reference date for the data.
-        bond_type (str, optional):  Filter data by bond type.
-            Defaults to None, which returns data for all bond types.
-        include_details (bool, optional):  If True, all columns are returned.
-            Defaults to False. If True, detail columns are included in the output.
+        date (pd.Timestamp): The reference date for the data.
 
     Returns:
-        pd.DataFrame: A DataFrame containing bond market data.
-            Returns an empty DataFrame if data is not available for the
-            specified date (weekends, holidays, unavailable data, or lack of
-            RTM access for older data).
+        pd.DataFrame: A DataFrame containing processed bond market data, or an
+            empty DataFrame if data is unavailable or a connection error occurs.
+    """
+    file_url = _build_file_url(date)
+    date_str = date.strftime("%d/%m/%Y")
+
+    # --- "FAIL-FAST" PARA EVITAR RETRIES DESNECESSÁRIOS NA RTM ---
+    if ANBIMA_RTM_URL in file_url:
+        try:
+            # Tenta resolver o hostname da RTM. É uma verificação de rede rápida.
+            socket.gethostbyname(ANBIMA_RTM_HOSTNAME)
+        except socket.gaierror:
+            # Se falhar (gaierror = get address info error), não estamos na RTM.
+            # Não adianta prosseguir para a função com retry.
+            logger.warning(
+                f"Could not resolve RTM host for {date_str}. This is expected if "
+                "you are not on the RTM network. Historical data requires RTM access. "
+                "Returning empty DataFrame."
+            )
+            return pd.DataFrame()
+
+    try:
+        # Se passamos pela verificação da RTM, agora podemos chamar a função com retry.
+        df = _read_raw_df(file_url)
+        if df.empty:
+            logger.info(
+                f"Anbima TPF secondary market data for {date_str} not available. "
+                "Returning empty DataFrame."
+            )
+            return df
+        df = _process_raw_df(df)
+        df = _add_dv01(df)
+        df = _add_usd_dv01(df)
+        df = _add_di_rate(df, target_date=date)
+        df = _reorder_columns(df)
+
+        return df.sort_values(["BondType", "MaturityDate"]).reset_index(drop=True)
+
+    except HTTPError as e:
+        if e.code == 404:  # noqa
+            logger.info(
+                f"No Anbima TPF secondary market data for {date_str} (HTTP 404). "
+                "Returning empty DataFrame."
+            )
+            return pd.DataFrame()
+        logger.error(f"HTTP Error fetching data for {date_str} from {file_url}: {e}")
+        raise
+
+    # Este bloco ainda é útil para outros URLErrors (ex: timeout genuíno na URL pública)
+    except URLError:
+        logger.exception(f"Network error (URLError) fetching TPF data for {date_str}")
+        raise
+
+    except Exception:
+        msg = f"An unexpected error occurred fetching TPF data for {date_str}"
+        logger.exception(msg)
+        raise
+
+
+def tpf_data(
+    date: DateScalar,
+    bond_type: str | None = None,
+    fetch_from_source: bool = False,
+) -> pd.DataFrame:
+    """Retrieve TPF secondary market data from ANBIMA.
+
+    This function fetches indicative rates and other data for Brazilian government
+    bonds from ANBIMA. By default, it attempts to retrieve data from a local
+    cache for performance. If `fetch_from_source` is True, it tries to fetch the data
+    directly from the ANBIMA website.
+
+    Args:
+        date (DateScalar): The reference date for the data (e.g., '2024-06-14').
+        bond_type (str, optional): Filters results by a specific bond type
+            (e.g., 'LTN', 'NTN-B'). Defaults to None, returning all bond types.
+        fetch_from_source (bool, optional): If True, forces the function to
+            bypass the cache and fetch data directly from the source.
+            Defaults to False.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the requested bond data. An empty
+        DataFrame is returned if no data is available for the specified date
+        (e.g., weekends, holidays, or future dates).
+
+    Examples:
+        >>> from pyield import anbima
+        >>> anbima.tpf_data(date="22-08-2025")
+           ReferenceDate BondType MaturityDate  IndicativeRate         Price
+        0     2025-08-22      LFT   2025-09-01        0.000165  17200.957952
+        1     2025-08-22      LFT   2026-03-01       -0.000116  17202.058818
+        2     2025-08-22      LFT   2026-09-01       -0.000107  17202.901668
+        3     2025-08-22      LFT   2027-03-01        0.000302  17193.200289
+        4     2025-08-22      LFT   2027-09-01        0.000411  17186.767105
+        ...
 
     DataFrame columns:
         - BondType: Tipo do título público (e.g., 'LTN', 'NTN-B').
@@ -265,20 +329,22 @@ def fetch_tpf_data(
         - AskRate: Taxa de venda em formato decimal.
         - IndicativeRate: Taxa indicativa em formato decimal.
         - DIRate: Taxa DI interpolada para o vencimento do título.
-        - StdDev: Desvio padrão da taxa indicativa. (Apenas se include_details=True)
+        - StdDev: Desvio padrão da taxa indicativa.
         - LowerBoundRateD0: Limite inferior do intervalo indicativo para D+0.
-            (Apenas se include_details=True)
         - UpperBoundRateD0: Limite superior do intervalo indicativo para D+0.
-            (Apenas se include_details=True)
         - LowerBoundRateD1: Limite inferior do intervalo indicativo para D+1.
-            (Apenas se include_details=True)
         - UpperBoundRateD1: Limite superior do intervalo indicativo para D+1.
-            (Apenas se include_details=True)
         - Criteria: Critério utilizado pela ANBIMA para o cálculo.
-            (Apenas se include_details=True)
 
+    Notes:
+        - Data for the last 5 business days is available on the public ANBIMA
+          website.
+        - Historical data (older than 5 business days) is only available via
+          the RTM network. If you are not connected to RTM, requests for
+          older dates will return an empty DataFrame.
     """
     date = convert_input_dates(date)
+
     date_log = date.strftime("%d/%m/%Y")
     today = dt.datetime.now(BZ_TIMEZONE).date()
     if date.date() > today:
@@ -288,126 +354,25 @@ def fetch_tpf_data(
         )
         return pd.DataFrame()
 
-    file_url = _build_file_url(date)
-
-    # --- "FAIL-FAST" PARA EVITAR RETRIES DESNECESSÁRIOS NA RTM ---
-    if ANBIMA_RTM_URL in file_url:
-        try:
-            # Tenta resolver o hostname da RTM. É uma verificação de rede rápida.
-            socket.gethostbyname(ANBIMA_RTM_HOSTNAME)
-        except socket.gaierror:
-            # Se falhar (gaierror = get address info error), não estamos na RTM.
-            # Não adianta prosseguir para a função com retry.
-            logger.warning(
-                f"Could not resolve RTM host for {date_log}. This is expected if "
-                "you are not on the RTM network. Historical data requires RTM access. "
-                "Returning empty DataFrame."
-            )
-            return pd.DataFrame()
-
-    try:
-        # Se passamos pela verificação da RTM, agora podemos chamar a função com retry.
-        df = _read_raw_df(file_url)
-        if df.empty:
-            logger.info(
-                f"Anbima TPF secondary market data for {date_log} not available. "
-                "Returning empty DataFrame."
-            )
-            return df
-        df = _process_raw_df(df)
-        df = _add_dv01(df)
-        df = _add_usd_dv01(df)
-        df = _add_di_rate(df, target_date=date)
-        df = _reorder_columns(df)
-
-        if not include_details:
-            df = _drop_detail_columns(df)
-
-        if bond_type:
-            norm_bond_type = _bond_type_mapping(bond_type)  # noqa
-            df = df.query("BondType == @norm_bond_type").reset_index(drop=True)
-        return df.sort_values(["BondType", "MaturityDate"]).reset_index(drop=True)
-
-    except HTTPError as e:
-        if e.code == 404:  # noqa
-            logger.info(
-                f"No Anbima TPF secondary market data for {date_log} (HTTP 404). "
-                "Returning empty DataFrame."
-            )
-            return pd.DataFrame()
-        logger.error(f"HTTP Error fetching data for {date_log} from {file_url}: {e}")
-        raise
-
-    # Este bloco ainda é útil para outros URLErrors (ex: timeout genuíno na URL pública)
-    except URLError:
-        logger.exception(f"Network error (URLError) fetching TPF data for {date_log}")
-        raise
-
-    except Exception:
-        msg = f"An unexpected error occurred fetching TPF data for {date_log}"
-        logger.exception(msg)
-        raise
-
-
-def tpf_data(
-    date: DateScalar,
-    bond_type: str | None = None,
-    adj_maturities: bool = False,
-) -> pd.DataFrame:
-    """Retrieve indicative rates for bonds from ANBIMA data.
-
-    This function fetches indicative rates for bonds from ANBIMA,
-    initially attempting to retrieve data from a cached dataset. If the data
-    is not available in the cache, it fetches it directly from the ANBIMA website.
-
-    Args:
-        date (DateScalar): The reference date for the rates.
-        bond_type (str, optional): Filter rates by bond type.
-            Defaults to None, which returns rates for all bond types.
-        adj_maturities (bool, optional): Adjust maturity dates to the next
-            business day. Defaults to False.
-
-    Returns:
-        pd.DataFrame: A DataFrame with the following columns:
-            - BondType: The type of bond.
-            - MaturityDate: The maturity date of the bond.
-            - IndicativeRate: The indicative rate of the bond.
-            - Price: The price (PU) of the bond.
-
-    Examples:
-        >>> from pyield import anbima
-        >>> anbima.tpf_data(date="22-08-2025")
-           ReferenceDate BondType MaturityDate  IndicativeRate         Price
-        0     2025-08-22      LFT   2025-09-01        0.000165  17200.957952
-        1     2025-08-22      LFT   2026-03-01       -0.000116  17202.058818
-        2     2025-08-22      LFT   2026-09-01       -0.000107  17202.901668
-        3     2025-08-22      LFT   2027-03-01        0.000302  17193.200289
-        4     2025-08-22      LFT   2027-09-01        0.000411  17186.767105
-        ...
-    """
-    df = get_cached_dataset("tpf")
-    date = convert_input_dates(date)
-    df = df.query("ReferenceDate == @date").reset_index(drop=True)
-
-    if df.empty:
+    if fetch_from_source:
         # Try to fetch the data from the Anbima website
-        df = fetch_tpf_data(date)
+        df = _fetch_tpf_data(date)
+    else:
+        df = (
+            get_cached_dataset("tpf")
+            .query("ReferenceDate == @date")
+            .reset_index(drop=True)
+        )
 
     if df.empty:
         # If the data is still empty, return an empty DataFrame
         return pd.DataFrame()
 
     if bond_type:
-        df = df.query("BondType == @bond_type").reset_index(drop=True)
+        norm_bond_type = _bond_type_mapping(bond_type)  # noqa
+        df = df.query("BondType == @norm_bond_type").reset_index(drop=True)
 
-    if adj_maturities:
-        df["MaturityDate"] = bday.offset(df["MaturityDate"], 0)
-
-    return (
-        df[["ReferenceDate", "BondType", "MaturityDate", "IndicativeRate", "Price"]]
-        .sort_values(["BondType", "MaturityDate"])
-        .reset_index(drop=True)
-    )
+    return df.sort_values(["BondType", "MaturityDate"]).reset_index(drop=True)
 
 
 def tpf_fixed_rate_maturities(date: DateScalar) -> pd.Series:
