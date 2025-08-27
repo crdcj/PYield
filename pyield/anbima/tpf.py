@@ -168,11 +168,12 @@ def _add_usd_dv01(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _add_di_rate(df: pd.DataFrame, target_date: pd.Timestamp) -> pd.DataFrame:
+def _add_di_rate(df: pd.DataFrame) -> pd.DataFrame:
     """Add the DI rate column to the DataFrame."""
     # INSERIR OS DADOS DO DI INTERPOLADO ###
+    reference_date = df["ReferenceDate"].iloc[0]
     df["DIRate"] = di1.interpolate_rates(
-        dates=target_date,
+        dates=reference_date,
         expirations=df["MaturityDate"],
         extrapolate=True,
     )
@@ -251,7 +252,7 @@ def _fetch_tpf_data(date: pd.Timestamp) -> pd.DataFrame:
         df = _process_raw_df(df)
         df = _add_dv01(df)
         df = _add_usd_dv01(df)
-        df = _add_di_rate(df, target_date=date)
+        df = _add_di_rate(df)
         df = _reorder_columns(df)
 
         return df.sort_values(["BondType", "MaturityDate"]).reset_index(drop=True)

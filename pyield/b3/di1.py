@@ -14,6 +14,41 @@ logger = logging.getLogger(__name__)
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 
+def _get_data(dates: pd.Series) -> pd.DataFrame:
+    """Busca dados de DI, incluindo dados intraday para o dia corrente se necessário."""
+    # 1. Busca inicial no cache com as datas solicitadas pelo usuário.
+    df_cached = (
+        get_cached_dataset("di1").query("TradeDate in @dates").reset_index(drop=True)
+    )
+
+    today = dt.now(TIMEZONE_BZ).date()
+    last_bday = bday.last_business_day().date()
+
+    # 2. Lógica para buscar dados intraday.
+    #    Isso é necessário quando o usuário solicita os dados do dia corrente
+    #    e eles ainda não foram persistidos no cache (processo noturno).
+    if (
+        # Condição 1: O dia de hoje foi explicitamente solicitado.
+        today in dates.values
+        # Condição 2: E ainda não está no cache.
+        and today not in df_cached["TradeDate"].values
+        # Condição 3: E hoje é o último dia útil.
+        and today == last_bday
+    ):
+        try:
+            df_intraday = b3.futures(contract_code="DI1", date=today)
+            if not df_intraday.empty:
+                logger.info("Dados intraday de DI inseridos com sucesso.")
+                return pd.concat([df_cached, df_intraday]).reset_index(drop=True)
+            else:
+                logger.warning(f"Nenhum dado intraday de DI encontrado para {today}.")
+        except Exception as e:
+            logger.error(f"Falha ao buscar dados intraday para {today}: {e}")
+
+    # 3. Se a lógica intraday não for acionada ou falhar, retorna apenas dados do cache.
+    return df_cached
+
+
 def data(
     dates: DateScalar | DateArray,
     month_start: bool = False,
@@ -57,22 +92,14 @@ def data(
     """
     dates = dc.convert_input_dates(dates)
     # Force dates to be a Series for consistency
-    dates = pd.Series(dates) if isinstance(dates, pd.Timestamp) else dates
+    if isinstance(dates, pd.Timestamp):
+        dates = pd.Series([dates]).astype("date32[pyarrow]")
+
     # Remove duplicates and sort dates
     dates = dates.drop_duplicates().sort_values().reset_index(drop=True)
-
-    df = get_cached_dataset("di1").query("TradeDate in @dates").reset_index(drop=True)
-
-    today = dt.now(TIMEZONE_BZ).date()
-    last_bday = bday.last_business_day()
-    is_trading_day = today == last_bday.date()
-    if is_trading_day and last_bday in df["TradeDate"]:
-        logger.info("Trying to get DI Futures data for today.")
-        df_intraday = b3.futures(contract_code="DI1", date=last_bday)
-        df = pd.concat([df, df_intraday]).reset_index(drop=True)
-
+    df = _get_data(dates)
     if df.empty:
-        logger.warning("No DI Futures data found for the specified dates.")
+        logger.warning("No DI1 data found for the specified dates.")
         logger.warning("Returning empty DataFrame.")
         return pd.DataFrame()
 
