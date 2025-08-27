@@ -37,11 +37,14 @@ def _get_data(dates: pd.Series) -> pd.DataFrame:
     ):
         try:
             df_intraday = b3.futures(contract_code="DI1", date=today)
-            if not df_intraday.empty:
-                logger.info("Dados intraday de DI inseridos com sucesso.")
-                return pd.concat([df_cached, df_intraday]).reset_index(drop=True)
-            else:
-                logger.warning(f"Nenhum dado intraday de DI encontrado para {today}.")
+            if "SettlementPrice" not in df_intraday.columns or df_intraday.empty:
+                logger.warning(
+                    f"Ainda sem dados de ajustes intraday para {today}."
+                    " Retornando apenas dados do cache."
+                )
+                return df_cached
+            logger.info("Dados intraday de DI inseridos com sucesso.")
+            return pd.concat([df_cached, df_intraday]).reset_index(drop=True)
         except Exception as e:
             logger.error(f"Falha ao buscar dados intraday para {today}: {e}")
 

@@ -209,18 +209,19 @@ def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _fetch_tpf_data(date: pd.Timestamp) -> pd.DataFrame:
-    """Fetch and process TPF secondary market data directly from the ANBIMA source.
+    """Busca e processa dados do mercado secundário de TPF diretamente da fonte ANBIMA.
 
-    This is a low-level function intended for internal use. It handles the logic
-    of building the correct URL (public or RTM), downloading the data with retries,
-    and processing it into a structured DataFrame.
+    Esta é uma função de baixo nível para uso interno. Ela lida com a lógica
+    de construir a URL correta (pública ou RTM), baixar os dados com novas
+    tentativas e processá-los em um DataFrame estruturado.
 
     Args:
-        date (pd.Timestamp): The reference date for the data.
+        date (pd.Timestamp): A data de referência para os dados.
 
     Returns:
-        pd.DataFrame: A DataFrame containing processed bond market data, or an
-            empty DataFrame if data is unavailable or a connection error occurs.
+        pd.DataFrame: Um DataFrame contendo os dados de mercado de títulos
+            processados, ou um DataFrame vazio se os dados não estiverem
+            disponíveis ou ocorrer um erro de conexão.
     """
     file_url = _build_file_url(date)
     date_str = date.strftime("%d/%m/%Y")
@@ -283,38 +284,37 @@ def tpf_data(
     bond_type: str | None = None,
     fetch_from_source: bool = False,
 ) -> pd.DataFrame:
-    """Retrieve TPF secondary market data from ANBIMA.
+    """Recupera os dados do mercado secundário de TPF da ANBIMA.
 
-    This function fetches indicative rates and other data for Brazilian government
-    bonds from ANBIMA. By default, it attempts to retrieve data from a local
-    cache for performance. If `fetch_from_source` is True, it tries to fetch the data
-    directly from the ANBIMA website.
+    Esta função busca taxas indicativas e outros dados de títulos públicos
+    brasileiros. A obtenção dos dados segue uma hierarquia de fontes para
+    otimizar o desempenho e o acesso.
 
     Args:
-        date (DateScalar): The reference date for the data (e.g., '2024-06-14').
-        bond_type (str, optional): Filters results by a specific bond type
-            (e.g., 'LTN', 'NTN-B'). Defaults to None, returning all bond types.
-        fetch_from_source (bool, optional): If True, forces the function to
-            bypass the cache and fetch data directly from the source.
-            Defaults to False.
+        date (DateScalar): A data de referência para os dados (ex: '2024-06-14').
+        bond_type (str, optional): Filtra os resultados por um tipo de título
+            específico (ex: 'LTN', 'NTN-B'). Por padrão, retorna todos os tipos.
+        fetch_from_source (bool, optional): Se True, força a função a ignorar o
+            cache e buscar os dados diretamente da fonte (ANBIMA).
+            Padrão é False.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the requested bond data. An empty
-        DataFrame is returned if no data is available for the specified date
-        (e.g., weekends, holidays, or future dates).
+        pd.DataFrame: Um DataFrame contendo os dados solicitados. Retorna um
+        DataFrame vazio se não houver dados para a data especificada (ex:
+        finais de semana, feriados ou datas futuras).
 
     Examples:
         >>> from pyield import anbima
         >>> anbima.tpf_data(date="22-08-2025")
-           ReferenceDate BondType MaturityDate  IndicativeRate         Price
-        0     2025-08-22      LFT   2025-09-01        0.000165  17200.957952
-        1     2025-08-22      LFT   2026-03-01       -0.000116  17202.058818
-        2     2025-08-22      LFT   2026-09-01       -0.000107  17202.901668
-        3     2025-08-22      LFT   2027-03-01        0.000302  17193.200289
-        4     2025-08-22      LFT   2027-09-01        0.000411  17186.767105
+           ReferenceDate BondType  SelicCode  ...   AskRate IndicativeRate    DIRate
+        0     2025-08-22      LFT     210100  ...    0.0001       0.000165   0.14906
+        1     2025-08-22      LFT     210100  ... -0.000156      -0.000116   0.14843
+        2     2025-08-22      LFT     210100  ... -0.000143      -0.000107    0.1436
+        3     2025-08-22      LFT     210100  ...  0.000292       0.000302  0.138189
         ...
 
-    DataFrame columns:
+
+    Data columns:
         - BondType: Tipo do título público (e.g., 'LTN', 'NTN-B').
         - ReferenceDate: Data de referência dos dados.
         - SelicCode: Código do título no SELIC.
@@ -329,7 +329,7 @@ def tpf_data(
         - BidRate: Taxa de compra em formato decimal (e.g., 0.10 para 10%).
         - AskRate: Taxa de venda em formato decimal.
         - IndicativeRate: Taxa indicativa em formato decimal.
-        - DIRate: Taxa DI interpolada para o vencimento do título.
+        - DIRate: Taxa DI interpolada (flatforward) no vencimento do título.
         - StdDev: Desvio padrão da taxa indicativa.
         - LowerBoundRateD0: Limite inferior do intervalo indicativo para D+0.
         - UpperBoundRateD0: Limite superior do intervalo indicativo para D+0.
@@ -338,11 +338,16 @@ def tpf_data(
         - Criteria: Critério utilizado pela ANBIMA para o cálculo.
 
     Notes:
-        - Data for the last 5 business days is available on the public ANBIMA
-          website.
-        - Historical data (older than 5 business days) is only available via
-          the RTM network. If you are not connected to RTM, requests for
-          older dates will return an empty DataFrame.
+        A fonte dos dados segue a seguinte hierarquia:
+
+        1.  **Cache Local (Padrão):** Fornece acesso rápido a dados históricos
+            desde 01/01/2020. É utilizado por padrão (`fetch_from_source=False`).
+        2.  **Site Público da ANBIMA:** Acessado quando `fetch_from_source=True`,
+            disponibiliza os dados dos últimos 5 dias úteis.
+        3.  **Rede RTM da ANBIMA:** Acessada quando `fetch_from_source=True` para
+            datas com mais de 5 dias úteis. O acesso ao histórico completo
+            requer uma conexão à rede RTM. Sem ela, a consulta para datas
+            antigas retornará um DataFrame vazio.
     """
     date = convert_input_dates(date)
 
@@ -377,11 +382,10 @@ def tpf_data(
 
 
 def tpf_fixed_rate_maturities(date: DateScalar) -> pd.Series:
-    """Retrieve pre-defined maturity dates for LTN and NTN-F bonds.
+    """Retrieve existing maturity dates for fixed-rate public bonds (LTN and NTN-F).
 
-    This function fetches pre-defined maturity dates for 'LTN' (prefixadas) and
-    'NTN-F' (indexadas ao CDI) bond types from the cached ANBIMA dataset
-    for a given reference date.
+    This function fetches existing maturity dates for 'LTN' and
+    'NTN-F' bond types for a given date.
 
     Args:
         date (DateScalar): The reference date for maturity dates.
@@ -389,6 +393,20 @@ def tpf_fixed_rate_maturities(date: DateScalar) -> pd.Series:
     Returns:
         pd.Series: A Series containing unique maturity dates for 'LTN' and
             'NTN-F' bonds, sorted in ascending order.
+
+    Examples:
+        >>> from pyield import anbima
+        >>> anbima.tpf_fixed_rate_maturities(date="22-08-2025")
+        0     2025-10-01
+        1     2026-01-01
+        2     2026-04-01
+        3     2026-07-01
+                ...
+        14    2031-01-01
+        15    2032-01-01
+        16    2033-01-01
+        17    2035-01-01
+        Name: MaturityDate, dtype: date32[day][pyarrow]
     """
     maturity_dates = (
         tpf_data(date)

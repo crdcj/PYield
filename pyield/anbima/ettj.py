@@ -18,7 +18,7 @@ ROUND_DIGITS = 6
 
 
 @default_retry
-def _get_last_content() -> str:
+def _get_last_content_text() -> str:
     """Fetches the raw yield curve data from ANBIMA."""
     request_payload = {
         "Idioma": "PT",
@@ -30,34 +30,47 @@ def _get_last_content() -> str:
     return r.text
 
 
-def _convert_text_to_df(text: str) -> pd.DataFrame:
+def _get_reference_date(text: str) -> pd.Timestamp:
+    file_date_str = text[0:10]  # formato = 09/09/2024
+    file_date = pd.to_datetime(file_date_str, format="%d/%m/%Y")
+    return file_date
+
+
+def _filter_ettf_text(texto_completo: str) -> str:
+    # Definir os marcadores de início e fim
+    marcador_inicio = "Vertices;ETTJ IPCA;ETTJ PREF;Inflação Implícita"
+    marcador_fim = "PREFIXADOS (CIRCULAR 3.361)"
+
+    # 2. Dividir o texto em uma lista de linhas
+    linhas = texto_completo.strip().splitlines()
+
+    # 3. Encontrar os índices das linhas de início e fim
+    indice_inicio = linhas.index(marcador_inicio)
+    indice_fim = linhas.index(marcador_fim)
+
+    # 4. Fatiar a lista para extrair o trecho desejado
+    trecho_filtrado = linhas[indice_inicio:indice_fim]
+
+    # Remover linhas vazias que possam ter sido incluídas no final
+    while trecho_filtrado and not trecho_filtrado[-1].strip():
+        trecho_filtrado.pop()
+
+    # 5. Juntar as linhas filtradas em um único texto e retornar
+    return "\n".join(trecho_filtrado)
+
+
+def _convert_text_to_df(text: str, reference_date: pd.Timestamp) -> pd.DataFrame:
     """Converts the raw yield curve text to a DataFrame."""
-    raw_df = pd.read_csv(
+    df = pd.read_csv(
         StringIO(text),
         sep=";",
-        encoding="latin1",
-        skiprows=5,
-        dtype_backend="numpy_nullable",
-    )
-
-    idx = raw_df.query("Vertices =='PREFIXADOS (CIRCULAR 3.361)'").first_valid_index()  # noqa
-    raw_df.query("index < @idx", inplace=True)
-    csv_buffer = StringIO()
-
-    # Save the DataFrame as CSV in memory buffer to be read again
-    # It's easier than handling values with commas and dots directly in the DataFrame
-    raw_df.to_csv(csv_buffer, index=False)
-    csv_buffer.seek(0)  # Move the buffer cursor to the beginning
-
-    df = pd.read_csv(
-        csv_buffer,
         decimal=",",
         thousands=".",
-        dtype_backend="numpy_nullable",
+        encoding="latin1",
+        dtype_backend="pyarrow",
     )
-    file_date_str = text[0:10]  # 09/09/2024
-    file_date = pd.to_datetime(file_date_str, format="%d/%m/%Y")
-    df["date"] = file_date
+    df["date"] = reference_date
+    df["date"] = df["date"].astype("date32[pyarrow]")
 
     return df
 
@@ -85,9 +98,7 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
         "real_rate",
         "implied_inflation",
     ]
-    df = df[column_order].copy()
-
-    return df
+    return df[column_order].copy()
 
 
 def last_ettj() -> pd.DataFrame:
@@ -111,9 +122,66 @@ def last_ettj() -> pd.DataFrame:
     Note:
         All rates are expressed in decimal format (e.g., 0.12 for 12%).
     """
-    text = _get_last_content()
-    df = _convert_text_to_df(text)
+    text = _get_last_content_text()
+    reference_date = _get_reference_date(text)
+    text = _filter_ettf_text(text)
+    df = _convert_text_to_df(text, reference_date)
     return _process_df(df)
+
+
+def _extrair_data_e_tabelas(
+    texto: str, titulo_tabela: str
+) -> tuple[pd.Timestamp, str, str]:
+    # Títulos que servem como nossos marcadores
+    titulo_pre = "ETTJ PREFIXADOS (%a.a./252)"
+    titulo_ipca = "ETTJ IPCA (%a.a./252)"
+
+    # Dividir o texto em linhas
+    linhas = [linha for linha in texto.strip().splitlines() if linha.strip()]
+
+    # Encontrar os índices dos títulos
+    inicio_tabela_pre = linhas.index(titulo_pre)
+    inicio_tabela_ipca = linhas.index(titulo_ipca)
+
+    # --- Extrair Tabela 1 ---
+    data_ref_pre = linhas[inicio_tabela_pre + 1]
+    # A tabela 1 vai do seu cabeçalho até a linha antes do título da tabela 2
+    tabela_pre_linhas = linhas[inicio_tabela_pre + 2 : inicio_tabela_ipca]
+    tabela_pre = "\n".join(tabela_pre_linhas)
+
+    # --- Extrair Tabela 2 ---
+    data_ref_ipca = linhas[inicio_tabela_ipca + 1]
+    # A tabela 2 vai do seu cabeçalho até o final da lista
+    tabela_ipca_linhas = linhas[inicio_tabela_ipca + 2 :]
+    tabela_ipca = "\n".join(tabela_ipca_linhas)
+
+    if data_ref_pre != data_ref_ipca:
+        raise ValueError("Datas de referência diferentes")
+
+    data_ref = pd.to_datetime(data_ref_pre, format="%d/%m/%Y")
+
+    return data_ref, tabela_pre, tabela_ipca
+
+
+def _ler_tabela_intradia(texto: str) -> pd.DataFrame:
+    """
+    Reads a table from the given text and returns it as a DataFrame.
+
+    Args:
+        texto (str): The text containing the table data.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the table data.
+    """
+    df = pd.read_csv(
+        StringIO(texto),
+        sep=";",
+        decimal=",",
+        thousands=".",
+        dtype_backend="pyarrow",
+    )
+    df = df.drop(columns=["Fechamento D -1"])
+    return df
 
 
 def intraday_ettj() -> pd.DataFrame:
@@ -140,25 +208,18 @@ def intraday_ettj() -> pd.DataFrame:
 
     request_payload = {"Dt_Ref": "", "saida": "csv"}
     response = requests.post(INTRADAY_ETTJ_URL, data=request_payload)
-    text_parts = response.text.split("ETTJ IPCA (%a.a./252)")
+    texto = response.text
 
-    nominal_text = text_parts[0]
-    lines = nominal_text.splitlines()
-    date_str = lines[1]
-    date = pd.to_datetime(date_str, format="%d/%m/%Y")
-    df_text = "\n".join(lines[2:])
-    df_nominal = pd.read_csv(StringIO(df_text), sep=";", decimal=",", thousands=".")
-    df_nominal = df_nominal.drop(columns=["Fechamento D -1"])
-    df_nominal = df_nominal.rename(columns={"D0": "nominal_rate"})
+    # --- Extração da Tabela 1: PREFIXADOS ---
+    data_ref, tabela_pre, tabela_ipca = _extrair_data_e_tabelas(texto, texto)
 
-    real_text = text_parts[1]
-    lines = real_text.splitlines()
-    df_text = "\n".join(lines[2:])
-    df_real = pd.read_csv(StringIO(df_text), sep=";", decimal=",", thousands=".")
-    df_real = df_real.drop(columns=["Fechamento D -1"])
-    df_real = df_real.rename(columns={"D0": "real_rate"})
+    df_pre = _ler_tabela_intradia(tabela_pre)
+    df_pre = df_pre.rename(columns={"D0": "nominal_rate"})
 
-    df = pd.merge(df_nominal, df_real, on="Vertices", how="right")
+    df_ipca = _ler_tabela_intradia(tabela_ipca)
+    df_ipca = df_ipca.rename(columns={"D0": "real_rate"})
+
+    df = pd.merge(df_pre, df_ipca, on="Vertices", how="right")
     df = df.rename(columns={"Vertices": "vertex"})
 
     # Divide float columns by 100 and round to 6 decimal places
@@ -167,6 +228,7 @@ def intraday_ettj() -> pd.DataFrame:
     df["implied_inflation"] = (df["nominal_rate"] + 1) / (df["real_rate"] + 1) - 1
     df["implied_inflation"] = df["implied_inflation"].round(ROUND_DIGITS)
 
-    df["date"] = date
+    df["date"] = data_ref
+    df["date"] = df["date"].astype("date32[pyarrow]")
     column_order = ["date", "vertex", "nominal_rate", "real_rate", "implied_inflation"]
     return df[column_order].copy()

@@ -52,9 +52,10 @@ def data(date: DateScalar) -> pd.DataFrame:
 
     Examples:
         >>> from pyield import ntnc
-        >>> ntnc.data("21-03-2025")
-          ReferenceDate BondType MaturityDate  IndicativeRate        Price
-        0    2025-03-21    NTN-C   2031-01-01        0.067626  8347.348705
+        >>> ntnc.data("23-08-2024")
+          ReferenceDate BondType  SelicCode  ...   AskRate IndicativeRate   DIRate
+        0    2024-08-23    NTN-C     770100  ...  0.057587       0.059617  0.11575
+        ...
     """
     return anbima.tpf_data(date, "NTN-C")
 
