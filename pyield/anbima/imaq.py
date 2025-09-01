@@ -14,7 +14,7 @@ from pyield.date_converter import DateScalar
 # Configura o logger do módulo
 logger = logging.getLogger(__name__)
 
-
+# --- Configurações Centralizadas ---
 IMA_URL = "https://www.anbima.com.br/informacoes/ima/ima-quantidade-mercado.asp"
 COLUMN_MAPPING = {
     "Data Referência": "Date",
@@ -115,13 +115,15 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
-    date = df["Date"].min()
-    df_anbima = tpf_data(date)[["MaturityDate", "DV01", "DV01USD"]].copy()
+    target_date = df["Date"].min()
+    df_anbima = tpf_data(target_date)
+    target_cols = ["ReferenceDate", "BondType", "MaturityDate", "DV01", "DV01USD"]
+    df_anbima = df_anbima[target_cols].rename(columns={"ReferenceDate": "Date"})
     # Guard clause for missing columns
     if "DV01" not in df_anbima.columns or "DV01USD" not in df_anbima.columns:
         return df
 
-    df = df.merge(df_anbima, on="MaturityDate", how="left")
+    df = df.merge(df_anbima, on=["Date", "BondType", "MaturityDate"], how="left")
     # Calcular os estoques
     df["MarketDV01"] = df["DV01"] * df["MarketQuantity"]
     df["MarketDV01USD"] = df["DV01USD"] * df["MarketQuantity"]
