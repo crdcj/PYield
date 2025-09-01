@@ -8,6 +8,7 @@ import requests
 from bs4 import XMLParsedAsHTMLWarning
 
 from pyield import date_converter as dc
+from pyield.anbima.tpf import tpf_data
 from pyield.date_converter import DateScalar
 
 # Configura o logger do módulo
@@ -18,7 +19,7 @@ IMA_URL = "https://www.anbima.com.br/informacoes/ima/ima-quantidade-mercado.asp"
 COLUMN_MAPPING = {
     "Data Referência": "Date",
     "Título": "BondType",
-    "Data de Vencimento": "Maturity",
+    "Data de Vencimento": "MaturityDate",
     "Codigo Selic": "SelicCode",
     "Código ISIN": "ISIN",
     "PU (R$)": "Price",
@@ -29,10 +30,7 @@ COLUMN_MAPPING = {
 }
 
 
-def _fetch_url_tables(target_date: pd.Timestamp) -> pd.DataFrame:
-    # Warning supression for BeautifulSoup, as the text is valid HTML and not XML
-    warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
-
+def _fetch_url_content(target_date: pd.Timestamp) -> str:
     target_date_str = target_date.strftime("%d/%m/%Y")
     payload = {
         "Tipo": "",
@@ -46,13 +44,19 @@ def _fetch_url_tables(target_date: pd.Timestamp) -> pd.DataFrame:
     r.raise_for_status()
     r.encoding = "iso-8859-1"
     if "Não há dados disponíveis" in r.text:
-        logger.warning(f"No data for {target_date_str}. Returning empty DataFrame.")
+        return ""
+    return r.text
+
+
+def _fetch_url_tables(text: str) -> pd.DataFrame:
+    # Warning supression for BeautifulSoup, as the text is valid HTML and not XML
+    warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+
+    if not text:
         return pd.DataFrame()
 
-    string_io_buffer = io.StringIO(r.text)
-
     dfs = pd.read_html(
-        string_io_buffer,
+        io.StringIO(text),
         flavor="html5lib",
         attrs={"width": "100%"},
         header=0,
@@ -79,13 +83,12 @@ def _fetch_url_tables(target_date: pd.Timestamp) -> pd.DataFrame:
     date_pattern = r"\b(\d{2}/\d{2}/\d{4})\b"
 
     # Busca pela primeira data
-    match = re.search(date_pattern, r.text)
+    match = re.search(date_pattern, text)
 
     if match:
         anbima_date_str = match.group(1)
         anbima_date = pd.to_datetime(anbima_date_str, format="%d/%m/%Y")
     else:
-        logger.warning(f"No data for {target_date_str}. Returning empty DataFrame.")
         return pd.DataFrame()
 
     df["Data Referência"] = anbima_date
@@ -95,8 +98,8 @@ def _fetch_url_tables(target_date: pd.Timestamp) -> pd.DataFrame:
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns=COLUMN_MAPPING)[COLUMN_MAPPING.values()]
-    df["Maturity"] = pd.to_datetime(df["Maturity"], format="%d/%m/%Y")
-    df["Maturity"] = df["Maturity"].astype("date32[pyarrow]")
+    df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%d/%m/%Y")
+    df["MaturityDate"] = df["MaturityDate"].astype("date32[pyarrow]")
     df["Date"] = df["Date"].astype("date32[pyarrow]")
 
     for col in ["MarketQuantity", "MarketValue", "QuantityVariation"]:
@@ -108,7 +111,44 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
         # Remove the thousands unit from numeric columns
         df[col] = (1000 * df[col]).round(0).astype("int64[pyarrow]")
 
+    return df.sort_values(by=["BondType", "MaturityDate"]).reset_index(drop=True)
+
+
+def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
+    date = df["Date"].min()
+    df_anbima = tpf_data(date)[["MaturityDate", "DV01", "DV01USD"]].copy()
+    # Guard clause for missing columns
+    if "DV01" not in df_anbima.columns or "DV01USD" not in df_anbima.columns:
+        return df
+
+    df = df.merge(df_anbima, on="MaturityDate", how="left")
+    # Calcular os estoques
+    df["MarketDV01"] = df["DV01"] * df["MarketQuantity"]
+    df["MarketDV01USD"] = df["DV01USD"] * df["MarketQuantity"]
+    for col in ["MarketDV01", "MarketDV01USD"]:
+        df[col] = df[col].round(0).astype("int64[pyarrow]")
+    # Remover colunas desnecessárias
+    df = df.drop(columns=["DV01", "DV01USD"], errors="ignore")
     return df
+
+
+def _reorder_df(df: pd.DataFrame) -> pd.DataFrame:
+    # Reorder the DataFrame columns
+    column_order = [
+        "Date",
+        "BondType",
+        "MaturityDate",
+        "SelicCode",
+        "ISIN",
+        "Price",
+        "MarketQuantity",
+        "MarketDV01",
+        "MarketDV01USD",
+        "MarketValue",
+        "QuantityVariation",
+        "BondStatus",
+    ]
+    return df[column_order].copy()
 
 
 def imaq(date: DateScalar) -> pd.DataFrame:
@@ -146,13 +186,18 @@ def imaq(date: DateScalar) -> pd.DataFrame:
 
     """
     date = dc.convert_input_dates(date)
+    date_str = date.strftime("%d/%m/%Y")
     try:
-        df = _fetch_url_tables(date)
+        text = _fetch_url_content(date)
+        df = _fetch_url_tables(text)
         if df.empty:
+            logger.warning(f"No data for {date_str}. Returning an empty DataFrame.")
             return df
-        return _process_df(df)
+        df = _process_df(df)
+        df = _add_dv01(df)
+        df = _reorder_df(df)
+        return df
     except Exception:  # Erro inesperado
-        date_str = date.strftime("%d/%m/%Y")
         msg = f"Error fetching IMA for {date_str}. Returning empty DataFrame."
         logger.exception(msg)
         return pd.DataFrame()

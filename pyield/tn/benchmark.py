@@ -7,8 +7,6 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
-
 COLUMN_MAPPING = {
     "INÍCIO": "StartDate",
     "TERMINO": "EndDate",
@@ -17,14 +15,71 @@ COLUMN_MAPPING = {
     "BENCHMARK": "Benchmark",
 }
 
-
 API_BASE_URL = (
     "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/benchmarks"
 )
 API_HISTORY_PARAM = "incluir_historico"
 
+TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
-def benchmarks(include_history: bool = False) -> pd.DataFrame:
+
+def _fetch_raw_benchmarks(include_history: bool) -> list[dict]:
+    """
+    Fetches the raw benchmark data from the Tesouro Nacional API.
+    Handles network requests, retries, and basic response validation.
+    """
+    session = requests.Session()
+    include_history_param_value = "S" if include_history else "N"
+    api_endpoint = f"{API_BASE_URL}?{API_HISTORY_PARAM}={include_history_param_value}"
+
+    try:
+        response = session.get(api_endpoint)
+        response.raise_for_status()
+    except requests.exceptions.SSLError as e:
+        logger.warning(
+            f"SSL error encountered: {e}. Retrying without certificate verification."
+        )
+        response = session.get(api_endpoint, verify=False)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error fetching benchmarks from API: {e}")
+        return []  # Retorna lista vazia em caso de erro
+
+    response_dict = response.json()
+
+    if not response_dict or "registros" not in response_dict:
+        logger.warning("API response did not contain 'registros' key or was empty.")
+        return []
+
+    return response_dict["registros"]
+
+
+def _process_benchmark_data(raw_data: list[dict]) -> pd.DataFrame:
+    """
+    Converts raw benchmark data into a cleaned and typed pandas DataFrame.
+    """
+    if not raw_data:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(raw_data).dropna().convert_dtypes(dtype_backend="pyarrow")
+
+    if df.empty:
+        logger.warning("DataFrame is empty after dropping NaN values.")
+        return pd.DataFrame()
+
+    # Limpeza e tipagem
+    date_cols = ["VENCIMENTO", "TERMINO", "INÍCIO"]
+    for col in date_cols:
+        df[col] = pd.to_datetime(df[col]).astype("date32[pyarrow]")
+
+    str_cols = ["BENCHMARK", "TÍTULO"]
+    for col in str_cols:
+        df[col] = df[col].str.strip()
+
+    return df
+
+
+def benchmarks(bond_type: str = None, include_history: bool = False) -> pd.DataFrame:
     """Fetches benchmark data for Brazilian Treasury Bonds from the TN API.
 
     This function retrieves current or historical benchmark data for various Brazilian
@@ -56,9 +111,8 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
     Examples:
         >>> from pyield import tn
         >>> df_current = tn.benchmarks()
-
         >>> # Get historical benchmarks
-        >>> df_history = tn.benchmarks(include_history=True)
+        >>> df_history = tn.benchmarks(bond_type="LFT", include_history=True)
         >>> df_history.head()
               StartDate     EndDate BondType MaturityDate      Benchmark
         0    2014-01-01  2014-06-30      LFT   2020-03-01     LFT 6 anos
@@ -67,67 +121,32 @@ def benchmarks(include_history: bool = False) -> pd.DataFrame:
         3    2015-05-01  2015-12-31      LFT   2021-09-01     LFT 6 anos
         4    2016-01-01  2016-06-30      LFT   2022-03-01     LFT 6 anos
     """
-    session = requests.Session()
-    include_history_param_value = "S" if include_history else "N"
-    api_endpoint = f"{API_BASE_URL}?{API_HISTORY_PARAM}={include_history_param_value}"
+    # Passo 1: Buscar os dados brutos
+    raw_data = _fetch_raw_benchmarks(include_history=include_history)
+    if not raw_data:
+        return pd.DataFrame()  # Retorna DF vazio se a busca falhou
 
-    try:
-        stn_benchmarks = session.get(api_endpoint)
-        stn_benchmarks.raise_for_status()
-    except requests.exceptions.SSLError as e:
-        logger.error(
-            f"SSL error encountered: {e}. Retrying without certificate verification."
-        )
-        stn_benchmarks = session.get(api_endpoint, verify=False)
-        stn_benchmarks.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error fetching benchmarks from API: {e}")
-        return pd.DataFrame()
-
-    response_dict = stn_benchmarks.json()
-
-    # 1a verificação: Verifica se a resposta da API contém dados válidos de registros
-    if not response_dict or not response_dict.get("registros"):
-        logger.warning("API response did not contain 'registros' key or it was empty.")
-        return pd.DataFrame()
-
-    # Tenta criar o DataFrame.
-    df = (
-        pd.DataFrame(response_dict["registros"])
-        .dropna()
-        .convert_dtypes(dtype_backend="pyarrow")
-    )
-
-    # 2a verificação: Verifica se o DataFrame resultante (pós-dropna) está vazio
-    # Esta verificação é importante porque .dropna() pode remover todas as linhas.
+    # Passo 2: Processar os dados em um DataFrame limpo
+    df = _process_benchmark_data(raw_data)
     if df.empty:
-        logger.warning(
-            "No valid benchmark data found after initial processing"
-            "(e.g., all rows had NaNs and were dropped).",
-        )
-        return pd.DataFrame()
+        return pd.DataFrame()  # Retorna DF vazio se o processamento resultou em nada
 
-    # Se chegamos até aqui, o DataFrame tem dados e pode ser processado.
-    for col in ["VENCIMENTO", "TERMINO", "INÍCIO"]:
-        df[col] = pd.to_datetime(df[col]).astype("date32[pyarrow]")
-
-    df["BENCHMARK"] = df["BENCHMARK"].str.strip()
-    df["TÍTULO"] = df["TÍTULO"].str.strip()
-
+    # Passo 3: Aplicar filtros específicos da chamada
     if not include_history:
-        # Em tese, a API já retorna apenas benchmarks ativos,
-        # mas vamos garantir que o DataFrame só contenha benchmarks ativos
-        # considerando o período atual.
         today = dt.now(TIMEZONE_BZ).date()  # noqa
         df = df.query("INÍCIO <= @today <= TERMINO").reset_index(drop=True)
+        if df.empty:
+            logger.warning(
+                "No current benchmark data found after filtering by active period."
+            )
 
-    # Verifica novamente se o DataFrame ficou vazio *após o filtro condicional*
-    # (apenas se `include_history` for False)
-    if df.empty and not include_history:
-        logger.warning(
-            "No current benchmark data found after filtering by active period."
-        )
+    if bond_type:
+        df = df.query("TÍTULO == @bond_type").reset_index(drop=True)
 
+    if df.empty:
+        return pd.DataFrame()  # Retorna DF vazio se os filtros removeram tudo
+
+    # Passo 4: Formatar a saída final
     column_order = [c for c in COLUMN_MAPPING if c in df.columns]
     return (
         df[column_order]
