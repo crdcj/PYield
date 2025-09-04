@@ -69,6 +69,8 @@ def _fetch_df_from_url(url: str) -> pd.DataFrame:
         df = _rename_columns(df)
         df = _process_df(df)
         df = _reorder_and_sort_columns(df)
+        # Garantir que não há duplicatas de datas, mantendo a última ocorrência
+        df = df.drop_duplicates(subset=["Date"], keep="last").reset_index(drop=True)
         return df
     except requests.exceptions.HTTPError as http_err:
         logger.error(f"HTTP error occurred: {http_err}")
@@ -145,11 +147,13 @@ def ptax_series(
 
     Examples:
         >>> from pyield import bc
-        >>> df = yd.bc.ptax_series(start="01-01-2025", end="05-01-2025")
+        >>> df = yd.bc.ptax_series(start="20-04-2025", end="25-04-2025")
         >>> df
                  Date                    DateTime  BuyRate  SellRate  MidRate
-        0  2025-01-02  2025-01-02 13:09:42.489000    6.208    6.2086   6.2083
-        1  2025-01-03  2025-01-03 13:07:30.503000   6.1557    6.1563    6.156
+        0  2025-04-22  2025-04-22 13:09:35.629000    5.749    5.7496   5.7493
+        1  2025-04-23  2025-04-23 13:06:30.443000   5.6874     5.688   5.6877
+        2  2025-04-24  2025-04-24 13:04:29.639000   5.6732    5.6738   5.6735
+        3  2025-04-25  2025-04-25 13:09:26.592000    5.684    5.6846   5.6843
 
     Notes:
         Disponível desde 28.11.1984, refere-se às taxas administradas até março de 1990
