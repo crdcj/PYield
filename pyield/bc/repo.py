@@ -58,9 +58,11 @@ def _pre_process_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    df["Date"] = df["Date"].astype("date32[pyarrow]")
-    df["Settlement"] = df["Settlement"].astype("date32[pyarrow]")
-    df["StartTime"] = pd.to_datetime(df["StartTime"], format="%H:%M").dt.time
+    for col in ["Date", "Settlement", "Maturity"]:
+        df[col] = df[col].astype("date32[pyarrow]")
+    df["StartTime"] = pd.to_datetime(df["StartTime"], format="%H:%M").astype(
+        "time32[s][pyarrow]"
+    )
     # AcceptedVolume é em milhares de reais -> converter para reais
     df["AcceptedVolume"] = (
         (1_000 * df["AcceptedVolume"]).round(0).astype("int64[pyarrow]")
@@ -68,7 +70,6 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
 
     # Remove the percentage sign and round to 6 decimal places (4 decimal places in %)
     df["CutRate"] = (df["CutRate"] / 100).round(6)
-    # df["BDtoReturn"] = bday.count(df["Date"], df["ReturnDate"])
     df["BDtoMat"] = bday.count(df["Date"], df["Maturity"])
     return df
 
@@ -85,10 +86,10 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     column_sequence = [
         "Date",
         "Settlement",
+        "StartTime",
         "Maturity",
         "CDToMat",
         "BDtoMat",
-        "StartTime",
         "AllowedParticipants",
         "CommunicationNumber",
         "OfferType",
@@ -172,10 +173,10 @@ def repos(
         O DataFrame possui as seguintes colunas:
             - Date: Data do leilão.
             - Settlement: Data de liquidação do leilão.
+            - StartTime: Hora de início do leilão.
             - Maturity: Data de retorno do leilão.
             - CDToMat: Prazo em dias corridos até o vencimento.
             - BDtoMat: Prazo em dias úteis até o vencimento.
-            - StartTime: Hora de início do leilão.
             - AllowedParticipants: Participantes permitidos no leilão.
             - CommunicationNumber: Número do comunicado.
             - OfferType: Tipo de oferta do leilão.
