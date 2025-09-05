@@ -118,28 +118,30 @@ def data(
             .query("BondType in ['LTN', 'NTN-F']")
             .drop_duplicates(subset=["ReferenceDate", "MaturityDate"])
             .sort_values(["ReferenceDate", "MaturityDate"])
-            .reset_index(drop=True)[["ReferenceDate", "MaturityDate", "BondType"]]
-        )
-        # Assure that the MaturityDate is a business day
-        df_pre["MaturityDate"] = bday.offset(df_pre["MaturityDate"], 0)
-
-        # Rename columns for merging
-        df_pre = df_pre.rename(
-            columns={"ReferenceDate": "TradeDate", "MaturityDate": "ExpirationDate"}
-        )
-        # merge_asof will be used to filter the most recent LTN and NTN-F
-        # maturities for the given trade date. Therefore, the intraday data
-        # will use LTN and NTN-F maturities from the previous day.
-        df = pd.merge_asof(
-            df, df_pre, on="TradeDate", by="ExpirationDate", direction="backward"
+            .reset_index(drop=True)[["ReferenceDate", "MaturityDate"]]
+            .rename(  # Rename columns for merging
+                columns={"ReferenceDate": "TradeDate", "MaturityDate": "ExpirationDate"}
+            )
         )
 
-        # BondType was used as flag to filter the maturities
-        df = (
-            df.query("BondType.notna()")
-            .drop(columns=["BondType"])
-            .reset_index(drop=True)
+        # Verificar se existe a data de hoje no df_pre
+        today = dt.now(TIMEZONE_BZ).date()
+        if today in dates.values and today not in df_pre["TradeDate"].values:
+            df_pre_today = df_pre.query("TradeDate == TradeDate.max()").reset_index(
+                drop=True
+            )
+            df_pre_today["TradeDate"] = today
+            df_pre_today["TradeDate"] = df_pre_today["TradeDate"].astype(
+                "date32[pyarrow]"
+            )
+            df_pre = pd.concat([df_pre, df_pre_today]).reset_index(drop=True)
+
+        # Assure that dates in ExpirationDate (maturity date) are business days
+        df_pre["ExpirationDate"] = bday.offset(df_pre["ExpirationDate"], 0).astype(
+            "date32[pyarrow]"
         )
+
+        df = df.merge(df_pre, how="inner", on=["TradeDate", "ExpirationDate"])
 
         if df.empty:
             logger.warning(
