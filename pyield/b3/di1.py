@@ -43,7 +43,10 @@ def _get_data(dates: pd.Series) -> pd.DataFrame:
                     " Retornando apenas dados do cache."
                 )
                 return df_cached
-            logger.info("Dados intraday de DI inseridos com sucesso.")
+            if "DaysToExp" in df_intraday.columns:
+                df_intraday.drop(columns=["DaysToExp"], inplace=True)
+            if df_cached.empty:
+                return df_intraday.reset_index(drop=True)
             return pd.concat([df_cached, df_intraday]).reset_index(drop=True)
         except Exception as e:
             logger.error(f"Falha ao buscar dados intraday para {today}: {e}")
