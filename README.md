@@ -92,7 +92,6 @@ date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
 3   2031-01-01     12.58
 4   2033-01-01      7.67
 5   2035-01-01     12.76
-
 ```
 
 ### Business Days Tools (Brazilian holidays are automatically considered)
@@ -105,15 +104,15 @@ date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
 
 # Get the next business day after a given date (offset=1)
 >>> bday.offset(dates="29-12-2023", offset=1)
-Timestamp('2024-01-02 00:00:00')
+datetime.date(2024, 1, 2)
 
 # Get the next business day if it is not a business day (offset=0)
 >>> bday.offset(dates="30-12-2023", offset=0)
-Timestamp('2024-01-02 00:00:00')
+datetime.date(2024, 1, 2)
 
 # Since 29-12-2023 is a business day, it returns the same date (offset=0)
 >>> bday.offset(dates="29-12-2023", offset=0)
-Timestamp('2023-12-29 00:00:00')
+datetime.date(2023, 12, 29)
 
 # Generate a pandas series with the business days between two dates
 >>> bday.generate(start='29-12-2023', end='03-01-2024')

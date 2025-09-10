@@ -354,7 +354,7 @@ def spot_rates(
     """
     # Process and validate the input data
     settlement = dc.convert_input_dates(settlement)
-    maturities = pd.to_datetime(maturities, errors="raise", dayfirst=True)
+    maturities = dc.convert_input_dates(maturities)
 
     # Create the interpolator to calculate the YTM rates for intermediate dates
     ff_interpolator = ip.Interpolator(

@@ -1,3 +1,5 @@
+import datetime as dt
+
 import numpy as np
 import pandas as pd
 
@@ -70,7 +72,7 @@ def test_count_old_and_new_holidays_lists():
 def test_offset_with_old_holiday():
     start = "20-11-2020"
     offset = 0
-    expected_result = pd.Timestamp("20-11-2020")
+    expected_result = dt.date(2020, 11, 20)
     result = bday.offset(start, offset)
     assert result == expected_result, f"Expected {expected_result}, but got {result}"
 
@@ -78,7 +80,7 @@ def test_offset_with_old_holiday():
 def test_offset_with_new_holiday():
     start = "20-11-2024"
     offset = 0
-    expected_result = pd.Timestamp("21-11-2024")
+    expected_result = dt.date(2024, 11, 21)
     result = bday.offset(start, offset)
     assert result == expected_result, f"Expected {expected_result}, but got {result}"
 
@@ -86,7 +88,7 @@ def test_offset_with_new_holiday():
 def test_offset_with_old_and_new_holidays():
     start = ["20-11-2020", "20-11-2024"]
     offset = 0
-    expected_result = pd.Series(["20-11-2020", "21-11-2024"], dtype="datetime64[ns]")
+    expected_result = pd.Series(["20-11-2020", "21-11-2024"], dtype="date32[pyarrow]")
     result = bday.offset(start, offset)
     are_series_equal = result.equals(expected_result)
     assert are_series_equal, f"Expected {expected_result}, but got {result}"
