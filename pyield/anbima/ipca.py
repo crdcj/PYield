@@ -1,5 +1,4 @@
 import io
-import locale
 import warnings
 from dataclasses import dataclass
 
@@ -12,9 +11,9 @@ warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 @dataclass
 class IndicatorProjection:
-    reference_period: pd.Period  # Reference month as a pd.Period object
-    projected_value: float  # Projected value
     last_updated: pd.Timestamp  # Date and time of the last update
+    reference_period: str  # Reference month as a string in "MMM/YY" format
+    projected_value: float  # Projected value
 
 
 def ipca_projection() -> IndicatorProjection:
@@ -34,19 +33,18 @@ def ipca_projection() -> IndicatorProjection:
 
     Returns:
         IndicatorProjection: An object containing:
-            - reference_period (pd.Period): Reference period of the projection
-            - projected_value (float): Projected IPCA value as a decimal number
             - last_updated (pd.Timestamp): Date and time of the last data update
+            - reference_period (str): Reference period of the projection as a string in
+              "MMM/YY" brazilian format (e.g., "set/25")
+            - projected_value (float): Projected IPCA value as a decimal number
 
     Raises:
         requests.RequestException: If there are connection issues with the ANBIMA site
         ValueError: If the expected data is not found in the page structure
-        locale.Error: If the 'pt_BR.UTF-8' locale is not available on the system
 
     Notes:
         - The function requires internet connection to access the ANBIMA website
         - The structure of the ANBIMA page may change, which could affect the function
-        - Temporarily changes the locale to pt_BR.UTF-8 to process dates in Portuguese
     """
     url = "https://www.anbima.com.br/informacoes/indicadores/"
     r = requests.get(url)
@@ -73,13 +71,9 @@ def ipca_projection() -> IndicatorProjection:
     ipca_date = ipca_row.iloc[0, 1]
     ipca_date = str(ipca_date)
     ipca_date = ipca_date.split("(")[-1].split(")")[0]
-    locale.setlocale(locale.LC_TIME, "pt_BR.UTF-8")
-    ipca_date = pd.to_datetime(ipca_date, format="%b/%y")
-    reference_period = ipca_date.to_period("M")
-    locale.setlocale(locale.LC_TIME, "")  # Reset locale to default
 
     return IndicatorProjection(
         last_updated=last_update,
-        reference_period=reference_period,
+        reference_period=ipca_date,
         projected_value=ipca_value,
     )

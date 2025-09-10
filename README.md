@@ -173,9 +173,8 @@ LastUpdatee      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate 
 >>> ipca = anbima.ipca_projection()
 >>> print(ipca)
 IndicatorProjection(
-    last_updated=Timestamp('2024-04-19 18:55:00'),
-    reference_month_ts=Timestamp('2024-04-01 00:00:00'),
-    reference_month_br='ABR/2024',
+    last_updated=Timestamp('2024-04-19 18:55:00'),    
+    reference_period='set/24',
     projected_value=0.0035  # 0.35%
 )
 >>> ipca.projected_value

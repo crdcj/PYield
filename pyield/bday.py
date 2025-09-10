@@ -344,8 +344,8 @@ def count(
             return None
 
         result = np.busday_count(
-            begindates=dc.to_numpy_date_type(start_pd),
-            enddates=dc.to_numpy_date_type(end_pd),
+            begindates=start_pd,
+            enddates=end_pd,
             holidays=br_holidays.get_holiday_array(start_pd),
         )
         return int(result)
@@ -357,7 +357,6 @@ def count(
     if isinstance(end_pd, pd.Series):
         start_pd = pd.Series(start_pd, index=end_pd.index)
     else:
-        assert isinstance(start_pd, pd.Series)  # Linter satisfaction
         end_pd = pd.Series(end_pd, index=start_pd.index)
 
     # Inicializa a série de resultados com o índice correto e tipo que suporta NA.
@@ -442,12 +441,12 @@ def generate(
     if start:
         start_pd = dc.convert_input_dates(start)
     else:
-        start_pd = pd.Timestamp.today()
+        start_pd = dt.datetime.now(TIMEZONE_BZ).date()
 
     if end:
         end_pd = dc.convert_input_dates(end)
     else:
-        end_pd = pd.Timestamp.today()
+        end_pd = dt.datetime.now(TIMEZONE_BZ).date()
 
     applicable_holidays = br_holidays.get_holiday_series(
         dates=start_pd, holiday_option=holiday_option

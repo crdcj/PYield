@@ -398,7 +398,7 @@ def interpolate_rate(
     return ff_interp(bd)
 
 
-def eod_dates() -> pd.Series:
+def available_trade_dates() -> pd.Series:
     """
     Returns all unique end-of-day trade dates available in the DI dataset.
 
@@ -406,13 +406,13 @@ def eod_dates() -> pd.Series:
     historical DI futures data cache, sorted chronologically.
 
     Returns:
-        pd.Series: A sorted Series of unique trade dates (pd.Timestamp)
+        pd.Series: A sorted Series of unique trade dates (dt.date)
                    for which DI data is available.
 
     Examples:
         >>> from pyield import di1
         >>> # DI Futures series starts from 1995-01-02
-        >>> di1.eod_dates().head(5)
+        >>> di1.available_trade_dates().head(5)
         0   1995-01-02
         1   1995-01-03
         2   1995-01-04
