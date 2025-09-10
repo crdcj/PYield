@@ -1,12 +1,11 @@
-import pandas as pd
-from pandas.api.typing import NaTType
+import datetime as dt
 
 from pyield import bday
 
 
 def get_expiration_date(
     expiration_code: str, expiration_day: int = 1
-) -> pd.Timestamp | NaTType:
+) -> dt.date | None:
     """
     Converts an expiration code into its corresponding expiration date.
 
@@ -26,13 +25,12 @@ def get_expiration_date(
 
     Examples:
         >>> get_expiration_date("F23")
-        Timestamp('2023-01-02 00:00:00')
+        datetime.date(2023, 1, 2)
 
         >>> get_expiration_date("Z33")
-        Timestamp('2033-12-01 00:00:00')
+        datetime.date(2033, 12, 1)
 
         >>> get_expiration_date("A99")
-        NaT
 
     Notes:
         The expiration date is calculated based on the format change introduced by B3 on
@@ -59,7 +57,7 @@ def get_expiration_date(
         month = month_codes[month_code]
         year = int("20" + expiration_code[-2:])
         # The expiration day is normally the first business day of the month
-        expiration = pd.Timestamp(year, month, expiration_day)
+        expiration = dt.date(year, month, expiration_day)
 
         # Adjust to the next business day when expiration date is not a business day
         adj_expiration = bday.offset(dates=expiration, offset=0)
@@ -67,4 +65,4 @@ def get_expiration_date(
         return adj_expiration
 
     except (KeyError, ValueError):
-        return pd.NaT
+        return None

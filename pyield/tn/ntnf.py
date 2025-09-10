@@ -132,6 +132,7 @@ def payment_dates(
         coupon_dates.append(coupon_date)
         # Move the coupon date back 6 months
         coupon_date -= pd.DateOffset(months=6)
+        coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
 
     # Return the coupon dates as a sorted Series
     coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
@@ -276,7 +277,7 @@ def spot_rates(  # noqa
         5   2035-01-01     2587  0.121398
     """
     # Process and validate the input data
-    settlement = dc.convert_input_dates(settlement).date()
+    settlement = dc.convert_input_dates(settlement)
 
     # Create flat forward interpolators for LTN and NTN-F rates
     ltn_rate_interpolator = ip.Interpolator(

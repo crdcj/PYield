@@ -353,7 +353,7 @@ def tpf_data(
 
     date_log = date.strftime("%d/%m/%Y")
     today = dt.datetime.now(BZ_TIMEZONE).date()
-    if date.date() > today:
+    if date > today:
         logger.info(
             f"Cannot fetch data for a future date ({date_log}). "
             "Returning empty DataFrame."

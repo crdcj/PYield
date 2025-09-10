@@ -1,5 +1,5 @@
+import datetime as dt
 import logging
-from datetime import datetime as dt
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -21,8 +21,8 @@ def _get_data(dates: pd.Series) -> pd.DataFrame:
         get_cached_dataset("di1").query("TradeDate in @dates").reset_index(drop=True)
     )
 
-    today = dt.now(TIMEZONE_BZ).date()
-    last_bday = bday.last_business_day().date()
+    today = dt.datetime.now(TIMEZONE_BZ).date()
+    last_bday = bday.last_business_day()
 
     # 2. Lógica para buscar dados intraday.
     #    Isso é necessário quando o usuário solicita os dados do dia corrente
@@ -98,7 +98,7 @@ def data(
     """
     dates = dc.convert_input_dates(dates)
     # Force dates to be a Series for consistency
-    if isinstance(dates, pd.Timestamp):
+    if isinstance(dates, dt.date):
         dates = pd.Series([dates]).astype("date32[pyarrow]")
 
     # Remove duplicates and sort dates
@@ -125,7 +125,7 @@ def data(
         )
 
         # Verificar se existe a data de hoje no df_pre
-        today = dt.now(TIMEZONE_BZ).date()
+        today = dt.datetime.now(TIMEZONE_BZ).date()
         if today in dates.values and today not in df_pre["TradeDate"].values:
             df_pre_today = df_pre.query("TradeDate == TradeDate.max()").reset_index(
                 drop=True
@@ -264,11 +264,11 @@ def interpolate_rates(
 
     # Ensure the lengths of input arrays are consistent
     match (dates, expirations):
-        case pd.Timestamp(), pd.Series():
+        case dt.date(), pd.Series():
             dfi = pd.DataFrame({"mat": expirations})
             dfi["tdate"] = dates
 
-        case pd.Series(), pd.Timestamp():
+        case pd.Series(), dt.date():
             dfi = pd.DataFrame({"tdate": dates})
             dfi["mat"] = expirations
 
@@ -277,7 +277,7 @@ def interpolate_rates(
                 raise ValueError("Args. should have the same length.")
             dfi = pd.DataFrame({"tdate": dates, "mat": expirations})
 
-        case pd.Timestamp(), pd.Timestamp():
+        case dt.date(), dt.date():
             dfi = pd.DataFrame({"tdate": [dates], "mat": [expirations]})
 
     # Compute business days between reference dates and maturities
@@ -362,8 +362,8 @@ def interpolate_rate(
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
-    date = dc.convert_input_dates(date).date()
-    expiration = dc.convert_input_dates(expiration).date()
+    date = dc.convert_input_dates(date)
+    expiration = dc.convert_input_dates(expiration)
     if not date or not expiration:
         return float("NaN")
 

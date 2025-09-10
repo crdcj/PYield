@@ -110,6 +110,7 @@ def payment_dates(
         coupon_dates.append(coupon_date)
         # Move the coupon date back 6 months
         coupon_date -= pd.DateOffset(months=6)
+        coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
 
     coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
     return coupon_dates.sort_values().reset_index(drop=True)

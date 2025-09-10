@@ -1,3 +1,5 @@
+import datetime as dt
+
 import numpy as np
 import pandas as pd
 
@@ -102,8 +104,7 @@ def _generate_all_coupon_dates(
     end = dc.convert_input_dates(end)
 
     # Initialize the first coupon date based on the reference date
-    reference_year = start.year
-    first_coupon_date = pd.Timestamp(f"{reference_year}-02-01")
+    first_coupon_date = dt.date(start.year, 2, 1)
 
     # Generate coupon dates
     coupon_dates = pd.date_range(start=first_coupon_date, end=end, freq="3MS")
@@ -113,8 +114,8 @@ def _generate_all_coupon_dates(
 
     # First coupon date must be after the reference date, otherwise, it can lead to
     # division by zero where BDays == 0 (bootstrap method for instance)
-    coupon_dates = coupon_dates[coupon_dates > start]
     coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
+    coupon_dates = coupon_dates[coupon_dates > start]
     return coupon_dates.reset_index(drop=True)
 
 
@@ -161,6 +162,7 @@ def payment_dates(
         coupon_dates.append(coupon_date)
         # Move the coupon date back 6 months
         coupon_date -= pd.DateOffset(months=6)
+        coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
 
     coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
     return coupon_dates.sort_values().reset_index(drop=True)
