@@ -19,7 +19,7 @@ class BrHolidays:
 
     @staticmethod
     def _load_holidays(file_path: Path) -> pd.Series:
-        """Loads the holidays from a file and returns it as a Series of Timestamps."""
+        """Loads the holidays from a file and returns it as a Series of dates."""
         df = pd.read_csv(file_path, header=None, names=["date"], comment="#")
         holidays = pd.to_datetime(df["date"], format="%d/%m/%Y")
         return holidays.astype("date32[pyarrow]")
@@ -34,7 +34,7 @@ class BrHolidays:
         the input.
 
         Args:
-            dates (pd.Timestamp | pd.Series | None): The dates to use for inferring
+            dates (dt.date | pd.Series | None): The dates to use for inferring
                 the holiday list. If a single date is provided, it is used directly.
                 If a Series of dates is provided, the earliest date is used.
 
@@ -43,7 +43,7 @@ class BrHolidays:
                 selected based on the earliest (minimum) date in the input.
 
         Returns:
-            pd.Series: The list of holidays as a Series of Timestamps.
+            pd.Series: The list of holidays as a Series of dates.
         """
         match holiday_option:
             case "old":
@@ -81,7 +81,7 @@ class BrHolidays:
         the input.
 
         Args:
-            dates (pd.Timestamp | pd.Series | None): The dates to use for inferring
+            dates (dt.date | pd.Series | None): The dates to use for inferring
                 the holiday list. If a single date is provided, it is used directly.
                 If a Series of dates is provided, the earliest date is used.
 

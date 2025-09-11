@@ -1,3 +1,5 @@
+import datetime as dt
+
 import numpy as np
 import pandas as pd
 
@@ -28,13 +30,13 @@ COUPON_PMT = 2.956301
 FINAL_PMT = 102.956301
 
 
-def _get_coupon_pmt(maturity: pd.Timestamp) -> float:
+def _get_coupon_pmt(maturity: dt.date) -> float:
     if maturity.year == 2031:  # noqa
         return COUPON_PMT_2031
     return COUPON_PMT
 
 
-def _get_final_pmt(maturity: pd.Timestamp) -> float:
+def _get_final_pmt(maturity: dt.date) -> float:
     if maturity.year == 2031:  # noqa
         return FINAL_PMT_2031
     return FINAL_PMT

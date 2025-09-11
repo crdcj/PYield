@@ -96,10 +96,10 @@ def benchmarks(bond_type: str = None, include_history: bool = False) -> pd.DataF
 
             *   `Benchmark` (str): The name or identifier of the benchmark
                 (e.g., 'LFT 3 anos').
-            *   `MaturityDate` (datetime64[ns]): The maturity date of the benchmark.
+            *   `MaturityDate` (datetime.date): The maturity date of the benchmark.
             *   `BondType` (str): The type of the bond (e.g., 'LTN', 'LFT', 'NTN-B').
-            *   `StartDate` (datetime64[ns]): The start date for the benchmark's period.
-            *   `EndDate` (datetime64[ns]): The end date for the benchmark's period.
+            *   `StartDate` (datetime.date): The start date for the benchmark's period.
+            *   `EndDate` (datetime.date): The end date for the benchmark's period.
 
     Notes:
         *   Data is sourced from the official Tesouro Nacional (Brazilian Treasury) API.

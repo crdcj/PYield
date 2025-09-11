@@ -216,7 +216,7 @@ def _fetch_tpf_data(date: dt.date) -> pd.DataFrame:
     tentativas e processá-los em um DataFrame estruturado.
 
     Args:
-        date (pd.Timestamp): A data de referência para os dados.
+        date (dt.date): A data de referência para os dados.
 
     Returns:
         pd.DataFrame: Um DataFrame contendo os dados de mercado de títulos

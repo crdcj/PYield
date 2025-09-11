@@ -22,14 +22,14 @@ def get_old_expiration_date(expiration_code: str, date: dt.date) -> dt.date | No
         expiration_code (str): An old DI Expiration Code from B3, where the first three
             letters represent the month and the last digit represents the year.
             Example: "JAN3".
-        date (pd.Timestamp): The trade date for which the contract code is valid.
+        date (dt.date): The trade date for which the contract code is valid.
 
     Returns:
-        pd.Timestamp
-            The contract's ExpirationDate date. Returns pd.NaT if the input is invalid.
+        dt.date
+            The contract's ExpirationDate date. Returns None if the input is invalid.
 
     Examples:
-        >>> get_old_expiration_date("JAN3", pd.Timestamp("2001-05-21"))
+        >>> get_old_expiration_date("JAN3", dt.date(2001, 5, 21))
         datetime.date(2003, 1, 2)
 
     Notes:
@@ -98,13 +98,13 @@ def _convert_prices_to_rates(
     return rates.round(5)
 
 
-def _fetch_url_data(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
+def _fetch_url_data(contract_code: str, date: dt.date) -> pd.DataFrame:
     """
     Fetch the historical futures data from B3 for a specific trade date. If the data is
     not available, an empty DataFrame is returned.
 
     Args:
-        date (pd.Timestamp): The trade date for which the data should be fetched.
+        date (dt.date): The trade date for which the data should be fetched.
 
     Returns:
         pd.DataFrame: Raw DI data as a Pandas pd.DataFrame.

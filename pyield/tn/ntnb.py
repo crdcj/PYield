@@ -424,12 +424,12 @@ def bei_rates(
     nominal yields. The calculation is based on the spot rates for NTN-B bonds.
 
     Args:
-        settlement (str or pd.Timestamp): The settlement date of the operation.
+        settlement (DateScalar): The settlement date of the operation.
         ntnb_maturities (pd.Series): The maturity dates for the NTN-B bonds.
         ntnb_rates (pd.Series): The real interest rates (Yield to Maturity - YTM)
             corresponding to the given NTN-B maturities.
         nominal_maturities (pd.Series): The maturity dates to be used as reference for
-            nominal reates.
+            nominal rates.
         nominal_rates (pd.Series): The nominal interest rates (e.g. DI Futures or
              zero prefixed bonds rates) used as reference for the calculation.
 
@@ -562,9 +562,9 @@ def dv01(
 
     Args:
         settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
+            or a date-like object.
         maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
-            a pandas Timestamp.
+            a date-like object.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-B.
 

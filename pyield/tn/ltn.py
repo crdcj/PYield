@@ -78,9 +78,9 @@ def price(
 
     Args:
         settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
+            or a date-like object.
         maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
-            a pandas Timestamp.
+            a date-like object.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
 
@@ -237,9 +237,9 @@ def dv01(
 
     Args:
         settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
+            or a date-like object.
         maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
-            a pandas Timestamp.
+            a date-like object.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the LTN.
 

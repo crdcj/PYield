@@ -1,3 +1,4 @@
+import datetime as dt
 from collections.abc import Callable
 
 import numpy as np
@@ -73,12 +74,12 @@ def maturities(date: DateScalar) -> pd.Series:
     return s_maturities
 
 
-def _check_maturity_date(maturity: pd.Timestamp) -> None:
+def _check_maturity_date(maturity: dt.date) -> None:
     """
     Check if the maturity date is a valid NTN-F maturity date.
 
     Args:
-        maturity (pd.Timestamp): The maturity date to be checked.
+        maturity (dt.date): The maturity date to be checked.
 
     Raises:
         ValueError: If the maturity date is not the 1st of January.
@@ -674,9 +675,9 @@ def dv01(
 
     Args:
         settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
+            or a date-like object.
         maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
-            a pandas Timestamp.
+            a date-like object.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
 

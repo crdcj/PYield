@@ -20,8 +20,8 @@ def get_expiration_date(
             (e.g., "F23" for January 2023).
 
     Returns:
-        pd.Timestamp: The expiration date corresponding to the code, adjusted to a valid
-            business day. Returns pd.NaT if the code is invalid.
+        dt.date: The expiration date corresponding to the code, adjusted to a valid
+            business day. Returns None if the code is invalid.
 
     Examples:
         >>> get_expiration_date("F23")
