@@ -1,3 +1,4 @@
+import datetime as dt
 import io
 import logging
 import zipfile
@@ -28,7 +29,7 @@ def _get_file_from_path(file_path: Path) -> io.BytesIO:
 
 
 @default_retry
-def _get_file_from_url(date: pd.Timestamp, source_type: str) -> io.BytesIO:
+def _get_file_from_url(date: dt.date, source_type: str) -> io.BytesIO:
     """
     Types of XML files available:
     Full Price Report (all assets)
@@ -192,7 +193,6 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 def _process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
-    # Convert to datetime64[ns] since it is pandas default type for timestamps
     df["TradeDate"] = df["TradeDate"].astype("date32[pyarrow]")
 
     expiration_code = df["TickerSymbol"].str[3:]
@@ -283,7 +283,7 @@ def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pd.DataFrame:
 
 
 def fetch_xml_data(
-    date: pd.Timestamp, contract_code: str, source_type: Literal["PR", "SPR"]
+    date: dt.date, contract_code: str, source_type: Literal["PR", "SPR"]
 ) -> pd.DataFrame:
     """Fetches and processes an XML report from B3's website.
 

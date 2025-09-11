@@ -1,3 +1,4 @@
+import datetime as dt
 import io
 import logging
 import re
@@ -30,7 +31,7 @@ COLUMN_MAPPING = {
 }
 
 
-def _fetch_url_content(target_date: pd.Timestamp) -> str:
+def _fetch_url_content(target_date: dt.date) -> str:
     target_date_str = target_date.strftime("%d/%m/%Y")
     payload = {
         "Tipo": "",

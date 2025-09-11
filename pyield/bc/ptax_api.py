@@ -184,7 +184,7 @@ def ptax_series(
     if start:
         start = dc.convert_input_dates(start)
     else:
-        start = pd.Timestamp("1984-11-28")
+        start = dt.date(1984, 11, 28)  # Primeira data disponível na API
 
     if end:
         end = dc.convert_input_dates(end)

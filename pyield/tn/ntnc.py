@@ -1,3 +1,5 @@
+import datetime as dt
+
 import numpy as np
 import pandas as pd
 
@@ -28,13 +30,13 @@ COUPON_PMT = 2.956301
 FINAL_PMT = 102.956301
 
 
-def _get_coupon_pmt(maturity: pd.Timestamp) -> float:
+def _get_coupon_pmt(maturity: dt.date) -> float:
     if maturity.year == 2031:  # noqa
         return COUPON_PMT_2031
     return COUPON_PMT
 
 
-def _get_final_pmt(maturity: pd.Timestamp) -> float:
+def _get_final_pmt(maturity: dt.date) -> float:
     if maturity.year == 2031:  # noqa
         return FINAL_PMT_2031
     return FINAL_PMT
@@ -110,6 +112,7 @@ def payment_dates(
         coupon_dates.append(coupon_date)
         # Move the coupon date back 6 months
         coupon_date -= pd.DateOffset(months=6)
+        coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
 
     coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
     return coupon_dates.sort_values().reset_index(drop=True)

@@ -7,14 +7,13 @@ import datetime as dt
 import io
 import logging
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
 
 from pyield import bday
+from pyield.config import TIMEZONE_BZ
 
-BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 REALTIME_START_TIME = dt.time(9, 0, 0)
 REALTIME_END_TIME = dt.time(22, 0, 0)
 
@@ -27,7 +26,7 @@ def _fetch_csv_from_url() -> str:
     Example URL for the CSV file containing intraday trades data:
         https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/02-06-2025
     """
-    today = dt.datetime.now(BZ_TIMEZONE).date()
+    today = dt.datetime.now(TIMEZONE_BZ).date()
     formatted_date = today.strftime("%d-%m-%Y")
     FILE_URL = f"https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/{formatted_date}"
     r = requests.get(FILE_URL, timeout=30)  # API usually takes 10s to respond
@@ -93,9 +92,10 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop(columns=["RowType"], errors="ignore")
     df["BondType"] = df["BondType"].str.strip()
     df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%d/%m/%Y")
-    now = dt.datetime.now(BZ_TIMEZONE)
-    df["SettlementDate"] = pd.Timestamp(now.date())
-    df["CollectedAt"] = pd.Timestamp(now)
+    now = dt.datetime.now(TIMEZONE_BZ)
+    df["SettlementDate"] = now.date()
+    df["SettlementDate"] = df["SettlementDate"].astype("date32[pyarrow]")
+    df["CollectedAt"] = now
     df["CollectedAt"] = df["CollectedAt"].astype("timestamp[ns][pyarrow]")
 
     for col in [c for c in df.columns if c.endswith("Date")]:
@@ -151,7 +151,7 @@ def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 def is_selic_open() -> bool:
     """Verifica se o mercado está aberto no momento."""
-    now = dt.datetime.now(BZ_TIMEZONE)
+    now = dt.datetime.now(TIMEZONE_BZ)
     today = now.date()
     time = now.time()
     is_last_bday = bday.is_business_day(today)

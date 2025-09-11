@@ -1,3 +1,4 @@
+import datetime as dt
 from pathlib import Path
 from typing import Literal
 
@@ -7,7 +8,7 @@ import pandas as pd
 
 class BrHolidays:
     # The date (inclusive) when the new holidays list starts to be valid
-    TRANSITION_DATE = pd.to_datetime("2023-12-26")
+    TRANSITION_DATE = pd.to_datetime("26-12-2023", dayfirst=True).date()
 
     def __init__(self):
         current_dir = Path(__file__).parent
@@ -18,14 +19,14 @@ class BrHolidays:
 
     @staticmethod
     def _load_holidays(file_path: Path) -> pd.Series:
-        """Loads the holidays from a file and returns it as a Series of Timestamps."""
+        """Loads the holidays from a file and returns it as a Series of dates."""
         df = pd.read_csv(file_path, header=None, names=["date"], comment="#")
         holidays = pd.to_datetime(df["date"], format="%d/%m/%Y")
-        return holidays.astype("datetime64[ns]")
+        return holidays.astype("date32[pyarrow]")
 
     def get_holiday_series(
         self,
-        dates: pd.Timestamp | pd.Series | None = None,
+        dates: dt.date | pd.Series | None = None,
         holiday_option: Literal["old", "new", "infer"] = "infer",
     ) -> pd.Series:
         """
@@ -33,7 +34,7 @@ class BrHolidays:
         the input.
 
         Args:
-            dates (pd.Timestamp | pd.Series | None): The dates to use for inferring
+            dates (dt.date | pd.Series | None): The dates to use for inferring
                 the holiday list. If a single date is provided, it is used directly.
                 If a Series of dates is provided, the earliest date is used.
 
@@ -42,7 +43,7 @@ class BrHolidays:
                 selected based on the earliest (minimum) date in the input.
 
         Returns:
-            pd.Series: The list of holidays as a Series of Timestamps.
+            pd.Series: The list of holidays as a Series of dates.
         """
         match holiday_option:
             case "old":
@@ -55,7 +56,7 @@ class BrHolidays:
                 if dates is None:
                     msg = "Dates must be provided when using 'infer' option."
                     raise ValueError(msg)
-                if isinstance(dates, pd.Timestamp):
+                if isinstance(dates, dt.date):
                     earliest_date = dates
                 else:
                     # NaN values will be ignored for min date calculation
@@ -72,7 +73,7 @@ class BrHolidays:
 
     def get_holiday_array(
         self,
-        dates: pd.Timestamp | pd.Series | None = None,
+        dates: dt.date | pd.Series | None = None,
         holiday_option: Literal["old", "new", "infer"] = "infer",
     ) -> np.ndarray:
         """
@@ -80,7 +81,7 @@ class BrHolidays:
         the input.
 
         Args:
-            dates (pd.Timestamp | pd.Series | None): The dates to use for inferring
+            dates (dt.date | pd.Series | None): The dates to use for inferring
                 the holiday list. If a single date is provided, it is used directly.
                 If a Series of dates is provided, the earliest date is used.
 

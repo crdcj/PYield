@@ -24,30 +24,37 @@ def validate_date_format(date_str):
 
 
 @overload
-def convert_input_dates(dates: DateScalar) -> pd.Timestamp: ...
+def convert_input_dates(dates: DateScalar) -> dt.date | None: ...
 @overload
 def convert_input_dates(dates: DateArray) -> pd.Series: ...
 
 
-def convert_input_dates(
+def convert_input_dates(  # noqa
     dates: DateScalar | DateArray,
-) -> pd.Timestamp | pd.Series:
+) -> dt.date | pd.Series | None:
     # Capturar apenas escalares nulos: a verificação `is True` é crucial,
     # pois `pd.isna()` retorna um array booleano para entradas de array,
-    # e um array nunca é idêntico ao objeto singleton `True`.
+    # e um array nulo é idêntico ao objeto singleton `True`.
     if pd.isna(dates) is True:
-        return pd.NaT
+        return None
 
     match dates:
         case str():
             validate_date_format(dates)
-            return pd.to_datetime(dates, dayfirst=True)
+            return pd.to_datetime(dates, dayfirst=True).date()
 
         case dt.date():
-            return pd.Timestamp(dates)
+            return dates
 
-        case dt.datetime() | np.datetime64() | pd.Timestamp():
-            return pd.Timestamp(dates).normalize()
+        case dt.datetime() | pd.Timestamp():
+            return dates.date()
+
+        case np.datetime64():
+            py_native = dates.item()
+            if isinstance(py_native, dt.datetime):
+                return py_native.date()
+            # Se não for dt.datetime, já é um dt.date, então pode retornar diretamente
+            return py_native
 
         case pd.Series() | np.ndarray() | list() | tuple():
             # Preserve input values making a copy
@@ -60,10 +67,10 @@ def convert_input_dates(
                 # Check first element to validate date format
                 validate_date_format(result.iloc[0])
 
-            return pd.to_datetime(result, dayfirst=True).astype("datetime64[ns]")
+            return pd.to_datetime(result, dayfirst=True).astype("date32[pyarrow]")
 
         case pd.DatetimeIndex():
-            return pd.Series(dates).astype("datetime64[ns]")
+            return pd.Series(dates).astype("date32[pyarrow]")
 
         case _:
             raise ValueError("Invalid input type for 'dates'.")
@@ -83,7 +90,7 @@ def to_numpy_date_type(
     """
     if pd.isna(dates) is True:
         return np.datetime64("NaT")
-    elif isinstance(dates, pd.Timestamp) or dates is pd.NaT:
+    elif isinstance(dates, dt.date):
         return np.datetime64(dates, "D")
     elif isinstance(dates, pd.Series):
         return dates.to_numpy().astype("datetime64[D]")

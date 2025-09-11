@@ -26,10 +26,8 @@ HISTORICAL_START_TIME = dt.time(20, 0)
 INTRADAY_START_TIME = dt.time(9, 16)
 
 
-def _is_trading_day(check_date_pd: pd.Timestamp) -> bool:
+def _is_trading_day(check_date: dt.date) -> bool:
     """Check if a date is a trading day."""
-    check_date = check_date_pd.date()
-
     # Só existe dado intraday se for o dia de hoje
     today = dt.datetime.now(BZ_TIMEZONE).date()
     if check_date != today:
@@ -53,7 +51,7 @@ def _is_trading_day(check_date_pd: pd.Timestamp) -> bool:
 
 def _get_historical_data(
     contract_code: str,
-    date: pd.Timestamp,
+    date: dt.date,
 ) -> pd.DataFrame:
     """Fetches historical data for a specified futures contract and reference date."""
     # First, try to fetch the data from BMF legacy service

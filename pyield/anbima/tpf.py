@@ -38,7 +38,7 @@ def _bond_type_mapping(bond_type: str) -> str:
     return bond_type_mapping.get(bond_type, bond_type)
 
 
-def _build_file_name(date: pd.Timestamp) -> str:
+def _build_file_name(date: dt.date) -> str:
     url_date = date.strftime("%y%m%d")
     if date < FORMAT_CHANGE_DATE:
         file_name = f"ms{url_date}.exe"
@@ -47,7 +47,7 @@ def _build_file_name(date: pd.Timestamp) -> str:
     return file_name
 
 
-def _build_file_url(date: pd.Timestamp) -> str:
+def _build_file_url(date: dt.date) -> str:
     last_bday = bday.last_business_day()
     business_days_count = bday.count(date, last_bday)
     if business_days_count > 5:  # noqa
@@ -208,7 +208,7 @@ def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df[column_order].copy()
 
 
-def _fetch_tpf_data(date: pd.Timestamp) -> pd.DataFrame:
+def _fetch_tpf_data(date: dt.date) -> pd.DataFrame:
     """Busca e processa dados do mercado secundário de TPF diretamente da fonte ANBIMA.
 
     Esta é uma função de baixo nível para uso interno. Ela lida com a lógica
@@ -216,7 +216,7 @@ def _fetch_tpf_data(date: pd.Timestamp) -> pd.DataFrame:
     tentativas e processá-los em um DataFrame estruturado.
 
     Args:
-        date (pd.Timestamp): A data de referência para os dados.
+        date (dt.date): A data de referência para os dados.
 
     Returns:
         pd.DataFrame: Um DataFrame contendo os dados de mercado de títulos
@@ -353,7 +353,7 @@ def tpf_data(
 
     date_log = date.strftime("%d/%m/%Y")
     today = dt.datetime.now(BZ_TIMEZONE).date()
-    if date.date() > today:
+    if date > today:
         logger.info(
             f"Cannot fetch data for a future date ({date_log}). "
             "Returning empty DataFrame."

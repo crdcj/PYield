@@ -11,9 +11,9 @@ Implementation Notes:
           in percentage format)
         - DI Over: 8 decimal places for daily rates (from 6 decimal places in % format).
           For annualized rates, the value is rounded to 4 decimal places.
-
 """
 
+import datetime as dt
 import logging
 from enum import Enum
 from urllib.error import HTTPError
@@ -21,6 +21,7 @@ from urllib.error import HTTPError
 import pandas as pd
 import requests
 
+from pyield.config import TIMEZONE_BZ
 from pyield.date_converter import DateScalar, convert_input_dates
 from pyield.retry import default_retry
 
@@ -143,14 +144,14 @@ def _fetch_data_from_url(
     # 1. Converter datas usando a função auxiliar existente e o pandas
     start_date = convert_input_dates(start) if start else None
     # Se a data final não for fornecida, usar a data de hoje para o cálculo do período
-    end_date = convert_input_dates(end) if end else pd.to_datetime("today").normalize()
+    end_date = convert_input_dates(end) if end else dt.datetime.now(TIMEZONE_BZ).date()
 
     # Se não houver data de início, a API já limita a 10 anos. Chamada direta é segura.
     if not start_date:
         return _fetch_request(serie, start, end)
 
     # 2. Verificar se o período é maior que 10 anos usando pd.DateOffset
-    if end_date < start_date + pd.DateOffset(years=10):
+    if end_date < (start_date + pd.DateOffset(years=10)).date():
         return _fetch_request(serie, start_date, end_date)
 
     # 3. Se for maior, quebrar em pedaços (chunking)

@@ -117,7 +117,6 @@ def _process_df(df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
     df["TradeDate"] = df["TradeDate"].astype("date32[pyarrow]")
 
     # Get current date and time
-    # now = pd.Timestamp.now(BZ_TIMEZONE).round("s").tz_localize(None)
     now = dt.datetime.now(BZ_TIMEZONE)
     # Subtract 15 minutes from the current time to account for API delay
     df["LastUpdate"] = now - pd.Timedelta(minutes=15)

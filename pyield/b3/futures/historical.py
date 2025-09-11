@@ -1,9 +1,9 @@
+import datetime as dt
 import io
 import logging
 
 import pandas as pd
 import requests
-from pandas.api.typing import NaTType
 
 from pyield import bday
 from pyield.b3.futures import common
@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 COUNT_CONVENTIONS = {"DAP": 252, "DI1": 252, "DDI": 360}
 
 
-def get_old_expiration_date(
-    expiration_code: str, date: pd.Timestamp
-) -> pd.Timestamp | NaTType:
+def get_old_expiration_date(expiration_code: str, date: dt.date) -> dt.date | None:
     """
     Internal function to convert an old DI contract code into its ExpirationDate date.
     Valid for contract codes up to 21-05-2006.
@@ -24,15 +22,15 @@ def get_old_expiration_date(
         expiration_code (str): An old DI Expiration Code from B3, where the first three
             letters represent the month and the last digit represents the year.
             Example: "JAN3".
-        date (pd.Timestamp): The trade date for which the contract code is valid.
+        date (dt.date): The trade date for which the contract code is valid.
 
     Returns:
-        pd.Timestamp
-            The contract's ExpirationDate date. Returns pd.NaT if the input is invalid.
+        dt.date
+            The contract's ExpirationDate date. Returns None if the input is invalid.
 
     Examples:
-        >>> get_old_expiration_date("JAN3", pd.Timestamp("2001-05-21"))
-        Timestamp('2003-01-02 00:00:00')
+        >>> get_old_expiration_date("JAN3", dt.date(2001, 5, 21))
+        datetime.date(2003, 1, 2)
 
     Notes:
         - In 22-05-2006, B3 changed the format of the DI contract codes. Before that
@@ -65,13 +63,13 @@ def get_old_expiration_date(
             year_codes[str(year)[-1:]] = year
         year = year_codes[expiration_code[-1:]]
 
-        expiration_date = pd.Timestamp(year, month, 1)
+        expiration_date = dt.date(year, month, 1)
         # Adjust to the next business day when the date is a weekend or a holiday.
         # Must use old holiday list, since this contract code was used until 2006.
         return bday.offset(dates=expiration_date, offset=0)
 
     except (KeyError, ValueError):
-        return pd.NaT
+        return None
 
 
 def _convert_prices_to_rates(
@@ -100,13 +98,13 @@ def _convert_prices_to_rates(
     return rates.round(5)
 
 
-def _fetch_url_data(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
+def _fetch_url_data(contract_code: str, date: dt.date) -> pd.DataFrame:
     """
     Fetch the historical futures data from B3 for a specific trade date. If the data is
     not available, an empty DataFrame is returned.
 
     Args:
-        date (pd.Timestamp): The trade date for which the data should be fetched.
+        date (dt.date): The trade date for which the data should be fetched.
 
     Returns:
         pd.DataFrame: Raw DI data as a Pandas pd.DataFrame.
@@ -180,15 +178,13 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns=rename_dict)
 
 
-def _process_df(
-    df: pd.DataFrame, date: pd.Timestamp, contract_code: str
-) -> pd.DataFrame:
+def _process_df(df: pd.DataFrame, date: dt.date, contract_code: str) -> pd.DataFrame:
     df["TradeDate"] = date
     df["TradeDate"] = df["TradeDate"].astype("date32[pyarrow]")
     df["TickerSymbol"] = contract_code + df["ExpirationCode"]
 
     # Contract code format was changed in 22/05/2006
-    code_format_change = pd.to_datetime("22-05-2006", dayfirst=True)
+    code_format_change = dt.date(2006, 5, 22)
     if date < code_format_change:
         df["ExpirationDate"] = (
             df["ExpirationCode"]
@@ -221,7 +217,7 @@ def _process_df(
 
     rate_cols = [col for col in df.columns if "Rate" in col]
     # Prior to 17/01/2002 (inclusive), DI prices were not converted to rates
-    switch_date = pd.to_datetime("17-01-2002", dayfirst=True)
+    switch_date = dt.date(2002, 1, 17)
     if date <= switch_date and contract_code == "DI1":
         df = _adjust_older_contracts_rates(df, rate_cols)
     else:
@@ -286,7 +282,7 @@ def _select_and_reorder_columns(df: pd.DataFrame):
     return df[reordered_columns].copy()
 
 
-def fetch_bmf_data(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
+def fetch_bmf_data(contract_code: str, date: dt.date) -> pd.DataFrame:
     """
     Fetchs the futures data for a given date from B3.
 
@@ -295,7 +291,7 @@ def fetch_bmf_data(contract_code: str, date: pd.Timestamp) -> pd.DataFrame:
 
     Args:
         asset_code (str): The asset code to fetch the futures data.
-        date (pd.Timestamp): The trade date to fetch the futures data.
+        date (dt.date): The trade date to fetch the futures data.
         count_convention (int): The count convention for the DI futures contract.
             Can be 252 business days or 360 calendar days.
 
