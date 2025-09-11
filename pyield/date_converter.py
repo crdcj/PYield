@@ -6,11 +6,16 @@ import pandas as pd
 
 DateScalar = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
 DateArray = (
-    pd.Series | pd.DatetimeIndex | np.ndarray | list[DateScalar] | tuple[DateScalar]
+    pd.Series
+    | pd.DatetimeIndex
+    | np.ndarray
+    | list[DateScalar]
+    | tuple[DateScalar, ...]
 )
 
 
-def validate_date_format(date_str):
+def validate_date_format(date_str) -> None:
+    """Validate if the date string is in the correct format (day first)."""
     # Primeiro tenta com hífen (-)
     for fmt in ["%d-%m-%Y", "%d/%m/%Y"]:
         try:
@@ -32,6 +37,14 @@ def convert_input_dates(dates: DateArray) -> pd.Series: ...
 def convert_input_dates(  # noqa
     dates: DateScalar | DateArray,
 ) -> dt.date | pd.Series | None:
+    """
+    Converte diferentes tipos de entrada (escalares ou coleções)
+    para dt.date ou pd.Series[date32[pyarrow]].
+
+    - Strings devem estar no formato dd-mm-YYYY ou dd/mm/YYYY.
+    - Nulos escalares retornam None.
+    - Arrays vazios não são permitidos.
+    """
     # Capturar apenas escalares nulos: a verificação `is True` é crucial,
     # pois `pd.isna()` retorna um array booleano para entradas de array,
     # e um array nulo é idêntico ao objeto singleton `True`.
@@ -43,18 +56,20 @@ def convert_input_dates(  # noqa
             validate_date_format(dates)
             return pd.to_datetime(dates, dayfirst=True).date()
 
+        case dt.datetime() | pd.Timestamp():
+            # Note: pd.Timestamp é um subtipo de dt.datetime e deve ser verificado antes
+            return dates.date()
+
         case dt.date():
             return dates
-
-        case dt.datetime() | pd.Timestamp():
-            return dates.date()
 
         case np.datetime64():
             py_native = dates.item()
             if isinstance(py_native, dt.datetime):
                 return py_native.date()
-            # Se não for dt.datetime, já é um dt.date, então pode retornar diretamente
-            return py_native
+            if isinstance(py_native, dt.date):
+                return py_native
+            raise ValueError(f"Unsupported numpy datetime64 conversion: {dates}")
 
         case pd.Series() | np.ndarray() | list() | tuple():
             # Preserve input values making a copy
@@ -90,9 +105,12 @@ def to_numpy_date_type(
     """
     if pd.isna(dates) is True:
         return np.datetime64("NaT")
-    elif isinstance(dates, dt.date):
+
+    # # cobre datetime.date, datetime.datetime e pd.Timestamp
+    if isinstance(dates, dt.date):
         return np.datetime64(dates, "D")
-    elif isinstance(dates, pd.Series):
+
+    if isinstance(dates, pd.Series):
         return dates.to_numpy().astype("datetime64[D]")
-    else:
-        raise ValueError("Invalid input type for 'dates'.")
+
+    raise ValueError("Invalid input type for 'dates'.")

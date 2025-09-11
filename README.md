@@ -41,7 +41,7 @@ The accepted formats in `DateArray` are:
 - `pd.DatetimeIndex`
 - `np.ndarray`
 - `list[DateScalar]`
-- `tuple[DateScalar]`
+- `tuple[DateScalar, ...]`
 
 Referencing `DateScalar` and `DateArray` in function arguments simplifies the code by allowing any of these date formats to be used interchangeably.
 

@@ -27,7 +27,7 @@ ANBIMA_RTM_URL = f"http://{ANBIMA_RTM_HOSTNAME}/merc_sec/arqs"
 # URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 
 # Before 13/05/2014 the file was zipped and the endpoint ended with ".exe"
-FORMAT_CHANGE_DATE = pd.to_datetime("13-05-2014", dayfirst=True)
+FORMAT_CHANGE_DATE = dt.date(2014, 5, 13)
 
 logger = logging.getLogger(__name__)
 
