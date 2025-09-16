@@ -3,6 +3,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 
 class Interpolator:
@@ -45,21 +46,50 @@ class Interpolator:
     def __init__(
         self,
         method: Literal["flat_forward", "linear"],
-        known_bdays: pd.Series | np.ndarray | tuple[int] | list[int],
-        known_rates: pd.Series | np.ndarray | tuple[float] | list[float],
+        known_bdays: pd.Series | np.ndarray | tuple[int] | list[int] | pl.Series,
+        known_rates: pd.Series | np.ndarray | tuple[float] | list[float] | pl.Series,
         extrapolate: bool = False,
     ):
         df = (
-            pd.DataFrame({"bday": known_bdays, "rate": known_rates})
-            .dropna()
-            .drop_duplicates(subset="bday")
-            .sort_values("bday", ignore_index=True)
+            pl.DataFrame({"bday": known_bdays, "rate": known_rates})
+            .with_columns(pl.col("bday").cast(pl.Int64))
+            .with_columns(pl.col("rate").cast(pl.Float64))
+            .drop_nulls()
+            .drop_nans()
+            .unique(subset="bday", keep="last")
+            .sort("bday")
         )
         self._df = df
         self._method = str(method)
-        self._known_bdays = tuple(df["bday"])
-        self._known_rates = tuple(df["rate"])
+        self._known_bdays = tuple(df.get_column("bday"))
+        self._known_rates = tuple(df.get_column("rate"))
         self._extrapolate = bool(extrapolate)
+
+    def linear(self, bday: int, k: int) -> float:
+        """
+        Performs the interest rate interpolation using the linear method.
+
+        The interpolated rate is given by the formula:
+        y = y1 + (x - x1) * (y2 - y1) / (x2 - x1)
+
+        Where:
+        - (x, y) is the point to be interpolated (bday, interpolated_rate).
+        - (x1, y1) is the previous known point (bday_j, rate_j).
+        - (x2, y2) is the next known point (bday_k, rate_k).
+
+        Args:
+            bday (int): Number of bus. days for which the rate is to be interpolated.
+            k (int): The index such that known_bdays[k-1] < bday < known_bdays[k].
+
+        Returns:
+            float: The interpolated interest rate in decimal form.
+        """
+        # Get the bracketing points for interpolation
+        bday_j, rate_j = self._known_bdays[k - 1], self._known_rates[k - 1]
+        bday_k, rate_k = self._known_bdays[k], self._known_rates[k]
+
+        # Perform linear interpolation
+        return rate_j + (bday - bday_j) * (rate_k - rate_j) / (bday_k - bday_j)
 
     def flat_forward(self, bday: int, k: int) -> float:
         r"""
@@ -137,24 +167,24 @@ class Interpolator:
 
         # Lower bound extrapolation is always the first known rate
         if bday < known_bdays[0]:
-            return float(known_rates[0])
+            return known_rates[0]
         # Upper bound extrapolation depends on the extrapolate flag
         elif bday > known_bdays[-1]:
-            return float(known_rates[-1]) if extrapolate else float("NaN")
-
-        # Early return for linear interpolation
-        if method == "linear":
-            return float(np.interp(bday, known_bdays, known_rates))
+            return known_rates[-1] if extrapolate else float("NaN")
 
         # Find k such that known_bdays[k-1] < bday < known_bdays[k]
         k = bisect.bisect_left(known_bdays, bday)
 
-        # Check if the interpolation point is known
+        # If bday is one of the known points, return its rate directly
         if k < len(known_bdays) and known_bdays[k] == bday:
-            return float(known_rates[k])
+            return known_rates[k]
 
-        # Perform flat forward interpolation
-        return float(self.flat_forward(bday, k))
+        if method == "linear":
+            return self.linear(bday, k)
+        elif method == "flat_forward":
+            return self.flat_forward(bday, k)
+
+        raise ValueError(f"Interpolation method '{method}' not recognized.")
 
     def __call__(self, bday: int) -> float:
         """

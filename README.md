@@ -42,6 +42,7 @@ The accepted formats in `DateArray` are:
 - `np.ndarray`
 - `list[DateScalar]`
 - `tuple[DateScalar, ...]`
+- `pl.Series` (Polars Series)
 
 Referencing `DateScalar` and `DateArray` in function arguments simplifies the code by allowing any of these date formats to be used interchangeably.
 
