@@ -88,7 +88,8 @@ def test_offset_with_new_holiday():
 def test_offset_with_old_and_new_holidays():
     start = ["20-11-2020", "20-11-2024"]
     offset = 0
-    expected_result = pd.Series(["20-11-2020", "21-11-2024"], dtype="date32[pyarrow]")
+    expected_result = pd.to_datetime(["20-11-2020", "21-11-2024"], dayfirst=True)
+    expected_result = pd.Series(expected_result).astype("date32[pyarrow]")
     result = bday.offset(start, offset)
     are_series_equal = result.equals(expected_result)
     assert are_series_equal, f"Expected {expected_result}, but got {result}"

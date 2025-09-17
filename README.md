@@ -183,17 +183,14 @@ IndicatorProjection(
 ```
 
 ### Interpolation Tools
+Interpolate interest rates for specific business days using the Interpolator class.
 ```python
 >>> from pyield import Interpolator
-# Interpolate interest rates for specific business days using the Interpolator class.
-
 # Initialize the Interpolator with known business days and interest rates.
 >>> known_bdays = [30, 60, 90]
 >>> known_rates = [0.045, 0.05, 0.055]
 >>> linear_interpolator = Interpolator("linear", known_bdays, known_rates)
-
-# Interpolate the interest rate for a given number of business days.
->>> linear_interpolator(45)
+>>> linear_interpolator(45)  # Interpolate the interest rate for a given number of business days.
 0.0475
 
 # Use the flat forward method for interpolation.

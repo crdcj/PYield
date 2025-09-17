@@ -3,11 +3,13 @@ from typing import overload
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 DateScalar = str | np.datetime64 | pd.Timestamp | dt.datetime | dt.date
 DateArray = (
-    pd.Series
-    | pd.DatetimeIndex
+    pd.DatetimeIndex
+    | pd.Series
+    | pl.Series
     | np.ndarray
     | list[DateScalar]
     | tuple[DateScalar, ...]
@@ -51,44 +53,35 @@ def convert_input_dates(  # noqa
     if pd.isna(dates) is True:
         return None
 
+    # --- LÓGICA ESCALAR (simples e rápida) ---
     match dates:
         case str():
             validate_date_format(dates)
             return pd.to_datetime(dates, dayfirst=True).date()
-
         case dt.datetime() | pd.Timestamp():
-            # Note: pd.Timestamp é um subtipo de dt.datetime e deve ser verificado antes
             return dates.date()
-
         case dt.date():
             return dates
-
         case np.datetime64():
-            py_native = dates.item()
-            if isinstance(py_native, dt.datetime):
-                return py_native.date()
-            if isinstance(py_native, dt.date):
-                return py_native
-            raise ValueError(f"Unsupported numpy datetime64 conversion: {dates}")
+            return pd.to_datetime(dates).date()
 
-        case pd.Series() | np.ndarray() | list() | tuple():
-            # Preserve input values making a copy
-            result = pd.Series(dates)
+    # --- LÓGICA DE ARRAY (mais complexa) ---
+    # Qualquer outro tipo de array cai aqui.
+    if isinstance(dates, pl.Series):
+        s = dates.to_pandas(use_pyarrow_extension_array=True)
+    else:
+        s = pd.Series(dates)
 
-            if result.empty:
-                raise ValueError("'dates' cannot be an empty Array.")
+    if s.empty:
+        raise ValueError("'dates' cannot be an empty Array.")
 
-            if pd.api.types.is_string_dtype(result):
-                # Check first element to validate date format
-                validate_date_format(result.iloc[0])
+    # Inspeciona o tipo do primeiro elemento não nulo para decidir se valida.
+    non_null_series = s.dropna()
+    if not non_null_series.empty and isinstance(non_null_series.iloc[0], str):
+        validate_date_format(non_null_series.iloc[0])
 
-            return pd.to_datetime(result, dayfirst=True).astype("date32[pyarrow]")
-
-        case pd.DatetimeIndex():
-            return pd.Series(dates).astype("date32[pyarrow]")
-
-        case _:
-            raise ValueError("Invalid input type for 'dates'.")
+    # Deixe pd.to_datetime lidar com todos os casos:
+    return pd.to_datetime(s, dayfirst=True).astype("date32[pyarrow]")
 
 
 def to_numpy_date_type(
