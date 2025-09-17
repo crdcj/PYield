@@ -1,9 +1,10 @@
 import pandas as pd
+import polars as pl
 
 
 def forwards(
-    bdays: pd.Series,
-    rates: pd.Series,
+    bdays: pd.Series | pl.Series | list[int] | tuple[int],
+    rates: pd.Series | pl.Series | list[float] | tuple[float],
     groupby_dates: pd.Series | None = None,
 ) -> pd.Series:
     r"""
@@ -61,8 +62,8 @@ def forwards(
         ValueError: Se `groupby_dates` não for None e não tiver o mesmo tamanho
 
     Examples:
-        >>> bdays = pd.Series([10, 20, 30])
-        >>> rates = pd.Series([0.05, 0.06, 0.07])
+        >>> bdays = [10, 20, 30]
+        >>> rates = [0.05, 0.06, 0.07]
         >>> yd.forwards(bdays, rates)
         0        0.05
         1    0.070095
@@ -70,11 +71,42 @@ def forwards(
         dtype: double[pyarrow]
 
         >>> # Exemplo com agrupamento (a última está isolada em outro grupo)
-        >>> groupby_dates = pd.Series([1, 1, 2])
+        >>> groupby_dates = [1, 1, 2]
         >>> yd.forwards(bdays, rates, groupby_dates)
         0    0.05
         1    0.070095
         2    0.07
+        dtype: double[pyarrow]
+
+        >>> # Exemplo com taxas indicativas de NTN-B em 16-09-2025
+        >>> from pyield import ntnb
+        >>> df = ntnb.data("16-09-2025")
+        >>> yd.forwards(df["BDToMat"], df["IndicativeRate"])
+        0       0.0943
+        1     0.071549
+        2     0.072439
+        3     0.069558
+        4     0.076614
+        5     0.076005
+        6     0.071325
+        7     0.069915
+        8     0.068105
+        9     0.071278
+        10    0.069117
+        11    0.070373
+        12    0.073286
+        dtype: double[pyarrow]
+
+        >>> # Valores nulos são descartados no cálculo e retornados como nulos
+        >>> du = [230, 415, 730, None, 914, 1228]
+        >>> tx = [0.0943, 0.084099, 0.079052, 0.1, 0.077134, 0.077001]
+        >>> yd.forwards(du, tx)
+        0      0.0943
+        1    0.071549
+        2    0.072439
+        3        <NA>
+        4    0.069558
+        5    0.076614
         dtype: double[pyarrow]
 
     Note:
@@ -83,52 +115,71 @@ def forwards(
         correta no cálculo das taxas a termo.
         - Os resultados são retornados na mesma ordem dos dados de entrada.
     """  # noqa: E501
-    bdays = bdays.astype("int64[pyarrow]")
-    rates = rates.astype("float64[pyarrow]")
+    # 1. Montar o DataFrame
 
-    # Check if indexes are the same
-    if not bdays.index.equals(rates.index):
-        raise ValueError("The indexes of bdays and rates must be the same.")
-
-    # Store original index
-    original_index = bdays.index
-
-    # Create a DataFrame to work with the given series
-    df = pd.DataFrame({"du_k": bdays, "rate_k": rates})
-    df["time_k"] = df["du_k"] / 252
-
-    if isinstance(groupby_dates, pd.Series):
-        if not groupby_dates.index.equals(bdays.index):
-            raise ValueError("groupby_dates index must be the same as bdays and rates.")
-        df["groupby_date"] = groupby_dates
+    if groupby_dates is not None:
+        df = pl.DataFrame(
+            {
+                "du_k": bdays,
+                "rate_k": rates,
+                "groupby_date": groupby_dates,
+            }
+        )
     else:
-        df["groupby_date"] = 0  # Dummy value to group the DataFrame
+        df = pl.DataFrame(
+            {
+                "du_k": bdays,
+                "rate_k": rates,
+            }
+        )
+        # Criar uma coluna de agrupamento dummy
+        df = df.with_columns(groupby_date=pl.lit(0))
 
-    # Sort by the groupby_dates and t2 columns to ensure proper chronological order
-    df = df.sort_values(by=["groupby_date", "time_k"])
+    # 2. Adicionar coluna para preservar a ordem original
+    df = df.with_row_index("original_order")
+    df_cleaned = df.unique(subset=["du_k", "groupby_date"]).drop_nans().drop_nulls()
 
-    # Calculate the next zero rate and business day for each group
-    df["rate_j"] = df.groupby("groupby_date")["rate_k"].shift(1)
-    df["time_j"] = df.groupby("groupby_date")["time_k"].shift(1)
-
-    # Calculate the formula components
+    # 3. Definir a fórmula da taxa a termo
     # fₖ = fⱼ→ₖ = ((1 + rₖ)^tₖ / (1 + rⱼ)^tⱼ) ^ (1/(tₖ - tⱼ)) - 1
-    factor_k = (1 + df["rate_k"]) ** df["time_k"]  # (1 + rₖ)^tₖ
-    factor_j = (1 + df["rate_j"]) ** df["time_j"]  # (1 + rⱼ)^tⱼ
-    factor_t = 1 / (df["time_k"] - df["time_j"])  # 1/(tₖ - tⱼ)
-    df["fwd"] = (factor_k / factor_j) ** factor_t - 1
+    exp1 = (1 + pl.col("rate_k")) ** pl.col("time_k")  # (1 + rₖ)^tₖ
+    exp2 = (1 + pl.col("rate_j")) ** pl.col("time_j")  # (1 + rⱼ)^tⱼ
+    exp3 = 1 / (pl.col("time_k") - pl.col("time_j"))  # 1/(tₖ - tⱼ)
+    fwd_formula = (exp1 / exp2) ** exp3 - 1
 
-    # Identifify the first index of each group of dates
-    first_indices = df.groupby("groupby_date").head(1).index
-    # Set the first forward rate of each group to the zero rate
-    df.loc[first_indices, "fwd"] = df.loc[first_indices, "rate_k"]
+    # --- Início da Lógica com Expressões (Lazy API) ---
+    lazy_df = (
+        df_cleaned.lazy()
+        .sort(["groupby_date", "du_k"])
+        .with_columns(
+            # Criar colunas de tempo
+            time_k=pl.col("du_k") / 252,
+        )
+        .with_columns(
+            # Calcular os valores deslocados (shift) dentro de cada grupo
+            rate_j=pl.col("rate_k").shift(1).over("groupby_date"),
+            time_j=pl.col("time_k").shift(1).over("groupby_date"),
+        )
+        .with_columns(fwd=fwd_formula)
+        .with_columns(
+            # Usar a taxa spot para a primeira entrada de cada grupo
+            fwd=pl.when(pl.col("time_j").is_null())
+            .then(pl.col("rate_k"))
+            .otherwise(pl.col("fwd"))
+        )
+        # Selecionamos só o que importa: o resultado e a chave pra juntar
+        .select(["original_order", "fwd"])
+    )
+    s_fwd = (
+        df.lazy()
+        .join(lazy_df, on="original_order", how="left")
+        .sort("original_order")
+        .collect()
+        .get_column("fwd")
+        .to_pandas(use_pyarrow_extension_array=True)
+    )
 
-    # Reindex the result to match the original input order
-    result_fwd = df["fwd"].reindex(original_index)
-
-    # Return the forward rates as a Series with no name
-    result_fwd.name = None
-    return result_fwd
+    s_fwd.name = None  # Remover o nome da série
+    return s_fwd
 
 
 def forward(
