@@ -98,15 +98,26 @@ def forwards(
         dtype: double[pyarrow]
 
         >>> # Valores nulos são descartados no cálculo e retornados como nulos
-        >>> du = [230, 415, 730, None, 914, 1228]
-        >>> tx = [0.0943, 0.084099, 0.079052, 0.1, 0.077134, 0.077001]
+        >>> du = [230, 415, 730, None, 914]
+        >>> tx = [0.0943, 0.084099, 0.079052, 0.1, 0.077134]
         >>> yd.forwards(du, tx)
         0      0.0943
         1    0.071549
         2    0.072439
         3        <NA>
         4    0.069558
-        5    0.076614
+        dtype: double[pyarrow]
+
+        >>> # O algoritmo ordena os dados de entrada antes do cálculo e retorna
+        >>> # os resultados na ordem original. Valores duplicados são tratados
+        >>> # como um único ponto no cálculo da taxa a termo (último valor é mantido).
+        >>> du = [230, 730, 415, 230]
+        >>> tx = [0.1, 0.079052, 0.084099, 0.0943]
+        >>> yd.forwards(du, tx)
+        0      0.0943
+        1    0.072439
+        2    0.071549
+        3      0.0943
         dtype: double[pyarrow]
 
     Note:
@@ -116,28 +127,15 @@ def forwards(
         - Os resultados são retornados na mesma ordem dos dados de entrada.
     """  # noqa: E501
     # 1. Montar o DataFrame
-
-    if groupby_dates is not None:
-        df = pl.DataFrame(
-            {
-                "du_k": bdays,
-                "rate_k": rates,
-                "groupby_date": groupby_dates,
-            }
-        )
-    else:
-        df = pl.DataFrame(
-            {
-                "du_k": bdays,
-                "rate_k": rates,
-            }
-        )
-        # Criar uma coluna de agrupamento dummy
-        df = df.with_columns(groupby_date=pl.lit(0))
-
-    # 2. Adicionar coluna para preservar a ordem original
-    df = df.with_row_index("original_order")
-    df_cleaned = df.unique(subset=["du_k", "groupby_date"]).drop_nans().drop_nulls()
+    # Criar coluna de agrupamento dummy se não for fornecida
+    groupby_dates_exp = pl.Series(groupby_dates) if groupby_dates is not None else 0
+    df_orig = pl.DataFrame(
+        {
+            "du_k": bdays,
+            "rate_k": rates,
+            "groupby_date": groupby_dates_exp,
+        }
+    )
 
     # 3. Definir a fórmula da taxa a termo
     # fₖ = fⱼ→ₖ = ((1 + rₖ)^tₖ / (1 + rⱼ)^tⱼ) ^ (1/(tₖ - tⱼ)) - 1
@@ -147,13 +145,12 @@ def forwards(
     fwd_formula = (exp1 / exp2) ** exp3 - 1
 
     # --- Início da Lógica com Expressões (Lazy API) ---
-    lazy_df = (
-        df_cleaned.lazy()
+    df_fwd = (
+        df_orig.drop_nans()
+        .drop_nulls()
+        .unique(subset=["du_k", "groupby_date"], keep="last")
         .sort(["groupby_date", "du_k"])
-        .with_columns(
-            # Criar colunas de tempo
-            time_k=pl.col("du_k") / 252,
-        )
+        .with_columns(time_k=pl.col("du_k") / 252)  # Criar coluna de tempo em anos
         .with_columns(
             # Calcular os valores deslocados (shift) dentro de cada grupo
             rate_j=pl.col("rate_k").shift(1).over("groupby_date"),
@@ -166,14 +163,14 @@ def forwards(
             .then(pl.col("rate_k"))
             .otherwise(pl.col("fwd"))
         )
-        # Selecionamos só o que importa: o resultado e a chave pra juntar
-        .select(["original_order", "fwd"])
     )
     s_fwd = (
-        df.lazy()
-        .join(lazy_df, on="original_order", how="left")
-        .sort("original_order")
-        .collect()
+        df_orig.join(
+            df_fwd,
+            on=["du_k", "groupby_date"],
+            how="left",
+            maintain_order="left",
+        )
         .get_column("fwd")
         .to_pandas(use_pyarrow_extension_array=True)
     )
