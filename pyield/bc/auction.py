@@ -216,26 +216,37 @@ def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pd.DataFrame:
-    # A série de leilões começa em 2007
+    bz_last_bday = bday.last_business_day()
+    if start_date >= bz_last_bday:
+        # Garantir que pelo menos um dia útil seja buscado
+        start_date = bday.offset(bz_last_bday, -1)
+
     df = pt.ptax_series(start=start_date, end=end_date)
-    return df[["Date", "MidRate"]].rename(columns={"MidRate": "PTAX"})
+    df = df[["Date", "MidRate"]].rename(columns={"MidRate": "PTAX"})
+    if end_date > df["Date"].max():
+        # Se a data final for maior que a última data disponível na série PTAX,
+        # adicionar uma linha com a última taxa PTAX disponível para a data final
+        last_ptax = df["PTAX"].iloc[-1]
+        new_row = pd.DataFrame({"Date": [end_date], "PTAX": [last_ptax]})
+        df = pd.concat([df, new_row]).reset_index(drop=True)
+    return df
 
 
 def _add_usd_dv01(df: pd.DataFrame) -> pd.DataFrame:
     # 1. Garanta que o DataFrame 'right' esteja ordenado pela chave de merge.
-    df_ptax = _get_ptax_df(start_date=df["Date"].min(), end_date=df["Date"].max())
+    ptax_start_date = df["Date"].min()
+    ptax_end_date = df["Date"].max()
+    df_ptax = _get_ptax_df(start_date=ptax_start_date, end_date=ptax_end_date)
 
     # 2. Garanta que o DataFrame 'left' esteja ordenado pela chave de merge.
     df = df.sort_values(by="Date").reset_index(drop=True)
-    df = pd.merge_ordered(left=df, right=df_ptax, on="Date", how="left")
-    # Se não houver PTAX, preencher com o último valor conhecido
-    df["PTAX"] = df["PTAX"].ffill()
+    df = pd.merge(left=df, right=df_ptax, on="Date", how="left")
 
     dv01_cols = [c for c in df.columns if c.startswith("DV01")]
     for col in dv01_cols:
         df[f"{col}USD"] = df[col] / df["PTAX"]
 
-    return df.drop(columns=["PTAX"])
+    return df
 
 
 def _add_avg_maturity(df: pd.DataFrame) -> pd.DataFrame:
