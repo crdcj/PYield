@@ -11,6 +11,8 @@ import logging
 from typing import Literal
 
 import pandas as pd
+import polars as pl
+import polars.selectors as cs
 import requests
 
 from pyield import bday
@@ -28,30 +30,6 @@ Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
 Chaves com comentário serão descartadas ao final do processamento
 FR = First Round and SR = Second Round
 """
-
-DTYPE_MAPPING = {
-    # Datas já são tratadas pelo `parse_dates`, mas podemos forçar o tipo final.
-    "dataMovimento": "date32[pyarrow]",
-    "dataLiquidacao": "date32[pyarrow]",
-    "dataVencimento": "date32[pyarrow]",
-    # Colunas de texto
-    "tipoOferta": "string[pyarrow]",
-    "tipoPublico": "string[pyarrow]",
-    # Colunas numéricas (inteiros)
-    "edital": "int64[pyarrow]",
-    "codigoTitulo": "int64[pyarrow]",
-    "quantidadeOfertada": "int64[pyarrow]",
-    "quantidadeAceita": "int64[pyarrow]",
-    "quantidadeOfertadaSegundaRodada": "int64[pyarrow]",
-    "quantidadeAceitaSegundaRodada": "int64[pyarrow]",
-    # Colunas numéricas (ponto flutuante)
-    "financeiro": "float64[pyarrow]",
-    "cotacaoMedia": "float64[pyarrow]",
-    "cotacaoCorte": "float64[pyarrow]",
-    "taxaMedia": "float64[pyarrow]",
-    "taxaCorte": "float64[pyarrow]",
-}
-
 NAME_MAPPING = {
     # "id": "ID",
     "dataMovimento": "Date",
@@ -77,32 +55,58 @@ NAME_MAPPING = {
 BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
 
 
+def _build_url(
+    start: DateScalar | None = None,
+    end: DateScalar | None = None,
+    auction_type: Literal["sell", "buy"] | None = None,
+) -> str:
+    url = BASE_API_URL
+    if start:
+        start = dc.convert_input_dates(start)
+        start_str = start.strftime("%Y-%m-%d")
+        url += f"@dataMovimentoInicio='{start_str}'"
+
+    if end:
+        end = dc.convert_input_dates(end)
+        end_str = end.strftime("%Y-%m-%d")
+        url += f"&@dataMovimentoFim='{end_str}'"
+
+    # Mapeamento do auction_type para o valor esperado pela API
+    auction_type_mapping = {"sell": "Venda", "buy": "Compra"}
+    if auction_type:
+        auction_type = str(auction_type).lower()
+        auction_type_api_value = auction_type_mapping[auction_type]
+        # Adiciona o parâmetro tipoOferta à URL se auction_type for fornecido
+        url += f"&@tipoOferta='{auction_type_api_value}'"
+
+    url += "&$format=text/csv"  # Adiciona o formato CSV ao final
+
+    return url
+
+
 @default_retry
-def _load_from_url(url: str) -> pd.DataFrame:
+def _get_api_csv(url: str) -> bytes:
     response = requests.get(url, timeout=10)
     response.raise_for_status()
+    response.encoding = "utf-8"
+    return response.text
 
-    # 1. Leitura inicial dos dados
-    df = pd.read_csv(
-        io.StringIO(response.text),
-        dtype_backend="pyarrow",
-        decimal=",",
-        date_format="%Y-%m-%d %H:%M:%S",
-        parse_dates=["dataMovimento", "dataLiquidacao", "dataVencimento"],
+
+def _parse_csv(csv_text: str) -> pd.DataFrame:
+    csv_buffer = io.StringIO(csv_text)
+    df = pl.read_csv(csv_buffer, decimal_comma=True, try_parse_dates=True)
+    df = df.with_columns(cs.temporal().cast(pl.Date))
+    return df.to_pandas(use_pyarrow_extension_array=True)
+
+
+def _format_df(df: pd.DataFrame) -> pd.DataFrame:
+    # Seleciona apenas as colunas que foram mapeadas (descartando as comentadas)
+    final_columns = [col for col in NAME_MAPPING if col in df.columns]
+    return (
+        df.query("ofertante == 'Tesouro Nacional'")[final_columns]
+        .rename(columns=NAME_MAPPING)
+        .reset_index(drop=True)
     )
-
-    # 2. Aplica todos os tipos de uma só vez usando o dicionário
-    df = df.astype(DTYPE_MAPPING)
-
-    df = df.query("ofertante == 'Tesouro Nacional'").reset_index(drop=True)
-
-    # 3. Renomeia as colunas para o padrão desejado
-    df = df.rename(columns=NAME_MAPPING)
-
-    # 4. Seleciona apenas as colunas que foram mapeadas (descartando as comentadas)
-    final_columns = [col for col in NAME_MAPPING.values() if col in df.columns]
-
-    return df[final_columns].reset_index(drop=True)
 
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -163,7 +167,6 @@ def _adjust_null_values(df: pd.DataFrame) -> pd.DataFrame:
     is_accepted = df["AcceptedQuantityFR"] != 0
     cols_to_update = ["AvgRate", "CutRate", "AvgPrice", "CutPrice"]
     df[cols_to_update] = df[cols_to_update].where(is_accepted, pd.NA)
-
     return df
 
 
@@ -298,26 +301,6 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df[column_sequence].sort_values(by=primary_sort_keys).reset_index(drop=True)
 
 
-def _fetch_df_from_url(url: str) -> pd.DataFrame:
-    try:
-        df = _load_from_url(url)
-        if df.empty:
-            logger.warning("No auction data found for the specified period.")
-            return pd.DataFrame()
-
-        df = _adjust_null_values(df)
-        df = _process_df(df)
-        df = _add_duration(df)
-        df = _add_dv01(df)
-        df = _add_usd_dv01(df)
-        df = _add_avg_maturity(df)
-        df = _sort_and_reorder_columns(df)
-        return df
-    except Exception:
-        logger.exception("Error fetching auction data from BC API.")
-        return pd.DataFrame()
-
-
 def auctions(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
@@ -423,25 +406,22 @@ def auctions(
         - Duration: Duration (Duração) calculada com base na data de
             liquidação da 1R e na data de vencimento do título.
     """
-    url = BASE_API_URL
-    if start:
-        start = dc.convert_input_dates(start)
-        start_str = start.strftime("%Y-%m-%d")
-        url += f"@dataMovimentoInicio='{start_str}'"
-
-    if end:
-        end = dc.convert_input_dates(end)
-        end_str = end.strftime("%Y-%m-%d")
-        url += f"&@dataMovimentoFim='{end_str}'"
-
-    # Mapeamento do auction_type para o valor esperado pela API
-    auction_type_mapping = {"sell": "Venda", "buy": "Compra"}
-    if auction_type:
-        auction_type = str(auction_type).lower()
-        auction_type_api_value = auction_type_mapping[auction_type]
-        # Adiciona o parâmetro tipoOferta à URL se auction_type for fornecido
-        url += f"&@tipoOferta='{auction_type_api_value}'"
-
-    url += "&$format=text/csv"  # Adiciona o formato CSV ao final
-
-    return _fetch_df_from_url(url)
+    try:
+        url = _build_url(start=start, end=end, auction_type=auction_type)
+        api_csv_text = _get_api_csv(url)
+        if not api_csv_text:
+            logger.warning("No auction data found for the specified period.")
+            return pd.DataFrame()
+        df = _parse_csv(api_csv_text)
+        df = _format_df(df)
+        df = _process_df(df)
+        df = _adjust_null_values(df)
+        df = _add_duration(df)
+        df = _add_dv01(df)
+        df = _add_usd_dv01(df)
+        df = _add_avg_maturity(df)
+        df = _sort_and_reorder_columns(df)
+        return df
+    except Exception:
+        logger.exception("Error fetching auction data from BC API.")
+        return pd.DataFrame()
