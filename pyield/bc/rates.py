@@ -1,24 +1,25 @@
 """
 This module provides functions to fetch various financial indicators from
-the Brazilian Central Bank's API.
+the Brazilian Central Bank's API using Polars.
 
 Implementation Notes:
     - Values are retrieved in percentage format and converted to decimal format
       (divided by 100).
     - Each rate type is rounded to maintain the same precision as provided by
       the Central Bank:
-        - SELIC Over and SELIC Target: 4 decimal places (from 2 decimal places
-          in percentage format)
-        - DI Over: 8 decimal places for daily rates (from 6 decimal places in % format).
-          For annualized rates, the value is rounded to 4 decimal places.
+        - SELIC Over and SELIC Target: 4 decimal places
+        - DI Over: 8 decimal places for daily rates. For annualized rates,
+          the value is rounded to 4 decimal places.
+    - For requests spanning more than 10 years, the date range is automatically
+      chunked using Polars' native calendar-aware date functionalities.
 """
 
 import datetime as dt
 import logging
 from enum import Enum
-from urllib.error import HTTPError
 
 import pandas as pd
+import polars as pl
 import requests
 
 from pyield.config import TIMEZONE_BZ
@@ -37,6 +38,10 @@ ERROR_CODE_NOT_FOUND = 404
 # 400 Bad Request error code for invalid requests
 ERROR_CODE_BAD_REQUEST = 400
 
+# Limite de segurança em dias, correspondendo a ~9.5 anos.
+# Evita a complexidade do cálculo exato de 10 anos-calendário.
+SAFE_DAYS_THRESHOLD = 3500  # aprox 365 * 9.5
+
 
 class BCSerie(Enum):
     """Enum para as séries disponíveis no Banco Central."""
@@ -47,7 +52,7 @@ class BCSerie(Enum):
 
 
 def _build_download_url(
-    serie: BCSerie, start: DateScalar | None = None, end: DateScalar | None = None
+    serie: BCSerie, start: DateScalar, end: DateScalar | None = None
 ) -> str:
     """
     Builds the URL for downloading data from the Central Bank series.
@@ -60,75 +65,72 @@ def _build_download_url(
     Returns:
         The formatted URL for the API request
     """
-    start_str = ""
-    if start:
-        start = convert_input_dates(start)
-        start_str = start.strftime("%d/%m/%Y")
-
-    end_str = ""
-    if end:
-        end = convert_input_dates(end)
-        end_str = end.strftime("%d/%m/%Y")
+    start = convert_input_dates(start)
+    start_str = start.strftime("%d/%m/%Y")
 
     api_url = BASE_URL
     api_url += f"{serie.value}/dados?formato=json"
-    api_url += f"&dataInicial={start_str}&dataFinal={end_str}"
+    api_url += f"&dataInicial={start_str}"
+
+    if end:
+        end = convert_input_dates(end)
+        end_str = end.strftime("%d/%m/%Y")
+        api_url += f"&dataFinal={end_str}"
 
     return api_url
 
 
-@default_retry
 def _fetch_request(
     serie: BCSerie,
-    start: DateScalar | None,
+    start: DateScalar,
     end: DateScalar | None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Worker function that fetches data from the API.
     """
+    # Define o esquema esperado para o DataFrame de retorno.
+    # Isso é crucial para os casos em que a API não retorna dados.
+    expected_schema = {"Date": pl.Date, "Value": pl.Float64}
+
     api_url = _build_download_url(serie, start, end)
-    try:
+
+    # 1. Mini-função interna SÓ para a chamada de rede. SÓ ELA leva o decorador.
+    @default_retry
+    def _do_api_call():
         response = requests.get(api_url, timeout=30)
         response.raise_for_status()
-        data = response.json()
+        return response.json()
 
+    try:
+        data = _do_api_call()
         if not data:
             logger.warning(f"No data available for the requested period: {api_url}")
-            return pd.DataFrame()
+            return pl.DataFrame(schema=expected_schema)
 
-        df = pd.DataFrame(data, dtype="string")
-        df = df.rename(columns={"data": "Date", "valor": "Value"})
-        df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y").astype(
-            "date32[pyarrow]"
+        df = (
+            pl.from_dicts(data)
+            .with_columns(
+                pl.col("data").str.to_date("%d/%m/%Y").alias("Date"),
+                (pl.col("valor").cast(pl.Float64) / 100).alias("Value"),
+            )
+            .select("Date", "Value")
         )
-        df["Value"] = (df["Value"].astype("float64[pyarrow]")) / 100
-
         return df
 
-    except HTTPError as e:
-        if e.response.status_code == ERROR_CODE_NOT_FOUND:
-            logger.warning(f"Resource not found (404): {api_url}")
-            return pd.DataFrame()
-        if (
-            e.response.status_code == ERROR_CODE_BAD_REQUEST
-            and "janela de consulta" in e.response.text
-        ):
-            logger.error(
-                "API request exceeded the 10-year limit. "
-                "This should have been handled by the chunking logic. URL: %s",
-                api_url,
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:  # noqa
+            logger.warning(
+                f"Resource not found (404), treated as no data: {e.request.url}"
             )
-        else:
-            logger.error(f"HTTP error accessing Central Bank API: {e}")
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching data from Central Bank API: {e}")
+            return pl.DataFrame(schema=expected_schema)
+
+        # Qualquer outro erro HTTP final para o programa.
         raise
 
 
 def _fetch_data_from_url(
-    serie: BCSerie, start: DateScalar | None = None, end: DateScalar | None = None
-) -> pd.DataFrame:
+    serie: BCSerie, start: DateScalar, end: DateScalar | None = None
+) -> pl.DataFrame:
     """
     Orchestrates fetching data from the Central Bank API, handling requests longer
     than 10 years by splitting them into smaller chunks using pandas DateOffset.
@@ -141,49 +143,50 @@ def _fetch_data_from_url(
     Returns:
         DataFrame with the requested data
     """
-    # 1. Converter datas usando a função auxiliar existente e o pandas
-    start_date = convert_input_dates(start) if start else None
+    # 1. Converter datas usando a função auxiliar existente
+    start_date = convert_input_dates(start)
     # Se a data final não for fornecida, usar a data de hoje para o cálculo do período
     end_date = convert_input_dates(end) if end else dt.datetime.now(TIMEZONE_BZ).date()
 
-    # Se não houver data de início, a API já limita a 10 anos. Chamada direta é segura.
-    if not start_date:
-        return _fetch_request(serie, start, end)
-
-    # 2. Verificar se o período é maior que 10 anos usando pd.DateOffset
-    if end_date < (start_date + pd.DateOffset(years=10)).date():
+    # Verificação simples e pragmática baseada em dias. Se o período for
+    # menor que nosso limite de segurança, faz uma chamada única.
+    if (end_date - start_date).days < SAFE_DAYS_THRESHOLD:
         return _fetch_request(serie, start_date, end_date)
 
     # 3. Se for maior, quebrar em pedaços (chunking)
     logger.info("Date range exceeds 10 years. Fetching data in chunks.")
-    all_dfs = []
-    current_start = start_date
 
-    while current_start < end_date:
-        # Fim do chunk é 10 anos à frente, menos 1 dia.
-        chunk_end = current_start + pd.DateOffset(years=10) - pd.DateOffset(days=1)
+    duration_str = "10y"
 
-        # Garantir que o fim do chunk não ultrapasse a data final solicitada
-        chunk_end = min(chunk_end, end_date)
+    chunk_starts = pl.date_range(
+        start=start_date, end=end_date, interval=duration_str, eager=True
+    )
 
-        # Buscar os dados para este chunk
-        df_chunk = _fetch_request(serie, current_start, chunk_end)
-        if not df_chunk.empty:
-            all_dfs.append(df_chunk)
+    chunk_ends = chunk_starts.dt.offset_by(duration_str)
 
-        # Preparar o início do próximo chunk
-        current_start = chunk_end + pd.DateOffset(days=1)
+    chunks_df = pl.DataFrame({"start": chunk_starts, "end": chunk_ends}).with_columns(
+        pl.when(pl.col("end") > end_date)
+        .then(pl.lit(end_date))
+        .otherwise(pl.col("end"))
+        .alias("end")
+    )
+
+    all_dfs = [
+        _fetch_request(serie, chunk["start"], chunk["end"])
+        for chunk in chunks_df.iter_rows(named=True)
+    ]
+
+    all_dfs = [df for df in all_dfs if not df.is_empty()]
 
     if not all_dfs:
-        return pd.DataFrame()
+        return pl.DataFrame()
 
-    # 4. Concatenar todos os DataFrames e retornar o resultado
-    final_df = pd.concat(all_dfs, ignore_index=True)
-    return final_df
+    return pl.concat(all_dfs).unique(subset=["Date"], keep="first").sort("Date")
 
 
 def selic_over_series(
-    start: DateScalar | None = None, end: DateScalar | None = None
+    start: DateScalar,
+    end: DateScalar | None = None,
 ) -> pd.DataFrame:
     """
     Fetches the SELIC Over rate from the Brazilian Central Bank.
@@ -216,10 +219,17 @@ def selic_over_series(
         4 2025-01-31  0.1315
         ...
 
+        >>> # Fetching data for a specific date range
+        >>> bc.selic_over_series("14-09-2025", "17-09-2025")
+                 Date  Value
+        0  2025-09-15  0.149
+        1  2025-09-16  0.149
+        2  2025-09-17  0.149
     """
     df = _fetch_data_from_url(BCSerie.SELIC_OVER, start, end)
-    df["Value"] = df["Value"].round(DECIMAL_PLACES_ANNUALIZED)
-    return df
+    return df.with_columns(
+        pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED),
+    ).to_pandas(use_pyarrow_extension_array=True)
 
 
 def selic_over(date: DateScalar) -> float:
@@ -243,11 +253,12 @@ def selic_over(date: DateScalar) -> float:
     df = selic_over_series(date, date)
     if df.empty:
         return float("nan")
-    return round(df.at[0, "Value"], 4)
+    return df.at[0, "Value"]
 
 
 def selic_target_series(
-    start: DateScalar | None = None, end: DateScalar | None = None
+    start: DateScalar,
+    end: DateScalar | None = None,
 ) -> pd.DataFrame:
     """
     Fetches the SELIC Target rate from the Brazilian Central Bank.
@@ -259,8 +270,7 @@ def selic_target_series(
         https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
 
     Args:
-        start: The start date for the data to fetch. If None, returns data from
-              the earliest available date.
+        start: The start date for the data to fetch.
         end: The end date for the data to fetch. If None, returns data up to
              the latest available date.
 
@@ -275,8 +285,8 @@ def selic_target_series(
         0 2024-05-31  0.105
     """
     df = _fetch_data_from_url(BCSerie.SELIC_TARGET, start, end)
-    df["Value"] = df["Value"].round(DECIMAL_PLACES_ANNUALIZED)
-    return df
+    df = df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
+    return df.to_pandas(use_pyarrow_extension_array=True)
 
 
 def selic_target(date: DateScalar) -> float:
@@ -300,11 +310,11 @@ def selic_target(date: DateScalar) -> float:
     df = selic_target_series(date, date)
     if df.empty:
         return float("nan")
-    return float(df.at[0, "Value"])
+    return df.at[0, "Value"]
 
 
 def di_over_series(
-    start: DateScalar | None = None,
+    start: DateScalar,
     end: DateScalar | None = None,
     annualized: bool = True,
 ) -> pd.DataFrame:
@@ -342,11 +352,16 @@ def di_over_series(
     """
     df = _fetch_data_from_url(BCSerie.DI_OVER, start, end)
     if annualized:
-        df["Value"] = (df["Value"] + 1) ** 252 - 1
-        df["Value"] = df["Value"].round(DECIMAL_PLACES_ANNUALIZED)
+        df = df.with_columns(
+            (((pl.col("Value") + 1).pow(252)) - 1)
+            .round(DECIMAL_PLACES_ANNUALIZED)
+            .alias("Value")
+        )
+
     else:
-        df["Value"] = df["Value"].round(DECIMAL_PLACES_DAILY)
-    return df
+        df = df.with_columns(pl.col("Value").round(DECIMAL_PLACES_DAILY))
+
+    return df.to_pandas(use_pyarrow_extension_array=True)
 
 
 def di_over(date: DateScalar, annualized: bool = True) -> float:
@@ -375,4 +390,4 @@ def di_over(date: DateScalar, annualized: bool = True) -> float:
     df = di_over_series(date, date, annualized)
     if df.empty:
         return float("nan")
-    return float(df.at[0, "Value"])
+    return df.at[0, "Value"]
