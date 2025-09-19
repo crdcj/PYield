@@ -3,7 +3,17 @@ Documentação da API do BC
     https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/aplicacao#!/recursos/leiloesTitulosPublicos#eyJmb3JtdWxhcmlvIjp7IiRmb3JtYXQiOiJqc29uIiwiJHRvcCI6MTAwfX0=
 Exemplo de chamada:
     "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='2025-04-08'&@dataMovimentoFim='2025-04-08'&$top=100&$format=json"
-"""
+
+Examplo de retorno da API:
+
+id                             , dataMovimento      , dataLiquidacao     , edital, tipoPublico, prazo, quantidadeOfertada, quantidadeAceita, codigoTitulo, dataVencimento     , tipoOferta, ofertante       , quantidadeOfertadaSegundaRodada, quantidadeAceitaSegundaRodada, cotacaoMedia  , cotacaoCorte  , taxaMedia, taxaCorte, financeiro
+9fe0a3ed0ae043f545d8918000005d , 2025-08-28 00:00:00, 2025-08-29 00:00:00,    202, TodoMercado,  2316,            3000000,          3000000,       100000, 2032-01-01 00:00:00, Venda     , Tesouro Nacional,                          750000,                             0, "443,791682"  , "443,791682"  , "13,7599", "13,7599",   "1331,4"
+9fe0a3ed0ae043f545d8918000005e , 2025-08-28 00:00:00, 2025-08-29 00:00:00,    203, TodoMercado,  1951,            1000000,          1000000,       950199, 2031-01-01 00:00:00, Venda     , Tesouro Nacional,                          250000,                             0, "887,706572"  , "887,706572"  , "13,703" , "13,703" ,    "887,7"
+9fe0a3ed0ae043f545d8918000005c , 2025-08-28 00:00:00, 2025-08-29 00:00:00,    202, TodoMercado,  1402,            6000000,          6000000,       100000, 2029-07-01 00:00:00, Venda     , Tesouro Nacional,                         1500000,                             0, "620,124125"  , "620,116199"  , "13,3786", "13,379" ,   "3720,7"
+9fe0a3ed0ae043f545d8918000005f , 2025-08-28 00:00:00, 2025-08-29 00:00:00,    203, TodoMercado,  3412,             300000,           300000,       950199, 2035-01-01 00:00:00, Venda     , Tesouro Nacional,                           75000,                         42426, "825,382124"  , "825,382124"  , "13,928" , "13,928" ,    "282,7"
+9fe0a3ed0ae043f545d8918000005b , 2025-08-28 00:00:00, 2025-08-29 00:00:00,    202, TodoMercado,   763,            6000000,          6000000,       100000, 2027-10-01 00:00:00, Venda     , Tesouro Nacional,                         1500000,                             0, "769,543353"  , "769,439322"  , "13,4259", "13,4333",   "4617,3"
+9fe09a766d18e3de0ac228c80000c5a, 2025-08-28 00:00:00, 2025-08-29 00:00:00,    202, TodoMercado,   398,            2000000,           960000,       100000, 2026-10-01 00:00:00, Venda     , Tesouro Nacional,                               0,                             0, "865,527516"  , "865,432896"  , "14,2045", "14,216" ,    "830,9"
+"""  # noqa: E501
 
 import datetime as dt
 import io
@@ -41,15 +51,15 @@ NAME_MAPPING = {
     # "prazo": "...", # N. de DC entre a data de liquidação e a data de vencimento
     "codigoTitulo": "SelicCode",  # [100000, 210100, 450000, 760199, 950199]
     "dataVencimento": "Maturity",
-    "financeiro": "Value",  # = FR + SR (in millions)
-    "quantidadeOfertada": "OfferedQuantityFR",
-    "quantidadeAceita": "AcceptedQuantityFR",
-    "quantidadeOfertadaSegundaRodada": "OfferedQuantitySR",
-    "quantidadeAceitaSegundaRodada": "AcceptedQuantitySR",
     "cotacaoMedia": "AvgPrice",
     "cotacaoCorte": "CutPrice",
     "taxaMedia": "AvgRate",
     "taxaCorte": "CutRate",
+    "quantidadeOfertada": "OfferedQuantityFR",
+    "quantidadeAceita": "AcceptedQuantityFR",
+    "quantidadeOfertadaSegundaRodada": "OfferedQuantitySR",
+    "quantidadeAceitaSegundaRodada": "AcceptedQuantitySR",
+    "financeiro": "Value",  # = FR + SR (in millions)
 }
 
 BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
@@ -101,10 +111,9 @@ def _parse_csv(csv_text: str) -> pl.DataFrame:
 
 def _format_df(df: pl.DataFrame) -> pl.DataFrame:
     # Seleciona apenas as colunas que foram mapeadas (descartando as comentadas)
-    final_columns = [col for col in NAME_MAPPING if col in df.columns]
     return (
         df.filter(pl.col("ofertante") == "Tesouro Nacional")
-        .select(final_columns)
+        .select([col for col in NAME_MAPPING if col in df.columns])
         .rename(NAME_MAPPING)
     )
 
@@ -279,21 +288,20 @@ def _add_duration(df: pl.DataFrame) -> pd.DataFrame:
         .map_elements(calculate_duration_per_row, return_dtype=pl.Float64)
         .alias("Duration")
     )
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df
 
 
 def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
     """
     Calcula o DV01 para o leilão de forma 100% vetorizada em Polars.
     """
-    # 1. Define a expressão base para o cálculo do DV01 por unidade.
-    #    Isso não calcula nada ainda, apenas cria o "plano".
-    dv01_unit_expr = 0.0001 * (
-        pl.col("Duration") * pl.col("AvgPrice") / (1 + pl.col("AvgRate"))
+    # 1. Define a expressão base para o cálculo do DV01 unitário.
+    dv01_unit_expr = (
+        0.0001 * pl.col("AvgPrice") * pl.col("Duration") / (1 + pl.col("AvgRate"))
     )
 
-    return df.with_columns(
-        # 2. Calcula as colunas DV01 multiplicando a expressão base pelas quantidades.
+    df = df.with_columns(
+        # 2. Criar as colunas DV01 multiplicando a expressão base pelas quantidades.
         (dv01_unit_expr * pl.col("AcceptedQuantity")).alias("DV01"),
         (dv01_unit_expr * pl.col("AcceptedQuantityFR")).alias("DV01FR"),
         (dv01_unit_expr * pl.col("AcceptedQuantitySR")).alias("DV01SR"),
@@ -310,73 +318,72 @@ def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
         .name.keep()  # Mantém os nomes originais das colunas
     )
 
-
-def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
-    # DV01 por título calculado com base nos valores da primeira rodada
-    mduration = df["Duration"] / (1 + df["AvgRate"])
-    dv01 = 0.0001 * mduration * df["AvgPrice"]
-
-    # Valores totais de DV01 para o leilão
-    df["DV01"] = dv01 * df["AcceptedQuantity"]
-    df["DV01FR"] = dv01 * df["AcceptedQuantityFR"]
-    df["DV01SR"] = dv01 * df["AcceptedQuantitySR"]
-
-    for col in ["DV01", "DV01FR", "DV01SR"]:
-        # Definrir DV01 nulos do leilão como 0
-        df[col] = df[col].fillna(0).round(2)
-
-    # Forçar 0 nas LFT, pois não há DV01
-    df.loc[df["BondType"] == "LFT", ["DV01", "DV01FR", "DV01SR"]] = 0.0
-
     return df
 
 
-def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pd.DataFrame:
+def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pl.DataFrame:
+    """
+    Busca a série histórica da PTAX no intervalo de datas especificado
+    e retorna como um DataFrame Polars.
+    """
+    # Garante que pelo menos um dia útil seja buscado
+    # Isso é importante caso seja o leilão do dia atual e não haja PTAX ainda
     bz_last_bday = bday.last_business_day()
     if start_date >= bz_last_bday:
-        # Garantir que pelo menos um dia útil seja buscado
         start_date = bday.offset(bz_last_bday, -1)
 
-    df = pt.ptax_series(start=start_date, end=end_date)
-    df = df[["Date", "MidRate"]].rename(columns={"MidRate": "PTAX"})
-    if end_date > df["Date"].max():
-        # Se a data final for maior que a última data disponível na série PTAX,
-        # adicionar uma linha com a última taxa PTAX disponível para a data final
-        last_ptax = df["PTAX"].iloc[-1]
-        new_row = pd.DataFrame({"Date": [end_date], "PTAX": [last_ptax]})
-        df = pd.concat([df, new_row]).reset_index(drop=True)
-    return df
+    # Busca a série PTAX usando a função já existente
+    df_pd = pt.ptax_series(start=start_date, end=end_date)
+
+    if df_pd.empty:
+        return pl.DataFrame(
+            {"Date": [], "PTAX": []}, schema={"Date": pl.Date, "PTAX": pl.Float64}
+        )
+
+    # Converte para Polars, seleciona, renomeia e ordena (importante para join_asof)
+    return (
+        pl.from_pandas(df_pd)
+        .select(["Date", "MidRate"])
+        .rename({"MidRate": "PTAX"})
+        .sort("Date")
+    )
 
 
-def _add_usd_dv01(df: pd.DataFrame) -> pd.DataFrame:
-    # 1. Garanta que o DataFrame 'right' esteja ordenado pela chave de merge.
-    ptax_start_date = df["Date"].min()
-    ptax_end_date = df["Date"].max()
+def _add_usd_dv01(df: pl.DataFrame) -> pl.DataFrame:
+    """
+    Adiciona o DV01 em USD usando um join_asof para encontrar a PTAX mais recente.
+    """
+    # Determina o intervalo de datas necessário a partir do DataFrame de leilões
+    ptax_start_date = df.get_column("Date").min()
+    ptax_end_date = df.get_column("Date").max()
+
+    # Busca o DataFrame da PTAX
     df_ptax = _get_ptax_df(start_date=ptax_start_date, end_date=ptax_end_date)
 
-    # 2. Garanta que o DataFrame 'left' esteja ordenado pela chave de merge.
-    df = df.sort_values(by="Date").reset_index(drop=True)
-    df = pd.merge(left=df, right=df_ptax, on="Date", how="left")
-
-    dv01_cols = [c for c in df.columns if c.startswith("DV01")]
-    for col in dv01_cols:
-        df[f"{col}USD"] = df[col] / df["PTAX"]
-
+    df = (
+        df.sort("Date")  # Importante para o join_asof
+        .join_asof(df_ptax, on="Date", strategy="forward")
+        .with_columns(
+            (cs.starts_with("DV01") / pl.col("PTAX")).round(2).name.suffix("USD")
+        )
+        .drop("PTAX")
+    )
     return df
 
 
-def _add_avg_maturity(df: pd.DataFrame) -> pd.DataFrame:
+def _add_avg_maturity(df: pl.DataFrame) -> pl.DataFrame:
     # Na metodolgia do Tesouro Nacional, a maturidade média é a mesma que a duração
-    df["AvgMaturity"] = df["Duration"]
-
-    # Para LFT, a maturidade média é calculada como o n. de dias úteis até o vencimento
-    is_lft = df["BondType"] == "LFT"
-    df.loc[is_lft, "AvgMaturity"] = df.loc[is_lft, "BDToMat"] / 252
+    df = df.with_columns(
+        pl.when(pl.col("BondType") == "LFT")
+        .then(pl.col("BDToMat") / 252)
+        .otherwise(pl.col("Duration"))
+        .alias("AvgMaturity")
+    )
 
     return df
 
 
-def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _sort_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     column_sequence = [
         "Date",
         "Settlement",
@@ -410,8 +417,8 @@ def _sort_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "Value",
     ]
 
-    primary_sort_keys = ["Date", "AuctionType", "BondType", "Maturity"]
-    return df[column_sequence].sort_values(by=primary_sort_keys).reset_index(drop=True)
+    column_keys = ["Date", "AuctionType", "BondType", "Maturity"]
+    return df.select(column_sequence).sort(column_keys)
 
 
 def auctions(
@@ -482,7 +489,6 @@ def auctions(
 
     Notes:
         FR = First Round (Primeira Rodada)
-
         SR = Second Round (Segunda Rodada)
 
     DataFrame Columns:
@@ -494,30 +500,29 @@ def auctions(
         - BondType: Categoria do título (ex: "LTN", "LFT", "NTN-B", "NTN-F").
         - SelicCode: Código do título no sistema Selic.
         - Maturity: Data de vencimento do título.
-        - DV01: Valor do DV01 total do leilão em R$.
-        - DV01FR: DV01 da Primeira Rodada (FR) em R$.
-        - DV01SR: DV01 da Segunda Rodada (SR) em R$.
-        - DV01USD: DV01 total do leilão em dólares (USD).
-        - DV01FRUSD: DV01 da Primeira Rodada (FR) em dólares (USD).
-        - DV01SRUSD: DV01 da Segunda Rodada (SR) em dólares (USD).
+        - BDToMat: Dias úteis entre a liquidação da 1R e a data de vencimento do título.
+        - Duration: Duration (Duração) calculada com base na data de
+            liquidação da 1R e na data de vencimento do título.
         - AvgMaturity: Maturidade média do título (em anos).
-        - Value: Valor total do leilão em R$ (FR + SR).
-        - ValueFR: Valor da primeira rodada (FR) do leilão em R$.
-        - ValueSR: Valor da segunda rodada (SR) em R$.
-        - OfferedQuantity: Quantidade total ofertada no leilão (FR + SR).
-        - OfferedQuantityFR: Quantidade ofertada na primeira rodada (FR).
-        - OfferedQuantitySR: Quantidade ofertada na segunda rodada (SR).
-        - AcceptedQuantity: Quantidade total aceita no leilão (FR + SR).
-        - AcceptedQuantityFR: Quantidade aceita na primeira rodada (FR).
-        - AcceptedQuantitySR: Quantidade aceita na segunda rodada (SR).
         - AvgPrice: Preço médio no leilão.
         - CutPrice: Preço de corte.
         - AvgRate: Taxa de juros média.
         - CutRate: Taxa de corte.
-        - BDToMat: Dias úteis entre a data de liquidação da 1R e a data de
-            vencimento do título.
-        - Duration: Duration (Duração) calculada com base na data de
-            liquidação da 1R e na data de vencimento do título.
+        - DV01FR: DV01 da Primeira Rodada (FR) em R$.
+        - DV01SR: DV01 da Segunda Rodada (SR) em R$.
+        - DV01: Valor do DV01 total do leilão em R$.
+        - DV01FRUSD: DV01 da Primeira Rodada (FR) em dólares (USD).
+        - DV01SRUSD: DV01 da Segunda Rodada (SR) em dólares (USD).
+        - DV01USD: DV01 total do leilão em dólares (USD).
+        - OfferedQuantityFR: Quantidade ofertada na primeira rodada (FR).
+        - OfferedQuantitySR: Quantidade ofertada na segunda rodada (SR).
+        - OfferedQuantity: Quantidade total ofertada no leilão (FR + SR).
+        - AcceptedQuantityFR: Quantidade aceita na primeira rodada (FR).
+        - AcceptedQuantitySR: Quantidade aceita na segunda rodada (SR).
+        - AcceptedQuantity: Quantidade total aceita no leilão (FR + SR).
+        - ValueFR: Valor da primeira rodada (FR) do leilão em R$.
+        - ValueSR: Valor da segunda rodada (SR) em R$.
+        - Value: Valor total do leilão em R$ (FR + SR).
     """
     try:
         url = _build_url(start=start, end=end, auction_type=auction_type)
@@ -534,7 +539,7 @@ def auctions(
         df = _add_usd_dv01(df)
         df = _add_avg_maturity(df)
         df = _sort_and_reorder_columns(df)
-        return df
-    except Exception:
-        logger.exception("Error fetching auction data from BC API.")
+        return df.to_pandas(use_pyarrow_extension_array=True)
+    except Exception as e:
+        logger.exception(f"Error fetching auction data from BC API: {e}")
         return pd.DataFrame()

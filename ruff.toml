@@ -9,4 +9,3 @@ select = ["I", "F", "E", "W", "PL", "PT"]
 
 [format]
 docstring-code-format = true
-docstring-code-line-length = 88
