@@ -92,26 +92,102 @@ def _get_api_csv(url: str) -> bytes:
     return response.text
 
 
-def _parse_csv(csv_text: str) -> pd.DataFrame:
+def _parse_csv(csv_text: str) -> pl.DataFrame:
     csv_buffer = io.StringIO(csv_text)
     df = pl.read_csv(csv_buffer, decimal_comma=True, try_parse_dates=True)
     df = df.with_columns(cs.temporal().cast(pl.Date))
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df
 
 
-def _format_df(df: pd.DataFrame) -> pd.DataFrame:
+def _format_df(df: pl.DataFrame) -> pl.DataFrame:
     # Seleciona apenas as colunas que foram mapeadas (descartando as comentadas)
     final_columns = [col for col in NAME_MAPPING if col in df.columns]
     return (
-        df.query("ofertante == 'Tesouro Nacional'")[final_columns]
-        .rename(columns=NAME_MAPPING)
-        .reset_index(drop=True)
+        df.filter(pl.col("ofertante") == "Tesouro Nacional")
+        .select(final_columns)
+        .rename(NAME_MAPPING)
     )
 
 
-def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    # A API retorna somente os valores de SR e FR
-    # Assim, vamos ter que somar SR com FR para obter os valores totais
+def _process_df(df: pl.DataFrame) -> pl.DataFrame:
+    # Em 11/06/2024 o BC passou a informar nas colunas de cotacao os valores dos PUs
+    # Isso afeta somente os títulos LFT e NTN-B
+    change_date = dt.datetime.strptime("11-06-2024", "%d-%m-%Y").date()
+
+    bond_mapping = {
+        100000: "LTN",
+        210100: "LFT",
+        # 450000: "..." # Foi um título ofertado pelo BC em 2009/2010
+        760199: "NTN-B",
+        950199: "NTN-F",
+    }
+
+    # A API retorna somente as quantidades de SR e FR e o financeiro total (FR + SR).
+    # Assim, vamos ter que somar SR com FR para obter as quantidades totais.
+    # E calcular o financeiro da FR e SR com base na proporção das quantidades.
+    df = (
+        df.with_columns(
+            # 1. Substitui nulos por 0 nas colunas de segunda rodada (SR)
+            pl.col("AcceptedQuantitySR", "OfferedQuantitySR").fill_null(0),
+        )
+        .with_columns(
+            # 2. Calcula as quantidades totais
+            (pl.col("OfferedQuantityFR") + pl.col("OfferedQuantitySR")).alias(
+                "OfferedQuantity"
+            ),
+            (pl.col("AcceptedQuantityFR") + pl.col("AcceptedQuantitySR")).alias(
+                "AcceptedQuantity"
+            ),
+            # 3. Converte o valor financeiro de milhões para unidades e tipo inteiro
+            (pl.col("Value") * 1_000_000).round(0).cast(pl.Int64).alias("Value"),
+            # 4. Converte as taxas de % para decimais
+            (pl.col("AvgRate") / 100).round(6).alias("AvgRate"),
+            (pl.col("CutRate") / 100).round(6).alias("CutRate"),
+        )
+        .with_columns(
+            # 5. Calcula o valor financeiro da primeira rodada (ValueFR)
+            pl.when(pl.col("AcceptedQuantityFR") != 0)
+            .then(
+                (pl.col("AcceptedQuantityFR") / pl.col("AcceptedQuantity"))
+                * pl.col("Value")
+            )
+            .otherwise(0)
+            .round(0)
+            .cast(pl.Int64)
+            .alias("ValueFR"),
+        )
+        .with_columns(
+            # 6. Calcula o valor da segunda rodada (ValueSR)
+            (pl.col("Value") - pl.col("ValueFR")).alias("ValueSR"),
+            # 7. Mapeia o código SELIC para o tipo de título (BondType)
+            pl.col("SelicCode")
+            .replace_strict(bond_mapping, return_dtype=pl.String)
+            .alias("BondType"),
+        )
+        .with_columns(
+            # 8. Ajusta o preço médio (AvgPrice) com base na data e tipo do título
+            pl.when(
+                (pl.col("Date") >= change_date)
+                | (pl.col("BondType").is_in(["LTN", "NTN-F"]))
+            )
+            .then(pl.col("AvgPrice"))
+            .otherwise((pl.col("ValueFR") / pl.col("AcceptedQuantityFR")).round(6))
+            .alias("AvgPrice")
+        )
+    )
+    s_bd_to_mat_pd = bday.count(
+        start=df.get_column("Settlement"),
+        end=df.get_column("Maturity"),
+    )
+    s_bd_to_mat = pl.Series(s_bd_to_mat_pd)
+    df = df.with_columns(s_bd_to_mat.alias("BDToMat"))
+    return df
+
+
+def _process_df_pandas(df: pl.DataFrame) -> pl.DataFrame:
+    # A API retorna somente as quantidades de SR e FR e o financeiro total (FR + SR).
+    # Assim, vamos ter que somar SR com FR para obter as quantidades totais.
+    # E calcular o financeiro da FR e SR com base na proporção das quantidades.
 
     # Remover valores nulos de SR e FR para o nulo não ser propagado
     df["AcceptedQuantitySR"] = df["AcceptedQuantitySR"].fillna(0)
@@ -162,40 +238,77 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _adjust_null_values(df: pd.DataFrame) -> pd.DataFrame:
+def _adjust_values_without_auction(df: pl.DataFrame) -> pl.DataFrame:
     # Onde não há quantidade aceita na primeira volta, não há taxa ou PU definidos.
-    is_accepted = df["AcceptedQuantityFR"] != 0
     cols_to_update = ["AvgRate", "CutRate", "AvgPrice", "CutPrice"]
-    df[cols_to_update] = df[cols_to_update].where(is_accepted, pd.NA)
+    df = df.with_columns(
+        pl.when(
+            (pl.col("AcceptedQuantityFR") == 0)
+            | (pl.col("AcceptedQuantityFR").is_null())
+        )
+        .then(None)
+        .otherwise(pl.col(cols_to_update))
+        .name.keep()
+    )
     return df
 
 
-def _add_duration(df: pd.DataFrame) -> pd.DataFrame:
-    df["Duration"] = 0.0
-    df_lft = df.query("BondType in ['LFT']").reset_index(drop=True)
+def _add_duration(df: pl.DataFrame) -> pd.DataFrame:
+    """
+    Calcula a duration para cada tipo de título, aplicando uma função
+    linha a linha para os casos não-vetorizáveis (NTN-F e NTN-B).
+    """
 
-    df_ltn = df.query("BondType == 'LTN'").reset_index(drop=True)
-    if not df_ltn.empty:
-        df_ltn["Duration"] = df_ltn["BDToMat"] / 252
+    def calculate_duration_per_row(row: dict) -> float:
+        """Função auxiliar que aplica a lógica para uma única linha."""
+        bond_type = row["BondType"]
 
-    df_ntnf = df.query("BondType == 'NTN-F'").reset_index(drop=True)
-    if not df_ntnf.empty:
-        df_ntnf["Duration"] = df_ntnf.apply(
-            lambda row: duration_f(row["Settlement"], row["Maturity"], row["AvgRate"]),
-            axis=1,
-        )
+        if bond_type == "LTN":
+            return row["BDToMat"] / 252
+        elif bond_type == "NTN-F":
+            # Chamada da sua função externa, linha a linha
+            return duration_f(row["Settlement"], row["Maturity"], row["AvgRate"])
+        elif bond_type == "NTN-B":
+            # Chamada da sua função externa, linha a linha
+            return duration_b(row["Settlement"], row["Maturity"], row["AvgRate"])
+        else:  # LFT e outros casos
+            return 0.0
 
-    df_ntnb = df.query("BondType == 'NTN-B'").reset_index(drop=True)
-    if not df_ntnb.empty:
-        df_ntnb["Duration"] = df_ntnb.apply(
-            lambda row: duration_b(row["Settlement"], row["Maturity"], row["AvgRate"]),
-            axis=1,
-        )
+    df = df.with_columns(
+        pl.struct(["BondType", "Settlement", "Maturity", "AvgRate", "BDToMat"])
+        .map_elements(calculate_duration_per_row, return_dtype=pl.Float64)
+        .alias("Duration")
+    )
+    return df.to_pandas(use_pyarrow_extension_array=True)
 
-    df = pd.concat([df_lft, df_ltn, df_ntnf, df_ntnb]).reset_index(drop=True)
-    df["Duration"] = df["Duration"].astype("float64[pyarrow]")
 
-    return df
+def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
+    """
+    Calcula o DV01 para o leilão de forma 100% vetorizada em Polars.
+    """
+    # 1. Define a expressão base para o cálculo do DV01 por unidade.
+    #    Isso não calcula nada ainda, apenas cria o "plano".
+    dv01_unit_expr = 0.0001 * (
+        pl.col("Duration") * pl.col("AvgPrice") / (1 + pl.col("AvgRate"))
+    )
+
+    return df.with_columns(
+        # 2. Calcula as colunas DV01 multiplicando a expressão base pelas quantidades.
+        (dv01_unit_expr * pl.col("AcceptedQuantity")).alias("DV01"),
+        (dv01_unit_expr * pl.col("AcceptedQuantityFR")).alias("DV01FR"),
+        (dv01_unit_expr * pl.col("AcceptedQuantitySR")).alias("DV01SR"),
+    ).with_columns(
+        # 3. Aplica a limpeza final:
+        #    - Se for LFT, o valor é 0.0
+        #    - Senão, usa o valor calculado.
+        #    - Preenche qualquer nulo restante com 0.
+        #    - Arredonda para 2 casas decimais.
+        pl.when(pl.col("BondType") == "LFT")
+        .then(0.0)
+        .otherwise(pl.col("DV01", "DV01FR", "DV01SR"))
+        .fill_null(0)
+        .name.keep()  # Mantém os nomes originais das colunas
+    )
 
 
 def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
@@ -415,7 +528,7 @@ def auctions(
         df = _parse_csv(api_csv_text)
         df = _format_df(df)
         df = _process_df(df)
-        df = _adjust_null_values(df)
+        df = _adjust_values_without_auction(df)
         df = _add_duration(df)
         df = _add_dv01(df)
         df = _add_usd_dv01(df)
