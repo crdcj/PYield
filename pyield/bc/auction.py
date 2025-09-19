@@ -334,11 +334,8 @@ def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pl.DataFrame:
 
     # Busca a série PTAX usando a função já existente
     df_pd = pt.ptax_series(start=start_date, end=end_date)
-
     if df_pd.empty:
-        return pl.DataFrame(
-            {"Date": [], "PTAX": []}, schema={"Date": pl.Date, "PTAX": pl.Float64}
-        )
+        return pl.DataFrame()
 
     # Converte para Polars, seleciona, renomeia e ordena (importante para join_asof)
     return (
@@ -359,6 +356,10 @@ def _add_usd_dv01(df: pl.DataFrame) -> pl.DataFrame:
 
     # Busca o DataFrame da PTAX
     df_ptax = _get_ptax_df(start_date=ptax_start_date, end_date=ptax_end_date)
+    if df_ptax.is_empty():
+        # Se não houver dados de PTAX, retorna o DataFrame original sem alterações
+        logger.warning("No PTAX data available to calculate DV01 in USD.")
+        return df
 
     df = (
         df.sort("Date")  # Importante para o join_asof
