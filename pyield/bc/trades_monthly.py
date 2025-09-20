@@ -32,7 +32,7 @@ BASE_URL = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
 TPF_TRADES_SCHEMA = {
     "DATA MOV": pl.String,  # Read as string, parse to date later for more control
     "SIGLA": pl.String,
-    "CODIGO": pl.String,  # Safer as string, as it's an identifier
+    "CODIGO": pl.Int64,  # Selic unique code is integer
     "CODIGO ISIN": pl.String,
     "EMISSAO": pl.String,  # Read as string, parse to date later
     "VENCIMENTO": pl.String,  # Read as string, parse to date later
