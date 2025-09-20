@@ -1,21 +1,36 @@
+"""
+Módulo para acessar a API de cotações PTAX do Banco Central do Brasil (BCB)
+
+Exemplo de chamada à API:
+    https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='09-01-2025'&@dataFinalCotacao='09-10-2025'&$format=text/csv
+
+Exemplo de resposta CSV da API do BCB:
+cotacaoCompra, cotacaoVenda, dataHoraCotacao
+2814         , 2828        , 1984-12-03 11:29:00.0
+2814         , 2828        , 1984-12-03 16:38:00.0
+2867         , 2881        , 1984-12-04 11:17:00.0
+...
+"5,4272"     , "5,4278"    , 2025-09-08 13:09:40.608
+"5,4272"     , "5,4278"    , 2025-09-09 13:07:27.786
+"5,4117"     , "5,4123"    , 2025-09-10 13:06:29.196
+"""
+
 import datetime as dt
 import io
 import logging
-from zoneinfo import ZoneInfo
 
 import pandas as pd
+import polars as pl
 import requests
 
 from pyield import date_converter as dc
+from pyield.config import TIMEZONE_BZ
 from pyield.date_converter import DateScalar
-
-TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
+from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
 
-"""Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
-Chaves com comentário serão descartadas ao final do processamento
-A ordem das chaves será a ordem das colunas no DataFrame final"""
+# Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
 COLUMN_MAPPING = {
     "dataHoraCotacao": "DateTime",
     "cotacaoCompra": "BuyRate",
@@ -25,59 +40,75 @@ COLUMN_MAPPING = {
 PTAX_API_URL = "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?"
 
 
-def _load_from_url(url: str) -> pd.DataFrame:
+def _build_api_url(start: dt.date, end: dt.date) -> str:
+    start_str = start.strftime("%m-%d-%Y")
+    end_str = end.strftime("%m-%d-%Y")
+
+    # Monta a URL da API com as datas de início e fim
+    url = PTAX_API_URL
+    url += f"@dataInicial='{start_str}'"
+    url += f"&@dataFinalCotacao='{end_str}'"
+    url += "&$format=text/csv"  # Adiciona o formato CSV ao final
+    return url
+
+
+@default_retry
+def _fetch_text_from_api(url: str) -> str:
     response = requests.get(url, timeout=10)
     response.raise_for_status()
-    return pd.read_csv(
-        io.StringIO(response.text),
-        dtype_backend="pyarrow",
-        decimal=",",
-        date_format="%Y-%m-%d %H:%M:%S.%f",
-        parse_dates=["dataHoraCotacao"],
+    return response.text
+
+
+def _parse_csv(csv_text: str) -> pl.DataFrame:
+    """Faz o parse seguro do CSV da API PTAX.
+
+    Evita depender de inferência heurística do Polars (que levou a tentar
+    ler *i64* em valores decimais como "13,77") definindo dtypes explícitos e
+    aplicando `strptime` controlado para a coluna de data/hora.
+
+    Estratégia:
+      1. Ler as colunas de taxas como Float64 (ou poderíamos usar Decimal futuramente)
+         já aproveitando `decimal_comma=True` para normalizar a vírgula.
+      2. Ler `dataHoraCotacao` como string e depois fazer parse explícito para
+         Datetime em milissegundos usando o formato conhecido `%Y-%m-%d %H:%M:%S%.3f`.
+      3. Forçar unidade de tempo "ms" (a API só tem milissegundos) removendo
+         qualquer precisão fantasma.
+    """
+
+    # Schema mínimo explícito. Mantemos dataHoraCotacao como Utf8 para parse manual.
+    schema = {
+        "cotacaoCompra": pl.Float64,
+        "cotacaoVenda": pl.Float64,
+        "dataHoraCotacao": pl.String,
+    }
+
+    df = pl.read_csv(
+        io.StringIO(csv_text),
+        decimal_comma=True,  # converte "5,4372" para "5.4372" antes do cast
+        schema=schema,
     )
-
-
-def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
-    # Remover colunas que não serão utilizadas
-    keep_columns = [col for col in COLUMN_MAPPING.keys() if col in df.columns]
-    return df[keep_columns].rename(columns=COLUMN_MAPPING)
-
-
-def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    df["Date"] = df["DateTime"].astype("date32[pyarrow]")
-    df["DateTime"] = df["DateTime"].astype("timestamp[ns][pyarrow]")
-    df["BuyRate"] = df["BuyRate"].round(4)  # BC API retorna com 4 casas decimais
-    df["SellRate"] = df["SellRate"].round(4)  # BC API retorna com 4 casas decimais
-
-    df["MidRate"] = (df["BuyRate"] + df["SellRate"]) / 2
-    df["MidRate"] = df["MidRate"].round(5)
-
     return df
 
 
-def _reorder_and_sort_columns(df: pd.DataFrame) -> pd.DataFrame:
-    ordered_columns = ["Date", "DateTime", "BuyRate", "SellRate", "MidRate"]
-    return df[ordered_columns].sort_values(by=["DateTime"]).reset_index(drop=True)
+def _process_df(df: pl.DataFrame) -> pl.DataFrame:
+    parsed_dt = pl.col("DateTime").str.strptime(
+        pl.Datetime(time_unit="ms"),
+        format="%Y-%m-%d %H:%M:%S%.3f",
+        strict=True,
+    )
 
-
-def _fetch_df_from_url(url: str) -> pd.DataFrame:
-    try:
-        df = _load_from_url(url)
-        if df.empty:
-            logging.warning("No data found for the specified period.")
-            return pd.DataFrame()
-        df = _rename_columns(df)
-        df = _process_df(df)
-        df = _reorder_and_sort_columns(df)
-        # Garantir que não há duplicatas de datas, mantendo a última ocorrência
-        df = df.drop_duplicates(subset=["Date"], keep="last").reset_index(drop=True)
-        return df
-    except requests.exceptions.HTTPError as http_err:
-        logger.error(f"HTTP error occurred: {http_err}")
-        return pd.DataFrame()
-    except Exception:
-        logger.exception("Error fetching auction data from BC API.")
-        return pd.DataFrame()
+    df = (
+        df.rename(COLUMN_MAPPING)
+        .with_columns(
+            parsed_dt.alias("DateTime"),
+            parsed_dt.cast(pl.Date).alias("Date"),
+            ((pl.col("BuyRate") + pl.col("SellRate")) / 2).round(5).alias("MidRate"),
+        )
+        .unique(subset=["Date"], keep="last")
+        .select(["Date", "DateTime", "BuyRate", "SellRate", "MidRate"])
+        .sort("DateTime")
+    )
+    return df
 
 
 def ptax_series(
@@ -191,16 +222,21 @@ def ptax_series(
     else:
         end = dt.datetime.now(TIMEZONE_BZ).date()
 
-    start_str = start.strftime("%m-%d-%Y")
-    end_str = end.strftime("%m-%d-%Y")
-
-    # Monta a URL da API com as datas de início e fim
-    url = PTAX_API_URL
-    url += f"@dataInicial='{start_str}'"
-    url += f"&@dataFinalCotacao='{end_str}'"
-    url += "&$format=text/csv"  # Adiciona o formato CSV ao final
-
-    return _fetch_df_from_url(url)
+    try:
+        url = _build_api_url(start, end)
+        text = _fetch_text_from_api(url)
+        df = _parse_csv(text)
+        if df.is_empty():
+            logging.warning("No data found for the specified period.")
+            return pd.DataFrame()
+        df = _process_df(df)
+        return df.to_pandas(use_pyarrow_extension_array=True)
+    except requests.exceptions.HTTPError as http_err:
+        logger.error(f"HTTP error occurred: {http_err}")
+        return pd.DataFrame()
+    except Exception as e:
+        logger.exception("Error fetching PTAX data from BC API: %s", e)
+        return pd.DataFrame()
 
 
 def ptax(date: DateScalar) -> float:

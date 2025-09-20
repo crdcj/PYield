@@ -1,7 +1,24 @@
+"""
+Module to fetch monthly secondary trading data for the domestic 'Federal Public Debt'
+(TPF - títulos públicos federais) registered in the Brazilian Central Bank (BCB) Selic system.
+The data is downloaded as a ZIP file, extracted, and loaded into a Pandas DataFrame.
+Example of the data format (first 3 lines):
+DATA MOV  ; SIGLA; CODIGO; CODIGO ISIN ; EMISSAO   ; VENCIMENTO; NUM DE OPER; QUANT NEGOCIADA; VALOR NEGOCIADO; PU MIN        ; PU MED        ; PU MAX        ; PU LASTRO     ; VALOR PAR     ; TAXA MIN; TAXA MED; TAXA MAX; NUM OPER COM CORRETAGEM; QUANT NEG COM CORRETAGEM
+02/09/2024; LFT  ; 210100; BRSTNCLF1RC4; 26/10/2018; 01/03/2025;          48;          100221;                ; 15288,00898200; 15292,57098100; 15302,77742100; 15285,54813387; 15288,23830700; -0,1897 ; -0,0565 ; 0,0032  ;                      20;                    16155
+02/09/2024; LFT  ; 210100; BRSTNCLF1RD2; 08/03/2019; 01/09/2025;         101;          230120;                ; 15288,23830700; 15294,25937800; 15311,01778200; 15279,49187722; 15288,23830700; -0,1498 ; -0,0395 ; 0,0000  ;                      21;                    19059
+02/09/2024; LFT  ; 210100; BRSTNCLF1RE0; 06/09/2019; 01/03/2026;          88;          512642;                ; 15286,63304100; 15288,20025100; 15292,77891300; 15268,60295396; 15288,23830700; -0,0198 ; 0,0002  ; 0,0071  ;                      27;                   121742
+...
+"""  # noqa: E501
+
+import datetime as dt
+import io
 import logging
-from urllib.error import HTTPError
+import zipfile as zf
 
 import pandas as pd
+import polars as pl
+import requests
+from requests.exceptions import HTTPError
 
 from pyield.date_converter import DateScalar, convert_input_dates
 from pyield.retry import default_retry
@@ -9,6 +26,30 @@ from pyield.retry import default_retry
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
+
+
+# Using the original column names from the source file
+TPF_TRADES_SCHEMA = {
+    "DATA MOV": pl.String,  # Read as string, parse to date later for more control
+    "SIGLA": pl.String,
+    "CODIGO": pl.String,  # Safer as string, as it's an identifier
+    "CODIGO ISIN": pl.String,
+    "EMISSAO": pl.String,  # Read as string, parse to date later
+    "VENCIMENTO": pl.String,  # Read as string, parse to date later
+    "NUM DE OPER": pl.Int64,
+    "QUANT NEGOCIADA": pl.Int64,
+    "VALOR NEGOCIADO": pl.Float64,
+    "PU MIN": pl.Float64,
+    "PU MED": pl.Float64,
+    "PU MAX": pl.Float64,
+    "PU LASTRO": pl.Float64,
+    "VALOR PAR": pl.Float64,
+    "TAXA MIN": pl.Float64,
+    "TAXA MED": pl.Float64,
+    "TAXA MAX": pl.Float64,
+    "NUM OPER COM CORRETAGEM": pl.Int64,
+    "QUANT NEG COM CORRETAGEM": pl.Int64,
+}
 
 COLUMN_MAPPING = {
     "DATA MOV": "SettlementDate",
@@ -19,7 +60,7 @@ COLUMN_MAPPING = {
     "VENCIMENTO": "MaturityDate",
     "NUM DE OPER": "Trades",
     "QUANT NEGOCIADA": "Quantity",
-    "VALOR NEGOCIADO": "Volume",
+    "VALOR NEGOCIADO": "Value",
     "PU MIN": "MinPrice",
     "PU MED": "AvgPrice",
     "PU MAX": "MaxPrice",
@@ -33,7 +74,7 @@ COLUMN_MAPPING = {
 }
 
 
-def _build_filename(target_date: DateScalar, extragoup: bool) -> str:
+def _build_filename(target_date: dt.date, extragroup: bool) -> str:
     """
     URL com todos os arquivos disponíveis:
     https://www4.bcb.gov.br/pom/demab/negociacoes/apresentacao.asp?frame=1
@@ -44,35 +85,53 @@ def _build_filename(target_date: DateScalar, extragoup: bool) -> str:
     All Operations File format: NegTYYYYMM.ZIP
     Only Extra Group File format: NegEYYYYMM.ZIP
     """
-    file_date = target_date.strftime("%Y%m")
-    operation_acronym = "E" if extragoup else "T"
-    return f"Neg{operation_acronym}{file_date}.ZIP"
+    year_month = target_date.strftime("%Y%m")
+    operation_acronym = "E" if extragroup else "T"
+    return f"Neg{operation_acronym}{year_month}.ZIP"
+
+
+def _build_file_url(target_date: dt.date, extragroup: bool) -> str:
+    filename = _build_filename(target_date, extragroup)
+    return f"{BASE_URL}/{filename}"
 
 
 @default_retry
-def _fetch_data_from_url(file_url: str) -> pd.DataFrame:
-    df = pd.read_csv(
-        file_url,
-        sep=";",
-        decimal=",",
-        dtype_backend="pyarrow",
+def _fetch_zip_from_url(file_url: str) -> bytes:
+    response = requests.get(file_url, timeout=15)
+    response.raise_for_status()
+    return response.content
+
+
+def _uncompress_zip(zip_content: bytes) -> io.BytesIO:
+    with zf.ZipFile(io.BytesIO(zip_content), "r") as file_zip:
+        # Lê o conteúdo do arquivo CSV para a memória como um objeto de bytes
+        csv_bytes = file_zip.read(file_zip.namelist()[0])
+        return io.BytesIO(csv_bytes)
+
+
+def _read_dataframe_from_zip(buffer: io.BytesIO) -> pl.DataFrame:
+    df = pl.read_csv(
+        buffer,
+        decimal_comma=True,
+        encoding="latin1",
+        separator=";",
+        schema=TPF_TRADES_SCHEMA,
     )
     return df
 
 
-def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    for col in ["DATA MOV", "EMISSAO", "VENCIMENTO"]:
-        df[col] = pd.to_datetime(df[col], format="%d/%m/%Y", errors="coerce")
-        df[col] = df[col].astype("date32[pyarrow]")
-
-    df = df.rename(columns=COLUMN_MAPPING)
-
-    # Volume are empty in the original BCB file, so we calculate it
-    df["Volume"] = (df["Quantity"] * df["AvgPrice"]).round(2)
-
-    sort_cols = ["SettlementDate", "BondType", "MaturityDate"]
-    df = df.sort_values(by=sort_cols).reset_index(drop=True)
-    return df
+def _process_df(df: pl.DataFrame) -> pd.DataFrame:
+    date_cols = ["SettlementDate", "IssueDate", "MaturityDate"]
+    df = (
+        df.rename(COLUMN_MAPPING)
+        .with_columns(
+            pl.col(date_cols).str.strptime(pl.Date, format="%d/%m/%Y", strict=False),
+            # Refazer o cálculo do valor pois ele vem vazio no arquivo
+            (pl.col("Quantity") * pl.col("AvgPrice")).round(2).alias("Value"),
+        )
+        .sort(["SettlementDate", "BondType", "MaturityDate"])
+    )
+    return df.to_pandas(use_pyarrow_extension_array=True)
 
 
 def tpf_monthly_trades(
@@ -114,7 +173,7 @@ def tpf_monthly_trades(
         - MaturityDate: Security's maturity date
         - Trades: Number of trades executed
         - Quantity: Quantity traded
-        - Volume: Total value traded
+        - Value: Value traded
         - AvgPrice: Average price
         - AvgRate: Average rate
         And additional trading metrics like min/max prices and rates.
@@ -123,14 +182,14 @@ def tpf_monthly_trades(
         >>> from pyield import bc
         >>> df = bc.tpf_monthly_trades("07-01-2025")  # Returns all trades for Jan/2025
     """
-    target_date = convert_input_dates(target_date)
-    msg = f"Fetching TPF trades for {target_date.strftime('%b/%Y')} from BCB"
-    logger.info(msg)
-    filename = _build_filename(target_date, extragroup)
-    url = f"{BASE_URL}/{filename}"
-
     try:
-        df = _fetch_data_from_url(url)
+        target_date = convert_input_dates(target_date)
+        url = _build_file_url(target_date, extragroup)
+        zip_content = _fetch_zip_from_url(url)
+        extracted_file = _uncompress_zip(zip_content)
+        df = _read_dataframe_from_zip(extracted_file)
+        df = _process_df(df)
+
     except HTTPError as e:
         if e.code == 404:  # noqa
             msg = f"Resource not found (404) at {url}. Returning an empty DataFrame."
@@ -152,4 +211,4 @@ def tpf_monthly_trades(
     msg = f"Successfully processed data from {url}. Found {len(df)} records."
     logger.info(msg)
 
-    return _process_df(df)
+    return df

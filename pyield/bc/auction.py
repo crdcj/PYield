@@ -62,6 +62,29 @@ NAME_MAPPING = {
     "financeiro": "Value",  # = FR + SR (in millions)
 }
 
+# Schema (tipos) esperado para o CSV bruto retornado pela API do BC.
+API_SCHEMA = {
+    "id": pl.String,  # não usamos, mas é retornado
+    "dataMovimento": pl.Datetime,  # será convertido para Date depois
+    "dataLiquidacao": pl.Datetime,
+    "edital": pl.Int64,
+    "tipoPublico": pl.String,
+    "prazo": pl.Int64,  # dias corridos entre liquidação e vencimento
+    "quantidadeOfertada": pl.Int64,
+    "quantidadeAceita": pl.Int64,
+    "codigoTitulo": pl.Int64,
+    "dataVencimento": pl.Datetime,
+    "tipoOferta": pl.String,
+    "ofertante": pl.String,
+    "quantidadeOfertadaSegundaRodada": pl.Int64,
+    "quantidadeAceitaSegundaRodada": pl.Int64,
+    "cotacaoMedia": pl.Float64,
+    "cotacaoCorte": pl.Float64,
+    "taxaMedia": pl.Float64,
+    "taxaCorte": pl.Float64,
+    "financeiro": pl.Float64,
+}
+
 BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
 
 
@@ -103,9 +126,18 @@ def _get_api_csv(url: str) -> bytes:
 
 
 def _parse_csv(csv_text: str) -> pl.DataFrame:
-    csv_buffer = io.StringIO(csv_text)
-    df = pl.read_csv(csv_buffer, decimal_comma=True, try_parse_dates=True)
-    df = df.with_columns(cs.temporal().cast(pl.Date))
+    # Lê usando schema explícito para garantir estabilidade dos tipos.
+    # Evitamos try_parse_dates para não promover colunas inesperadas a datas.
+    df = pl.read_csv(
+        io.StringIO(csv_text),
+        decimal_comma=True,
+        schema=API_SCHEMA,
+        null_values=["null"],
+    )
+    # Converte os campos datetime para Date (mantemos apenas a data).
+    df = df.with_columns(
+        pl.col(["dataMovimento", "dataLiquidacao", "dataVencimento"]).cast(pl.Date)
+    )
     return df
 
 
@@ -190,60 +222,6 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     )
     s_bd_to_mat = pl.Series(s_bd_to_mat_pd)
     df = df.with_columns(s_bd_to_mat.alias("BDToMat"))
-    return df
-
-
-def _process_df_pandas(df: pl.DataFrame) -> pl.DataFrame:
-    # A API retorna somente as quantidades de SR e FR e o financeiro total (FR + SR).
-    # Assim, vamos ter que somar SR com FR para obter as quantidades totais.
-    # E calcular o financeiro da FR e SR com base na proporção das quantidades.
-
-    # Remover valores nulos de SR e FR para o nulo não ser propagado
-    df["AcceptedQuantitySR"] = df["AcceptedQuantitySR"].fillna(0)
-    df["OfferedQuantitySR"] = df["OfferedQuantitySR"].fillna(0)
-
-    df["OfferedQuantity"] = df["OfferedQuantityFR"] + df["OfferedQuantitySR"]
-    df["AcceptedQuantity"] = df["AcceptedQuantityFR"] + df["AcceptedQuantitySR"]
-    # Total value of the auction in R$ millions
-    # Convert to R$ and use int since there is no decimal value after conversion
-    df["Value"] = (1_000_000 * df["Value"]).round(0).astype("int64[pyarrow]")
-
-    # Remove the percentage sign and round to 6 decimal places (4 decimal places in %)
-    # Before 25/08/2015, there were no rounding rules for the rates in the BC API
-    df["AvgRate"] = (df["AvgRate"] / 100).round(6)
-    df["CutRate"] = (df["CutRate"] / 100).round(6)
-
-    # Calculate the financial value of the first round
-    first_round_ratio = df["AcceptedQuantityFR"] / df["AcceptedQuantity"]
-    # Force 0 when AcceptedQuantityFR is 0 to avoid division by zero
-    first_round_ratio = first_round_ratio.where(df["AcceptedQuantityFR"] != 0, 0)
-    # O dado do financeiro do BC está em milhões com uma casa decimal de precisão
-    # Portanto, podemos converter para inteiro sem perda de informação
-    df["ValueFR"] = (first_round_ratio * df["Value"]).round(0).astype("int64[pyarrow]")
-    df["ValueSR"] = df["Value"] - df["ValueFR"]
-
-    bond_mappping = {
-        100000: "LTN",
-        210100: "LFT",
-        # 450000: "..." # Foi um título ofertado pelo BC em 2009/2010
-        760199: "NTN-B",
-        950199: "NTN-F",
-    }
-    df["BondType"] = df["SelicCode"].map(bond_mappping).astype("string[pyarrow]")
-
-    # Em 11/06/2024 o BC passou a informar nas colunas de cotacao os valores dos PUs
-    # Isso afeta somente os títulos LFT e NTN-B
-    change_date = dt.datetime.strptime("11-06-2024", "%d-%m-%Y").date()
-    adjusted_avg_price = (df["ValueFR"] / df["AcceptedQuantityFR"]).round(6)
-    is_date_after_change = df["Date"] >= change_date
-    is_ltn_or_ntnf = df["BondType"].isin(["LTN", "NTN-F"])
-    # Se for depois da data de mudança ou for LTN/NTN-F, manter o preço médio
-    keep_avg_price = is_date_after_change | is_ltn_or_ntnf
-    df["AvgPrice"] = df["AvgPrice"].where(keep_avg_price, adjusted_avg_price)
-
-    # Usar a data de liquidação para calcular o número de dias úteis até o vencimento
-    df["BDToMat"] = bday.count(start=df["Settlement"], end=df["Maturity"])
-
     return df
 
 

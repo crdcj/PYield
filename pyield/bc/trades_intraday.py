@@ -72,7 +72,7 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
         " corretagem liquidados operações": "BrokeredTrades",
         " títulos": "Quantity",
         " corretagem títulos": "BrokeredQuantity",
-        " financeiro": "Volume",
+        " financeiro": "Value",
         " mercado a termo pu último": "ForwardLastPrice",
         " tx último.1": "ForwardLastRate",
         " pu mínimo.1": "ForwardMinPrice",
@@ -85,7 +85,7 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
         " corretagem contratados operações": "ForwardBrokeredTrades",
         " títulos.1": "ForwardQuantity",
         " corretagem títulos.1": "ForwardBrokeredQuantity",
-        " financeiro.1": "ForwardVolume",
+        " financeiro.1": "ForwardValue",
     }
 
     df = df.rename(columns=col_mapping)
@@ -127,7 +127,7 @@ def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "LastRate",
         "Trades",
         "Quantity",
-        "Volume",
+        "Value",
         "BrokeredTrades",
         "BrokeredQuantity",
         "ForwardMinPrice",
@@ -140,7 +140,7 @@ def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "ForwardMaxRate",
         "ForwardTrades",
         "ForwardQuantity",
-        "ForwardVolume",
+        "ForwardValue",
         "ForwardBrokeredTrades",
         "ForwardBrokeredQuantity",
     ]
@@ -196,7 +196,7 @@ def tpf_intraday_trades() -> pd.DataFrame:
             *   `LastRate`: Last traded yield/rate (as a decimal).
             *   `Trades`: Total number of trades settled.
             *   `Quantity`: Total number of bonds traded (quantity).
-            *   `Volume`: Total financial volume traded (in BRL).
+            *   `Value`: Total financial value traded (in BRL).
             *   `BrokeredTrades`: Number of brokered trades settled.
             *   `BrokeredQuantity`: Quantity of bonds traded via brokers.
 
@@ -211,7 +211,7 @@ def tpf_intraday_trades() -> pd.DataFrame:
             *   `ForwardLastRate`: Last traded yield/rate (decimal).
             *   `ForwardTrades`: Total number of trades contracted.
             *   `ForwardQuantity`: Total number of bonds traded (quantity).
-            *   `ForwardVolume`: Total financial volume traded (in BRL).
+            *   `ForwardValue`: Total financial value traded (in BRL).
             *   `ForwardBrokeredTrades`: Number of brokered trades contracted.
             *   `ForwardBrokeredQuantity`: Quantity of bonds traded via brokers.
     # Arrow note usage in data types
@@ -236,9 +236,11 @@ def tpf_intraday_trades() -> pd.DataFrame:
         df = _convert_csv_to_df(cleaned_text)
         df = _process_df(df)
         df = _reorder_columns(df)
-        volume = df["Volume"].sum() / 10**9
-        logger.info(f"Fetched {volume:,.1f} billion BRL in FPD intraday trades.")
+        value = df["Value"].sum() / 10**9
+        logger.info(f"Fetched {value:,.1f} billion BRL in FPD intraday trades.")
         return df
-    except Exception:
-        logger.exception("Error fetching data from BCB. Returning empty DataFrame.")
+    except Exception as e:
+        logger.exception(
+            f"Error fetching data from BCB: {e}. Returning empty DataFrame."
+        )
         return pd.DataFrame()
