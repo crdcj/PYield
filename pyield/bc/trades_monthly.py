@@ -180,8 +180,16 @@ def tpf_monthly_trades(
 
     Examples:
         >>> from pyield import bc
-        >>> df = bc.tpf_monthly_trades("07-01-2025")  # Returns all trades for Jan/2025
-    """
+        >>> # Fetches all trades for Jan/2025
+        >>> bc.tpf_monthly_trades("07-01-2025", extragroup=True).head(5)
+          SettlementDate BondType SelicCode          ISIN  ... AvgRate MaxRate  BrokerageTrades  BrokerageQuantity
+        0     2025-01-02      LFT    210100  BRSTNCLF1RC4  ...  0.0132  0.0906                2               9581
+        1     2025-01-02      LFT    210100  BRSTNCLF1RD2  ...  0.0561   0.101               11              42823
+        2     2025-01-02      LFT    210100  BRSTNCLF1RE0  ...  0.0191  0.0405               19              33330
+        3     2025-01-02      LFT    210100  BRSTNCLF1RF7  ...  0.0304    0.05               10              14583
+        4     2025-01-02      LFT    210100  BRSTNCLF1RG5  ...  0.0697  0.0935               12              51776
+        ...
+    """  # noqa: E501
     try:
         target_date = convert_input_dates(target_date)
         url = _build_file_url(target_date, extragroup)
