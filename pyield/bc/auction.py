@@ -506,10 +506,10 @@ def auctions(
     try:
         url = _build_url(start=start, end=end, auction_type=auction_type)
         api_csv_text = _get_api_csv(url)
-        if not api_csv_text:
-            logger.warning("No auction data found for the specified period.")
-            return pd.DataFrame()
         df = _parse_csv(api_csv_text)
+        if df.is_empty():
+            logger.warning("No auction data found after parsing the API response.")
+            return pd.DataFrame()
         df = _format_df(df)
         df = _process_df(df)
         df = _adjust_values_without_auction(df)
