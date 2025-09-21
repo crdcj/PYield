@@ -5,6 +5,8 @@ from typing import Literal
 import pandas as pd
 import requests
 
+from pyield.retry import default_retry
+
 logger = logging.getLogger(__name__)
 
 ima_types = Literal[
@@ -47,15 +49,19 @@ IMA_COL_MAPPING = {
 LAST_IMA_URL = "https://www.anbima.com.br/informacoes/ima/arqs/ima_completo.txt"
 
 
-def _fetch_last_ima() -> pd.DataFrame:
+@default_retry
+def _fetch_last_ima_text() -> str:
     r = requests.get(LAST_IMA_URL)
     r.raise_for_status()
     r.encoding = "latin1"
-    text = r.text.split("2@COMPOSIÇÃO DE CARTEIRA")[1].strip()
-    string_io_buffer = io.StringIO(text)
+    return r.text
+
+
+def _fetch_last_ima(text: str) -> pd.DataFrame:
+    text = text.split("2@COMPOSIÇÃO DE CARTEIRA")[1].strip()
 
     df = pd.read_csv(
-        string_io_buffer,
+        io.StringIO(text),
         sep="@",
         decimal=",",
         thousands=".",
@@ -163,7 +169,8 @@ def last_ima(ima_type: ima_types | None = None) -> pd.DataFrame:
             fetching or processing.
     """
     try:
-        df = _fetch_last_ima()
+        ima_text = _fetch_last_ima_text()
+        df = _fetch_last_ima(ima_text)
         df = _process_last_ima(df)
         df = _reorder_last_ima(df)
         if ima_type is not None:

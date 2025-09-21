@@ -8,6 +8,7 @@ import requests
 from pyield import bday
 from pyield.b3.futures import common
 from pyield.fwd import forwards
+from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
 COUNT_CONVENTIONS = {"DAP": 252, "DI1": 252, "DDI": 360}
@@ -98,35 +99,30 @@ def _convert_prices_to_rates(
     return rates.round(5)
 
 
-def _fetch_url_data(contract_code: str, date: dt.date) -> pd.DataFrame:
-    """
-    Fetch the historical futures data from B3 for a specific trade date. If the data is
-    not available, an empty DataFrame is returned.
-
-    Args:
-        date (dt.date): The trade date for which the data should be fetched.
-
-    Returns:
-        pd.DataFrame: Raw DI data as a Pandas pd.DataFrame.
-    """
+@default_retry
+def _fetch_html_data(contract_code: str, date: dt.date) -> str:
     url_date = date.strftime("%d/%m/%Y")
     # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
     url_base = "https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp"
     params = {"Data": url_date, "Mercadoria": contract_code, "XLS": "true"}
     r = requests.get(url_base, params=params, timeout=10)
+    r.raise_for_status()
+    r.encoding = "iso-8859-1"
+    return r.text
 
-    if "VENCTO" not in r.text:
+
+def _parse_raw_df(html_text: str) -> pd.DataFrame:
+    if "VENCTO" not in html_text:
         return pd.DataFrame()
 
     df = pd.read_html(
-        io.StringIO(r.text),
+        io.StringIO(html_text),
         match="VENCTO",
         header=1,
         thousands=".",
         decimal=",",
         na_values=["-"],
         dtype_backend="pyarrow",
-        encoding="iso-8859-1",
     )[0]
 
     # Remove rows and columns with all NaN values
@@ -299,7 +295,8 @@ def fetch_bmf_data(contract_code: str, date: dt.date) -> pd.DataFrame:
         pd.DataFrame: A Pandas pd.DataFrame containing processed futures data. If
             the data is not available, an empty DataFrame is returned.
     """
-    df_raw = _fetch_url_data(contract_code, date)
+    html_text = _fetch_html_data(contract_code, date)
+    df_raw = _parse_raw_df(html_text)
     if df_raw.empty:
         logger.warning(
             f"No data found for {contract_code} on {date.strftime('%d-%m-%Y')}."
