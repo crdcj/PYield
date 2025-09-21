@@ -210,9 +210,6 @@ def repos(
         Notas adicionais:
             - Dados ordenados por: data_leilao, hora_inicio, tipo_oferta.
 
-    Raises:
-        Propaga exceções de falhas graves (ex. falha de conexão, timeout).
-
     Examples:
         >>> from pyield import bc
         >>> bc.repos(start="21-08-2025", end="21-08-2025")
