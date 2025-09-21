@@ -168,20 +168,16 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     # E calcular o financeiro da FR e SR com base na proporção das quantidades.
     df = (
         df.with_columns(
-            # 1. Substitui nulos por 0 nas colunas de segunda rodada (SR)
-            pl.col("AcceptedQuantitySR", "OfferedQuantitySR").fill_null(0),
-        )
-        .with_columns(
-            # 2. Calcula as quantidades totais
-            (pl.col("OfferedQuantityFR") + pl.col("OfferedQuantitySR")).alias(
+            # 1. Calcula as quantidades totais, tratando nulos automaticamente.
+            pl.sum_horizontal("OfferedQuantityFR", "OfferedQuantitySR").alias(
                 "OfferedQuantity"
             ),
-            (pl.col("AcceptedQuantityFR") + pl.col("AcceptedQuantitySR")).alias(
+            pl.sum_horizontal("AcceptedQuantityFR", "AcceptedQuantitySR").alias(
                 "AcceptedQuantity"
             ),
-            # 3. Converte o valor financeiro de milhões para unidades e tipo inteiro
+            # 2. Converte o valor financeiro de milhões para unidades e tipo inteiro
             (pl.col("Value") * 1_000_000).round(0).cast(pl.Int64).alias("Value"),
-            # 4. Converte as taxas de % para decimais
+            # 3. Converte as taxas de % para decimais
             (pl.col("AvgRate") / 100).round(6).alias("AvgRate"),
             (pl.col("CutRate") / 100).round(6).alias("CutRate"),
         )
@@ -227,12 +223,10 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
 
 def _adjust_values_without_auction(df: pl.DataFrame) -> pl.DataFrame:
     # Onde não há quantidade aceita na primeira volta, não há taxa ou PU definidos.
+    # A API do BC retorna 0.0 nesses casos, mas vamos ajustar para None.
     cols_to_update = ["AvgRate", "CutRate", "AvgPrice", "CutPrice"]
     df = df.with_columns(
-        pl.when(
-            (pl.col("AcceptedQuantityFR") == 0)
-            | (pl.col("AcceptedQuantityFR").is_null())
-        )
+        pl.when(pl.col("AcceptedQuantityFR") == 0)
         .then(None)
         .otherwise(pl.col(cols_to_update))
         .name.keep()
