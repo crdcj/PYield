@@ -1,6 +1,9 @@
 """
 Fetches real-time secondary trading data for domestic Federal Public Debt (FPD)
 https://www.bcb.gov.br/htms/selic/selicprecos.asp?frame=1
+
+CSV file example:
+
 """
 
 import datetime as dt
@@ -9,7 +12,9 @@ import logging
 from pathlib import Path
 
 import pandas as pd
+import polars as pl
 import requests
+from polars import selectors as cs
 
 from pyield import bday
 from pyield.config import TIMEZONE_BZ
@@ -40,21 +45,21 @@ def _clean_csv(text: str) -> str:
     rows = text.splitlines()
     header = rows[0]
     valid_rows = [header] + [row for row in rows if row.startswith("1;")]
-    return "\n".join(valid_rows)
+    text = "\n".join(valid_rows)
+    text = text.replace(".", "")  # Remove thousands separator
+    text = text.replace(",", ".")  # Replace decimal comma with dot
+    return text
 
 
-def _convert_csv_to_df(text: str) -> pd.DataFrame:
-    return pd.read_csv(
+def _convert_csv_to_df(text: str) -> pl.DataFrame:
+    return pl.read_csv(
         io.StringIO(text),
-        sep=";",
-        decimal=",",
-        thousands=".",
-        dtype_backend="pyarrow",
-        na_values="-",
+        separator=";",
+        null_values="-",
     )
 
 
-def _process_df(df: pd.DataFrame) -> pd.DataFrame:
+def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     col_mapping = {
         "//1": "RowType",
         "código título": "SelicCode",
@@ -74,42 +79,36 @@ def _process_df(df: pd.DataFrame) -> pd.DataFrame:
         " corretagem títulos": "BrokeredQuantity",
         " financeiro": "Value",
         " mercado a termo pu último": "ForwardLastPrice",
-        " tx último.1": "ForwardLastRate",
-        " pu mínimo.1": "ForwardMinPrice",
-        " tx mínimo.1": "ForwardMinRate",
-        " pu médio.1": "ForwardAvgPrice",
-        " tx médio.1": "ForwardAvgRate",
-        " pu máximo.1": "ForwardMaxPrice",
-        " tx máximo.1": "ForwardMaxRate",
+        " tx último_duplicated_0": "ForwardLastRate",
+        " pu mínimo_duplicated_0": "ForwardMinPrice",
+        " tx mínimo_duplicated_0": "ForwardMinRate",
+        " pu médio_duplicated_0": "ForwardAvgPrice",
+        " tx médio_duplicated_0": "ForwardAvgRate",
+        " pu máximo_duplicated_0": "ForwardMaxPrice",
+        " tx máximo_duplicated_0": "ForwardMaxRate",
         " totais contratados operações": "ForwardTrades",
         " corretagem contratados operações": "ForwardBrokeredTrades",
-        " títulos.1": "ForwardQuantity",
-        " corretagem títulos.1": "ForwardBrokeredQuantity",
-        " financeiro.1": "ForwardValue",
+        " títulos_duplicated_0": "ForwardQuantity",
+        " corretagem títulos_duplicated_0": "ForwardBrokeredQuantity",
+        " financeiro_duplicated_0": "ForwardValue",
     }
-
-    df = df.rename(columns=col_mapping)
-    df = df.drop(columns=["RowType"], errors="ignore")
-    df["BondType"] = df["BondType"].str.strip()
-    df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%d/%m/%Y")
     now = dt.datetime.now(TIMEZONE_BZ)
-    df["SettlementDate"] = now.date()
-    df["SettlementDate"] = df["SettlementDate"].astype("date32[pyarrow]")
-    df["CollectedAt"] = now
-    df["CollectedAt"] = df["CollectedAt"].astype("timestamp[ns][pyarrow]")
-
-    for col in [c for c in df.columns if c.endswith("Date")]:
-        df[col] = df[col].astype("date32[pyarrow]")
-
-    # Remove percentage from rate columns
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    for col in rate_cols:
-        df[col] = (df[col] / 100).round(6)
-
+    today = now.date()
+    df = (
+        df.rename(col_mapping)
+        .drop(["RowType"], strict=False)
+        .with_columns(
+            pl.col("BondType").str.strip_chars(),
+            pl.col("MaturityDate").str.strptime(pl.Date, "%d/%m/%Y"),
+            pl.lit(today).alias("SettlementDate"),
+            pl.lit(now).alias("CollectedAt"),
+            (cs.contains("Rate") / 100).round(6),
+        )
+    )
     return df
 
 
-def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     reorder_columns = [
         # "RowType",
         "CollectedAt",
@@ -146,7 +145,7 @@ def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
     ]
 
     column_order = [col for col in reorder_columns if col in df.columns]
-    return df[column_order].copy()
+    return df.select(column_order)
 
 
 def is_selic_open() -> bool:
@@ -220,7 +219,6 @@ def tpf_intraday_trades() -> pd.DataFrame:
           no data is found, or an error occurs.
         - Arrow data types are used for better performance and compatibility with other
           libraries.
-
     """
     if not is_selic_open():
         logger.info("Market is closed. Returning empty DataFrame.")
@@ -228,7 +226,6 @@ def tpf_intraday_trades() -> pd.DataFrame:
 
     try:
         raw_text = _fetch_csv_from_url()
-        # raw_text = test_file.read_text(encoding="iso-8859-15")
         cleaned_text = _clean_csv(raw_text)
         if not cleaned_text:
             logger.warning("No data found in the FPD intraday trades.")
@@ -236,9 +233,9 @@ def tpf_intraday_trades() -> pd.DataFrame:
         df = _convert_csv_to_df(cleaned_text)
         df = _process_df(df)
         df = _reorder_columns(df)
-        value = df["Value"].sum() / 10**9
+        value = df.select(pl.sum("Value")).item() / 10**9
         logger.info(f"Fetched {value:,.1f} billion BRL in FPD intraday trades.")
-        return df
+        return df.to_pandas(use_pyarrow_extension_array=True)
     except Exception as e:
         logger.exception(
             f"Error fetching data from BCB: {e}. Returning empty DataFrame."
