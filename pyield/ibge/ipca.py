@@ -34,20 +34,17 @@ def _process_ipca_dataframe(
     Returns:
         pd.DataFrame: DataFrame with columns 'Period' and 'Value'
     """
-    df = pd.DataFrame.from_dict(data_dict, orient="index")
-    df = df.reset_index()
-    df = df.rename(columns={"index": "Period", 0: "Value"})
+    df = (
+        pd.DataFrame.from_dict(data_dict, orient="index")
+        .reset_index()
+        .rename(columns={"index": "Period", 0: "Value"})
+    )
+    df["Period"] = pd.to_datetime(df["Period"], format="%Y%m").dt.to_period("M")
 
-    df["Value"] = pd.to_numeric(df["Value"])
-
+    df["Value"] = pd.to_numeric(df["Value"], dtype_backend="pyarrow").round(2)
     # If it's a rate value, divide by 100 and round to 4 decimal places
     if is_in_pct:
         df["Value"] = (df["Value"] / 100).round(4)
-    else:
-        df["Value"] = df["Value"].round(2)
-
-    df["Value"] = df["Value"].astype("float64[pyarrow]")
-    df["Period"] = pd.to_datetime(df["Period"], format="%Y%m").dt.to_period("M")
 
     return df
 
@@ -71,8 +68,12 @@ def ipca_rates(start: DateScalar, end: DateScalar) -> pd.DataFrame:
 
     Examples:
         >>> from pyield import ibge
-        >>> # Get the IPCA rates for the first quarter of 2024
-        >>> df = ibge.ipca_rates("01-01-2024", "31-03-2024")
+        >>> # Get the IPCA rates for the first quarter of 2025
+        >>> ibge.ipca_rates("01-01-2025", "01-03-2025")
+            Period   Value
+        0  2025-01  0.0016
+        1  2025-02  0.0131
+        2  2025-03  0.0056
     """
     start = convert_input_dates(start)
     end = convert_input_dates(end)
@@ -176,8 +177,12 @@ def ipca_indexes(start: DateScalar, end: DateScalar) -> pd.DataFrame:
 
     Examples:
         >>> from pyield import ibge
-        >>> # Get the IPCA indexes for the first quarter of 2024
-        >>> df = ibge.ipca_indexes("01-01-2024", "31-03-2024")
+        >>> # Get the IPCA indexes for the first quarter of 2025
+        >>> ibge.ipca_indexes(start="01-01-2025", end="01-03-2025")
+            Period    Value
+        0  2025-01  7111.86
+        1  2025-02  7205.03
+        2  2025-03  7245.38
     """
     start = convert_input_dates(start)
     end = convert_input_dates(end)

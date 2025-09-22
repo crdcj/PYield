@@ -54,7 +54,7 @@ def ipca_projection() -> IndicatorProjection:
         flavor="html5lib",
         decimal=",",
         thousands=".",
-        dtype_backend="numpy_nullable",
+        dtype_backend="pyarrow",
     )
     # The IPCA projection is in the third table
     df = dfs[2]
@@ -64,8 +64,8 @@ def ipca_projection() -> IndicatorProjection:
 
     ipca_row = df.loc[df[0] == "IPCA1"]
     ipca_value = ipca_row.iloc[0, 2]
-    ipca_value = pd.to_numeric(ipca_value, errors="coerce")
-    ipca_value = round(float(ipca_value) / 100, 4)
+    ipca_value = pd.to_numeric(ipca_value, errors="coerce", dtype_backend="pyarrow")
+    ipca_value = round(ipca_value / 100, 4)
 
     # Extract and format the reference month
     ipca_date = ipca_row.iloc[0, 1]

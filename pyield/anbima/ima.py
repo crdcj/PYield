@@ -3,6 +3,7 @@ import logging
 from typing import Literal
 
 import pandas as pd
+import polars as pl
 import requests
 
 from pyield.retry import default_retry
@@ -20,6 +21,31 @@ ima_types = Literal[
     "IMA-GERAL-EX-C",
     "IMA-GERAL",
 ]
+
+
+IMA_SCHEMA = {
+    "2": pl.Int64,  # Coluna inicial "2" que será descartada
+    "Data de Referência": pl.String,
+    "INDICE": pl.String,
+    "Títulos": pl.String,
+    "Data de Vencimento": pl.String,
+    "Código SELIC": pl.Int64,
+    "Código ISIN": pl.String,
+    "Taxa Indicativa (% a.a.)": pl.Float64,
+    "PU (R$)": pl.Float64,
+    "PU de Juros (R$)": pl.Float64,
+    "Quantidade (1.000 títulos)": pl.Float64,
+    "Quantidade Teórica (1.000 títulos)": pl.Float64,
+    "Carteira a Mercado (R$ mil)": pl.Float64,
+    "Peso (%)": pl.Float64,
+    "Prazo (d.u.)": pl.Int64,
+    "Duration (d.u.)": pl.Int64,
+    "Número de Operações *": pl.Int64,
+    "Quant. Negociada (1.000 títulos) *": pl.Float64,
+    "Valor Negociado (R$ mil) *": pl.Float64,
+    "PMR": pl.Float64,  # Prazo médio de repactuação
+    "Convexidade": pl.Float64,
+}
 
 IMA_COL_MAPPING = {
     # "2",
@@ -54,49 +80,50 @@ def _fetch_last_ima_text() -> str:
     r = requests.get(LAST_IMA_URL)
     r.raise_for_status()
     r.encoding = "latin1"
-    return r.text
+    text = r.text.split("2@COMPOSIÇÃO DE CARTEIRA")[1].strip()
+    return text
 
 
-def _fetch_last_ima(text: str) -> pd.DataFrame:
-    text = text.split("2@COMPOSIÇÃO DE CARTEIRA")[1].strip()
-
-    df = pd.read_csv(
+def _parse_df(text: str) -> pl.DataFrame:
+    df = pl.read_csv(
         io.StringIO(text),
-        sep="@",
-        decimal=",",
-        thousands=".",
-        dtype_backend="pyarrow",
-        na_values="--",
+        separator="@",
+        decimal_comma=True,
+        null_values="--",
+        schema=IMA_SCHEMA,
     )
-
     return df
 
 
-def _process_last_ima(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.rename(columns=IMA_COL_MAPPING)[IMA_COL_MAPPING.values()]
-    df["IndicativeRate"] = (df["IndicativeRate"] / 100).round(6)
-    df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y").astype("date32[pyarrow]")
-    df["Maturity"] = pd.to_datetime(df["Maturity"], format="%d/%m/%Y").astype(
-        "date32[pyarrow]"
-    )
-    df["MarketQuantity"] = (1000 * df["MarketQuantity"]).astype("int64[pyarrow]")
-    df["MarketValue"] = (1000 * df["MarketValue"]).round(0).astype("int64[pyarrow]")
-    df["Price"] = df["Price"].round(6)
-    # Duration is in business days, convert to years
-    df["Duration"] /= 252
-    mduration = df["Duration"] / (1 + df["IndicativeRate"])
-    df["DV01"] = 0.0001 * mduration * df["Price"]
-    # LFT DV01 is zero
-    df["DV01"] = df["DV01"].where(df["BondType"] != "LFT", 0)
-    # Since MarketDV01 is the total stock value, we round them to integer
-    df["MarketDV01"] = (
-        (df["DV01"] * df["MarketQuantity"]).round(0).astype("int64[pyarrow]")
+def _process_df(df: pl.DataFrame) -> pl.DataFrame:
+    dv01_expr = (
+        0.0001 * pl.col("Price") * (pl.col("Duration") / (1 + pl.col("IndicativeRate")))
     )
 
+    df = (
+        df.rename(IMA_COL_MAPPING)
+        .select(IMA_COL_MAPPING.values())
+        .with_columns(
+            pl.col("Date").str.strptime(pl.Date, "%d/%m/%Y"),
+            pl.col("Maturity").str.strptime(pl.Date, "%d/%m/%Y"),
+            (pl.col("IndicativeRate") / 100).round(6),
+            (pl.col("MarketQuantity") * 1000).cast(pl.Int64),
+            (pl.col("MarketValue") * 1000).round(2),
+            (pl.col("NegotiatedQuantity") * 1000).cast(pl.Int64),
+            (pl.col("NegotiatedValue") * 1000).round(2),
+            pl.col("Duration") / 252,
+        )
+        .with_columns(
+            dv01_expr.alias("DV01"),
+        )
+        .with_columns(
+            (pl.col("DV01") * pl.col("MarketQuantity")).round(2).alias("MarketDV01"),
+        )
+    )
     return df
 
 
-def _reorder_last_ima(df: pd.DataFrame) -> pd.DataFrame:
+def _reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     col_order = [
         "Date",
         "IMAType",
@@ -121,7 +148,7 @@ def _reorder_last_ima(df: pd.DataFrame) -> pd.DataFrame:
         "MarketQuantity",
         "MarketValue",
     ]
-    return df[col_order].reset_index(drop=True)
+    return df.select(col_order)
 
 
 def last_ima(ima_type: ima_types | None = None) -> pd.DataFrame:
@@ -170,13 +197,13 @@ def last_ima(ima_type: ima_types | None = None) -> pd.DataFrame:
     """
     try:
         ima_text = _fetch_last_ima_text()
-        df = _fetch_last_ima(ima_text)
-        df = _process_last_ima(df)
-        df = _reorder_last_ima(df)
+        df = _parse_df(ima_text)
+        df = _process_df(df)
+        df = _reorder_columns(df)
         if ima_type is not None:
-            df = df.query("IMAType == @ima_type").reset_index(drop=True)
-        df = df.sort_values(["IMAType", "BondType", "Maturity"]).reset_index(drop=True)
-        return df
+            df = df.filter(pl.col("IMAType") == ima_type)
+        df = df.sort(["IMAType", "BondType", "Maturity"])
+        return df.to_pandas(use_pyarrow_extension_array=True)
     except Exception as e:
         logger.exception(f"Error fetching or processing the last IMA data: {e}")
         return pd.DataFrame()
