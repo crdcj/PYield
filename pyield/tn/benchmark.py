@@ -122,10 +122,16 @@ def benchmarks(bond_type: str = None, include_history: bool = False) -> pd.DataF
         4        LFT   2022-03-01     LFT 6 anos 2016-01-01  2016-06-30
     """
     api_data = _fetch_raw_benchmarks(include_history=include_history)
-
     df = _process_api_data(api_data)
 
-    if not include_history:
+    # Definir a ordenação final com base no caso de uso
+    if include_history:
+        # Para dados históricos, a ordem cronológica é mais útil
+        sort_columns = ["StartDate", "BondType", "MaturityDate"]
+    else:
+        # Para dados atuais, agrupar por tipo de título é mais útil
+        sort_columns = ["BondType", "MaturityDate"]
+        # Filtrar apenas os dados atuais
         today = dt.now(TIMEZONE_BZ).date()
         df = df.filter(pl.lit(today).is_between(pl.col("StartDate"), pl.col("EndDate")))
 
@@ -134,6 +140,6 @@ def benchmarks(bond_type: str = None, include_history: bool = False) -> pd.DataF
 
     return (
         df.select(FINAL_COLUMN_ORDER)
-        .sort(["BondType", "MaturityDate"])
+        .sort(sort_columns)
         .to_pandas(use_pyarrow_extension_array=True)
     )
