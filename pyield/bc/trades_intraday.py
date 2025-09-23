@@ -1,9 +1,6 @@
 """
 Fetches real-time secondary trading data for domestic Federal Public Debt (FPD)
 https://www.bcb.gov.br/htms/selic/selicprecos.asp?frame=1
-
-CSV file example:
-
 """
 
 import datetime as dt
@@ -25,6 +22,103 @@ REALTIME_END_TIME = dt.time(22, 0, 0)
 logger = logging.getLogger(__name__)
 test_file = Path(__file__).parent.parent.parent / "tests/data/negocios-registrados.csv"
 
+API_COL_MAPPING = {
+    "//1": "RowType",
+    "código título": "SelicCode",
+    "data vencimento": "MaturityDate",
+    "sigla": "BondType",
+    "mercado à vista pu último": "LastPrice",
+    "tx último": "LastRate",
+    "pu mínimo": "MinPrice",
+    "tx mínimo": "MinRate",
+    "pu médio": "AvgPrice",
+    "tx médio": "AvgRate",
+    "pu máximo": "MaxPrice",
+    "tx máximo": "MaxRate",
+    "totais liquidados operações": "Trades",
+    "corretagem liquidados operações": "BrokeredTrades",
+    "títulos": "Quantity",
+    "corretagem títulos": "BrokeredQuantity",
+    "financeiro": "Value",
+    "mercado a termo pu último": "FwdLastPrice",
+    "tx último_duplicated_0": "FwdLastRate",
+    "pu mínimo_duplicated_0": "FwdMinPrice",
+    "tx mínimo_duplicated_0": "FwdMinRate",
+    "pu médio_duplicated_0": "FwdAvgPrice",
+    "tx médio_duplicated_0": "FwdAvgRate",
+    "pu máximo_duplicated_0": "FwdMaxPrice",
+    "tx máximo_duplicated_0": "FwdMaxRate",
+    "totais contratados operações": "FwdTrades",
+    "corretagem contratados operações": "FwdBrokeredTrades",
+    "títulos_duplicated_0": "FwdQuantity",
+    "corretagem títulos_duplicated_0": "FwdBrokeredQuantity",
+    "financeiro_duplicated_0": "FwdValue",
+}
+
+DATA_SCHEMA = {
+    "SelicCode": pl.Int64,
+    "LastPrice": pl.Float64,
+    "LastRate": pl.Float64,
+    "MinPrice": pl.Float64,
+    "MinRate": pl.Float64,
+    "AvgPrice": pl.Float64,
+    "AvgRate": pl.Float64,
+    "MaxPrice": pl.Float64,
+    "MaxRate": pl.Float64,
+    "Trades": pl.Int64,
+    "BrokeredTrades": pl.Int64,
+    "Quantity": pl.Int64,
+    "BrokeredQuantity": pl.Int64,
+    "Value": pl.Float64,
+    "FwdLastPrice": pl.Float64,
+    "FwdLastRate": pl.Float64,
+    "FwdMinPrice": pl.Float64,
+    "FwdMinRate": pl.Float64,
+    "FwdAvgPrice": pl.Float64,
+    "FwdAvgRate": pl.Float64,
+    "FwdMaxPrice": pl.Float64,
+    "FwdMaxRate": pl.Float64,
+    "FwdTrades": pl.Int64,
+    "FwdBrokeredTrades": pl.Int64,
+    "FwdQuantity": pl.Int64,
+    "FwdBrokeredQuantity": pl.Int64,
+    "FwdValue": pl.Float64,
+}
+
+FINAL_COLUMN_ORDER = [
+    "CollectedAt",
+    "SettlementDate",
+    "BondType",
+    "SelicCode",
+    "MaturityDate",
+    "MinPrice",
+    "AvgPrice",
+    "MaxPrice",
+    "LastPrice",
+    "MinRate",
+    "AvgRate",
+    "MaxRate",
+    "LastRate",
+    "Trades",
+    "Quantity",
+    "Value",
+    "BrokeredTrades",
+    "BrokeredQuantity",
+    "FwdMinPrice",
+    "FwdAvgPrice",
+    "FwdLastPrice",
+    "FwdMaxPrice",
+    "FwdLastRate",
+    "FwdMinRate",
+    "FwdAvgRate",
+    "FwdMaxRate",
+    "FwdTrades",
+    "FwdQuantity",
+    "FwdValue",
+    "FwdBrokeredTrades",
+    "FwdBrokeredQuantity",
+]
+
 
 def _fetch_csv_from_url() -> str:
     """
@@ -41,7 +135,6 @@ def _fetch_csv_from_url() -> str:
 
 
 def _clean_csv(text: str) -> str:
-    """Clean the CSV text data by removing unnecessary rows."""
     rows = text.splitlines()
     header = rows[0]
     valid_rows = [header] + [row for row in rows if row.startswith("1;")]
@@ -60,42 +153,16 @@ def _convert_csv_to_df(text: str) -> pl.DataFrame:
 
 
 def _process_df(df: pl.DataFrame) -> pl.DataFrame:
-    col_mapping = {
-        "//1": "RowType",
-        "código título": "SelicCode",
-        " data vencimento": "MaturityDate",
-        " sigla": "BondType",
-        " mercado à vista pu último": "LastPrice",
-        " tx último": "LastRate",
-        " pu mínimo": "MinPrice",
-        " tx mínimo": "MinRate",
-        " pu médio": "AvgPrice",
-        " tx médio": "AvgRate",
-        " pu máximo": "MaxPrice",
-        " tx máximo": "MaxRate",
-        " totais liquidados operações": "Trades",
-        " corretagem liquidados operações": "BrokeredTrades",
-        " títulos": "Quantity",
-        " corretagem títulos": "BrokeredQuantity",
-        " financeiro": "Value",
-        " mercado a termo pu último": "ForwardLastPrice",
-        " tx último_duplicated_0": "ForwardLastRate",
-        " pu mínimo_duplicated_0": "ForwardMinPrice",
-        " tx mínimo_duplicated_0": "ForwardMinRate",
-        " pu médio_duplicated_0": "ForwardAvgPrice",
-        " tx médio_duplicated_0": "ForwardAvgRate",
-        " pu máximo_duplicated_0": "ForwardMaxPrice",
-        " tx máximo_duplicated_0": "ForwardMaxRate",
-        " totais contratados operações": "ForwardTrades",
-        " corretagem contratados operações": "ForwardBrokeredTrades",
-        " títulos_duplicated_0": "ForwardQuantity",
-        " corretagem títulos_duplicated_0": "ForwardBrokeredQuantity",
-        " financeiro_duplicated_0": "ForwardValue",
-    }
     now = dt.datetime.now(TIMEZONE_BZ)
     today = now.date()
+
+    # 1. Strip column names from source
+    df.columns = [col.strip() for col in df.columns]
+
+    # 2. Main processing pipeline
     df = (
-        df.rename(col_mapping)
+        df.rename(API_COL_MAPPING)
+        .cast(DATA_SCHEMA, strict=False)
         .drop(["RowType"], strict=False)
         .with_columns(
             pl.col("BondType").str.strip_chars(),
@@ -105,47 +172,11 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
             (cs.contains("Rate") / 100).round(6),
         )
     )
-    return df
 
+    # 3. Final selection and reordering
+    final_columns = [col for col in FINAL_COLUMN_ORDER if col in df.columns]
 
-def _reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
-    reorder_columns = [
-        # "RowType",
-        "CollectedAt",
-        "SettlementDate",
-        "BondType",
-        "SelicCode",
-        "MaturityDate",
-        "MinPrice",
-        "AvgPrice",
-        "MaxPrice",
-        "LastPrice",
-        "MinRate",
-        "AvgRate",
-        "MaxRate",
-        "LastRate",
-        "Trades",
-        "Quantity",
-        "Value",
-        "BrokeredTrades",
-        "BrokeredQuantity",
-        "ForwardMinPrice",
-        "ForwardAvgPrice",
-        "ForwardLastPrice",
-        "ForwardMaxPrice",
-        "ForwardLastRate",
-        "ForwardMinRate",
-        "ForwardAvgRate",
-        "ForwardMaxRate",
-        "ForwardTrades",
-        "ForwardQuantity",
-        "ForwardValue",
-        "ForwardBrokeredTrades",
-        "ForwardBrokeredQuantity",
-    ]
-
-    column_order = [col for col in reorder_columns if col in df.columns]
-    return df.select(column_order)
+    return df.select(final_columns)
 
 
 def is_selic_open() -> bool:
@@ -175,46 +206,45 @@ def tpf_intraday_trades() -> pd.DataFrame:
             securities. Returns an empty DataFrame if the market is closed, no data
             is found, or an error occurs. The DataFrame includes the following columns:
 
-            *   `SettlementDate`: The reference date for the spot market
-                trading activity reported in this dataset (the current
-                business day). Forward trades listed have future settlement dates
-                not specified here.
-            *   `BondType`: Abbreviation/ticker for the bond type (e.g., LFT,
-                LTN, NTN-B).
-            *   `SelicCode`: The unique SELIC code identifying the specific bond issue.
-            *   `MaturityDate`: The maturity date of the bond.
+    DataFrame Columns:
+        - `CollectedAt`: Timestamp indicating when the data was collected
+            (in Brazil/Sao_Paulo timezone).
+        - `SettlementDate`: The reference date for the spot market
+            trading activity reported in this dataset (the current
+            business day). Forward trades listed have future settlement dates
+            not specified here.
+        - `BondType`: Abbreviation/ticker for the bond type (e.g., LFT,
+            LTN, NTN-B).
+        - `SelicCode`: The unique SELIC code identifying the specific bond issue.
+        - `MaturityDate`: The maturity date of the bond.
+        - `MinPrice`: Minimum traded price.
+        - `AvgPrice`: Average traded price.
+        - `MaxPrice`: Maximum traded price.
+        - `LastPrice`: Last traded price.
+        - `MinRate`: Minimum traded yield/rate (as a decimal, e.g., 0.11 for 11%).
+        - `AvgRate`: Average traded yield/rate (as a decimal).
+        - `MaxRate`: Maximum traded yield/rate (as a decimal).
+        - `LastRate`: Last traded yield/rate (as a decimal).
+        - `Trades`: Total number of trades settled.
+        - `Quantity`: Total number of bonds traded (quantity).
+        - `Value`: Total financial value traded (in BRL).
+        - `BrokeredTrades`: Number of brokered trades settled.
+        - `BrokeredQuantity`: Quantity of bonds traded via brokers.
+        - `FwdMinPrice`: Forward minimum traded price.
+        - `FwdAvgPrice`: Forward average traded price.
+        - `FwdMaxPrice`: Forward maximum traded price.
+        - `FwdLastPrice`: Forward last traded price.
+        - `FwdMinRate`: Forward minimum traded yield/rate (decimal).
+        - `FwdAvgRate`: Forward average traded yield/rate (decimal).
+        - `FwdMaxRate`: Forward maximum traded yield/rate (decimal).
+        - `FwdLastRate`: Forward last traded yield/rate (decimal).
+        - `FwdTrades`: Forward total number of trades contracted.
+        - `FwdQuantity`: Forward total number of bonds traded (quantity).
+        - `FwdValue`: Forward total financial value traded (in BRL).
+        - `FwdBrokeredTrades`: Forward number of brokered trades contracted.
+        - `FwdBrokeredQuantity`: Forward quantity of bonds traded via brokers.
 
-            **Spot Market Data:**
-            *   `MinPrice`: Minimum traded price.
-            *   `AvgPrice`: Average traded price.
-            *   `MaxPrice`: Maximum traded price.
-            *   `LastPrice`: Last traded price.
-            *   `MinRate`: Minimum traded yield/rate (as a decimal, e.g., 0.11 for 11%).
-            *   `AvgRate`: Average traded yield/rate (as a decimal).
-            *   `MaxRate`: Maximum traded yield/rate (as a decimal).
-            *   `LastRate`: Last traded yield/rate (as a decimal).
-            *   `Trades`: Total number of trades settled.
-            *   `Quantity`: Total number of bonds traded (quantity).
-            *   `Value`: Total financial value traded (in BRL).
-            *   `BrokeredTrades`: Number of brokered trades settled.
-            *   `BrokeredQuantity`: Quantity of bonds traded via brokers.
-
-            **Forward Market Data:**
-            *   `ForwardMinPrice`: Minimum traded price.
-            *   `ForwardAvgPrice`: Average traded price.
-            *   `ForwardMaxPrice`: Maximum traded price.
-            *   `ForwardLastPrice`: Last traded price.
-            *   `ForwardMinRate`: Minimum traded yield/rate (decimal).
-            *   `ForwardAvgRate`: Average traded yield/rate (decimal).
-            *   `ForwardMaxRate`: Maximum traded yield/rate (decimal).
-            *   `ForwardLastRate`: Last traded yield/rate (decimal).
-            *   `ForwardTrades`: Total number of trades contracted.
-            *   `ForwardQuantity`: Total number of bonds traded (quantity).
-            *   `ForwardValue`: Total financial value traded (in BRL).
-            *   `ForwardBrokeredTrades`: Number of brokered trades contracted.
-            *   `ForwardBrokeredQuantity`: Quantity of bonds traded via brokers.
-    # Arrow note usage in data types
-    Note:
+    Notes:
         - The DataFrame returned by this function may be empty if the market is closed,
           no data is found, or an error occurs.
         - Arrow data types are used for better performance and compatibility with other
@@ -230,9 +260,10 @@ def tpf_intraday_trades() -> pd.DataFrame:
         if not cleaned_text:
             logger.warning("No data found in the FPD intraday trades.")
             return pd.DataFrame()
+
         df = _convert_csv_to_df(cleaned_text)
         df = _process_df(df)
-        df = _reorder_columns(df)
+
         value = df.select(pl.sum("Value")).item() / 10**9
         logger.info(f"Fetched {value:,.1f} billion BRL in FPD intraday trades.")
         return df.to_pandas(use_pyarrow_extension_array=True)

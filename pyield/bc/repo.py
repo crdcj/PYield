@@ -192,7 +192,7 @@ def repos(
         enriquecidos (frações decimais, inteiros, datas). Em caso de erro
         retorna DataFrame vazio e registra log da exceção.
 
-    Colunas retornadas:
+    DataFrame columns:
         - data_leilao: data de ocorrência do leilão.
         - data_liquidacao: data de liquidação (início da operação).
         - data_retorno: data de recompra / término da operação.
@@ -207,8 +207,8 @@ def repos(
         - percentual_aceito: percentual do volume ofertado efetivamente aceito (0-100).
           100 = nenhuma rejeição. 0 indica nada aceito (volume_aceito = 0).
 
-        Notas adicionais:
-            - Dados ordenados por: data_leilao, hora_inicio, tipo_oferta.
+    Notes:
+        - Dados ordenados por: data_leilao, hora_inicio, tipo_oferta.
 
     Examples:
         >>> from pyield import bc
