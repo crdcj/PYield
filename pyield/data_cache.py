@@ -46,7 +46,7 @@ def _get_today_date_key():
 @default_retry
 def _load_github_file(file_url: str) -> pd.DataFrame:
     """Carrega um arquivo do GitHub e retorna um DataFrame."""
-    return pd.read_parquet(file_url)
+    return pd.read_parquet(file_url, dtype_backend="pyarrow")
 
 
 @functools.lru_cache(maxsize=len(DATASET_CONFIGS))

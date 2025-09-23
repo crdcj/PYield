@@ -3,9 +3,18 @@ from datetime import datetime as dt
 from zoneinfo import ZoneInfo
 
 import pandas as pd
+import polars as pl
 import requests
 
 logger = logging.getLogger(__name__)
+
+API_BASE_URL = (
+    "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/benchmarks"
+)
+
+API_HISTORY_PARAM = "incluir_historico"
+
+TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 COLUMN_MAPPING = {
     "INÍCIO": "StartDate",
@@ -15,12 +24,15 @@ COLUMN_MAPPING = {
     "BENCHMARK": "Benchmark",
 }
 
-API_BASE_URL = (
-    "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/benchmarks"
-)
-API_HISTORY_PARAM = "incluir_historico"
+DATA_SCHEMA = {
+    "BondType": pl.String,
+    "MaturityDate": pl.Date,
+    "Benchmark": pl.String,
+    "StartDate": pl.Date,
+    "EndDate": pl.Date,
+}
 
-TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
+FINAL_COLUMN_ORDER = list(DATA_SCHEMA.keys())
 
 
 def _fetch_raw_benchmarks(include_history: bool) -> list[dict]:
@@ -54,29 +66,18 @@ def _fetch_raw_benchmarks(include_history: bool) -> list[dict]:
     return response_dict["registros"]
 
 
-def _process_benchmark_data(raw_data: list[dict]) -> pd.DataFrame:
-    """
-    Converts raw benchmark data into a cleaned and typed pandas DataFrame.
-    """
+def _process_api_data(raw_data: list[dict]) -> pl.DataFrame:
     if not raw_data:
-        return pd.DataFrame()
+        return pl.DataFrame(schema=DATA_SCHEMA)
 
-    df = pd.DataFrame(raw_data).dropna().convert_dtypes(dtype_backend="pyarrow")
-
-    if df.empty:
-        logger.warning("DataFrame is empty after dropping NaN values.")
-        return pd.DataFrame()
-
-    # Limpeza e tipagem
-    date_cols = ["VENCIMENTO", "TERMINO", "INÍCIO"]
-    for col in date_cols:
-        df[col] = pd.to_datetime(df[col]).astype("date32[pyarrow]")
-
-    str_cols = ["BENCHMARK", "TÍTULO"]
-    for col in str_cols:
-        df[col] = df[col].str.strip()
-
-    return df
+    return (
+        pl.DataFrame(raw_data)
+        .rename(COLUMN_MAPPING)
+        .drop_nulls()
+        .with_columns(pl.col("Benchmark", "BondType").str.strip_chars())
+        .cast(DATA_SCHEMA)
+        .sort(["StartDate", "BondType", "MaturityDate"])
+    )
 
 
 def benchmarks(bond_type: str = None, include_history: bool = False) -> pd.DataFrame:
@@ -114,43 +115,26 @@ def benchmarks(bond_type: str = None, include_history: bool = False) -> pd.DataF
         >>> # Get historical benchmarks
         >>> df_history = tn.benchmarks(bond_type="LFT", include_history=True)
         >>> df_history.head()
-              StartDate     EndDate BondType MaturityDate      Benchmark
-        0    2014-01-01  2014-06-30      LFT   2020-03-01     LFT 6 anos
-        1    2014-07-01  2014-12-31      LFT   2020-09-01     LFT 6 anos
-        2    2015-01-01  2015-04-30      LFT   2021-03-01     LFT 6 anos
-        3    2015-05-01  2015-12-31      LFT   2021-09-01     LFT 6 anos
-        4    2016-01-01  2016-06-30      LFT   2022-03-01     LFT 6 anos
+            BondType MaturityDate      Benchmark  StartDate     EndDate
+        0        LFT   2020-03-01     LFT 6 anos 2014-01-01  2014-06-30
+        1        LFT   2020-09-01     LFT 6 anos 2014-07-01  2014-12-31
+        2        LFT   2021-03-01     LFT 6 anos 2015-01-01  2015-04-30
+        3        LFT   2021-09-01     LFT 6 anos 2015-05-01  2015-12-31
+        4        LFT   2022-03-01     LFT 6 anos 2016-01-01  2016-06-30
     """
-    # Passo 1: Buscar os dados brutos
-    raw_data = _fetch_raw_benchmarks(include_history=include_history)
-    if not raw_data:
-        return pd.DataFrame()  # Retorna DF vazio se a busca falhou
+    api_data = _fetch_raw_benchmarks(include_history=include_history)
 
-    # Passo 2: Processar os dados em um DataFrame limpo
-    df = _process_benchmark_data(raw_data)
-    if df.empty:
-        return pd.DataFrame()  # Retorna DF vazio se o processamento resultou em nada
+    df = _process_api_data(api_data)
 
-    # Passo 3: Aplicar filtros específicos da chamada
     if not include_history:
-        today = dt.now(TIMEZONE_BZ).date()  # noqa
-        df = df.query("INÍCIO <= @today <= TERMINO").reset_index(drop=True)
-        if df.empty:
-            logger.warning(
-                "No current benchmark data found after filtering by active period."
-            )
+        today = dt.now(TIMEZONE_BZ).date()
+        df = df.filter(pl.lit(today).is_between(pl.col("StartDate"), pl.col("EndDate")))
 
     if bond_type:
-        df = df.query("TÍTULO == @bond_type").reset_index(drop=True)
+        df = df.filter(pl.col("BondType") == bond_type)
 
-    if df.empty:
-        return pd.DataFrame()  # Retorna DF vazio se os filtros removeram tudo
-
-    # Passo 4: Formatar a saída final
-    column_order = [c for c in COLUMN_MAPPING if c in df.columns]
     return (
-        df[column_order]
-        .rename(columns=COLUMN_MAPPING)
-        .sort_values(["BondType", "MaturityDate"])
-        .reset_index(drop=True)
+        df.select(FINAL_COLUMN_ORDER)
+        .sort(["BondType", "MaturityDate"])
+        .to_pandas(use_pyarrow_extension_array=True)
     )
