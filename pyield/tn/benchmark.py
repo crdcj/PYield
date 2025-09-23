@@ -94,11 +94,10 @@ def benchmarks(bond_type: str = None, include_history: bool = False) -> pd.DataF
     Returns:
         pd.DataFrame: A pandas DataFrame containing the benchmark data.
             The DataFrame includes the following columns:
-
+            *   `BondType` (str): The type of the bond (e.g., 'LTN', 'LFT', 'NTN-B').
+            *   `MaturityDate` (datetime.date): The maturity date of the benchmark.
             *   `Benchmark` (str): The name or identifier of the benchmark
                 (e.g., 'LFT 3 anos').
-            *   `MaturityDate` (datetime.date): The maturity date of the benchmark.
-            *   `BondType` (str): The type of the bond (e.g., 'LTN', 'LFT', 'NTN-B').
             *   `StartDate` (datetime.date): The start date for the benchmark's period.
             *   `EndDate` (datetime.date): The end date for the benchmark's period.
 
