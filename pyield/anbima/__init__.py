@@ -1,4 +1,5 @@
-from pyield.anbima.ettj import intraday_ettj, last_ettj
+from pyield.anbima.ettj_intraday import intraday_ettj
+from pyield.anbima.ettj_last import last_ettj
 from pyield.anbima.ima import last_ima
 from pyield.anbima.imaq import imaq
 from pyield.anbima.ipca import ipca_projection
