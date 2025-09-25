@@ -13,6 +13,7 @@ import re
 
 import pandas as pd
 import polars as pl
+import polars.selectors as ps
 import requests
 
 from pyield import date_converter as dc
@@ -54,7 +55,7 @@ def _fetch_url_content(target_date: dt.date) -> bytes:
     return r.content
 
 
-def _get_reference_date(html_content: bytes) -> dt.date | None:
+def _check_content_date(html_content: bytes, target_date: dt.date) -> None:
     # Expressão regular para datas no formato dd/mm/ano
     date_pattern = r"\b(\d{2}/\d{2}/\d{4})\b"
 
@@ -62,13 +63,21 @@ def _get_reference_date(html_content: bytes) -> dt.date | None:
     match = re.search(date_pattern, html_content.decode("iso-8859-1"))
 
     if match:
-        anbima_date_str = match.group(1)
-        anbima_date = pd.to_datetime(anbima_date_str, format="%d/%m/%Y").date()
-        return anbima_date
-    return None
+        found_date_string = match.group(1)
+        found_date = dt.datetime.strptime(found_date_string, "%d/%m/%Y").date()
+        if found_date != target_date:
+            raise ValueError(
+                f"Reference date {found_date} differs from target date {target_date}."
+            )
+        else:
+            logger.info(f"Reference date found: {found_date}")
+
+    else:
+        logger.warning("No reference date found in HTML content.")
+        return None
 
 
-def _read_html_data(html_content: str) -> pd.DataFrame:
+def _parse_html_data(html_content: str) -> str:
     dfs = pd.read_html(
         io.BytesIO(html_content),
         flavor="lxml",
@@ -81,64 +90,58 @@ def _read_html_data(html_content: str) -> pd.DataFrame:
         na_values="--",
         encoding="iso-8859-1",
     )
-    return pd.concat(dfs).astype("string[pyarrow]")
-
-
-def _prepare_df(df: pd.DataFrame, reference_date: dt.date) -> pd.DataFrame:
-    df = (
-        pl.from_pandas(df)
-        .filter(
-            pl.col("Data de Vencimento").is_not_null(),
-            (pl.col("Título") != "Título"),
-        )
-        .unique(subset="Código ISIN")
-        .rename(COLUMN_MAPPING)
-        .with_columns(
-            pl.col("BondType").str.strip_chars(),
-            pl.col("SelicCode").cast(pl.Int64),
-            pl.col("ISIN").str.strip_chars(),
-            pl.col("MaturityDate").str.strptime(pl.Date, format="%d/%m/%Y"),
-            pl.col("MarketQuantity").cast(pl.Float64),
-            pl.col("Price").cast(pl.Float64),
-            pl.col("MarketValue").cast(pl.Float64),
-            pl.col("QuantityVariation").cast(pl.Float64),
-            pl.col("BondStatus").str.strip_chars(),
-            Date=reference_date,
-        )
+    return (
+        pd.concat(dfs)
+        .rename(columns=COLUMN_MAPPING)
+        .query("MaturityDate.notnull()")
+        .query("BondType != 'Título'")
+        .to_csv(index=False)
     )
 
-    return df.to_pandas(use_pyarrow_extension_array=True)
+
+def _process_pandas_csv(pandas_csv: str, reference_date: dt.date) -> pl.DataFrame:
+    df = (
+        pl.read_csv(io.StringIO(pandas_csv))
+        .unique(subset="ISIN")
+        .with_columns(ps.string().str.strip_chars().name.keep())
+        .with_columns(
+            pl.col("MaturityDate").str.strptime(pl.Date, format="%d/%m/%Y"),
+            (pl.col("MarketQuantity") * 1000).cast(pl.Int64),
+            (pl.col("MarketValue") * 1000).cast(pl.Int64),
+            (pl.col("QuantityVariation") * 1000).cast(pl.Int64),
+            Date=reference_date,
+        )
+        .sort(by=["BondType", "MaturityDate"])
+    )
+
+    return df
 
 
-def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    for col in ["MarketQuantity", "MarketValue", "QuantityVariation"]:
-        # Remove the thousands unit from numeric columns
-        df[col] = (1000 * df[col]).round(0).astype("int64[pyarrow]")
-
-    return df.sort_values(by=["BondType", "MaturityDate"]).reset_index(drop=True)
-
-
-def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
-    target_date = df["Date"].min()
-    df_anbima = tpf_data(target_date)
+def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pd.DataFrame:
+    df_anbima = tpf_data(reference_date)
+    df_anbima = pl.from_pandas(df_anbima)
     target_cols = ["ReferenceDate", "BondType", "MaturityDate", "DV01", "DV01USD"]
-    df_anbima = df_anbima[target_cols].rename(columns={"ReferenceDate": "Date"})
+    df_anbima = df_anbima.select(target_cols).rename({"ReferenceDate": "Date"})
     # Guard clause for missing columns
     if "DV01" not in df_anbima.columns or "DV01USD" not in df_anbima.columns:
         return df
 
-    df = df.merge(df_anbima, on=["Date", "BondType", "MaturityDate"], how="left")
+    df = df.join(df_anbima, on=["Date", "BondType", "MaturityDate"], how="left")
     # Calcular os estoques
-    df["MarketDV01"] = df["DV01"] * df["MarketQuantity"]
-    df["MarketDV01USD"] = df["DV01USD"] * df["MarketQuantity"]
-    for col in ["MarketDV01", "MarketDV01USD"]:
-        df[col] = df[col].round(0).astype("int64[pyarrow]")
-    # Remover colunas desnecessárias
-    df = df.drop(columns=["DV01", "DV01USD"], errors="ignore")
+    df = df.with_columns(
+        (pl.col("DV01") * pl.col("MarketQuantity"))
+        .round(0)
+        .cast(pl.Int64)
+        .alias("MarketDV01"),
+        (pl.col("DV01USD") * pl.col("MarketQuantity"))
+        .round(0)
+        .cast(pl.Int64)
+        .alias("MarketDV01USD"),
+    ).drop(["DV01", "DV01USD"])
     return df
 
 
-def _reorder_df(df: pd.DataFrame) -> pd.DataFrame:
+def _reorder_df(df: pl.DataFrame) -> pl.DataFrame:
     # Reorder the DataFrame columns
     column_order = [
         "Date",
@@ -154,7 +157,7 @@ def _reorder_df(df: pd.DataFrame) -> pd.DataFrame:
         "QuantityVariation",
         "BondStatus",
     ]
-    return df[column_order].copy()
+    return df.select(column_order)
 
 
 def imaq(date: DateScalar) -> pd.DataFrame:
@@ -201,21 +204,14 @@ def imaq(date: DateScalar) -> pd.DataFrame:
             )
             return pd.DataFrame()
 
-        reference_date = _get_reference_date(url_content)
-        if not reference_date:
-            logger.warning(
-                f"Could not determine reference date for {date_str}. "
-                "Returning an empty DataFrame."
-            )
-            return pd.DataFrame()
+        _check_content_date(url_content, date)
 
-        df = _read_html_data(url_content)
-        df = _prepare_df(df, reference_date)
+        pandas_csv = _parse_html_data(url_content)
+        df = _process_pandas_csv(pandas_csv, date)
 
-        df = _process_df(df)
-        df = _add_dv01(df)
+        df = _add_dv01(df, date)
         df = _reorder_df(df)
-        return df
+        return df.to_pandas(use_pyarrow_extension_array=True)
     except Exception:  # Erro inesperado
         msg = f"Error fetching IMA for {date_str}. Returning empty DataFrame."
         logger.exception(msg)
