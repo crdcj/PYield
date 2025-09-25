@@ -3,6 +3,7 @@ import logging
 from zoneinfo import ZoneInfo
 
 import pandas as pd
+import polars as pl
 
 import pyield.date_converter as dc
 from pyield import b3, bday, interpolator
@@ -18,7 +19,9 @@ def _get_data(dates: pd.Series) -> pd.DataFrame:
     """Busca dados de DI, incluindo dados intraday para o dia corrente se necessário."""
     # 1. Busca inicial no cache com as datas solicitadas pelo usuário.
     df_cached = (
-        get_cached_dataset("di1").query("TradeDate in @dates").reset_index(drop=True)
+        get_cached_dataset("di1")
+        .filter(pl.col("TradeDate").is_in(dates))
+        .to_pandas(use_pyarrow_extension_array=True)
     )
 
     today = dt.datetime.now(TIMEZONE_BZ).date()
@@ -115,13 +118,12 @@ def data(
     if pre_filter:
         df_pre = (
             get_cached_dataset("tpf")
-            .query("BondType in ['LTN', 'NTN-F']")
-            .drop_duplicates(subset=["ReferenceDate", "MaturityDate"])
-            .sort_values(["ReferenceDate", "MaturityDate"])
-            .reset_index(drop=True)[["ReferenceDate", "MaturityDate"]]
-            .rename(  # Rename columns for merging
-                columns={"ReferenceDate": "TradeDate", "MaturityDate": "ExpirationDate"}
-            )
+            .filter(pl.col("BondType").is_in(["LTN", "NTN-F"]))
+            .unique(subset=["ReferenceDate", "MaturityDate"])
+            .sort(["ReferenceDate", "MaturityDate"])
+            .select(["ReferenceDate", "MaturityDate"])
+            .rename({"ReferenceDate": "TradeDate", "MaturityDate": "ExpirationDate"})
+            .to_pandas(use_pyarrow_extension_array=True)
         )
 
         # Verificar se existe a data de hoje no df_pre
@@ -422,9 +424,10 @@ def available_trade_dates() -> pd.Series:
     """
     available_dates = (
         get_cached_dataset("di1")
-        .drop_duplicates(subset=["TradeDate"])["TradeDate"]
-        .sort_values(ascending=True)
-        .reset_index(drop=True)
+        .unique(subset=["TradeDate"])
+        .get_column("TradeDate")
+        .sort(descending=False)
+        .to_pandas(use_pyarrow_extension_array=True)
     )
     available_dates.name = None
     return available_dates

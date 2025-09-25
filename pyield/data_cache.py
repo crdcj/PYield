@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Literal
 from zoneinfo import ZoneInfo
 
-import pandas as pd
+import polars as pl
 
 from pyield.retry import default_retry
 
@@ -44,13 +44,13 @@ def _get_today_date_key():
 
 
 @default_retry
-def _load_github_file(file_url: str) -> pd.DataFrame:
+def _load_github_file(file_url: str) -> pl.DataFrame:
     """Carrega um arquivo do GitHub e retorna um DataFrame."""
-    return pd.read_parquet(file_url, dtype_backend="pyarrow")
+    return pl.read_parquet(file_url)
 
 
 @functools.lru_cache(maxsize=len(DATASET_CONFIGS))
-def _get_dataset_with_ttl(dataset_id: str, date_key: str) -> pd.DataFrame:
+def _get_dataset_with_ttl(dataset_id: str, date_key: str) -> pl.DataFrame:
     """
     Função interna e cacheada. Sua única responsabilidade é carregar os dados
     e colocá-los no cache.
@@ -64,14 +64,13 @@ def _get_dataset_with_ttl(dataset_id: str, date_key: str) -> pd.DataFrame:
 
     try:
         # Apenas carrega e retorna. O .copy() aqui é opcional, mas inofensivo.
-        df = _load_github_file(full_url)
-        return df
+        return _load_github_file(full_url)
     except Exception:
         logger.exception(f"Erro ao carregar dataset {dataset_id}")
         raise
 
 
-def get_cached_dataset(dataset_id: Literal["di1", "tpf"]) -> pd.DataFrame:
+def get_cached_dataset(dataset_id: Literal["di1", "tpf"]) -> pl.DataFrame:
     """
     Obtém um dataset configurado pelo seu ID, garantindo que o cache
     não seja modificado pelo chamador.
@@ -81,4 +80,4 @@ def get_cached_dataset(dataset_id: Literal["di1", "tpf"]) -> pd.DataFrame:
     df_from_cache = _get_dataset_with_ttl(dataset_id.lower(), _get_today_date_key())
 
     # 2. Retorna uma CÓPIA para o usuário. Este é o passo crucial de proteção.
-    return df_from_cache.copy()
+    return df_from_cache.clone()

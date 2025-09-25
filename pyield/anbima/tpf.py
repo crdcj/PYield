@@ -1,4 +1,16 @@
+"""
+Raw data file example from ANBIMA:
+    ANBIMA - Associação Brasileira das Entidades dos Mercados Financeiro e de Capitais
+
+    Titulo@Data Referencia@Codigo SELIC@Data Base/Emissao@Data Vencimento@Tx. Compra@Tx. Venda@Tx. Indicativas@PU@Desvio padrao@Interv. Ind. Inf. (D0)@Interv. Ind. Sup. (D0)@Interv. Ind. Inf. (D+1)@Interv. Ind. Sup. (D+1)@Criterio
+    LTN@20250924@100000@20230707@20251001@14,9483@14,9263@14,9375@997,241543@0,00433039162894@14,7341@15,2612@14,7316@15,2689@Calculado
+    LTN@20250924@100000@20200206@20260101@14,7741@14,7485@14,7616@963,001853@0,00729826731971@14,7008@14,9986@14,7021@14,9975@Calculado
+    LTN@20250924@100000@20240105@20260401@14,7357@14,707@14,7205@931,607124@0,00317937979329@14,5525@14,9847@14,5669@14,9959@Calculado
+    ...
+"""  # noqa
+
 import datetime as dt
+import io
 import logging
 import socket
 from typing import Literal
@@ -6,6 +18,9 @@ from urllib.error import HTTPError, URLError
 from zoneinfo import ZoneInfo
 
 import pandas as pd
+import polars as pl
+import polars.selectors as ps
+import requests
 
 from pyield import bday
 from pyield.b3 import di1
@@ -29,7 +44,34 @@ ANBIMA_RTM_URL = f"http://{ANBIMA_RTM_HOSTNAME}/merc_sec/arqs"
 # Before 13/05/2014 the file was zipped and the endpoint ended with ".exe"
 FORMAT_CHANGE_DATE = dt.date(2014, 5, 13)
 
+COLUMN_NAME_MAPPING = {
+    "Titulo": "BondType",
+    "Data Referencia": "ReferenceDate",
+    "Codigo SELIC": "SelicCode",
+    "Data Base/Emissao": "IssueBaseDate",
+    "Data Vencimento": "MaturityDate",
+    "Tx. Compra": "BidRate",
+    "Tx. Venda": "AskRate",
+    "Tx. Indicativas": "IndicativeRate",
+    "PU": "Price",
+    "Desvio padrao": "StdDev",
+    "Interv. Ind. Inf. (D0)": "LowerBoundRateD0",
+    "Interv. Ind. Sup. (D0)": "UpperBoundRateD0",
+    "Interv. Ind. Inf. (D+1)": "LowerBoundRateD1",
+    "Interv. Ind. Sup. (D+1)": "UpperBoundRateD1",
+    "Criterio": "Criteria",
+}
+
 logger = logging.getLogger(__name__)
+
+
+def _validate_not_future_date(date: dt.date):
+    """Raises ValueError if the date is in the future."""
+    today = dt.datetime.now(BZ_TIMEZONE).date()
+    if date > today:
+        date_log = date.strftime("%d/%m/%Y")
+        msg = f"Cannot process data for a future date ({date_log})."
+        raise ValueError(msg)
 
 
 def _bond_type_mapping(bond_type: str) -> str:
@@ -60,127 +102,125 @@ def _build_file_url(date: dt.date) -> str:
 
 
 @default_retry
-def _read_raw_df(file_url: str) -> pd.DataFrame:
-    df = pd.read_csv(
-        file_url,
-        sep="@",
-        encoding="latin1",
-        skiprows=2,
-        decimal=",",
-        thousands=".",
-        na_values=["--"],
-        dtype_backend="pyarrow",
+def _get_csv_data(date: dt.date) -> str:
+    file_url = _build_file_url(date)
+    r = requests.get(file_url)
+    r.raise_for_status()
+    r.encoding = "latin1"
+    text = r.text
+    return text
+
+
+def _rename_columns(csv_text: str) -> str:
+    for old_name, new_name in COLUMN_NAME_MAPPING.items():
+        csv_text = csv_text.replace(old_name, new_name)
+    return csv_text
+
+
+def _read_csv_data(csv_text: str) -> pd.DataFrame:
+    df = pl.read_csv(
+        source=io.StringIO(csv_text),
+        skip_lines=2,
+        separator="@",
+        null_values=["--"],
+        decimal_comma=True,
     )
     return df
 
 
-def _process_raw_df(df_raw: pd.DataFrame) -> pd.DataFrame:
-    # Filter selected columns and rename them
-    selected_columns_dict = {
-        "Titulo": "BondType",
-        "Data Referencia": "ReferenceDate",
-        "Codigo SELIC": "SelicCode",
-        "Data Base/Emissao": "IssueBaseDate",
-        "Data Vencimento": "MaturityDate",
-        "Tx. Compra": "BidRate",
-        "Tx. Venda": "AskRate",
-        "Tx. Indicativas": "IndicativeRate",
-        "PU": "Price",
-        "Desvio padrao": "StdDev",
-        "Interv. Ind. Inf. (D0)": "LowerBoundRateD0",
-        "Interv. Ind. Sup. (D0)": "UpperBoundRateD0",
-        "Interv. Ind. Inf. (D+1)": "LowerBoundRateD1",
-        "Interv. Ind. Sup. (D+1)": "UpperBoundRateD1",
-        "Criterio": "Criteria",
+def _process_raw_df(df: pl.DataFrame) -> pd.DataFrame:
+    df = df.rename(COLUMN_NAME_MAPPING).with_columns(
+        # Remove percentage from rates
+        # Rate columns have percentage values with 4 decimal places in percentage values
+        # Round to 6 decimal places to avoid floating point errors
+        (ps.contains("Rate") / 100).round(6),
+        (ps.ends_with("Date")).cast(pl.String).str.strptime(pl.Date, "%Y%m%d"),
+    )
+    bd_to_mat_pd = bday.count(
+        start=df.get_column("ReferenceDate"), end=df.get_column("MaturityDate")
+    )
+    df = df.with_columns(BDToMat=pl.Series(bd_to_mat_pd))
+    return df
+
+
+def _calculate_duration_per_row(row: dict) -> float:
+    """Função auxiliar que será aplicada a cada linha do struct."""
+    # Mapeia o BondType para a função de duration correspondente
+    # Isso torna a lógica dentro do lambda ainda mais limpa
+
+    bond_type = row["BondType"]
+    if bond_type == "LTN":
+        return row["BDToMat"] / 252  # A lógica da LTN depende apenas do BDToMat
+
+    duration_functions = {
+        "NTN-F": duration_f,
+        "NTN-B": duration_b,
+        "NTN-C": duration_c,
     }
-    df = df_raw.rename(columns=selected_columns_dict)
 
-    # Remove percentage from rates
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    # Rate columns have percentage values with 4 decimal places in percentage values
-    # We will round to 6 decimal places to avoid floating point errors
-    df[rate_cols] = (df[rate_cols] / 100).round(6)
+    duration_func = duration_functions.get(bond_type)  # Busca da função correta
+    if duration_func:
+        return duration_func(
+            row["ReferenceDate"],
+            row["MaturityDate"],
+            row["IndicativeRate"],
+        )
+    # Se o BondType não for reconhecido, retorna 0.0 (LFT ou outros)
+    return 0.0
 
-    for col in ["ReferenceDate", "MaturityDate", "IssueBaseDate"]:
-        df[col] = pd.to_datetime(df[col], format="%Y%m%d").astype("date32[pyarrow]")
 
+def _add_duration_polars_v0(df: pl.DataFrame) -> pl.DataFrame:
+    """Adiciona a coluna 'Duration' ao DataFrame Polars de forma otimizada."""
+    colunas_necessarias = [
+        "BondType",
+        "ReferenceDate",
+        "MaturityDate",
+        "IndicativeRate",
+        "BDToMat",  # Necessário para LTN
+    ]
+    # Adiciona a coluna Duration
+    df = df.with_columns(
+        Duration=pl.struct(colunas_necessarias).map_elements(
+            _calculate_duration_per_row, return_dtype=pl.Float64
+        )
+    )
     return df
 
 
-def _add_dv01(df: pd.DataFrame) -> pd.DataFrame:
-    df["BDToMat"] = bday.count(start=df["ReferenceDate"], end=df["MaturityDate"])
+def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
+    """Add the DV01 columns to the DataFrame."""
+    # mduration = df["Duration"] / (1 + df["IndicativeRate"])
+    # df["DV01"] = 0.0001 * mduration * df["Price"]
+    mduration_expr = pl.col("Duration") / (1 + pl.col("IndicativeRate"))
+    df = df.with_columns((0.0001 * mduration_expr * pl.col("Price")).alias("DV01"))
 
-    df["Duration"] = 0.0
-    df["Duration"] = df["Duration"].astype("float64[pyarrow]")
-
-    df_others = df.query(
-        "BondType not in ['LTN', 'NTN-F', 'NTN-B', 'NTN-C']"
-    ).reset_index(drop=True)
-
-    df_ltn = df.query("BondType == 'LTN'").reset_index(drop=True)
-    if not df_ltn.empty:
-        df_ltn["Duration"] = df_ltn["BDToMat"] / 252
-
-    df_ntnf = df.query("BondType == 'NTN-F'").reset_index(drop=True)
-    if not df_ntnf.empty:
-        df_ntnf["Duration"] = df_ntnf.apply(
-            lambda row: duration_f(
-                row["ReferenceDate"], row["MaturityDate"], row["IndicativeRate"]
-            ),
-            axis=1,
-        )
-
-    df_ntnb = df.query("BondType == 'NTN-B'").reset_index(drop=True)
-    if not df_ntnb.empty:
-        df_ntnb["Duration"] = df_ntnb.apply(
-            lambda row: duration_b(
-                row["ReferenceDate"], row["MaturityDate"], row["IndicativeRate"]
-            ),
-            axis=1,
-        )
-
-    df_ntnc = df.query("BondType == 'NTN-C'").reset_index(drop=True)
-    if not df_ntnc.empty:
-        df_ntnc["Duration"] = df_ntnc.apply(
-            lambda row: duration_c(
-                row["ReferenceDate"], row["MaturityDate"], row["IndicativeRate"]
-            ),
-            axis=1,
-        )
-
-    df = pd.concat([df_others, df_ltn, df_ntnf, df_ntnb, df_ntnc])
-    df["Duration"] = df["Duration"].astype("float64[pyarrow]")
-
-    mduration = df["Duration"] / (1 + df["IndicativeRate"])
-    df["DV01"] = 0.0001 * mduration * df["Price"]
-
-    return df
-
-
-def _add_usd_dv01(df: pd.DataFrame) -> pd.DataFrame:
-    """Add the USD DV01 column to the DataFrame."""
+    # DV01 in USD
     try:
-        reference_date = df["ReferenceDate"].iloc[0]
+        # reference_date = df["ReferenceDate"].iloc[0]
+        reference_date = df.get_column("ReferenceDate").item(0)
         ptax_rate = ptax(date=reference_date)
-        df["DV01USD"] = df["DV01"] / ptax_rate
+        if ptax_rate is None:
+            reference_date = bday.offset(reference_date, -1)
+        df = df.with_columns((pl.col("DV01") / ptax_rate).alias("DV01USD"))
     except Exception as e:
         logger.error(f"Error adding USD DV01: {e}")
     return df
 
 
-def _add_di_rate(df: pd.DataFrame) -> pd.DataFrame:
+def _add_di_data(df: pl.DataFrame) -> pl.DataFrame:
     """Add the DI rate column to the DataFrame."""
     # INSERIR OS DADOS DO DI INTERPOLADO ###
-    reference_date = df["ReferenceDate"].iloc[0]
-    df["DIRate"] = di1.interpolate_rates(
+    reference_date = df.get_column("ReferenceDate").item(0)
+    di_rate = di1.interpolate_rates(  # pandas Series
         dates=reference_date,
-        expirations=df["MaturityDate"],
+        expirations=df.get_column("MaturityDate"),
         extrapolate=True,
     )
+    df = df.with_columns(pl.Series(di_rate).alias("DIRate"))
     return df
 
 
-def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _custom_sort_and_order(df: pl.DataFrame) -> pl.DataFrame:
     """Reorder the columns of the DataFrame according to the specified order."""
     column_order = [
         "BondType",
@@ -205,10 +245,10 @@ def _reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "Criteria",
     ]
     column_order = [col for col in column_order if col in df.columns]
-    return df[column_order].copy()
+    return df.select(column_order).sort(["BondType", "MaturityDate"])
 
 
-def _fetch_tpf_data(date: dt.date) -> pd.DataFrame:
+def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
     """Busca e processa dados do mercado secundário de TPF diretamente da fonte ANBIMA.
 
     Esta é uma função de baixo nível para uso interno. Ela lida com a lógica
@@ -243,20 +283,22 @@ def _fetch_tpf_data(date: dt.date) -> pd.DataFrame:
 
     try:
         # Se passamos pela verificação da RTM, agora podemos chamar a função com retry.
-        df = _read_raw_df(file_url)
-        if df.empty:
+        csv_text = _get_csv_data(date)
+        if not csv_text.strip():
             logger.info(
                 f"Anbima TPF secondary market data for {date_str} not available. "
                 "Returning empty DataFrame."
             )
-            return df
+            return pd.DataFrame()
+        # csv_text = _rename_columns(csv_text)
+        df = _read_csv_data(csv_text)
         df = _process_raw_df(df)
+        df = _add_duration_polars_v0(df)
         df = _add_dv01(df)
-        df = _add_usd_dv01(df)
-        df = _add_di_rate(df)
-        df = _reorder_columns(df)
+        df = _add_di_data(df)
+        df = _custom_sort_and_order(df)
 
-        return df.sort_values(["BondType", "MaturityDate"]).reset_index(drop=True)
+        return df
 
     except HTTPError as e:
         if e.code == 404:  # noqa
@@ -350,35 +392,24 @@ def tpf_data(
             antigas retornará um DataFrame vazio.
     """
     date = convert_input_dates(date)
-
-    date_log = date.strftime("%d/%m/%Y")
-    today = dt.datetime.now(BZ_TIMEZONE).date()
-    if date > today:
-        logger.info(
-            f"Cannot fetch data for a future date ({date_log}). "
-            "Returning empty DataFrame."
-        )
-        return pd.DataFrame()
+    _validate_not_future_date(date)
 
     if fetch_from_source:
         # Try to fetch the data from the Anbima website
         df = _fetch_tpf_data(date)
     else:
-        df = (
-            get_cached_dataset("tpf")
-            .query("ReferenceDate == @date")
-            .reset_index(drop=True)
-        )
+        df = get_cached_dataset("tpf").filter(pl.col("ReferenceDate") == date)
 
-    if df.empty:
+    if df.is_empty():
         # If the data is still empty, return an empty DataFrame
         return pd.DataFrame()
 
     if bond_type:
         norm_bond_type = _bond_type_mapping(bond_type)  # noqa
-        df = df.query("BondType == @norm_bond_type").reset_index(drop=True)
+        df = df.filter(pl.col("BondType") == norm_bond_type)
 
-    return df.sort_values(["BondType", "MaturityDate"]).reset_index(drop=True)
+    df = df.sort(["ReferenceDate", "BondType", "MaturityDate"])
+    return df.to_pandas(use_pyarrow_extension_array=True)
 
 
 def tpf_fixed_rate_maturities(date: DateScalar) -> pd.Series:
