@@ -1,6 +1,6 @@
 import logging
 
-from pyield import anbima, b3, bc, bday, ibge, tn
+from pyield import anbima, b3, bc, bday, ipca, tn
 from pyield.__about__ import __version__
 from pyield.b3 import di1, futures
 from pyield.fwd import forward, forwards
@@ -12,7 +12,7 @@ __all__ = [
     "anbima",
     "bc",
     "b3",
-    "ibge",
+    "ipca",
     "tn",
     "bday",
     "di1",

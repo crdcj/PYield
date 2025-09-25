@@ -277,17 +277,6 @@ def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
         (dv01_unit_expr * pl.col("AcceptedQuantity")).alias("DV01"),
         (dv01_unit_expr * pl.col("AcceptedQuantityFR")).alias("DV01FR"),
         (dv01_unit_expr * pl.col("AcceptedQuantitySR")).alias("DV01SR"),
-    ).with_columns(
-        # 3. Aplica a limpeza final:
-        #    - Se for LFT, o valor é 0.0
-        #    - Senão, usa o valor calculado.
-        #    - Preenche qualquer nulo restante com 0.
-        #    - Arredonda para 2 casas decimais.
-        pl.when(pl.col("BondType") == "LFT")
-        .then(0.0)
-        .otherwise(pl.col("DV01", "DV01FR", "DV01SR"))
-        .fill_null(0)
-        .name.keep()  # Mantém os nomes originais das colunas
     )
 
     return df
@@ -335,7 +324,7 @@ def _add_usd_dv01(df: pl.DataFrame) -> pl.DataFrame:
 
     df = (
         df.sort("Date")  # Importante para o join_asof
-        .join_asof(df_ptax, on="Date", strategy="forward")
+        .join_asof(df_ptax, on="Date", strategy="backward")
         .with_columns(
             (cs.starts_with("DV01") / pl.col("PTAX")).round(2).name.suffix("USD")
         )

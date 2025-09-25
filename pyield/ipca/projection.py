@@ -16,7 +16,7 @@ class IndicatorProjection:
     projected_value: float  # Projected value
 
 
-def ipca_projection() -> IndicatorProjection:
+def projected_rate() -> IndicatorProjection:
     """
     Retrieves the current IPCA projection from the ANBIMA website.
 
