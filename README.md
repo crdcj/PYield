@@ -28,7 +28,6 @@ pip install pyield
 `DateScalar` and `DateArray` are a type alias used across PYield to represent different types of date inputs. It includes several common date formats, allowing for flexible date handling within the library. 
 
 The accepted formats in `DateScalar` are:
-
 - `datetime.date`
 - `datetime.datetime`
 - `str` (in the format `DD-MM-YYYY` as used in Brazil)
@@ -37,11 +36,11 @@ The accepted formats in `DateScalar` are:
 
 ### DateArray
 The accepted formats in `DateArray` are:
-- `pd.Series`
 - `pd.DatetimeIndex`
 - `np.ndarray`
 - `list[DateScalar]`
 - `tuple[DateScalar, ...]`
+- `pd.Series` (Pandas Series)
 - `pl.Series` (Polars Series)
 
 Referencing `DateScalar` and `DateArray` in function arguments simplifies the code by allowing any of these date formats to be used interchangeably.
@@ -170,10 +169,10 @@ LastUpdatee      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate 
 
 ### Projections Data
 ```python
->>> from pyield import anbima
+>>> from pyield import ipca
 # Fetch current month projection for IPCA from IBGE API
->>> ipca = anbima.ipca_projection()
->>> print(ipca)
+>>> current_ipca = ipca.projected_rate()
+>>> print(current_ipca)
 IndicatorProjection(
     last_updated=Timestamp('2024-04-19 18:55:00'),    
     reference_period='set/24',

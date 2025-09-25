@@ -4,7 +4,7 @@ from pyield.ipca.historical import (
     last_rates,
     rates,
 )
-from pyield.ipca.projection import projected_rate
+from pyield.ipca.projected import projected_rate
 
 __all__ = [
     "indexes",

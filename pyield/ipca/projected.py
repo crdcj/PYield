@@ -1,19 +1,41 @@
+import datetime as dt
 import io
-import warnings
 from dataclasses import dataclass
 
 import pandas as pd
 import requests
-from bs4 import XMLParsedAsHTMLWarning
-
-warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 
 @dataclass
 class IndicatorProjection:
-    last_updated: pd.Timestamp  # Date and time of the last update
+    last_updated: dt.datetime  # Date and time of the last update
     reference_period: str  # Reference month as a string in "MMM/YY" format
     projected_value: float  # Projected value
+
+
+def _get_page_text() -> bytes:
+    """Faz a requisição HTTP para a página da ANBIMA e retorna o texto HTML."""
+    url = "https://www.anbima.com.br/informacoes/indicadores/"
+    try:
+        r = requests.get(url, timeout=10)  # Adiciona um timeout para a requisição
+        r.raise_for_status()  # Lança um HTTPError para respostas de erro (4xx ou 5xx)
+        return r.content
+    except requests.exceptions.RequestException as e:
+        raise ConnectionError(f"Erro ao acessar a página da ANBIMA: {e}")
+
+
+def _read_ipca_table(page_bytes: bytes) -> pd.DataFrame:
+    dfs = pd.read_html(
+        io.BytesIO(page_bytes),
+        flavor="lxml",
+        decimal=",",
+        thousands=".",
+        dtype_backend="pyarrow",
+        encoding="latin1",
+    )
+    # The IPCA projection is in the third table
+    df = dfs[2]
+    return df
 
 
 def projected_rate() -> IndicatorProjection:
@@ -33,7 +55,7 @@ def projected_rate() -> IndicatorProjection:
 
     Returns:
         IndicatorProjection: An object containing:
-            - last_updated (pd.Timestamp): Date and time of the last data update
+            - last_updated (dt.datetime): Date and time of the last data update
             - reference_period (str): Reference period of the projection as a string in
               "MMM/YY" brazilian format (e.g., "set/25")
             - projected_value (float): Projected IPCA value as a decimal number
@@ -42,30 +64,28 @@ def projected_rate() -> IndicatorProjection:
         requests.RequestException: If there are connection issues with the ANBIMA site
         ValueError: If the expected data is not found in the page structure
 
+    Example:
+        >>> from pyield import ipca
+        >>> # Retrieve the current IPCA projection from ANBIMA
+        >>> ipca.projected_rate()
+        IndicatorProjection(last_updated=..., reference_period=..., projected_value=...)
+
     Notes:
         - The function requires internet connection to access the ANBIMA website
         - The structure of the ANBIMA page may change, which could affect the function
     """
-    url = "https://www.anbima.com.br/informacoes/indicadores/"
-    r = requests.get(url)
-    r.encoding = "latin1"
-    dfs = pd.read_html(
-        io.StringIO(r.text),
-        flavor="html5lib",
-        decimal=",",
-        thousands=".",
-        dtype_backend="pyarrow",
-    )
-    # The IPCA projection is in the third table
-    df = dfs[2]
+
+    page_text = _get_page_text()
+    df = _read_ipca_table(page_text)
 
     last_update_str = df.iat[0, 0].split("Atualização:")[-1].strip()
-    last_update = pd.to_datetime(last_update_str, format="%d/%m/%Y - %H:%M h")
+    # last_update = pd.to_datetime(last_update_str, format="%d/%m/%Y - %H:%M h")
+    last_update = dt.datetime.strptime(last_update_str, "%d/%m/%Y - %H:%M h")
 
     ipca_row = df.loc[df[0] == "IPCA1"]
     ipca_value = ipca_row.iloc[0, 2]
-    ipca_value = pd.to_numeric(ipca_value, errors="coerce", dtype_backend="pyarrow")
-    ipca_value = round(ipca_value / 100, 4)
+    ipca_value = float(ipca_value) / 100
+    ipca_value = round(ipca_value, 4)
 
     # Extract and format the reference month
     ipca_date = ipca_row.iloc[0, 1]

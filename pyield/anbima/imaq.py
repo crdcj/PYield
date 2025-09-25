@@ -1,12 +1,19 @@
+"""
+HTML page example:
+    Título Codigo Selic  Código ISIN Data de Vencimento Quantidade em Mercado (1.000 Títulos)    PU (R$) Valor de Mercado (R$ Mil)  Variação da Quantidade  (1.000 Títulos)        Status do Titulo
+       LTN       100000 BRSTNCLTN863         01/10/2025                           115.870,772 997,241543               115.551.147                                    0,000 Participante Definitivo
+       LTN       100000 BRSTNCLTN7U7         01/01/2026                           176.807,732 963,001853               170.266.174                                   -1,987 Participante Definitivo
+       LTN       100000 BRSTNCLTN8B5         01/04/2026                           115.826,847 931,607124               107.905.116                                    0,000 Participante Definitivo
+"""  # noqa
+
 import datetime as dt
 import io
 import logging
 import re
-import warnings
 
 import pandas as pd
+import polars as pl
 import requests
-from bs4 import XMLParsedAsHTMLWarning
 
 from pyield import date_converter as dc
 from pyield.anbima.tpf import tpf_data
@@ -18,20 +25,19 @@ logger = logging.getLogger(__name__)
 # --- Configurações Centralizadas ---
 IMA_URL = "https://www.anbima.com.br/informacoes/ima/ima-quantidade-mercado.asp"
 COLUMN_MAPPING = {
-    "Data Referência": "Date",
     "Título": "BondType",
-    "Data de Vencimento": "MaturityDate",
     "Codigo Selic": "SelicCode",
     "Código ISIN": "ISIN",
-    "PU (R$)": "Price",
+    "Data de Vencimento": "MaturityDate",
     "Quantidade em Mercado (1.000 Títulos)": "MarketQuantity",
+    "PU (R$)": "Price",
     "Valor de Mercado (R$ Mil)": "MarketValue",
     "Variação da Quantidade (1.000 Títulos)": "QuantityVariation",
     "Status do Titulo": "BondStatus",
 }
 
 
-def _fetch_url_content(target_date: dt.date) -> str:
+def _fetch_url_content(target_date: dt.date) -> bytes:
     target_date_str = target_date.strftime("%d/%m/%Y")
     payload = {
         "Tipo": "",
@@ -43,22 +49,29 @@ def _fetch_url_content(target_date: dt.date) -> str:
 
     r = requests.post(IMA_URL, data=payload, timeout=10)
     r.raise_for_status()
-    r.encoding = "iso-8859-1"
     if "Não há dados disponíveis" in r.text:
         return ""
-    return r.text
+    return r.content
 
 
-def _fetch_url_tables(text: str) -> pd.DataFrame:
-    # Warning supression for BeautifulSoup, as the text is valid HTML and not XML
-    warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+def _get_reference_date(html_content: bytes) -> dt.date | None:
+    # Expressão regular para datas no formato dd/mm/ano
+    date_pattern = r"\b(\d{2}/\d{2}/\d{4})\b"
 
-    if not text:
-        return pd.DataFrame()
+    # Busca pela primeira data
+    match = re.search(date_pattern, html_content.decode("iso-8859-1"))
 
+    if match:
+        anbima_date_str = match.group(1)
+        anbima_date = pd.to_datetime(anbima_date_str, format="%d/%m/%Y").date()
+        return anbima_date
+    return None
+
+
+def _read_html_data(html_content: str) -> pd.DataFrame:
     dfs = pd.read_html(
-        io.StringIO(text),
-        flavor="html5lib",
+        io.BytesIO(html_content),
+        flavor="lxml",
         attrs={"width": "100%"},
         header=0,
         thousands=".",
@@ -66,49 +79,39 @@ def _fetch_url_tables(text: str) -> pd.DataFrame:
         displayed_only=True,
         dtype_backend="pyarrow",
         na_values="--",
+        encoding="iso-8859-1",
     )
+    return pd.concat(dfs).astype("string[pyarrow]")
 
+
+def _prepare_df(df: pd.DataFrame, reference_date: dt.date) -> pd.DataFrame:
     df = (
-        pd.concat(dfs)
-        .query("`Data de Vencimento`.notnull()")
-        .query("Título!='Título'")
-        .drop_duplicates(subset="Código ISIN")
-        .reset_index(drop=True)
+        pl.from_pandas(df)
+        .filter(
+            pl.col("Data de Vencimento").is_not_null(),
+            (pl.col("Título") != "Título"),
+        )
+        .unique(subset="Código ISIN")
+        .rename(COLUMN_MAPPING)
+        .with_columns(
+            pl.col("BondType").str.strip_chars(),
+            pl.col("SelicCode").cast(pl.Int64),
+            pl.col("ISIN").str.strip_chars(),
+            pl.col("MaturityDate").str.strptime(pl.Date, format="%d/%m/%Y"),
+            pl.col("MarketQuantity").cast(pl.Float64),
+            pl.col("Price").cast(pl.Float64),
+            pl.col("MarketValue").cast(pl.Float64),
+            pl.col("QuantityVariation").cast(pl.Float64),
+            pl.col("BondStatus").str.strip_chars(),
+            Date=reference_date,
+        )
     )
 
-    # Convert to CSV and then back to pandas to get automatic type conversion
-    csv_buffer = io.StringIO(df.to_csv(index=False))
-    df = pd.read_csv(csv_buffer, dtype_backend="pyarrow", engine="pyarrow")
-
-    # Expressão regular para datas no formato dd/mm/ano
-    date_pattern = r"\b(\d{2}/\d{2}/\d{4})\b"
-
-    # Busca pela primeira data
-    match = re.search(date_pattern, text)
-
-    if match:
-        anbima_date_str = match.group(1)
-        anbima_date = pd.to_datetime(anbima_date_str, format="%d/%m/%Y")
-    else:
-        return pd.DataFrame()
-
-    df["Data Referência"] = anbima_date
-
-    return df
+    return df.to_pandas(use_pyarrow_extension_array=True)
 
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.rename(columns=COLUMN_MAPPING)[COLUMN_MAPPING.values()]
-    df["MaturityDate"] = pd.to_datetime(df["MaturityDate"], format="%d/%m/%Y")
-    df["MaturityDate"] = df["MaturityDate"].astype("date32[pyarrow]")
-    df["Date"] = df["Date"].astype("date32[pyarrow]")
-
     for col in ["MarketQuantity", "MarketValue", "QuantityVariation"]:
-        # Fallback to string conversion in case conversion failed during read_csv
-        if pd.api.types.is_string_dtype(df[col].dtype):
-            df[col] = df[col].str.replace(".", "", regex=False).replace(",", ".")
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-
         # Remove the thousands unit from numeric columns
         df[col] = (1000 * df[col]).round(0).astype("int64[pyarrow]")
 
@@ -191,11 +194,24 @@ def imaq(date: DateScalar) -> pd.DataFrame:
     date = dc.convert_input_dates(date)
     date_str = date.strftime("%d/%m/%Y")
     try:
-        text = _fetch_url_content(date)
-        df = _fetch_url_tables(text)
-        if df.empty:
-            logger.warning(f"No data for {date_str}. Returning an empty DataFrame.")
-            return df
+        url_content = _fetch_url_content(date)
+        if not url_content:
+            logger.warning(
+                f"No data available for {date_str}. Returning an empty DataFrame."
+            )
+            return pd.DataFrame()
+
+        reference_date = _get_reference_date(url_content)
+        if not reference_date:
+            logger.warning(
+                f"Could not determine reference date for {date_str}. "
+                "Returning an empty DataFrame."
+            )
+            return pd.DataFrame()
+
+        df = _read_html_data(url_content)
+        df = _prepare_df(df, reference_date)
+
         df = _process_df(df)
         df = _add_dv01(df)
         df = _reorder_df(df)

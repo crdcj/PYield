@@ -12,8 +12,8 @@ nav:
   - Modules:
       - Anbima Data: anbima.md
       - Business Day Tools: bday.md
-      - BC Data: bc.md
-      - IBGE Data: ibge.md
+      - BC Data: bc.md      
+      - IPCA Data: ipca.md
       - Interpolator: interpolator.md
       - Tesouro Data: tn.md
       - LFT: lft.md
