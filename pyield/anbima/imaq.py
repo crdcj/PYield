@@ -106,9 +106,9 @@ def _process_pandas_csv(pandas_csv: str, reference_date: dt.date) -> pl.DataFram
         .with_columns(ps.string().str.strip_chars().name.keep())
         .with_columns(
             pl.col("MaturityDate").str.strptime(pl.Date, format="%d/%m/%Y"),
-            (pl.col("MarketQuantity") * 1000).cast(pl.Int64),
-            (pl.col("MarketValue") * 1000).cast(pl.Int64),
-            (pl.col("QuantityVariation") * 1000).cast(pl.Int64),
+            (pl.col("MarketQuantity") * 1000),
+            (pl.col("MarketValue") * 1000),
+            (pl.col("QuantityVariation") * 1000),
             Date=reference_date,
         )
         .sort(by=["BondType", "MaturityDate"])
@@ -129,15 +129,21 @@ def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pd.DataFrame:
     df = df.join(df_anbima, on=["Date", "BondType", "MaturityDate"], how="left")
     # Calcular os estoques
     df = df.with_columns(
-        (pl.col("DV01") * pl.col("MarketQuantity"))
-        .round(0)
-        .cast(pl.Int64)
-        .alias("MarketDV01"),
-        (pl.col("DV01USD") * pl.col("MarketQuantity"))
-        .round(0)
-        .cast(pl.Int64)
-        .alias("MarketDV01USD"),
+        (pl.col("DV01") * pl.col("MarketQuantity")).alias("MarketDV01"),
+        (pl.col("DV01USD") * pl.col("MarketQuantity")).alias("MarketDV01USD"),
     ).drop(["DV01", "DV01USD"])
+    return df
+
+
+def _cast_int_columns(df: pl.DataFrame) -> pl.DataFrame:
+    integer_cols = [
+        "MarketQuantity",
+        "MarketValue",
+        "QuantityVariation",
+        "MarketDV01",
+        "MarketDV01USD",
+    ]
+    df = df.with_columns(pl.col(integer_cols).round(0).cast(pl.Int64))
     return df
 
 
@@ -184,15 +190,19 @@ def imaq(date: DateScalar) -> pd.DataFrame:
         - SelicCode: Code representing the SELIC rate.
         - ISIN: International Securities Identification Number.
         - Price: Bond price.
-        - MarketQuantity: Market quantity (in units of 1000 bonds).
-        - MarketValue: Market value (in units of 1000 reais).
-        - QuantityVariation: Variation in quantity (in units of 1000 bonds).
+        - MarketQuantity: Market quantity .
+        - MarketDV01: Market DV01 .
+        - MarketDV01USD: Market DV01 in USD.
+        - MarketValue: Market value .
+        - QuantityVariation: Variation in quantity .
         - BondStatus: Status of the bond.
+
+    Notes:
+        - Values are converted to pure units (e.g., MarketQuantity multiplied by 1,000).
 
     Raises:
         Exception: Logs error and returns an empty DataFrame if any error occurs during
             fetching or processing.
-
     """
     date = dc.convert_input_dates(date)
     date_str = date.strftime("%d/%m/%Y")
@@ -208,8 +218,8 @@ def imaq(date: DateScalar) -> pd.DataFrame:
 
         pandas_csv = _parse_html_data(url_content)
         df = _process_pandas_csv(pandas_csv, date)
-
         df = _add_dv01(df, date)
+        df = _cast_int_columns(df)
         df = _reorder_df(df)
         return df.to_pandas(use_pyarrow_extension_array=True)
     except Exception:  # Erro inesperado
