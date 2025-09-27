@@ -6,7 +6,8 @@ import pandas as pd
 import polars as pl
 
 import pyield.date_converter as dc
-from pyield import b3, bday, interpolator
+from pyield import b3, interpolator
+from pyield.bday import core
 from pyield.data_cache import get_cached_dataset
 from pyield.date_converter import DateArray, DateScalar
 
@@ -25,7 +26,7 @@ def _get_data(dates: pd.Series) -> pd.DataFrame:
     )
 
     today = dt.datetime.now(TIMEZONE_BZ).date()
-    last_bday = bday.last_business_day()
+    last_bday = core.last_business_day()
 
     # 2. Lógica para buscar dados intraday.
     #    Isso é necessário quando o usuário solicita os dados do dia corrente
@@ -139,7 +140,7 @@ def data(
             df_pre = pd.concat([df_pre, df_pre_today]).reset_index(drop=True)
 
         # Assure that dates in ExpirationDate (maturity date) are business days
-        df_pre["ExpirationDate"] = bday.offset(df_pre["ExpirationDate"], 0).astype(
+        df_pre["ExpirationDate"] = core.offset(df_pre["ExpirationDate"], 0).astype(
             "date32[pyarrow]"
         )
 
@@ -283,7 +284,7 @@ def interpolate_rates(
             dfi = pd.DataFrame({"tdate": [dates], "mat": [expirations]})
 
     # Compute business days between reference dates and maturities
-    dfi["bdays"] = bday.count(dfi["tdate"], dfi["mat"])
+    dfi["bdays"] = core.count(dfi["tdate"], dfi["mat"])
 
     # Initialize the interpolated rate column with NaN
     dfi["irate"] = pd.NA
@@ -394,7 +395,7 @@ def interpolate_rate(
         known_rates=df["SettlementRate"],
         extrapolate=extrapolate,
     )
-    bd = bday.count(date, expiration)
+    bd = core.count(date, expiration)
     if pd.isna(bd):
         return float("NaN")
     return ff_interp(bd)

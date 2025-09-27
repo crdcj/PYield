@@ -3,7 +3,7 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-from pyield import bday
+from pyield.bday import core
 
 
 def test_count_with_strings1():
@@ -11,7 +11,7 @@ def test_count_with_strings1():
     end = "08-01-2023"
     # 01/01/2023 is a Sunday and a holiday
     expected_result = 5
-    result = bday.count(start, end)
+    result = core.count(start, end)
     assert result == expected_result, f"Expected {expected_result}, but got {result}"
 
 
@@ -21,7 +21,7 @@ def test_count_strings2():
     # 25/12/2023 is a holiday
     # 01/01/2024 is a holiday
     expected_result = 10
-    result = bday.count(start, end)
+    result = core.count(start, end)
     assert result == expected_result, f"Expected {expected_result}, but got {result}"
 
 
@@ -30,7 +30,7 @@ def test_count_with_series():
     end = pd.Series(["08-01-2023", "22-01-2023"])
     # Assuming no holidays in these periods
     expected_result = np.array([5, 15])
-    result = bday.count(start, end)
+    result = core.count(start, end)
     are_arrays_equal = np.array_equal(result, expected_result)
     assert are_arrays_equal, f"Expected {expected_result}, but got {result}"
 
@@ -39,7 +39,7 @@ def test_count_negative_count():
     start = "08-01-2023"
     end = "01-01-2023"
     expected_result = -5  # Negative count expected
-    result = bday.count(start, end)
+    result = core.count(start, end)
     assert result == expected_result, f"Expected {expected_result}, but got {result}"
 
 
@@ -47,7 +47,7 @@ def test_count_new_holiday():
     start = "20-11-2024"  # Wednesday (Zumbi Nacional Day)
     end = "21-11-2024"
     expected_result = 0
-    result = bday.count(start, end)
+    result = core.count(start, end)
     assert result == expected_result, f"Expected {expected_result}, but got {result}"
 
 
@@ -55,7 +55,7 @@ def test_count_old_holiday():
     start = "20-11-2020"  # Friday (was not a holiday in 2020)
     end = "21-11-2020"
     expected_result = 1
-    result = bday.count(start, end)
+    result = core.count(start, end)
     assert result == expected_result, f"Expected {expected_result}, but got {result}"
 
 
@@ -64,7 +64,7 @@ def test_count_old_and_new_holidays_lists():
     end = ["21-11-2020", "21-11-2024"]
     expected_result = pd.Series([1, 0])
     expected_result = expected_result.astype("int64[pyarrow]")
-    result = bday.count(start, end)
+    result = core.count(start, end)
     are_series_equal = result.equals(expected_result)
     assert are_series_equal, f"Expected {expected_result}, but got {result}"
 
@@ -73,7 +73,7 @@ def test_offset_with_old_holiday():
     start = "20-11-2020"
     offset = 0
     expected_result = dt.date(2020, 11, 20)
-    result = bday.offset(start, offset)
+    result = core.offset(start, offset)
     assert result == expected_result, f"Expected {expected_result}, but got {result}"
 
 
@@ -81,7 +81,7 @@ def test_offset_with_new_holiday():
     start = "20-11-2024"
     offset = 0
     expected_result = dt.date(2024, 11, 21)
-    result = bday.offset(start, offset)
+    result = core.offset(start, offset)
     assert result == expected_result, f"Expected {expected_result}, but got {result}"
 
 
@@ -90,6 +90,6 @@ def test_offset_with_old_and_new_holidays():
     offset = 0
     expected_result = pd.to_datetime(["20-11-2020", "21-11-2024"], dayfirst=True)
     expected_result = pd.Series(expected_result).astype("date32[pyarrow]")
-    result = bday.offset(start, offset)
+    result = core.offset(start, offset)
     are_series_equal = result.equals(expected_result)
     assert are_series_equal, f"Expected {expected_result}, but got {result}"

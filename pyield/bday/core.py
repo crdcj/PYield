@@ -5,8 +5,8 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 
+import pyield.bday.holidays as hl
 import pyield.date_converter as dc
-import pyield.holidays as hl
 from pyield.date_converter import DateArray, DateScalar
 
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")

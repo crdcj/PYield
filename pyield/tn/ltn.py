@@ -1,8 +1,9 @@
 import pandas as pd
 
-from pyield import anbima, bday
+from pyield import anbima
 from pyield import date_converter as dc
 from pyield.b3 import di1
+from pyield.bday import core
 from pyield.date_converter import DateScalar
 from pyield.tn import tools
 
@@ -101,7 +102,7 @@ def price(
     maturity = dc.convert_input_dates(maturity)
 
     # Calculate the number of business days between settlement and cash flow dates
-    bdays = bday.count(settlement, maturity)
+    bdays = core.count(settlement, maturity)
 
     # Calculate the number of periods truncated as per Anbima rule
     num_of_years = tools.truncate(bdays / 252, 14)

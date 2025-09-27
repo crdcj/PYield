@@ -22,9 +22,9 @@ import polars as pl
 import polars.selectors as ps
 import requests
 
-from pyield import bday
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
+from pyield.bday import core
 from pyield.data_cache import get_cached_dataset
 from pyield.date_converter import DateScalar, convert_input_dates
 from pyield.retry import default_retry
@@ -90,8 +90,8 @@ def _build_file_name(date: dt.date) -> str:
 
 
 def _build_file_url(date: dt.date) -> str:
-    last_bday = bday.last_business_day()
-    business_days_count = bday.count(date, last_bday)
+    last_bday = core.last_business_day()
+    business_days_count = core.count(date, last_bday)
     if business_days_count > 5:  # noqa
         # For dates older than 5 business days, only the RTM data is available
         logger.info(f"Trying to fetch RTM data for {date.strftime('%d/%m/%Y')}")
@@ -136,7 +136,7 @@ def _process_raw_df(df: pl.DataFrame) -> pd.DataFrame:
         (ps.contains("Rate") / 100).round(6),
         (ps.ends_with("Date")).cast(pl.String).str.strptime(pl.Date, "%Y%m%d"),
     )
-    bd_to_mat_pd = bday.count(
+    bd_to_mat_pd = core.count(
         start=df.get_column("ReferenceDate"), end=df.get_column("MaturityDate")
     )
     df = df.with_columns(BDToMat=pl.Series(bd_to_mat_pd))
@@ -200,7 +200,7 @@ def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
         reference_date = df.get_column("ReferenceDate").item(0)
         ptax_rate = ptax(date=reference_date)
         if ptax_rate is None:
-            reference_date = bday.offset(reference_date, -1)
+            reference_date = core.offset(reference_date, -1)
         df = df.with_columns((pl.col("DV01") / ptax_rate).alias("DV01USD"))
     except Exception as e:
         logger.error(f"Error adding USD DV01: {e}")

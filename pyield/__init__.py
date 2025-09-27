@@ -26,6 +26,7 @@ __all__ = [
     "ntnc",
     "ntnf",
     "pre",
+    "bday",
 ]
 
 # Configura o logger do pacote principal com um NullHandler

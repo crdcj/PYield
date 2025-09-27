@@ -5,11 +5,11 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from pyield import bday
 from pyield import date_converter as dc
 from pyield.b3.futures.historical import fetch_bmf_data
 from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield.b3.futures.xml import fetch_xml_data
+from pyield.bday import core
 from pyield.date_converter import DateScalar
 
 BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
@@ -34,7 +34,7 @@ def _is_trading_day(check_date: dt.date) -> bool:
         return False
 
     # Só existe dado intraday se for um dia de útil
-    if not bday.is_business_day(check_date):
+    if not core.is_business_day(check_date):
         return False
 
     # Pregão não abre na véspera de Natal e Ano Novo

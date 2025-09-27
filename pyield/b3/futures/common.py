@@ -1,6 +1,6 @@
 import datetime as dt
 
-from pyield import bday
+from pyield.bday import core
 
 
 def get_expiration_date(
@@ -60,7 +60,7 @@ def get_expiration_date(
         expiration = dt.date(year, month, expiration_day)
 
         # Adjust to the next business day when expiration date is not a business day
-        adj_expiration = bday.offset(dates=expiration, offset=0)
+        adj_expiration = core.offset(dates=expiration, offset=0)
 
         return adj_expiration
 

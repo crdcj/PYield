@@ -25,9 +25,9 @@ import polars as pl
 import polars.selectors as cs
 import requests
 
-from pyield import bday
 from pyield import date_converter as dc
 from pyield.bc import ptax_api as pt
+from pyield.bday import core
 from pyield.date_converter import DateScalar
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
@@ -212,7 +212,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
             .alias("AvgPrice")
         )
     )
-    s_bd_to_mat_pd = bday.count(
+    s_bd_to_mat_pd = core.count(
         start=df.get_column("Settlement"),
         end=df.get_column("Maturity"),
     )
@@ -289,9 +289,9 @@ def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pl.DataFrame:
     """
     # Garante que pelo menos um dia útil seja buscado
     # Isso é importante caso seja o leilão do dia atual e não haja PTAX ainda
-    bz_last_bday = bday.last_business_day()
+    bz_last_bday = core.last_business_day()
     if start_date >= bz_last_bday:
-        start_date = bday.offset(bz_last_bday, -1)
+        start_date = core.offset(bz_last_bday, -1)
 
     # Busca a série PTAX usando a função já existente
     df_pd = pt.ptax_series(start=start_date, end=end_date)

@@ -5,8 +5,8 @@ import logging
 import pandas as pd
 import requests
 
-from pyield import bday
 from pyield.b3.futures import common
+from pyield.bday import core
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
@@ -67,7 +67,7 @@ def get_old_expiration_date(expiration_code: str, date: dt.date) -> dt.date | No
         expiration_date = dt.date(year, month, 1)
         # Adjust to the next business day when the date is a weekend or a holiday.
         # Must use old holiday list, since this contract code was used until 2006.
-        return bday.offset(dates=expiration_date, offset=0)
+        return core.offset(dates=expiration_date, offset=0)
 
     except (KeyError, ValueError):
         return None
@@ -199,7 +199,7 @@ def _process_df(df: pd.DataFrame, date: dt.date, contract_code: str) -> pd.DataF
     # Convert to nullable integer, since it is the default type in the library
     df["DaysToExp"] = df["DaysToExp"].astype("int64[pyarrow]")
 
-    df["BDaysToExp"] = bday.count(date, df["ExpirationDate"])
+    df["BDaysToExp"] = core.count(date, df["ExpirationDate"])
 
     # Remove expired contracts
     df = df.query("DaysToExp > 0").reset_index(drop=True)

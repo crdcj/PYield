@@ -5,7 +5,8 @@ import pandas as pd
 
 import pyield.date_converter as dc
 import pyield.tn.tools as bt
-from pyield import anbima, bday
+from pyield import anbima
+from pyield.bday import core
 from pyield.date_converter import DateScalar
 
 """
@@ -209,7 +210,7 @@ def quotation(
     cf_values = cf_df["CashFlow"]
 
     # Calculate the number of business days between settlement and cash flow dates
-    bdays = bday.count(settlement, cf_dates)
+    bdays = core.count(settlement, cf_dates)
 
     # Calculate the number of periods truncated as per Anbima rules
     num_of_years = bt.truncate(bdays / 252, 14)
@@ -280,7 +281,7 @@ def duration(
     maturity = dc.convert_input_dates(maturity)
 
     df = cash_flows(settlement, maturity)
-    df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252
+    df["BY"] = core.count(settlement, df["PaymentDate"]) / 252
     df["DCF"] = df["CashFlow"] / (1 + rate) ** df["BY"]
     duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
     # Return the duration as native float
