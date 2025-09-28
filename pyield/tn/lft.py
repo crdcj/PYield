@@ -1,8 +1,7 @@
 import pandas as pd
 
-from pyield import anbima
+from pyield import anbima, bday
 from pyield import date_converter as dc
-from pyield.bday import core
 from pyield.date_converter import DateScalar
 from pyield.tn import tools
 
@@ -66,7 +65,7 @@ def quotation(
     maturity = dc.convert_input_dates(maturity)
 
     # The number of bdays between settlement (inclusive) and the maturity (exclusive)
-    bdays = core.count(settlement, maturity)
+    bdays = bday.count(settlement, maturity)
 
     # Calculate the number of periods truncated as per Anbima rules
     num_of_years = tools.truncate(bdays / 252, 14)

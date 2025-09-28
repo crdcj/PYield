@@ -6,8 +6,7 @@ import pandas as pd
 import pyield.date_converter as dc
 import pyield.interpolator as ip
 import pyield.tn.tools as bt
-from pyield import anbima
-from pyield.bday import core
+from pyield import anbima, bday
 from pyield.date_converter import DateScalar
 
 """
@@ -251,7 +250,7 @@ def quotation(
     cf_values = cf_df["CashFlow"]
 
     # Calculate the number of business days between settlement and cash flow dates
-    bdays = core.count(settlement, cf_dates)
+    bdays = bday.count(settlement, cf_dates)
 
     # Calculate the number of periods truncated as per Anbima rules
     num_of_years = bt.truncate(bdays / 252, 14)
@@ -360,7 +359,7 @@ def spot_rates(
     # Create the interpolator to calculate the YTM rates for intermediate dates
     ff_interpolator = ip.Interpolator(
         method="flat_forward",
-        known_bdays=core.count(settlement, maturities),
+        known_bdays=bday.count(settlement, maturities),
         known_rates=rates,
     )
 
@@ -371,7 +370,7 @@ def spot_rates(
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
     df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
-    df["BDToMat"] = core.count(settlement, df["MaturityDate"])
+    df["BDToMat"] = bday.count(settlement, df["MaturityDate"])
     df["BYears"] = df["BDToMat"] / 252
     df["YTM"] = df["BDToMat"].apply(ff_interpolator)
     df["Coupon"] = COUPON_PMT
@@ -489,12 +488,12 @@ def bei_rates(
 
     # Calculate Real Interest Rate (RIR)
     df = spot_rates(settlement, ntnb_maturities, ntnb_rates)
-    df["BDToMat"] = core.count(settlement, df["MaturityDate"])
+    df["BDToMat"] = bday.count(settlement, df["MaturityDate"])
     df = df.rename(columns={"SpotRate": "RIR"})
 
     nir_interplator = ip.Interpolator(
         method="flat_forward",
-        known_bdays=core.count(settlement, nominal_maturities),
+        known_bdays=bday.count(settlement, nominal_maturities),
         known_rates=nominal_rates,
         extrapolate=True,
     )
@@ -543,7 +542,7 @@ def duration(
     maturity = dc.convert_input_dates(maturity)
 
     df = cash_flows(settlement, maturity)
-    df["BY"] = core.count(settlement, df["PaymentDate"]) / 252
+    df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252
     df["DCF"] = df["CashFlow"] / (1 + rate) ** df["BY"]
     duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
     # Return the duration as native float

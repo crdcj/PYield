@@ -1,7 +1,6 @@
 import pandas as pd
 
-from pyield import anbima
-from pyield.bday import core
+from pyield import anbima, bday
 from pyield.date_converter import DateScalar
 from pyield.tn import ntnf
 
@@ -117,7 +116,7 @@ def _process_additional_ltn(
             )
 
         try:
-            bdays = core.count(date, maturity)
+            bdays = bday.count(date, maturity)
             if pd.isna(bdays):
                 raise ValueError(
                     f"Business days calculation returned NaN for additional LTN"

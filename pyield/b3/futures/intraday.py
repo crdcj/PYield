@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 import requests
 
-from pyield.bday import core
+from pyield import bday
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
@@ -113,7 +113,7 @@ def _process_df(df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
     )
 
     # Get currante date in Brazil
-    df["TradeDate"] = core.last_business_day()
+    df["TradeDate"] = bday.last_business_day()
     df["TradeDate"] = df["TradeDate"].astype("date32[pyarrow]")
 
     # Get current date and time
@@ -121,7 +121,7 @@ def _process_df(df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
     # Subtract 15 minutes from the current time to account for API delay
     df["LastUpdate"] = now - pd.Timedelta(minutes=15)
 
-    df["BDaysToExp"] = core.count(df["TradeDate"], df["ExpirationDate"])
+    df["BDaysToExp"] = bday.count(df["TradeDate"], df["ExpirationDate"])
 
     df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
 

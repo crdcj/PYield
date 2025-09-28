@@ -19,8 +19,8 @@ import pandas as pd
 import polars as pl
 import requests
 
+from pyield import bday
 from pyield import date_converter as dc
-from pyield.bday import core
 from pyield.date_converter import DateScalar
 from pyield.retry import default_retry
 
@@ -128,7 +128,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
         (100 - pl.col("percentual_corte")).alias("percentual_aceito"),
     )
 
-    s_prazo_pd = core.count(
+    s_prazo_pd = bday.count(
         start=df.get_column("data_liquidacao"),
         end=df.get_column("data_retorno"),
     )

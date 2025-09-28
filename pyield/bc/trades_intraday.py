@@ -13,7 +13,7 @@ import polars as pl
 import requests
 from polars import selectors as cs
 
-from pyield.bday import core
+from pyield import bday
 from pyield.config import TIMEZONE_BZ
 
 REALTIME_START_TIME = dt.time(9, 0, 0)
@@ -184,7 +184,7 @@ def is_selic_open() -> bool:
     now = dt.datetime.now(TIMEZONE_BZ)
     today = now.date()
     time = now.time()
-    is_last_bday = core.is_business_day(today)
+    is_last_bday = bday.is_business_day(today)
     is_trading_time = REALTIME_START_TIME <= time <= REALTIME_END_TIME
 
     return is_last_bday and is_trading_time

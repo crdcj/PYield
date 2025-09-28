@@ -10,8 +10,8 @@ import requests
 from lxml import etree
 
 import pyield.date_converter as dc
+from pyield import bday
 from pyield.b3.futures import common
-from pyield.bday import core
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
@@ -210,7 +210,7 @@ def _process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     # Remove expired contracts
     df = df.query("DaysToExp > 0").reset_index(drop=True)
 
-    df["BDaysToExp"] = core.count(df["TradeDate"], df["ExpirationDate"])
+    df["BDaysToExp"] = bday.count(df["TradeDate"], df["ExpirationDate"])
 
     rate_cols = [col for col in df.columns if "Rate" in col]
     # Remove % and round to 5 (3 in %) dec. places in rate columns

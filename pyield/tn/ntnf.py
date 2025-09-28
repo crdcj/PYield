@@ -4,11 +4,10 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 
-from pyield import anbima
+from pyield import anbima, bday
 from pyield import date_converter as dc
 from pyield import interpolator as ip
 from pyield.b3 import di1
-from pyield.bday import core
 from pyield.date_converter import DateScalar
 from pyield.tn import tools
 
@@ -181,7 +180,7 @@ def cash_flows(
     df = pd.DataFrame(data={"PaymentDate": pay_dates, "CashFlow": cf_values})
 
     if adj_payment_dates:
-        df["PaymentDate"] = core.offset(df["PaymentDate"], 0)
+        df["PaymentDate"] = bday.offset(df["PaymentDate"], 0)
 
     return df
 
@@ -217,7 +216,7 @@ def price(
     """
     cf_df = cash_flows(settlement, maturity)
     cf_values = cf_df["CashFlow"]
-    bdays = core.count(settlement, cf_df["PaymentDate"])
+    bdays = bday.count(settlement, cf_df["PaymentDate"])
     byears = tools.truncate(bdays / 252, 14)
     discount_factors = (1 + rate) ** byears
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
@@ -284,12 +283,12 @@ def spot_rates(  # noqa
     # Create flat forward interpolators for LTN and NTN-F rates
     ltn_rate_interpolator = ip.Interpolator(
         method="flat_forward",
-        known_bdays=core.count(settlement, ltn_maturities),
+        known_bdays=bday.count(settlement, ltn_maturities),
         known_rates=ltn_rates,
     )
     ntnf_rate_interpolator = ip.Interpolator(
         method="flat_forward",
-        known_bdays=core.count(settlement, ntnf_maturities),
+        known_bdays=bday.count(settlement, ntnf_maturities),
         known_rates=ntnf_rates,
     )
 
@@ -298,7 +297,7 @@ def spot_rates(  # noqa
 
     # Create a DataFrame with all coupon dates and the corresponding YTM
     df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
-    df["BDToMat"] = core.count(start=settlement, end=df["MaturityDate"])
+    df["BDToMat"] = bday.count(start=settlement, end=df["MaturityDate"])
     df["BYears"] = df["BDToMat"] / 252
     df["Coupon"] = COUPON_PMT
     df["YTM"] = df["BDToMat"].apply(ntnf_rate_interpolator)
@@ -471,7 +470,7 @@ def di_net_spread(  # noqa
 
     ff_interpolator = ip.Interpolator(
         "flat_forward",
-        core.count(settlement, di_expirations),
+        bday.count(settlement, di_expirations),
         di_rates,
     )
 
@@ -483,9 +482,9 @@ def di_net_spread(  # noqa
 
     # Calculate cash flows and business days between settlement and payment dates
     df = cash_flows(settlement, ntnf_maturity).reset_index()
-    df["BDToMat"] = core.count(settlement, df["PaymentDate"])
+    df["BDToMat"] = bday.count(settlement, df["PaymentDate"])
 
-    byears = core.count(settlement, df["PaymentDate"]) / 252
+    byears = bday.count(settlement, df["PaymentDate"]) / 252
     di_interp = df["BDToMat"].apply(ff_interpolator)
     bond_price = price(settlement, ntnf_maturity, ntnf_rate)
     bond_cash_flows = df["CashFlow"]
@@ -547,12 +546,12 @@ def premium(
     settlement = dc.convert_input_dates(settlement)
 
     df = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
-    df["BDToMat"] = core.count(settlement, df["PaymentDate"])
+    df["BDToMat"] = bday.count(settlement, df["PaymentDate"])
     df["BYears"] = df["BDToMat"] / 252
 
     ff_interpolator = ip.Interpolator(
         "flat_forward",
-        core.count(settlement, di_expirations),
+        bday.count(settlement, di_expirations),
         di_rates,
     )
 
@@ -596,7 +595,7 @@ def historical_premium(
     ntnf_ytm = float(ntnf_ytms.iloc[0])
 
     df = cash_flows(date, maturity, adj_payment_dates=True)
-    df["BDToMat"] = core.count(date, df["PaymentDate"])
+    df["BDToMat"] = bday.count(date, df["PaymentDate"])
     df["BYears"] = df["BDToMat"] / 252
     df["ReferenceDate"] = date
 
@@ -657,7 +656,7 @@ def duration(
     maturity = dc.convert_input_dates(maturity)
 
     df = cash_flows(settlement, maturity)
-    df["BY"] = core.count(settlement, df["PaymentDate"]) / 252
+    df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252
     df["DCF"] = df["CashFlow"] / (1 + rate) ** df["BY"]
     duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
     # Return the duration as native float
