@@ -1,5 +1,6 @@
 import datetime as dt
 import logging
+from typing import Literal, overload
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -55,12 +56,33 @@ def _get_data(dates: list[dt.date]) -> pl.DataFrame:
     return df_cached
 
 
+@overload
 def data(
     dates: DateScalar | DateArray,
     month_start: bool = False,
     pre_filter: bool = False,
     all_columns: bool = True,
-) -> pd.DataFrame:
+    return_format: Literal["pandas"] = "pandas",
+) -> pd.DataFrame: ...
+
+
+@overload
+def data(
+    dates: DateScalar | DateArray,
+    month_start: bool = False,
+    pre_filter: bool = False,
+    all_columns: bool = True,
+    return_format: Literal["polars"] = "polars",
+) -> pl.DataFrame: ...
+
+
+def data(
+    dates: DateScalar | DateArray,
+    month_start: bool = False,
+    pre_filter: bool = False,
+    all_columns: bool = True,
+    return_format: Literal["pandas", "polars"] = "pandas",
+) -> pd.DataFrame | pl.DataFrame:
     """
     Retrieves DI Futures contract data for a specific trade date.
 
@@ -179,12 +201,62 @@ def data(
         df = df.select(selected_cols)
 
     df = df.sort(by=["TradeDate", "ExpirationDate"])
-    return df.to_pandas(use_pyarrow_extension_array=True)
+
+    if return_format == "pandas":
+        df = df.to_pandas(use_pyarrow_extension_array=True)
+
+    return df
+
+
+def _build_input_dataframe(
+    dates: DateScalar | DateArray,
+    expirations: DateScalar | DateArray,
+) -> pl.DataFrame | None:
+    # 1. Converte as entradas primeiro
+    converted_dates = dc.convert_input_dates(dates)
+    converted_expirations = dc.convert_input_dates(expirations)
+
+    # 2. Lida com os 4 casos de forma SIMPLES E LEGÍVEL
+    match (converted_dates, converted_expirations):
+        # CASO 1: Data escalar, vencimentos em array
+        case dt.date() as d, pd.Series() as e:
+            if e.empty:
+                dfi = None
+            else:
+                # Cria o DF com o array, e ADICIONA o escalar com pl.lit()
+                dfi = pl.DataFrame({"ExpirationDate": e}).with_columns(TradeDate=d)
+
+        # CASO 2: Datas em array, vencimento escalar
+        case pd.Series() as d, dt.date() as e:
+            if d.empty:
+                dfi = None
+            else:
+                # Mesma lógica, invertida
+                dfi = pl.DataFrame({"TradeDate": d}).with_columns(ExpirationDate=e)
+
+        # CASO 3: Ambos são arrays
+        case pd.Series() as d, pd.Series() as e:
+            if d.empty or e.empty:
+                dfi = None
+            elif len(d) != len(e):
+                raise ValueError("'dates' e 'expirations' devem ter o mesmo tamanho.")
+            else:
+                dfi = pl.DataFrame({"TradeDate": d, "ExpirationDate": e})
+
+        # CASO 4: Ambos são escalares
+        case dt.date() as d, dt.date() as e:
+            dfi = pl.DataFrame({"TradeDate": [d], "ExpirationDate": [e]})
+
+        # QUALQUER OUTRA COISA
+        case _:
+            dfi = None
+
+    return dfi
 
 
 def interpolate_rates(
-    dates: DateScalar | DateArray,
-    expirations: DateScalar | DateArray,
+    dates: DateScalar | DateArray | None,
+    expirations: DateScalar | DateArray | None,
     extrapolate: bool = True,
 ) -> pd.Series:
     """
@@ -233,7 +305,7 @@ def interpolate_rates(
         0    0.13972
         1    0.134613
         2    <NA>
-        dtype: double[pyarrow]
+        Name: irate, dtype: double[pyarrow]
 
         >>> # Interpolate rates for a single trade date and multiple expiration dates
         >>> # There is no DI Contract in 09-05-2025 with expiration 01-01-2050
@@ -245,7 +317,7 @@ def interpolate_rates(
         ... )
         0    0.13901
         1    0.13881
-        dtype: double[pyarrow]
+        Name: irate, dtype: double[pyarrow]
 
         >>> # With extrapolation set to False, the second rate will be NaN
         >>> # Note: 0.13576348733268917 is shown as 0.135763
@@ -255,56 +327,38 @@ def interpolate_rates(
         ...     extrapolate=False,
         ... )
         0    0.135763
-        1    <NA>
-        dtype: double[pyarrow]
+        1    NaN
+        Name: irate, dtype: double[pyarrow]
 
     Notes:
         - All available settlement rates are used for the flat-forward interpolation.
         - The function handles broadcasting of scalar and array-like inputs.
     """
-    # Convert input dates to a consistent format
-    dates = dc.convert_input_dates(dates)
-    expirations = dc.convert_input_dates(expirations)
+    dfi = _build_input_dataframe(dates, expirations)
 
-    # Ensure the lengths of input arrays are consistent
-    match (dates, expirations):
-        case dt.date(), pd.Series():
-            dfi = pd.DataFrame({"mat": expirations})
-            dfi["tdate"] = dates
+    # 2. Se a helper retornou None, a entrada é inválida.
+    if dfi is None:
+        logger.warning("Invalid or empty dates provided. Returning empty Series.")
+        return pd.Series(dtype="float64[pyarrow]")
 
-        case pd.Series(), dt.date():
-            dfi = pd.DataFrame({"tdate": dates})
-            dfi["mat"] = expirations
-
-        case pd.Series(), pd.Series():
-            if len(dates) != len(expirations):
-                raise ValueError("Args. should have the same length.")
-            dfi = pd.DataFrame({"tdate": dates, "mat": expirations})
-
-        case dt.date(), dt.date():
-            dfi = pd.DataFrame({"tdate": [dates], "mat": [expirations]})
-
-    # Compute business days between reference dates and maturities
-    dfi["bdays"] = bday.count(dfi["tdate"], dfi["mat"])
-
-    # Initialize the interpolated rate column with NaN
-    dfi["irate"] = pd.NA
-    dfi["irate"] = dfi["irate"].astype("float64[pyarrow]")
+    # bday.count retorna uma Series de inteiros do pandas
+    s_bdays = bday.count(dfi["TradeDate"], dfi["ExpirationDate"])
+    dfi = dfi.with_columns(pl.Series("bdays", s_bdays), irate=None)
 
     # Load DI rates dataset filtered by the provided reference dates
-    dfr = data(dates=dates)
+    dfr: pl.DataFrame = data(dates=dates, all_columns=False, return_format="polars")
 
     # Return an empty DataFrame if no rates are found
-    if dfr.empty:
-        return pd.Series()
+    if dfr.is_empty():
+        return pd.Series(dtype="float64[pyarrow]")
 
     # Iterate over each unique reference date
-    for date in dfi["tdate"].unique():
+    for date in dfi.get_column("TradeDate").unique().to_list():
         # Filter DI rates for the current reference date
-        dfr_subset = dfr.query("TradeDate == @date").reset_index(drop=True)
+        dfr_subset = dfr.filter(pl.col("TradeDate") == date)
 
         # Skip processing if no rates are available for the current date
-        if dfr_subset.empty:
+        if dfr_subset.is_empty():
             continue
 
         # Initialize the interpolator with known rates and business days
@@ -315,13 +369,16 @@ def interpolate_rates(
             extrapolate=extrapolate,
         )
 
-        # Apply interpolation to rows matching the current reference date
-        mask: pd.Series = dfi["tdate"] == date
-        dfi.loc[mask, "irate"] = dfi.loc[mask, "bdays"].apply(interp)
+        dfi = dfi.with_columns(
+            pl.when(pl.col("TradeDate") == date)
+            .then(pl.col("bdays").map_elements(interp, return_dtype=pl.Float64))
+            .otherwise(pl.col("irate"))
+            .alias("irate")
+        )
 
     # Return the Series with interpolated rates
-    dfi["irate"].name = None
-    return dfi["irate"]
+    irates = dfi.get_column("irate")
+    return irates.to_pandas(use_pyarrow_extension_array=True)
 
 
 def interpolate_rate(
@@ -366,43 +423,56 @@ def interpolate_rate(
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
-    date = dc.convert_input_dates(date)
-    expiration = dc.convert_input_dates(expiration)
-    if not date or not expiration:
-        return float("NaN")
+    converted_date = dc.convert_input_dates(date)
+    converted_expiration = dc.convert_input_dates(expiration)
+
+    if not isinstance(converted_date, dt.date) or not isinstance(
+        converted_expiration, dt.date
+    ):
+        raise ValueError("Both 'date' and 'expiration' must be single date values.")
+
+    if not converted_date or not converted_expiration:
+        return float("nan")
 
     # Get the DI contract DataFrame
-    df = data(dates=date)
+    df = data(dates=converted_date, return_format="polars")
 
-    if df.empty:
-        return float("NaN")
+    if df.is_empty():
+        return float("nan")
 
-    max_exp = df["ExpirationDate"].max()
+    max_exp = df.get_column("ExpirationDate").max()
 
-    if expiration > max_exp and not extrapolate:
+    if converted_expiration > max_exp and not extrapolate:
         logger.warning(
-            f"Expiration date ({expiration}) is greater than the maximum expiration "
+            f"Expiration ({converted_expiration}) is greater than the maximum exp. "
             f"date ({max_exp}) and extrapolation is not allowed. Returning NaN."
         )
-        return float("NaN")
+        return float("nan")
 
-    if expiration in df["ExpirationDate"]:
-        rate = df.query("ExpirationDate == @expiration")["SettlementRate"]
-        return float(rate.iloc[0]) if not rate.empty else float("NaN")
+    rate = df.filter(pl.col("ExpirationDate") == converted_expiration).get_column(
+        "SettlementRate"
+    )
+
+    if not rate.is_empty():
+        logger.info(f"Exact match found for expiration {converted_expiration}.")
+        return rate.item(0)
 
     ff_interp = interpolator.Interpolator(
         method="flat_forward",
-        known_bdays=df["BDaysToExp"],
-        known_rates=df["SettlementRate"],
+        known_bdays=df.get_column("BDaysToExp"),
+        known_rates=df.get_column("SettlementRate"),
         extrapolate=extrapolate,
     )
-    bd = bday.count(date, expiration)
-    if pd.isna(bd):
-        return float("NaN")
+    bd = bday.count(converted_date, converted_expiration)
+    if not bd:
+        return float("nan")
+
     return ff_interp(bd)
 
 
-def available_trade_dates() -> pd.Series:
+def available_trade_dates(
+    return_format: Literal["pandas", "polars"] = "pandas",
+) -> pd.Series | pl.Series:
     """
     Returns all unique end-of-day trade dates available in the DI dataset.
 
@@ -422,14 +492,16 @@ def available_trade_dates() -> pd.Series:
         2   1995-01-04
         3   1995-01-05
         4   1995-01-06
-        dtype: date32[day][pyarrow]
+        Name: available_dates, dtype: date32[day][pyarrow]
     """
     available_dates = (
         get_cached_dataset("di1")
         .unique(subset=["TradeDate"])
         .get_column("TradeDate")
         .sort(descending=False)
-        .to_pandas(use_pyarrow_extension_array=True)
+        .alias("available_dates")
     )
-    available_dates.name = None
+    if return_format == "pandas":
+        available_dates = available_dates.to_pandas(use_pyarrow_extension_array=True)
+
     return available_dates
