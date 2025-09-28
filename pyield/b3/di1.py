@@ -15,14 +15,10 @@ logger = logging.getLogger(__name__)
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 
-def _get_data(dates: pd.Series) -> pd.DataFrame:
+def _get_data(dates: list[dt.date]) -> pl.DataFrame:
     """Busca dados de DI, incluindo dados intraday para o dia corrente se necessário."""
     # 1. Busca inicial no cache com as datas solicitadas pelo usuário.
-    df_cached = (
-        get_cached_dataset("di1")
-        .filter(pl.col("TradeDate").is_in(dates))
-        .to_pandas(use_pyarrow_extension_array=True)
-    )
+    df_cached = get_cached_dataset("di1").filter(pl.col("TradeDate").is_in(dates))
 
     today = dt.datetime.now(TIMEZONE_BZ).date()
     last_bday = bday.last_business_day()
@@ -30,27 +26,28 @@ def _get_data(dates: pd.Series) -> pd.DataFrame:
     # 2. Lógica para buscar dados intraday.
     #    Isso é necessário quando o usuário solicita os dados do dia corrente
     #    e eles ainda não foram persistidos no cache (processo noturno).
-    if (
-        # Condição 1: O dia de hoje foi explicitamente solicitado.
-        today in dates.values
-        # Condição 2: E ainda não está no cache.
-        and today not in df_cached["TradeDate"].values
-        # Condição 3: E hoje é o último dia útil.
-        and today == last_bday
-    ):
+    # Condição 1: O dia de hoje foi solicitado.
+    has_today = today in dates
+    # Condição 2: E ainda não está no cache.
+    is_today_not_in_cache = df_cached.filter(pl.col("TradeDate") == today).is_empty()
+    # Condição 3: E hoje é o último dia útil.
+    is_today_last_bday = today == last_bday
+
+    if has_today and is_today_not_in_cache and is_today_last_bday:
         try:
             df_intraday = b3.futures(contract_code="DI1", date=today)
-            if "SettlementPrice" not in df_intraday.columns or df_intraday.empty:
+            df_intraday = pl.from_pandas(df_intraday)
+            if "SettlementPrice" not in df_intraday.columns or df_intraday.is_empty():
                 logger.warning(
                     f"Ainda sem dados de ajustes intraday para {today}."
                     " Retornando apenas dados do cache."
                 )
                 return df_cached
             if "DaysToExp" in df_intraday.columns:
-                df_intraday.drop(columns=["DaysToExp"], inplace=True)
-            if df_cached.empty:
-                return df_intraday.reset_index(drop=True)
-            return pd.concat([df_cached, df_intraday]).reset_index(drop=True)
+                df_intraday = df_intraday.drop(["DaysToExp"])
+            if df_cached.is_empty():
+                return df_intraday
+            return pl.concat([df_cached, df_intraday], how="diagonal")
         except Exception as e:
             logger.error(f"Falha ao buscar dados intraday para {today}: {e}")
 
@@ -99,53 +96,57 @@ def data(
         3 2024-10-16     2025-02-01       DI1G25          74         279491
         4 2024-10-16     2025-03-01       DI1H25          94         344056
     """
-    dates = dc.convert_input_dates(dates)
-    # Force dates to be a Series for consistency
-    if isinstance(dates, dt.date):
-        dates = pd.Series([dates]).astype("date32[pyarrow]")
+    pd_dates = dc.convert_input_dates(dates)
 
-    # Remove duplicates and sort dates
-    dates = dates.drop_duplicates().sort_values().reset_index(drop=True)
-    df = _get_data(dates)
-    if df.empty:
-        logger.warning("No DI1 data found for the specified dates.")
+    match pd_dates:
+        case None:
+            logger.warning("No valid dates provided. Returning empty DataFrame.")
+            return pd.DataFrame()
+        case dt.date():
+            dates_list = [pd_dates]
+        case pd.Series():
+            if pd_dates.empty:
+                logger.warning("No valid dates provided. Returning empty DataFrame.")
+                return pd.DataFrame()
+            dates_list = pl.Series("TradeDate", pd_dates).unique().sort().to_list()
+        case _:
+            logger.warning("Invalid date format provided. Returning empty DataFrame.")
+            return pd.DataFrame()
+
+    df = _get_data(dates_list)
+    if df.is_empty():
+        logger.warning(f"No DI1 data found for the specified dates: {dates}.")
         logger.warning("Returning empty DataFrame.")
         return pd.DataFrame()
 
     if "DaysToExpiration" in df.columns:
-        df.drop(columns=["DaysToExpiration"], inplace=True)
+        df = df.drop("DaysToExpiration")
 
     if pre_filter:
         df_pre = (
             get_cached_dataset("tpf")
             .filter(pl.col("BondType").is_in(["LTN", "NTN-F"]))
             .unique(subset=["ReferenceDate", "MaturityDate"])
-            .sort(["ReferenceDate", "MaturityDate"])
-            .select(["ReferenceDate", "MaturityDate"])
-            .rename({"ReferenceDate": "TradeDate", "MaturityDate": "ExpirationDate"})
-            .to_pandas(use_pyarrow_extension_array=True)
+            .select(
+                pl.col("ReferenceDate").alias("TradeDate"),
+                pl.col("MaturityDate").alias("ExpirationDate"),
+            )
         )
 
-        # Verificar se existe a data de hoje no df_pre
-        today = dt.datetime.now(TIMEZONE_BZ).date()
-        if today in dates.values and today not in df_pre["TradeDate"].values:
-            df_pre_today = df_pre.query("TradeDate == TradeDate.max()").reset_index(
-                drop=True
-            )
-            df_pre_today["TradeDate"] = today
-            df_pre_today["TradeDate"] = df_pre_today["TradeDate"].astype(
-                "date32[pyarrow]"
-            )
-            df_pre = pd.concat([df_pre, df_pre_today]).reset_index(drop=True)
+        # garante que os dois lados estão ordenados pelas chaves necessárias
+        df = df.sort(["TradeDate", "ExpirationDate"])
+        df_pre = df_pre.sort(["TradeDate", "ExpirationDate"])
 
-        # Assure that dates in ExpirationDate (maturity date) are business days
-        df_pre["ExpirationDate"] = bday.offset(df_pre["ExpirationDate"], 0).astype(
-            "date32[pyarrow]"
+        df = df.join_asof(
+            df_pre,
+            left_on="TradeDate",
+            right_on="TradeDate",
+            by="ExpirationDate",  # garante matching por vértice
+            strategy="backward",  # pega a data anterior se não tiver exata
+            check_sortedness=False,  # já garantimos a ordenação
         )
 
-        df = df.merge(df_pre, how="inner", on=["TradeDate", "ExpirationDate"])
-
-        if df.empty:
+        if df.is_empty():
             logger.warning(
                 "No DI Futures data found for the specified dates after pre-filtering."
                 "Returning empty DataFrame."
@@ -153,7 +154,7 @@ def data(
             return pd.DataFrame()
 
     if month_start:
-        df["ExpirationDate"] = df["ExpirationDate"].dt.floor("MS")
+        df = df.with_columns(pl.col("ExpirationDate").dt.truncate("1mo"))
 
     if not all_columns:
         cols = [
@@ -175,9 +176,10 @@ def data(
             "ForwardRate",
         ]
         selected_cols = [col for col in cols if col in df.columns]
-        df = df[selected_cols].copy()
+        df = df.select(selected_cols)
 
-    return df.sort_values(by=["TradeDate", "ExpirationDate"]).reset_index(drop=True)
+    df = df.sort(by=["TradeDate", "ExpirationDate"])
+    return df.to_pandas(use_pyarrow_extension_array=True)
 
 
 def interpolate_rates(
