@@ -1,22 +1,19 @@
 import datetime as dt
 import logging
-from typing import Literal, overload
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 import polars as pl
 
 import pyield.date_converter as dc
 from pyield import b3, bday, interpolator
+from pyield.config import TIMEZONE_BZ
 from pyield.data_cache import get_cached_dataset
 from pyield.date_converter import DateArray, DateScalar
 
 logger = logging.getLogger(__name__)
 
-TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
-
-def _get_data(dates: list[dt.date]) -> pl.DataFrame:
+def _load_with_intraday(dates: list[dt.date]) -> pl.DataFrame:
     """Busca dados de DI, incluindo dados intraday para o dia corrente se necessário."""
     # 1. Busca inicial no cache com as datas solicitadas pelo usuário.
     df_cached = get_cached_dataset("di1").filter(pl.col("TradeDate").is_in(dates))
@@ -43,9 +40,9 @@ def _get_data(dates: list[dt.date]) -> pl.DataFrame:
                     f"Ainda sem dados de ajustes intraday para {today}."
                     " Retornando apenas dados do cache."
                 )
+                df_intraday = df_intraday.drop("DaysToExp", strict=False)
+
                 return df_cached
-            if "DaysToExp" in df_intraday.columns:
-                df_intraday = df_intraday.drop(["DaysToExp"])
             if df_cached.is_empty():
                 return df_intraday
             return pl.concat([df_cached, df_intraday], how="diagonal")
@@ -56,33 +53,31 @@ def _get_data(dates: list[dt.date]) -> pl.DataFrame:
     return df_cached
 
 
-@overload
+def _get_data(dates: DateScalar | DateArray) -> pl.DataFrame:
+    converted_dates = dc.convert_input_dates(dates)
+
+    match converted_dates:
+        case None:
+            logger.warning("No valid dates provided. Returning empty DataFrame.")
+            return pl.DataFrame()
+        case dt.date():
+            dates_list = [converted_dates]
+        case pd.Series():
+            dates_list = (
+                pl.Series("TradeDate", converted_dates).unique().sort().to_list()
+            )
+
+    df = _load_with_intraday(dates_list)
+
+    return df.sort(by=["TradeDate", "ExpirationDate"])
+
+
 def data(
     dates: DateScalar | DateArray,
     month_start: bool = False,
     pre_filter: bool = False,
     all_columns: bool = True,
-    return_format: Literal["pandas"] = "pandas",
-) -> pd.DataFrame: ...
-
-
-@overload
-def data(
-    dates: DateScalar | DateArray,
-    month_start: bool = False,
-    pre_filter: bool = False,
-    all_columns: bool = True,
-    return_format: Literal["polars"] = "polars",
-) -> pl.DataFrame: ...
-
-
-def data(
-    dates: DateScalar | DateArray,
-    month_start: bool = False,
-    pre_filter: bool = False,
-    all_columns: bool = True,
-    return_format: Literal["pandas", "polars"] = "pandas",
-) -> pd.DataFrame | pl.DataFrame:
+) -> pd.DataFrame:
     """
     Retrieves DI Futures contract data for a specific trade date.
 
@@ -118,31 +113,10 @@ def data(
         3 2024-10-16     2025-02-01       DI1G25          74         279491
         4 2024-10-16     2025-03-01       DI1H25          94         344056
     """
-    pd_dates = dc.convert_input_dates(dates)
+    df = _get_data(dates=dates)
 
-    match pd_dates:
-        case None:
-            logger.warning("No valid dates provided. Returning empty DataFrame.")
-            return pd.DataFrame()
-        case dt.date():
-            dates_list = [pd_dates]
-        case pd.Series():
-            if pd_dates.empty:
-                logger.warning("No valid dates provided. Returning empty DataFrame.")
-                return pd.DataFrame()
-            dates_list = pl.Series("TradeDate", pd_dates).unique().sort().to_list()
-        case _:
-            logger.warning("Invalid date format provided. Returning empty DataFrame.")
-            return pd.DataFrame()
-
-    df = _get_data(dates_list)
-    if df.is_empty():
-        logger.warning(f"No DI1 data found for the specified dates: {dates}.")
-        logger.warning("Returning empty DataFrame.")
-        return pd.DataFrame()
-
-    if "DaysToExpiration" in df.columns:
-        df = df.drop("DaysToExpiration")
+    if month_start:
+        df = df.with_columns(pl.col("ExpirationDate").dt.truncate("1mo"))
 
     if pre_filter:
         df_pre = (
@@ -168,16 +142,6 @@ def data(
             check_sortedness=False,  # já garantimos a ordenação
         )
 
-        if df.is_empty():
-            logger.warning(
-                "No DI Futures data found for the specified dates after pre-filtering."
-                "Returning empty DataFrame."
-            )
-            return pd.DataFrame()
-
-    if month_start:
-        df = df.with_columns(pl.col("ExpirationDate").dt.truncate("1mo"))
-
     if not all_columns:
         cols = [
             "TradeDate",
@@ -200,18 +164,13 @@ def data(
         selected_cols = [col for col in cols if col in df.columns]
         df = df.select(selected_cols)
 
-    df = df.sort(by=["TradeDate", "ExpirationDate"])
-
-    if return_format == "pandas":
-        df = df.to_pandas(use_pyarrow_extension_array=True)
-
-    return df
+    return df.to_pandas(use_pyarrow_extension_array=True)
 
 
 def _build_input_dataframe(
     dates: DateScalar | DateArray,
     expirations: DateScalar | DateArray,
-) -> pl.DataFrame | None:
+) -> pl.DataFrame:
     # 1. Converte as entradas primeiro
     converted_dates = dc.convert_input_dates(dates)
     converted_expirations = dc.convert_input_dates(expirations)
@@ -221,7 +180,7 @@ def _build_input_dataframe(
         # CASO 1: Data escalar, vencimentos em array
         case dt.date() as d, pd.Series() as e:
             if e.empty:
-                dfi = None
+                dfi = pl.DataFrame()
             else:
                 # Cria o DF com o array, e ADICIONA o escalar com pl.lit()
                 dfi = pl.DataFrame({"ExpirationDate": e}).with_columns(TradeDate=d)
@@ -229,7 +188,7 @@ def _build_input_dataframe(
         # CASO 2: Datas em array, vencimento escalar
         case pd.Series() as d, dt.date() as e:
             if d.empty:
-                dfi = None
+                dfi = pl.DataFrame()
             else:
                 # Mesma lógica, invertida
                 dfi = pl.DataFrame({"TradeDate": d}).with_columns(ExpirationDate=e)
@@ -237,7 +196,7 @@ def _build_input_dataframe(
         # CASO 3: Ambos são arrays
         case pd.Series() as d, pd.Series() as e:
             if d.empty or e.empty:
-                dfi = None
+                dfi = pl.DataFrame()
             elif len(d) != len(e):
                 raise ValueError("'dates' e 'expirations' devem ter o mesmo tamanho.")
             else:
@@ -249,7 +208,7 @@ def _build_input_dataframe(
 
         # QUALQUER OUTRA COISA
         case _:
-            dfi = None
+            dfi = pl.DataFrame()
 
     return dfi
 
@@ -337,7 +296,7 @@ def interpolate_rates(
     dfi = _build_input_dataframe(dates, expirations)
 
     # 2. Se a helper retornou None, a entrada é inválida.
-    if dfi is None:
+    if dfi.is_empty():
         logger.warning("Invalid or empty dates provided. Returning empty Series.")
         return pd.Series(dtype="float64[pyarrow]")
 
@@ -346,7 +305,7 @@ def interpolate_rates(
     dfi = dfi.with_columns(pl.Series("bdays", s_bdays), irate=None)
 
     # Load DI rates dataset filtered by the provided reference dates
-    dfr: pl.DataFrame = data(dates=dates, all_columns=False, return_format="polars")
+    dfr = _get_data(dates=dates)
 
     # Return an empty DataFrame if no rates are found
     if dfr.is_empty():
@@ -435,7 +394,7 @@ def interpolate_rate(
         return float("nan")
 
     # Get the DI contract DataFrame
-    df = data(dates=converted_date, return_format="polars")
+    df = _get_data(dates=converted_date)
 
     if df.is_empty():
         return float("nan")
@@ -470,13 +429,11 @@ def interpolate_rate(
     return ff_interp(bd)
 
 
-def available_trade_dates(
-    return_format: Literal["pandas", "polars"] = "pandas",
-) -> pd.Series | pl.Series:
+def available_trade_dates() -> pd.Series:
     """
-    Returns all unique end-of-day trade dates available in the DI dataset.
+    Returns all available (completed) trading dates in the DI dataset.
 
-    Retrieves and lists all distinct 'TradeDate' values present in the
+    Retrieves distinct 'TradeDate' values present in the
     historical DI futures data cache, sorted chronologically.
 
     Returns:
@@ -500,8 +457,6 @@ def available_trade_dates(
         .get_column("TradeDate")
         .sort(descending=False)
         .alias("available_dates")
+        .to_pandas(use_pyarrow_extension_array=True)
     )
-    if return_format == "pandas":
-        available_dates = available_dates.to_pandas(use_pyarrow_extension_array=True)
-
     return available_dates
