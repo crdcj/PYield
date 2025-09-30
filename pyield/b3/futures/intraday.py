@@ -1,18 +1,47 @@
+"""
+Example of JSON data from B3 API for DI1 contract:
+[
+    {'SctyQtn': {
+        'bottomLmtPric': 12.43,
+        'prvsDayAdjstmntPric': 13.396,
+        'topLmtPric': 14.675,
+        'opngPric': 13.37,
+        'minPric': 13.37,
+        'maxPric': 13.37,
+        'avrgPric': 13.37,
+        'curPrc': 13.37},
+        'asset': {
+            'AsstSummry': {
+                'grssAmt': 1657811.68,
+                'mtrtyCode': '2030-04-01',
+                'opnCtrcts': 36457,
+                'tradQty': 7,
+                'traddCtrctsQty': 29},
+                'code': 'DI1'
+            },
+            'buyOffer': {'price': 13.38},
+            'mkt': {'cd': 'FUT'},
+            'sellOffer': {'price': 13.395},
+            'symb': 'DI1J30',
+            'desc': 'DI DE 1 DIA'},
+    {'SctyQtn': {...
+"""
+
 import datetime as dt
 import logging
-from zoneinfo import ZoneInfo
 
 import pandas as pd
+import polars as pl
+import polars.selectors as cs
 import requests
 
 from pyield import bday
+from pyield.config import TIMEZONE_BZ
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
 BASE_URL = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
 
-# Timezone for Brazil
-BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
 # Pregão abre às 9:00, porém os dados têm atraso de 15 minutos.
 # Esperar 1 minuto adicional para garantir que estejam disponíveis (9:16h).
@@ -23,21 +52,7 @@ logger = logging.getLogger(__name__)
 
 
 @default_retry
-def _fetch_b3_df(contract_code: str) -> pd.DataFrame:
-    """
-    Fetch the latest data for a given future code from B3 derivatives quotation API.
-
-    Args:
-        future_code (str): The future code to fetch data for.
-
-    Returns:
-        pd.DataFrame: DataFrame containing the normalized and cleaned data from the API.
-            If no data is available, an empty DataFrame is returned.
-
-    Raises:
-        Exception: An exception is raised if the data fetch operation fails.
-    """
-
+def _fetch_json(contract_code: str) -> list[dict]:
     url = f"{BASE_URL}/{contract_code}"
 
     r = requests.get(url, timeout=10)
@@ -46,27 +61,29 @@ def _fetch_b3_df(contract_code: str) -> pd.DataFrame:
 
     # Check if the response contains the expected data
     if "Quotation not available" in r.text or "curPrc" not in r.text:
-        return pd.DataFrame()
+        return []
 
+    return r.json()["Scty"]
+
+
+def _convert_json(json_data: list[dict]) -> pl.DataFrame:
     # Normalize JSON response into a flat table
-    df = pd.json_normalize(r.json()["Scty"])
+    # Polars json_normalize is unstable, so we use Pandas first
+    df = pd.json_normalize(json_data)
+    df = df.convert_dtypes(dtype_backend="pyarrow")
+    return pl.from_pandas(df)
 
-    # Convert columns to the most appropriate data type
-    return df.convert_dtypes(dtype_backend="pyarrow")
 
+def _process_columns(df: pl.DataFrame) -> pl.DataFrame:
+    df.columns = [
+        c.replace("SctyQtn.", "").replace("asset.AsstSummry.", "") for c in df.columns
+    ]
 
-def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Rename the columns of a DataFrame containing the futures data.
-
-    Args:
-        df (pd.DataFrame): A DataFrame containing futures data.
-
-    Returns:
-        pd.DataFrame: DataFrame with the columns renamed.
-    """
-    all_columns = {
+    rename_map = {
         "symb": "TickerSymbol",
+        # "desc": "Description",  # Dropped
+        # "asset.code": "AssetCode",  # Dropped
+        # "mkt.cd": "MarketCode",  # Dropped
         "bottomLmtPric": "MinLimitRate",
         "prvsDayAdjstmntPric": "PrevSettlementRate",
         "topLmtPric": "MaxLimitRate",
@@ -83,82 +100,53 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
         "buyOffer.price": "LastAskRate",
         "sellOffer.price": "LastBidRate",
     }
-    # Check which columns are present in the DataFrame before renaming
-    rename_dict = {c: all_columns[c] for c in all_columns if c in df.columns}
-    df = df.rename(columns=rename_dict)
+    df = df.select(rename_map.keys()).rename(rename_map, strict=False)
     return df
 
 
-def _process_df(df: pd.DataFrame, contract_code: str) -> pd.DataFrame:
-    """Process the raw DataFrame from B3 API."""
-    # Clean and reformat the DataFrame columns
-    df.columns = (df.columns
-        .str.replace("SctyQtn.", "")
-        .str.replace("asset.AsstSummry.", "")
-    )  # fmt: skip
-    df.drop(columns=["desc", "asset.code", "mkt.cd"], inplace=True)
-
-    df = _rename_columns(df)
-
-    # Convert maturity codes to datetime and drop rows with missing values
-    df["ExpirationDate"] = pd.to_datetime(df["ExpirationDate"], errors="coerce").astype(
-        "date32[pyarrow]"
-    )
-
-    # Sort the DataFrame by maturity code and reset the index
+def _pre_process_df(df: pl.DataFrame) -> pl.DataFrame:
     df = (
-        df.dropna(subset=["ExpirationDate"])
-        .sort_values("ExpirationDate")
-        .reset_index(drop=True)
+        df.with_columns(
+            pl.col("ExpirationDate").str.strptime(
+                pl.Date, format="%Y-%m-%d", strict=False
+            )
+        )
+        .drop_nulls(subset=["ExpirationDate", "TradeVolume"])
+        .sort("ExpirationDate")
     )
+    return df
 
-    # Get currante date in Brazil
-    df["TradeDate"] = bday.last_business_day()
-    df["TradeDate"] = df["TradeDate"].astype("date32[pyarrow]")
 
-    # Get current date and time
-    now = dt.datetime.now(BZ_TIMEZONE)
-    # Subtract 15 minutes from the current time to account for API delay
-    df["LastUpdate"] = now - pd.Timedelta(minutes=15)
+def _process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
+    trade_date = bday.last_business_day()
+    df = df.with_columns(
+        # Remove percentage in all rate columns
+        (cs.contains("Rate") / 100).round(5),
+        TradeDate=trade_date,
+        LastUpdate=(dt.datetime.now(TIMEZONE_BZ) - dt.timedelta(minutes=15)),
+        DaysToExp=((pl.col("ExpirationDate") - trade_date).dt.total_days()),
+    ).filter(pl.col("DaysToExp") > 0)  # Remove expiring contracts
 
-    df["BDaysToExp"] = bday.count(df["TradeDate"], df["ExpirationDate"])
-
-    df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
-
-    # Remove expired contracts
-    df = df.query("DaysToExp >= 0").reset_index(drop=True)
-
-    # The "FinancialVolume" column is in BRL, so we need to round it to cents
-    df["FinancialVolume"] = df["FinancialVolume"].round(2)
-
-    # Remove percentage in all rate columns
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    df[rate_cols] = df[rate_cols].div(100).round(5)
+    bdays_to_exp = bday.count(trade_date, df["ExpirationDate"])
+    df = df.with_columns(pl.Series(bdays_to_exp).alias("BDaysToExp"))
 
     if contract_code in {"DI1", "DAP"}:  # Add LastPrice for DI1 and DAP
-        byears = df["BDaysToExp"] / 252
-        df["LastPrice"] = 100_000 / ((1 + df["LastRate"]) ** byears)
-        df["LastPrice"] = df["LastPrice"].round(2)
-        df["ForwardRate"] = forwards(bdays=df["BDaysToExp"], rates=df["LastRate"])
+        fwd_rate = forwards(bdays=df["BDaysToExp"], rates=df["LastRate"])
+        byears = pl.col("BDaysToExp") / 252
+        last_price = 100_000 / ((1 + pl.col("LastRate")) ** byears)
+        df = df.with_columns(
+            LastPrice=last_price.round(2),
+            ForwardRate=pl.Series(fwd_rate),
+        )
 
     if contract_code == "DI1":  # Add DV01 for DI1
-        duration = df["BDaysToExp"] / 252
-        modified_duration = duration / (1 + df["LastRate"])
-        df["DV01"] = 0.0001 * modified_duration * df["LastPrice"]
-
+        duration = pl.col("BDaysToExp") / 252
+        modified_duration = duration / (1 + pl.col("LastRate"))
+        df = df.with_columns(DV01=(0.0001 * modified_duration * pl.col("LastPrice")))
     return df
 
 
-def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Select and reorder columns in the DataFrame.
-
-    Args:
-        df (pd.DataFrame): A DataFrame containing futures data.
-
-    Returns:
-        pd.DataFrame: DataFrame with the columns selected and reordered.
-    """
+def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     all_columns = [
         "TradeDate",
         "LastUpdate",
@@ -185,7 +173,15 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "ForwardRate",
     ]
     reordered_columns = [col for col in all_columns if col in df.columns]
-    return df[reordered_columns].copy()
+    return df.select(reordered_columns)
+
+
+def _empty_logger(contract_code: str) -> None:
+    date_str = dt.datetime.now(TIMEZONE_BZ).strftime("%d-%m-%Y %H:%M")
+    logger.warning(
+        f"No intraday data available for {contract_code} on {date_str}. "
+        f"Returning an empty DataFrame."
+    )
 
 
 def fetch_intraday_df(contract_code: str) -> pd.DataFrame:
@@ -195,15 +191,16 @@ def fetch_intraday_df(contract_code: str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
     """
-    raw_df = _fetch_b3_df(contract_code)
-    if raw_df.empty:
-        date_str = dt.datetime.now(BZ_TIMEZONE).strftime("%d-%m-%Y %H:%M")
-        logger.warning(
-            f"No data available for {contract_code} on {date_str}. "
-            f"Returning an empty DataFrame."
-        )
-
+    json_data = _fetch_json(contract_code)
+    if not json_data:
+        _empty_logger(contract_code)
         return pd.DataFrame()
-    df = _process_df(raw_df, contract_code)
+    df = _convert_json(json_data)
+    if df.is_empty():
+        _empty_logger(contract_code)
+        return pd.DataFrame()
+    df = _process_columns(df)
+    df = _pre_process_df(df)
+    df = _process_df(df, contract_code)
     df = _select_and_reorder_columns(df)
-    return df
+    return df.to_pandas(use_pyarrow_extension_array=True)
