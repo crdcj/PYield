@@ -111,7 +111,8 @@ def _pre_process_df(df: pl.DataFrame) -> pl.DataFrame:
                 pl.Date, format="%Y-%m-%d", strict=False
             )
         )
-        .drop_nulls(subset=["ExpirationDate", "TradeVolume"])
+        .drop_nulls(subset=["ExpirationDate"])
+        .filter(pl.col("OpenContracts") > 0)  # Remove contracts with zero open interest
         .sort("ExpirationDate")
     )
     return df
