@@ -199,7 +199,7 @@ def tpf_monthly_trades(
         df = _process_df(df)
 
     except HTTPError as e:
-        if e.code == 404:  # noqa
+        if e.response.status_code == 404:  # noqa
             msg = f"Resource not found (404) at {url}. Returning an empty DataFrame."
             logger.warning(msg)
             return pd.DataFrame()
