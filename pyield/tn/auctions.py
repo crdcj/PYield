@@ -119,6 +119,7 @@ https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/resultados?datalei
 import datetime as dt
 import logging
 
+import pandas as pd
 import polars as pl
 import requests
 from polars import selectors as cs
@@ -179,35 +180,78 @@ COLUMN_MAP = {
     "taxa_maxima": "taxa_maxima",
 }
 
+FINAL_COLUMN_ORDER = [
+    "data_1v",
+    "data_liquidacao_1v",
+    "data_liquidacao_2v",
+    "numero_edital",
+    "tipo_leilao",
+    "titulo",
+    "benchmark",
+    "data_vencimento",
+    "dias_uteis",
+    "dias_corridos",
+    "duration",
+    "prazo_medio",
+    "quantidade_ofertada_1v",
+    "quantidade_ofertada_2v",
+    "quantidade_aceita_1v",
+    "quantidade_aceita_2v",
+    "quantidade_aceita_total",
+    "financeiro_1v",
+    "financeiro_2v",
+    "financeiro_total",
+    "quantidade_bcb",
+    "financeiro_bcb",
+    "dv01_1v",
+    "dv01_2v",
+    "dv01_total",
+    "dv01_1v_usd",
+    "dv01_2v_usd",
+    "dv01_total_usd",
+    "pu_minimo",
+    "pu_medio",
+    "taxa_media",
+    "taxa_maxima",
+]
 
-def _fetch_api_data(auction_date: dt.date) -> dict:
-    # The base URL for the Tesouro Nacional auctions API
-    auctions_endpoint = (
+
+def _fetch_auction_data(auction_date: dt.date) -> list[dict]:
+    """Busca os dados brutos da API do Tesouro para uma data específica."""
+    endpoint = (
         "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/resultados"
     )
-    auction_date_str = auction_date.strftime("%d/%m/%Y")
-    # Set the parameters for the API request
-    params = {"dataleilao": auction_date_str}
+    params = {"dataleilao": auction_date.strftime("%d/%m/%Y")}
 
-    try:
-        # Make the GET request to the API
-        response = requests.get(auctions_endpoint, params=params)
+    response = requests.get(endpoint, params=params)
+    response.raise_for_status()
+    data = response.json()
+    if "registros" not in data or not data["registros"]:
+        logger.warning(f"Nenhum dado de leilão encontrado para a data: {auction_date}")
+        return []
+    return data["registros"]
 
-        # Raise an exception for bad status codes (4xx or 5xx)
-        response.raise_for_status()
 
-        # Parse the JSON response
-        data = response.json()
+def _fetch_ptax_data(auction_date: dt.date) -> pl.DataFrame:
+    """Busca a PTAX para o dia útil anterior e posterior à data de referência."""
+    # Voltar um dia útil com relação à data do leilão
+    # Isso é importante caso seja o leilão do dia atual e não haja PTAX ainda
+    min_date = bday.offset(auction_date, -1)
+    # Avançar um dia útil com relação à data do leilão por conta da 2ª volta
+    max_date = bday.offset(auction_date, 1)
 
-        # Guard clause for empty or missing data
-        if "registros" not in data or not data["registros"]:
-            print(f"No auction data found for the date: {auction_date}")
-            return pl.DataFrame()
-        return data
-
-    except requests.RequestException as e:
-        print(f"Error fetching auction data: {e}")
+    # Busca a série PTAX usando a função já existente
+    df_pd = bc.ptax_series(start=min_date, end=max_date)
+    if df_pd.empty:
         return pl.DataFrame()
+
+    # Converte para Polars, seleciona, renomeia e ordena (importante para join_asof)
+    return (
+        pl.from_pandas(df_pd)
+        .select(["Date", "MidRate"])
+        .rename({"Date": "data_ref", "MidRate": "ptax"})
+        .sort("data_ref")
+    )
 
 
 def _add_duration(df: pl.DataFrame) -> pl.DataFrame:
@@ -251,6 +295,18 @@ def _add_duration(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
+def _add_avg_maturity(df: pl.DataFrame) -> pl.DataFrame:
+    # Na metodolgia do Tesouro Nacional, a maturidade média é a mesma que a duração
+    df = df.with_columns(
+        pl.when(pl.col("titulo") == "LFT")
+        .then(pl.col("dias_uteis") / 252)
+        .otherwise(pl.col("duration"))
+        .alias("prazo_medio")
+    )
+
+    return df
+
+
 def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
     """
     Calcula o DV01 para o leilão de forma 100% vetorizada em Polars.
@@ -270,7 +326,7 @@ def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _get_ptax_df(auction_date: dt.date) -> pl.DataFrame:
+def _fetch_ptax_data(auction_date: dt.date) -> pl.DataFrame:
     """
     Busca a série histórica da PTAX no intervalo de datas especificado
     e retorna como um DataFrame Polars.
@@ -301,7 +357,7 @@ def _add_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     """
     auction_date = df.get_column("data_1v").min()
     # Busca o DataFrame da PTAX
-    df_ptax = _get_ptax_df(auction_date=auction_date)
+    df_ptax = _fetch_ptax_data(auction_date=auction_date)
     if df_ptax.is_empty():
         # Se não houver dados de PTAX, retorna o DataFrame original sem alterações
         logger.warning("No PTAX data available to calculate DV01 in USD.")
@@ -318,7 +374,42 @@ def _add_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def treasury_auction_data(auction_date: DateScalar) -> pl.DataFrame:
+def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
+    """Converte dados brutos em um DataFrame Polars limpo e tipado."""
+    if not raw_data:
+        return pl.DataFrame()
+
+    df = (
+        pl.from_dicts(raw_data, schema=DATA_SCHEMA)
+        .rename(COLUMN_MAP)
+        .with_columns(
+            # Conversão de datas
+            cs.starts_with("data_")
+            .exclude("data_liquidacao_2v")
+            .str.strptime(pl.Date, "%d/%m/%Y"),
+            # Tratamento da data de 2ª volta que tem formato diferente
+            pl.col("data_liquidacao_2v").str.strptime(
+                pl.Date, "%Y-%m-%dT%H:%M:%S%.f%z", strict=False
+            ),
+            # Cálculos de totais
+            pl.sum_horizontal("quantidade_aceita_1v", "quantidade_aceita_2v").alias(
+                "quantidade_aceita_total"
+            ),
+            pl.sum_horizontal("financeiro_1v", "financeiro_2v").alias(
+                "financeiro_total"
+            ),
+            # Converter de percentual para formato decimal
+            (cs.starts_with("taxa") / 100).round(7),
+        )
+    )
+
+    # Cálculo de dias úteis (requer acesso a colunas já convertidas)
+    dias_uteis = bday.count(df["data_liquidacao_1v"], df["data_vencimento"])
+    df = df.with_columns(pl.Series(name="dias_uteis", values=dias_uteis))
+    return df
+
+
+def auction(auction_date: DateScalar) -> pd.DataFrame:
     """
     Fetches and processes Brazilian Treasury auction data for a given date.
 
@@ -327,101 +418,27 @@ def treasury_auction_data(auction_date: DateScalar) -> pl.DataFrame:
     library to create a well-structured and typed DataFrame.
 
     Args:
-        auction_date: The date of the auction in the format 'DD/MM/YYYY'.
+        auction_date: The date of the auction in the format accepted by PYield
+            DateScalar (e.g., "DD-MM-YYYY", datetime.date, etc.).
 
     Returns:
-        A Polars DataFrame containing the processed auction data.
+        A Pandas DataFrame containing the processed auction data.
         Returns an empty DataFrame if the request fails or no data is found.
     """
-    # Validate the input date format
     try:
         auction_date = dc.convert_input_dates(auction_date)
-
-    except ValueError:
-        print("Error: Invalid date format. Please use 'DD/MM/YYYY'.")
-        return pl.DataFrame()
-
-    try:
-        data = _fetch_api_data(auction_date)
-        # Convert the list of auction records into a Polars DataFrame
-        df = (
-            pl.from_dicts(data["registros"], schema=DATA_SCHEMA)
-            .rename(COLUMN_MAP, strict=False)
-            .with_columns(
-                pl.col("data_1v").str.strptime(pl.Date, "%d/%m/%Y", strict=False),
-                pl.col("data_liquidacao_1v").str.strptime(
-                    pl.Date, "%d/%m/%Y", strict=False
-                ),
-                pl.col("data_vencimento").str.strptime(
-                    pl.Date, "%d/%m/%Y", strict=False
-                ),
-                pl.sum_horizontal("quantidade_aceita_1v", "quantidade_aceita_2v").alias(
-                    "quantidade_aceita_total"
-                ),
-                pl.sum_horizontal("financeiro_1v", "financeiro_2v").alias(
-                    "financeiro_total"
-                ),
-                # Convert percentage rates from basis points to decimal
-                # Round one more decimal place to avoid floating point issues (6 -> 7)
-                (pl.col("taxa_media") / 100).round(7),
-                (pl.col("taxa_maxima") / 100).round(7),
-            )
-        )
-
-        dias_uteis = bday.count(df["data_liquidacao_1v"], df["data_vencimento"])
-        df = df.with_columns(pl.Series(dias_uteis).alias("dias_uteis"))
-
-        # Handle the specific format of 'data_liquidacao_2v' if it exists
-        if "data_liquidacao_2v" in df.columns:
-            df = df.with_columns(
-                pl.col("data_liquidacao_2v").str.strptime(
-                    pl.Date, "%Y-%m-%dT%H:%M:%S%.f%z", strict=False
-                )
-            )
-
+        data = _fetch_auction_data(auction_date)
+        df = _transform_raw_data(data)
         df = _add_duration(df)
         df = _add_dv01(df)
         df = _add_dv01_usd(df)
-
-        column_order = [
-            "data_1v",
-            "data_liquidacao_1v",
-            "data_liquidacao_2v",
-            "numero_edital",
-            "tipo_leilao",
-            "titulo",
-            "benchmark",
-            "data_vencimento",
-            "dias_uteis",
-            "dias_corridos",
-            "duration",
-            "quantidade_ofertada_1v",
-            "quantidade_ofertada_2v",
-            "quantidade_aceita_1v",
-            "quantidade_aceita_2v",
-            "quantidade_aceita_total",
-            "financeiro_1v",
-            "financeiro_2v",
-            "financeiro_total",
-            "quantidade_bcb",
-            "financeiro_bcb",
-            "dv01_1v",
-            "dv01_2v",
-            "dv01_total",
-            "dv01_1v_usd",
-            "dv01_2v_usd",
-            "dv01_total_usd",
-            "pu_minimo",
-            "pu_medio",
-            "taxa_media",
-            "taxa_maxima",
-        ]
-        df = df.select(column_order)
-        return df
+        df = _add_avg_maturity(df)
+        df = df.select(FINAL_COLUMN_ORDER)
+        return df.to_pandas(use_pyarrow_extension_array=True)
 
     except requests.exceptions.RequestException as e:
         print(f"An error occurred during the API request: {e}")
-        return pl.DataFrame()
+        return pd.DataFrame()
     except ValueError as e:
         print(f"An error occurred while parsing the JSON response: {e}")
-        return pl.DataFrame()
+        return pd.DataFrame()
