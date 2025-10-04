@@ -234,7 +234,7 @@ def _adjust_values_without_auction(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _add_duration(df: pl.DataFrame) -> pd.DataFrame:
+def _add_duration(df: pl.DataFrame) -> pl.DataFrame:
     """
     Calcula a duration para cada tipo de título, aplicando uma função
     linha a linha para os casos não-vetorizáveis (NTN-F e NTN-B).
