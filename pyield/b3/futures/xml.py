@@ -6,12 +6,13 @@ from pathlib import Path
 from typing import Literal
 
 import pandas as pd
+import polars as pl
+import polars.selectors as cs
 import requests
 from lxml import etree
 
 import pyield.date_converter as dc
 from pyield import bday
-from pyield.b3.futures import common
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
@@ -40,7 +41,6 @@ def _get_file_from_url(date: dt.date, source_type: str) -> io.BytesIO:
         - aprox. 50kB zipped file;
         url example: https://www.b3.com.br/pesquisapregao/download?filelist=SPRD240216.zip
     """
-
     date_str = date.strftime("%y%m%d")
 
     if source_type == "PR":
@@ -146,16 +146,15 @@ def _extract_data_from_xml(xml_file: io.BytesIO, asset_code: str) -> list[dict]:
     return di_data
 
 
-def _create_df_from_data(di1_data: list) -> pd.DataFrame:
-    # Criar um DataFrame com os dados coletados
-    df = pd.DataFrame(di1_data)
+def _create_df_from_data(di1_data: list) -> pl.DataFrame:
+    df = pl.DataFrame(di1_data)
+    csv = df.write_csv()
+    df = pl.read_csv(io.StringIO(csv), try_parse_dates=True)
 
-    # Convert to CSV and then back to pandas to get automatic type conversion
-    file = io.StringIO(df.to_csv(index=False))
-    return pd.read_csv(file, dtype_backend="pyarrow")
+    return df
 
 
-def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _rename_columns(df: pl.DataFrame) -> pl.DataFrame:
     all_columns = {
         "TradDt": "TradeDate",
         "TckrSymb": "TickerSymbol",
@@ -189,51 +188,94 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
         # "AdjstdValCtrct",
     }
     all_columns = {c: all_columns[c] for c in all_columns if c in df.columns}
-    return df.rename(columns=all_columns)
+    return df.rename(all_columns)
 
 
-def _process_df(df_raw: pd.DataFrame) -> pd.DataFrame:
-    df = df_raw.copy()
-    df["TradeDate"] = df["TradeDate"].astype("date32[pyarrow]")
+def _fill_zero_cols(df: pl.DataFrame) -> pl.DataFrame:
+    """
+    Preenche valores nulos com 0 para colunas onde a ausência de dados
+    significa zero atividade (e.g., volume de negociação).
+    """
+    # Colunas onde NaN (ausência de dado) significa 0 (zero atividade).
+    ZERO_COLS = ["OpenContracts", "TradeCount", "TradeVolume", "FinancialVolume"]
 
-    expiration_code = df["TickerSymbol"].str[3:]
-    contract_code = df["TickerSymbol"].str[:3].loc[0]
-    expiration_day = 15 if contract_code == "DAP" else 1
-    df["ExpirationDate"] = expiration_code.apply(
-        common.get_expiration_date, args=(expiration_day,)
-    ).astype("date32[pyarrow]")
+    # Garante que só vamos tentar preencher colunas que realmente existem no DataFrame.
+    cols_to_fill = [col for col in ZERO_COLS if col in df.columns]
 
-    df["DaysToExp"] = (df["ExpirationDate"] - df["TradeDate"]).dt.days
-    # Convert to nullable integer, since it is the default type in the library
-    df["DaysToExp"] = df["DaysToExp"].astype("int64[pyarrow]")
+    if not cols_to_fill:
+        return df  # Retorna o DF original se nenhuma coluna alvo for encontrada.
 
-    # Remove expired contracts
-    df = df.query("DaysToExp > 0").reset_index(drop=True)
-
-    df["BDaysToExp"] = bday.count(df["TradeDate"], df["ExpirationDate"])
-
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    # Remove % and round to 5 (3 in %) dec. places in rate columns
-    df[rate_cols] = df[rate_cols].div(100).round(5)
-
-    # Columns where NaN means 0
-    zero_cols = ["OpenContracts", "TradeCount", "TradeVolume", "FinancialVolume"]
-    for col in zero_cols:
-        if col in df.columns:
-            df[col] = df[col].fillna(0)
-
-    if contract_code == "DI1":  # Calculate DV01 for DI1 contracts
-        duration = df["BDaysToExp"] / 252
-        modified_duration = duration / (1 + df["SettlementRate"])
-        df["DV01"] = 0.0001 * modified_duration * df["SettlementPrice"]
-
-    if contract_code in {"DI1", "DAP"}:  # Calculate forwards for DI1 and DAP contracts
-        df["ForwardRate"] = forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
-
-    return df.sort_values(by=["ExpirationDate"], ignore_index=True)
+    return df.with_columns(pl.col(cols_to_fill).fill_null(0))
 
 
-def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
+def add_expiration_date(df: pl.DataFrame, expiration_day: int) -> pl.DataFrame:
+    """
+    Recebe um DataFrame Polars e ADICIONA a coluna 'ExpirationDate'.
+
+    - Pega a coluna 'TickerSymbol'.
+    - Extrai o código de vencimento.
+    - Converte para a data "bruta", sem ajuste de feriado.
+    - Retorna o DataFrame com a nova coluna.
+    - Sem frescura, sem função de expressão, sem porra nenhuma.
+    """
+    month_codes_map = {
+        "F": 1,
+        "G": 2,
+        "H": 3,
+        "J": 4,
+        "K": 5,
+        "M": 6,
+        "N": 7,
+        "Q": 8,
+        "U": 9,
+        "V": 10,
+        "X": 11,
+        "Z": 12,
+    }
+
+    df = df.with_columns(
+        pl.date(
+            # Ano: 2000 + últimos 2 chars do Ticker (e.g., "25") -> 2025
+            year=("20" + pl.col("TickerSymbol").str.slice(-2)).cast(
+                pl.UInt16, strict=False
+            ),
+            month=(  # Mês: Pega o 4º char do Ticker (e.g., "F") e mapeia pra 1
+                pl.col("TickerSymbol")
+                .str.slice(3, 1)
+                .replace_strict(month_codes_map, return_dtype=pl.UInt8)
+            ),
+            day=expiration_day,  # Dia: Usa o valor que veio como parâmetro
+        ).alias("ExpirationDate")
+    )
+    adj_exp_dates = bday.offset(df["ExpirationDate"], 0)
+    df = df.with_columns(pl.Series("ExpirationDate", adj_exp_dates))
+
+    return df
+
+
+def _process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
+    bdays_to_exp = bday.count(df["TradeDate"], df["ExpirationDate"])
+    df = df.with_columns(
+        (cs.contains("Rate") / 100).round(5),
+        pl.Series("BDaysToExp", bdays_to_exp),
+        DaysToExp=(pl.col("ExpirationDate") - pl.col("TradeDate")).dt.total_days(),
+    ).filter(pl.col("DaysToExp") > 0)
+
+    if contract_code == "DI1":
+        byears = pl.col("BDaysToExp") / 252
+        m_duration = byears / (1 + pl.col("SettlementRate"))
+        df = df.with_columns(
+            DV01=0.0001 * m_duration * pl.col("SettlementPrice"),
+        )
+
+    if contract_code in {"DI1", "DAP"}:
+        forward_rates = forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
+        df = df.with_columns(pl.Series("ForwardRate", forward_rates))
+
+    return df.sort("ExpirationDate")
+
+
+def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     # All SPRD columns are present in PR
     all_columns = [
         "TradeDate",
@@ -260,7 +302,7 @@ def _select_and_reorder_columns(df: pd.DataFrame) -> pd.DataFrame:
         "ForwardRate",
     ]
     selected_columns = [col for col in all_columns if col in df.columns]
-    return df[selected_columns]
+    return df.select(selected_columns)
 
 
 def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pd.DataFrame:
@@ -276,11 +318,16 @@ def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pd.DataFrame:
 
     df = _rename_columns(df_raw)
 
-    df = _process_df(df)
+    df = _fill_zero_cols(df)
+
+    expiration_day = 15 if contract_code == "DAP" else 1
+    df = add_expiration_date(df, expiration_day)
+
+    df = _process_df(df, contract_code)
 
     df = _select_and_reorder_columns(df)
 
-    return df
+    return df.to_pandas(use_pyarrow_extension_array=True)
 
 
 def fetch_xml_data(
