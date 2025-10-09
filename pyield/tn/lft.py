@@ -34,6 +34,41 @@ def data(date: DateScalar) -> pd.DataFrame:
     return anbima.tpf_data(date, "LFT")
 
 
+def maturities(date: DateScalar) -> pd.Series:
+    """
+    Fetch the bond maturities available for the given reference date.
+
+    Args:
+        date (DateScalar): The reference date for fetching the data.
+
+    Returns:
+        pd.Series: A Series of bond maturities available for the reference date.
+
+    Examples:
+        >>> from pyield import lft
+        >>> lft.maturities("22-08-2024")
+        0     2024-09-01
+        1     2025-03-01
+        2     2025-09-01
+        3     2026-03-01
+        4     2026-09-01
+        5     2027-03-01
+        6     2027-09-01
+        7     2028-03-01
+        8     2028-09-01
+        9     2029-03-01
+        10    2029-09-01
+        11    2030-03-01
+        12    2030-06-01
+        13    2030-09-01
+        dtype: date32[day][pyarrow]
+    """
+    df_rates = data(date)
+    s_maturities = df_rates["MaturityDate"]
+    s_maturities.name = None
+    return s_maturities
+
+
 def quotation(
     settlement: DateScalar,
     maturity: DateScalar,

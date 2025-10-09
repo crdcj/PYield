@@ -3,10 +3,22 @@ import io
 import logging
 
 import polars as pl
+import polars.selectors as cs
 import requests
 
 from pyield import date_converter as dc
 from pyield.date_converter import DateScalar
+
+# --- 1. Centralização e Organização das Constantes ---
+# A versão da API é um ponto frágil. Centralizá-la facilita a manutenção.
+API_VERSION = "1.0018"
+BASE_URL = (
+    f"https://www.anbima.com.br/sistemas/taxasonline/consulta/versao/{API_VERSION}"
+)
+
+URL_PAGINA_INICIAL = f"{BASE_URL}/taxasOnline.asp"
+URL_CONSULTA_DADOS = f"{BASE_URL}/exibedados.asp"
+URL_DOWNLOAD = f"{BASE_URL}/download_dados.asp?extensao=csv"
 
 COLUMN_ALIASES = {
     "Título": "titulo",
@@ -17,38 +29,58 @@ COLUMN_ALIASES = {
     "Horário": "horario",
     "Prazo": "prazo",
     "Lote": "lote",
-    "Fech D-1": "taxa_indicativa_d1",
+    "Fech D-1": "taxa_indicativa_anterior",
     "Indicativo Superior": "taxa_limite_superior",
     "Máxima": "taxa_maxima",
     "Média": "taxa_media",
     "Mínima": "taxa_minima",
     "Indicativo Inferior": "taxa_limite_inferior",
     "Última": "taxa_ultima",
-    "Oferta Compra": "taxa_bid",
-    "Oferta Venda": "taxa_ask",
+    "Oferta Compra": "taxa_compra",
+    "Oferta Venda": "taxa_venda",
     "Nº de Negócios": "num_negocios",
     "Quantidade Negociada": "quantidade_negociada",
     "Volume Negociado (R$)": "volume_negociado",
 }
 
+# Colunas não selecionadas estão vazias na API.
+FINAL_COLUMN_ORDER = [
+    "data_referencia",
+    "horario",
+    "titulo",
+    "data_vencimento",
+    "codigo_isin",
+    "provedor",
+    # "edital",
+    # "prazo",
+    "lote",
+    # "num_negocios",
+    # "quantidade_negociada",
+    # "volume_negociado",
+    # "taxa_minima",
+    # "taxa_media",
+    # "taxa_maxima",
+    "taxa_indicativa_anterior",
+    "taxa_limite_inferior",
+    "taxa_limite_superior",
+    "taxa_ultima",
+    "taxa_venda",
+    "taxa_compra",
+    "taxa_media",
+]
+
 logger = logging.getLogger(__name__)
 
-url_pagina_inicial = "https://www.anbima.com.br/sistemas/taxasonline/consulta/versao/1.0018/taxasOnline.asp"
-url_consulta_dados = "https://www.anbima.com.br/sistemas/taxasonline/consulta/versao/1.0018/exibedados.asp"
-url_download = "https://www.anbima.com.br/sistemas/taxasonline/consulta/versao/1.0018/download_dados.asp?extensao=csv"
 
-
-def _fetch_url_data(data_referencia) -> str:
-    headers = {  # Cabeçalhos para simular um navegador real
-        # O Referer precisa ser a página de onde a ação se origina.
-        "Referer": url_pagina_inicial,
+# A função de fetch continua muito boa, apenas com o retorno de None.
+def _fetch_url_data(data_referencia: str) -> str | None:
+    headers = {
+        "Referer": URL_PAGINA_INICIAL,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",  # noqa
         "Origin": "https://www.anbima.com.br",
-        # Necessário para POST com payload
         "Content-Type": "application/x-www-form-urlencoded",
     }
-
-    payload = {  # Payload com a data. Usaremos para a consulta e o download.
+    payload = {
         "dataref": data_referencia,
         "dtRefIdioma": data_referencia,
         "layoutimprimir": "0",
@@ -63,92 +95,67 @@ def _fetch_url_data(data_referencia) -> str:
         "fldColunas": ["C2", "C17", "C18", "C19"],
     }
 
-    # 1. Iniciar a sessão
     with requests.Session() as s:
-        # P1: Fazer um GET na página inicial para obter os cookies de sessão.
-        s.get(url_pagina_inicial, headers=headers)
-
-        # P2: Simular o clique em "Consultar" enviando o POST para o endpoint correto.
+        s.get(URL_PAGINA_INICIAL, headers=headers)
         try:
             response_consulta = s.post(
-                url_consulta_dados, headers=headers, data=payload
+                URL_CONSULTA_DADOS, headers=headers, data=payload
             )
             response_consulta.raise_for_status()
         except requests.exceptions.RequestException as e:
-            logger.error(f"Erro ao registrar a data na sessão: {e}")
-            return ""
+            logger.error(f"Erro ao registrar a data '{data_referencia}' na sessão: {e}")
+            return None  # 3. Retornar None em caso de falha
 
-        # P3: Com a data devidamente registrada na sessão, solicitar o download.
         try:
-            response_download = s.post(url_download, headers=headers, data=payload)
+            response_download = s.post(URL_DOWNLOAD, headers=headers, data=payload)
             response_download.raise_for_status()
-
-            # Checando se o conteúdo parece ser um CSV e não uma página de erro
             if "text/html" in response_download.headers.get("Content-Type", ""):
-                logger.error("AVISO: O servidor respondeu com HTML em vez de CSV.")
-                logger.error(f"Conteúdo recebido: {response_download.text[:500]}")
-                return ""
+                logger.error(
+                    "AVISO: O servidor respondeu com HTML em vez de CSV para '%s'.",
+                    data_referencia,
+                )
+                return None
             response_download.encoding = "iso-8859-1"
             return response_download.text
-
         except requests.exceptions.RequestException as e:
-            logger.error(f"Erro durante o download: {e}")
-            if "response_download" in locals():
-                logger.error(f"Resposta do servidor: {response_download.text[:500]}")
-            return ""
+            logger.error(
+                f"Erro durante o download para a data '{data_referencia}': {e}"
+            )
+            return None
 
 
-def _convert_to_df(csv_data: str) -> pl.DataFrame:
-    csv_rows = csv_data.splitlines()
+def _process_csv_data(csv_data: str) -> pl.DataFrame:
+    """Converte o CSV bruto em um DataFrame Polars limpo e estruturado."""
+    csv_rows = csv_data.strip().splitlines()
+
+    # Extrai a data de referência da primeira linha do arquivo
     data_ref_str = csv_rows[0].split(":")[1].strip()
     data_ref = dt.datetime.strptime(data_ref_str, "%d/%m/%Y").date()
-    cleaned_csv_data = "\n".join(csv_rows[1:]).replace(
+
+    # Prepara o conteúdo do CSV para leitura
+    # O arquivo CSV da Anbima contém um ';' extra no final do cabeçalho.
+    # Esta linha remove o ';' da última coluna para garantir a leitura correta.
+    cleaned_csv_content = "\n".join(csv_rows[1:]).replace(
         "Volume Negociado (R$);", "Volume Negociado (R$)"
     )
-    df = pl.read_csv(
-        io.StringIO(cleaned_csv_data), separator=";", decimal_comma=True
-    ).with_columns(
-        pl.col(pl.String).str.strip_chars(),
-        data_referencia=data_ref,
+
+    df = (
+        pl.read_csv(io.StringIO(cleaned_csv_content), separator=";", decimal_comma=True)
+        .rename(COLUMN_ALIASES)
+        .with_columns(pl.col(pl.String).str.strip_chars())  # Remove espaços em branco
+        .with_columns(
+            pl.col("data_vencimento").str.strptime(pl.Date, format="%d/%m/%Y"),
+            pl.col("horario").str.strptime(pl.Time, format="%H:%M:%S"),
+            data_referencia=data_ref,  # Adiciona a coluna de data de referência
+            taxa_media=pl.mean_horizontal("taxa_compra", "taxa_venda"),
+        )
+        .select(FINAL_COLUMN_ORDER)
+        # Converte as colunas de taxa de percentual para decimal
+        # São 6 casas decimais no máximo.
+        # Arredondar na 8a para minimizar erros de ponto flutuante.
+        .with_columns(((cs.starts_with("taxa_") & cs.numeric()) / 100).round(8))
     )
     return df
-
-
-def _process_df(df: pl.DataFrame) -> pl.DataFrame:
-    df = df.rename(COLUMN_ALIASES).with_columns(
-        pl.col("data_vencimento").str.strptime(pl.Date, format="%d/%m/%Y"),
-        pl.col("horario").str.strptime(pl.Time, format="%H:%M:%S"),
-        taxa_mid=pl.mean_horizontal("taxa_bid", "taxa_ask"),
-    )
-    return df
-
-
-def _reorder_columns(df: pl.DataFrame):
-    columns_order = [
-        "data_referencia",
-        "horario",
-        "titulo",
-        "data_vencimento",
-        "codigo_isin",
-        "provedor",
-        "edital",
-        "prazo",
-        "lote",
-        "num_negocios",
-        "quantidade_negociada",
-        "volume_negociado",
-        "taxa_indicativa_d1",
-        "taxa_minima",
-        "taxa_media",
-        "taxa_maxima",
-        "taxa_ultima",
-        "taxa_limite_superior",
-        "taxa_limite_inferior",
-        "taxa_bid",
-        "taxa_ask",
-        "taxa_mid",
-    ]
-    return df.select(columns_order)
 
 
 def tpf_difusao(data_referencia: DateScalar) -> pl.DataFrame:
@@ -157,21 +164,26 @@ def tpf_difusao(data_referencia: DateScalar) -> pl.DataFrame:
 
     Parâmetros:
     -----------
-    data_referencia : str
-        Data de referência no formato "DD/MM/AAAA".
+    data_referencia : str | dt.date | dt.datetime
+        Data de referência (ex: "DD/MM/AAAA").
 
     Retorna:
     --------
     pl.DataFrame
-        DataFrame contendo os dados da TPF Difusão.
+        DataFrame com os dados. Retorna um DataFrame vazio se não houver dados
+        ou em caso de erro.
     """
-    data_referencia = dc.convert_input_dates(data_referencia)
-    csv_data = _fetch_url_data(data_referencia)
-    if not csv_data:
-        logger.error("Nenhum dado foi retornado para a data fornecida.")
+    data_str = dc.convert_input_dates(data_referencia)
+    csv_data = _fetch_url_data(data_str)
+
+    if csv_data is None:
+        logger.warning("Nenhum dado foi retornado para a data '%s'.", data_str)
         return pl.DataFrame()
 
-    df = _convert_to_df(csv_data)
-    df = _process_df(df)
-    df = _reorder_columns(df)
-    return df
+    try:
+        return _process_csv_data(csv_data)
+    except Exception as e:
+        logger.error(
+            "Falha ao processar os dados CSV para a data '%s': %s", data_str, e
+        )
+        return pl.DataFrame()
