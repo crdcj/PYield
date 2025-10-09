@@ -1,6 +1,35 @@
+import datetime as dt
+import io
 import logging
 
+import polars as pl
 import requests
+
+from pyield import date_converter as dc
+from pyield.date_converter import DateScalar
+
+COLUMN_ALIASES = {
+    "Título": "titulo",
+    "Vencimento": "data_vencimento",
+    "Código ISIN": "codigo_isin",
+    "Provedor": "provedor",
+    "Edital": "edital",
+    "Horário": "horario",
+    "Prazo": "prazo",
+    "Lote": "lote",
+    "Fech D-1": "taxa_indicativa_d1",
+    "Indicativo Superior": "taxa_limite_superior",
+    "Máxima": "taxa_maxima",
+    "Média": "taxa_media",
+    "Mínima": "taxa_minima",
+    "Indicativo Inferior": "taxa_limite_inferior",
+    "Última": "taxa_ultima",
+    "Oferta Compra": "taxa_bid",
+    "Oferta Venda": "taxa_ask",
+    "Nº de Negócios": "num_negocios",
+    "Quantidade Negociada": "quantidade_negociada",
+    "Volume Negociado (R$)": "volume_negociado",
+}
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +38,7 @@ url_consulta_dados = "https://www.anbima.com.br/sistemas/taxasonline/consulta/ve
 url_download = "https://www.anbima.com.br/sistemas/taxasonline/consulta/versao/1.0018/download_dados.asp?extensao=csv"
 
 
-def _fetch_url_data(data_desejada) -> str:
+def _fetch_url_data(data_referencia) -> str:
     headers = {  # Cabeçalhos para simular um navegador real
         # O Referer precisa ser a página de onde a ação se origina.
         "Referer": url_pagina_inicial,
@@ -20,8 +49,8 @@ def _fetch_url_data(data_desejada) -> str:
     }
 
     payload = {  # Payload com a data. Usaremos para a consulta e o download.
-        "dataref": data_desejada,
-        "dtRefIdioma": data_desejada,
+        "dataref": data_referencia,
+        "dtRefIdioma": data_referencia,
         "layoutimprimir": "0",
         "idioma": "",
         "idresumo": "",
@@ -67,3 +96,82 @@ def _fetch_url_data(data_desejada) -> str:
             if "response_download" in locals():
                 logger.error(f"Resposta do servidor: {response_download.text[:500]}")
             return ""
+
+
+def _convert_to_df(csv_data: str) -> pl.DataFrame:
+    csv_rows = csv_data.splitlines()
+    data_ref_str = csv_rows[0].split(":")[1].strip()
+    data_ref = dt.datetime.strptime(data_ref_str, "%d/%m/%Y").date()
+    cleaned_csv_data = "\n".join(csv_rows[1:]).replace(
+        "Volume Negociado (R$);", "Volume Negociado (R$)"
+    )
+    df = pl.read_csv(
+        io.StringIO(cleaned_csv_data), separator=";", decimal_comma=True
+    ).with_columns(
+        pl.col(pl.String).str.strip_chars(),
+        data_referencia=data_ref,
+    )
+    return df
+
+
+def _process_df(df: pl.DataFrame) -> pl.DataFrame:
+    df = df.rename(COLUMN_ALIASES).with_columns(
+        pl.col("data_vencimento").str.strptime(pl.Date, format="%d/%m/%Y"),
+        pl.col("horario").str.strptime(pl.Time, format="%H:%M:%S"),
+        taxa_mid=pl.mean_horizontal("taxa_bid", "taxa_ask"),
+    )
+    return df
+
+
+def _reorder_columns(df: pl.DataFrame):
+    columns_order = [
+        "data_referencia",
+        "horario",
+        "titulo",
+        "data_vencimento",
+        "codigo_isin",
+        "provedor",
+        "edital",
+        "prazo",
+        "lote",
+        "num_negocios",
+        "quantidade_negociada",
+        "volume_negociado",
+        "taxa_indicativa_d1",
+        "taxa_minima",
+        "taxa_media",
+        "taxa_maxima",
+        "taxa_ultima",
+        "taxa_limite_superior",
+        "taxa_limite_inferior",
+        "taxa_bid",
+        "taxa_ask",
+        "taxa_mid",
+    ]
+    return df.select(columns_order)
+
+
+def tpf_difusao(data_referencia: DateScalar) -> pl.DataFrame:
+    """
+    Obtém a TPF Difusão da Anbima para uma data de referência específica.
+
+    Parâmetros:
+    -----------
+    data_referencia : str
+        Data de referência no formato "DD/MM/AAAA".
+
+    Retorna:
+    --------
+    pl.DataFrame
+        DataFrame contendo os dados da TPF Difusão.
+    """
+    data_referencia = dc.convert_input_dates(data_referencia)
+    csv_data = _fetch_url_data(data_referencia)
+    if not csv_data:
+        logger.error("Nenhum dado foi retornado para a data fornecida.")
+        return pl.DataFrame()
+
+    df = _convert_to_df(csv_data)
+    df = _process_df(df)
+    df = _reorder_columns(df)
+    return df
