@@ -2,6 +2,7 @@ import datetime as dt
 import io
 import logging
 
+import pandas as pd
 import polars as pl
 import polars.selectors as cs
 import requests
@@ -10,7 +11,6 @@ from pyield import date_converter as dc
 from pyield.date_converter import DateScalar
 
 # --- 1. Centralização e Organização das Constantes ---
-# A versão da API é um ponto frágil. Centralizá-la facilita a manutenção.
 API_VERSION = "1.0018"
 BASE_URL = (
     f"https://www.anbima.com.br/sistemas/taxasonline/consulta/versao/{API_VERSION}"
@@ -63,16 +63,15 @@ FINAL_COLUMN_ORDER = [
     "taxa_indicativa_anterior",
     "taxa_limite_inferior",
     "taxa_limite_superior",
-    "taxa_ultima",
     "taxa_venda",
     "taxa_compra",
     "taxa_media",
+    "taxa_ultima",
 ]
 
 logger = logging.getLogger(__name__)
 
 
-# A função de fetch continua muito boa, apenas com o retorno de None.
 def _fetch_url_data(data_referencia: str) -> str | None:
     headers = {
         "Referer": URL_PAGINA_INICIAL,
@@ -154,36 +153,49 @@ def _process_csv_data(csv_data: str) -> pl.DataFrame:
         # São 6 casas decimais no máximo.
         # Arredondar na 8a para minimizar erros de ponto flutuante.
         .with_columns(((cs.starts_with("taxa_") & cs.numeric()) / 100).round(8))
+        .sort(by=["titulo", "data_vencimento", "provedor", "horario"])
     )
     return df
 
 
-def tpf_difusao(data_referencia: DateScalar) -> pl.DataFrame:
+def tpf_difusao(data_referencia: DateScalar) -> pd.DataFrame:
     """
     Obtém a TPF Difusão da Anbima para uma data de referência específica.
 
-    Parâmetros:
-    -----------
-    data_referencia : str | dt.date | dt.datetime
-        Data de referência (ex: "DD/MM/AAAA").
+    Args:
+        data_referencia (str | dt.date | dt.datetime):
+            Data de referência (ex: "DD/MM/AAAA").
 
-    Retorna:
-    --------
-    pl.DataFrame
-        DataFrame com os dados. Retorna um DataFrame vazio se não houver dados
-        ou em caso de erro.
+    Returns:
+        pd.DataFrame: DataFrame com os dados. Retorna um DataFrame vazio se
+            não houver dados ou em caso de erro.
+
+    Output Columns:
+        * data_referencia (date): Data de referência da consulta.
+        * horario (time): Horário da negociação ou indicação (HH:MM:SS).
+        * titulo (string): Nome do título (ex: LFT, LTN).
+        * data_vencimento (date): Data de vencimento do título.
+        * codigo_isin (string): Código ISIN do título.
+        * provedor (string): Provedor dos dados.
+        * lote (string): Lote de negociação.
+        * taxa_indicativa_anterior (float): Taxa indicativa de fechamento D-1 (decimal).
+        * taxa_limite_inferior (float): Taxa limite inferior (decimal).
+        * taxa_limite_superior (float): Taxa limite superior (decimal).
+        * taxa_venda (float): Taxa de oferta de venda (Ask rate) (decimal).
+        * taxa_compra (float): Taxa de oferta de compra (Bid rate) (decimal).
+        * taxa_media (float): Média entre a taxa de compra e venda (decimal).
+        * taxa_ultima (float): Última taxa negociada (decimal).
     """
     data_str = dc.convert_input_dates(data_referencia)
     csv_data = _fetch_url_data(data_str)
 
     if csv_data is None:
         logger.warning("Nenhum dado foi retornado para a data '%s'.", data_str)
-        return pl.DataFrame()
+        return pd.DataFrame()
 
     try:
-        return _process_csv_data(csv_data)
+        df = _process_csv_data(csv_data)
+        return df.to_pandas(use_pyarrow_extension_array=True)
     except Exception as e:
-        logger.error(
-            "Falha ao processar os dados CSV para a data '%s': %s", data_str, e
-        )
-        return pl.DataFrame()
+        logger.error("Falha ao processar o CSV para a data '%s': %s", data_str, e)
+        return pd.DataFrame()
