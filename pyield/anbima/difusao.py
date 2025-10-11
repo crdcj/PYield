@@ -7,6 +7,7 @@ import polars as pl
 import polars.selectors as cs
 import requests
 
+from pyield import bday
 from pyield import date_converter as dc
 from pyield.date_converter import DateScalar
 
@@ -19,6 +20,29 @@ BASE_URL = (
 URL_PAGINA_INICIAL = f"{BASE_URL}/taxasOnline.asp"
 URL_CONSULTA_DADOS = f"{BASE_URL}/exibedados.asp"
 URL_DOWNLOAD = f"{BASE_URL}/download_dados.asp?extensao=csv"
+
+API_SCHEMA = {
+    "Título": pl.String,
+    "Vencimento": pl.String,
+    "Código ISIN": pl.String,
+    "Provedor": pl.String,
+    "Edital": pl.String,
+    "Horário": pl.String,
+    "Prazo": pl.Int64,
+    "Lote": pl.String,
+    "Fech D-1": pl.Float64,
+    "Indicativo Superior": pl.Float64,
+    "Máxima": pl.Float64,
+    "Média": pl.Float64,
+    "Mínima": pl.Float64,
+    "Indicativo Inferior": pl.Float64,
+    "Última": pl.Float64,
+    "Oferta Compra": pl.Float64,
+    "Oferta Venda": pl.Float64,
+    "Nº de Negócios": pl.Int64,
+    "Quantidade Negociada": pl.Int64,
+    "Volume Negociado (R$)": pl.Float64,
+}
 
 COLUMN_ALIASES = {
     "Título": "titulo",
@@ -45,15 +69,15 @@ COLUMN_ALIASES = {
 
 # Colunas não selecionadas estão vazias na API.
 FINAL_COLUMN_ORDER = [
-    "data_referencia",
-    "horario",
+    "data_hora_referencia",
+    "provedor",
     "titulo",
     "data_vencimento",
     "codigo_isin",
-    "provedor",
+    "dias_uteis",
     # "edital",
     # "prazo",
-    "lote",
+    # "lote", # é sempre "P"
     # "num_negocios",
     # "quantidade_negociada",
     # "volume_negociado",
@@ -61,8 +85,8 @@ FINAL_COLUMN_ORDER = [
     # "taxa_media",
     # "taxa_maxima",
     "taxa_indicativa_anterior",
-    "taxa_limite_inferior",
-    "taxa_limite_superior",
+    # "taxa_limite_inferior",
+    # "taxa_limite_superior",
     "taxa_venda",
     "taxa_compra",
     "taxa_media",
@@ -139,22 +163,41 @@ def _process_csv_data(csv_data: str) -> pl.DataFrame:
     )
 
     df = (
-        pl.read_csv(io.StringIO(cleaned_csv_content), separator=";", decimal_comma=True)
+        pl.read_csv(
+            io.StringIO(cleaned_csv_content),
+            separator=";",
+            decimal_comma=True,
+            schema=API_SCHEMA,
+        )
         .rename(COLUMN_ALIASES)
         .with_columns(pl.col(pl.String).str.strip_chars())  # Remove espaços em branco
         .with_columns(
             pl.col("data_vencimento").str.strptime(pl.Date, format="%d/%m/%Y"),
-            pl.col("horario").str.strptime(pl.Time, format="%H:%M:%S"),
             data_referencia=data_ref,  # Adiciona a coluna de data de referência
+            # Ajusta o horário para 12:00:00 quando o provedor for "ANBIMA 12H"
+            horario=pl.when(pl.col("provedor") == "ANBIMA 12H")
+            .then(pl.lit(dt.time(12, 0)))  # <-- Cria um literal do tipo Time
+            .otherwise(pl.col("horario").str.strptime(pl.Time, format="%H:%M:%S")),
             taxa_media=pl.mean_horizontal("taxa_compra", "taxa_venda"),
         )
-        .select(FINAL_COLUMN_ORDER)
-        # Converte as colunas de taxa de percentual para decimal
-        # São 6 casas decimais no máximo.
-        # Arredondar na 8a para minimizar erros de ponto flutuante.
-        .with_columns(((cs.starts_with("taxa_") & cs.numeric()) / 100).round(8))
-        .sort(by=["titulo", "data_vencimento", "provedor", "horario"])
     )
+
+    dias_uteis = bday.count(df["data_referencia"], df["data_vencimento"])
+    df = (
+        df.with_columns(
+            pl.Series("dias_uteis", dias_uteis),
+            # Converte as colunas de taxa de percentual para decimal
+            # São 6 casas decimais no máximo.
+            # Arredondar na 8a para minimizar erros de ponto flutuante.
+            (cs.starts_with("taxa_") / 100).round(8),
+            pl.col("data_referencia")
+            .dt.combine(pl.col("horario"))
+            .alias("data_hora_referencia"),
+        )
+        .select(FINAL_COLUMN_ORDER)
+        .sort(by=["titulo", "data_vencimento", "data_hora_referencia"])
+    )
+
     return df
 
 
@@ -171,16 +214,13 @@ def tpf_difusao(data_referencia: DateScalar) -> pd.DataFrame:
             não houver dados ou em caso de erro.
 
     Output Columns:
-        * data_referencia (date): Data de referência da consulta.
-        * horario (time): Horário da negociação ou indicação (HH:MM:SS).
+        * data_hora_referencia (datetime): Data e hora de referência da taxa.
+        * provedor (string): Provedor dos dados.
         * titulo (string): Nome do título (ex: LFT, LTN).
         * data_vencimento (date): Data de vencimento do título.
         * codigo_isin (string): Código ISIN do título.
-        * provedor (string): Provedor dos dados.
-        * lote (string): Lote de negociação.
+        * dias_uteis (int): Dias úteis entre a data de referência e o vencimento.
         * taxa_indicativa_anterior (float): Taxa indicativa de fechamento D-1 (decimal).
-        * taxa_limite_inferior (float): Taxa limite inferior (decimal).
-        * taxa_limite_superior (float): Taxa limite superior (decimal).
         * taxa_venda (float): Taxa de oferta de venda (Ask rate) (decimal).
         * taxa_compra (float): Taxa de oferta de compra (Bid rate) (decimal).
         * taxa_media (float): Média entre a taxa de compra e venda (decimal).
