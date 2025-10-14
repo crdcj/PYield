@@ -11,7 +11,7 @@ import polars.selectors as cs
 import requests
 from lxml import etree
 
-import pyield.date_converter as dc
+import pyield._converters.dates as dc
 from pyield import bday
 from pyield.fwd import forwards
 from pyield.retry import default_retry

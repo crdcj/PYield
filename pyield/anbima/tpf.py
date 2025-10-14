@@ -23,10 +23,11 @@ import polars.selectors as ps
 import requests
 
 from pyield import bday
+from pyield._converters.dates import DateScalar, convert_input_dates
+from pyield._converters.frames import format_output
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
 from pyield.data_cache import get_cached_dataset
-from pyield.date_converter import DateScalar, convert_input_dates
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnc import duration as duration_c
@@ -325,7 +326,8 @@ def tpf_data(
     date: DateScalar,
     bond_type: str | None = None,
     fetch_from_source: bool = False,
-) -> pd.DataFrame:
+    return_format: Literal["pandas", "polars"] = "pandas",
+) -> pd.DataFrame | pl.DataFrame:
     """Recupera os dados do mercado secundário de TPF da ANBIMA.
 
     Esta função busca taxas indicativas e outros dados de títulos públicos
@@ -409,10 +411,13 @@ def tpf_data(
         df = df.filter(pl.col("BondType") == norm_bond_type)
 
     df = df.sort(["ReferenceDate", "BondType", "MaturityDate"])
-    return df.to_pandas(use_pyarrow_extension_array=True)
+
+    return format_output(df, return_format)
 
 
-def tpf_fixed_rate_maturities(date: DateScalar) -> pd.Series:
+def tpf_fixed_rate_maturities(
+    date: DateScalar, return_format: Literal["pandas", "polars"] = "pandas"
+) -> pd.Series | pl.Series:
     """Retrieve existing maturity dates for fixed-rate public bonds (LTN and NTN-F).
 
     This function fetches existing maturity dates for 'LTN' and
@@ -440,10 +445,10 @@ def tpf_fixed_rate_maturities(date: DateScalar) -> pd.Series:
         Name: MaturityDate, dtype: date32[day][pyarrow]
     """
     maturity_dates = (
-        tpf_data(date)
-        .query("BondType in ['LTN', 'NTN-F']")["MaturityDate"]
-        .drop_duplicates()
-        .sort_values(ignore_index=True)
-        .reset_index(drop=True)
+        tpf_data(date, return_format="polars")
+        .filter(pl.col("BondType").is_in(["LTN", "NTN-F"]))
+        .get_column("MaturityDate")
+        .unique()
+        .sort()
     )
-    return maturity_dates
+    return format_output(maturity_dates, return_format)

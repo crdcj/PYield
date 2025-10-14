@@ -4,11 +4,11 @@ import logging
 import pandas as pd
 import polars as pl
 
-import pyield.date_converter as dc
+import pyield._converters.dates as dc
 from pyield import b3, bday, interpolator
+from pyield._converters.dates import DateArray, DateScalar
 from pyield.config import TIMEZONE_BZ
 from pyield.data_cache import get_cached_dataset
-from pyield.date_converter import DateArray, DateScalar
 
 logger = logging.getLogger(__name__)
 

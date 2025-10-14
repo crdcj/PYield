@@ -6,11 +6,11 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from pyield import bday
-from pyield import date_converter as dc
+from pyield._converters import dates as dc
+from pyield._converters.dates import DateScalar
 from pyield.b3.futures.historical import fetch_bmf_data
 from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield.b3.futures.xml import fetch_xml_data
-from pyield.date_converter import DateScalar
 
 BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]

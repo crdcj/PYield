@@ -16,9 +16,9 @@ import polars as pl
 import polars.selectors as ps
 import requests
 
-from pyield import date_converter as dc
+from pyield._converters import dates as dc
+from pyield._converters.dates import DateScalar
 from pyield.anbima.tpf import tpf_data
-from pyield.date_converter import DateScalar
 
 # Configura o logger do módulo
 logger = logging.getLogger(__name__)

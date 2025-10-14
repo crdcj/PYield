@@ -3,11 +3,11 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-import pyield.date_converter as dc
+import pyield._converters.dates as dc
 import pyield.interpolator as ip
 import pyield.tn.tools as bt
 from pyield import anbima, bday
-from pyield.date_converter import DateScalar
+from pyield._converters.dates import DateScalar
 
 """
 Constants calculated as per Anbima Rules and in base 100

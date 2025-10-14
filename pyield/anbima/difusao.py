@@ -8,8 +8,8 @@ import polars.selectors as cs
 import requests
 
 from pyield import bday
-from pyield import date_converter as dc
-from pyield.date_converter import DateScalar
+from pyield._converters import dates as dc
+from pyield._converters.dates import DateScalar
 
 # --- 1. Centralização e Organização das Constantes ---
 API_VERSION = "1.0018"

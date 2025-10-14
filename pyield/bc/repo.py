@@ -20,8 +20,8 @@ import polars as pl
 import requests
 
 from pyield import bday
-from pyield import date_converter as dc
-from pyield.date_converter import DateScalar
+from pyield._converters import dates as dc
+from pyield._converters.dates import DateScalar
 from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)

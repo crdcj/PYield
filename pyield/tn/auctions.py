@@ -9,8 +9,8 @@ import requests
 from polars import selectors as cs
 
 from pyield import bc, bday
-from pyield import date_converter as dc
-from pyield.date_converter import DateScalar
+from pyield._converters import dates as dc
+from pyield._converters.dates import DateScalar
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f

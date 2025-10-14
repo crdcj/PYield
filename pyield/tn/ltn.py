@@ -1,9 +1,9 @@
 import pandas as pd
 
 from pyield import anbima, bday
-from pyield import date_converter as dc
+from pyield._converters import dates as dc
+from pyield._converters.dates import DateScalar
 from pyield.b3 import di1
-from pyield.date_converter import DateScalar
 from pyield.tn import tools
 
 FACE_VALUE = 1000

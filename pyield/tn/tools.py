@@ -3,10 +3,10 @@ from typing import overload
 import numpy as np
 import pandas as pd
 
-from pyield import date_converter as dc
+from pyield._converters import dates as dc
+from pyield._converters.dates import DateScalar
 from pyield.anbima import tpf
 from pyield.b3 import di1
-from pyield.date_converter import DateScalar
 
 
 @overload

@@ -1,7 +1,7 @@
 import pandas as pd
 
 from pyield import anbima, bday
-from pyield.date_converter import DateScalar
+from pyield._converters.dates import DateScalar
 from pyield.tn import ntnf
 
 

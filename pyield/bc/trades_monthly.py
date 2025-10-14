@@ -20,7 +20,7 @@ import polars as pl
 import requests
 from requests.exceptions import HTTPError
 
-from pyield.date_converter import DateScalar, convert_input_dates
+from pyield._converters.dates import DateScalar, convert_input_dates
 from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
