@@ -75,10 +75,15 @@ def _validate_not_future_date(date: dt.date):
         raise ValueError(msg)
 
 
-def _bond_type_mapping(bond_type: str) -> str:
+def _bond_type_mapping(bond_type: str) -> list[str]:
     bond_type = bond_type.upper()
-    bond_type_mapping = {"NTNB": "NTN-B", "NTNC": "NTN-C", "NTNF": "NTN-F"}
-    return bond_type_mapping.get(bond_type, bond_type)
+    bond_type_mapping = {
+        "PRE": ["LTN", "NTN-F"],
+        "NTNB": ["NTN-B"],
+        "NTNC": ["NTN-C"],
+        "NTNF": ["NTN-F"],
+    }
+    return bond_type_mapping.get(bond_type, [bond_type])
 
 
 def _build_file_name(date: dt.date) -> str:
@@ -343,8 +348,8 @@ def tpf_data(
             Padrão é False.
 
     Returns:
-        pd.DataFrame: Um DataFrame contendo os dados solicitados. Retorna um
-        DataFrame vazio se não houver dados para a data especificada (ex:
+        pd.DataFrame | pl.DataFrame: Um DataFrame contendo os dados solicitados.
+            Retorna um DataFrame vazio se não houver dados para a data especificada (ex:
         finais de semana, feriados ou datas futuras).
 
     Examples:
@@ -407,32 +412,35 @@ def tpf_data(
         return pd.DataFrame()
 
     if bond_type:
-        norm_bond_type = _bond_type_mapping(bond_type)  # noqa
-        df = df.filter(pl.col("BondType") == norm_bond_type)
+        norm_bond_type = _bond_type_mapping(bond_type)
+        df = df.filter(pl.col("BondType").is_in(norm_bond_type))
 
     df = df.sort(["ReferenceDate", "BondType", "MaturityDate"])
 
     return format_output(df, return_format)
 
 
-def tpf_fixed_rate_maturities(
-    date: DateScalar, return_format: Literal["pandas", "polars"] = "pandas"
+def tpf_maturities(
+    date: DateScalar,
+    bond_type: str,
+    return_format: Literal["pandas", "polars"] = "pandas",
 ) -> pd.Series | pl.Series:
-    """Retrieve existing maturity dates for fixed-rate public bonds (LTN and NTN-F).
-
-    This function fetches existing maturity dates for 'LTN' and
-    'NTN-F' bond types for a given date.
+    """Retrieve existing maturity dates for a given bond type on a specific date.
 
     Args:
         date (DateScalar): The reference date for maturity dates.
+        bond_type (str): The bond type to filter by (e.g., 'PRE' for both 'LTN'
+            and 'NTN-F', or specify 'LTN' or 'NTN-F' directly).
+        return_format (Literal["pandas", "polars"], optional): The desired return
+            format. Defaults to "pandas".
 
     Returns:
-        pd.Series: A Series containing unique maturity dates for 'LTN' and
-            'NTN-F' bonds, sorted in ascending order.
+        pd.Series | pl.Series: A Series containing unique maturity dates for the
+        specified bond type(s).
 
     Examples:
         >>> from pyield import anbima
-        >>> anbima.tpf_fixed_rate_maturities(date="22-08-2025")
+        >>> anbima.tpf_maturities(date="22-08-2025", bond_type="PRE")
         0     2025-10-01
         1     2026-01-01
         2     2026-04-01
@@ -445,8 +453,7 @@ def tpf_fixed_rate_maturities(
         Name: MaturityDate, dtype: date32[day][pyarrow]
     """
     maturity_dates = (
-        tpf_data(date, return_format="polars")
-        .filter(pl.col("BondType").is_in(["LTN", "NTN-F"]))
+        tpf_data(date, bond_type, return_format="polars")
         .get_column("MaturityDate")
         .unique()
         .sort()
