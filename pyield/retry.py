@@ -17,7 +17,6 @@ from tenacity import (
     RetryCallState,
     retry,
     stop_after_attempt,
-    stop_after_delay,
     wait_exponential,
 )
 
@@ -85,10 +84,28 @@ def should_retry_exception(retry_state: RetryCallState) -> bool:  # noqa
 
 
 # --- Decorador Tenacity Principal ---
+"""Retry policy padrão.
+
+IMPORTANTE SOBRE A CONFIGURAÇÃO DE *stop*:
+Antes usávamos: stop=(stop_after_attempt(3) | stop_after_delay(15))
+Com chamadas HTTP usando timeout=30s, um único ReadTimeout já consumia >15s
+e o Tenacity entendia que a condição de parada OR havia sido atingida,
+encerrando o fluxo SEM realizar as tentativas restantes.
+
+Para garantir que até 3 tentativas sejam feitas independentemente da duração
+individual (desde que a aplicação queira esperar), removemos o limite de
+tempo agregado e mantivemos apenas stop_after_attempt(3).
+
+Se for necessário um limite total de tempo, ele deve ser configurado para um
+valor superior a (timeout_http * número_de_tentativas) ou usar um timeout
+menor na chamada requests.get.
+"""
+
 default_retry = retry(
     retry=should_retry_exception,
     wait=wait_exponential(multiplier=1, min=1, max=10),
-    stop=(stop_after_attempt(3) | stop_after_delay(15)),
+    # Apenas limite por número de tentativas para não abortar prematuramente
+    stop=stop_after_attempt(3),
     before_sleep=_log_before_sleep,
     reraise=True,
 )

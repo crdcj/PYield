@@ -78,7 +78,7 @@ def data(
     month_start: bool = False,
     pre_filter: bool = False,
     return_format: Literal["pandas", "polars"] = "pandas",
-) -> pd.DataFrame:
+) -> pd.DataFrame | pl.DataFrame:
     """
     Retrieves DI Futures contract data for a specific trade date.
 
@@ -98,8 +98,8 @@ def data(
             format. Can be 'pandas' (default) or 'polars'.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the DI futures contract data for the
-            specified dates, sorted by trade dates and expiration dates.
+        pd.DataFrame | pl.DataFrame: A DataFrame containing the DI futures contract
+            data for the specified dates, sorted by trade dates and expiration dates.
             Returns an empty DataFrame if no data is found
 
     Examples:
@@ -142,7 +142,7 @@ def data(
             check_sortedness=False,  # já garantimos a ordenação
         )
 
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return cv.format_output(df, return_format)
 
 
 def _build_input_dataframe(
@@ -195,7 +195,8 @@ def interpolate_rates(
     dates: DateScalar | DateArray | None,
     expirations: DateScalar | DateArray | None,
     extrapolate: bool = True,
-) -> pd.Series:
+    return_format: str = "pandas",
+) -> pd.Series | pl.Series:
     """
     Interpolates DI rates for specified trade dates and expiration dates.
 
@@ -313,9 +314,9 @@ def interpolate_rates(
             .alias("irate")
         )
 
-    # Return the Series with interpolated rates
+    # Return the series with interpolated rates
     irates = dfi.get_column("irate")
-    return irates.to_pandas(use_pyarrow_extension_array=True)
+    return cv.format_output(irates, return_format)
 
 
 def interpolate_rate(
@@ -407,7 +408,7 @@ def interpolate_rate(
     return ff_interp(bd)
 
 
-def available_trade_dates() -> pd.Series:
+def available_trade_dates(return_format: str = "pandas") -> pd.Series:
     """
     Returns all available (completed) trading dates in the DI dataset.
 
@@ -431,10 +432,9 @@ def available_trade_dates() -> pd.Series:
     """
     available_dates = (
         get_cached_dataset("di1")
-        .unique(subset=["TradeDate"])
         .get_column("TradeDate")
-        .sort(descending=False)
+        .unique()
+        .sort()
         .alias("available_dates")
-        .to_pandas(use_pyarrow_extension_array=True)
     )
-    return available_dates
+    return cv.format_output(available_dates, return_format)

@@ -1,4 +1,5 @@
 import pandas as pd
+import polars as pl
 
 import pyield.converters as cv
 from pyield import anbima, bday
@@ -165,29 +166,55 @@ def pre_spreads(date: DateScalar) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame containing the bond type, maturity date and the
             calculated spread in basis points.
+
+    Raises:
+        ValueError: If DI data is missing the 'SettlementRate' column or is empty.
+
+    Examples:
+        >>> from pyield import pre
+        >>> pre.pre_spreads("30-05-2025")
+        BondType MaturityDate  DISpread
+        0       LTN   2025-07-01  0.000439
+        1       LTN   2025-10-01   -0.0009
+        2       LTN   2026-01-01 -0.000488
+        3       LTN   2026-04-01 -0.000445
+        4       LTN   2026-07-01  0.000081
+        5       LTN   2026-10-01  -0.00005
+        6       LTN   2027-04-01   0.00028
+        7       LTN   2027-07-01   0.00025
+        8       LTN   2028-01-01  0.000055
+        9       LTN   2028-07-01   0.00015
+        10      LTN   2029-01-01  0.001077
+        11      LTN   2030-01-01    0.0011
+        12      LTN   2032-01-01  0.001124
+        13    NTN-F   2027-01-01 -0.000331
+        14    NTN-F   2029-01-01  0.001421
+        15    NTN-F   2031-01-01  0.002161
+        16    NTN-F   2033-01-01  0.001151
+        17    NTN-F   2035-01-01    0.0022
     """
     # Fetch DI rates for the reference date
     converted_date = cv.convert_input_dates(date)
-    df_di = di1.data(dates=converted_date, month_start=True)
-    if "SettlementRate" not in df_di.columns or df_di.empty:
+    df_di = di1.data(dates=converted_date, month_start=True, return_format="polars")
+    if "SettlementRate" not in df_di.columns or df_di.is_empty():
         raise ValueError("DI data is missing the 'SettlementRate' column or is empty.")
 
-    df_di = df_di[["ExpirationDate", "SettlementRate"]].copy()
-
-    # Renaming the columns to match the ANBIMA structure
-    df_di.rename(columns={"ExpirationDate": "MaturityDate"}, inplace=True)
+    # Prepare DI DataFrame for merging
+    df_di = df_di.select("ExpirationDate", "SettlementRate").rename(
+        {"ExpirationDate": "MaturityDate"}
+    )
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_ltn = tpf.tpf_data(converted_date, "LTN")
-    df_ntnf = tpf.tpf_data(converted_date, "NTN-F")
-    df_pre = pd.concat([df_ltn, df_ntnf], ignore_index=True)
-
-    # Merge bond and DI rates by maturity date to calculate spreads
-    df_spreads = pd.merge(df_pre, df_di, how="left", on="MaturityDate")
+    df_ltn = tpf.tpf_data(converted_date, "LTN", return_format="polars")
+    df_ntnf = tpf.tpf_data(converted_date, "NTN-F", return_format="polars")
+    df_pre: pl.DataFrame = pl.concat([df_ltn, df_ntnf], how="diagonal")
 
     # Calculate the DI spread as the difference between indicative and settlement rates
-    df_spreads["DISpread"] = df_spreads["IndicativeRate"] - df_spreads["SettlementRate"]
+    df_spreads = (
+        df_pre.join(df_di, how="left", on="MaturityDate")  # Join DI table by maturity
+        .with_columns(DISpread=pl.col("IndicativeRate") - pl.col("SettlementRate"))
+        .select("BondType", "MaturityDate", "DISpread")
+        .sort("BondType", "MaturityDate")
+    )
 
-    # Prepare and return the final sorted DataFrame
-    df_spreads = df_spreads.sort_values(["BondType", "MaturityDate"], ignore_index=True)
-    return df_spreads[["BondType", "MaturityDate", "DISpread"]].copy()
+    return df_spreads.to_pandas(use_pyarrow_extension_array=True)

@@ -201,12 +201,11 @@ def _add_dv01(df_input: pl.DataFrame) -> pl.DataFrame:
 
     # DV01 in USD
     try:
-        # reference_date = df["ReferenceDate"].iloc[0]
         reference_date = df.get_column("ReferenceDate").item(0)
         ptax_rate = ptax(date=reference_date)
         if ptax_rate is None:
             reference_date = bday.offset(reference_date, -1)
-        df = df.with_columns((pl.col("DV01") / ptax_rate).alias("DV01USD"))
+        df = df.with_columns(DV01USD=pl.col("DV01") / ptax_rate)
     except Exception as e:
         logger.error(f"Error adding USD DV01: {e}")
     return df
@@ -216,12 +215,13 @@ def _add_di_data(df: pl.DataFrame) -> pl.DataFrame:
     """Add the DI rate column to the DataFrame."""
     # INSERIR OS DADOS DO DI INTERPOLADO ###
     reference_date = df.get_column("ReferenceDate").item(0)
-    di_rate = di1.interpolate_rates(  # pandas Series
+    di_rates = di1.interpolate_rates(
         dates=reference_date,
         expirations=df.get_column("MaturityDate"),
         extrapolate=True,
+        return_format="polars",
     )
-    df = df.with_columns(pl.Series(di_rate).alias("DIRate"))
+    df = df.with_columns(di_rates.alias("DIRate"))
     return df
 
 

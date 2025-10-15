@@ -17,6 +17,7 @@ Implementation Notes:
 import datetime as dt
 import logging
 from enum import Enum
+from typing import Any
 
 import pandas as pd
 import polars as pl
@@ -49,6 +50,14 @@ class BCSerie(Enum):
     SELIC_OVER = 1178
     SELIC_TARGET = 432
     DI_OVER = 11
+
+
+@default_retry
+def _do_api_call(api_url: str) -> list[dict[str, Any]]:
+    """Executa uma chamada GET na API do BCB e retorna o JSON."""
+    response = requests.get(api_url, timeout=30)
+    response.raise_for_status()
+    return response.json()  # type: ignore[return-value]
 
 
 def _build_download_url(
@@ -94,15 +103,8 @@ def _fetch_request(
 
     api_url = _build_download_url(serie, start, end)
 
-    # 1. Mini-função interna SÓ para a chamada de rede. SÓ ELA leva o decorador.
-    @default_retry
-    def _do_api_call():
-        response = requests.get(api_url, timeout=30)
-        response.raise_for_status()
-        return response.json()
-
     try:
-        data = _do_api_call()
+        data = _do_api_call(api_url)
         if not data:
             logger.warning(f"No data available for the requested period: {api_url}")
             return pl.DataFrame(schema=expected_schema)
@@ -110,8 +112,8 @@ def _fetch_request(
         df = (
             pl.from_dicts(data)
             .with_columns(
-                pl.col("data").str.to_date("%d/%m/%Y").alias("Date"),
-                (pl.col("valor").cast(pl.Float64) / 100).alias("Value"),
+                Date=pl.col("data").str.to_date("%d/%m/%Y"),
+                Value=pl.col("valor").cast(pl.Float64) / 100,
             )
             .select("Date", "Value")
         )
