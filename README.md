@@ -6,7 +6,22 @@
 
 PYield is a Python library designed for the analysis of Brazilian fixed income instruments. Leveraging the power of popular Python libraries like Polars, Pandas, Numpy and Requests, PYield simplifies the process of obtaining and processing data from key sources such as ANBIMA, BCB, IBGE and B3.
 
-Documentation: [https://crdcj.github.io/PYield/](https://crdcj.github.io/PYield/)
+---
+### ⚠️ Polars Migration Notice (v0.40+)
+
+Starting with version **0.40**, PYield will progressively migrate function returns to use **Polars DataFrames and Series** instead of Pandas. The main driver for this change is to leverage Polars' more **robust and stable data typing capabilities**, ensuring higher consistency and reliability across financial calculations.
+
+If you need to convert the returned Polars object back to Pandas, you can easily use the `.to_pandas()` method:
+
+```python
+# Assuming 'df'/'s' are the Polars DataFrame/Series returned by a PYield function
+df_pandas = df.to_pandas(use_pyarrow_extension_array=True)
+s_pandas = s.to_pandas(use_pyarrow_extension_array=True)
+```
+
+## Documentation
+
+Visit the [full documentation for PYield](https://crdcj.github.io/PYield/).
 
 ## Key Features
 
