@@ -979,7 +979,7 @@
                 <code>date</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1123,7 +1123,7 @@
                 <code>date</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1435,7 +1435,7 @@ maturity as the LFT).</p>
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1451,7 +1451,7 @@ maturity as the LFT).</p>
                 <code>maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1584,8 +1584,8 @@ maturity as the LFT).</p>
 </span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="sd">        98.9645</span>
 </span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="c1"># Validate and normalize dates</span>
-</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>
 </span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>    <span class="c1"># The number of bdays between settlement (inclusive) and the maturity (exclusive)</span>
 </span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>    <span class="n">bdays</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">)</span>

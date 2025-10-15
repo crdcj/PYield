@@ -1059,7 +1059,7 @@ payment at maturity.</p>
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1075,7 +1075,7 @@ payment at maturity.</p>
                 <code>maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1210,8 +1210,8 @@ business day.</p>
 </span><span id="__span-0-167"><a id="__codelineno-0-167" name="__codelineno-0-167"></a><span class="sd">        1  2025-01-01  1048.80885</span>
 </span><span id="__span-0-168"><a id="__codelineno-0-168" name="__codelineno-0-168"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-169"><a id="__codelineno-0-169" name="__codelineno-0-169"></a>    <span class="c1"># Validate input dates</span>
-</span><span id="__span-0-170"><a id="__codelineno-0-170" name="__codelineno-0-170"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-170"><a id="__codelineno-0-170" name="__codelineno-0-170"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a>    <span class="n">_check_maturity_date</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a>
 </span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a>    <span class="c1"># Get the coupon payment dates between the settlement and maturity dates</span>
@@ -1262,7 +1262,7 @@ business day.</p>
                 <code>date</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1396,7 +1396,7 @@ discounted cash flows.</p>
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1412,7 +1412,7 @@ discounted cash flows.</p>
                 <code>ntnf_maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1650,8 +1650,8 @@ None. A good initial guess is the DI gross spread for the bond.</p>
 </span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a><span class="sd">        12.13</span>
 </span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a>    <span class="c1"># Create an interpolator for the DI rates using the flat-forward method</span>
-</span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a>    <span class="n">ntnf_maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">ntnf_maturity</span><span class="p">)</span>
+</span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a>    <span class="n">ntnf_maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">ntnf_maturity</span><span class="p">)</span>
 </span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a>
 </span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a>    <span class="n">ff_interpolator</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">Interpolator</span><span class="p">(</span>
 </span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a>        <span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span>
@@ -1718,7 +1718,7 @@ rates and calculates the spread between these rates in basis points.</p>
                 <code>date</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1835,7 +1835,7 @@ rates and calculates the spread between these rates in basis points.</p>
 </span><span id="__span-0-359"><a id="__codelineno-0-359" name="__codelineno-0-359"></a>
 </span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a>    <span class="c1"># Fetch DI Spreads for the reference date</span>
-</span><span id="__span-0-362"><a id="__codelineno-0-362" name="__codelineno-0-362"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">pre_spreads</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+</span><span id="__span-0-362"><a id="__codelineno-0-362" name="__codelineno-0-362"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">pre</span><span class="o">.</span><span class="n">pre_spreads</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
 </span><span id="__span-0-363"><a id="__codelineno-0-363" name="__codelineno-0-363"></a>    <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
 </span><span id="__span-0-364"><a id="__codelineno-0-364" name="__codelineno-0-364"></a>        <span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;BondType == &#39;NTN-F&#39;&quot;</span><span class="p">)</span>
 </span><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a>        <span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s2">&quot;MaturityDate&quot;</span><span class="p">])</span>
@@ -1878,7 +1878,7 @@ rates and calculates the spread between these rates in basis points.</p>
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1894,7 +1894,7 @@ rates and calculates the spread between these rates in basis points.</p>
                 <code>maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2017,8 +2017,8 @@ rates and calculates the spread between these rates in basis points.</p>
 </span><span id="__span-0-652"><a id="__codelineno-0-652" name="__codelineno-0-652"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;NaN&quot;</span><span class="p">)</span>
 </span><span id="__span-0-653"><a id="__codelineno-0-653" name="__codelineno-0-653"></a>
 </span><span id="__span-0-654"><a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="c1"># Validate and normalize input dates</span>
-</span><span id="__span-0-655"><a id="__codelineno-0-655" name="__codelineno-0-655"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-656"><a id="__codelineno-0-656" name="__codelineno-0-656"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-655"><a id="__codelineno-0-655" name="__codelineno-0-655"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-656"><a id="__codelineno-0-656" name="__codelineno-0-656"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-657"><a id="__codelineno-0-657" name="__codelineno-0-657"></a>
 </span><span id="__span-0-658"><a id="__codelineno-0-658" name="__codelineno-0-658"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">cash_flows</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-659"><a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;PaymentDate&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mi">252</span>
@@ -2063,7 +2063,7 @@ rates and calculates the spread between these rates in basis points.</p>
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2080,7 +2080,7 @@ or a date-like object.</p>
                 <code>maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2241,7 +2241,7 @@ increase in yield.</p>
                 <code>date</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2382,7 +2382,7 @@ The NTN-F bond is determined by its maturity date.</p>
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2398,7 +2398,7 @@ The NTN-F bond is determined by its maturity date.</p>
                 <code>maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2523,8 +2523,8 @@ The NTN-F bond is determined by its maturity date.</p>
 </span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="sd">        dtype: date32[day][pyarrow]</span>
 </span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a>    <span class="c1"># Validate and normalize dates</span>
-</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a>
 </span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a>    <span class="c1"># Check if the maturity date is valid</span>
 </span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a>    <span class="n">_check_maturity_date</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
@@ -2587,7 +2587,7 @@ on the difference between the discount factors of the bond's yield-to-maturity
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2603,7 +2603,7 @@ on the difference between the discount factors of the bond's yield-to-maturity
                 <code>ntnf_maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2848,8 +2848,8 @@ the expiration dates.</p>
 </span><span id="__span-0-542"><a id="__codelineno-0-542" name="__codelineno-0-542"></a><span class="sd">          the present value of cash flows for the NTN-F bond using DI rates.</span>
 </span><span id="__span-0-543"><a id="__codelineno-0-543" name="__codelineno-0-543"></a>
 </span><span id="__span-0-544"><a id="__codelineno-0-544" name="__codelineno-0-544"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-545"><a id="__codelineno-0-545" name="__codelineno-0-545"></a>    <span class="n">ntnf_maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">ntnf_maturity</span><span class="p">)</span>
-</span><span id="__span-0-546"><a id="__codelineno-0-546" name="__codelineno-0-546"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-545"><a id="__codelineno-0-545" name="__codelineno-0-545"></a>    <span class="n">ntnf_maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">ntnf_maturity</span><span class="p">)</span>
+</span><span id="__span-0-546"><a id="__codelineno-0-546" name="__codelineno-0-546"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
 </span><span id="__span-0-547"><a id="__codelineno-0-547" name="__codelineno-0-547"></a>
 </span><span id="__span-0-548"><a id="__codelineno-0-548" name="__codelineno-0-548"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">cash_flows</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">ntnf_maturity</span><span class="p">,</span> <span class="n">adj_payment_dates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span><span id="__span-0-549"><a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BDToMat&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;PaymentDate&quot;</span><span class="p">])</span>
@@ -2919,7 +2919,7 @@ the expiration dates.</p>
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2935,7 +2935,7 @@ the expiration dates.</p>
                 <code>maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3127,7 +3127,7 @@ it calculates the spot rates using the bootstrap method.</p>
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3426,7 +3426,7 @@ coupon payments. Defaults to False.</p>
 </span><span id="__span-0-278"><a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        5   2035-01-01     2587  0.121398</span>
 </span><span id="__span-0-279"><a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-280"><a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="c1"># Process and validate the input data</span>
-</span><span id="__span-0-281"><a id="__codelineno-0-281" name="__codelineno-0-281"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-281"><a id="__codelineno-0-281" name="__codelineno-0-281"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
 </span><span id="__span-0-282"><a id="__codelineno-0-282" name="__codelineno-0-282"></a>
 </span><span id="__span-0-283"><a id="__codelineno-0-283" name="__codelineno-0-283"></a>    <span class="c1"># Create flat forward interpolators for LTN and NTN-F rates</span>
 </span><span id="__span-0-284"><a id="__codelineno-0-284" name="__codelineno-0-284"></a>    <span class="n">ltn_rate_interpolator</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">Interpolator</span><span class="p">(</span>

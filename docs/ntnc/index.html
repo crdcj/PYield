@@ -997,7 +997,7 @@
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1014,7 +1014,7 @@ the cash flows.</p>
                 <code>maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1169,8 +1169,8 @@ the cash flows.</p>
 </span><span id="__span-0-155"><a id="__codelineno-0-155" name="__codelineno-0-155"></a><span class="sd">        11  2031-01-01  105.830052</span>
 </span><span id="__span-0-156"><a id="__codelineno-0-156" name="__codelineno-0-156"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-157"><a id="__codelineno-0-157" name="__codelineno-0-157"></a>    <span class="c1"># Validate and normalize dates</span>
-</span><span id="__span-0-158"><a id="__codelineno-0-158" name="__codelineno-0-158"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-159"><a id="__codelineno-0-159" name="__codelineno-0-159"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-158"><a id="__codelineno-0-158" name="__codelineno-0-158"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-159"><a id="__codelineno-0-159" name="__codelineno-0-159"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-160"><a id="__codelineno-0-160" name="__codelineno-0-160"></a>
 </span><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a>    <span class="c1"># Get the coupon dates between the settlement and maturity dates</span>
 </span><span id="__span-0-162"><a id="__codelineno-0-162" name="__codelineno-0-162"></a>    <span class="n">p_dates</span> <span class="o">=</span> <span class="n">payment_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">)</span>
@@ -1220,7 +1220,7 @@ the cash flows.</p>
                 <code>date</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1340,7 +1340,7 @@ the cash flows.</p>
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1356,7 +1356,7 @@ the cash flows.</p>
                 <code>maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1479,8 +1479,8 @@ the cash flows.</p>
 </span><span id="__span-0-276"><a id="__codelineno-0-276" name="__codelineno-0-276"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;NaN&quot;</span><span class="p">)</span>
 </span><span id="__span-0-277"><a id="__codelineno-0-277" name="__codelineno-0-277"></a>
 </span><span id="__span-0-278"><a id="__codelineno-0-278" name="__codelineno-0-278"></a>    <span class="c1"># Validate and normalize dates</span>
-</span><span id="__span-0-279"><a id="__codelineno-0-279" name="__codelineno-0-279"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-280"><a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-279"><a id="__codelineno-0-279" name="__codelineno-0-279"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-280"><a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-281"><a id="__codelineno-0-281" name="__codelineno-0-281"></a>
 </span><span id="__span-0-282"><a id="__codelineno-0-282" name="__codelineno-0-282"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">cash_flows</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-283"><a id="__codelineno-0-283" name="__codelineno-0-283"></a>    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;PaymentDate&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mi">252</span>
@@ -1525,7 +1525,7 @@ The dates are inclusive. The NTN-C bond is determined by its maturity date.</p>
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1542,7 +1542,7 @@ the coupon dates.</p>
                 <code>maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1688,8 +1688,8 @@ the coupon dates.</p>
 </span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="sd">        dtype: date32[day][pyarrow]</span>
 </span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="c1"># Validate and normalize dates</span>
-</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>
 </span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>    <span class="c1"># Check if maturity date is after the start date</span>
 </span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>    <span class="k">if</span> <span class="n">maturity</span> <span class="o">&lt;</span> <span class="n">settlement</span><span class="p">:</span>
@@ -1863,7 +1863,7 @@ the coupon dates.</p>
 </span><span id="__span-0-247"><a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">        &gt;&gt;&gt; ntnc.price(6598.913723, 126.4958)</span>
 </span><span id="__span-0-248"><a id="__codelineno-0-248" name="__codelineno-0-248"></a><span class="sd">        8347.348705</span>
 </span><span id="__span-0-249"><a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-250"><a id="__codelineno-0-250" name="__codelineno-0-250"></a>    <span class="k">return</span> <span class="n">bt</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">vna</span> <span class="o">*</span> <span class="n">quotation</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</span><span id="__span-0-250"><a id="__codelineno-0-250" name="__codelineno-0-250"></a>    <span class="k">return</span> <span class="n">tl</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">vna</span> <span class="o">*</span> <span class="n">quotation</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -1900,7 +1900,7 @@ the coupon dates.</p>
                 <code>settlement</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1916,7 +1916,7 @@ the coupon dates.</p>
                 <code>maturity</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2067,8 +2067,8 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-C.</p>
 </span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">        126.4958</span>
 </span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-203"><a id="__codelineno-0-203" name="__codelineno-0-203"></a>    <span class="c1"># Validate and normalize dates</span>
-</span><span id="__span-0-204"><a id="__codelineno-0-204" name="__codelineno-0-204"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
-</span><span id="__span-0-205"><a id="__codelineno-0-205" name="__codelineno-0-205"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
+</span><span id="__span-0-204"><a id="__codelineno-0-204" name="__codelineno-0-204"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
+</span><span id="__span-0-205"><a id="__codelineno-0-205" name="__codelineno-0-205"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-206"><a id="__codelineno-0-206" name="__codelineno-0-206"></a>
 </span><span id="__span-0-207"><a id="__codelineno-0-207" name="__codelineno-0-207"></a>    <span class="n">cf_df</span> <span class="o">=</span> <span class="n">cash_flows</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-208"><a id="__codelineno-0-208" name="__codelineno-0-208"></a>    <span class="n">cf_dates</span> <span class="o">=</span> <span class="n">cf_df</span><span class="p">[</span><span class="s2">&quot;PaymentDate&quot;</span><span class="p">]</span>
@@ -2078,7 +2078,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-C.</p>
 </span><span id="__span-0-212"><a id="__codelineno-0-212" name="__codelineno-0-212"></a>    <span class="n">bdays</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">cf_dates</span><span class="p">)</span>
 </span><span id="__span-0-213"><a id="__codelineno-0-213" name="__codelineno-0-213"></a>
 </span><span id="__span-0-214"><a id="__codelineno-0-214" name="__codelineno-0-214"></a>    <span class="c1"># Calculate the number of periods truncated as per Anbima rules</span>
-</span><span id="__span-0-215"><a id="__codelineno-0-215" name="__codelineno-0-215"></a>    <span class="n">num_of_years</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">bdays</span> <span class="o">/</span> <span class="mi">252</span><span class="p">,</span> <span class="mi">14</span><span class="p">)</span>
+</span><span id="__span-0-215"><a id="__codelineno-0-215" name="__codelineno-0-215"></a>    <span class="n">num_of_years</span> <span class="o">=</span> <span class="n">tl</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">bdays</span> <span class="o">/</span> <span class="mi">252</span><span class="p">,</span> <span class="mi">14</span><span class="p">)</span>
 </span><span id="__span-0-216"><a id="__codelineno-0-216" name="__codelineno-0-216"></a>
 </span><span id="__span-0-217"><a id="__codelineno-0-217" name="__codelineno-0-217"></a>    <span class="n">discount_factor</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span><span class="p">)</span> <span class="o">**</span> <span class="n">num_of_years</span>
 </span><span id="__span-0-218"><a id="__codelineno-0-218" name="__codelineno-0-218"></a>
@@ -2086,7 +2086,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-C.</p>
 </span><span id="__span-0-220"><a id="__codelineno-0-220" name="__codelineno-0-220"></a>    <span class="n">cf_present_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">cf_values</span> <span class="o">/</span> <span class="n">discount_factor</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 </span><span id="__span-0-221"><a id="__codelineno-0-221" name="__codelineno-0-221"></a>
 </span><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="c1"># Return the quotation (the dcf sum) truncated as per Anbima rules</span>
-</span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a>    <span class="k">return</span> <span class="n">bt</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">cf_present_value</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="mi">4</span><span class="p">)</span>
+</span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a>    <span class="k">return</span> <span class="n">tl</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">cf_present_value</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="mi">4</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

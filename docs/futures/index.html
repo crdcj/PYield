@@ -977,7 +977,7 @@ Supported contract codes are:
                 <code>date</code>
             </td>
             <td>
-                  <code><span title="pyield.date_converter.DateScalar">DateScalar</span></code>
+                  <code><span title="pyield.converters.DateScalar">DateScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1172,7 +1172,7 @@ contract.</p>
 </span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">        3  2024-05-31       DAPU24  ...         0.0855     0.078171</span>
 </span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">        ...</span>
 </span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a>    <span class="n">converted_date</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a>    <span class="n">converted_date</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_input_dates</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
 </span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a>    <span class="n">selected_contract</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">contract_code</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
 </span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a>
 </span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a>    <span class="k">if</span> <span class="n">_is_trading_day</span><span class="p">(</span><span class="n">converted_date</span><span class="p">):</span>
