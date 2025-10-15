@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pandas as pd
 import polars as pl
 
@@ -150,7 +152,9 @@ def _validate_final_result(df_combined: pd.DataFrame) -> None:
         raise ValueError("Final result contains NaN values in SpotRate column")
 
 
-def pre_spreads(date: DateScalar) -> pd.DataFrame:
+def pre_spreads(
+    date: DateScalar, return_format: Literal["pandas", "polars"] = "pandas"
+) -> pd.DataFrame | pl.DataFrame:
     """
     Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on
     ANBIMA's indicative rates.
@@ -217,4 +221,4 @@ def pre_spreads(date: DateScalar) -> pd.DataFrame:
         .sort("BondType", "MaturityDate")
     )
 
-    return df_spreads.to_pandas(use_pyarrow_extension_array=True)
+    return cv.to_return_format(df_spreads, return_format)

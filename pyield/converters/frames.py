@@ -4,7 +4,7 @@ import pandas as pd
 import polars as pl
 
 
-def format_output(
+def to_return_format(
     data: pl.DataFrame | pl.Series,
     return_format: Literal["pandas", "polars"] = "pandas",
 ) -> pd.DataFrame | pd.Series | pl.DataFrame | pl.Series:

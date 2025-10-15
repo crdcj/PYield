@@ -147,7 +147,7 @@ def di_spreads(date: DateScalar) -> pd.DataFrame:
         12   2030-01-01     14.96
     """
     # Fetch DI Spreads for the reference date
-    df = pre.pre_spreads(date)
+    df = pre.pre_spreads(date, return_format="pandas")
     df.query("BondType == 'LTN'", inplace=True)
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
     return df[["MaturityDate", "DISpread"]]

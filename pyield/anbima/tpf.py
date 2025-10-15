@@ -25,7 +25,7 @@ import requests
 from pyield import bday
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
-from pyield.converters import DateScalar, convert_input_dates, format_output
+from pyield.converters import DateScalar, convert_input_dates, to_return_format
 from pyield.data_cache import get_cached_dataset
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
@@ -408,7 +408,7 @@ def tpf_data(
         df = get_cached_dataset("tpf").filter(pl.col("ReferenceDate") == date)
 
     if df.is_empty():
-        return format_output(df, return_format)
+        return to_return_format(df, return_format)
 
     if bond_type:
         norm_bond_type = _bond_type_mapping(bond_type)
@@ -416,7 +416,7 @@ def tpf_data(
 
     df = df.sort(["ReferenceDate", "BondType", "MaturityDate"])
 
-    return format_output(df, return_format)
+    return to_return_format(df, return_format)
 
 
 def tpf_maturities(
@@ -457,4 +457,4 @@ def tpf_maturities(
         .unique()
         .sort()
     )
-    return format_output(maturity_dates, return_format)
+    return to_return_format(maturity_dates, return_format)

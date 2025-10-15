@@ -90,20 +90,27 @@ def _parse_html_data(html_content: str) -> str:
         na_values="--",
         encoding="iso-8859-1",
     )
-    return (
-        pd.concat(dfs)
-        .rename(columns=COLUMN_MAPPING)
-        .query("MaturityDate.notnull()")
-        .query("BondType != 'Título'")
-        .to_csv(index=False)
-    )
+    return pd.concat(dfs).to_csv(index=False)
 
 
-def _process_pandas_csv(pandas_csv: str, reference_date: dt.date) -> pl.DataFrame:
-    df = (
-        pl.read_csv(io.StringIO(pandas_csv))
-        .unique(subset="ISIN")
+def _pre_process_data(raw_csv: str) -> str:
+    csv = (
+        pl.read_csv(io.StringIO(raw_csv))
+        .rename(COLUMN_MAPPING)
         .with_columns(ps.string().str.strip_chars().name.keep())
+        .filter(
+            pl.col("MaturityDate").is_not_null(),
+            pl.col("BondType") != "Título",
+        )
+        .unique(subset="ISIN")
+        .write_csv()
+    )
+    return csv
+
+
+def _process_data(csv: str, reference_date: dt.date) -> pl.DataFrame:
+    df = (
+        pl.read_csv(io.StringIO(csv))
         .with_columns(
             pl.col("MaturityDate").str.strptime(pl.Date, format="%d/%m/%Y"),
             (pl.col("MarketQuantity") * 1000),
@@ -129,8 +136,8 @@ def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pd.DataFrame:
     df = df.join(df_anbima, on=["Date", "BondType", "MaturityDate"], how="left")
     # Calcular os estoques
     df = df.with_columns(
-        (pl.col("DV01") * pl.col("MarketQuantity")).alias("MarketDV01"),
-        (pl.col("DV01USD") * pl.col("MarketQuantity")).alias("MarketDV01USD"),
+        MarketDV01=pl.col("DV01") * pl.col("MarketQuantity"),
+        MarketDV01USD=pl.col("DV01USD") * pl.col("MarketQuantity"),
     ).drop(["DV01", "DV01USD"])
     return df
 
@@ -216,8 +223,9 @@ def imaq(date: DateScalar) -> pd.DataFrame:
 
         _check_content_date(url_content, date)
 
-        pandas_csv = _parse_html_data(url_content)
-        df = _process_pandas_csv(pandas_csv, date)
+        raw_csv = _parse_html_data(url_content)
+        clean_csv = _pre_process_data(raw_csv)
+        df = _process_data(clean_csv, date)
         df = _add_dv01(df, date)
         df = _cast_int_columns(df)
         df = _reorder_df(df)
