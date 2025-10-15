@@ -1,10 +1,10 @@
 import pandas as pd
 
+import pyield.converters as cv
 from pyield import anbima, bday
-from pyield._converters import dates as dc
-from pyield._converters.dates import DateScalar
 from pyield.b3 import di1
-from pyield.tn import tools
+from pyield.converters import DateScalar
+from pyield.tn import pre, tools
 
 FACE_VALUE = 1000
 
@@ -97,8 +97,8 @@ def price(
     """
 
     # Validate and normalize dates
-    settlement = dc.convert_input_dates(settlement)
-    maturity = dc.convert_input_dates(maturity)
+    settlement = cv.convert_input_dates(settlement)
+    maturity = cv.convert_input_dates(maturity)
 
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement, maturity)
@@ -147,7 +147,7 @@ def di_spreads(date: DateScalar) -> pd.DataFrame:
         12   2030-01-01     14.96
     """
     # Fetch DI Spreads for the reference date
-    df = tools.pre_spreads(date)
+    df = pre.pre_spreads(date)
     df.query("BondType == 'LTN'", inplace=True)
     df.sort_values(["MaturityDate"], ignore_index=True, inplace=True)
     return df[["MaturityDate", "DISpread"]]
@@ -202,8 +202,8 @@ def historical_premium(
 
     """
     # Convert input dates to a consistent format
-    date = dc.convert_input_dates(date)
-    maturity = dc.convert_input_dates(maturity)
+    date = cv.convert_input_dates(date)
+    maturity = cv.convert_input_dates(maturity)
 
     # Retrieve LTN rates for the reference date
     df_anbima = data(date)

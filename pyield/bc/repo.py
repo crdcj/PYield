@@ -19,9 +19,9 @@ import pandas as pd
 import polars as pl
 import requests
 
+import pyield.converters as cv
 from pyield import bday
-from pyield._converters import dates as dc
-from pyield._converters.dates import DateScalar
+from pyield.converters import DateScalar
 from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
@@ -73,12 +73,12 @@ def _build_url(start: DateScalar | None, end: DateScalar | None) -> str:
     """
     url = API_BASE_URL
     if start:
-        start = dc.convert_input_dates(start)
+        start = cv.convert_input_dates(start)
         start_str = start.strftime("%Y-%m-%d")
         url += f"@dataLancamentoInicio='{start_str}'"
 
     if end:
-        end = dc.convert_input_dates(end)
+        end = cv.convert_input_dates(end)
         end_str = end.strftime("%Y-%m-%d")
         url += f"&@dataLancamentoFim='{end_str}'"
 

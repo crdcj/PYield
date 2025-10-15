@@ -16,9 +16,9 @@ import polars as pl
 import polars.selectors as ps
 import requests
 
-from pyield._converters import dates as dc
-from pyield._converters.dates import DateScalar
+import pyield.converters as cv
 from pyield.anbima.tpf import tpf_data
+from pyield.converters import DateScalar
 
 # Configura o logger do módulo
 logger = logging.getLogger(__name__)
@@ -204,7 +204,7 @@ def imaq(date: DateScalar) -> pd.DataFrame:
         Exception: Logs error and returns an empty DataFrame if any error occurs during
             fetching or processing.
     """
-    date = dc.convert_input_dates(date)
+    date = cv.convert_input_dates(date)
     date_str = date.strftime("%d/%m/%Y")
     try:
         url_content = _fetch_url_content(date)

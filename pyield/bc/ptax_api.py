@@ -23,9 +23,9 @@ import pandas as pd
 import polars as pl
 import requests
 
-from pyield._converters import dates as dc
-from pyield._converters.dates import DateScalar
+import pyield.converters as cv
 from pyield.config import TIMEZONE_BZ
+from pyield.converters import DateScalar
 from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
@@ -213,12 +213,12 @@ def ptax_series(
 
     """
     if start:
-        start = dc.convert_input_dates(start)
+        start = cv.convert_input_dates(start)
     else:
         start = dt.date(1984, 11, 28)  # Primeira data disponível na API
 
     if end:
-        end = dc.convert_input_dates(end)
+        end = cv.convert_input_dates(end)
     else:
         end = dt.datetime.now(TIMEZONE_BZ).date()
 

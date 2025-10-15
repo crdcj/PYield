@@ -1,8 +1,8 @@
 import pandas as pd
 
+import pyield.converters as cv
 from pyield import anbima, bday
-from pyield._converters import dates as dc
-from pyield._converters.dates import DateScalar
+from pyield.converters import DateScalar
 from pyield.tn import tools
 
 
@@ -96,8 +96,8 @@ def quotation(
         98.9645
     """
     # Validate and normalize dates
-    settlement = dc.convert_input_dates(settlement)
-    maturity = dc.convert_input_dates(maturity)
+    settlement = cv.convert_input_dates(settlement)
+    maturity = cv.convert_input_dates(maturity)
 
     # The number of bdays between settlement (inclusive) and the maturity (exclusive)
     bdays = bday.count(settlement, maturity)

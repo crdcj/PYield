@@ -6,7 +6,7 @@ import polars as pl
 
 def format_output(
     data: pl.DataFrame | pl.Series,
-    return_format: Literal["pandas", "polars"],
+    return_format: Literal["pandas", "polars"] = "pandas",
 ) -> pd.DataFrame | pd.Series | pl.DataFrame | pl.Series:
     """Converte um objeto Polars para o formato de saída especificado."""
     if return_format == "polars":

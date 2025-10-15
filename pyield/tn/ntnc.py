@@ -3,10 +3,10 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-import pyield._converters.dates as dc
-import pyield.tn.tools as bt
+import pyield.converters as cv
+import pyield.tn.tools as tl
 from pyield import anbima, bday
-from pyield._converters.dates import DateScalar
+from pyield.converters import DateScalar
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -96,8 +96,8 @@ def payment_dates(
         dtype: date32[day][pyarrow]
     """
     # Validate and normalize dates
-    settlement = dc.convert_input_dates(settlement)
-    maturity = dc.convert_input_dates(maturity)
+    settlement = cv.convert_input_dates(settlement)
+    maturity = cv.convert_input_dates(maturity)
 
     # Check if maturity date is after the start date
     if maturity < settlement:
@@ -155,8 +155,8 @@ def cash_flows(
         11  2031-01-01  105.830052
     """
     # Validate and normalize dates
-    settlement = dc.convert_input_dates(settlement)
-    maturity = dc.convert_input_dates(maturity)
+    settlement = cv.convert_input_dates(settlement)
+    maturity = cv.convert_input_dates(maturity)
 
     # Get the coupon dates between the settlement and maturity dates
     p_dates = payment_dates(settlement, maturity)
@@ -201,8 +201,8 @@ def quotation(
         126.4958
     """
     # Validate and normalize dates
-    settlement = dc.convert_input_dates(settlement)
-    maturity = dc.convert_input_dates(maturity)
+    settlement = cv.convert_input_dates(settlement)
+    maturity = cv.convert_input_dates(maturity)
 
     cf_df = cash_flows(settlement, maturity)
     cf_dates = cf_df["PaymentDate"]
@@ -212,7 +212,7 @@ def quotation(
     bdays = bday.count(settlement, cf_dates)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = bt.truncate(bdays / 252, 14)
+    num_of_years = tl.truncate(bdays / 252, 14)
 
     discount_factor = (1 + rate) ** num_of_years
 
@@ -220,7 +220,7 @@ def quotation(
     cf_present_value = (cf_values / discount_factor).round(10)
 
     # Return the quotation (the dcf sum) truncated as per Anbima rules
-    return bt.truncate(cf_present_value.sum(), 4)
+    return tl.truncate(cf_present_value.sum(), 4)
 
 
 def price(
@@ -247,7 +247,7 @@ def price(
         >>> ntnc.price(6598.913723, 126.4958)
         8347.348705
     """
-    return bt.truncate(vna * quotation / 100, 6)
+    return tl.truncate(vna * quotation / 100, 6)
 
 
 def duration(
@@ -276,8 +276,8 @@ def duration(
         return float("NaN")
 
     # Validate and normalize dates
-    settlement = dc.convert_input_dates(settlement)
-    maturity = dc.convert_input_dates(maturity)
+    settlement = cv.convert_input_dates(settlement)
+    maturity = cv.convert_input_dates(maturity)
 
     df = cash_flows(settlement, maturity)
     df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252

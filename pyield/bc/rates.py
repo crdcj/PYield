@@ -22,8 +22,8 @@ import pandas as pd
 import polars as pl
 import requests
 
-from pyield._converters.dates import DateScalar, convert_input_dates
 from pyield.config import TIMEZONE_BZ
+from pyield.converters import DateScalar, convert_input_dates
 from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)

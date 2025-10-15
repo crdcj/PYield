@@ -3,11 +3,11 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-import pyield._converters.dates as dc
+import pyield.converters as cv
 import pyield.interpolator as ip
-import pyield.tn.tools as bt
+import pyield.tn.tools as tl
 from pyield import anbima, bday
-from pyield._converters.dates import DateScalar
+from pyield.converters import DateScalar
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -100,8 +100,8 @@ def _generate_all_coupon_dates(
         pd.Series: Series of coupon dates within the specified range.
     """
     # Validate and normalize dates
-    start = dc.convert_input_dates(start)
-    end = dc.convert_input_dates(end)
+    start = cv.convert_input_dates(start)
+    end = cv.convert_input_dates(end)
 
     # Initialize the first coupon date based on the reference date
     first_coupon_date = dt.date(start.year, 2, 1)
@@ -146,8 +146,8 @@ def payment_dates(
         dtype: date32[day][pyarrow]
     """
     # Validate and normalize dates
-    settlement = dc.convert_input_dates(settlement)
-    maturity = dc.convert_input_dates(maturity)
+    settlement = cv.convert_input_dates(settlement)
+    maturity = cv.convert_input_dates(maturity)
 
     # Check if maturity date is after the start date
     if maturity < settlement:
@@ -196,8 +196,8 @@ def cash_flows(
         2  2025-05-15  102.956301
     """
     # Validate and normalize dates
-    settlement = dc.convert_input_dates(settlement)
-    maturity = dc.convert_input_dates(maturity)
+    settlement = cv.convert_input_dates(settlement)
+    maturity = cv.convert_input_dates(maturity)
 
     # Get the coupon dates between the settlement and maturity dates
     p_dates = payment_dates(settlement, maturity)
@@ -242,8 +242,8 @@ def quotation(
         100.6409
     """
     # Validate and normalize dates
-    settlement = dc.convert_input_dates(settlement)
-    maturity = dc.convert_input_dates(maturity)
+    settlement = cv.convert_input_dates(settlement)
+    maturity = cv.convert_input_dates(maturity)
 
     cf_df = cash_flows(settlement, maturity)
     cf_dates = cf_df["PaymentDate"]
@@ -253,7 +253,7 @@ def quotation(
     bdays = bday.count(settlement, cf_dates)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = bt.truncate(bdays / 252, 14)
+    num_of_years = tl.truncate(bdays / 252, 14)
 
     discount_factor = (1 + rate) ** num_of_years
 
@@ -261,7 +261,7 @@ def quotation(
     cf_present_value = (cf_values / discount_factor).round(10)
 
     # Return the quotation (the dcf sum) truncated as per Anbima rules
-    return bt.truncate(cf_present_value.sum(), 4)
+    return tl.truncate(cf_present_value.sum(), 4)
 
 
 def price(
@@ -288,7 +288,7 @@ def price(
         >>> ntnb.price(4315.498383, 100.6409)
         4343.156412
     """
-    return bt.truncate(vna * quotation / 100, 6)
+    return tl.truncate(vna * quotation / 100, 6)
 
 
 def spot_rates(
@@ -353,8 +353,8 @@ def spot_rates(
                 - SpotRate: The real spot rate for the bond.
     """
     # Process and validate the input data
-    settlement = dc.convert_input_dates(settlement)
-    maturities = dc.convert_input_dates(maturities)
+    settlement = cv.convert_input_dates(settlement)
+    maturities = cv.convert_input_dates(maturities)
 
     # Create the interpolator to calculate the YTM rates for intermediate dates
     ff_interpolator = ip.Interpolator(
@@ -390,7 +390,7 @@ def spot_rates(
         # Calculate the present value of the cash flows without last payment
         cf_dates = cf_dates[:-1]
         cf_df = df.query("MaturityDate in @cf_dates").reset_index(drop=True)
-        cf_present_value = bt.calculate_present_value(
+        cf_present_value = tl.calculate_present_value(
             cash_flows=cf_df["Coupon"],
             rates=cf_df["SpotRate"],
             periods=cf_df["BYears"],
@@ -483,7 +483,7 @@ def bei_rates(
 
     """
     # Normalize input dates
-    settlement = dc.convert_input_dates(settlement)
+    settlement = cv.convert_input_dates(settlement)
     ntnb_maturities = pd.to_datetime(ntnb_maturities, errors="coerce", dayfirst=True)
 
     # Calculate Real Interest Rate (RIR)
@@ -538,8 +538,8 @@ def duration(
         return float("NaN")
 
     # Validate and normalize dates
-    settlement = dc.convert_input_dates(settlement)
-    maturity = dc.convert_input_dates(maturity)
+    settlement = cv.convert_input_dates(settlement)
+    maturity = cv.convert_input_dates(maturity)
 
     df = cash_flows(settlement, maturity)
     df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252

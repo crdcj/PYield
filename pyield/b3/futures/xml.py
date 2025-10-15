@@ -11,7 +11,7 @@ import polars.selectors as cs
 import requests
 from lxml import etree
 
-import pyield._converters.dates as dc
+import pyield.converters as cv
 from pyield import bday
 from pyield.fwd import forwards
 from pyield.retry import default_retry
@@ -354,7 +354,7 @@ def fetch_xml_data(
             available for the given date.
     """
     try:
-        date = dc.convert_input_dates(date)
+        date = cv.convert_input_dates(date)
         zip_file = _get_file_from_url(date, source_type)
         df = process_zip_file(zip_file, contract_code)
     except ValueError as e:

@@ -1,13 +1,14 @@
 import datetime as dt
 import logging
+from typing import Literal
 
 import pandas as pd
 import polars as pl
 
-import pyield._converters.dates as dc
+import pyield.converters as cv
 from pyield import b3, bday, interpolator
-from pyield._converters.dates import DateArray, DateScalar
 from pyield.config import TIMEZONE_BZ
+from pyield.converters import DateArray, DateScalar
 from pyield.data_cache import get_cached_dataset
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ def _load_with_intraday(dates: list[dt.date]) -> pl.DataFrame:
 
 
 def _get_data(dates: DateScalar | DateArray) -> pl.DataFrame:
-    converted_dates = dc.convert_input_dates(dates)
+    converted_dates = cv.convert_input_dates(dates)
 
     match converted_dates:
         case None:
@@ -76,7 +77,7 @@ def data(
     dates: DateScalar | DateArray,
     month_start: bool = False,
     pre_filter: bool = False,
-    all_columns: bool = True,
+    return_format: Literal["pandas", "polars"] = "pandas",
 ) -> pd.DataFrame:
     """
     Retrieves DI Futures contract data for a specific trade date.
@@ -93,9 +94,8 @@ def data(
             those whose expiration dates match known prefixed Treasury bond (LTN, NTN-F)
             maturities from the TPF dataset nearest to the given trade date.
             Defaults to False.
-        all_columns (bool, optional): If True, returns all available columns from
-            the DI dataset. If False, returns a subset of the most common columns.
-            Defaults to True.
+        return_format (Literal['pandas','polars'], optional): Specifies the return
+            format. Can be 'pandas' (default) or 'polars'.
 
     Returns:
         pd.DataFrame: A DataFrame containing the DI futures contract data for the
@@ -142,28 +142,6 @@ def data(
             check_sortedness=False,  # já garantimos a ordenação
         )
 
-    if not all_columns:
-        cols = [
-            "TradeDate",
-            "TickerSymbol",
-            "ExpirationDate",
-            "BDaysToExp",
-            "OpenContracts",
-            "TradeVolume",
-            "DV01",
-            "SettlementPrice",
-            "LastPrice",
-            "OpenRate",
-            "MinRate",
-            "MaxRate",
-            "CloseRate",
-            "SettlementRate",
-            "LastRate",
-            "ForwardRate",
-        ]
-        selected_cols = [col for col in cols if col in df.columns]
-        df = df.select(selected_cols)
-
     return df.to_pandas(use_pyarrow_extension_array=True)
 
 
@@ -172,8 +150,8 @@ def _build_input_dataframe(
     expirations: DateScalar | DateArray,
 ) -> pl.DataFrame:
     # 1. Converte as entradas primeiro
-    converted_dates = dc.convert_input_dates(dates)
-    converted_expirations = dc.convert_input_dates(expirations)
+    converted_dates = cv.convert_input_dates(dates)
+    converted_expirations = cv.convert_input_dates(expirations)
 
     # 2. Lida com os 4 casos de forma SIMPLES E LEGÍVEL
     match (converted_dates, converted_expirations):
@@ -382,8 +360,8 @@ def interpolate_rate(
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
-    converted_date = dc.convert_input_dates(date)
-    converted_expiration = dc.convert_input_dates(expiration)
+    converted_date = cv.convert_input_dates(date)
+    converted_expiration = cv.convert_input_dates(expiration)
 
     if not isinstance(converted_date, dt.date) or not isinstance(
         converted_expiration, dt.date

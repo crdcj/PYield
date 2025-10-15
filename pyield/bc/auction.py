@@ -25,10 +25,10 @@ import polars as pl
 import polars.selectors as cs
 import requests
 
+import pyield.bc.ptax_api as pt
+import pyield.converters as cv
 from pyield import bday
-from pyield._converters import dates as dc
-from pyield._converters.dates import DateScalar
-from pyield.bc import ptax_api as pt
+from pyield.converters import DateScalar
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
@@ -95,12 +95,12 @@ def _build_url(
 ) -> str:
     url = BASE_API_URL
     if start:
-        start = dc.convert_input_dates(start)
+        start = cv.convert_input_dates(start)
         start_str = start.strftime("%Y-%m-%d")
         url += f"@dataMovimentoInicio='{start_str}'"
 
     if end:
-        end = dc.convert_input_dates(end)
+        end = cv.convert_input_dates(end)
         end_str = end.strftime("%Y-%m-%d")
         url += f"&@dataMovimentoFim='{end_str}'"
 

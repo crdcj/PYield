@@ -23,10 +23,9 @@ import polars.selectors as ps
 import requests
 
 from pyield import bday
-from pyield._converters.dates import DateScalar, convert_input_dates
-from pyield._converters.frames import format_output
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
+from pyield.converters import DateScalar, convert_input_dates, format_output
 from pyield.data_cache import get_cached_dataset
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
@@ -175,7 +174,7 @@ def _calculate_duration_per_row(row: dict) -> float:
     return 0.0
 
 
-def _add_duration_polars_v0(df: pl.DataFrame) -> pl.DataFrame:
+def _add_duration(df_input: pl.DataFrame) -> pl.DataFrame:
     """Adiciona a coluna 'Duration' ao DataFrame Polars de forma otimizada."""
     colunas_necessarias = [
         "BondType",
@@ -185,7 +184,7 @@ def _add_duration_polars_v0(df: pl.DataFrame) -> pl.DataFrame:
         "BDToMat",  # Necessário para LTN
     ]
     # Adiciona a coluna Duration
-    df = df.with_columns(
+    df = df_input.with_columns(
         Duration=pl.struct(colunas_necessarias).map_elements(
             _calculate_duration_per_row, return_dtype=pl.Float64
         )
@@ -193,12 +192,12 @@ def _add_duration_polars_v0(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
+def _add_dv01(df_input: pl.DataFrame) -> pl.DataFrame:
     """Add the DV01 columns to the DataFrame."""
-    # mduration = df["Duration"] / (1 + df["IndicativeRate"])
-    # df["DV01"] = 0.0001 * mduration * df["Price"]
     mduration_expr = pl.col("Duration") / (1 + pl.col("IndicativeRate"))
-    df = df.with_columns((0.0001 * mduration_expr * pl.col("Price")).alias("DV01"))
+    df = df_input.with_columns(
+        (0.0001 * mduration_expr * pl.col("Price")).alias("DV01")
+    )
 
     # DV01 in USD
     try:
@@ -285,7 +284,7 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
                 "you are not on the RTM network. Historical data requires RTM access. "
                 "Returning empty DataFrame."
             )
-            return pd.DataFrame()
+            return pl.DataFrame()
 
     try:
         # Se passamos pela verificação da RTM, agora podemos chamar a função com retry.
@@ -295,11 +294,11 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
                 f"Anbima TPF secondary market data for {date_str} not available. "
                 "Returning empty DataFrame."
             )
-            return pd.DataFrame()
+            return pl.DataFrame()
         # csv_text = _rename_columns(csv_text)
         df = _read_csv_data(csv_text)
         df = _process_raw_df(df)
-        df = _add_duration_polars_v0(df)
+        df = _add_duration(df)
         df = _add_dv01(df)
         df = _add_di_data(df)
         df = _custom_sort_and_order(df)
@@ -402,14 +401,14 @@ def tpf_data(
     _validate_not_future_date(date)
 
     if fetch_from_source:
-        # Try to fetch the data from the Anbima website
+        # Try to fetch the data directly from the source (ANBIMA)
         df = _fetch_tpf_data(date)
     else:
+        # Otherwise, get the data from the local cache
         df = get_cached_dataset("tpf").filter(pl.col("ReferenceDate") == date)
 
     if df.is_empty():
-        # If the data is still empty, return an empty DataFrame
-        return pd.DataFrame()
+        return format_output(df, return_format)
 
     if bond_type:
         norm_bond_type = _bond_type_mapping(bond_type)

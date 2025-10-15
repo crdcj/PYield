@@ -7,9 +7,9 @@ import polars as pl
 import polars.selectors as cs
 import requests
 
+import pyield.converters as cv
 from pyield import bday
-from pyield._converters import dates as dc
-from pyield._converters.dates import DateScalar
+from pyield.converters import DateScalar
 
 # --- 1. Centralização e Organização das Constantes ---
 API_VERSION = "1.0018"
@@ -226,7 +226,7 @@ def tpf_difusao(data_referencia: DateScalar) -> pd.DataFrame:
         * taxa_media (float): Média entre a taxa de compra e venda (decimal).
         * taxa_ultima (float): Última taxa negociada (decimal).
     """
-    data_str = dc.convert_input_dates(data_referencia)
+    data_str = cv.convert_input_dates(data_referencia)
     csv_data = _fetch_url_data(data_str)
 
     if csv_data is None:

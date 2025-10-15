@@ -1,7 +1,7 @@
 import ftplib
 import logging
 
-from pyield._converters.dates import DateScalar, convert_input_dates
+from pyield.converters import DateScalar, convert_input_dates
 
 logger = logging.getLogger(__name__)
 

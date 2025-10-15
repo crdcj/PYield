@@ -5,9 +5,9 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 
-import pyield._converters.dates as dc
 import pyield.bday.holidays as hl
-from pyield._converters.dates import DateArray, DateScalar
+import pyield.converters as cv
+from pyield.converters import DateArray, DateScalar
 
 TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
@@ -162,7 +162,7 @@ def offset(  # noqa
         https://numpy.org/doc/stable/reference/generated/numpy.busday_offset.html
     """
     # Padroniza as entradas para objetos do Pandas
-    dates_pd = dc.convert_input_dates(dates)
+    dates_pd = cv.convert_input_dates(dates)
     if isinstance(offset, IntegerArray):
         offset_pd = pd.Series(offset).astype("int64[pyarrow]")
     else:
@@ -211,7 +211,7 @@ def offset(  # noqa
 
     if mask_old_holidays.any():
         np_offset_values = np.busday_offset(
-            dates=dc.to_numpy_date_type(dates_pd[mask_old_holidays]),
+            dates=cv.to_numpy_date_type(dates_pd[mask_old_holidays]),
             offsets=offset_pd[mask_old_holidays],
             roll=roll,
             holidays=OLD_HOLIDAYS_ARRAY,
@@ -221,7 +221,7 @@ def offset(  # noqa
 
     if mask_new_holidays.any():
         np_offset_values = np.busday_offset(
-            dates=dc.to_numpy_date_type(dates_pd[mask_new_holidays]),
+            dates=cv.to_numpy_date_type(dates_pd[mask_new_holidays]),
             offsets=offset_pd[mask_new_holidays],
             roll=roll,
             holidays=NEW_HOLIDAYS_ARRAY,
@@ -328,8 +328,8 @@ def count(
         dtype: int64[pyarrow]
     """
     # Padroniza as entradas para objetos do Pandas
-    start_pd = dc.convert_input_dates(start)
-    end_pd = dc.convert_input_dates(end)
+    start_pd = cv.convert_input_dates(start)
+    end_pd = cv.convert_input_dates(end)
 
     # 1. VALIDAÇÃO ESTRUTURAL
     if isinstance(start_pd, pd.Series) and isinstance(end_pd, pd.Series):
@@ -372,16 +372,16 @@ def count(
     # Calcula e atribui os resultados para o subconjunto "OLD"
     if mask_old_holidays.any():
         result.loc[mask_old_holidays] = np.busday_count(
-            begindates=dc.to_numpy_date_type(start_pd[mask_old_holidays]),
-            enddates=dc.to_numpy_date_type(end_pd[mask_old_holidays]),
+            begindates=cv.to_numpy_date_type(start_pd[mask_old_holidays]),
+            enddates=cv.to_numpy_date_type(end_pd[mask_old_holidays]),
             holidays=OLD_HOLIDAYS_ARRAY,
         )
 
     # Calcula e atribui os resultados para o subconjunto "NEW"
     if mask_new_holidays.any():
         result.loc[mask_new_holidays] = np.busday_count(
-            begindates=dc.to_numpy_date_type(start_pd[mask_new_holidays]),
-            enddates=dc.to_numpy_date_type(end_pd[mask_new_holidays]),
+            begindates=cv.to_numpy_date_type(start_pd[mask_new_holidays]),
+            enddates=cv.to_numpy_date_type(end_pd[mask_new_holidays]),
             holidays=NEW_HOLIDAYS_ARRAY,
         )
 
@@ -439,12 +439,12 @@ def generate(
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html.
     """
     if start:
-        start_pd = dc.convert_input_dates(start)
+        start_pd = cv.convert_input_dates(start)
     else:
         start_pd = dt.datetime.now(TIMEZONE_BZ).date()
 
     if end:
-        end_pd = dc.convert_input_dates(end)
+        end_pd = cv.convert_input_dates(end)
     else:
         end_pd = dt.datetime.now(TIMEZONE_BZ).date()
 
@@ -484,7 +484,7 @@ def is_business_day(date: DateScalar) -> bool:
         Brazilian holiday list (before or after the 2023-12-26 transition), based
         on the input `date`.
     """
-    date_pd = dc.convert_input_dates(date)
+    date_pd = cv.convert_input_dates(date)
     shifted_date = offset(date_pd, 0)  # Shift the date if it is not a business day
     return date_pd == shifted_date
 

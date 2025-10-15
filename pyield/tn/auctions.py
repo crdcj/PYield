@@ -9,8 +9,8 @@ import requests
 from polars import selectors as cs
 
 from pyield import bc, bday
-from pyield._converters import dates as dc
-from pyield._converters.dates import DateScalar
+from pyield import converters as cv
+from pyield.converters import DateScalar
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
@@ -429,7 +429,7 @@ def auction(auction_date: DateScalar) -> pd.DataFrame:
     processamento, ou se não houver dados para a data especificada.
     """
     try:
-        auction_date = dc.convert_input_dates(auction_date)
+        auction_date = cv.convert_input_dates(auction_date)
         data = _fetch_auction_data(auction_date)
         if not data:
             logger.info(f"No auction data available for {auction_date}.")
