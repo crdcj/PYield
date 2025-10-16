@@ -72,12 +72,12 @@ def _build_url(start: DateScalar | None, end: DateScalar | None) -> str:
     """
     url = API_BASE_URL
     if start:
-        start = cv.convert_input_dates(start)
+        start = cv.convert_dates(start)
         start_str = start.strftime("%Y-%m-%d")
         url += f"@dataLancamentoInicio='{start_str}'"
 
     if end:
-        end = cv.convert_input_dates(end)
+        end = cv.convert_dates(end)
         end_str = end.strftime("%Y-%m-%d")
         url += f"&@dataLancamentoFim='{end_str}'"
 

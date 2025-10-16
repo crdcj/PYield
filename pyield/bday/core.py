@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 import pyield.bday.holidays as hl
 import pyield.converters as cv
@@ -19,6 +20,7 @@ IntegerArray = np.ndarray | pd.Series | list | tuple
 br_holidays = hl.BrHolidays()
 OLD_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="old")
 NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="new")
+TRANSITION_DATE = br_holidays.TRANSITION_DATE
 
 
 @overload
@@ -162,7 +164,7 @@ def offset(  # noqa
         https://numpy.org/doc/stable/reference/generated/numpy.busday_offset.html
     """
     # Padroniza as entradas para objetos do Pandas
-    dates_pd = cv.convert_input_dates(dates)
+    dates_pd = cv.convert_dates(dates)
     if isinstance(offset, IntegerArray):
         offset_pd = pd.Series(offset).astype("int64[pyarrow]")
     else:
@@ -206,8 +208,8 @@ def offset(  # noqa
 
     # Divide the input in order to apply the correct holiday list
     mask_not_null = dates_pd.notna() & offset_pd.notna()
-    mask_old_holidays = mask_not_null & (dates_pd < br_holidays.TRANSITION_DATE)
-    mask_new_holidays = mask_not_null & (dates_pd >= br_holidays.TRANSITION_DATE)
+    mask_old_holidays = mask_not_null & (dates_pd < TRANSITION_DATE)
+    mask_new_holidays = mask_not_null & (dates_pd >= TRANSITION_DATE)
 
     if mask_old_holidays.any():
         np_offset_values = np.busday_offset(
@@ -294,7 +296,7 @@ def count(
         1    41
         dtype: int64[pyarrow]
 
-        The remaining business days in January and February to the end of the year
+        The remaining business days from January/February until the end of the year
         >>> bday.count(["01-01-2024", "01-02-2024"], "01-01-2025")
         0    253
         1    231
@@ -328,8 +330,8 @@ def count(
         dtype: int64[pyarrow]
     """
     # Padroniza as entradas para objetos do Pandas
-    start_pd = cv.convert_input_dates(start)
-    end_pd = cv.convert_input_dates(end)
+    start_pd = cv.convert_dates(start)
+    end_pd = cv.convert_dates(end)
 
     # 1. VALIDAÇÃO ESTRUTURAL
     if isinstance(start_pd, pd.Series) and isinstance(end_pd, pd.Series):
@@ -366,8 +368,8 @@ def count(
     # Cria máscaras para linhas não-nulas, divididas pelo calendário de feriados.
     # A lógica de feriados depende APENAS da data de início.
     not_null_mask = start_pd.notna() & end_pd.notna()
-    mask_old_holidays = not_null_mask & (start_pd < br_holidays.TRANSITION_DATE)
-    mask_new_holidays = not_null_mask & (start_pd >= br_holidays.TRANSITION_DATE)
+    mask_old_holidays = not_null_mask & (start_pd < TRANSITION_DATE)
+    mask_new_holidays = not_null_mask & (start_pd >= TRANSITION_DATE)
 
     # Calcula e atribui os resultados para o subconjunto "OLD"
     if mask_old_holidays.any():
@@ -387,6 +389,48 @@ def count(
 
     # As linhas onde not_null_mask era False já contêm o valor <NA> default.
     return result
+
+
+def count_pure_polars(
+    start: DateScalar | DateArray,
+    end: DateScalar | DateArray,
+) -> int | pl.Series | None:
+    """
+    Counts business days idiomatically using only Polars expressions,
+    leveraging Polars' natural null propagation.
+    """
+    start_pl = cv.convert_dates(start)
+    end_pl = cv.convert_dates(end)
+
+    if len(start_pl) > 1 and len(end_pl) > 1 and len(start_pl) != len(end_pl):
+        raise ValueError("Input series have different lengths!")
+
+    # Coloca as séries em um DataFrame para trabalhar com expressões em colunas
+    df = pl.DataFrame({"start": start_pl, "end": end_pl})
+
+    # Lógica simplificada: a propagação de nulos é automática e implícita.
+    # Se 'start' ou 'end' for nulo, o resultado de business_day_count também será.
+    result_expr = (
+        pl.when(pl.col("start") < TRANSITION_DATE)
+        .then(
+            pl.col("start").dt.business_day_count(
+                pl.col("end"), holidays=OLD_HOLIDAYS_ARRAY
+            )
+        )
+        .otherwise(
+            pl.col("start").dt.business_day_count(
+                pl.col("end"), holidays=NEW_HOLIDAYS_ARRAY
+            )
+        )
+    )
+
+    result_series = df.select(result_expr.alias("result"))["result"]
+
+    # Se a entrada original era escalar, retorna o valor escalar
+    if len(result_series) == 1:
+        return result_series.item()
+
+    return result_series
 
 
 def generate(
@@ -439,12 +483,12 @@ def generate(
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html.
     """
     if start:
-        start_pd = cv.convert_input_dates(start)
+        start_pd = cv.convert_dates(start)
     else:
         start_pd = dt.datetime.now(TIMEZONE_BZ).date()
 
     if end:
-        end_pd = cv.convert_input_dates(end)
+        end_pd = cv.convert_dates(end)
     else:
         end_pd = dt.datetime.now(TIMEZONE_BZ).date()
 
@@ -484,7 +528,7 @@ def is_business_day(date: DateScalar) -> bool:
         Brazilian holiday list (before or after the 2023-12-26 transition), based
         on the input `date`.
     """
-    date_pd = cv.convert_input_dates(date)
+    date_pd = cv.convert_dates(date)
     shifted_date = offset(date_pd, 0)  # Shift the date if it is not a business day
     return date_pd == shifted_date
 

@@ -1,7 +1,7 @@
 import ftplib
 import logging
 
-from pyield.converters import DateScalar, convert_input_dates
+from pyield.converters import DateScalar, convert_dates
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def di_over(date: DateScalar) -> float:
     ftp = None
     try:
         # Convert date to file format
-        date_obj = convert_input_dates(date)
+        date_obj = convert_dates(date)
         filename = date_obj.strftime("%Y%m%d.txt")
 
         # Connect to FTP and get the file

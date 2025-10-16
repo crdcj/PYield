@@ -54,7 +54,7 @@ def _load_with_intraday(dates: list[dt.date]) -> pl.DataFrame:
 
 
 def _get_data(dates: DateScalar | DateArray) -> pl.DataFrame:
-    converted_dates = cv.convert_input_dates(dates)
+    converted_dates = cv.convert_dates(dates)
 
     match converted_dates:
         case None:
@@ -159,8 +159,8 @@ def _build_input_dataframe(
     expirations: DateScalar | DateArray,
 ) -> pl.DataFrame:
     # 1. Converte as entradas primeiro
-    converted_dates = cv.convert_input_dates(dates)
-    converted_expirations = cv.convert_input_dates(expirations)
+    converted_dates = cv.convert_dates(dates)
+    converted_expirations = cv.convert_dates(expirations)
 
     # 2. Lida com os 4 casos de forma SIMPLES E LEGÍVEL
     match (converted_dates, converted_expirations):
@@ -377,8 +377,8 @@ def interpolate_rate(
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
-    converted_date = cv.convert_input_dates(date)
-    converted_expiration = cv.convert_input_dates(expiration)
+    converted_date = cv.convert_dates(date)
+    converted_expiration = cv.convert_dates(expiration)
 
     if not isinstance(converted_date, dt.date) or not isinstance(
         converted_expiration, dt.date

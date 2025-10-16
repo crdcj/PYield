@@ -31,12 +31,12 @@ def validate_date_format(date_str) -> None:
 
 
 @overload
-def convert_input_dates(dates: DateScalar) -> dt.date | None: ...
+def convert_dates(dates: DateScalar) -> dt.date | None: ...
 @overload
-def convert_input_dates(dates: DateArray) -> pd.Series: ...
+def convert_dates(dates: DateArray) -> pd.Series: ...
 
 
-def convert_input_dates(  # noqa
+def convert_dates(  # noqa
     dates: DateScalar | DateArray,
 ) -> dt.date | pd.Series | None:
     """
@@ -65,23 +65,28 @@ def convert_input_dates(  # noqa
         case np.datetime64():
             return pd.to_datetime(dates).date()
 
-    # --- LÓGICA DE ARRAY (mais complexa) ---
-    # Qualquer outro tipo de array cai aqui.
-    if isinstance(dates, pl.Series):
-        s = dates.to_pandas(use_pyarrow_extension_array=True)
-    else:
-        s = pd.Series(dates)
+    # --- LÓGICA DE ARRAY (adaptada para Polars) ---
+    # Converte a entrada para uma Série Polars imediatamente.
+    # O construtor do Polars é muito bom em lidar com vários tipos de entrada.
+    s = pl.Series(dates)
 
-    if s.empty:
+    if s.is_empty():
         raise ValueError("'dates' cannot be an empty Array.")
 
-    # Inspeciona o tipo do primeiro elemento não nulo para decidir se valida.
-    non_null_series = s.dropna()
-    if not non_null_series.empty and isinstance(non_null_series.iloc[0], str):
-        validate_date_format(non_null_series.iloc[0])
+    # Se a série contiver strings, usamos a validação e o poder de parsing do Pandas,
+    if s.dtype == pl.String:
+        # Valida o formato usando o primeiro elemento não nulo (mesma lógica de antes)
+        first_str = s.drop_nulls().first()
+        if first_str:
+            validate_date_format(first_str)
 
-    # Deixe pd.to_datetime lidar com todos os casos:
-    return pd.to_datetime(s, dayfirst=True).astype("date32[pyarrow]")
+        pd_series_for_parsing = s.to_pandas(use_pyarrow_extension_array=True)
+        parsed_dates = pd.to_datetime(pd_series_for_parsing, dayfirst=True).dt.date
+        return pl.Series(parsed_dates, dtype=pl.Date)
+
+    # Para todos os outros dtypes (numéricos, datetime, date, etc.),
+    # o cast nativo do Polars é suficiente e muito rápido.
+    return s.cast(pl.Date)
 
 
 def to_numpy_date_type(

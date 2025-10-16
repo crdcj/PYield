@@ -226,7 +226,7 @@ def tpf_difusao(data_referencia: DateScalar) -> pd.DataFrame:
         * taxa_media (float): Média entre a taxa de compra e venda (decimal).
         * taxa_ultima (float): Última taxa negociada (decimal).
     """
-    data_str = cv.convert_input_dates(data_referencia)
+    data_str = cv.convert_dates(data_referencia)
     csv_data = _fetch_url_data(data_str)
 
     if csv_data is None:

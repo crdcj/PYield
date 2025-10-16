@@ -353,7 +353,7 @@ def fetch_xml_data(
             available for the given date.
     """
     try:
-        date = cv.convert_input_dates(date)
+        date = cv.convert_dates(date)
         zip_file = _get_file_from_url(date, source_type)
         df = process_zip_file(zip_file, contract_code)
     except ValueError as e:

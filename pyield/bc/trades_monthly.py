@@ -19,7 +19,7 @@ import polars as pl
 import requests
 from requests.exceptions import HTTPError
 
-from pyield.converters import DateScalar, convert_input_dates
+from pyield.converters import DateScalar, convert_dates
 from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
@@ -202,7 +202,7 @@ def tpf_monthly_trades(
 
     """  # noqa: E501
     try:
-        target_date = convert_input_dates(target_date)
+        target_date = convert_dates(target_date)
         url = _build_file_url(target_date, extragroup)
         zip_content = _fetch_zip_from_url(url)
         extracted_file = _uncompress_zip(zip_content)

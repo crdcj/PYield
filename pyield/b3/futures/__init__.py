@@ -135,7 +135,7 @@ def futures(
         └────────────┴──────────────┴────────────────┴────────────┴───┴──────────────┴───────────┴────────────────┴─────────────┘
 
     """  # noqa: E501
-    converted_date = cv.convert_input_dates(date)
+    converted_date = cv.convert_dates(date)
     selected_contract = str(contract_code).upper()
 
     if _is_trading_day(converted_date):

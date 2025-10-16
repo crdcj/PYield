@@ -114,8 +114,8 @@ def payment_dates(
         dtype: date32[day][pyarrow]
     """
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     # Check if the maturity date is valid
     _check_maturity_date(maturity)
@@ -167,8 +167,8 @@ def cash_flows(
         1  2025-01-01  1048.80885
     """
     # Validate input dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
     _check_maturity_date(maturity)
 
     # Get the coupon payment dates between the settlement and maturity dates
@@ -278,7 +278,7 @@ def spot_rates(  # noqa
         5   2035-01-01     2587  0.121398
     """
     # Process and validate the input data
-    settlement = cv.convert_input_dates(settlement)
+    settlement = cv.convert_dates(settlement)
 
     # Create flat forward interpolators for LTN and NTN-F rates
     ltn_rate_interpolator = ip.Interpolator(
@@ -428,8 +428,8 @@ def di_net_spread(  # noqa
         12.13
     """
     # Create an interpolator for the DI rates using the flat-forward method
-    settlement = cv.convert_input_dates(settlement)
-    ntnf_maturity = cv.convert_input_dates(ntnf_maturity)
+    settlement = cv.convert_dates(settlement)
+    ntnf_maturity = cv.convert_dates(ntnf_maturity)
 
     ff_interpolator = ip.Interpolator(
         "flat_forward",
@@ -505,8 +505,8 @@ def premium(
           the present value of cash flows for the NTN-F bond using DI rates.
 
     """
-    ntnf_maturity = cv.convert_input_dates(ntnf_maturity)
-    settlement = cv.convert_input_dates(settlement)
+    ntnf_maturity = cv.convert_dates(ntnf_maturity)
+    settlement = cv.convert_dates(settlement)
 
     df = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
     df["BDToMat"] = bday.count(settlement, df["PaymentDate"])
@@ -545,8 +545,8 @@ def historical_premium(
     date: DateScalar,
     maturity: DateScalar,
 ) -> float:
-    date = cv.convert_input_dates(date)
-    maturity = cv.convert_input_dates(maturity)
+    date = cv.convert_dates(date)
+    maturity = cv.convert_dates(maturity)
 
     df_ntnf = data(date)
     if df_ntnf.empty:
@@ -615,8 +615,8 @@ def duration(
         return float("NaN")
 
     # Validate and normalize input dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     df = cash_flows(settlement, maturity)
     df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252

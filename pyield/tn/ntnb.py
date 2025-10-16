@@ -99,8 +99,8 @@ def _generate_all_coupon_dates(
         pd.Series: Series of coupon dates within the specified range.
     """
     # Validate and normalize dates
-    start = cv.convert_input_dates(start)
-    end = cv.convert_input_dates(end)
+    start = cv.convert_dates(start)
+    end = cv.convert_dates(end)
 
     # Initialize the first coupon date based on the reference date
     first_coupon_date = dt.date(start.year, 2, 1)
@@ -145,8 +145,8 @@ def payment_dates(
         dtype: date32[day][pyarrow]
     """
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     # Check if maturity date is after the start date
     if maturity < settlement:
@@ -195,8 +195,8 @@ def cash_flows(
         2  2025-05-15  102.956301
     """
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     # Get the coupon dates between the settlement and maturity dates
     p_dates = payment_dates(settlement, maturity)
@@ -241,8 +241,8 @@ def quotation(
         100.6409
     """
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     cf_df = cash_flows(settlement, maturity)
     cf_dates = cf_df["PaymentDate"]
@@ -352,8 +352,8 @@ def spot_rates(
                 - SpotRate: The real spot rate for the bond.
     """
     # Process and validate the input data
-    settlement = cv.convert_input_dates(settlement)
-    maturities = cv.convert_input_dates(maturities)
+    settlement = cv.convert_dates(settlement)
+    maturities = cv.convert_dates(maturities)
 
     # Create the interpolator to calculate the YTM rates for intermediate dates
     ff_interpolator = ip.Interpolator(
@@ -482,7 +482,7 @@ def bei_rates(
 
     """
     # Normalize input dates
-    settlement = cv.convert_input_dates(settlement)
+    settlement = cv.convert_dates(settlement)
     ntnb_maturities = pd.to_datetime(ntnb_maturities, errors="coerce", dayfirst=True)
 
     # Calculate Real Interest Rate (RIR)
@@ -537,8 +537,8 @@ def duration(
         return float("NaN")
 
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     df = cash_flows(settlement, maturity)
     df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252

@@ -429,7 +429,7 @@ def auction(auction_date: DateScalar) -> pd.DataFrame:
     processamento, ou se não houver dados para a data especificada.
     """
     try:
-        auction_date = cv.convert_input_dates(auction_date)
+        auction_date = cv.convert_dates(auction_date)
         data = _fetch_auction_data(auction_date)
         if not data:
             logger.info(f"No auction data available for {auction_date}.")

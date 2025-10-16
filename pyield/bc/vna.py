@@ -1,6 +1,6 @@
 import requests
 
-from pyield.converters import DateScalar, convert_input_dates
+from pyield.converters import DateScalar, convert_dates
 from pyield.retry import default_retry
 
 
@@ -8,7 +8,7 @@ from pyield.retry import default_retry
 def _get_text(date: DateScalar) -> str:
     # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
-    date = convert_input_dates(date)
+    date = convert_dates(date)
     url_file = f"{date.strftime('%Y%m%d')}APC238"
     url_vna = url_base + url_file
 

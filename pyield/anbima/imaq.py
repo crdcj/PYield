@@ -211,7 +211,7 @@ def imaq(date: DateScalar) -> pl.DataFrame:
         Exception: Logs error and returns an empty DataFrame if any error occurs during
             fetching or processing.
     """
-    date = cv.convert_input_dates(date)
+    date = cv.convert_dates(date)
     date_str = date.strftime("%d/%m/%Y")
     try:
         url_content = _fetch_url_content(date)

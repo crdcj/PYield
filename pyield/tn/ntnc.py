@@ -1,6 +1,5 @@
 import datetime as dt
 
-import numpy as np
 import pandas as pd
 import polars as pl
 
@@ -104,8 +103,8 @@ def payment_dates(
         ]
     """
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     # Check if maturity date is after the start date
     if maturity < settlement:
@@ -147,23 +146,28 @@ def cash_flows(
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.cash_flows("21-03-2025", "01-01-2031")
-           PaymentDate    CashFlow
-        0   2025-07-01    5.830052
-        1   2026-01-01    5.830052
-        2   2026-07-01    5.830052
-        3   2027-01-01    5.830052
-        4   2027-07-01    5.830052
-        5   2028-01-01    5.830052
-        6   2028-07-01    5.830052
-        7   2029-01-01    5.830052
-        8   2029-07-01    5.830052
-        9   2030-01-01    5.830052
-        10  2030-07-01    5.830052
-        11  2031-01-01  105.830052
+        shape: (12, 2)
+        ┌─────────────┬────────────┐
+        │ PaymentDate ┆ CashFlow   │
+        │ ---         ┆ ---        │
+        │ date        ┆ f64        │
+        ╞═════════════╪════════════╡
+        │ 2025-07-01  ┆ 5.830052   │
+        │ 2026-01-01  ┆ 5.830052   │
+        │ 2026-07-01  ┆ 5.830052   │
+        │ 2027-01-01  ┆ 5.830052   │
+        │ 2027-07-01  ┆ 5.830052   │
+        │ …           ┆ …          │
+        │ 2029-01-01  ┆ 5.830052   │
+        │ 2029-07-01  ┆ 5.830052   │
+        │ 2030-01-01  ┆ 5.830052   │
+        │ 2030-07-01  ┆ 5.830052   │
+        │ 2031-01-01  ┆ 105.830052 │
+        └─────────────┴────────────┘
     """
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     # Get the coupon dates between the settlement and maturity dates
     p_dates = payment_dates(settlement, maturity)
@@ -172,11 +176,13 @@ def cash_flows(
     coupon_pmt = _get_coupon_pmt(maturity)
     final_pmt = _get_final_pmt(maturity)
 
-    # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    cfs = np.where(p_dates == maturity, final_pmt, coupon_pmt).tolist()
-
-    # Return a dataframe with the payment dates and cash flows
-    df = pl.DataFrame({"PaymentDate": p_dates, "CashFlow": cfs})
+    # Build dataframe and assign cash flows using Polars expression (avoid NumPy)
+    df = pl.DataFrame({"PaymentDate": p_dates}).with_columns(
+        pl.when(pl.col("PaymentDate") == maturity)
+        .then(final_pmt)
+        .otherwise(coupon_pmt)
+        .alias("CashFlow")
+    )
     return df
 
 
@@ -209,8 +215,8 @@ def quotation(
         126.4958
     """
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     cf_df = cash_flows(settlement, maturity)
     cf_dates = cf_df["PaymentDate"]
@@ -284,8 +290,8 @@ def duration(
         return float("NaN")
 
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     df = cash_flows(settlement, maturity)
     df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252

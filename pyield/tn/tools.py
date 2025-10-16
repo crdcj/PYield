@@ -1,31 +1,45 @@
 from typing import overload
 
-import numpy as np
-import pandas as pd
+import pandas as pd  # still needed for calculate_present_value below
+import polars as pl
 
 
 @overload
 def truncate(values: float, decimal_places: int) -> float: ...
 @overload
-def truncate(values: pd.Series, decimal_places: int) -> pd.Series: ...
-def truncate(values: float | pd.Series, decimal_places: int) -> float | pd.Series:
-    """
-    Truncate a float or a Pandas Series to the specified decimal place.
+def truncate(values: int, decimal_places: int) -> float: ...
+@overload
+def truncate(values: pl.Series, decimal_places: int) -> pl.Series: ...
+
+
+def truncate(values: float | int | pl.Series, decimal_places: int) -> float | pl.Series:
+    """Trunca números (scalar ou ``polars.Series``) em direção a zero.
+
+    Implementação unificada usando apenas operações de ``polars``: escalares
+    são embrulhados em uma série temporária e depois desembrulhados.
 
     Args:
-        values (float or pandas.Series): The value(s) to be truncated.
-        decimal_places (int): The number of decimal places to truncate to.
+        values: Escalar (int/float) ou ``pl.Series``.
+        decimal_places: Casas decimais (>= 0).
 
     Returns:
-        float or pandas.Series: The truncated value(s).
+        Float se entrada era escalar, ou ``pl.Series`` se entrada era série.
     """
+    if decimal_places < 0:
+        raise ValueError("decimal_places must be non-negative")
+
     factor = 10**decimal_places
-    truncated_values = np.trunc(values * factor) / factor
-    if isinstance(truncated_values, np.floating):
-        truncated_values = float(truncated_values)
-    else:
-        truncated_values = pd.Series(truncated_values)
-    return truncated_values
+    is_scalar = isinstance(values, (int, float))
+
+    series = pl.Series([values]) if is_scalar else values
+    # Multiplica, trunca via cast para inteiro e divide para voltar à escala
+    truncated = (series * factor).cast(pl.Int64) / factor
+    truncated = truncated.cast(pl.Float64)
+
+    if is_scalar:
+        # Retorna primeiro elemento como float
+        return truncated.item()
+    return truncated
 
 
 def calculate_present_value(

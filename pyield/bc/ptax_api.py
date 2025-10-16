@@ -213,12 +213,12 @@ def ptax_series(
 
     """
     if start:
-        start = cv.convert_input_dates(start)
+        start = cv.convert_dates(start)
     else:
         start = dt.date(1984, 11, 28)  # Primeira data disponível na API
 
     if end:
-        end = cv.convert_input_dates(end)
+        end = cv.convert_dates(end)
     else:
         end = dt.datetime.now(TIMEZONE_BZ).date()
 

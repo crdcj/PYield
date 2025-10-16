@@ -4,7 +4,7 @@ import pandas as pd
 import polars as pl
 import requests
 
-from pyield.converters import DateScalar, convert_input_dates
+from pyield.converters import DateScalar, convert_dates
 from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
@@ -72,8 +72,8 @@ def rates(start: DateScalar, end: DateScalar) -> pd.DataFrame:
         1  202502  0.0131
         2  202503  0.0056
     """
-    start = convert_input_dates(start)
-    end = convert_input_dates(end)
+    start = convert_dates(start)
+    end = convert_dates(end)
 
     start_date = start.strftime("%Y%m")
     end_date = end.strftime("%Y%m")
@@ -178,8 +178,8 @@ def indexes(start: DateScalar, end: DateScalar) -> pd.DataFrame:
         1  202502  7205.03
         2  202503  7245.38
     """
-    start = convert_input_dates(start)
-    end = convert_input_dates(end)
+    start = convert_dates(start)
+    end = convert_dates(end)
 
     start_date = start.strftime("%Y%m")
     end_date = end.strftime("%Y%m")

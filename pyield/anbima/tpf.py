@@ -25,7 +25,7 @@ import requests
 from pyield import bday
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
-from pyield.converters import DateScalar, convert_input_dates
+from pyield.converters import DateScalar, convert_dates
 from pyield.data_cache import get_cached_dataset
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
@@ -406,7 +406,7 @@ def tpf_data(
             requer uma conexão à rede RTM. Sem ela, a consulta para datas
             antigas retornará um DataFrame vazio.
     """  # noqa
-    date = convert_input_dates(date)
+    date = convert_dates(date)
     _validate_not_future_date(date)
 
     if fetch_from_source:

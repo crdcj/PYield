@@ -24,7 +24,7 @@ import polars as pl
 import requests
 
 from pyield.config import TIMEZONE_BZ
-from pyield.converters import DateScalar, convert_input_dates
+from pyield.converters import DateScalar, convert_dates
 from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ def _build_download_url(
     Returns:
         The formatted URL for the API request
     """
-    start = convert_input_dates(start)
+    start = convert_dates(start)
     start_str = start.strftime("%d/%m/%Y")
 
     api_url = BASE_URL
@@ -82,7 +82,7 @@ def _build_download_url(
     api_url += f"&dataInicial={start_str}"
 
     if end:
-        end = convert_input_dates(end)
+        end = convert_dates(end)
         end_str = end.strftime("%d/%m/%Y")
         api_url += f"&dataFinal={end_str}"
 
@@ -146,9 +146,9 @@ def _fetch_data_from_url(
         DataFrame with the requested data
     """
     # 1. Converter datas usando a função auxiliar existente
-    start_date = convert_input_dates(start)
+    start_date = convert_dates(start)
     # Se a data final não for fornecida, usar a data de hoje para o cálculo do período
-    end_date = convert_input_dates(end) if end else dt.datetime.now(TIMEZONE_BZ).date()
+    end_date = convert_dates(end) if end else dt.datetime.now(TIMEZONE_BZ).date()
 
     # Verificação simples e pragmática baseada em dias. Se o período for
     # menor que nosso limite de segurança, faz uma chamada única.
