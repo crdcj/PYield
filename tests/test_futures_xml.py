@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pandas as pd
 import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
@@ -13,41 +12,48 @@ from pyield.b3.futures import xml as fx
 def prepare_data(
     contract_code: ContractOptions,
     date: str,
-) -> tuple:
-    """Prepares the data for comparison."""
-    converted_date = pd.to_datetime(date, format="%d-%m-%Y")
-    file_date = converted_date.strftime("%y%m%d")
+) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """Prepare Polars DataFrames for comparison eliminating pandas usage.
+
+    Steps:
+    - Build file path from provided date string (DD-MM-YYYY)
+    - Read XML report (already returns Polars)
+    - Clean and normalize specific columns
+    - Fetch futures data (Polars)
+    - Align columns and filter to expected tickers only
+    """
+    # Date parsing manually to avoid pandas dependency
+    day, month, year = date.split("-")
+    file_date = f"{year[2:]}{month}{day}"  # YYMMDD
     file_path = Path(f"./tests/data/SPRD{file_date}.zip")
 
     expected_df = fx.read_xml_report(file_path=file_path, contract_code=contract_code)
-    for col in expected_df.columns:
-        if col == "FinancialVolume":
-            expected_df[col] = expected_df[col].round(0).astype("Int64[pyarrow]")
 
-    # AvgRate can have different values in the XML file
-    # and in the B3 website. We drop it to avoid comparison issues.
-    # if "AvgRate" in expected_df.columns:
-    #     expected_df = expected_df.drop(columns=["AvgRate"])
-    for col in ["AvgRate", "ForwardRate"]:
-        if col in expected_df.columns:
-            expected_df = expected_df.drop(columns=[col])
+    # Round FinancialVolume to integer (keep as Int64 if present)
+    if "FinancialVolume" in expected_df.columns:
+        expected_df = expected_df.with_columns(
+            pl.col("FinancialVolume").round(0).cast(pl.Int64)
+        )
+
+    # Drop variable rate columns if present
+    drop_cols = [c for c in ["AvgRate", "ForwardRate"] if c in expected_df.columns]
+    if drop_cols:
+        expected_df = expected_df.drop(drop_cols)
 
     result_df = yd.futures(contract_code=contract_code, date=date)
 
-    # Ensure that both DataFrames have the same columns
-    expected_cols = set(expected_df.columns)
-    result_cols = set(result_df.columns)
-    common_cols = list(expected_cols & result_cols)
-    result_df = result_df[common_cols].copy()
-    expected_df = expected_df[common_cols].copy()
+    # Ensure both DataFrames have same columns
+    common_cols = list(set(expected_df.columns) & set(result_df.columns))
+    expected_df = expected_df.select(common_cols)
+    result_df = result_df.select(common_cols)
 
-    # XML files can have less tickers than the B3 website (in zero open contracts)
-    result_df = result_df.query(
-        "TickerSymbol in @expected_df.TickerSymbol"
-    ).reset_index(drop=True)
-
-    result_df = pl.from_pandas(result_df)
-    expected_df = pl.from_pandas(expected_df)
+    # Filter result_df to expected tickers (XML might have fewer tickers)
+    if "TickerSymbol" in expected_df.columns:
+        expected_tickers = expected_df.get_column("TickerSymbol")
+        # Use implode to avoid deprecation warning on is_in ambiguity
+        result_df = result_df.filter(
+            pl.col("TickerSymbol").is_in(expected_tickers.implode())
+        )
 
     return result_df, expected_df
 

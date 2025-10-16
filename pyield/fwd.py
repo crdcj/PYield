@@ -5,8 +5,8 @@ import polars as pl
 def forwards(
     bdays: pd.Series | pl.Series | list[int] | tuple[int],
     rates: pd.Series | pl.Series | list[float] | tuple[float],
-    groupby_dates: pd.Series | None = None,
-) -> pd.Series:
+    groupby_dates: pd.Series | pl.Series | None = None,
+) -> pl.Series:
     r"""
     Calcula taxas a termo (forward rates) a partir de taxas zero (spot rates).
 
@@ -65,48 +65,58 @@ def forwards(
         >>> bdays = [10, 20, 30]
         >>> rates = [0.05, 0.06, 0.07]
         >>> yd.forwards(bdays, rates)
-        0        0.05
-        1    0.070095
-        2    0.090284
-        dtype: double[pyarrow]
+        shape: (3,)
+        Series: 'fwd' [f64]
+        [
+            0.05
+            0.070095
+            0.090284
+        ]
 
         >>> # Exemplo com agrupamento (a última está isolada em outro grupo)
         >>> groupby_dates = [1, 1, 2]
         >>> yd.forwards(bdays, rates, groupby_dates)
-        0    0.05
-        1    0.070095
-        2    0.07
-        dtype: double[pyarrow]
+        shape: (3,)
+        Series: 'fwd' [f64]
+        [
+            0.05
+            0.070095
+            0.07
+        ]
 
         >>> # Exemplo com taxas indicativas de NTN-B em 16-09-2025
         >>> from pyield import ntnb
         >>> df = ntnb.data("16-09-2025")
         >>> yd.forwards(df["BDToMat"], df["IndicativeRate"])
-        0       0.0943
-        1     0.071549
-        2     0.072439
-        3     0.069558
-        4     0.076614
-        5     0.076005
-        6     0.071325
-        7     0.069915
-        8     0.068105
-        9     0.071278
-        10    0.069117
-        11    0.070373
-        12    0.073286
-        dtype: double[pyarrow]
+        shape: (13,)
+        Series: 'fwd' [f64]
+        [
+            0.0943
+            0.071549
+            0.072439
+            0.069558
+            0.076614
+            …
+            0.068105
+            0.071278
+            0.069117
+            0.070373
+            0.073286
+        ]
 
         >>> # Valores nulos são descartados no cálculo e retornados como nulos
         >>> du = [230, 415, 730, None, 914]
         >>> tx = [0.0943, 0.084099, 0.079052, 0.1, 0.077134]
         >>> yd.forwards(du, tx)
-        0      0.0943
-        1    0.071549
-        2    0.072439
-        3        <NA>
-        4    0.069558
-        dtype: double[pyarrow]
+        shape: (5,)
+        Series: 'fwd' [f64]
+        [
+            0.0943
+            0.071549
+            0.072439
+            null
+            0.069558
+        ]
 
         >>> # O algoritmo ordena os dados de entrada antes do cálculo e retorna
         >>> # os resultados na ordem original. Valores duplicados são tratados
@@ -114,11 +124,14 @@ def forwards(
         >>> du = [230, 730, 415, 230]
         >>> tx = [0.1, 0.079052, 0.084099, 0.0943]
         >>> yd.forwards(du, tx)
-        0      0.0943
-        1    0.072439
-        2    0.071549
-        3      0.0943
-        dtype: double[pyarrow]
+        shape: (4,)
+        Series: 'fwd' [f64]
+        [
+            0.0943
+            0.072439
+            0.071549
+            0.0943
+        ]
 
     Note:
         - A função ordena os dados de entrada primeiro por `groupby_dates`,
@@ -164,18 +177,13 @@ def forwards(
             .otherwise(pl.col("fwd"))
         )
     )
-    s_fwd = (
-        df_orig.join(
-            df_fwd,
-            on=["du_k", "groupby_date"],
-            how="left",
-            maintain_order="left",
-        )
-        .get_column("fwd")
-        .to_pandas(use_pyarrow_extension_array=True)
-    )
+    s_fwd = df_orig.join(
+        df_fwd,
+        on=["du_k", "groupby_date"],
+        how="left",
+        maintain_order="left",
+    ).get_column("fwd")
 
-    s_fwd.name = None  # Remover o nome da série
     return s_fwd
 
 

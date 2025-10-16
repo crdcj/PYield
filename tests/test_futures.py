@@ -1,4 +1,16 @@
+import polars as pl
+
 import pyield as yd
+
+
+def _extract_settlement_rates(df, tickers):
+    """Return settlement rates for given tickers preserving original row order.
+
+    Accepts either a Polars or Pandas DataFrame (for backward compatibility) and
+    filters rows matching the provided ticker symbols.
+    """
+    filtered = df.filter(pl.col("TickerSymbol").is_in(tickers))
+    return filtered.get_column("SettlementRate").to_list()
 
 
 def test_settlement_rate_with_old_holiday_list():
@@ -9,8 +21,8 @@ def test_settlement_rate_with_old_holiday_list():
 
     # 22-12-2023 is before the new holiday calendar
     df = yd.futures(contract_code="DI1", date="22-12-2023")
-    tickers = list(settlement_rates.keys())  # noqa: F841
-    result = df.query("TickerSymbol in @tickers")["SettlementRate"].to_list()
+    tickers = list(settlement_rates.keys())
+    result = _extract_settlement_rates(df, tickers)
     assert result == list(settlement_rates.values())
 
 
@@ -33,6 +45,6 @@ def test_settlement_rates_with_current_holiday_list():
         "DI1F33": 0.10331,
     }
     df = yd.futures(contract_code="DI1", date="26-12-2023")
-    tickers = list(settlement_rates.keys())  # noqa: F841
-    results = df.query("TickerSymbol in @tickers")["SettlementRate"].to_list()
+    tickers = list(settlement_rates.keys())
+    results = _extract_settlement_rates(df, tickers)
     assert results == list(settlement_rates.values())

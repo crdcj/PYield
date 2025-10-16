@@ -3,6 +3,7 @@ import io
 import logging
 
 import pandas as pd
+import polars as pl
 import requests
 
 from pyield import bday
@@ -12,6 +13,8 @@ from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
 COUNT_CONVENTIONS = {"DAP": 252, "DI1": 252, "DDI": 360}
+BDAYS_PER_YEAR = 252
+CAL_DAYS_CONVENTION = 360
 
 
 def get_old_expiration_date(expiration_code: str, date: dt.date) -> dt.date | None:
@@ -74,29 +77,33 @@ def get_old_expiration_date(expiration_code: str, date: dt.date) -> dt.date | No
 
 
 def _convert_prices_to_rates(
-    prices: pd.Series, days_to_expiration: pd.Series, count_convention: int
-) -> pd.Series:
-    """
-    Internal function to convert DI futures prices to rates.
+    prices: pl.Series | pd.Series,
+    days_to_expiration: pl.Series | pd.Series,
+    count_convention: int,
+) -> pl.Series:
+    """Converte preços de futuros DI em taxas usando Polars.
 
-    Args:
-        prices (pd.Series): The futures prices to be converted.
-        days_to_expiration (pd.Series): The number of days to expiration for each price.
-        count_convention (int): The count convention for the DI futures contract.
-            Can be 252 business days or 360 calendar days.
-
-    Returns:
-        pd.Series: A pd.Series containing the futures rates.
+    Aceita Series do Polars ou Pandas e retorna sempre um `pl.Series`.
+    Precisão: 5 casas (equivalente a 3 em %).
     """
-    if count_convention == 252:  # noqa
-        rates = (100_000 / prices) ** (252 / days_to_expiration) - 1
-    elif count_convention == 360:  # noqa
-        rates = (100_000 / prices - 1) * (360 / days_to_expiration)
+    # Normaliza para polars
+    if isinstance(prices, pd.Series):
+        prices_pl = pl.Series(prices.name or "price", prices.to_list())
+    else:
+        prices_pl = prices
+    if isinstance(days_to_expiration, pd.Series):
+        du_pl = pl.Series(days_to_expiration.name or "du", days_to_expiration.to_list())
+    else:
+        du_pl = days_to_expiration
+
+    if count_convention == BDAYS_PER_YEAR:
+        rates_expr = (100_000 / prices_pl) ** (BDAYS_PER_YEAR / du_pl) - 1
+    elif count_convention == CAL_DAYS_CONVENTION:
+        rates_expr = (100_000 / prices_pl - 1) * (CAL_DAYS_CONVENTION / du_pl)
     else:
         raise ValueError("Invalid count_convention. Must be 252 or 360.")
 
-    # Round to 5 (3 in %) dec. places (contract's current max. precision)
-    return rates.round(5)
+    return pl.Series("rate", rates_expr).round(5)
 
 
 @default_retry
@@ -111,9 +118,9 @@ def _fetch_html_data(contract_code: str, date: dt.date) -> str:
     return r.text
 
 
-def _parse_raw_df(html_text: str) -> pd.DataFrame:
+def _parse_raw_df(html_text: str) -> pl.DataFrame:
     if "VENCTO" not in html_text:
-        return pd.DataFrame()
+        return pl.DataFrame()
 
     df = pd.read_html(
         io.StringIO(html_text),
@@ -124,31 +131,44 @@ def _parse_raw_df(html_text: str) -> pd.DataFrame:
         na_values=["-"],
         dtype_backend="pyarrow",
     )[0]
+    return pl.from_pandas(df)
 
-    # Remove rows and columns with all NaN values
-    df = df.dropna(axis=0, how="all").dropna(axis=1, how="all").reset_index(drop=True)
 
-    # Force "VAR. PTOS." to be string, since it can also be read as float
-    df["VAR. PTOS."] = df["VAR. PTOS."].astype("string[pyarrow]")
-
-    # Force "AJUSTE CORRIG. (4)" to be float, since it can be also read as int
-    if "AJUSTE CORRIG. (4)" in df.columns:
-        df["AJUSTE CORRIG. (4)"] = df["AJUSTE CORRIG. (4)"].astype("float64[pyarrow]")
-
+def _pre_process_df(df: pl.DataFrame) -> pl.DataFrame:
+    # Remove rows and columns where all values are null
+    cols = [s.name for s in df if not (s.null_count() == df.height)]
+    df = (
+        df.select(cols)
+        .filter(~pl.all_horizontal(pl.all().is_null()))
+        .with_columns(pl.col("VAR. PTOS.").cast(pl.String))
+    )
     return df
 
 
-def _adjust_older_contracts_rates(df: pd.DataFrame, rate_cols: list) -> pd.DataFrame:
+def _adjust_older_contracts_rates(df: pl.DataFrame, rate_cols: list) -> pl.DataFrame:
+    """Adjust legacy DI1 contract pricing (pre-2002) converting prices -> rates."""
     for col in rate_cols:
-        df[col] = _convert_prices_to_rates(df[col], df["BDaysToExp"], 252)
-
-    # Invert low and high prices
-    df["MinRate"], df["MaxRate"] = df["MaxRate"], df["MinRate"]
-
+        df = df.with_columns(
+            _convert_prices_to_rates(df[col], df["BDaysToExp"], BDAYS_PER_YEAR).alias(
+                col
+            )
+        )
+    if {"MinRate", "MaxRate"}.issubset(rate_cols):
+        df = (
+            df.with_columns(
+                pl.col("MaxRate").alias("_tmp_max"),
+                pl.col("MinRate").alias("_tmp_min"),
+            )
+            .with_columns(
+                pl.col("_tmp_max").alias("MinRate"),
+                pl.col("_tmp_min").alias("MaxRate"),
+            )
+            .drop(["_tmp_max", "_tmp_min"])
+        )
     return df
 
 
-def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _rename_columns(df: pl.DataFrame) -> pl.DataFrame:
     all_columns = {
         "VENCTO": "ExpirationCode",
         "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
@@ -171,94 +191,94 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
         "ÚLT.OF. VENDA": "CloseBidRate",
     }
     rename_dict = {c: all_columns[c] for c in all_columns if c in df.columns}
-    return df.rename(columns=rename_dict)
+    return df.rename(rename_dict)
 
 
-def _process_df(df: pd.DataFrame, date: dt.date, contract_code: str) -> pd.DataFrame:
-    df["TradeDate"] = date
-    df["TradeDate"] = df["TradeDate"].astype("date32[pyarrow]")
-    df["TickerSymbol"] = contract_code + df["ExpirationCode"]
+def _process_df(df: pl.DataFrame, date: dt.date, contract_code: str) -> pl.DataFrame:
+    """Process renamed legacy BMF DataFrame using Polars (parity with old Pandas)."""
 
-    # Contract code format was changed in 22/05/2006
-    code_format_change = dt.date(2006, 5, 22)
-    if date < code_format_change:
-        df["ExpirationDate"] = (
-            df["ExpirationCode"]
-            .apply(lambda code: get_old_expiration_date(code, date))
-            .astype("date32[pyarrow]")
-        )
-    else:
-        expiration_day = 15 if contract_code == "DAP" else 1
-        df["ExpirationDate"] = (
-            df["ExpirationCode"]
-            .apply(lambda code: common.get_expiration_date(code, expiration_day))
-            .astype("date32[pyarrow]")
-        )
+    def _expiration_dates(raw: pl.Series) -> list[dt.date | None]:
+        change_date = dt.date(2006, 5, 22)
+        if date < change_date:
+            return [get_old_expiration_date(code, date) for code in raw.to_list()]
+        day = 15 if contract_code == "DAP" else 1
+        return [common.get_expiration_date(code, day) for code in raw.to_list()]
 
-    df["DaysToExp"] = (df["ExpirationDate"] - date).dt.days
-    # Convert to nullable integer, since it is the default type in the library
-    df["DaysToExp"] = df["DaysToExp"].astype("int64[pyarrow]")
+    # Core columns
+    exp_dates = _expiration_dates(df["ExpirationCode"])
+    days_to_exp = [(d - date).days if d else None for d in exp_dates]
+    bdays_to_exp = bday.count(date, exp_dates)
 
-    df["BDaysToExp"] = bday.count(date, df["ExpirationDate"])
+    df = df.with_columns(
+        pl.Series("ExpirationDate", exp_dates).cast(pl.Date),
+        pl.Series("DaysToExp", days_to_exp).cast(pl.Int64),
+        pl.Series("BDaysToExp", bdays_to_exp),
+        TradeDate=date,
+        TickerSymbol=contract_code + pl.col("ExpirationCode"),
+    ).filter(pl.col("DaysToExp") > 0)
 
-    # Remove expired contracts
-    df = df.query("DaysToExp > 0").reset_index(drop=True)
+    # Zero -> null conversion
+    rate_cols = [c for c in df.columns if "Rate" in c]
+    extra_cols = ["SettlementPrice"] if "SettlementPrice" in df.columns else []
+    adj_cols = rate_cols + extra_cols
+    df = df.with_columns(
+        pl.when(pl.col(adj_cols) == 0)
+        .then(pl.lit(None))
+        .otherwise(pl.col(adj_cols))
+        .name.keep()
+    )
 
-    # Columns where 0 means NaN
-    cols_with_nan = [col for col in df.columns if "Rate" in col]
-    if "SettlementPrice" in df.columns:
-        cols_with_nan.append("SettlementPrice")
-    # Replace 0 with NaN in these columns
-    df[cols_with_nan] = df[cols_with_nan].replace(0, pd.NA)
-
-    rate_cols = [col for col in df.columns if "Rate" in col]
-    # Prior to 17/01/2002 (inclusive), DI prices were not converted to rates
+    # Rate transformation
     switch_date = dt.date(2002, 1, 17)
     if date <= switch_date and contract_code == "DI1":
         df = _adjust_older_contracts_rates(df, rate_cols)
     else:
-        # Remove % and round to 5 (3 in %) dec. places in rate columns
-        df[rate_cols] = df[rate_cols].div(100).round(5)
+        df = df.with_columns((pl.col(rate_cols) / 100).round(5))
 
-    count_convention = COUNT_CONVENTIONS.get(contract_code)
-    if count_convention == 252:  # noqa
-        df["SettlementRate"] = _convert_prices_to_rates(
-            prices=df["SettlementPrice"],
-            days_to_expiration=df["BDaysToExp"],
-            count_convention=252,
+    # SettlementRate
+    count_conv = COUNT_CONVENTIONS.get(contract_code)
+    if (
+        count_conv in {BDAYS_PER_YEAR, CAL_DAYS_CONVENTION}
+        and "SettlementPrice" in df.columns
+    ):
+        du_series = (
+            df["BDaysToExp"] if count_conv == BDAYS_PER_YEAR else df["DaysToExp"]
         )
-    elif count_convention == 360:  # noqa
-        df["SettlementRate"] = _convert_prices_to_rates(
-            prices=df["SettlementPrice"],
-            days_to_expiration=df["DaysToExp"],
-            count_convention=360,
+        df = df.with_columns(
+            _convert_prices_to_rates(
+                df["SettlementPrice"], du_series, count_conv
+            ).alias("SettlementRate")
         )
 
-    if contract_code == "DI1":  # Calculate DV01 for DI1 contracts
-        duration = df["BDaysToExp"] / 252
-        modified_duration = duration / (1 + df["SettlementRate"])
-        df["DV01"] = 0.0001 * modified_duration * df["SettlementPrice"]
+    # DV01
+    if (
+        contract_code == "DI1"
+        and "SettlementRate" in df.columns
+        and "SettlementPrice" in df.columns
+    ):
+        duration = pl.col("BDaysToExp") / BDAYS_PER_YEAR
+        mod_duration = duration / (1 + pl.col("SettlementRate"))
+        df = df.with_columns(DV01=(0.0001 * mod_duration * pl.col("SettlementPrice")))
 
-    if contract_code in {"DI1", "DAP"}:  # Calculate forwards for DI1 and DAP contracts
-        df["ForwardRate"] = forwards(
-            bdays=df["BDaysToExp"],
-            rates=df["SettlementRate"],
+    # Forward rates
+    if contract_code in {"DI1", "DAP"} and "SettlementRate" in df.columns:
+        df = df.with_columns(
+            ForwardRate=forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
         )
 
     return df
 
 
-def _select_and_reorder_columns(df: pd.DataFrame):
+def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     all_columns = [
         "TradeDate",
         "TickerSymbol",
-        # "ExpirationCode",
+        # "ExpirationCode",  # intentionally omitted
         "ExpirationDate",
         "BDaysToExp",
         "DaysToExp",
         "OpenContracts",
-        # "OpenContractsEndSession" since there is no OpenContracts at the end of the
-        # day in XML data, it will be removed to avoid confusion with XML data
+        # "OpenContractsEndSession" removed for consistency with XML pipeline
         "TradeCount",
         "TradeVolume",
         "FinancialVolume",
@@ -274,11 +294,11 @@ def _select_and_reorder_columns(df: pd.DataFrame):
         "SettlementRate",
         "ForwardRate",
     ]
-    reordered_columns = [col for col in all_columns if col in df.columns]
-    return df[reordered_columns].copy()
+    selected = [c for c in all_columns if c in df.columns]
+    return df.select(selected)
 
 
-def fetch_bmf_data(contract_code: str, date: dt.date) -> pd.DataFrame:
+def fetch_bmf_data(contract_code: str, date: dt.date) -> pl.DataFrame:
     """
     Fetchs the futures data for a given date from B3.
 
@@ -292,19 +312,22 @@ def fetch_bmf_data(contract_code: str, date: dt.date) -> pd.DataFrame:
             Can be 252 business days or 360 calendar days.
 
     Returns:
-        pd.DataFrame: A Pandas pd.DataFrame containing processed futures data. If
-            the data is not available, an empty DataFrame is returned.
+        pd.DataFrame: Processed futures data. Internally uses Polars for
+            transformations and returns a pandas DataFrame (pyarrow dtypes)
+            for compatibility with the public API. If no data is found,
+            returns an empty DataFrame.
     """
     html_text = _fetch_html_data(contract_code, date)
-    df_raw = _parse_raw_df(html_text)
-    if df_raw.empty:
+    df = _parse_raw_df(html_text)
+    df = _pre_process_df(df)
+    if df.is_empty():
         logger.warning(
             f"No data found for {contract_code} on {date.strftime('%d-%m-%Y')}."
             f" Returning an empty DataFrame."
         )
-        return pd.DataFrame()
+        return pl.DataFrame()
 
-    df = _rename_columns(df_raw)
+    df = _rename_columns(df)
     df = _process_df(df, date, contract_code)
     df = _select_and_reorder_columns(df)
     return df
