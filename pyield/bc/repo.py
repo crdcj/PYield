@@ -15,7 +15,6 @@ ac1b013d13d6fb1d9d9e251b8000121e, 2025-08-21   , 12:00     , TodoMercado        
 import io
 import logging
 
-import pandas as pd
 import polars as pl
 import requests
 
@@ -175,7 +174,7 @@ def _sort_and_select_columns(df: pl.DataFrame) -> pl.DataFrame:
 def repos(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """Consulta e retorna leilões de operações compromissadas (repos) do BCB.
 
     Semântica dos parâmetros de período (API OData):
@@ -188,7 +187,7 @@ def repos(
         end: Data final (inclusive) ou None.
 
     Returns:
-        DataFrame pandas com colunas normalizadas em português e tipos
+        DataFrame polars com colunas normalizadas em português e tipos
         enriquecidos (frações decimais, inteiros, datas). Em caso de erro
         retorna DataFrame vazio e registra log da exceção.
 
@@ -213,10 +212,15 @@ def repos(
     Examples:
         >>> from pyield import bc
         >>> bc.repos(start="21-08-2025", end="21-08-2025")
-          data_leilao data_liquidacao data_retorno hora_inicio  ...  publico_permitido  volume_aceito  taxa_corte percentual_aceito
-        0  2025-08-21      2025-08-21   2025-08-22    09:00:00  ...      SomenteDealer   647707406000       0.149             100.0
-        1  2025-08-21      2025-08-22   2025-11-21    12:00:00  ...        TodoMercado     5000000000      0.9978             35.87
-        [2 rows x 12 columns]
+        shape: (2, 12)
+        ┌─────────────┬─────────────────┬──────────────┬─────────────┬───┬───────────────────┬───────────────┬────────────┬───────────────────┐
+        │ data_leilao ┆ data_liquidacao ┆ data_retorno ┆ hora_inicio ┆ … ┆ publico_permitido ┆ volume_aceito ┆ taxa_corte ┆ percentual_aceito │
+        │ ---         ┆ ---             ┆ ---          ┆ ---         ┆   ┆ ---               ┆ ---           ┆ ---        ┆ ---               │
+        │ date        ┆ date            ┆ date         ┆ time        ┆   ┆ str               ┆ i64           ┆ f64        ┆ f64               │
+        ╞═════════════╪═════════════════╪══════════════╪═════════════╪═══╪═══════════════════╪═══════════════╪════════════╪═══════════════════╡
+        │ 2025-08-21  ┆ 2025-08-21      ┆ 2025-08-22   ┆ 09:00:00    ┆ … ┆ SomenteDealer     ┆ 647707406000  ┆ 0.149      ┆ 100.0             │
+        │ 2025-08-21  ┆ 2025-08-22      ┆ 2025-11-21   ┆ 12:00:00    ┆ … ┆ TodoMercado       ┆ 5000000000    ┆ 0.9978     ┆ 35.87             │
+        └─────────────┴─────────────────┴──────────────┴─────────────┴───┴───────────────────┴───────────────┴────────────┴───────────────────┘
     """  # noqa: E501
     try:
         url = _build_url(start=start, end=end)
@@ -225,11 +229,11 @@ def repos(
         df = _read_csv_data(api_csv)
         if df.is_empty():
             logger.warning("Sem dados de leilões para o período especificado.")
-            return pd.DataFrame()
+            return pl.DataFrame()
         df = _process_df(df)
         df = _handle_zero_volume(df)
         df = _sort_and_select_columns(df)
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
     except Exception as e:
         logger.exception(f"Erro ao buscar dados de leilões na API do BC: {e}")
-        return pd.DataFrame()
+        return pl.DataFrame()

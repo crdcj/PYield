@@ -1,6 +1,5 @@
 import datetime as dt
 import logging
-from typing import Literal
 
 import pandas as pd
 import polars as pl
@@ -77,8 +76,7 @@ def data(
     dates: DateScalar | DateArray,
     month_start: bool = False,
     pre_filter: bool = False,
-    return_format: Literal["pandas", "polars"] = "pandas",
-) -> pd.DataFrame | pl.DataFrame:
+) -> pl.DataFrame:
     """
     Retrieves DI Futures contract data for a specific trade date.
 
@@ -98,21 +96,34 @@ def data(
             format. Can be 'pandas' (default) or 'polars'.
 
     Returns:
-        pd.DataFrame | pl.DataFrame: A DataFrame containing the DI futures contract
+        pl.DataFrame: A DataFrame containing the DI futures contract
             data for the specified dates, sorted by trade dates and expiration dates.
             Returns an empty DataFrame if no data is found
 
     Examples:
         >>> from pyield import di1
         >>> df = di1.data(dates="16-10-2024", month_start=True)
-        >>> df.iloc[:5, :5]  # Show the first five rows and columns
-           TradeDate ExpirationDate TickerSymbol  BDaysToExp  OpenContracts
-        0 2024-10-16     2024-11-01       DI1X24          12        1744269
-        1 2024-10-16     2024-12-01       DI1Z24          31        1429375
-        2 2024-10-16     2025-01-01       DI1F25          52        5423969
-        3 2024-10-16     2025-02-01       DI1G25          74         279491
-        4 2024-10-16     2025-03-01       DI1H25          94         344056
-    """
+        >>> df
+        shape: (38, 19)
+        ┌────────────┬────────────────┬──────────────┬────────────┬───┬──────────────┬──────────────┬────────────────┬─────────────┐
+        │ TradeDate  ┆ ExpirationDate ┆ TickerSymbol ┆ BDaysToExp ┆ … ┆ CloseBidRate ┆ CloseAskRate ┆ SettlementRate ┆ ForwardRate │
+        │ ---        ┆ ---            ┆ ---          ┆ ---        ┆   ┆ ---          ┆ ---          ┆ ---            ┆ ---         │
+        │ date       ┆ date           ┆ str          ┆ i64        ┆   ┆ f64          ┆ f64          ┆ f64            ┆ f64         │
+        ╞════════════╪════════════════╪══════════════╪════════════╪═══╪══════════════╪══════════════╪════════════════╪═════════════╡
+        │ 2024-10-16 ┆ 2024-11-01     ┆ DI1X24       ┆ 12         ┆ … ┆ 0.10656      ┆ 0.10652      ┆ 0.10653        ┆ 0.10653     │
+        │ 2024-10-16 ┆ 2024-12-01     ┆ DI1Z24       ┆ 31         ┆ … ┆ 0.10914      ┆ 0.10912      ┆ 0.1091         ┆ 0.110726    │
+        │ 2024-10-16 ┆ 2025-01-01     ┆ DI1F25       ┆ 52         ┆ … ┆ 0.1117       ┆ 0.11164      ┆ 0.11164        ┆ 0.1154      │
+        │ 2024-10-16 ┆ 2025-02-01     ┆ DI1G25       ┆ 74         ┆ … ┆ 0.11375      ┆ 0.11355      ┆ 0.11362        ┆ 0.118314    │
+        │ 2024-10-16 ┆ 2025-03-01     ┆ DI1H25       ┆ 94         ┆ … ┆ 0.11595      ┆ 0.1157       ┆ 0.1157         ┆ 0.12343     │
+        │ …          ┆ …              ┆ …            ┆ …          ┆ … ┆ …            ┆ …            ┆ …              ┆ …           │
+        │ 2024-10-16 ┆ 2035-01-01     ┆ DI1F35       ┆ 2556       ┆ … ┆ 0.1265       ┆ 0.1264       ┆ 0.1265         ┆ 0.124455    │
+        │ 2024-10-16 ┆ 2036-01-01     ┆ DI1F36       ┆ 2805       ┆ … ┆ null         ┆ null         ┆ 0.1263         ┆ 0.124249    │
+        │ 2024-10-16 ┆ 2037-01-01     ┆ DI1F37       ┆ 3058       ┆ … ┆ null         ┆ null         ┆ 0.1263         ┆ 0.1263      │
+        │ 2024-10-16 ┆ 2038-01-01     ┆ DI1F38       ┆ 3307       ┆ … ┆ null         ┆ null         ┆ 0.1263         ┆ 0.1263      │
+        │ 2024-10-16 ┆ 2039-01-01     ┆ DI1F39       ┆ 3558       ┆ … ┆ null         ┆ null         ┆ 0.1263         ┆ 0.1263      │
+        └────────────┴────────────────┴──────────────┴────────────┴───┴──────────────┴──────────────┴────────────────┴─────────────┘
+
+    """  # noqa: E501
     df = _get_data(dates=dates)
 
     if month_start:
@@ -142,7 +153,7 @@ def data(
             check_sortedness=False,  # já garantimos a ordenação
         )
 
-    return cv.to_return_format(df, return_format)
+    return df
 
 
 def _build_input_dataframe(
@@ -195,8 +206,7 @@ def interpolate_rates(
     dates: DateScalar | DateArray | None,
     expirations: DateScalar | DateArray | None,
     extrapolate: bool = True,
-    return_format: Literal["pandas", "polars"] = "pandas",
-) -> pd.Series | pl.Series:
+) -> pl.Series:
     """
     Interpolates DI rates for specified trade dates and expiration dates.
 
@@ -240,10 +250,13 @@ def interpolate_rates(
         ...     dates=["08-05-2025", "09-05-2025", "10-05-2025"],
         ...     expirations=["01-01-2027", "25-11-2027", "01-01-2030"],
         ... )
-        0    0.13972
-        1    0.134613
-        2    <NA>
-        Name: irate, dtype: double[pyarrow]
+        shape: (3,)
+        Series: 'irate' [f64]
+        [
+            0.13972
+            0.134613
+            null
+        ]
 
         >>> # Interpolate rates for a single trade date and multiple expiration dates
         >>> # There is no DI Contract in 09-05-2025 with expiration 01-01-2050
@@ -253,9 +266,12 @@ def interpolate_rates(
         ...     dates="25-04-2025",
         ...     expirations=["01-01-2027", "01-01-2050"],
         ... )
-        0    0.13901
-        1    0.13881
-        Name: irate, dtype: double[pyarrow]
+        shape: (2,)
+        Series: 'irate' [f64]
+        [
+            0.13901
+            0.13881
+        ]
 
         >>> # With extrapolation set to False, the second rate will be NaN
         >>> # Note: 0.13576348733268917 is shown as 0.135763
@@ -264,9 +280,12 @@ def interpolate_rates(
         ...     expirations=["01-11-2027", "01-01-2050"],
         ...     extrapolate=False,
         ... )
-        0    0.135763
-        1    NaN
-        Name: irate, dtype: double[pyarrow]
+        shape: (2,)
+        Series: 'irate' [f64]
+        [
+            0.135763
+            NaN
+        ]
 
     Notes:
         - All available settlement rates are used for the flat-forward interpolation.
@@ -315,8 +334,7 @@ def interpolate_rates(
         )
 
     # Return the series with interpolated rates
-    irates = dfi.get_column("irate")
-    return cv.to_return_format(irates, return_format)
+    return dfi.get_column("irate")
 
 
 def interpolate_rate(
@@ -408,9 +426,7 @@ def interpolate_rate(
     return ff_interp(bd)
 
 
-def available_trade_dates(
-    return_format: Literal["pandas", "polars"] = "pandas",
-) -> pd.Series | pl.Series:
+def available_trade_dates() -> pl.Series:
     """
     Returns all available (completed) trading dates in the DI dataset.
 
@@ -418,19 +434,22 @@ def available_trade_dates(
     historical DI futures data cache, sorted chronologically.
 
     Returns:
-        pd.Series: A sorted Series of unique trade dates (dt.date)
-                   for which DI data is available.
+        pl.Series: A sorted Series of unique trade dates (dt.date)
+            for which DI data is available.
 
     Examples:
         >>> from pyield import di1
         >>> # DI Futures series starts from 1995-01-02
         >>> di1.available_trade_dates().head(5)
-        0   1995-01-02
-        1   1995-01-03
-        2   1995-01-04
-        3   1995-01-05
-        4   1995-01-06
-        Name: available_dates, dtype: date32[day][pyarrow]
+        shape: (5,)
+        Series: 'available_dates' [date]
+        [
+            1995-01-02
+            1995-01-03
+            1995-01-04
+            1995-01-05
+            1995-01-06
+        ]
     """
     available_dates = (
         get_cached_dataset("di1")
@@ -439,4 +458,4 @@ def available_trade_dates(
         .sort()
         .alias("available_dates")
     )
-    return cv.to_return_format(available_dates, return_format)
+    return available_dates
