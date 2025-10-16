@@ -92,8 +92,6 @@ def data(
             those whose expiration dates match known prefixed Treasury bond (LTN, NTN-F)
             maturities from the TPF dataset nearest to the given trade date.
             Defaults to False.
-        return_format (Literal['pandas','polars'], optional): Specifies the return
-            format. Can be 'pandas' (default) or 'polars'.
 
     Returns:
         pl.DataFrame: A DataFrame containing the DI futures contract

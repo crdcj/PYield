@@ -219,7 +219,6 @@ def _add_di_data(df: pl.DataFrame) -> pl.DataFrame:
         dates=reference_date,
         expirations=df.get_column("MaturityDate"),
         extrapolate=True,
-        return_format="polars",
     )
     df = df.with_columns(di_rates.alias("DIRate"))
     return df
@@ -437,8 +436,6 @@ def tpf_maturities(
         date (DateScalar): The reference date for maturity dates.
         bond_type (str): The bond type to filter by (e.g., 'PRE' for both 'LTN'
             and 'NTN-F', or specify 'LTN' or 'NTN-F' directly).
-        return_format (Literal["pandas", "polars"], optional): The desired return
-            format. Defaults to "pandas".
 
     Returns:
         pl.Series: A Series containing unique maturity dates for the

@@ -2,6 +2,7 @@ import datetime as dt
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 import pyield.converters as cv
 import pyield.interpolator as ip
@@ -78,9 +79,7 @@ def maturities(date: DateScalar) -> pd.Series:
         dtype: date32[day][pyarrow]
     """
     df_rates = data(date)
-    s_maturities = df_rates["MaturityDate"]
-    s_maturities.name = None
-    return s_maturities
+    return df_rates["MaturityDate"]
 
 
 def _generate_all_coupon_dates(
@@ -114,9 +113,9 @@ def _generate_all_coupon_dates(
 
     # First coupon date must be after the reference date, otherwise, it can lead to
     # division by zero where BDays == 0 (bootstrap method for instance)
-    coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
-    coupon_dates = coupon_dates[coupon_dates > start]
-    return coupon_dates.reset_index(drop=True)
+    coupon_dates = pl.Series(coupon_dates)
+    coupon_dates = coupon_dates.filter(coupon_dates > start)
+    return coupon_dates
 
 
 def payment_dates(
@@ -164,7 +163,7 @@ def payment_dates(
         coupon_date -= pd.DateOffset(months=6)
         coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
 
-    coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
+    coupon_dates = pl.Series(coupon_dates)
     return coupon_dates.sort_values().reset_index(drop=True)
 
 

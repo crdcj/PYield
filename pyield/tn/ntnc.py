@@ -2,6 +2,7 @@ import datetime as dt
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 import pyield.converters as cv
 import pyield.tn.tools as tl
@@ -55,10 +56,15 @@ def data(date: DateScalar) -> pd.DataFrame:
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.data("23-08-2024")
-          ReferenceDate BondType  SelicCode  ...   AskRate IndicativeRate   DIRate
-        0    2024-08-23    NTN-C     770100  ...  0.057587       0.059617  0.11575
-        ...
-    """
+        shape: (1, 14)
+        ┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬─────────┐
+        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate  │
+        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---     │
+        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64      ┆ f64      ┆ f64            ┆ f64     │
+        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪══════════╪══════════╪════════════════╪═════════╡
+        │ 2024-08-23    ┆ NTN-C    ┆ 770100    ┆ 2000-07-01    ┆ … ┆ 0.061591 ┆ 0.057587 ┆ 0.059617       ┆ 0.11575 │
+        └───────────────┴──────────┴───────────┴───────────────┴───┴──────────┴──────────┴────────────────┴─────────┘
+    """  # noqa: E501
     return anbima.tpf_data(date, "NTN-C")
 
 
@@ -81,19 +87,21 @@ def payment_dates(
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.payment_dates("21-03-2025", "01-01-2031")
-        0    2025-07-01
-        1    2026-01-01
-        2    2026-07-01
-        3    2027-01-01
-        4    2027-07-01
-        5    2028-01-01
-        6    2028-07-01
-        7    2029-01-01
-        8    2029-07-01
-        9    2030-01-01
-        10   2030-07-01
-        11   2031-01-01
-        dtype: date32[day][pyarrow]
+        shape: (12,)
+        Series: '' [date]
+        [
+            2025-07-01
+            2026-01-01
+            2026-07-01
+            2027-01-01
+            2027-07-01
+            …
+            2029-01-01
+            2029-07-01
+            2030-01-01
+            2030-07-01
+            2031-01-01
+        ]
     """
     # Validate and normalize dates
     settlement = cv.convert_input_dates(settlement)
@@ -114,8 +122,7 @@ def payment_dates(
         coupon_date -= pd.DateOffset(months=6)
         coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
 
-    coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
-    return coupon_dates.sort_values().reset_index(drop=True)
+    return pl.Series(coupon_dates).sort()
 
 
 def cash_flows(
@@ -169,7 +176,8 @@ def cash_flows(
     cfs = np.where(p_dates == maturity, final_pmt, coupon_pmt).tolist()
 
     # Return a dataframe with the payment dates and cash flows
-    return pd.DataFrame(data={"PaymentDate": p_dates, "CashFlow": cfs})
+    df = pl.DataFrame({"PaymentDate": p_dates, "CashFlow": cfs})
+    return df
 
 
 def quotation(

@@ -9,7 +9,7 @@ from pyield import converters as cv
 from pyield import interpolator as ip
 from pyield.b3 import di1
 from pyield.converters import DateScalar
-from pyield.tn import pre, tools
+from pyield.tn import tools
 
 """
 Constants calculated as per Anbima Rules
@@ -329,43 +329,6 @@ def spot_rates(  # noqa
         df = df.query("MaturityDate in @ntnf_maturities").reset_index(drop=True)
 
     return df
-
-
-def di_spreads(date: DateScalar) -> pd.DataFrame:
-    """
-    Calculates the DI spread for the NTN-F based on ANBIMA's indicative rates.
-
-    This function fetches the indicative rates for the NTN-F bonds and the DI futures
-    rates and calculates the spread between these rates in basis points.
-
-    Parameters:
-        date (DateScalar): The reference date for the spread calculation.
-
-    Returns:
-        pd.DataFrame: DataFrame with columns "MaturityDate", "DISpread".
-
-    Examples:
-        >>> from pyield import ntnf
-        >>> df_spreads = ntnf.di_spreads("23-08-2024")
-        >>> df_spreads["DISpread"] = df_spreads["DISpread"] * 10_000  # Convert to bps
-        >>> df_spreads
-          MaturityDate  DISpread
-        0   2025-01-01     -5.38
-        1   2027-01-01      4.39
-        2   2029-01-01      7.37
-        3   2031-01-01     12.58
-        4   2033-01-01      7.67
-        5   2035-01-01     12.76
-
-    """
-    # Fetch DI Spreads for the reference date
-    df = pre.pre_spreads(date)
-    df = (
-        df.query("BondType == 'NTN-F'")
-        .sort_values(["MaturityDate"])
-        .reset_index(drop=True)
-    )
-    return df[["MaturityDate", "DISpread"]]
 
 
 def _bisection_method(func, a, b, tol=1e-8, maxiter=100):

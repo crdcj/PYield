@@ -1,5 +1,3 @@
-from typing import Literal
-
 import pandas as pd
 import polars as pl
 
@@ -152,9 +150,7 @@ def _validate_final_result(df_combined: pd.DataFrame) -> None:
         raise ValueError("Final result contains NaN values in SpotRate column")
 
 
-def pre_spreads(
-    date: DateScalar, return_format: Literal["pandas", "polars"] = "pandas"
-) -> pd.DataFrame | pl.DataFrame:
+def di_spreads(date: DateScalar) -> pl.DataFrame:
     """
     Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on
     ANBIMA's indicative rates.
@@ -168,7 +164,7 @@ def pre_spreads(
         date (DateScalar): The reference date for the spread calculation.
 
     Returns:
-        pd.DataFrame: DataFrame containing the bond type, maturity date and the
+        pl.DataFrame: DataFrame containing the bond type, maturity date and the
             calculated spread in basis points.
 
     Raises:
@@ -176,30 +172,30 @@ def pre_spreads(
 
     Examples:
         >>> from pyield import pre
-        >>> pre.pre_spreads("30-05-2025")
-        BondType MaturityDate  DISpread
-        0       LTN   2025-07-01  0.000439
-        1       LTN   2025-10-01   -0.0009
-        2       LTN   2026-01-01 -0.000488
-        3       LTN   2026-04-01 -0.000445
-        4       LTN   2026-07-01  0.000081
-        5       LTN   2026-10-01  -0.00005
-        6       LTN   2027-04-01   0.00028
-        7       LTN   2027-07-01   0.00025
-        8       LTN   2028-01-01  0.000055
-        9       LTN   2028-07-01   0.00015
-        10      LTN   2029-01-01  0.001077
-        11      LTN   2030-01-01    0.0011
-        12      LTN   2032-01-01  0.001124
-        13    NTN-F   2027-01-01 -0.000331
-        14    NTN-F   2029-01-01  0.001421
-        15    NTN-F   2031-01-01  0.002161
-        16    NTN-F   2033-01-01  0.001151
-        17    NTN-F   2035-01-01    0.0022
+        >>> df = pre.di_spreads("30-05-2025")
+        >>> print(df.with_columns(pl.col("DISpread") * 10000))  # Convert to bps
+        shape: (18, 3)
+        ┌──────────┬──────────────┬──────────┐
+        │ BondType ┆ MaturityDate ┆ DISpread │
+        │ ---      ┆ ---          ┆ ---      │
+        │ str      ┆ date         ┆ f64      │
+        ╞══════════╪══════════════╪══════════╡
+        │ LTN      ┆ 2025-07-01   ┆ 4.39     │
+        │ LTN      ┆ 2025-10-01   ┆ -9.0     │
+        │ LTN      ┆ 2026-01-01   ┆ -4.88    │
+        │ LTN      ┆ 2026-04-01   ┆ -4.45    │
+        │ LTN      ┆ 2026-07-01   ┆ 0.81     │
+        │ …        ┆ …            ┆ …        │
+        │ NTN-F    ┆ 2027-01-01   ┆ -3.31    │
+        │ NTN-F    ┆ 2029-01-01   ┆ 14.21    │
+        │ NTN-F    ┆ 2031-01-01   ┆ 21.61    │
+        │ NTN-F    ┆ 2033-01-01   ┆ 11.51    │
+        │ NTN-F    ┆ 2035-01-01   ┆ 22.0     │
+        └──────────┴──────────────┴──────────┘
     """
     # Fetch DI rates for the reference date
     converted_date = cv.convert_input_dates(date)
-    df_di = di1.data(dates=converted_date, month_start=True, return_format="polars")
+    df_di = di1.data(dates=converted_date, month_start=True)
     if "SettlementRate" not in df_di.columns or df_di.is_empty():
         raise ValueError("DI data is missing the 'SettlementRate' column or is empty.")
 
@@ -209,9 +205,9 @@ def pre_spreads(
     )
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_ltn = tpf.tpf_data(converted_date, "LTN", return_format="polars")
-    df_ntnf = tpf.tpf_data(converted_date, "NTN-F", return_format="polars")
-    df_pre: pl.DataFrame = pl.concat([df_ltn, df_ntnf], how="diagonal")
+    df_ltn = tpf.tpf_data(converted_date, "LTN")
+    df_ntnf = tpf.tpf_data(converted_date, "NTN-F")
+    df_pre = pl.concat([df_ltn, df_ntnf], how="diagonal")
 
     # Calculate the DI spread as the difference between indicative and settlement rates
     df_spreads = (
@@ -221,4 +217,4 @@ def pre_spreads(
         .sort("BondType", "MaturityDate")
     )
 
-    return cv.to_return_format(df_spreads, return_format)
+    return df_spreads
