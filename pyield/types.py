@@ -13,3 +13,4 @@ DateArray = (
     | list[DateScalar]
     | tuple[DateScalar, ...]
 )
+FloatArray = np.ndarray | list[float] | tuple[float, ...] | pd.Series | pl.Series

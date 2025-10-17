@@ -1,7 +1,6 @@
 import math
 from collections.abc import Callable
 
-import numpy as np
 import pandas as pd
 import polars as pl
 
@@ -9,7 +8,7 @@ from pyield import anbima, bday
 from pyield import converters as cv
 from pyield import interpolator as ip
 from pyield.tn import tools
-from pyield.types import DateArray, DateScalar
+from pyield.types import DateArray, DateScalar, FloatArray
 
 """
 Constants calculated as per Anbima Rules
@@ -22,7 +21,6 @@ COUPON_DAY = 1
 COUPON_MONTHS = {1, 7}
 COUPON_PMT = 48.80885
 FINAL_PMT = 1048.80885  # 1000 + 48.80885
-FloatArray = np.ndarray | list[float] | tuple[float, ...] | pd.Series | pl.Series
 
 
 def data(date: DateScalar) -> pl.DataFrame:
