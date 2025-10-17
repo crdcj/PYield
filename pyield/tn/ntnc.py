@@ -42,7 +42,7 @@ def _get_final_pmt(maturity: dt.date) -> float:
     return FINAL_PMT
 
 
-def data(date: DateScalar) -> pd.DataFrame:
+def data(date: DateScalar) -> pl.DataFrame:
     """
     Fetch the LTN Anbima indicative rates for the given reference date.
 
@@ -70,7 +70,7 @@ def data(date: DateScalar) -> pd.DataFrame:
 def payment_dates(
     settlement: DateScalar,
     maturity: DateScalar,
-) -> pd.Series:
+) -> pl.Series:
     """
     Generate all remaining coupon dates between a given date and the maturity date.
     The dates are inclusive. The NTN-C bond is determined by its maturity date.
@@ -81,7 +81,7 @@ def payment_dates(
         maturity (DateScalar): The maturity date.
 
     Returns:
-        pd.Series: Series of coupon dates within the specified range.
+        pl.Series: Series of coupon dates within the specified range.
 
     Examples:
         >>> from pyield import ntnc
@@ -127,7 +127,7 @@ def payment_dates(
 def cash_flows(
     settlement: DateScalar,
     maturity: DateScalar,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Generate the cash flows for NTN-C bonds between the settlement and maturity dates.
 
@@ -137,7 +137,7 @@ def cash_flows(
         maturity (DateScalar): The maturity date of the bond.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
+        pl.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
 
     Returned columns:
         - PaymentDate: The payment date of the cash flow
@@ -170,14 +170,14 @@ def cash_flows(
     maturity = cv.convert_dates(maturity)
 
     # Get the coupon dates between the settlement and maturity dates
-    p_dates = payment_dates(settlement, maturity)
+    pay_dates = payment_dates(settlement, maturity)
 
     # Get the right coupon payment and final payment values
     coupon_pmt = _get_coupon_pmt(maturity)
     final_pmt = _get_final_pmt(maturity)
 
     # Build dataframe and assign cash flows using Polars expression (avoid NumPy)
-    df = pl.DataFrame({"PaymentDate": p_dates}).with_columns(
+    df = pl.DataFrame({"PaymentDate": pay_dates}).with_columns(
         pl.when(pl.col("PaymentDate") == maturity)
         .then(final_pmt)
         .otherwise(coupon_pmt)
@@ -285,17 +285,16 @@ def duration(
         >>> ntnc.duration("21-03-2025", "01-01-2031", 0.067626)
         4.405363320448003
     """
-    # Return NaN if any input is NaN
-    if any(pd.isna(x) for x in [settlement, maturity, rate]):
-        return float("NaN")
-
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 
+    s = pl.Series([settlement, maturity, rate], strict=False, nan_to_null=True)
+    if s.is_null().any():
+        return float("NaN")
+
     df = cash_flows(settlement, maturity)
-    df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252
-    df["DCF"] = df["CashFlow"] / (1 + rate) ** df["BY"]
-    duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
-    # Return the duration as native float
-    return float(duration)
+    b_years = bday.count(settlement, df["PaymentDate"]) / 252
+    dcf = df["CashFlow"] / (1 + rate) ** b_years
+    duration = (dcf * b_years).sum() / dcf.sum()
+    return duration

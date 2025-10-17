@@ -1,8 +1,8 @@
-import datetime as dt
 from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from pyield import anbima, bday
 from pyield import converters as cv
@@ -24,7 +24,7 @@ COUPON_PMT = 48.80885
 FINAL_PMT = 1048.80885  # 1000 + 48.80885
 
 
-def data(date: DateScalar) -> pd.DataFrame:
+def data(date: DateScalar) -> pl.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
@@ -37,17 +37,25 @@ def data(date: DateScalar) -> pd.DataFrame:
     Examples:
         >>> from pyield import ntnf
         >>> ntnf.data("23-08-2024")
-          ReferenceDate BondType  SelicCode  ...   AskRate IndicativeRate   DIRate
-        0    2024-08-23    NTN-F     950199  ...  0.107524       0.107692  0.10823
-        1    2024-08-23    NTN-F     950199  ...  0.114948       0.115109  0.11467
-        2    2024-08-23    NTN-F     950199  ...   0.11621       0.116337   0.1156
-        3    2024-08-23    NTN-F     950199  ...  0.116958       0.117008  0.11575
-        ...
-    """
+        shape: (6, 14)
+        ┌─────────────┬──────────┬───────────┬────────────┬───┬──────────┬──────────┬────────────┬─────────┐
+        │ ReferenceDa ┆ BondType ┆ SelicCode ┆ IssueBaseD ┆ … ┆ BidRate  ┆ AskRate  ┆ Indicative ┆ DIRate  │
+        │ te          ┆ ---      ┆ ---       ┆ ate        ┆   ┆ ---      ┆ ---      ┆ Rate       ┆ ---     │
+        │ ---         ┆ str      ┆ i64       ┆ ---        ┆   ┆ f64      ┆ f64      ┆ ---        ┆ f64     │
+        │ date        ┆          ┆           ┆ date       ┆   ┆          ┆          ┆ f64        ┆         │
+        ╞═════════════╪══════════╪═══════════╪════════════╪═══╪══════════╪══════════╪════════════╪═════════╡
+        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2014-01-10 ┆ … ┆ 0.107864 ┆ 0.107524 ┆ 0.107692   ┆ 0.10823 │
+        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2016-01-15 ┆ … ┆ 0.11527  ┆ 0.114948 ┆ 0.115109   ┆ 0.11467 │
+        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2018-01-05 ┆ … ┆ 0.116468 ┆ 0.11621  ┆ 0.116337   ┆ 0.1156  │
+        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2020-01-10 ┆ … ┆ 0.117072 ┆ 0.116958 ┆ 0.117008   ┆ 0.11575 │
+        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2022-01-07 ┆ … ┆ 0.116473 ┆ 0.116164 ┆ 0.116307   ┆ 0.11554 │
+        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2024-01-05 ┆ … ┆ 0.116662 ┆ 0.116523 ┆ 0.116586   ┆ 0.11531 │
+        └─────────────┴──────────┴───────────┴────────────┴───┴──────────┴──────────┴────────────┴─────────┘
+    """  # noqa
     return anbima.tpf_data(date, "NTN-F")
 
 
-def maturities(date: DateScalar) -> pd.Series:
+def maturities(date: DateScalar) -> pl.Series:
     """
     Fetch the NTN-F bond maturities available for the given reference date.
 
@@ -60,32 +68,18 @@ def maturities(date: DateScalar) -> pd.Series:
     Examples:
         >>> from pyield import ntnf
         >>> ntnf.maturities("23-08-2024")
-        0   2025-01-01
-        1   2027-01-01
-        2   2029-01-01
-        3   2031-01-01
-        4   2033-01-01
-        5   2035-01-01
-        dtype: date32[day][pyarrow]
+        shape: (6,)
+        Series: 'MaturityDate' [date]
+        [
+            2025-01-01
+            2027-01-01
+            2029-01-01
+            2031-01-01
+            2033-01-01
+            2035-01-01
+        ]
     """
-    df_rates = data(date)
-    s_maturities = df_rates["MaturityDate"]
-    s_maturities.name = None
-    return s_maturities
-
-
-def _check_maturity_date(maturity: dt.date) -> None:
-    """
-    Check if the maturity date is a valid NTN-F maturity date.
-
-    Args:
-        maturity (dt.date): The maturity date to be checked.
-
-    Raises:
-        ValueError: If the maturity date is not the 1st of January.
-    """
-    if maturity.day != 1 or maturity.month not in COUPON_MONTHS:
-        raise ValueError("NTN-F maturity date must be the 1st of January.")
+    return data(date)["MaturityDate"]
 
 
 def payment_dates(
@@ -117,9 +111,6 @@ def payment_dates(
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 
-    # Check if the maturity date is valid
-    _check_maturity_date(maturity)
-
     # Check if maturity date is after the start date
     if maturity <= settlement:
         raise ValueError("Maturity date must be after the settlement date.")
@@ -135,16 +126,14 @@ def payment_dates(
         coupon_date -= pd.DateOffset(months=6)
         coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
 
-    # Return the coupon dates as a sorted Series
-    coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
-    return coupon_dates.sort_values().reset_index(drop=True)
+    return pl.Series(coupon_dates).sort()
 
 
 def cash_flows(
     settlement: DateScalar,
     maturity: DateScalar,
     adj_payment_dates: bool = False,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Generate the cash flows for the NTN-F bond between the settlement (exclusive) and
     maturity dates (inclusive). The cash flows are the coupon payments and the final
@@ -161,23 +150,35 @@ def cash_flows(
 
     Examples:
         >>> from pyield import ntnf
-        >>> ntnf.cash_flows("15-05-2024", "01-01-2025")
-          PaymentDate    CashFlow
-        0  2024-07-01    48.80885
-        1  2025-01-01  1048.80885
+        >>> ntnf.cash_flows("15-05-2024", "01-01-2027")
+        shape: (6, 2)
+        ┌─────────────┬────────────┐
+        │ PaymentDate ┆ CashFlow   │
+        │ ---         ┆ ---        │
+        │ date        ┆ f64        │
+        ╞═════════════╪════════════╡
+        │ 2024-07-01  ┆ 48.80885   │
+        │ 2025-01-01  ┆ 48.80885   │
+        │ 2025-07-01  ┆ 48.80885   │
+        │ 2026-01-01  ┆ 48.80885   │
+        │ 2026-07-01  ┆ 48.80885   │
+        │ 2027-01-01  ┆ 1048.80885 │
+        └─────────────┴────────────┘
     """
     # Validate input dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
-    _check_maturity_date(maturity)
 
-    # Get the coupon payment dates between the settlement and maturity dates
+    # Get the payment dates between the settlement and maturity dates
     pay_dates = payment_dates(settlement, maturity)
 
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    cf_values = np.where(pay_dates == maturity, FINAL_PMT, COUPON_PMT)
-
-    df = pd.DataFrame(data={"PaymentDate": pay_dates, "CashFlow": cf_values})
+    df = pl.DataFrame(data={"PaymentDate": pay_dates}).with_columns(
+        pl.when(pl.col("PaymentDate") == maturity)
+        .then(FINAL_PMT)
+        .otherwise(COUPON_PMT)
+        .alias("CashFlow")
+    )
 
     if adj_payment_dates:
         df["PaymentDate"] = bday.offset(df["PaymentDate"], 0)
