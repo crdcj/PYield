@@ -25,12 +25,13 @@ import requests
 from pyield import bday
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
-from pyield.converters import DateScalar, convert_dates
+from pyield.converters import convert_dates
 from pyield.data_cache import get_cached_dataset
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnc import duration as duration_c
 from pyield.tn.ntnf import duration as duration_f
+from pyield.types import DateScalar
 
 BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 

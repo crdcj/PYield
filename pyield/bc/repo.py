@@ -20,8 +20,8 @@ import requests
 
 import pyield.converters as cv
 from pyield import bday
-from pyield.converters import DateScalar
 from pyield.retry import default_retry
+from pyield.types import DateScalar
 
 logger = logging.getLogger(__name__)
 

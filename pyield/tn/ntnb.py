@@ -8,7 +8,7 @@ import pyield.converters as cv
 import pyield.interpolator as ip
 import pyield.tn.tools as tl
 from pyield import anbima, bday
-from pyield.converters import DateScalar
+from pyield.types import DateScalar
 
 """
 Constants calculated as per Anbima Rules and in base 100

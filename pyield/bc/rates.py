@@ -22,10 +22,11 @@ from typing import Any
 import pandas as pd
 import polars as pl
 import requests
+from converters import convert_dates
 
 from pyield.config import TIMEZONE_BZ
-from pyield.converters import DateScalar, convert_dates
 from pyield.retry import default_retry
+from pyield.types import DateScalar
 
 logger = logging.getLogger(__name__)
 

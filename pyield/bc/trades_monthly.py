@@ -19,8 +19,9 @@ import polars as pl
 import requests
 from requests.exceptions import HTTPError
 
-from pyield.converters import DateScalar, convert_dates
+from pyield.converters import convert_dates
 from pyield.retry import default_retry
+from pyield.types import DateScalar
 
 logger = logging.getLogger(__name__)
 

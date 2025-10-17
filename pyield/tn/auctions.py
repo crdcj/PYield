@@ -10,10 +10,10 @@ from polars import selectors as cs
 
 from pyield import bc, bday
 from pyield import converters as cv
-from pyield.converters import DateScalar
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
+from pyield.types import DateScalar
 
 logger = logging.getLogger(__name__)
 

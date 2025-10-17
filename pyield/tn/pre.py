@@ -5,8 +5,8 @@ import pyield.converters as cv
 from pyield import anbima, bday
 from pyield.anbima import tpf
 from pyield.b3 import di1
-from pyield.converters import DateScalar
 from pyield.tn import ntnf
+from pyield.types import DateScalar
 
 
 def spot_rates(date: DateScalar) -> pd.DataFrame:

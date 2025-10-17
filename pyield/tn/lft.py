@@ -2,8 +2,8 @@ import pandas as pd
 
 import pyield.converters as cv
 from pyield import anbima, bday
-from pyield.converters import DateScalar
 from pyield.tn import tools
+from pyield.types import DateScalar
 
 
 def data(date: DateScalar) -> pd.DataFrame:

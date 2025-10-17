@@ -25,8 +25,8 @@ import requests
 
 import pyield.converters as cv
 from pyield.config import TIMEZONE_BZ
-from pyield.converters import DateScalar
 from pyield.retry import default_retry
+from pyield.types import DateScalar
 
 logger = logging.getLogger(__name__)
 

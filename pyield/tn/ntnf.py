@@ -8,8 +8,8 @@ import polars as pl
 from pyield import anbima, bday
 from pyield import converters as cv
 from pyield import interpolator as ip
-from pyield.converters import DateArray, DateScalar
 from pyield.tn import tools
+from pyield.types import DateArray, DateScalar
 
 """
 Constants calculated as per Anbima Rules

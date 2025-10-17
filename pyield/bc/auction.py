@@ -28,10 +28,10 @@ import requests
 import pyield.bc.ptax_api as pt
 import pyield.converters as cv
 from pyield import bday
-from pyield.converters import DateScalar
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
+from pyield.types import DateScalar
 
 logger = logging.getLogger(__name__)
 

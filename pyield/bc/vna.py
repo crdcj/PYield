@@ -1,7 +1,8 @@
 import requests
 
-from pyield.converters import DateScalar, convert_dates
+from pyield.converters import convert_dates
 from pyield.retry import default_retry
+from pyield.types import DateScalar
 
 
 @default_retry

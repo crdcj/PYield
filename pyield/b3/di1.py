@@ -7,8 +7,8 @@ import polars as pl
 import pyield.converters as cv
 from pyield import b3, bday, interpolator
 from pyield.config import TIMEZONE_BZ
-from pyield.converters import DateArray, DateScalar
 from pyield.data_cache import get_cached_dataset
+from pyield.types import DateArray, DateScalar
 
 logger = logging.getLogger(__name__)
 

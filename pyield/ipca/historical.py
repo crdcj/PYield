@@ -4,8 +4,9 @@ import pandas as pd
 import polars as pl
 import requests
 
-from pyield.converters import DateScalar, convert_dates
+from pyield.converters import convert_dates
 from pyield.retry import default_retry
+from pyield.types import DateScalar
 
 logger = logging.getLogger(__name__)
 IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"

@@ -1,11 +1,9 @@
-import pandas as pd
 import polars as pl
 
 import pyield.converters as cv
 from pyield import anbima, bday
-from pyield.b3 import di1
-from pyield.converters import DateScalar
 from pyield.tn import tools
+from pyield.types import DateScalar
 
 FACE_VALUE = 1000
 
@@ -147,51 +145,6 @@ def premium(ltn_rate: float, di_rate: float) -> float:
 
     # Retorno do cálculo do prêmio
     return ltn_daily_rate / di_daily_rate
-
-
-def historical_premium(
-    date: DateScalar,
-    maturity: DateScalar,
-) -> float:
-    """
-    Calculate the premium of the LTN bond over the DI Future rate for a given date.
-
-    Args:
-        date (DateScalar): The reference date to fetch the rates.
-        maturity (DateScalar): The maturity date of the LTN bond.
-
-    Returns:
-        float: The premium of the LTN bond over the DI Future rate for the given date.
-               If the data is not available, returns NaN.
-
-    Examples:
-        >>> from pyield import ltn
-        >>> ltn.historical_premium("22-08-2024", "01-01-2030")
-        1.0120718007994287
-
-    """
-    # Convert input dates to a consistent format
-    date = cv.convert_dates(date)
-    maturity = cv.convert_dates(maturity)
-
-    # Retrieve LTN rates for the reference date
-    df_anbima = data(date)
-    if df_anbima.is_empty():
-        return float("NaN")
-
-    # Extract the LTN rate for the specified maturity date
-    ltn_rates = df_anbima.filter(pl.col("MaturityDate") == maturity)["IndicativeRate"]
-    if ltn_rates.is_empty():
-        return float("NaN")
-    ltn_rate = float(ltn_rates[0])
-
-    # Retrieve DI rate for the reference date and maturity
-    di_rate = di1.interpolate_rate(date=date, expiration=maturity, extrapolate=True)
-    if pd.isna(di_rate):
-        return float("NaN")
-
-    # Calculate and return the premium using the extracted rates
-    return premium(ltn_rate, di_rate)
 
 
 def dv01(

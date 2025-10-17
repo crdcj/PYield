@@ -8,7 +8,7 @@ import polars as pl
 import pyield.bday.holidays as hl
 import pyield.converters as cv
 from pyield.config import TIMEZONE_BZ
-from pyield.converters import DateArray, DateScalar
+from pyield.types import DateArray, DateScalar
 
 IntegerScalar = int | np.integer
 IntegerArray = np.ndarray | list | tuple | pl.Series | pd.Series

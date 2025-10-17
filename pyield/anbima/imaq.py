@@ -18,7 +18,7 @@ import requests
 
 import pyield.converters as cv
 from pyield.anbima.tpf import tpf_data
-from pyield.converters import DateScalar
+from pyield.types import DateScalar
 
 # Configura o logger do módulo
 logger = logging.getLogger(__name__)

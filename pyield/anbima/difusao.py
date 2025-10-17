@@ -9,7 +9,7 @@ import requests
 
 import pyield.converters as cv
 from pyield import bday
-from pyield.converters import DateScalar
+from pyield.types import DateScalar
 
 # --- 1. Centralização e Organização das Constantes ---
 API_VERSION = "1.0018"
