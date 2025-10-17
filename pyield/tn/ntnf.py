@@ -22,6 +22,7 @@ COUPON_DAY = 1
 COUPON_MONTHS = {1, 7}
 COUPON_PMT = 48.80885
 FINAL_PMT = 1048.80885  # 1000 + 48.80885
+FloatArray = np.ndarray | list[float] | tuple[float, ...] | pd.Series | pl.Series
 
 
 def data(date: DateScalar) -> pl.DataFrame:
@@ -38,19 +39,18 @@ def data(date: DateScalar) -> pl.DataFrame:
         >>> from pyield import ntnf
         >>> ntnf.data("23-08-2024")
         shape: (6, 14)
-        ┌─────────────┬──────────┬───────────┬────────────┬───┬──────────┬──────────┬────────────┬─────────┐
-        │ ReferenceDa ┆ BondType ┆ SelicCode ┆ IssueBaseD ┆ … ┆ BidRate  ┆ AskRate  ┆ Indicative ┆ DIRate  │
-        │ te          ┆ ---      ┆ ---       ┆ ate        ┆   ┆ ---      ┆ ---      ┆ Rate       ┆ ---     │
-        │ ---         ┆ str      ┆ i64       ┆ ---        ┆   ┆ f64      ┆ f64      ┆ ---        ┆ f64     │
-        │ date        ┆          ┆           ┆ date       ┆   ┆          ┆          ┆ f64        ┆         │
-        ╞═════════════╪══════════╪═══════════╪════════════╪═══╪══════════╪══════════╪════════════╪═════════╡
-        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2014-01-10 ┆ … ┆ 0.107864 ┆ 0.107524 ┆ 0.107692   ┆ 0.10823 │
-        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2016-01-15 ┆ … ┆ 0.11527  ┆ 0.114948 ┆ 0.115109   ┆ 0.11467 │
-        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2018-01-05 ┆ … ┆ 0.116468 ┆ 0.11621  ┆ 0.116337   ┆ 0.1156  │
-        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2020-01-10 ┆ … ┆ 0.117072 ┆ 0.116958 ┆ 0.117008   ┆ 0.11575 │
-        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2022-01-07 ┆ … ┆ 0.116473 ┆ 0.116164 ┆ 0.116307   ┆ 0.11554 │
-        │ 2024-08-23  ┆ NTN-F    ┆ 950199    ┆ 2024-01-05 ┆ … ┆ 0.116662 ┆ 0.116523 ┆ 0.116586   ┆ 0.11531 │
-        └─────────────┴──────────┴───────────┴────────────┴───┴──────────┴──────────┴────────────┴─────────┘
+        ┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬─────────┐
+        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate  │
+        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---     │
+        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64      ┆ f64      ┆ f64            ┆ f64     │
+        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪══════════╪══════════╪════════════════╪═════════╡
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2014-01-10    ┆ … ┆ 0.107864 ┆ 0.107524 ┆ 0.107692       ┆ 0.10823 │
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2016-01-15    ┆ … ┆ 0.11527  ┆ 0.114948 ┆ 0.115109       ┆ 0.11467 │
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2018-01-05    ┆ … ┆ 0.116468 ┆ 0.11621  ┆ 0.116337       ┆ 0.1156  │
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2020-01-10    ┆ … ┆ 0.117072 ┆ 0.116958 ┆ 0.117008       ┆ 0.11575 │
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2022-01-07    ┆ … ┆ 0.116473 ┆ 0.116164 ┆ 0.116307       ┆ 0.11554 │
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2024-01-05    ┆ … ┆ 0.116662 ┆ 0.116523 ┆ 0.116586       ┆ 0.11531 │
+        └───────────────┴──────────┴───────────┴───────────────┴───┴──────────┴──────────┴────────────────┴─────────┘
     """  # noqa
     return anbima.tpf_data(date, "NTN-F")
 
@@ -341,7 +341,7 @@ def _bisection_method(func, a, b, tol=1e-8, maxiter=100):
     for _ in range(maxiter):
         midpoint = (a + b) / 2
         fmid = func(midpoint)
-        if np.abs(fmid) < tol or (b - a) / 2 < tol:
+        if abs(fmid) < tol or (b - a) / 2 < tol:
             return midpoint
         if fmid * fa < 0:
             b, fb = midpoint, fmid
@@ -389,8 +389,8 @@ def di_net_spread(  # noqa
     settlement: DateScalar,
     ntnf_maturity: DateScalar,
     ntnf_rate: float,
-    di_expirations: pd.Series,
-    di_rates: pd.Series,
+    di_expirations: DateScalar,
+    di_rates: FloatArray,
     initial_guess: float | None = None,
 ) -> float:
     """
@@ -428,36 +428,50 @@ def di_net_spread(  # noqa
         >>> round(spread * 10_000, 2)  # Convert to bps for display
         12.13
     """
-    # Create an interpolator for the DI rates using the flat-forward method
+    # 1. Validação e conversão de datas
     settlement = cv.convert_dates(settlement)
     ntnf_maturity = cv.convert_dates(ntnf_maturity)
+    di_expirations = cv.convert_dates(di_expirations)
+    # Force di_rates to be a Polars Series
+    if not isinstance(di_rates, pl.Series):
+        di_rates = pl.Series(di_rates)
 
+    # 2. Validação dos inputs de DI
+    if len(di_rates) != len(di_expirations):
+        raise ValueError("di_rates and di_expirations must have the same length.")
+    if di_rates.is_empty():
+        return float("NaN")
+
+    # 3. Criação do interpolador
     ff_interpolator = ip.Interpolator(
         "flat_forward",
         bday.count(settlement, di_expirations),
         di_rates,
     )
+    df = cash_flows(settlement, ntnf_maturity)
 
-    # Ensure the DI data is valid
-    if len(di_rates) != len(di_expirations):
-        raise ValueError("di_rates and di_expirations must have the same length.")
-    if len(di_rates) == 0:
-        return float("NaN")
+    bdays_to_payment = bday.count(settlement, df["PaymentDate"])
+    byears_to_payment = bdays_to_payment / 252
 
-    # Calculate cash flows and business days between settlement and payment dates
-    df = cash_flows(settlement, ntnf_maturity).reset_index()
-    df["BDToMat"] = bday.count(settlement, df["PaymentDate"])
+    df = df.with_columns(
+        BDaysToPayment=bdays_to_payment,
+    ).with_columns(
+        DIRateInterp=pl.col("BDaysToPayment").map_elements(
+            ff_interpolator, return_dtype=pl.Float64
+        ),
+    )
 
-    byears = bday.count(settlement, df["PaymentDate"]) / 252
-    di_interp = df["BDToMat"].apply(ff_interpolator)
+    # 5. Extração dos dados para o cálculo numérico
     bond_price = price(settlement, ntnf_maturity, ntnf_rate)
     bond_cash_flows = df["CashFlow"]
+    di_interp = df["DIRateInterp"]
 
-    def price_difference(p):
-        # Difference between the bond's price and its discounted cash flows
-        return (bond_cash_flows / (1 + di_interp + p) ** byears).sum() - bond_price
+    # 6. Função de diferença de preço para o solver
+    def price_difference(p: float) -> float:
+        discounted_cf = bond_cash_flows / (1 + di_interp + p) ** byears_to_payment
+        return discounted_cf.sum() - bond_price
 
-    # Solve for the spread that zeroes the price difference using the bisection method
+    # 7. Resolver para o spread
     return _solve_spread(price_difference, initial_guess)
 
 
