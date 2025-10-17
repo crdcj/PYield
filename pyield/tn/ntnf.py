@@ -1,3 +1,4 @@
+import math
 from collections.abc import Callable
 
 import numpy as np
@@ -7,7 +8,6 @@ import polars as pl
 from pyield import anbima, bday
 from pyield import converters as cv
 from pyield import interpolator as ip
-from pyield.b3 import di1
 from pyield.converters import DateScalar
 from pyield.tn import tools
 
@@ -172,6 +172,9 @@ def cash_flows(
     # Get the payment dates between the settlement and maturity dates
     pay_dates = payment_dates(settlement, maturity)
 
+    if adj_payment_dates:
+        pay_dates = bday.offset(pay_dates, 0)
+
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
     df = pl.DataFrame(data={"PaymentDate": pay_dates}).with_columns(
         pl.when(pl.col("PaymentDate") == maturity)
@@ -179,10 +182,6 @@ def cash_flows(
         .otherwise(COUPON_PMT)
         .alias("CashFlow")
     )
-
-    if adj_payment_dates:
-        df["PaymentDate"] = bday.offset(df["PaymentDate"], 0)
-
     return df
 
 
@@ -469,6 +468,8 @@ def di_net_spread(  # noqa
         bday.count(settlement, di_expirations),
         di_rates,
     )
+
+    # 4. Geração dos fluxos de caixa do NTN-F
     df = cash_flows(settlement, ntnf_maturity)
 
     bdays_to_payment = bday.count(settlement, df["PaymentDate"])
@@ -541,12 +542,15 @@ def premium(
           the present value of cash flows for the NTN-F bond using DI rates.
 
     """
-    ntnf_maturity = cv.convert_dates(ntnf_maturity)
+    # 1. Validação e conversão de datas (padrão consistente)
     settlement = cv.convert_dates(settlement)
+    ntnf_maturity = cv.convert_dates(ntnf_maturity)
+    di_expirations = cv.convert_dates(di_expirations)
+    if not isinstance(di_rates, pl.Series):
+        di_rates = pl.Series(di_rates)
 
-    df = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
-    df["BDToMat"] = bday.count(settlement, df["PaymentDate"])
-    df["BYears"] = df["BDToMat"] / 252
+    # 2. Preparação do DataFrame de fluxo de caixa e interpolador
+    df_cf = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
 
     ff_interpolator = ip.Interpolator(
         "flat_forward",
@@ -554,75 +558,43 @@ def premium(
         di_rates,
     )
 
-    df["DIRate"] = df["BDToMat"].apply(ff_interpolator)
+    # 3. Calcular dados externos (dias úteis) antes de usar no with_columns
+    bdays_to_payment = bday.count(settlement, df_cf.get_column("PaymentDate"))
 
-    # Calculate the present value of the cash flows using the DI rate
+    # 4. Construir o DataFrame final com todas as colunas necessárias
+    df = df_cf.with_columns(BDToMat=bdays_to_payment).with_columns(
+        BYears=pl.col("BDToMat") / 252,
+        DIRate=pl.col("BDToMat").map_elements(ff_interpolator, return_dtype=pl.Float64),
+    )
+
+    # 5. Calcular o preço do título usando as taxas DI interpoladas
     bond_price = tools.calculate_present_value(
         cash_flows=df["CashFlow"],
         rates=df["DIRate"],
-        periods=df["BDToMat"] / 252,
+        periods=df["BYears"],
     )
 
-    # Calculate the rate corresponding to this price
-    def price_difference(ytm):
-        # The ytm that zeroes the price difference
-        return (df["CashFlow"] / (1 + ytm) ** df["BYears"]).sum() - bond_price
+    def price_difference(ytm: float) -> float:
+        # A YTM que zera a diferença de preço
+        discounted_cf = df["CashFlow"] / (1 + ytm) ** df["BYears"]
+        return discounted_cf.sum() - bond_price
 
-    # Solve for the YTM that zeroes the price difference
+    # 7. Resolver para a YTM implícita
     di_ytm = _solve_spread(price_difference, ntnf_rate)
 
+    if math.isnan(di_ytm):
+        return float("NaN")
+
+    # 8. Calcular o prêmio final
     factor_ntnf = (1 + ntnf_rate) ** (1 / 252)
     factor_di = (1 + di_ytm) ** (1 / 252)
-    premium_np = (factor_ntnf - 1) / (factor_di - 1)
-    return float(premium_np)
 
+    # Evitar divisão por zero se o fator DI for 1
+    if factor_di == 1:
+        return float("inf") if factor_ntnf > 1 else 0.0
 
-def historical_premium(
-    date: DateScalar,
-    maturity: DateScalar,
-) -> float:
-    date = cv.convert_dates(date)
-    maturity = cv.convert_dates(maturity)
-
-    df_ntnf = data(date)
-    if df_ntnf.empty:
-        return float("NaN")
-
-    ntnf_ytms = df_ntnf.query("MaturityDate == @maturity")["IndicativeRate"]
-    if ntnf_ytms.empty:
-        return float("NaN")
-    ntnf_ytm = float(ntnf_ytms.iloc[0])
-
-    df = cash_flows(date, maturity, adj_payment_dates=True)
-    df["BDToMat"] = bday.count(date, df["PaymentDate"])
-    df["BYears"] = df["BDToMat"] / 252
-    df["ReferenceDate"] = date
-
-    df["DIRate"] = di1.interpolate_rates(
-        dates=df["ReferenceDate"],
-        expirations=df["PaymentDate"],
-        extrapolate=True,
-    )
-
-    # Calculate the present value of the cash flows using the DI rate
-    bond_price = tools.calculate_present_value(
-        cash_flows=df["CashFlow"],
-        rates=df["DIRate"],
-        periods=df["BDToMat"] / 252,
-    )
-
-    # Calculate the rate corresponding to this price
-    def price_difference(ytm):
-        # The ytm that zeroes the price difference
-        return (df["CashFlow"] / (1 + ytm) ** df["BYears"]).sum() - bond_price
-
-    # Solve for the YTM that zeroes the price difference
-    di_ytm = _solve_spread(price_difference, ntnf_ytm)
-
-    factor_ntnf = (1 + ntnf_ytm) ** (1 / 252)
-    factor_di = (1 + di_ytm) ** (1 / 252)
-
-    return float((factor_ntnf - 1) / (factor_di - 1))
+    premium_val = (factor_ntnf - 1) / (factor_di - 1)
+    return premium_val
 
 
 def duration(
@@ -646,20 +618,19 @@ def duration(
         >>> ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
         6.32854218039796
     """
-    # Return NaN if any input is NaN
-    if any(pd.isna(x) for x in [settlement, maturity, rate]):
-        return float("NaN")
-
     # Validate and normalize input dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 
+    s = pl.Series([settlement, maturity, rate], strict=False, nan_to_null=True)
+    if s.is_null().any():
+        return float("NaN")  # Early return if any input is invalid
+
     df = cash_flows(settlement, maturity)
-    df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252
-    df["DCF"] = df["CashFlow"] / (1 + rate) ** df["BY"]
-    duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
-    # Return the duration as native float
-    return float(duration)
+    byears = bday.count(settlement, df["PaymentDate"]) / 252
+    dcf = df["CashFlow"] / (1 + rate) ** byears
+    duration = (dcf * byears).sum() / dcf.sum()
+    return duration
 
 
 def dv01(

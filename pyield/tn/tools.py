@@ -1,6 +1,5 @@
 from typing import overload
 
-import pandas as pd  # still needed for calculate_present_value below
 import polars as pl
 
 
@@ -43,18 +42,12 @@ def truncate(values: float | int | pl.Series, decimal_places: int) -> float | pl
 
 
 def calculate_present_value(
-    cash_flows: pd.Series,
-    rates: pd.Series,
-    periods: pd.Series,
+    cash_flows: pl.Series,
+    rates: pl.Series,
+    periods: pl.Series,
 ) -> float:
-    # Return 0 if any input is empty
-    if cash_flows.empty or rates.empty or periods.empty:
-        return 0
-
-    # Reset the index to avoid issues with the series alignment
-    cash_flows = cash_flows.reset_index(drop=True)
-    rates = rates.reset_index(drop=True)
-    periods = periods.reset_index(drop=True)
+    if cash_flows.is_empty() or rates.is_empty() or periods.is_empty():
+        return 0  # Return 0 if any input is empty
 
     # Check if data have the same length
     if len(cash_flows) != len(rates) or len(cash_flows) != len(periods):
