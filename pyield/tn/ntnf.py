@@ -332,8 +332,29 @@ def spot_rates(  # noqa
     return df
 
 
-def _bisection_method(func, a, b, tol=1e-8, maxiter=100):
-    """Bisection method for root finding."""
+def _bisection_method(
+    func: Callable[[float], float],
+    a: float,
+    b: float,
+    tol: float = 1e-8,
+    maxiter: int = 100,
+) -> float:
+    """Bisection method for root finding.
+
+    Args:
+        func (Callable[[float], float]): Function for which the root is sought. Must
+            accept a single float and return a float.
+        a (float): Lower bound of the interval.
+        b (float): Upper bound of the interval.
+        tol (float): Tolerance for convergence. Defaults to 1e-8.
+        maxiter (int): Maximum number of iterations allowed. Defaults to 100.
+
+    Returns:
+        float: Approximate root of ``func`` within the interval ``[a, b]``.
+
+    Raises:
+        ValueError: If ``func`` does not change sign in the interval ``[a, b]``.
+    """
     fa, fb = func(a), func(b)
     if fa * fb > 0:
         raise ValueError("Function does not change sign in the interval.")
