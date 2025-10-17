@@ -4,9 +4,9 @@ from collections.abc import Callable
 import pandas as pd
 import polars as pl
 
+import pyield.converters as cv
+import pyield.interpolator as ip
 from pyield import anbima, bday
-from pyield import converters as cv
-from pyield import interpolator as ip
 from pyield.tn import tools
 from pyield.types import DateArray, DateScalar, FloatArray
 
