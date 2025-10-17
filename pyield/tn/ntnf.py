@@ -8,7 +8,7 @@ import polars as pl
 from pyield import anbima, bday
 from pyield import converters as cv
 from pyield import interpolator as ip
-from pyield.converters import DateScalar
+from pyield.converters import DateArray, DateScalar
 from pyield.tn import tools
 
 """
@@ -227,12 +227,12 @@ def price(
 
 def spot_rates(  # noqa
     settlement: DateScalar,
-    ltn_maturities: pd.Series,
-    ltn_rates: pd.Series,
-    ntnf_maturities: pd.Series,
-    ntnf_rates: pd.Series,
+    ltn_maturities: DateArray,
+    ltn_rates: FloatArray,
+    ntnf_maturities: DateArray,
+    ntnf_rates: FloatArray,
     show_coupons: bool = False,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Calculate the spot rates (zero coupon rates) for NTN-F bonds using the bootstrap
     method.
@@ -255,8 +255,9 @@ def spot_rates(  # noqa
             coupon payments. Defaults to False.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "BDToMat", "MaturityDate" and "SpotRate".
-            "BDToMat" is the business days from the settlement date to the maturities.
+        pl.DataFrame: DataFrame with columns "MaturityDate", "BDToMat" and
+            "SpotRate". "BDToMat" is the business days from the settlement date
+            to the maturities.
 
     Examples:
         >>> from pyield import ntnf, ltn
@@ -269,18 +270,30 @@ def spot_rates(  # noqa
         ...     ntnf_maturities=df_ntnf["MaturityDate"],
         ...     ntnf_rates=df_ntnf["IndicativeRate"],
         ... )
-          MaturityDate  BDToMat  SpotRate
-        0   2025-01-01       83  0.108837
-        1   2027-01-01      584  0.119981
-        2   2029-01-01     1083  0.122113
-        3   2031-01-01     1584  0.122231
-        4   2033-01-01     2088  0.121355
-        5   2035-01-01     2587  0.121398
+        shape: (6, 3)
+        ┌───────────────┬────────┬──────────┐
+        │ MaturityDate  ┆ BDToMat┆ SpotRate │
+        │ ---           ┆ ---    ┆ ---      │
+        │ date          ┆ i64    ┆ f64      │
+        ╞═══════════════╪════════╪══════════╡
+        │ 2025-01-01    ┆ 83     ┆ 0.108837 │
+        │ 2027-01-01    ┆ 584    ┆ 0.119981 │
+        │ 2029-01-01    ┆ 1083   ┆ 0.122113 │
+        │ 2031-01-01    ┆ 1584   ┆ 0.122231 │
+        │ 2033-01-01    ┆ 2088   ┆ 0.121355 │
+        │ 2035-01-01    ┆ 2587   ┆ 0.121398 │
+        └───────────────┴────────┴──────────┘
     """
-    # Process and validate the input data
+    # 1. Converter e normalizar inputs para Polars
     settlement = cv.convert_dates(settlement)
+    ltn_maturities = cv.convert_dates(ltn_maturities)
+    ntnf_maturities = cv.convert_dates(ntnf_maturities)
+    if not isinstance(ltn_rates, pd.Series):
+        ltn_rates = pl.Series(ltn_rates).cast(pl.Float64)
+    if not isinstance(ntnf_rates, pd.Series):
+        ntnf_rates = pl.Series(ntnf_rates).cast(pl.Float64)
 
-    # Create flat forward interpolators for LTN and NTN-F rates
+    # 2. Criar interpoladores (aceitam pl.Series diretamente)
     ltn_rate_interpolator = ip.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, ltn_maturities),
@@ -292,41 +305,84 @@ def spot_rates(  # noqa
         known_rates=ntnf_rates,
     )
 
-    # Generate all coupon dates up to the last NTN-F maturity date
-    all_coupon_dates = payment_dates(settlement, ntnf_maturities.max())
+    # 3. Gerar todas as datas de cupom até o último vencimento NTN-F
+    last_maturity = ntnf_maturities.max()
+    all_coupon_dates = payment_dates(settlement, last_maturity)
 
-    # Create a DataFrame with all coupon dates and the corresponding YTM
-    df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
-    df["BDToMat"] = bday.count(start=settlement, end=df["MaturityDate"])
-    df["BYears"] = df["BDToMat"] / 252
-    df["Coupon"] = COUPON_PMT
-    df["YTM"] = df["BDToMat"].apply(ntnf_rate_interpolator)
+    # 4. Construir DataFrame inicial
+    bdays_to_mat = bday.count(settlement, all_coupon_dates)
+    df = pl.DataFrame(
+        {
+            "MaturityDate": all_coupon_dates,
+            "BDToMat": bdays_to_mat,
+        }
+    ).with_columns(
+        BYears=pl.col("BDToMat") / 252,
+        Coupon=COUPON_PMT,
+        YTM=pl.col("BDToMat").map_elements(
+            ntnf_rate_interpolator, return_dtype=pl.Float64
+        ),
+    )
 
-    # The Bootstrap loop to calculate spot rates
-    for index, row in df.iterrows():
-        if row["MaturityDate"] <= ltn_maturities.max():
-            # Use LTN rates for maturities before the last LTN maturity date
-            df.at[index, "SpotRate"] = ltn_rate_interpolator(row["BDToMat"])
+    # 5. Loop de bootstrap (iterativo por dependência sequencial)
+    last_ltn_maturity = ltn_maturities.max()
+    maturities_list = df["MaturityDate"]
+    bdays_list = df["BDToMat"]
+    byears_list = df["BYears"]
+    ytm_list = df["YTM"]
+
+    solved_spot_rates: list[float] = []
+    spot_map: dict[pl.Date, float] = {}
+
+    for i in range(len(df)):
+        mat_date = maturities_list[i]
+        bdays_val = int(bdays_list[i])
+        byears_val = float(byears_list[i])
+        ytm_val = float(ytm_list[i])
+
+        # Caso esteja antes (ou igual) ao último vencimento LTN: usar interpolador LTN
+        if mat_date <= last_ltn_maturity:
+            spot_rate = ltn_rate_interpolator(bdays_val)
+            solved_spot_rates.append(spot_rate)
+            spot_map[mat_date] = spot_rate
             continue
 
-        # Calculate the present value of the coupon payments
-        cf_dates = payment_dates(settlement, row["MaturityDate"])[:-1]  # noqa
-        cf_df = df.query("MaturityDate in @cf_dates").reset_index(drop=True)
+        # Datas de cupom (exclui último pagamento) para este vencimento
+        cf_dates = payment_dates(settlement, mat_date)[:-1]
+        if len(cf_dates) == 0:
+            # Caso improvável, mas protege contra divisão por zero mais adiante
+            spot_rate = float("NaN")
+            solved_spot_rates.append(spot_rate)
+            spot_map[mat_date] = spot_rate
+            continue
+
+        # Recuperar SpotRates já solucionadas para estes cupons
+        cf_spot_rates = [spot_map[d] for d in cf_dates]
+        cf_periods = bday.count(settlement, cf_dates) / 252
+        cf_cash_flows = [COUPON_PMT] * len(cf_dates)
+
         cf_present_value = tools.calculate_present_value(
-            cash_flows=cf_df["Coupon"],
-            rates=cf_df["SpotRate"],
-            periods=cf_df["BDToMat"] / 252,
+            cash_flows=pl.Series(cf_cash_flows),
+            rates=pl.Series(cf_spot_rates),
+            periods=cf_periods,
         )
 
-        bond_price = price(settlement, row["MaturityDate"], row["YTM"])
+        bond_price = price(settlement, mat_date, ytm_val)
         price_factor = FINAL_PMT / (bond_price - cf_present_value)
-        df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
+        spot_rate = price_factor ** (1 / byears_val) - 1
 
-    df = df[["MaturityDate", "BDToMat", "SpotRate"]].copy()
-    df["SpotRate"] = df["SpotRate"].astype("float64[pyarrow]")
+        solved_spot_rates.append(spot_rate)
+        spot_map[mat_date] = spot_rate
 
+    # 6. Anexar coluna SpotRate
+    df = df.with_columns(SpotRate=pl.Series(solved_spot_rates, dtype=pl.Float64))
+
+    # 7. Selecionar colunas finais
+    df = df.select(["MaturityDate", "BDToMat", "SpotRate"])
+
+    # 8. Remover cupons (Julho) se não solicitado
     if not show_coupons:
-        df = df.query("MaturityDate in @ntnf_maturities").reset_index(drop=True)
+        df = df.filter(pl.col("MaturityDate").is_in(ntnf_maturities))
 
     return df
 
