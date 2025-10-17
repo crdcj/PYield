@@ -102,10 +102,17 @@ def payment_dates(
 
     Examples:
         >>> from pyield import ntnf
-        >>> ntnf.payment_dates("15-05-2024", "01-01-2025")
-        0   2024-07-01
-        1   2025-01-01
-        dtype: date32[day][pyarrow]
+        >>> ntnf.payment_dates("15-05-2024", "01-01-2027")
+        shape: (6,)
+        Series: '' [date]
+        [
+            2024-07-01
+            2025-01-01
+            2025-07-01
+            2026-01-01
+            2026-07-01
+            2027-01-01
+        ]
     """
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
@@ -172,9 +179,6 @@ def cash_flows(
     # Get the payment dates between the settlement and maturity dates
     pay_dates = payment_dates(settlement, maturity)
 
-    if adj_payment_dates:
-        pay_dates = bday.offset(pay_dates, 0)
-
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
     df = pl.DataFrame(data={"PaymentDate": pay_dates}).with_columns(
         pl.when(pl.col("PaymentDate") == maturity)
@@ -182,6 +186,10 @@ def cash_flows(
         .otherwise(COUPON_PMT)
         .alias("CashFlow")
     )
+
+    if adj_payment_dates:
+        adj_pay_dates = bday.offset(pay_dates, 0)
+        df = df.with_columns(PaymentDate=adj_pay_dates)
     return df
 
 
@@ -271,18 +279,18 @@ def spot_rates(  # noqa
         ...     ntnf_rates=df_ntnf["IndicativeRate"],
         ... )
         shape: (6, 3)
-        ┌───────────────┬────────┬──────────┐
-        │ MaturityDate  ┆ BDToMat┆ SpotRate │
-        │ ---           ┆ ---    ┆ ---      │
-        │ date          ┆ i64    ┆ f64      │
-        ╞═══════════════╪════════╪══════════╡
-        │ 2025-01-01    ┆ 83     ┆ 0.108837 │
-        │ 2027-01-01    ┆ 584    ┆ 0.119981 │
-        │ 2029-01-01    ┆ 1083   ┆ 0.122113 │
-        │ 2031-01-01    ┆ 1584   ┆ 0.122231 │
-        │ 2033-01-01    ┆ 2088   ┆ 0.121355 │
-        │ 2035-01-01    ┆ 2587   ┆ 0.121398 │
-        └───────────────┴────────┴──────────┘
+        ┌──────────────┬─────────┬──────────┐
+        │ MaturityDate ┆ BDToMat ┆ SpotRate │
+        │ ---          ┆ ---     ┆ ---      │
+        │ date         ┆ i32     ┆ f64      │
+        ╞══════════════╪═════════╪══════════╡
+        │ 2025-01-01   ┆ 83      ┆ 0.108837 │
+        │ 2027-01-01   ┆ 584     ┆ 0.119981 │
+        │ 2029-01-01   ┆ 1083    ┆ 0.122113 │
+        │ 2031-01-01   ┆ 1584    ┆ 0.122231 │
+        │ 2033-01-01   ┆ 2088    ┆ 0.121355 │
+        │ 2035-01-01   ┆ 2587    ┆ 0.121398 │
+        └──────────────┴─────────┴──────────┘
     """
     # 1. Converter e normalizar inputs para Polars
     settlement = cv.convert_dates(settlement)
@@ -382,7 +390,9 @@ def spot_rates(  # noqa
 
     # 8. Remover cupons (Julho) se não solicitado
     if not show_coupons:
-        df = df.filter(pl.col("MaturityDate").is_in(ntnf_maturities))
+        # Evitar DeprecationWarning do is_in em tipos iguais: usar semi-join
+        df_mats = pl.DataFrame({"MaturityDate": ntnf_maturities})
+        df = df.join(df_mats, on="MaturityDate", how="semi")
 
     return df
 
