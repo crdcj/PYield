@@ -245,7 +245,7 @@ def interpolate_rates(
         ...     expirations=["01-01-2027", "25-11-2027", "01-01-2030"],
         ... )
         shape: (3,)
-        Series: 'irate' [f64]
+        Series: 'FlatFwdRate' [f64]
         [
             0.13972
             0.134613
@@ -261,7 +261,7 @@ def interpolate_rates(
         ...     expirations=["01-01-2027", "01-01-2050"],
         ... )
         shape: (2,)
-        Series: 'irate' [f64]
+        Series: 'FlatFwdRate' [f64]
         [
             0.13901
             0.13881
@@ -275,7 +275,7 @@ def interpolate_rates(
         ...     extrapolate=False,
         ... )
         shape: (2,)
-        Series: 'irate' [f64]
+        Series: 'FlatFwdRate' [f64]
         [
             0.135763
             NaN

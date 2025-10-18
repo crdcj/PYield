@@ -14,6 +14,7 @@ br_holidays = hl.BrHolidays()
 OLD_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="old")
 NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="new")
 TRANSITION_DATE = br_holidays.TRANSITION_DATE
+_WEEKEND_START = 5  # Python weekday() >= 5 means Saturday/Sunday
 
 
 @overload
@@ -73,7 +74,7 @@ def count(
         Total business days in January and February since the start of the year
         >>> bday.count(start="01-01-2024", end=["01-02-2024", "01-03-2024"])
         shape: (2,)
-        Series: 'result' [i32]
+        Series: 'bdays' [i64]
         [
             22
             41
@@ -82,7 +83,7 @@ def count(
         The remaining business days from January/February until the end of the year
         >>> bday.count(["01-01-2024", "01-02-2024"], "01-01-2025")
         shape: (2,)
-        Series: 'result' [i32]
+        Series: 'bdays' [i64]
         [
             253
             231
@@ -91,7 +92,7 @@ def count(
         The total business days in January and February of 2024
         >>> bday.count(["01-01-2024", "01-02-2024"], ["01-02-2024", "01-03-2024"])
         shape: (2,)
-        Series: 'result' [i32]
+        Series: 'bdays' [i64]
         [
             22
             19
@@ -104,7 +105,7 @@ def count(
 
         >>> bday.count("01-01-2024", ["01-02-2024", None])  # None in end array
         shape: (2,)
-        Series: 'result' [i32]
+        Series: 'bdays' [i64]
         [
             22
             null
@@ -113,7 +114,7 @@ def count(
         >>> start_dates = pd.Series(["01-01-2024", "01-02-2024", "01-03-2024"])
         >>> bday.count(start_dates, "01-01-2025")
         shape: (3,)
-        Series: 'result' [i32]
+        Series: 'bdays' [i64]
         [
             253
             231
@@ -142,15 +143,16 @@ def count(
                 start=pl.col("start"), end=pl.col("end"), holidays=NEW_HOLIDAYS_ARRAY
             )
         )
+        .cast(pl.Int64)
     )
 
-    result_series = df.select(result_expr.alias("result"))["result"]
+    s_bdays = df.select(result_expr.alias("bdays"))["bdays"]
 
     # Se a entrada original era escalar, retorna o valor escalar
-    if len(result_series) == 1:
-        return result_series.item()
+    if len(s_bdays) == 1:
+        return s_bdays.item()
 
-    return result_series
+    return s_bdays
 
 
 @overload
@@ -339,7 +341,7 @@ def generate(
     end: DateScalar | None = None,
     inclusive: Literal["both", "neither", "left", "right"] = "both",
     holiday_option: Literal["old", "new", "infer"] = "new",
-) -> pd.Series:
+) -> pl.Series:
     """
     Generates a Series of business days between a `start` and `end` date, considering
     the list of Brazilian holidays. It supports customization of holiday lists and
@@ -370,13 +372,16 @@ def generate(
     Examples:
         >>> from pyield import bday
         >>> bday.generate(start="22-12-2023", end="02-01-2024")
-        0   2023-12-22
-        1   2023-12-26
-        2   2023-12-27
-        3   2023-12-28
-        4   2023-12-29
-        5   2024-01-02
-        dtype: date32[day][pyarrow]
+        shape: (6,)
+        Series: '' [date]
+        [
+            2023-12-22
+            2023-12-26
+            2023-12-27
+            2023-12-28
+            2023-12-29
+            2024-01-02
+        ]
 
     Note:
         For detailed information on parameters and error handling, refer to
@@ -405,33 +410,82 @@ def generate(
         inclusive=inclusive,
         holidays=applicable_holidays,
     )
+    s_pd = pd.Series(result_dti.values).astype("date32[pyarrow]")
+    return pl.Series(s_pd)
 
-    return pd.Series(result_dti.values).astype("date32[pyarrow]")
 
+@overload
+def is_business_day(dates: DateScalar) -> bool | None: ...
+@overload
+def is_business_day(dates: DateArray) -> pl.Series: ...
+def is_business_day(dates: DateScalar | DateArray) -> bool | pl.Series | None:
+    """Check if date(s) are business day(s) in Brazil.
 
-def is_business_day(date: DateScalar) -> bool:
-    """
-    Checks if the input date is a business day.
+    This function applies the correct holiday list (old vs. new) for EACH date
+    relative to the transition date ``2023-12-26``. Dates before the transition
+    use the *old* holiday list; dates on/after the transition use the *new*
+    holiday list.
+
+    Behavior mirrors other functions in this module: if the resulting length is 1
+    (even if the user passed a single-element collection) a Python ``bool`` (or
+    ``None`` for null input) is returned; otherwise a ``polars.Series`` of booleans
+    is returned with nulls propagated.
 
     Args:
-        date (DateScalar): The date to check.
+        dates: A single date or a collection of dates (scalar, list/tuple/Series,
+            numpy array, Polars/Pandas Series). Null scalar inputs return ``None``.
 
     Returns:
-        bool: True if the input date is a business day, False otherwise.
+        bool | pl.Series | None: ``True`` if business day, ``False`` if not, ``None``
+        for null scalar input, or a Polars boolean Series for array inputs.
 
     Examples:
         >>> from pyield import bday
-        >>> bday.is_business_day("25-12-2023")  # Christmas
+        >>> bday.is_business_day("25-12-2023")  # Christmas (old calendar)
         False
+        >>> bday.is_business_day("20-11-2024")  # National Zumbi Day (new holiday)
+        False
+        >>> bday.is_business_day(["22-12-2023", "26-12-2023"])  # Mixed periods
+        shape: (2,)
+        Series: 'is_bday' [bool]
+        [
+            true
+            true
+        ]
 
     Notes:
-        - This function correctly identifies business days according to the applicable
-        Brazilian holiday list (before or after the 2023-12-26 transition), based
-        on the input `date`.
+        - The transition date is defined in ``TRANSITION_DATE``.
+        - Null elements in array inputs propagate as nulls.
+        - Weekends are never business days.
     """
-    date_pd = cv.convert_dates(date)
-    shifted_date = offset(date_pd, 0)  # Shift the date if it is not a business day
-    return date_pd == shifted_date
+    converted = cv.convert_dates(dates)
+
+    # Scalar path ---------------------------------------------------------
+    if isinstance(converted, dt.date) or converted is None:
+        date_pd = cv.convert_dates(dates)
+        shifted_date = offset(date_pd, 0)  # Shift the date if it is not a business day
+        return date_pd == shifted_date
+
+    # Array path ----------------------------------------------------------
+    # Build DataFrame to allow conditional expression selecting the right holiday list
+    df = pl.DataFrame({"dates": converted}, schema={"dates": pl.Date}, nan_to_null=True)
+
+    result_expr = (
+        pl.when(pl.col("dates") < TRANSITION_DATE)
+        .then(
+            pl.col("dates").dt.is_business_day(holidays=OLD_HOLIDAYS_ARRAY),
+        )
+        .otherwise(
+            pl.col("dates").dt.is_business_day(holidays=NEW_HOLIDAYS_ARRAY),
+        )
+    )
+
+    s_result = df.select(result_expr.alias("is_bday"))["is_bday"]
+
+    if len(s_result) == 1:
+        return s_result.item()
+
+    return s_result
 
 
 def last_business_day() -> dt.date:
