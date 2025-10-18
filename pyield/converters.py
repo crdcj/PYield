@@ -1,7 +1,6 @@
 import datetime as dt
 from typing import overload
 
-import numpy as np
 import pandas as pd
 import polars as pl
 
@@ -45,13 +44,16 @@ def convert_dates(dates: DateArray) -> pl.Series: ...
 def convert_dates(  # noqa
     dates: DateScalar | DateArray,
 ) -> dt.date | pl.Series | None:
-    """
-    Converte diferentes tipos de entrada (escalares ou coleções)
-    para dt.date ou pd.Series[date32[pyarrow]].
+    """Converte diferentes tipos de entrada (escalares ou coleções) para
+    ``datetime.date`` (quando escalar) ou ``polars.Series`` com dtype ``Date``.
 
-    - Strings devem estar no formato dd-mm-YYYY, dd/mm/YYYY ou YYYY-mm-dd.
-    - Nulos escalares retornam None.
-    - Arrays vazios não são permitidos.
+    Regras:
+        - Strings devem estar em um dos formatos suportados:
+            ``dd-mm-YYYY``, ``dd/mm/YYYY`` ou ``YYYY-mm-dd``.
+    - Valor escalar nulo (``None``, ``NaT``) retorna ``None``.
+    - Arrays vazios não são permitidos (levanta ``ValueError``).
+        - Coleções de strings não podem misturar formatos; o primeiro valor
+            não-nulo define o formato usado para toda a série.
     """
     # Capturar apenas escalares nulos: a verificação `is True` é crucial,
     # pois `pd.isna()` retorna um array booleano para entradas de array,
@@ -68,8 +70,8 @@ def convert_dates(  # noqa
             return dates.date()
         case dt.date():
             return dates
-        case np.datetime64():
-            return pd.to_datetime(dates).date()
+        # Removido suporte explícito a np.datetime64 (não usado mais);
+        # se aparecer em coleções, Polars lidará no caminho de array.
 
     # --- LÓGICA DE ARRAY (adaptada para Polars) ---
     # Converte a entrada para uma Série Polars imediatamente.
@@ -93,31 +95,6 @@ def convert_dates(  # noqa
         parsed_dates = pd.to_datetime(pd_series_for_parsing, format=fmt).dt.date
         return pl.Series(parsed_dates, dtype=pl.Date)
 
-    # Para todos os outros dtypes (numéricos, datetime, date, etc.),
+    # Para todos os outros dtypes (datetime, date, etc.),
     # o cast nativo do Polars é suficiente e muito rápido.
     return s.cast(pl.Date)
-
-
-def to_numpy_date_type(
-    dates: pd.Timestamp | pd.Series,
-) -> np.datetime64 | np.ndarray:
-    """
-    Converts the input dates to a numpy datetime64[D] format.
-
-    Args:
-        dates (Timestamp | Series): A single date or a Series of dates.
-
-    Returns:
-        np.datetime64 | np.ndarray: The input dates in a numpy datetime64[D] format.
-    """
-    if pd.isna(dates) is True:
-        return np.datetime64("NaT")
-
-    # # cobre datetime.date, datetime.datetime e pd.Timestamp
-    if isinstance(dates, dt.date):
-        return np.datetime64(dates, "D")
-
-    if isinstance(dates, pd.Series):
-        return dates.to_numpy().astype("datetime64[D]")
-
-    raise ValueError("Invalid input type for 'dates'.")
