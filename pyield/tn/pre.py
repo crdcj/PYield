@@ -82,9 +82,7 @@ def spot_rates(date: DateScalar) -> pd.DataFrame:
 
     # Find LTN maturities that are not in the NTN-F result
     ltn_mask = ~df_ltn["MaturityDate"].isin(df_spots["MaturityDate"])
-    ltn_not_in_ntnf = df_ltn.loc[
-        ltn_mask
-    ].copy()  # Use .loc and .copy() to avoid warning
+    ltn_not_in_ntnf = df_ltn.loc[ltn_mask].copy()
 
     if not ltn_not_in_ntnf.empty:
         # Process additional LTN maturities

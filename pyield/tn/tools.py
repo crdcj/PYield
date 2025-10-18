@@ -37,15 +37,12 @@ def truncate(values: float | int | pl.Series, decimal_places: int) -> float | pl
 
 
 def calculate_present_value(
-    cash_flows: pl.Series,
-    rates: pl.Series,
-    periods: pl.Series,
+    cash_flows: pl.Series | list[float],
+    rates: pl.Series | list[float],
+    periods: pl.Series | list[float],
 ) -> float:
-    if cash_flows.is_empty() or rates.is_empty() or periods.is_empty():
+    df = pl.DataFrame({"cash_flows": cash_flows, "rates": rates, "periods": periods})
+    if df.is_empty():
         return 0.0
 
-    # Check if data have the same length
-    if len(cash_flows) != len(rates) or len(cash_flows) != len(periods):
-        raise ValueError("All series must have the same length.")
-
-    return (cash_flows / (1 + rates) ** periods).sum()
+    return (df["cash_flows"] / (1 + df["rates"]) ** df["periods"]).sum()
