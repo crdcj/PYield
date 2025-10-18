@@ -42,7 +42,7 @@ def calculate_present_value(
     periods: pl.Series,
 ) -> float:
     if cash_flows.is_empty() or rates.is_empty() or periods.is_empty():
-        return 0  # Return 0 if any input is empty
+        return 0.0
 
     # Check if data have the same length
     if len(cash_flows) != len(rates) or len(cash_flows) != len(periods):
