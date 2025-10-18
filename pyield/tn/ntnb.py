@@ -392,12 +392,10 @@ def spot_rates(
         .sort("MaturityDate")
     )
 
-    df_dicts = df.to_dicts()
-
     def _update_spot_rate(
         df: pl.DataFrame, maturity: dt.date, spot_rate: float
     ) -> pl.DataFrame:
-        """Helper function to update the spot rate in the DataFrame."""
+        """Helper function to update the spot rate inside the bootstrap loop."""
         return df.with_columns(
             pl.when(pl.col("MaturityDate") == maturity)
             .then(spot_rate)
@@ -406,6 +404,7 @@ def spot_rates(
         )
 
     # Bootstrap method to calculate spot rates
+    df_dicts = df.to_dicts()
     for row in df_dicts:
         maturity = row["MaturityDate"]
         cf_dates = payment_dates(settlement, maturity).to_list()
