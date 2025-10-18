@@ -1,7 +1,6 @@
 import datetime as dt
 
-import numpy as np
-import pandas as pd
+import polars as pl
 
 from pyield import bday
 
@@ -27,12 +26,14 @@ def test_count_strings2():
 
 def test_count_with_series():
     start = "01-01-2023"
-    end = pd.Series(["08-01-2023", "22-01-2023"])
+    end = ["08-01-2023", "22-01-2023"]
     # Assuming no holidays in these periods
-    expected_result = np.array([5, 15])
+    expected_result = [5, 15]
     result = bday.count(start, end)
-    are_arrays_equal = np.array_equal(result, expected_result)
-    assert are_arrays_equal, f"Expected {expected_result}, but got {result}"
+    assert isinstance(result, pl.Series)
+    assert result.to_list() == expected_result, (
+        f"Expected {expected_result}, but got {result.to_list()}"
+    )
 
 
 def test_count_negative_count():
@@ -62,11 +63,12 @@ def test_count_old_holiday():
 def test_count_old_and_new_holidays_lists():
     start = ["20-11-2020", "20-11-2024"]
     end = ["21-11-2020", "21-11-2024"]
-    expected_result = pd.Series([1, 0])
-    expected_result = expected_result.astype("int64[pyarrow]")
+    expected_result = [1, 0]
     result = bday.count(start, end)
-    are_series_equal = result.equals(expected_result)
-    assert are_series_equal, f"Expected {expected_result}, but got {result}"
+    assert isinstance(result, pl.Series)
+    assert result.to_list() == expected_result, (
+        f"Expected {expected_result}, but got {result.to_list()}"
+    )
 
 
 def test_offset_with_old_holiday():
@@ -88,8 +90,10 @@ def test_offset_with_new_holiday():
 def test_offset_with_old_and_new_holidays():
     start = ["20-11-2020", "20-11-2024"]
     offset = 0
-    expected_result = pd.to_datetime(["20-11-2020", "21-11-2024"], dayfirst=True)
-    expected_result = pd.Series(expected_result).astype("date32[pyarrow]")
+    expected_result = [dt.date(2020, 11, 20), dt.date(2024, 11, 21)]
     result = bday.offset(start, offset)
-    are_series_equal = result.equals(expected_result)
-    assert are_series_equal, f"Expected {expected_result}, but got {result}"
+    assert isinstance(result, pl.Series)
+    # Polars Series of dates returns python date objects in to_list()
+    assert result.to_list() == expected_result, (
+        f"Expected {expected_result}, but got {result.to_list()}"
+    )
