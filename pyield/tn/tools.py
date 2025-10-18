@@ -1,5 +1,6 @@
 from typing import overload
 
+import numpy as np
 import polars as pl
 
 
@@ -28,17 +29,11 @@ def truncate(values: float | int | pl.Series, decimal_places: int) -> float | pl
         raise ValueError("decimal_places must be non-negative")
 
     factor = 10**decimal_places
-    is_scalar = isinstance(values, (int, float))
-
-    series = pl.Series([values]) if is_scalar else values
-    # Multiplica, trunca via cast para inteiro e divide para voltar à escala
-    truncated = (series * factor).cast(pl.Int64) / factor
-    truncated = truncated.cast(pl.Float64)
-
-    if is_scalar:
-        # Retorna primeiro elemento como float
-        return truncated.item()
-    return truncated
+    truncated_values = np.trunc(values * factor) / factor
+    if isinstance(truncated_values, np.floating):
+        return float(truncated_values)
+    else:
+        return pl.Series(truncated_values)
 
 
 def calculate_present_value(

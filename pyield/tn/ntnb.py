@@ -39,13 +39,25 @@ def data(date: DateScalar) -> pd.DataFrame:
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.data("23-08-2024")
-           ReferenceDate BondType  SelicCode  ...   AskRate IndicativeRate    DIRate
-        0     2024-08-23    NTN-B     760199  ...  0.063667       0.063804  0.112749
-        1     2024-08-23    NTN-B     760199  ...  0.065635       0.065795  0.114963
-        2     2024-08-23    NTN-B     760199  ...  0.063601       0.063794  0.114888
-        3     2024-08-23    NTN-B     760199  ...  0.062905       0.063094  0.115595
-        ...
-    """
+        shape: (14, 14)
+        ┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬──────────┐
+        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate   │
+        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---      │
+        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64      ┆ f64      ┆ f64            ┆ f64      │
+        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪══════════╪══════════╪════════════════╪══════════╡
+        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.063961 ┆ 0.063667 ┆ 0.063804       ┆ 0.112749 │
+        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.06594  ┆ 0.065635 ┆ 0.065795       ┆ 0.114963 │
+        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.063925 ┆ 0.063601 ┆ 0.063794       ┆ 0.114888 │
+        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.063217 ┆ 0.062905 ┆ 0.063094       ┆ 0.115595 │
+        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.062245 ┆ 0.061954 ┆ 0.0621         ┆ 0.115665 │
+        │ …             ┆ …        ┆ …         ┆ …             ┆ … ┆ …        ┆ …        ┆ …              ┆ …        │
+        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.060005 ┆ 0.059574 ┆ 0.059797       ┆ 0.11511  │
+        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.061107 ┆ 0.060733 ┆ 0.060923       ┆ 0.11511  │
+        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.061304 ┆ 0.060931 ┆ 0.06114        ┆ 0.11511  │
+        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.061053 ┆ 0.06074  ┆ 0.060892       ┆ 0.11511  │
+        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.061211 ┆ 0.0608   ┆ 0.061005       ┆ 0.11511  │
+        └───────────────┴──────────┴───────────┴───────────────┴───┴──────────┴──────────┴────────────────┴──────────┘
+    """  # noqa: E501
     return anbima.tpf_data(date, "NTN-B")
 
 
@@ -62,30 +74,29 @@ def maturities(date: DateScalar) -> pd.Series:
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.maturities("16-08-2024")
-        0    2025-05-15
-        1    2026-08-15
-        2    2027-05-15
-        3    2028-08-15
-        4    2029-05-15
-        5    2030-08-15
-        6    2032-08-15
-        7    2033-05-15
-        8    2035-05-15
-        9    2040-08-15
-        10   2045-05-15
-        11   2050-08-15
-        12   2055-05-15
-        13   2060-08-15
-        dtype: date32[day][pyarrow]
+        shape: (14,)
+        Series: 'MaturityDate' [date]
+        [
+            2025-05-15
+            2026-08-15
+            2027-05-15
+            2028-08-15
+            2029-05-15
+            …
+            2040-08-15
+            2045-05-15
+            2050-08-15
+            2055-05-15
+            2060-08-15
+        ]
     """
-    df_rates = data(date)
-    return df_rates["MaturityDate"]
+    return data(date)["MaturityDate"]
 
 
 def _generate_all_coupon_dates(
     start: DateScalar,
     end: DateScalar,
-) -> pd.Series:
+) -> pl.Series:
     """
     Generate a map of all possible coupon dates between the start and end dates.
     The dates are inclusive. Coupon payments are made on the 15th of February, May,
@@ -96,26 +107,22 @@ def _generate_all_coupon_dates(
         end (DateScalar): The end date.
 
     Returns:
-        pd.Series: Series of coupon dates within the specified range.
+        pl.Series: Series of coupon dates within the specified range.
     """
-    # Validate and normalize dates
     start = cv.convert_dates(start)
     end = cv.convert_dates(end)
 
-    # Initialize the first coupon date based on the reference date
     first_coupon_date = dt.date(start.year, 2, 1)
 
-    # Generate coupon dates
-    coupon_dates = pd.date_range(start=first_coupon_date, end=end, freq="3MS")
+    # Generate coupon dates on the 1st of the month
+    coupon_dates = pl.date_range(
+        start=first_coupon_date, end=end, interval="3mo", eager=True
+    )
+    # Offset dates to the 15th
+    coupon_dates = coupon_dates.dt.offset_by("14d")
 
-    # Offset dates by 14 in order to have day 15 of the month
-    coupon_dates += pd.Timedelta(days=14)
-
-    # First coupon date must be after the reference date, otherwise, it can lead to
-    # division by zero where BDays == 0 (bootstrap method for instance)
-    coupon_dates = pl.Series(coupon_dates)
-    coupon_dates = coupon_dates.filter(coupon_dates > start)
-    return coupon_dates
+    # First coupon date must be after the reference date
+    return coupon_dates.filter(coupon_dates > start)
 
 
 def payment_dates(
@@ -139,38 +146,35 @@ def payment_dates(
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.payment_dates("10-05-2024", "15-05-2025")
-        0   2024-05-15
-        1   2024-11-15
-        2   2025-05-15
-        dtype: date32[day][pyarrow]
+        shape: (3,)
+        Series: '' [date]
+        [
+            2024-05-15
+            2024-11-15
+            2025-05-15
+        ]
     """
-    # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 
-    # Check if maturity date is after the start date
-    if maturity < settlement:
-        raise ValueError("Maturity date must be after the start date.")
+    if maturity <= settlement:
+        raise ValueError("Maturity date must be after the settlement date.")
 
-    # Initialize loop variables
     coupon_date = maturity
     coupon_dates = []
 
-    # Iterate backwards from the maturity date to the settlement date
     while coupon_date > settlement:
         coupon_dates.append(coupon_date)
-        # Move the coupon date back 6 months
         coupon_date -= pd.DateOffset(months=6)
-        coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
+        coupon_date = coupon_date.date()
 
-    coupon_dates = pl.Series(coupon_dates)
-    return coupon_dates.sort_values().reset_index(drop=True)
+    return pl.Series(coupon_dates).sort()
 
 
 def cash_flows(
     settlement: DateScalar,
     maturity: DateScalar,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Generate the cash flows for NTN-B bonds between the settlement and maturity dates.
 
@@ -189,10 +193,16 @@ def cash_flows(
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.cash_flows("10-05-2024", "15-05-2025")
-          PaymentDate    CashFlow
-        0  2024-05-15    2.956301
-        1  2024-11-15    2.956301
-        2  2025-05-15  102.956301
+        shape: (3, 2)
+        ┌─────────────┬────────────┐
+        │ PaymentDate ┆ CashFlow   │
+        │ ---         ┆ ---        │
+        │ date        ┆ f64        │
+        ╞═════════════╪════════════╡
+        │ 2024-05-15  ┆ 2.956301   │
+        │ 2024-11-15  ┆ 2.956301   │
+        │ 2025-05-15  ┆ 102.956301 │
+        └─────────────┴────────────┘
     """
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
@@ -201,11 +211,14 @@ def cash_flows(
     # Get the coupon dates between the settlement and maturity dates
     p_dates = payment_dates(settlement, maturity)
 
-    # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    cfs = np.where(p_dates == maturity, FINAL_PMT, COUPON_PMT).tolist()
+    df = pl.DataFrame({"PaymentDate": p_dates}).with_columns(
+        pl.when(pl.col("PaymentDate") == maturity)
+        .then(FINAL_PMT)
+        .otherwise(COUPON_PMT)
+        .alias("CashFlow")
+    )
 
-    # Return a dataframe with the payment dates and cash flows
-    return pd.DataFrame(data={"PaymentDate": p_dates, "CashFlow": cfs})
+    return df
 
 
 def quotation(
@@ -541,11 +554,10 @@ def duration(
     maturity = cv.convert_dates(maturity)
 
     df = cash_flows(settlement, maturity)
-    df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252
-    df["DCF"] = df["CashFlow"] / (1 + rate) ** df["BY"]
-    duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
-    # Return the duration as native float
-    return float(duration)
+    byears = bday.count(settlement, df["PaymentDate"]) / 252
+    dcf = df["CashFlow"] / (1 + rate) ** byears
+    duration = (dcf * byears).sum() / dcf.sum()
+    return duration
 
 
 def dv01(
