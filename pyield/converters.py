@@ -26,8 +26,6 @@ def validate_date_format(date_str) -> None:
 def convert_dates(dates: DateScalar) -> dt.date | None: ...
 @overload
 def convert_dates(dates: DateArray) -> pl.Series: ...
-
-
 def convert_dates(  # noqa
     dates: DateScalar | DateArray,
 ) -> dt.date | pl.Series | None:

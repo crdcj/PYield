@@ -403,20 +403,19 @@ def spot_rates(
             .alias("SpotRate")
         )
 
-    # Bootstrap method to calculate spot rates
+    # Bootstrap method to calculate spot rates iteratively
     df_dicts = df.to_dicts()
     for row in df_dicts:
         maturity = row["MaturityDate"]
         cf_dates = payment_dates(settlement, maturity).to_list()
 
         if len(cf_dates) == 1:
-            # If there is only one cash flow date, it means the bond is a single payment
-            # bond, so the spot rate is equal to the YTM rate
+            # For a zero-coupon bond (single cash flow), the spot rate equals the YTM
             spot_rate = row["YTM"]
             df = _update_spot_rate(df, maturity, spot_rate)
             continue
 
-        # 3. DataFrame com todos os resultados calculados até o fluxo de caixa anterior
+        # Get results for all previous cash flows already calculated
         df_temp = df.filter(pl.col("MaturityDate").is_in(cf_dates[:-1]))
 
         present_value = tl.calculate_present_value(

@@ -1,7 +1,6 @@
 import datetime as dt
 import logging
 
-import pandas as pd
 import polars as pl
 
 import pyield.converters as cv
@@ -62,7 +61,7 @@ def _get_data(dates: DateScalar | DateArray) -> pl.DataFrame:
             return pl.DataFrame()
         case dt.date():
             dates_list = [converted_dates]
-        case pd.Series():
+        case pl.Series():
             dates_list = (
                 pl.Series("TradeDate", converted_dates).unique().sort().to_list()
             )
@@ -165,27 +164,24 @@ def _build_input_dataframe(
     # 2. Lida com os 4 casos de forma SIMPLES E LEGÍVEL
     match (converted_dates, converted_expirations):
         # CASO 1: Data escalar, vencimentos em array
-        case dt.date() as d, pd.Series() as e:
-            if e.empty:
+        case dt.date() as d, pl.Series() as e:
+            if e.is_empty():
                 dfi = pl.DataFrame()
             else:
-                # Cria o DF com o array, e ADICIONA o escalar com pl.lit()
                 dfi = pl.DataFrame({"ExpirationDate": e}).with_columns(TradeDate=d)
 
         # CASO 2: Datas em array, vencimento escalar
-        case pd.Series() as d, dt.date() as e:
-            if d.empty:
+        case pl.Series() as d, dt.date() as e:
+            if d.is_empty():
                 dfi = pl.DataFrame()
             else:
                 # Mesma lógica, invertida
                 dfi = pl.DataFrame({"TradeDate": d}).with_columns(ExpirationDate=e)
 
         # CASO 3: Ambos são arrays
-        case pd.Series() as d, pd.Series() as e:
-            if d.empty or e.empty:
+        case pl.Series() as d, pl.Series() as e:
+            if d.is_empty() or e.is_empty():
                 dfi = pl.DataFrame()
-            elif len(d) != len(e):
-                raise ValueError("'dates' e 'expirations' devem ter o mesmo tamanho.")
             else:
                 dfi = pl.DataFrame({"TradeDate": d, "ExpirationDate": e})
 
@@ -294,18 +290,17 @@ def interpolate_rates(
     # 2. Se a helper retornou None, a entrada é inválida.
     if dfi.is_empty():
         logger.warning("Invalid or empty dates provided. Returning empty Series.")
-        return pd.Series(dtype="float64[pyarrow]")
+        return pl.Series()
 
-    # bday.count retorna uma Series de inteiros do pandas
     s_bdays = bday.count(dfi["TradeDate"], dfi["ExpirationDate"])
-    dfi = dfi.with_columns(pl.Series("bdays", s_bdays), irate=None)
+    dfi = dfi.with_columns(BDaysToExp=s_bdays, FlatFwdRate=None)
 
     # Load DI rates dataset filtered by the provided reference dates
     dfr = _get_data(dates=dates)
 
     # Return an empty DataFrame if no rates are found
     if dfr.is_empty():
-        return pd.Series(dtype="float64[pyarrow]")
+        return pl.Series()
 
     # Iterate over each unique reference date
     for date in dfi.get_column("TradeDate").unique().to_list():
@@ -326,13 +321,13 @@ def interpolate_rates(
 
         dfi = dfi.with_columns(
             pl.when(pl.col("TradeDate") == date)
-            .then(pl.col("bdays").map_elements(interp, return_dtype=pl.Float64))
-            .otherwise(pl.col("irate"))
-            .alias("irate")
+            .then(pl.col("BDaysToExp").map_elements(interp, return_dtype=pl.Float64))
+            .otherwise(pl.col("FlatFwdRate"))
+            .alias("FlatFwdRate")
         )
 
     # Return the series with interpolated rates
-    return dfi.get_column("irate")
+    return dfi.get_column("FlatFwdRate")
 
 
 def interpolate_rate(
