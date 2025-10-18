@@ -1,5 +1,6 @@
 import datetime as dt
 
+import numpy as np
 import pandas as pd
 import polars as pl
 
@@ -396,12 +397,10 @@ def spot_rates(  # noqa
         SpotRate=None,
     )
 
-    # Lista para guardar os resultados, substituindo a modificação in-place (df.at)
     spot_rates_list = []
 
     # Dicionário para consultar resultados anteriores. É necessário porque não
     # podemos ler a coluna "SpotRate" do df enquanto a construímos.
-    # Isso substitui a lógica de `df.query()` que lia valores já calculados.
     calculated_results = {}
 
     # The Bootstrap loop to calculate spot rates
@@ -448,6 +447,190 @@ def spot_rates(  # noqa
     if not show_coupons:
         df = df.filter(pl.col("MaturityDate").is_in(maturities.implode()))
     return df
+
+
+def spot_rates_optimized(  # noqa
+    settlement: "DateScalar",
+    maturities: "DateArray",
+    rates: "FloatArray",
+    show_coupons: bool = False,
+) -> pl.DataFrame:
+    # A preparação inicial dos dados é a mesma
+    settlement_date = cv.convert_dates(settlement)
+    original_maturities = cv.convert_dates(maturities)
+
+    flat_fwd = ip.Interpolator(
+        method="flat_forward",
+        known_bdays=bday.count(settlement_date, original_maturities),
+        known_rates=rates,
+    )
+
+    all_coupon_dates = _generate_all_coupon_dates(
+        settlement_date, original_maturities.max()
+    )
+    bdays_to_mat = bday.count(settlement_date, all_coupon_dates)
+
+    df = (
+        pl.DataFrame({"MaturityDate": all_coupon_dates, "BDToMat": bdays_to_mat})
+        .with_columns(
+            BYears=pl.col("BDToMat") / 252,
+            YTM=pl.col("BDToMat").map_elements(flat_fwd, return_dtype=pl.Float64),
+            Coupon=COUPON_PMT,
+        )
+        .sort("MaturityDate")
+    )
+
+    spot_rates_list = []
+    cal_results = {}  # Dicionário para consulta rápida O(1)
+
+    rows_as_dicts = df.to_dicts()
+    for row in rows_as_dicts:  # `row` aqui é um dicionário
+        maturity = row["MaturityDate"]
+        cf_dates = payment_dates(settlement_date, maturity).to_list()
+
+        if len(cf_dates) <= 1:
+            spot_rate = row["YTM"]
+        else:
+            cf_dates_prev = cf_dates[:-1]
+
+            if not cf_dates_prev:
+                cf_present_value = 0.0
+            else:
+                prev_coupons = [cal_results[dt]["Coupon"] for dt in cf_dates_prev]
+                prev_spot_rates = [cal_results[dt]["SpotRate"] for dt in cf_dates_prev]
+                prev_byears = [cal_results[dt]["BYears"] for dt in cf_dates_prev]
+
+                # Delega o cálculo pesado para uma função vetorizada
+                cf_present_value = tl.calculate_present_value(
+                    cash_flows=pl.Series(prev_coupons),
+                    rates=pl.Series(prev_spot_rates),
+                    periods=pl.Series(prev_byears),
+                )
+
+            bond_price = quotation(settlement_date, maturity, row["YTM"])
+            price_factor = FINAL_PMT / (bond_price - cf_present_value)
+            spot_rate = price_factor ** (1 / row["BYears"]) - 1
+
+        spot_rates_list.append(spot_rate)
+        cal_results[maturity] = {
+            "MaturityDate": maturity,
+            "Coupon": row["Coupon"],
+            "SpotRate": spot_rate,
+            "BYears": row["BYears"],
+        }
+
+    df = df.with_columns(SpotRate=pl.Series(values=spot_rates_list, dtype=pl.Float64))
+    if not show_coupons:
+        df = df.filter(pl.col("MaturityDate").is_in(original_maturities.to_list()))
+
+    return df.select(["MaturityDate", "BDToMat", "SpotRate"])
+
+
+def spot_rates_matrix(
+    settlement: DateScalar,
+    maturities: DateArray,
+    rates: FloatArray,
+    show_coupons: bool = False,
+) -> pl.DataFrame:
+    """
+    Calculate spot rates using matrix bootstrap method.
+
+    This method is significantly faster than iterative bootstrap as it solves
+    the entire system of equations at once using linear algebra.
+
+    The approach:
+    1. Build cash flow matrix C where C[i,j] = cash flow of bond i at date j
+    2. Calculate price vector P from YTM rates
+    3. Solve: C × D = P, where D is the discount factor vector
+    4. Convert discount factors to spot rates
+
+    Args:
+        settlement (DateScalar): The reference date for settlement.
+        maturities (DateArray): Array of maturity dates for the bonds.
+        rates (FloatArray): Array of yield to maturity rates.
+        show_coupons (bool, optional): If True, include intermediate coupon dates.
+
+    Returns:
+        pl.DataFrame: DataFrame with columns "MaturityDate", "BDToMat", "SpotRate".
+    """
+    # Process and validate input
+    settlement = cv.convert_dates(settlement)
+    maturities = cv.convert_dates(maturities)
+
+    # Create interpolator for intermediate dates
+    ff_interpolator = ip.Interpolator(
+        method="flat_forward",
+        known_bdays=bday.count(settlement, maturities),
+        known_rates=rates,
+    )
+
+    # Generate all coupon dates
+    all_coupon_dates = _generate_all_coupon_dates(
+        settlement, maturities.max()
+    ).to_list()
+    bdays_to_mat = bday.count(settlement, all_coupon_dates)
+
+    # Build base dataframe
+    df = pl.DataFrame(
+        {
+            "MaturityDate": all_coupon_dates,
+            "BDToMat": bdays_to_mat,
+        }
+    ).with_columns(
+        BYears=pl.col("BDToMat") / 252,
+        YTM=pl.col("BDToMat").map_elements(ff_interpolator, return_dtype=pl.Float64),
+    )
+
+    n = len(all_coupon_dates)
+
+    # Step 1: Build cash flow matrix C (n × n)
+    C = np.zeros((n, n))
+
+    for i, maturity in enumerate(all_coupon_dates):
+        # Get payment dates for this bond
+        cf_dates = payment_dates(settlement, maturity)
+
+        # Find indices of payment dates in all_coupon_dates
+        for cf_date in cf_dates[:-1]:  # Coupons
+            j = all_coupon_dates.index(cf_date) if cf_date in all_coupon_dates else None
+            if j is not None:
+                C[i, j] = COUPON_PMT
+
+        # Final payment (coupon + principal)
+        C[i, i] = FINAL_PMT
+
+    # Step 2: Calculate price vector P
+    P = np.array(
+        [
+            quotation(settlement, maturity, ytm)
+            for maturity, ytm in zip(df["MaturityDate"], df["YTM"])
+        ]
+    )
+
+    # Step 3: Solve linear system C × D = P for discount factors D
+    try:
+        D = np.linalg.solve(C, P)
+    except np.linalg.LinAlgError:
+        # Fallback to least squares if matrix is singular
+        D = np.linalg.lstsq(C, P, rcond=None)[0]
+
+    # Step 4: Convert discount factors to spot rates
+    # D[i] = 1 / (1 + r)^t  =>  r = (1/D[i])^(1/t) - 1
+    byears = df["BYears"].to_numpy()
+
+    # Avoid division by zero for settlement date
+    spot_rates = np.where(byears > 0, (1 / D) ** (1 / byears) - 1, 0.0)
+
+    # Build result dataframe
+    result = df.select(["MaturityDate", "BDToMat"]).with_columns(
+        SpotRate=pl.Series(values=spot_rates, dtype=pl.Float64)
+    )
+
+    # Filter to original maturities if requested
+    if not show_coupons:
+        result = result.filter(pl.col("MaturityDate").is_in(maturities.implode()))
+
+    return result
 
 
 def bei_rates(
