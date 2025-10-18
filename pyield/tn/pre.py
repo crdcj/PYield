@@ -50,10 +50,10 @@ def spot_rates(date: DateScalar) -> pd.DataFrame:
         16   2035-01-01     2390  0.141068
     """
     # Fetch LTN data (zero coupon bonds)
-    df_ltn = anbima.tpf_data(date, "LTN")
+    df_ltn = anbima.tpf_data(date, "LTN").to_pandas(use_pyarrow_extension_array=True)
 
     # Fetch NTN-F data (coupon bonds)
-    df_ntnf = anbima.tpf_data(date, "NTN-F")
+    df_ntnf = anbima.tpf_data(date, "NTN-F").to_pandas(use_pyarrow_extension_array=True)
 
     # Check if we have data for both bond types
     if df_ltn.empty and df_ntnf.empty:
@@ -78,7 +78,7 @@ def spot_rates(date: DateScalar) -> pd.DataFrame:
         ntnf_maturities=df_ntnf["MaturityDate"],
         ntnf_rates=df_ntnf["IndicativeRate"],
         show_coupons=False,
-    )
+    ).to_pandas(use_pyarrow_extension_array=True)
 
     # Find LTN maturities that are not in the NTN-F result
     ltn_mask = ~df_ltn["MaturityDate"].isin(df_spots["MaturityDate"])
