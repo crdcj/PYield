@@ -342,7 +342,7 @@ def spot_rates(
         │ ---          ┆ ---     ┆ ---      │
         │ date         ┆ i32     ┆ f64      │
         ╞══════════════╪═════════╪══════════╡
-        │ 2025-05-15   ┆ 185     ┆ 0.063894 │
+        │ 2025-05-15   ┆ 185     ┆ 0.063893 │
         │ 2026-08-15   ┆ 502     ┆ 0.066141 │
         │ 2027-05-15   ┆ 687     ┆ 0.064087 │
         │ 2028-08-15   ┆ 1002    ┆ 0.063057 │
@@ -381,13 +381,14 @@ def spot_rates(
     # Generate coupon dates up to the longest maturity date
     all_coupon_dates = _generate_all_coupon_dates(settlement, maturities.max())
     bdays_to_mat = bday.count(settlement, all_coupon_dates)
+
     df = (
         pl.DataFrame({"MaturityDate": all_coupon_dates, "BDToMat": bdays_to_mat})
         .with_columns(
             BYears=pl.col("BDToMat") / 252,
             YTM=pl.col("BDToMat").map_elements(flat_fwd, return_dtype=pl.Float64),
             Coupon=COUPON_PMT,
-            SpotRate=None,
+            SpotRate=pl.lit(None, dtype=pl.Float64),
         )
         .sort("MaturityDate")
     )
@@ -405,19 +406,21 @@ def spot_rates(
 
     # Bootstrap method to calculate spot rates iteratively
     df_dicts = df.to_dicts()
+    first_maturity = maturities.min()
     for row in df_dicts:
         maturity = row["MaturityDate"]
-        cf_dates = payment_dates(settlement, maturity).to_list()
 
-        if len(cf_dates) == 1:
-            # For a zero-coupon bond (single cash flow), the spot rate equals the YTM
+        # Spot rates <= first maturity are YTM rates by definition
+        if maturity <= first_maturity:
             spot_rate = row["YTM"]
             df = _update_spot_rate(df, maturity, spot_rate)
             continue
 
         # Get results for all previous cash flows already calculated
-        df_temp = df.filter(pl.col("MaturityDate").is_in(cf_dates[:-1]))
+        prev_cf_dates = payment_dates(settlement, maturity).to_list()[:-1]
+        df_temp = df.filter(pl.col("MaturityDate").is_in(prev_cf_dates))
 
+        # Calculate the spot rate for the current maturity
         present_value = tl.calculate_present_value(
             df_temp["Coupon"],
             df_temp["SpotRate"],
@@ -494,7 +497,7 @@ def bei_rates(
         │ ---          ┆ ---     ┆ ---      ┆ ---      ┆ ---      │
         │ date         ┆ i32     ┆ f64      ┆ f64      ┆ f64      │
         ╞══════════════╪═════════╪══════════╪══════════╪══════════╡
-        │ 2025-05-15   ┆ 171     ┆ 0.061749 ┆ 0.113836 ┆ 0.049058 │
+        │ 2025-05-15   ┆ 171     ┆ 0.061748 ┆ 0.113836 ┆ 0.049059 │
         │ 2026-08-15   ┆ 488     ┆ 0.066133 ┆ 0.117126 ┆ 0.04783  │
         │ 2027-05-15   ┆ 673     ┆ 0.063816 ┆ 0.117169 ┆ 0.050152 │
         │ 2028-08-15   ┆ 988     ┆ 0.063635 ┆ 0.11828  ┆ 0.051376 │
