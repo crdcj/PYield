@@ -388,9 +388,7 @@ def spot_rates(  # noqa
 
     # 8. Remover cupons (Julho) se não solicitado
     if not show_coupons:
-        # Evitar DeprecationWarning do is_in em tipos iguais: usar semi-join
-        df_mats = pl.DataFrame({"MaturityDate": ntnf_maturities})
-        df = df.join(df_mats, on="MaturityDate", how="semi")
+        df = df.filter(pl.col("MaturityDate").is_in(ntnf_maturities.implode()))
 
     return df
 

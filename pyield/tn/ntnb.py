@@ -1,6 +1,5 @@
 import datetime as dt
 
-import numpy as np
 import pandas as pd
 import polars as pl
 
@@ -8,7 +7,7 @@ import pyield.converters as cv
 import pyield.interpolator as ip
 import pyield.tn.tools as tl
 from pyield import anbima, bday
-from pyield.types import DateScalar
+from pyield.types import DateArray, DateScalar, FloatArray
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -303,12 +302,12 @@ def price(
     return tl.truncate(vna * quotation / 100, 6)
 
 
-def spot_rates(
+def spot_rates(  # noqa
     settlement: DateScalar,
-    maturities: pd.Series,
-    rates: pd.Series,
+    maturities: DateArray,
+    rates: FloatArray,
     show_coupons: bool = False,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Calculate the spot rates for NTN-B bonds using the bootstrap method.
 
@@ -337,21 +336,24 @@ def spot_rates(
         ...     maturities=df["MaturityDate"],
         ...     rates=df["IndicativeRate"],
         ... )
-           MaturityDate  BDToMat  SpotRate
-        0    2025-05-15      185  0.063894
-        1    2026-08-15      502  0.066141
-        2    2027-05-15      687  0.064087
-        3    2028-08-15     1002  0.063057
-        4    2029-05-15     1186  0.061458
-        5    2030-08-15     1500  0.059491
-        6    2032-08-15     2004  0.059652
-        7    2033-05-15     2191  0.059497
-        8    2035-05-15     2690  0.059151
-        9    2040-08-15     4009  0.058326
-        10   2045-05-15     5196  0.060371
-        11   2050-08-15     6511  0.060772
-        12   2055-05-15     7700  0.059909
-        13   2060-08-15     9017  0.060652
+        shape: (14, 3)
+        ┌──────────────┬─────────┬──────────┐
+        │ MaturityDate ┆ BDToMat ┆ SpotRate │
+        │ ---          ┆ ---     ┆ ---      │
+        │ date         ┆ i32     ┆ f64      │
+        ╞══════════════╪═════════╪══════════╡
+        │ 2025-05-15   ┆ 185     ┆ 0.063894 │
+        │ 2026-08-15   ┆ 502     ┆ 0.066141 │
+        │ 2027-05-15   ┆ 687     ┆ 0.064087 │
+        │ 2028-08-15   ┆ 1002    ┆ 0.063057 │
+        │ 2029-05-15   ┆ 1186    ┆ 0.061458 │
+        │ …            ┆ …       ┆ …        │
+        │ 2040-08-15   ┆ 4009    ┆ 0.058326 │
+        │ 2045-05-15   ┆ 5196    ┆ 0.060371 │
+        │ 2050-08-15   ┆ 6511    ┆ 0.060772 │
+        │ 2055-05-15   ┆ 7700    ┆ 0.059909 │
+        │ 2060-08-15   ┆ 9017    ┆ 0.060652 │
+        └──────────────┴─────────┴──────────┘
 
     Notes:
         The calculation of the spot rates for NTN-B bonds considers the following steps:
@@ -359,10 +361,11 @@ def spot_rates(
             - Interpolate the YTM rates in the intermediate payment dates.
             - Calculate the NTN-B quotation for each maturity date.
             - Calculate the real spot rates for each maturity date.
-            - Columns in the returned DataFrame:
-                - MaturityDate: The maturity date of the bond.
-                - BDToMat: The number of business days from settlement to maturities.
-                - SpotRate: The real spot rate for the bond.
+
+    Columns returned:
+        - MaturityDate: The maturity date of the bond.
+        - BDToMat: The number of business days from settlement to maturities.
+        - SpotRate: The real spot rate for the bond.
     """
     # Process and validate the input data
     settlement = cv.convert_dates(settlement)
@@ -379,57 +382,81 @@ def spot_rates(
     all_coupon_dates = _generate_all_coupon_dates(
         start=settlement, end=maturities.max()
     )
+    all_coupon_dates = _generate_all_coupon_dates(settlement, maturities.max())
+    bdays_to_mat = bday.count(settlement, all_coupon_dates)
+    df = pl.DataFrame(
+        {
+            "MaturityDate": all_coupon_dates,
+            "BDToMat": bdays_to_mat,
+        }
+    ).with_columns(
+        BYears=pl.col("BDToMat") / 252,
+        YTM=pl.col("BDToMat").map_elements(ff_interpolator, return_dtype=pl.Float64),
+        Coupon=COUPON_PMT,
+        SpotRate=None,
+    )
 
-    # Create a DataFrame with all coupon dates and the corresponding YTM
-    df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
-    df["BDToMat"] = bday.count(settlement, df["MaturityDate"])
-    df["BYears"] = df["BDToMat"] / 252
-    df["YTM"] = df["BDToMat"].apply(ff_interpolator)
-    df["Coupon"] = COUPON_PMT
-    df["SpotRate"] = np.nan
+    # Lista para guardar os resultados, substituindo a modificação in-place (df.at)
+    spot_rates_list = []
+
+    # Dicionário para consultar resultados anteriores. É necessário porque não
+    # podemos ler a coluna "SpotRate" do df enquanto a construímos.
+    # Isso substitui a lógica de `df.query()` que lia valores já calculados.
+    calculated_results = {}
 
     # The Bootstrap loop to calculate spot rates
-    for index, row in df.iterrows():
+    for row in df.iter_rows(named=True):
+        maturity = row["MaturityDate"]
         # Get the cash flow dates for the bond
-        cf_dates = payment_dates(settlement, row["MaturityDate"])
+        cf_dates = payment_dates(settlement, maturity)
 
         # If there is only one cash flow date, it means the bond is a single payment
         # bond, so the spot rate is equal to the YTM rate
         if len(cf_dates) == 1:
-            df.at[index, "SpotRate"] = row["YTM"]
-            continue
+            # df.at[index, "SpotRate"] = row["YTM"]
+            spot_rate = row["YTM"]
+        else:
+            cf_dates_prev = cf_dates[:-1]
+            # Calculate the present value of the cash flows without last payment
+            cf_df_prev = pl.DataFrame({"MaturityDate": cf_dates_prev}).join(
+                pl.DataFrame(list(calculated_results.values())), on="MaturityDate"
+            )
 
-        # Calculate the present value of the cash flows without last payment
-        cf_dates = cf_dates[:-1]
-        cf_df = df.query("MaturityDate in @cf_dates").reset_index(drop=True)
-        cf_present_value = tl.calculate_present_value(
-            cash_flows=cf_df["Coupon"],
-            rates=cf_df["SpotRate"],
-            periods=cf_df["BYears"],
-        )
+            cf_present_value = tl.calculate_present_value(
+                cash_flows=cf_df_prev["Coupon"],
+                rates=cf_df_prev["SpotRate"],
+                periods=cf_df_prev["BYears"],
+            )
 
-        # Calculate the Spot Rate for the bond
-        bond_price = quotation(settlement, row["MaturityDate"], row["YTM"])
-        price_factor = FINAL_PMT / (bond_price - cf_present_value)
-        df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
+            bond_price = quotation(settlement, maturity, row["YTM"])
+            price_factor = FINAL_PMT / (bond_price - cf_present_value)
+            spot_rate = price_factor ** (1 / row["BYears"]) - 1
 
-    df = df[["MaturityDate", "BDToMat", "SpotRate"]].copy()
-    # Force float64 type in float columns to standardize the output
-    df["SpotRate"] = df["SpotRate"].astype("float64[pyarrow]")
+        spot_rates_list.append(spot_rate)
+        # E também guardamos no dicionário para as próximas iterações
+        calculated_results[maturity] = {
+            "MaturityDate": maturity,
+            "Coupon": row["Coupon"],
+            "SpotRate": spot_rate,
+            "BYears": row["BYears"],
+        }
 
-    # Filter the result without the intermediate coupon dates (virtual bonds)
+    # Após o loop, adicionamos a lista de resultados ao DataFrame de uma só vez
+    df = df.with_columns(SpotRate=pl.Series(values=spot_rates_list, dtype=pl.Float64))
+    df = df.select(["MaturityDate", "BDToMat", "SpotRate"])
+
     if not show_coupons:
-        df = df.query("MaturityDate in @maturities").reset_index(drop=True)
+        df = df.filter(pl.col("MaturityDate").is_in(maturities.implode()))
     return df
 
 
 def bei_rates(
     settlement: DateScalar,
-    ntnb_maturities: pd.Series,
-    ntnb_rates: pd.Series,
-    nominal_maturities: pd.Series,
-    nominal_rates: pd.Series,
-) -> pd.DataFrame:
+    ntnb_maturities: DateArray,
+    ntnb_rates: FloatArray,
+    nominal_maturities: DateArray,
+    nominal_rates: FloatArray,
+) -> pl.DataFrame:
     """
     Calculate the Breakeven Inflation (BEI) for NTN-B bonds based on nominal and real
     interest rates. The BEI represents the inflation rate that equalizes the real and
@@ -446,7 +473,7 @@ def bei_rates(
              zero prefixed bonds rates) used as reference for the calculation.
 
     Returns:
-        pd.DataFrame: DataFrame containing the calculated breakeven inflation rates.
+        pl.DataFrame: DataFrame containing the calculated breakeven inflation rates.
 
     Returned columns:
         - MaturityDate: The maturity date of the bonds.
@@ -477,51 +504,51 @@ def bei_rates(
         ...     nominal_maturities=df_di["ExpirationDate"],
         ...     nominal_rates=df_di["SettlementRate"],
         ... )
-           MaturityDate  BDToMat       RIR       NIR       BEI
-        0    2025-05-15      171  0.061749  0.113836  0.049058
-        1    2026-08-15      488  0.066133  0.117126   0.04783
-        2    2027-05-15      673  0.063816  0.117169  0.050152
-        3    2028-08-15      988  0.063635   0.11828  0.051376
-        4    2029-05-15     1172  0.062532   0.11838  0.052561
-        5    2030-08-15     1486  0.061809  0.118499   0.05339
-        6    2032-08-15     1990  0.062135  0.118084  0.052676
-        7    2033-05-15     2177  0.061897   0.11787   0.05271
-        8    2035-05-15     2676  0.061711  0.117713  0.052747
-        9    2040-08-15     3995  0.060468   0.11759  0.053865
-        10   2045-05-15     5182    0.0625   0.11759   0.05185
-        11   2050-08-15     6497  0.063016   0.11759  0.051339
-        12   2055-05-15     7686  0.062252   0.11759  0.052095
-        13   2060-08-15     9003  0.063001   0.11759  0.051354
-
+        shape: (14, 5)
+        ┌──────────────┬─────────┬──────────┬──────────┬──────────┐
+        │ MaturityDate ┆ BDToMat ┆ RIR      ┆ NIR      ┆ BEI      │
+        │ ---          ┆ ---     ┆ ---      ┆ ---      ┆ ---      │
+        │ date         ┆ i32     ┆ f64      ┆ f64      ┆ f64      │
+        ╞══════════════╪═════════╪══════════╪══════════╪══════════╡
+        │ 2025-05-15   ┆ 171     ┆ 0.061749 ┆ 0.113836 ┆ 0.049058 │
+        │ 2026-08-15   ┆ 488     ┆ 0.066133 ┆ 0.117126 ┆ 0.04783  │
+        │ 2027-05-15   ┆ 673     ┆ 0.063816 ┆ 0.117169 ┆ 0.050152 │
+        │ 2028-08-15   ┆ 988     ┆ 0.063635 ┆ 0.11828  ┆ 0.051376 │
+        │ 2029-05-15   ┆ 1172    ┆ 0.062532 ┆ 0.11838  ┆ 0.052561 │
+        │ …            ┆ …       ┆ …        ┆ …        ┆ …        │
+        │ 2040-08-15   ┆ 3995    ┆ 0.060468 ┆ 0.11759  ┆ 0.053865 │
+        │ 2045-05-15   ┆ 5182    ┆ 0.0625   ┆ 0.11759  ┆ 0.05185  │
+        │ 2050-08-15   ┆ 6497    ┆ 0.063016 ┆ 0.11759  ┆ 0.051339 │
+        │ 2055-05-15   ┆ 7686    ┆ 0.062252 ┆ 0.11759  ┆ 0.052095 │
+        │ 2060-08-15   ┆ 9003    ┆ 0.063001 ┆ 0.11759  ┆ 0.051354 │
+        └──────────────┴─────────┴──────────┴──────────┴──────────┘
     """
     # Normalize input dates
     settlement = cv.convert_dates(settlement)
-    ntnb_maturities = pd.to_datetime(ntnb_maturities, errors="coerce", dayfirst=True)
+    ntnb_maturities = cv.convert_dates(ntnb_maturities)
 
-    # Calculate Real Interest Rate (RIR)
-    df = spot_rates(settlement, ntnb_maturities, ntnb_rates)
-    df["BDToMat"] = bday.count(settlement, df["MaturityDate"])
-    df = df.rename(columns={"SpotRate": "RIR"})
-
-    nir_interplator = ip.Interpolator(
+    nir_interpolator = ip.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, nominal_maturities),
         known_rates=nominal_rates,
         extrapolate=True,
     )
 
-    df["NIR"] = df["BDToMat"].apply(nir_interplator).astype("float64[pyarrow]")
-    # Calculate Breakeven Inflation Rate (BEI)
-    df["BEI"] = ((df["NIR"] + 1) / (df["RIR"] + 1)) - 1
+    df = (
+        spot_rates(settlement, ntnb_maturities, ntnb_rates)
+        .rename({"SpotRate": "RIR"})
+        .with_columns(
+            NIR=pl.col("BDToMat").map_elements(
+                nir_interpolator, return_dtype=pl.Float64
+            )
+        )
+        .with_columns(
+            BEI=((pl.col("NIR") + 1) / (pl.col("RIR") + 1)) - 1,
+        )
+        .select("MaturityDate", "BDToMat", "RIR", "NIR", "BEI")
+    )
 
-    cols_reordered = [
-        "MaturityDate",
-        "BDToMat",
-        "RIR",
-        "NIR",
-        "BEI",
-    ]
-    return df[cols_reordered].copy()
+    return df
 
 
 def duration(
@@ -543,7 +570,7 @@ def duration(
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
-        15.083054313130464
+        15.08305431313046
     """
     # Return NaN if any input is NaN
     if any(pd.isna(x) for x in [settlement, maturity, rate]):
@@ -557,7 +584,8 @@ def duration(
     byears = bday.count(settlement, df["PaymentDate"]) / 252
     dcf = df["CashFlow"] / (1 + rate) ** byears
     duration = (dcf * byears).sum() / dcf.sum()
-    return duration
+    # Truncar para 14 casas decimais para repetibilidade dos resultados
+    return tl.truncate(duration, 14)
 
 
 def dv01(
