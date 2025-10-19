@@ -11,8 +11,8 @@ from pyield.types import DateArray, DateScalar, IntegerArray, IntegerScalar
 
 # Initialize Brazilian holidays data
 br_holidays = hl.BrHolidays()
-OLD_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="old")
-NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_array(holiday_option="new")
+OLD_HOLIDAYS_ARRAY = br_holidays.get_holiday_series(holiday_option="old")
+NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_series(holiday_option="new")
 TRANSITION_DATE = br_holidays.TRANSITION_DATE
 _WEEKEND_START = 5  # Python weekday() >= 5 means Saturday/Sunday
 
