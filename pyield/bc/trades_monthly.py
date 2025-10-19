@@ -21,7 +21,7 @@ from requests.exceptions import HTTPError
 
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
-from pyield.types import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -202,6 +202,9 @@ def tpf_monthly_trades(
         └────────────────┴──────────┴───────────┴──────────────┴───┴─────────┴─────────┴─────────────────┴───────────────────┘
 
     """  # noqa: E501
+    if has_null_args(target_date):
+        logger.warning("No target_date provided. Returning an empty DataFrame.")
+        return pl.DataFrame()
     try:
         target_date = convert_dates(target_date)
         url = _build_file_url(target_date, extragroup)

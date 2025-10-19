@@ -14,7 +14,7 @@ from pyield.retry import default_retry
 logger = logging.getLogger(__name__)
 COUNT_CONVENTIONS = {"DAP": 252, "DI1": 252, "DDI": 360}
 BDAYS_PER_YEAR = 252
-CAL_DAYS_CONVENTION = 360
+CDAYS_PER_YEAR = 360
 
 
 def get_old_expiration_date(expiration_code: str, date: dt.date) -> dt.date | None:
@@ -98,8 +98,8 @@ def _convert_prices_to_rates(
 
     if count_convention == BDAYS_PER_YEAR:
         rates_expr = (100_000 / prices_pl) ** (BDAYS_PER_YEAR / du_pl) - 1
-    elif count_convention == CAL_DAYS_CONVENTION:
-        rates_expr = (100_000 / prices_pl - 1) * (CAL_DAYS_CONVENTION / du_pl)
+    elif count_convention == CDAYS_PER_YEAR:
+        rates_expr = (100_000 / prices_pl - 1) * (CDAYS_PER_YEAR / du_pl)
     else:
         raise ValueError("Invalid count_convention. Must be 252 or 360.")
 
@@ -148,11 +148,8 @@ def _pre_process_df(df: pl.DataFrame) -> pl.DataFrame:
 def _adjust_older_contracts_rates(df: pl.DataFrame, rate_cols: list) -> pl.DataFrame:
     """Adjust legacy DI1 contract pricing (pre-2002) converting prices -> rates."""
     for col in rate_cols:
-        df = df.with_columns(
-            _convert_prices_to_rates(df[col], df["BDaysToExp"], BDAYS_PER_YEAR).alias(
-                col
-            )
-        )
+        rate_col = _convert_prices_to_rates(df[col], df["BDaysToExp"], BDAYS_PER_YEAR)
+        df = df.with_columns(col=rate_col)
     if {"MinRate", "MaxRate"}.issubset(rate_cols):
         df = (
             df.with_columns(
@@ -238,17 +235,16 @@ def _process_df(df: pl.DataFrame, date: dt.date, contract_code: str) -> pl.DataF
     # SettlementRate
     count_conv = COUNT_CONVENTIONS.get(contract_code)
     if (
-        count_conv in {BDAYS_PER_YEAR, CAL_DAYS_CONVENTION}
+        count_conv in {BDAYS_PER_YEAR, CDAYS_PER_YEAR}
         and "SettlementPrice" in df.columns
     ):
         du_series = (
             df["BDaysToExp"] if count_conv == BDAYS_PER_YEAR else df["DaysToExp"]
         )
-        df = df.with_columns(
-            _convert_prices_to_rates(
-                df["SettlementPrice"], du_series, count_conv
-            ).alias("SettlementRate")
+        settlement_rates = _convert_prices_to_rates(
+            df["SettlementPrice"], du_series, count_conv
         )
+        df = df.with_columns(SettlementRate=settlement_rates)
 
     # DV01
     if (

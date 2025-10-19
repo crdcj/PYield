@@ -211,12 +211,10 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
             .alias("AvgPrice")
         )
     )
-    s_bd_to_mat_pd = bday.count(
-        start=df.get_column("Settlement"),
-        end=df.get_column("Maturity"),
+    bdays_to_mat = bday.count(
+        start=df.get_column("Settlement"), end=df.get_column("Maturity")
     )
-    s_bd_to_mat = pl.Series(s_bd_to_mat_pd)
-    df = df.with_columns(s_bd_to_mat.alias("BDToMat"))
+    df = df.with_columns(bdays_to_mat.alias("BDToMat"))
     return df
 
 

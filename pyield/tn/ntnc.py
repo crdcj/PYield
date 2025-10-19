@@ -6,7 +6,7 @@ import polars as pl
 import pyield.converters as cv
 import pyield.tn.tools as tl
 from pyield import anbima, bday
-from pyield.types import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -102,6 +102,8 @@ def payment_dates(
             2031-01-01
         ]
     """
+    if has_null_args(settlement, maturity):
+        return pl.Series(dtype=pl.Date)
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -165,6 +167,8 @@ def cash_flows(
         │ 2031-01-01  ┆ 105.830052 │
         └─────────────┴────────────┘
     """
+    if has_null_args(settlement, maturity):
+        return pl.DataFrame()
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -214,6 +218,8 @@ def quotation(
         >>> ntnc.quotation("21-03-2025", "01-01-2031", 0.067626)
         126.4958
     """
+    if has_null_args(settlement, maturity, rate):
+        return float("nan")
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -261,6 +267,8 @@ def price(
         >>> ntnc.price(6598.913723, 126.4958)
         8347.348705
     """
+    if has_null_args(vna, quotation):
+        return float("nan")
     return tl.truncate(vna * quotation / 100, 6)
 
 
@@ -285,13 +293,11 @@ def duration(
         >>> ntnc.duration("21-03-2025", "01-01-2031", 0.067626)
         4.405363320448003
     """
-    # Validate and normalize dates
+    if has_null_args(settlement, maturity, rate):
+        return float("nan")
+    # Normalize inputs
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
-
-    s = pl.Series([settlement, maturity, rate], strict=False, nan_to_null=True)
-    if s.is_null().any():
-        return float("NaN")
 
     df = cash_flows(settlement, maturity)
     b_years = bday.count(settlement, df["PaymentDate"]) / 252

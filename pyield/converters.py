@@ -4,7 +4,7 @@ from typing import overload
 import pandas as pd
 import polars as pl
 
-from pyield.types import DateArray, DateScalar
+from pyield.types import DateArray, DateScalar, has_null_args
 
 
 def validate_date_format(date_str: str) -> str:
@@ -55,10 +55,7 @@ def convert_dates(  # noqa
         - Coleções de strings não podem misturar formatos; o primeiro valor
             não-nulo define o formato usado para toda a série.
     """
-    # Capturar apenas escalares nulos: a verificação `is True` é crucial,
-    # pois `pd.isna()` retorna um array booleano para entradas de array,
-    # e um array nulo é idêntico ao objeto singleton `True`.
-    if pd.isna(dates) is True:
+    if has_null_args(dates):
         return None
 
     # --- LÓGICA ESCALAR (simples e rápida) ---

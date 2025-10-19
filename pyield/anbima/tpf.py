@@ -30,7 +30,7 @@ from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnc import duration as duration_c
 from pyield.tn.ntnf import duration as duration_f
-from pyield.types import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
@@ -406,6 +406,8 @@ def tpf_data(
             requer uma conexão à rede RTM. Sem ela, a consulta para datas
             antigas retornará um DataFrame vazio.
     """  # noqa
+    if has_null_args(date):
+        return pl.DataFrame()
     date = convert_dates(date)
     _validate_not_future_date(date)
 

@@ -1,9 +1,9 @@
 import bisect
 from typing import Literal
 
-import numpy as np
-import pandas as pd
 import polars as pl
+
+from pyield.types import FloatArray, IntegerArray
 
 
 class Interpolator:
@@ -12,8 +12,8 @@ class Interpolator:
 
     Args:
         method (Literal["flat_forward", "linear"]): The interpolation method to use.
-        known_bdays (pd.Series | list[int]): The known business days sequence.
-        known_rates (pd.Series | list[float]): The known interest rates sequence.
+        known_bdays (IntegerArray): The known business days sequence.
+        known_rates (FloatArray): The known interest rates sequence.
         extrapolate (bool, optional): If True, extrapolates beyond known business days
             using the last available rate. Defaults to False, returning NaN for
             out-of-range values.
@@ -46,8 +46,8 @@ class Interpolator:
     def __init__(
         self,
         method: Literal["flat_forward", "linear"],
-        known_bdays: pd.Series | np.ndarray | tuple[int] | list[int] | pl.Series,
-        known_rates: pd.Series | np.ndarray | tuple[float] | list[float] | pl.Series,
+        known_bdays: IntegerArray,
+        known_rates: FloatArray,
         extrapolate: bool = False,
     ):
         df = (
@@ -159,6 +159,10 @@ class Interpolator:
             float: The interest rate interpolated by the specified method for the given
                 number of business days.
         """
+        # Validate input
+        if not isinstance(bday, int):
+            return float("nan")
+
         # Create local references to facilitate code readability
         known_bdays = self._known_bdays
         known_rates = self._known_rates
@@ -170,7 +174,7 @@ class Interpolator:
             return known_rates[0]
         # Upper bound extrapolation depends on the extrapolate flag
         elif bday > known_bdays[-1]:
-            return known_rates[-1] if extrapolate else float("NaN")
+            return known_rates[-1] if extrapolate else float("nan")
 
         # Find k such that known_bdays[k-1] < bday < known_bdays[k]
         k = bisect.bisect_left(known_bdays, bday)

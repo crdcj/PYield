@@ -1,7 +1,6 @@
-import pandas as pd
 import polars as pl
 
-from pyield.types import DateArray, FloatArray, IntegerArray
+from pyield.types import DateArray, FloatArray, IntegerArray, has_null_args
 
 
 def forwards(
@@ -141,6 +140,9 @@ def forwards(
         correta no cálculo das taxas a termo.
         - Os resultados são retornados na mesma ordem dos dados de entrada.
     """  # noqa: E501
+    # Validações iniciais
+    if has_null_args(bdays, rates):
+        return pl.Series(dtype=pl.Float64)
     # 1. Montar o DataFrame
     # Criar coluna de agrupamento dummy se não for fornecida
     groupby_dates_exp = pl.Series(groupby_dates) if groupby_dates is not None else 0
@@ -245,7 +247,7 @@ def forward(
     f_{1 \rightarrow 2} = \left( \frac{(1 + r_2)^{t_2}}{(1 + r_1)^{t_1}} \right)^{\frac{1}{t_2 - t_1}} - 1
     $$
     """  # noqa: E501
-    if any(pd.isna(x) for x in [rate1, rate2, bday1, bday2]):
+    if has_null_args(rate1, rate2, bday1, bday2):
         # If any of the inputs are NaN, return NaN
         return float("nan")
 

@@ -1,8 +1,12 @@
+import logging
+
 import requests
 
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
-from pyield.types import DateScalar
+from pyield.types import DateScalar, has_null_args
+
+logger = logging.getLogger(__name__)
 
 
 @default_retry
@@ -86,6 +90,9 @@ def vna_lft(date: DateScalar) -> float:
             fails. This could be due to network issues, website unavailability,
             or the requested data not being found for the given date.
     """
+    if has_null_args(date):
+        logger.warning("No valid date provided. Returning NaN.")
+        return float("nan")
     text = _get_text(date)
     table_text = _extract_vna_table_text(text)
     table_lines = _parse_vna_table_lines(table_text)

@@ -3,7 +3,6 @@ import logging
 from typing import Literal
 from zoneinfo import ZoneInfo
 
-import pandas as pd
 import polars as pl
 
 import pyield.converters as cv
@@ -11,7 +10,7 @@ from pyield import bday
 from pyield.b3.futures.historical import fetch_bmf_data
 from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield.b3.futures.xml import fetch_xml_data
-from pyield.types import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
@@ -135,10 +134,12 @@ def futures(
         └────────────┴──────────────┴────────────────┴────────────┴───┴──────────────┴───────────┴────────────────┴─────────────┘
 
     """  # noqa: E501
-    converted_date = cv.convert_dates(date)
+    if has_null_args(contract_code, date):
+        return pl.DataFrame()
+    trade_date = cv.convert_dates(date)
     selected_contract = str(contract_code).upper()
 
-    if _is_trading_day(converted_date):
+    if _is_trading_day(trade_date):
         # É um dia de negociação intraday
         time = dt.datetime.now(BZ_TIMEZONE).time()
         if time < INTRADAY_START_TIME:  # Mercado não está aberto ainda
@@ -147,7 +148,7 @@ def futures(
 
         # Existe a chance de que os dados consolidados estejam disponíveis após as 20h
         if time >= HISTORICAL_START_TIME:
-            df_hist = _get_historical_data(selected_contract, converted_date)
+            df_hist = _get_historical_data(selected_contract, trade_date)
             if not df_hist.empty:
                 logger.info("Consolidated data is already available and will be used.")
                 return df_hist
@@ -156,7 +157,7 @@ def futures(
         return fetch_intraday_df(selected_contract)
 
     else:  # É um dia histórico
-        return _get_historical_data(selected_contract, converted_date)
+        return _get_historical_data(selected_contract, trade_date)
 
 
 __all__ = [

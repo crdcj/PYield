@@ -127,11 +127,8 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
         (100 - pl.col("percentual_corte")).alias("percentual_aceito"),
     )
 
-    s_prazo_pd = bday.count(
-        start=df.get_column("data_liquidacao"),
-        end=df.get_column("data_retorno"),
-    )
-    df = df.with_columns(pl.Series(s_prazo_pd).alias("prazo_dias_uteis"))
+    prazos = bday.count(start=df["data_liquidacao"], end=df["data_retorno"])
+    df = df.with_columns(prazos.alias("prazo_dias_uteis"))
     return df
 
 

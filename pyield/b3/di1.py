@@ -7,7 +7,7 @@ import pyield.converters as cv
 from pyield import b3, bday, interpolator
 from pyield.config import TIMEZONE_BZ
 from pyield.data_cache import get_cached_dataset
-from pyield.types import DateArray, DateScalar
+from pyield.types import DateArray, DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +121,9 @@ def data(
         └────────────┴────────────────┴──────────────┴────────────┴───┴──────────────┴──────────────┴────────────────┴─────────────┘
 
     """  # noqa: E501
+    if has_null_args(dates):
+        logger.warning("No valid 'dates' provided. Returning empty DataFrame.")
+        return pl.DataFrame()
     df = _get_data(dates=dates)
 
     if month_start:
@@ -165,25 +168,16 @@ def _build_input_dataframe(
     match (converted_dates, converted_expirations):
         # CASO 1: Data escalar, vencimentos em array
         case dt.date() as d, pl.Series() as e:
-            if e.is_empty():
-                dfi = pl.DataFrame()
-            else:
-                dfi = pl.DataFrame({"ExpirationDate": e}).with_columns(TradeDate=d)
+            dfi = pl.DataFrame({"ExpirationDate": e}).with_columns(TradeDate=d)
 
         # CASO 2: Datas em array, vencimento escalar
         case pl.Series() as d, dt.date() as e:
-            if d.is_empty():
-                dfi = pl.DataFrame()
-            else:
-                # Mesma lógica, invertida
-                dfi = pl.DataFrame({"TradeDate": d}).with_columns(ExpirationDate=e)
+            # Mesma lógica, invertida
+            dfi = pl.DataFrame({"TradeDate": d}).with_columns(ExpirationDate=e)
 
         # CASO 3: Ambos são arrays
         case pl.Series() as d, pl.Series() as e:
-            if d.is_empty() or e.is_empty():
-                dfi = pl.DataFrame()
-            else:
-                dfi = pl.DataFrame({"TradeDate": d, "ExpirationDate": e})
+            dfi = pl.DataFrame({"TradeDate": d, "ExpirationDate": e})
 
         # CASO 4: Ambos são escalares
         case dt.date() as d, dt.date() as e:
@@ -197,8 +191,8 @@ def _build_input_dataframe(
 
 
 def interpolate_rates(
-    dates: DateScalar | DateArray | None,
-    expirations: DateScalar | DateArray | None,
+    dates: DateScalar | DateArray,
+    expirations: DateScalar | DateArray,
     extrapolate: bool = True,
 ) -> pl.Series:
     """
@@ -284,12 +278,17 @@ def interpolate_rates(
         - All available settlement rates are used for the flat-forward interpolation.
         - The function handles broadcasting of scalar and array-like inputs.
     """
-    dfi = _build_input_dataframe(dates, expirations)
+    if has_null_args(dates, expirations):
+        logger.warning(
+            "Both 'dates' and 'expirations' must be provided. Returning empty Series."
+        )
+        return pl.Series(dtype=pl.Float64)
 
-    # 2. Se a helper retornou None, a entrada é inválida.
+    dfi = _build_input_dataframe(dates, expirations)
+    # 2. Se a helper retornou um DataFrame vazio, retornar uma Series vazia
     if dfi.is_empty():
-        logger.warning("Invalid or empty dates provided. Returning empty Series.")
-        return pl.Series()
+        logger.warning("Invalid inputs provided. Returning empty Series.")
+        return pl.Series(dtype=pl.Float64)
 
     s_bdays = bday.count(dfi["TradeDate"], dfi["ExpirationDate"])
     dfi = dfi.with_columns(BDaysToExp=s_bdays, FlatFwdRate=None)
@@ -299,7 +298,7 @@ def interpolate_rates(
 
     # Return an empty DataFrame if no rates are found
     if dfr.is_empty():
-        return pl.Series()
+        return pl.Series(dtype=pl.Float64)
 
     # Iterate over each unique reference date
     for date in dfi.get_column("TradeDate").unique().to_list():
@@ -371,6 +370,10 @@ def interpolate_rate(
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
+    if has_null_args(date, expiration):
+        logger.warning("Both 'date' and 'expiration' must be provided. Returning NaN.")
+        return float("nan")
+
     converted_date = cv.convert_dates(date)
     converted_expiration = cv.convert_dates(expiration)
 
@@ -379,42 +382,20 @@ def interpolate_rate(
     ):
         raise ValueError("Both 'date' and 'expiration' must be single date values.")
 
-    if not converted_date or not converted_expiration:
-        return float("nan")
-
     # Get the DI contract DataFrame
     df = _get_data(dates=converted_date)
 
     if df.is_empty():
         return float("nan")
 
-    max_exp = df.get_column("ExpirationDate").max()
-
-    if converted_expiration > max_exp and not extrapolate:
-        logger.warning(
-            f"Expiration ({converted_expiration}) is greater than the maximum exp. "
-            f"date ({max_exp}) and extrapolation is not allowed. Returning NaN."
-        )
-        return float("nan")
-
-    rate = df.filter(pl.col("ExpirationDate") == converted_expiration).get_column(
-        "SettlementRate"
-    )
-
-    if not rate.is_empty():
-        logger.info(f"Exact match found for expiration {converted_expiration}.")
-        return rate.item(0)
-
     ff_interp = interpolator.Interpolator(
         method="flat_forward",
-        known_bdays=df.get_column("BDaysToExp"),
-        known_rates=df.get_column("SettlementRate"),
+        known_bdays=df["BDaysToExp"],
+        known_rates=df["SettlementRate"],
         extrapolate=extrapolate,
     )
-    bd = bday.count(converted_date, converted_expiration)
-    if not bd:
-        return float("nan")
 
+    bd = bday.count(converted_date, converted_expiration)
     return ff_interp(bd)
 
 

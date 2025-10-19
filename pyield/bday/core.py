@@ -7,7 +7,13 @@ import polars as pl
 import pyield.bday.holidays as hl
 import pyield.converters as cv
 from pyield.config import TIMEZONE_BZ
-from pyield.types import DateArray, DateScalar, IntegerArray, IntegerScalar
+from pyield.types import (
+    DateArray,
+    DateScalar,
+    IntegerArray,
+    IntegerScalar,
+    has_null_args,
+)
 
 # Initialize Brazilian holidays data
 br_holidays = hl.BrHolidays()
@@ -121,6 +127,8 @@ def count(
             212
         ]
     """
+    if has_null_args(start, end):
+        return None
     start_pl = cv.convert_dates(start)
     end_pl = cv.convert_dates(end)
 
@@ -298,6 +306,8 @@ def offset(
         This function uses `polars.Expr.dt.add_business_days` under the hood. For
         detailed information, refer to the Polars documentation.
     """
+    if has_null_args(dates, offset):
+        return None
     dates_pl = cv.convert_dates(dates)
 
     # Coloca as entradas em um DataFrame para trabalhar com expressões em colunas
@@ -388,6 +398,8 @@ def generate(
         `pandas.bdate_range` documentation:
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html.
     """
+    if has_null_args(start, end):
+        return pl.Series(dtype=pl.Date)
     if start:
         start_pd = cv.convert_dates(start)
     else:
@@ -458,6 +470,8 @@ def is_business_day(dates: DateScalar | DateArray) -> bool | pl.Series | None:
         - Null elements in array inputs propagate as nulls.
         - Weekends are never business days.
     """
+    if has_null_args(dates):
+        return None
     converted = cv.convert_dates(dates)
 
     # Scalar path ---------------------------------------------------------

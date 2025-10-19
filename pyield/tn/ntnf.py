@@ -8,7 +8,7 @@ import pyield.converters as cv
 import pyield.interpolator as ip
 from pyield import anbima, bday
 from pyield.tn import tools
-from pyield.types import DateArray, DateScalar, FloatArray
+from pyield.types import DateArray, DateScalar, FloatArray, has_null_args
 
 """
 Constants calculated as per Anbima Rules
@@ -112,7 +112,9 @@ def payment_dates(
             2027-01-01
         ]
     """
-    # Validate and normalize dates
+    if has_null_args(settlement, maturity):
+        return pl.Series(dtype=pl.Date)
+    # Normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 
@@ -170,7 +172,9 @@ def cash_flows(
         │ 2027-01-01  ┆ 1048.80885 │
         └─────────────┴────────────┘
     """
-    # Validate input dates
+    if has_null_args(settlement, maturity):
+        return pl.DataFrame()
+    # Normalize input dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 
@@ -220,6 +224,8 @@ def price(
         >>> ntnf.price("05-07-2024", "01-01-2035", 0.11921)
         895.359254
     """
+    if has_null_args(settlement, maturity, rate):
+        return float("nan")
     cf_df = cash_flows(settlement, maturity)
     cf_values = cf_df["CashFlow"]
     bdays = bday.count(settlement, cf_df["PaymentDate"])
@@ -290,6 +296,10 @@ def spot_rates(  # noqa
         │ 2035-01-01   ┆ 2587    ┆ 0.121398 │
         └──────────────┴─────────┴──────────┘
     """
+    if has_null_args(
+        settlement, ltn_maturities, ltn_rates, ntnf_maturities, ntnf_rates
+    ):
+        return pl.DataFrame()
     # 1. Converter e normalizar inputs para Polars
     settlement = cv.convert_dates(settlement)
     ltn_maturities = cv.convert_dates(ltn_maturities)
@@ -357,7 +367,7 @@ def spot_rates(  # noqa
         cf_dates = payment_dates(settlement, mat_date)[:-1]
         if len(cf_dates) == 0:
             # Caso improvável, mas protege contra divisão por zero mais adiante
-            spot_rate = float("NaN")
+            spot_rate = float("nan")
             solved_spot_rates.append(spot_rate)
             spot_map[mat_date] = spot_rate
             continue
@@ -462,7 +472,7 @@ def _solve_spread(
         p_solution = _bisection_method(price_difference_func, a, b)
     except ValueError:
         # If no solution is found, return NaN
-        p_solution = float("NaN")
+        p_solution = float("nan")
 
     return p_solution
 
@@ -510,6 +520,8 @@ def di_net_spread(  # noqa
         >>> round(spread * 10_000, 2)  # Convert to bps for display
         12.13
     """
+    if has_null_args(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
+        return float("nan")
     # 1. Validação e conversão de datas
     settlement = cv.convert_dates(settlement)
     ntnf_maturity = cv.convert_dates(ntnf_maturity)
@@ -521,8 +533,6 @@ def di_net_spread(  # noqa
     # 2. Validação dos inputs de DI
     if len(di_rates) != len(di_expirations):
         raise ValueError("di_rates and di_expirations must have the same length.")
-    if di_rates.is_empty():
-        return float("NaN")
 
     # 3. Criação do interpolador
     ff_interpolator = ip.Interpolator(
@@ -604,6 +614,8 @@ def premium(
           the present value of cash flows for the NTN-F bond using DI rates.
 
     """
+    if has_null_args(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
+        return float("nan")
     # 1. Validação e conversão de datas (padrão consistente)
     settlement = cv.convert_dates(settlement)
     ntnf_maturity = cv.convert_dates(ntnf_maturity)
@@ -645,7 +657,7 @@ def premium(
     di_ytm = _solve_spread(price_difference, ntnf_rate)
 
     if math.isnan(di_ytm):
-        return float("NaN")
+        return float("nan")
 
     # 8. Calcular o prêmio final
     factor_ntnf = (1 + ntnf_rate) ** (1 / 252)
@@ -680,13 +692,11 @@ def duration(
         >>> ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
         6.32854218039796
     """
-    # Validate and normalize input dates
+    if has_null_args(settlement, maturity, rate):
+        return float("nan")
+    # Normalize inputs
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
-
-    s = pl.Series([settlement, maturity, rate], strict=False, nan_to_null=True)
-    if s.is_null().any():
-        return float("NaN")  # Early return if any input is invalid
 
     df = cash_flows(settlement, maturity)
     byears = bday.count(settlement, df["PaymentDate"]) / 252
@@ -722,6 +732,8 @@ def dv01(
         >>> ntnf.dv01("26-03-2025", "01-01-2035", 0.151375)
         0.39025200000003224
     """
+    if has_null_args(settlement, maturity, rate):
+        return float("nan")
     price1 = price(settlement, maturity, rate)
     price2 = price(settlement, maturity, rate + 0.0001)
     return price1 - price2
