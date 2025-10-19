@@ -3,7 +3,7 @@ import polars as pl
 import pyield.converters as cv
 from pyield import anbima, bday
 from pyield.tn import tools
-from pyield.types import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 
 def data(date: DateScalar) -> pl.DataFrame:
@@ -106,6 +106,8 @@ def quotation(
         98.9645
     """
     # Validate and normalize dates
+    if has_null_args(settlement, maturity, rate):
+        return float("nan")
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 
@@ -140,6 +142,8 @@ def premium(lft_rate: float, di_rate: float) -> float:
         >>> lft.premium(lft_rate, di_rate)
         1.008594331960501
     """
+    if has_null_args(lft_rate, di_rate):
+        return float("nan")
     # daily rate
     ltt_factor = (lft_rate + 1) ** (1 / 252)
     di_factor = (di_rate + 1) ** (1 / 252)

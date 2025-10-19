@@ -5,7 +5,7 @@ import requests
 
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
-from pyield.types import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"
@@ -76,6 +76,8 @@ def rates(start: DateScalar, end: DateScalar) -> pl.DataFrame:
         1  202502  0.0131
         2  202503  0.0056
     """
+    if has_null_args(start, end):
+        return pl.DataFrame()
     start = convert_dates(start)
     end = convert_dates(end)
 
@@ -182,6 +184,8 @@ def indexes(start: DateScalar, end: DateScalar) -> pl.DataFrame:
         1  202502  7205.03
         2  202503  7245.38
     """
+    if has_null_args(start, end):
+        return pl.DataFrame()
     start = convert_dates(start)
     end = convert_dates(end)
 

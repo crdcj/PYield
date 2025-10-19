@@ -25,7 +25,7 @@ import requests
 from pyield.config import TIMEZONE_BZ
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
-from pyield.types import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -228,6 +228,8 @@ def selic_over_series(
         1  2025-09-16  0.149
         2  2025-09-17  0.149
     """
+    if has_null_args(start):  # Start must be provided
+        return pl.DataFrame()
     df = _fetch_data_from_url(BCSerie.SELIC_OVER, start, end)
     return df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
 
@@ -250,6 +252,8 @@ def selic_over(date: DateScalar) -> float:
         >>> bc.selic_over("31-05-2024")
         0.104
     """
+    if has_null_args(date):
+        return float("nan")
     df = selic_over_series(date, date)
     if df.is_empty():
         return float("nan")
@@ -284,6 +288,8 @@ def selic_target_series(
                 Date  Value
         0 2024-05-31  0.105
     """
+    if has_null_args(start):  # Start must be provided
+        return pl.DataFrame()
     df = _fetch_data_from_url(BCSerie.SELIC_TARGET, start, end)
     df = df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
     return df
@@ -307,6 +313,8 @@ def selic_target(date: DateScalar) -> float:
         >>> bc.selic_target("31-05-2024")
         0.105
     """
+    if has_null_args(date):
+        return float("nan")
     df = selic_target_series(date, date)
     if df.is_empty():
         return float("nan")
@@ -350,6 +358,8 @@ def di_over_series(
         ...
 
     """
+    if has_null_args(start):
+        return pl.DataFrame()
     df = _fetch_data_from_url(BCSerie.DI_OVER, start, end)
     if annualized:
         df = df.with_columns(
@@ -387,6 +397,8 @@ def di_over(date: DateScalar, annualized: bool = True) -> float:
         >>> bc.di_over("28-01-2025", annualized=False)
         0.00045513
     """
+    if has_null_args(date):
+        return float("nan")
     df = di_over_series(date, date, annualized)
     if df.is_empty():
         return float("nan")

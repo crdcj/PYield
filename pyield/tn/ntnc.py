@@ -293,9 +293,9 @@ def duration(
         >>> ntnc.duration("21-03-2025", "01-01-2031", 0.067626)
         4.405363320448003
     """
+    # Validate and normalize inputs
     if has_null_args(settlement, maturity, rate):
         return float("nan")
-    # Normalize inputs
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 

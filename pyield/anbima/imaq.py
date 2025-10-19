@@ -18,7 +18,7 @@ import requests
 
 import pyield.converters as cv
 from pyield.anbima.tpf import tpf_data
-from pyield.types import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 # Configura o logger do módulo
 logger = logging.getLogger(__name__)
@@ -210,6 +210,9 @@ def imaq(date: DateScalar) -> pl.DataFrame:
         Exception: Logs error and returns an empty DataFrame if any error occurs during
             fetching or processing.
     """
+    if has_null_args(date):
+        logger.warning("No date provided. Returning empty DataFrame.")
+        return pl.DataFrame()
     date = cv.convert_dates(date)
     date_str = date.strftime("%d/%m/%Y")
     try:

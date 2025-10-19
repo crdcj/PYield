@@ -14,6 +14,7 @@ import pyield.converters as cv
 from pyield import bday
 from pyield.fwd import forwards
 from pyield.retry import default_retry
+from pyield.types import DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -330,7 +331,7 @@ def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pl.DataFrame:
 
 
 def fetch_xml_data(
-    date: dt.date, contract_code: str, source_type: Literal["PR", "SPR"]
+    date: DateScalar, contract_code: str, source_type: Literal["PR", "SPR"]
 ) -> pl.DataFrame:
     """Fetches and processes an XML report from B3's website.
 
@@ -352,6 +353,9 @@ def fetch_xml_data(
         ValueError: If the `source_type` is invalid or if no data is
             available for the given date.
     """
+    if has_null_args(date):
+        logger.warning("No date provided. Returning empty DataFrame.")
+        return pl.DataFrame()
     try:
         date = cv.convert_dates(date)
         zip_file = _get_file_from_url(date, source_type)

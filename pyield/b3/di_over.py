@@ -2,7 +2,7 @@ import ftplib
 import logging
 
 from pyield.converters import convert_dates
-from pyield.types import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,8 @@ def di_over(date: DateScalar) -> float:
         >>> di_over("28/02/2025")
         0.1315
     """
+    if has_null_args(date):
+        return float("nan")
     ftp = None
     try:
         # Convert date to file format

@@ -74,7 +74,6 @@ def projected_rate() -> IndicatorProjection:
         - The function requires internet connection to access the ANBIMA website
         - The structure of the ANBIMA page may change, which could affect the function
     """
-
     page_text = _get_page_text()
     df = _read_ipca_table(page_text)
 

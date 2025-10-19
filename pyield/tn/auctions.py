@@ -12,7 +12,7 @@ from pyield import converters as cv
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
-from pyield.types import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -425,6 +425,9 @@ def auction(auction_date: DateScalar) -> pl.DataFrame:
     Retorna um DataFrame do Pandas vazio se ocorrer um erro na requisição, no
     processamento, ou se não houver dados para a data especificada.
     """
+    if has_null_args(auction_date):
+        logger.info("No auction date provided.")
+        return pl.DataFrame()
     try:
         auction_date = cv.convert_dates(auction_date)
         data = _fetch_auction_data(auction_date)

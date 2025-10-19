@@ -127,6 +127,7 @@ def count(
             212
         ]
     """
+    # Validate and normalize inputs
     if has_null_args(start, end):
         return None
     start_pl = cv.convert_dates(start)
@@ -306,6 +307,7 @@ def offset(
         This function uses `polars.Expr.dt.add_business_days` under the hood. For
         detailed information, refer to the Polars documentation.
     """
+    # Validate and normalize inputs
     if has_null_args(dates, offset):
         return None
     dates_pl = cv.convert_dates(dates)
@@ -398,8 +400,6 @@ def generate(
         `pandas.bdate_range` documentation:
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html.
     """
-    if has_null_args(start, end):
-        return pl.Series(dtype=pl.Date)
     if start:
         start_pd = cv.convert_dates(start)
     else:
@@ -470,6 +470,7 @@ def is_business_day(dates: DateScalar | DateArray) -> bool | pl.Series | None:
         - Null elements in array inputs propagate as nulls.
         - Weekends are never business days.
     """
+    # Validate and normalize inputs
     if has_null_args(dates):
         return None
     converted = cv.convert_dates(dates)
