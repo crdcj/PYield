@@ -2,7 +2,6 @@ import datetime as dt
 import io
 import logging
 
-import pandas as pd
 import polars as pl
 import polars.selectors as cs
 import requests
@@ -201,7 +200,7 @@ def _process_csv_data(csv_data: str) -> pl.DataFrame:
     return df
 
 
-def tpf_difusao(data_referencia: DateScalar) -> pd.DataFrame:
+def tpf_difusao(data_referencia: DateScalar) -> pl.DataFrame:
     """
     Obtém a TPF Difusão da Anbima para uma data de referência específica.
 
@@ -210,7 +209,7 @@ def tpf_difusao(data_referencia: DateScalar) -> pd.DataFrame:
             Data de referência (ex: "DD/MM/AAAA").
 
     Returns:
-        pd.DataFrame: DataFrame com os dados. Retorna um DataFrame vazio se
+        pl.DataFrame: DataFrame com os dados. Retorna um DataFrame vazio se
             não houver dados ou em caso de erro.
 
     Output Columns:
@@ -231,11 +230,11 @@ def tpf_difusao(data_referencia: DateScalar) -> pd.DataFrame:
 
     if csv_data is None:
         logger.warning("Nenhum dado foi retornado para a data '%s'.", data_str)
-        return pd.DataFrame()
+        return pl.DataFrame()
 
     try:
         df = _process_csv_data(csv_data)
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
     except Exception as e:
         logger.error("Falha ao processar o CSV para a data '%s': %s", data_str, e)
-        return pd.DataFrame()
+        return pl.DataFrame()

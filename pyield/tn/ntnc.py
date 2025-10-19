@@ -50,7 +50,7 @@ def data(date: DateScalar) -> pl.DataFrame:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
+        pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
 
     Examples:
         >>> from pyield import ntnc

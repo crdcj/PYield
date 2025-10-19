@@ -17,7 +17,6 @@ from typing import Literal
 from urllib.error import HTTPError, URLError
 from zoneinfo import ZoneInfo
 
-import pandas as pd
 import polars as pl
 import polars.selectors as ps
 import requests
@@ -123,7 +122,7 @@ def _rename_columns(csv_text: str) -> str:
     return csv_text
 
 
-def _read_csv_data(csv_text: str) -> pd.DataFrame:
+def _read_csv_data(csv_text: str) -> pl.DataFrame:
     df = pl.read_csv(
         source=io.StringIO(csv_text),
         skip_lines=2,
@@ -134,7 +133,7 @@ def _read_csv_data(csv_text: str) -> pd.DataFrame:
     return df
 
 
-def _process_raw_df(df: pl.DataFrame) -> pd.DataFrame:
+def _process_raw_df(df: pl.DataFrame) -> pl.DataFrame:
     df = df.rename(COLUMN_NAME_MAPPING).with_columns(
         # Remove percentage from rates
         # Rate columns have percentage values with 4 decimal places in percentage values
@@ -264,7 +263,7 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
         date (dt.date): A data de referência para os dados.
 
     Returns:
-        pd.DataFrame: Um DataFrame contendo os dados de mercado de títulos
+        pl.DataFrame: Um DataFrame contendo os dados de mercado de títulos
             processados, ou um DataFrame vazio se os dados não estiverem
             disponíveis ou ocorrer um erro de conexão.
     """
@@ -311,7 +310,7 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
                 f"No Anbima TPF secondary market data for {date_str} (HTTP 404). "
                 "Returning empty DataFrame."
             )
-            return pd.DataFrame()
+            return pl.DataFrame()
         logger.error(f"HTTP Error fetching data for {date_str} from {file_url}: {e}")
         raise
 

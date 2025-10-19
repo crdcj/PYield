@@ -1,4 +1,4 @@
-import pandas as pd
+import polars as pl
 
 import pyield.converters as cv
 from pyield import anbima, bday
@@ -6,7 +6,7 @@ from pyield.tn import tools
 from pyield.types import DateScalar
 
 
-def data(date: DateScalar) -> pd.DataFrame:
+def data(date: DateScalar) -> pl.DataFrame:
     """
     Fetch the LFT indicative rates for the given reference date from ANBIMA.
 
@@ -14,7 +14,7 @@ def data(date: DateScalar) -> pd.DataFrame:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame containing the following columns:
+        pl.DataFrame: DataFrame containing the following columns:
             - ReferenceDate: The reference date for the data.
             - BondType: The type of bond.
             - MaturityDate: The maturity date of the LFT bond.
@@ -46,7 +46,7 @@ def data(date: DateScalar) -> pd.DataFrame:
     return anbima.tpf_data(date, "LFT")
 
 
-def maturities(date: DateScalar) -> pd.Series:
+def maturities(date: DateScalar) -> pl.Series:
     """
     Fetch the bond maturities available for the given reference date.
 
@@ -54,7 +54,7 @@ def maturities(date: DateScalar) -> pd.Series:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.Series: A Series of bond maturities available for the reference date.
+        pl.Series: A Series of bond maturities available for the reference date.
 
     Examples:
         >>> from pyield import lft

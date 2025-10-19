@@ -19,7 +19,6 @@ import datetime as dt
 import io
 import logging
 
-import pandas as pd
 import polars as pl
 import requests
 
@@ -114,7 +113,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
 def ptax_series(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """Cotações de Dólar PTAX (taxa de câmbio)
     - Fonte: Banco Central do Brasil (BCB)
     - Frequência: Diária
@@ -172,7 +171,7 @@ def ptax_series(
             Padrão é `None`.
 
     Returns:
-        pd.DataFrame: Um DataFrame contendo os dados de cotações de dólar PTAX.
+        pl.DataFrame: Um DataFrame contendo os dados de cotações de dólar PTAX.
         Se não houver dados disponíveis para o período especificado, um DataFrame vazio
         será retornado.
 
@@ -228,15 +227,15 @@ def ptax_series(
         df = _parse_csv(text)
         if df.is_empty():
             logging.warning("No data found for the specified period.")
-            return pd.DataFrame()
+            return pl.DataFrame()
         df = _process_df(df)
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
     except requests.exceptions.HTTPError as http_err:
         logger.error(f"HTTP error occurred: {http_err}")
-        return pd.DataFrame()
+        return pl.DataFrame()
     except Exception as e:
         logger.exception("Error fetching PTAX data from BC API: %s", e)
-        return pd.DataFrame()
+        return pl.DataFrame()
 
 
 def ptax(date: DateScalar) -> float:
@@ -262,7 +261,7 @@ def ptax(date: DateScalar) -> float:
 
         >>> # Busca a PTAX para um fim de semana (sem dados)
         >>> ptax_rate_weekend = bc.ptax("23-08-2025")
-        >>> pd.isna(ptax_rate_weekend)
+        >>>  ptax_rate_weekend is None
         True
     """
     # Reutiliza a função ptax_series para buscar os dados para o dia específico.

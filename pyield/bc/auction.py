@@ -20,7 +20,6 @@ import io
 import logging
 from typing import Literal
 
-import pandas as pd
 import polars as pl
 import polars.selectors as cs
 import requests
@@ -294,17 +293,12 @@ def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pl.DataFrame:
         start_date = bday.offset(bz_last_bday, -1)
 
     # Busca a série PTAX usando a função já existente
-    df_pd = pt.ptax_series(start=start_date, end=end_date)
-    if df_pd.empty:
+    df = pt.ptax_series(start=start_date, end=end_date)
+    if df.is_empty():
         return pl.DataFrame()
 
     # Converte para Polars, seleciona, renomeia e ordena (importante para join_asof)
-    return (
-        pl.from_pandas(df_pd)
-        .select(["Date", "MidRate"])
-        .rename({"MidRate": "PTAX"})
-        .sort("Date")
-    )
+    return df.select(["Date", "MidRate"]).rename({"MidRate": "PTAX"}).sort("Date")
 
 
 def _add_usd_dv01(df: pl.DataFrame) -> pl.DataFrame:
@@ -387,7 +381,7 @@ def auctions(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
     auction_type: Literal["sell", "buy"] | None = None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Recupera dados de leilões para um determinado período e tipo de leilão da API do BC.
 
@@ -492,7 +486,7 @@ def auctions(
         df = _parse_csv(api_csv_text)
         if df.is_empty():
             logger.warning("No auction data found after parsing the API response.")
-            return pd.DataFrame()
+            return pl.DataFrame()
         df = _format_df(df)
         df = _process_df(df)
         df = _adjust_values_without_auction(df)
@@ -501,7 +495,7 @@ def auctions(
         df = _add_usd_dv01(df)
         df = _add_avg_maturity(df)
         df = _sort_and_reorder_columns(df)
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
     except Exception as e:
         logger.exception(f"Error fetching auction data from BC API: {e}")
-        return pd.DataFrame()
+        return pl.DataFrame()

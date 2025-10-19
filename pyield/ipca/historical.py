@@ -1,6 +1,5 @@
 import logging
 
-import pandas as pd
 import polars as pl
 import requests
 
@@ -24,7 +23,7 @@ def _fetch_api_data(url: str) -> dict[str, str]:
 
 def _process_ipca_dataframe(
     data_dict: dict[str, str], is_in_pct: bool = False
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Process the IPCA data dictionary into a DataFrame with proper formatting.
 
@@ -34,7 +33,7 @@ def _process_ipca_dataframe(
             format (True) or indexes (False). Defaults to False.
 
     Returns:
-        pd.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
     """
     df = pl.DataFrame(
         {"Period": data_dict.keys(), "Value": data_dict.values()}
@@ -44,10 +43,10 @@ def _process_ipca_dataframe(
     )
     if is_in_pct:
         df = df.with_columns((pl.col("Value") / 100).round(4))
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df
 
 
-def rates(start: DateScalar, end: DateScalar) -> pd.DataFrame:
+def rates(start: DateScalar, end: DateScalar) -> pl.DataFrame:
     """
     Retrieves the IPCA monthly rates for a specified date range.
 
@@ -62,12 +61,16 @@ def rates(start: DateScalar, end: DateScalar) -> pd.DataFrame:
         end (DateScalar): The end date of the date range
 
     Returns:
-        pd.DataFrame: DataFrame with columns 'Period' and 'Rate'
+        pl.DataFrame: DataFrame with columns 'Period' and 'Rate'
 
     Examples:
         >>> from pyield import ipca
         >>> # Get the IPCA rates for the first quarter of 2025
         >>> ipca.rates("01-01-2025", "01-03-2025")
+        shape: (3, 2)
+        ┌──────────┬────────────┐
+        │  Period  │   Value    │
+        ├──────────┼────────────┤
            Period   Value
         0  202501  0.0016
         1  202502  0.0131
@@ -84,7 +87,7 @@ def rates(start: DateScalar, end: DateScalar) -> pd.DataFrame:
     return _process_ipca_dataframe(data_dict, is_in_pct=True)
 
 
-def last_rates(num_months: int = 1) -> pd.DataFrame:
+def last_rates(num_months: int = 1) -> pl.DataFrame:
     """
     Retrieves the last IPCA monthly rates for a specified number of months.
 
@@ -98,7 +101,7 @@ def last_rates(num_months: int = 1) -> pd.DataFrame:
         num_months (int, optional): Number of months to retrieve. Defaults to 1.
 
     Returns:
-        pd.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
 
     Raises:
         ValueError: If num_months is 0
@@ -120,7 +123,7 @@ def last_rates(num_months: int = 1) -> pd.DataFrame:
     return _process_ipca_dataframe(data_dict, is_in_pct=True)
 
 
-def last_indexes(num_months: int = 1) -> pd.DataFrame:
+def last_indexes(num_months: int = 1) -> pl.DataFrame:
     """
     Retrieves the last IPCA index values for a specified number of months.
 
@@ -134,7 +137,7 @@ def last_indexes(num_months: int = 1) -> pd.DataFrame:
         num_months (int, optional): Number of months to retrieve. Defaults to 1.
 
     Returns:
-        pd.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
 
     Examples:
         >>> from pyield import ipca
@@ -145,7 +148,7 @@ def last_indexes(num_months: int = 1) -> pd.DataFrame:
     """
     num_months = abs(num_months)
     if num_months == 0:
-        return pd.DataFrame(columns=["Period", "Value"])
+        return pl.DataFrame()
 
     api_url = f"{IPCA_URL}-{num_months}/variaveis/2266?localidades=N1[all]"
     data_dict = _fetch_api_data(api_url)
@@ -153,7 +156,7 @@ def last_indexes(num_months: int = 1) -> pd.DataFrame:
     return _process_ipca_dataframe(data_dict)
 
 
-def indexes(start: DateScalar, end: DateScalar) -> pd.DataFrame:
+def indexes(start: DateScalar, end: DateScalar) -> pl.DataFrame:
     """
     Retrieves the IPCA index values for a specified date range.
 
@@ -168,7 +171,7 @@ def indexes(start: DateScalar, end: DateScalar) -> pd.DataFrame:
         end (DateScalar): The end date of the date range
 
     Returns:
-        pd.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
 
     Examples:
         >>> from pyield import ipca

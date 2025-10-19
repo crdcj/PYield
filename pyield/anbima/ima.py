@@ -2,7 +2,6 @@ import io
 import logging
 from typing import Literal
 
-import pandas as pd
 import polars as pl
 import requests
 
@@ -151,7 +150,7 @@ def _reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(col_order)
 
 
-def last_ima(ima_type: ima_types | None = None) -> pd.DataFrame:
+def last_ima(ima_type: ima_types | None = None) -> pl.DataFrame:
     """
     Fetch and process the last IMA market data available from ANBIMA.
 
@@ -165,7 +164,7 @@ def last_ima(ima_type: ima_types | None = None) -> pd.DataFrame:
             IMA indexes are returned. Defaults to None.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the IMA data.
+        pl.DataFrame: A DataFrame containing the IMA data.
 
     DataFrame columns:
         - Date: reference date of the data.
@@ -203,7 +202,7 @@ def last_ima(ima_type: ima_types | None = None) -> pd.DataFrame:
         if ima_type is not None:
             df = df.filter(pl.col("IMAType") == ima_type)
         df = df.sort(["IMAType", "BondType", "Maturity"])
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
     except Exception as e:
         logger.exception(f"Error fetching or processing the last IMA data: {e}")
-        return pd.DataFrame()
+        return pl.DataFrame()

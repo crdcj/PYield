@@ -31,7 +31,7 @@ def data(date: DateScalar) -> pl.DataFrame:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
+        pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
 
     Examples:
         >>> from pyield import ntnf
@@ -61,7 +61,7 @@ def maturities(date: DateScalar) -> pl.Series:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.Series: A Series of NTN-F bond maturities available for the reference date.
+        pl.Series: A Series of NTN-F bond maturities available for the reference date.
 
     Examples:
         >>> from pyield import ntnf
@@ -83,7 +83,7 @@ def maturities(date: DateScalar) -> pl.Series:
 def payment_dates(
     settlement: DateScalar,
     maturity: DateScalar,
-) -> pd.Series:
+) -> pl.Series:
     """
     Generate all remaining coupon dates between a settlement date and a maturity date.
     The dates are exclusive for the settlement date and inclusive for the maturity date.
@@ -95,7 +95,7 @@ def payment_dates(
         maturity (DateScalar): The maturity date.
 
     Returns:
-        pd.Series: A Series containing the coupon dates between the settlement
+        pl.Series: A Series containing the coupon dates between the settlement
             (exclusive) and maturity (inclusive) dates.
 
     Examples:
@@ -151,7 +151,7 @@ def cash_flows(
             business day.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
+        pl.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
 
     Examples:
         >>> from pyield import ntnf
@@ -253,10 +253,10 @@ def spot_rates(  # noqa
 
     Args:
         settlement (DateScalar): The settlement date for the spot rates calculation.
-        ltn_maturities (pd.Series): The LTN known maturities.
-        ltn_rates (pd.Series): The LTN known rates.
-        ntnf_maturities (pd.Series): The NTN-F known maturities.
-        ntnf_rates (pd.Series): The NTN-F known rates.
+        ltn_maturities (DateArray): The LTN known maturities.
+        ltn_rates (FloatArray): The LTN known rates.
+        ntnf_maturities (DateArray): The NTN-F known maturities.
+        ntnf_rates (FloatArray): The NTN-F known rates.
         show_coupons (bool): If True, show also July rates corresponding to the
             coupon payments. Defaults to False.
 
@@ -294,9 +294,9 @@ def spot_rates(  # noqa
     settlement = cv.convert_dates(settlement)
     ltn_maturities = cv.convert_dates(ltn_maturities)
     ntnf_maturities = cv.convert_dates(ntnf_maturities)
-    if not isinstance(ltn_rates, pd.Series):
+    if not isinstance(ltn_rates, pl.Series):
         ltn_rates = pl.Series(ltn_rates).cast(pl.Float64)
-    if not isinstance(ntnf_rates, pd.Series):
+    if not isinstance(ntnf_rates, pl.Series):
         ntnf_rates = pl.Series(ntnf_rates).cast(pl.Float64)
 
     # 2. Criar interpoladores (aceitam pl.Series diretamente)
@@ -488,8 +488,8 @@ def di_net_spread(  # noqa
         settlement (DateScalar): The settlement date to calculate the spread.
         ntnf_maturity (DateScalar): The bond maturity date.
         ntnf_rate (float): The yield to maturity (YTM) of the bond.
-        di_rates (pd.Series): A Series of DI rates.
-        di_expirations (pd.Series): A list or Series of DI expiration dates.
+        di_rates (FloatArray): A Series of DI rates.
+        di_expirations (DateArray): A list or Series of DI expiration dates.
         initial_guess (float, optional): An initial guess for the spread. Defaults to
             None. A good initial guess is the DI gross spread for the bond.
 
@@ -498,8 +498,8 @@ def di_net_spread(  # noqa
 
     Examples:
         # Obs: only some of the DI rates will be used in the example.
-        >>> exp_dates = pd.to_datetime(["2025-01-01", "2030-01-01", "2035-01-01"])
-        >>> di_rates = pd.Series([0.10823, 0.11594, 0.11531])
+        >>> exp_dates = ["2025-01-01", "2030-01-01", "2035-01-01"]
+        >>> di_rates = [0.10823, 0.11594, 0.11531]
         >>> spread = di_net_spread(
         ...     settlement="23-08-2024",
         ...     ntnf_maturity="01-01-2035",
@@ -563,8 +563,8 @@ def premium(
     settlement: DateScalar,
     ntnf_maturity: DateScalar,
     ntnf_rate: float,
-    di_expirations: pd.Series,
-    di_rates: pd.Series,
+    di_expirations: DateScalar,
+    di_rates: FloatArray,
 ) -> float:
     """
     Calculate the premium of an NTN-F bond over DI rates.
@@ -578,8 +578,8 @@ def premium(
         settlement (DateScalar): The settlement date to calculate the premium.
         ntnf_maturity (DateScalar): The maturity date of the NTN-F bond.
         ntnf_rate (float): The yield to maturity (YTM) of the NTN-F bond.
-        di_expirations (pd.Series): Series containing the expiration dates for DI rates.
-        di_rates (pd.Series): Series containing the DI rates corresponding to
+        di_expirations (DateScalar): Series with the expiration dates for the DI.
+        di_rates (FloatArray): Series containing the DI rates corresponding to
             the expiration dates.
 
     Returns:
@@ -588,8 +588,8 @@ def premium(
 
     Examples:
         >>> # Obs: only some of the DI rates will be used in the example.
-        >>> exp_dates = pd.to_datetime(["2025-01-01", "2030-01-01", "2035-01-01"])
-        >>> di_rates = pd.Series([0.10823, 0.11594, 0.11531])
+        >>> exp_dates = ["2025-01-01", "2030-01-01", "2035-01-01"]
+        >>> di_rates = [0.10823, 0.11594, 0.11531]
         >>> premium(
         ...     settlement="23-08-2024",
         ...     ntnf_maturity="01-01-2035",

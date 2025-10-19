@@ -124,9 +124,8 @@ def _process_data(csv: str, reference_date: dt.date) -> pl.DataFrame:
     return df
 
 
-def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pd.DataFrame:
+def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
     df_anbima = tpf_data(reference_date)
-    df_anbima = pl.from_pandas(df_anbima)
     target_cols = ["ReferenceDate", "BondType", "MaturityDate", "DV01", "DV01USD"]
     df_anbima = df_anbima.select(target_cols).rename({"ReferenceDate": "Date"})
     # Guard clause for missing columns

@@ -79,7 +79,6 @@ def projected_rate() -> IndicatorProjection:
     df = _read_ipca_table(page_text)
 
     last_update_str = df.iat[0, 0].split("Atualização:")[-1].strip()
-    # last_update = pd.to_datetime(last_update_str, format="%d/%m/%Y - %H:%M h")
     last_update = dt.datetime.strptime(last_update_str, "%d/%m/%Y - %H:%M h")
 
     ipca_row = df.loc[df[0] == "IPCA1"]

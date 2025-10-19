@@ -1,11 +1,13 @@
 import pandas as pd
 import polars as pl
 
+from pyield.types import DateArray, FloatArray, IntegerArray
+
 
 def forwards(
-    bdays: pd.Series | pl.Series | list[int] | tuple[int],
-    rates: pd.Series | pl.Series | list[float] | tuple[float],
-    groupby_dates: pd.Series | pl.Series | None = None,
+    bdays: IntegerArray,
+    rates: FloatArray,
+    groupby_dates: DateArray | IntegerArray | None = None,
 ) -> pl.Series:
     r"""
     Calcula taxas a termo (forward rates) a partir de taxas zero (spot rates).
@@ -46,15 +48,15 @@ def forwards(
     de cada grupo, que é tratado separadamente.
 
     Args:
-        bdays (pd.Series): Número de dias úteis para cada taxa zero.
-        rates (pd.Series): Taxas zero correspondentes aos dias úteis.
-        groupby_dates (pd.Series | None, optional): Critério de agrupamento
+        bdays (IntegerArray): Número de dias úteis para cada taxa zero.
+        rates (FloatArray): Taxas zero correspondentes aos dias úteis.
+        groupby_dates (DateArray | IntegerArray | None, optional): Critério de agrupamento
             opcional para segmentar os cálculos (ex: por data de referência).
             Se None, todos os dados são tratados como um único grupo.
             Default None.
 
     Returns:
-        pd.Series: Série contendo as taxas a termo calculadas (tipo Float64).
+        pl.Series: Série contendo as taxas a termo calculadas (tipo Float64).
             A primeira taxa de cada grupo corresponde à taxa zero inicial.
 
     Raises:
@@ -243,7 +245,7 @@ def forward(
     f_{1 \rightarrow 2} = \left( \frac{(1 + r_2)^{t_2}}{(1 + r_1)^{t_1}} \right)^{\frac{1}{t_2 - t_1}} - 1
     $$
     """  # noqa: E501
-    if pd.isna(rate1) or pd.isna(rate2) or pd.isna(bday1) or pd.isna(bday2):
+    if any(pd.isna(x) for x in [rate1, rate2, bday1, bday2]):
         # If any of the inputs are NaN, return NaN
         return float("nan")
 

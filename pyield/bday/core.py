@@ -111,7 +111,7 @@ def count(
             null
         ]
 
-        >>> start_dates = pd.Series(["01-01-2024", "01-02-2024", "01-03-2024"])
+        >>> start_dates = ["01-01-2024", "01-02-2024", "01-03-2024"]
         >>> bday.count(start_dates, "01-01-2025")
         shape: (3,)
         Series: 'bdays' [i64]
@@ -268,7 +268,7 @@ def offset(
         # Null values are propagated
         >>> bday.offset(None, 1)
 
-        >>> bday.offset(pd.NaT, [1, 2])  # NaT input with a list of offsets
+        >>> bday.offset(None, [1, 2])  # NaT input with a list of offsets
         shape: (2,)
         Series: 'result' [date]
         [

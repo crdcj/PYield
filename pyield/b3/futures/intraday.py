@@ -69,9 +69,8 @@ def _fetch_json(contract_code: str) -> list[dict]:
 def _convert_json(json_data: list[dict]) -> pl.DataFrame:
     # Normalize JSON response into a flat table
     # Polars json_normalize is unstable, so we use Pandas first
-    df = pd.json_normalize(json_data)
-    df = df.convert_dtypes(dtype_backend="pyarrow")
-    return pl.from_pandas(df)
+    df = pd.json_normalize(json_data).convert_dtypes(dtype_backend="pyarrow")
+    return pl.from_pandas(df, nan_to_null=True)
 
 
 def _process_columns(df: pl.DataFrame) -> pl.DataFrame:

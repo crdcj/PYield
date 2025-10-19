@@ -2,7 +2,6 @@ import datetime as dt
 import logging
 from io import StringIO
 
-import pandas as pd
 import polars as pl
 import requests
 
@@ -95,7 +94,7 @@ def _parse_intraday_table(texto: str) -> pl.DataFrame:
     return pl.read_csv(StringIO(texto), separator=";").drop("Fechamento D -1")
 
 
-def intraday_ettj() -> pd.DataFrame:
+def intraday_ettj() -> pl.DataFrame:
     """
     Retrieves and processes the intraday Brazilian yield curve data from ANBIMA.
 
@@ -104,7 +103,7 @@ def intraday_ettj() -> pd.DataFrame:
     at various vertices (time points). The curve is published at around 12:30 PM BRT.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the intraday ETTJ data.
+        pl.DataFrame: A DataFrame containing the intraday ETTJ data.
 
     DataFrame columns:
         - date: Reference date of the yield curve
@@ -141,4 +140,4 @@ def intraday_ettj() -> pd.DataFrame:
         .alias("implied_inflation"),
     )
     column_order = ["date", "vertex", "nominal_rate", "real_rate", "implied_inflation"]
-    return df.select(column_order).to_pandas(use_pyarrow_extension_array=True)
+    return df.select(column_order)

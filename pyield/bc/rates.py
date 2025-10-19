@@ -19,7 +19,6 @@ import logging
 from enum import Enum
 from typing import Any
 
-import pandas as pd
 import polars as pl
 import requests
 
@@ -190,7 +189,7 @@ def _fetch_data_from_url(
 def selic_over_series(
     start: DateScalar,
     end: DateScalar | None = None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Fetches the SELIC Over rate from the Brazilian Central Bank.
 
@@ -230,9 +229,7 @@ def selic_over_series(
         2  2025-09-17  0.149
     """
     df = _fetch_data_from_url(BCSerie.SELIC_OVER, start, end)
-    return df.with_columns(
-        pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED),
-    ).to_pandas(use_pyarrow_extension_array=True)
+    return df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
 
 
 def selic_over(date: DateScalar) -> float:
@@ -254,15 +251,15 @@ def selic_over(date: DateScalar) -> float:
         0.104
     """
     df = selic_over_series(date, date)
-    if df.empty:
+    if df.is_empty():
         return float("nan")
-    return df.at[0, "Value"]
+    return df["Value"].item(0)
 
 
 def selic_target_series(
     start: DateScalar,
     end: DateScalar | None = None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Fetches the SELIC Target rate from the Brazilian Central Bank.
 
@@ -289,7 +286,7 @@ def selic_target_series(
     """
     df = _fetch_data_from_url(BCSerie.SELIC_TARGET, start, end)
     df = df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df
 
 
 def selic_target(date: DateScalar) -> float:
@@ -311,16 +308,16 @@ def selic_target(date: DateScalar) -> float:
         0.105
     """
     df = selic_target_series(date, date)
-    if df.empty:
+    if df.is_empty():
         return float("nan")
-    return df.at[0, "Value"]
+    return df["Value"].item(0)
 
 
 def di_over_series(
     start: DateScalar,
     end: DateScalar | None = None,
     annualized: bool = True,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Fetches the DI (Interbank Deposit) rate from the Brazilian Central Bank.
 
@@ -364,7 +361,7 @@ def di_over_series(
     else:
         df = df.with_columns(pl.col("Value").round(DECIMAL_PLACES_DAILY))
 
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df
 
 
 def di_over(date: DateScalar, annualized: bool = True) -> float:
@@ -391,6 +388,6 @@ def di_over(date: DateScalar, annualized: bool = True) -> float:
         0.00045513
     """
     df = di_over_series(date, date, annualized)
-    if df.empty:
+    if df.is_empty():
         return float("nan")
-    return df.at[0, "Value"]
+    return df["Value"].item(0)

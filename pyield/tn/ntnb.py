@@ -21,7 +21,7 @@ COUPON_PMT = 2.956301
 FINAL_PMT = 102.956301
 
 
-def data(date: DateScalar) -> pd.DataFrame:
+def data(date: DateScalar) -> pl.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
@@ -29,7 +29,7 @@ def data(date: DateScalar) -> pd.DataFrame:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
+        pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
 
     Returned columns:
         - MaturityDate: The maturity date of the bond.
@@ -60,7 +60,7 @@ def data(date: DateScalar) -> pd.DataFrame:
     return anbima.tpf_data(date, "NTN-B")
 
 
-def maturities(date: DateScalar) -> pd.Series:
+def maturities(date: DateScalar) -> pl.Series:
     """
     Get the bond maturities available for the given reference date.
 
@@ -68,7 +68,7 @@ def maturities(date: DateScalar) -> pd.Series:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.Series: Series containing the maturity dates for the NTN-B bonds.
+        pl.Series: Series containing the maturity dates for the NTN-B bonds.
 
     Examples:
         >>> from pyield import ntnb
@@ -114,7 +114,7 @@ def _generate_all_coupon_dates(
     first_coupon_date = dt.date(start.year, 2, 1)
 
     # Generate coupon dates on the 1st of the month
-    coupon_dates = pl.date_range(
+    coupon_dates: pl.Series = pl.date_range(
         start=first_coupon_date, end=end, interval="3mo", eager=True
     )
     # Offset dates to the 15th
@@ -127,7 +127,7 @@ def _generate_all_coupon_dates(
 def payment_dates(
     settlement: DateScalar,
     maturity: DateScalar,
-) -> pd.Series:
+) -> pl.Series:
     """
     Generate all remaining coupon dates between a given date and the maturity date.
     The dates are inclusive. Coupon payments are made on the 15th of February, May,
@@ -140,7 +140,7 @@ def payment_dates(
         maturity (DateScalar): The maturity date.
 
     Returns:
-        pd.Series: Series of coupon dates within the specified range.
+        pl.Series: Series of coupon dates within the specified range.
 
     Examples:
         >>> from pyield import ntnb
@@ -183,7 +183,7 @@ def cash_flows(
         maturity (DateScalar): The maturity date of the bond.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
+        pl.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
 
     Returned columns:
         - PaymentDate: The payment date of the cash flow
@@ -318,13 +318,13 @@ def spot_rates(
 
     Args:
         settlement (DateScalar): The reference date for settlement.
-        maturities (pd.Series): Series of maturity dates for the bonds.
-        rates (pd.Series): Series of yield to maturity rates.
+        maturities (DateArray): Series of maturity dates for the bonds.
+        rates (FloatArray): Series of yield to maturity rates.
         show_coupons (bool, optional): If True, the result will include the
             intermediate coupon dates. Defaults to False.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "MaturityDate", "SpotRate".
+        pl.DataFrame: DataFrame with columns "MaturityDate", "SpotRate".
 
     Examples:
         >>> from pyield import ntnb
@@ -451,12 +451,12 @@ def bei_rates(
 
     Args:
         settlement (DateScalar): The settlement date of the operation.
-        ntnb_maturities (pd.Series): The maturity dates for the NTN-B bonds.
-        ntnb_rates (pd.Series): The real interest rates (Yield to Maturity - YTM)
+        ntnb_maturities (DateArray): The maturity dates for the NTN-B bonds.
+        ntnb_rates (FloatArray): The real interest rates (Yield to Maturity - YTM)
             corresponding to the given NTN-B maturities.
-        nominal_maturities (pd.Series): The maturity dates to be used as reference for
+        nominal_maturities (DateArray): The maturity dates to be used as reference for
             nominal rates.
-        nominal_rates (pd.Series): The nominal interest rates (e.g. DI Futures or
+        nominal_rates (FloatArray): The nominal interest rates (e.g. DI Futures or
              zero prefixed bonds rates) used as reference for the calculation.
 
     Returns:

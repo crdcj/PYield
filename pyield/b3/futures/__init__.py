@@ -87,7 +87,7 @@ def futures(
             If the reference date is a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:
-        pd.DataFrame: DataFrame containing the fetched data for the specified futures
+        pl.DataFrame: DataFrame containing the fetched data for the specified futures
             contract.
 
     Raises:
@@ -143,7 +143,7 @@ def futures(
         time = dt.datetime.now(BZ_TIMEZONE).time()
         if time < INTRADAY_START_TIME:  # Mercado não está aberto ainda
             logger.warning("Market is not open yet. Returning an empty DataFrame. ")
-            return pd.DataFrame()
+            return pl.DataFrame()
 
         # Existe a chance de que os dados consolidados estejam disponíveis após as 20h
         if time >= HISTORICAL_START_TIME:

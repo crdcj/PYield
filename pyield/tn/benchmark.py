@@ -2,7 +2,6 @@ import logging
 from datetime import datetime as dt
 from zoneinfo import ZoneInfo
 
-import pandas as pd
 import polars as pl
 import requests
 
@@ -80,7 +79,7 @@ def _process_api_data(raw_data: list[dict]) -> pl.DataFrame:
     )
 
 
-def benchmarks(bond_type: str = None, include_history: bool = False) -> pd.DataFrame:
+def benchmarks(bond_type: str = None, include_history: bool = False) -> pl.DataFrame:
     """Fetches benchmark data for Brazilian Treasury Bonds from the TN API.
 
     This function retrieves current or historical benchmark data for various Brazilian
@@ -92,7 +91,7 @@ def benchmarks(bond_type: str = None, include_history: bool = False) -> pd.DataF
             If `False` (default), only current benchmarks are returned.
 
     Returns:
-        pd.DataFrame: A pandas DataFrame containing the benchmark data.
+        pl.DataFrame: A Polars DataFrame containing the benchmark data.
             The DataFrame includes the following columns:
             *   `BondType` (str): The type of the bond (e.g., 'LTN', 'LFT', 'NTN-B').
             *   `MaturityDate` (datetime.date): The maturity date of the benchmark.
@@ -138,8 +137,4 @@ def benchmarks(bond_type: str = None, include_history: bool = False) -> pd.DataF
     if bond_type:
         df = df.filter(pl.col("BondType") == bond_type)
 
-    return (
-        df.select(FINAL_COLUMN_ORDER)
-        .sort(sort_columns)
-        .to_pandas(use_pyarrow_extension_array=True)
-    )
+    return df.select(FINAL_COLUMN_ORDER).sort(sort_columns)

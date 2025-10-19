@@ -222,24 +222,19 @@ def interpolate_rates(
             range of known DI rates for a given trade date. Defaults to True.
 
     Returns:
-        pd.Series: A Series containing the interpolated DI rates (as floats).
+        pl.Series: A Series containing the interpolated DI rates (as floats).
             Values will be NaN where interpolation is not possible
             (e.g., no DI data for the trade date).
 
-    Raises:
-        ValueError: If `dates` and `expirations` are both array-like but have
-            different lengths.
-
     Examples:
-        >>> from pyield import di1
-        >>> # Note: by default, pandas shows floats with 6 decimal places
-        >>> # Interpolate rates for multiple trade and expiration dates
-        >>> # There is a contract with expiration 01-01-2027 in 08-05-2025
+        - Interpolate rates for multiple trade and expiration dates
+        >>> # For contract with expiration 01-01-2027 in 08-05-2025
         >>> # The rate is not interpolated (settlement rate is used)
         >>> # There is no contract with expiration 25-11-2027 in 09-05-2025
         >>> # The rate is interpolated (flat-forward method)
         >>> # There is no data for trade date 10-05-2025 (Saturday) -> NaN
         >>> # Note: 0.13461282461562996 is shown as 0.134613
+        >>> from pyield import di1
         >>> di1.interpolate_rates(
         ...     dates=["08-05-2025", "09-05-2025", "10-05-2025"],
         ...     expirations=["01-01-2027", "25-11-2027", "01-01-2030"],
@@ -252,7 +247,7 @@ def interpolate_rates(
             null
         ]
 
-        >>> # Interpolate rates for a single trade date and multiple expiration dates
+        - Interpolate rates for a single trade date and multiple expiration dates
         >>> # There is no DI Contract in 09-05-2025 with expiration 01-01-2050
         >>> # The longest available contract is used to extrapolate the rate
         >>> # Note: extrapolation is allowed by default
@@ -280,6 +275,10 @@ def interpolate_rates(
             0.135763
             NaN
         ]
+
+    Raises:
+        ValueError: If `dates` and `expirations` are both array-like but have
+            different lengths.
 
     Notes:
         - All available settlement rates are used for the flat-forward interpolation.

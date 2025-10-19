@@ -187,7 +187,7 @@ def repos(
         end: Data final (inclusive) ou None.
 
     Returns:
-        DataFrame polars com colunas normalizadas em português e tipos
+        DataFrame com colunas normalizadas em português e tipos
         enriquecidos (frações decimais, inteiros, datas). Em caso de erro
         retorna DataFrame vazio e registra log da exceção.
 

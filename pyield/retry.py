@@ -9,8 +9,6 @@ para lidar com erros transitórios.
 import logging
 
 # Dependências de terceiros
-import pandas as pd
-
 # MUDANÇA CRUCIAL: Importar exceções da biblioteca 'requests'
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 from tenacity import (
@@ -73,10 +71,6 @@ def should_retry_exception(retry_state: RetryCallState) -> bool:  # noqa
 
     # Erros de rede genéricos que valem a pena tentar de novo
     if isinstance(exception, (Timeout, ConnectionError)):
-        return True
-
-    # Erros de parsing que podem ser de um download corrompido
-    if isinstance(exception, (pd.errors.EmptyDataError, pd.errors.ParserError)):
         return True
 
     # Para qualquer outra exceção não listada, não tentar novamente.
