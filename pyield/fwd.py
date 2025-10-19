@@ -229,17 +229,18 @@ def forward(
         >>> # Exemplo válido: bday2 > bday1
         >>> yd.forward(10, 20, 0.05, 0.06)
         0.0700952380952371
-        >>> # Exemplo inválido: bday2 <= bday1
+        >>> # Exemplo inválido: bday1 >= bday2
         >>> yd.forward(20, 10, 0.06, 0.05)
         nan
+        >>> # Exemplo inválido: bday1 == bday2
         >>> yd.forward(10, 10, 0.05, 0.05)
         nan
-        >>> # Exemplo com NaN na entrada
-        >>> yd.forward(10, 20, 0.05, pd.NA)
+        >>> # Argumentos nulos retornam nan
+        >>> yd.forward(10, 20, 0.05, None)
         nan
 
     Note:
-        É fundamental que `bday2` seja estritamente maior que `bday1` para que
+        `bday2` precisa ser necessariamente maior que `bday1` para que
         o cálculo da taxa a termo seja matematicamente válido.
 
     A fórmula utilizada é derivada da relação entre taxas zero (spot rates) é:

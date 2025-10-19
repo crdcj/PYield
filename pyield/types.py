@@ -21,7 +21,7 @@ IntegerArray = np.ndarray | list | tuple | pl.Series | pd.Series
 
 def _has_null_arg(arg) -> bool:  # noqa
     match arg:
-        # 1. Padrão literal para None
+        # 1. Singletons
         case None:
             return True
 

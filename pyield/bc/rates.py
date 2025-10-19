@@ -211,22 +211,33 @@ def selic_over_series(
 
     Examples:
         >>> from pyield import bc
-        >>> # No data on 26-01-2025 (sunday). Rate changed due to Copom meeting.
-        >>> bc.selic_over_series("26-01-2025")  # Returns all data since 26-01-2025
-                Date   Value
-        0 2025-01-27  0.1215
-        1 2025-01-28  0.1215
-        2 2025-01-29  0.1215
-        3 2025-01-30  0.1315
-        4 2025-01-31  0.1315
-        ...
+        >>> # No data on 26-01-2025 (sunday). Selic changed due to Copom meeting.
+        >>> bc.selic_over_series("26-01-2025").head(5)  # Showing first 5 rows
+        shape: (5, 2)
+        ┌────────────┬────────┐
+        │ Date       ┆ Value  │
+        │ ---        ┆ ---    │
+        │ date       ┆ f64    │
+        ╞════════════╪════════╡
+        │ 2025-01-27 ┆ 0.1215 │
+        │ 2025-01-28 ┆ 0.1215 │
+        │ 2025-01-29 ┆ 0.1215 │
+        │ 2025-01-30 ┆ 0.1315 │
+        │ 2025-01-31 ┆ 0.1315 │
+        └────────────┴────────┘
 
         >>> # Fetching data for a specific date range
         >>> bc.selic_over_series("14-09-2025", "17-09-2025")
-                 Date  Value
-        0  2025-09-15  0.149
-        1  2025-09-16  0.149
-        2  2025-09-17  0.149
+        shape: (3, 2)
+        ┌────────────┬───────┐
+        │ Date       ┆ Value │
+        │ ---        ┆ ---   │
+        │ date       ┆ f64   │
+        ╞════════════╪═══════╡
+        │ 2025-09-15 ┆ 0.149 │
+        │ 2025-09-16 ┆ 0.149 │
+        │ 2025-09-17 ┆ 0.149 │
+        └────────────┴───────┘
     """
     if has_null_args(start):  # Start must be provided
         return pl.DataFrame()
@@ -285,8 +296,14 @@ def selic_target_series(
     Examples:
         >>> from pyield import bc
         >>> bc.selic_target_series("31-05-2024", "31-05-2024")
-                Date  Value
-        0 2024-05-31  0.105
+        shape: (1, 2)
+        ┌────────────┬───────┐
+        │ Date       ┆ Value │
+        │ ---        ┆ ---   │
+        │ date       ┆ f64   │
+        ╞════════════╪═══════╡
+        │ 2024-05-31 ┆ 0.105 │
+        └────────────┴───────┘
     """
     if has_null_args(start):  # Start must be provided
         return pl.DataFrame()
@@ -349,14 +366,20 @@ def di_over_series(
 
     Examples:
         >>> from pyield import bc
-        >>> bc.di_over_series("29-01-2025")
-                Date   Value
-        0  2025-01-29  0.1215
-        1  2025-01-30  0.1315
-        2  2025-01-31  0.1315
-        3  2025-02-03  0.1315
-        ...
-
+        >>> # Returns all data since 29-01-2025
+        >>> bc.di_over_series("29-01-2025").head(5)  # Showing only first 5 rows
+        shape: (5, 2)
+        ┌────────────┬────────┐
+        │ Date       ┆ Value  │
+        │ ---        ┆ ---    │
+        │ date       ┆ f64    │
+        ╞════════════╪════════╡
+        │ 2025-01-29 ┆ 0.1215 │
+        │ 2025-01-30 ┆ 0.1315 │
+        │ 2025-01-31 ┆ 0.1315 │
+        │ 2025-02-03 ┆ 0.1315 │
+        │ 2025-02-04 ┆ 0.1315 │
+        └────────────┴────────┘
     """
     if has_null_args(start):
         return pl.DataFrame()
@@ -374,7 +397,7 @@ def di_over_series(
     return df
 
 
-def di_over(date: DateScalar, annualized: bool = True) -> float:
+def di_over(date: DateScalar, annualized: bool = True) -> float | None:
     """
     Fetches the DI Over rate value for a specific date.
 
@@ -398,8 +421,8 @@ def di_over(date: DateScalar, annualized: bool = True) -> float:
         0.00045513
     """
     if has_null_args(date):
-        return float("nan")
+        return None
     df = di_over_series(date, date, annualized)
     if df.is_empty():
-        return float("nan")
+        return None
     return df["Value"].item(0)
