@@ -39,25 +39,36 @@ pip install pyield
 ## Custom Types
 
 ### DateScalar
-`DateScalar` and `DateArray` are a type alias used across PYield to represent different types of date inputs. It includes several common date formats, allowing for flexible date handling within the library. 
+`DateScalar` and `DateArray` are internal type unions used across PYield to accept flexible date inputs. Supported scalar Python / library date types:
 
-The accepted formats in `DateScalar` are:
+- `str` (formats: `DD-MM-YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`)
 - `datetime.date`
 - `datetime.datetime`
-- `str` (in the format `DD-MM-YYYY` as used in Brazil)
-- `np.datetime64`
-- `pd.Timestamp`
+- `pandas.Timestamp`
+- `numpy.datetime64`
 
 ### DateArray
-The accepted formats in `DateArray` are:
-- `pd.DatetimeIndex`
-- `np.ndarray`
+Accepted collection types (homogeneous date-like values):
+
 - `list[DateScalar]`
 - `tuple[DateScalar, ...]`
-- `pd.Series` (Pandas Series)
-- `pl.Series` (Polars Series)
+- `pandas.Series`
+- `pandas.DatetimeIndex`
+- `numpy.ndarray`
+- `polars.Series`
 
-Referencing `DateScalar` and `DateArray` in function arguments simplifies the code by allowing any of these date formats to be used interchangeably.
+Other helper unions:
+
+`FloatArray`:
+- `list[float]` | `tuple[float, ...]` | `numpy.ndarray` | `pandas.Series` | `polars.Series`
+
+`IntegerScalar`:
+- `int` | `numpy.integer`
+
+`IntegerArray`:
+- `list[int]` | `tuple[int, ...]` | `numpy.ndarray` | `pandas.Series` | `polars.Series`
+
+Referencing these unions in function docstrings means you can pass any of the listed types interchangeably; conversion is handled internally.
 
 ### Date String Formats
 Accepted string date formats:
@@ -77,6 +88,38 @@ Always parse external inputs explicitly when constructing your own pipelines:
 import pandas as pd
 dt_val = pd.to_datetime("31-05-2024", format="%d-%m-%Y")
 iso_val = pd.to_datetime("2024-05-31", format="%Y-%m-%d")
+```
+
+### Null & Empty Input Handling
+
+PYield uses an internal helper (`has_null_args`) for early detection of missing inputs. The default propagation policy is: return **`None`** for missing scalar inputs and preserve nulls inside collections. This avoids implicit imputation and makes failure modes explicit.
+
+Summary:
+- Scalar functions (dates, prices, quotations, spreads, durations): return `None` when any required argument is missing or empty.
+- Collection (vectorized) functions: if the entire relevant input is missing/empty, return an empty Polars `DataFrame`/`Series` (or `None` for purely scalar semantics). Individual null elements propagate as `null` values in the resulting Polars Series/DataFrame.
+- Empty collections where a shape is mandatory (e.g. an empty date array for conversion) raise `ValueError` rather than returning a silently empty result.
+- Date string collections must share a single format; the first non-null defines it.
+- Numeric computations only produce `NaN` when an internal arithmetic step yields an undefined value (rare — typical missing input short-circuits to `None`).
+
+Examples:
+```python
+>>> from pyield import ntnb, bday
+# Missing settlement -> None
+>>> ntnb.quotation(None, "15-05-2035", 0.06149)
+None
+
+# Null start date in business day count -> None
+>>> bday.count(None, "01-01-2025")
+None
+
+# Null in array input propagates element-wise
+>>> bday.count(["01-01-2024", None], "01-02-2024")
+shape: (2,)
+Series: 'bdays' [i64]
+[
+    22
+    null
+]
 ```
 ## How to use PYield
 ### Brazilian Treasury Bonds Tools
