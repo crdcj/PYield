@@ -1,11 +1,11 @@
 import logging
 
-import pandas as pd
 import polars as pl
 import requests
 
-from pyield.converters import DateScalar, convert_input_dates
+from pyield.converters import convert_dates
 from pyield.retry import default_retry
+from pyield.types import DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"
@@ -23,7 +23,7 @@ def _fetch_api_data(url: str) -> dict[str, str]:
 
 def _process_ipca_dataframe(
     data_dict: dict[str, str], is_in_pct: bool = False
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Process the IPCA data dictionary into a DataFrame with proper formatting.
 
@@ -33,7 +33,7 @@ def _process_ipca_dataframe(
             format (True) or indexes (False). Defaults to False.
 
     Returns:
-        pd.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
     """
     df = pl.DataFrame(
         {"Period": data_dict.keys(), "Value": data_dict.values()}
@@ -43,10 +43,10 @@ def _process_ipca_dataframe(
     )
     if is_in_pct:
         df = df.with_columns((pl.col("Value") / 100).round(4))
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df
 
 
-def rates(start: DateScalar, end: DateScalar) -> pd.DataFrame:
+def rates(start: DateScalar, end: DateScalar) -> pl.DataFrame:
     """
     Retrieves the IPCA monthly rates for a specified date range.
 
@@ -61,19 +61,27 @@ def rates(start: DateScalar, end: DateScalar) -> pd.DataFrame:
         end (DateScalar): The end date of the date range
 
     Returns:
-        pd.DataFrame: DataFrame with columns 'Period' and 'Rate'
+        pl.DataFrame: DataFrame with columns 'Period' and 'Rate'
 
     Examples:
         >>> from pyield import ipca
         >>> # Get the IPCA rates for the first quarter of 2025
         >>> ipca.rates("01-01-2025", "01-03-2025")
-           Period   Value
-        0  202501  0.0016
-        1  202502  0.0131
-        2  202503  0.0056
+        shape: (3, 2)
+        ┌────────┬────────┐
+        │ Period ┆ Value  │
+        │ ---    ┆ ---    │
+        │ i64    ┆ f64    │
+        ╞════════╪════════╡
+        │ 202501 ┆ 0.0016 │
+        │ 202502 ┆ 0.0131 │
+        │ 202503 ┆ 0.0056 │
+        └────────┴────────┘
     """
-    start = convert_input_dates(start)
-    end = convert_input_dates(end)
+    if has_null_args(start, end):
+        return pl.DataFrame()
+    start = convert_dates(start)
+    end = convert_dates(end)
 
     start_date = start.strftime("%Y%m")
     end_date = end.strftime("%Y%m")
@@ -83,7 +91,7 @@ def rates(start: DateScalar, end: DateScalar) -> pd.DataFrame:
     return _process_ipca_dataframe(data_dict, is_in_pct=True)
 
 
-def last_rates(num_months: int = 1) -> pd.DataFrame:
+def last_rates(num_months: int = 1) -> pl.DataFrame:
     """
     Retrieves the last IPCA monthly rates for a specified number of months.
 
@@ -97,7 +105,7 @@ def last_rates(num_months: int = 1) -> pd.DataFrame:
         num_months (int, optional): Number of months to retrieve. Defaults to 1.
 
     Returns:
-        pd.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
 
     Raises:
         ValueError: If num_months is 0
@@ -119,7 +127,7 @@ def last_rates(num_months: int = 1) -> pd.DataFrame:
     return _process_ipca_dataframe(data_dict, is_in_pct=True)
 
 
-def last_indexes(num_months: int = 1) -> pd.DataFrame:
+def last_indexes(num_months: int = 1) -> pl.DataFrame:
     """
     Retrieves the last IPCA index values for a specified number of months.
 
@@ -133,7 +141,7 @@ def last_indexes(num_months: int = 1) -> pd.DataFrame:
         num_months (int, optional): Number of months to retrieve. Defaults to 1.
 
     Returns:
-        pd.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
 
     Examples:
         >>> from pyield import ipca
@@ -144,7 +152,7 @@ def last_indexes(num_months: int = 1) -> pd.DataFrame:
     """
     num_months = abs(num_months)
     if num_months == 0:
-        return pd.DataFrame(columns=["Period", "Value"])
+        return pl.DataFrame()
 
     api_url = f"{IPCA_URL}-{num_months}/variaveis/2266?localidades=N1[all]"
     data_dict = _fetch_api_data(api_url)
@@ -152,7 +160,7 @@ def last_indexes(num_months: int = 1) -> pd.DataFrame:
     return _process_ipca_dataframe(data_dict)
 
 
-def indexes(start: DateScalar, end: DateScalar) -> pd.DataFrame:
+def indexes(start: DateScalar, end: DateScalar) -> pl.DataFrame:
     """
     Retrieves the IPCA index values for a specified date range.
 
@@ -167,19 +175,27 @@ def indexes(start: DateScalar, end: DateScalar) -> pd.DataFrame:
         end (DateScalar): The end date of the date range
 
     Returns:
-        pd.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
 
     Examples:
         >>> from pyield import ipca
         >>> # Get the IPCA indexes for the first quarter of 2025
         >>> ipca.indexes(start="01-01-2025", end="01-03-2025")
-           Period    Value
-        0  202501  7111.86
-        1  202502  7205.03
-        2  202503  7245.38
+        shape: (3, 2)
+        ┌────────┬─────────┐
+        │ Period ┆ Value   │
+        │ ---    ┆ ---     │
+        │ i64    ┆ f64     │
+        ╞════════╪═════════╡
+        │ 202501 ┆ 7111.86 │
+        │ 202502 ┆ 7205.03 │
+        │ 202503 ┆ 7245.38 │
+        └────────┴─────────┘
     """
-    start = convert_input_dates(start)
-    end = convert_input_dates(end)
+    if has_null_args(start, end):
+        return pl.DataFrame()
+    start = convert_dates(start)
+    end = convert_dates(end)
 
     start_date = start.strftime("%Y%m")
     end_date = end.strftime("%Y%m")

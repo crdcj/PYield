@@ -15,13 +15,13 @@ import io
 import logging
 import zipfile as zf
 
-import pandas as pd
 import polars as pl
 import requests
 from requests.exceptions import HTTPError
 
-from pyield.converters import DateScalar, convert_input_dates
+from pyield.converters import convert_dates
 from pyield.retry import default_retry
+from pyield.types import DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -120,23 +120,23 @@ def _read_dataframe_from_zip(buffer: io.BytesIO) -> pl.DataFrame:
     return df
 
 
-def _process_df(df: pl.DataFrame) -> pd.DataFrame:
+def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     date_cols = ["SettlementDate", "IssueDate", "MaturityDate"]
     df = (
         df.rename(COLUMN_MAPPING)
         .with_columns(
             pl.col(date_cols).str.strptime(pl.Date, format="%d/%m/%Y", strict=False),
             # Refazer o cálculo do valor pois ele vem vazio no arquivo
-            (pl.col("Quantity") * pl.col("AvgPrice")).round(2).alias("Value"),
+            Value=(pl.col("Quantity") * pl.col("AvgPrice")).round(2),
         )
         .sort(["SettlementDate", "BondType", "MaturityDate"])
     )
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df
 
 
 def tpf_monthly_trades(
     target_date: DateScalar, extragroup: bool = False
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """Fetches monthly secondary trading data for the domestic 'Federal Public Debt'
     (TPF - títulos públicos federais) registered in the Brazilian Central Bank (BCB)
     Selic system.
@@ -149,9 +149,9 @@ def tpf_monthly_trades(
     Args:
         target_date (DateScalar): The date for which the monthly trading data will be
             fetched. This date can be a string, datetime, or pandas Timestamp object.
-            It will be converted to a pandas Timestamp object. Only the year and month
+            It will be converted to a date object. Only the year and month
             of this date will be used to download the corresponding monthly file.
-            extragroup (bool): If True, fetches only the trades that are considered
+        extragroup (bool): If True, fetches only the trades that are considered
             'extragroup' (between different economic groups)".
             If False, fetches all trades. Default is False.
             Extragroup trades are those where the transferring counterparty's
@@ -161,7 +161,7 @@ def tpf_monthly_trades(
             administrator.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the bond trading data for the specified
+        pl.DataFrame: A DataFrame containing the bond trading data for the specified
             month.
 
     DataFrame columns:
@@ -181,17 +181,32 @@ def tpf_monthly_trades(
     Examples:
         >>> from pyield import bc
         >>> # Fetches all trades for Jan/2025
-        >>> bc.tpf_monthly_trades("07-01-2025", extragroup=True).head(5)
-          SettlementDate BondType SelicCode          ISIN  ... AvgRate MaxRate  BrokerageTrades  BrokerageQuantity
-        0     2025-01-02      LFT    210100  BRSTNCLF1RC4  ...  0.0132  0.0906                2               9581
-        1     2025-01-02      LFT    210100  BRSTNCLF1RD2  ...  0.0561   0.101               11              42823
-        2     2025-01-02      LFT    210100  BRSTNCLF1RE0  ...  0.0191  0.0405               19              33330
-        3     2025-01-02      LFT    210100  BRSTNCLF1RF7  ...  0.0304    0.05               10              14583
-        4     2025-01-02      LFT    210100  BRSTNCLF1RG5  ...  0.0697  0.0935               12              51776
-        ...
+        >>> bc.tpf_monthly_trades("07-01-2025", extragroup=True)
+        shape: (1_019, 19)
+        ┌────────────────┬──────────┬───────────┬──────────────┬───┬─────────┬─────────┬─────────────────┬───────────────────┐
+        │ SettlementDate ┆ BondType ┆ SelicCode ┆ ISIN         ┆ … ┆ AvgRate ┆ MaxRate ┆ BrokerageTrades ┆ BrokerageQuantity │
+        │ ---            ┆ ---      ┆ ---       ┆ ---          ┆   ┆ ---     ┆ ---     ┆ ---             ┆ ---               │
+        │ date           ┆ str      ┆ i64       ┆ str          ┆   ┆ f64     ┆ f64     ┆ i64             ┆ i64               │
+        ╞════════════════╪══════════╪═══════════╪══════════════╪═══╪═════════╪═════════╪═════════════════╪═══════════════════╡
+        │ 2025-01-02     ┆ LFT      ┆ 210100    ┆ BRSTNCLF1RC4 ┆ … ┆ 0.0132  ┆ 0.0906  ┆ 2               ┆ 9581              │
+        │ 2025-01-02     ┆ LFT      ┆ 210100    ┆ BRSTNCLF1RD2 ┆ … ┆ 0.0561  ┆ 0.101   ┆ 11              ┆ 42823             │
+        │ 2025-01-02     ┆ LFT      ┆ 210100    ┆ BRSTNCLF1RE0 ┆ … ┆ 0.0191  ┆ 0.0405  ┆ 19              ┆ 33330             │
+        │ 2025-01-02     ┆ LFT      ┆ 210100    ┆ BRSTNCLF1RF7 ┆ … ┆ 0.0304  ┆ 0.05    ┆ 10              ┆ 14583             │
+        │ 2025-01-02     ┆ LFT      ┆ 210100    ┆ BRSTNCLF1RG5 ┆ … ┆ 0.0697  ┆ 0.0935  ┆ 12              ┆ 51776             │
+        │ …              ┆ …        ┆ …         ┆ …            ┆ … ┆ …       ┆ …       ┆ …               ┆ …                 │
+        │ 2025-01-31     ┆ NTN-F    ┆ 950199    ┆ BRSTNCNTF1P8 ┆ … ┆ null    ┆ null    ┆ 0               ┆ 0                 │
+        │ 2025-01-31     ┆ NTN-F    ┆ 950199    ┆ BRSTNCNTF1Q6 ┆ … ┆ null    ┆ null    ┆ 0               ┆ 0                 │
+        │ 2025-01-31     ┆ NTN-F    ┆ 950199    ┆ BRSTNCNTF204 ┆ … ┆ null    ┆ null    ┆ 12              ┆ 570000            │
+        │ 2025-01-31     ┆ NTN-F    ┆ 950199    ┆ BRSTNCNTF212 ┆ … ┆ null    ┆ null    ┆ 0               ┆ 0                 │
+        │ 2025-01-31     ┆ NTN-F    ┆ 950199    ┆ BRSTNCNTF238 ┆ … ┆ null    ┆ null    ┆ 4               ┆ 115000            │
+        └────────────────┴──────────┴───────────┴──────────────┴───┴─────────┴─────────┴─────────────────┴───────────────────┘
+
     """  # noqa: E501
+    if has_null_args(target_date):
+        logger.warning("No target_date provided. Returning an empty DataFrame.")
+        return pl.DataFrame()
     try:
-        target_date = convert_input_dates(target_date)
+        target_date = convert_dates(target_date)
         url = _build_file_url(target_date, extragroup)
         zip_content = _fetch_zip_from_url(url)
         extracted_file = _uncompress_zip(zip_content)
@@ -202,7 +217,7 @@ def tpf_monthly_trades(
         if e.response.status_code == 404:  # noqa
             msg = f"Resource not found (404) at {url}. Returning an empty DataFrame."
             logger.warning(msg)
-            return pd.DataFrame()
+            return pl.DataFrame()
         else:
             # Captures the full traceback for unexpected HTTP errors
             msg = f"Unexpected HTTP error ({e.code}) while accessing URL: {url}"

@@ -19,14 +19,13 @@ import datetime as dt
 import io
 import logging
 
-import pandas as pd
 import polars as pl
 import requests
 
 import pyield.converters as cv
 from pyield.config import TIMEZONE_BZ
-from pyield.converters import DateScalar
 from pyield.retry import default_retry
+from pyield.types import DateScalar
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +113,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
 def ptax_series(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """Cotações de Dólar PTAX (taxa de câmbio)
     - Fonte: Banco Central do Brasil (BCB)
     - Frequência: Diária
@@ -172,19 +171,24 @@ def ptax_series(
             Padrão é `None`.
 
     Returns:
-        pd.DataFrame: Um DataFrame contendo os dados de cotações de dólar PTAX.
+        pl.DataFrame: Um DataFrame contendo os dados de cotações de dólar PTAX.
         Se não houver dados disponíveis para o período especificado, um DataFrame vazio
         será retornado.
 
     Examples:
         >>> from pyield import bc
-        >>> df = yd.bc.ptax_series(start="20-04-2025", end="25-04-2025")
-        >>> df
-                 Date                    DateTime  BuyRate  SellRate  MidRate
-        0  2025-04-22  2025-04-22 13:09:35.629000    5.749    5.7496   5.7493
-        1  2025-04-23  2025-04-23 13:06:30.443000   5.6874     5.688   5.6877
-        2  2025-04-24  2025-04-24 13:04:29.639000   5.6732    5.6738   5.6735
-        3  2025-04-25  2025-04-25 13:09:26.592000    5.684    5.6846   5.6843
+        >>> bc.ptax_series(start="20-04-2025", end="25-04-2025")
+        shape: (4, 5)
+        ┌────────────┬─────────────────────────┬─────────┬──────────┬─────────┐
+        │ Date       ┆ DateTime                ┆ BuyRate ┆ SellRate ┆ MidRate │
+        │ ---        ┆ ---                     ┆ ---     ┆ ---      ┆ ---     │
+        │ date       ┆ datetime[ms]            ┆ f64     ┆ f64      ┆ f64     │
+        ╞════════════╪═════════════════════════╪═════════╪══════════╪═════════╡
+        │ 2025-04-22 ┆ 2025-04-22 13:09:35.629 ┆ 5.749   ┆ 5.7496   ┆ 5.7493  │
+        │ 2025-04-23 ┆ 2025-04-23 13:06:30.443 ┆ 5.6874  ┆ 5.688    ┆ 5.6877  │
+        │ 2025-04-24 ┆ 2025-04-24 13:04:29.639 ┆ 5.6732  ┆ 5.6738   ┆ 5.6735  │
+        │ 2025-04-25 ┆ 2025-04-25 13:09:26.592 ┆ 5.684   ┆ 5.6846   ┆ 5.6843  │
+        └────────────┴─────────────────────────┴─────────┴──────────┴─────────┘
 
     Notes:
         Disponível desde 28.11.1984, refere-se às taxas administradas até março de 1990
@@ -208,17 +212,15 @@ def ptax_series(
         - DateTime: Data e hora da cotação.
         - BuyRate: Taxa de compra.
         - SellRate: Taxa de venda.
-        - MidRate: Taxa média entre a taxa de compra e venda.
-
-
+        - MidRate: Taxa média entre a compra/venda arredondada para 5 casas decimais.
     """
     if start:
-        start = cv.convert_input_dates(start)
+        start = cv.convert_dates(start)
     else:
         start = dt.date(1984, 11, 28)  # Primeira data disponível na API
 
     if end:
-        end = cv.convert_input_dates(end)
+        end = cv.convert_dates(end)
     else:
         end = dt.datetime.now(TIMEZONE_BZ).date()
 
@@ -228,18 +230,18 @@ def ptax_series(
         df = _parse_csv(text)
         if df.is_empty():
             logging.warning("No data found for the specified period.")
-            return pd.DataFrame()
+            return pl.DataFrame()
         df = _process_df(df)
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
     except requests.exceptions.HTTPError as http_err:
         logger.error(f"HTTP error occurred: {http_err}")
-        return pd.DataFrame()
+        return pl.DataFrame()
     except Exception as e:
         logger.exception("Error fetching PTAX data from BC API: %s", e)
-        return pd.DataFrame()
+        return pl.DataFrame()
 
 
-def ptax(date: DateScalar) -> float:
+def ptax(date: DateScalar) -> float | None:
     """Busca a cotação PTAX média de fechamento para uma data específica.
 
     Esta função é um wrapper para a função `ptax_series`, otimizada para
@@ -251,7 +253,7 @@ def ptax(date: DateScalar) -> float:
 
     Returns:
         float: O valor da PTAX (taxa média) para a data especificada.
-               Retorna `np.nan` se não houver cotação para a data
+               Retorna None se não houver cotação para a data
                (ex: feriado, fim de semana ou data futura).
 
     Examples:
@@ -261,8 +263,7 @@ def ptax(date: DateScalar) -> float:
         5.4389
 
         >>> # Busca a PTAX para um fim de semana (sem dados)
-        >>> ptax_rate_weekend = bc.ptax("23-08-2025")
-        >>> pd.isna(ptax_rate_weekend)
+        >>> bc.ptax("23-08-2025") is None
         True
     """
     # Reutiliza a função ptax_series para buscar os dados para o dia específico.
@@ -271,10 +272,10 @@ def ptax(date: DateScalar) -> float:
 
     # Se o DataFrame estiver vazio, significa que não há cotação para a data.
     # Isso ocorre em fins de semana, feriados ou datas futuras.
-    if df_ptax.empty:
+    if df_ptax.is_empty():
         logger.warning(f"No PTAX data found for date: {date}")
-        return float("nan")
+        return None
 
     # A API retorna uma única linha para a cotação de fechamento de um dia.
     # A coluna "MidRate" representa a PTAX de fechamento.
-    return df_ptax["MidRate"].iloc[0]
+    return df_ptax["MidRate"].item(0)

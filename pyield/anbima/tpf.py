@@ -17,7 +17,6 @@ from typing import Literal
 from urllib.error import HTTPError, URLError
 from zoneinfo import ZoneInfo
 
-import pandas as pd
 import polars as pl
 import polars.selectors as ps
 import requests
@@ -25,16 +24,17 @@ import requests
 from pyield import bday
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
-from pyield.converters import DateScalar, convert_input_dates, to_return_format
+from pyield.converters import convert_dates
 from pyield.data_cache import get_cached_dataset
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnc import duration as duration_c
 from pyield.tn.ntnf import duration as duration_f
+from pyield.types import DateScalar, has_null_args
 
 BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
-BOND_TYPES = Literal["LTN", "NTN-B", "NTN-C", "NTN-F", "LFT"]
+BOND_TYPES = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
 
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
 ANBIMA_RTM_HOSTNAME = "www.anbima.associados.rtm"
@@ -122,7 +122,7 @@ def _rename_columns(csv_text: str) -> str:
     return csv_text
 
 
-def _read_csv_data(csv_text: str) -> pd.DataFrame:
+def _read_csv_data(csv_text: str) -> pl.DataFrame:
     df = pl.read_csv(
         source=io.StringIO(csv_text),
         skip_lines=2,
@@ -133,7 +133,7 @@ def _read_csv_data(csv_text: str) -> pd.DataFrame:
     return df
 
 
-def _process_raw_df(df: pl.DataFrame) -> pd.DataFrame:
+def _process_raw_df(df: pl.DataFrame) -> pl.DataFrame:
     df = df.rename(COLUMN_NAME_MAPPING).with_columns(
         # Remove percentage from rates
         # Rate columns have percentage values with 4 decimal places in percentage values
@@ -211,15 +211,13 @@ def _add_dv01(df_input: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _add_di_data(df: pl.DataFrame) -> pl.DataFrame:
+def _add_di_rate(df: pl.DataFrame) -> pl.DataFrame:
     """Add the DI rate column to the DataFrame."""
-    # INSERIR OS DADOS DO DI INTERPOLADO ###
-    reference_date = df.get_column("ReferenceDate").item(0)
+    reference_date = df["ReferenceDate"].item(0)
     di_rates = di1.interpolate_rates(
         dates=reference_date,
-        expirations=df.get_column("MaturityDate"),
+        expirations=df["MaturityDate"],
         extrapolate=True,
-        return_format="polars",
     )
     df = df.with_columns(di_rates.alias("DIRate"))
     return df
@@ -264,7 +262,7 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
         date (dt.date): A data de referência para os dados.
 
     Returns:
-        pd.DataFrame: Um DataFrame contendo os dados de mercado de títulos
+        pl.DataFrame: Um DataFrame contendo os dados de mercado de títulos
             processados, ou um DataFrame vazio se os dados não estiverem
             disponíveis ou ocorrer um erro de conexão.
     """
@@ -300,7 +298,7 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
         df = _process_raw_df(df)
         df = _add_duration(df)
         df = _add_dv01(df)
-        df = _add_di_data(df)
+        df = _add_di_rate(df)
         df = _custom_sort_and_order(df)
 
         return df
@@ -311,7 +309,7 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
                 f"No Anbima TPF secondary market data for {date_str} (HTTP 404). "
                 "Returning empty DataFrame."
             )
-            return pd.DataFrame()
+            return pl.DataFrame()
         logger.error(f"HTTP Error fetching data for {date_str} from {file_url}: {e}")
         raise
 
@@ -328,10 +326,9 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
 
 def tpf_data(
     date: DateScalar,
-    bond_type: str | None = None,
+    bond_type: BOND_TYPES | None = None,
     fetch_from_source: bool = False,
-    return_format: Literal["pandas", "polars"] = "pandas",
-) -> pd.DataFrame | pl.DataFrame:
+) -> pl.DataFrame:
     """Recupera os dados do mercado secundário de TPF da ANBIMA.
 
     Esta função busca taxas indicativas e outros dados de títulos públicos
@@ -347,20 +344,31 @@ def tpf_data(
             Padrão é False.
 
     Returns:
-        pd.DataFrame | pl.DataFrame: Um DataFrame contendo os dados solicitados.
+        pl.DataFrame: Um DataFrame contendo os dados solicitados.
             Retorna um DataFrame vazio se não houver dados para a data especificada (ex:
-        finais de semana, feriados ou datas futuras).
+            finais de semana, feriados ou datas futuras).
 
     Examples:
         >>> from pyield import anbima
         >>> anbima.tpf_data(date="22-08-2025")
-           ReferenceDate BondType  SelicCode  ...   AskRate IndicativeRate    DIRate
-        0     2025-08-22      LFT     210100  ...    0.0001       0.000165   0.14906
-        1     2025-08-22      LFT     210100  ... -0.000156      -0.000116   0.14843
-        2     2025-08-22      LFT     210100  ... -0.000143      -0.000107    0.1436
-        3     2025-08-22      LFT     210100  ...  0.000292       0.000302  0.138189
-        ...
-
+        shape: (49, 14)
+        ┌───────────────┬──────────┬───────────┬───────────────┬───┬───────────┬───────────┬────────────────┬──────────┐
+        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate   ┆ AskRate   ┆ IndicativeRate ┆ DIRate   │
+        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---       ┆ ---       ┆ ---            ┆ ---      │
+        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64       ┆ f64       ┆ f64            ┆ f64      │
+        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪═══════════╪═══════════╪════════════════╪══════════╡
+        │ 2025-08-22    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000198  ┆ 0.0001    ┆ 0.000165       ┆ 0.14906  │
+        │ 2025-08-22    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ -0.000053 ┆ -0.000156 ┆ -0.000116      ┆ 0.14843  │
+        │ 2025-08-22    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ -0.000053 ┆ -0.000143 ┆ -0.000107      ┆ 0.1436   │
+        │ 2025-08-22    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000309  ┆ 0.000292  ┆ 0.000302       ┆ 0.138189 │
+        │ 2025-08-22    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000421  ┆ 0.000399  ┆ 0.000411       ┆ 0.134548 │
+        │ …             ┆ …        ┆ …         ┆ …             ┆ … ┆ …         ┆ …         ┆ …              ┆ …        │
+        │ 2025-08-22    ┆ NTN-F    ┆ 950199    ┆ 2016-01-15    ┆ … ┆ 0.139379  ┆ 0.139163  ┆ 0.139268       ┆ 0.13959  │
+        │ 2025-08-22    ┆ NTN-F    ┆ 950199    ┆ 2018-01-05    ┆ … ┆ 0.134252  ┆ 0.134018  ┆ 0.13414        ┆ 0.1327   │
+        │ 2025-08-22    ┆ NTN-F    ┆ 950199    ┆ 2020-01-10    ┆ … ┆ 0.13846   ┆ 0.138355  ┆ 0.13841        ┆ 0.13626  │
+        │ 2025-08-22    ┆ NTN-F    ┆ 950199    ┆ 2022-01-07    ┆ … ┆ 0.139503  ┆ 0.139321  ┆ 0.139398       ┆ 0.13807  │
+        │ 2025-08-22    ┆ NTN-F    ┆ 950199    ┆ 2024-01-05    ┆ … ┆ 0.140673  ┆ 0.140566  ┆ 0.140633       ┆ 0.13845  │
+        └───────────────┴──────────┴───────────┴───────────────┴───┴───────────┴───────────┴────────────────┴──────────┘
 
     Data columns:
         - BondType: Tipo do título público (e.g., 'LTN', 'NTN-B').
@@ -396,8 +404,10 @@ def tpf_data(
             datas com mais de 5 dias úteis. O acesso ao histórico completo
             requer uma conexão à rede RTM. Sem ela, a consulta para datas
             antigas retornará um DataFrame vazio.
-    """
-    date = convert_input_dates(date)
+    """  # noqa
+    if has_null_args(date):
+        return pl.DataFrame()
+    date = convert_dates(date)
     _validate_not_future_date(date)
 
     if fetch_from_source:
@@ -408,53 +418,48 @@ def tpf_data(
         df = get_cached_dataset("tpf").filter(pl.col("ReferenceDate") == date)
 
     if df.is_empty():
-        return to_return_format(df, return_format)
+        return pl.DataFrame()
 
     if bond_type:
         norm_bond_type = _bond_type_mapping(bond_type)
         df = df.filter(pl.col("BondType").is_in(norm_bond_type))
 
-    df = df.sort(["ReferenceDate", "BondType", "MaturityDate"])
-
-    return to_return_format(df, return_format)
+    return df.sort(["ReferenceDate", "BondType", "MaturityDate"])
 
 
 def tpf_maturities(
     date: DateScalar,
     bond_type: str,
-    return_format: Literal["pandas", "polars"] = "pandas",
-) -> pd.Series | pl.Series:
+) -> pl.Series:
     """Retrieve existing maturity dates for a given bond type on a specific date.
 
     Args:
         date (DateScalar): The reference date for maturity dates.
         bond_type (str): The bond type to filter by (e.g., 'PRE' for both 'LTN'
             and 'NTN-F', or specify 'LTN' or 'NTN-F' directly).
-        return_format (Literal["pandas", "polars"], optional): The desired return
-            format. Defaults to "pandas".
 
     Returns:
-        pd.Series | pl.Series: A Series containing unique maturity dates for the
-        specified bond type(s).
+        pl.Series: A Series containing unique maturity dates for the
+            specified bond type(s).
 
     Examples:
         >>> from pyield import anbima
         >>> anbima.tpf_maturities(date="22-08-2025", bond_type="PRE")
-        0     2025-10-01
-        1     2026-01-01
-        2     2026-04-01
-        3     2026-07-01
-                ...
-        14    2031-01-01
-        15    2032-01-01
-        16    2033-01-01
-        17    2035-01-01
-        Name: MaturityDate, dtype: date32[day][pyarrow]
+        shape: (18,)
+        Series: 'MaturityDate' [date]
+        [
+            2025-10-01
+            2026-01-01
+            2026-04-01
+            2026-07-01
+            2026-10-01
+            …
+            2030-01-01
+            2031-01-01
+            2032-01-01
+            2033-01-01
+            2035-01-01
+        ]
+
     """
-    maturity_dates = (
-        tpf_data(date, bond_type, return_format="polars")
-        .get_column("MaturityDate")
-        .unique()
-        .sort()
-    )
-    return to_return_format(maturity_dates, return_format)
+    return tpf_data(date, bond_type).get_column("MaturityDate").unique().sort()

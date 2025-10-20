@@ -8,7 +8,6 @@ import io
 import logging
 from pathlib import Path
 
-import pandas as pd
 import polars as pl
 import requests
 from polars import selectors as cs
@@ -190,7 +189,7 @@ def is_selic_open() -> bool:
     return is_last_bday and is_trading_time
 
 
-def tpf_intraday_trades() -> pd.DataFrame:
+def tpf_intraday_trades() -> pl.DataFrame:
     """Fetches real-time secondary trading data for domestic Federal Public Debt
     (TPF - títulos públicos federais) from the Central Bank of Brazil (BCB).
 
@@ -202,7 +201,7 @@ def tpf_intraday_trades() -> pd.DataFrame:
     data provided by BCB for Brazilian government bonds.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the latest intraday trades for FPD
+        pl.DataFrame: A DataFrame containing the latest intraday trades for FPD
             securities. Returns an empty DataFrame if the market is closed, no data
             is found, or an error occurs. The DataFrame includes the following columns:
 
@@ -252,23 +251,23 @@ def tpf_intraday_trades() -> pd.DataFrame:
     """
     if not is_selic_open():
         logger.info("Market is closed. Returning empty DataFrame.")
-        return pd.DataFrame()
+        return pl.DataFrame()
 
     try:
         raw_text = _fetch_csv_from_url()
         cleaned_text = _clean_csv(raw_text)
         if not cleaned_text:
             logger.warning("No data found in the FPD intraday trades.")
-            return pd.DataFrame()
+            return pl.DataFrame()
 
         df = _convert_csv_to_df(cleaned_text)
         df = _process_df(df)
 
-        value = df.select(pl.sum("Value")).item() / 10**9
+        value = df["Value"].sum() / 10**9
         logger.info(f"Fetched {value:,.1f} billion BRL in FPD intraday trades.")
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
     except Exception as e:
         logger.exception(
             f"Error fetching data from BCB: {e}. Returning empty DataFrame."
         )
-        return pd.DataFrame()
+        return pl.DataFrame()

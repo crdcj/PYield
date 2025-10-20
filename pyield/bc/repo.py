@@ -15,14 +15,13 @@ ac1b013d13d6fb1d9d9e251b8000121e, 2025-08-21   , 12:00     , TodoMercado        
 import io
 import logging
 
-import pandas as pd
 import polars as pl
 import requests
 
 import pyield.converters as cv
 from pyield import bday
-from pyield.converters import DateScalar
 from pyield.retry import default_retry
+from pyield.types import DateScalar
 
 logger = logging.getLogger(__name__)
 
@@ -73,12 +72,12 @@ def _build_url(start: DateScalar | None, end: DateScalar | None) -> str:
     """
     url = API_BASE_URL
     if start:
-        start = cv.convert_input_dates(start)
+        start = cv.convert_dates(start)
         start_str = start.strftime("%Y-%m-%d")
         url += f"@dataLancamentoInicio='{start_str}'"
 
     if end:
-        end = cv.convert_input_dates(end)
+        end = cv.convert_dates(end)
         end_str = end.strftime("%Y-%m-%d")
         url += f"&@dataLancamentoFim='{end_str}'"
 
@@ -128,11 +127,8 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
         (100 - pl.col("percentual_corte")).alias("percentual_aceito"),
     )
 
-    s_prazo_pd = bday.count(
-        start=df.get_column("data_liquidacao"),
-        end=df.get_column("data_retorno"),
-    )
-    df = df.with_columns(pl.Series(s_prazo_pd).alias("prazo_dias_uteis"))
+    prazos = bday.count(start=df["data_liquidacao"], end=df["data_retorno"])
+    df = df.with_columns(prazos.alias("prazo_dias_uteis"))
     return df
 
 
@@ -175,7 +171,7 @@ def _sort_and_select_columns(df: pl.DataFrame) -> pl.DataFrame:
 def repos(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """Consulta e retorna leilões de operações compromissadas (repos) do BCB.
 
     Semântica dos parâmetros de período (API OData):
@@ -188,7 +184,7 @@ def repos(
         end: Data final (inclusive) ou None.
 
     Returns:
-        DataFrame pandas com colunas normalizadas em português e tipos
+        DataFrame com colunas normalizadas em português e tipos
         enriquecidos (frações decimais, inteiros, datas). Em caso de erro
         retorna DataFrame vazio e registra log da exceção.
 
@@ -213,10 +209,15 @@ def repos(
     Examples:
         >>> from pyield import bc
         >>> bc.repos(start="21-08-2025", end="21-08-2025")
-          data_leilao data_liquidacao data_retorno hora_inicio  ...  publico_permitido  volume_aceito  taxa_corte percentual_aceito
-        0  2025-08-21      2025-08-21   2025-08-22    09:00:00  ...      SomenteDealer   647707406000       0.149             100.0
-        1  2025-08-21      2025-08-22   2025-11-21    12:00:00  ...        TodoMercado     5000000000      0.9978             35.87
-        [2 rows x 12 columns]
+        shape: (2, 12)
+        ┌─────────────┬─────────────────┬──────────────┬─────────────┬───┬───────────────────┬───────────────┬────────────┬───────────────────┐
+        │ data_leilao ┆ data_liquidacao ┆ data_retorno ┆ hora_inicio ┆ … ┆ publico_permitido ┆ volume_aceito ┆ taxa_corte ┆ percentual_aceito │
+        │ ---         ┆ ---             ┆ ---          ┆ ---         ┆   ┆ ---               ┆ ---           ┆ ---        ┆ ---               │
+        │ date        ┆ date            ┆ date         ┆ time        ┆   ┆ str               ┆ i64           ┆ f64        ┆ f64               │
+        ╞═════════════╪═════════════════╪══════════════╪═════════════╪═══╪═══════════════════╪═══════════════╪════════════╪═══════════════════╡
+        │ 2025-08-21  ┆ 2025-08-21      ┆ 2025-08-22   ┆ 09:00:00    ┆ … ┆ SomenteDealer     ┆ 647707406000  ┆ 0.149      ┆ 100.0             │
+        │ 2025-08-21  ┆ 2025-08-22      ┆ 2025-11-21   ┆ 12:00:00    ┆ … ┆ TodoMercado       ┆ 5000000000    ┆ 0.9978     ┆ 35.87             │
+        └─────────────┴─────────────────┴──────────────┴─────────────┴───┴───────────────────┴───────────────┴────────────┴───────────────────┘
     """  # noqa: E501
     try:
         url = _build_url(start=start, end=end)
@@ -225,11 +226,11 @@ def repos(
         df = _read_csv_data(api_csv)
         if df.is_empty():
             logger.warning("Sem dados de leilões para o período especificado.")
-            return pd.DataFrame()
+            return pl.DataFrame()
         df = _process_df(df)
         df = _handle_zero_volume(df)
         df = _sort_and_select_columns(df)
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
     except Exception as e:
         logger.exception(f"Erro ao buscar dados de leilões na API do BC: {e}")
-        return pd.DataFrame()
+        return pl.DataFrame()

@@ -1,49 +1,48 @@
 from typing import overload
 
 import numpy as np
-import pandas as pd
+import polars as pl
 
 
 @overload
 def truncate(values: float, decimal_places: int) -> float: ...
 @overload
-def truncate(values: pd.Series, decimal_places: int) -> pd.Series: ...
-def truncate(values: float | pd.Series, decimal_places: int) -> float | pd.Series:
-    """
-    Truncate a float or a Pandas Series to the specified decimal place.
+def truncate(values: int, decimal_places: int) -> float: ...
+@overload
+def truncate(values: pl.Series, decimal_places: int) -> pl.Series: ...
+
+
+def truncate(values: float | int | pl.Series, decimal_places: int) -> float | pl.Series:
+    """Trunca números (scalar ou ``polars.Series``) em direção a zero.
+
+    Implementação unificada usando apenas operações de ``polars``: escalares
+    são embrulhados em uma série temporária e depois desembrulhados.
 
     Args:
-        values (float or pandas.Series): The value(s) to be truncated.
-        decimal_places (int): The number of decimal places to truncate to.
+        values: Escalar (int/float) ou ``pl.Series``.
+        decimal_places: Casas decimais (>= 0).
 
     Returns:
-        float or pandas.Series: The truncated value(s).
+        Float se entrada era escalar, ou ``pl.Series`` se entrada era série.
     """
+    if decimal_places < 0:
+        raise ValueError("decimal_places must be non-negative")
+
     factor = 10**decimal_places
     truncated_values = np.trunc(values * factor) / factor
     if isinstance(truncated_values, np.floating):
-        truncated_values = float(truncated_values)
+        return float(truncated_values)
     else:
-        truncated_values = pd.Series(truncated_values)
-    return truncated_values
+        return pl.Series(truncated_values)
 
 
 def calculate_present_value(
-    cash_flows: pd.Series,
-    rates: pd.Series,
-    periods: pd.Series,
+    cash_flows: pl.Series | list[float],
+    rates: pl.Series | list[float],
+    periods: pl.Series | list[float],
 ) -> float:
-    # Return 0 if any input is empty
-    if cash_flows.empty or rates.empty or periods.empty:
-        return 0
+    df = pl.DataFrame({"cash_flows": cash_flows, "rates": rates, "periods": periods})
+    if df.is_empty():
+        return 0.0
 
-    # Reset the index to avoid issues with the series alignment
-    cash_flows = cash_flows.reset_index(drop=True)
-    rates = rates.reset_index(drop=True)
-    periods = periods.reset_index(drop=True)
-
-    # Check if data have the same length
-    if len(cash_flows) != len(rates) or len(cash_flows) != len(periods):
-        raise ValueError("All series must have the same length.")
-
-    return (cash_flows / (1 + rates) ** periods).sum()
+    return (df["cash_flows"] / (1 + df["rates"]) ** df["periods"]).sum()

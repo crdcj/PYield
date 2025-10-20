@@ -1,12 +1,12 @@
 import datetime as dt
 
-import numpy as np
 import pandas as pd
+import polars as pl
 
 import pyield.converters as cv
 import pyield.tn.tools as tl
 from pyield import anbima, bday
-from pyield.converters import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -42,7 +42,7 @@ def _get_final_pmt(maturity: dt.date) -> float:
     return FINAL_PMT
 
 
-def data(date: DateScalar) -> pd.DataFrame:
+def data(date: DateScalar) -> pl.DataFrame:
     """
     Fetch the LTN Anbima indicative rates for the given reference date.
 
@@ -50,22 +50,27 @@ def data(date: DateScalar) -> pd.DataFrame:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
+        pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
 
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.data("23-08-2024")
-          ReferenceDate BondType  SelicCode  ...   AskRate IndicativeRate   DIRate
-        0    2024-08-23    NTN-C     770100  ...  0.057587       0.059617  0.11575
-        ...
-    """
+        shape: (1, 14)
+        ┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬─────────┐
+        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate  │
+        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---     │
+        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64      ┆ f64      ┆ f64            ┆ f64     │
+        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪══════════╪══════════╪════════════════╪═════════╡
+        │ 2024-08-23    ┆ NTN-C    ┆ 770100    ┆ 2000-07-01    ┆ … ┆ 0.061591 ┆ 0.057587 ┆ 0.059617       ┆ 0.11575 │
+        └───────────────┴──────────┴───────────┴───────────────┴───┴──────────┴──────────┴────────────────┴─────────┘
+    """  # noqa: E501
     return anbima.tpf_data(date, "NTN-C")
 
 
 def payment_dates(
     settlement: DateScalar,
     maturity: DateScalar,
-) -> pd.Series:
+) -> pl.Series:
     """
     Generate all remaining coupon dates between a given date and the maturity date.
     The dates are inclusive. The NTN-C bond is determined by its maturity date.
@@ -76,28 +81,32 @@ def payment_dates(
         maturity (DateScalar): The maturity date.
 
     Returns:
-        pd.Series: Series of coupon dates within the specified range.
+        pl.Series: Series of coupon dates within the specified range.
 
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.payment_dates("21-03-2025", "01-01-2031")
-        0    2025-07-01
-        1    2026-01-01
-        2    2026-07-01
-        3    2027-01-01
-        4    2027-07-01
-        5    2028-01-01
-        6    2028-07-01
-        7    2029-01-01
-        8    2029-07-01
-        9    2030-01-01
-        10   2030-07-01
-        11   2031-01-01
-        dtype: date32[day][pyarrow]
+        shape: (12,)
+        Series: '' [date]
+        [
+            2025-07-01
+            2026-01-01
+            2026-07-01
+            2027-01-01
+            2027-07-01
+            …
+            2029-01-01
+            2029-07-01
+            2030-01-01
+            2030-07-01
+            2031-01-01
+        ]
     """
+    if has_null_args(settlement, maturity):
+        return pl.Series(dtype=pl.Date)
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     # Check if maturity date is after the start date
     if maturity < settlement:
@@ -114,14 +123,13 @@ def payment_dates(
         coupon_date -= pd.DateOffset(months=6)
         coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
 
-    coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
-    return coupon_dates.sort_values().reset_index(drop=True)
+    return pl.Series(coupon_dates).sort()
 
 
 def cash_flows(
     settlement: DateScalar,
     maturity: DateScalar,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Generate the cash flows for NTN-C bonds between the settlement and maturity dates.
 
@@ -131,7 +139,7 @@ def cash_flows(
         maturity (DateScalar): The maturity date of the bond.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
+        pl.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
 
     Returned columns:
         - PaymentDate: The payment date of the cash flow
@@ -140,43 +148,53 @@ def cash_flows(
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.cash_flows("21-03-2025", "01-01-2031")
-           PaymentDate    CashFlow
-        0   2025-07-01    5.830052
-        1   2026-01-01    5.830052
-        2   2026-07-01    5.830052
-        3   2027-01-01    5.830052
-        4   2027-07-01    5.830052
-        5   2028-01-01    5.830052
-        6   2028-07-01    5.830052
-        7   2029-01-01    5.830052
-        8   2029-07-01    5.830052
-        9   2030-01-01    5.830052
-        10  2030-07-01    5.830052
-        11  2031-01-01  105.830052
+        shape: (12, 2)
+        ┌─────────────┬────────────┐
+        │ PaymentDate ┆ CashFlow   │
+        │ ---         ┆ ---        │
+        │ date        ┆ f64        │
+        ╞═════════════╪════════════╡
+        │ 2025-07-01  ┆ 5.830052   │
+        │ 2026-01-01  ┆ 5.830052   │
+        │ 2026-07-01  ┆ 5.830052   │
+        │ 2027-01-01  ┆ 5.830052   │
+        │ 2027-07-01  ┆ 5.830052   │
+        │ …           ┆ …          │
+        │ 2029-01-01  ┆ 5.830052   │
+        │ 2029-07-01  ┆ 5.830052   │
+        │ 2030-01-01  ┆ 5.830052   │
+        │ 2030-07-01  ┆ 5.830052   │
+        │ 2031-01-01  ┆ 105.830052 │
+        └─────────────┴────────────┘
     """
+    if has_null_args(settlement, maturity):
+        return pl.DataFrame()
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     # Get the coupon dates between the settlement and maturity dates
-    p_dates = payment_dates(settlement, maturity)
+    pay_dates = payment_dates(settlement, maturity)
 
     # Get the right coupon payment and final payment values
     coupon_pmt = _get_coupon_pmt(maturity)
     final_pmt = _get_final_pmt(maturity)
 
-    # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    cfs = np.where(p_dates == maturity, final_pmt, coupon_pmt).tolist()
-
-    # Return a dataframe with the payment dates and cash flows
-    return pd.DataFrame(data={"PaymentDate": p_dates, "CashFlow": cfs})
+    # Build dataframe and assign cash flows using Polars expression (avoid NumPy)
+    df = pl.DataFrame({"PaymentDate": pay_dates}).with_columns(
+        pl.when(pl.col("PaymentDate") == maturity)
+        .then(final_pmt)
+        .otherwise(coupon_pmt)
+        .alias("CashFlow")
+    )
+    return df
 
 
 def quotation(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float:
+) -> float | None:
     """
     Calculate the NTN-C quotation in base 100 using Anbima rules.
 
@@ -187,7 +205,7 @@ def quotation(
             the cash flows, which is the yield to maturity (YTM) of the NTN-C.
 
     Returns:
-        float: The NTN-C quotation truncated to 4 decimal places.
+        float | None: The NTN-C quotation truncated to 4 decimal places.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -200,9 +218,11 @@ def quotation(
         >>> ntnc.quotation("21-03-2025", "01-01-2031", 0.067626)
         126.4958
     """
-    # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    # Validate and normalize inputs
+    if has_null_args(settlement, maturity, rate):
+        return None
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     cf_df = cash_flows(settlement, maturity)
     cf_dates = cf_df["PaymentDate"]
@@ -226,7 +246,7 @@ def quotation(
 def price(
     vna: float,
     quotation: float,
-) -> float:
+) -> float | None:
     """
     Calculate the NTN-C price using Anbima rules.
 
@@ -237,7 +257,7 @@ def price(
         quotation (float): The NTN-C quotation in base 100.
 
     Returns:
-        float: The NTN-C price truncated to 6 decimal places.
+        float | None: The NTN-C price truncated to 6 decimal places.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -247,6 +267,8 @@ def price(
         >>> ntnc.price(6598.913723, 126.4958)
         8347.348705
     """
+    if has_null_args(vna, quotation):
+        return None
     return tl.truncate(vna * quotation / 100, 6)
 
 
@@ -254,7 +276,7 @@ def duration(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float:
+) -> float | None:
     """
     Calculate the Macaulay duration of the NTN-C bond in business years.
 
@@ -264,24 +286,21 @@ def duration(
         rate (float): The discount rate used to calculate the duration.
 
     Returns:
-        float: The Macaulay duration of the NTN-C bond in business years.
+        float | None: The Macaulay duration of the NTN-C bond in business years.
 
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.duration("21-03-2025", "01-01-2031", 0.067626)
         4.405363320448003
     """
-    # Return NaN if any input is NaN
-    if any(pd.isna(x) for x in [settlement, maturity, rate]):
-        return float("NaN")
-
-    # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    # Validate and normalize inputs
+    if has_null_args(settlement, maturity, rate):
+        return None
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     df = cash_flows(settlement, maturity)
-    df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252
-    df["DCF"] = df["CashFlow"] / (1 + rate) ** df["BY"]
-    duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
-    # Return the duration as native float
-    return float(duration)
+    b_years = bday.count(settlement, df["PaymentDate"]) / 252
+    dcf = df["CashFlow"] / (1 + rate) ** b_years
+    duration = (dcf * b_years).sum() / dcf.sum()
+    return duration

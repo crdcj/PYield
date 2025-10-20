@@ -18,7 +18,7 @@ import requests
 
 import pyield.converters as cv
 from pyield.anbima.tpf import tpf_data
-from pyield.converters import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 # Configura o logger do módulo
 logger = logging.getLogger(__name__)
@@ -124,9 +124,8 @@ def _process_data(csv: str, reference_date: dt.date) -> pl.DataFrame:
     return df
 
 
-def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pd.DataFrame:
+def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
     df_anbima = tpf_data(reference_date)
-    df_anbima = pl.from_pandas(df_anbima)
     target_cols = ["ReferenceDate", "BondType", "MaturityDate", "DV01", "DV01USD"]
     df_anbima = df_anbima.select(target_cols).rename({"ReferenceDate": "Date"})
     # Guard clause for missing columns
@@ -173,7 +172,7 @@ def _reorder_df(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(column_order)
 
 
-def imaq(date: DateScalar) -> pd.DataFrame:
+def imaq(date: DateScalar) -> pl.DataFrame:
     """
     Fetch and process IMA market data for a given date.
 
@@ -188,7 +187,7 @@ def imaq(date: DateScalar) -> pd.DataFrame:
             the data.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the IMA data.
+        pl.DataFrame: A DataFrame containing the IMA data.
 
     DataFrame columns:
         - Date: Reference date of the data.
@@ -211,7 +210,10 @@ def imaq(date: DateScalar) -> pd.DataFrame:
         Exception: Logs error and returns an empty DataFrame if any error occurs during
             fetching or processing.
     """
-    date = cv.convert_input_dates(date)
+    if has_null_args(date):
+        logger.warning("No date provided. Returning empty DataFrame.")
+        return pl.DataFrame()
+    date = cv.convert_dates(date)
     date_str = date.strftime("%d/%m/%Y")
     try:
         url_content = _fetch_url_content(date)
@@ -219,7 +221,7 @@ def imaq(date: DateScalar) -> pd.DataFrame:
             logger.warning(
                 f"No data available for {date_str}. Returning an empty DataFrame."
             )
-            return pd.DataFrame()
+            return pl.DataFrame()
 
         _check_content_date(url_content, date)
 
@@ -229,8 +231,8 @@ def imaq(date: DateScalar) -> pd.DataFrame:
         df = _add_dv01(df, date)
         df = _cast_int_columns(df)
         df = _reorder_df(df)
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
     except Exception:  # Erro inesperado
         msg = f"Error fetching IMA for {date_str}. Returning empty DataFrame."
         logger.exception(msg)
-        return pd.DataFrame()
+        return pl.DataFrame()

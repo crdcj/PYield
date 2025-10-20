@@ -1,12 +1,12 @@
-import pandas as pd
+import polars as pl
 
 import pyield.converters as cv
 from pyield import anbima, bday
-from pyield.converters import DateScalar
 from pyield.tn import tools
+from pyield.types import DateScalar, has_null_args
 
 
-def data(date: DateScalar) -> pd.DataFrame:
+def data(date: DateScalar) -> pl.DataFrame:
     """
     Fetch the LFT indicative rates for the given reference date from ANBIMA.
 
@@ -14,7 +14,7 @@ def data(date: DateScalar) -> pd.DataFrame:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame containing the following columns:
+        pl.DataFrame: DataFrame containing the following columns:
             - ReferenceDate: The reference date for the data.
             - BondType: The type of bond.
             - MaturityDate: The maturity date of the LFT bond.
@@ -24,17 +24,29 @@ def data(date: DateScalar) -> pd.DataFrame:
     Examples:
         >>> from pyield import lft
         >>> lft.data("23-08-2024")
-           ReferenceDate BondType  SelicCode  ...   AskRate IndicativeRate    DIRate
-        0     2024-08-23      LFT     210100  ...  0.000226       0.000272   0.10408
-        1     2024-08-23      LFT     210100  ... -0.000481      -0.000418   0.11082
-        2     2024-08-23      LFT     210100  ... -0.000258       -0.00023  0.114315
-        3     2024-08-23      LFT     210100  ...   0.00006       0.000075  0.114982
-        ...
-    """
+        shape: (14, 14)
+        ┌───────────────┬──────────┬───────────┬───────────────┬───┬───────────┬───────────┬────────────────┬──────────┐
+        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate   ┆ AskRate   ┆ IndicativeRate ┆ DIRate   │
+        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---       ┆ ---       ┆ ---            ┆ ---      │
+        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64       ┆ f64       ┆ f64            ┆ f64      │
+        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪═══════════╪═══════════╪════════════════╪══════════╡
+        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000306  ┆ 0.000226  ┆ 0.000272       ┆ 0.10408  │
+        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ -0.000397 ┆ -0.000481 ┆ -0.000418      ┆ 0.11082  │
+        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ -0.000205 ┆ -0.000258 ┆ -0.00023       ┆ 0.114315 │
+        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000085  ┆ 0.00006   ┆ 0.000075       ┆ 0.114982 │
+        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000124  ┆ 0.000097  ┆ 0.000114       ┆ 0.114955 │
+        │ …             ┆ …        ┆ …         ┆ …             ┆ … ┆ …         ┆ …         ┆ …              ┆ …        │
+        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.001501  ┆ 0.001476  ┆ 0.001491       ┆ 0.11564  │
+        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.001597  ┆ 0.001571  ┆ 0.001587       ┆ 0.115773 │
+        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.001601  ┆ 0.001574  ┆ 0.001591       ┆ 0.115904 │
+        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.001649  ┆ 0.001627  ┆ 0.001641       ┆ 0.115854 │
+        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.001696  ┆ 0.00168   ┆ 0.001687       ┆ 0.115806 │
+        └───────────────┴──────────┴───────────┴───────────────┴───┴───────────┴───────────┴────────────────┴──────────┘
+    """  # noqa: E501
     return anbima.tpf_data(date, "LFT")
 
 
-def maturities(date: DateScalar) -> pd.Series:
+def maturities(date: DateScalar) -> pl.Series:
     """
     Fetch the bond maturities available for the given reference date.
 
@@ -42,38 +54,36 @@ def maturities(date: DateScalar) -> pd.Series:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.Series: A Series of bond maturities available for the reference date.
+        pl.Series: A Series of bond maturities available for the reference date.
 
     Examples:
         >>> from pyield import lft
         >>> lft.maturities("22-08-2024")
-        0     2024-09-01
-        1     2025-03-01
-        2     2025-09-01
-        3     2026-03-01
-        4     2026-09-01
-        5     2027-03-01
-        6     2027-09-01
-        7     2028-03-01
-        8     2028-09-01
-        9     2029-03-01
-        10    2029-09-01
-        11    2030-03-01
-        12    2030-06-01
-        13    2030-09-01
-        dtype: date32[day][pyarrow]
+        shape: (14,)
+        Series: 'MaturityDate' [date]
+        [
+            2024-09-01
+            2025-03-01
+            2025-09-01
+            2026-03-01
+            2026-09-01
+            …
+            2029-03-01
+            2029-09-01
+            2030-03-01
+            2030-06-01
+            2030-09-01
+        ]
     """
     df_rates = data(date)
-    s_maturities = df_rates["MaturityDate"]
-    s_maturities.name = None
-    return s_maturities
+    return df_rates["MaturityDate"]
 
 
 def quotation(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float:
+) -> float | None:
     """
     Calculate the quotation of a LFT bond using Anbima rules.
 
@@ -83,7 +93,7 @@ def quotation(
         rate (float): The annualized yield rate of the bond
 
     Returns:
-        float: The quotation of the bond.
+        float | None: The quotation of the bond.
 
     Examples:
         Calculate the quotation of a LFT bond with a 0.02 yield rate:
@@ -96,8 +106,10 @@ def quotation(
         98.9645
     """
     # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    if has_null_args(settlement, maturity, rate):
+        return None
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     # The number of bdays between settlement (inclusive) and the maturity (exclusive)
     bdays = bday.count(settlement, maturity)
@@ -110,7 +122,7 @@ def quotation(
     return tools.truncate(100 * discount_factor, 4)
 
 
-def premium(lft_rate: float, di_rate: float) -> float:
+def premium(lft_rate: float, di_rate: float) -> float | None:
     """
     Calculate the premium of the LFT bond over the DI Futures rate.
 
@@ -120,7 +132,7 @@ def premium(lft_rate: float, di_rate: float) -> float:
             maturity as the LFT).
 
     Returns:
-        float: The premium of the LFT bond over the DI Futures rate.
+        float | None: The premium of the LFT bond over the DI Futures rate.
 
     Examples:
         Calculate the premium of a LFT in 28/04/2025
@@ -130,6 +142,8 @@ def premium(lft_rate: float, di_rate: float) -> float:
         >>> lft.premium(lft_rate, di_rate)
         1.008594331960501
     """
+    if has_null_args(lft_rate, di_rate):
+        return None
     # daily rate
     ltt_factor = (lft_rate + 1) ** (1 / 252)
     di_factor = (di_rate + 1) ** (1 / 252)

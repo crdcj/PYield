@@ -19,13 +19,13 @@ import logging
 from enum import Enum
 from typing import Any
 
-import pandas as pd
 import polars as pl
 import requests
 
 from pyield.config import TIMEZONE_BZ
-from pyield.converters import DateScalar, convert_input_dates
+from pyield.converters import convert_dates
 from pyield.retry import default_retry
+from pyield.types import DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def _build_download_url(
     Returns:
         The formatted URL for the API request
     """
-    start = convert_input_dates(start)
+    start = convert_dates(start)
     start_str = start.strftime("%d/%m/%Y")
 
     api_url = BASE_URL
@@ -82,7 +82,7 @@ def _build_download_url(
     api_url += f"&dataInicial={start_str}"
 
     if end:
-        end = convert_input_dates(end)
+        end = convert_dates(end)
         end_str = end.strftime("%d/%m/%Y")
         api_url += f"&dataFinal={end_str}"
 
@@ -135,7 +135,7 @@ def _fetch_data_from_url(
 ) -> pl.DataFrame:
     """
     Orchestrates fetching data from the Central Bank API, handling requests longer
-    than 10 years by splitting them into smaller chunks using pandas DateOffset.
+    than 10 years by splitting them into smaller chunks using polars date_range.
 
     Args:
         serie: The series enum to fetch
@@ -146,9 +146,9 @@ def _fetch_data_from_url(
         DataFrame with the requested data
     """
     # 1. Converter datas usando a função auxiliar existente
-    start_date = convert_input_dates(start)
+    start_date = convert_dates(start)
     # Se a data final não for fornecida, usar a data de hoje para o cálculo do período
-    end_date = convert_input_dates(end) if end else dt.datetime.now(TIMEZONE_BZ).date()
+    end_date = convert_dates(end) if end else dt.datetime.now(TIMEZONE_BZ).date()
 
     # Verificação simples e pragmática baseada em dias. Se o período for
     # menor que nosso limite de segurança, faz uma chamada única.
@@ -189,7 +189,7 @@ def _fetch_data_from_url(
 def selic_over_series(
     start: DateScalar,
     end: DateScalar | None = None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Fetches the SELIC Over rate from the Brazilian Central Bank.
 
@@ -211,30 +211,41 @@ def selic_over_series(
 
     Examples:
         >>> from pyield import bc
-        >>> # No data on 26-01-2025 (sunday). Rate changed due to Copom meeting.
-        >>> bc.selic_over_series("26-01-2025")  # Returns all data since 26-01-2025
-                Date   Value
-        0 2025-01-27  0.1215
-        1 2025-01-28  0.1215
-        2 2025-01-29  0.1215
-        3 2025-01-30  0.1315
-        4 2025-01-31  0.1315
-        ...
+        >>> # No data on 26-01-2025 (sunday). Selic changed due to Copom meeting.
+        >>> bc.selic_over_series("26-01-2025").head(5)  # Showing first 5 rows
+        shape: (5, 2)
+        ┌────────────┬────────┐
+        │ Date       ┆ Value  │
+        │ ---        ┆ ---    │
+        │ date       ┆ f64    │
+        ╞════════════╪════════╡
+        │ 2025-01-27 ┆ 0.1215 │
+        │ 2025-01-28 ┆ 0.1215 │
+        │ 2025-01-29 ┆ 0.1215 │
+        │ 2025-01-30 ┆ 0.1315 │
+        │ 2025-01-31 ┆ 0.1315 │
+        └────────────┴────────┘
 
         >>> # Fetching data for a specific date range
         >>> bc.selic_over_series("14-09-2025", "17-09-2025")
-                 Date  Value
-        0  2025-09-15  0.149
-        1  2025-09-16  0.149
-        2  2025-09-17  0.149
+        shape: (3, 2)
+        ┌────────────┬───────┐
+        │ Date       ┆ Value │
+        │ ---        ┆ ---   │
+        │ date       ┆ f64   │
+        ╞════════════╪═══════╡
+        │ 2025-09-15 ┆ 0.149 │
+        │ 2025-09-16 ┆ 0.149 │
+        │ 2025-09-17 ┆ 0.149 │
+        └────────────┴───────┘
     """
+    if has_null_args(start):  # Start must be provided
+        return pl.DataFrame()
     df = _fetch_data_from_url(BCSerie.SELIC_OVER, start, end)
-    return df.with_columns(
-        pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED),
-    ).to_pandas(use_pyarrow_extension_array=True)
+    return df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
 
 
-def selic_over(date: DateScalar) -> float:
+def selic_over(date: DateScalar) -> float | None:
     """
     Fetches the SELIC Over rate value for a specific date.
 
@@ -245,23 +256,25 @@ def selic_over(date: DateScalar) -> float:
         date: The reference date to fetch the SELIC Over rate for.
 
     Returns:
-        The SELIC Over rate as a float.
+        The SELIC Over rate as a float or None if not available.
 
     Examples:
         >>> from pyield import bc
         >>> bc.selic_over("31-05-2024")
         0.104
     """
+    if has_null_args(date):
+        return None
     df = selic_over_series(date, date)
-    if df.empty:
-        return float("nan")
-    return df.at[0, "Value"]
+    if df.is_empty():
+        return None
+    return df["Value"].item(0)
 
 
 def selic_target_series(
     start: DateScalar,
     end: DateScalar | None = None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Fetches the SELIC Target rate from the Brazilian Central Bank.
 
@@ -283,15 +296,23 @@ def selic_target_series(
     Examples:
         >>> from pyield import bc
         >>> bc.selic_target_series("31-05-2024", "31-05-2024")
-                Date  Value
-        0 2024-05-31  0.105
+        shape: (1, 2)
+        ┌────────────┬───────┐
+        │ Date       ┆ Value │
+        │ ---        ┆ ---   │
+        │ date       ┆ f64   │
+        ╞════════════╪═══════╡
+        │ 2024-05-31 ┆ 0.105 │
+        └────────────┴───────┘
     """
+    if has_null_args(start):  # Start must be provided
+        return pl.DataFrame()
     df = _fetch_data_from_url(BCSerie.SELIC_TARGET, start, end)
     df = df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df
 
 
-def selic_target(date: DateScalar) -> float:
+def selic_target(date: DateScalar) -> float | None:
     """
     Fetches the SELIC Target rate value for a specific date.
 
@@ -302,24 +323,26 @@ def selic_target(date: DateScalar) -> float:
         date: The reference date to fetch the SELIC Target rate for.
 
     Returns:
-        The SELIC Target rate as a float.
+        The SELIC Target rate as a float or None if not available.
 
     Examples:
         >>> from pyield import bc
         >>> bc.selic_target("31-05-2024")
         0.105
     """
+    if has_null_args(date):
+        return None
     df = selic_target_series(date, date)
-    if df.empty:
-        return float("nan")
-    return df.at[0, "Value"]
+    if df.is_empty():
+        return None
+    return df["Value"].item(0)
 
 
 def di_over_series(
     start: DateScalar,
     end: DateScalar | None = None,
     annualized: bool = True,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Fetches the DI (Interbank Deposit) rate from the Brazilian Central Bank.
 
@@ -343,15 +366,23 @@ def di_over_series(
 
     Examples:
         >>> from pyield import bc
-        >>> bc.di_over_series("29-01-2025")
-                Date   Value
-        0  2025-01-29  0.1215
-        1  2025-01-30  0.1315
-        2  2025-01-31  0.1315
-        3  2025-02-03  0.1315
-        ...
-
+        >>> # Returns all data since 29-01-2025
+        >>> bc.di_over_series("29-01-2025").head(5)  # Showing only first 5 rows
+        shape: (5, 2)
+        ┌────────────┬────────┐
+        │ Date       ┆ Value  │
+        │ ---        ┆ ---    │
+        │ date       ┆ f64    │
+        ╞════════════╪════════╡
+        │ 2025-01-29 ┆ 0.1215 │
+        │ 2025-01-30 ┆ 0.1315 │
+        │ 2025-01-31 ┆ 0.1315 │
+        │ 2025-02-03 ┆ 0.1315 │
+        │ 2025-02-04 ┆ 0.1315 │
+        └────────────┴────────┘
     """
+    if has_null_args(start):
+        return pl.DataFrame()
     df = _fetch_data_from_url(BCSerie.DI_OVER, start, end)
     if annualized:
         df = df.with_columns(
@@ -363,10 +394,10 @@ def di_over_series(
     else:
         df = df.with_columns(pl.col("Value").round(DECIMAL_PLACES_DAILY))
 
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df
 
 
-def di_over(date: DateScalar, annualized: bool = True) -> float:
+def di_over(date: DateScalar, annualized: bool = True) -> float | None:
     """
     Fetches the DI Over rate value for a specific date.
 
@@ -379,7 +410,7 @@ def di_over(date: DateScalar, annualized: bool = True) -> float:
             days per year), otherwise returns the daily rate.
 
     Returns:
-        The DI Over rate as a float.
+        The DI Over rate as a float or None if not available.
 
     Examples:
         >>> from pyield import bc
@@ -389,7 +420,9 @@ def di_over(date: DateScalar, annualized: bool = True) -> float:
         >>> bc.di_over("28-01-2025", annualized=False)
         0.00045513
     """
+    if has_null_args(date):
+        return None
     df = di_over_series(date, date, annualized)
-    if df.empty:
-        return float("nan")
-    return df.at[0, "Value"]
+    if df.is_empty():
+        return None
+    return df["Value"].item(0)

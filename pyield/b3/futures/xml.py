@@ -5,7 +5,6 @@ import zipfile
 from pathlib import Path
 from typing import Literal
 
-import pandas as pd
 import polars as pl
 import polars.selectors as cs
 import requests
@@ -15,6 +14,7 @@ import pyield.converters as cv
 from pyield import bday
 from pyield.fwd import forwards
 from pyield.retry import default_retry
+from pyield.types import DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -270,7 +270,7 @@ def _process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
 
     if contract_code in {"DI1", "DAP"}:
         forward_rates = forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
-        df = df.with_columns(pl.Series("ForwardRate", forward_rates))
+        df = df.with_columns(ForwardRate=forward_rates)
 
     return df.sort("ExpirationDate")
 
@@ -305,10 +305,10 @@ def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(selected_columns)
 
 
-def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pd.DataFrame:
+def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pl.DataFrame:
     if zip_file is None or zip_file.getbuffer().nbytes == 0:
         logger.warning("Empty XML zip file. Probably the date has no data.")
-        return pd.DataFrame()
+        return pl.DataFrame()
 
     xml_file = _extract_xml_from_zip(zip_file)
 
@@ -327,12 +327,12 @@ def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pd.DataFrame:
 
     df = _select_and_reorder_columns(df)
 
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df
 
 
 def fetch_xml_data(
-    date: dt.date, contract_code: str, source_type: Literal["PR", "SPR"]
-) -> pd.DataFrame:
+    date: DateScalar, contract_code: str, source_type: Literal["PR", "SPR"]
+) -> pl.DataFrame:
     """Fetches and processes an XML report from B3's website.
 
     Downloads a zipped XML report for a specific date and asset code
@@ -353,18 +353,21 @@ def fetch_xml_data(
         ValueError: If the `source_type` is invalid or if no data is
             available for the given date.
     """
+    if has_null_args(date):
+        logger.warning("No date provided. Returning empty DataFrame.")
+        return pl.DataFrame()
     try:
-        date = cv.convert_input_dates(date)
+        date = cv.convert_dates(date)
         zip_file = _get_file_from_url(date, source_type)
         df = process_zip_file(zip_file, contract_code)
     except ValueError as e:
         logger.warning(f"Error fetching XML data: {e}. Returning empty DataFrame.")
-        return pd.DataFrame()
+        return pl.DataFrame()
 
     return df
 
 
-def read_xml_report(file_path: Path, contract_code: str) -> pd.DataFrame:
+def read_xml_report(file_path: Path, contract_code: str) -> pl.DataFrame:
     """Reads and processes an XML report from a local file.
 
     Reads a zipped XML report from the specified file path, extracts the

@@ -1,14 +1,19 @@
+import logging
+
 import requests
 
-from pyield.converters import DateScalar, convert_input_dates
+from pyield.converters import convert_dates
 from pyield.retry import default_retry
+from pyield.types import DateScalar, has_null_args
+
+logger = logging.getLogger(__name__)
 
 
 @default_retry
 def _get_text(date: DateScalar) -> str:
     # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
-    date = convert_input_dates(date)
+    date = convert_dates(date)
     url_file = f"{date.strftime('%Y%m%d')}APC238"
     url_vna = url_base + url_file
 
@@ -54,7 +59,7 @@ def _validate_vna_values(vnas: list[float]) -> float:
     return vna_value
 
 
-def vna_lft(date: DateScalar) -> float:
+def vna_lft(date: DateScalar) -> float | None:
     """Retrieves the VNA (Valor Nominal Atualizado) from the BCB for a given date.
 
     This function fetches daily data from the BCB website, extracts the
@@ -68,7 +73,8 @@ def vna_lft(date: DateScalar) -> float:
             `convert_input_dates` function.
 
     Returns:
-        float: The VNA (Valor Nominal Atualizado) value for the specified date.
+        float | None: The VNA (Valor Nominal Atualizado) value for the specified date,
+            or None if the date is invalid or data is not available.
 
     Examples:
         >>> from pyield import bc
@@ -85,6 +91,9 @@ def vna_lft(date: DateScalar) -> float:
             fails. This could be due to network issues, website unavailability,
             or the requested data not being found for the given date.
     """
+    if has_null_args(date):
+        logger.warning("No valid date provided. Returning NaN.")
+        return None
     text = _get_text(date)
     table_text = _extract_vna_table_text(text)
     table_lines = _parse_vna_table_lines(table_text)

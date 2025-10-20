@@ -1,15 +1,15 @@
-import datetime as dt
+import math
 from collections.abc import Callable
 
-import numpy as np
 import pandas as pd
+import polars as pl
 
+import pyield.converters as cv
+import pyield.interpolator as ip
 from pyield import anbima, bday
-from pyield import converters as cv
-from pyield import interpolator as ip
-from pyield.b3 import di1
-from pyield.converters import DateScalar
-from pyield.tn import pre, tools
+from pyield.tn import tools
+from pyield.tn.pre import di_spreads as pre_di_spreads
+from pyield.types import DateArray, DateScalar, FloatArray, has_null_args
 
 """
 Constants calculated as per Anbima Rules
@@ -24,7 +24,7 @@ COUPON_PMT = 48.80885
 FINAL_PMT = 1048.80885  # 1000 + 48.80885
 
 
-def data(date: DateScalar) -> pd.DataFrame:
+def data(date: DateScalar) -> pl.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
@@ -32,22 +32,29 @@ def data(date: DateScalar) -> pd.DataFrame:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
+        pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
 
     Examples:
         >>> from pyield import ntnf
         >>> ntnf.data("23-08-2024")
-          ReferenceDate BondType  SelicCode  ...   AskRate IndicativeRate   DIRate
-        0    2024-08-23    NTN-F     950199  ...  0.107524       0.107692  0.10823
-        1    2024-08-23    NTN-F     950199  ...  0.114948       0.115109  0.11467
-        2    2024-08-23    NTN-F     950199  ...   0.11621       0.116337   0.1156
-        3    2024-08-23    NTN-F     950199  ...  0.116958       0.117008  0.11575
-        ...
-    """
+        shape: (6, 14)
+        ┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬─────────┐
+        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate  │
+        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---     │
+        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64      ┆ f64      ┆ f64            ┆ f64     │
+        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪══════════╪══════════╪════════════════╪═════════╡
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2014-01-10    ┆ … ┆ 0.107864 ┆ 0.107524 ┆ 0.107692       ┆ 0.10823 │
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2016-01-15    ┆ … ┆ 0.11527  ┆ 0.114948 ┆ 0.115109       ┆ 0.11467 │
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2018-01-05    ┆ … ┆ 0.116468 ┆ 0.11621  ┆ 0.116337       ┆ 0.1156  │
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2020-01-10    ┆ … ┆ 0.117072 ┆ 0.116958 ┆ 0.117008       ┆ 0.11575 │
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2022-01-07    ┆ … ┆ 0.116473 ┆ 0.116164 ┆ 0.116307       ┆ 0.11554 │
+        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2024-01-05    ┆ … ┆ 0.116662 ┆ 0.116523 ┆ 0.116586       ┆ 0.11531 │
+        └───────────────┴──────────┴───────────┴───────────────┴───┴──────────┴──────────┴────────────────┴─────────┘
+    """  # noqa
     return anbima.tpf_data(date, "NTN-F")
 
 
-def maturities(date: DateScalar) -> pd.Series:
+def maturities(date: DateScalar) -> pl.Series:
     """
     Fetch the NTN-F bond maturities available for the given reference date.
 
@@ -55,43 +62,29 @@ def maturities(date: DateScalar) -> pd.Series:
         date (DateScalar): The reference date for fetching the data.
 
     Returns:
-        pd.Series: A Series of NTN-F bond maturities available for the reference date.
+        pl.Series: A Series of NTN-F bond maturities available for the reference date.
 
     Examples:
         >>> from pyield import ntnf
         >>> ntnf.maturities("23-08-2024")
-        0   2025-01-01
-        1   2027-01-01
-        2   2029-01-01
-        3   2031-01-01
-        4   2033-01-01
-        5   2035-01-01
-        dtype: date32[day][pyarrow]
+        shape: (6,)
+        Series: 'MaturityDate' [date]
+        [
+            2025-01-01
+            2027-01-01
+            2029-01-01
+            2031-01-01
+            2033-01-01
+            2035-01-01
+        ]
     """
-    df_rates = data(date)
-    s_maturities = df_rates["MaturityDate"]
-    s_maturities.name = None
-    return s_maturities
-
-
-def _check_maturity_date(maturity: dt.date) -> None:
-    """
-    Check if the maturity date is a valid NTN-F maturity date.
-
-    Args:
-        maturity (dt.date): The maturity date to be checked.
-
-    Raises:
-        ValueError: If the maturity date is not the 1st of January.
-    """
-    if maturity.day != 1 or maturity.month not in COUPON_MONTHS:
-        raise ValueError("NTN-F maturity date must be the 1st of January.")
+    return data(date)["MaturityDate"]
 
 
 def payment_dates(
     settlement: DateScalar,
     maturity: DateScalar,
-) -> pd.Series:
+) -> pl.Series:
     """
     Generate all remaining coupon dates between a settlement date and a maturity date.
     The dates are exclusive for the settlement date and inclusive for the maturity date.
@@ -103,22 +96,28 @@ def payment_dates(
         maturity (DateScalar): The maturity date.
 
     Returns:
-        pd.Series: A Series containing the coupon dates between the settlement
+        pl.Series: A Series containing the coupon dates between the settlement
             (exclusive) and maturity (inclusive) dates.
 
     Examples:
         >>> from pyield import ntnf
-        >>> ntnf.payment_dates("15-05-2024", "01-01-2025")
-        0   2024-07-01
-        1   2025-01-01
-        dtype: date32[day][pyarrow]
+        >>> ntnf.payment_dates("15-05-2024", "01-01-2027")
+        shape: (6,)
+        Series: '' [date]
+        [
+            2024-07-01
+            2025-01-01
+            2025-07-01
+            2026-01-01
+            2026-07-01
+            2027-01-01
+        ]
     """
-    # Validate and normalize dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
-
-    # Check if the maturity date is valid
-    _check_maturity_date(maturity)
+    if has_null_args(settlement, maturity):
+        return pl.Series(dtype=pl.Date)
+    # Normalize dates
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     # Check if maturity date is after the start date
     if maturity <= settlement:
@@ -135,16 +134,14 @@ def payment_dates(
         coupon_date -= pd.DateOffset(months=6)
         coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
 
-    # Return the coupon dates as a sorted Series
-    coupon_dates = pd.Series(coupon_dates).astype("date32[pyarrow]")
-    return coupon_dates.sort_values().reset_index(drop=True)
+    return pl.Series(coupon_dates).sort()
 
 
 def cash_flows(
     settlement: DateScalar,
     maturity: DateScalar,
     adj_payment_dates: bool = False,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Generate the cash flows for the NTN-F bond between the settlement (exclusive) and
     maturity dates (inclusive). The cash flows are the coupon payments and the final
@@ -157,31 +154,45 @@ def cash_flows(
             business day.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
+        pl.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
 
     Examples:
         >>> from pyield import ntnf
-        >>> ntnf.cash_flows("15-05-2024", "01-01-2025")
-          PaymentDate    CashFlow
-        0  2024-07-01    48.80885
-        1  2025-01-01  1048.80885
+        >>> ntnf.cash_flows("15-05-2024", "01-01-2027")
+        shape: (6, 2)
+        ┌─────────────┬────────────┐
+        │ PaymentDate ┆ CashFlow   │
+        │ ---         ┆ ---        │
+        │ date        ┆ f64        │
+        ╞═════════════╪════════════╡
+        │ 2024-07-01  ┆ 48.80885   │
+        │ 2025-01-01  ┆ 48.80885   │
+        │ 2025-07-01  ┆ 48.80885   │
+        │ 2026-01-01  ┆ 48.80885   │
+        │ 2026-07-01  ┆ 48.80885   │
+        │ 2027-01-01  ┆ 1048.80885 │
+        └─────────────┴────────────┘
     """
-    # Validate input dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
-    _check_maturity_date(maturity)
+    if has_null_args(settlement, maturity):
+        return pl.DataFrame()
+    # Normalize input dates
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
-    # Get the coupon payment dates between the settlement and maturity dates
+    # Get the payment dates between the settlement and maturity dates
     pay_dates = payment_dates(settlement, maturity)
 
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    cf_values = np.where(pay_dates == maturity, FINAL_PMT, COUPON_PMT)
-
-    df = pd.DataFrame(data={"PaymentDate": pay_dates, "CashFlow": cf_values})
+    df = pl.DataFrame(data={"PaymentDate": pay_dates}).with_columns(
+        pl.when(pl.col("PaymentDate") == maturity)
+        .then(FINAL_PMT)
+        .otherwise(COUPON_PMT)
+        .alias("CashFlow")
+    )
 
     if adj_payment_dates:
-        df["PaymentDate"] = bday.offset(df["PaymentDate"], 0)
-
+        adj_pay_dates = bday.offset(pay_dates, 0)
+        df = df.with_columns(PaymentDate=adj_pay_dates)
     return df
 
 
@@ -189,7 +200,7 @@ def price(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float:
+) -> float | None:
     """
     Calculate the NTN-F price using Anbima rules, which corresponds to the present
         value of the cash flows discounted at the given yield to maturity rate (YTM).
@@ -201,7 +212,7 @@ def price(
             present value of the cash flows.
 
     Returns:
-        float: The NTN-F price using Anbima rules.
+        float | None: The NTN-F price using Anbima rules.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -214,6 +225,8 @@ def price(
         >>> ntnf.price("05-07-2024", "01-01-2035", 0.11921)
         895.359254
     """
+    if has_null_args(settlement, maturity, rate):
+        return None
     cf_df = cash_flows(settlement, maturity)
     cf_values = cf_df["CashFlow"]
     bdays = bday.count(settlement, cf_df["PaymentDate"])
@@ -227,12 +240,12 @@ def price(
 
 def spot_rates(  # noqa
     settlement: DateScalar,
-    ltn_maturities: pd.Series,
-    ltn_rates: pd.Series,
-    ntnf_maturities: pd.Series,
-    ntnf_rates: pd.Series,
+    ltn_maturities: DateArray,
+    ltn_rates: FloatArray,
+    ntnf_maturities: DateArray,
+    ntnf_rates: FloatArray,
     show_coupons: bool = False,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Calculate the spot rates (zero coupon rates) for NTN-F bonds using the bootstrap
     method.
@@ -247,16 +260,17 @@ def spot_rates(  # noqa
 
     Args:
         settlement (DateScalar): The settlement date for the spot rates calculation.
-        ltn_maturities (pd.Series): The LTN known maturities.
-        ltn_rates (pd.Series): The LTN known rates.
-        ntnf_maturities (pd.Series): The NTN-F known maturities.
-        ntnf_rates (pd.Series): The NTN-F known rates.
+        ltn_maturities (DateArray): The LTN known maturities.
+        ltn_rates (FloatArray): The LTN known rates.
+        ntnf_maturities (DateArray): The NTN-F known maturities.
+        ntnf_rates (FloatArray): The NTN-F known rates.
         show_coupons (bool): If True, show also July rates corresponding to the
             coupon payments. Defaults to False.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "BDToMat", "MaturityDate" and "SpotRate".
-            "BDToMat" is the business days from the settlement date to the maturities.
+        pl.DataFrame: DataFrame with columns "MaturityDate", "BDToMat" and
+            "SpotRate". "BDToMat" is the business days from the settlement date
+            to the maturities.
 
     Examples:
         >>> from pyield import ntnf, ltn
@@ -269,18 +283,34 @@ def spot_rates(  # noqa
         ...     ntnf_maturities=df_ntnf["MaturityDate"],
         ...     ntnf_rates=df_ntnf["IndicativeRate"],
         ... )
-          MaturityDate  BDToMat  SpotRate
-        0   2025-01-01       83  0.108837
-        1   2027-01-01      584  0.119981
-        2   2029-01-01     1083  0.122113
-        3   2031-01-01     1584  0.122231
-        4   2033-01-01     2088  0.121355
-        5   2035-01-01     2587  0.121398
+        shape: (6, 3)
+        ┌──────────────┬─────────┬──────────┐
+        │ MaturityDate ┆ BDToMat ┆ SpotRate │
+        │ ---          ┆ ---     ┆ ---      │
+        │ date         ┆ i64     ┆ f64      │
+        ╞══════════════╪═════════╪══════════╡
+        │ 2025-01-01   ┆ 83      ┆ 0.108837 │
+        │ 2027-01-01   ┆ 584     ┆ 0.119981 │
+        │ 2029-01-01   ┆ 1083    ┆ 0.122113 │
+        │ 2031-01-01   ┆ 1584    ┆ 0.122231 │
+        │ 2033-01-01   ┆ 2088    ┆ 0.121355 │
+        │ 2035-01-01   ┆ 2587    ┆ 0.121398 │
+        └──────────────┴─────────┴──────────┘
     """
-    # Process and validate the input data
-    settlement = cv.convert_input_dates(settlement)
+    if has_null_args(
+        settlement, ltn_maturities, ltn_rates, ntnf_maturities, ntnf_rates
+    ):
+        return pl.DataFrame()
+    # 1. Converter e normalizar inputs para Polars
+    settlement = cv.convert_dates(settlement)
+    ltn_maturities = cv.convert_dates(ltn_maturities)
+    ntnf_maturities = cv.convert_dates(ntnf_maturities)
+    if not isinstance(ltn_rates, pl.Series):
+        ltn_rates = pl.Series(ltn_rates).cast(pl.Float64)
+    if not isinstance(ntnf_rates, pl.Series):
+        ntnf_rates = pl.Series(ntnf_rates).cast(pl.Float64)
 
-    # Create flat forward interpolators for LTN and NTN-F rates
+    # 2. Criar interpoladores (aceitam pl.Series diretamente)
     ltn_rate_interpolator = ip.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, ltn_maturities),
@@ -292,84 +322,111 @@ def spot_rates(  # noqa
         known_rates=ntnf_rates,
     )
 
-    # Generate all coupon dates up to the last NTN-F maturity date
-    all_coupon_dates = payment_dates(settlement, ntnf_maturities.max())
+    # 3. Gerar todas as datas de cupom até o último vencimento NTN-F
+    last_maturity = ntnf_maturities.max()
+    all_coupon_dates = payment_dates(settlement, last_maturity)
 
-    # Create a DataFrame with all coupon dates and the corresponding YTM
-    df = pd.DataFrame(data=all_coupon_dates, columns=["MaturityDate"])
-    df["BDToMat"] = bday.count(start=settlement, end=df["MaturityDate"])
-    df["BYears"] = df["BDToMat"] / 252
-    df["Coupon"] = COUPON_PMT
-    df["YTM"] = df["BDToMat"].apply(ntnf_rate_interpolator)
+    # 4. Construir DataFrame inicial
+    bdays_to_mat = bday.count(settlement, all_coupon_dates)
+    df = pl.DataFrame(
+        {
+            "MaturityDate": all_coupon_dates,
+            "BDToMat": bdays_to_mat,
+        }
+    ).with_columns(
+        BYears=pl.col("BDToMat") / 252,
+        Coupon=COUPON_PMT,
+        YTM=pl.col("BDToMat").map_elements(
+            ntnf_rate_interpolator, return_dtype=pl.Float64
+        ),
+    )
 
-    # The Bootstrap loop to calculate spot rates
-    for index, row in df.iterrows():
-        if row["MaturityDate"] <= ltn_maturities.max():
-            # Use LTN rates for maturities before the last LTN maturity date
-            df.at[index, "SpotRate"] = ltn_rate_interpolator(row["BDToMat"])
+    # 5. Loop de bootstrap (iterativo por dependência sequencial)
+    last_ltn_maturity = ltn_maturities.max()
+    maturities_list = df["MaturityDate"]
+    bdays_list = df["BDToMat"]
+    byears_list = df["BYears"]
+    ytm_list = df["YTM"]
+
+    solved_spot_rates: list[float] = []
+    spot_map: dict[pl.Date, float] = {}
+
+    for i in range(len(df)):
+        mat_date = maturities_list[i]
+        bdays_val = int(bdays_list[i])
+        byears_val = float(byears_list[i])
+        ytm_val = float(ytm_list[i])
+
+        # Caso esteja antes (ou igual) ao último vencimento LTN: usar interpolador LTN
+        if mat_date <= last_ltn_maturity:
+            spot_rate = ltn_rate_interpolator(bdays_val)
+            solved_spot_rates.append(spot_rate)
+            spot_map[mat_date] = spot_rate
             continue
 
-        # Calculate the present value of the coupon payments
-        cf_dates = payment_dates(settlement, row["MaturityDate"])[:-1]  # noqa
-        cf_df = df.query("MaturityDate in @cf_dates").reset_index(drop=True)
+        # Datas de cupom (exclui último pagamento) para este vencimento
+        cf_dates = payment_dates(settlement, mat_date)[:-1]
+        if len(cf_dates) == 0:
+            # Caso improvável, mas protege contra divisão por zero mais adiante
+            spot_rate = None
+            solved_spot_rates.append(spot_rate)
+            spot_map[mat_date] = spot_rate
+            continue
+
+        # Recuperar SpotRates já solucionadas para estes cupons
+        cf_spot_rates = [spot_map[d] for d in cf_dates]
+        cf_periods = bday.count(settlement, cf_dates) / 252
+        cf_cash_flows = [COUPON_PMT] * len(cf_dates)
+
         cf_present_value = tools.calculate_present_value(
-            cash_flows=cf_df["Coupon"],
-            rates=cf_df["SpotRate"],
-            periods=cf_df["BDToMat"] / 252,
+            cash_flows=pl.Series(cf_cash_flows),
+            rates=pl.Series(cf_spot_rates),
+            periods=cf_periods,
         )
 
-        bond_price = price(settlement, row["MaturityDate"], row["YTM"])
+        bond_price = price(settlement, mat_date, ytm_val)
         price_factor = FINAL_PMT / (bond_price - cf_present_value)
-        df.at[index, "SpotRate"] = price_factor ** (1 / row["BYears"]) - 1
+        spot_rate = price_factor ** (1 / byears_val) - 1
 
-    df = df[["MaturityDate", "BDToMat", "SpotRate"]].copy()
-    df["SpotRate"] = df["SpotRate"].astype("float64[pyarrow]")
+        solved_spot_rates.append(spot_rate)
+        spot_map[mat_date] = spot_rate
 
+    # 6. Anexar coluna SpotRate
+    df = df.with_columns(SpotRate=pl.Series(solved_spot_rates, dtype=pl.Float64))
+
+    # 7. Selecionar colunas finais
+    df = df.select(["MaturityDate", "BDToMat", "SpotRate"])
+
+    # 8. Remover cupons (Julho) se não solicitado
     if not show_coupons:
-        df = df.query("MaturityDate in @ntnf_maturities").reset_index(drop=True)
+        df = df.filter(pl.col("MaturityDate").is_in(ntnf_maturities.implode()))
 
     return df
 
 
-def di_spreads(date: DateScalar) -> pd.DataFrame:
-    """
-    Calculates the DI spread for the NTN-F based on ANBIMA's indicative rates.
+def _bisection_method(
+    func: Callable[[float], float],
+    a: float,
+    b: float,
+    tol: float = 1e-8,
+    maxiter: int = 100,
+) -> float:
+    """Bisection method for root finding.
 
-    This function fetches the indicative rates for the NTN-F bonds and the DI futures
-    rates and calculates the spread between these rates in basis points.
-
-    Parameters:
-        date (DateScalar): The reference date for the spread calculation.
+    Args:
+        func (Callable[[float], float]): Function for which the root is sought. Must
+            accept a single float and return a float.
+        a (float): Lower bound of the interval.
+        b (float): Upper bound of the interval.
+        tol (float): Tolerance for convergence. Defaults to 1e-8.
+        maxiter (int): Maximum number of iterations allowed. Defaults to 100.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "MaturityDate", "DISpread".
+        float: Approximate root of ``func`` within the interval ``[a, b]``.
 
-    Examples:
-        >>> from pyield import ntnf
-        >>> df_spreads = ntnf.di_spreads("23-08-2024")
-        >>> df_spreads["DISpread"] = df_spreads["DISpread"] * 10_000  # Convert to bps
-        >>> df_spreads
-          MaturityDate  DISpread
-        0   2025-01-01     -5.38
-        1   2027-01-01      4.39
-        2   2029-01-01      7.37
-        3   2031-01-01     12.58
-        4   2033-01-01      7.67
-        5   2035-01-01     12.76
-
+    Raises:
+        ValueError: If ``func`` does not change sign in the interval ``[a, b]``.
     """
-    # Fetch DI Spreads for the reference date
-    df = pre.pre_spreads(date)
-    df = (
-        df.query("BondType == 'NTN-F'")
-        .sort_values(["MaturityDate"])
-        .reset_index(drop=True)
-    )
-    return df[["MaturityDate", "DISpread"]]
-
-
-def _bisection_method(func, a, b, tol=1e-8, maxiter=100):
-    """Bisection method for root finding."""
     fa, fb = func(a), func(b)
     if fa * fb > 0:
         raise ValueError("Function does not change sign in the interval.")
@@ -377,7 +434,7 @@ def _bisection_method(func, a, b, tol=1e-8, maxiter=100):
     for _ in range(maxiter):
         midpoint = (a + b) / 2
         fmid = func(midpoint)
-        if np.abs(fmid) < tol or (b - a) / 2 < tol:
+        if abs(fmid) < tol or (b - a) / 2 < tol:
             return midpoint
         if fmid * fa < 0:
             b, fb = midpoint, fmid
@@ -416,7 +473,7 @@ def _solve_spread(
         p_solution = _bisection_method(price_difference_func, a, b)
     except ValueError:
         # If no solution is found, return NaN
-        p_solution = float("NaN")
+        p_solution = float("nan")
 
     return p_solution
 
@@ -425,10 +482,10 @@ def di_net_spread(  # noqa
     settlement: DateScalar,
     ntnf_maturity: DateScalar,
     ntnf_rate: float,
-    di_expirations: pd.Series,
-    di_rates: pd.Series,
+    di_expirations: DateScalar,
+    di_rates: FloatArray,
     initial_guess: float | None = None,
-) -> float:
+) -> float | None:
     """
     Calculate the net DI spread for a bond given the YTM and the DI rates.
 
@@ -442,18 +499,18 @@ def di_net_spread(  # noqa
         settlement (DateScalar): The settlement date to calculate the spread.
         ntnf_maturity (DateScalar): The bond maturity date.
         ntnf_rate (float): The yield to maturity (YTM) of the bond.
-        di_rates (pd.Series): A Series of DI rates.
-        di_expirations (pd.Series): A list or Series of DI expiration dates.
+        di_rates (FloatArray): A Series of DI rates.
+        di_expirations (DateArray): A list or Series of DI expiration dates.
         initial_guess (float, optional): An initial guess for the spread. Defaults to
             None. A good initial guess is the DI gross spread for the bond.
 
     Returns:
-        float: The net DI spread in decimal format (e.g., 0.0012 for 12 bps).
+        float | None: The net DI spread in decimal format (e.g., 0.0012 for 12 bps).
 
     Examples:
         # Obs: only some of the DI rates will be used in the example.
-        >>> exp_dates = pd.to_datetime(["2025-01-01", "2030-01-01", "2035-01-01"])
-        >>> di_rates = pd.Series([0.10823, 0.11594, 0.11531])
+        >>> exp_dates = ["2025-01-01", "2030-01-01", "2035-01-01"]
+        >>> di_rates = [0.10823, 0.11594, 0.11531]
         >>> spread = di_net_spread(
         ...     settlement="23-08-2024",
         ...     ntnf_maturity="01-01-2035",
@@ -464,36 +521,53 @@ def di_net_spread(  # noqa
         >>> round(spread * 10_000, 2)  # Convert to bps for display
         12.13
     """
-    # Create an interpolator for the DI rates using the flat-forward method
-    settlement = cv.convert_input_dates(settlement)
-    ntnf_maturity = cv.convert_input_dates(ntnf_maturity)
+    # 1. Validação e conversão de inputs
+    if has_null_args(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
+        return None
+    settlement = cv.convert_dates(settlement)
+    ntnf_maturity = cv.convert_dates(ntnf_maturity)
+    di_expirations = cv.convert_dates(di_expirations)
 
+    # Force di_rates to be a Polars Series
+    if not isinstance(di_rates, pl.Series):
+        di_rates = pl.Series(di_rates)
+
+    # 2. Validação dos inputs de DI
+    if len(di_rates) != len(di_expirations):
+        raise ValueError("di_rates and di_expirations must have the same length.")
+
+    # 3. Criação do interpolador
     ff_interpolator = ip.Interpolator(
         "flat_forward",
         bday.count(settlement, di_expirations),
         di_rates,
     )
 
-    # Ensure the DI data is valid
-    if len(di_rates) != len(di_expirations):
-        raise ValueError("di_rates and di_expirations must have the same length.")
-    if len(di_rates) == 0:
-        return float("NaN")
+    # 4. Geração dos fluxos de caixa do NTN-F
+    df = cash_flows(settlement, ntnf_maturity)
 
-    # Calculate cash flows and business days between settlement and payment dates
-    df = cash_flows(settlement, ntnf_maturity).reset_index()
-    df["BDToMat"] = bday.count(settlement, df["PaymentDate"])
+    bdays_to_payment = bday.count(settlement, df["PaymentDate"])
+    byears_to_payment = bdays_to_payment / 252
 
-    byears = bday.count(settlement, df["PaymentDate"]) / 252
-    di_interp = df["BDToMat"].apply(ff_interpolator)
+    df = df.with_columns(
+        BDaysToPayment=bdays_to_payment,
+    ).with_columns(
+        DIRateInterp=pl.col("BDaysToPayment").map_elements(
+            ff_interpolator, return_dtype=pl.Float64
+        ),
+    )
+
+    # 5. Extração dos dados para o cálculo numérico
     bond_price = price(settlement, ntnf_maturity, ntnf_rate)
     bond_cash_flows = df["CashFlow"]
+    di_interp = df["DIRateInterp"]
 
-    def price_difference(p):
-        # Difference between the bond's price and its discounted cash flows
-        return (bond_cash_flows / (1 + di_interp + p) ** byears).sum() - bond_price
+    # 6. Função de diferença de preço para o solver
+    def price_difference(p: float) -> float:
+        discounted_cf = bond_cash_flows / (1 + di_interp + p) ** byears_to_payment
+        return discounted_cf.sum() - bond_price
 
-    # Solve for the spread that zeroes the price difference using the bisection method
+    # 7. Resolver para o spread
     return _solve_spread(price_difference, initial_guess)
 
 
@@ -501,9 +575,9 @@ def premium(
     settlement: DateScalar,
     ntnf_maturity: DateScalar,
     ntnf_rate: float,
-    di_expirations: pd.Series,
-    di_rates: pd.Series,
-) -> float:
+    di_expirations: DateScalar,
+    di_rates: FloatArray,
+) -> float | None:
     """
     Calculate the premium of an NTN-F bond over DI rates.
 
@@ -516,18 +590,18 @@ def premium(
         settlement (DateScalar): The settlement date to calculate the premium.
         ntnf_maturity (DateScalar): The maturity date of the NTN-F bond.
         ntnf_rate (float): The yield to maturity (YTM) of the NTN-F bond.
-        di_expirations (pd.Series): Series containing the expiration dates for DI rates.
-        di_rates (pd.Series): Series containing the DI rates corresponding to
+        di_expirations (DateScalar): Series with the expiration dates for the DI.
+        di_rates (FloatArray): Series containing the DI rates corresponding to
             the expiration dates.
 
     Returns:
-        float: The premium of the NTN-F bond over the DI curve, expressed as a
+        float | None: The premium of the NTN-F bond over the DI curve, expressed as a
         factor.
 
     Examples:
         >>> # Obs: only some of the DI rates will be used in the example.
-        >>> exp_dates = pd.to_datetime(["2025-01-01", "2030-01-01", "2035-01-01"])
-        >>> di_rates = pd.Series([0.10823, 0.11594, 0.11531])
+        >>> exp_dates = ["2025-01-01", "2030-01-01", "2035-01-01"]
+        >>> di_rates = [0.10823, 0.11594, 0.11531]
         >>> premium(
         ...     settlement="23-08-2024",
         ...     ntnf_maturity="01-01-2035",
@@ -542,12 +616,17 @@ def premium(
           the present value of cash flows for the NTN-F bond using DI rates.
 
     """
-    ntnf_maturity = cv.convert_input_dates(ntnf_maturity)
-    settlement = cv.convert_input_dates(settlement)
+    if has_null_args(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
+        return None
+    # 1. Validação e conversão de datas (padrão consistente)
+    settlement = cv.convert_dates(settlement)
+    ntnf_maturity = cv.convert_dates(ntnf_maturity)
+    di_expirations = cv.convert_dates(di_expirations)
+    if not isinstance(di_rates, pl.Series):
+        di_rates = pl.Series(di_rates)
 
-    df = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
-    df["BDToMat"] = bday.count(settlement, df["PaymentDate"])
-    df["BYears"] = df["BDToMat"] / 252
+    # 2. Preparação do DataFrame de fluxo de caixa e interpolador
+    df_cf = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
 
     ff_interpolator = ip.Interpolator(
         "flat_forward",
@@ -555,75 +634,43 @@ def premium(
         di_rates,
     )
 
-    df["DIRate"] = df["BDToMat"].apply(ff_interpolator)
+    # 3. Calcular dados externos (dias úteis) antes de usar no with_columns
+    bdays_to_payment = bday.count(settlement, df_cf.get_column("PaymentDate"))
 
-    # Calculate the present value of the cash flows using the DI rate
+    # 4. Construir o DataFrame final com todas as colunas necessárias
+    df = df_cf.with_columns(BDToMat=bdays_to_payment).with_columns(
+        BYears=pl.col("BDToMat") / 252,
+        DIRate=pl.col("BDToMat").map_elements(ff_interpolator, return_dtype=pl.Float64),
+    )
+
+    # 5. Calcular o preço do título usando as taxas DI interpoladas
     bond_price = tools.calculate_present_value(
         cash_flows=df["CashFlow"],
         rates=df["DIRate"],
-        periods=df["BDToMat"] / 252,
+        periods=df["BYears"],
     )
 
-    # Calculate the rate corresponding to this price
-    def price_difference(ytm):
-        # The ytm that zeroes the price difference
-        return (df["CashFlow"] / (1 + ytm) ** df["BYears"]).sum() - bond_price
+    def price_difference(ytm: float) -> float:
+        # A YTM que zera a diferença de preço
+        discounted_cf = df["CashFlow"] / (1 + ytm) ** df["BYears"]
+        return discounted_cf.sum() - bond_price
 
-    # Solve for the YTM that zeroes the price difference
+    # 7. Resolver para a YTM implícita
     di_ytm = _solve_spread(price_difference, ntnf_rate)
 
+    if math.isnan(di_ytm):
+        return float("nan")
+
+    # 8. Calcular o prêmio final
     factor_ntnf = (1 + ntnf_rate) ** (1 / 252)
     factor_di = (1 + di_ytm) ** (1 / 252)
-    premium_np = (factor_ntnf - 1) / (factor_di - 1)
-    return float(premium_np)
 
+    # Evitar divisão por zero se o fator DI for 1
+    if factor_di == 1:
+        return float("inf") if factor_ntnf > 1 else 0.0
 
-def historical_premium(
-    date: DateScalar,
-    maturity: DateScalar,
-) -> float:
-    date = cv.convert_input_dates(date)
-    maturity = cv.convert_input_dates(maturity)
-
-    df_ntnf = data(date)
-    if df_ntnf.empty:
-        return float("NaN")
-
-    ntnf_ytms = df_ntnf.query("MaturityDate == @maturity")["IndicativeRate"]
-    if ntnf_ytms.empty:
-        return float("NaN")
-    ntnf_ytm = float(ntnf_ytms.iloc[0])
-
-    df = cash_flows(date, maturity, adj_payment_dates=True)
-    df["BDToMat"] = bday.count(date, df["PaymentDate"])
-    df["BYears"] = df["BDToMat"] / 252
-    df["ReferenceDate"] = date
-
-    df["DIRate"] = di1.interpolate_rates(
-        dates=df["ReferenceDate"],
-        expirations=df["PaymentDate"],
-        extrapolate=True,
-    )
-
-    # Calculate the present value of the cash flows using the DI rate
-    bond_price = tools.calculate_present_value(
-        cash_flows=df["CashFlow"],
-        rates=df["DIRate"],
-        periods=df["BDToMat"] / 252,
-    )
-
-    # Calculate the rate corresponding to this price
-    def price_difference(ytm):
-        # The ytm that zeroes the price difference
-        return (df["CashFlow"] / (1 + ytm) ** df["BYears"]).sum() - bond_price
-
-    # Solve for the YTM that zeroes the price difference
-    di_ytm = _solve_spread(price_difference, ntnf_ytm)
-
-    factor_ntnf = (1 + ntnf_ytm) ** (1 / 252)
-    factor_di = (1 + di_ytm) ** (1 / 252)
-
-    return float((factor_ntnf - 1) / (factor_di - 1))
+    premium_val = (factor_ntnf - 1) / (factor_di - 1)
+    return premium_val
 
 
 def duration(
@@ -647,27 +694,24 @@ def duration(
         >>> ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
         6.32854218039796
     """
-    # Return NaN if any input is NaN
-    if any(pd.isna(x) for x in [settlement, maturity, rate]):
-        return float("NaN")
-
-    # Validate and normalize input dates
-    settlement = cv.convert_input_dates(settlement)
-    maturity = cv.convert_input_dates(maturity)
+    if has_null_args(settlement, maturity, rate):
+        return None
+    # Normalize inputs
+    settlement = cv.convert_dates(settlement)
+    maturity = cv.convert_dates(maturity)
 
     df = cash_flows(settlement, maturity)
-    df["BY"] = bday.count(settlement, df["PaymentDate"]) / 252
-    df["DCF"] = df["CashFlow"] / (1 + rate) ** df["BY"]
-    duration = (df["DCF"] * df["BY"]).sum() / df["DCF"].sum()
-    # Return the duration as native float
-    return float(duration)
+    byears = bday.count(settlement, df["PaymentDate"]) / 252
+    dcf = df["CashFlow"] / (1 + rate) ** byears
+    duration = (dcf * byears).sum() / dcf.sum()
+    return duration
 
 
 def dv01(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float:
+) -> float | None:
     """
     Calculate the DV01 (Dollar Value of 01) for an NTN-F in R$.
 
@@ -682,7 +726,7 @@ def dv01(
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
 
     Returns:
-        float: The DV01 value, representing the price change for a 1 basis point
+        float | None: The DV01 value, representing the price change for a 1 basis point
             increase in yield.
 
     Examples:
@@ -690,6 +734,52 @@ def dv01(
         >>> ntnf.dv01("26-03-2025", "01-01-2035", 0.151375)
         0.39025200000003224
     """
+    if has_null_args(settlement, maturity, rate):
+        return None
     price1 = price(settlement, maturity, rate)
     price2 = price(settlement, maturity, rate + 0.0001)
     return price1 - price2
+
+
+def di_spreads(date: DateScalar, bps: bool = False) -> pl.DataFrame:
+    """
+    Calcula o DI Spread para títulos prefixados (LTN e NTN-F) em uma data de referência.
+
+    Definição do spread (forma bruta):
+        DISpread_raw = IndicativeRate - SettlementRate
+
+    Quando ``bps=False`` a coluna retorna essa diferença em formato decimal
+    (ex: 0.000439 ≈ 4.39 bps). Quando ``bps=True`` o valor é automaticamente
+    multiplicado por 10_000 e exibido diretamente em basis points.
+
+    Args:
+        date (DateScalar): Data de referência para buscar as taxas.
+        bps (bool): Se True, retorna DISpread já convertido em basis points.
+            Default False.
+
+    Returns:
+        pl.DataFrame com colunas:
+            - BondType
+            - MaturityDate
+            - DISpread (decimal ou bps conforme parâmetro)
+
+    Raises:
+        ValueError: Se os dados de DI não possuem 'SettlementRate' ou estão vazios.
+
+    Examples:
+        >>> from pyield import ntnf
+        >>> ntnf.di_spreads("30-05-2025", bps=True)
+        shape: (5, 3)
+        ┌──────────┬──────────────┬──────────┐
+        │ BondType ┆ MaturityDate ┆ DISpread │
+        │ ---      ┆ ---          ┆ ---      │
+        │ str      ┆ date         ┆ f64      │
+        ╞══════════╪══════════════╪══════════╡
+        │ NTN-F    ┆ 2027-01-01   ┆ -3.31    │
+        │ NTN-F    ┆ 2029-01-01   ┆ 14.21    │
+        │ NTN-F    ┆ 2031-01-01   ┆ 21.61    │
+        │ NTN-F    ┆ 2033-01-01   ┆ 11.51    │
+        │ NTN-F    ┆ 2035-01-01   ┆ 22.0     │
+        └──────────┴──────────────┴──────────┘
+    """
+    return pre_di_spreads(date, bps=bps).filter(pl.col("BondType") == "NTN-F")

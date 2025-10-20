@@ -20,7 +20,6 @@ import io
 import logging
 from typing import Literal
 
-import pandas as pd
 import polars as pl
 import polars.selectors as cs
 import requests
@@ -28,10 +27,10 @@ import requests
 import pyield.bc.ptax_api as pt
 import pyield.converters as cv
 from pyield import bday
-from pyield.converters import DateScalar
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
+from pyield.types import DateScalar
 
 logger = logging.getLogger(__name__)
 
@@ -95,12 +94,12 @@ def _build_url(
 ) -> str:
     url = BASE_API_URL
     if start:
-        start = cv.convert_input_dates(start)
+        start = cv.convert_dates(start)
         start_str = start.strftime("%Y-%m-%d")
         url += f"@dataMovimentoInicio='{start_str}'"
 
     if end:
-        end = cv.convert_input_dates(end)
+        end = cv.convert_dates(end)
         end_str = end.strftime("%Y-%m-%d")
         url += f"&@dataMovimentoFim='{end_str}'"
 
@@ -212,12 +211,10 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
             .alias("AvgPrice")
         )
     )
-    s_bd_to_mat_pd = bday.count(
-        start=df.get_column("Settlement"),
-        end=df.get_column("Maturity"),
+    bdays_to_mat = bday.count(
+        start=df.get_column("Settlement"), end=df.get_column("Maturity")
     )
-    s_bd_to_mat = pl.Series(s_bd_to_mat_pd)
-    df = df.with_columns(s_bd_to_mat.alias("BDToMat"))
+    df = df.with_columns(bdays_to_mat.alias("BDToMat"))
     return df
 
 
@@ -294,17 +291,12 @@ def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pl.DataFrame:
         start_date = bday.offset(bz_last_bday, -1)
 
     # Busca a série PTAX usando a função já existente
-    df_pd = pt.ptax_series(start=start_date, end=end_date)
-    if df_pd.empty:
+    df = pt.ptax_series(start=start_date, end=end_date)
+    if df.is_empty():
         return pl.DataFrame()
 
     # Converte para Polars, seleciona, renomeia e ordena (importante para join_asof)
-    return (
-        pl.from_pandas(df_pd)
-        .select(["Date", "MidRate"])
-        .rename({"MidRate": "PTAX"})
-        .sort("Date")
-    )
+    return df.select(["Date", "MidRate"]).rename({"MidRate": "PTAX"}).sort("Date")
 
 
 def _add_usd_dv01(df: pl.DataFrame) -> pl.DataFrame:
@@ -387,7 +379,7 @@ def auctions(
     start: DateScalar | None = None,
     end: DateScalar | None = None,
     auction_type: Literal["sell", "buy"] | None = None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """
     Recupera dados de leilões para um determinado período e tipo de leilão da API do BC.
 
@@ -433,21 +425,25 @@ def auctions(
             diretamente na API. Padrão é `None` (retorna todos os tipos de leilão).
 
     Returns:
-        pd.DataFrame: Um DataFrame contendo dados de leilões para o período e tipo
+        pl.DataFrame: Um DataFrame contendo dados de leilões para o período e tipo
             especificados. Em caso de erro ao buscar os dados, um DataFrame vazio
             é retornado e uma mensagem de erro é registrada no log.
 
     Examples:
         >>> from pyield import bc
-        >>> df = bc.auctions(start="19-08-2025", end="19-08-2025")
-        >>> df
-                Date Settlement AuctionType  ...     ValueFR  ValueSR       Value
-        0 2025-08-19 2025-08-20       Venda  ...  2572400000        0  2572400000
-        1 2025-08-19 2025-08-20       Venda  ... 12804476147 17123853 12821600000
-        2 2025-08-19 2025-08-20       Venda  ...  1289936461  3263539  1293200000
-        3 2025-08-19 2025-08-20       Venda  ...  2071654327  2245673  2073900000
-        4 2025-08-19 2025-08-20       Venda  ...  2010700000        0  2010700000
-        [5 rows x 30 columns]
+        >>> bc.auctions(start="19-08-2025", end="19-08-2025")
+        shape: (5, 30)
+        ┌────────────┬────────────┬─────────────┬───────────┬───┬──────────────────┬─────────────┬──────────┬─────────────┐
+        │ Date       ┆ Settlement ┆ AuctionType ┆ Ordinance ┆ … ┆ AcceptedQuantity ┆ ValueFR     ┆ ValueSR  ┆ Value       │
+        │ ---        ┆ ---        ┆ ---         ┆ ---       ┆   ┆ ---              ┆ ---         ┆ ---      ┆ ---         │
+        │ date       ┆ date       ┆ str         ┆ i64       ┆   ┆ i64              ┆ i64         ┆ i64      ┆ i64         │
+        ╞════════════╪════════════╪═════════════╪═══════════╪═══╪══════════════════╪═════════════╪══════════╪═════════════╡
+        │ 2025-08-19 ┆ 2025-08-20 ┆ Venda       ┆ 192       ┆ … ┆ 150000           ┆ 2572400000  ┆ 0        ┆ 2572400000  │
+        │ 2025-08-19 ┆ 2025-08-20 ┆ Venda       ┆ 192       ┆ … ┆ 751003           ┆ 12804476147 ┆ 17123853 ┆ 12821600000 │
+        │ 2025-08-19 ┆ 2025-08-20 ┆ Venda       ┆ 193       ┆ … ┆ 300759           ┆ 1289936461  ┆ 3263539  ┆ 1293200000  │
+        │ 2025-08-19 ┆ 2025-08-20 ┆ Venda       ┆ 194       ┆ … ┆ 500542           ┆ 2071654327  ┆ 2245673  ┆ 2073900000  │
+        │ 2025-08-19 ┆ 2025-08-20 ┆ Venda       ┆ 194       ┆ … ┆ 500000           ┆ 2010700000  ┆ 0        ┆ 2010700000  │
+        └────────────┴────────────┴─────────────┴───────────┴───┴──────────────────┴─────────────┴──────────┴─────────────┘
 
     Notes:
         FR = First Round (Primeira Rodada)
@@ -485,14 +481,14 @@ def auctions(
         - ValueFR: Valor da primeira rodada (FR) do leilão em R$.
         - ValueSR: Valor da segunda rodada (SR) em R$.
         - Value: Valor total do leilão em R$ (FR + SR).
-    """
+    """  # noqa: E501
     try:
         url = _build_url(start=start, end=end, auction_type=auction_type)
         api_csv_text = _get_api_csv(url)
         df = _parse_csv(api_csv_text)
         if df.is_empty():
             logger.warning("No auction data found after parsing the API response.")
-            return pd.DataFrame()
+            return pl.DataFrame()
         df = _format_df(df)
         df = _process_df(df)
         df = _adjust_values_without_auction(df)
@@ -501,7 +497,7 @@ def auctions(
         df = _add_usd_dv01(df)
         df = _add_avg_maturity(df)
         df = _sort_and_reorder_columns(df)
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
     except Exception as e:
         logger.exception(f"Error fetching auction data from BC API: {e}")
-        return pd.DataFrame()
+        return pl.DataFrame()

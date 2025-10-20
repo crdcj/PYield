@@ -2,7 +2,6 @@ import datetime as dt
 import logging
 from io import StringIO
 
-import pandas as pd
 import polars as pl
 import requests
 
@@ -95,7 +94,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(column_order)
 
 
-def last_ettj() -> pd.DataFrame:
+def last_ettj() -> pl.DataFrame:
     """
     Retrieves and processes the latest Brazilian yield curve data from ANBIMA.
 
@@ -104,7 +103,7 @@ def last_ettj() -> pd.DataFrame:
     at various vertices (time points).
 
     Returns:
-        pd.DataFrame: A DataFrame containing the latest ETTJ data.
+        pl.DataFrame: A DataFrame containing the latest ETTJ data.
 
     DataFrame columns:
         - date: Reference date of the yield curve
@@ -121,4 +120,4 @@ def last_ettj() -> pd.DataFrame:
     text = _filter_ettf_text(text)
     df = _convert_text_to_df(text, reference_date)
     df = _process_df(df)
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df

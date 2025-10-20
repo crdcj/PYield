@@ -3,17 +3,16 @@
 import datetime as dt
 import logging
 
-import pandas as pd
 import polars as pl
 import requests
 from polars import selectors as cs
 
 from pyield import bc, bday
 from pyield import converters as cv
-from pyield.converters import DateScalar
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
+from pyield.types import DateScalar, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -297,14 +296,12 @@ def _fetch_ptax_data(auction_date: dt.date) -> pl.DataFrame:
     max_date = bday.offset(auction_date, 1)
 
     # Busca a série PTAX usando a função já existente
-    df_pd = bc.ptax_series(start=min_date, end=max_date)
-    if df_pd.empty:
+    df = bc.ptax_series(start=min_date, end=max_date)
+    if df.is_empty():
         return pl.DataFrame()
 
-    # Converte para Polars, seleciona, renomeia e ordena (importante para join_asof)
     return (
-        pl.from_pandas(df_pd)
-        .select(["Date", "MidRate"])
+        df.select(["Date", "MidRate"])
         .rename({"Date": "data_ref", "MidRate": "ptax"})
         .sort("data_ref")
     )
@@ -333,7 +330,7 @@ def _add_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def auction(auction_date: DateScalar) -> pd.DataFrame:
+def auction(auction_date: DateScalar) -> pl.DataFrame:
     """
     Fetches and processes Brazilian Treasury auction data for a given date.
 
@@ -380,7 +377,7 @@ def auction(auction_date: DateScalar) -> pd.DataFrame:
             DateScalar (e.g., "DD-MM-YYYY", datetime.date, etc.).
 
     Returns:
-        Um DataFrame do Pandas contendo os dados processados do leilão. As colunas são:
+        Um DataFrame do Polars contendo os dados processados do leilão. As colunas são:
         - data_1v: Data de realização do leilão (1ª volta).
         - data_liquidacao_1v: Data de liquidação financeira da 1ª volta.
         - data_liquidacao_2v: Data de liquidação financeira da 2ª volta (se houver).
@@ -428,23 +425,26 @@ def auction(auction_date: DateScalar) -> pd.DataFrame:
     Retorna um DataFrame do Pandas vazio se ocorrer um erro na requisição, no
     processamento, ou se não houver dados para a data especificada.
     """
+    if has_null_args(auction_date):
+        logger.info("No auction date provided.")
+        return pl.DataFrame()
     try:
-        auction_date = cv.convert_input_dates(auction_date)
+        auction_date = cv.convert_dates(auction_date)
         data = _fetch_auction_data(auction_date)
         if not data:
             logger.info(f"No auction data available for {auction_date}.")
-            return pd.DataFrame()
+            return pl.DataFrame()
         df = _transform_raw_data(data)
         df = _add_duration(df)
         df = _add_dv01(df)
         df = _add_dv01_usd(df)
         df = _add_avg_maturity(df)
         df = df.select(FINAL_COLUMN_ORDER)
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
 
     except requests.exceptions.RequestException as e:
         logger.error(f"An error occurred during the API request: {e}")
-        return pd.DataFrame()
+        return pl.DataFrame()
     except ValueError as e:
         logger.error(f"An error occurred while parsing the JSON response: {e}")
-        return pd.DataFrame()
+        return pl.DataFrame()

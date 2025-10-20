@@ -69,9 +69,8 @@ def _fetch_json(contract_code: str) -> list[dict]:
 def _convert_json(json_data: list[dict]) -> pl.DataFrame:
     # Normalize JSON response into a flat table
     # Polars json_normalize is unstable, so we use Pandas first
-    df = pd.json_normalize(json_data)
-    df = df.convert_dtypes(dtype_backend="pyarrow")
-    return pl.from_pandas(df)
+    df = pd.json_normalize(json_data).convert_dtypes(dtype_backend="pyarrow")
+    return pl.from_pandas(df, nan_to_null=True)
 
 
 def _process_columns(df: pl.DataFrame) -> pl.DataFrame:
@@ -137,7 +136,7 @@ def _process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
         last_price = 100_000 / ((1 + pl.col("LastRate")) ** byears)
         df = df.with_columns(
             LastPrice=last_price.round(2),
-            ForwardRate=pl.Series(fwd_rate),
+            ForwardRate=fwd_rate,
         )
 
     if contract_code == "DI1":  # Add DV01 for DI1
@@ -185,23 +184,23 @@ def _empty_logger(contract_code: str) -> None:
     )
 
 
-def fetch_intraday_df(contract_code: str) -> pd.DataFrame:
+def fetch_intraday_df(contract_code: str) -> pl.DataFrame:
     """
     Fetch the latest futures data from B3.
 
     Returns:
-        pd.DataFrame: A Pandas pd.DataFrame containing the latest DI futures data.
+        pl.DataFrame: A Polars DataFrame containing the latest DI futures data.
     """
     json_data = _fetch_json(contract_code)
     if not json_data:
         _empty_logger(contract_code)
-        return pd.DataFrame()
+        return pl.DataFrame()
     df = _convert_json(json_data)
     if df.is_empty():
         _empty_logger(contract_code)
-        return pd.DataFrame()
+        return pl.DataFrame()
     df = _process_columns(df)
     df = _pre_process_df(df)
     df = _process_df(df, contract_code)
     df = _select_and_reorder_columns(df)
-    return df.to_pandas(use_pyarrow_extension_array=True)
+    return df

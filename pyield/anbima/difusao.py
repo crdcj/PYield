@@ -2,14 +2,13 @@ import datetime as dt
 import io
 import logging
 
-import pandas as pd
 import polars as pl
 import polars.selectors as cs
 import requests
 
 import pyield.converters as cv
 from pyield import bday
-from pyield.converters import DateScalar
+from pyield.types import DateScalar, has_null_args
 
 # --- 1. Centralização e Organização das Constantes ---
 API_VERSION = "1.0018"
@@ -201,7 +200,7 @@ def _process_csv_data(csv_data: str) -> pl.DataFrame:
     return df
 
 
-def tpf_difusao(data_referencia: DateScalar) -> pd.DataFrame:
+def tpf_difusao(data_referencia: DateScalar) -> pl.DataFrame:
     """
     Obtém a TPF Difusão da Anbima para uma data de referência específica.
 
@@ -210,7 +209,7 @@ def tpf_difusao(data_referencia: DateScalar) -> pd.DataFrame:
             Data de referência (ex: "DD/MM/AAAA").
 
     Returns:
-        pd.DataFrame: DataFrame com os dados. Retorna um DataFrame vazio se
+        pl.DataFrame: DataFrame com os dados. Retorna um DataFrame vazio se
             não houver dados ou em caso de erro.
 
     Output Columns:
@@ -226,16 +225,19 @@ def tpf_difusao(data_referencia: DateScalar) -> pd.DataFrame:
         * taxa_media (float): Média entre a taxa de compra e venda (decimal).
         * taxa_ultima (float): Última taxa negociada (decimal).
     """
-    data_str = cv.convert_input_dates(data_referencia)
+    if has_null_args(data_referencia):
+        logger.warning("Nenhuma data fornecida. Retornando DataFrame vazio.")
+        return pl.DataFrame()
+    data_str = cv.convert_dates(data_referencia)
     csv_data = _fetch_url_data(data_str)
 
     if csv_data is None:
         logger.warning("Nenhum dado foi retornado para a data '%s'.", data_str)
-        return pd.DataFrame()
+        return pl.DataFrame()
 
     try:
         df = _process_csv_data(csv_data)
-        return df.to_pandas(use_pyarrow_extension_array=True)
+        return df
     except Exception as e:
         logger.error("Falha ao processar o CSV para a data '%s': %s", data_str, e)
-        return pd.DataFrame()
+        return pl.DataFrame()
