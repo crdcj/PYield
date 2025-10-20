@@ -111,14 +111,19 @@ def benchmarks(bond_type: str = None, include_history: bool = False) -> pl.DataF
         >>> from pyield import tn
         >>> df_current = tn.benchmarks()
         >>> # Get historical benchmarks
-        >>> df_history = tn.benchmarks(bond_type="LFT", include_history=True)
-        >>> df_history.head()
-            BondType MaturityDate      Benchmark  StartDate     EndDate
-        0        LFT   2020-03-01     LFT 6 anos 2014-01-01  2014-06-30
-        1        LFT   2020-09-01     LFT 6 anos 2014-07-01  2014-12-31
-        2        LFT   2021-03-01     LFT 6 anos 2015-01-01  2015-04-30
-        3        LFT   2021-09-01     LFT 6 anos 2015-05-01  2015-12-31
-        4        LFT   2022-03-01     LFT 6 anos 2016-01-01  2016-06-30
+        >>> tn.benchmarks(bond_type="LFT", include_history=True).head()
+        shape: (5, 5)
+        ┌──────────┬──────────────┬────────────┬────────────┬────────────┐
+        │ BondType ┆ MaturityDate ┆ Benchmark  ┆ StartDate  ┆ EndDate    │
+        │ ---      ┆ ---          ┆ ---        ┆ ---        ┆ ---        │
+        │ str      ┆ date         ┆ str        ┆ date       ┆ date       │
+        ╞══════════╪══════════════╪════════════╪════════════╪════════════╡
+        │ LFT      ┆ 2020-03-01   ┆ LFT 6 anos ┆ 2014-01-01 ┆ 2014-06-30 │
+        │ LFT      ┆ 2020-09-01   ┆ LFT 6 anos ┆ 2014-07-01 ┆ 2014-12-31 │
+        │ LFT      ┆ 2021-03-01   ┆ LFT 6 anos ┆ 2015-01-01 ┆ 2015-04-30 │
+        │ LFT      ┆ 2021-09-01   ┆ LFT 6 anos ┆ 2015-05-01 ┆ 2015-12-31 │
+        │ LFT      ┆ 2022-03-01   ┆ LFT 6 anos ┆ 2016-01-01 ┆ 2016-06-30 │
+        └──────────┴──────────────┴────────────┴────────────┴────────────┘
     """
     api_data = _fetch_raw_benchmarks(include_history=include_history)
     df = _process_api_data(api_data)

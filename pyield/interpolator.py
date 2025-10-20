@@ -41,6 +41,12 @@ class Interpolator:
         >>> fforward = Interpolator("flat_forward", known_bdays, known_rates)
         >>> fforward(45)
         0.04833068080970859
+
+        >>> print(fforward(100))  # Extrapolation disabled by default
+        None
+
+        >>> print(fforward(-10))
+        None
     """
 
     def __init__(
@@ -146,7 +152,7 @@ class Interpolator:
         f_t = (time - time_j) / (time_k - time_j)
         return (f_j * (f_k / f_j) ** f_t) ** (1 / time) - 1
 
-    def interpolate(self, bday: int) -> float:
+    def interpolate(self, bday: int) -> float | None:
         """
         Finds the appropriate interpolation point and returns the interest rate
         interpolated by the specified method from that point.
@@ -156,12 +162,13 @@ class Interpolator:
                 calculated.
 
         Returns:
-            float: The interest rate interpolated by the specified method for the given
-                number of business days.
+            float | None: The interest rate interpolated by the specified method for
+               the given number of business days. If the input is out of range and
+               extrapolation is disabled, returns None.
         """
         # Validate input
-        if not isinstance(bday, int):
-            return float("nan")
+        if not isinstance(bday, int) or bday < 0:
+            return None
 
         # Create local references to facilitate code readability
         known_bdays = self._known_bdays
@@ -174,7 +181,7 @@ class Interpolator:
             return known_rates[0]
         # Upper bound extrapolation depends on the extrapolate flag
         elif bday > known_bdays[-1]:
-            return known_rates[-1] if extrapolate else float("nan")
+            return known_rates[-1] if extrapolate else None
 
         # Find k such that known_bdays[k-1] < bday < known_bdays[k]
         k = bisect.bisect_left(known_bdays, bday)
@@ -190,7 +197,7 @@ class Interpolator:
 
         raise ValueError(f"Interpolation method '{method}' not recognized.")
 
-    def __call__(self, bday: int) -> float:
+    def __call__(self, bday: int) -> float | None:
         """
         Allows the instance to be called as a function to perform interpolation.
 
@@ -199,8 +206,10 @@ class Interpolator:
                 calculated.
 
         Returns:
-            float: The interest rate interpolated by the specified method for the given
-                number of business days.
+            float | None: The interest rate interpolated by the specified method for
+               the given number of business days. If the input is out of range and
+               extrapolation is disabled, returns None.
+
         """
         return self.interpolate(bday)
 

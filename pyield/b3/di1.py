@@ -256,7 +256,7 @@ def interpolate_rates(
             0.13881
         ]
 
-        >>> # With extrapolation set to False, the second rate will be NaN
+        >>> # With extrapolation set to False, the second rate will be null
         >>> # Note: 0.13576348733268917 is shown as 0.135763
         >>> di1.interpolate_rates(
         ...     dates="25-04-2025",
@@ -267,7 +267,7 @@ def interpolate_rates(
         Series: 'FlatFwdRate' [f64]
         [
             0.135763
-            NaN
+            null
         ]
 
     Raises:

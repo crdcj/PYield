@@ -275,15 +275,11 @@ def offset(
         ]
 
         # Null values are propagated
-        >>> bday.offset(None, 1)
+        >>> print(bday.offset(None, 1))
+        None
 
-        >>> bday.offset(None, [1, 2])  # NaT input with a list of offsets
-        shape: (2,)
-        Series: 'result' [date]
-        [
-            null
-            null
-        ]
+        >>> print(bday.offset(None, [1, 2]))
+        None
 
         >>> bday.offset(["19-09-2024", None], 1)
         shape: (2,)
@@ -475,13 +471,6 @@ def is_business_day(dates: DateScalar | DateArray) -> bool | pl.Series | None:
         return None
     converted = cv.convert_dates(dates)
 
-    # Scalar path ---------------------------------------------------------
-    if isinstance(converted, dt.date) or converted is None:
-        date_pd = cv.convert_dates(dates)
-        shifted_date = offset(date_pd, 0)  # Shift the date if it is not a business day
-        return date_pd == shifted_date
-
-    # Array path ----------------------------------------------------------
     # Build DataFrame to allow conditional expression selecting the right holiday list
     df = pl.DataFrame({"dates": converted}, schema={"dates": pl.Date}, nan_to_null=True)
 

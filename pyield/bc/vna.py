@@ -59,7 +59,7 @@ def _validate_vna_values(vnas: list[float]) -> float:
     return vna_value
 
 
-def vna_lft(date: DateScalar) -> float:
+def vna_lft(date: DateScalar) -> float | None:
     """Retrieves the VNA (Valor Nominal Atualizado) from the BCB for a given date.
 
     This function fetches daily data from the BCB website, extracts the
@@ -73,7 +73,8 @@ def vna_lft(date: DateScalar) -> float:
             `convert_input_dates` function.
 
     Returns:
-        float: The VNA (Valor Nominal Atualizado) value for the specified date.
+        float | None: The VNA (Valor Nominal Atualizado) value for the specified date,
+            or None if the date is invalid or data is not available.
 
     Examples:
         >>> from pyield import bc
@@ -92,7 +93,7 @@ def vna_lft(date: DateScalar) -> float:
     """
     if has_null_args(date):
         logger.warning("No valid date provided. Returning NaN.")
-        return float("nan")
+        return None
     text = _get_text(date)
     table_text = _extract_vna_table_text(text)
     table_lines = _parse_vna_table_lines(table_text)

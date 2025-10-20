@@ -40,27 +40,26 @@ def forwards(
     Valores nulos nas taxas ou prazos de entrada resultarão em valores nulos
     nas taxas a termo calculadas. A função também lida com agrupamentos
     opcionais, permitindo calcular taxas a termo para diferentes grupos de
-    datas. O agrupamento é feito com base na coluna `groupby_dates`, que
-    deve ser fornecida como uma série de pandas. Se `groupby_dates` for None,
-    todos os dados serão tratados como um único grupo.
+    datas. O agrupamento é feito com base em `groupby_dates`. Se este
+    argumento for None, todos os dados serão tratados como um único grupo.
     A função calcula as taxas a termo para todos os pontos, exceto o primeiro
     de cada grupo, que é tratado separadamente.
 
-    Args:
+     Args:
         bdays (IntegerArray): Número de dias úteis para cada taxa zero.
         rates (FloatArray): Taxas zero correspondentes aos dias úteis.
-        groupby_dates (DateArray | IntegerArray | None, optional): Critério de agrupamento
-            opcional para segmentar os cálculos (ex: por data de referência).
-            Se None, todos os dados são tratados como um único grupo.
-            Default None.
+        groupby_dates (DateArray | IntegerArray | None, optional):
+            Critério de agrupamento opcional para segmentar os cálculos
+            (ex: por data de referência). Se None, todos os dados são tratados
+            como um único grupo. Default None.
 
     Returns:
         pl.Series: Série contendo as taxas a termo calculadas (tipo Float64).
             A primeira taxa de cada grupo corresponde à taxa zero inicial.
 
-    Raises:
-        ValueError: Se os índices de `bdays` e `rates` não forem iguais.
-        ValueError: Se `groupby_dates` não for None e não tiver o mesmo tamanho
+     Raises:
+        polars.exceptions.ShapeError: Se os comprimentos de `bdays`, `rates`
+            e `groupby_dates` (quando fornecido) não forem iguais.
 
     Examples:
         >>> bdays = [10, 20, 30]
@@ -196,7 +195,7 @@ def forward(
     bday2: int,
     rate1: float,
     rate2: float,
-) -> float:
+) -> float | None:
     r"""
     Calcula a taxa a termo (forward rate) entre dois prazos (dias úteis).
 
@@ -221,23 +220,21 @@ def forward(
         rate2 (float): Taxa zero (spot rate) para o prazo `bday2`.
 
     Returns:
-        float: A taxa a termo calculada entre `bday1` e `bday2`. Retorna
-            `float('nan')` se `bday2 <= bday1` ou se qualquer um dos
-            argumentos de entrada for NaN.
+        float | None: A taxa a termo calculada entre `bday1` e `bday2`. Retorna
+            `None` se `bday1 >= bday2` ou se qualquer um dos
+            argumentos de entrada for float('nan') ou None.
 
     Examples:
         >>> # Exemplo válido: bday2 > bday1
         >>> yd.forward(10, 20, 0.05, 0.06)
         0.0700952380952371
         >>> # Exemplo inválido: bday1 >= bday2
-        >>> yd.forward(20, 10, 0.06, 0.05)
-        nan
-        >>> # Exemplo inválido: bday1 == bday2
-        >>> yd.forward(10, 10, 0.05, 0.05)
-        nan
-        >>> # Argumentos nulos retornam nan
-        >>> yd.forward(10, 20, 0.05, None)
-        nan
+        >>> print(yd.forward(20, 10, 0.06, 0.05))
+        None
+
+        >>> # Argumentos nulos retornam None
+        >>> print(yd.forward(10, 20, 0.05, None))
+        None
 
     Note:
         `bday2` precisa ser necessariamente maior que `bday1` para que
@@ -249,12 +246,12 @@ def forward(
     $$
     """  # noqa: E501
     if has_null_args(rate1, rate2, bday1, bday2):
-        # If any of the inputs are NaN, return NaN
-        return float("nan")
+        # If any of the inputs are nullable, return None
+        return None
 
     # Handle the case where the two dates are the same
     if bday2 <= bday1:
-        return float("nan")
+        return None
 
     # Convert business days to business years
     t1 = bday1 / 252

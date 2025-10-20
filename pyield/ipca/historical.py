@@ -68,13 +68,15 @@ def rates(start: DateScalar, end: DateScalar) -> pl.DataFrame:
         >>> # Get the IPCA rates for the first quarter of 2025
         >>> ipca.rates("01-01-2025", "01-03-2025")
         shape: (3, 2)
-        ┌──────────┬────────────┐
-        │  Period  │   Value    │
-        ├──────────┼────────────┤
-           Period   Value
-        0  202501  0.0016
-        1  202502  0.0131
-        2  202503  0.0056
+        ┌────────┬────────┐
+        │ Period ┆ Value  │
+        │ ---    ┆ ---    │
+        │ i64    ┆ f64    │
+        ╞════════╪════════╡
+        │ 202501 ┆ 0.0016 │
+        │ 202502 ┆ 0.0131 │
+        │ 202503 ┆ 0.0056 │
+        └────────┴────────┘
     """
     if has_null_args(start, end):
         return pl.DataFrame()
@@ -179,10 +181,16 @@ def indexes(start: DateScalar, end: DateScalar) -> pl.DataFrame:
         >>> from pyield import ipca
         >>> # Get the IPCA indexes for the first quarter of 2025
         >>> ipca.indexes(start="01-01-2025", end="01-03-2025")
-           Period    Value
-        0  202501  7111.86
-        1  202502  7205.03
-        2  202503  7245.38
+        shape: (3, 2)
+        ┌────────┬─────────┐
+        │ Period ┆ Value   │
+        │ ---    ┆ ---     │
+        │ i64    ┆ f64     │
+        ╞════════╪═════════╡
+        │ 202501 ┆ 7111.86 │
+        │ 202502 ┆ 7205.03 │
+        │ 202503 ┆ 7245.38 │
+        └────────┴─────────┘
     """
     if has_null_args(start, end):
         return pl.DataFrame()

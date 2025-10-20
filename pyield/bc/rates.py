@@ -245,7 +245,7 @@ def selic_over_series(
     return df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
 
 
-def selic_over(date: DateScalar) -> float:
+def selic_over(date: DateScalar) -> float | None:
     """
     Fetches the SELIC Over rate value for a specific date.
 
@@ -256,7 +256,7 @@ def selic_over(date: DateScalar) -> float:
         date: The reference date to fetch the SELIC Over rate for.
 
     Returns:
-        The SELIC Over rate as a float.
+        The SELIC Over rate as a float or None if not available.
 
     Examples:
         >>> from pyield import bc
@@ -264,10 +264,10 @@ def selic_over(date: DateScalar) -> float:
         0.104
     """
     if has_null_args(date):
-        return float("nan")
+        return None
     df = selic_over_series(date, date)
     if df.is_empty():
-        return float("nan")
+        return None
     return df["Value"].item(0)
 
 
@@ -312,7 +312,7 @@ def selic_target_series(
     return df
 
 
-def selic_target(date: DateScalar) -> float:
+def selic_target(date: DateScalar) -> float | None:
     """
     Fetches the SELIC Target rate value for a specific date.
 
@@ -323,7 +323,7 @@ def selic_target(date: DateScalar) -> float:
         date: The reference date to fetch the SELIC Target rate for.
 
     Returns:
-        The SELIC Target rate as a float.
+        The SELIC Target rate as a float or None if not available.
 
     Examples:
         >>> from pyield import bc
@@ -331,10 +331,10 @@ def selic_target(date: DateScalar) -> float:
         0.105
     """
     if has_null_args(date):
-        return float("nan")
+        return None
     df = selic_target_series(date, date)
     if df.is_empty():
-        return float("nan")
+        return None
     return df["Value"].item(0)
 
 
@@ -410,7 +410,7 @@ def di_over(date: DateScalar, annualized: bool = True) -> float | None:
             days per year), otherwise returns the daily rate.
 
     Returns:
-        The DI Over rate as a float.
+        The DI Over rate as a float or None if not available.
 
     Examples:
         >>> from pyield import bc
