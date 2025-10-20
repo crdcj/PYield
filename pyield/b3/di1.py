@@ -33,7 +33,6 @@ def _load_with_intraday(dates: list[dt.date]) -> pl.DataFrame:
     if has_today and is_today_not_in_cache and is_today_last_bday:
         try:
             df_intraday = b3.futures(contract_code="DI1", date=today)
-            df_intraday = pl.from_pandas(df_intraday)
             if "SettlementPrice" not in df_intraday.columns or df_intraday.is_empty():
                 logger.warning(
                     f"Ainda sem dados de ajustes intraday para {today}."

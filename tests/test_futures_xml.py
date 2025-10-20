@@ -13,7 +13,7 @@ def prepare_data(
     contract_code: ContractOptions,
     date: str,
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
-    """Prepare Polars DataFrames for comparison eliminating pandas usage.
+    """Prepare Polars DataFrames for comparison.
 
     Steps:
     - Build file path from provided date string (DD-MM-YYYY)
@@ -22,7 +22,6 @@ def prepare_data(
     - Fetch futures data (Polars)
     - Align columns and filter to expected tickers only
     """
-    # Date parsing manually to avoid pandas dependency
     day, month, year = date.split("-")
     file_date = f"{year[2:]}{month}{day}"  # YYMMDD
     file_path = Path(f"./tests/data/SPRD{file_date}.zip")

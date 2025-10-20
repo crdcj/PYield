@@ -308,9 +308,7 @@ def fetch_bmf_data(contract_code: str, date: dt.date) -> pl.DataFrame:
             Can be 252 business days or 360 calendar days.
 
     Returns:
-        pl.DataFrame: Processed futures data. Internally uses Polars for
-            transformations and returns a pandas DataFrame (pyarrow dtypes)
-            for compatibility with the public API. If no data is found,
+        pl.DataFrame: Processed futures data. If no data is found,
             returns an empty DataFrame.
     """
     html_text = _fetch_html_data(contract_code, date)

@@ -135,7 +135,7 @@ def _fetch_data_from_url(
 ) -> pl.DataFrame:
     """
     Orchestrates fetching data from the Central Bank API, handling requests longer
-    than 10 years by splitting them into smaller chunks using pandas DateOffset.
+    than 10 years by splitting them into smaller chunks using polars date_range.
 
     Args:
         serie: The series enum to fetch

@@ -425,7 +425,7 @@ def auctions(
             diretamente na API. Padrão é `None` (retorna todos os tipos de leilão).
 
     Returns:
-        pd.DataFrame: Um DataFrame contendo dados de leilões para o período e tipo
+        pl.DataFrame: Um DataFrame contendo dados de leilões para o período e tipo
             especificados. Em caso de erro ao buscar os dados, um DataFrame vazio
             é retornado e uma mensagem de erro é registrada no log.
 

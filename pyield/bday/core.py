@@ -56,7 +56,7 @@ def count(
         end (DateScalar | DateArray): The end date(s) for counting (exclusive).
 
     Returns:
-        int | pd.Series | None: Returns an integer or None if `start` and `end` are
+        int | pl.Series | None: Returns an integer or None if `start` and `end` are
             single dates, or a Series if any of them is an array of dates.
 
     Notes:
@@ -65,7 +65,7 @@ def count(
         - It supports flexible date inputs, including single dates, lists, Series, and
             more, for both `start` and `end` parameters.
         - The return type depends on the input types: single dates return an int, while
-            arrays of dates return a pd.Series with the count for each date range.
+            arrays of dates return a pl.Series with the count for each date range.
         - The `start` date determines the holiday list, ensuring consistency with the
             applicable calendar at the time.
         - See `numpy.busday_count` documentation for more details on how holidays are
@@ -289,7 +289,7 @@ def offset(
             null
         ]
 
-        >>> dates = pd.Series(["19-09-2024", "20-09-2024", "21-09-2024"])
+        >>> dates = ["19-09-2024", "20-09-2024", "21-09-2024"]
         >>> bday.offset(dates, 1)
         shape: (3,)
         Series: 'result' [date]
@@ -374,7 +374,7 @@ def generate(
             is before the transition, 'old' is used; otherwise, 'new' is used.
 
     Returns:
-        pd.Series: A Series representing a range of business days between the specified
+        pl.Series: A Series representing a range of business days between the specified
             start and end dates, considering the specified holidays.
 
     Examples:

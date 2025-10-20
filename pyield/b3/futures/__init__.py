@@ -56,7 +56,6 @@ def _get_historical_data(
     """Fetches historical data for a specified futures contract and reference date."""
     # First, try to fetch the data from BMF legacy service
     df = fetch_bmf_data(contract_code, date)
-    # fetch_bmf_data now returns pandas DataFrame
     if not df.is_empty():  # If data is found from BMF
         return df
 
