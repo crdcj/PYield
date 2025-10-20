@@ -3,10 +3,8 @@ import logging
 import pandas as pd
 import polars as pl
 
-import pyield.converters as cv
 from pyield import anbima, bday
 from pyield.anbima import tpf
-from pyield.b3 import di1
 from pyield.tn import ntnf
 from pyield.types import DateScalar
 
@@ -156,8 +154,7 @@ def di_spreads(date: DateScalar, bps: bool = False) -> pl.DataFrame:
     """
     Calcula o DI Spread para títulos prefixados (LTN e NTN-F) em uma data de referência.
 
-    Definição do spread (forma bruta):
-        spread = taxa indicativa do PRE - taxa de ajuste do DI
+    spread = taxa indicativa do PRE - taxa de ajuste do DI
 
     Quando ``bps=False`` a coluna retorna essa diferença em formato decimal
     (ex: 0.000439 ≈ 4.39 bps). Quando ``bps=True`` o valor é automaticamente
@@ -173,9 +170,6 @@ def di_spreads(date: DateScalar, bps: bool = False) -> pl.DataFrame:
             - BondType
             - MaturityDate
             - DISpread (decimal ou bps conforme parâmetro)
-
-    Raises:
-        ValueError: Se os dados de DI não possuem 'SettlementRate'.
 
     Examples:
         >>> from pyield import pre
@@ -199,34 +193,15 @@ def di_spreads(date: DateScalar, bps: bool = False) -> pl.DataFrame:
         │ NTN-F    ┆ 2035-01-01   ┆ 22.0     │
         └──────────┴──────────────┴──────────┘
     """
-    # Fetch DI rates for the reference date
-    converted_date = cv.convert_dates(date)
-    df_di = di1.data(dates=converted_date, month_start=True)
-
-    if "SettlementRate" not in df_di.columns:
-        raise ValueError("DI data is missing the 'SettlementRate' column.")
-
-    # Prepare DI DataFrame for merging
-    df_di = df_di.select("ExpirationDate", "SettlementRate").rename(
-        {"ExpirationDate": "MaturityDate"}
-    )
-
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_pre = tpf.tpf_data(converted_date, "PRE")
-
-    if df_di.is_empty() or df_pre.is_empty():
-        logger.warning("DI or PRE data is empty for date: %s", converted_date)
-        return pl.DataFrame(columns=["BondType", "MaturityDate", "DISpread"])
-
-    # Calculate the DI spread as the difference between indicative and settlement rates
-    df_spreads = (
-        df_pre.join(df_di, how="left", on="MaturityDate")  # Join DI table by maturity
-        .with_columns(DISpread=pl.col("IndicativeRate") - pl.col("SettlementRate"))
+    df = (
+        tpf.tpf_data(date, "PRE")
+        .with_columns(DISpread=pl.col("IndicativeRate") - pl.col("DIRate"))
         .select("BondType", "MaturityDate", "DISpread")
         .sort("BondType", "MaturityDate")
     )
 
     if bps:
-        df_spreads = df_spreads.with_columns(pl.col("DISpread") * 10_000)
+        df = df.with_columns(pl.col("DISpread") * 10_000)
 
-    return df_spreads
+    return df
