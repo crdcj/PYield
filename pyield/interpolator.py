@@ -163,8 +163,8 @@ class Interpolator:
 
         Returns:
             float | None: The interest rate interpolated by the specified method for
-               the given number of business days. If the input is out of range and
-               extrapolation is disabled, returns None.
+                the given number of business days. If the input is out of range and
+                extrapolation is disabled, returns None.
         """
         # Validate input
         if not isinstance(bday, int) or bday < 0:
@@ -207,9 +207,8 @@ class Interpolator:
 
         Returns:
             float | None: The interest rate interpolated by the specified method for
-               the given number of business days. If the input is out of range and
-               extrapolation is disabled, returns None.
-
+                the given number of business days. If the input is out of range and
+                extrapolation is disabled, returns None.
         """
         return self.interpolate(bday)
 
