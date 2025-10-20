@@ -115,13 +115,17 @@ def _fetch_html_data(contract_code: str, date: dt.date) -> str:
     r = requests.get(url_base, params=params, timeout=10)
     r.raise_for_status()
     r.encoding = "iso-8859-1"
+    if "VENCTO" not in r.text:
+        logger.warning(
+            "No valid data found for %s on %s. Returning empty text.",
+            contract_code,
+            date.strftime("%d-%m-%Y"),
+        )
+        return ""
     return r.text
 
 
 def _parse_raw_df(html_text: str) -> pl.DataFrame:
-    if "VENCTO" not in html_text:
-        return pl.DataFrame()
-
     df = pd.read_html(
         io.StringIO(html_text),
         match="VENCTO",
@@ -253,8 +257,8 @@ def _process_df(df: pl.DataFrame, date: dt.date, contract_code: str) -> pl.DataF
         and "SettlementPrice" in df.columns
     ):
         duration = pl.col("BDaysToExp") / BDAYS_PER_YEAR
-        mod_duration = duration / (1 + pl.col("SettlementRate"))
-        df = df.with_columns(DV01=(0.0001 * mod_duration * pl.col("SettlementPrice")))
+        m_duration = duration / (1 + pl.col("SettlementRate"))
+        df = df.with_columns(DV01=(0.0001 * m_duration * pl.col("SettlementPrice")))
 
     # Forward rates
     if contract_code in {"DI1", "DAP"} and "SettlementRate" in df.columns:
@@ -312,15 +316,10 @@ def fetch_bmf_data(contract_code: str, date: dt.date) -> pl.DataFrame:
             returns an empty DataFrame.
     """
     html_text = _fetch_html_data(contract_code, date)
+    if not html_text:
+        return pl.DataFrame()
     df = _parse_raw_df(html_text)
     df = _pre_process_df(df)
-    if df.is_empty():
-        logger.warning(
-            f"No data found for {contract_code} on {date.strftime('%d-%m-%Y')}."
-            f" Returning an empty DataFrame."
-        )
-        return pl.DataFrame()
-
     df = _rename_columns(df)
     df = _process_df(df, date, contract_code)
     df = _select_and_reorder_columns(df)

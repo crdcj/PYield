@@ -6,7 +6,7 @@ import polars as pl
 import pyield.converters as cv
 import pyield.interpolator as ip
 import pyield.tn.tools as tl
-from pyield import anbima, bday
+from pyield import anbima, bday, fwd
 from pyield.types import DateArray, DateScalar, FloatArray, has_null_args
 
 """
@@ -32,8 +32,20 @@ def data(date: DateScalar) -> pl.DataFrame:
         pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
 
     Returned columns:
+        - ReferenceDate: The reference date of the data.
+        - BondType: The type of the bond (NTN-B).
+        - SelicCode: The SELIC code of the bond.
+        - IssueBaseDate: The issue base date of the bond.
         - MaturityDate: The maturity date of the bond.
+        - BDToMat: The number of business days to maturity.
+        - Duration: The duration of the bond.
+        - DV01: The DV01 of the bond.
+        - DV01USD: The DV01 in USD of the bond.
+        - Price: The price of the bond.
+        - BidRate: The bid rate of the bond.
+        - AskRate: The ask rate of the bond.
         - IndicativeRate: The indicative rate for the bond.
+        - DIRate: The interpolated DI rate for the bond.
 
     Examples:
         >>> from pyield import ntnb
@@ -627,3 +639,67 @@ def dv01(
     price1 = price(vna, quotation1)
     price2 = price(vna, quotation2)
     return price1 - price2
+
+
+def forwards(
+    date: DateScalar,
+    zero_coupon: bool = True,
+) -> pl.DataFrame:
+    """
+    Calculate the NTN-B forward rates for the given reference date.
+
+    Args:
+        date (DateScalar): The reference date for fetching the data.
+        zero_coupon (bool, optional): If True, use zero-coupon rates for
+            forward rate calculation. Defaults to True. If False, the
+            yield to maturity rates are used instead.
+
+    Returns:
+        pl.DataFrame: A DataFrame containing the forward rates.
+
+    Columns returned:
+        - MaturityDate: The maturity date of the bond.
+        - BDToMat: The number of business days to maturity.
+        - IndicativeRate: The indicative rate for the bond.
+        - ForwardRate: The calculated forward rate for the bond.
+
+    Examples:
+        >>> from pyield import ntnb
+        >>> ntnb.forwards("17-10-2025", zero_coupon=True)
+        shape: (13, 4)
+        ┌──────────────┬─────────┬────────────────┬─────────────┐
+        │ MaturityDate ┆ BDToMat ┆ IndicativeRate ┆ ForwardRate │
+        │ ---          ┆ ---     ┆ ---            ┆ ---         │
+        │ date         ┆ i64     ┆ f64            ┆ f64         │
+        ╞══════════════╪═════════╪════════════════╪═════════════╡
+        │ 2026-08-15   ┆ 207     ┆ 0.10089        ┆ 0.10089     │
+        │ 2027-05-15   ┆ 392     ┆ 0.088776       ┆ 0.074793    │
+        │ 2028-08-15   ┆ 707     ┆ 0.083615       ┆ 0.076598    │
+        │ 2029-05-15   ┆ 891     ┆ 0.0818         ┆ 0.074148    │
+        │ 2030-08-15   ┆ 1205    ┆ 0.080902       ┆ 0.077857    │
+        │ …            ┆ …       ┆ …              ┆ …           │
+        │ 2040-08-15   ┆ 3714    ┆ 0.076067       ┆ 0.070587    │
+        │ 2045-05-15   ┆ 4901    ┆ 0.075195       ┆ 0.069811    │
+        │ 2050-08-15   ┆ 6216    ┆ 0.074087       ┆ 0.064348    │
+        │ 2055-05-15   ┆ 7405    ┆ 0.073702       ┆ 0.067551    │
+        │ 2060-08-15   ┆ 8722    ┆ 0.073795       ┆ 0.074505    │
+        └──────────────┴─────────┴────────────────┴─────────────┘
+    """
+    # Validate and normalize the date
+    df = data(date).select("MaturityDate", "BDToMat", "IndicativeRate")
+    if zero_coupon:
+        df_ref = spot_rates(
+            settlement=date,
+            maturities=df["MaturityDate"],
+            rates=df["IndicativeRate"],
+        ).rename({"SpotRate": "ReferenceRate"})
+    else:
+        df_ref = df.rename({"IndicativeRate": "ReferenceRate"})
+    fwd_rates = fwd.forwards(bdays=df_ref["BDToMat"], rates=df_ref["ReferenceRate"])
+    df_ref = df_ref.with_columns(ForwardRate=fwd_rates)
+    df = df.join(
+        df_ref.select("MaturityDate", "ForwardRate"),
+        on="MaturityDate",
+        how="inner",
+    ).sort("MaturityDate")
+    return df

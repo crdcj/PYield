@@ -1,7 +1,6 @@
 import datetime as dt
 import logging
 from typing import Literal
-from zoneinfo import ZoneInfo
 
 import polars as pl
 
@@ -10,9 +9,9 @@ from pyield import bday
 from pyield.b3.futures.historical import fetch_bmf_data
 from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield.b3.futures.xml import fetch_xml_data
+from pyield.config import TIMEZONE_BZ
 from pyield.types import DateScalar, has_null_args
 
-BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
 logger = logging.getLogger(__name__)
 
@@ -26,26 +25,55 @@ HISTORICAL_START_TIME = dt.time(20, 0)
 INTRADAY_START_TIME = dt.time(9, 16)
 
 
+def _validate_reference_date(trade_date: dt.date) -> bool:
+    """Valida se a data de referência é utilizável para consulta.
+
+    Critérios:
+    - Deve ser um dia útil brasileiro.
+    - Não pode estar no futuro (maior que a data corrente no Brasil).
+
+    Retorna True se válida, False caso contrário (e loga um aviso).
+    """
+    today_bz = dt.datetime.now(TIMEZONE_BZ).date()
+    if trade_date > today_bz:
+        logger.warning(
+            "The provided date %s is in the future. Returning an empty DataFrame.",
+            trade_date,
+        )
+        return False
+    if not bday.is_business_day(trade_date):
+        logger.warning(
+            "The provided date %s is not a business day. Returning an empty DataFrame.",
+            trade_date,
+        )
+        return False
+
+    # Não tem pregão na véspera de Natal e Ano Novo
+    special_closed_dates = {  # Datas especiais
+        dt.date(trade_date.year, 12, 24),  # Véspera de Natal
+        dt.date(trade_date.year, 12, 31),  # Véspera de Ano Novo
+    }
+    if trade_date in special_closed_dates:
+        logger.warning(
+            "There is no trading session before Christmas and New Year's Eve: %s. "
+            + "Returning an empty DataFrame.",
+            trade_date,
+        )
+        return False
+
+    return True
+
+
 def _is_trading_day(check_date: dt.date) -> bool:
     """Check if a date is a trading day."""
-    # Só existe dado intraday se for o dia de hoje
-    today = dt.datetime.now(BZ_TIMEZONE).date()
-    if check_date != today:
+    # Primeiro valida regra geral de dia futuro / não útil / datas especiais
+    if not _validate_reference_date(check_date):
         return False
 
-    # Só existe dado intraday se for um dia de útil
-    if not bday.is_business_day(check_date):
+    # Intraday só existe para 'hoje'
+    today_bz = dt.datetime.now(TIMEZONE_BZ).date()
+    if check_date != today_bz:
         return False
-
-    # Pregão não abre na véspera de Natal e Ano Novo
-    special_closed_dates = {  # Datas especiais
-        dt.date(check_date.year, 12, 24),  # Véspera de Natal
-        dt.date(check_date.year, 12, 31),  # Véspera de Ano Novo
-    }
-    if check_date in special_closed_dates:
-        return False
-
-    # Se não retornou False até aqui, é porque é um dia de negociação
     return True
 
 
@@ -136,11 +164,16 @@ def futures(
     if has_null_args(contract_code, date):
         return pl.DataFrame()
     trade_date = cv.convert_dates(date)
+
+    # Validação centralizada (evita chamadas desnecessárias às APIs B3)
+    if not _validate_reference_date(trade_date):
+        return pl.DataFrame()
+
     selected_contract = str(contract_code).upper()
 
     if _is_trading_day(trade_date):
         # É um dia de negociação intraday
-        time = dt.datetime.now(BZ_TIMEZONE).time()
+        time = dt.datetime.now(TIMEZONE_BZ).time()
         if time < INTRADAY_START_TIME:  # Mercado não está aberto ainda
             logger.warning("Market is not open yet. Returning an empty DataFrame. ")
             return pl.DataFrame()

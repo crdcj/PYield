@@ -1,12 +1,15 @@
+import datetime as dt
+from typing import Sequence
+
 import polars as pl
 
-from pyield.types import DateArray, FloatArray, IntegerArray, has_null_args
+from pyield.types import FloatArray, IntegerArray, has_null_args
 
 
 def forwards(
     bdays: IntegerArray,
     rates: FloatArray,
-    groupby_dates: DateArray | IntegerArray | None = None,
+    group_by: Sequence[str | int | dt.date] | pl.Series | None = None,
 ) -> pl.Series:
     r"""
     Calcula taxas a termo (forward rates) a partir de taxas zero (spot rates).
@@ -40,7 +43,7 @@ def forwards(
     Valores nulos nas taxas ou prazos de entrada resultarão em valores nulos
     nas taxas a termo calculadas. A função também lida com agrupamentos
     opcionais, permitindo calcular taxas a termo para diferentes grupos de
-    datas. O agrupamento é feito com base em `groupby_dates`. Se este
+    datas. O agrupamento é feito com base em `group_by`. Se este
     argumento for None, todos os dados serão tratados como um único grupo.
     A função calcula as taxas a termo para todos os pontos, exceto o primeiro
     de cada grupo, que é tratado separadamente.
@@ -48,10 +51,11 @@ def forwards(
      Args:
         bdays (IntegerArray): Número de dias úteis para cada taxa zero.
         rates (FloatArray): Taxas zero correspondentes aos dias úteis.
-        groupby_dates (DateArray | IntegerArray | None, optional):
-            Critério de agrupamento opcional para segmentar os cálculos
-            (ex: por data de referência). Se None, todos os dados são tratados
-            como um único grupo. Default None.
+        group_by (GroupingCriteria, optional):
+            Critério de agrupamento para os cálculos (ex: datas de referência,
+            tickers de títulos). Pode ser uma lista/série de strings, inteiros
+            ou datas. Se None, todos os dados são tratados como um único grupo.
+            Default None.
 
     Returns:
         pl.Series: Série contendo as taxas a termo calculadas (tipo Float64).
@@ -59,7 +63,7 @@ def forwards(
 
      Raises:
         polars.exceptions.ShapeError: Se os comprimentos de `bdays`, `rates`
-            e `groupby_dates` (quando fornecido) não forem iguais.
+            e `group_by` (quando fornecido) não forem iguais.
 
     Examples:
         >>> bdays = [10, 20, 30]
@@ -74,8 +78,8 @@ def forwards(
         ]
 
         >>> # Exemplo com agrupamento (a última está isolada em outro grupo)
-        >>> groupby_dates = [1, 1, 2]
-        >>> yd.forwards(bdays, rates, groupby_dates)
+        >>> group_by = ["LTN", "LTN", "NTN-F"]
+        >>> yd.forwards(bdays, rates, group_by)
         shape: (3,)
         Series: 'fwd' [f64]
         [
@@ -134,7 +138,7 @@ def forwards(
         ]
 
     Note:
-        - A função ordena os dados de entrada primeiro por `groupby_dates`,
+        - A função ordena os dados de entrada primeiro por `group_by`,
         se for fornecido, e depois por `bdays` para garantir a ordem cronológica
         correta no cálculo das taxas a termo.
         - Os resultados são retornados na mesma ordem dos dados de entrada.
@@ -144,12 +148,12 @@ def forwards(
         return pl.Series(dtype=pl.Float64)
     # 1. Montar o DataFrame
     # Criar coluna de agrupamento dummy se não for fornecida
-    groupby_dates_exp = pl.Series(groupby_dates) if groupby_dates is not None else 0
+    group_by_exp = pl.Series(group_by) if group_by is not None else 0
     df_orig = pl.DataFrame(
         {
             "du_k": bdays,
             "rate_k": rates,
-            "groupby_date": groupby_dates_exp,
+            "group_by": group_by_exp,
         }
     )
 
@@ -164,13 +168,13 @@ def forwards(
     df_fwd = (
         df_orig.drop_nans()
         .drop_nulls()
-        .unique(subset=["du_k", "groupby_date"], keep="last")
-        .sort(["groupby_date", "du_k"])
+        .unique(subset=["du_k", "group_by"], keep="last")
+        .sort(["group_by", "du_k"])
         .with_columns(time_k=pl.col("du_k") / 252)  # Criar coluna de tempo em anos
         .with_columns(
             # Calcular os valores deslocados (shift) dentro de cada grupo
-            rate_j=pl.col("rate_k").shift(1).over("groupby_date"),
-            time_j=pl.col("time_k").shift(1).over("groupby_date"),
+            rate_j=pl.col("rate_k").shift(1).over("group_by"),
+            time_j=pl.col("time_k").shift(1).over("group_by"),
         )
         .with_columns(fwd=fwd_formula)
         .with_columns(
@@ -182,7 +186,7 @@ def forwards(
     )
     s_fwd = df_orig.join(
         df_fwd,
-        on=["du_k", "groupby_date"],
+        on=["du_k", "group_by"],
         how="left",
         maintain_order="left",
     ).get_column("fwd")

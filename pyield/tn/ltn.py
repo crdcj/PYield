@@ -1,7 +1,7 @@
 import polars as pl
 
 import pyield.converters as cv
-from pyield import anbima, bday
+from pyield import anbima, bday, fwd
 from pyield.tn import tools
 from pyield.tn.pre import di_spreads as pre_di_spreads
 from pyield.types import DateScalar, has_null_args
@@ -233,3 +233,49 @@ def di_spreads(date: DateScalar, bps: bool = False) -> pl.DataFrame:
         └──────────┴──────────────┴──────────┘
     """
     return pre_di_spreads(date, bps=bps).filter(pl.col("BondType") == "LTN")
+
+
+def forwards(date: DateScalar) -> pl.DataFrame:
+    """Calcula as taxas forward da LTN para uma data de referência.
+
+    As taxas indicativas da LTN já são spot (zero-coupon) por construção, pois o
+    título não paga cupons. Portanto o cálculo de forward é direto usando a
+    estrutura de vencimentos e suas taxas.
+
+    Args:
+        date (DateScalar): Data de referência das taxas indicativas.
+
+    Returns:
+        pl.DataFrame com colunas:
+            - MaturityDate
+            - BDToMat
+            - IndicativeRate (spot)
+            - ForwardRate
+
+    Examples:
+        >>> from pyield import ltn
+        >>> ltn.forwards("17-10-2025")
+        shape: (13, 4)
+        ┌──────────────┬─────────┬────────────────┬─────────────┐
+        │ MaturityDate ┆ BDToMat ┆ IndicativeRate ┆ ForwardRate │
+        │ ---          ┆ ---     ┆ ---            ┆ ---         │
+        │ date         ┆ i64     ┆ f64            ┆ f64         │
+        ╞══════════════╪═════════╪════════════════╪═════════════╡
+        │ 2026-01-01   ┆ 52      ┆ 0.148307       ┆ 0.148307    │
+        │ 2026-04-01   ┆ 113     ┆ 0.147173       ┆ 0.146207    │
+        │ 2026-07-01   ┆ 174     ┆ 0.145206       ┆ 0.141571    │
+        │ 2026-10-01   ┆ 239     ┆ 0.142424       ┆ 0.13501     │
+        │ 2027-04-01   ┆ 361     ┆ 0.138155       ┆ 0.129838    │
+        │ …            ┆ …       ┆ …              ┆ …           │
+        │ 2028-07-01   ┆ 676     ┆ 0.133411       ┆ 0.131654    │
+        │ 2029-01-01   ┆ 800     ┆ 0.134254       ┆ 0.138861    │
+        │ 2029-07-01   ┆ 924     ┆ 0.135264       ┆ 0.141802    │
+        │ 2030-01-01   ┆ 1049    ┆ 0.135967       ┆ 0.141177    │
+        │ 2032-01-01   ┆ 1553    ┆ 0.13883        ┆ 0.144812    │
+        └──────────────┴─────────┴────────────────┴─────────────┘
+    """
+    if has_null_args(date):
+        return pl.DataFrame()
+    df = data(date).select("MaturityDate", "BDToMat", "IndicativeRate")
+    fwd_rates = fwd.forwards(bdays=df["BDToMat"], rates=df["IndicativeRate"])
+    return df.with_columns(ForwardRate=fwd_rates).sort("MaturityDate")
