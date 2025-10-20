@@ -181,7 +181,7 @@ def futures(
         # Existe a chance de que os dados consolidados estejam disponíveis após as 20h
         if time >= HISTORICAL_START_TIME:
             df_hist = _get_historical_data(selected_contract, trade_date)
-            if not df_hist.empty:
+            if not df_hist.is_empty():
                 logger.info("Consolidated data is already available and will be used.")
                 return df_hist
 
