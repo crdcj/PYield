@@ -34,7 +34,7 @@ from pyield.types import DateScalar, has_null_args
 
 BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
-BOND_TYPES = Literal["LTN", "NTN-B", "NTN-C", "NTN-F", "LFT"]
+BOND_TYPES = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
 
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
 ANBIMA_RTM_HOSTNAME = "www.anbima.associados.rtm"
@@ -327,7 +327,7 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
 
 def tpf_data(
     date: DateScalar,
-    bond_type: str | None = None,
+    bond_type: BOND_TYPES | None = None,
     fetch_from_source: bool = False,
 ) -> pl.DataFrame:
     """Recupera os dados do mercado secundário de TPF da ANBIMA.

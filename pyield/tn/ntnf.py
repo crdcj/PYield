@@ -8,6 +8,7 @@ import pyield.converters as cv
 import pyield.interpolator as ip
 from pyield import anbima, bday
 from pyield.tn import tools
+from pyield.tn.pre import di_spreads as pre_di_spreads
 from pyield.types import DateArray, DateScalar, FloatArray, has_null_args
 
 """
@@ -737,3 +738,47 @@ def dv01(
     price1 = price(settlement, maturity, rate)
     price2 = price(settlement, maturity, rate + 0.0001)
     return price1 - price2
+
+
+def di_spreads(date: DateScalar, bps: bool = False) -> pl.DataFrame:
+    """
+    Calcula o DI Spread para títulos prefixados (LTN e NTN-F) em uma data de referência.
+
+    Definição do spread (forma bruta):
+        DISpread_raw = IndicativeRate - SettlementRate
+
+    Quando ``bps=False`` a coluna retorna essa diferença em formato decimal
+    (ex: 0.000439 ≈ 4.39 bps). Quando ``bps=True`` o valor é automaticamente
+    multiplicado por 10_000 e exibido diretamente em basis points.
+
+    Args:
+        date (DateScalar): Data de referência para buscar as taxas.
+        bps (bool): Se True, retorna DISpread já convertido em basis points.
+            Default False.
+
+    Returns:
+        pl.DataFrame com colunas:
+            - BondType
+            - MaturityDate
+            - DISpread (decimal ou bps conforme parâmetro)
+
+    Raises:
+        ValueError: Se os dados de DI não possuem 'SettlementRate' ou estão vazios.
+
+    Examples:
+        >>> from pyield import ntnf
+        >>> ntnf.di_spreads("30-05-2025", bps=True)
+        shape: (5, 3)
+        ┌──────────┬──────────────┬──────────┐
+        │ BondType ┆ MaturityDate ┆ DISpread │
+        │ ---      ┆ ---          ┆ ---      │
+        │ str      ┆ date         ┆ f64      │
+        ╞══════════╪══════════════╪══════════╡
+        │ NTN-F    ┆ 2027-01-01   ┆ -3.31    │
+        │ NTN-F    ┆ 2029-01-01   ┆ 14.21    │
+        │ NTN-F    ┆ 2031-01-01   ┆ 21.61    │
+        │ NTN-F    ┆ 2033-01-01   ┆ 11.51    │
+        │ NTN-F    ┆ 2035-01-01   ┆ 22.0     │
+        └──────────┴──────────────┴──────────┘
+    """
+    return pre_di_spreads(date, bps=bps).filter(pl.col("BondType") == "NTN-F")

@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 import polars as pl
 
@@ -7,6 +9,8 @@ from pyield.anbima import tpf
 from pyield.b3 import di1
 from pyield.tn import ntnf
 from pyield.types import DateScalar
+
+logger = logging.getLogger(__name__)
 
 
 def spot_rates(date: DateScalar) -> pd.DataFrame:
@@ -148,30 +152,34 @@ def _validate_final_result(df_combined: pd.DataFrame) -> None:
         raise ValueError("Final result contains NaN values in SpotRate column")
 
 
-def di_spreads(date: DateScalar) -> pl.DataFrame:
+def di_spreads(date: DateScalar, bps: bool = False) -> pl.DataFrame:
     """
-    Calculates the DI spread for Brazilian treasury bonds (LTN and NTN-F) based on
-    ANBIMA's indicative rates.
+    Calcula o DI Spread para títulos prefixados (LTN e NTN-F) em uma data de referência.
 
-    This function fetches the indicative rates for Brazilian treasury securities (LTN
-    and NTN-F bonds) and the DI futures rates for a specified reference date,
-    calculating the spread between these rates in basis points. If no reference date is
-    provided, the function uses the previous business day.
+    Definição do spread (forma bruta):
+        spread = taxa indicativa do PRE - taxa de ajuste do DI
 
-    Parameters:
-        date (DateScalar): The reference date for the spread calculation.
+    Quando ``bps=False`` a coluna retorna essa diferença em formato decimal
+    (ex: 0.000439 ≈ 4.39 bps). Quando ``bps=True`` o valor é automaticamente
+    multiplicado por 10_000 e exibido diretamente em basis points.
+
+    Args:
+        date (DateScalar): Data de referência para buscar as taxas.
+        bps (bool): Se True, retorna DISpread já convertido em basis points.
+            Default False.
 
     Returns:
-        pl.DataFrame: DataFrame containing the bond type, maturity date and the
-            calculated spread in basis points.
+        pl.DataFrame com colunas:
+            - BondType
+            - MaturityDate
+            - DISpread (decimal ou bps conforme parâmetro)
 
     Raises:
-        ValueError: If DI data is missing the 'SettlementRate' column or is empty.
+        ValueError: Se os dados de DI não possuem 'SettlementRate'.
 
     Examples:
         >>> from pyield import pre
-        >>> df = pre.di_spreads("30-05-2025")
-        >>> print(df.with_columns(pl.col("DISpread") * 10000))  # Convert to bps
+        >>> pre.di_spreads("30-05-2025", bps=True)
         shape: (18, 3)
         ┌──────────┬──────────────┬──────────┐
         │ BondType ┆ MaturityDate ┆ DISpread │
@@ -194,8 +202,9 @@ def di_spreads(date: DateScalar) -> pl.DataFrame:
     # Fetch DI rates for the reference date
     converted_date = cv.convert_dates(date)
     df_di = di1.data(dates=converted_date, month_start=True)
-    if "SettlementRate" not in df_di.columns or df_di.is_empty():
-        raise ValueError("DI data is missing the 'SettlementRate' column or is empty.")
+
+    if "SettlementRate" not in df_di.columns:
+        raise ValueError("DI data is missing the 'SettlementRate' column.")
 
     # Prepare DI DataFrame for merging
     df_di = df_di.select("ExpirationDate", "SettlementRate").rename(
@@ -203,9 +212,11 @@ def di_spreads(date: DateScalar) -> pl.DataFrame:
     )
 
     # Fetch bond rates, filtering for LTN and NTN-F types
-    df_ltn = tpf.tpf_data(converted_date, "LTN")
-    df_ntnf = tpf.tpf_data(converted_date, "NTN-F")
-    df_pre = pl.concat([df_ltn, df_ntnf], how="diagonal")
+    df_pre = tpf.tpf_data(converted_date, "PRE")
+
+    if df_di.is_empty() or df_pre.is_empty():
+        logger.warning("DI or PRE data is empty for date: %s", converted_date)
+        return pl.DataFrame(columns=["BondType", "MaturityDate", "DISpread"])
 
     # Calculate the DI spread as the difference between indicative and settlement rates
     df_spreads = (
@@ -214,5 +225,8 @@ def di_spreads(date: DateScalar) -> pl.DataFrame:
         .select("BondType", "MaturityDate", "DISpread")
         .sort("BondType", "MaturityDate")
     )
+
+    if bps:
+        df_spreads = df_spreads.with_columns(pl.col("DISpread") * 10_000)
 
     return df_spreads
