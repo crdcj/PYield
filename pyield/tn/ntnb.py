@@ -228,7 +228,7 @@ def quotation(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float:
+) -> float | None:
     """
     Calculate the NTN-B quotation in base 100 using Anbima rules.
 
@@ -239,7 +239,7 @@ def quotation(
             the cash flows, which is the yield to maturity (YTM) of the NTN-B.
 
     Returns:
-        float: The NTN-B quotation truncated to 4 decimal places.
+        float | None: The NTN-B quotation truncated to 4 decimal places.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -257,7 +257,7 @@ def quotation(
         100.6409
     """
     if has_null_args(settlement, maturity, rate):
-        return float("nan")
+        return None
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -284,7 +284,7 @@ def quotation(
 def price(
     vna: float,
     quotation: float,
-) -> float:
+) -> float | None:
     """
     Calculate the NTN-B price using Anbima rules.
 
@@ -306,7 +306,7 @@ def price(
         4343.156412
     """
     if has_null_args(vna, quotation):
-        return float("nan")
+        return None
     return tl.truncate(vna * quotation / 100, 6)
 
 
@@ -556,7 +556,7 @@ def duration(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float:
+) -> float | None:
     """
     Calculate the Macaulay duration of the NTN-B bond in business years.
 
@@ -566,7 +566,7 @@ def duration(
         rate (float): The discount rate used to calculate the duration.
 
     Returns:
-        float: The Macaulay duration of the NTN-B bond in business years.
+        float | None: The Macaulay duration of the NTN-B bond in business years.
 
     Examples:
         >>> from pyield import ntnb
@@ -575,7 +575,7 @@ def duration(
     """
     # Return NaN if any input is nullable
     if has_null_args(settlement, maturity, rate):
-        return float("nan")
+        return None
 
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
@@ -594,7 +594,7 @@ def dv01(
     maturity: DateScalar,
     rate: float,
     vna: float,
-) -> float:
+) -> float | None:
     """
     Calculate the DV01 (Dollar Value of 01) for an NTN-B in R$.
 
@@ -609,7 +609,7 @@ def dv01(
             the cash flows, which is the yield to maturity (YTM) of the NTN-B.
 
     Returns:
-        float: The DV01 value, representing the price change for a 1 basis point
+        float | None: The DV01 value, representing the price change for a 1 basis point
             increase in yield.
 
     Examples:
@@ -618,7 +618,7 @@ def dv01(
         4.640875999999935
     """
     if has_null_args(settlement, maturity, rate, vna):
-        return float("nan")
+        return None
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)

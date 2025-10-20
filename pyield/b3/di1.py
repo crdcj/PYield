@@ -331,7 +331,7 @@ def interpolate_rate(
     date: DateScalar,
     expiration: DateScalar,
     extrapolate: bool = False,
-) -> float:
+) -> float | None:
     """
     Interpolates or retrieves the DI rate for a single expiration date.
 
@@ -349,8 +349,8 @@ def interpolate_rate(
             expirations for the given `date`. Defaults to False.
 
     Returns:
-        float: The exact or interpolated DI settlement rate for the specified
-            date and expiration. Returns `float('NaN')` if:
+        float | None: The exact or interpolated DI settlement rate for the specified
+            date and expiration. Returns `None` if:
                 - No DI data is found for the `date`.
                 - The `expiration` is outside range and `extrapolate` is False.
                 - An interpolation calculation fails.
@@ -371,7 +371,7 @@ def interpolate_rate(
     """
     if has_null_args(date, expiration):
         logger.warning("Both 'date' and 'expiration' must be provided. Returning NaN.")
-        return float("nan")
+        return None
 
     converted_date = cv.convert_dates(date)
     converted_expiration = cv.convert_dates(expiration)
@@ -385,7 +385,7 @@ def interpolate_rate(
     df = _get_data(dates=converted_date)
 
     if df.is_empty():
-        return float("nan")
+        return None
 
     ff_interp = interpolator.Interpolator(
         method="flat_forward",

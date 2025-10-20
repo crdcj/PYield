@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 DI_OVER_DECIMAL_PLACES = 4
 
 
-def di_over(date: DateScalar) -> float:
+def di_over(date: DateScalar) -> float | None:
     """
     Gets the DI (Interbank Deposit) rate for a specific date from B3/CETIP FTP server.
 
@@ -18,7 +18,7 @@ def di_over(date: DateScalar) -> float:
         date (str): Date in DD/MM/YYYY format
 
     Returns:
-        float: DI rate for the specified date or NaN (Not a Number) if no data is found.
+        float | None: DI rate for the specified date or None if no data is found.
 
     Raises:
         ValueError: If date is not in the correct format
@@ -30,7 +30,7 @@ def di_over(date: DateScalar) -> float:
         0.1315
     """
     if has_null_args(date):
-        return float("nan")
+        return None
     ftp = None
     try:
         # Convert date to file format
@@ -56,7 +56,7 @@ def di_over(date: DateScalar) -> float:
             return round(rate, DI_OVER_DECIMAL_PLACES)
         else:
             logger.error(f"No data found for date {date}")
-            return float("nan")
+            return None
 
     except ValueError as e:
         logger.error(f"Date format error: {e}")

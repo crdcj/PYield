@@ -200,7 +200,7 @@ def price(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float:
+) -> float | None:
     """
     Calculate the NTN-F price using Anbima rules, which corresponds to the present
         value of the cash flows discounted at the given yield to maturity rate (YTM).
@@ -212,7 +212,7 @@ def price(
             present value of the cash flows.
 
     Returns:
-        float: The NTN-F price using Anbima rules.
+        float | None: The NTN-F price using Anbima rules.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -226,7 +226,7 @@ def price(
         895.359254
     """
     if has_null_args(settlement, maturity, rate):
-        return float("nan")
+        return None
     cf_df = cash_flows(settlement, maturity)
     cf_values = cf_df["CashFlow"]
     bdays = bday.count(settlement, cf_df["PaymentDate"])
@@ -368,7 +368,7 @@ def spot_rates(  # noqa
         cf_dates = payment_dates(settlement, mat_date)[:-1]
         if len(cf_dates) == 0:
             # Caso improvável, mas protege contra divisão por zero mais adiante
-            spot_rate = float("nan")
+            spot_rate = None
             solved_spot_rates.append(spot_rate)
             spot_map[mat_date] = spot_rate
             continue
@@ -485,7 +485,7 @@ def di_net_spread(  # noqa
     di_expirations: DateScalar,
     di_rates: FloatArray,
     initial_guess: float | None = None,
-) -> float:
+) -> float | None:
     """
     Calculate the net DI spread for a bond given the YTM and the DI rates.
 
@@ -505,7 +505,7 @@ def di_net_spread(  # noqa
             None. A good initial guess is the DI gross spread for the bond.
 
     Returns:
-        float: The net DI spread in decimal format (e.g., 0.0012 for 12 bps).
+        float | None: The net DI spread in decimal format (e.g., 0.0012 for 12 bps).
 
     Examples:
         # Obs: only some of the DI rates will be used in the example.
@@ -521,12 +521,13 @@ def di_net_spread(  # noqa
         >>> round(spread * 10_000, 2)  # Convert to bps for display
         12.13
     """
+    # 1. Validação e conversão de inputs
     if has_null_args(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
-        return float("nan")
-    # 1. Validação e conversão de datas
+        return None
     settlement = cv.convert_dates(settlement)
     ntnf_maturity = cv.convert_dates(ntnf_maturity)
     di_expirations = cv.convert_dates(di_expirations)
+
     # Force di_rates to be a Polars Series
     if not isinstance(di_rates, pl.Series):
         di_rates = pl.Series(di_rates)
@@ -576,7 +577,7 @@ def premium(
     ntnf_rate: float,
     di_expirations: DateScalar,
     di_rates: FloatArray,
-) -> float:
+) -> float | None:
     """
     Calculate the premium of an NTN-F bond over DI rates.
 
@@ -594,7 +595,7 @@ def premium(
             the expiration dates.
 
     Returns:
-        float: The premium of the NTN-F bond over the DI curve, expressed as a
+        float | None: The premium of the NTN-F bond over the DI curve, expressed as a
         factor.
 
     Examples:
@@ -616,7 +617,7 @@ def premium(
 
     """
     if has_null_args(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
-        return float("nan")
+        return None
     # 1. Validação e conversão de datas (padrão consistente)
     settlement = cv.convert_dates(settlement)
     ntnf_maturity = cv.convert_dates(ntnf_maturity)
@@ -694,7 +695,7 @@ def duration(
         6.32854218039796
     """
     if has_null_args(settlement, maturity, rate):
-        return float("nan")
+        return None
     # Normalize inputs
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -710,7 +711,7 @@ def dv01(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float:
+) -> float | None:
     """
     Calculate the DV01 (Dollar Value of 01) for an NTN-F in R$.
 
@@ -725,7 +726,7 @@ def dv01(
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
 
     Returns:
-        float: The DV01 value, representing the price change for a 1 basis point
+        float | None: The DV01 value, representing the price change for a 1 basis point
             increase in yield.
 
     Examples:
@@ -734,7 +735,7 @@ def dv01(
         0.39025200000003224
     """
     if has_null_args(settlement, maturity, rate):
-        return float("nan")
+        return None
     price1 = price(settlement, maturity, rate)
     price2 = price(settlement, maturity, rate + 0.0001)
     return price1 - price2

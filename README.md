@@ -7,17 +7,16 @@
 PYield is a Python library designed for the analysis of Brazilian fixed income instruments. Leveraging the power of popular Python libraries like Polars, Pandas, Numpy and Requests, PYield simplifies the process of obtaining and processing data from key sources such as ANBIMA, BCB, IBGE and B3.
 
 ---
-### ⚠️ Polars Migration Notice (v0.40+)
+### ✅ Polars Migration Completed
 
-Starting with version **0.40**, PYield will progressively migrate function returns to use **Polars DataFrames and Series** instead of Pandas. The main driver for this change is to leverage Polars' more **robust and stable data typing capabilities**, ensuring higher consistency and reliability across financial calculations.
+All public functions now return **Polars DataFrames or Series** as the canonical format. This provides stronger typing, faster execution and more reliable date/rate handling.
 
-If you need to convert the returned Polars object back to Pandas, you can easily use the `.to_pandas()` method:
-
+Need Pandas? Convert explicitly:
 ```python
-# Assuming 'df'/'s' are the Polars DataFrame/Series returned by a PYield function
 df_pandas = df.to_pandas(use_pyarrow_extension_array=True)
-s_pandas = s.to_pandas(use_pyarrow_extension_array=True)
+series_pandas = s.to_pandas(use_pyarrow_extension_array=True)
 ```
+The internal typing relies on PyArrow-backed dtypes for consistency across numeric and date operations.
 
 ## Documentation
 
@@ -60,140 +59,150 @@ The accepted formats in `DateArray` are:
 
 Referencing `DateScalar` and `DateArray` in function arguments simplifies the code by allowing any of these date formats to be used interchangeably.
 
-### Important Note on Date Formats
-When using date strings in PYield functions, please ensure that the **date format is day-first** (e.g., "31-05-2024"). This format was chosen to be consistent with the Brazilian date convention.
+### Date String Formats
+Accepted string date formats:
 
-For production code, it is recommended to parse date strings with `pandas.to_datetime` using an **explicit format** to avoid ambiguity and ensure consistency. For example:
+- Day-first (Brazilian): `DD-MM-YYYY` (e.g., `31-05-2024`)
+- Day-first (slash): `DD/MM/YYYY` (e.g., `31/05/2024`)
+- ISO: `YYYY-MM-DD` (e.g., `2024-05-31`)
+
+Rules:
+- No ambiguous autodetection: `2024-05-06` is always interpreted as ISO (`YYYY-MM-DD`).
+- A collection of strings must not mix different styles; the first non-null value defines the format.
+- Nulls are preserved; empty collections are not allowed.
+
+Recommendation:
+Always parse external inputs explicitly when constructing your own pipelines:
 ```python
 import pandas as pd
-# Converting a date string to a pandas Timestamp with a specific format
-date = pd.to_datetime("2024/31/05", format="%Y/%d/%m")
-date = pd.to_datetime("05-31-2024", format="%m-%d-%Y")
+dt_val = pd.to_datetime("31-05-2024", format="%d-%m-%Y")
+iso_val = pd.to_datetime("2024-05-31", format="%Y-%m-%d")
 ```
 ## How to use PYield
 ### Brazilian Treasury Bonds Tools
 ```python
->>> from pyield import ntnb, ntnf, ltn
+>>> from pyield import ltn, ntnb, ntnf
 
-# Get ANBIMA data for a given date
+# Get ANBIMA LTN data for a given date
 >>> ltn.data("23-08-2024")
-┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬─────────┐
-│ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate  │
-│ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---     │
-│ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64      ┆ f64      ┆ f64            ┆ f64     │
-╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪══════════╪══════════╪════════════════╪═════════╡
-│ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2022-07-08    ┆ … ┆ 0.10459  ┆ 0.104252 ┆ 0.104416       ┆ 0.10472 │
-│ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2018-02-01    ┆ … ┆ 0.107366 ┆ 0.107016 ┆ 0.107171       ┆ 0.10823 │
-│ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2023-01-06    ┆ … ┆ 0.110992 ┆ 0.110746 ┆ 0.110866       ┆ 0.11179 │
-│ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2022-01-07    ┆ … ┆ 0.11315  ┆ 0.112947 ┆ 0.113032       ┆ 0.11365 │
-│ …             ┆ …        ┆ …         ┆ …             ┆ … ┆ …        ┆ …        ┆ …              ┆ …       │
-│ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2023-07-07    ┆ … ┆ 0.115452 ┆ 0.115247 ┆ 0.115335       ┆ 0.11498 │
-│ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2024-01-05    ┆ … ┆ 0.115758 ┆ 0.115633 ┆ 0.115694       ┆ 0.11508 │
-│ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2024-07-05    ┆ … ┆ 0.11647  ┆ 0.116341 ┆ 0.116417       ┆ 0.11554 │
-│ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2024-01-05    ┆ … ┆ 0.117504 ┆ 0.11737  ┆ 0.117436       ┆ 0.11594 │
-└───────────────┴──────────┴───────────┴───────────────┴───┴──────────┴──────────┴────────────────┴─────────┘
+shape: (13, 14)
+┌──────────────┬─────────┬──────────┬──────────────┬───┬─────────┬─────────┬──────────────┬────────┐
+│ ReferenceDate│ BondType│ SelicCode│ IssueBaseDate│ … │ BidRate │ AskRate │ IndicativeRate│ DIRate │
+│ ---          │ ---     │ ---      │ ---          │   │ ---     │ ---     │ ---           │ ---    │
+│ date         │ str     │ i64      │ date         │   │ f64     │ f64     │ f64           │ f64    │
+├──────────────┼─────────┼──────────┼──────────────┼───┼─────────┼─────────┼──────────────┼────────┤
+│ 2024-08-23   │ LTN     │ 100000   │ 2022-07-08   │ … │ 0.10459 │ 0.104252│ 0.104416      │ 0.10472│
+│ 2024-08-23   │ LTN     │ 100000   │ 2018-02-01   │ … │ 0.107366│ 0.107016│ 0.107171      │ 0.10823│
+│ 2024-08-23   │ LTN     │ 100000   │ 2023-01-06   │ … │ 0.110992│ 0.110746│ 0.110866      │ 0.11179│
+│ …            │ …       │ …        │ …            │ … │ …       │ …       │ …             │ …      │
+└──────────────┴─────────┴──────────┴──────────────┴───┴─────────┴─────────┴──────────────┴────────┘
 
-# Calculate the quotation of a NTN-B bond as per ANBIMA's rules
+# Calculate the quotation of an NTN-B bond (base 100, truncated to 4 decimals)
 >>> ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)
 99.3651
 >>> ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)
 99.5341
 
-# Calculate the DI Spread of NTN-F and LTN bonds in a given date
->>> ntnf.di_spreads("23-08-2024")
-    MaturityDate  DISpread
-0   2025-01-01     -5.38
-1   2027-01-01      4.39
-2   2029-01-01      7.37
-3   2031-01-01     12.58
-4   2033-01-01      7.67
-5   2035-01-01     12.76
+# DI Spreads: IndicativeRate - SettlementRate (bps=True multiplies by 10_000)
+>>> ntnf.di_spreads("30-05-2025", bps=True)
+shape: (5, 3)
+┌─────────┬────────────┬──────────┐
+│ BondType│ MaturityDate│ DISpread │
+│ ---     │ ---         │ ---      │
+│ str     │ date        │ f64      │
+├─────────┼────────────┼──────────┤
+│ NTN-F   │ 2027-01-01  │ -3.31    │
+│ NTN-F   │ 2029-01-01  │ 14.21    │
+│ NTN-F   │ 2031-01-01  │ 21.61    │
+│ NTN-F   │ 2033-01-01  │ 11.51    │
+│ NTN-F   │ 2035-01-01  │ 22.0     │
+└─────────┴────────────┴──────────┘
 ```
 
-### Business Days Tools (Brazilian holidays are automatically considered)
+### Business Days Tools (Brazilian holidays automatically considered)
 ```python
 >>> from pyield import bday
-# Count the number of business days between two dates
-# Start date is included, end date is excluded
->>> bday.count(start='29-12-2023', end='02-01-2024')
+# Count business days (start inclusive, end exclusive)
+>>> bday.count("29-12-2023", "02-01-2024")
 1
 
-# Get the next business day after a given date (offset=1)
->>> bday.offset(dates="29-12-2023", offset=1)
+# Next business day after given date (offset=1)
+>>> bday.offset("29-12-2023", 1)
 datetime.date(2024, 1, 2)
 
-# Get the next business day if it is not a business day (offset=0)
->>> bday.offset(dates="30-12-2023", offset=0)
+# Adjust to next business day when not a business day (offset=0)
+>>> bday.offset("30-12-2023", 0)
 datetime.date(2024, 1, 2)
 
-# Since 29-12-2023 is a business day, it returns the same date (offset=0)
->>> bday.offset(dates="29-12-2023", offset=0)
+# Returns same date if already business day (offset=0)
+>>> bday.offset("29-12-2023", 0)
 datetime.date(2023, 12, 29)
 
-# Generate a pandas series with the business days between two dates
->>> bday.generate(start='29-12-2023', end='03-01-2024')
-0   2023-12-29
-1   2024-01-02
-2   2024-01-03
+# Generate business day series
+>>> bday.generate(start="22-12-2023", end="02-01-2024")
+shape: (6,)
+Series: '' [date]
+[
+    2023-12-22
+    2023-12-26
+    2023-12-27
+    2023-12-28
+    2023-12-29
+    2024-01-02
+]
 ```
 
 ### Futures Data
 ```python
->>> import pyield as yd
+>>> from pyield.b3.futures import futures
 
-# Fetch historical DI Futures data from B3
->>> yd.futures(contract_code="DI1", date='08-03-2024')
-TradeDate  TickerSymbol ExpirationDate BDaysToExp ... LastRate LastAskRate LastBidRate SettlementRate
-2024-03-08       DI1J24     2024-04-01         15 ...   10.952      10.952      10.956         10.956
-2024-03-08       DI1K24     2024-05-02         37 ...   10.776      10.774      10.780         10.777
-2024-03-08       DI1M24     2024-06-03         58 ...   10.604      10.602      10.604         10.608
-       ...          ...            ...        ... ...      ...         ...         ...            ...
-2024-03-08       DI1F37     2037-01-02       3213 ...     <NA>        <NA>        <NA>         10.859
-2024-03-08       DI1F38     2038-01-04       3462 ...     <NA>        <NA>        <NA>         10.859
-2024-03-08       DI1F39     2039-01-03       3713 ...     <NA>        <NA>        <NA>         10.85
-
-# Fetch current DI Futures data from B3 (15 minutes delay)
->>> yd.futures(contract_code="DI1", date="21-03-2024")  # when the date used is the current date and market is open
-LastUpdatee      TickerSymbol ExpirationDate BDaysToExp ... MaxRate LastAskRate LastBidRate LastRate
-2024-04-21 13:37:39       DI1K24     2024-05-02          7 ... 0.10660     0.10652     0.10660  0.10660
-2024-04-21 13:37:39       DI1M24     2024-06-03         28 ... 0.10518     0.10510     0.10516  0.10518
-2024-04-21 13:37:39       DI1N24     2024-07-01         48 ... 0.10480     0.10456     0.10462  0.10460
-                ...          ...            ...        ... ...     ...         ...         ...      ...
-2024-04-21 13:37:39       DI1F37     2037-01-02       3183 ...    <NA>        <NA>     0.11600     <NA>
-2024-04-21 13:37:39       DI1F38     2038-01-04       3432 ...    <NA>        <NA>     0.11600     <NA>
-2024-04-21 13:37:39       DI1F39     2039-01-03       3683 ...    <NA>        <NA>        <NA>     <NA>
+# Fetch DI1 futures (historical)
+>>> futures("DI1", "31-05-2024")
+shape: (40, 20)
+┌────────────┬──────────────┬──────────────┬────────────┬───┬──────────────┬─────────┬──────────────┬─────────────┐
+│ TradeDate  ┆ TickerSymbol ┆ ExpirationDate┆ BDaysToExp ┆ … ┆ CloseBidRate ┆ CloseRate┆ SettlementRate┆ ForwardRate │
+│ ---        ┆ ---          ┆ ---           ┆ ---        ┆   ┆ ---          ┆ ---      ┆ ---           ┆ ---         │
+│ date       ┆ str          ┆ date          ┆ i64        ┆   ┆ f64          ┆ f64      ┆ f64           ┆ f64         │
+├────────────┼──────────────┼──────────────┼────────────┼───┼──────────────┼─────────┼──────────────┼─────────────┤
+│ 2024-05-31 ┆ DI1M24       ┆ 2024-06-03    ┆ 1          ┆ … ┆ 0.10404      ┆ 0.10404  ┆ 0.10399       ┆ 0.10399     │
+│ 2024-05-31 ┆ DI1N24       ┆ 2024-07-01    ┆ 21         ┆ … ┆ 0.1039       ┆ 0.10386  ┆ 0.1039        ┆ 0.103896    │
+│ 2024-05-31 ┆ DI1Q24       ┆ 2024-08-01    ┆ 44         ┆ … ┆ 0.10374      ┆ 0.10374  ┆ 0.1037        ┆ 0.103517    │
+│ …          ┆ …            ┆ …            ┆ …          ┆ … ┆ …            ┆ …        ┆ …             ┆ …           │
+└────────────┴──────────────┴──────────────┴────────────┴───┴──────────────┴─────────┴──────────────┴─────────────┘
 ```
 
 ### Indicators Data
 ```python
 >>> from pyield import bc
 
-# Fetch the SELIC target rates from the Central Bank of Brazil
->>> bc.selic_over_series("26-01-2025", "30-01-2025")  # No data on 26-01-2025 (sunday)
-        Date   Value
-0 2025-01-27  0.1215
-1 2025-01-28  0.1215
-2 2025-01-29  0.1215
-3 2025-01-30  0.1315
+# SELIC Over series (no data on Sunday)
+>>> bc.selic_over_series("26-01-2025").head(5)
+shape: (5, 2)
+┌────────────┬────────┐
+│ Date       ┆ Value  │
+│ ---        ┆ ---    │
+│ date       ┆ f64    │
+├────────────┼────────┤
+│ 2025-01-27 ┆ 0.1215 │
+│ 2025-01-28 ┆ 0.1215 │
+│ 2025-01-29 ┆ 0.1215 │
+│ 2025-01-30 ┆ 0.1315 │
+│ 2025-01-31 ┆ 0.1315 │
+└────────────┴────────┘
 
-# Fetch the SELIC target rate for a specific date
->>> bc.selic_over("27-01-2025")
-        Date   Value
-0.1215  # 12.15%
+# SELIC Over for a single date
+>>> bc.selic_over("31-05-2024")
+0.104  # 10.40%
 ```
 
 ### Projections Data
 ```python
 >>> from pyield import ipca
-# Fetch current month projection for IPCA from IBGE API
->>> current_ipca = ipca.projected_rate()
->>> print(current_ipca)
-IndicatorProjection(
-    last_updated=Timestamp('2024-04-19 18:55:00'),    
-    reference_period='set/24',
-    projected_value=0.0035  # 0.35%
-)
->>> ipca.projected_value
+# Fetch current month projection for IPCA
+>>> proj = ipca.projected_rate()
+>>> proj
+IndicatorProjection(last_updated=..., reference_period=..., projected_value=...)
+>>> proj.projected_value
 0.0035  # 0.35%
 ```
 
