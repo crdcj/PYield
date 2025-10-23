@@ -151,7 +151,7 @@ def count(
 
     s_bdays = df.select(result_expr.alias("bdays"))["bdays"]
 
-    # Se a entrada original era escalar, retorna o valor escalar
+    # Se a série resultante tem tamanho 1, retorna o valor escalar
     if len(s_bdays) == 1:
         return s_bdays.item()
 
@@ -350,7 +350,7 @@ def offset(
     # Executa a expressão e obtém a série de resultados
     result_series = df.select(result_expr.alias("result"))["result"]
 
-    # Se a entrada original era escalar, retorna o valor escalar
+    # Se a série resultante tem tamanho 1, retorna o valor escalar
     if len(result_series) == 1:
         return result_series.item()
 
@@ -432,7 +432,7 @@ def generate(
         holidays=applicable_holidays,
     )
     s_pd = pd.Series(result_dti.values).astype("date32[pyarrow]")
-    return pl.Series(s_pd)
+    return pl.from_pandas(s_pd)
 
 
 @overload
@@ -440,25 +440,40 @@ def is_business_day(dates: DateScalar) -> bool | None: ...
 @overload
 def is_business_day(dates: DateArray) -> pl.Series: ...
 def is_business_day(dates: DateScalar | DateArray) -> bool | pl.Series | None:
-    """Check if date(s) are business day(s) in Brazil.
+    """Determine whether date(s) are Brazilian business days with per-element
+    holiday regime selection.
 
-    This function applies the correct holiday list (old vs. new) for EACH date
-    relative to the transition date ``2023-12-26``. Dates before the transition
-    use the *old* holiday list; dates on/after the transition use the *new*
-    holiday list.
+    PER-ROW HOLIDAY REGIME: For EACH input date the appropriate holiday list
+    ("old" vs. "new") is selected by comparing to the transition date
+    ``2023-12-26`` (``TRANSITION_DATE``). Dates strictly before the transition
+    use the old list; dates on or after it use the new list. This mirrors the
+    behavior of ``count`` and ``offset`` which apply regime logic element-wise.
 
-    Behavior mirrors other functions in this module: if the resulting length is 1
-    (even if the user passed a single-element collection) a Python ``bool`` (or
-    ``None`` for null input) is returned; otherwise a ``polars.Series`` of booleans
-    is returned with nulls propagated.
+    ORDER & SHAPE PRESERVATION: The output preserves the original element order.
+    No sorting, deduplication, reshaping or alignment is performed; the i-th
+    result corresponds to the i-th provided date after broadcasting (if any
+    broadcasting occurred from a scalar input elsewhere in the call chain).
+
+    NULL PROPAGATION: A null scalar argument short-circuits to ``None``. Null
+    values inside array-like inputs produce nulls at the corresponding output
+    positions.
+
+    RETURN TYPE: If the (non-null) input resolves to a single element a Python
+    ``bool`` is returned. If that lone element is null, ``None`` is returned.
+    Otherwise a ``polars.Series`` of booleans named ``'is_bday'`` is produced.
+
+    WEEKENDS: Saturdays and Sundays are never business days regardless of the
+    holiday regime.
 
     Args:
-        dates: A single date or a collection of dates (scalar, list/tuple/Series,
-            numpy array, Polars/Pandas Series). Null scalar inputs return ``None``.
+        dates: Single date or collection (list/tuple/ndarray/Polars/Pandas
+            Series). May include nulls which propagate. Null scalar input
+            returns ``None``.
 
     Returns:
-        bool | pl.Series | None: ``True`` if business day, ``False`` if not, ``None``
-        for null scalar input, or a Polars boolean Series for array inputs.
+        bool | pl.Series | None: ``True`` if business day, ``False`` otherwise
+        for scalar input; ``None`` for null scalar input; or a Polars boolean
+        Series (name: ``'is_bday'``) for array inputs.
 
     Examples:
         >>> from pyield import bday
@@ -475,9 +490,10 @@ def is_business_day(dates: DateScalar | DateArray) -> bool | pl.Series | None:
         ]
 
     Notes:
-        - The transition date is defined in ``TRANSITION_DATE``.
-        - Null elements in array inputs propagate as nulls.
-        - Weekends are never business days.
+        - Transition date defined in ``TRANSITION_DATE``.
+        - Mirrors per-row logic used in ``count`` and ``offset``.
+        - Weekends always evaluate to ``False``.
+        - Null elements propagate.
     """
     # Validate and normalize inputs
     if has_null_args(dates):
