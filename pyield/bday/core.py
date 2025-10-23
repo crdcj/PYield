@@ -34,43 +34,37 @@ def count(
     end: DateScalar | DateArray,
 ) -> int | pl.Series | None:
     """
-    Counts the number of business days between a `start` date (inclusive) and an `end`
-    date (exclusive). The function can handle single dates, arrays of dates and
-    mixed inputs, returning either a single integer or a series of integers depending
-    on the inputs. It accounts for specified holidays, effectively excluding them from
-    the business day count.
+    Count business days between `start` (inclusive) and `end` (exclusive) with
+    Brazilian holiday adjustment and per-row holiday regime selection.
 
-    **Important Note:** Each date in the `start` input is evaluated individually to
-    determine which list of holidays (old or new) applies to the calculation. The
-    transition date is 2023-12-26, which means:
-    - Dates before 2023-12-26 use the old holiday list.
-    - Dates on or after 2023-12-26 use the new holiday list.
+    ORDER PRESERVATION (critical): The output order ALWAYS matches the element-wise
+    order of the original inputs. No sorting, deduplication, alignment or reshaping is
+    performed. If you pass arrays, the i-th result corresponds to the i-th pair of
+    (`start`, `end`) after broadcasting. This guarantees safe assignment back to the
+    originating DataFrame.
+
+    Holiday regime: For each `start` value, the holiday list (old vs. new) is chosen
+    based on the transition date 2023-12-26 (`TRANSITION_DATE`). Starts before the
+    transition use the old list for that row's count; starts on/after use the new list.
+
+    Null propagation: If any scalar argument is null, returns `None`. Nulls inside
+    array inputs yield nulls in corresponding result positions.
+
+    Return type: If both inputs are scalars (non-null) an `int` is returned; otherwise
+    a `polars.Series` of int counts (name: 'bdays'). If a null scalar short-circuits,
+    `None` is returned.
 
     Args:
-        start (DateScalar | DateArray): The start date(s) for counting (inclusive).
-            **Transition Handling:** The holiday list used for the *entire* counting
-            period between `start` and `end` is determined solely by the `start` date's
-            relation to the holiday transition date (2023-12-26). If `start` is before
-            this date, the old holiday list is used for the whole count, even if `end`
-            is after it. If `start` is on or after this date, new holiday list is used.
-        end (DateScalar | DateArray): The end date(s) for counting (exclusive).
+        start: Single date or collection (inclusive boundary).
+        end: Single date or collection (exclusive boundary).
 
     Returns:
         int | pl.Series | None: Returns an integer or None if `start` and `end` are
             single dates, or a Series if any of them is an array of dates.
 
     Notes:
-        - This function is a wrapper around `numpy.busday_count`, adapted to work
-            directly with various Pandas and Numpy date formats.
-        - It supports flexible date inputs, including single dates, lists, Series, and
-            more, for both `start` and `end` parameters.
-        - The return type depends on the input types: single dates return an int, while
-            arrays of dates return a pl.Series with the count for each date range.
-        - The `start` date determines the holiday list, ensuring consistency with the
-            applicable calendar at the time.
-        - See `numpy.busday_count` documentation for more details on how holidays are
-            handled and how business day counts are calculated:
-            https://numpy.org/doc/stable/reference/generated/numpy.busday_count.html.
+        - This function is a wrapper around `polars.business_day_count`.
+        - The holiday list is determined per-row based on the `start` date.
 
     Examples:
         >>> from pyield import bday
@@ -184,37 +178,56 @@ def offset(
     roll: Literal["forward", "backward"] = "forward",
 ) -> dt.date | pl.Series | None:
     """
-    First adjusts the date to fall on a valid day according to the roll rule, then
-    applies offsets to the given dates to the next or previous business day, considering
-    brazilian holidays. This function supports both single dates and collections of
-    dates. It is a wrapper for `polars.Expr.dt.add_business_days`.
+    Offset date(s) by a number of business days with per-row Brazilian holiday
+    regime selection. The operation is performed in two steps per element:
+    1) ROLL: If the original date falls on a weekend or holiday, move it according
+       to ``roll`` ("forward" -> next business day; "backward" -> previous).
+    2) ADD: Apply the signed business-day ``offset`` (positive forward, negative
+       backward, zero = stay on the rolled date).
 
-    **Important Note:** Each date in the `dates` input is evaluated individually to
-    determine which list of holidays applies to the calculation. Transition date
-    is 2023-12-26, which means:
-    - Dates before 2023-12-26 use the old holiday list.
-    - Dates on or after 2023-12-26 use the new holiday list.
+    ORDER PRESERVATION (critical): Output ordering strictly matches the element-wise
+    pairing after broadcasting between ``dates`` and ``offset``. No sorting,
+    deduplication or shape changes occur. The i-th result corresponds to the i-th
+    (date, offset) pair, enabling safe assignment back into the originating DataFrame.
+
+    Holiday regime: For EACH date the appropriate holiday list (old vs. new) is
+    chosen based on the transition date ``2023-12-26`` (``TRANSITION_DATE``). Dates
+    before the transition use the *old* list; dates on/after use the *new* list.
+
+    Roll semantics: ``roll`` only acts when the original date is not already a
+    business day under its regime. After rolling, the subsequent business-day
+    addition is applied from that rolled anchor. An ``offset`` of 0 therefore
+    returns either the original date (if already a business day) or the rolled
+    business day.
+
+    Null propagation: If any scalar argument is null, the function short-circuits
+    to ``None``. Nulls inside array inputs propagate to their corresponding output
+    positions.
+
+    Broadcasting: ``dates`` and ``offset`` may be scalars or array-like. Standard
+    Polars broadcasting rules apply when constructing the per-row pairs.
+
+    Return type: If both inputs are non-null scalars a ``datetime.date`` is returned.
+    Otherwise a ``polars.Series`` of dates named ``'result'`` is produced. Null scalar
+    inputs yield ``None``.
 
     Args:
-        dates (DateScalar | DateArray): The date(s) to offset. Can be a scalar date type
-            or a collection of dates. **Transition Handling:** Due to a change in
-            Brazilian national holidays effective from 2023-12-26 (`TRANSITION_DATE`),
-            this function automatically selects the appropriate holiday list
-            (old or new) based on **each individual date** in the `dates` input.
-            Dates before 2023-12-26 use the old list for their offset calculation,
-            while dates on or after 2023-12-26 use the new list.
-        offset (int | Series | np.ndarray | list[int] | tuple[int], optional):
-            The number of business days to offset the dates. Positive for future dates,
-            negative for past dates. Zero will return the same date if it's a business
-            day, or the next/previous business day otherwise, according to `roll`.
-        roll (Literal["forward", "backward"], optional): Direction to roll the date if
-            it falls on a holiday or weekend. 'forward' to the next business day,
-            'backward' to the previous. Defaults to 'forward'.
+        dates: Single date or collection of dates to be rolled (if needed) and then
+            offset. Each date independently selects the holiday regime.
+        offset: Signed count of business days to apply after rolling. Positive moves
+            forward, negative backward, zero keeps the rolled anchor.
+        roll: Direction to roll a non-business starting date ("forward" or
+            "backward"). Defaults to "forward".
 
     Returns:
-        dt.date | pl.Series | None: If a single date is provided, returns a single
-            `date` of the offset date or None. If a series of dates is provided, returns
-            a `polars.Series` of offset dates.
+        dt.date | pl.Series | None: A Python ``date`` for scalar inputs, a Polars
+        Series of dates for any array input, or ``None`` if a null scalar argument
+        was provided.
+
+    Notes:
+        - Wrapper around ``polars.Expr.dt.add_business_days`` applied conditionally.
+        - Holiday regime is decided per element by comparing to ``TRANSITION_DATE``.
+        - Weekends are always treated as non-business days.
 
     Examples:
         >>> from pyield import bday
