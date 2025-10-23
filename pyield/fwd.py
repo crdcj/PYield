@@ -36,15 +36,18 @@ def forwards(
         - tₖ é o prazo em anos para o vértice atual (calculado como duₖ/252).
         - A constante 252 representa o número de dias úteis no ano.
 
+    A função preserva a ordem original dos dados de entrada e lida com valores nulos
+    de forma apropriada. Valores nulos nas entradas resultarão em valores nulos
+    nas taxas a termo calculadas.
+
     A primeira taxa a termo de cada grupo é definida como a
     taxa zero desse primeiro vértice (fwd₁ = r₁), dado que não existe um vértice
     anterior a r₁ para se calcular a taxa a termo no primeiro ponto.
 
-    Valores nulos nas taxas ou prazos de entrada resultarão em valores nulos
-    nas taxas a termo calculadas. A função também lida com agrupamentos
-    opcionais, permitindo calcular taxas a termo para diferentes grupos de
-    datas. O agrupamento é feito com base em `group_by`. Se este
-    argumento for None, todos os dados serão tratados como um único grupo.
+    A função também lida com agrupamentos opcionais, permitindo calcular taxas
+    a termo para diferentes grupos de datas. O agrupamento é feito com base em `group_by`.
+    Se este argumento for None, todos os dados serão tratados como um único grupo.
+
     A função calcula as taxas a termo para todos os pontos, exceto o primeiro
     de cada grupo, que é tratado separadamente.
 
@@ -141,6 +144,8 @@ def forwards(
         - A função ordena os dados de entrada primeiro por `group_by`,
         se for fornecido, e depois por `bdays` para garantir a ordem cronológica
         correta no cálculo das taxas a termo.
+        - Valores nulos em `bdays` ou `rates` são ignorados no cálculo,
+        resultando em valores nulos nas posições correspondentes na saída.
         - Os resultados são retornados na mesma ordem dos dados de entrada.
     """  # noqa: E501
     # Validações iniciais
@@ -164,7 +169,7 @@ def forwards(
     exp3 = 1 / (pl.col("time_k") - pl.col("time_j"))  # 1/(tₖ - tⱼ)
     fwd_formula = (exp1 / exp2) ** exp3 - 1
 
-    # --- Início da Lógica com Expressões (Lazy API) ---
+    # 4. Calcular as taxas a termo
     df_fwd = (
         df_orig.drop_nans()
         .drop_nulls()
@@ -178,20 +183,24 @@ def forwards(
         )
         .with_columns(fwd=fwd_formula)
         .with_columns(
-            # Usar a taxa spot para a primeira entrada de cada grupo
-            fwd=pl.when(pl.col("time_j").is_null())
+            # A matriz de cálculo já foi tratada: ela está deduplicada,
+            # sem nulos e ordenada por group_by e du_k. Então, basta
+            # ajustar a primeira taxa fwd de cada grupo para ser igual à taxa spot!
+            fwd=pl.when(pl.col("du_k") == pl.first("du_k").over("group_by"))
             .then(pl.col("rate_k"))
             .otherwise(pl.col("fwd"))
         )
     )
-    s_fwd = df_orig.join(
-        df_fwd,
+    # 5. Reunir os resultados na ordem original
+    df_orig = df_orig.join(
+        df_fwd.drop("rate_k"),  # rate_k já existe em df_orig
         on=["du_k", "group_by"],
         how="left",
         maintain_order="left",
-    ).get_column("fwd")
+    )
 
-    return s_fwd
+    # Retornar a série de taxas a termo
+    return df_orig["fwd"]
 
 
 def forward(
