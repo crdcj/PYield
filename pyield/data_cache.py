@@ -72,9 +72,6 @@ def _get_dataset_with_ttl(dataset_id: str, date_key: str) -> pl.DataFrame:
         raise
 
 
-# --- API Pública ---
-
-
 def get_cached_dataset(dataset_id: DatasetId) -> pl.DataFrame:
     """
     Obtém um dataset configurado pelo seu ID, garantindo que o cache

@@ -647,8 +647,6 @@ def di_net_spread(  # noqa
         ntnf_rate (float): The yield to maturity (YTM) of the bond.
         di_rates (FloatArray): A Series of DI rates.
         di_expirations (DateArray): A list or Series of DI expiration dates.
-        initial_guess (float, optional): An initial guess for the spread. Defaults to
-            None. A good initial guess is the DI gross spread for the bond.
 
     Returns:
         float: The net DI spread in decimal format (e.g., 0.0012 for 12 bps).
