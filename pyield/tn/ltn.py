@@ -81,7 +81,7 @@ def price(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float | None:
+) -> float:
     """
     Calculate the LTN price using Anbima rules.
 
@@ -94,7 +94,7 @@ def price(
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
 
     Returns:
-        float | None: The LTN price using Anbima rules.
+        float: The LTN price using Anbima rules.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -106,7 +106,7 @@ def price(
     """
     # Validate and normalize inputs
     if has_null_args(settlement, maturity, rate):
-        return None
+        return float("nan")
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 
@@ -122,7 +122,7 @@ def price(
     return tools.truncate(FACE_VALUE / discount_factor, 6)
 
 
-def premium(ltn_rate: float, di_rate: float) -> float | None:
+def premium(ltn_rate: float, di_rate: float) -> float:
     """
     Calculate the premium of the LTN bond over the DI Future rate using provided rates.
 
@@ -131,7 +131,7 @@ def premium(ltn_rate: float, di_rate: float) -> float | None:
         di_rate (float): The annualized DI Future rate.
 
     Returns:
-        float | None: The premium of the LTN bond over the DI Future rate.
+        float: The premium of the LTN bond over the DI Future rate.
 
     Examples:
         Reference date: 22-08-2024
@@ -142,7 +142,7 @@ def premium(ltn_rate: float, di_rate: float) -> float | None:
         1.0120718007994287
     """
     if has_null_args(ltn_rate, di_rate):
-        return None
+        return float("nan")
     # Cálculo das taxas diárias
     ltn_daily_rate = (1 + ltn_rate) ** (1 / 252) - 1
     di_daily_rate = (1 + di_rate) ** (1 / 252) - 1
@@ -155,7 +155,7 @@ def dv01(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float | None:
+) -> float:
     """
     Calculate the DV01 (Dollar Value of 01) for an LTN in R$.
 
@@ -170,7 +170,7 @@ def dv01(
             the cash flows, which is the yield to maturity (YTM) of the LTN.
 
     Returns:
-        float | None: The DV01 value, representing the price change for a 1 basis point
+        float: The DV01 value, representing the price change for a 1 basis point
             increase in yield.
 
     Examples:
@@ -179,7 +179,7 @@ def dv01(
         0.2269059999999854
     """
     if has_null_args(settlement, maturity, rate):
-        return None
+        return float("nan")
     price1 = price(settlement, maturity, rate)
     price2 = price(settlement, maturity, rate + 0.0001)
     return price1 - price2

@@ -241,7 +241,7 @@ def ptax_series(
         return pl.DataFrame()
 
 
-def ptax(date: DateScalar) -> float | None:
+def ptax(date: DateScalar) -> float:
     """Busca a cotação PTAX média de fechamento para uma data específica.
 
     Esta função é um wrapper para a função `ptax_series`, otimizada para
@@ -263,8 +263,8 @@ def ptax(date: DateScalar) -> float | None:
         5.4389
 
         >>> # Busca a PTAX para um fim de semana (sem dados)
-        >>> bc.ptax("23-08-2025") is None
-        True
+        >>> bc.ptax("23-08-2025")
+        nan
     """
     # Reutiliza a função ptax_series para buscar os dados para o dia específico.
     # Definir start e end com a mesma data busca a cotação para aquele dia.
@@ -274,7 +274,7 @@ def ptax(date: DateScalar) -> float | None:
     # Isso ocorre em fins de semana, feriados ou datas futuras.
     if df_ptax.is_empty():
         logger.warning(f"No PTAX data found for date: {date}")
-        return None
+        return float("nan")
 
     # A API retorna uma única linha para a cotação de fechamento de um dia.
     # A coluna "MidRate" representa a PTAX de fechamento.

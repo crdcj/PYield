@@ -194,7 +194,7 @@ def quotation(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float | None:
+) -> float:
     """
     Calculate the NTN-C quotation in base 100 using Anbima rules.
 
@@ -205,7 +205,7 @@ def quotation(
             the cash flows, which is the yield to maturity (YTM) of the NTN-C.
 
     Returns:
-        float | None: The NTN-C quotation truncated to 4 decimal places.
+        float: The NTN-C quotation truncated to 4 decimal places.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -220,7 +220,7 @@ def quotation(
     """
     # Validate and normalize inputs
     if has_null_args(settlement, maturity, rate):
-        return None
+        return float("nan")
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 
@@ -246,7 +246,7 @@ def quotation(
 def price(
     vna: float,
     quotation: float,
-) -> float | None:
+) -> float:
     """
     Calculate the NTN-C price using Anbima rules.
 
@@ -257,7 +257,7 @@ def price(
         quotation (float): The NTN-C quotation in base 100.
 
     Returns:
-        float | None: The NTN-C price truncated to 6 decimal places.
+        float: The NTN-C price truncated to 6 decimal places.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -268,7 +268,7 @@ def price(
         8347.348705
     """
     if has_null_args(vna, quotation):
-        return None
+        return float("nan")
     return tl.truncate(vna * quotation / 100, 6)
 
 
@@ -276,7 +276,7 @@ def duration(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float | None:
+) -> float:
     """
     Calculate the Macaulay duration of the NTN-C bond in business years.
 
@@ -286,7 +286,7 @@ def duration(
         rate (float): The discount rate used to calculate the duration.
 
     Returns:
-        float | None: The Macaulay duration of the NTN-C bond in business years.
+        float: The Macaulay duration of the NTN-C bond in business years.
 
     Examples:
         >>> from pyield import ntnc
@@ -295,7 +295,7 @@ def duration(
     """
     # Validate and normalize inputs
     if has_null_args(settlement, maturity, rate):
-        return None
+        return float("nan")
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 

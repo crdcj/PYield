@@ -203,7 +203,7 @@ def price(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float | None:
+) -> float:
     """
     Calculate the NTN-F price using Anbima rules, which corresponds to the present
         value of the cash flows discounted at the given yield to maturity rate (YTM).
@@ -215,7 +215,7 @@ def price(
             present value of the cash flows.
 
     Returns:
-        float | None: The NTN-F price using Anbima rules.
+        float: The NTN-F price using Anbima rules.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -229,7 +229,7 @@ def price(
         895.359254
     """
     if has_null_args(settlement, maturity, rate):
-        return None
+        return float("nan")
     cf_df = cash_flows(settlement, maturity)
     cf_values = cf_df["CashFlow"]
     bdays = bday.count(settlement, cf_df["PaymentDate"])
@@ -407,13 +407,74 @@ def spot_rates(  # noqa
     return df
 
 
-def _bisection_method(
+def _find_bracketing_interval(
     func: Callable[[float], float],
-    a: float,
-    b: float,
-    tol: float = 1e-8,
-    maxiter: int = 100,
-) -> float:
+) -> tuple[float, float] | None:
+    """
+    Encontra um intervalo [a, b] para a TAXA DE JUROS que zera a função.
+
+    Otimizado para o contexto financeiro, buscando a taxa apenas em um
+    intervalo realista. A função 'func' é a que calcula a diferença de
+    preço dado uma taxa.
+    """
+    # --- LIMITES DE BOM SENSO PARA A *TAXA* QUE ESTAMOS PROCURANDO ---
+    # Uma taxa/spread não vai ser -50% ou +200%, então limitamos a busca.
+    X0: float = 0.01
+    STEP: float = 0.01
+    GROWTH_FACTOR: float = 1.6
+    MAX_ATTEMPTS: int = 100
+
+    # Limites para a TAXA (variável 'a' e 'b' da busca)
+    MIN_RATE: float = -1.0  # Limite inferior: -100%
+    MAX_RATE: float = 10.00  # Limite superior: 1000%
+    # -----------------------------------------------------------------
+
+    # Ponto de partida
+    f0 = func(X0)
+    if abs(f0) == 0:
+        return (X0, X0)
+
+    # 1. Busca na direção positiva
+    a, fa = X0, f0
+    b = X0 + STEP
+    current_step = STEP
+
+    for _ in range(MAX_ATTEMPTS):
+        # Se a PRÓXIMA TAXA A SER TESTADA ('b') for irrealista, paramos.
+        if b > MAX_RATE:
+            break
+
+        fb = func(b)
+        if fa * fb < 0:
+            return (a, b)
+
+        a, fa = b, fb
+        current_step *= GROWTH_FACTOR
+        b += current_step
+
+    # 2. Busca na direção negativa
+    a, fa = X0, f0
+    b = X0 - STEP
+    current_step = STEP
+
+    for _ in range(MAX_ATTEMPTS):
+        # Se a PRÓXIMA TAXA A SER TESTADA ('b') for irrealista, paramos.
+        if b < MIN_RATE:
+            break
+
+        fb = func(b)
+        if fa * fb < 0:
+            return (b, a)
+
+        a, fa = b, fb
+        current_step *= GROWTH_FACTOR
+        b -= current_step
+
+    # Se a busca falhou dentro dos limites realistas
+    return None
+
+
+def _bisection_method(func: Callable[[float], float], a: float, b: float) -> float:
     """Bisection method for root finding.
 
     Args:
@@ -421,8 +482,6 @@ def _bisection_method(
             accept a single float and return a float.
         a (float): Lower bound of the interval.
         b (float): Upper bound of the interval.
-        tol (float): Tolerance for convergence. Defaults to 1e-8.
-        maxiter (int): Maximum number of iterations allowed. Defaults to 100.
 
     Returns:
         float: Approximate root of ``func`` within the interval ``[a, b]``.
@@ -430,6 +489,8 @@ def _bisection_method(
     Raises:
         ValueError: If ``func`` does not change sign in the interval ``[a, b]``.
     """
+    TOL = 1e-8
+    MAX_ITER = 100
     fa, fb = func(a), func(b)
     if fa * fb > 0:
         logger.warning(
@@ -437,10 +498,10 @@ def _bisection_method(
         )
         return float("nan")
 
-    for _ in range(maxiter):
+    for _ in range(MAX_ITER):
         midpoint = (a + b) / 2
         fmid = func(midpoint)
-        if abs(fmid) < tol or (b - a) / 2 < tol:
+        if abs(fmid) < TOL or (b - a) / 2 < TOL:
             return midpoint
         if fmid * fa < 0:
             b, fb = midpoint, fmid
@@ -452,34 +513,116 @@ def _bisection_method(
 
 def _solve_spread(
     price_difference_func: Callable,
-    initial_guess: float | None = None,
 ) -> float:
     """
-    Solve for the spread that zeroes the price difference using a bisection method.
+    Versão robusta que encontra automaticamente um intervalo válido.
+    """
+    # Tenta encontrar intervalo válido
+    bracket = _find_bracketing_interval(price_difference_func)
+
+    if bracket is None:
+        logger.warning("Não foi possível encontrar intervalo de busca válido")
+        return float("nan")
+
+    a, b = bracket
+    return _bisection_method(price_difference_func, a, b)
+
+
+def premium(  # noqa
+    settlement: DateScalar,
+    ntnf_maturity: DateScalar,
+    ntnf_rate: float,
+    di_expirations: DateScalar,
+    di_rates: FloatArray,
+) -> float:
+    """
+    Calculate the premium of an NTN-F bond over DI rates.
+
+    This function computes the premium of an NTN-F bond by comparing its implied
+    discount factor with that of the DI curve. It determines the net premium based
+    on the difference between the discount factors of the bond's yield-to-maturity
+    (YTM) and the interpolated DI rates.
 
     Args:
-        price_difference_func (callable): The function that computes the difference
-            between the bond's market price and its discounted cash flows.
-        initial_guess (float, optional): An initial guess for the spread.
+        settlement (DateScalar): The settlement date to calculate the premium.
+        ntnf_maturity (DateScalar): The maturity date of the NTN-F bond.
+        ntnf_rate (float): The yield to maturity (YTM) of the NTN-F bond.
+        di_expirations (DateScalar): Series with the expiration dates for the DI.
+        di_rates (FloatArray): Series containing the DI rates corresponding to
+            the expiration dates.
 
     Returns:
-        float: The solution for the spread in bps or NaN if no solution is found.
+        float: The premium of the NTN-F bond over the DI curve, expressed as a
+        factor.
+
+    Examples:
+        >>> # Obs: only some of the DI rates will be used in the example.
+        >>> exp_dates = ["2025-01-01", "2030-01-01", "2035-01-01"]
+        >>> di_rates = [0.10823, 0.11594, 0.11531]
+        >>> premium(
+        ...     settlement="23-08-2024",
+        ...     ntnf_maturity="01-01-2035",
+        ...     ntnf_rate=0.116586,
+        ...     di_expirations=exp_dates,
+        ...     di_rates=di_rates,
+        ... )
+        1.0099602679927115
+
+    Notes:
+        - The function adjusts coupon payment dates to business days and calculates
+          the present value of cash flows for the NTN-F bond using DI rates.
+
     """
-    try:
-        if initial_guess:
-            a = initial_guess - 0.01  # -100 bps
-            b = initial_guess + 0.01  # +100 bps
-        else:
-            a = -0.1  # -1000 bps
-            b = 0.1  # +1000 bps
+    if has_null_args(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
+        return float("nan")
 
-        # Find the spread (p) that zeroes the price difference
-        p_solution = _bisection_method(price_difference_func, a, b)
-    except ValueError:
-        # If no solution is found, return NaN
-        p_solution = float("nan")
+    # 1-6. [código original até price_difference]
+    settlement = cv.convert_dates(settlement)
+    ntnf_maturity = cv.convert_dates(ntnf_maturity)
+    di_expirations = cv.convert_dates(di_expirations)
+    if not isinstance(di_rates, pl.Series):
+        di_rates = pl.Series(di_rates)
 
-    return p_solution
+    df_cf = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
+    ff_interpolator = ip.Interpolator(
+        "flat_forward",
+        bday.count(settlement, di_expirations),
+        di_rates,
+    )
+
+    bdays_to_payments = bday.count(settlement, df_cf["PaymentDate"])
+    df = df_cf.with_columns(BDToMat=bdays_to_payments).with_columns(
+        BYears=pl.col("BDToMat") / 252,
+        DIRate=pl.col("BDToMat").map_elements(ff_interpolator, return_dtype=pl.Float64),
+    )
+
+    bond_price = tools.calculate_present_value(
+        cash_flows=df["CashFlow"],
+        rates=df["DIRate"],
+        periods=df["BYears"],
+    )
+
+    if math.isnan(bond_price):
+        return float("nan")
+
+    def price_difference(rate: float) -> float:
+        discounted_cf = df["CashFlow"] / (1 + rate) ** df["BYears"]
+        return discounted_cf.sum() - bond_price
+
+    di_ytm = _solve_spread(price_difference)
+
+    if math.isnan(di_ytm):
+        return float("nan")
+
+    # 8. Calcular o prêmio final
+    factor_ntnf = (1 + ntnf_rate) ** (1 / 252)
+    factor_di = (1 + di_ytm) ** (1 / 252)
+
+    if factor_di == 1:
+        return float("inf") if factor_ntnf > 1 else 0.0
+
+    premium_val = (factor_ntnf - 1) / (factor_di - 1)
+    return premium_val
 
 
 def di_net_spread(  # noqa
@@ -488,8 +631,7 @@ def di_net_spread(  # noqa
     ntnf_rate: float,
     di_expirations: DateScalar,
     di_rates: FloatArray,
-    initial_guess: float | None = None,
-) -> float | None:
+) -> float:
     """
     Calculate the net DI spread for a bond given the YTM and the DI rates.
 
@@ -509,7 +651,7 @@ def di_net_spread(  # noqa
             None. A good initial guess is the DI gross spread for the bond.
 
     Returns:
-        float | None: The net DI spread in decimal format (e.g., 0.0012 for 12 bps).
+        float: The net DI spread in decimal format (e.g., 0.0012 for 12 bps).
 
     Examples:
         # Obs: only some of the DI rates will be used in the example.
@@ -557,7 +699,8 @@ def di_net_spread(  # noqa
         BDaysToPayment=bdays_to_payment,
     ).with_columns(
         DIRateInterp=pl.col("BDaysToPayment").map_elements(
-            ff_interpolator, return_dtype=pl.Float64
+            function=ff_interpolator,
+            return_dtype=pl.Float64,
         ),
     )
 
@@ -572,122 +715,14 @@ def di_net_spread(  # noqa
         return discounted_cf.sum() - bond_price
 
     # 7. Resolver para o spread
-    return _solve_spread(price_difference, initial_guess)
-
-
-def premium(  # noqa
-    settlement: DateScalar,
-    ntnf_maturity: DateScalar,
-    ntnf_rate: float,
-    di_expirations: DateScalar,
-    di_rates: FloatArray,
-) -> float:
-    """
-    Calculate the premium of an NTN-F bond over DI rates.
-
-    This function computes the premium of an NTN-F bond by comparing its implied
-    discount factor with that of the DI curve. It determines the net premium based
-    on the difference between the discount factors of the bond's yield-to-maturity
-    (YTM) and the interpolated DI rates.
-
-    Args:
-        settlement (DateScalar): The settlement date to calculate the premium.
-        ntnf_maturity (DateScalar): The maturity date of the NTN-F bond.
-        ntnf_rate (float): The yield to maturity (YTM) of the NTN-F bond.
-        di_expirations (DateScalar): Series with the expiration dates for the DI.
-        di_rates (FloatArray): Series containing the DI rates corresponding to
-            the expiration dates.
-
-    Returns:
-        float: The premium of the NTN-F bond over the DI curve, expressed as a
-        factor.
-
-    Examples:
-        >>> # Obs: only some of the DI rates will be used in the example.
-        >>> exp_dates = ["2025-01-01", "2030-01-01", "2035-01-01"]
-        >>> di_rates = [0.10823, 0.11594, 0.11531]
-        >>> premium(
-        ...     settlement="23-08-2024",
-        ...     ntnf_maturity="01-01-2035",
-        ...     ntnf_rate=0.116586,
-        ...     di_expirations=exp_dates,
-        ...     di_rates=di_rates,
-        ... )
-        1.0099602136954626
-
-    Notes:
-        - The function adjusts coupon payment dates to business days and calculates
-          the present value of cash flows for the NTN-F bond using DI rates.
-
-    """
-    if has_null_args(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
-        return float("nan")
-    # 1. Validação e conversão de datas (padrão consistente)
-    settlement = cv.convert_dates(settlement)
-    ntnf_maturity = cv.convert_dates(ntnf_maturity)
-    di_expirations = cv.convert_dates(di_expirations)
-    if not isinstance(di_rates, pl.Series):
-        di_rates = pl.Series(di_rates)
-
-    # 2. Preparação do DataFrame de fluxo de caixa e interpolador
-    df_cf = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
-
-    ff_interpolator = ip.Interpolator(
-        "flat_forward",
-        bday.count(settlement, di_expirations),
-        di_rates,
-    )
-
-    # 3. Calcular dados externos (dias úteis) antes de usar no with_columns
-    bdays_to_payments = bday.count(settlement, df_cf["PaymentDate"])
-
-    # 4. Construir o DataFrame final com todas as colunas necessárias
-    df = df_cf.with_columns(BDToMat=bdays_to_payments).with_columns(
-        BYears=pl.col("BDToMat") / 252,
-        DIRate=pl.col("BDToMat").map_elements(ff_interpolator, return_dtype=pl.Float64),
-    )
-
-    # 5. Calcular o preço do título usando as taxas DI interpoladas
-    bond_price = tools.calculate_present_value(
-        cash_flows=df["CashFlow"],
-        rates=df["DIRate"],
-        periods=df["BYears"],
-    )
-
-    if math.isnan(bond_price):
-        return float("nan")
-
-    def price_difference(rate: float) -> float:
-        # A taxa que zera a diferença de preço -> TIR implícita
-        discounted_cf = df["CashFlow"] / (1 + rate) ** df["BYears"]
-        return discounted_cf.sum() - bond_price
-
-    # 7. Resolver para a TIR implícita
-    bd_to_maturity = bday.count(settlement, ntnf_maturity)
-    di_rate = ff_interpolator(bd_to_maturity)
-    di_spread = ntnf_rate - di_rate
-    di_ytm = _solve_spread(price_difference, di_spread)
-
-    if math.isnan(di_ytm):
-        return float("nan")
-
-    # 8. Calcular o prêmio final
-    factor_ntnf = (1 + ntnf_rate) ** (1 / 252)
-    factor_di = (1 + di_ytm) ** (1 / 252)
-
-    # Evitar divisão por zero se o fator DI for 1
-    if factor_di == 1:
-        return float("inf") if factor_ntnf > 1 else 0.0
-
-    premium_val = (factor_ntnf - 1) / (factor_di - 1)
-    return premium_val
+    return _solve_spread(price_difference)
 
 
 def duration(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float | None:
+) -> float:
     """
     Calculate the Macaulay duration for an NTN-F bond in business years.
 
@@ -697,7 +732,7 @@ def duration(
         rate (float): The yield to maturity (YTM) used to discount the cash flows.
 
     Returns:
-        float | None: The Macaulay duration in business business years.
+        float: The Macaulay duration in business business years.
 
     Examples:
         >>> from pyield import ntnf
@@ -705,7 +740,7 @@ def duration(
         6.32854218039796
     """
     if has_null_args(settlement, maturity, rate):
-        return None
+        return float("nan")
     # Normalize inputs
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -721,7 +756,7 @@ def dv01(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float | None:
+) -> float:
     """
     Calculate the DV01 (Dollar Value of 01) for an NTN-F in R$.
 
@@ -736,7 +771,7 @@ def dv01(
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
 
     Returns:
-        float | None: The DV01 value, representing the price change for a 1 basis point
+        float: The DV01 value, representing the price change for a 1 basis point
             increase in yield.
 
     Examples:
@@ -745,7 +780,7 @@ def dv01(
         0.39025200000003224
     """
     if has_null_args(settlement, maturity, rate):
-        return None
+        return float("nan")
     price1 = price(settlement, maturity, rate)
     price2 = price(settlement, maturity, rate + 0.0001)
     return price1 - price2

@@ -208,7 +208,7 @@ def forward(
     bday2: int,
     rate1: float,
     rate2: float,
-) -> float | None:
+) -> float:
     r"""
     Calcula a taxa a termo (forward rate) entre dois prazos (dias úteis).
 
@@ -233,7 +233,7 @@ def forward(
         rate2 (float): Taxa zero (spot rate) para o prazo `bday2`.
 
     Returns:
-        float | None: A taxa a termo calculada entre `bday1` e `bday2`. Retorna
+        float: A taxa a termo calculada entre `bday1` e `bday2`. Retorna
             `None` se `bday1 >= bday2` ou se qualquer um dos
             argumentos de entrada for float('nan') ou None.
 
@@ -243,11 +243,11 @@ def forward(
         0.0700952380952371
         >>> # Exemplo inválido: bday1 >= bday2
         >>> print(yd.forward(20, 10, 0.06, 0.05))
-        None
+        nan
 
-        >>> # Argumentos nulos retornam None
+        >>> # Argumentos nulos retornam nan
         >>> print(yd.forward(10, 20, 0.05, None))
-        None
+        nan
 
     Note:
         `bday2` precisa ser necessariamente maior que `bday1` para que
@@ -260,11 +260,11 @@ def forward(
     """  # noqa: E501
     if has_null_args(rate1, rate2, bday1, bday2):
         # If any of the inputs are nullable, return None
-        return None
+        return float("nan")
 
     # Handle the case where the two dates are the same
     if bday2 <= bday1:
-        return None
+        return float("nan")
 
     # Convert business days to business years
     t1 = bday1 / 252

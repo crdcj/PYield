@@ -245,7 +245,7 @@ def selic_over_series(
     return df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
 
 
-def selic_over(date: DateScalar) -> float | None:
+def selic_over(date: DateScalar) -> float:
     """
     Fetches the SELIC Over rate value for a specific date.
 
@@ -264,10 +264,10 @@ def selic_over(date: DateScalar) -> float | None:
         0.104
     """
     if has_null_args(date):
-        return None
+        return float("nan")
     df = selic_over_series(date, date)
     if df.is_empty():
-        return None
+        return float("nan")
     return df["Value"].item(0)
 
 
@@ -312,7 +312,7 @@ def selic_target_series(
     return df
 
 
-def selic_target(date: DateScalar) -> float | None:
+def selic_target(date: DateScalar) -> float:
     """
     Fetches the SELIC Target rate value for a specific date.
 
@@ -331,10 +331,10 @@ def selic_target(date: DateScalar) -> float | None:
         0.105
     """
     if has_null_args(date):
-        return None
+        return float("nan")
     df = selic_target_series(date, date)
     if df.is_empty():
-        return None
+        return float("nan")
     return df["Value"].item(0)
 
 
@@ -397,7 +397,7 @@ def di_over_series(
     return df
 
 
-def di_over(date: DateScalar, annualized: bool = True) -> float | None:
+def di_over(date: DateScalar, annualized: bool = True) -> float:
     """
     Fetches the DI Over rate value for a specific date.
 
@@ -410,7 +410,7 @@ def di_over(date: DateScalar, annualized: bool = True) -> float | None:
             days per year), otherwise returns the daily rate.
 
     Returns:
-        The DI Over rate as a float or None if not available.
+        The DI Over rate as a float or float("nan") if not available.
 
     Examples:
         >>> from pyield import bc
@@ -421,8 +421,8 @@ def di_over(date: DateScalar, annualized: bool = True) -> float | None:
         0.00045513
     """
     if has_null_args(date):
-        return None
+        return float("nan")
     df = di_over_series(date, date, annualized)
     if df.is_empty():
-        return None
+        return float("nan")
     return df["Value"].item(0)

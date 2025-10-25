@@ -83,7 +83,7 @@ def quotation(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float | None:
+) -> float:
     """
     Calculate the quotation of a LFT bond using Anbima rules.
 
@@ -93,7 +93,7 @@ def quotation(
         rate (float): The annualized yield rate of the bond
 
     Returns:
-        float | None: The quotation of the bond.
+        float: The quotation of the bond.
 
     Examples:
         Calculate the quotation of a LFT bond with a 0.02 yield rate:
@@ -107,7 +107,7 @@ def quotation(
     """
     # Validate and normalize dates
     if has_null_args(settlement, maturity, rate):
-        return None
+        return float("nan")
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 
@@ -122,7 +122,7 @@ def quotation(
     return tools.truncate(100 * discount_factor, 4)
 
 
-def premium(lft_rate: float, di_rate: float) -> float | None:
+def premium(lft_rate: float, di_rate: float) -> float:
     """
     Calculate the premium of the LFT bond over the DI Futures rate.
 
@@ -132,7 +132,7 @@ def premium(lft_rate: float, di_rate: float) -> float | None:
             maturity as the LFT).
 
     Returns:
-        float | None: The premium of the LFT bond over the DI Futures rate.
+        float: The premium of the LFT bond over the DI Futures rate.
 
     Examples:
         Calculate the premium of a LFT in 28/04/2025
@@ -143,7 +143,7 @@ def premium(lft_rate: float, di_rate: float) -> float | None:
         1.008594331960501
     """
     if has_null_args(lft_rate, di_rate):
-        return None
+        return float("nan")
     # daily rate
     ltt_factor = (lft_rate + 1) ** (1 / 252)
     di_factor = (di_rate + 1) ** (1 / 252)

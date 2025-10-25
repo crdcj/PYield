@@ -8,8 +8,7 @@ import polars as pl
 
 from pyield.config import TIMEZONE_BZ
 
-GIT_URL = "https://raw.githubusercontent.com/crdcj/pyield-data/main"
-BASE_DATA_URL = f"{GIT_URL}/data"
+BASE_URL = "https://github.com/crdcj/pyield-data/releases/latest/download"
 
 
 # Usar um dataclass para uma configuração mais estruturada e segura.
@@ -64,7 +63,7 @@ def _get_dataset_with_ttl(dataset_id: str, date_key: str) -> pl.DataFrame:
 
     config = DATASET_CONFIGS[dataset_id]
     # Acesso via atributo com dataclass
-    full_url = f"{BASE_DATA_URL}/{config.filename}"
+    full_url = f"{BASE_URL}/{config.filename}"
 
     try:
         return _load_github_file(full_url)

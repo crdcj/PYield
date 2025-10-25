@@ -25,27 +25,27 @@ def _has_null_arg(arg) -> bool:  # noqa
         case None:
             return True
 
-        # 2. Padrão de tipo para Pandas
-        case pd.DataFrame() as df:
-            return df.empty
-        case pd.Series() as s:
-            return s.empty
+        # 2. Padrão de tipo para Pandas (expandido para incluir pd.Index)
+        case pd.DataFrame() | pd.Series() | pd.Index() as pd_obj:
+            return pd_obj.empty
 
         # 3. Padrão de tipo para Polars
-        case pl.DataFrame() as df:
-            return df.is_empty()
-        case pl.Series() as s:
-            return s.is_empty()
+        case pl.DataFrame() | pl.Series() as pl_obj:
+            return pl_obj.is_empty()
 
-        # 4. Padrão de tipo para NaN
+        # 4. Padrão de tipo para NumPy (adicionado)
+        case np.ndarray() as arr:
+            return arr.size == 0
+
+        # 5. Padrão de tipo para NaN
         case float() as f:
             return math.isnan(f)
 
-        # 5. Padrão para coleções vazias conhecidas
+        # 6. Padrão para coleções vazias conhecidas (agora seguro)
         case [] | "" | () | {}:
             return True
 
-        # 6. Caso padrão (catch-all)
+        # 7. Caso padrão (catch-all)
         case _:
             return False
 
