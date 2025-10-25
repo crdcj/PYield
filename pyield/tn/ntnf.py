@@ -1,3 +1,4 @@
+import logging
 import math
 from collections.abc import Callable
 
@@ -22,6 +23,8 @@ COUPON_DAY = 1
 COUPON_MONTHS = {1, 7}
 COUPON_PMT = 48.80885
 FINAL_PMT = 1048.80885  # 1000 + 48.80885
+
+logger = logging.getLogger(__name__)
 
 
 def data(date: DateScalar) -> pl.DataFrame:
@@ -429,7 +432,10 @@ def _bisection_method(
     """
     fa, fb = func(a), func(b)
     if fa * fb > 0:
-        raise ValueError("Function does not change sign in the interval.")
+        logger.warning(
+            "Bisection method failed: function does not change sign in the interval."
+        )
+        return float("nan")
 
     for _ in range(maxiter):
         midpoint = (a + b) / 2
@@ -460,14 +466,12 @@ def _solve_spread(
         float: The solution for the spread in bps or NaN if no solution is found.
     """
     try:
-        if initial_guess is not None:
-            # range_width_bps below the initial guess
-            a = initial_guess - 0.005  # 50 bps
-            # range_width_bps above the initial guess
-            b = initial_guess + 0.005  # 50 bps
+        if initial_guess:
+            a = initial_guess - 0.01  # -100 bps
+            b = initial_guess + 0.01  # +100 bps
         else:
-            a = -0.01  # Initial guess of -100 bps
-            b = 0.01  # Initial guess of 100 bps
+            a = -0.1  # -1000 bps
+            b = 0.1  # +1000 bps
 
         # Find the spread (p) that zeroes the price difference
         p_solution = _bisection_method(price_difference_func, a, b)
@@ -571,13 +575,13 @@ def di_net_spread(  # noqa
     return _solve_spread(price_difference, initial_guess)
 
 
-def premium(
+def premium(  # noqa
     settlement: DateScalar,
     ntnf_maturity: DateScalar,
     ntnf_rate: float,
     di_expirations: DateScalar,
     di_rates: FloatArray,
-) -> float | None:
+) -> float:
     """
     Calculate the premium of an NTN-F bond over DI rates.
 
@@ -595,7 +599,7 @@ def premium(
             the expiration dates.
 
     Returns:
-        float | None: The premium of the NTN-F bond over the DI curve, expressed as a
+        float: The premium of the NTN-F bond over the DI curve, expressed as a
         factor.
 
     Examples:
@@ -617,7 +621,7 @@ def premium(
 
     """
     if has_null_args(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
-        return None
+        return float("nan")
     # 1. Validação e conversão de datas (padrão consistente)
     settlement = cv.convert_dates(settlement)
     ntnf_maturity = cv.convert_dates(ntnf_maturity)
@@ -635,10 +639,10 @@ def premium(
     )
 
     # 3. Calcular dados externos (dias úteis) antes de usar no with_columns
-    bdays_to_payment = bday.count(settlement, df_cf.get_column("PaymentDate"))
+    bdays_to_payments = bday.count(settlement, df_cf["PaymentDate"])
 
     # 4. Construir o DataFrame final com todas as colunas necessárias
-    df = df_cf.with_columns(BDToMat=bdays_to_payment).with_columns(
+    df = df_cf.with_columns(BDToMat=bdays_to_payments).with_columns(
         BYears=pl.col("BDToMat") / 252,
         DIRate=pl.col("BDToMat").map_elements(ff_interpolator, return_dtype=pl.Float64),
     )
@@ -650,13 +654,19 @@ def premium(
         periods=df["BYears"],
     )
 
-    def price_difference(ytm: float) -> float:
-        # A YTM que zera a diferença de preço
-        discounted_cf = df["CashFlow"] / (1 + ytm) ** df["BYears"]
+    if math.isnan(bond_price):
+        return float("nan")
+
+    def price_difference(rate: float) -> float:
+        # A taxa que zera a diferença de preço -> TIR implícita
+        discounted_cf = df["CashFlow"] / (1 + rate) ** df["BYears"]
         return discounted_cf.sum() - bond_price
 
-    # 7. Resolver para a YTM implícita
-    di_ytm = _solve_spread(price_difference, ntnf_rate)
+    # 7. Resolver para a TIR implícita
+    bd_to_maturity = bday.count(settlement, ntnf_maturity)
+    di_rate = ff_interpolator(bd_to_maturity)
+    di_spread = ntnf_rate - di_rate
+    di_ytm = _solve_spread(price_difference, di_spread)
 
     if math.isnan(di_ytm):
         return float("nan")
@@ -677,7 +687,7 @@ def duration(
     settlement: DateScalar,
     maturity: DateScalar,
     rate: float,
-) -> float:
+) -> float | None:
     """
     Calculate the Macaulay duration for an NTN-F bond in business years.
 
@@ -687,7 +697,7 @@ def duration(
         rate (float): The yield to maturity (YTM) used to discount the cash flows.
 
     Returns:
-        float: The Macaulay duration in business business years.
+        float | None: The Macaulay duration in business business years.
 
     Examples:
         >>> from pyield import ntnf

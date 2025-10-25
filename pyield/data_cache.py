@@ -1,15 +1,12 @@
 import functools
-import io
 import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
 import polars as pl
-import requests
 
 from pyield.config import TIMEZONE_BZ
-from pyield.retry import default_retry
 
 GIT_URL = "https://raw.githubusercontent.com/crdcj/pyield-data/main"
 BASE_DATA_URL = f"{GIT_URL}/data"
@@ -48,14 +45,9 @@ def _get_today_date_key() -> str:
     return datetime.now(TIMEZONE_BZ).strftime("%Y-%m-%d")
 
 
-@default_retry
 def _load_github_file(file_url: str) -> pl.DataFrame:
     """Carrega um arquivo do GitHub de forma robusta e retorna um DataFrame."""
-    timeout = (5, 30)
-    response = requests.get(file_url, timeout=timeout)
-    response.raise_for_status()
-    buffer = io.BytesIO(response.content)
-    return pl.read_parquet(buffer)
+    return pl.read_parquet(file_url, use_pyarrow=True)
 
 
 @functools.lru_cache(maxsize=len(DATASET_CONFIGS))
