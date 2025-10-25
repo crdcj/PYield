@@ -40,9 +40,39 @@ def calculate_present_value(
     cash_flows: pl.Series | list[float],
     rates: pl.Series | list[float],
     periods: pl.Series | list[float],
-) -> float:
-    df = pl.DataFrame({"cash_flows": cash_flows, "rates": rates, "periods": periods})
-    if df.is_empty():
-        return 0.0
+) -> float | None:
+    """
+    Calcula o valor presente de uma série de fluxos de caixa de forma estrita.
 
-    return (df["cash_flows"] / (1 + df["rates"]) ** df["periods"]).sum()
+    Retorna None se:
+    - As listas/séries de entrada estiverem vazias.
+    - Qualquer valor de entrada ou resultado do cálculo for null, NaN ou inf.
+
+    Raises:
+        polars.exceptions.ShapeError: Se as entrada tiverem tamanhos diferentes.
+    """
+    # A criação do DataFrame agora pode levantar um ShapeError, o que é o
+    # comportamento desejado para entradas estruturalmente inválidas.
+    df = pl.DataFrame(
+        {
+            "cash_flows": cash_flows,
+            "rates": rates,
+            "periods": periods,
+        },
+        schema={"cash_flows": pl.Float64, "rates": pl.Float64, "periods": pl.Float64},
+    )
+
+    if df.is_empty():
+        return None
+
+    present_values_series = df["cash_flows"] / (1 + df["rates"]) ** df["periods"]
+
+    # Passo 1: Checa por nulos.
+    if present_values_series.has_nulls():
+        return None
+
+    # Passo 2: Se não houver nulos, checa por valores não-finitos (NaN e inf).
+    if not present_values_series.is_finite().all():
+        return None
+
+    return present_values_series.sum()

@@ -22,58 +22,52 @@ from tenacity import (
 logger = logging.getLogger(__name__)
 
 
-# --- Funções Auxiliares para Tenacity ---
 def _log_before_sleep(retry_state: RetryCallState):
     """Loga uma mensagem ANTES de o Tenacity entrar em espera entre tentativas."""
-    outcome = retry_state.outcome
-    if not outcome or not outcome.failed:
+    # Esta função já é excelente, sem necessidade de grandes mudanças.
+    # Adicionei apenas "..." para indicar que a mensagem de erro foi truncada.
+    if not (outcome := retry_state.outcome) or not outcome.failed:
         return
 
-    exception = outcome.exception()
-    if not exception:
+    if not (exception := outcome.exception()):
         return
 
-    next_action = retry_state.next_action
-    if not next_action or not hasattr(next_action, "sleep"):
+    if not (next_action := retry_state.next_action) or not hasattr(
+        next_action, "sleep"
+    ):
         return
 
     sleep_duration = next_action.sleep
+    truncated_exc = str(exception).replace("\n", " ")[:150]
 
     logger.warning(
         f"Tentativa {retry_state.attempt_number} falhou com "
-        f"{type(exception).__name__}: {str(exception)[:150]}. Tentando novamente em "
+        f"{type(exception).__name__}: {truncated_exc}... Tentando novamente em "
         f"{sleep_duration:.2f} segundos..."
     )
 
 
-def should_retry_exception(retry_state: RetryCallState) -> bool:  # noqa
+def should_retry_exception(retry_state: RetryCallState) -> bool:
     """Determina se uma exceção capturada justifica uma nova tentativa."""
-    if not retry_state.outcome or not retry_state.outcome.failed:
+    if not retry_state.outcome or not (exception := retry_state.outcome.exception()):
         return False
 
-    exception = retry_state.outcome.exception()
-    if exception is None:
-        return False
-
-    if isinstance(exception, HTTPError):
-        # Acessa o status code através do objeto 'response'
-        status_code = exception.response.status_code
-
-        # CASOS PERMANENTES (NÃO TENTAR NOVAMENTE)
-        # Erros 4xx do cliente, exceto 429 (Too Many Requests)
-        if 400 <= status_code < 500 and status_code != 429:  # noqa
-            return False
-
-        # CASOS TRANSITÓRIOS (TENTAR NOVAMENTE)
-        # Erro 429 (Too Many Requests) ou erros 5xx (Server Error)
-        if status_code == 429 or status_code >= 500:  # noqa
-            return True
-
-    # Erros de rede genéricos que valem a pena tentar de novo
+    # SUGESTÃO DE REFINAMENTO: Tratar os casos simples primeiro (early return).
+    # Erros de rede genéricos são sempre transitórios e devem ser tentados novamente.
     if isinstance(exception, (Timeout, ConnectionError)):
         return True
 
-    # Para qualquer outra exceção não listada, não tentar novamente.
+    # Agora, tratar o caso mais complexo do HTTPError.
+    if isinstance(exception, HTTPError):
+        status_code = exception.response.status_code
+
+        # CASOS TRANSITÓRIOS (TENTAR NOVAMENTE)
+        # Erro 429 (Too Many Requests) ou erros 5xx (Server Error)
+        if status_code == 429 or status_code >= 500:  # noqa E501
+            return True
+
+    # Se a exceção não foi um dos casos transitórios acima, não tente novamente.
+    # Isso cobre implicitamente os outros erros 4xx e quaisquer outras exceções.
     return False
 
 
@@ -97,8 +91,7 @@ menor na chamada requests.get.
 
 default_retry = retry(
     retry=should_retry_exception,
-    wait=wait_exponential(multiplier=1, min=1, max=10),
-    # Apenas limite por número de tentativas para não abortar prematuramente
+    wait=wait_exponential(multiplier=1.5, min=5, max=30),
     stop=stop_after_attempt(3),
     before_sleep=_log_before_sleep,
     reraise=True,
