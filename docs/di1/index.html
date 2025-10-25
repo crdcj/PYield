@@ -1473,19 +1473,19 @@ expirations for the given <code>date</code>. Defaults to False.</p>
     <table>
       <thead>
         <tr>
-          <th>Type</th>
+<th>Name</th>          <th>Type</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td>
-                  <code><span title="float">float</span> | None</code>
+<td><code>float</code></td>            <td>
+                  <code><span title="float">float</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>float | None: The exact or interpolated DI settlement rate for the specified
-date and expiration. Returns <code>None</code> if:
+                <p>The exact or interpolated DI settlement rate for the specified
+date and expiration. Returns <code>float("nan")</code> if:
     - No DI data is found for the <code>date</code>.
     - The <code>expiration</code> is outside range and <code>extrapolate</code> is False.
     - An interpolation calculation fails.</p>
@@ -1586,7 +1586,7 @@ date and expiration. Returns <code>None</code> if:
 </span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a>    <span class="n">date</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a>    <span class="n">expiration</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a>    <span class="n">extrapolate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 </span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">    Interpolates or retrieves the DI rate for a single expiration date.</span>
 </span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a>
@@ -1604,8 +1604,8 @@ date and expiration. Returns <code>None</code> if:
 </span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">            expirations for the given `date`. Defaults to False.</span>
 </span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a>
 </span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">        float | None: The exact or interpolated DI settlement rate for the specified</span>
-</span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">            date and expiration. Returns `None` if:</span>
+</span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">        float: The exact or interpolated DI settlement rate for the specified</span>
+</span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">            date and expiration. Returns `float(&quot;nan&quot;)` if:</span>
 </span><span id="__span-0-354"><a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">                - No DI data is found for the `date`.</span>
 </span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">                - The `expiration` is outside range and `extrapolate` is False.</span>
 </span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">                - An interpolation calculation fails.</span>
@@ -1626,7 +1626,7 @@ date and expiration. Returns <code>None</code> if:
 </span><span id="__span-0-371"><a id="__codelineno-0-371" name="__codelineno-0-371"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-372"><a id="__codelineno-0-372" name="__codelineno-0-372"></a>    <span class="k">if</span> <span class="n">has_null_args</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">expiration</span><span class="p">):</span>
 </span><span id="__span-0-373"><a id="__codelineno-0-373" name="__codelineno-0-373"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Both &#39;date&#39; and &#39;expiration&#39; must be provided. Returning NaN.&quot;</span><span class="p">)</span>
-</span><span id="__span-0-374"><a id="__codelineno-0-374" name="__codelineno-0-374"></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="__span-0-374"><a id="__codelineno-0-374" name="__codelineno-0-374"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
 </span><span id="__span-0-375"><a id="__codelineno-0-375" name="__codelineno-0-375"></a>
 </span><span id="__span-0-376"><a id="__codelineno-0-376" name="__codelineno-0-376"></a>    <span class="n">converted_date</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_dates</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
 </span><span id="__span-0-377"><a id="__codelineno-0-377" name="__codelineno-0-377"></a>    <span class="n">converted_expiration</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_dates</span><span class="p">(</span><span class="n">expiration</span><span class="p">)</span>
@@ -1640,7 +1640,7 @@ date and expiration. Returns <code>None</code> if:
 </span><span id="__span-0-385"><a id="__codelineno-0-385" name="__codelineno-0-385"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">_get_data</span><span class="p">(</span><span class="n">dates</span><span class="o">=</span><span class="n">converted_date</span><span class="p">)</span>
 </span><span id="__span-0-386"><a id="__codelineno-0-386" name="__codelineno-0-386"></a>
 </span><span id="__span-0-387"><a id="__codelineno-0-387" name="__codelineno-0-387"></a>    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">():</span>
-</span><span id="__span-0-388"><a id="__codelineno-0-388" name="__codelineno-0-388"></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="__span-0-388"><a id="__codelineno-0-388" name="__codelineno-0-388"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
 </span><span id="__span-0-389"><a id="__codelineno-0-389" name="__codelineno-0-389"></a>
 </span><span id="__span-0-390"><a id="__codelineno-0-390" name="__codelineno-0-390"></a>    <span class="n">ff_interp</span> <span class="o">=</span> <span class="n">interpolator</span><span class="o">.</span><span class="n">Interpolator</span><span class="p">(</span>
 </span><span id="__span-0-391"><a id="__codelineno-0-391" name="__codelineno-0-391"></a>        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span>
@@ -1808,7 +1808,7 @@ Values will be NaN where interpolation is not possible
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="go">    0.13881</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="go">]</span>
 </span></code></pre></div>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># With extrapolation set to False, the second rate will be null</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># With extrapolation set to False, the second rate will be NaN</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Note: 0.13576348733268917 is shown as 0.135763</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">di1</span><span class="o">.</span><span class="n">interpolate_rates</span><span class="p">(</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">... </span>    <span class="n">dates</span><span class="o">=</span><span class="s2">&quot;25-04-2025&quot;</span><span class="p">,</span>
@@ -1819,7 +1819,7 @@ Values will be NaN where interpolation is not possible
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="go">Series: &#39;FlatFwdRate&#39; [f64]</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="go">[</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="go">    0.135763</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="go">    null</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="go">    NaN</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="go">]</span>
 </span></code></pre></div>
 
@@ -2059,7 +2059,7 @@ different lengths.</p>
 </span><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">            0.13881</span>
 </span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">        ]</span>
 </span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a>
-</span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">        &gt;&gt;&gt; # With extrapolation set to False, the second rate will be null</span>
+</span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">        &gt;&gt;&gt; # With extrapolation set to False, the second rate will be NaN</span>
 </span><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">        &gt;&gt;&gt; # Note: 0.13576348733268917 is shown as 0.135763</span>
 </span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="sd">        &gt;&gt;&gt; di1.interpolate_rates(</span>
 </span><span id="__span-0-261"><a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">        ...     dates=&quot;25-04-2025&quot;,</span>
@@ -2070,7 +2070,7 @@ different lengths.</p>
 </span><span id="__span-0-266"><a id="__codelineno-0-266" name="__codelineno-0-266"></a><span class="sd">        Series: &#39;FlatFwdRate&#39; [f64]</span>
 </span><span id="__span-0-267"><a id="__codelineno-0-267" name="__codelineno-0-267"></a><span class="sd">        [</span>
 </span><span id="__span-0-268"><a id="__codelineno-0-268" name="__codelineno-0-268"></a><span class="sd">            0.135763</span>
-</span><span id="__span-0-269"><a id="__codelineno-0-269" name="__codelineno-0-269"></a><span class="sd">            null</span>
+</span><span id="__span-0-269"><a id="__codelineno-0-269" name="__codelineno-0-269"></a><span class="sd">            NaN</span>
 </span><span id="__span-0-270"><a id="__codelineno-0-270" name="__codelineno-0-270"></a><span class="sd">        ]</span>
 </span><span id="__span-0-271"><a id="__codelineno-0-271" name="__codelineno-0-271"></a>
 </span><span id="__span-0-272"><a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="sd">    Raises:</span>

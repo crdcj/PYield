@@ -1469,18 +1469,18 @@ the cash flows, which is the yield to maturity (YTM) of the LTN.</p>
     <table>
       <thead>
         <tr>
-          <th>Type</th>
+<th>Name</th>          <th>Type</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td>
-                  <code><span title="float">float</span> | None</code>
+<td><code>float</code></td>            <td>
+                  <code><span title="float">float</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>float | None: The DV01 value, representing the price change for a 1 basis point
+                <p>The DV01 value, representing the price change for a 1 basis point
 increase in yield.</p>
               </div>
             </td>
@@ -1533,7 +1533,7 @@ increase in yield.</p>
 </span><span id="__span-0-155"><a id="__codelineno-0-155" name="__codelineno-0-155"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-156"><a id="__codelineno-0-156" name="__codelineno-0-156"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-157"><a id="__codelineno-0-157" name="__codelineno-0-157"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-</span><span id="__span-0-158"><a id="__codelineno-0-158" name="__codelineno-0-158"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-158"><a id="__codelineno-0-158" name="__codelineno-0-158"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 </span><span id="__span-0-159"><a id="__codelineno-0-159" name="__codelineno-0-159"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-160"><a id="__codelineno-0-160" name="__codelineno-0-160"></a><span class="sd">    Calculate the DV01 (Dollar Value of 01) for an LTN in R$.</span>
 </span><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a>
@@ -1548,7 +1548,7 @@ increase in yield.</p>
 </span><span id="__span-0-170"><a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">            the cash flows, which is the yield to maturity (YTM) of the LTN.</span>
 </span><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a>
 </span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a><span class="sd">        float | None: The DV01 value, representing the price change for a 1 basis point</span>
+</span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a><span class="sd">        float: The DV01 value, representing the price change for a 1 basis point</span>
 </span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a><span class="sd">            increase in yield.</span>
 </span><span id="__span-0-175"><a id="__codelineno-0-175" name="__codelineno-0-175"></a>
 </span><span id="__span-0-176"><a id="__codelineno-0-176" name="__codelineno-0-176"></a><span class="sd">    Examples:</span>
@@ -1557,7 +1557,7 @@ increase in yield.</p>
 </span><span id="__span-0-179"><a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="sd">        0.2269059999999854</span>
 </span><span id="__span-0-180"><a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-181"><a id="__codelineno-0-181" name="__codelineno-0-181"></a>    <span class="k">if</span> <span class="n">has_null_args</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span><span class="p">):</span>
-</span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
 </span><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a>    <span class="n">price1</span> <span class="o">=</span> <span class="n">price</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span><span class="p">)</span>
 </span><span id="__span-0-184"><a id="__codelineno-0-184" name="__codelineno-0-184"></a>    <span class="n">price2</span> <span class="o">=</span> <span class="n">price</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span> <span class="o">+</span> <span class="mf">0.0001</span><span class="p">)</span>
 </span><span id="__span-0-185"><a id="__codelineno-0-185" name="__codelineno-0-185"></a>    <span class="k">return</span> <span class="n">price1</span> <span class="o">-</span> <span class="n">price2</span>
@@ -1984,18 +1984,18 @@ estrutura de vencimentos e suas taxas.</p>
     <table>
       <thead>
         <tr>
-          <th>Type</th>
+<th>Name</th>          <th>Type</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td>
-                  <code><span title="float">float</span> | None</code>
+<td><code>float</code></td>            <td>
+                  <code><span title="float">float</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>float | None: The premium of the LTN bond over the DI Future rate.</p>
+                <p>The premium of the LTN bond over the DI Future rate.</p>
               </div>
             </td>
           </tr>
@@ -2041,7 +2041,7 @@ DI (JAN30) Settlement rate: 0.11725</p>
 <span class="normal"><a href="#__codelineno-0-148">148</a></span>
 <span class="normal"><a href="#__codelineno-0-149">149</a></span>
 <span class="normal"><a href="#__codelineno-0-150">150</a></span>
-<span class="normal"><a href="#__codelineno-0-151">151</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a><span class="k">def</span><span class="w"> </span><span class="nf">premium</span><span class="p">(</span><span class="n">ltn_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">di_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-151">151</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a><span class="k">def</span><span class="w"> </span><span class="nf">premium</span><span class="p">(</span><span class="n">ltn_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">di_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 </span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a><span class="sd">    Calculate the premium of the LTN bond over the DI Future rate using provided rates.</span>
 </span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a>
@@ -2050,7 +2050,7 @@ DI (JAN30) Settlement rate: 0.11725</p>
 </span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a><span class="sd">        di_rate (float): The annualized DI Future rate.</span>
 </span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a>
 </span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a><span class="sd">        float | None: The premium of the LTN bond over the DI Future rate.</span>
+</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a><span class="sd">        float: The premium of the LTN bond over the DI Future rate.</span>
 </span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135"></a>
 </span><span id="__span-0-136"><a id="__codelineno-0-136" name="__codelineno-0-136"></a><span class="sd">    Examples:</span>
 </span><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a><span class="sd">        Reference date: 22-08-2024</span>
@@ -2061,7 +2061,7 @@ DI (JAN30) Settlement rate: 0.11725</p>
 </span><span id="__span-0-142"><a id="__codelineno-0-142" name="__codelineno-0-142"></a><span class="sd">        1.0120718007994287</span>
 </span><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-144"><a id="__codelineno-0-144" name="__codelineno-0-144"></a>    <span class="k">if</span> <span class="n">has_null_args</span><span class="p">(</span><span class="n">ltn_rate</span><span class="p">,</span> <span class="n">di_rate</span><span class="p">):</span>
-</span><span id="__span-0-145"><a id="__codelineno-0-145" name="__codelineno-0-145"></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="__span-0-145"><a id="__codelineno-0-145" name="__codelineno-0-145"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
 </span><span id="__span-0-146"><a id="__codelineno-0-146" name="__codelineno-0-146"></a>    <span class="c1"># Cálculo das taxas diárias</span>
 </span><span id="__span-0-147"><a id="__codelineno-0-147" name="__codelineno-0-147"></a>    <span class="n">ltn_daily_rate</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">ltn_rate</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">252</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
 </span><span id="__span-0-148"><a id="__codelineno-0-148" name="__codelineno-0-148"></a>    <span class="n">di_daily_rate</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">di_rate</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">252</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
@@ -2158,18 +2158,18 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-F.</p>
     <table>
       <thead>
         <tr>
-          <th>Type</th>
+<th>Name</th>          <th>Type</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td>
-                  <code><span title="float">float</span> | None</code>
+<td><code>float</code></td>            <td>
+                  <code><span title="float">float</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>float | None: The LTN price using Anbima rules.</p>
+                <p>The LTN price using Anbima rules.</p>
               </div>
             </td>
           </tr>
@@ -2239,7 +2239,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-F.</p>
 </span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 </span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">    Calculate the LTN price using Anbima rules.</span>
 </span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a>
@@ -2252,7 +2252,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-F.</p>
 </span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">            the cash flows, which is the yield to maturity (YTM) of the NTN-F.</span>
 </span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>
 </span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="sd">        float | None: The LTN price using Anbima rules.</span>
+</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="sd">        float: The LTN price using Anbima rules.</span>
 </span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>
 </span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="sd">    References:</span>
 </span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">        - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf</span>
@@ -2264,7 +2264,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-F.</p>
 </span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a>    <span class="c1"># Validate and normalize inputs</span>
 </span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a>    <span class="k">if</span> <span class="n">has_null_args</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span><span class="p">):</span>
-</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
 </span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
 </span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a>

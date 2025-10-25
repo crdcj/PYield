@@ -1431,18 +1431,18 @@ the cash flows.</p>
     <table>
       <thead>
         <tr>
-          <th>Type</th>
+<th>Name</th>          <th>Type</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td>
-                  <code><span title="float">float</span> | None</code>
+<td><code>float</code></td>            <td>
+                  <code><span title="float">float</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>float | None: The Macaulay duration of the NTN-C bond in business years.</p>
+                <p>The Macaulay duration of the NTN-C bond in business years.</p>
               </div>
             </td>
           </tr>
@@ -1494,7 +1494,7 @@ the cash flows.</p>
 </span><span id="__span-0-276"><a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-277"><a id="__codelineno-0-277" name="__codelineno-0-277"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-278"><a id="__codelineno-0-278" name="__codelineno-0-278"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-</span><span id="__span-0-279"><a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-279"><a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 </span><span id="__span-0-280"><a id="__codelineno-0-280" name="__codelineno-0-280"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-281"><a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="sd">    Calculate the Macaulay duration of the NTN-C bond in business years.</span>
 </span><span id="__span-0-282"><a id="__codelineno-0-282" name="__codelineno-0-282"></a>
@@ -1504,7 +1504,7 @@ the cash flows.</p>
 </span><span id="__span-0-286"><a id="__codelineno-0-286" name="__codelineno-0-286"></a><span class="sd">        rate (float): The discount rate used to calculate the duration.</span>
 </span><span id="__span-0-287"><a id="__codelineno-0-287" name="__codelineno-0-287"></a>
 </span><span id="__span-0-288"><a id="__codelineno-0-288" name="__codelineno-0-288"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-289"><a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="sd">        float | None: The Macaulay duration of the NTN-C bond in business years.</span>
+</span><span id="__span-0-289"><a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="sd">        float: The Macaulay duration of the NTN-C bond in business years.</span>
 </span><span id="__span-0-290"><a id="__codelineno-0-290" name="__codelineno-0-290"></a>
 </span><span id="__span-0-291"><a id="__codelineno-0-291" name="__codelineno-0-291"></a><span class="sd">    Examples:</span>
 </span><span id="__span-0-292"><a id="__codelineno-0-292" name="__codelineno-0-292"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnc</span>
@@ -1513,7 +1513,7 @@ the cash flows.</p>
 </span><span id="__span-0-295"><a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a>    <span class="c1"># Validate and normalize inputs</span>
 </span><span id="__span-0-297"><a id="__codelineno-0-297" name="__codelineno-0-297"></a>    <span class="k">if</span> <span class="n">has_null_args</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span><span class="p">):</span>
-</span><span id="__span-0-298"><a id="__codelineno-0-298" name="__codelineno-0-298"></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="__span-0-298"><a id="__codelineno-0-298" name="__codelineno-0-298"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
 </span><span id="__span-0-299"><a id="__codelineno-0-299" name="__codelineno-0-299"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
 </span><span id="__span-0-300"><a id="__codelineno-0-300" name="__codelineno-0-300"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-301"><a id="__codelineno-0-301" name="__codelineno-0-301"></a>
@@ -1822,18 +1822,18 @@ the coupon dates.</p>
     <table>
       <thead>
         <tr>
-          <th>Type</th>
+<th>Name</th>          <th>Type</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td>
-                  <code><span title="float">float</span> | None</code>
+<td><code>float</code></td>            <td>
+                  <code><span title="float">float</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>float | None: The NTN-C price truncated to 6 decimal places.</p>
+                <p>The NTN-C price truncated to 6 decimal places.</p>
               </div>
             </td>
           </tr>
@@ -1886,7 +1886,7 @@ the coupon dates.</p>
 <span class="normal"><a href="#__codelineno-0-272">272</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="k">def</span><span class="w"> </span><span class="nf">price</span><span class="p">(</span>
 </span><span id="__span-0-247"><a id="__codelineno-0-247" name="__codelineno-0-247"></a>    <span class="n">vna</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
 </span><span id="__span-0-248"><a id="__codelineno-0-248" name="__codelineno-0-248"></a>    <span class="n">quotation</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-</span><span id="__span-0-249"><a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-249"><a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 </span><span id="__span-0-250"><a id="__codelineno-0-250" name="__codelineno-0-250"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-251"><a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">    Calculate the NTN-C price using Anbima rules.</span>
 </span><span id="__span-0-252"><a id="__codelineno-0-252" name="__codelineno-0-252"></a>
@@ -1897,7 +1897,7 @@ the coupon dates.</p>
 </span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        quotation (float): The NTN-C quotation in base 100.</span>
 </span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a>
 </span><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="sd">        float | None: The NTN-C price truncated to 6 decimal places.</span>
+</span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="sd">        float: The NTN-C price truncated to 6 decimal places.</span>
 </span><span id="__span-0-261"><a id="__codelineno-0-261" name="__codelineno-0-261"></a>
 </span><span id="__span-0-262"><a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">    References:</span>
 </span><span id="__span-0-263"><a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">        - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf</span>
@@ -1908,7 +1908,7 @@ the coupon dates.</p>
 </span><span id="__span-0-268"><a id="__codelineno-0-268" name="__codelineno-0-268"></a><span class="sd">        8347.348705</span>
 </span><span id="__span-0-269"><a id="__codelineno-0-269" name="__codelineno-0-269"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-270"><a id="__codelineno-0-270" name="__codelineno-0-270"></a>    <span class="k">if</span> <span class="n">has_null_args</span><span class="p">(</span><span class="n">vna</span><span class="p">,</span> <span class="n">quotation</span><span class="p">):</span>
-</span><span id="__span-0-271"><a id="__codelineno-0-271" name="__codelineno-0-271"></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="__span-0-271"><a id="__codelineno-0-271" name="__codelineno-0-271"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
 </span><span id="__span-0-272"><a id="__codelineno-0-272" name="__codelineno-0-272"></a>    <span class="k">return</span> <span class="n">tl</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">vna</span> <span class="o">*</span> <span class="n">quotation</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
@@ -1998,18 +1998,18 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-C.</p>
     <table>
       <thead>
         <tr>
-          <th>Type</th>
+<th>Name</th>          <th>Type</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td>
-                  <code><span title="float">float</span> | None</code>
+<td><code>float</code></td>            <td>
+                  <code><span title="float">float</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>float | None: The NTN-C quotation truncated to 4 decimal places.</p>
+                <p>The NTN-C quotation truncated to 4 decimal places.</p>
               </div>
             </td>
           </tr>
@@ -2090,7 +2090,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-C.</p>
 </span><span id="__span-0-194"><a id="__codelineno-0-194" name="__codelineno-0-194"></a>    <span class="n">settlement</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-195"><a id="__codelineno-0-195" name="__codelineno-0-195"></a>    <span class="n">maturity</span><span class="p">:</span> <span class="n">DateScalar</span><span class="p">,</span>
 </span><span id="__span-0-196"><a id="__codelineno-0-196" name="__codelineno-0-196"></a>    <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-</span><span id="__span-0-197"><a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-197"><a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 </span><span id="__span-0-198"><a id="__codelineno-0-198" name="__codelineno-0-198"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-199"><a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="sd">    Calculate the NTN-C quotation in base 100 using Anbima rules.</span>
 </span><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a>
@@ -2101,7 +2101,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-C.</p>
 </span><span id="__span-0-205"><a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">            the cash flows, which is the yield to maturity (YTM) of the NTN-C.</span>
 </span><span id="__span-0-206"><a id="__codelineno-0-206" name="__codelineno-0-206"></a>
 </span><span id="__span-0-207"><a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-208"><a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="sd">        float | None: The NTN-C quotation truncated to 4 decimal places.</span>
+</span><span id="__span-0-208"><a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="sd">        float: The NTN-C quotation truncated to 4 decimal places.</span>
 </span><span id="__span-0-209"><a id="__codelineno-0-209" name="__codelineno-0-209"></a>
 </span><span id="__span-0-210"><a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">    References:</span>
 </span><span id="__span-0-211"><a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">        - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf</span>
@@ -2116,7 +2116,7 @@ the cash flows, which is the yield to maturity (YTM) of the NTN-C.</p>
 </span><span id="__span-0-220"><a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-221"><a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="c1"># Validate and normalize inputs</span>
 </span><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="k">if</span> <span class="n">has_null_args</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturity</span><span class="p">,</span> <span class="n">rate</span><span class="p">):</span>
-</span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
 </span><span id="__span-0-224"><a id="__codelineno-0-224" name="__codelineno-0-224"></a>    <span class="n">settlement</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_dates</span><span class="p">(</span><span class="n">settlement</span><span class="p">)</span>
 </span><span id="__span-0-225"><a id="__codelineno-0-225" name="__codelineno-0-225"></a>    <span class="n">maturity</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">convert_dates</span><span class="p">(</span><span class="n">maturity</span><span class="p">)</span>
 </span><span id="__span-0-226"><a id="__codelineno-0-226" name="__codelineno-0-226"></a>
