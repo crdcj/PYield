@@ -130,13 +130,7 @@ def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
         .rename(COLUMN_MAP)
         .with_columns(
             # Conversão de datas
-            cs.starts_with("data_")
-            .exclude("data_liquidacao_2v")
-            .str.strptime(pl.Date, "%d/%m/%Y"),
-            # Tratamento da data de 2ª volta que tem formato diferente
-            pl.col("data_liquidacao_2v").str.strptime(
-                pl.Date, "%Y-%m-%dT%H:%M:%S%.f%#z", strict=False
-            ),
+            cs.starts_with("data_").str.strptime(pl.Date, "%d/%m/%Y"),
             # Cálculos de totais
             pl.sum_horizontal("quantidade_ofertada_1v", "quantidade_ofertada_2v").alias(
                 "quantidade_ofertada_total"
@@ -192,28 +186,25 @@ def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
             cs.starts_with("financeiro_ofertado").round(2),
             (cs.starts_with("taxa") / 100).round(7),  # Percentual -> decimal
         )
-        .with_columns(
-            # Aplicar a lógica condicional em um segundo passo para evitar
-            # conflito de nomes duplicados dentro do MESMO with_columns.
-            [
-                pl.when(pl.col("quantidade_aceita_1v") == 0)
-                .then(None)
-                .otherwise(pl.col(col))
-                .alias(col)
-                for col in [
-                    "pu_minimo",
-                    "pu_medio",
-                    "tipo_pu_medio",
-                    "taxa_media",
-                    "taxa_maxima",
-                ]
-            ]
-        )
+    )
+    ajustar_cols = [
+        "pu_minimo",
+        "pu_medio",
+        "tipo_pu_medio",
+        "taxa_media",
+        "taxa_maxima",
+    ]
+    # Se a quantidade aceita for zero, ajustar colunas específicas para None
+    df = df.with_columns(
+        pl.when(pl.col("quantidade_aceita_1v") == 0)
+        .then(None)
+        .otherwise(pl.col(ajustar_cols))
+        .name.keep()
     )
 
     # Cálculo de dias úteis (requer acesso a colunas já convertidas)
     dias_uteis = bday.count(df["data_liquidacao_1v"], df["data_vencimento"])
-    df = df.with_columns(pl.Series(name="dias_uteis", values=dias_uteis))
+    df = df.with_columns(dias_uteis.alias("dias_uteis"))
     return df.sort(["data_1v", "titulo", "data_vencimento"])
 
 
@@ -244,13 +235,11 @@ def _add_duration(df: pl.DataFrame) -> pl.DataFrame:
 
     df = df.with_columns(
         pl.struct(
-            [
-                "titulo",
-                "data_liquidacao_1v",
-                "data_vencimento",
-                "taxa_media",
-                "dias_uteis",
-            ]
+            "titulo",
+            "data_liquidacao_1v",
+            "data_vencimento",
+            "taxa_media",
+            "dias_uteis",
         )
         .map_elements(calculate_duration_per_row, return_dtype=pl.Float64)
         .alias("duration")
@@ -279,9 +268,9 @@ def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
 
     df = df.with_columns(
         # 2. Criar as colunas DV01 multiplicando a expressão base pelas quantidades.
-        (dv01_unit_expr * pl.col("quantidade_aceita_1v")).alias("dv01_1v"),
-        (dv01_unit_expr * pl.col("quantidade_aceita_2v")).alias("dv01_2v"),
-        (dv01_unit_expr * pl.col("quantidade_aceita_total")).alias("dv01_total"),
+        dv01_1v=dv01_unit_expr * pl.col("quantidade_aceita_1v"),
+        dv01_2v=dv01_unit_expr * pl.col("quantidade_aceita_2v"),
+        dv01_total=dv01_unit_expr * pl.col("quantidade_aceita_total"),
     ).with_columns(cs.starts_with("dv01").round(2))
 
     return df
@@ -301,7 +290,7 @@ def _fetch_ptax_data(auction_date: dt.date) -> pl.DataFrame:
         return pl.DataFrame()
 
     return (
-        df.select(["Date", "MidRate"])
+        df.select("Date", "MidRate")
         .rename({"Date": "data_ref", "MidRate": "ptax"})
         .sort("data_ref")
     )
@@ -346,7 +335,7 @@ def auction(auction_date: DateScalar) -> pl.DataFrame:
             {...},
             {
             "quantidade_bcb": 0,
-            "liquidacao_segunda_volta": "2025-10-01T00:00:00.000Z",
+            "liquidacao_segunda_volta": "30/09/2025",
             "oferta_segunda_volta": 37499,
             "data_leilao": "30/09/2025",
             "oferta": 150000,
