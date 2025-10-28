@@ -81,7 +81,8 @@ def payment_dates(
         maturity (DateScalar): The maturity date.
 
     Returns:
-        pl.Series: Series of coupon dates within the specified range.
+        pl.Series: Series of coupon dates within the specified range. Returns an
+            empty Series if the maturity date is before the settlement date.
 
     Examples:
         >>> from pyield import ntnc
@@ -110,7 +111,7 @@ def payment_dates(
 
     # Check if maturity date is after the start date
     if maturity < settlement:
-        raise ValueError("Maturity date must be after the start date.")
+        return pl.Series(dtype=pl.Date)
 
     # Initialize loop variables
     coupon_date = maturity
@@ -175,6 +176,10 @@ def cash_flows(
 
     # Get the coupon dates between the settlement and maturity dates
     pay_dates = payment_dates(settlement, maturity)
+
+    # Return empty DataFrame if no payment dates (settlement >= maturity)
+    if pay_dates.is_empty():
+        return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
 
     # Get the right coupon payment and final payment values
     coupon_pmt = _get_coupon_pmt(maturity)

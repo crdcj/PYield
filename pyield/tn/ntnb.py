@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 
 import pandas as pd
 import polars as pl
@@ -19,6 +20,8 @@ COUPON_MONTHS = {2, 5, 8, 11}
 """
 COUPON_PMT = 2.956301
 FINAL_PMT = 102.956301
+
+logger = logging.getLogger(__name__)
 
 
 def data(date: DateScalar) -> pl.DataFrame:
@@ -152,7 +155,8 @@ def payment_dates(
         maturity (DateScalar): The maturity date.
 
     Returns:
-        pl.Series: Series of coupon dates within the specified range.
+        pl.Series: Series of coupon dates within the specified range. Returns an empty
+            Series if the maturity date is before or equal to the settlement date.
 
     Examples:
         >>> from pyield import ntnb
@@ -171,7 +175,7 @@ def payment_dates(
     maturity = cv.convert_dates(maturity)
 
     if maturity <= settlement:
-        raise ValueError("Maturity date must be after the settlement date.")
+        return pl.Series(dtype=pl.Date)
 
     coupon_date = maturity
     coupon_dates = []
@@ -198,6 +202,7 @@ def cash_flows(
 
     Returns:
         pl.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
+            Returns empty DataFrame if settlement >= maturity.
 
     Returned columns:
         - PaymentDate: The payment date of the cash flow
@@ -226,6 +231,10 @@ def cash_flows(
     # Get the coupon dates between the settlement and maturity dates
     p_dates = payment_dates(settlement, maturity)
 
+    # Return empty DataFrame if no payment dates (settlement >= maturity)
+    if p_dates.is_empty():
+        return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
+
     df = pl.DataFrame({"PaymentDate": p_dates}).with_columns(
         pl.when(pl.col("PaymentDate") == maturity)
         .then(FINAL_PMT)
@@ -251,7 +260,8 @@ def quotation(
             the cash flows, which is the yield to maturity (YTM) of the NTN-B.
 
     Returns:
-        float: The NTN-B quotation truncated to 4 decimal places.
+        float: The NTN-B quotation truncated to 4 decimal places. Returns float('nan')
+            if the calculation cannot be performed due to invalid inputs.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -275,6 +285,9 @@ def quotation(
     maturity = cv.convert_dates(maturity)
 
     cf_df = cash_flows(settlement, maturity)
+    if cf_df.is_empty():
+        return float("nan")
+
     cf_dates = cf_df["PaymentDate"]
     cf_values = cf_df["CashFlow"]
 
@@ -320,6 +333,98 @@ def price(
     if has_null_args(vna, quotation):
         return float("nan")
     return tl.truncate(vna * quotation / 100, 6)
+
+
+def _validate_spot_rate_inputs(
+    settlement: DateScalar,
+    maturities: DateArray,
+    rates: FloatArray,
+) -> tuple[dt.date, pl.Series, pl.Series]:
+    # Process and validate the input data
+    settlement = cv.convert_dates(settlement)
+    maturities = cv.convert_dates(maturities)
+
+    # Structural validation: ensure maturities and rates have the same length
+    if len(maturities) != len(rates):
+        raise ValueError(
+            f"Maturities and rates must have the same length. "
+            f"Got {len(maturities)} maturities and {len(rates)} rates."
+        )
+
+    # Create base dataframe and filter out invalid data
+    df_clean = pl.DataFrame(
+        data={"maturities": maturities, "rates": rates},
+        schema={"maturities": pl.Date, "rates": pl.Float64},
+    ).filter(pl.col("maturities") > settlement)
+
+    # Warn about filtered maturities
+    filtered_count = len(maturities) - df_clean.height
+    if filtered_count > 0:
+        logger.warning(
+            "Maturities on or before settlement were ignored: "
+            f"{filtered_count} entries removed."
+        )
+
+    return settlement, df_clean["maturities"], df_clean["rates"]
+
+
+def _create_bootstrap_dataframe(
+    settlement: dt.date,
+    rates: pl.Series,
+    maturities: pl.Series,
+) -> pl.DataFrame:
+    """Cria o DataFrame base para o bootstrap."""
+    # Create the interpolator to calculate the YTM rates for intermediate dates
+    flat_fwd = ip.Interpolator(
+        method="flat_forward",
+        known_bdays=bday.count(settlement, maturities),
+        known_rates=rates,
+    )
+
+    # Generate coupon dates up to the longest maturity date
+    all_coupon_dates = _generate_all_coupon_dates(settlement, maturities.max())
+    bdays_to_mat = bday.count(settlement, all_coupon_dates)
+
+    df = (
+        pl.DataFrame({"MaturityDate": all_coupon_dates, "BDToMat": bdays_to_mat})
+        .with_columns(
+            BYears=pl.col("BDToMat") / 252,
+            YTM=pl.col("BDToMat").map_elements(flat_fwd, return_dtype=pl.Float64),
+            Coupon=COUPON_PMT,
+            SpotRate=pl.lit(None, dtype=pl.Float64),
+        )
+        .sort("MaturityDate")
+    )
+
+    return df
+
+
+def _update_spot_rate(
+    df: pl.DataFrame, maturity: dt.date, spot_rate: float
+) -> pl.DataFrame:
+    """Helper function to update the spot rate inside the bootstrap loop."""
+    return df.with_columns(
+        pl.when(pl.col("MaturityDate") == maturity)
+        .then(spot_rate)
+        .otherwise(pl.col("SpotRate"))
+        .alias("SpotRate")
+    )
+
+
+def _calculate_coupons_present_value(
+    df: pl.DataFrame,
+    settlement: dt.date,
+    maturity: dt.date,
+) -> float:
+    """Calcula o valor presente dos cupons anteriores à maturidade."""
+    prev_cf_dates = payment_dates(settlement, maturity).to_list()[:-1]
+    df_temp = df.filter(pl.col("MaturityDate").is_in(prev_cf_dates))
+
+    return tl.calculate_present_value(
+        df_temp["Coupon"],
+        df_temp["SpotRate"],
+        df_temp["BYears"],
+    )
 
 
 def spot_rates(
@@ -389,42 +494,12 @@ def spot_rates(
     """
     if has_null_args(settlement, maturities, rates):
         return pl.DataFrame()
-    # Process and validate the input data
-    settlement = cv.convert_dates(settlement)
-    maturities = cv.convert_dates(maturities)
 
-    # Create the interpolator to calculate the YTM rates for intermediate dates
-    flat_fwd = ip.Interpolator(
-        method="flat_forward",
-        known_bdays=bday.count(settlement, maturities),
-        known_rates=rates,
+    settlement, maturities, rates = _validate_spot_rate_inputs(
+        settlement, maturities, rates
     )
 
-    # Generate coupon dates up to the longest maturity date
-    all_coupon_dates = _generate_all_coupon_dates(settlement, maturities.max())
-    bdays_to_mat = bday.count(settlement, all_coupon_dates)
-
-    df = (
-        pl.DataFrame({"MaturityDate": all_coupon_dates, "BDToMat": bdays_to_mat})
-        .with_columns(
-            BYears=pl.col("BDToMat") / 252,
-            YTM=pl.col("BDToMat").map_elements(flat_fwd, return_dtype=pl.Float64),
-            Coupon=COUPON_PMT,
-            SpotRate=pl.lit(None, dtype=pl.Float64),
-        )
-        .sort("MaturityDate")
-    )
-
-    def _update_spot_rate(
-        df: pl.DataFrame, maturity: dt.date, spot_rate: float
-    ) -> pl.DataFrame:
-        """Helper function to update the spot rate inside the bootstrap loop."""
-        return df.with_columns(
-            pl.when(pl.col("MaturityDate") == maturity)
-            .then(spot_rate)
-            .otherwise(pl.col("SpotRate"))
-            .alias("SpotRate")
-        )
+    df = _create_bootstrap_dataframe(settlement, rates, maturities)
 
     # Bootstrap method to calculate spot rates iteratively
     df_dicts = df.to_dicts()
@@ -438,18 +513,10 @@ def spot_rates(
             df = _update_spot_rate(df, maturity, spot_rate)
             continue
 
-        # Get results for all previous cash flows already calculated
-        prev_cf_dates = payment_dates(settlement, maturity).to_list()[:-1]
-        df_temp = df.filter(pl.col("MaturityDate").is_in(prev_cf_dates))
-
         # Calculate the spot rate for the current maturity
-        present_value = tl.calculate_present_value(
-            df_temp["Coupon"],
-            df_temp["SpotRate"],
-            df_temp["BYears"],
-        )
+        coupons_pv = _calculate_coupons_present_value(df, settlement, maturity)
         bond_price = quotation(settlement, maturity, row["YTM"])
-        price_factor = FINAL_PMT / (bond_price - present_value)
+        price_factor = FINAL_PMT / (bond_price - coupons_pv)
         spot_rate = price_factor ** (1 / row["BYears"]) - 1
 
         df = _update_spot_rate(df, maturity, spot_rate)

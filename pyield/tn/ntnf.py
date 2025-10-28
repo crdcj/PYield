@@ -100,7 +100,8 @@ def payment_dates(
 
     Returns:
         pl.Series: A Series containing the coupon dates between the settlement
-            (exclusive) and maturity (inclusive) dates.
+            (exclusive) and maturity (inclusive) dates. Returns an empty Series if
+            the maturity date is before or equal to the settlement date.
 
     Examples:
         >>> from pyield import ntnf
@@ -124,7 +125,7 @@ def payment_dates(
 
     # Check if maturity date is after the start date
     if maturity <= settlement:
-        raise ValueError("Maturity date must be after the settlement date.")
+        return pl.Series(dtype=pl.Date)
 
     # Initialize loop variables
     coupon_date = maturity
@@ -185,6 +186,10 @@ def cash_flows(
     # Get the payment dates between the settlement and maturity dates
     pay_dates = payment_dates(settlement, maturity)
 
+    # Return empty DataFrame if no payment dates (settlement >= maturity)
+    if pay_dates.is_empty():
+        return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
+
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
     df = pl.DataFrame(data={"PaymentDate": pay_dates}).with_columns(
         pl.when(pl.col("PaymentDate") == maturity)
@@ -230,7 +235,11 @@ def price(
     """
     if has_null_args(settlement, maturity, rate):
         return float("nan")
+
     cf_df = cash_flows(settlement, maturity)
+    if cf_df.is_empty():
+        return float("nan")
+
     cf_values = cf_df["CashFlow"]
     bdays = bday.count(settlement, cf_df["PaymentDate"])
     byears = tools.truncate(bdays / 252, 14)
@@ -553,7 +562,7 @@ def premium(  # noqa
 
     Returns:
         float: The premium of the NTN-F bond over the DI curve, expressed as a
-        factor.
+        factor. If calculation fails, returns NaN.
 
     Examples:
         >>> # Obs: only some of the DI rates will be used in the example.
@@ -584,6 +593,9 @@ def premium(  # noqa
         di_rates = pl.Series(di_rates)
 
     df_cf = cash_flows(settlement, ntnf_maturity, adj_payment_dates=True)
+    if df_cf.is_empty():
+        return float("nan")
+
     ff_interpolator = ip.Interpolator(
         "flat_forward",
         bday.count(settlement, di_expirations),
@@ -650,6 +662,7 @@ def di_net_spread(  # noqa
 
     Returns:
         float: The net DI spread in decimal format (e.g., 0.0012 for 12 bps).
+            If calculation fails, returns NaN.
 
     Examples:
         # Obs: only some of the DI rates will be used in the example.
@@ -678,7 +691,7 @@ def di_net_spread(  # noqa
 
     # 2. Validação dos inputs de DI
     if len(di_rates) != len(di_expirations):
-        raise ValueError("di_rates and di_expirations must have the same length.")
+        return float("nan")
 
     # 3. Criação do interpolador
     ff_interpolator = ip.Interpolator(
@@ -689,6 +702,8 @@ def di_net_spread(  # noqa
 
     # 4. Geração dos fluxos de caixa do NTN-F
     df = cash_flows(settlement, ntnf_maturity)
+    if df.is_empty():
+        return float("nan")
 
     bdays_to_payment = bday.count(settlement, df["PaymentDate"])
     byears_to_payment = bdays_to_payment / 252
@@ -730,7 +745,8 @@ def duration(
         rate (float): The yield to maturity (YTM) used to discount the cash flows.
 
     Returns:
-        float: The Macaulay duration in business business years.
+        float: The Macaulay duration in business business years. Returns NaN if
+            calculation is not possible due to invalid inputs.
 
     Examples:
         >>> from pyield import ntnf
@@ -744,6 +760,9 @@ def duration(
     maturity = cv.convert_dates(maturity)
 
     df = cash_flows(settlement, maturity)
+    if df.is_empty():
+        return float("nan")
+
     byears = bday.count(settlement, df["PaymentDate"]) / 252
     dcf = df["CashFlow"] / (1 + rate) ** byears
     duration = (dcf * byears).sum() / dcf.sum()
