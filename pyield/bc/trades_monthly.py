@@ -97,7 +97,7 @@ def _build_file_url(target_date: dt.date, extragroup: bool) -> str:
 
 @default_retry
 def _fetch_zip_from_url(file_url: str) -> bytes:
-    response = requests.get(file_url, timeout=15)
+    response = requests.get(file_url, timeout=10)
     response.raise_for_status()
     return response.content
 

@@ -76,7 +76,7 @@ LAST_IMA_URL = "https://www.anbima.com.br/informacoes/ima/arqs/ima_completo.txt"
 
 @default_retry
 def _fetch_last_ima_text() -> str:
-    r = requests.get(LAST_IMA_URL)
+    r = requests.get(LAST_IMA_URL, timeout=3)
     r.raise_for_status()
     r.encoding = "latin1"
     text = r.text.split("2@COMPOSIÇÃO DE CARTEIRA")[1].strip()

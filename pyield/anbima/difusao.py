@@ -118,10 +118,10 @@ def _fetch_url_data(data_referencia: str) -> str | None:
     }
 
     with requests.Session() as s:
-        s.get(URL_PAGINA_INICIAL, headers=headers)
+        s.get(URL_PAGINA_INICIAL, headers=headers, timeout=60)
         try:
             response_consulta = s.post(
-                URL_CONSULTA_DADOS, headers=headers, data=payload
+                URL_CONSULTA_DADOS, headers=headers, data=payload, timeout=60
             )
             response_consulta.raise_for_status()
         except requests.exceptions.RequestException as e:
@@ -129,7 +129,9 @@ def _fetch_url_data(data_referencia: str) -> str | None:
             return None  # 3. Retornar None em caso de falha
 
         try:
-            response_download = s.post(URL_DOWNLOAD, headers=headers, data=payload)
+            response_download = s.post(
+                URL_DOWNLOAD, headers=headers, data=payload, timeout=60
+            )
             response_download.raise_for_status()
             if "text/html" in response_download.headers.get("Content-Type", ""):
                 logger.error(

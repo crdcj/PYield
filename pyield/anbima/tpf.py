@@ -107,7 +107,7 @@ def _build_file_url(date: dt.date) -> str:
 @default_retry
 def _get_csv_data(date: dt.date) -> str:
     file_url = _build_file_url(date)
-    r = requests.get(file_url)
+    r = requests.get(file_url, timeout=10)
     r.raise_for_status()
     r.encoding = "latin1"
     text = r.text

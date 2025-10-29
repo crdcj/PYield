@@ -17,7 +17,7 @@ def _get_text(date: DateScalar) -> str:
     url_file = f"{date.strftime('%Y%m%d')}APC238"
     url_vna = url_base + url_file
 
-    response = requests.get(url_vna)
+    response = requests.get(url_vna, timeout=10)
     response.raise_for_status()
     return response.text
 

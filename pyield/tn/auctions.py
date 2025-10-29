@@ -115,7 +115,7 @@ def _fetch_auction_data(auction_date: dt.date) -> list[dict]:
     )
     params = {"dataleilao": auction_date.strftime("%d/%m/%Y")}
 
-    response = requests.get(endpoint, params=params, timeout=15)
+    response = requests.get(endpoint, params=params, timeout=10)
     response.raise_for_status()
     data = response.json()
     if "registros" not in data or not data["registros"]:

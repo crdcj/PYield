@@ -17,8 +17,8 @@ def _get_page_text() -> bytes:
     """Faz a requisição HTTP para a página da ANBIMA e retorna o texto HTML."""
     url = "https://www.anbima.com.br/informacoes/indicadores/"
     try:
-        r = requests.get(url, timeout=10)  # Adiciona um timeout para a requisição
-        r.raise_for_status()  # Lança um HTTPError para respostas de erro (4xx ou 5xx)
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
         return r.content
     except requests.exceptions.RequestException as e:
         raise ConnectionError(f"Erro ao acessar a página da ANBIMA: {e}")

@@ -44,13 +44,13 @@ def _fetch_raw_benchmarks(include_history: bool) -> list[dict]:
     api_endpoint = f"{API_BASE_URL}?{API_HISTORY_PARAM}={include_history_param_value}"
 
     try:
-        response = session.get(api_endpoint)
+        response = session.get(api_endpoint, timeout=10)
         response.raise_for_status()
     except requests.exceptions.SSLError as e:
         logger.warning(
             f"SSL error encountered: {e}. Retrying without certificate verification."
         )
-        response = session.get(api_endpoint, verify=False)
+        response = session.get(api_endpoint, verify=False, timeout=10)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching benchmarks from API: {e}")

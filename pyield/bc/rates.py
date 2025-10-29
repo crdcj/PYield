@@ -55,7 +55,7 @@ class BCSerie(Enum):
 @default_retry
 def _do_api_call(api_url: str) -> list[dict[str, Any]]:
     """Executa uma chamada GET na API do BCB e retorna o JSON."""
-    response = requests.get(api_url, timeout=30)
+    response = requests.get(api_url, timeout=10)
     response.raise_for_status()
     return response.json()  # type: ignore[return-value]
 
