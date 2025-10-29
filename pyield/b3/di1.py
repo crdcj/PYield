@@ -17,8 +17,9 @@ def _load_with_intraday(dates: list[dt.date]) -> pl.DataFrame:
     df_cached = get_cached_dataset("di1").filter(pl.col("TradeDate").is_in(dates))
 
     # 2. Identifica datas solicitadas que não estão no cache
+    requested_dates = set(dates)
     cached_dates = set(df_cached["TradeDate"].unique().to_list())
-    missing_dates = [d for d in dates if d not in cached_dates]
+    missing_dates = requested_dates - cached_dates
 
     # 3. Para cada data faltante, tenta buscar dados via API
     dfs_to_concat = [df_cached] if not df_cached.is_empty() else []
