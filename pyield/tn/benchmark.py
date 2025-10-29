@@ -75,7 +75,7 @@ def _process_api_data(raw_data: list[dict]) -> pl.DataFrame:
         .drop_nulls()
         .with_columns(pl.col("Benchmark", "BondType").str.strip_chars())
         .cast(DATA_SCHEMA)
-        .sort(["StartDate", "BondType", "MaturityDate"])
+        .sort("StartDate", "BondType", "MaturityDate")
     )
 
 
