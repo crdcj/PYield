@@ -36,16 +36,10 @@ def _validate_reference_date(trade_date: dt.date) -> bool:
     """
     today_bz = dt.datetime.now(TIMEZONE_BZ).date()
     if trade_date > today_bz:
-        logger.warning(
-            "The provided date %s is in the future. Returning an empty DataFrame.",
-            trade_date,
-        )
+        logger.warning(f"The provided date {trade_date} is in the future.")
         return False
     if not bday.is_business_day(trade_date):
-        logger.warning(
-            "The provided date %s is not a business day. Returning an empty DataFrame.",
-            trade_date,
-        )
+        logger.warning(f"The provided date {trade_date} is not a business day.")
         return False
 
     # Não tem pregão na véspera de Natal e Ano Novo
@@ -55,16 +49,15 @@ def _validate_reference_date(trade_date: dt.date) -> bool:
     }
     if trade_date in special_closed_dates:
         logger.warning(
-            "There is no trading session before Christmas and New Year's Eve: %s. "
-            + "Returning an empty DataFrame.",
-            trade_date,
+            "There is no trading session before Christmas and New Year's Eve: "
+            f"{trade_date}"
         )
         return False
 
     return True
 
 
-def _is_trading_day(check_date: dt.date) -> bool:
+def _is_intraday_date(check_date: dt.date) -> bool:
     """Check if a date is a trading day."""
     # Primeiro valida regra geral de dia futuro / não útil / datas especiais
     if not _validate_reference_date(check_date):
@@ -167,11 +160,12 @@ def futures(
 
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
     if not _validate_reference_date(trade_date):
+        logger.warning(f"{trade_date} is not a valid date. Returning empty DataFrame.")
         return pl.DataFrame()
 
     selected_contract = str(contract_code).upper()
 
-    if _is_trading_day(trade_date):
+    if _is_intraday_date(trade_date):
         # É um dia de negociação intraday
         time = dt.datetime.now(TIMEZONE_BZ).time()
         if time < INTRADAY_START_TIME:  # Mercado não está aberto ainda
