@@ -14,16 +14,16 @@ import io
 import logging
 import socket
 from typing import Literal
-from urllib.error import HTTPError, URLError
-from zoneinfo import ZoneInfo
 
 import polars as pl
 import polars.selectors as ps
 import requests
+from requests.exceptions import HTTPError, RequestException
 
 from pyield import bday
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
+from pyield.config import TIMEZONE_BZ
 from pyield.converters import convert_dates
 from pyield.data_cache import get_cached_dataset
 from pyield.retry import default_retry
@@ -31,8 +31,6 @@ from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnc import duration as duration_c
 from pyield.tn.ntnf import duration as duration_f
 from pyield.types import DateScalar, has_null_args
-
-BZ_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
 BOND_TYPES = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
 
@@ -67,7 +65,7 @@ logger = logging.getLogger(__name__)
 
 def _validate_not_future_date(date: dt.date):
     """Raises ValueError if the date is in the future."""
-    today = dt.datetime.now(BZ_TIMEZONE).date()
+    today = dt.datetime.now(TIMEZONE_BZ).date()
     if date > today:
         date_log = date.strftime("%d/%m/%Y")
         msg = f"Cannot process data for a future date ({date_log})."
@@ -116,12 +114,6 @@ def _get_csv_data(date: dt.date) -> str:
     return text
 
 
-def _rename_columns(csv_text: str) -> str:
-    for old_name, new_name in COLUMN_NAME_MAPPING.items():
-        csv_text = csv_text.replace(old_name, new_name)
-    return csv_text
-
-
 def _read_csv_data(csv_text: str) -> pl.DataFrame:
     df = pl.read_csv(
         source=io.StringIO(csv_text),
@@ -141,10 +133,8 @@ def _process_raw_df(df: pl.DataFrame) -> pl.DataFrame:
         (ps.contains("Rate") / 100).round(6),
         (ps.ends_with("Date")).cast(pl.String).str.strptime(pl.Date, "%Y%m%d"),
     )
-    bd_to_mat_pd = bday.count(
-        start=df.get_column("ReferenceDate"), end=df.get_column("MaturityDate")
-    )
-    df = df.with_columns(BDToMat=pl.Series(bd_to_mat_pd))
+    bd_to_mat_pd = bday.count(start=df["ReferenceDate"], end=df["MaturityDate"])
+    df = df.with_columns(BDToMat=bd_to_mat_pd)
     return df
 
 
@@ -192,19 +182,14 @@ def _add_duration(df_input: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _add_dv01(df_input: pl.DataFrame) -> pl.DataFrame:
+def _add_dv01(df_input: pl.DataFrame, ref_date: dt.date) -> pl.DataFrame:
     """Add the DV01 columns to the DataFrame."""
     mduration_expr = pl.col("Duration") / (1 + pl.col("IndicativeRate"))
-    df = df_input.with_columns(
-        (0.0001 * mduration_expr * pl.col("Price")).alias("DV01")
-    )
+    df = df_input.with_columns(DV01=0.0001 * mduration_expr * pl.col("Price"))
 
     # DV01 in USD
     try:
-        reference_date = df.get_column("ReferenceDate").item(0)
-        ptax_rate = ptax(date=reference_date)
-        if ptax_rate is None:
-            reference_date = bday.offset(reference_date, -1)
+        ptax_rate = ptax(date=ref_date)
         df = df.with_columns(DV01USD=pl.col("DV01") / ptax_rate)
     except Exception as e:
         logger.error(f"Error adding USD DV01: {e}")
@@ -247,7 +232,7 @@ def _custom_sort_and_order(df: pl.DataFrame) -> pl.DataFrame:
         "Criteria",
     ]
     column_order = [col for col in column_order if col in df.columns]
-    return df.select(column_order).sort(["BondType", "MaturityDate"])
+    return df.select(column_order).sort("BondType", "MaturityDate")
 
 
 def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
@@ -292,18 +277,18 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
                 "Returning empty DataFrame."
             )
             return pl.DataFrame()
-        # csv_text = _rename_columns(csv_text)
+
         df = _read_csv_data(csv_text)
         df = _process_raw_df(df)
         df = _add_duration(df)
-        df = _add_dv01(df)
+        df = _add_dv01(df, date)
         df = _add_di_rate(df, date)
         df = _custom_sort_and_order(df)
 
         return df
 
     except HTTPError as e:
-        if e.code == 404:  # noqa
+        if e.response.status_code == 404:  # noqa
             logger.info(
                 f"No Anbima TPF secondary market data for {date_str} (HTTP 404). "
                 "Returning empty DataFrame."
@@ -313,8 +298,8 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
         raise
 
     # Este bloco ainda é útil para outros URLErrors (ex: timeout genuíno na URL pública)
-    except URLError:
-        logger.exception(f"Network error (URLError) fetching TPF data for {date_str}")
+    except RequestException:
+        logger.exception(f"RequestException fetching TPF data for {date_str}")
         raise
 
     except Exception:
