@@ -5,7 +5,6 @@ import polars as pl
 
 import pyield.converters as cv
 from pyield import b3, bday, interpolator
-from pyield.config import TIMEZONE_BZ
 from pyield.data_cache import get_cached_dataset
 from pyield.types import DateArray, DateScalar, has_null_args
 
@@ -13,42 +12,40 @@ logger = logging.getLogger(__name__)
 
 
 def _load_with_intraday(dates: list[dt.date]) -> pl.DataFrame:
-    """Busca dados de DI, incluindo dados intraday para o dia corrente se necessário."""
+    """Busca dados de DI, incluindo dados intraday para datas ausentes no cache."""
     # 1. Busca inicial no cache com as datas solicitadas pelo usuário.
     df_cached = get_cached_dataset("di1").filter(pl.col("TradeDate").is_in(dates))
 
-    today = dt.datetime.now(TIMEZONE_BZ).date()
-    last_bday = bday.last_business_day()
+    # 2. Identifica datas solicitadas que não estão no cache
+    cached_dates = set(df_cached["TradeDate"].unique().to_list())
+    missing_dates = [d for d in dates if d not in cached_dates]
 
-    # 2. Lógica para buscar dados intraday.
-    #    Isso é necessário quando o usuário solicita os dados do dia corrente
-    #    e eles ainda não foram persistidos no cache (processo noturno).
-    # Condição 1: O dia de hoje foi solicitado.
-    has_today = today in dates
-    # Condição 2: E ainda não está no cache.
-    is_today_not_in_cache = df_cached.filter(pl.col("TradeDate") == today).is_empty()
-    # Condição 3: E hoje é o último dia útil.
-    is_today_last_bday = today == last_bday
+    # 3. Para cada data faltante, tenta buscar dados via API
+    dfs_to_concat = [df_cached] if not df_cached.is_empty() else []
 
-    if has_today and is_today_not_in_cache and is_today_last_bday:
+    for ref_date in missing_dates:
         try:
-            df_intraday = b3.futures(contract_code="DI1", date=today)
-            if "SettlementPrice" not in df_intraday.columns or df_intraday.is_empty():
+            df_missing = b3.futures(contract_code="DI1", date=ref_date)
+
+            # Só adiciona se tiver SettlementPrice
+            if "SettlementPrice" in df_missing.columns:
+                df_missing = df_missing.drop("DaysToExp", strict=False)
+                dfs_to_concat.append(df_missing)
+            else:
                 logger.warning(
-                    f"Ainda sem dados de ajustes intraday para {today}."
-                    " Retornando apenas dados do cache."
+                    f"Dados para {ref_date} não contêm 'SettlementPrice'. "
+                    "Pulando esta data."
                 )
-                df_intraday = df_intraday.drop("DaysToExp", strict=False)
-
-                return df_cached
-            if df_cached.is_empty():
-                return df_intraday
-            return pl.concat([df_cached, df_intraday], how="diagonal")
         except Exception as e:
-            logger.error(f"Falha ao buscar dados intraday para {today}: {e}")
+            logger.error(f"Falha ao buscar dados para {ref_date}: {e}")
 
-    # 3. Se a lógica intraday não for acionada ou falhar, retorna apenas dados do cache.
-    return df_cached
+    # 4. Retorna concatenação de todos os DataFrames disponíveis
+    if len(dfs_to_concat) == 0:
+        return pl.DataFrame()  # Retorna DataFrame vazio se nada foi encontrado
+    elif len(dfs_to_concat) == 1:
+        return dfs_to_concat[0]
+    else:
+        return pl.concat(dfs_to_concat, how="diagonal")
 
 
 def _get_data(dates: DateScalar | DateArray) -> pl.DataFrame:

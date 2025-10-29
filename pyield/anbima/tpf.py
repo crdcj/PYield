@@ -211,15 +211,14 @@ def _add_dv01(df_input: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _add_di_rate(df: pl.DataFrame) -> pl.DataFrame:
+def _add_di_rate(df: pl.DataFrame, ref_date: dt.date) -> pl.DataFrame:
     """Add the DI rate column to the DataFrame."""
-    reference_date = df["ReferenceDate"].item(0)
     di_rates = di1.interpolate_rates(
-        dates=reference_date,
+        dates=ref_date,
         expirations=df["MaturityDate"],
         extrapolate=True,
     )
-    df = df.with_columns(di_rates.alias("DIRate"))
+    df = df.with_columns(DIRate=di_rates)
     return df
 
 
@@ -298,7 +297,7 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
         df = _process_raw_df(df)
         df = _add_duration(df)
         df = _add_dv01(df)
-        df = _add_di_rate(df)
+        df = _add_di_rate(df, date)
         df = _custom_sort_and_order(df)
 
         return df
