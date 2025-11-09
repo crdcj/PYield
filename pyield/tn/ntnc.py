@@ -6,7 +6,7 @@ import polars as pl
 import pyield.converters as cv
 import pyield.tn.tools as tl
 from pyield import anbima, bday
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -42,7 +42,7 @@ def _get_final_pmt(maturity: dt.date) -> float:
     return FINAL_PMT
 
 
-def data(date: DateScalar) -> pl.DataFrame:
+def data(date: DateLike) -> pl.DataFrame:
     """
     Fetch the LTN Anbima indicative rates for the given reference date.
 
@@ -68,8 +68,8 @@ def data(date: DateScalar) -> pl.DataFrame:
 
 
 def payment_dates(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
 ) -> pl.Series:
     """
     Generate all remaining coupon dates between a given date and the maturity date.
@@ -128,8 +128,8 @@ def payment_dates(
 
 
 def cash_flows(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
 ) -> pl.DataFrame:
     """
     Generate the cash flows for NTN-C bonds between the settlement and maturity dates.
@@ -196,8 +196,8 @@ def cash_flows(
 
 
 def quotation(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
     rate: float,
 ) -> float:
     """
@@ -278,8 +278,8 @@ def price(
 
 
 def duration(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
     rate: float,
 ) -> float:
     """

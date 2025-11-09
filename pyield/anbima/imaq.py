@@ -18,7 +18,7 @@ import requests
 
 import pyield.converters as cv
 from pyield.anbima.tpf import tpf_data
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 # Configura o logger do módulo
 logger = logging.getLogger(__name__)
@@ -172,7 +172,7 @@ def _reorder_df(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(column_order)
 
 
-def imaq(date: DateScalar) -> pl.DataFrame:
+def imaq(date: DateLike) -> pl.DataFrame:
     """
     Fetch and process IMA market data for a given date.
 

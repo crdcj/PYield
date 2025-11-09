@@ -1,10 +1,9 @@
 import datetime as dt
 from typing import overload
 
-import pandas as pd
 import polars as pl
 
-from pyield.types import DateArray, DateScalar, has_null_args
+from pyield.types import ArrayLike, DateLike
 
 
 def validate_date_format(date_str: str) -> str:
@@ -38,60 +37,40 @@ def validate_date_format(date_str: str) -> str:
 
 
 @overload
-def convert_dates(dates: DateScalar) -> dt.date | None: ...
+def convert_dates(dates: None) -> None: ...
 @overload
-def convert_dates(dates: DateArray) -> pl.Series: ...
-def convert_dates(  # noqa
-    dates: DateScalar | DateArray,
+def convert_dates(dates: DateLike) -> dt.date: ...
+@overload
+def convert_dates(dates: ArrayLike) -> pl.Series: ...
+
+
+def convert_dates(
+    dates: DateLike | ArrayLike | None,
 ) -> dt.date | pl.Series | None:
     """Converte diferentes tipos de entrada (escalares ou coleções) para
     ``datetime.date`` (quando escalar) ou ``polars.Series`` com dtype ``Date``.
-
-    Regras:
-        - Strings devem estar em um dos formatos suportados:
-            ``dd-mm-YYYY``, ``dd/mm/YYYY`` ou ``YYYY-mm-dd``.
-    - Valor escalar nulo (``None``, ``NaT``) retorna ``None``.
-    - Arrays vazios não são permitidos (levanta ``ValueError``).
-        - Coleções de strings não podem misturar formatos; o primeiro valor
-            não-nulo define o formato usado para toda a série.
     """
-    if has_null_args(dates):
-        return None
+    if not hasattr(dates, "__len__") or isinstance(dates, str):
+        is_scalar = True
+        s = pl.Series(values=[dates])
+    else:
+        is_scalar = False
+        s = pl.Series(values=dates)
 
-    # --- LÓGICA ESCALAR (simples e rápida) ---
-    match dates:
-        case str():
-            fmt = validate_date_format(dates)
-            return pd.to_datetime(dates, format=fmt).date()
-        case dt.datetime() | pd.Timestamp():
-            return dates.date()
-        case dt.date():
-            return dates
-        # Removido suporte explícito a np.datetime64 (não usado mais);
-        # se aparecer em coleções, Polars lidará no caminho de array.
-
-    # --- LÓGICA DE ARRAY (adaptada para Polars) ---
-    # Converte a entrada para uma Série Polars imediatamente.
-    # O construtor do Polars é muito bom em lidar com vários tipos de entrada.
-    s = pl.Series(dates)
-
-    if s.is_empty():
-        raise ValueError("'dates' cannot be an empty Array.")
-
-    # Se a série contiver strings, usamos a validação e o poder de parsing do Pandas,
     if s.dtype == pl.String:
         # Usa primeiro valor não-nulo para determinar o formato.
         first_str = s.drop_nulls().first()
-        if first_str is None:
-            # Série só com nulls: retorna série vazia (nulls) como Date.
-            return s.cast(pl.Date)
-        fmt = validate_date_format(first_str)
+        if first_str:
+            fmt = validate_date_format(first_str)
+            s = s.str.to_date(format=fmt, strict=False)
+        else:
+            s = s.cast(pl.Date)
+    else:
+        # Para todos os outros dtypes (datetime, date, etc.),
+        # o cast nativo do Polars é suficiente e muito rápido.
+        s = s.cast(pl.Date)
 
-        pd_series_for_parsing = s.to_pandas(use_pyarrow_extension_array=True)
-        # Parsing explícito usando o formato detectado; erros levantam exception.
-        parsed_dates = pd.to_datetime(pd_series_for_parsing, format=fmt).dt.date
-        return pl.Series(parsed_dates, dtype=pl.Date)
+    if is_scalar:
+        return s.first()
 
-    # Para todos os outros dtypes (datetime, date, etc.),
-    # o cast nativo do Polars é suficiente e muito rápido.
-    return s.cast(pl.Date)
+    return s

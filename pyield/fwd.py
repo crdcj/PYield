@@ -3,12 +3,12 @@ from typing import Sequence
 
 import polars as pl
 
-from pyield.types import FloatArray, IntegerArray, has_null_args
+from pyield.types import ArrayLike, has_null_args
 
 
 def forwards(
-    bdays: IntegerArray,
-    rates: FloatArray,
+    bdays: ArrayLike,
+    rates: ArrayLike,
     group_by: Sequence[str | int | dt.date] | pl.Series | None = None,
 ) -> pl.Series:
     r"""
@@ -52,8 +52,8 @@ def forwards(
     de cada grupo, que é tratado separadamente.
 
      Args:
-        bdays (IntegerArray): Número de dias úteis para cada taxa zero.
-        rates (FloatArray): Taxas zero correspondentes aos dias úteis.
+        bdays (ArrayLike): Número de dias úteis para cada taxa zero.
+        rates (ArrayLike): Taxas zero correspondentes aos dias úteis.
         group_by (GroupingCriteria, optional):
             Critério de agrupamento para os cálculos (ex: datas de referência,
             tickers de títulos). Pode ser uma lista/série de strings, inteiros

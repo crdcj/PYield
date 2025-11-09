@@ -6,12 +6,12 @@ import polars as pl
 from pyield import anbima, bday
 from pyield.anbima import tpf
 from pyield.tn import ntnf
-from pyield.types import DateScalar
+from pyield.types import DateLike
 
 logger = logging.getLogger(__name__)
 
 
-def spot_rates(date: DateScalar) -> pd.DataFrame:
+def spot_rates(date: DateLike) -> pd.DataFrame:
     """
     Create the PRE curve (zero coupon rates) for Brazilian fixed rate bonds.
 
@@ -108,7 +108,7 @@ def spot_rates(date: DateScalar) -> pd.DataFrame:
 
 
 def _process_additional_ltn(
-    date: DateScalar, ltn_not_in_ntnf: pd.DataFrame
+    date: DateLike, ltn_not_in_ntnf: pd.DataFrame
 ) -> pd.DataFrame:
     """Process additional LTN maturities not covered by NTN-F bootstrap."""
     # Validate and calculate business days
@@ -150,7 +150,7 @@ def _validate_final_result(df_combined: pd.DataFrame) -> None:
         raise ValueError("Final result contains NaN values in SpotRate column")
 
 
-def di_spreads(date: DateScalar, bps: bool = False) -> pl.DataFrame:
+def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
     """
     Calcula o DI Spread para títulos prefixados (LTN e NTN-F) em uma data de referência.
 

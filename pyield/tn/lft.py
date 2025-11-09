@@ -3,10 +3,10 @@ import polars as pl
 import pyield.converters as cv
 from pyield import anbima, bday
 from pyield.tn import tools
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 
-def data(date: DateScalar) -> pl.DataFrame:
+def data(date: DateLike) -> pl.DataFrame:
     """
     Fetch the LFT indicative rates for the given reference date from ANBIMA.
 
@@ -46,7 +46,7 @@ def data(date: DateScalar) -> pl.DataFrame:
     return anbima.tpf_data(date, "LFT")
 
 
-def maturities(date: DateScalar) -> pl.Series:
+def maturities(date: DateLike) -> pl.Series:
     """
     Fetch the bond maturities available for the given reference date.
 
@@ -80,8 +80,8 @@ def maturities(date: DateScalar) -> pl.Series:
 
 
 def quotation(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
     rate: float,
 ) -> float:
     """

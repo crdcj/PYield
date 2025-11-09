@@ -4,12 +4,12 @@ import pyield.converters as cv
 from pyield import anbima, bday, fwd
 from pyield.tn import tools
 from pyield.tn.pre import di_spreads as pre_di_spreads
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 FACE_VALUE = 1000
 
 
-def data(date: DateScalar) -> pl.DataFrame:
+def data(date: DateLike) -> pl.DataFrame:
     """
     Fetch the LTN Anbima indicative rates for the given reference date.
 
@@ -44,7 +44,7 @@ def data(date: DateScalar) -> pl.DataFrame:
     return anbima.tpf_data(date, "LTN")
 
 
-def maturities(date: DateScalar) -> pl.Series:
+def maturities(date: DateLike) -> pl.Series:
     """
     Fetch the bond maturities available for the given reference date.
 
@@ -78,8 +78,8 @@ def maturities(date: DateScalar) -> pl.Series:
 
 
 def price(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
     rate: float,
 ) -> float:
     """
@@ -152,8 +152,8 @@ def premium(ltn_rate: float, di_rate: float) -> float:
 
 
 def dv01(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
     rate: float,
 ) -> float:
     """
@@ -185,7 +185,7 @@ def dv01(
     return price1 - price2
 
 
-def di_spreads(date: DateScalar, bps: bool = False) -> pl.DataFrame:
+def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
     """
     Calcula o DI Spread para títulos prefixados (LTN e NTN-F) em uma data de referência.
 
@@ -235,7 +235,7 @@ def di_spreads(date: DateScalar, bps: bool = False) -> pl.DataFrame:
     return pre_di_spreads(date, bps=bps).filter(pl.col("BondType") == "LTN")
 
 
-def forwards(date: DateScalar) -> pl.DataFrame:
+def forwards(date: DateLike) -> pl.DataFrame:
     """Calcula as taxas forward da LTN para uma data de referência.
 
     As taxas indicativas da LTN já são spot (zero-coupon) por construção, pois o

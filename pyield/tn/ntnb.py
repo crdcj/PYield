@@ -8,7 +8,7 @@ import pyield.converters as cv
 import pyield.interpolator as ip
 import pyield.tn.tools as tl
 from pyield import anbima, bday, fwd
-from pyield.types import DateArray, DateScalar, FloatArray, has_null_args
+from pyield.types import ArrayLike, DateLike, has_null_args, has_nullable_scalar_args
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -24,7 +24,7 @@ FINAL_PMT = 102.956301
 logger = logging.getLogger(__name__)
 
 
-def data(date: DateScalar) -> pl.DataFrame:
+def data(date: DateLike) -> pl.DataFrame:
     """
     Fetch the bond indicative rates for the given reference date.
 
@@ -75,7 +75,7 @@ def data(date: DateScalar) -> pl.DataFrame:
     return anbima.tpf_data(date, "NTN-B")
 
 
-def maturities(date: DateScalar) -> pl.Series:
+def maturities(date: DateLike) -> pl.Series:
     """
     Get the bond maturities available for the given reference date.
 
@@ -108,8 +108,8 @@ def maturities(date: DateScalar) -> pl.Series:
 
 
 def _generate_all_coupon_dates(
-    start: DateScalar,
-    end: DateScalar,
+    start: DateLike,
+    end: DateLike,
 ) -> pl.Series:
     """
     Generate a map of all possible coupon dates between the start and end dates.
@@ -140,8 +140,8 @@ def _generate_all_coupon_dates(
 
 
 def payment_dates(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
 ) -> pl.Series:
     """
     Generate all remaining coupon dates between a given date and the maturity date.
@@ -169,7 +169,7 @@ def payment_dates(
             2025-05-15
         ]
     """
-    if has_null_args(settlement, maturity):
+    if has_nullable_scalar_args(settlement, maturity):
         return pl.Series(dtype=pl.Date)
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -189,8 +189,8 @@ def payment_dates(
 
 
 def cash_flows(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
 ) -> pl.DataFrame:
     """
     Generate the cash flows for NTN-B bonds between the settlement and maturity dates.
@@ -222,7 +222,7 @@ def cash_flows(
         │ 2025-05-15  ┆ 102.956301 │
         └─────────────┴────────────┘
     """
-    if has_null_args(settlement, maturity):
+    if has_nullable_scalar_args(settlement, maturity):
         return pl.DataFrame()
     # Normalize dates
     settlement = cv.convert_dates(settlement)
@@ -246,8 +246,8 @@ def cash_flows(
 
 
 def quotation(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
     rate: float,
 ) -> float:
     """
@@ -278,7 +278,7 @@ def quotation(
         >>> ntnb.quotation("15-08-2024", "15-08-2032", 0.05929)
         100.6409
     """
-    if has_null_args(settlement, maturity, rate):
+    if has_nullable_scalar_args(settlement, maturity, rate):
         return float("nan")
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
@@ -330,15 +330,15 @@ def price(
         >>> ntnb.price(4315.498383, 100.6409)
         4343.156412
     """
-    if has_null_args(vna, quotation):
+    if has_nullable_scalar_args(vna, quotation):
         return float("nan")
     return tl.truncate(vna * quotation / 100, 6)
 
 
 def _validate_spot_rate_inputs(
-    settlement: DateScalar,
-    maturities: DateArray,
-    rates: FloatArray,
+    settlement: DateLike,
+    maturities: ArrayLike,
+    rates: ArrayLike,
 ) -> tuple[dt.date, pl.Series, pl.Series]:
     # Process and validate the input data
     settlement = cv.convert_dates(settlement)
@@ -428,9 +428,9 @@ def _calculate_coupons_present_value(
 
 
 def spot_rates(
-    settlement: DateScalar,
-    maturities: DateArray,
-    rates: FloatArray,
+    settlement: DateLike,
+    maturities: ArrayLike,
+    rates: ArrayLike,
     show_coupons: bool = False,
 ) -> pl.DataFrame:
     """
@@ -443,8 +443,8 @@ def spot_rates(
 
     Args:
         settlement (DateScalar): The reference date for settlement.
-        maturities (DateArray): Series of maturity dates for the bonds.
-        rates (FloatArray): Series of yield to maturity rates.
+        maturities (ArrayLike): Series of maturity dates for the bonds.
+        rates (ArrayLike): Series of yield to maturity rates.
         show_coupons (bool, optional): If True, the result will include the
             intermediate coupon dates. Defaults to False.
 
@@ -492,7 +492,7 @@ def spot_rates(
         - BDToMat: The number of business days from settlement to maturities.
         - SpotRate: The real spot rate for the bond.
     """
-    if has_null_args(settlement, maturities, rates):
+    if has_nullable_scalar_args(settlement, maturities, rates):
         return pl.DataFrame()
 
     settlement, maturities, rates = _validate_spot_rate_inputs(
@@ -527,11 +527,11 @@ def spot_rates(
 
 
 def bei_rates(
-    settlement: DateScalar,
-    ntnb_maturities: DateArray,
-    ntnb_rates: FloatArray,
-    nominal_maturities: DateArray,
-    nominal_rates: FloatArray,
+    settlement: DateLike,
+    ntnb_maturities: ArrayLike,
+    ntnb_rates: ArrayLike,
+    nominal_maturities: ArrayLike,
+    nominal_rates: ArrayLike,
 ) -> pl.DataFrame:
     """
     Calculate the Breakeven Inflation (BEI) for NTN-B bonds based on nominal and real
@@ -540,12 +540,12 @@ def bei_rates(
 
     Args:
         settlement (DateScalar): The settlement date of the operation.
-        ntnb_maturities (DateArray): The maturity dates for the NTN-B bonds.
-        ntnb_rates (FloatArray): The real interest rates (Yield to Maturity - YTM)
+        ntnb_maturities (ArrayLike): The maturity dates for the NTN-B bonds.
+        ntnb_rates (ArrayLike): The real interest rates (Yield to Maturity - YTM)
             corresponding to the given NTN-B maturities.
-        nominal_maturities (DateArray): The maturity dates to be used as reference for
+        nominal_maturities (ArrayLike): The maturity dates to be used as reference for
             nominal rates.
-        nominal_rates (FloatArray): The nominal interest rates (e.g. DI Futures or
+        nominal_rates (ArrayLike): The nominal interest rates (e.g. DI Futures or
              zero prefixed bonds rates) used as reference for the calculation.
 
     Returns:
@@ -632,8 +632,8 @@ def bei_rates(
 
 
 def duration(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
     rate: float,
 ) -> float:
     """
@@ -653,7 +653,7 @@ def duration(
         15.08305431313046
     """
     # Return NaN if any input is nullable
-    if has_null_args(settlement, maturity, rate):
+    if has_nullable_scalar_args(settlement, maturity, rate):
         return float("nan")
 
     # Validate and normalize dates
@@ -669,8 +669,8 @@ def duration(
 
 
 def dv01(
-    settlement: DateScalar,
-    maturity: DateScalar,
+    settlement: DateLike,
+    maturity: DateLike,
     rate: float,
     vna: float,
 ) -> float:
@@ -696,7 +696,7 @@ def dv01(
         >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, 4470.979474)
         4.640875999999935
     """
-    if has_null_args(settlement, maturity, rate, vna):
+    if has_nullable_scalar_args(settlement, maturity, rate, vna):
         return float("nan")
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
@@ -709,7 +709,7 @@ def dv01(
 
 
 def forwards(
-    date: DateScalar,
+    date: DateLike,
     zero_coupon: bool = True,
 ) -> pl.DataFrame:
     """

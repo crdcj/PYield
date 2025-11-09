@@ -25,7 +25,7 @@ import requests
 import pyield.converters as cv
 from pyield.config import TIMEZONE_BZ
 from pyield.retry import default_retry
-from pyield.types import DateScalar
+from pyield.types import DateLike
 
 logger = logging.getLogger(__name__)
 
@@ -111,8 +111,8 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def ptax_series(
-    start: DateScalar | None = None,
-    end: DateScalar | None = None,
+    start: DateLike | None = None,
+    end: DateLike | None = None,
 ) -> pl.DataFrame:
     """Cotações de Dólar PTAX (taxa de câmbio)
     - Fonte: Banco Central do Brasil (BCB)
@@ -241,7 +241,7 @@ def ptax_series(
         return pl.DataFrame()
 
 
-def ptax(date: DateScalar) -> float:
+def ptax(date: DateLike) -> float:
     """Busca a cotação PTAX média de fechamento para uma data específica.
 
     Esta função é um wrapper para a função `ptax_series`, otimizada para

@@ -21,7 +21,7 @@ from requests.exceptions import HTTPError
 
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -134,9 +134,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def tpf_monthly_trades(
-    target_date: DateScalar, extragroup: bool = False
-) -> pl.DataFrame:
+def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.DataFrame:
     """Fetches monthly secondary trading data for the domestic 'Federal Public Debt'
     (TPF - títulos públicos federais) registered in the Brazilian Central Bank (BCB)
     Selic system.

@@ -12,7 +12,7 @@ from pyield import converters as cv
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -319,7 +319,7 @@ def _add_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def auction(auction_date: DateScalar) -> pl.DataFrame:
+def auction(auction_date: DateLike) -> pl.DataFrame:
     """
     Fetches and processes Brazilian Treasury auction data for a given date.
 

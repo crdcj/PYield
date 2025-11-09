@@ -14,7 +14,7 @@ import pyield.converters as cv
 from pyield import bday
 from pyield.fwd import forwards
 from pyield.retry import default_retry
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -331,7 +331,7 @@ def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pl.DataFrame:
 
 
 def fetch_xml_data(
-    date: DateScalar, contract_code: str, source_type: Literal["PR", "SPR"]
+    date: DateLike, contract_code: str, source_type: Literal["PR", "SPR"]
 ) -> pl.DataFrame:
     """Fetches and processes an XML report from B3's website.
 

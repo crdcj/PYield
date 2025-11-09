@@ -38,8 +38,8 @@ pip install pyield
 ```
 ## Custom Types
 
-### DateScalar
-`DateScalar` and `DateArray` are internal type unions used across PYield to accept flexible date inputs. Supported scalar Python / library date types:
+### DateLike
+`DateLike` is an internal type union used across PYield to accept flexible date inputs. Supported scalar date types are:
 
 - `str` (formats: `DD-MM-YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`)
 - `datetime.date`
@@ -47,26 +47,14 @@ pip install pyield
 - `pandas.Timestamp`
 - `numpy.datetime64`
 
-### DateArray
+### ArrayLike
 Accepted collection types (homogeneous date-like values):
 
-- `list[DateScalar]`
-- `tuple[DateScalar, ...]`
+- `list[Any]`
+- `tuple[Any, ...]`
 - `pandas.Series`
-- `pandas.DatetimeIndex`
 - `numpy.ndarray`
 - `polars.Series`
-
-Other helper unions:
-
-`FloatArray`:
-- `list[float]` | `tuple[float, ...]` | `numpy.ndarray` | `pandas.Series` | `polars.Series`
-
-`IntegerScalar`:
-- `int` | `numpy.integer`
-
-`IntegerArray`:
-- `list[int]` | `tuple[int, ...]` | `numpy.ndarray` | `pandas.Series` | `polars.Series`
 
 Referencing these unions in function docstrings means you can pass any of the listed types interchangeably; conversion is handled internally.
 
@@ -79,8 +67,8 @@ Accepted string date formats:
 
 Rules:
 - No ambiguous autodetection: `2024-05-06` is always interpreted as ISO (`YYYY-MM-DD`).
-- A collection of strings must not mix different styles; the first non-null value defines the format.
-- Nulls are preserved; empty collections are not allowed.
+- Format is determined by the first non null string.
+- Nulls are preserved.
 
 Recommendation:
 Always parse external inputs explicitly when constructing your own pipelines:

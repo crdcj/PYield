@@ -5,7 +5,7 @@ import requests
 
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 logger = logging.getLogger(__name__)
 IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"
@@ -46,7 +46,7 @@ def _process_ipca_dataframe(
     return df
 
 
-def rates(start: DateScalar, end: DateScalar) -> pl.DataFrame:
+def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
     """
     Retrieves the IPCA monthly rates for a specified date range.
 
@@ -160,7 +160,7 @@ def last_indexes(num_months: int = 1) -> pl.DataFrame:
     return _process_ipca_dataframe(data_dict)
 
 
-def indexes(start: DateScalar, end: DateScalar) -> pl.DataFrame:
+def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
     """
     Retrieves the IPCA index values for a specified date range.
 

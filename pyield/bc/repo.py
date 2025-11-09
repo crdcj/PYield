@@ -21,7 +21,7 @@ import requests
 import pyield.converters as cv
 from pyield import bday
 from pyield.retry import default_retry
-from pyield.types import DateScalar
+from pyield.types import DateLike
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ COLUMN_MAPPING = {
 API_BASE_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloes_compromissadas(dataLancamentoInicio=@dataLancamentoInicio,dataLancamentoFim=@dataLancamentoFim,horaInicio=@horaInicio,dataLiquidacao=@dataLiquidacao,dataRetorno=@dataRetorno,publicoPermitidoLeilao=@publicoPermitidoLeilao,nomeTipoOferta=@nomeTipoOferta)?"
 
 
-def _build_url(start: DateScalar | None, end: DateScalar | None) -> str:
+def _build_url(start: DateLike | None, end: DateLike | None) -> str:
     """Monta URL de consulta conforme parâmetros opcionais de início e fim.
 
     Regras da API:
@@ -169,8 +169,8 @@ def _sort_and_select_columns(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def repos(
-    start: DateScalar | None = None,
-    end: DateScalar | None = None,
+    start: DateLike | None = None,
+    end: DateLike | None = None,
 ) -> pl.DataFrame:
     """Consulta e retorna leilões de operações compromissadas (repos) do BCB.
 

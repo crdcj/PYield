@@ -25,7 +25,7 @@ import requests
 from pyield.config import TIMEZONE_BZ
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def _do_api_call(api_url: str) -> list[dict[str, Any]]:
 
 
 def _build_download_url(
-    serie: BCSerie, start: DateScalar, end: DateScalar | None = None
+    serie: BCSerie, start: DateLike, end: DateLike | None = None
 ) -> str:
     """
     Builds the URL for downloading data from the Central Bank series.
@@ -91,8 +91,8 @@ def _build_download_url(
 
 def _fetch_request(
     serie: BCSerie,
-    start: DateScalar,
-    end: DateScalar | None,
+    start: DateLike,
+    end: DateLike | None,
 ) -> pl.DataFrame:
     """
     Worker function that fetches data from the API.
@@ -131,7 +131,7 @@ def _fetch_request(
 
 
 def _fetch_data_from_url(
-    serie: BCSerie, start: DateScalar, end: DateScalar | None = None
+    serie: BCSerie, start: DateLike, end: DateLike | None = None
 ) -> pl.DataFrame:
     """
     Orchestrates fetching data from the Central Bank API, handling requests longer
@@ -187,8 +187,8 @@ def _fetch_data_from_url(
 
 
 def selic_over_series(
-    start: DateScalar,
-    end: DateScalar | None = None,
+    start: DateLike,
+    end: DateLike | None = None,
 ) -> pl.DataFrame:
     """
     Fetches the SELIC Over rate from the Brazilian Central Bank.
@@ -245,7 +245,7 @@ def selic_over_series(
     return df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
 
 
-def selic_over(date: DateScalar) -> float:
+def selic_over(date: DateLike) -> float:
     """
     Fetches the SELIC Over rate value for a specific date.
 
@@ -272,8 +272,8 @@ def selic_over(date: DateScalar) -> float:
 
 
 def selic_target_series(
-    start: DateScalar,
-    end: DateScalar | None = None,
+    start: DateLike,
+    end: DateLike | None = None,
 ) -> pl.DataFrame:
     """
     Fetches the SELIC Target rate from the Brazilian Central Bank.
@@ -312,7 +312,7 @@ def selic_target_series(
     return df
 
 
-def selic_target(date: DateScalar) -> float:
+def selic_target(date: DateLike) -> float:
     """
     Fetches the SELIC Target rate value for a specific date.
 
@@ -339,8 +339,8 @@ def selic_target(date: DateScalar) -> float:
 
 
 def di_over_series(
-    start: DateScalar,
-    end: DateScalar | None = None,
+    start: DateLike,
+    end: DateLike | None = None,
     annualized: bool = True,
 ) -> pl.DataFrame:
     """
@@ -397,7 +397,7 @@ def di_over_series(
     return df
 
 
-def di_over(date: DateScalar, annualized: bool = True) -> float:
+def di_over(date: DateLike, annualized: bool = True) -> float:
     """
     Fetches the DI Over rate value for a specific date.
 

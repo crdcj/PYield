@@ -30,7 +30,7 @@ from pyield import bday
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
-from pyield.types import DateScalar
+from pyield.types import DateLike
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +88,8 @@ BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1
 
 
 def _build_url(
-    start: DateScalar | None = None,
-    end: DateScalar | None = None,
+    start: DateLike | None = None,
+    end: DateLike | None = None,
     auction_type: Literal["sell", "buy"] | None = None,
 ) -> str:
     url = BASE_API_URL
@@ -376,8 +376,8 @@ def _sort_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def auctions(
-    start: DateScalar | None = None,
-    end: DateScalar | None = None,
+    start: DateLike | None = None,
+    end: DateLike | None = None,
     auction_type: Literal["sell", "buy"] | None = None,
 ) -> pl.DataFrame:
     """

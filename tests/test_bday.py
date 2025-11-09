@@ -1,7 +1,6 @@
 import datetime as dt
 
 import polars as pl
-import pytest
 
 from pyield import bday
 
@@ -119,20 +118,3 @@ def test_count_iso_format():
     result_br = bday.count(start_br, end_br)
     assert result_br == expected
     assert result_iso == result_br
-
-
-def test_count_mixed_formats_error():
-    """Mistura de formatos em uma coleção deve levantar ValueError.
-
-    A lógica em `convert_dates` detecta formato com base no primeiro não-nulo
-    e aplica parsing fixo. Ao incluir um segundo formato diferente deve falhar.
-    """
-    mixed_dates = ["02-01-2024", "2024-01-03", "04-01-2024"]
-    end = "09-01-2024"
-    # A mensagem vem do pandas (array_strptime) ao tentar aplicar fmt uniforme.
-    # Procuramos trecho chave indicando mismatch de formato.
-    with pytest.raises(ValueError, match="doesn't match format") as exc_info:
-        bday.count(mixed_dates, end)
-    # Mensagem deve indicar formato inválido para a string ISO sendo
-    # interpretada com formato brasileiro.
-    assert "doesn't match format" in str(exc_info.value)

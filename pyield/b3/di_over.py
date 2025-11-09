@@ -2,7 +2,7 @@ import ftplib
 import logging
 
 from pyield.converters import convert_dates
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 DI_OVER_DECIMAL_PLACES = 4
 
 
-def di_over(date: DateScalar) -> float:
+def di_over(date: DateLike) -> float:
     """
     Gets the DI (Interbank Deposit) rate for a specific date from B3/CETIP FTP server.
 

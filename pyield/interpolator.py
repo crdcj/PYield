@@ -3,7 +3,7 @@ from typing import Literal
 
 import polars as pl
 
-from pyield.types import FloatArray, IntegerArray
+from pyield.types import ArrayLike
 
 
 class Interpolator:
@@ -12,8 +12,8 @@ class Interpolator:
 
     Args:
         method (Literal["flat_forward", "linear"]): The interpolation method to use.
-        known_bdays (IntegerArray): The known business days sequence.
-        known_rates (FloatArray): The known interest rates sequence.
+        known_bdays (ArrayLike): The known business days sequence.
+        known_rates (ArrayLike): The known interest rates sequence.
         extrapolate (bool, optional): If True, extrapolates beyond known business days
             using the last available rate. Defaults to False, returning NaN for
             out-of-range values.
@@ -52,8 +52,8 @@ class Interpolator:
     def __init__(
         self,
         method: Literal["flat_forward", "linear"],
-        known_bdays: IntegerArray,
-        known_rates: FloatArray,
+        known_bdays: ArrayLike,
+        known_rates: ArrayLike,
         extrapolate: bool = False,
     ):
         df = (

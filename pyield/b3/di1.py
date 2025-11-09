@@ -6,7 +6,7 @@ import polars as pl
 import pyield.converters as cv
 from pyield import b3, bday, interpolator
 from pyield.data_cache import get_cached_dataset
-from pyield.types import DateArray, DateScalar, has_null_args
+from pyield.types import ArrayLike, DateLike, has_null_args
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ def _load_with_intraday(dates: list[dt.date]) -> pl.DataFrame:
         return pl.concat(dfs_to_concat, how="diagonal")
 
 
-def _get_data(dates: DateScalar | DateArray) -> pl.DataFrame:
+def _get_data(dates: DateLike | ArrayLike) -> pl.DataFrame:
     converted_dates = cv.convert_dates(dates)
 
     match converted_dates:
@@ -69,7 +69,7 @@ def _get_data(dates: DateScalar | DateArray) -> pl.DataFrame:
 
 
 def data(
-    dates: DateScalar | DateArray,
+    dates: DateLike | ArrayLike,
     month_start: bool = False,
     pre_filter: bool = False,
 ) -> pl.DataFrame:
@@ -154,8 +154,8 @@ def data(
 
 
 def _build_input_dataframe(
-    dates: DateScalar | DateArray,
-    expirations: DateScalar | DateArray,
+    dates: DateLike | ArrayLike,
+    expirations: DateLike | ArrayLike,
 ) -> pl.DataFrame:
     # 1. Converte as entradas primeiro
     converted_dates = cv.convert_dates(dates)
@@ -188,8 +188,8 @@ def _build_input_dataframe(
 
 
 def interpolate_rates(
-    dates: DateScalar | DateArray,
-    expirations: DateScalar | DateArray,
+    dates: DateLike | ArrayLike,
+    expirations: DateLike | ArrayLike,
     extrapolate: bool = True,
 ) -> pl.Series:
     """
@@ -206,8 +206,8 @@ def interpolate_rates(
     the scalar value is applied to all elements of the array.
 
     Args:
-        dates (DateScalar | DateArray): The trade date(s) for the rates.
-        expirations (DateScalar | DateArray): The corresponding expiration date(s).
+        dates (DateScalar | ArrayLike): The trade date(s) for the rates.
+        expirations (DateScalar | ArrayLike): The corresponding expiration date(s).
             Must be compatible in length with `dates` if both are arrays.
         extrapolate (bool, optional): Whether to allow extrapolation beyond the
             range of known DI rates for a given trade date. Defaults to True.
@@ -326,8 +326,8 @@ def interpolate_rates(
 
 
 def interpolate_rate(
-    date: DateScalar,
-    expiration: DateScalar,
+    date: DateLike,
+    expiration: DateLike,
     extrapolate: bool = False,
 ) -> float:
     """

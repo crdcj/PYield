@@ -4,13 +4,13 @@ import requests
 
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 logger = logging.getLogger(__name__)
 
 
 @default_retry
-def _get_text(date: DateScalar) -> str:
+def _get_text(date: DateLike) -> str:
     # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
     date = convert_dates(date)
@@ -59,7 +59,7 @@ def _validate_vna_values(vnas: list[float]) -> float:
     return vna_value
 
 
-def vna_lft(date: DateScalar) -> float:
+def vna_lft(date: DateLike) -> float:
     """Retrieves the VNA (Valor Nominal Atualizado) from the BCB for a given date.
 
     This function fetches daily data from the BCB website, extracts the

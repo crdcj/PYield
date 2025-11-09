@@ -30,7 +30,7 @@ from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnc import duration as duration_c
 from pyield.tn.ntnf import duration as duration_f
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 BOND_TYPES = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
 
@@ -309,7 +309,7 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
 
 
 def tpf_data(
-    date: DateScalar,
+    date: DateLike,
     bond_type: BOND_TYPES | None = None,
     fetch_from_source: bool = False,
 ) -> pl.DataFrame:
@@ -412,7 +412,7 @@ def tpf_data(
 
 
 def tpf_maturities(
-    date: DateScalar,
+    date: DateLike,
     bond_type: str,
 ) -> pl.Series:
     """Retrieve existing maturity dates for a given bond type on a specific date.

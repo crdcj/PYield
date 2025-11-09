@@ -8,7 +8,7 @@ import requests
 
 import pyield.converters as cv
 from pyield import bday
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 # --- 1. Centralização e Organização das Constantes ---
 API_VERSION = "1.0018"
@@ -202,7 +202,7 @@ def _process_csv_data(csv_data: str) -> pl.DataFrame:
     return df
 
 
-def tpf_difusao(data_referencia: DateScalar) -> pl.DataFrame:
+def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
     """
     Obtém a TPF Difusão da Anbima para uma data de referência específica.
 

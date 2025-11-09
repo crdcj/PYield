@@ -6,33 +6,33 @@ import polars as pl
 
 import pyield.bday.holidays as hl
 import pyield.converters as cv
+import pyield.types as tp
 from pyield.config import TIMEZONE_BZ
-from pyield.types import (
-    DateArray,
-    DateScalar,
-    IntegerArray,
-    IntegerScalar,
-    has_null_args,
-)
+from pyield.types import ArrayLike, DateLike
 
-# Initialize Brazilian holidays data
+# Initialize Brazilian holidays class
 br_holidays = hl.BrHolidays()
 OLD_HOLIDAYS_ARRAY = br_holidays.get_holiday_series(holiday_option="old")
 NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_series(holiday_option="new")
 TRANSITION_DATE = br_holidays.TRANSITION_DATE
-_WEEKEND_START = 5  # Python weekday() >= 5 means Saturday/Sunday
 
 
 @overload
-def count(start: DateScalar, end: DateScalar) -> int | None: ...
+def count(start: ArrayLike, end: ArrayLike | DateLike | None) -> pl.Series: ...
 @overload
-def count(start: DateArray, end: DateScalar | DateArray) -> pl.Series: ...
+def count(start: DateLike | None, end: ArrayLike) -> pl.Series: ...
 @overload
-def count(start: DateScalar, end: DateArray) -> pl.Series: ...
+def count(start: DateLike, end: DateLike) -> int: ...
+@overload
+def count(start: DateLike, end: None) -> None: ...
+@overload
+def count(start: None, end: DateLike | None) -> None: ...
+
+
 def count(
-    start: DateScalar | DateArray,
-    end: DateScalar | DateArray,
-) -> int | pl.Series | None:
+    start: None | DateLike | ArrayLike,
+    end: None | DateLike | ArrayLike,
+) -> None | int | pl.Series:
     """
     Count business days between `start` (inclusive) and `end` (exclusive) with
     Brazilian holiday adjustment and per-row holiday regime selection.
@@ -121,20 +121,16 @@ def count(
             212
         ]
     """
-    # Validate and normalize inputs
-    if has_null_args(start, end):
-        return None
-    start_pl = cv.convert_dates(start)
-    end_pl = cv.convert_dates(end)
-
     # Coloca as séries em um DataFrame para trabalhar com expressões em colunas
+    converted_start = cv.convert_dates(start)
+    converted_end = cv.convert_dates(end)
     df = pl.DataFrame(
-        {"start": start_pl, "end": end_pl},
+        data={"start": converted_start, "end": converted_end},
         schema={"start": pl.Date, "end": pl.Date},
         nan_to_null=True,
     )
 
-    result_expr = (
+    count_expr = (
         pl.when(pl.col("start") < TRANSITION_DATE)
         .then(
             pl.business_day_count(
@@ -147,34 +143,52 @@ def count(
             )
         )
         .cast(pl.Int64)
+        .alias("bdays")
     )
 
-    s_bdays = df.select(result_expr.alias("bdays"))["bdays"]
+    s = df.select(count_expr)["bdays"]
 
-    # Se a série resultante tem tamanho 1, retorna o valor escalar
-    if len(s_bdays) == 1:
-        return s_bdays.item()
+    if not tp.has_array_like_args(start, end):
+        return s.first()
 
-    return s_bdays
+    return s
 
 
 @overload
 def offset(
-    dates: DateScalar, offset: IntegerScalar, roll: Literal["forward", "backward"] = ...
-) -> dt.date | None: ...
-@overload
-def offset(
-    dates: DateArray,
-    offset: IntegerArray | IntegerScalar,
+    dates: ArrayLike,
+    offset: ArrayLike | int | None,
     roll: Literal["forward", "backward"] = ...,
 ) -> pl.Series: ...
 @overload
 def offset(
-    dates: DateScalar, offset: IntegerArray, roll: Literal["forward", "backward"] = ...
+    dates: DateLike | None,
+    offset: ArrayLike,
+    roll: Literal["forward", "backward"] = ...,
 ) -> pl.Series: ...
+@overload
 def offset(
-    dates: DateScalar | DateArray,
-    offset: IntegerScalar | IntegerArray,
+    dates: DateLike,
+    offset: int,
+    roll: Literal["forward", "backward"] = ...,
+) -> dt.date: ...
+@overload
+def offset(
+    dates: None,
+    offset: int,
+    roll: Literal["forward", "backward"] = ...,
+) -> None: ...
+@overload
+def offset(
+    dates: DateLike,
+    offset: None,
+    roll: Literal["forward", "backward"] = ...,
+) -> None: ...
+
+
+def offset(
+    dates: DateLike | ArrayLike | None,
+    offset: int | ArrayLike | None,
     roll: Literal["forward", "backward"] = "forward",
 ) -> dt.date | pl.Series | None:
     """
@@ -287,13 +301,20 @@ def offset(
             2024-09-23
         ]
 
-        # Null values are propagated
+        # Scalar nulls propagate to None
         >>> print(bday.offset(None, 1))
         None
 
-        >>> print(bday.offset(None, [1, 2]))
-        None
+        # Scalar null propagates inside arrays
+        >>> bday.offset(None, [1, 2])
+        shape: (2,)
+        Series: 'result' [date]
+        [
+            null
+            null
+        ]
 
+        # Nulls inside arrays are preserved
         >>> bday.offset(["19-09-2024", None], 1)
         shape: (2,)
         Series: 'result' [date]
@@ -316,20 +337,15 @@ def offset(
         This function uses `polars.Expr.dt.add_business_days` under the hood. For
         detailed information, refer to the Polars documentation.
     """
-    # Validate and normalize inputs
-    if has_null_args(dates, offset):
-        return None
-    dates_pl = cv.convert_dates(dates)
-
     # Coloca as entradas em um DataFrame para trabalhar com expressões em colunas
     df = pl.DataFrame(
-        {"dates": dates_pl, "offset": offset},
+        data={"dates": cv.convert_dates(dates), "offset": offset},
         schema={"dates": pl.Date, "offset": pl.Int64},
         nan_to_null=True,
     )
 
     # Cria a expressão condicional para aplicar a lista de feriados correta
-    result_expr = (
+    offset_expr = (
         pl.when(pl.col("dates") < TRANSITION_DATE)
         .then(
             pl.col("dates").dt.add_business_days(
@@ -345,21 +361,21 @@ def offset(
                 holidays=NEW_HOLIDAYS_ARRAY,
             )
         )
+        .alias("result")
     )
 
     # Executa a expressão e obtém a série de resultados
-    result_series = df.select(result_expr.alias("result"))["result"]
+    s = df.select(offset_expr)["result"]
 
-    # Se a série resultante tem tamanho 1, retorna o valor escalar
-    if len(result_series) == 1:
-        return result_series.item()
+    if not tp.has_array_like_args(dates, offset):
+        return s.first()
 
-    return result_series
+    return s
 
 
 def generate(
-    start: DateScalar | None = None,
-    end: DateScalar | None = None,
+    start: DateLike | None = None,
+    end: DateLike | None = None,
     inclusive: Literal["both", "neither", "left", "right"] = "both",
     holiday_option: Literal["old", "new", "infer"] = "new",
 ) -> pl.Series:
@@ -409,24 +425,22 @@ def generate(
         `pandas.bdate_range` documentation:
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html.
     """
-    if start:
-        start_pd = cv.convert_dates(start)
-    else:
-        start_pd = dt.datetime.now(TIMEZONE_BZ).date()
+    conv_start = cv.convert_dates(start)
+    if not conv_start:
+        conv_start = dt.datetime.now(TIMEZONE_BZ).date()
 
-    if end:
-        end_pd = cv.convert_dates(end)
-    else:
-        end_pd = dt.datetime.now(TIMEZONE_BZ).date()
+    conv_end = cv.convert_dates(end)
+    if not conv_end:
+        conv_end = dt.datetime.now(TIMEZONE_BZ).date()
 
     applicable_holidays = br_holidays.get_holiday_series(
-        dates=start_pd, holiday_option=holiday_option
+        dates=conv_start, holiday_option=holiday_option
     ).to_list()
 
     # Get the result as a DatetimeIndex (dti)
     result_dti = pd.bdate_range(
-        start=start_pd,
-        end=end_pd,
+        start=conv_start,
+        end=conv_end,
         freq="C",
         inclusive=inclusive,
         holidays=applicable_holidays,
@@ -436,10 +450,14 @@ def generate(
 
 
 @overload
-def is_business_day(dates: DateScalar) -> bool | None: ...
+def is_business_day(dates: None) -> None: ...
 @overload
-def is_business_day(dates: DateArray) -> pl.Series: ...
-def is_business_day(dates: DateScalar | DateArray) -> bool | pl.Series | None:
+def is_business_day(dates: DateLike) -> bool: ...
+@overload
+def is_business_day(dates: ArrayLike) -> pl.Series: ...
+
+
+def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Series:
     """Determine whether date(s) are Brazilian business days with per-element
     holiday regime selection.
 
@@ -496,14 +514,18 @@ def is_business_day(dates: DateScalar | DateArray) -> bool | pl.Series | None:
         - Null elements propagate.
     """
     # Validate and normalize inputs
-    if has_null_args(dates):
+    if tp.has_null_args(dates):
         return None
-    converted = cv.convert_dates(dates)
+    conv_dates = cv.convert_dates(dates)
 
     # Build DataFrame to allow conditional expression selecting the right holiday list
-    df = pl.DataFrame({"dates": converted}, schema={"dates": pl.Date}, nan_to_null=True)
+    df = pl.DataFrame(
+        {"dates": conv_dates},
+        schema={"dates": pl.Date},
+        nan_to_null=True,
+    )
 
-    result_expr = (
+    is_bday_expr = (
         pl.when(pl.col("dates") < TRANSITION_DATE)
         .then(
             pl.col("dates").dt.is_business_day(holidays=OLD_HOLIDAYS_ARRAY),
@@ -511,14 +533,15 @@ def is_business_day(dates: DateScalar | DateArray) -> bool | pl.Series | None:
         .otherwise(
             pl.col("dates").dt.is_business_day(holidays=NEW_HOLIDAYS_ARRAY),
         )
+        .alias("is_bday")
     )
 
-    s_result = df.select(result_expr.alias("is_bday"))["is_bday"]
+    s = df.select(is_bday_expr)["is_bday"]
 
-    if len(s_result) == 1:
-        return s_result.item()
+    if s.len() == 1:
+        return s.item()
 
-    return s_result
+    return s
 
 
 def last_business_day() -> dt.date:

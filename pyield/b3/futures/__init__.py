@@ -10,7 +10,7 @@ from pyield.b3.futures.historical import fetch_bmf_data
 from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield.b3.futures.xml import fetch_xml_data
 from pyield.config import TIMEZONE_BZ
-from pyield.types import DateScalar, has_null_args
+from pyield.types import DateLike, has_null_args
 
 ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ def _get_historical_data(
 
 def futures(
     contract_code: ContractOptions | str,
-    date: DateScalar,
+    date: DateLike,
 ) -> pl.DataFrame:
     """
     Fetches data for a specified futures contract based on type and reference date.
