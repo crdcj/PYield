@@ -411,12 +411,12 @@ def auctions(
     Leilões de "Buy" são aqueles em que o Tesouro Nacional compra títulos do mercado.
 
     Args:
-        start (DateScalar, opcional): A data de início para a consulta dos leilões.
+        start (DateLike, opcional): A data de início para a consulta dos leilões.
             Se `start` for fornecido e `end` for `None`, a API retornará dados de
             leilão a partir de `start` até a data mais recente disponível.
             Se `start` e `end` forem `None`, a série histórica completa será retornada.
             Padrão é `None`.
-        end (DateScalar, opcional): A data de fim para a consulta de dados de leilão.
+        end (DateLike, opcional): A data de fim para a consulta de dados de leilão.
             Se `end` for fornecido e `start` for `None`, a API retornará dados de
             leilão desde a data mais antiga disponível até a data de `end`.
             Se `start` e `end` forem `None`, a série histórica completa será retornada.

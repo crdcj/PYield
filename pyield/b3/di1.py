@@ -80,7 +80,7 @@ def data(
     (to month start) and optional filtering based on LTN and NTN-F bond maturities.
 
     Args:
-        dates (DateScalar): The trade dates for which to retrieve DI contract data.
+        dates (DateLike): The trade dates for which to retrieve DI contract data.
         month_start (bool, optional): If True, adjusts all expiration dates to the
             first day of their respective month (e.g., 2025-02-01 becomes
             2025-01-01). Defaults to False.
@@ -206,8 +206,8 @@ def interpolate_rates(
     the scalar value is applied to all elements of the array.
 
     Args:
-        dates (DateScalar | ArrayLike): The trade date(s) for the rates.
-        expirations (DateScalar | ArrayLike): The corresponding expiration date(s).
+        dates (DateLike | ArrayLike): The trade date(s) for the rates.
+        expirations (DateLike | ArrayLike): The corresponding expiration date(s).
             Must be compatible in length with `dates` if both are arrays.
         extrapolate (bool, optional): Whether to allow extrapolation beyond the
             range of known DI rates for a given trade date. Defaults to True.
@@ -340,8 +340,8 @@ def interpolate_rate(
     contracts.
 
     Args:
-        date (DateScalar): The trade date for which to retrieve DI data.
-        expiration (DateScalar): The target expiration date for the rate.
+        date (DateLike): The trade date for which to retrieve DI data.
+        expiration (DateLike): The target expiration date for the rate.
         extrapolate (bool, optional): If True, allows extrapolation if the
             `expiration` date falls outside the range of available contract
             expirations for the given `date`. Defaults to False.

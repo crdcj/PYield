@@ -14,7 +14,7 @@ def data(date: DateLike) -> pl.DataFrame:
     Fetch the LTN Anbima indicative rates for the given reference date.
 
     Args:
-        date (DateScalar): The reference date for fetching the data.
+        date (DateLike): The reference date for fetching the data.
 
     Returns:
         pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -49,7 +49,7 @@ def maturities(date: DateLike) -> pl.Series:
     Fetch the bond maturities available for the given reference date.
 
     Args:
-        date (DateScalar): The reference date for fetching the data.
+        date (DateLike): The reference date for fetching the data.
 
     Returns:
         pl.Series: A Series of bond maturities available for the reference date.
@@ -86,9 +86,9 @@ def price(
     Calculate the LTN price using Anbima rules.
 
     Args:
-        settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
+        settlement (DateLike): The settlement date in 'DD-MM-YYYY' format
             or a date-like object.
-        maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
+        maturity (DateLike): The maturity date in 'DD-MM-YYYY' format or
             a date-like object.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
@@ -162,9 +162,9 @@ def dv01(
     Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.
 
     Args:
-        settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
+        settlement (DateLike): The settlement date in 'DD-MM-YYYY' format
             or a date-like object.
-        maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
+        maturity (DateLike): The maturity date in 'DD-MM-YYYY' format or
             a date-like object.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the LTN.
@@ -197,7 +197,7 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
     multiplicado por 10_000 e exibido diretamente em basis points.
 
     Args:
-        date (DateScalar): Data de referência para buscar as taxas.
+        date (DateLike): Data de referência para buscar as taxas.
         bps (bool): Se True, retorna DISpread já convertido em basis points.
             Default False.
 
@@ -243,7 +243,7 @@ def forwards(date: DateLike) -> pl.DataFrame:
     estrutura de vencimentos e suas taxas.
 
     Args:
-        date (DateScalar): Data de referência das taxas indicativas.
+        date (DateLike): Data de referência das taxas indicativas.
 
     Returns:
         pl.DataFrame com colunas:

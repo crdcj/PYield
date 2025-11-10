@@ -383,9 +383,9 @@ def generate(
     inclusion options for start and end dates. It wraps `pandas.bdate_range`.
 
     Args:
-        start (DateScalar | None, optional): The start date for generating the dates.
+        start (DateLike | None, optional): The start date for generating the dates.
              If None, the current date is used. Defaults to None.
-        end (DateScalar | None, optional): The end date for generating business days.
+        end (DateLike | None, optional): The end date for generating business days.
             If None, the current date is used. Defaults to None.
         inclusive (Literal["both", "neither", "left", "right"], optional):
             Determines which of the start and end dates are included in the result.

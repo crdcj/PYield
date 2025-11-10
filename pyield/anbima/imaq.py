@@ -183,7 +183,7 @@ def imaq(date: DateLike) -> pl.DataFrame:
     fetching or processing, an empty DataFrame is returned.
 
     Args:
-        date (DateScalar): A date-like object representing the target date for fetching
+        date (DateLike): A date-like object representing the target date for fetching
             the data.
 
     Returns:

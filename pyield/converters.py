@@ -59,12 +59,12 @@ def convert_dates(
 
     if s.dtype == pl.String:
         # Usa primeiro valor não-nulo para determinar o formato.
-        first_str = s.drop_nulls().first()
+        first_str = s.str.strip_chars().replace("", None).drop_nulls().first()
         if first_str:
             fmt = validate_date_format(first_str)
             s = s.str.to_date(format=fmt, strict=False)
         else:
-            s = s.cast(pl.Date)
+            s = pl.Series(values=[None] * s.len(), dtype=pl.Date)
     else:
         # Para todos os outros dtypes (datetime, date, etc.),
         # o cast nativo do Polars é suficiente e muito rápido.

@@ -19,7 +19,7 @@ def spot_rates(date: DateLike) -> pd.DataFrame:
     spot rates derived from NTN-F bonds using the bootstrap method.
 
     Args:
-        date (DateScalar): The reference date for fetching the data.
+        date (DateLike): The reference date for fetching the data.
 
     Returns:
         pd.DataFrame: DataFrame with columns "MaturityDate", "BDToMat", and "SpotRate".
@@ -161,7 +161,7 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
     multiplicado por 10_000 e exibido diretamente em basis points.
 
     Args:
-        date (DateScalar): Data de referência para buscar as taxas.
+        date (DateLike): Data de referência para buscar as taxas.
         bps (bool): Se True, retorna DISpread já convertido em basis points.
             Default False.
 

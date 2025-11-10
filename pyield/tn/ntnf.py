@@ -32,7 +32,7 @@ def data(date: DateLike) -> pl.DataFrame:
     Fetch the bond indicative rates for the given reference date.
 
     Args:
-        date (DateScalar): The reference date for fetching the data.
+        date (DateLike): The reference date for fetching the data.
 
     Returns:
         pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -62,7 +62,7 @@ def maturities(date: DateLike) -> pl.Series:
     Fetch the NTN-F bond maturities available for the given reference date.
 
     Args:
-        date (DateScalar): The reference date for fetching the data.
+        date (DateLike): The reference date for fetching the data.
 
     Returns:
         pl.Series: A Series of NTN-F bond maturities available for the reference date.
@@ -95,8 +95,8 @@ def payment_dates(
     The NTN-F bond is determined by its maturity date.
 
     Args:
-        settlement (DateScalar): The settlement date.
-        maturity (DateScalar): The maturity date.
+        settlement (DateLike): The settlement date.
+        maturity (DateLike): The maturity date.
 
     Returns:
         pl.Series: A Series containing the coupon dates between the settlement
@@ -152,8 +152,8 @@ def cash_flows(
     payment at maturity.
 
     Args:
-        settlement (DateScalar): The date (exclusive) for starting the cash flows.
-        maturity (DateScalar): The maturity date of the bond.
+        settlement (DateLike): The date (exclusive) for starting the cash flows.
+        maturity (DateLike): The maturity date of the bond.
         adj_payment_dates (bool): If True, adjust the payment dates to the next
             business day.
 
@@ -214,8 +214,8 @@ def price(
         value of the cash flows discounted at the given yield to maturity rate (YTM).
 
     Args:
-        settlement (DateScalar): The settlement date to calculate the price.
-        maturity (DateScalar): The maturity date of the bond.
+        settlement (DateLike): The settlement date to calculate the price.
+        maturity (DateLike): The maturity date of the bond.
         rate (float): The discount rate (yield to maturity) used to calculate the
             present value of the cash flows.
 
@@ -271,7 +271,7 @@ def spot_rates(  # noqa
 
 
     Args:
-        settlement (DateScalar): The settlement date for the spot rates calculation.
+        settlement (DateLike): The settlement date for the spot rates calculation.
         ltn_maturities (ArrayLike): The LTN known maturities.
         ltn_rates (ArrayLike): The LTN known rates.
         ntnf_maturities (ArrayLike): The NTN-F known maturities.
@@ -553,10 +553,10 @@ def premium(  # noqa
     (YTM) and the interpolated DI rates.
 
     Args:
-        settlement (DateScalar): The settlement date to calculate the premium.
-        ntnf_maturity (DateScalar): The maturity date of the NTN-F bond.
+        settlement (DateLike): The settlement date to calculate the premium.
+        ntnf_maturity (DateLike): The maturity date of the NTN-F bond.
         ntnf_rate (float): The yield to maturity (YTM) of the NTN-F bond.
-        di_expirations (DateScalar): Series with the expiration dates for the DI.
+        di_expirations (DateLike): Series with the expiration dates for the DI.
         di_rates (ArrayLike): Series containing the DI rates corresponding to
             the expiration dates.
 
@@ -656,8 +656,8 @@ def di_net_spread(  # noqa
     discounted cash flows.
 
     Args:
-        settlement (DateScalar): The settlement date to calculate the spread.
-        ntnf_maturity (DateScalar): The bond maturity date.
+        settlement (DateLike): The settlement date to calculate the spread.
+        ntnf_maturity (DateLike): The bond maturity date.
         ntnf_rate (float): The yield to maturity (YTM) of the bond.
         di_rates (ArrayLike): A Series of DI rates.
         di_expirations (ArrayLike): A list or Series of DI expiration dates.
@@ -744,8 +744,8 @@ def duration(
     Calculate the Macaulay duration for an NTN-F bond in business years.
 
     Args:
-        settlement (DateScalar): The settlement date to calculate the duration.
-        maturity (DateScalar): The maturity date of the bond.
+        settlement (DateLike): The settlement date to calculate the duration.
+        maturity (DateLike): The maturity date of the bond.
         rate (float): The yield to maturity (YTM) used to discount the cash flows.
 
     Returns:
@@ -784,9 +784,9 @@ def dv01(
     Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.
 
     Args:
-        settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
+        settlement (DateLike): The settlement date in 'DD-MM-YYYY' format
             or a date-like object.
-        maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
+        maturity (DateLike): The maturity date in 'DD-MM-YYYY' format or
             a date-like object.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-F.
@@ -819,7 +819,7 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
     multiplicado por 10_000 e exibido diretamente em basis points.
 
     Args:
-        date (DateScalar): Data de referência para buscar as taxas.
+        date (DateLike): Data de referência para buscar as taxas.
         bps (bool): Se True, retorna DISpread já convertido em basis points.
             Default False.
 

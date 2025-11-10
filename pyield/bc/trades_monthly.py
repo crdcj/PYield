@@ -145,7 +145,7 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
     all trades executed during the month, separated by each 'SettlementDate'.
 
     Args:
-        target_date (DateScalar): The date for which the monthly trading data will be
+        target_date (DateLike): The date for which the monthly trading data will be
             fetched. This date can be a string, datetime, or pandas Timestamp object.
             It will be converted to a date object. Only the year and month
             of this date will be used to download the corresponding monthly file.

@@ -57,8 +57,8 @@ def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/202401-202403/variaveis/63?localidades=N1[all]
 
     Args:
-        start (DateScalar): The start date of the date range
-        end (DateScalar): The end date of the date range
+        start (DateLike): The start date of the date range
+        end (DateLike): The end date of the date range
 
     Returns:
         pl.DataFrame: DataFrame with columns 'Period' and 'Rate'
@@ -171,8 +171,8 @@ def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/202401-202403/variaveis/2266?localidades=N1[all]
 
     Args:
-        start (DateScalar): The start date of the date range
-        end (DateScalar): The end date of the date range
+        start (DateLike): The start date of the date range
+        end (DateLike): The end date of the date range
 
     Returns:
         pl.DataFrame: DataFrame with columns 'Period' and 'Value'

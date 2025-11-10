@@ -11,7 +11,7 @@ def data(date: DateLike) -> pl.DataFrame:
     Fetch the LFT indicative rates for the given reference date from ANBIMA.
 
     Args:
-        date (DateScalar): The reference date for fetching the data.
+        date (DateLike): The reference date for fetching the data.
 
     Returns:
         pl.DataFrame: DataFrame containing the following columns:
@@ -51,7 +51,7 @@ def maturities(date: DateLike) -> pl.Series:
     Fetch the bond maturities available for the given reference date.
 
     Args:
-        date (DateScalar): The reference date for fetching the data.
+        date (DateLike): The reference date for fetching the data.
 
     Returns:
         pl.Series: A Series of bond maturities available for the reference date.
@@ -88,8 +88,8 @@ def quotation(
     Calculate the quotation of a LFT bond using Anbima rules.
 
     Args:
-        settlement (DateScalar): The settlement date of the bond.
-        maturity (DateScalar): The maturity date of the bond.
+        settlement (DateLike): The settlement date of the bond.
+        maturity (DateLike): The maturity date of the bond.
         rate (float): The annualized yield rate of the bond
 
     Returns:

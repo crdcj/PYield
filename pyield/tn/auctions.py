@@ -363,7 +363,7 @@ def auction(auction_date: DateLike) -> pl.DataFrame:
 
     Args:
         auction_date: The date of the auction in the format accepted by PYield
-            DateScalar (e.g., "DD-MM-YYYY", datetime.date, etc.).
+            DateLike (e.g., "DD-MM-YYYY", datetime.date, etc.).
 
     Returns:
         Um DataFrame do Polars contendo os dados processados do leilão. As colunas são:

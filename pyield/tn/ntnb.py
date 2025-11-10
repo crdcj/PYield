@@ -29,7 +29,7 @@ def data(date: DateLike) -> pl.DataFrame:
     Fetch the bond indicative rates for the given reference date.
 
     Args:
-        date (DateScalar): The reference date for fetching the data.
+        date (DateLike): The reference date for fetching the data.
 
     Returns:
         pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -80,7 +80,7 @@ def maturities(date: DateLike) -> pl.Series:
     Get the bond maturities available for the given reference date.
 
     Args:
-        date (DateScalar): The reference date for fetching the data.
+        date (DateLike): The reference date for fetching the data.
 
     Returns:
         pl.Series: Series containing the maturity dates for the NTN-B bonds.
@@ -117,8 +117,8 @@ def _generate_all_coupon_dates(
     August, and November (15-02, 15-05, 15-08, and 15-11 of each year).
 
     Args:
-        start (DateScalar): The start date.
-        end (DateScalar): The end date.
+        start (DateLike): The start date.
+        end (DateLike): The end date.
 
     Returns:
         pl.Series: Series of coupon dates within the specified range.
@@ -150,9 +150,9 @@ def payment_dates(
     bond is determined by its maturity date.
 
     Args:
-        settlement (DateScalar): The settlement date (exlusive) to start generating
+        settlement (DateLike): The settlement date (exlusive) to start generating
             the coupon dates.
-        maturity (DateScalar): The maturity date.
+        maturity (DateLike): The maturity date.
 
     Returns:
         pl.Series: Series of coupon dates within the specified range. Returns an empty
@@ -196,9 +196,9 @@ def cash_flows(
     Generate the cash flows for NTN-B bonds between the settlement and maturity dates.
 
     Args:
-        settlement (DateScalar): The settlement date (exclusive) to start generating
+        settlement (DateLike): The settlement date (exclusive) to start generating
             the cash flows.
-        maturity (DateScalar): The maturity date of the bond.
+        maturity (DateLike): The maturity date of the bond.
 
     Returns:
         pl.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
@@ -254,8 +254,8 @@ def quotation(
     Calculate the NTN-B quotation in base 100 using Anbima rules.
 
     Args:
-        settlement (DateScalar): The settlement date of the operation.
-        maturity (DateScalar): The maturity date of the NTN-B bond.
+        settlement (DateLike): The settlement date of the operation.
+        maturity (DateLike): The maturity date of the NTN-B bond.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-B.
 
@@ -278,8 +278,6 @@ def quotation(
         >>> ntnb.quotation("15-08-2024", "15-08-2032", 0.05929)
         100.6409
     """
-    if has_nullable_args(settlement, maturity, rate):
-        return float("nan")
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -329,9 +327,9 @@ def price(
         4271.864805
         >>> ntnb.price(4315.498383, 100.6409)
         4343.156412
+        >>> ntnb.price(None, 99.5341)  # Nullable inputs return float('nan')
+        nan
     """
-    if has_nullable_args(vna, quotation):
-        return float("nan")
     return tl.truncate(vna * quotation / 100, 6)
 
 
@@ -442,7 +440,7 @@ def spot_rates(
     price.
 
     Args:
-        settlement (DateScalar): The reference date for settlement.
+        settlement (DateLike): The reference date for settlement.
         maturities (ArrayLike): Series of maturity dates for the bonds.
         rates (ArrayLike): Series of yield to maturity rates.
         show_coupons (bool, optional): If True, the result will include the
@@ -539,7 +537,7 @@ def bei_rates(
     nominal yields. The calculation is based on the spot rates for NTN-B bonds.
 
     Args:
-        settlement (DateScalar): The settlement date of the operation.
+        settlement (DateLike): The settlement date of the operation.
         ntnb_maturities (ArrayLike): The maturity dates for the NTN-B bonds.
         ntnb_rates (ArrayLike): The real interest rates (Yield to Maturity - YTM)
             corresponding to the given NTN-B maturities.
@@ -640,8 +638,8 @@ def duration(
     Calculate the Macaulay duration of the NTN-B bond in business years.
 
     Args:
-        settlement (DateScalar): The settlement date of the operation.
-        maturity (DateScalar): The maturity date of the NTN-B bond.
+        settlement (DateLike): The settlement date of the operation.
+        maturity (DateLike): The maturity date of the NTN-B bond.
         rate (float): The discount rate used to calculate the duration.
 
     Returns:
@@ -680,9 +678,9 @@ def dv01(
     Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.
 
     Args:
-        settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
+        settlement (DateLike): The settlement date in 'DD-MM-YYYY' format
             or a date-like object.
-        maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
+        maturity (DateLike): The maturity date in 'DD-MM-YYYY' format or
             a date-like object.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-B.
@@ -696,11 +694,6 @@ def dv01(
         >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, 4470.979474)
         4.640875999999935
     """
-    if has_nullable_args(settlement, maturity, rate, vna):
-        return float("nan")
-    # Validate and normalize dates
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
     quotation1 = quotation(settlement, maturity, rate)
     quotation2 = quotation(settlement, maturity, rate + 0.0001)
     price1 = price(vna, quotation1)
@@ -716,7 +709,7 @@ def forwards(
     Calculate the NTN-B forward rates for the given reference date.
 
     Args:
-        date (DateScalar): The reference date for fetching the data.
+        date (DateLike): The reference date for fetching the data.
         zero_coupon (bool, optional): If True, use zero-coupon rates for
             forward rate calculation. Defaults to True. If False, the
             yield to maturity rates are used instead.

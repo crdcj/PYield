@@ -320,7 +320,7 @@ def tpf_data(
     otimizar o desempenho e o acesso.
 
     Args:
-        date (DateScalar): A data de referência para os dados (ex: '2024-06-14').
+        date (DateLike): A data de referência para os dados (ex: '2024-06-14').
         bond_type (str, optional): Filtra os resultados por um tipo de título
             específico (ex: 'LTN', 'NTN-B'). Por padrão, retorna todos os tipos.
         fetch_from_source (bool, optional): Se True, força a função a ignorar o
@@ -418,7 +418,7 @@ def tpf_maturities(
     """Retrieve existing maturity dates for a given bond type on a specific date.
 
     Args:
-        date (DateScalar): The reference date for maturity dates.
+        date (DateLike): The reference date for maturity dates.
         bond_type (str): The bond type to filter by (e.g., 'PRE' for both 'LTN'
             and 'NTN-F', or specify 'LTN' or 'NTN-F' directly).
 

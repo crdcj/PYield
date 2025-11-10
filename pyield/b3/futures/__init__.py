@@ -102,7 +102,7 @@ def futures(
             - "WDO": Mini U.S. Dollar Futures from B3.
             - "IND": Ibovespa Futures from B3.
             - "WIN": Mini Ibovespa Futures from B3.
-        date (DateScalar): The date for which to fetch the data.
+        date (DateLike): The date for which to fetch the data.
             If the reference date is a string, it should be in 'DD-MM-YYYY' format.
 
     Returns:

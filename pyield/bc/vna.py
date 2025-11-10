@@ -67,7 +67,7 @@ def vna_lft(date: DateLike) -> float:
     returns this value.
 
     Args:
-        date (DateScalar): The date for which to retrieve the VNA value.
+        date (DateLike): The date for which to retrieve the VNA value.
             This argument accepts various date formats, including string and
             datetime objects, which are then standardized using the
             `convert_input_dates` function.

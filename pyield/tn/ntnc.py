@@ -47,7 +47,7 @@ def data(date: DateLike) -> pl.DataFrame:
     Fetch the LTN Anbima indicative rates for the given reference date.
 
     Args:
-        date (DateScalar): The reference date for fetching the data.
+        date (DateLike): The reference date for fetching the data.
 
     Returns:
         pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
@@ -76,9 +76,9 @@ def payment_dates(
     The dates are inclusive. The NTN-C bond is determined by its maturity date.
 
     Args:
-        settlement (DateScalar): The settlement date (exlusive) to start generating
+        settlement (DateLike): The settlement date (exlusive) to start generating
             the coupon dates.
-        maturity (DateScalar): The maturity date.
+        maturity (DateLike): The maturity date.
 
     Returns:
         pl.Series: Series of coupon dates within the specified range. Returns an
@@ -135,9 +135,9 @@ def cash_flows(
     Generate the cash flows for NTN-C bonds between the settlement and maturity dates.
 
     Args:
-        settlement (DateScalar): The settlement date (exclusive) to start generating
+        settlement (DateLike): The settlement date (exclusive) to start generating
             the cash flows.
-        maturity (DateScalar): The maturity date of the bond.
+        maturity (DateLike): The maturity date of the bond.
 
     Returns:
         pl.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
@@ -204,8 +204,8 @@ def quotation(
     Calculate the NTN-C quotation in base 100 using Anbima rules.
 
     Args:
-        settlement (DateScalar): The settlement date of the operation.
-        maturity (DateScalar): The maturity date of the NTN-C bond.
+        settlement (DateLike): The settlement date of the operation.
+        maturity (DateLike): The maturity date of the NTN-C bond.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-C.
 
@@ -286,8 +286,8 @@ def duration(
     Calculate the Macaulay duration of the NTN-C bond in business years.
 
     Args:
-        settlement (DateScalar): The settlement date of the operation.
-        maturity (DateScalar): The maturity date of the NTN-C bond.
+        settlement (DateLike): The settlement date of the operation.
+        maturity (DateLike): The maturity date of the NTN-C bond.
         rate (float): The discount rate used to calculate the duration.
 
     Returns:
