@@ -6,7 +6,7 @@ import polars as pl
 import pyield.converters as cv
 import pyield.tn.tools as tl
 from pyield import anbima, bday
-from pyield.types import DateLike, has_null_args
+from pyield.types import DateLike, has_nullable_args
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -103,7 +103,7 @@ def payment_dates(
             2031-01-01
         ]
     """
-    if has_null_args(settlement, maturity):
+    if has_nullable_args(settlement, maturity):
         return pl.Series(dtype=pl.Date)
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
@@ -168,7 +168,7 @@ def cash_flows(
         │ 2031-01-01  ┆ 105.830052 │
         └─────────────┴────────────┘
     """
-    if has_null_args(settlement, maturity):
+    if has_nullable_args(settlement, maturity):
         return pl.DataFrame()
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
@@ -224,7 +224,7 @@ def quotation(
         126.4958
     """
     # Validate and normalize inputs
-    if has_null_args(settlement, maturity, rate):
+    if has_nullable_args(settlement, maturity, rate):
         return float("nan")
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -272,7 +272,7 @@ def price(
         >>> ntnc.price(6598.913723, 126.4958)
         8347.348705
     """
-    if has_null_args(vna, quotation):
+    if has_nullable_args(vna, quotation):
         return float("nan")
     return tl.truncate(vna * quotation / 100, 6)
 
@@ -299,7 +299,7 @@ def duration(
         4.405363320448003
     """
     # Validate and normalize inputs
-    if has_null_args(settlement, maturity, rate):
+    if has_nullable_args(settlement, maturity, rate):
         return float("nan")
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)

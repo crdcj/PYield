@@ -25,7 +25,7 @@ import requests
 from pyield.config import TIMEZONE_BZ
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
-from pyield.types import DateLike, has_null_args
+from pyield.types import DateLike, has_nullable_args
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +239,7 @@ def selic_over_series(
         │ 2025-09-17 ┆ 0.149 │
         └────────────┴───────┘
     """
-    if has_null_args(start):  # Start must be provided
+    if has_nullable_args(start):  # Start must be provided
         return pl.DataFrame()
     df = _fetch_data_from_url(BCSerie.SELIC_OVER, start, end)
     return df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
@@ -263,7 +263,7 @@ def selic_over(date: DateLike) -> float:
         >>> bc.selic_over("31-05-2024")
         0.104
     """
-    if has_null_args(date):
+    if has_nullable_args(date):
         return float("nan")
     df = selic_over_series(date, date)
     if df.is_empty():
@@ -305,7 +305,7 @@ def selic_target_series(
         │ 2024-05-31 ┆ 0.105 │
         └────────────┴───────┘
     """
-    if has_null_args(start):  # Start must be provided
+    if has_nullable_args(start):  # Start must be provided
         return pl.DataFrame()
     df = _fetch_data_from_url(BCSerie.SELIC_TARGET, start, end)
     df = df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
@@ -330,7 +330,7 @@ def selic_target(date: DateLike) -> float:
         >>> bc.selic_target("31-05-2024")
         0.105
     """
-    if has_null_args(date):
+    if has_nullable_args(date):
         return float("nan")
     df = selic_target_series(date, date)
     if df.is_empty():
@@ -381,7 +381,7 @@ def di_over_series(
         │ 2025-02-04 ┆ 0.1315 │
         └────────────┴────────┘
     """
-    if has_null_args(start):
+    if has_nullable_args(start):
         return pl.DataFrame()
     df = _fetch_data_from_url(BCSerie.DI_OVER, start, end)
     if annualized:
@@ -420,7 +420,7 @@ def di_over(date: DateLike, annualized: bool = True) -> float:
         >>> bc.di_over("28-01-2025", annualized=False)
         0.00045513
     """
-    if has_null_args(date):
+    if has_nullable_args(date):
         return float("nan")
     df = di_over_series(date, date, annualized)
     if df.is_empty():

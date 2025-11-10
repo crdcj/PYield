@@ -18,7 +18,7 @@ import requests
 
 import pyield.converters as cv
 from pyield.anbima.tpf import tpf_data
-from pyield.types import DateLike, has_null_args
+from pyield.types import DateLike, has_nullable_args
 
 # Configura o logger do módulo
 logger = logging.getLogger(__name__)
@@ -210,7 +210,7 @@ def imaq(date: DateLike) -> pl.DataFrame:
         Exception: Logs error and returns an empty DataFrame if any error occurs during
             fetching or processing.
     """
-    if has_null_args(date):
+    if has_nullable_args(date):
         logger.warning("No date provided. Returning empty DataFrame.")
         return pl.DataFrame()
     date = cv.convert_dates(date)

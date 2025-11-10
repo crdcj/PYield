@@ -2,7 +2,7 @@ import ftplib
 import logging
 
 from pyield.converters import convert_dates
-from pyield.types import DateLike, has_null_args
+from pyield.types import DateLike, has_nullable_args
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def di_over(date: DateLike) -> float:
         >>> di_over("28/02/2025")
         0.1315
     """
-    if has_null_args(date):
+    if has_nullable_args(date):
         return float("nan")
     ftp = None
     try:

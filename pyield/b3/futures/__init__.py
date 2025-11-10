@@ -10,7 +10,7 @@ from pyield.b3.futures.historical import fetch_bmf_data
 from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield.b3.futures.xml import fetch_xml_data
 from pyield.config import TIMEZONE_BZ
-from pyield.types import DateLike, has_null_args
+from pyield.types import DateLike, has_nullable_args
 
 ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
 logger = logging.getLogger(__name__)
@@ -154,7 +154,7 @@ def futures(
         └────────────┴──────────────┴────────────────┴────────────┴───┴──────────────┴───────────┴────────────────┴─────────────┘
 
     """  # noqa: E501
-    if has_null_args(contract_code, date):
+    if has_nullable_args(contract_code, date):
         return pl.DataFrame()
     trade_date = cv.convert_dates(date)
 

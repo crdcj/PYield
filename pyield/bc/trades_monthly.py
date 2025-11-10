@@ -21,7 +21,7 @@ from requests.exceptions import HTTPError
 
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
-from pyield.types import DateLike, has_null_args
+from pyield.types import DateLike, has_nullable_args
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +200,7 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         └────────────────┴──────────┴───────────┴──────────────┴───┴─────────┴─────────┴─────────────────┴───────────────────┘
 
     """  # noqa: E501
-    if has_null_args(target_date):
+    if has_nullable_args(target_date):
         logger.warning("No target_date provided. Returning an empty DataFrame.")
         return pl.DataFrame()
     try:

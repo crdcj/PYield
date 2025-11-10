@@ -3,7 +3,7 @@ from typing import Sequence
 
 import polars as pl
 
-from pyield.types import ArrayLike, has_null_args
+from pyield.types import ArrayLike, has_nullable_args
 
 
 def forwards(
@@ -149,7 +149,7 @@ def forwards(
         - Os resultados são retornados na mesma ordem dos dados de entrada.
     """  # noqa: E501
     # Validações iniciais
-    if has_null_args(bdays, rates):
+    if has_nullable_args(bdays, rates):
         return pl.Series(dtype=pl.Float64)
     # 1. Montar o DataFrame
     # Criar coluna de agrupamento dummy se não for fornecida
@@ -258,7 +258,7 @@ def forward(
     f_{1 \rightarrow 2} = \left( \frac{(1 + r_2)^{t_2}}{(1 + r_1)^{t_1}} \right)^{\frac{1}{t_2 - t_1}} - 1
     $$
     """  # noqa: E501
-    if has_null_args(rate1, rate2, bday1, bday2):
+    if has_nullable_args(rate1, rate2, bday1, bday2):
         # If any of the inputs are nullable, return None
         return float("nan")
 

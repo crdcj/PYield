@@ -14,7 +14,7 @@ import pyield.converters as cv
 from pyield import bday
 from pyield.fwd import forwards
 from pyield.retry import default_retry
-from pyield.types import DateLike, has_null_args
+from pyield.types import DateLike, has_nullable_args
 
 logger = logging.getLogger(__name__)
 
@@ -353,7 +353,7 @@ def fetch_xml_data(
         ValueError: If the `source_type` is invalid or if no data is
             available for the given date.
     """
-    if has_null_args(date):
+    if has_nullable_args(date):
         logger.warning("No date provided. Returning empty DataFrame.")
         return pl.DataFrame()
     try:

@@ -4,7 +4,7 @@ import pyield.converters as cv
 from pyield import anbima, bday, fwd
 from pyield.tn import tools
 from pyield.tn.pre import di_spreads as pre_di_spreads
-from pyield.types import DateLike, has_null_args
+from pyield.types import DateLike, has_nullable_args
 
 FACE_VALUE = 1000
 
@@ -105,7 +105,7 @@ def price(
         535.279902
     """
     # Validate and normalize inputs
-    if has_null_args(settlement, maturity, rate):
+    if has_nullable_args(settlement, maturity, rate):
         return float("nan")
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -141,7 +141,7 @@ def premium(ltn_rate: float, di_rate: float) -> float:
         >>> ltn.premium(0.118746, 0.11725)
         1.0120718007994287
     """
-    if has_null_args(ltn_rate, di_rate):
+    if has_nullable_args(ltn_rate, di_rate):
         return float("nan")
     # Cálculo das taxas diárias
     ltn_daily_rate = (1 + ltn_rate) ** (1 / 252) - 1
@@ -178,7 +178,7 @@ def dv01(
         >>> ltn.dv01("26-03-2025", "01-01-2032", 0.150970)
         0.2269059999999854
     """
-    if has_null_args(settlement, maturity, rate):
+    if has_nullable_args(settlement, maturity, rate):
         return float("nan")
     price1 = price(settlement, maturity, rate)
     price2 = price(settlement, maturity, rate + 0.0001)
@@ -274,7 +274,7 @@ def forwards(date: DateLike) -> pl.DataFrame:
         │ 2032-01-01   ┆ 1553    ┆ 0.13883        ┆ 0.144812    │
         └──────────────┴─────────┴────────────────┴─────────────┘
     """
-    if has_null_args(date):
+    if has_nullable_args(date):
         return pl.DataFrame()
     df = data(date).select("MaturityDate", "BDToMat", "IndicativeRate")
     fwd_rates = fwd.forwards(bdays=df["BDToMat"], rates=df["IndicativeRate"])

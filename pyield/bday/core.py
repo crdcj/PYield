@@ -122,10 +122,8 @@ def count(
         ]
     """
     # Coloca as séries em um DataFrame para trabalhar com expressões em colunas
-    converted_start = cv.convert_dates(start)
-    converted_end = cv.convert_dates(end)
     df = pl.DataFrame(
-        data={"start": converted_start, "end": converted_end},
+        data={"start": cv.convert_dates(start), "end": cv.convert_dates(end)},
         schema={"start": pl.Date, "end": pl.Date},
         nan_to_null=True,
     )
@@ -513,14 +511,9 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
         - Weekends always evaluate to ``False``.
         - Null elements propagate.
     """
-    # Validate and normalize inputs
-    if tp.has_null_args(dates):
-        return None
-    conv_dates = cv.convert_dates(dates)
-
     # Build DataFrame to allow conditional expression selecting the right holiday list
     df = pl.DataFrame(
-        {"dates": conv_dates},
+        {"dates": cv.convert_dates(dates)},
         schema={"dates": pl.Date},
         nan_to_null=True,
     )
@@ -538,8 +531,8 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
 
     s = df.select(is_bday_expr)["is_bday"]
 
-    if s.len() == 1:
-        return s.item()
+    if not tp.has_array_like_args(dates):
+        return s.first()
 
     return s
 

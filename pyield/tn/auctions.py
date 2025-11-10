@@ -12,7 +12,7 @@ from pyield import converters as cv
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
-from pyield.types import DateLike, has_null_args
+from pyield.types import DateLike, has_nullable_args
 
 logger = logging.getLogger(__name__)
 
@@ -414,7 +414,7 @@ def auction(auction_date: DateLike) -> pl.DataFrame:
     Retorna um DataFrame do Pandas vazio se ocorrer um erro na requisição, no
     processamento, ou se não houver dados para a data especificada.
     """
-    if has_null_args(auction_date):
+    if has_nullable_args(auction_date):
         logger.info("No auction date provided.")
         return pl.DataFrame()
     try:

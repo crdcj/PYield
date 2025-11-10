@@ -8,7 +8,7 @@ import pyield.converters as cv
 import pyield.interpolator as ip
 import pyield.tn.tools as tl
 from pyield import anbima, bday, fwd
-from pyield.types import ArrayLike, DateLike, has_null_args, has_nullable_scalar_args
+from pyield.types import ArrayLike, DateLike, has_nullable_args
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -169,7 +169,7 @@ def payment_dates(
             2025-05-15
         ]
     """
-    if has_nullable_scalar_args(settlement, maturity):
+    if has_nullable_args(settlement, maturity):
         return pl.Series(dtype=pl.Date)
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -222,7 +222,7 @@ def cash_flows(
         │ 2025-05-15  ┆ 102.956301 │
         └─────────────┴────────────┘
     """
-    if has_nullable_scalar_args(settlement, maturity):
+    if has_nullable_args(settlement, maturity):
         return pl.DataFrame()
     # Normalize dates
     settlement = cv.convert_dates(settlement)
@@ -278,7 +278,7 @@ def quotation(
         >>> ntnb.quotation("15-08-2024", "15-08-2032", 0.05929)
         100.6409
     """
-    if has_nullable_scalar_args(settlement, maturity, rate):
+    if has_nullable_args(settlement, maturity, rate):
         return float("nan")
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
@@ -330,7 +330,7 @@ def price(
         >>> ntnb.price(4315.498383, 100.6409)
         4343.156412
     """
-    if has_nullable_scalar_args(vna, quotation):
+    if has_nullable_args(vna, quotation):
         return float("nan")
     return tl.truncate(vna * quotation / 100, 6)
 
@@ -492,7 +492,7 @@ def spot_rates(
         - BDToMat: The number of business days from settlement to maturities.
         - SpotRate: The real spot rate for the bond.
     """
-    if has_nullable_scalar_args(settlement, maturities, rates):
+    if has_nullable_args(settlement, maturities, rates):
         return pl.DataFrame()
 
     settlement, maturities, rates = _validate_spot_rate_inputs(
@@ -599,7 +599,7 @@ def bei_rates(
         │ 2060-08-15   ┆ 9003    ┆ 0.063001 ┆ 0.11759  ┆ 0.051354 │
         └──────────────┴─────────┴──────────┴──────────┴──────────┘
     """
-    if has_null_args(
+    if has_nullable_args(
         settlement, ntnb_maturities, ntnb_rates, nominal_maturities, nominal_rates
     ):
         return pl.DataFrame()
@@ -653,7 +653,7 @@ def duration(
         15.08305431313046
     """
     # Return NaN if any input is nullable
-    if has_nullable_scalar_args(settlement, maturity, rate):
+    if has_nullable_args(settlement, maturity, rate):
         return float("nan")
 
     # Validate and normalize dates
@@ -696,7 +696,7 @@ def dv01(
         >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, 4470.979474)
         4.640875999999935
     """
-    if has_nullable_scalar_args(settlement, maturity, rate, vna):
+    if has_nullable_args(settlement, maturity, rate, vna):
         return float("nan")
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
