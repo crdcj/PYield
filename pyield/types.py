@@ -32,9 +32,9 @@ def _has_nullable_arg(arg) -> bool:  # noqa
         case float() as f:
             return math.isnan(f)
 
-        # 6. Padrão para strig
+        # 6. Padrão para string
         case str() if not arg:
-            True
+            return True
 
         # 7. Padrão para coleções vazias
         case [] | () | {}:

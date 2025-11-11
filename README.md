@@ -30,84 +30,70 @@ Visit the [full documentation for PYield](https://crdcj.github.io/PYield/).
 - **Easy Integration**: Seamless integration with pandas data analysis workflows.
 - **Type Hints**: Full support for static type checking, enhancing development experience and code quality.
 
+## Overview & Navigation
+
+PYield is split into focused namespaces. Each function and class has a rich docstring (the online site is generated from them via MkDocs). The quickest learning path is: open a Python shell, import a namespace, call `help()`.
+
+### Top-Level Namespace (Cheat Sheet)
+Symbols exported directly by `pyield.__all__` (available via `from pyield import ...`). Prefer these first:
+
+| Symbol | Kind | Purpose |
+|--------|------|---------|
+| `bday` | module | Business day calendar (count, offset, generate). |
+| `anbima` | module | ANBIMA diffusion & curve endpoints. |
+| `bc` | module | BCB indicators (SELIC Over, PTAX, repo rates). |
+| `b3` | module | B3 domain (futures submodules). |
+| `di1` | module | DI1 futures data & analytics. |
+| `futures` | function | Fetch futures (see `help(futures)`). |
+| `forward` | function | Single period forward rate from spot curve. |
+| `forwards` | function | Vectorized forward rate construction. |
+| `Interpolator` | class | Rate interpolation (linear / flat_forward). |
+| `ltn` | module | LTN bond data & analytics. |
+| `ntnb` | module | NTN-B pricing, spot, forward, BEI. |
+| `ntnc` | module | NTN-C (if available in current dataset). |
+| `ntnf` | module | NTN-F DI spreads & related analytics. |
+| `lft` | module | LFT bond tools. |
+| `pre` | module | Zero-coupon (pré-fixado) helpers. |
+| `ipca` | module | Inflation historical & projections. |
+
+
+### Learning Path
+1. Install: `pip install pyield`.
+2. Choose a domain: e.g. bonds (`from pyield import ntnb`).
+3. Inspect: `dir(ntnb)` then `help(ntnb.quotation)`.
+4. Reproduce the docstring example verbatim.
+5. Chain outputs (Polars DataFrames / Series) into your pipeline; convert to pandas only if unavoidable.
+
+### Minimal Quick Start
+```python
+from pyield import bday, ntnb, bc
+
+# Calendar
+business_days = bday.count("02-01-2025", "15-01-2025")
+
+# Bond quotation (base 100)
+q = ntnb.quotation("31-05-2024", "15-05-2035", 0.06149)
+
+# SELIC Over single day
+selic = bc.selic_over("31-05-2024")
+
+print(business_days, q, selic)
+```
+
+### Docstrings = Source of Truth
+If any README description conflicts with behavior, prefer the docstring. It documents:
+* Parameters & types
+* Edge cases / null semantics
+* References (e.g. ANBIMA methodology PDFs)
+* Examples guaranteed to run (CI checks)
+
+See also: [Custom Types & Data Handling](#custom-types--data-handling) for input normalization rules.
+
 ## Installation
 
 You can install PYield using pip:
 ```sh
 pip install pyield
-```
-## Custom Types
-
-### DateLike
-`DateLike` is an internal type union used across PYield to accept flexible date inputs. Supported scalar date types are:
-
-- `str` (formats: `DD-MM-YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`)
-- `datetime.date`
-- `datetime.datetime`
-- `pandas.Timestamp`
-- `numpy.datetime64`
-
-### ArrayLike
-Accepted collection types (homogeneous date-like values):
-
-- `list[Any]`
-- `tuple[Any, ...]`
-- `pandas.Series`
-- `numpy.ndarray`
-- `polars.Series`
-
-Referencing these unions in function docstrings means you can pass any of the listed types interchangeably; conversion is handled internally.
-
-### Date String Formats
-Accepted string date formats:
-
-- Day-first (Brazilian): `DD-MM-YYYY` (e.g., `31-05-2024`)
-- Day-first (slash): `DD/MM/YYYY` (e.g., `31/05/2024`)
-- ISO: `YYYY-MM-DD` (e.g., `2024-05-31`)
-
-Rules:
-- No ambiguous autodetection: `2024-05-06` is always interpreted as ISO (`YYYY-MM-DD`).
-- Format is determined by the first non null string.
-- Nulls are preserved.
-
-Recommendation:
-Always parse external inputs explicitly when constructing your own pipelines:
-```python
-import pandas as pd
-dt_val = pd.to_datetime("31-05-2024", format="%d-%m-%Y")
-iso_val = pd.to_datetime("2024-05-31", format="%Y-%m-%d")
-```
-
-### Null & Empty Input Handling
-
-PYield uses an internal helper (`has_null_args`) for early detection of missing inputs. The default propagation policy is: return **`None`** for missing scalar inputs and preserve nulls inside collections. This avoids implicit imputation and makes failure modes explicit.
-
-Summary:
-- Scalar functions (dates, prices, quotations, spreads, durations): return `None` when any required argument is missing or empty.
-- Collection (vectorized) functions: if the entire relevant input is missing/empty, return an empty Polars `DataFrame`/`Series` (or `None` for purely scalar semantics). Individual null elements propagate as `null` values in the resulting Polars Series/DataFrame.
-- Empty collections where a shape is mandatory (e.g. an empty date array for conversion) raise `ValueError` rather than returning a silently empty result.
-- Date string collections must share a single format; the first non-null defines it.
-- Numeric computations only produce `NaN` when an internal arithmetic step yields an undefined value (rare — typical missing input short-circuits to `None`).
-
-Examples:
-```python
->>> from pyield import ntnb, bday
-# Missing settlement -> None
->>> ntnb.quotation(None, "15-05-2035", 0.06149)
-None
-
-# Null start date in business day count -> None
->>> bday.count(None, "01-01-2025")
-None
-
-# Null in array input propagates element-wise
->>> bday.count(["01-01-2024", None], "01-02-2024")
-shape: (2,)
-Series: 'bdays' [i64]
-[
-    22
-    null
-]
 ```
 ## How to use PYield
 ### Brazilian Treasury Bonds Tools
@@ -168,88 +154,115 @@ datetime.date(2024, 1, 2)
 # Returns same date if already business day (offset=0)
 >>> bday.offset("29-12-2023", 0)
 datetime.date(2023, 12, 29)
+```
 
-# Generate business day series
->>> bday.generate(start="22-12-2023", end="02-01-2024")
-shape: (6,)
-Series: '' [date]
+## Custom Types & Data Handling
+
+This section documents the internal typing and data normalization rules adopted across PYield so users can rely on predictable inputs/outputs and null semantics.
+
+### DateLike (scalar inputs)
+`DateLike` is a union used anywhere a single date is accepted:
+
+* `str` (accepted formats below)
+* `datetime.date`
+* `datetime.datetime`
+* `pandas.Timestamp`
+* `numpy.datetime64`
+
+Returned scalar dates are normalized to `datetime.date` (no timezone).
+
+### ArrayLike (collection inputs)
+`ArrayLike` covers any homogeneous collection of values accepted by vectorized functions:
+
+* `Sequence[Any]` (e.g. `list`, `tuple`)
+* `pandas.Series`
+* `polars.Series`
+* `numpy.ndarray`
+
+Internally collections of date-like values are converted to a `polars.Series` with dtype `Date`.
+
+### Supported Date String Formats
+
+* Brazilian day‑first (dash): `DD-MM-YYYY`  (e.g. `31-05-2024`)
+* Brazilian day‑first (slash): `DD/MM/YYYY` (e.g. `31/05/2024`)
+* ISO: `YYYY-MM-DD` (e.g. `2024-05-31`)
+
+Rules:
+1. No ambiguous inference: `2024-05-06` is always ISO (`YYYY-MM-DD`).
+2. Collections: the first non-null/non-empty string determines the format for the entire collection.
+3. Strings not matching that inferred format become `null` (instead of raising) to keep vectorization robust.
+4. A collection containing only null/empty strings becomes a `Date` Series of all nulls.
+
+Recommendation (defensive pipelines):
+```python
+import pandas as pd
+dt_val = pd.to_datetime("31-05-2024", format="%d-%m-%Y")
+iso_val = pd.to_datetime("2024-05-31", format="%Y-%m-%d")
+```
+
+### Conversion Summary
+
+| Input                               | Output Normalization                 |
+|-------------------------------------|--------------------------------------|
+| "31-05-2024"                        | datetime.date(2024, 5, 31)           |
+| ["31-05-2024", "01-06-2024"]        | polars.Series<Date>[2024-05-31,…]    |
+| ["31-05-2024", None]                | polars.Series<Date>[2024-05-31,null] |
+| ["31-05-2024", "2024-06-01"]        | second -> null (mismatched format)   |
+| [] (where shape mandatory)          | ValueError (function-dependent)      |
+
+### Nullability & Early Short-Circuit
+
+The internal helper `has_nullable_args(*args)` returns `True` if any argument is considered "nullable". An argument is nullable when it is:
+
+* `None`
+* `NaN` (float)
+* Empty string `""`
+* Empty collection: `[]`, `()`, `{}`
+* Empty pandas `DataFrame` / `Series` / `Index`
+* Empty polars `DataFrame` / `Series`
+* NumPy `ndarray` with `size == 0`
+
+Policy:
+* Scalar-style functions:
+    * Pure date counters/adjusters may return `None` when a required scalar date is missing.
+    * Valuation / rate functions (`quotation`, `price`, `duration`, `dv01`) return `float('nan')` when inputs are nullable or a cash-flow schedule cannot be built.
+* Vectorized functions: an entirely missing/empty driving input yields an empty `DataFrame`/`Series` (or `None` if semantics are purely scalar); element-level nulls propagate.
+* Arithmetic emits `NaN` only for truly undefined operations—most missing cases short-circuit sooner (or return `nan` as above for valuation functions).
+
+### Practical Examples
+```python
+>>> from pyield import ntnb, bday
+
+# Missing settlement -> nan (empty cash-flow schedule)
+>>> ntnb.quotation(None, "15-05-2035", 0.06149)
+nan
+
+# Date output with null start date -> None
+>>> bday.count(None, "01-01-2025")
+None
+
+# Element-level null propagation
+>>> bday.count(["01-01-2024", None], "01-02-2024")
+shape: (2,)
+Series: 'bdays' [i64]
 [
-    2023-12-22
-    2023-12-26
-    2023-12-27
-    2023-12-28
-    2023-12-29
-    2024-01-02
+    22
+    null
 ]
 ```
 
-### Futures Data
+### Pandas Interop
+Polars objects are the canonical return types. Convert explicitly when you need pandas:
 ```python
->>> from pyield.b3.futures import futures
-
-# Fetch DI1 futures (historical)
->>> futures("DI1", "31-05-2024")
-shape: (40, 20)
-┌────────────┬──────────────┬───────────────┬────────────┬───┬──────────────┬──────────┬───────────────┬─────────────┐
-│ TradeDate  ┆ TickerSymbol ┆ ExpirationDate┆ BDaysToExp ┆ … ┆ CloseBidRate ┆ CloseRate┆ SettlementRate┆ ForwardRate │
-│ ---        ┆ ---          ┆ ---           ┆ ---        ┆   ┆ ---          ┆ ---      ┆ ---           ┆ ---         │
-│ date       ┆ str          ┆ date          ┆ i64        ┆   ┆ f64          ┆ f64      ┆ f64           ┆ f64         │
-├────────────┼──────────────┼───────────────┼────────────┼───┼──────────────┼──────────┼───────────────┼─────────────┤
-│ 2024-05-31 ┆ DI1M24       ┆ 2024-06-03    ┆ 1          ┆ … ┆ 0.10404      ┆ 0.10404  ┆ 0.10399       ┆ 0.10399     │
-│ 2024-05-31 ┆ DI1N24       ┆ 2024-07-01    ┆ 21         ┆ … ┆ 0.1039       ┆ 0.10386  ┆ 0.1039        ┆ 0.103896    │
-│ 2024-05-31 ┆ DI1Q24       ┆ 2024-08-01    ┆ 44         ┆ … ┆ 0.10374      ┆ 0.10374  ┆ 0.1037        ┆ 0.103517    │
-│ …          ┆ …            ┆ …             ┆ …          ┆ … ┆ …            ┆ …        ┆ …             ┆ …           │
-└────────────┴──────────────┴───────────────┴────────────┴───┴──────────────┴──────────┴───────────────┴─────────────┘
+df_pandas = df.to_pandas(use_pyarrow_extension_array=True)
+series_pandas = s.to_pandas(use_pyarrow_extension_array=True)
 ```
 
-### Indicators Data
-```python
->>> from pyield import bc
+### Rationale
+Using Polars + Arrow dtypes provides:
+* Deterministic schema & faster IO
+* Efficient vectorized date casting
+* Clear null vs. missing semantics
+* Reduced overhead vs. repeated Pandas conversions
 
-# SELIC Over series (no data on Sunday)
->>> bc.selic_over_series("26-01-2025").head(5)
-shape: (5, 2)
-┌────────────┬────────┐
-│ Date       ┆ Value  │
-│ ---        ┆ ---    │
-│ date       ┆ f64    │
-├────────────┼────────┤
-│ 2025-01-27 ┆ 0.1215 │
-│ 2025-01-28 ┆ 0.1215 │
-│ 2025-01-29 ┆ 0.1215 │
-│ 2025-01-30 ┆ 0.1315 │
-│ 2025-01-31 ┆ 0.1315 │
-└────────────┴────────┘
-
-# SELIC Over for a single date
->>> bc.selic_over("31-05-2024")
-0.104  # 10.40%
-```
-
-### Projections Data
-```python
->>> from pyield import ipca
-# Fetch current month projection for IPCA
->>> proj = ipca.projected_rate()
->>> proj
-IndicatorProjection(last_updated=..., reference_period=..., projected_value=...)
->>> proj.projected_value
-0.0035  # 0.35%
-```
-
-### Interpolation Tools
-Interpolate interest rates for specific business days using the Interpolator class.
-```python
->>> from pyield import Interpolator
-# Initialize the Interpolator with known business days and interest rates.
->>> known_bdays = [30, 60, 90]
->>> known_rates = [0.045, 0.05, 0.055]
->>> linear_interpolator = Interpolator("linear", known_bdays, known_rates)
->>> linear_interpolator(45)  # Interpolate the interest rate for a given number of business days.
-0.0475
-
-# Use the flat forward method for interpolation.
->>> ff_interpolator = Interpolator("flat_forward", known_bdays, known_rates)
->>> ff_interpolator(45)
-0.04833068080970859
-```
+These conventions keep public APIs flexible on input while consistent on output.
