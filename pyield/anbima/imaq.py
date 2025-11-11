@@ -55,26 +55,21 @@ def _fetch_url_content(target_date: dt.date) -> bytes:
     return r.content
 
 
-def _check_content_date(html_content: bytes, target_date: dt.date) -> None:
-    # Expressão regular para datas no formato dd/mm/ano
-    date_pattern = r"\b(\d{2}/\d{2}/\d{4})\b"
+def _extract_reference_date(html_content: bytes) -> dt.date | None:
+    """
+    Extract reference date from HTML content.
 
-    # Busca pela primeira data
+    Returns:
+        The reference date found in the HTML, or None if not found.
+    """
+    date_pattern = r"\b(\d{2}/\d{2}/\d{4})\b"
     match = re.search(date_pattern, html_content.decode("iso-8859-1"))
 
-    if match:
-        found_date_string = match.group(1)
-        found_date = dt.datetime.strptime(found_date_string, "%d/%m/%Y").date()
-        if found_date != target_date:
-            raise ValueError(
-                f"Reference date {found_date} differs from target date {target_date}."
-            )
-        else:
-            logger.info(f"Reference date found: {found_date}")
-
-    else:
-        logger.warning("No reference date found in HTML content.")
+    if not match:
         return None
+
+    date_string = match.group(1)
+    return dt.datetime.strptime(date_string, "%d/%m/%Y").date()
 
 
 def _parse_html_data(html_content: str) -> str:
@@ -184,7 +179,8 @@ def imaq(date: DateLike) -> pl.DataFrame:
 
     Args:
         date (DateLike): A date-like object representing the target date for fetching
-            the data.
+            the data. Only 5 business days from the last available data are available.
+            The last is typically from 2 business days ago.
 
     Returns:
         pl.DataFrame: A DataFrame containing the IMA data.
@@ -209,6 +205,13 @@ def imaq(date: DateLike) -> pl.DataFrame:
     Raises:
         Exception: Logs error and returns an empty DataFrame if any error occurs during
             fetching or processing.
+
+    Examples:
+        >>> from pyield import bday
+        >>> target_date = bday.offset(dt.date.today(), -5)
+        >>> df = imaq(target_date)
+        >>> df["Date"].first() == target_date
+        True
     """
     if has_nullable_args(date):
         logger.warning("No date provided. Returning empty DataFrame.")
@@ -223,7 +226,17 @@ def imaq(date: DateLike) -> pl.DataFrame:
             )
             return pl.DataFrame()
 
-        _check_content_date(url_content, date)
+        # ✅ VALIDAÇÃO CRÍTICA EXPLÍCITA NO FLUXO PRINCIPAL
+        reference_date = _extract_reference_date(url_content)
+
+        if reference_date is None:
+            raise ValueError(f"No reference date found in HTML for {date_str}")
+
+        if reference_date != date:
+            raise ValueError(
+                f"Reference date mismatch: expected {date_str}, "
+                f"got {reference_date.strftime('%d/%m/%Y')}"
+            )
 
         raw_csv = _parse_html_data(url_content)
         clean_csv = _pre_process_data(raw_csv)

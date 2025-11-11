@@ -95,7 +95,7 @@ FINAL_COLUMN_ORDER = [
 logger = logging.getLogger(__name__)
 
 
-def _fetch_url_data(data_referencia: str) -> str | None:
+def _fetch_url_data(data_referencia: str) -> str:
     headers = {
         "Referer": URL_PAGINA_INICIAL,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",  # noqa
@@ -126,7 +126,7 @@ def _fetch_url_data(data_referencia: str) -> str | None:
             response_consulta.raise_for_status()
         except requests.exceptions.RequestException as e:
             logger.error(f"Erro ao registrar a data '{data_referencia}' na sessão: {e}")
-            return None  # 3. Retornar None em caso de falha
+            return ""
 
         try:
             response_download = s.post(
@@ -138,14 +138,14 @@ def _fetch_url_data(data_referencia: str) -> str | None:
                     "AVISO: O servidor respondeu com HTML em vez de CSV para '%s'.",
                     data_referencia,
                 )
-                return None
+                return ""
             response_download.encoding = "iso-8859-1"
             return response_download.text
         except requests.exceptions.RequestException as e:
             logger.error(
                 f"Erro durante o download para a data '{data_referencia}': {e}"
             )
-            return None
+            return ""
 
 
 def _process_csv_data(csv_data: str) -> pl.DataFrame:
@@ -233,7 +233,7 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
     data_str = cv.convert_dates(data_referencia)
     csv_data = _fetch_url_data(data_str)
 
-    if csv_data is None:
+    if not csv_data:
         logger.warning("Nenhum dado foi retornado para a data '%s'.", data_str)
         return pl.DataFrame()
 
