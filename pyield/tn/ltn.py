@@ -1,6 +1,5 @@
 import polars as pl
 
-import pyield.converters as cv
 from pyield import anbima, bday, fwd
 from pyield.tn import tools
 from pyield.tn.pre import di_spreads as pre_di_spreads
@@ -73,8 +72,7 @@ def maturities(date: DateLike) -> pl.Series:
             2030-01-01
         ]
     """
-    df_rates = data(date)
-    return df_rates["MaturityDate"]
+    return data(date)["MaturityDate"]
 
 
 def price(
@@ -107,9 +105,6 @@ def price(
     # Validate and normalize inputs
     if has_nullable_args(settlement, maturity, rate):
         return float("nan")
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
-
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement, maturity)
 
@@ -177,9 +172,11 @@ def dv01(
         >>> from pyield import ltn
         >>> ltn.dv01("26-03-2025", "01-01-2032", 0.150970)
         0.2269059999999854
+
+        Nullable inputs return float('nan')
+        >>> ltn.dv01(None, "01-01-2032", 0.150970)
+        nan
     """
-    if has_nullable_args(settlement, maturity, rate):
-        return float("nan")
     price1 = price(settlement, maturity, rate)
     price2 = price(settlement, maturity, rate + 0.0001)
     return price1 - price2

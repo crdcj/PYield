@@ -587,10 +587,6 @@ def premium(  # noqa
     ):
         return float("nan")
 
-    # 1-6. [código original até price_difference]
-    settlement = cv.convert_dates(settlement)
-    ntnf_maturity = cv.convert_dates(ntnf_maturity)
-    di_expirations = cv.convert_dates(di_expirations)
     if not isinstance(di_rates, pl.Series):
         di_rates = pl.Series(di_rates)
 
@@ -628,10 +624,8 @@ def premium(  # noqa
     if math.isnan(di_ytm):
         return float("nan")
 
-    # 8. Calcular o prêmio final
     factor_ntnf = (1 + ntnf_rate) ** (1 / 252)
     factor_di = (1 + di_ytm) ** (1 / 252)
-
     if factor_di == 1:
         return float("inf") if factor_ntnf > 1 else 0.0
 
@@ -643,7 +637,7 @@ def di_net_spread(  # noqa
     settlement: DateLike,
     ntnf_maturity: DateLike,
     ntnf_rate: float,
-    di_expirations: DateLike,
+    di_expirations: ArrayLike,
     di_rates: ArrayLike,
 ) -> float:
     """
@@ -679,32 +673,35 @@ def di_net_spread(  # noqa
         ... )
         >>> round(spread * 10_000, 2)  # Convert to bps for display
         12.13
+
+        >>> # Nullable inputs return float('nan')
+        >>> di_net_spread(
+        ...     settlement=None,
+        ...     ntnf_maturity="01-01-2035",
+        ...     ntnf_rate=0.116586,
+        ...     di_expirations=exp_dates,
+        ...     di_rates=di_rates,
+        ... )
+        nan
     """
-    # 1. Validação e conversão de inputs
+    # Validação de inputs
     if has_nullable_args(
         settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates
     ):
-        return None
-    settlement = cv.convert_dates(settlement)
-    ntnf_maturity = cv.convert_dates(ntnf_maturity)
-    di_expirations = cv.convert_dates(di_expirations)
+        return float("nan")
 
     # Force di_rates to be a Polars Series
     if not isinstance(di_rates, pl.Series):
         di_rates = pl.Series(di_rates)
 
-    # 2. Validação dos inputs de DI
-    if len(di_rates) != len(di_expirations):
-        return float("nan")
-
-    # 3. Criação do interpolador
+    # Criação do interpolador
     ff_interpolator = ip.Interpolator(
         "flat_forward",
         bday.count(settlement, di_expirations),
         di_rates,
     )
 
-    # 4. Geração dos fluxos de caixa do NTN-F
+    # Geração dos fluxos de caixa do NTN-F
     df = cash_flows(settlement, ntnf_maturity)
     if df.is_empty():
         return float("nan")
@@ -721,12 +718,12 @@ def di_net_spread(  # noqa
         ),
     )
 
-    # 5. Extração dos dados para o cálculo numérico
+    # Extração dos dados para o cálculo numérico
     bond_price = price(settlement, ntnf_maturity, ntnf_rate)
     bond_cash_flows = df["CashFlow"]
     di_interp = df["DIRateInterp"]
 
-    # 6. Função de diferença de preço para o solver
+    # Função de diferença de preço para o solver
     def price_difference(p: float) -> float:
         discounted_cf = bond_cash_flows / (1 + di_interp + p) ** byears_to_payment
         return discounted_cf.sum() - bond_price
@@ -756,13 +753,11 @@ def duration(
         >>> from pyield import ntnf
         >>> ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
         6.32854218039796
-    """
-    if has_nullable_args(settlement, maturity, rate):
-        return float("nan")
-    # Normalize inputs
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
 
+        Nullable inputs return NaN:
+        >>> ntnf.duration(None, "01-01-2035", 0.121785)
+        nan
+    """
     df = cash_flows(settlement, maturity)
     if df.is_empty():
         return float("nan")
@@ -799,9 +794,11 @@ def dv01(
         >>> from pyield import ntnf
         >>> ntnf.dv01("26-03-2025", "01-01-2035", 0.151375)
         0.39025200000003224
+
+        Nullable inputs return NaN:
+        >>> ntnf.dv01("", "01-01-2035", 0.151375)
+        nan
     """
-    if has_nullable_args(settlement, maturity, rate):
-        return float("nan")
     price1 = price(settlement, maturity, rate)
     price2 = price(settlement, maturity, rate + 0.0001)
     return price1 - price2

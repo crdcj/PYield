@@ -168,8 +168,6 @@ def cash_flows(
         │ 2031-01-01  ┆ 105.830052 │
         └─────────────┴────────────┘
     """
-    if has_nullable_args(settlement, maturity):
-        return pl.DataFrame()
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -223,13 +221,10 @@ def quotation(
         >>> ntnc.quotation("21-03-2025", "01-01-2031", 0.067626)
         126.4958
     """
-    # Validate and normalize inputs
-    if has_nullable_args(settlement, maturity, rate):
-        return float("nan")
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
-
     cf_df = cash_flows(settlement, maturity)
+    if cf_df.is_empty():
+        return float("nan")
+
     cf_dates = cf_df["PaymentDate"]
     cf_values = cf_df["CashFlow"]
 
@@ -296,16 +291,14 @@ def duration(
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.duration("21-03-2025", "01-01-2031", 0.067626)
-        4.405363320448003
+        4.405363320448
     """
-    # Validate and normalize inputs
-    if has_nullable_args(settlement, maturity, rate):
-        return float("nan")
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
-
     df = cash_flows(settlement, maturity)
+    if df.is_empty():
+        return float("nan")
+
     b_years = bday.count(settlement, df["PaymentDate"]) / 252
     dcf = df["CashFlow"] / (1 + rate) ** b_years
     duration = (dcf * b_years).sum() / dcf.sum()
-    return duration
+    # Truncar para 14 casas decimais para repetibilidade dos resultados
+    return tl.truncate(duration, 14)

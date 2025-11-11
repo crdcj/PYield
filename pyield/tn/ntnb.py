@@ -222,13 +222,9 @@ def cash_flows(
         │ 2025-05-15  ┆ 102.956301 │
         └─────────────┴────────────┘
     """
-    if has_nullable_args(settlement, maturity):
-        return pl.DataFrame()
-    # Normalize dates
+    # Get the coupon dates between the settlement and maturity dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
-
-    # Get the coupon dates between the settlement and maturity dates
     p_dates = payment_dates(settlement, maturity)
 
     # Return empty DataFrame if no payment dates (settlement >= maturity)
@@ -278,10 +274,6 @@ def quotation(
         >>> ntnb.quotation("15-08-2024", "15-08-2032", 0.05929)
         100.6409
     """
-    # Validate and normalize dates
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
-
     cf_df = cash_flows(settlement, maturity)
     if cf_df.is_empty():
         return float("nan")
@@ -330,6 +322,8 @@ def price(
         >>> ntnb.price(None, 99.5341)  # Nullable inputs return float('nan')
         nan
     """
+    if has_nullable_args(vna, quotation):
+        return float("nan")
     return tl.truncate(vna * quotation / 100, 6)
 
 
@@ -650,15 +644,9 @@ def duration(
         >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
         15.08305431313046
     """
-    # Return NaN if any input is nullable
-    if has_nullable_args(settlement, maturity, rate):
-        return float("nan")
-
-    # Validate and normalize dates
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
-
     df = cash_flows(settlement, maturity)
+    if df.is_empty():
+        return float("nan")
     byears = bday.count(settlement, df["PaymentDate"]) / 252
     dcf = df["CashFlow"] / (1 + rate) ** byears
     duration = (dcf * byears).sum() / dcf.sum()

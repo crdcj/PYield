@@ -1,6 +1,5 @@
 import polars as pl
 
-import pyield.converters as cv
 from pyield import anbima, bday
 from pyield.tn import tools
 from pyield.types import DateLike, has_nullable_args
@@ -75,8 +74,7 @@ def maturities(date: DateLike) -> pl.Series:
             2030-09-01
         ]
     """
-    df_rates = data(date)
-    return df_rates["MaturityDate"]
+    return data(date)["MaturityDate"]
 
 
 def quotation(
@@ -104,13 +102,13 @@ def quotation(
         ...     rate=0.001717,  # 0.1717%
         ... )
         98.9645
+
+        Nullable inputs return float('nan'):
+        >>> lft.quotation(settlement=None, maturity="01-09-2030", rate=0.001717)
+        nan
     """
-    # Validate and normalize dates
     if has_nullable_args(settlement, maturity, rate):
         return float("nan")
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
-
     # The number of bdays between settlement (inclusive) and the maturity (exclusive)
     bdays = bday.count(settlement, maturity)
 
