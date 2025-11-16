@@ -4,7 +4,7 @@
 
 # PYield: Brazilian Fixed Income Toolkit
 
-PYield is a Python library designed for the analysis of Brazilian fixed income instruments. Leveraging the power of popular Python libraries like Polars, Pandas, Numpy and Requests, PYield simplifies the process of obtaining and processing data from key sources such as ANBIMA, BCB, IBGE and B3.
+PYield is a Python library designed for the analysis of Brazilian fixed income instruments. Leveraging the power of Polars and Requests, PYield simplifies the process of obtaining and processing data from key sources such as ANBIMA, BCB, IBGE and B3.
 
 ---
 ### ✅ Polars migration from version 0.40.0 onwards:
@@ -32,10 +32,9 @@ Visit the [full documentation for PYield](https://crdcj.github.io/PYield/).
 
 ## Overview & Navigation
 
-PYield is split into focused namespaces. Each function and class has a rich docstring (the online site is generated from them via MkDocs). The quickest learning path is: open a Python shell, import a namespace, call `help()`.
+PYield is split into focused namespaces. Each function and class has a rich docstring (the online site is generated from them via MkDocs). The quickest learning path is accessing the documentation and following the function/class examples verbatim.
 
 ### Top-Level Namespace (Cheat Sheet)
-Symbols exported directly by `pyield.__all__` (available via `from pyield import ...`). Prefer these first:
 
 | Symbol | Kind | Purpose |
 |--------|------|---------|
@@ -55,14 +54,6 @@ Symbols exported directly by `pyield.__all__` (available via `from pyield import
 | `lft` | module | LFT bond tools. |
 | `pre` | module | Zero-coupon (pré-fixado) helpers. |
 | `ipca` | module | Inflation historical & projections. |
-
-
-### Learning Path
-1. Install: `pip install pyield`.
-2. Choose a domain: e.g. bonds (`from pyield import ntnb`).
-3. Inspect: `dir(ntnb)` then `help(ntnb.quotation)`.
-4. Reproduce the docstring example verbatim.
-5. Chain outputs (Polars DataFrames / Series) into your pipeline; convert to pandas only if unavoidable.
 
 ### Minimal Quick Start
 ```python
