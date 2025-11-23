@@ -1,10 +1,21 @@
 [![PyPI version](https://img.shields.io/pypi/v/pyield.svg)](https://pypi.python.org/pypi/pyield)
 [![Made with Python](https://img.shields.io/badge/Python->=3.12-blue?logo=python&logoColor=white)](https://python.org "Go to Python homepage")
 [![License](https://img.shields.io/badge/License-MIT-blue)](https://github.com/crdcj/PYield/blob/main/LICENSE)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/colab_quickstart.ipynb)
 
 # PYield: Brazilian Fixed Income Toolkit
 
 PYield is a Python library designed for the analysis of Brazilian fixed income instruments. Leveraging the power of Polars and Requests, PYield simplifies the process of obtaining and processing data from key sources such as ANBIMA, BCB, IBGE and B3.
+
+## Examples & Colab Quickstart
+
+Um notebook de *quickstart* está disponível no diretório `examples/` e pode ser aberto diretamente no Google Colab usando o badge acima. Ele demonstra:
+
+- Instalação do pacote.
+- Uso básico do calendário de dias úteis (`bday.count`, `bday.offset`).
+- Consulta de futuros DI (`futures`).
+
+Outros exemplos podem ser adicionados futuramente (títulos públicos, interpolação de curvas, inflação). Contribuições são bem-vindas.
 
 ---
 ### ✅ Polars migration from version 0.40.0 onwards:
