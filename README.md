@@ -9,13 +9,13 @@ PYield is a Python library designed for the analysis of Brazilian fixed income i
 
 ## Examples & Colab Quickstart
 
-Um notebook de *quickstart* está disponível no diretório `examples/` e pode ser aberto diretamente no Google Colab usando o badge acima. Ele demonstra:
+A quickstart notebook is available in the examples/ directory and can be opened directly in Google Colab using the badge above. It demonstrates:
 
-- Instalação do pacote.
-- Uso básico do calendário de dias úteis (`bday.count`, `bday.offset`).
-- Consulta de futuros DI (`futures`).
+- Package installation.
+- Basic use of the business day calendar (bday.count, bday.offset).
+- DI futures query (futures).
 
-Outros exemplos podem ser adicionados futuramente (títulos públicos, interpolação de curvas, inflação). Contribuições são bem-vindas.
+More examples may be added later (treasury bonds, curve interpolation, inflation). Contributions are welcome.
 
 ---
 ### ✅ Polars migration from version 0.40.0 onwards:
@@ -81,15 +81,6 @@ selic = bc.selic_over("31-05-2024")
 
 print(business_days, q, selic)
 ```
-
-### Docstrings = Source of Truth
-If any README description conflicts with behavior, prefer the docstring. It documents:
-* Parameters & types
-* Edge cases / null semantics
-* References (e.g. ANBIMA methodology PDFs)
-* Examples guaranteed to run (CI checks)
-
-See also: [Custom Types & Data Handling](#custom-types--data-handling) for input normalization rules.
 
 ## Installation
 
