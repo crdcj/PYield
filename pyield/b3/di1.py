@@ -132,8 +132,8 @@ def data(
             .filter(pl.col("BondType").is_in(["LTN", "NTN-F"]))
             .unique(subset=["ReferenceDate", "MaturityDate"])
             .select(
-                pl.col("ReferenceDate").alias("TradeDate"),
-                pl.col("MaturityDate").alias("ExpirationDate"),
+                TradeDate=pl.col("ReferenceDate"),
+                ExpirationDate=pl.col("MaturityDate"),
             )
         )
 

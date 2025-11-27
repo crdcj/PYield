@@ -132,30 +132,32 @@ def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
             # Conversão de datas
             cs.starts_with("data_").str.strptime(pl.Date, "%d/%m/%Y"),
             # Cálculos de totais
-            pl.sum_horizontal("quantidade_ofertada_1v", "quantidade_ofertada_2v").alias(
-                "quantidade_ofertada_total"
+            quantidade_ofertada_total=(
+                pl.sum_horizontal("quantidade_ofertada_1v", "quantidade_ofertada_2v")
             ),
-            pl.sum_horizontal("quantidade_aceita_1v", "quantidade_aceita_2v").alias(
-                "quantidade_aceita_total"
+            quantidade_aceita_total=(
+                pl.sum_horizontal("quantidade_aceita_1v", "quantidade_aceita_2v")
             ),
-            pl.sum_horizontal("financeiro_aceito_1v", "financeiro_aceito_2v").alias(
-                "financeiro_aceito_total"
+            financeiro_aceito_total=(
+                pl.sum_horizontal("financeiro_aceito_1v", "financeiro_aceito_2v")
             ),
             # Cálculo do financeiro ofertado
-            pl.when(pl.col("quantidade_ofertada_1v") == pl.col("quantidade_aceita_1v"))
+            financeiro_ofertado_1v=pl.when(
+                pl.col("quantidade_ofertada_1v") == pl.col("quantidade_aceita_1v")
+            )
             .then(pl.col("financeiro_aceito_1v"))
-            .otherwise((pl.col("quantidade_ofertada_1v") * pl.col("pu_medio")))
-            .alias("financeiro_ofertado_1v"),
-            pl.when(pl.col("quantidade_ofertada_2v") == pl.col("quantidade_aceita_2v"))
+            .otherwise(pl.col("quantidade_ofertada_1v") * pl.col("pu_medio")),
+            financeiro_ofertado_2v=pl.when(
+                pl.col("quantidade_ofertada_2v") == pl.col("quantidade_aceita_2v")
+            )
             .then(pl.col("financeiro_aceito_2v"))
-            .otherwise((pl.col("quantidade_ofertada_2v") * pl.col("pu_medio")))
-            .alias("financeiro_ofertado_2v"),
+            .otherwise(pl.col("quantidade_ofertada_2v") * pl.col("pu_medio")),
             # Cálculo das taxas de colocação
-            (pl.col("quantidade_aceita_1v") / pl.col("quantidade_ofertada_1v")).alias(
-                "colocacao_1v"
+            colocacao_1v=(
+                pl.col("quantidade_aceita_1v") / pl.col("quantidade_ofertada_1v")
             ),
-            (pl.col("quantidade_aceita_2v") / pl.col("quantidade_ofertada_2v")).alias(
-                "colocacao_2v"
+            colocacao_2v=(
+                pl.col("quantidade_aceita_2v") / pl.col("quantidade_ofertada_2v")
             ),
             # Deixar um marcador de que o pu_medio não é original
             tipo_pu_medio=pl.when(pl.col("pu_medio") == 0)
@@ -164,22 +166,21 @@ def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
         )
         .with_columns(
             # Cálculo do financeiro ofertado
-            pl.sum_horizontal("financeiro_ofertado_1v", "financeiro_ofertado_2v").alias(
-                "financeiro_ofertado_total"
+            financeiro_ofertado_total=(
+                pl.sum_horizontal("financeiro_ofertado_1v", "financeiro_ofertado_2v")
             ),
-            (
+            colocacao_total=(
                 pl.col("quantidade_aceita_total") / pl.col("quantidade_ofertada_total")
-            ).alias("colocacao_total"),
+            ),
             # Algumas vezes o prazo não vem na API, então calculamos
-            (pl.col("data_vencimento") - pl.col("data_liquidacao_1v"))
-            .dt.total_days()
-            .alias("dias_corridos"),
+            dias_corridos=(
+                pl.col("data_vencimento") - pl.col("data_liquidacao_1v")
+            ).dt.total_days(),
             # Algumas vezes o PU médio vem zero da API, então recalculamos
-            pl.when(pl.col("pu_medio") == 0)
+            pu_medio=pl.when(pl.col("pu_medio") == 0)
             .then((pl.col("financeiro_aceito_1v") / pl.col("quantidade_aceita_1v")))
             .otherwise(pl.col("pu_medio"))
-            .round(6)
-            .alias("pu_medio"),
+            .round(6),
         )
         .with_columns(
             # Arredondamentos e transformações que criam/alteram colunas sem condicional
@@ -205,7 +206,7 @@ def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
     # Cálculo de dias úteis (requer acesso a colunas já convertidas)
     dias_uteis = bday.count(df["data_liquidacao_1v"], df["data_vencimento"])
     df = df.with_columns(dias_uteis.alias("dias_uteis"))
-    return df.sort(["data_1v", "titulo", "data_vencimento"])
+    return df.sort("data_1v", "titulo", "data_vencimento")
 
 
 def _add_duration(df: pl.DataFrame) -> pl.DataFrame:
@@ -300,7 +301,7 @@ def _add_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     """
     Adiciona o DV01 em USD usando um join_asof para encontrar a PTAX mais recente.
     """
-    auction_date = df.get_column("data_1v").min()
+    auction_date = df["data_1v"].first()
     # Busca o DataFrame da PTAX
     df_ptax = _fetch_ptax_data(auction_date=auction_date)
     if df_ptax.is_empty():
