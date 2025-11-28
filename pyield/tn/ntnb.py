@@ -629,20 +629,31 @@ def duration(
     rate: float,
 ) -> float:
     """
-    Calculate the Macaulay duration of the NTN-B bond in business years.
+     Calculate the Macaulay duration of the NTN-B bond in business years.
 
-    Args:
-        settlement (DateLike): The settlement date of the operation.
-        maturity (DateLike): The maturity date of the NTN-B bond.
-        rate (float): The discount rate used to calculate the duration.
+    Formula:
+                   Sum( t * CFₜ / (1 + y)ᵗ )
+         MacD = ---------------------------------
+                         Current Bond Price
 
-    Returns:
-        float: The Macaulay duration of the NTN-B bond in business years.
+     Where:
+         t    = time in years until payment
+         CFₜ = cash flow at time t
+         y    = yield to maturity (periodic)
+         Price = Sum( CFₜ / (1 + y)ᵗ )
 
-    Examples:
-        >>> from pyield import ntnb
-        >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
-        15.08305431313046
+     Args:
+         settlement (DateLike): The settlement date of the operation.
+         maturity (DateLike): The maturity date of the NTN-B bond.
+         rate (float): The discount rate used to calculate the duration.
+
+     Returns:
+         float: The Macaulay duration of the NTN-B bond in business years.
+
+     Examples:
+         >>> from pyield import ntnb
+         >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
+         15.08305431313046
     """
     df = cash_flows(settlement, maturity)
     if df.is_empty():
