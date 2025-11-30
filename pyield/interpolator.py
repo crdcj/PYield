@@ -43,9 +43,9 @@ class Interpolator:
         0.04833068080970859
 
         Array interpolation (polars shows 6 decimal places by default):
-        >>> fforward([15, 45, 75, 105])
+        >>> fforward([15, 45, 75, 100])
         shape: (4,)
-        Series: 'bday' [f64]
+        Series: 'interpolated_rate' [f64]
         [
             0.045
             0.048331
@@ -58,6 +58,13 @@ class Interpolator:
 
         >>> print(fforward(-10))  # Invalid input returns NaN
         nan
+
+        If extrapolation is enabled, the last known rate is used:
+        >>> fforward_extrap = Interpolator(
+        ...     "flat_forward", known_bdays, known_rates, extrapolate=True
+        ... )
+        >>> print(fforward_extrap(100))
+        0.055
     """
 
     def __init__(
@@ -179,7 +186,9 @@ class Interpolator:
             float or pl.Series - Interpolated rate(s)
         """
         if hasattr(bdays, "__len__"):
-            bday_series = pl.Series(name="bday", values=bdays, dtype=pl.Int64)
+            bday_series = pl.Series(
+                name="interpolated_rate", values=bdays, dtype=pl.Int64
+            )
             result = bday_series.map_elements(
                 self._interpolated_rate, return_dtype=pl.Float64
             )
