@@ -340,17 +340,16 @@ def spot_rates(  # noqa
 
     # 4. Construir DataFrame inicial
     bdays_to_mat = bday.count(settlement, all_coupon_dates)
+    ytm_rates = ntnf_rate_interpolator(bdays_to_mat)
     df = pl.DataFrame(
         {
             "MaturityDate": all_coupon_dates,
             "BDToMat": bdays_to_mat,
+            "BYears": bdays_to_mat / 252,
+            "YTM": ytm_rates,
         }
     ).with_columns(
-        BYears=pl.col("BDToMat") / 252,
-        Coupon=COUPON_PMT,
-        YTM=pl.col("BDToMat").map_elements(
-            ntnf_rate_interpolator, return_dtype=pl.Float64
-        ),
+        Coupon=pl.lit(COUPON_PMT),
     )
 
     # 5. Loop de bootstrap (iterativo por dependência sequencial)
@@ -601,9 +600,10 @@ def premium(  # noqa
     )
 
     bdays_to_payments = bday.count(settlement, df_cf["PaymentDate"])
-    df = df_cf.with_columns(BDToMat=bdays_to_payments).with_columns(
-        BYears=pl.col("BDToMat") / 252,
-        DIRate=pl.col("BDToMat").map_elements(ff_interpolator, return_dtype=pl.Float64),
+    df = df_cf.with_columns(
+        BDToMat=bdays_to_payments,
+        BYears=bdays_to_payments / 252,
+        DIRate=ff_interpolator(bdays_to_payments),
     )
 
     bond_price = tools.calculate_present_value(
@@ -711,11 +711,7 @@ def di_net_spread(  # noqa
 
     df = df.with_columns(
         BDaysToPayment=bdays_to_payment,
-    ).with_columns(
-        DIRateInterp=pl.col("BDaysToPayment").map_elements(
-            function=ff_interpolator,
-            return_dtype=pl.Float64,
-        ),
+        DIRateInterp=ff_interpolator(bdays_to_payment),
     )
 
     # Extração dos dados para o cálculo numérico

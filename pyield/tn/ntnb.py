@@ -376,18 +376,23 @@ def _create_bootstrap_dataframe(
     # Generate coupon dates up to the longest maturity date
     all_coupon_dates = _generate_all_coupon_dates(settlement, maturities.max())
     bdays_to_mat = bday.count(settlement, all_coupon_dates)
+    ytm_rates = flat_fwd.interpolate(bdays_to_mat)
 
     df = (
-        pl.DataFrame({"MaturityDate": all_coupon_dates, "BDToMat": bdays_to_mat})
+        pl.DataFrame(
+            {
+                "MaturityDate": all_coupon_dates,
+                "BDToMat": bdays_to_mat,
+                "BYears": bdays_to_mat / 252,
+                "YTM": ytm_rates,
+            }
+        )
         .with_columns(
-            BYears=pl.col("BDToMat") / 252,
-            YTM=pl.col("BDToMat").map_elements(flat_fwd, return_dtype=pl.Float64),
-            Coupon=COUPON_PMT,
+            Coupon=pl.lit(COUPON_PMT),
             SpotRate=pl.lit(None, dtype=pl.Float64),
         )
         .sort("MaturityDate")
     )
-
     return df
 
 
@@ -599,20 +604,17 @@ def bei_rates(
     settlement = cv.convert_dates(settlement)
     ntnb_maturities = cv.convert_dates(ntnb_maturities)
 
-    nir_interpolator = ip.Interpolator(
+    ff_interpolator = ip.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, nominal_maturities),
         known_rates=nominal_rates,
         extrapolate=True,
     )
-
+    df_spot = spot_rates(settlement, ntnb_maturities, ntnb_rates)
     df = (
-        spot_rates(settlement, ntnb_maturities, ntnb_rates)
-        .rename({"SpotRate": "RIR"})
+        df_spot.rename({"SpotRate": "RIR"})
         .with_columns(
-            NIR=pl.col("BDToMat").map_elements(
-                nir_interpolator, return_dtype=pl.Float64
-            )
+            NIR=ff_interpolator(df_spot["BDToMat"]),
         )
         .with_columns(
             BEI=((pl.col("NIR") + 1) / (pl.col("RIR") + 1)) - 1,

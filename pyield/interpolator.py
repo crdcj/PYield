@@ -1,5 +1,5 @@
 import bisect
-from typing import Literal
+from typing import Literal, overload
 
 import polars as pl
 
@@ -32,20 +32,31 @@ class Interpolator:
         >>> known_bdays = [30, 60, 90]
         >>> known_rates = [0.045, 0.05, 0.055]
 
-        Linear interpolation example:
+        Linear interpolation:
         >>> linear = Interpolator("linear", known_bdays, known_rates)
         >>> linear(45)
         0.0475
 
-        Flat forward interpolation example:
+        Flat forward interpolation:
         >>> fforward = Interpolator("flat_forward", known_bdays, known_rates)
         >>> fforward(45)
         0.04833068080970859
 
+        Array interpolation (polars shows 6 decimal places by default):
+        >>> fforward([15, 45, 75, 105])
+        shape: (4,)
+        Series: 'bday' [f64]
+        [
+            0.045
+            0.048331
+            0.052997
+            null
+        ]
+
         >>> print(fforward(100))  # Extrapolation disabled by default
         nan
 
-        >>> print(fforward(-10))
+        >>> print(fforward(-10))  # Invalid input returns NaN
         nan
     """
 
@@ -152,18 +163,42 @@ class Interpolator:
         f_t = (time - time_j) / (time_k - time_j)
         return (f_j * (f_k / f_j) ** f_t) ** (1 / time) - 1
 
-    def interpolate(self, bday: int) -> float:
+    @overload
+    def interpolate(self, bdays: int) -> float: ...
+    @overload
+    def interpolate(self, bdays: ArrayLike) -> pl.Series: ...
+
+    def interpolate(self, bdays: int | ArrayLike) -> float | pl.Series:
+        """
+        Interpolates rates for given business day(s).
+
+        Args:
+            bdays: int or ArrayLike - Business day(s) for interpolation
+
+        Returns:
+            float or pl.Series - Interpolated rate(s)
+        """
+        if hasattr(bdays, "__len__"):
+            bday_series = pl.Series(name="bday", values=bdays, dtype=pl.Int64)
+            result = bday_series.map_elements(
+                self._interpolated_rate, return_dtype=pl.Float64
+            )
+            return result.fill_nan(None)
+        else:
+            return self._interpolated_rate(bdays)
+
+    def _interpolated_rate(self, bday: int) -> float:
         """
         Finds the appropriate interpolation point and returns the interest rate
         interpolated by the specified method from that point.
 
         Args:
-            bday (int): Number of business days for which the interest rate is to be
-                calculated.
+            bday (int): Number of business days for which the interest rate
+              is to be calculated.
 
         Returns:
-            float: The interest rate interpolated by the specified method for
-                the given number of business days. If the input is out of range and
+            float: The interest rate interpolated by the specified method
+                for the given number of business days. If the input is out of range and
                 extrapolation is disabled, returns float("nan").
         """
         # Validate input
@@ -197,7 +232,7 @@ class Interpolator:
 
         raise ValueError(f"Interpolation method '{method}' not recognized.")
 
-    def __call__(self, bday: int) -> float:
+    def __call__(self, bday: int | ArrayLike) -> float | pl.Series:
         """
         Allows the instance to be called as a function to perform interpolation.
 

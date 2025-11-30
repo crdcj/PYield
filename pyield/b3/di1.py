@@ -253,7 +253,7 @@ def interpolate_rates(
             0.13881
         ]
 
-        >>> # With extrapolation set to False, the second rate will be NaN
+        >>> # With extrapolation set to False, the second rate will be null
         >>> # Note: 0.13576348733268917 is shown as 0.135763
         >>> di1.interpolate_rates(
         ...     dates="25-04-2025",
@@ -264,7 +264,7 @@ def interpolate_rates(
         Series: 'FlatFwdRate' [f64]
         [
             0.135763
-            NaN
+            null
         ]
 
     Raises:
@@ -288,6 +288,8 @@ def interpolate_rates(
         return pl.Series(dtype=pl.Float64)
 
     s_bdays = bday.count(dfi["TradeDate"], dfi["ExpirationDate"])
+
+    # Inicializa FlatFwdRate como None
     dfi = dfi.with_columns(BDaysToExp=s_bdays, FlatFwdRate=None)
 
     # Load DI rates dataset filtered by the provided reference dates
@@ -321,8 +323,8 @@ def interpolate_rates(
             .alias("FlatFwdRate")
         )
 
-    # Return the series with interpolated rates
-    return dfi.get_column("FlatFwdRate")
+    # Return the interpolated rates with nulls where interpolation was not possible
+    return dfi.get_column("FlatFwdRate").fill_nan(None)
 
 
 def interpolate_rate(
