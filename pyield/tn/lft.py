@@ -146,3 +146,27 @@ def premium(lft_rate: float, di_rate: float) -> float:
     ltt_factor = (lft_rate + 1) ** (1 / 252)
     di_factor = (di_rate + 1) ** (1 / 252)
     return (ltt_factor * di_factor - 1) / (di_factor - 1)
+
+
+def price(
+    vna: float,
+    quotation: float,
+) -> float:
+    """
+    Calculate the LFT price using Brazilian Treasury rules.
+
+    Args:
+        vna (float): The nominal value of the LFT bond.
+        quotation (float): The LFT quotation in base 100.
+    Returns:
+        float: The LFT price truncated to 6 decimal places.
+
+    References:
+         - SEI Proccess 17944.005214/2024-09
+
+    Examples:
+        >>> from pyield import lft
+        >>> lft.price(15785.324502, 99.9291)
+        15774.132706
+    """
+    return tools.truncate(vna * quotation / 100, 6)

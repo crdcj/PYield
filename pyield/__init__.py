@@ -5,7 +5,7 @@ from pyield.__about__ import __version__
 from pyield.b3 import di1, futures
 from pyield.fwd import forward, forwards
 from pyield.interpolator import Interpolator
-from pyield.tn import lft, ltn, ntnb, ntnc, ntnf, pre
+from pyield.tn import lft, ltn, ntnb, ntnb1, ntnbprinc, ntnc, ntnf, pre
 
 __all__ = [
     "__version__",
@@ -23,6 +23,8 @@ __all__ = [
     "lft",
     "ltn",
     "ntnb",
+    "ntnbprinc",
+    "ntnb1",
     "ntnc",
     "ntnf",
     "pre",
