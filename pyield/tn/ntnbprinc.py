@@ -72,8 +72,8 @@ def dv01(
 
     Examples:
         >>> from pyield import ntnbprinc as bp
-        >>> bp.dv01("26-03-2025", "01-01-2032", 0.150970, 1000)
-        0.2269059999999854
+        >>> bp.dv01("02-12-2025", "15-05-2029", 0.0777, 4567.033825)
+        1.1200559999997495
     """
     price1 = price(settlement, maturity, rate, face_value)
     price2 = price(settlement, maturity, rate + 0.0001, face_value)

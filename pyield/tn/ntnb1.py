@@ -75,9 +75,8 @@ def payment_dates(
 
     Examples:
         >>> from pyield import ntnb1
-        >>> ntnb1.payment_dates(
-        ...     "10-05-2024", "15-12-2050", ntnb1.CommercialName.RENDA_MAIS
-        ... )
+        >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
+        >>> ntnb1.payment_dates("10-05-2024", "15-12-2050", r_mais)
         shape: (240,)
         Series: 'payment_dates' [date]
         [
@@ -95,7 +94,7 @@ def payment_dates(
         ]
     """
     if has_nullable_args(settlement, maturity, commercial_name):
-        return pl.Series("payment_dates", [])
+        return pl.Series("payment_dates", dtype=pl.Date)
 
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
@@ -110,42 +109,13 @@ def payment_dates(
     _, _, n_amortizations = _get_bond_parameters(commercial_name)
 
     amtz_dates = [maturity - pd.DateOffset(months=i) for i in range(n_amortizations)]
-    amtz_dates = [d.date() for d in amtz_dates]
-    amtz_dates = [d for d in amtz_dates if d > settlement]
 
     if len(amtz_dates) == 0:
         raise ValueError("No amortization dates found after settlement date.")
 
-    return pl.Series("payment_dates", amtz_dates).sort()
+    s_pmt_dates = pl.Series(name="payment_dates", values=amtz_dates).cast(pl.Date)
 
-
-def price(
-    vna: float,
-    quotation: float,
-) -> float:
-    """
-    Calculate the NTN-B1 price using Brazilian Treasury rules.
-
-    Args:
-        vna (float): The nominal value of the NTN-B bond.
-        quotation (float): The NTN-B quotation in base 100.
-
-    Returns:
-        float: The NTN-B1 price truncated to 6 decimal places.
-
-    References:
-         - SEI Proccess 17944.005214/2024-09
-
-    Examples:
-        >>> from pyield import ntnb1
-        >>> ntnb1.price(4299.160173, 99.3651 / 100)
-        4271.864805
-        >>> ntnb1.price(4315.498383, 100.6409 / 100)
-        4343.156412
-    """
-    if has_nullable_args(vna, quotation):
-        return float("nan")
-    return bt.truncate(vna * quotation, 6)
+    return s_pmt_dates.filter(s_pmt_dates > settlement).sort()
 
 
 def cash_flows(
@@ -170,9 +140,8 @@ def cash_flows(
 
     Examples:
         >>> from pyield import ntnb1
-        >>> ntnb1.cash_flows(
-        ...     "10-05-2024", "15-12-2060", ntnb1.CommercialName.RENDA_MAIS
-        ... )
+        >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
+        >>> ntnb1.cash_flows("10-05-2024", "15-12-2060", r_mais)
         shape: (240, 2)
         ┌─────────────┬──────────┐
         │ PaymentDate ┆ CashFlow │
@@ -219,49 +188,6 @@ def cash_flows(
     return df
 
 
-def duration(
-    settlement: DateLike,
-    maturity: DateLike,
-    rate: float,
-    commercial_name: CommercialName,
-) -> float:
-    """
-    Calculate the Macaulay duration of the NTN-B bond in business years.
-
-    Args:
-        settlement (DateScalar): The settlement date of the operation.
-        maturity (DateScalar): The maturity date of the NTN-B bond.
-        rate (float): The discount rate used to calculate the duration.
-        commercial_name (CommercialName): The commercial name of the NTN-B1 bond
-            (Renda+ or Educa+).
-
-    Returns:
-        float: The Macaulay duration of the NTN-B bond in business years.
-
-    Examples:
-        >>> from pyield import ntnb1
-        >>> ntnb1.duration(
-        ...     "23-06-2025", "15-12-2084", 0.0686, ntnb1.CommercialName.RENDA_MAIS
-        ... )
-        47.10493458167134
-    """
-    # Return NaN if any input is NaN
-    if has_nullable_args(settlement, maturity, rate, commercial_name):
-        return float("nan")
-
-    # Validate and normalize dates
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
-
-    df = cash_flows(settlement, maturity, commercial_name)
-    by = bday.count(settlement, df["PaymentDate"]) / 252
-    dcf = df["CashFlow"] / (1 + rate) ** by
-    duration = (dcf * by).sum() / dcf.sum()
-
-    # Return the duration as native float
-    return duration
-
-
 def quotation(
     settlement: DateLike,
     maturity: DateLike,
@@ -287,9 +213,8 @@ def quotation(
 
     Examples:
         >>> from pyield import ntnb1
-        >>> ntnb1.quotation(
-        ...     "18-06-2025", "15-12-2084", 0.07010, ntnb1.CommercialName.RENDA_MAIS
-        ... )
+        >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
+        >>> ntnb1.quotation("18-06-2025", "15-12-2084", 0.07010, r_mais)
         0.038332
     """
     cf_df = cash_flows(settlement, maturity, commercial_name)
@@ -297,10 +222,10 @@ def quotation(
     cf_values = cf_df["CashFlow"]
 
     # Calculate the number of business days between settlement and cash flow dates
-    bdays = bday.count(settlement, cf_dates)
+    b_days = bday.count(settlement, cf_dates)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = bt.truncate(bdays / 252, 14)
+    num_of_years = bt.truncate(b_days / 252, 14)
 
     discount_factor = (1 + rate) ** num_of_years
 
@@ -309,6 +234,73 @@ def quotation(
 
     # Return the quotation (the dcf sum) truncated as per Anbima rules
     return bt.truncate(cf_present_value.sum(), 6)
+
+
+def price(
+    vna: float,
+    quotation: float,
+) -> float:
+    """
+    Calculate the NTN-B1 price using Brazilian Treasury rules.
+
+    Args:
+        vna (float): The nominal value of the NTN-B bond.
+        quotation (float): The NTN-B quotation in base 100.
+
+    Returns:
+        float: The NTN-B1 price truncated to 6 decimal places.
+
+    References:
+         - SEI Proccess 17944.005214/2024-09
+
+    Examples:
+        >>> from pyield import ntnb1
+        >>> ntnb1.price(4299.160173, 99.3651 / 100)
+        4271.864805
+        >>> ntnb1.price(4315.498383, 100.6409 / 100)
+        4343.156412
+    """
+    if has_nullable_args(vna, quotation):
+        return float("nan")
+    return bt.truncate(vna * quotation, 6)
+
+
+def duration(
+    settlement: DateLike,
+    maturity: DateLike,
+    rate: float,
+    commercial_name: CommercialName,
+) -> float:
+    """
+    Calculate the Macaulay duration of the NTN-B bond in business years.
+
+    Args:
+        settlement (DateScalar): The settlement date of the operation.
+        maturity (DateScalar): The maturity date of the NTN-B bond.
+        rate (float): The discount rate used to calculate the duration.
+        commercial_name (CommercialName): The commercial name of the NTN-B1 bond
+            (Renda+ or Educa+).
+
+    Returns:
+        float: The Macaulay duration of the NTN-B bond in business years.
+
+    Examples:
+        >>> from pyield import ntnb1
+        >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
+        >>> ntnb1.duration("23-06-2025", "15-12-2084", 0.0686, r_mais)
+        47.10493458167134
+    """
+    # Return NaN if any input is nullable
+    if has_nullable_args(settlement, maturity, rate, commercial_name):
+        return float("nan")
+
+    df = cash_flows(settlement, maturity, commercial_name)
+    s_byears = bday.count(settlement, df["PaymentDate"]) / 252
+    s_dcf = df["CashFlow"] / (1 + rate) ** s_byears
+    duration = (s_dcf * s_byears).sum() / s_dcf.sum()
+
+    # Truncate duration to 14 decimal places for result reproducibility
+    return bt.truncate(duration, 14)
 
 
 def dv01(
@@ -338,9 +330,10 @@ def dv01(
             increase in yield.
 
     Examples:
-        >>> from pyield import ntnb
-        >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, 4470.979474)
-        4.640875999999935
+        >>> from pyield import ntnb1
+        >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
+        >>> ntnb1.dv01("23-06-2025", "15-12-2084", 0.0686, 4299.160173, r_mais)
+        0.7738490000000127
     """
     if has_nullable_args(settlement, maturity, rate, vna, commercial_name):
         return float("nan")
@@ -349,4 +342,4 @@ def dv01(
     quotation2 = quotation(settlement, maturity, rate + 0.0001, commercial_name)
     price1 = price(vna, quotation1)
     price2 = price(vna, quotation2)
-    return bt.truncate(price1 - price2, 2)
+    return price1 - price2
