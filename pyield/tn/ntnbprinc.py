@@ -38,9 +38,9 @@ def price(
     bdays = bday.count(settlement, maturity)
 
     # Calculate the number of periods truncated as per Anbima rule
-    num_of_years = tools.truncate(bdays / 252, 14)
+    byears = tools.truncate(bdays / 252, 14)
 
-    discount_factor = (1 + rate) ** num_of_years
+    discount_factor = (1 + rate) ** byears
 
     # Truncate the price to 6 decimal places as per Anbima rules
     return tools.truncate(face_value / discount_factor, 6)

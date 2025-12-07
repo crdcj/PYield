@@ -135,7 +135,7 @@ def _generate_all_coupon_dates(
     # Offset dates to the 15th
     coupon_dates = coupon_dates.dt.offset_by("14d")
 
-    # First coupon date must be after the reference date
+    # First coupon date must be after the start date
     return coupon_dates.filter(coupon_dates > start)
 
 
@@ -162,7 +162,7 @@ def payment_dates(
         >>> from pyield import ntnb
         >>> ntnb.payment_dates("10-05-2024", "15-05-2025")
         shape: (3,)
-        Series: '' [date]
+        Series: 'payment_dates' [date]
         [
             2024-05-15
             2024-11-15
@@ -185,7 +185,7 @@ def payment_dates(
         coupon_date -= pd.DateOffset(months=6)
         coupon_date = coupon_date.date()
 
-    return pl.Series(coupon_dates).sort()
+    return pl.Series(name="payment_dates", values=coupon_dates).sort()
 
 
 def cash_flows(
@@ -231,7 +231,9 @@ def cash_flows(
     if p_dates.is_empty():
         return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
 
-    df = pl.DataFrame({"PaymentDate": p_dates}).with_columns(
+    df = pl.DataFrame(
+        {"PaymentDate": p_dates},
+    ).with_columns(
         pl.when(pl.col("PaymentDate") == maturity)
         .then(FINAL_PMT)
         .otherwise(COUPON_PMT)
@@ -274,20 +276,20 @@ def quotation(
         >>> ntnb.quotation("15-08-2024", "15-08-2032", 0.05929)
         100.6409
     """
-    cf_df = cash_flows(settlement, maturity)
-    if cf_df.is_empty():
+    df_cf = cash_flows(settlement, maturity)
+    if df_cf.is_empty():
         return float("nan")
 
-    cf_dates = cf_df["PaymentDate"]
-    cf_values = cf_df["CashFlow"]
+    cf_dates = df_cf["PaymentDate"]
+    cf_values = df_cf["CashFlow"]
 
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement, cf_dates)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = tl.truncate(bdays / 252, 14)
+    byears = tl.truncate(bdays / 252, 14)
 
-    discount_factor = (1 + rate) ** num_of_years
+    discount_factor = (1 + rate) ** byears
 
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
     cf_present_value = (cf_values / discount_factor).round(10)

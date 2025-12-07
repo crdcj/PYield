@@ -113,9 +113,9 @@ def payment_dates(
     if len(amtz_dates) == 0:
         raise ValueError("No amortization dates found after settlement date.")
 
-    s_pmt_dates = pl.Series(name="payment_dates", values=amtz_dates).cast(pl.Date)
+    pmt_dates = pl.Series(name="payment_dates", values=amtz_dates).cast(pl.Date)
 
-    return s_pmt_dates.filter(s_pmt_dates > settlement).sort()
+    return pmt_dates.filter(pmt_dates > settlement).sort()
 
 
 def cash_flows(

@@ -107,7 +107,7 @@ def payment_dates(
         >>> from pyield import ntnf
         >>> ntnf.payment_dates("15-05-2024", "01-01-2027")
         shape: (6,)
-        Series: '' [date]
+        Series: 'payment_dates' [date]
         [
             2024-07-01
             2025-01-01
@@ -138,7 +138,7 @@ def payment_dates(
         coupon_date -= pd.DateOffset(months=6)
         coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
 
-    return pl.Series(coupon_dates).sort()
+    return pl.Series(name="payment_dates", values=coupon_dates).sort()
 
 
 def cash_flows(
@@ -184,14 +184,16 @@ def cash_flows(
     maturity = cv.convert_dates(maturity)
 
     # Get the payment dates between the settlement and maturity dates
-    pay_dates = payment_dates(settlement, maturity)
+    pmt_dates = payment_dates(settlement, maturity)
 
     # Return empty DataFrame if no payment dates (settlement >= maturity)
-    if pay_dates.is_empty():
+    if pmt_dates.is_empty():
         return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
 
     # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
-    df = pl.DataFrame(data={"PaymentDate": pay_dates}).with_columns(
+    df = pl.DataFrame(
+        data={"PaymentDate": pmt_dates},
+    ).with_columns(
         pl.when(pl.col("PaymentDate") == maturity)
         .then(FINAL_PMT)
         .otherwise(COUPON_PMT)
@@ -199,7 +201,7 @@ def cash_flows(
     )
 
     if adj_payment_dates:
-        adj_pay_dates = bday.offset(pay_dates, 0)
+        adj_pay_dates = bday.offset(pmt_dates, 0)
         df = df.with_columns(PaymentDate=adj_pay_dates)
     return df
 
@@ -236,12 +238,12 @@ def price(
     if has_nullable_args(settlement, maturity, rate):
         return float("nan")
 
-    cf_df = cash_flows(settlement, maturity)
-    if cf_df.is_empty():
+    df_cf = cash_flows(settlement, maturity)
+    if df_cf.is_empty():
         return float("nan")
 
-    cf_values = cf_df["CashFlow"]
-    bdays = bday.count(settlement, cf_df["PaymentDate"])
+    cf_values = df_cf["CashFlow"]
+    bdays = bday.count(settlement, df_cf["PaymentDate"])
     byears = tools.truncate(bdays / 252, 14)
     discount_factors = (1 + rate) ** byears
     # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
