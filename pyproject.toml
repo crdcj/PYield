@@ -14,9 +14,8 @@ classifiers = [
     "Topic :: Office/Business :: Financial :: Investment",
 ]
 dependencies = [
-    "pandas[html, parquet]>=2.0.0",    
-    "numpy>=2.0.0",
-    "polars>=1.33.0",
+    "polars[numpy, pyarrow]>=1.33.0",
+    "pandas[html]>=2.0.0",    
     "requests>=2.31.0",
     "tenacity>=9.0.0",
 ]
@@ -35,8 +34,7 @@ dev = [
     "mkdocs-material",
     "mkdocstrings[python]",
     "mkdocs-autorefs",
-    "types-requests",
-    "pandas-stubs",
+    "types-requests",    
     "lxml-stubs",
 ]
 
