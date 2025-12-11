@@ -105,6 +105,7 @@ def payment_dates(
     """
     if has_nullable_args(settlement, maturity):
         return pl.Series(dtype=pl.Date)
+
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -168,6 +169,9 @@ def cash_flows(
         │ 2031-01-01  ┆ 105.830052 │
         └─────────────┴────────────┘
     """
+    if has_nullable_args(settlement, maturity):
+        return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
+
     # Validate and normalize dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -221,6 +225,9 @@ def quotation(
         >>> ntnc.quotation("21-03-2025", "01-01-2031", 0.067626)
         126.4958
     """
+    if has_nullable_args(settlement, maturity, rate):
+        return float("nan")
+
     cf_df = cash_flows(settlement, maturity)
     if cf_df.is_empty():
         return float("nan")
@@ -293,6 +300,9 @@ def duration(
         >>> ntnc.duration("21-03-2025", "01-01-2031", 0.067626)
         4.405363320448
     """
+    if has_nullable_args(settlement, maturity, rate):
+        return float("nan")
+
     df = cash_flows(settlement, maturity)
     if df.is_empty():
         return float("nan")

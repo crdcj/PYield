@@ -217,6 +217,9 @@ def quotation(
         >>> ntnb1.quotation("18-06-2025", "15-12-2084", 0.07010, r_mais)
         0.038332
     """
+    if has_nullable_args(settlement, maturity, rate, commercial_name):
+        return float("nan")
+
     cf_df = cash_flows(settlement, maturity, commercial_name)
     cf_dates = cf_df["PaymentDate"]
     cf_values = cf_df["CashFlow"]

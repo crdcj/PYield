@@ -4,15 +4,6 @@ Documentação da API do BC
 Exemplo de chamada:
     "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='2025-04-08'&@dataMovimentoFim='2025-04-08'&$top=100&$format=json"
 
-Examplo de retorno da API:
-
-id                             , dataMovimento      , dataLiquidacao     , edital, tipoPublico, prazo, quantidadeOfertada, quantidadeAceita, codigoTitulo, dataVencimento     , tipoOferta, ofertante       , quantidadeOfertadaSegundaRodada, quantidadeAceitaSegundaRodada, cotacaoMedia  , cotacaoCorte  , taxaMedia, taxaCorte, financeiro
-9fe0a3ed0ae043f545d8918000005d , 2025-08-28 00:00:00, 2025-08-29 00:00:00,    202, TodoMercado,  2316,            3000000,          3000000,       100000, 2032-01-01 00:00:00, Venda     , Tesouro Nacional,                          750000,                             0, "443,791682"  , "443,791682"  , "13,7599", "13,7599",   "1331,4"
-9fe0a3ed0ae043f545d8918000005e , 2025-08-28 00:00:00, 2025-08-29 00:00:00,    203, TodoMercado,  1951,            1000000,          1000000,       950199, 2031-01-01 00:00:00, Venda     , Tesouro Nacional,                          250000,                             0, "887,706572"  , "887,706572"  , "13,703" , "13,703" ,    "887,7"
-9fe0a3ed0ae043f545d8918000005c , 2025-08-28 00:00:00, 2025-08-29 00:00:00,    202, TodoMercado,  1402,            6000000,          6000000,       100000, 2029-07-01 00:00:00, Venda     , Tesouro Nacional,                         1500000,                             0, "620,124125"  , "620,116199"  , "13,3786", "13,379" ,   "3720,7"
-9fe0a3ed0ae043f545d8918000005f , 2025-08-28 00:00:00, 2025-08-29 00:00:00,    203, TodoMercado,  3412,             300000,           300000,       950199, 2035-01-01 00:00:00, Venda     , Tesouro Nacional,                           75000,                         42426, "825,382124"  , "825,382124"  , "13,928" , "13,928" ,    "282,7"
-9fe0a3ed0ae043f545d8918000005b , 2025-08-28 00:00:00, 2025-08-29 00:00:00,    202, TodoMercado,   763,            6000000,          6000000,       100000, 2027-10-01 00:00:00, Venda     , Tesouro Nacional,                         1500000,                             0, "769,543353"  , "769,439322"  , "13,4259", "13,4333",   "4617,3"
-9fe09a766d18e3de0ac228c80000c5a, 2025-08-28 00:00:00, 2025-08-29 00:00:00,    202, TodoMercado,   398,            2000000,           960000,       100000, 2026-10-01 00:00:00, Venda     , Tesouro Nacional,                               0,                             0, "865,527516"  , "865,432896"  , "14,2045", "14,216" ,    "830,9"
 """  # noqa: E501
 
 import datetime as dt
@@ -56,8 +47,10 @@ NAME_MAPPING = {
     "taxaCorte": "CutRate",
     "quantidadeOfertada": "OfferedQuantityFR",
     "quantidadeAceita": "AcceptedQuantityFR",
+    "quantidadeLiquidada": "SettledQuantityFR",
     "quantidadeOfertadaSegundaRodada": "OfferedQuantitySR",
     "quantidadeAceitaSegundaRodada": "AcceptedQuantitySR",
+    "quantidadeLiquidadaSegundaRodada": "SettledQuantitySR",
     "financeiro": "Value",  # = FR + SR (in millions)
 }
 
@@ -82,6 +75,8 @@ API_SCHEMA = {
     "taxaMedia": pl.Float64,
     "taxaCorte": pl.Float64,
     "financeiro": pl.Float64,
+    "quantidadeLiquidada": pl.Int64,
+    "quantidadeLiquidadaSegundaRodada": pl.Int64,
 }
 
 BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
@@ -135,7 +130,7 @@ def _parse_csv(csv_text: str) -> pl.DataFrame:
     )
     # Converte os campos datetime para Date (mantemos apenas a data).
     df = df.with_columns(
-        pl.col(["dataMovimento", "dataLiquidacao", "dataVencimento"]).cast(pl.Date)
+        pl.col("dataMovimento", "dataLiquidacao", "dataVencimento").cast(pl.Date)
     )
     return df
 
@@ -167,18 +162,16 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     # E calcular o financeiro da FR e SR com base na proporção das quantidades.
     df = (
         df.with_columns(
-            # 1. Calcula as quantidades totais, tratando nulos automaticamente.
-            pl.sum_horizontal("OfferedQuantityFR", "OfferedQuantitySR").alias(
-                "OfferedQuantity"
+            # Converte o valor financeiro de milhões para unidades e tipo inteiro
+            (pl.col("Value") * 1_000_000).round(0).cast(pl.Int64),
+            # Converte as taxas de % para decimais
+            (pl.col("AvgRate", "CutRate") / 100).round(6),
+            # Calcula as quantidades totais, tratando nulos automaticamente.
+            OfferedQuantity=pl.sum_horizontal("OfferedQuantityFR", "OfferedQuantitySR"),
+            AcceptedQuantity=pl.sum_horizontal(
+                "AcceptedQuantityFR", "AcceptedQuantitySR"
             ),
-            pl.sum_horizontal("AcceptedQuantityFR", "AcceptedQuantitySR").alias(
-                "AcceptedQuantity"
-            ),
-            # 2. Converte o valor financeiro de milhões para unidades e tipo inteiro
-            (pl.col("Value") * 1_000_000).round(0).cast(pl.Int64).alias("Value"),
-            # 3. Converte as taxas de % para decimais
-            (pl.col("AvgRate") / 100).round(6).alias("AvgRate"),
-            (pl.col("CutRate") / 100).round(6).alias("CutRate"),
+            SettledQuantity=pl.sum_horizontal("SettledQuantityFR", "SettledQuantitySR"),
         )
         .with_columns(
             # 5. Calcula o valor financeiro da primeira rodada (ValueFR)
@@ -271,9 +264,9 @@ def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
 
     df = df.with_columns(
         # 2. Criar as colunas DV01 multiplicando a expressão base pelas quantidades.
-        (dv01_unit_expr * pl.col("AcceptedQuantity")).alias("DV01"),
-        (dv01_unit_expr * pl.col("AcceptedQuantityFR")).alias("DV01FR"),
-        (dv01_unit_expr * pl.col("AcceptedQuantitySR")).alias("DV01SR"),
+        DV01=dv01_unit_expr * pl.col("AcceptedQuantity"),
+        DV01FR=dv01_unit_expr * pl.col("AcceptedQuantityFR"),
+        DV01SR=dv01_unit_expr * pl.col("AcceptedQuantitySR"),
     )
 
     return df
@@ -296,7 +289,7 @@ def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pl.DataFrame:
         return pl.DataFrame()
 
     # Converte para Polars, seleciona, renomeia e ordena (importante para join_asof)
-    return df.select(["Date", "MidRate"]).rename({"MidRate": "PTAX"}).sort("Date")
+    return df.select("Date", "MidRate").rename({"MidRate": "PTAX"}).sort("Date")
 
 
 def _add_usd_dv01(df: pl.DataFrame) -> pl.DataFrame:
@@ -304,8 +297,8 @@ def _add_usd_dv01(df: pl.DataFrame) -> pl.DataFrame:
     Adiciona o DV01 em USD usando um join_asof para encontrar a PTAX mais recente.
     """
     # Determina o intervalo de datas necessário a partir do DataFrame de leilões
-    ptax_start_date = df.get_column("Date").min()
-    ptax_end_date = df.get_column("Date").max()
+    ptax_start_date = df["Date"].min()
+    ptax_end_date = df["Date"].max()
 
     # Busca o DataFrame da PTAX
     df_ptax = _get_ptax_df(start_date=ptax_start_date, end_date=ptax_end_date)
@@ -360,6 +353,9 @@ def _sort_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
         "DV01FRUSD",
         "DV01SRUSD",
         "DV01USD",
+        "SettledQuantityFR",
+        "SettledQuantitySR",
+        "SettledQuantity",
         "OfferedQuantityFR",
         "OfferedQuantitySR",
         "OfferedQuantity",
@@ -432,7 +428,7 @@ def auctions(
     Examples:
         >>> from pyield import bc
         >>> bc.auctions(start="19-08-2025", end="19-08-2025")
-        shape: (5, 30)
+        shape: (5, 33)
         ┌────────────┬────────────┬─────────────┬───────────┬───┬──────────────────┬─────────────┬──────────┬─────────────┐
         │ Date       ┆ Settlement ┆ AuctionType ┆ Ordinance ┆ … ┆ AcceptedQuantity ┆ ValueFR     ┆ ValueSR  ┆ Value       │
         │ ---        ┆ ---        ┆ ---         ┆ ---       ┆   ┆ ---              ┆ ---         ┆ ---      ┆ ---         │
@@ -478,6 +474,9 @@ def auctions(
         - AcceptedQuantityFR: Quantidade aceita na primeira rodada (FR).
         - AcceptedQuantitySR: Quantidade aceita na segunda rodada (SR).
         - AcceptedQuantity: Quantidade total aceita no leilão (FR + SR).
+        - SettledQuantityFR: Quantidade liquidada na primeira rodada (FR).
+        - SettledQuantitySR: Quantidade liquidada na segunda rodada (SR).
+        - SettledQuantity: Quantidade total liquidada no leilão (FR + SR
         - ValueFR: Valor da primeira rodada (FR) do leilão em R$.
         - ValueSR: Valor da segunda rodada (SR) em R$.
         - Value: Valor total do leilão em R$ (FR + SR).

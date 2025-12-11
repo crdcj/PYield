@@ -756,6 +756,9 @@ def duration(
         >>> ntnf.duration(None, "01-01-2035", 0.121785)
         nan
     """
+    if has_nullable_args(settlement, maturity, rate):
+        return float("nan")
+
     df = cash_flows(settlement, maturity)
     if df.is_empty():
         return float("nan")
@@ -797,6 +800,9 @@ def dv01(
         >>> ntnf.dv01("", "01-01-2035", 0.151375)
         nan
     """
+    if has_nullable_args(settlement, maturity, rate):
+        return float("nan")
+
     price1 = price(settlement, maturity, rate)
     price2 = price(settlement, maturity, rate + 0.0001)
     return price1 - price2

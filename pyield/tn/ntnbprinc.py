@@ -75,6 +75,9 @@ def dv01(
         >>> bp.dv01("02-12-2025", "15-05-2029", 0.0777, 4567.033825)
         1.1200559999997495
     """
+    if has_nullable_args(settlement, maturity, rate, face_value):
+        return float("nan")
+
     price1 = price(settlement, maturity, rate, face_value)
     price2 = price(settlement, maturity, rate + 0.0001, face_value)
     return price1 - price2

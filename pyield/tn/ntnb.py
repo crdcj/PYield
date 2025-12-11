@@ -171,6 +171,7 @@ def payment_dates(
     """
     if has_nullable_args(settlement, maturity):
         return pl.Series(dtype=pl.Date)
+
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
 
@@ -222,6 +223,9 @@ def cash_flows(
         │ 2025-05-15  ┆ 102.956301 │
         └─────────────┴────────────┘
     """
+    if has_nullable_args(settlement, maturity):
+        return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
+
     # Get the coupon dates between the settlement and maturity dates
     settlement = cv.convert_dates(settlement)
     maturity = cv.convert_dates(maturity)
@@ -276,6 +280,9 @@ def quotation(
         >>> ntnb.quotation("15-08-2024", "15-08-2032", 0.05929)
         100.6409
     """
+    if has_nullable_args(settlement, maturity, rate):
+        return float("nan")
+
     df_cf = cash_flows(settlement, maturity)
     if df_cf.is_empty():
         return float("nan")
@@ -659,9 +666,13 @@ def duration(
          >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
          15.08305431313046
     """
+    if has_nullable_args(settlement, maturity, rate):
+        return float("nan")
+
     df = cash_flows(settlement, maturity)
     if df.is_empty():
         return float("nan")
+
     byears = bday.count(settlement, df["PaymentDate"]) / 252
     dcf = df["CashFlow"] / (1 + rate) ** byears
     duration = (dcf * byears).sum() / dcf.sum()
@@ -697,6 +708,9 @@ def dv01(
         >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, 4470.979474)
         4.640875999999935
     """
+    if has_nullable_args(settlement, maturity, rate, vna):
+        return float("nan")
+
     quotation1 = quotation(settlement, maturity, rate)
     quotation2 = quotation(settlement, maturity, rate + 0.0001)
     price1 = price(vna, quotation1)
@@ -748,6 +762,9 @@ def forwards(
         │ 2060-08-15   ┆ 8722    ┆ 0.073795       ┆ 0.074505    │
         └──────────────┴─────────┴────────────────┴─────────────┘
     """
+    if has_nullable_args(date):
+        return pl.DataFrame()
+
     # Validate and normalize the date
     df = data(date).select("MaturityDate", "BDToMat", "IndicativeRate")
     if zero_coupon:

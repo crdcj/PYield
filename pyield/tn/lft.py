@@ -169,4 +169,6 @@ def price(
         >>> lft.price(15785.324502, 99.9291)
         15774.132706
     """
+    if has_nullable_args(vna, quotation):
+        return float("nan")
     return tools.truncate(vna * quotation / 100, 6)

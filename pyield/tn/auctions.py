@@ -430,11 +430,14 @@ def auction(auction_date: DateLike) -> pl.DataFrame:
         df = _add_dv01_usd(df)
         df = _add_avg_maturity(df)
         df = df.select(FINAL_COLUMN_ORDER)
+
+        # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
+        df = df.with_columns(cs.float().fill_nan(None))
         return df
 
     except requests.exceptions.RequestException as e:
         logger.error(f"An error occurred during the API request: {e}")
         return pl.DataFrame()
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         logger.error(f"An error occurred while parsing the JSON response: {e}")
         return pl.DataFrame()

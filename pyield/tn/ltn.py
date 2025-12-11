@@ -177,6 +177,9 @@ def dv01(
         >>> ltn.dv01(None, "01-01-2032", 0.150970)
         nan
     """
+    if has_nullable_args(settlement, maturity, rate):
+        return float("nan")
+
     price1 = price(settlement, maturity, rate)
     price2 = price(settlement, maturity, rate + 0.0001)
     return price1 - price2

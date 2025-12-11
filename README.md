@@ -247,18 +247,6 @@ Series: 'bdays' [i64]
 ]
 ```
 
-### Pandas Interop
-Polars objects are the canonical return types. Convert explicitly when you need pandas:
-```python
-df_pandas = df.to_pandas(use_pyarrow_extension_array=True)
-series_pandas = s.to_pandas(use_pyarrow_extension_array=True)
-```
-
-### Rationale
-Using Polars + Arrow dtypes provides:
-* Deterministic schema & faster IO
-* Efficient vectorized date casting
-* Clear null vs. missing semantics
-* Reduced overhead vs. repeated Pandas conversions
-
-These conventions keep public APIs flexible on input while consistent on output.
+## Tests
+To run the test suite, use the following command:
+pytest pyield --doctest-modules
