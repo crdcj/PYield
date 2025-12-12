@@ -129,7 +129,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
             # Refazer o cálculo do valor pois ele vem vazio no arquivo
             Value=(pl.col("Quantity") * pl.col("AvgPrice")).round(2),
         )
-        .sort(["SettlementDate", "BondType", "MaturityDate"])
+        .sort("SettlementDate", "BondType", "MaturityDate")
     )
     return df
 

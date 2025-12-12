@@ -496,6 +496,9 @@ def auctions(
         df = _add_usd_dv01(df)
         df = _add_avg_maturity(df)
         df = _sort_and_reorder_columns(df)
+        # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
+        df = df.with_columns(cs.float().fill_nan(None))
+
         return df
     except Exception as e:
         logger.exception(f"Error fetching auction data from BC API: {e}")

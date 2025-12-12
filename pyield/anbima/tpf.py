@@ -16,6 +16,7 @@ import socket
 from typing import Literal
 
 import polars as pl
+import polars.selectors as cs
 import polars.selectors as ps
 import requests
 from requests.exceptions import HTTPError, RequestException
@@ -175,9 +176,9 @@ def _add_duration(df_input: pl.DataFrame) -> pl.DataFrame:
     ]
     # Adiciona a coluna Duration
     df = df_input.with_columns(
-        Duration=pl.struct(colunas_necessarias).map_elements(
-            _calculate_duration_per_row, return_dtype=pl.Float64
-        )
+        pl.struct(colunas_necessarias)
+        .map_elements(_calculate_duration_per_row, return_dtype=pl.Float64)
+        .alias("Duration")
     )
     return df
 
@@ -284,6 +285,8 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
         df = _add_dv01(df, date)
         df = _add_di_rate(df, date)
         df = _custom_sort_and_order(df)
+        # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
+        df = df.with_columns(cs.float().fill_nan(None))
 
         return df
 
@@ -408,7 +411,7 @@ def tpf_data(
         norm_bond_type = _bond_type_mapping(bond_type)
         df = df.filter(pl.col("BondType").is_in(norm_bond_type))
 
-    return df.sort(["ReferenceDate", "BondType", "MaturityDate"])
+    return df.sort("ReferenceDate", "BondType", "MaturityDate")
 
 
 def tpf_maturities(

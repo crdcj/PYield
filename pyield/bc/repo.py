@@ -120,11 +120,11 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
         - prazo_dias_uteis: calculado via calendário de negócios (bday.count).
     """
     df = df.rename(COLUMN_MAPPING).with_columns(
-        (1000 * pl.col("volume_aceito")).alias("volume_aceito"),
+        volume_aceito=1000 * pl.col("volume_aceito"),
         # porcentagem -> fração
-        (pl.col("taxa_corte") / 100).round(6).alias("taxa_corte"),
+        taxa_corte=(pl.col("taxa_corte") / 100).round(6),
         # converte percentual rejeitado original em percentual aceito
-        (100 - pl.col("percentual_corte")).alias("percentual_aceito"),
+        percentual_aceito=100 - pl.col("percentual_corte"),
     )
 
     prazos = bday.count(start=df["data_liquidacao"], end=df["data_retorno"])
@@ -135,14 +135,12 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
 def _handle_zero_volume(df: pl.DataFrame) -> pl.DataFrame:
     """Ajusta a taxa_corte e o percentual_aceito quando volume_aceito = 0."""
     return df.with_columns(
-        pl.when(pl.col("volume_aceito") == 0)
+        taxa_corte=pl.when(pl.col("volume_aceito") == 0)
         .then(None)
-        .otherwise(pl.col("taxa_corte"))
-        .alias("taxa_corte"),
-        pl.when(pl.col("volume_aceito") == 0)
+        .otherwise(pl.col("taxa_corte")),
+        percentual_aceito=pl.when(pl.col("volume_aceito") == 0)
         .then(0)
-        .otherwise(pl.col("percentual_aceito"))
-        .alias("percentual_aceito"),
+        .otherwise(pl.col("percentual_aceito")),
     )
 
 
