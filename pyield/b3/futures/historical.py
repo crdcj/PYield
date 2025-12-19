@@ -6,7 +6,6 @@ import polars as pl
 import requests
 
 from pyield import bday
-from pyield.b3.futures import common
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
@@ -23,6 +22,7 @@ COLUMN_CONFIG = {
     "Preço máximo": (pl.Float64, "MaxValue"),
     "Preço médio": (pl.Float64, "AvgValue"),
     "Preço de fechamento": (pl.Float64, "CloseValue"),
+    "Preço de referência": (pl.Float64, "ReferencePrice"),
     "Última oferta de compra": (pl.Float64, "LastBidValue"),
     "Última oferta de venda": (pl.Float64, "LastAskValue"),
     "Oscilação": (pl.Float64, "Oscillation"),
@@ -40,6 +40,38 @@ CSV_SCHEMA = {k: v[0] for k, v in COLUMN_CONFIG.items()}
 RENAME_MAP = {k: v[1] for k, v in COLUMN_CONFIG.items()}
 
 logger = logging.getLogger(__name__)
+
+
+def add_expiration_date(df: pl.DataFrame, code_column: str, day: int = 1) -> pl.Series:
+    month_map = {
+        "F": 1,
+        "G": 2,
+        "H": 3,
+        "J": 4,
+        "K": 5,
+        "M": 6,
+        "N": 7,
+        "Q": 8,
+        "U": 9,
+        "V": 10,
+        "X": 11,
+        "Z": 12,
+    }
+    df = df.with_columns(
+        pl.date(
+            # Ano: Pega os 2 últimos dígitos -> Int -> Soma 2000
+            year=pl.col(code_column).str.slice(-2).cast(pl.Int32, strict=False) + 2000,
+            # Mês: Pega 1ª letra -> Mapeia -> Int
+            month=pl.col(code_column)
+            .str.slice(0, 1)
+            .replace_strict(month_map, default=None, return_dtype=pl.Int8),
+            day=day,
+        ).alias("ExpirationDate")
+    )
+    # Ajusta para dia útil, se necessário
+    adj_dates = bday.offset(dates=df["ExpirationDate"], offset=0)
+    df = df.with_columns(ExpirationDate=adj_dates)
+    return df
 
 
 @default_retry
@@ -60,14 +92,11 @@ def _fetch_csv_data(date: dt.date) -> str:
         "Accept": "application/json, text/plain, */*",
     }
 
-    try:
-        response = requests.post(url, params=params, json=payload, headers=headers)
-        if response.status_code == requests.codes.ok:
-            return response.text
-        return ""
-    except Exception as e:
-        logger.error(f"Erro na requisição B3: {e}")
-        return ""
+    response = requests.post(
+        url, params=params, json=payload, headers=headers, timeout=(5, 30)
+    )
+    response.raise_for_status()
+    return response.text
 
 
 def _parse_raw_df(csv_data: str) -> pl.DataFrame:
@@ -96,29 +125,17 @@ def _pre_process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
     return df
 
 
-def _process_df(df: pl.DataFrame, date: dt.date, contract_code: str) -> pl.DataFrame:
+def _process_df(
+    df: pl.DataFrame, trade_date: dt.date, contract_code: str
+) -> pl.DataFrame:
     # 1. Datas de Vencimento
-    def _expiration_dates(raw: pl.Series) -> list[dt.date | None]:
-        day = 15 if contract_code == "DAP" else 1
-        return [common.get_expiration_date(code, day) for code in raw.to_list()]
 
-    exp_dates = _expiration_dates(df["ExpirationCode"])
-    bdays_to_exp = bday.count(date, exp_dates)
-
-    # Tratamento seguro para list comprehension com None
-    days_to_exp = []
-    for d in exp_dates:
-        if d:
-            delta = (d - date).days
-            days_to_exp.append(delta)
-        else:
-            days_to_exp.append(None)
+    bdays_to_exp = bday.count(trade_date, df["ExpirationDate"])
 
     df = df.with_columns(
-        pl.Series("ExpirationDate", exp_dates).cast(pl.Date),
-        pl.Series("DaysToExp", days_to_exp).cast(pl.Int64),
         BDaysToExp=bdays_to_exp,
-        TradeDate=date,
+        DaysToExp=(df["ExpirationDate"] - pl.lit(trade_date)).dt.total_days(),
+        TradeDate=trade_date,
     ).filter(pl.col("DaysToExp") > 0)
 
     # 2. Renomeação Dinâmica (Rate vs Price)
@@ -164,33 +181,35 @@ def _process_df(df: pl.DataFrame, date: dt.date, contract_code: str) -> pl.DataF
 
 
 def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
-    all_columns = [
+    # Define a ordem preferida, mas só seleciona o que existe no DF
+    preferred_order = [
         "TradeDate",
         "TickerSymbol",
-        "ISINCode",
-        # "Segment",
         "ExpirationDate",
         "BDaysToExp",
-        "DaysToExp",
-        "OpenContracts",
-        "TradeCount",
-        "TradeVolume",
-        "FinancialVolume",
-        "DV01",
+        # Colunas de Preço (vão existir para DOL, IND, etc)
+        "OpenPrice",
+        "MinPrice",
+        "MaxPrice",
+        "AvgPrice",
+        "ClosePrice",
         "SettlementPrice",
-        # "ReferencePrice",
-        "SettlementRate",
+        # Colunas de Taxa (vão existir para DI1, DAP, etc)
         "OpenRate",
         "MinRate",
-        "AvgRate",
         "MaxRate",
+        "AvgRate",
         "CloseRate",
-        "LastAskRate",
-        "LastBidRate",
+        "SettlementRate",
+        # Métricas Calculadas e Volume
+        "DV01",
         "ForwardRate",
+        "OpenContracts",
+        "FinancialVolume",
     ]
-    selected = [c for c in all_columns if c in df.columns]
-    return df.select(selected)
+
+    existing_cols = [c for c in preferred_order if c in df.columns]
+    return df.select(existing_cols)
 
 
 def fetch_bmf_data(contract_code: str, date: dt.date) -> pl.DataFrame:
@@ -217,6 +236,10 @@ def fetch_bmf_data(contract_code: str, date: dt.date) -> pl.DataFrame:
     df = _pre_process_df(df, contract_code)
     if df.is_empty():
         return pl.DataFrame()
+
+    day = 15 if contract_code == "DAP" else 1
+    df = add_expiration_date(df, code_column="TickerSymbol", day=day)
+
     df = _process_df(df, date, contract_code)
     df = _select_and_reorder_columns(df)
     return df
