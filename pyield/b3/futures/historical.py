@@ -2,7 +2,6 @@ import datetime as dt
 import io
 import logging
 
-import pandas as pd
 import polars as pl
 import requests
 
@@ -11,257 +10,152 @@ from pyield.b3.futures import common
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
+# Lista de contratos que negociam por TAXA (Juros/Cupom)
+# Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.
+RATE_BASED_CONTRACTS = {"DI1", "DAP", "DDI", "FRC", "FRO", "DAP"}
+COLUMN_CONFIG = {
+    "Instrumento financeiro": (pl.String, "TickerSymbol"),
+    "Código ISIN": (pl.String, "ISINCode"),
+    "Segmento": (pl.String, "Segment"),
+    # Lemos como "Value" genérico, pois pode ser Taxa ou Preço
+    "Preço de abertura": (pl.Float64, "OpenValue"),
+    "Preço mínimo": (pl.Float64, "MinValue"),
+    "Preço máximo": (pl.Float64, "MaxValue"),
+    "Preço médio": (pl.Float64, "AvgValue"),
+    "Preço de fechamento": (pl.Float64, "CloseValue"),
+    "Última oferta de compra": (pl.Float64, "LastBidValue"),
+    "Última oferta de venda": (pl.Float64, "LastAskValue"),
+    "Oscilação": (pl.Float64, "Oscillation"),
+    "Ajuste": (pl.Float64, "SettlementPrice"),
+    # "Ajuste de referência" = Taxa (apenas para derivativos de juros)
+    "Ajuste de referência": (pl.Float64, "SettlementRate"),
+    "Variação": (pl.Float64, "Variation"),
+    "Valor do ajuste por contrato (R$)": (pl.Float64, "AdjustmentValuePerContract"),
+    "Quantidade de negócios": (pl.Int64, "TradeCount"),
+    "Quantidade de contratos": (pl.Int64, "OpenContracts"),
+    "Volume financeiro": (pl.Float64, "FinancialVolume"),
+}
+
+CSV_SCHEMA = {k: v[0] for k, v in COLUMN_CONFIG.items()}
+RENAME_MAP = {k: v[1] for k, v in COLUMN_CONFIG.items()}
+
 logger = logging.getLogger(__name__)
-COUNT_CONVENTIONS = {"DAP": 252, "DI1": 252, "DDI": 360}
-BDAYS_PER_YEAR = 252
-CDAYS_PER_YEAR = 360
-
-
-def get_old_expiration_date(expiration_code: str, date: dt.date) -> dt.date | None:
-    """
-    Internal function to convert an old DI contract code into its ExpirationDate date.
-    Valid for contract codes up to 21-05-2006.
-
-    Args:
-        expiration_code (str): An old DI Expiration Code from B3, where the first three
-            letters represent the month and the last digit represents the year.
-            Example: "JAN3".
-        date (dt.date): The trade date for which the contract code is valid.
-
-    Returns:
-        dt.date
-            The contract's ExpirationDate date. Returns None if the input is invalid.
-
-    Examples:
-        >>> get_old_expiration_date("JAN3", dt.date(2001, 5, 21))
-        datetime.date(2003, 1, 2)
-
-    Notes:
-        - In 22-05-2006, B3 changed the format of the DI contract codes. Before that
-        date, the first three letters represented the month and the last digit
-        represented the year.
-    """
-
-    month_codes = {
-        "JAN": 1,
-        "FEV": 2,
-        "MAR": 3,
-        "ABR": 4,
-        "MAI": 5,
-        "JUN": 6,
-        "JUL": 7,
-        "AGO": 8,
-        "SET": 9,
-        "OUT": 10,
-        "NOV": 11,
-        "DEZ": 12,
-    }
-    try:
-        month_code = expiration_code[:3]
-        month = month_codes[month_code]
-
-        # Year codes must generated dynamically, since it depends on the trade date.
-        reference_year = date.year
-        year_codes = {}
-        for year in range(reference_year, reference_year + 10):
-            year_codes[str(year)[-1:]] = year
-        year = year_codes[expiration_code[-1:]]
-
-        expiration_date = dt.date(year, month, 1)
-        # Adjust to the next business day when the date is a weekend or a holiday.
-        # Must use old holiday list, since this contract code was used until 2006.
-        return bday.offset(dates=expiration_date, offset=0)
-
-    except (KeyError, ValueError):
-        return None
-
-
-def _convert_prices_to_rates(
-    prices: pl.Series | pd.Series,
-    days_to_expiration: pl.Series | pd.Series,
-    count_convention: int,
-) -> pl.Series:
-    """Converte preços de futuros DI em taxas usando Polars.
-
-    Aceita Series do Polars ou Pandas e retorna sempre um `pl.Series`.
-    Precisão: 5 casas (equivalente a 3 em %).
-    """
-    # Normaliza para polars
-    if isinstance(prices, pd.Series):
-        prices_pl = pl.Series(prices.name or "price", prices.to_list())
-    else:
-        prices_pl = prices
-    if isinstance(days_to_expiration, pd.Series):
-        du_pl = pl.Series(days_to_expiration.name or "du", days_to_expiration.to_list())
-    else:
-        du_pl = days_to_expiration
-
-    if count_convention == BDAYS_PER_YEAR:
-        rates_expr = (100_000 / prices_pl) ** (BDAYS_PER_YEAR / du_pl) - 1
-    elif count_convention == CDAYS_PER_YEAR:
-        rates_expr = (100_000 / prices_pl - 1) * (CDAYS_PER_YEAR / du_pl)
-    else:
-        raise ValueError("Invalid count_convention. Must be 252 or 360.")
-
-    return pl.Series("rate", rates_expr).round(5)
 
 
 @default_retry
-def _fetch_html_data(contract_code: str, date: dt.date) -> str:
-    url_date = date.strftime("%d/%m/%Y")
-    # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
-    url_base = "https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp"
-    params = {"Data": url_date, "Mercadoria": contract_code, "XLS": "true"}
-    r = requests.get(url_base, params=params, timeout=10)
-    r.raise_for_status()
-    r.encoding = "iso-8859-1"
-    if "VENCTO" not in r.text:
-        logger.warning(
-            "No valid data found for %s on %s. Returning empty text.",
-            contract_code,
-            date.strftime("%d-%m-%Y"),
-        )
+def _fetch_csv_data(date: dt.date) -> str:
+    url = "https://arquivos.b3.com.br/bdi/table/export/csv"
+    params = {"lang": "pt-BR"}
+    date_str = date.strftime("%Y-%m-%d")
+    payload = {
+        "Name": "ConsolidatedTradesDerivatives",
+        "Date": date_str,
+        "FinalDate": date_str,
+        "ClientId": "",
+        "Filters": {},
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",  # noqa E501
+        "Accept": "application/json, text/plain, */*",
+    }
+
+    try:
+        response = requests.post(url, params=params, json=payload, headers=headers)
+        if response.status_code == requests.codes.ok:
+            return response.text
         return ""
-    return r.text
+    except Exception as e:
+        logger.error(f"Erro na requisição B3: {e}")
+        return ""
 
 
-def _parse_raw_df(html_text: str) -> pl.DataFrame:
-    df = pd.read_html(
-        io.StringIO(html_text),
-        match="VENCTO",
-        header=1,
-        thousands=".",
-        decimal=",",
-        na_values=["-"],
-        dtype_backend="pyarrow",
-    )[0]
-    return pl.from_pandas(df)
-
-
-def _pre_process_df(df: pl.DataFrame) -> pl.DataFrame:
-    # Remove rows and columns where all values are null
-    cols = [s.name for s in df if not (s.null_count() == df.height)]
-    df = (
-        df.select(cols)
-        .filter(~pl.all_horizontal(pl.all().is_null()))
-        .with_columns(pl.col("VAR. PTOS.").cast(pl.String))
+def _parse_raw_df(csv_data: str) -> pl.DataFrame:
+    df = pl.read_csv(
+        io.StringIO(csv_data.replace(".", "")),
+        separator=";",
+        skip_lines=2,
+        null_values=["-"],
+        decimal_comma=True,
+        schema=CSV_SCHEMA,
     )
     return df
 
 
-def _adjust_older_contracts_rates(df: pl.DataFrame, rate_cols: list) -> pl.DataFrame:
-    """Adjust legacy DI1 contract pricing (pre-2002) converting prices -> rates."""
-    for col in rate_cols:
-        rate_col = _convert_prices_to_rates(df[col], df["BDaysToExp"], BDAYS_PER_YEAR)
-        df = df.with_columns(col=rate_col)
-    if {"MinRate", "MaxRate"}.issubset(rate_cols):
-        df = (
-            df.with_columns(
-                pl.col("MaxRate").alias("_tmp_max"),
-                pl.col("MinRate").alias("_tmp_min"),
-            )
-            .with_columns(
-                pl.col("_tmp_max").alias("MinRate"),
-                pl.col("_tmp_min").alias("MaxRate"),
-            )
-            .drop(["_tmp_max", "_tmp_min"])
+def _pre_process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
+    # Remove rows and columns where all values are null
+    df = (
+        df.rename(RENAME_MAP, strict=False)
+        .filter(
+            pl.col("TickerSymbol").str.contains(contract_code),
+            pl.col("TickerSymbol").str.len_chars() == 6,  # noqa
         )
+        .with_columns(ExpirationCode=pl.col("TickerSymbol").str.slice(3))
+    )
+
     return df
 
 
-def _rename_columns(df: pl.DataFrame) -> pl.DataFrame:
-    all_columns = {
-        "VENCTO": "ExpirationCode",
-        "CONTR. ABERT.(1)": "OpenContracts",  # At the start of the day
-        "CONTR. FECH.(2)": "OpenContractsEndSession",  # At the end of the day
-        "NÚM. NEGOC.": "TradeCount",
-        "CONTR. NEGOC.": "TradeVolume",
-        "VOL.": "FinancialVolume",
-        "AJUSTE": "SettlementPrice",
-        "AJUSTE ANTER. (3)": "PrevSettlementRate",
-        "AJUSTE CORRIG. (4)": "AdjSettlementRate",
-        "AJUSTE  DE REF.": "SettlementRate",  # FRC
-        "PREÇO MÍN.": "MinRate",
-        "PREÇO MÉD.": "AvgRate",
-        "PREÇO MÁX.": "MaxRate",
-        "PREÇO ABERTU.": "OpenRate",
-        "ÚLT. PREÇO": "CloseRate",
-        "VAR. PTOS.": "PointsVariation",
-        # Attention: bid/ask rates are inverted
-        "ÚLT.OF. COMPRA": "CloseAskRate",
-        "ÚLT.OF. VENDA": "CloseBidRate",
-    }
-    rename_dict = {c: all_columns[c] for c in all_columns if c in df.columns}
-    return df.rename(rename_dict)
-
-
 def _process_df(df: pl.DataFrame, date: dt.date, contract_code: str) -> pl.DataFrame:
-    """Process renamed legacy BMF DataFrame using Polars (parity with old Pandas)."""
-
+    # 1. Datas de Vencimento
     def _expiration_dates(raw: pl.Series) -> list[dt.date | None]:
-        change_date = dt.date(2006, 5, 22)
-        if date < change_date:
-            return [get_old_expiration_date(code, date) for code in raw.to_list()]
         day = 15 if contract_code == "DAP" else 1
         return [common.get_expiration_date(code, day) for code in raw.to_list()]
 
-    # Core columns
     exp_dates = _expiration_dates(df["ExpirationCode"])
-    days_to_exp = [(d - date).days if d else None for d in exp_dates]
     bdays_to_exp = bday.count(date, exp_dates)
+
+    # Tratamento seguro para list comprehension com None
+    days_to_exp = []
+    for d in exp_dates:
+        if d:
+            delta = (d - date).days
+            days_to_exp.append(delta)
+        else:
+            days_to_exp.append(None)
 
     df = df.with_columns(
         pl.Series("ExpirationDate", exp_dates).cast(pl.Date),
         pl.Series("DaysToExp", days_to_exp).cast(pl.Int64),
-        pl.Series("BDaysToExp", bdays_to_exp),
+        BDaysToExp=bdays_to_exp,
         TradeDate=date,
-        TickerSymbol=contract_code + pl.col("ExpirationCode"),
     ).filter(pl.col("DaysToExp") > 0)
 
-    # Zero -> null conversion
-    rate_cols = [c for c in df.columns if "Rate" in c]
-    extra_cols = ["SettlementPrice"] if "SettlementPrice" in df.columns else []
-    adj_cols = rate_cols + extra_cols
-    df = df.with_columns(
-        pl.when(pl.col(adj_cols) == 0)
-        .then(pl.lit(None))
-        .otherwise(pl.col(adj_cols))
-        .name.keep()
-    )
+    # 2. Renomeação Dinâmica (Rate vs Price)
+    # Se for contrato de taxa, as colunas "Value" viram "Rate"
+    # Se for contrato de preço, as colunas "Value" viram "Price"
+    is_rate_based = contract_code in RATE_BASED_CONTRACTS
+    target_suffix = "Rate" if is_rate_based else "Price"
 
-    # Rate transformation
-    switch_date = dt.date(2002, 1, 17)
-    if date <= switch_date and contract_code == "DI1":
-        df = _adjust_older_contracts_rates(df, rate_cols)
-    else:
-        df = df.with_columns((pl.col(rate_cols) / 100).round(5))
+    cols_to_rename = [c for c in df.columns if c.endswith("Value")]
+    rename_dict = {c: c.replace("Value", target_suffix) for c in cols_to_rename}
+    df = df.rename(rename_dict)
 
-    # SettlementRate
-    count_conv = COUNT_CONVENTIONS.get(contract_code)
-    if (
-        count_conv in {BDAYS_PER_YEAR, CDAYS_PER_YEAR}
-        and "SettlementPrice" in df.columns
-    ):
-        du_series = (
-            df["BDaysToExp"] if count_conv == BDAYS_PER_YEAR else df["DaysToExp"]
-        )
-        settlement_rates = _convert_prices_to_rates(
-            df["SettlementPrice"], du_series, count_conv
-        )
-        df = df.with_columns(SettlementRate=settlement_rates)
+    # 3. Tratamento Específico de Taxas
+    if is_rate_based:
+        # Pega todas as colunas que agora terminam em "Rate" (incluindo SettlementRate)
+        rate_cols = [c for c in df.columns if c.endswith("Rate")]
 
-    # DV01
+        # Divide por 100 para transformar percentual em decimal (14.50 -> 0.1450)
+        df = df.with_columns((pl.col(c) / 100).round(6) for c in rate_cols)
+
+    # 4. Cálculo do DV01 (Apenas para DI1 e se tivermos as colunas necessárias)
+    # SettlementPrice aqui já é o PU vindo do CSV (Ex: 99.000)
+    # SettlementRate aqui já é a taxa decimal (Ex: 0.14)
     if (
         contract_code == "DI1"
-        and "SettlementRate" in df.columns
         and "SettlementPrice" in df.columns
+        and "SettlementRate" in df.columns
     ):
-        duration = pl.col("BDaysToExp") / BDAYS_PER_YEAR
+        # DV01 = (Duration / (1 + Taxa)) * PU * 0.0001
+        # Duration Modificada * PU * 1bp
+        duration = pl.col("BDaysToExp") / 252
         m_duration = duration / (1 + pl.col("SettlementRate"))
-        df = df.with_columns(DV01=(0.0001 * m_duration * pl.col("SettlementPrice")))
+        df = df.with_columns(DV01=(m_duration * pl.col("SettlementPrice") * 0.0001))
 
-    # Forward rates
+    # 5. Forward Rates (Para DI1 e DAP)
     if contract_code in {"DI1", "DAP"} and "SettlementRate" in df.columns:
+        # Assume que forwards aceita taxa decimal e dias úteis
         df = df.with_columns(
             ForwardRate=forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
         )
@@ -273,25 +167,26 @@ def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     all_columns = [
         "TradeDate",
         "TickerSymbol",
-        # "ExpirationCode",  # intentionally omitted
+        "ISINCode",
+        # "Segment",
         "ExpirationDate",
         "BDaysToExp",
         "DaysToExp",
         "OpenContracts",
-        # "OpenContractsEndSession" removed for consistency with XML pipeline
         "TradeCount",
         "TradeVolume",
         "FinancialVolume",
         "DV01",
         "SettlementPrice",
+        # "ReferencePrice",
+        "SettlementRate",
         "OpenRate",
         "MinRate",
         "AvgRate",
         "MaxRate",
-        "CloseAskRate",
-        "CloseBidRate",
         "CloseRate",
-        "SettlementRate",
+        "LastAskRate",
+        "LastBidRate",
         "ForwardRate",
     ]
     selected = [c for c in all_columns if c in df.columns]
@@ -315,12 +210,13 @@ def fetch_bmf_data(contract_code: str, date: dt.date) -> pl.DataFrame:
         pl.DataFrame: Processed futures data. If no data is found,
             returns an empty DataFrame.
     """
-    html_text = _fetch_html_data(contract_code, date)
-    if not html_text:
+    csv_text = _fetch_csv_data(date)
+    if not csv_text:
         return pl.DataFrame()
-    df = _parse_raw_df(html_text)
-    df = _pre_process_df(df)
-    df = _rename_columns(df)
+    df = _parse_raw_df(csv_text)
+    df = _pre_process_df(df, contract_code)
+    if df.is_empty():
+        return pl.DataFrame()
     df = _process_df(df, date, contract_code)
     df = _select_and_reorder_columns(df)
     return df
