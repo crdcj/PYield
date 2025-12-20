@@ -66,7 +66,7 @@ def futures(
         ValueError: If the futures contract code is not recognized or supported.
 
     Examples:
-        >>> futures("DI1", "31-05-2024")
+        >>> futures("31-05-2024", "DI1")
         shape: (40, 20)
         ┌────────────┬──────────────┬────────────────┬────────────┬───┬──────────────┬───────────┬────────────────┬─────────────┐
         │ TradeDate  ┆ TickerSymbol ┆ ExpirationDate ┆ BDaysToExp ┆ … ┆ CloseBidRate ┆ CloseRate ┆ SettlementRate ┆ ForwardRate │
@@ -86,7 +86,7 @@ def futures(
         │ 2024-05-31 ┆ DI1F39       ┆ 2039-01-03     ┆ 3656       ┆ … ┆ null         ┆ null      ┆ 0.11887        ┆ 0.11887     │
         └────────────┴──────────────┴────────────────┴────────────┴───┴──────────────┴───────────┴────────────────┴─────────────┘
 
-        >>> futures("DAP", "31-05-2024")
+        >>> futures("31-05-2024", "DAP")
         shape: (22, 19)
         ┌────────────┬──────────────┬────────────────┬────────────┬───┬──────────────┬───────────┬────────────────┬─────────────┐
         │ TradeDate  ┆ TickerSymbol ┆ ExpirationDate ┆ BDaysToExp ┆ … ┆ CloseBidRate ┆ CloseRate ┆ SettlementRate ┆ ForwardRate │

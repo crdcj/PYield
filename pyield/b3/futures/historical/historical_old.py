@@ -97,7 +97,7 @@ def _get_old_expiration_date(date: dt.date, expiration_code: str) -> dt.date | N
             The contract's ExpirationDate date. Returns None if the input is invalid.
 
     Examples:
-        >>> get_old_expiration_date("JAN3", dt.date(2001, 5, 21))
+        >>> _get_old_expiration_date(dt.date(2001, 5, 21), "JAN3")
         datetime.date(2003, 1, 2)
 
     Notes:

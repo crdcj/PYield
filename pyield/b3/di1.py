@@ -98,7 +98,7 @@ def data(
         >>> from pyield import di1
         >>> df = di1.data(dates="16-10-2024", month_start=True)
         >>> df
-        shape: (38, 19)
+        shape: (38, 23)
         ┌────────────┬────────────────┬──────────────┬────────────┬───┬──────────────┬──────────────┬────────────────┬─────────────┐
         │ TradeDate  ┆ ExpirationDate ┆ TickerSymbol ┆ BDaysToExp ┆ … ┆ CloseBidRate ┆ CloseAskRate ┆ SettlementRate ┆ ForwardRate │
         │ ---        ┆ ---            ┆ ---          ┆ ---        ┆   ┆ ---          ┆ ---          ┆ ---            ┆ ---         │
