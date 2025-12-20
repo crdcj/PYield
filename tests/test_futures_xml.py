@@ -5,8 +5,8 @@ import pytest
 from polars.testing import assert_frame_equal
 
 import pyield as yd
+from pyield.b3 import price_report as fx
 from pyield.b3.futures import ContractOptions
-from pyield.b3.futures import xml as fx
 
 
 def prepare_data(
@@ -26,7 +26,7 @@ def prepare_data(
     file_date = f"{year[2:]}{month}{day}"  # YYMMDD
     file_path = Path(f"./tests/data/SPRD{file_date}.zip")
 
-    expected_df = fx.read_xml_report(file_path=file_path, contract_code=contract_code)
+    expected_df = fx.read_price_report(file_path=file_path, contract_code=contract_code)
 
     # Round FinancialVolume to integer (keep as Int64 if present)
     if "FinancialVolume" in expected_df.columns:

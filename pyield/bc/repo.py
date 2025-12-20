@@ -107,7 +107,7 @@ def _read_csv_data(csv_text: str) -> pl.DataFrame:
         io.StringIO(csv_text),
         decimal_comma=True,
         null_values=["null", ""],
-        schema=API_SCHEMA,
+        schema_overrides=API_SCHEMA,
     )
 
 
