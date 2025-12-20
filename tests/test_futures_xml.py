@@ -5,13 +5,12 @@ import pytest
 from polars.testing import assert_frame_equal
 
 import pyield as yd
-from pyield.b3.futures import ContractOptions
-from pyield.b3.futures import xml as fx
+from pyield.b3 import price_report as fx
 
 
 def prepare_data(
-    contract_code: ContractOptions,
     date: str,
+    contract_code: str,
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
     """Prepare Polars DataFrames for comparison.
 
@@ -26,7 +25,7 @@ def prepare_data(
     file_date = f"{year[2:]}{month}{day}"  # YYMMDD
     file_path = Path(f"./tests/data/SPRD{file_date}.zip")
 
-    expected_df = fx.read_xml_report(file_path=file_path, contract_code=contract_code)
+    expected_df = fx.read_price_report(file_path=file_path, contract_code=contract_code)
 
     # Round FinancialVolume to integer (keep as Int64 if present)
     if "FinancialVolume" in expected_df.columns:
@@ -58,29 +57,29 @@ def prepare_data(
 
 
 @pytest.mark.parametrize(
-    ("asset_code", "date"),
+    ("date", "contract_code"),
     [
-        ("DI1", "22-12-2023"),
-        ("FRC", "22-12-2023"),
-        ("DDI", "22-12-2023"),
-        ("DAP", "22-12-2023"),
-        ("DOL", "22-12-2023"),
-        ("WDO", "22-12-2023"),
-        ("IND", "22-12-2023"),
-        ("WIN", "22-12-2023"),
-        ("DI1", "26-04-2024"),
-        ("FRC", "26-04-2024"),
-        ("DDI", "26-04-2024"),
-        ("DAP", "26-04-2024"),
-        ("DOL", "26-04-2024"),
-        ("WDO", "26-04-2024"),
-        ("IND", "26-04-2024"),
-        ("WIN", "26-04-2024"),
+        ("22-12-2023", "DI1"),
+        ("22-12-2023", "FRC"),
+        ("22-12-2023", "DDI"),
+        ("22-12-2023", "DAP"),
+        ("22-12-2023", "DOL"),
+        ("22-12-2023", "WDO"),
+        ("22-12-2023", "IND"),
+        ("22-12-2023", "WIN"),
+        ("26-04-2024", "DI1"),
+        ("26-04-2024", "FRC"),
+        ("26-04-2024", "DDI"),
+        ("26-04-2024", "DAP"),
+        ("26-04-2024", "DOL"),
+        ("26-04-2024", "WDO"),
+        ("26-04-2024", "IND"),
+        ("26-04-2024", "WIN"),
     ],
 )
-def test_fetch_and_prepare_data(asset_code, date):
+def test_fetch_and_prepare_data(date, contract_code):
     """Tests if the asset data fetched matches the expected data read from file."""
-    result_df, expected_df = prepare_data(asset_code, date)
+    result_df, expected_df = prepare_data(date, contract_code)
     assert_frame_equal(
         result_df, expected_df, rel_tol=1e-4, check_exact=False, check_dtypes=True
     )

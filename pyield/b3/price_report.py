@@ -12,26 +12,26 @@ from lxml import etree
 
 import pyield.converters as cv
 from pyield import bday
+from pyield.b3.common import add_expiration_date
 from pyield.fwd import forwards
-from pyield.retry import default_retry
+from pyield.retry import DataNotAvailableError, default_retry
 from pyield.types import DateLike, has_nullable_args
 
 logger = logging.getLogger(__name__)
 
 
-def _get_file_from_path(file_path: Path) -> io.BytesIO:
+def _get_file_from_path(file_path: Path) -> bytes:
     # Check if a file path was not provided
     if not isinstance(file_path, Path):
         raise ValueError("A file path must be provided.")
     if not file_path.exists():
         raise FileNotFoundError(f"No file found at {file_path}.")
 
-    content = file_path.read_bytes()
-    return io.BytesIO(content)
+    return file_path.read_bytes()
 
 
 @default_retry
-def _get_file_from_url(date: dt.date, source_type: str) -> io.BytesIO:
+def _get_zip_data_from_url(date: dt.date, source_type: str) -> bytes:
     """
     Types of XML files available:
     Full Price Report (all assets)
@@ -52,18 +52,23 @@ def _get_file_from_url(date: dt.date, source_type: str) -> io.BytesIO:
     else:
         raise ValueError("Invalid source type. Must be either 'PR' or 'SPR'.")
 
-    response = requests.get(url, timeout=10)
+    response = requests.get(url, timeout=(5, 30))
+    response.raise_for_status()
 
-    # When a the date has no data, the file has less than 22 bytes
-    if len(response.content) < 1024:  # noqa
+    # Checagem de tamanho
+    response_size = len(response.content)
+
+    # Se o arquivo for muito pequeno, consideramos uma falha transiente
+    if response_size < 1024:  # noqa
         date_str = date.strftime("%Y-%m-%d")
-        return io.BytesIO()
+        raise DataNotAvailableError(f"No data available for date {date_str}.")
 
-    return io.BytesIO(response.content)
+    return response.content
 
 
-def _extract_xml_from_zip(zip_file: io.BytesIO) -> io.BytesIO:
+def _extract_xml_from_zip(zip_data: bytes) -> bytes:
     # First, read the outer file
+    zip_file = io.BytesIO(zip_data)
     with zipfile.ZipFile(zip_file, "r") as outer_zip:
         outer_file_name = outer_zip.namelist()[0]
         outer_file_content = outer_zip.read(outer_file_name)
@@ -78,10 +83,10 @@ def _extract_xml_from_zip(zip_file: io.BytesIO) -> io.BytesIO:
         # Unzip last file (the most recent as per B3's name convention)
         inner_file_content = inner_zip.read(xml_filenames[-1])
 
-    return io.BytesIO(inner_file_content)
+    return inner_file_content
 
 
-def _extract_data_from_xml(xml_file: io.BytesIO, asset_code: str) -> list[dict]:
+def _extract_data_from_xml(xml_bytes: bytes, asset_code: str) -> list[dict]:
     parser = etree.XMLParser(
         ns_clean=True,
         remove_blank_text=True,
@@ -91,6 +96,7 @@ def _extract_data_from_xml(xml_file: io.BytesIO, asset_code: str) -> list[dict]:
         no_network=True,
         load_dtd=False,  # Disable DTD loading
     )
+    xml_file = io.BytesIO(xml_bytes)
     tree = etree.parse(xml_file, parser=parser)
 
     # XPath para encontrar elementos cujo texto começa com código do ativo: DI1, FRC...
@@ -208,56 +214,10 @@ def _fill_zero_cols(df: pl.DataFrame) -> pl.DataFrame:
     return df.with_columns(pl.col(cols_to_fill).fill_null(0))
 
 
-def add_expiration_date(df: pl.DataFrame, expiration_day: int) -> pl.DataFrame:
-    """
-    Recebe um DataFrame Polars e ADICIONA a coluna 'ExpirationDate'.
-
-    - Pega a coluna 'TickerSymbol'.
-    - Extrai o código de vencimento.
-    - Converte para a data "bruta", sem ajuste de feriado.
-    - Retorna o DataFrame com a nova coluna.
-    - Sem frescura, sem função de expressão, sem porra nenhuma.
-    """
-    month_codes_map = {
-        "F": 1,
-        "G": 2,
-        "H": 3,
-        "J": 4,
-        "K": 5,
-        "M": 6,
-        "N": 7,
-        "Q": 8,
-        "U": 9,
-        "V": 10,
-        "X": 11,
-        "Z": 12,
-    }
-
-    df = df.with_columns(
-        pl.date(
-            # Ano: 2000 + últimos 2 chars do Ticker (e.g., "25") -> 2025
-            year=("20" + pl.col("TickerSymbol").str.slice(-2)).cast(
-                pl.UInt16, strict=False
-            ),
-            month=(  # Mês: Pega o 4º char do Ticker (e.g., "F") e mapeia pra 1
-                pl.col("TickerSymbol")
-                .str.slice(3, 1)
-                .replace_strict(month_codes_map, return_dtype=pl.UInt8)
-            ),
-            day=expiration_day,  # Dia: Usa o valor que veio como parâmetro
-        ).alias("ExpirationDate")
-    )
-    adj_exp_dates = bday.offset(df["ExpirationDate"], 0)
-    df = df.with_columns(pl.Series("ExpirationDate", adj_exp_dates))
-
-    return df
-
-
 def _process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
-    bdays_to_exp = bday.count(df["TradeDate"], df["ExpirationDate"])
     df = df.with_columns(
         (cs.contains("Rate") / 100).round(5),
-        pl.Series("BDaysToExp", bdays_to_exp),
+        BDaysToExp=bday.count(df["TradeDate"], df["ExpirationDate"]),
         DaysToExp=(pl.col("ExpirationDate") - pl.col("TradeDate")).dt.total_days(),
     ).filter(pl.col("DaysToExp") > 0)
 
@@ -305,12 +265,12 @@ def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(selected_columns)
 
 
-def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pl.DataFrame:
-    if zip_file is None or zip_file.getbuffer().nbytes == 0:
+def process_zip_file(zip_data: bytes, contract_code: str) -> pl.DataFrame:
+    if not zip_data:
         logger.warning("Empty XML zip file. Probably the date has no data.")
         return pl.DataFrame()
 
-    xml_file = _extract_xml_from_zip(zip_file)
+    xml_file = _extract_xml_from_zip(zip_data)
 
     di_data = _extract_data_from_xml(xml_file, contract_code)
 
@@ -321,7 +281,7 @@ def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pl.DataFrame:
     df = _fill_zero_cols(df)
 
     expiration_day = 15 if contract_code == "DAP" else 1
-    df = add_expiration_date(df, expiration_day)
+    df = add_expiration_date(df, "TickerSymbol", expiration_day)
 
     df = _process_df(df, contract_code)
 
@@ -330,8 +290,8 @@ def process_zip_file(zip_file: io.BytesIO, contract_code: str) -> pl.DataFrame:
     return df
 
 
-def fetch_xml_data(
-    date: DateLike, contract_code: str, source_type: Literal["PR", "SPR"]
+def fetch_price_report(
+    date: DateLike, contract_code: str, source_type: Literal["PR", "SPR"] = "SPR"
 ) -> pl.DataFrame:
     """Fetches and processes an XML report from B3's website.
 
@@ -343,11 +303,10 @@ def fetch_xml_data(
         date: The date of the report to fetch.
         asset_code: The asset code to filter the report for (e.g., 'DI1').
         source_type: The type of report to fetch, either 'PR' (Full Price
-            Report) or 'SPR' (Simplified Price Report).
+            Report) or 'SPR' (Simplified Price Report). Defaults to 'SPR'.
 
     Returns:
-        A Pandas DataFrame containing the processed data.
-        For 'DI1' asset codes, an additional 'DV01' column is calculated.
+        A DataFrame containing the processed data.
 
     Raises:
         ValueError: If the `source_type` is invalid or if no data is
@@ -358,16 +317,15 @@ def fetch_xml_data(
         return pl.DataFrame()
     try:
         date = cv.convert_dates(date)
-        zip_file = _get_file_from_url(date, source_type)
-        df = process_zip_file(zip_file, contract_code)
-    except ValueError as e:
+        zip_data = _get_zip_data_from_url(date, source_type)
+        df = process_zip_file(zip_data, contract_code)
+        return df
+    except Exception as e:
         logger.warning(f"Error fetching XML data: {e}. Returning empty DataFrame.")
         return pl.DataFrame()
 
-    return df
 
-
-def read_xml_report(file_path: Path, contract_code: str) -> pl.DataFrame:
+def read_price_report(file_path: Path, contract_code: str) -> pl.DataFrame:
     """Reads and processes an XML report from a local file.
 
     Reads a zipped XML report from the specified file path, extracts the

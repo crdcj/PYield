@@ -125,7 +125,7 @@ def _parse_csv(csv_text: str) -> pl.DataFrame:
     df = pl.read_csv(
         io.StringIO(csv_text),
         decimal_comma=True,
-        schema=API_SCHEMA,
+        schema_overrides=API_SCHEMA,
         null_values=["null"],
     )
     # Converte os campos datetime para Date (mantemos apenas a data).

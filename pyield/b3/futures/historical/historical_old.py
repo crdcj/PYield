@@ -7,7 +7,6 @@ import polars as pl
 import requests
 
 from pyield import bday
-from pyield.b3.futures import common
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
@@ -17,7 +16,72 @@ BDAYS_PER_YEAR = 252
 CDAYS_PER_YEAR = 360
 
 
-def get_old_expiration_date(expiration_code: str, date: dt.date) -> dt.date | None:
+def _get_expiration_date(
+    expiration_code: str, expiration_day: int = 1
+) -> dt.date | None:
+    """
+    Converts an expiration code into its corresponding expiration date.
+
+    This function translates an expiration code into a specific expiration date based on
+    a given mapping. The expiration code consists of a letter representing the month and
+    two digits for the year. The function ensures the date returned is a valid business
+    day by adjusting weekends and holidays as necessary.
+
+    Args:
+        expiration_code (str): The expiration code to be converted, where the first
+            letter represents the month and the last two digits represent the year
+            (e.g., "F23" for January 2023).
+
+    Returns:
+        dt.date: The expiration date corresponding to the code, adjusted to a valid
+            business day. Returns None if the code is invalid.
+
+    Examples:
+        >>> _get_expiration_date("F23")
+        datetime.date(2023, 1, 2)
+
+        >>> _get_expiration_date("Z33")
+        datetime.date(2033, 12, 1)
+
+        >>> _get_expiration_date("A99")
+
+    Notes:
+        The expiration date is calculated based on the format change introduced by B3 on
+        22-05-2006, where the first letter represents the month and the last two digits
+        represent the year.
+    """
+    month_codes = {
+        "F": 1,
+        "G": 2,
+        "H": 3,
+        "J": 4,
+        "K": 5,
+        "M": 6,
+        "N": 7,
+        "Q": 8,
+        "U": 9,
+        "V": 10,
+        "X": 11,
+        "Z": 12,
+    }
+
+    try:
+        month_code = expiration_code[0]
+        month = month_codes[month_code]
+        year = int("20" + expiration_code[-2:])
+        # The expiration day is normally the first business day of the month
+        expiration = dt.date(year, month, expiration_day)
+
+        # Adjust to the next business day when expiration date is not a business day
+        adj_expiration = bday.offset(dates=expiration, offset=0)
+
+        return adj_expiration
+
+    except (KeyError, ValueError):
+        return None
+
+
+def _get_old_expiration_date(date: dt.date, expiration_code: str) -> dt.date | None:
     """
     Internal function to convert an old DI contract code into its ExpirationDate date.
     Valid for contract codes up to 21-05-2006.
@@ -33,7 +97,7 @@ def get_old_expiration_date(expiration_code: str, date: dt.date) -> dt.date | No
             The contract's ExpirationDate date. Returns None if the input is invalid.
 
     Examples:
-        >>> get_old_expiration_date("JAN3", dt.date(2001, 5, 21))
+        >>> _get_old_expiration_date(dt.date(2001, 5, 21), "JAN3")
         datetime.date(2003, 1, 2)
 
     Notes:
@@ -107,7 +171,7 @@ def _convert_prices_to_rates(
 
 
 @default_retry
-def _fetch_html_data(contract_code: str, date: dt.date) -> str:
+def _fetch_html_data(date: dt.date, contract_code: str) -> str:
     url_date = date.strftime("%d/%m/%Y")
     # url example: https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp?Data=05/10/2023&Mercadoria=DI1
     url_base = "https://www2.bmf.com.br/pages/portal/bmfbovespa/boletim1/SistemaPregao_excel1.asp"
@@ -201,9 +265,9 @@ def _process_df(df: pl.DataFrame, date: dt.date, contract_code: str) -> pl.DataF
     def _expiration_dates(raw: pl.Series) -> list[dt.date | None]:
         change_date = dt.date(2006, 5, 22)
         if date < change_date:
-            return [get_old_expiration_date(code, date) for code in raw.to_list()]
+            return [_get_old_expiration_date(date, code) for code in raw.to_list()]
         day = 15 if contract_code == "DAP" else 1
-        return [common.get_expiration_date(code, day) for code in raw.to_list()]
+        return [_get_expiration_date(code, day) for code in raw.to_list()]
 
     # Core columns
     exp_dates = _expiration_dates(df["ExpirationCode"])
@@ -298,7 +362,7 @@ def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(selected)
 
 
-def fetch_bmf_data(contract_code: str, date: dt.date) -> pl.DataFrame:
+def fetch_old_historical_df(date: dt.date, contract_code: str) -> pl.DataFrame:
     """
     Fetchs the futures data for a given date from B3.
 
@@ -306,16 +370,14 @@ def fetch_bmf_data(contract_code: str, date: dt.date) -> pl.DataFrame:
     trade date. It's the primary external interface for accessing futures data.
 
     Args:
-        asset_code (str): The asset code to fetch the futures data.
         date (dt.date): The trade date to fetch the futures data.
-        count_convention (int): The count convention for the DI futures contract.
-            Can be 252 business days or 360 calendar days.
+        contract_code (str): The asset code to fetch the futures data.
 
     Returns:
         pl.DataFrame: Processed futures data. If no data is found,
             returns an empty DataFrame.
     """
-    html_text = _fetch_html_data(contract_code, date)
+    html_text = _fetch_html_data(date, contract_code)
     if not html_text:
         return pl.DataFrame()
     df = _parse_raw_df(html_text)

@@ -126,7 +126,7 @@ def _fetch_auction_data(auction_date: dt.date) -> list[dict]:
 def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
     """Converte dados brutos em um DataFrame Polars limpo e tipado."""
     df = (
-        pl.from_dicts(raw_data, schema=DATA_SCHEMA)
+        pl.from_dicts(raw_data, schema_overrides=DATA_SCHEMA)
         .rename(COLUMN_MAP)
         .with_columns(
             # Conversão de datas

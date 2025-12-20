@@ -80,9 +80,9 @@ def _process_columns(df: pl.DataFrame) -> pl.DataFrame:
 
     rename_map = {
         "symb": "TickerSymbol",
-        # "desc": "Description",  # Dropped
-        # "asset.code": "AssetCode",  # Dropped
-        # "mkt.cd": "MarketCode",  # Dropped
+        # "desc": "Description",
+        # "asset.code": "AssetCode",
+        # "mkt.cd": "MarketCode",
         "bottomLmtPric": "MinLimitRate",
         "prvsDayAdjstmntPric": "PrevSettlementRate",
         "topLmtPric": "MaxLimitRate",
@@ -191,16 +191,27 @@ def fetch_intraday_df(contract_code: str) -> pl.DataFrame:
     Returns:
         pl.DataFrame: A Polars DataFrame containing the latest DI futures data.
     """
-    json_data = _fetch_json(contract_code)
-    if not json_data:
-        _empty_logger(contract_code)
+    try:
+        json_data = _fetch_json(contract_code)
+        if not json_data:
+            _empty_logger(contract_code)
+            return pl.DataFrame()
+
+        df = _convert_json(json_data)
+        if df.is_empty():
+            _empty_logger(contract_code)
+            return pl.DataFrame()
+
+        df = _process_columns(df)
+        df = _pre_process_df(df)
+        df = _process_df(df, contract_code)
+        df = _select_and_reorder_columns(df)
+        return df
+    except Exception as e:
+        # 1. Pega Exception genérico (qualquer erro).
+        # 2. logger.exception grava o erro E a pilha de chamadas (traceback).
+        # 3. Retorna DataFrame vazio para não quebrar a API.
+        logger.exception(
+            f"CRITICAL: Failed to process {contract_code} for today. Error: {e}"
+        )
         return pl.DataFrame()
-    df = _convert_json(json_data)
-    if df.is_empty():
-        _empty_logger(contract_code)
-        return pl.DataFrame()
-    df = _process_columns(df)
-    df = _pre_process_df(df)
-    df = _process_df(df, contract_code)
-    df = _select_and_reorder_columns(df)
-    return df

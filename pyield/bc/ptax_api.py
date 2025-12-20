@@ -84,7 +84,7 @@ def _parse_csv(csv_text: str) -> pl.DataFrame:
     df = pl.read_csv(
         io.StringIO(csv_text),
         decimal_comma=True,  # converte "5,4372" para "5.4372" antes do cast
-        schema=schema,
+        schema_overrides=schema,
     )
     return df
 

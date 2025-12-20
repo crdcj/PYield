@@ -11,6 +11,12 @@ from tenacity import (
 logger = logging.getLogger(__name__)
 
 
+class DataNotAvailableError(Exception):
+    """Levantada quando o dado baixado for considerado inválido (dado vazio/pequeno)."""
+
+    pass
+
+
 def _log_before_sleep(retry_state: RetryCallState):
     """Loga uma mensagem ANTES de o Tenacity entrar em espera entre tentativas."""
     if not (outcome := retry_state.outcome) or not outcome.failed:
@@ -40,7 +46,7 @@ def should_retry_exception(retry_state: RetryCallState) -> bool:
         return False
 
     # Erros de rede genéricos são sempre transitórios
-    if isinstance(exception, (Timeout, ConnectionError)):
+    if isinstance(exception, (Timeout, ConnectionError, DataNotAvailableError)):
         return True
 
     # HTTPError: apenas 429 e 5xx são transitórios
@@ -55,7 +61,7 @@ def should_retry_exception(retry_state: RetryCallState) -> bool:
 # Retry policy padrão otimizado para timeouts específicos
 default_retry = retry(
     retry=should_retry_exception,
-    wait=wait_exponential(multiplier=2, min=1, max=10),  # ⚡ Otimizado
+    wait=wait_exponential(multiplier=2, min=1, max=10),
     stop=stop_after_attempt(3),
     before_sleep=_log_before_sleep,
     reraise=True,

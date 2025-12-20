@@ -115,7 +115,7 @@ def _read_dataframe_from_zip(buffer: io.BytesIO) -> pl.DataFrame:
         decimal_comma=True,
         encoding="latin1",
         separator=";",
-        schema=TPF_TRADES_SCHEMA,
+        schema_overrides=TPF_TRADES_SCHEMA,
     )
     return df
 
