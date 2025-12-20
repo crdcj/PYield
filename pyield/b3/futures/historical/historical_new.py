@@ -191,37 +191,36 @@ def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(existing_cols)
 
 
-def fetch_new_historical_df(contract_code: str, date: dt.date) -> pl.DataFrame:
-    """
-    Fetchs the futures data for a given date from B3.
-
-    This function fetches and processes the futures data from B3 for a specific
-    trade date. It's the primary external interface for accessing futures data.
-
-    Args:
-        asset_code (str): The asset code to fetch the futures data.
-        date (dt.date): The trade date to fetch the futures data.
-
-    Returns:
-        pl.DataFrame: Processed futures data. If no data is found,
-            returns an empty DataFrame.
-    """
+def fetch_new_historical_df(date: dt.date, contract_code: str) -> pl.DataFrame:
+    """Fetchs the futures data for a given date from B3."""
     try:
+        # Tenta baixar os dados
         csv_text = _fetch_csv_data(date)
-    except requests.exceptions.HTTPError as e:
-        logger.error(f"Failed to fetch data for {date}: {e}")
-        return pl.DataFrame()
 
-    if not csv_text:
-        return pl.DataFrame()
-    df = _parse_raw_df(csv_text)
-    df = _pre_process_df(df, contract_code)
-    if df.is_empty():
-        return pl.DataFrame()
+        # Se veio vazio ou nulo, retorna vazio
+        if not csv_text:
+            return pl.DataFrame()
 
-    day = 15 if contract_code == "DAP" else 1
-    df = add_expiration_date(df, ticker_column="TickerSymbol", day=day)
+        # Tenta fazer o parse e processamento
+        df = _parse_raw_df(csv_text)
+        df = _pre_process_df(df, contract_code)
 
-    df = _process_df(df, date, contract_code)
-    df = _select_and_reorder_columns(df)
-    return df.sort("ExpirationDate")
+        if df.is_empty():
+            return pl.DataFrame()
+
+        day = 15 if contract_code == "DAP" else 1
+        df = add_expiration_date(df, ticker_column="TickerSymbol", expiration_day=day)
+
+        df = _process_df(df, date, contract_code)
+        df = _select_and_reorder_columns(df)
+
+        return df.sort("ExpirationDate")
+
+    except Exception as e:
+        # 1. Pega Exception genérico (qualquer erro).
+        # 2. logger.exception grava o erro E a pilha de chamadas (traceback).
+        # 3. Retorna DataFrame vazio para não quebrar a API.
+        logger.exception(
+            f"CRITICAL: Failed to process {contract_code} for {date}. Error: {e}"
+        )
+        return pl.DataFrame()

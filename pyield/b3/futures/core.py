@@ -5,8 +5,8 @@ from typing import Literal
 import polars as pl
 
 import pyield.converters as cv
-from pyield import bday
-from pyield.b3.futures.historical.core import fetch_historical_data
+from pyield.b3.common import is_trade_date_valid
+from pyield.b3.futures.historical.core import fetch_historical_df
 from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield.config import TIMEZONE_BZ
 from pyield.types import DateLike, has_nullable_args
@@ -24,42 +24,10 @@ HISTORICAL_START_TIME = dt.time(20, 0)
 INTRADAY_START_TIME = dt.time(9, 16)
 
 
-def _validate_reference_date(trade_date: dt.date) -> bool:
-    """Valida se a data de referência é utilizável para consulta.
-
-    Critérios:
-    - Deve ser um dia útil brasileiro.
-    - Não pode estar no futuro (maior que a data corrente no Brasil).
-
-    Retorna True se válida, False caso contrário (e loga um aviso).
-    """
-    today_bz = dt.datetime.now(TIMEZONE_BZ).date()
-    if trade_date > today_bz:
-        logger.warning(f"The provided date {trade_date} is in the future.")
-        return False
-    if not bday.is_business_day(trade_date):
-        logger.warning(f"The provided date {trade_date} is not a business day.")
-        return False
-
-    # Não tem pregão na véspera de Natal e Ano Novo
-    special_closed_dates = {  # Datas especiais
-        dt.date(trade_date.year, 12, 24),  # Véspera de Natal
-        dt.date(trade_date.year, 12, 31),  # Véspera de Ano Novo
-    }
-    if trade_date in special_closed_dates:
-        logger.warning(
-            "There is no trading session before Christmas and New Year's Eve: "
-            f"{trade_date}"
-        )
-        return False
-
-    return True
-
-
 def _is_intraday_date(check_date: dt.date) -> bool:
     """Check if a date is a trading day."""
     # Primeiro valida regra geral de dia futuro / não útil / datas especiais
-    if not _validate_reference_date(check_date):
+    if not is_trade_date_valid(check_date):
         return False
 
     # Intraday só existe para 'hoje'
@@ -70,8 +38,8 @@ def _is_intraday_date(check_date: dt.date) -> bool:
 
 
 def futures(
-    contract_code: ContractOptions | str,
     date: DateLike,
+    contract_code: ContractOptions | str,
 ) -> pl.DataFrame:
     """
     Fetches data for a specified futures contract based on type and reference date.
@@ -139,12 +107,12 @@ def futures(
         └────────────┴──────────────┴────────────────┴────────────┴───┴──────────────┴───────────┴────────────────┴─────────────┘
 
     """  # noqa: E501
-    if has_nullable_args(contract_code, date):
+    if has_nullable_args(date, contract_code):
         return pl.DataFrame()
     trade_date = cv.convert_dates(date)
 
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
-    if not _validate_reference_date(trade_date):
+    if not is_trade_date_valid(trade_date):
         logger.warning(f"{trade_date} is not a valid date. Returning empty DataFrame.")
         return pl.DataFrame()
 
@@ -159,7 +127,7 @@ def futures(
 
         # Existe a chance de que os dados consolidados estejam disponíveis após as 20h
         if time >= HISTORICAL_START_TIME:
-            df_hist = fetch_historical_data(selected_contract, trade_date)
+            df_hist = fetch_historical_df(trade_date, selected_contract)
             if not df_hist.is_empty():
                 logger.info("Consolidated data is already available and will be used.")
                 return df_hist
@@ -168,4 +136,4 @@ def futures(
         return fetch_intraday_df(selected_contract)
 
     else:  # É um dia histórico
-        return fetch_historical_data(selected_contract, trade_date)
+        return fetch_historical_df(trade_date, selected_contract)

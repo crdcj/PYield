@@ -1,6 +1,12 @@
+import datetime as dt
+import logging
+
 import polars as pl
 
 from pyield import bday
+from pyield.config import TIMEZONE_BZ
+
+logger = logging.getLogger(__name__)
 
 
 def add_expiration_date(
@@ -46,3 +52,35 @@ def add_expiration_date(
     adj_dates = bday.offset(dates=df["ExpirationDate"], offset=0)
     df = df.with_columns(ExpirationDate=adj_dates)
     return df
+
+
+def is_trade_date_valid(trade_date: dt.date) -> bool:
+    """Valida se a data de referência é utilizável para consulta.
+
+    Critérios:
+    - Deve ser um dia útil brasileiro.
+    - Não pode estar no futuro (maior que a data corrente no Brasil).
+
+    Retorna True se válida, False caso contrário (e loga um aviso).
+    """
+    today_bz = dt.datetime.now(TIMEZONE_BZ).date()
+    if trade_date > today_bz:
+        logger.warning(f"The provided date {trade_date} is in the future.")
+        return False
+    if not bday.is_business_day(trade_date):
+        logger.warning(f"The provided date {trade_date} is not a business day.")
+        return False
+
+    # Não tem pregão na véspera de Natal e Ano Novo
+    special_closed_dates = {  # Datas especiais
+        dt.date(trade_date.year, 12, 24),  # Véspera de Natal
+        dt.date(trade_date.year, 12, 31),  # Véspera de Ano Novo
+    }
+    if trade_date in special_closed_dates:
+        logger.warning(
+            "There is no trading session before Christmas and New Year's Eve: "
+            f"{trade_date}"
+        )
+        return False
+
+    return True

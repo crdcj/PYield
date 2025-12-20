@@ -51,8 +51,8 @@ def count(
     array inputs yield nulls in corresponding result positions.
 
     Return type: If both inputs are scalars (non-null) an `int` is returned; otherwise
-    a `polars.Series` of int counts (name: 'bdays'). If a null scalar short-circuits,
-    `None` is returned.
+    a `polars.Series` of int counts (name: 'bday_count').
+    If a null scalar short-circuits, `None` is returned.
 
     Args:
         start: Single date or collection (inclusive boundary).
@@ -74,7 +74,7 @@ def count(
         Total business days in January and February since the start of the year
         >>> bday.count(start="01-01-2024", end=["01-02-2024", "01-03-2024"])
         shape: (2,)
-        Series: 'bdays' [i64]
+        Series: 'bday_count' [i64]
         [
             22
             41
@@ -83,7 +83,7 @@ def count(
         The remaining business days from January/February until the end of the year
         >>> bday.count(["01-01-2024", "01-02-2024"], "01-01-2025")
         shape: (2,)
-        Series: 'bdays' [i64]
+        Series: 'bday_count' [i64]
         [
             253
             231
@@ -92,7 +92,7 @@ def count(
         The total business days in January and February of 2024
         >>> bday.count(["01-01-2024", "01-02-2024"], ["01-02-2024", "01-03-2024"])
         shape: (2,)
-        Series: 'bdays' [i64]
+        Series: 'bday_count' [i64]
         [
             22
             19
@@ -105,7 +105,7 @@ def count(
 
         >>> bday.count("01-01-2024", ["01-02-2024", None])  # None in end array
         shape: (2,)
-        Series: 'bdays' [i64]
+        Series: 'bday_count' [i64]
         [
             22
             null
@@ -114,7 +114,7 @@ def count(
         >>> start_dates = ["01-01-2024", "01-02-2024", "01-03-2024"]
         >>> bday.count(start_dates, "01-01-2025")
         shape: (3,)
-        Series: 'bdays' [i64]
+        Series: 'bday_count' [i64]
         [
             253
             231
@@ -141,10 +141,10 @@ def count(
             )
         )
         .cast(pl.Int64)
-        .alias("bdays")
+        .alias("bday_count")
     )
 
-    s = df.select(count_expr)["bdays"]
+    s = df.select(count_expr)["bday_count"]
 
     if not tp.has_array_like_args(start, end):
         return s.first()
@@ -220,8 +220,8 @@ def offset(
     Polars broadcasting rules apply when constructing the per-row pairs.
 
     Return type: If both inputs are non-null scalars a ``datetime.date`` is returned.
-    Otherwise a ``polars.Series`` of dates named ``'result'`` is produced. Null scalar
-    inputs yield ``None``.
+    Otherwise a ``polars.Series`` of dates named ``'adjusted_date'`` is produced.
+    Null scalar inputs yield ``None``.
 
     Args:
         dates: Single date or collection of dates to be rolled (if needed) and then
@@ -285,7 +285,7 @@ def offset(
         # List of dates and offsets
         >>> bday.offset(["19-09-2024", "20-09-2024"], 1)
         shape: (2,)
-        Series: 'result' [date]
+        Series: 'adjusted_date' [date]
         [
             2024-09-20
             2024-09-23
@@ -293,7 +293,7 @@ def offset(
 
         >>> bday.offset("19-09-2024", [1, 2])  # a list of offsets
         shape: (2,)
-        Series: 'result' [date]
+        Series: 'adjusted_date' [date]
         [
             2024-09-20
             2024-09-23
@@ -306,7 +306,7 @@ def offset(
         # Scalar null propagates inside arrays
         >>> bday.offset(None, [1, 2])
         shape: (2,)
-        Series: 'result' [date]
+        Series: 'adjusted_date' [date]
         [
             null
             null
@@ -315,7 +315,7 @@ def offset(
         # Nulls inside arrays are preserved
         >>> bday.offset(["19-09-2024", None], 1)
         shape: (2,)
-        Series: 'result' [date]
+        Series: 'adjusted_date' [date]
         [
             2024-09-20
             null
@@ -324,7 +324,7 @@ def offset(
         >>> dates = ["19-09-2024", "20-09-2024", "21-09-2024"]
         >>> bday.offset(dates, 1)
         shape: (3,)
-        Series: 'result' [date]
+        Series: 'adjusted_date' [date]
         [
             2024-09-20
             2024-09-23
@@ -359,11 +359,11 @@ def offset(
                 holidays=NEW_HOLIDAYS_ARRAY,
             )
         )
-        .alias("result")
+        .alias("adjusted_date")
     )
 
     # Executa a expressão e obtém a série de resultados
-    s = df.select(offset_expr)["result"]
+    s = df.select(offset_expr)["adjusted_date"]
 
     if not tp.has_array_like_args(dates, offset):
         return s.first()
@@ -408,7 +408,7 @@ def generate(
         >>> from pyield import bday
         >>> bday.generate(start="22-12-2023", end="02-01-2024")
         shape: (6,)
-        Series: '' [date]
+        Series: 'bday' [date]
         [
             2023-12-22
             2023-12-26
@@ -443,7 +443,7 @@ def generate(
         inclusive=inclusive,
         holidays=applicable_holidays,
     )
-    s_pd = pd.Series(result_dti.values).astype("date32[pyarrow]")
+    s_pd = pd.Series(result_dti.values, name="bday").astype("date32[pyarrow]")
     return pl.from_pandas(s_pd)
 
 
