@@ -7,7 +7,7 @@ import polars as pl
 import pyield.bday.holidays as hl
 import pyield.converters as cv
 import pyield.types as tp
-from pyield.config import TIMEZONE_BZ
+from pyield import clock
 from pyield.types import ArrayLike, DateLike
 
 # Initialize Brazilian holidays class
@@ -424,12 +424,13 @@ def generate(
         https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html.
     """
     conv_start = cv.convert_dates(start)
+    today = clock.today()
     if not conv_start:
-        conv_start = dt.datetime.now(TIMEZONE_BZ).date()
+        conv_start = today
 
     conv_end = cv.convert_dates(end)
     if not conv_end:
-        conv_end = dt.datetime.now(TIMEZONE_BZ).date()
+        conv_end = today
 
     applicable_holidays = br_holidays.get_holiday_series(
         dates=conv_start, holiday_option=holiday_option
@@ -553,7 +554,7 @@ def last_business_day() -> dt.date:
 
     """
     # Get the current date in Brazil without timezone information
-    bz_today = dt.datetime.now(TIMEZONE_BZ).date()
+    bz_today = clock.today()
     result = offset(bz_today, 0, roll="backward")
     assert isinstance(result, dt.date), (
         "Assumption violated: offset did not return a date for the current date."

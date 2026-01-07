@@ -1,9 +1,9 @@
 import logging
-from datetime import datetime as dt
-from zoneinfo import ZoneInfo
 
 import polars as pl
 import requests
+
+from pyield import clock
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,6 @@ API_BASE_URL = (
 
 API_HISTORY_PARAM = "incluir_historico"
 
-TIMEZONE_BZ = ZoneInfo("America/Sao_Paulo")
 
 COLUMN_MAPPING = {
     "INÍCIO": "StartDate",
@@ -136,7 +135,7 @@ def benchmarks(bond_type: str = None, include_history: bool = False) -> pl.DataF
         # Para dados atuais, agrupar por tipo de título é mais útil
         sort_columns = ["BondType", "MaturityDate"]
         # Filtrar apenas os dados atuais
-        today = dt.now(TIMEZONE_BZ).date()
+        today = clock.today()
         df = df.filter(pl.lit(today).is_between(pl.col("StartDate"), pl.col("EndDate")))
 
     if bond_type:

@@ -14,7 +14,6 @@ Implementation Notes:
       chunked using Polars' native calendar-aware date functionalities.
 """
 
-import datetime as dt
 import logging
 from enum import Enum
 from typing import Any
@@ -22,7 +21,7 @@ from typing import Any
 import polars as pl
 import requests
 
-from pyield.config import TIMEZONE_BZ
+from pyield import clock
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
 from pyield.types import DateLike, has_nullable_args
@@ -148,7 +147,7 @@ def _fetch_data_from_url(
     # 1. Converter datas usando a função auxiliar existente
     start_date = convert_dates(start)
     # Se a data final não for fornecida, usar a data de hoje para o cálculo do período
-    end_date = convert_dates(end) if end else dt.datetime.now(TIMEZONE_BZ).date()
+    end_date = convert_dates(end) if end else clock.today()
 
     # Verificação simples e pragmática baseada em dias. Se o período for
     # menor que nosso limite de segurança, faz uma chamada única.

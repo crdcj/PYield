@@ -12,8 +12,7 @@ import polars as pl
 import requests
 from polars import selectors as cs
 
-from pyield import bday
-from pyield.config import TIMEZONE_BZ
+from pyield import bday, clock
 
 REALTIME_START_TIME = dt.time(9, 0, 0)
 REALTIME_END_TIME = dt.time(22, 0, 0)
@@ -124,7 +123,7 @@ def _fetch_csv_from_url() -> str:
     Example URL for the CSV file containing intraday trades data:
         https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/02-06-2025
     """
-    today = dt.datetime.now(TIMEZONE_BZ).date()
+    today = clock.today()
     formatted_date = today.strftime("%d-%m-%Y")
     FILE_URL = f"https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/{formatted_date}"
     r = requests.get(FILE_URL, timeout=30)  # API usually takes 10s to respond
@@ -152,7 +151,7 @@ def _convert_csv_to_df(text: str) -> pl.DataFrame:
 
 
 def _process_df(df: pl.DataFrame) -> pl.DataFrame:
-    now = dt.datetime.now(TIMEZONE_BZ)
+    now = clock.now()
     today = now.date()
 
     # 1. Strip column names from source
@@ -180,7 +179,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
 
 def is_selic_open() -> bool:
     """Verifica se o mercado está aberto no momento."""
-    now = dt.datetime.now(TIMEZONE_BZ)
+    now = clock.now()
     today = now.date()
     time = now.time()
     is_last_bday = bday.is_business_day(today)

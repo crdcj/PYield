@@ -3,8 +3,7 @@ import logging
 
 import polars as pl
 
-from pyield import bday
-from pyield.config import TIMEZONE_BZ
+from pyield import bday, clock
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +62,7 @@ def is_trade_date_valid(trade_date: dt.date) -> bool:
 
     Retorna True se válida, False caso contrário (e loga um aviso).
     """
-    today_bz = dt.datetime.now(TIMEZONE_BZ).date()
-    if trade_date > today_bz:
+    if trade_date > clock.today():
         logger.warning(f"The provided date {trade_date} is in the future.")
         return False
     if not bday.is_business_day(trade_date):

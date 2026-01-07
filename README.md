@@ -60,6 +60,8 @@ PYield is split into focused namespaces. Each function and class has a rich docs
 | `futures` | function | Fetch futures (see `help(futures)`). |
 | `forward` | function | Single period forward rate from spot curve. |
 | `forwards` | function | Vectorized forward rate construction. |
+| `today` | function | Brazilian current date (America/Sao_Paulo). |
+| `now` | function | Current local time in Brazil (time only). |
 | `Interpolator` | class | Rate interpolation (linear / flat_forward). |
 | `ltn` | module | LTN bond data & analytics. |
 | `ntnb` | module | NTN-B pricing, spot, forward, BEI. |
@@ -83,6 +85,20 @@ q = ntnb.quotation("31-05-2024", "15-05-2035", 0.06149)
 selic = bc.selic_over("31-05-2024")
 
 print(business_days, q, selic)
+```
+
+### Brazilian Clock Helpers
+```python
+from pyield import today, now, now_datetime
+
+# Date in Brazil timezone
+d = today()            # -> datetime.date
+
+# Time in Brazil (naive time, no tz info embedded)
+t = now()              # -> datetime.time
+
+# Timezone-aware datetime (America/Sao_Paulo)
+dt = now_datetime()    # -> datetime.datetime (aware)
 ```
 
 ## Installation

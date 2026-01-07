@@ -23,7 +23,7 @@ import polars as pl
 import requests
 
 import pyield.converters as cv
-from pyield.config import TIMEZONE_BZ
+from pyield import clock
 from pyield.retry import default_retry
 from pyield.types import DateLike
 
@@ -222,7 +222,7 @@ def ptax_series(
     if end:
         end = cv.convert_dates(end)
     else:
-        end = dt.datetime.now(TIMEZONE_BZ).date()
+        end = clock.today()
 
     try:
         url = _build_api_url(start, end)

@@ -21,10 +21,9 @@ import polars.selectors as ps
 import requests
 from requests.exceptions import HTTPError, RequestException
 
-from pyield import bday
+from pyield import bday, clock
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
-from pyield.config import TIMEZONE_BZ
 from pyield.converters import convert_dates
 from pyield.data_cache import get_cached_dataset
 from pyield.retry import default_retry
@@ -66,8 +65,7 @@ logger = logging.getLogger(__name__)
 
 def _validate_not_future_date(date: dt.date):
     """Raises ValueError if the date is in the future."""
-    today = dt.datetime.now(TIMEZONE_BZ).date()
-    if date > today:
+    if date > clock.today():
         date_log = date.strftime("%d/%m/%Y")
         msg = f"Cannot process data for a future date ({date_log})."
         raise ValueError(msg)

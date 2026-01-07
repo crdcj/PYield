@@ -1,12 +1,11 @@
 import functools
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Literal
 
 import polars as pl
 
-from pyield.config import TIMEZONE_BZ
+from pyield.clock import now
 
 BASE_URL = "https://github.com/crdcj/pyield-data/releases/latest/download"
 
@@ -41,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 def _get_today_date_key() -> str:
     """Retorna a data atual como string no formato YYYY-MM-DD."""
-    return datetime.now(TIMEZONE_BZ).strftime("%Y-%m-%d")
+    return now().strftime("%Y-%m-%d")
 
 
 def _load_github_file(file_url: str) -> pl.DataFrame:

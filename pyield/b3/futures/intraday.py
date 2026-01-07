@@ -35,8 +35,7 @@ import polars as pl
 import polars.selectors as cs
 import requests
 
-from pyield import bday
-from pyield.config import TIMEZONE_BZ
+from pyield import bday, clock
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
@@ -123,7 +122,7 @@ def _process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
         # Remove percentage in all rate columns
         (cs.contains("Rate") / 100).round(5),
         TradeDate=trade_date,
-        LastUpdate=(dt.datetime.now(TIMEZONE_BZ) - dt.timedelta(minutes=15)),
+        LastUpdate=(clock.now() - dt.timedelta(minutes=15)),
         DaysToExp=((pl.col("ExpirationDate") - trade_date).dt.total_days()),
     ).filter(pl.col("DaysToExp") > 0)  # Remove expiring contracts
 
@@ -177,7 +176,7 @@ def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def _empty_logger(contract_code: str) -> None:
-    date_str = dt.datetime.now(TIMEZONE_BZ).strftime("%d-%m-%Y %H:%M")
+    date_str = clock.now().strftime("%d-%m-%Y %H:%M")
     logger.warning(
         f"No intraday data available for {contract_code} on {date_str}. "
         f"Returning an empty DataFrame."

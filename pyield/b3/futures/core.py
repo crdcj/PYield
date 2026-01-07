@@ -5,10 +5,10 @@ from typing import Literal
 import polars as pl
 
 import pyield.converters as cv
+from pyield import clock
 from pyield.b3.common import is_trade_date_valid
 from pyield.b3.futures.historical.core import fetch_historical_df
 from pyield.b3.futures.intraday import fetch_intraday_df
-from pyield.config import TIMEZONE_BZ
 from pyield.types import DateLike, has_nullable_args
 
 ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
@@ -31,7 +31,7 @@ def _is_intraday_date(check_date: dt.date) -> bool:
         return False
 
     # Intraday só existe para 'hoje'
-    today_bz = dt.datetime.now(TIMEZONE_BZ).date()
+    today_bz = clock.today()
     if check_date != today_bz:
         return False
     return True
@@ -120,7 +120,7 @@ def futures(
 
     if _is_intraday_date(trade_date):
         # É um dia de negociação intraday
-        time = dt.datetime.now(TIMEZONE_BZ).time()
+        time = clock.now().time()
         if time < INTRADAY_START_TIME:  # Mercado não está aberto ainda
             logger.warning("Market is not open yet. Returning an empty DataFrame. ")
             return pl.DataFrame()
