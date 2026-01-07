@@ -30,7 +30,6 @@ def _load_with_intraday(dates: list[dt.date]) -> pl.DataFrame:
 
             # Só adiciona se tiver SettlementPrice
             if "SettlementPrice" in df_missing.columns:
-                df_missing = df_missing.drop("DaysToExp", strict=False)
                 dfs_to_concat.append(df_missing)
             else:
                 logger.warning(

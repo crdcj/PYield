@@ -29,7 +29,6 @@ COLUMN_CONFIG = {
     "Variação": (pl.Float64, "Variation"),
     "Ajuste": (pl.Float64, "SettlementPrice"),
     "Preço de referência": (pl.Float64, "ReferencePrice"),
-    # "Ajuste de referência" = Taxa (apenas para derivativos de juros)
     "Ajuste de referência": (pl.Float64, "SettlementRate"),
     "Valor do ajuste por contrato (R$)": (pl.Float64, "AdjustmentValuePerContract"),
     "Quantidade de negócios": (pl.Int64, "TradeCount"),
@@ -136,7 +135,7 @@ def _process_df(
         # Duration Modificada * PU * 1bp
         duration = pl.col("BDaysToExp") / 252
         m_duration = duration / (1 + pl.col("SettlementRate"))
-        df = df.with_columns(DV01=(m_duration * pl.col("SettlementPrice") * 0.0001))
+        df = df.with_columns(DV01=m_duration * pl.col("SettlementPrice") * 0.0001)
 
     # 5. Forward Rates (Para DI1 e DAP)
     if contract_code in {"DI1", "DAP"} and "SettlementRate" in df.columns:

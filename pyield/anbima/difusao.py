@@ -230,7 +230,8 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
     if has_nullable_args(data_referencia):
         logger.warning("Nenhuma data fornecida. Retornando DataFrame vazio.")
         return pl.DataFrame()
-    data_str = cv.convert_dates(data_referencia)
+    data = cv.convert_dates(data_referencia)
+    data_str = data.strftime("%d/%m/%Y")
     csv_data = _fetch_url_data(data_str)
 
     if not csv_data:

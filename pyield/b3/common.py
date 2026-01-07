@@ -17,8 +17,8 @@ def add_expiration_date(
     - Pega a coluna 'ticker_column'.
     - Extrai o código de vencimento.
     - Converte para a data "bruta", sem ajuste de feriado.
-    - Ajusta para dia útil, se necessário.
-    - Retorna o DataFrame com a nova coluna.
+    - Garante que a data de vencimento é um dia útil.
+    - Retorna o DataFrame com a nova coluna ExpirationDate.
     """
 
     month_map = {
@@ -47,7 +47,7 @@ def add_expiration_date(
             day=expiration_day,
         ).alias("ExpirationDate")
     )
-    # Ajusta para dia útil, se necessário
+    # Garantee que a data de vencimento é um dia útil
     adj_dates = bday.offset(dates=df["ExpirationDate"], offset=0)
     df = df.with_columns(ExpirationDate=adj_dates)
     return df

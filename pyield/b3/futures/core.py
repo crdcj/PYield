@@ -15,13 +15,11 @@ ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"
 logger = logging.getLogger(__name__)
 
 
-# Apesar do pregão terminar às 18:00h, os dados consolidados são disponibilizados
-# normalmente somente após as 20:00h.
-HISTORICAL_START_TIME = dt.time(20, 0)
-
 # Pregão abre às 9:00, porém os dados têm atraso de 15 minutos.
 # Esperar 1 minuto adicional para garantir que estejam disponíveis (9:16h).
 INTRADAY_START_TIME = dt.time(9, 16)
+# Pregão fecha às 18:00h, momento em que os dados consolidados começam a ser preparados.
+INTRADAY_END_TIME = dt.time(18, 30)
 
 
 def _is_intraday_date(check_date: dt.date) -> bool:
@@ -34,6 +32,7 @@ def _is_intraday_date(check_date: dt.date) -> bool:
     today_bz = clock.today()
     if check_date != today_bz:
         return False
+
     return True
 
 
@@ -125,8 +124,8 @@ def futures(
             logger.warning("Market is not open yet. Returning an empty DataFrame. ")
             return pl.DataFrame()
 
-        # Existe a chance de que os dados consolidados estejam disponíveis após as 20h
-        if time >= HISTORICAL_START_TIME:
+        # Existe a chance de que os dados consolidados estejam disponíveis após as 18h
+        if time >= INTRADAY_END_TIME:
             df_hist = fetch_historical_df(trade_date, selected_contract)
             if not df_hist.is_empty():
                 logger.info("Consolidated data is already available and will be used.")

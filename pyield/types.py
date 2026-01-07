@@ -58,7 +58,7 @@ def has_nullable_args(*args) -> bool:
 
 
 def is_array_like(arg) -> bool:
-    if hasattr(arg, "__len__") and not isinstance(arg, str):
+    if hasattr(arg, "__len__") and not isinstance(arg, (str, bytes)):
         return True
     return False
 

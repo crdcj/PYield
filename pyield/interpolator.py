@@ -1,9 +1,10 @@
 import bisect
+import numbers
 from typing import Literal, overload
 
 import polars as pl
 
-from pyield.types import ArrayLike
+from pyield.types import ArrayLike, is_array_like
 
 
 class Interpolator:
@@ -170,11 +171,6 @@ class Interpolator:
         f_t = (time - time_j) / (time_k - time_j)
         return (f_j * (f_k / f_j) ** f_t) ** (1 / time) - 1
 
-    @overload
-    def interpolate(self, bdays: int) -> float: ...
-    @overload
-    def interpolate(self, bdays: ArrayLike) -> pl.Series: ...
-
     def interpolate(self, bdays: int | ArrayLike) -> float | pl.Series:
         """
         Interpolates rates for given business day(s).
@@ -185,16 +181,20 @@ class Interpolator:
         Returns:
             float or pl.Series - Interpolated rate(s)
         """
-        if hasattr(bdays, "__len__"):
-            bday_series = pl.Series(
-                name="interpolated_rate", values=bdays, dtype=pl.Int64
-            )
-            result = bday_series.map_elements(
+        if is_array_like(bdays):
+            s_bdays = pl.Series(name="interpolated_rate", values=bdays, dtype=pl.Int64)
+            result = s_bdays.map_elements(
                 self._interpolated_rate, return_dtype=pl.Float64
             )
             return result.fill_nan(None)
+
+        # Aceita QUALQUER coisa que se comporte como inteiro (int, np.int64, etc)
+        # Mas REJEITA floats (30.5) e Strings
+        elif isinstance(bdays, numbers.Integral):
+            return self._interpolated_rate(int(bdays))
+
         else:
-            return self._interpolated_rate(bdays)
+            raise TypeError("bdays must be an int or an array-like structure.")
 
     def _interpolated_rate(self, bday: int) -> float:
         """
@@ -241,6 +241,10 @@ class Interpolator:
 
         raise ValueError(f"Interpolation method '{method}' not recognized.")
 
+    @overload
+    def __call__(self, bday: int) -> float: ...
+    @overload
+    def __call__(self, bday: ArrayLike) -> pl.Series: ...
     def __call__(self, bday: int | ArrayLike) -> float | pl.Series:
         """
         Allows the instance to be called as a function to perform interpolation.
