@@ -64,7 +64,7 @@ def _get_data(dates: DateLike | ArrayLike) -> pl.DataFrame:
 
     df = _load_with_intraday(dates_list)
 
-    return df.sort(by=["TradeDate", "ExpirationDate"])
+    return df.sort("TradeDate", "ExpirationDate")
 
 
 def data(
@@ -137,8 +137,8 @@ def data(
         )
 
         # garante que os dois lados estão ordenados pelas chaves necessárias
-        df = df.sort(["TradeDate", "ExpirationDate"])
-        df_pre = df_pre.sort(["TradeDate", "ExpirationDate"])
+        df = df.sort("TradeDate", "ExpirationDate")
+        df_pre = df_pre.sort("TradeDate", "ExpirationDate")
 
         df = df.join_asof(
             df_pre,
@@ -281,30 +281,39 @@ def interpolate_rates(
         return pl.Series(dtype=pl.Float64)
 
     dfi = _build_input_dataframe(dates, expirations)
-    # 2. Se a helper retornou um DataFrame vazio, retornar uma Series vazia
     if dfi.is_empty():
         logger.warning("Invalid inputs provided. Returning empty Series.")
         return pl.Series(dtype=pl.Float64)
 
-    s_bdays = bday.count(dfi["TradeDate"], dfi["ExpirationDate"])
-
-    # Inicializa FlatFwdRate como None
-    dfi = dfi.with_columns(BDaysToExp=s_bdays, FlatFwdRate=None)
-
     # Load DI rates dataset filtered by the provided reference dates
     dfr = _get_data(dates=dates)
-
     # Return an empty DataFrame if no rates are found
     if dfr.is_empty():
         return pl.Series(dtype=pl.Float64)
 
+    # 1. CRIA O ÍNDICE ORIGINAL AQUI
+    # Isso garante que saberemos a ordem exata depois
+    dfi = dfi.with_row_index("_temp_idx")
+
+    s_bdays = bday.count(dfi["TradeDate"], dfi["ExpirationDate"])
+    # Inicializa FlatFwdRate como None
+    dfi = dfi.with_columns(BDaysToExp=s_bdays, FlatFwdRate=None)
+
+    # Lista para armazenar os pedaços processados
+    processed_chunks = []
+
     # Iterate over each unique reference date
-    for date in dfi.get_column("TradeDate").unique().to_list():
-        # Filter DI rates for the current reference date
+    for date in dfi["TradeDate"].unique().to_list():
+        # 1. Filtra apenas as linhas desta data (Particionamento)
+        df_subset = dfi.filter(pl.col("TradeDate") == date)
+
+        # 2. Busca as taxas de referência para esta data
         dfr_subset = dfr.filter(pl.col("TradeDate") == date)
 
-        # Skip processing if no rates are available for the current date
+        # Se não houver dados de curva (dfr), adicionamos o subset como está (com Nulls)
+        # e continuamos.
         if dfr_subset.is_empty():
+            processed_chunks.append(df_subset)
             continue
 
         # Initialize the interpolator with known rates and business days
@@ -315,15 +324,24 @@ def interpolate_rates(
             extrapolate=extrapolate,
         )
 
-        dfi = dfi.with_columns(
-            pl.when(pl.col("TradeDate") == date)
-            .then(pl.col("BDaysToExp").map_elements(interp, return_dtype=pl.Float64))
-            .otherwise(pl.col("FlatFwdRate"))
+        # 4. A Mágica: map_batches passa a Series inteira para o 'interp'
+        # O 'interp' retorna uma Series, que o Polars alinha perfeitamente
+        df_subset = df_subset.with_columns(
+            pl.col("BDaysToExp")
+            .map_batches(interp)  # Passa Series -> Recebe Series
             .alias("FlatFwdRate")
         )
 
-    # Return the interpolated rates with nulls where interpolation was not possible
-    return dfi.get_column("FlatFwdRate").fill_nan(None)
+        processed_chunks.append(df_subset)
+
+    if not processed_chunks:
+        return pl.Series(dtype=pl.Float64)
+
+    # 2. CONCATENA E ORDENA DE VOLTA
+    # O sort("_temp_idx") restaura a ordem original dos inputs
+    df_final = pl.concat(processed_chunks).sort("_temp_idx")
+
+    return df_final["FlatFwdRate"].fill_nan(None)
 
 
 def interpolate_rate(
