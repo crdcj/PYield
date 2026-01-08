@@ -125,9 +125,27 @@ def _fetch_auction_data(auction_date: dt.date) -> list[dict]:
 
 def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
     """Converte dados brutos em um DataFrame Polars limpo e tipado."""
+    # 1. Criação inicial do DataFrame
+    # O schema_overrides ajuda nos tipos, mas não cria colunas que não vieram no JSON
+    df = pl.from_dicts(raw_data, schema_overrides=DATA_SCHEMA)
+
+    # 2. Tratamento defensivo para colunas de Segunda Volta (que podem não existir)
+    # Lista de colunas opcionais e seus tipos
+    cols_opcionais = {
+        "liquidacao_segunda_volta": pl.String,
+        "oferta_segunda_volta": pl.Int64,
+        "financeiro_aceito_segunda_volta": pl.Float64,
+        "quantidade_liquidada": pl.Int64,
+        "quantidade_aceita_segunda_volta": pl.Int64,
+    }
+
+    # Verifica se cada coluna existe; se não, cria preenchida com None (Null)
+    for col_name, dtype in cols_opcionais.items():
+        if col_name not in df.columns:
+            df = df.with_columns(pl.lit(None, dtype=dtype).alias(col_name))
+
     df = (
-        pl.from_dicts(raw_data, schema_overrides=DATA_SCHEMA)
-        .rename(COLUMN_MAP)
+        df.rename(COLUMN_MAP)
         .with_columns(
             # Conversão de datas
             cs.starts_with("data_").str.strptime(pl.Date, "%d/%m/%Y"),

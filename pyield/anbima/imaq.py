@@ -207,8 +207,8 @@ def imaq(date: DateLike) -> pl.DataFrame:
             fetching or processing.
 
     Examples:
-        >>> from pyield import bday
-        >>> target_date = bday.offset(dt.date.today(), -5)
+        >>> from pyield import bday, clock
+        >>> target_date = bday.offset(bday.last_business_day(), -2)
         >>> df = imaq(target_date)
         >>> df["Date"].first() == target_date
         True

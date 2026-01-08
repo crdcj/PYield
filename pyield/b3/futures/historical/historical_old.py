@@ -141,8 +141,8 @@ def _get_old_expiration_date(date: dt.date, expiration_code: str) -> dt.date | N
 
 
 def _convert_prices_to_rates(
-    prices: pl.Series | pd.Series,
-    days_to_expiration: pl.Series | pd.Series,
+    prices: pl.Series,
+    days_to_expiration: pl.Series,
     count_convention: int,
 ) -> pl.Series:
     """Converte preços de futuros DI em taxas usando Polars.
@@ -150,20 +150,10 @@ def _convert_prices_to_rates(
     Aceita Series do Polars ou Pandas e retorna sempre um `pl.Series`.
     Precisão: 5 casas (equivalente a 3 em %).
     """
-    # Normaliza para polars
-    if isinstance(prices, pd.Series):
-        prices_pl = pl.Series(prices.name or "price", prices.to_list())
-    else:
-        prices_pl = prices
-    if isinstance(days_to_expiration, pd.Series):
-        du_pl = pl.Series(days_to_expiration.name or "du", days_to_expiration.to_list())
-    else:
-        du_pl = days_to_expiration
-
     if count_convention == BDAYS_PER_YEAR:
-        rates_expr = (100_000 / prices_pl) ** (BDAYS_PER_YEAR / du_pl) - 1
+        rates_expr = (100_000 / prices) ** (BDAYS_PER_YEAR / days_to_expiration) - 1
     elif count_convention == CDAYS_PER_YEAR:
-        rates_expr = (100_000 / prices_pl - 1) * (CDAYS_PER_YEAR / du_pl)
+        rates_expr = (100_000 / prices - 1) * (CDAYS_PER_YEAR / days_to_expiration)
     else:
         raise ValueError("Invalid count_convention. Must be 252 or 360.")
 
@@ -228,7 +218,7 @@ def _adjust_older_contracts_rates(df: pl.DataFrame, rate_cols: list) -> pl.DataF
                 pl.col("_tmp_max").alias("MinRate"),
                 pl.col("_tmp_min").alias("MaxRate"),
             )
-            .drop(["_tmp_max", "_tmp_min"])
+            .drop("_tmp_max", "_tmp_min")
         )
     return df
 

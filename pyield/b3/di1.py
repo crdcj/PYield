@@ -303,7 +303,7 @@ def interpolate_rates(
     processed_chunks = []
 
     # Iterate over each unique reference date
-    for date in dfi["TradeDate"].unique().to_list():
+    for date in dfi["TradeDate"].unique():
         # 1. Filtra apenas as linhas desta data (Particionamento)
         df_subset = dfi.filter(pl.col("TradeDate") == date)
 
