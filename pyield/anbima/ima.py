@@ -89,7 +89,7 @@ def _parse_df(text: str) -> pl.DataFrame:
         separator="@",
         decimal_comma=True,
         null_values="--",
-        schema=IMA_SCHEMA,
+        schema_overrides=IMA_SCHEMA,
     )
     return df
 
@@ -115,9 +115,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
         .with_columns(
             dv01_expr.alias("DV01"),
         )
-        .with_columns(
-            (pl.col("DV01") * pl.col("MarketQuantity")).round(2).alias("MarketDV01"),
-        )
+        .with_columns(MarketDV01=(pl.col("DV01") * pl.col("MarketQuantity")).round(2))
     )
     return df
 
@@ -199,9 +197,9 @@ def last_ima(ima_type: ima_types | None = None) -> pl.DataFrame:
         df = _parse_df(ima_text)
         df = _process_df(df)
         df = _reorder_columns(df)
-        if ima_type is not None:
+        if ima_type:
             df = df.filter(pl.col("IMAType") == ima_type)
-        df = df.sort(["IMAType", "BondType", "Maturity"])
+        df = df.sort("IMAType", "BondType", "Maturity")
         return df
     except Exception as e:
         logger.exception(f"Error fetching or processing the last IMA data: {e}")
