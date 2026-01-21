@@ -89,16 +89,13 @@ print(business_days, q, selic)
 
 ### Brazilian Clock Helpers
 ```python
-from pyield import today, now, now_datetime
+from pyield import today, now
 
-# Date in Brazil timezone
-d = today()            # -> datetime.date
+# Current Date in Brazil timezone (America/Sao_Paulo, no tz info embedded)
+d = today()  # -> datetime.date 
 
-# Time in Brazil (naive time, no tz info embedded)
-t = now()              # -> datetime.time
-
-# Timezone-aware datetime (America/Sao_Paulo)
-dt = now_datetime()    # -> datetime.datetime (aware)
+# Current timestamp in Brazil timezone (America/Sao_Paulo, no tz info embedded)
+t = now()  # -> datetime.datetime
 ```
 
 ## Installation
