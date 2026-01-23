@@ -51,7 +51,7 @@ def _fetch_url_content(target_date: dt.date) -> bytes:
     r = requests.post(IMA_URL, data=payload, timeout=10)
     r.raise_for_status()
     if "Não há dados disponíveis" in r.text:
-        return ""
+        return b""
     return r.content
 
 
@@ -72,9 +72,9 @@ def _extract_reference_date(html_content: bytes) -> dt.date | None:
     return dt.datetime.strptime(date_string, "%d/%m/%Y").date()
 
 
-def _parse_html_data(html_content: str) -> str:
+def _parse_html_data(html_content: bytes) -> str:
     dfs = pd.read_html(
-        io.BytesIO(html_content),
+        io.BytesIO(html_content),  # type: ignore[arg-type]
         flavor="lxml",
         attrs={"width": "100%"},
         header=0,
@@ -107,13 +107,13 @@ def _process_data(csv: str, reference_date: dt.date) -> pl.DataFrame:
     df = (
         pl.read_csv(io.StringIO(csv))
         .with_columns(
-            pl.col("MaturityDate").str.strptime(pl.Date, format="%d/%m/%Y"),
+            pl.col("MaturityDate").str.to_date(format="%d/%m/%Y"),
             (pl.col("MarketQuantity") * 1000),
             (pl.col("MarketValue") * 1000),
             (pl.col("QuantityVariation") * 1000),
             Date=reference_date,
         )
-        .sort(by=["BondType", "MaturityDate"])
+        .sort("BondType", "MaturityDate")
     )
 
     return df
@@ -121,8 +121,8 @@ def _process_data(csv: str, reference_date: dt.date) -> pl.DataFrame:
 
 def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
     df_anbima = tpf_data(reference_date)
-    target_cols = ["ReferenceDate", "BondType", "MaturityDate", "DV01", "DV01USD"]
-    df_anbima = df_anbima.select(target_cols).rename({"ReferenceDate": "Date"})
+    keep_cols = ["ReferenceDate", "BondType", "MaturityDate", "DV01", "DV01USD"]
+    df_anbima = df_anbima.select(keep_cols).rename({"ReferenceDate": "Date"})
     # Guard clause for missing columns
     if "DV01" not in df_anbima.columns or "DV01USD" not in df_anbima.columns:
         return df
@@ -132,7 +132,7 @@ def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
     df = df.with_columns(
         MarketDV01=pl.col("DV01") * pl.col("MarketQuantity"),
         MarketDV01USD=pl.col("DV01USD") * pl.col("MarketQuantity"),
-    ).drop(["DV01", "DV01USD"])
+    ).drop("DV01", "DV01USD")
     return df
 
 

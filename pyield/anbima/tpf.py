@@ -414,13 +414,13 @@ def tpf_data(
 
 def tpf_maturities(
     date: DateLike,
-    bond_type: str,
+    bond_type: BOND_TYPES,
 ) -> pl.Series:
     """Retrieve existing maturity dates for a given bond type on a specific date.
 
     Args:
         date (DateLike): The reference date for maturity dates.
-        bond_type (str): The bond type to filter by (e.g., 'PRE' for both 'LTN'
+        bond_type (BOND_TYPES): The bond type to filter by (e.g., 'PRE' for both 'LTN'
             and 'NTN-F', or specify 'LTN' or 'NTN-F' directly).
 
     Returns:
@@ -447,4 +447,4 @@ def tpf_maturities(
         ]
 
     """
-    return tpf_data(date, bond_type).get_column("MaturityDate").unique().sort()
+    return tpf_data(date, bond_type)["MaturityDate"].unique().sort()
