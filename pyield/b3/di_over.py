@@ -10,66 +10,67 @@ logger = logging.getLogger(__name__)
 DI_OVER_DECIMAL_PLACES = 4
 
 
-def di_over(date: DateLike) -> float | None:
+def di_over(date: DateLike) -> float:
     """
     Gets the DI (Interbank Deposit) rate for a specific date from B3/CETIP FTP server.
 
     Args:
-        date (str): Date in DD/MM/YYYY format
+        date (DateLike): Date in DD/MM/YYYY string format, datetime or pandas Timestamp.
 
     Returns:
-        float | None: DI rate for the specified date or None if no data is found.
+        float: DI rate for the specified date (e.g., 0.1315 for 13.15%).
+               Returns float("nan") if the file is not found (e.g., weekends, holidays).
 
     Raises:
-        ValueError: If date is not in the correct format
-        ftplib.error_perm: If the file is not found or there is a permission error
-        Exception: For any other unexpected error
+        ValueError: If date is not in the correct format.
+        ConnectionError: If connection to the FTP server fails or other transfer
+            errors occur.
 
     Examples:
         >>> di_over("28/02/2025")
         0.1315
+        >>> di_over("01/01/2025")  # Holiday
+        nan
     """
     if has_nullable_args(date):
-        return None  # Early return for nullable input
-    ftp = None
+        return float("nan")
+
     try:
-        # Convert date to file format
+        # Convert date to expected file format: YYYYMMDD.txt
         date_obj = convert_dates(date)
         filename = date_obj.strftime("%Y%m%d.txt")
 
-        # Connect to FTP and get the file
-        ftp = ftplib.FTP("ftp.cetip.com.br")
-        ftp.login()
-        ftp.cwd("/MediaCDI")
+        # Use context manager for safe resource handling (auto-close/quit)
+        with ftplib.FTP("ftp.cetip.com.br", timeout=10) as ftp:
+            ftp.login()
+            ftp.cwd("/MediaCDI")
 
-        # Read rate
-        lines = []
-        ftp.retrlines(f"RETR {filename}", lines.append)
+            lines = []
+            try:
+                ftp.retrlines(f"RETR {filename}", lines.append)
+            except ftplib.error_perm as e:
+                # Code 550 usually means "File not found" (weekend/holiday/future)
+                if str(e).startswith("550"):
+                    logger.warning(f"DI Rate file not found for {date}: {e}")
+                    return float("nan")  # Return NaN instead of raising exception
 
-        # Close FTP connection
-        ftp.quit()
+                # If it's another type of error, we raise it to be caught below
+                raise e
 
-        # Get and format rate
-        if lines:
+            if not lines:
+                logger.error(f"File {filename} is empty.")
+                return float("nan")
+
+            # Parse the rate
+            # Format usually: "00001315" -> 13.15% -> 0.1315
             raw_rate = lines[0].strip()
             rate = int(raw_rate) / 10000
             return round(rate, DI_OVER_DECIMAL_PLACES)
-        else:
-            logger.error(f"No data found for date {date}")
-            return None
 
     except ValueError as e:
-        logger.error(f"Date format error: {e}")
+        logger.error(f"Date format error for input '{date}': {e}")
         raise
-    except ftplib.error_perm as e:
-        logger.error(f"File access error: {e}")
-        raise
-    except Exception:
-        logger.exception("Unexpected error")
-        raise
-    finally:
-        if ftp and ftp.sock:  # Ensure FTP connection is closed AND socket exists
-            try:
-                ftp.quit()
-            except:  # noqa
-                pass
+
+    except ftplib.all_errors as e:
+        logger.error(f"FTP connection or transfer error: {e}")
+        raise ConnectionError(f"Failed to fetch DI rate from FTP: {e}") from e

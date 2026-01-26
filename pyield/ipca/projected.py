@@ -15,7 +15,7 @@ class IndicatorProjection:
 def _get_page_text() -> str:
     """
     Faz a requisição e retorna o HTML decodificado como string.
-    Retornar str evita conflitos de tipo no regex.
+    Retornar str evita conflitos de tipo no regex e facilita o processamento.
     """
     url = "https://www.anbima.com.br/informacoes/indicadores/"
     try:
@@ -31,27 +31,26 @@ def projected_rate() -> IndicatorProjection:
     """
     Retrieves the current IPCA projection from the ANBIMA website.
 
-    This function makes an HTTP request to the ANBIMA website, extracts HTML tables
-    containing economic indicators, and specifically processes the IPCA projection data.
+    This function makes an HTTP request to the ANBIMA website and extracts the
+    IPCA projection data directly from the raw HTML using regular expressions.
 
     Process:
-        1. Accesses the ANBIMA indicators webpage
-        2. Extracts the third table that contains the IPCA projection
-        3. Locates the row labeled as "IPCA1"
-        4. Extracts the projection value and converts it to decimal format
-        5. Extracts and formats the reference month of the projection
-        6. Extracts the date and time of the last update
+        1. Accesses the ANBIMA indicators webpage.
+        2. Searches for the "Last Update" text pattern to parse the timestamp.
+        3. Searches for the specific IPCA block containing the "Projeção" label.
+        4. Extracts the reference period (e.g., "jan/26") and the value.
+        5. Converts the percentage string to a decimal float.
 
     Returns:
         IndicatorProjection: An object containing:
-            - last_updated (dt.datetime): Date and time of the last data update
+            - last_updated (dt.datetime): Date and time of the last data update.
             - reference_period (str): Reference period of the projection as a string in
-              "MMM/YY" brazilian format (e.g., "set/25")
-            - projected_value (float): Projected IPCA value as a decimal number
+              "MMM/YY" brazilian format (e.g., "set/25").
+            - projected_value (float): Projected IPCA value as a decimal number.
 
     Raises:
-        requests.RequestException: If there are connection issues with the ANBIMA site
-        ValueError: If the expected data is not found in the page structure
+        ConnectionError: If there are connection issues with the ANBIMA site.
+        ValueError: If the expected data patterns are not found in the page text.
 
     Example:
         >>> from pyield import ipca
@@ -60,8 +59,9 @@ def projected_rate() -> IndicatorProjection:
         IndicatorProjection(last_updated=..., reference_period=..., projected_value=...)
 
     Notes:
-        - The function requires internet connection to access the ANBIMA website
-        - The structure of the ANBIMA page may change, which could affect the function
+        - The function requires internet connection to access the ANBIMA website.
+        - The extraction relies on text patterns (Regex). Significant changes to the
+          HTML structure or label text by ANBIMA may affect the function.
     """
     # 1. Obtém o texto já decodificado (str)
     html_content = _get_page_text()
@@ -77,7 +77,8 @@ def projected_rate() -> IndicatorProjection:
     last_update_str = match_update.group(1)
     # Remove espaços extras que possam existir na captura
     last_update_str = last_update_str.replace(" - ", "-").strip()
-    # Formato esperado: "23/01/2026-16:48" (ajustado para parsing seguro)
+
+    # Formato esperado: "23/01/2026-16:48"
     try:
         last_updated = dt.datetime.strptime(last_update_str, "%d/%m/%Y-%H:%M")
     except ValueError:
