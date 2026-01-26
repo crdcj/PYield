@@ -14,7 +14,7 @@ classifiers = [
     "Topic :: Office/Business :: Financial :: Investment",
 ]
 dependencies = [
-    "polars[numpy, pyarrow]>=1.33.0",
+    "polars[pyarrow]>=1.33.0",
     "pandas[html]>=2.0.0",
     "python-dateutil>=2.8.0",
     "requests>=2.31.0",

@@ -186,7 +186,7 @@ def cash_flows(
     coupon_pmt = _get_coupon_pmt(maturity)
     final_pmt = _get_final_pmt(maturity)
 
-    # Build dataframe and assign cash flows using Polars expression (avoid NumPy)
+    # Build dataframe and assign cash flows using Polars expressions
     df = pl.DataFrame({"PaymentDate": pay_dates}).with_columns(
         pl.when(pl.col("PaymentDate") == maturity)
         .then(final_pmt)
