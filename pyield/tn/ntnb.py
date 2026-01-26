@@ -1,8 +1,8 @@
 import datetime as dt
 import logging
 
-import pandas as pd
 import polars as pl
+from dateutil.relativedelta import relativedelta
 
 import pyield.converters as cv
 import pyield.interpolator as ip
@@ -108,8 +108,8 @@ def maturities(date: DateLike) -> pl.Series:
 
 
 def _generate_all_coupon_dates(
-    start: DateLike,
-    end: DateLike,
+    start: dt.date,
+    end: dt.date,
 ) -> pl.Series:
     """
     Generate a map of all possible coupon dates between the start and end dates.
@@ -123,9 +123,6 @@ def _generate_all_coupon_dates(
     Returns:
         pl.Series: Series of coupon dates within the specified range.
     """
-    start = cv.convert_dates(start)
-    end = cv.convert_dates(end)
-
     first_coupon_date = dt.date(start.year, 2, 1)
 
     # Generate coupon dates on the 1st of the month
@@ -183,8 +180,7 @@ def payment_dates(
 
     while coupon_date > settlement:
         coupon_dates.append(coupon_date)
-        coupon_date -= pd.DateOffset(months=6)
-        coupon_date = coupon_date.date()
+        coupon_date -= relativedelta(months=6)
 
     return pl.Series(name="payment_dates", values=coupon_dates).sort()
 
@@ -383,7 +379,9 @@ def _create_bootstrap_dataframe(
     )
 
     # Generate coupon dates up to the longest maturity date
-    all_coupon_dates = _generate_all_coupon_dates(settlement, maturities.max())
+    last_maturity = maturities.max()
+    assert isinstance(last_maturity, dt.date)
+    all_coupon_dates = _generate_all_coupon_dates(settlement, last_maturity)
     bdays_to_mat = bday.count(settlement, all_coupon_dates)
     ytm_rates = flat_fwd.interpolate(bdays_to_mat)
 

@@ -1,7 +1,7 @@
 import datetime as dt
 
-import pandas as pd
 import polars as pl
+from dateutil.relativedelta import relativedelta
 
 import pyield.converters as cv
 import pyield.tn.tools as tl
@@ -122,8 +122,7 @@ def payment_dates(
     while coupon_date > settlement:
         coupon_dates.append(coupon_date)
         # Move the coupon date back 6 months
-        coupon_date -= pd.DateOffset(months=6)
-        coupon_date = coupon_date.date()  # DateOffset returns a Timestamp
+        coupon_date -= relativedelta(months=6)
 
     return pl.Series(coupon_dates).sort()
 

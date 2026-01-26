@@ -1,7 +1,7 @@
 from enum import Enum
 
-import pandas as pd
 import polars as pl
+from dateutil.relativedelta import relativedelta
 
 import pyield.converters as cv
 import pyield.tn.tools as bt
@@ -108,7 +108,7 @@ def payment_dates(
     # Get bond parameters
     _, _, n_amortizations = _get_bond_parameters(commercial_name)
 
-    amtz_dates = [maturity - pd.DateOffset(months=i) for i in range(n_amortizations)]
+    amtz_dates = [maturity - relativedelta(months=i) for i in range(n_amortizations)]
 
     if len(amtz_dates) == 0:
         raise ValueError("No amortization dates found after settlement date.")
