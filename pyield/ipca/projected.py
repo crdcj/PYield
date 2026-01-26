@@ -1,8 +1,7 @@
 import datetime as dt
-import io
+import re
 from dataclasses import dataclass
 
-import pandas as pd
 import requests
 
 
@@ -13,29 +12,19 @@ class IndicatorProjection:
     projected_value: float  # Projected value
 
 
-def _get_page_text() -> bytes:
-    """Faz a requisição HTTP para a página da ANBIMA e retorna o texto HTML."""
+def _get_page_text() -> str:
+    """
+    Faz a requisição e retorna o HTML decodificado como string.
+    Retornar str evita conflitos de tipo no regex.
+    """
     url = "https://www.anbima.com.br/informacoes/indicadores/"
     try:
         r = requests.get(url, timeout=10)
         r.raise_for_status()
-        return r.content
+        # Decodifica explicitamente para string (latin1 conforme o header do XML)
+        return r.content.decode("latin1")
     except requests.exceptions.RequestException as e:
         raise ConnectionError(f"Erro ao acessar a página da ANBIMA: {e}")
-
-
-def _read_ipca_table(page_bytes: bytes) -> pd.DataFrame:
-    dfs = pd.read_html(
-        io.BytesIO(page_bytes),
-        flavor="lxml",
-        decimal=",",
-        thousands=".",
-        dtype_backend="pyarrow",
-        encoding="latin1",
-    )
-    # The IPCA projection is in the third table
-    df = dfs[2]
-    return df
 
 
 def projected_rate() -> IndicatorProjection:
@@ -74,24 +63,54 @@ def projected_rate() -> IndicatorProjection:
         - The function requires internet connection to access the ANBIMA website
         - The structure of the ANBIMA page may change, which could affect the function
     """
-    page_text = _get_page_text()
-    df = _read_ipca_table(page_text)
+    # 1. Obtém o texto já decodificado (str)
+    html_content = _get_page_text()
 
-    last_update_str = df.iat[0, 0].split("Atualização:")[-1].strip()
-    last_update = dt.datetime.strptime(last_update_str, "%d/%m/%Y - %H:%M h")
+    # 2. Extrair Data de Atualização
+    # Procura por: "Data e Hora da Última Atualização: 23/01/2026 - 16:48 h"
+    update_pattern = r"Data e Hora da Última Atualização:\s*([0-9]{2}/[0-9]{2}/[0-9]{4}\s*-\s*[0-9]{2}:[0-9]{2})"  # noqa:E501
 
-    ipca_row = df.loc[df[0] == "IPCA1"]
-    ipca_value = ipca_row.iloc[0, 2]
-    ipca_value = float(ipca_value) / 100
-    ipca_value = round(ipca_value, 4)
+    match_update = re.search(update_pattern, html_content)
+    if not match_update:
+        raise ValueError("Não foi possível encontrar a data de atualização na página.")
 
-    # Extract and format the reference month
-    ipca_date = ipca_row.iloc[0, 1]
-    ipca_date = str(ipca_date)
-    ipca_date = ipca_date.split("(")[-1].split(")")[0]
+    last_update_str = match_update.group(1)
+    # Remove espaços extras que possam existir na captura
+    last_update_str = last_update_str.replace(" - ", "-").strip()
+    # Formato esperado: "23/01/2026-16:48" (ajustado para parsing seguro)
+    try:
+        last_updated = dt.datetime.strptime(last_update_str, "%d/%m/%Y-%H:%M")
+    except ValueError:
+        # Fallback caso o espaço seja mantido ou o formato varie levemente
+        last_updated = dt.datetime.strptime(match_update.group(1), "%d/%m/%Y - %H:%M")
+
+    # 3. Extrair Bloco do IPCA
+    # Regex explicado:
+    # IPCA.*?        -> Encontra IPCA e avança (ignora o IPCA índice, busca o próximo)
+    # Projeção\s*\(  -> Encontra 'Projeção ('
+    # (.*?)          -> GRUPO 1: Captura o período (ex: jan/26)
+    # \)             -> Fecha parênteses
+    # .*?>           -> Avança até fechar a próxima tag HTML (<td>)
+    # ([0-9]+,[0-9]+)-> GRUPO 2: Captura o valor (ex: 0,36)
+    # <              -> Garante que o número acabou
+
+    ipca_pattern = r"IPCA.*?Projeção\s*\((.*?)\).*?>([0-9]+,[0-9]+)<"
+
+    # Passamos flags= explicitamente para satisfazer linters estritos
+    match_ipca = re.search(ipca_pattern, html_content, flags=re.DOTALL | re.IGNORECASE)
+
+    if not match_ipca:
+        raise ValueError("Não foi possível encontrar os dados de projeção do IPCA.")
+
+    period_str = match_ipca.group(1)  # Ex: jan/26
+    value_str = match_ipca.group(2)  # Ex: 0,36
+
+    # Conversão de valores
+    projected_value = float(value_str.replace(",", ".")) / 100
+    projected_value = round(projected_value, 4)
 
     return IndicatorProjection(
-        last_updated=last_update,
-        reference_period=ipca_date,
-        projected_value=ipca_value,
+        last_updated=last_updated,
+        reference_period=period_str,
+        projected_value=projected_value,
     )

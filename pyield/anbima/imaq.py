@@ -80,7 +80,6 @@ def _parse_html_data(html_content: bytes) -> str:
         header=0,
         thousands=".",
         decimal=",",
-        displayed_only=True,
         dtype_backend="pyarrow",
         na_values="--",
         encoding="iso-8859-1",
