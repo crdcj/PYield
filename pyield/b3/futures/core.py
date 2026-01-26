@@ -54,8 +54,7 @@ def futures(
             - "WDO": Mini U.S. Dollar Futures from B3.
             - "IND": Ibovespa Futures from B3.
             - "WIN": Mini Ibovespa Futures from B3.
-        date (DateLike): The date for which to fetch the data.
-            If the reference date is a string, it should be in 'DD-MM-YYYY' format.
+        date (DateLike): The reference date for fetching the data.
 
     Returns:
         pl.DataFrame: DataFrame containing the fetched data for the specified futures

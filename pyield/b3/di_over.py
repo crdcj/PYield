@@ -15,7 +15,7 @@ def di_over(date: DateLike) -> float:
     Gets the DI (Interbank Deposit) rate for a specific date from B3/CETIP FTP server.
 
     Args:
-        date (DateLike): Date in DD/MM/YYYY string format, datetime or pandas Timestamp.
+        date (DateLike): The reference date for fetching the DI rate.
 
     Returns:
         float: DI rate for the specified date (e.g., 0.1315 for 13.15%).

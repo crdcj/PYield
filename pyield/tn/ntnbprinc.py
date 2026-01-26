@@ -13,13 +13,11 @@ def price(
     Calculate the NTN-B PRINCIPAL price using Anbima rules.
 
     Args:
-        settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
-        maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
-            a pandas Timestamp.
-        rate (float): The discount rate used to calculate the present value of
-            the cash flows, which is the yield to maturity (YTM) of the NTN-F.
+        settlement (DateLike): The settlement date.
+        maturity (DateLike): The maturity date.
+        rate (float): The discount rate (yield to maturity) of the bond.
         face_value (float): The face value of the bond (VNA).
+
     Returns:
         float: The NTN-B PRINCIPAL price using Anbima rules.
 
@@ -58,12 +56,9 @@ def dv01(
     Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.
 
     Args:
-        settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
-        maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
-            a pandas Timestamp.
-        rate (float): The discount rate used to calculate the present value of
-            the cash flows, which is the yield to maturity (YTM) of the LTN.
+        settlement (DateLike): The settlement date.
+        maturity (DateLike): The maturity date.
+        rate (float): The discount rate (yield to maturity) of the bond.
         face_value (float): The face value of the bond (VNA).
 
     Returns:

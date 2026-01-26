@@ -125,9 +125,9 @@ def cash_flows(
     Generate the cash flows for NTN-B1 bonds between the settlement and maturity dates.
 
     Args:
-        settlement (DateScalar): The settlement date (exclusive) to start generating
+        settlement (DateLike): The settlement date (exclusive) to start generating
             the cash flows.
-        maturity (DateScalar): The maturity date of the bond.
+        maturity (DateLike): The maturity date of the bond.
         commercial_name (CommercialName): The commercial name of the NTN-B1 bond
             (Renda+ or Educa+).
 
@@ -198,8 +198,8 @@ def quotation(
     Calculate the NTN-B quotation in base 100 using Anbima rules.
 
     Args:
-        settlement (DateScalar): The settlement date of the operation.
-        maturity (DateScalar): The maturity date of the NTN-B bond.
+        settlement (DateLike): The settlement date of the operation.
+        maturity (DateLike): The maturity date of the NTN-B bond.
         rate (float): The discount rate used to calculate the present value of
             the cash flows, which is the yield to maturity (YTM) of the NTN-B.
         commercial_name (CommercialName): The commercial name of the NTN-B1 bond
@@ -278,8 +278,8 @@ def duration(
     Calculate the Macaulay duration of the NTN-B bond in business years.
 
     Args:
-        settlement (DateScalar): The settlement date of the operation.
-        maturity (DateScalar): The maturity date of the NTN-B bond.
+        settlement (DateLike): The settlement date of the operation.
+        maturity (DateLike): The maturity date of the NTN-B bond.
         rate (float): The discount rate used to calculate the duration.
         commercial_name (CommercialName): The commercial name of the NTN-B1 bond
             (Renda+ or Educa+).
@@ -319,12 +319,9 @@ def dv01(
     Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.
 
     Args:
-        settlement (DateScalar): The settlement date in 'DD-MM-YYYY' format
-            or a pandas Timestamp.
-        maturity (DateScalar): The maturity date in 'DD-MM-YYYY' format or
-            a pandas Timestamp.
-        rate (float): The discount rate used to calculate the present value of
-            the cash flows, which is the yield to maturity (YTM) of the NTN-B.
+        settlement (DateLike): The settlement date.
+        maturity (DateLike): The maturity date of the NTN-B bond.
+        rate (float): The discount rate (yield to maturity) of the NTN-B bond.
         vna (float): The nominal value of the NTN-B bond.
         commercial_name (CommercialName): The commercial name of the NTN-B1 bond
 

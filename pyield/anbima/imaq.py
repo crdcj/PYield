@@ -177,9 +177,8 @@ def imaq(date: DateLike) -> pl.DataFrame:
     fetching or processing, an empty DataFrame is returned.
 
     Args:
-        date (DateLike): A date-like object representing the target date for fetching
-            the data. Only 5 business days from the last available data are available.
-            The last is typically from 2 business days ago.
+        date (DateLike): The reference date for fetching the data. Only the last 5
+            business days are available. The latest is typically from 2 bdays ago.
 
     Returns:
         pl.DataFrame: A DataFrame containing the IMA data.

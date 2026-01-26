@@ -84,12 +84,9 @@ def price(
     Calculate the LTN price using Anbima rules.
 
     Args:
-        settlement (DateLike): The settlement date in 'DD-MM-YYYY' format
-            or a date-like object.
-        maturity (DateLike): The maturity date in 'DD-MM-YYYY' format or
-            a date-like object.
-        rate (float): The discount rate used to calculate the present value of
-            the cash flows, which is the yield to maturity (YTM) of the NTN-F.
+        settlement (DateLike): The settlement date.
+        maturity (DateLike): The maturity date.
+        rate (float): The discount rate (yield to maturity) of the bond.
 
     Returns:
         float: The LTN price using Anbima rules.
@@ -157,12 +154,9 @@ def dv01(
     Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.
 
     Args:
-        settlement (DateLike): The settlement date in 'DD-MM-YYYY' format
-            or a date-like object.
-        maturity (DateLike): The maturity date in 'DD-MM-YYYY' format or
-            a date-like object.
-        rate (float): The discount rate used to calculate the present value of
-            the cash flows, which is the yield to maturity (YTM) of the LTN.
+        settlement (DateLike): The settlement date.
+        maturity (DateLike): The maturity date.
+        rate (float): The discount rate (yield to maturity) of the bond.
 
     Returns:
         float: The DV01 value, representing the price change for a 1 basis point
