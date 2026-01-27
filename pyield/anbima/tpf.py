@@ -17,7 +17,6 @@ from typing import Literal
 
 import polars as pl
 import polars.selectors as cs
-import polars.selectors as ps
 import requests
 from requests.exceptions import HTTPError, RequestException
 
@@ -37,34 +36,42 @@ BOND_TYPES = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
 ANBIMA_RTM_HOSTNAME = "www.anbima.associados.rtm"
 ANBIMA_RTM_URL = f"http://{ANBIMA_RTM_HOSTNAME}/merc_sec/arqs"
-# URL example: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
+# Exemplo de URL: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 
-# Before 13/05/2014 the file was zipped and the endpoint ended with ".exe"
+# Antes de 13/05/2014 o arquivo era zipado e o endpoint terminava com ".exe"
 FORMAT_CHANGE_DATE = dt.date(2014, 5, 13)
 
-COLUMN_NAME_MAPPING = {
-    "Titulo": "BondType",
-    "Data Referencia": "ReferenceDate",
-    "Codigo SELIC": "SelicCode",
-    "Data Base/Emissao": "IssueBaseDate",
-    "Data Vencimento": "MaturityDate",
-    "Tx. Compra": "BidRate",
-    "Tx. Venda": "AskRate",
-    "Tx. Indicativas": "IndicativeRate",
-    "PU": "Price",
-    "Desvio padrao": "StdDev",
-    "Interv. Ind. Inf. (D0)": "LowerBoundRateD0",
-    "Interv. Ind. Sup. (D0)": "UpperBoundRateD0",
-    "Interv. Ind. Inf. (D+1)": "LowerBoundRateD1",
-    "Interv. Ind. Sup. (D+1)": "UpperBoundRateD1",
-    "Criterio": "Criteria",
+PUBLIC_DATA_RETENTION_DAYS = 5
+
+# Única fonte de verdade para colunas do CSV: (novo_nome, tipo)
+# Colunas de data são lidas como String e convertidas em _process_raw_df
+TPF_COLUMNS = {
+    "Titulo": ("BondType", pl.String),
+    "Data Referencia": ("ReferenceDate", pl.String),
+    "Codigo SELIC": ("SelicCode", pl.Int64),
+    "Data Base/Emissao": ("IssueBaseDate", pl.String),
+    "Data Vencimento": ("MaturityDate", pl.String),
+    "Tx. Compra": ("BidRate", pl.Float64),
+    "Tx. Venda": ("AskRate", pl.Float64),
+    "Tx. Indicativas": ("IndicativeRate", pl.Float64),
+    "PU": ("Price", pl.Float64),
+    "Desvio padrao": ("StdDev", pl.Float64),
+    "Interv. Ind. Inf. (D0)": ("LowerBoundRateD0", pl.Float64),
+    "Interv. Ind. Sup. (D0)": ("UpperBoundRateD0", pl.Float64),
+    "Interv. Ind. Inf. (D+1)": ("LowerBoundRateD1", pl.Float64),
+    "Interv. Ind. Sup. (D+1)": ("UpperBoundRateD1", pl.Float64),
+    "Criterio": ("Criteria", pl.String),
 }
+
+# Derivados automaticamente
+TPF_SCHEMA = {k: v[1] for k, v in TPF_COLUMNS.items()}
+COLUMN_NAME_MAPPING = {k: v[0] for k, v in TPF_COLUMNS.items()}
 
 logger = logging.getLogger(__name__)
 
 
 def _validate_not_future_date(date: dt.date):
-    """Raises ValueError if the date is in the future."""
+    """Levanta ValueError se a data for no futuro."""
     if date > clock.today():
         date_log = date.strftime("%d/%m/%Y")
         msg = f"Cannot process data for a future date ({date_log})."
@@ -94,9 +101,9 @@ def _build_file_name(date: dt.date) -> str:
 def _build_file_url(date: dt.date) -> str:
     last_bday = bday.last_business_day()
     business_days_count = bday.count(date, last_bday)
-    if business_days_count > 5:  # noqa
-        # For dates older than 5 business days, only the RTM data is available
-        logger.info(f"Trying to fetch RTM data for {date.strftime('%d/%m/%Y')}")
+    if business_days_count > PUBLIC_DATA_RETENTION_DAYS:
+        # Para datas com mais de 5 dias úteis, apenas os dados da RTM estão disponíveis
+        logger.info(f"Tentando buscar dados RTM para {date.strftime('%d/%m/%Y')}")
         file_url = f"{ANBIMA_RTM_URL}/{_build_file_name(date)}"
     else:
         file_url = f"{ANBIMA_URL}/{_build_file_name(date)}"
@@ -109,8 +116,7 @@ def _get_csv_data(date: dt.date) -> str:
     r = requests.get(file_url, timeout=10)
     r.raise_for_status()
     r.encoding = "latin1"
-    text = r.text
-    return text
+    return r.text
 
 
 def _read_csv_data(csv_text: str) -> pl.DataFrame:
@@ -120,20 +126,21 @@ def _read_csv_data(csv_text: str) -> pl.DataFrame:
         separator="@",
         null_values=["--"],
         decimal_comma=True,
+        schema_overrides=TPF_SCHEMA,
     )
     return df
 
 
 def _process_raw_df(df: pl.DataFrame) -> pl.DataFrame:
     df = df.rename(COLUMN_NAME_MAPPING).with_columns(
-        # Remove percentage from rates
-        # Rate columns have percentage values with 4 decimal places in percentage values
-        # Round to 6 decimal places to avoid floating point errors
-        (ps.contains("Rate") / 100).round(6),
-        (ps.ends_with("Date")).cast(pl.String).str.strptime(pl.Date, "%Y%m%d"),
+        # Remove o percentual das taxas
+        # Colunas de taxa têm valores percentuais com 4 casas decimais
+        # Arredonda para 6 casas decimais para minimizar erros de ponto flutuante
+        cs.contains("Rate").truediv(100).round(6),
+        cs.ends_with("Date").str.to_date(format="%Y%m%d"),
     )
-    bd_to_mat_pd = bday.count(start=df["ReferenceDate"], end=df["MaturityDate"])
-    df = df.with_columns(BDToMat=bd_to_mat_pd)
+    bd_to_mat = bday.count(start=df["ReferenceDate"], end=df["MaturityDate"])
+    df = df.with_columns(BDToMat=bd_to_mat)
     return df
 
 
@@ -141,7 +148,6 @@ def _calculate_duration_per_row(row: dict) -> float:
     """Função auxiliar que será aplicada a cada linha do struct."""
     # Mapeia o BondType para a função de duration correspondente
     # Isso torna a lógica dentro do lambda ainda mais limpa
-
     bond_type = row["BondType"]
     if bond_type == "LTN":
         return row["BDToMat"] / 252  # A lógica da LTN depende apenas do BDToMat
@@ -182,11 +188,11 @@ def _add_duration(df_input: pl.DataFrame) -> pl.DataFrame:
 
 
 def _add_dv01(df_input: pl.DataFrame, ref_date: dt.date) -> pl.DataFrame:
-    """Add the DV01 columns to the DataFrame."""
+    """Adiciona as colunas de DV01 ao DataFrame."""
     mduration_expr = pl.col("Duration") / (1 + pl.col("IndicativeRate"))
     df = df_input.with_columns(DV01=0.0001 * mduration_expr * pl.col("Price"))
 
-    # DV01 in USD
+    # DV01 em USD
     try:
         ptax_rate = ptax(date=ref_date)
         df = df.with_columns(DV01USD=pl.col("DV01") / ptax_rate)
@@ -196,7 +202,7 @@ def _add_dv01(df_input: pl.DataFrame, ref_date: dt.date) -> pl.DataFrame:
 
 
 def _add_di_rate(df: pl.DataFrame, ref_date: dt.date) -> pl.DataFrame:
-    """Add the DI rate column to the DataFrame."""
+    """Adiciona a coluna de taxa DI ao DataFrame."""
     di_rates = di1.interpolate_rates(
         dates=ref_date,
         expirations=df["MaturityDate"],
@@ -207,7 +213,7 @@ def _add_di_rate(df: pl.DataFrame, ref_date: dt.date) -> pl.DataFrame:
 
 
 def _custom_sort_and_order(df: pl.DataFrame) -> pl.DataFrame:
-    """Reorder the columns of the DataFrame according to the specified order."""
+    """Reordena as colunas do DataFrame de acordo com a ordem especificada."""
     column_order = [
         "BondType",
         "ReferenceDate",
@@ -396,10 +402,10 @@ def tpf_data(
     _validate_not_future_date(date)
 
     if fetch_from_source:
-        # Try to fetch the data directly from the source (ANBIMA)
+        # Tenta buscar os dados diretamente da fonte (ANBIMA)
         df = _fetch_tpf_data(date)
     else:
-        # Otherwise, get the data from the local cache
+        # Caso contrário, obtém os dados do cache local
         df = get_cached_dataset("tpf").filter(pl.col("ReferenceDate") == date)
 
     if df.is_empty():
@@ -416,16 +422,16 @@ def tpf_maturities(
     date: DateLike,
     bond_type: BOND_TYPES,
 ) -> pl.Series:
-    """Retrieve existing maturity dates for a given bond type on a specific date.
+    """Recupera os vencimentos existentes para um tipo de título na data especificada.
 
     Args:
-        date (DateLike): The reference date for maturity dates.
-        bond_type (BOND_TYPES): The bond type to filter by (e.g., 'PRE' for both 'LTN'
-            and 'NTN-F', or specify 'LTN' or 'NTN-F' directly).
+        date (DateLike): A data de referência para os vencimentos.
+        bond_type (BOND_TYPES): O tipo de título para filtrar (ex: 'PRE' para 'LTN'
+            e 'NTN-F', ou especifique 'LTN' ou 'NTN-F' diretamente).
 
     Returns:
-        pl.Series: A Series containing unique maturity dates for the
-            specified bond type(s).
+        pl.Series: Uma Series contendo as datas de vencimento únicas para o(s)
+            tipo(s) de título especificado(s).
 
     Examples:
         >>> from pyield import anbima
