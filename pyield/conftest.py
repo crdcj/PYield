@@ -1,4 +1,3 @@
-import pandas as pd
 import polars as pl
 import pytest
 
@@ -8,7 +7,6 @@ import pyield as yd
 @pytest.fixture(autouse=True)
 def add_np(doctest_namespace):
     doctest_namespace["yd"] = yd
-    doctest_namespace["pd"] = pd
     doctest_namespace["pl"] = pl
 
 
