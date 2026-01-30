@@ -99,10 +99,10 @@ def _build_url(
         url += f"&@dataMovimentoFim='{end_str}'"
 
     # Mapeamento do auction_type para o valor esperado pela API
-    auction_type_mapping = {"sell": "Venda", "buy": "Compra"}
     if auction_type:
-        auction_type = str(auction_type).lower()
-        auction_type_api_value = auction_type_mapping[auction_type]
+        normalized_auction_type = auction_type.lower()
+        auction_type_mapping = {"sell": "Venda", "buy": "Compra"}
+        auction_type_api_value = auction_type_mapping[normalized_auction_type]
         # Adiciona o parâmetro tipoOferta à URL se auction_type for fornecido
         url += f"&@tipoOferta='{auction_type_api_value}'"
 
@@ -112,7 +112,7 @@ def _build_url(
 
 
 @default_retry
-def _get_api_csv(url: str) -> bytes:
+def _get_api_csv(url: str) -> str:
     response = requests.get(url, timeout=10)
     response.raise_for_status()
     response.encoding = "utf-8"
@@ -299,6 +299,8 @@ def _add_usd_dv01(df: pl.DataFrame) -> pl.DataFrame:
     # Determina o intervalo de datas necessário a partir do DataFrame de leilões
     ptax_start_date = df["Date"].min()
     ptax_end_date = df["Date"].max()
+    assert isinstance(ptax_start_date, dt.date)
+    assert isinstance(ptax_end_date, dt.date)
 
     # Busca o DataFrame da PTAX
     df_ptax = _get_ptax_df(start_date=ptax_start_date, end_date=ptax_end_date)
