@@ -1,7 +1,6 @@
 import datetime as dt
 from typing import Literal, overload
 
-import pandas as pd
 import polars as pl
 
 import pyield.bday.holidays as hl
@@ -15,6 +14,7 @@ br_holidays = hl.BrHolidays()
 OLD_HOLIDAYS_ARRAY = br_holidays.get_holiday_series(holiday_option="old")
 NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_series(holiday_option="new")
 TRANSITION_DATE = br_holidays.TRANSITION_DATE
+SATURDAY_INDEX = 6
 
 
 @overload
@@ -374,35 +374,25 @@ def offset(
 def generate(
     start: DateLike | None = None,
     end: DateLike | None = None,
-    inclusive: Literal["both", "neither", "left", "right"] = "both",
+    closed: Literal["both", "left", "right", "none"] = "both",
     holiday_option: Literal["old", "new", "infer"] = "new",
 ) -> pl.Series:
     """
     Generates a Series of business days between a `start` and `end` date, considering
-    the list of Brazilian holidays. It supports customization of holiday lists and
-    inclusion options for start and end dates. It wraps `pandas.bdate_range`.
+    the list of Brazilian holidays.
 
     Args:
-        start (DateLike | None, optional): The start date for generating the dates.
-             If None, the current date is used. Defaults to None.
-        end (DateLike | None, optional): The end date for generating business days.
-            If None, the current date is used. Defaults to None.
-        inclusive (Literal["both", "neither", "left", "right"], optional):
-            Determines which of the start and end dates are included in the result.
-            Valid options are 'both', 'neither', 'left', 'right'. Defaults to 'both'.
-        holiday_option (Literal["old", "new", "infer"], optional):
-            Specifies the list of holidays to consider. Defaults to "new".
-            - **'old'**: Uses the holiday list effective *before* the transition date
-            of 2023-12-26.
-            - **'new'**: Uses the holiday list effective *on and after* the transition
-            date of 2023-12-26.
-            - **'infer'**: Automatically selects the holiday list ('old' or 'new') based
-            on the `start` date relative to the transition date (2023-12-26). If `start`
-            is before the transition, 'old' is used; otherwise, 'new' is used.
+        start: The start date. If None, the current date is used.
+        end: The end date. If None, the current date is used.
+        closed: Define which sides of the range are closed (inclusive).
+            Valid options are 'both', 'left', 'right', 'none'. Defaults to 'both'.
+        holiday_option: Specifies the list of holidays to consider. Defaults to "new".
+            - 'old': Uses the holiday list effective before 2023-12-26.
+            - 'new': Uses the holiday list effective on and after 2023-12-26.
+            - 'infer': Selects based on `start` date relative to the transition.
 
     Returns:
-        pl.Series: A Series representing a range of business days between the specified
-            start and end dates, considering the specified holidays.
+        pl.Series: A Series of business days (name: 'bday').
 
     Examples:
         >>> from pyield import bday
@@ -417,35 +407,21 @@ def generate(
             2023-12-29
             2024-01-02
         ]
-
-    Note:
-        For detailed information on parameters and error handling, refer to
-        `pandas.bdate_range` documentation:
-        https://pandas.pydata.org/docs/reference/api/pandas.bdate_range.html.
     """
-    conv_start = cv.convert_dates(start)
     today = clock.today()
-    if not conv_start:
-        conv_start = today
+    conv_start = cv.convert_dates(start) or today
+    conv_end = cv.convert_dates(end) or today
 
-    conv_end = cv.convert_dates(end)
-    if not conv_end:
-        conv_end = today
+    # Gera range completo de datas
+    s = pl.date_range(conv_start, conv_end, closed=closed, eager=True).alias("bday")
 
-    applicable_holidays = br_holidays.get_holiday_series(
+    # Pega feriados aplicáveis
+    holidays = br_holidays.get_holiday_series(
         dates=conv_start, holiday_option=holiday_option
-    ).to_list()
+    ).implode()
 
-    # Get the result as a DatetimeIndex (dti)
-    result_dti = pd.bdate_range(
-        start=conv_start,
-        end=conv_end,
-        freq="C",
-        inclusive=inclusive,
-        holidays=applicable_holidays,
-    )
-    s_pd = pd.Series(result_dti.values, name="bday").astype("date32[pyarrow]")
-    return pl.from_pandas(s_pd)
+    # Filtra: só dias úteis (seg-sex e não feriado)
+    return s.filter((s.dt.weekday() < SATURDAY_INDEX) & (~s.is_in(holidays)))
 
 
 @overload
