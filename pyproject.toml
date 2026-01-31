@@ -1,5 +1,5 @@
 [project]
-name = "PYield"
+name = "pyield"
 authors = [{ name = "Carlos Carvalho", email = "cr.cj@outlook.com" }]
 description = "A Python library for analysis of fixed income instruments in Brazil"
 readme = "README.md"
@@ -23,20 +23,25 @@ dependencies = [
 dynamic = ["version"]
 
 [project.urls]
+Homepage = "https://github.com/crdcj/PYield"
+Documentation = "https://crdcj.github.io/PYield"
 Source = "https://github.com/crdcj/PYield"
+"Bug Tracker" = "https://github.com/crdcj/PYield/issues"
 
 [dependency-groups]
 dev = [
-    "python-dotenv",
-    "ipykernel",
-    "pytest",
-    "pyright",
-    "mkdocs",
-    "mkdocs-material",
-    "mkdocstrings[python]",
-    "mkdocs-autorefs",
-    "types-requests",    
-    "lxml-stubs",
+    "python-dotenv>=1.0.0",
+    "ipykernel>=6.20.0",
+    "pytest>=8.0.0",
+    "pyright>=1.1.350",
+    "ruff>=0.6.0",
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.0.0",
+    "mkdocstrings[python]>=0.24.0",
+    "mkdocs-autorefs>=1.0.0",
+    "mkdocs-git-revision-date-localized-plugin>=1.2.0",
+    "types-requests>=2.31.0",
+    "lxml-stubs>=0.5.0",
 ]
 
 [build-system]
@@ -51,3 +56,10 @@ only-include = ["pyield"]
 
 [tool.uv]
 package = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "pyield"]
+addopts = "--doctest-modules"
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"

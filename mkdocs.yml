@@ -10,23 +10,28 @@ nav:
   - Articles:
       - Introduction to Pyield: articles/pyield_intro.md
   - Modules:
-      - Anbima Data: anbima.md
-      - Business Day Tools: bday.md
-      - BC Data: bc.md      
-      - IPCA Data: ipca.md
-      - Interpolator: interpolator.md
-      - Tesouro Data: tn.md
-      - LFT: lft.md
-      - LTN: ltn.md
-      - NTN-B: ntnb.md
-      - NTN-B Princ: ntnbp.md
-      - NTN-B1: ntnb1.md
-      - NTN-C: ntnc.md
-      - NTN-F: ntnf.md
-      - PRE: pre.md
-      - DI Futures Data: di1.md      
-      - Futures Data: futures.md      
-      - Forwards: forwards.md  
+      - Core:
+          - Business Day Tools: bday.md
+          - Interpolator: interpolator.md
+          - Forwards: forwards.md
+      - Data Sources:
+          - Anbima: anbima.md
+          - Banco Central (BC): bc.md
+          - B3:
+              - Overview: b3.md
+              - DI Futures: di1.md
+              - Futures: futures.md
+          - IPCA: ipca.md
+      - Treasury Bonds:
+          - Overview: tn.md
+          - LFT: lft.md
+          - LTN: ltn.md
+          - NTN-B: ntnb.md
+          - NTN-B Principal: ntnbp.md
+          - NTN-B1: ntnb1.md
+          - NTN-C: ntnc.md
+          - NTN-F: ntnf.md
+          - PRE: pre.md  
 
 theme:
   name: 'material'
@@ -35,11 +40,11 @@ theme:
     - scheme: slate
       toggle:
         icon: material/lightbulb-outline
-        name: Modo claro
+        name: Alternar para modo claro
     - scheme: default
       toggle:
         icon: material/lightbulb
-        name: Modo escuro
+        name: Alternar para modo escuro
 
   features:
     - navigation.instant
@@ -60,11 +65,15 @@ plugins:
   - search
   - tags
   - autorefs
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+      fallback_to_build_date: true
   - mkdocstrings:
       handlers:
         python:
-          options:            
-            show_root_toc_entry: false            
+          options:
+            show_root_toc_entry: false
             docstring_style: google
             docstring_section_style: table
             docstring_options:
@@ -83,15 +92,25 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.arithmatex:
       generic: true
+  - admonition
+  - pymdownx.details
+  - tables
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - abbr
+  - attr_list
+  - md_in_html
 
 repo_url: 'https://github.com/crdcj/PYield'
 repo_name: 'PYield'
-copyright: '@ 2024 <strong>Carlos Carvalho</strong>. Todos os direitos reservados.'
+copyright: '@ 2024-2026 <strong>Carlos Carvalho</strong>. Todos os direitos reservados.'
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/crdcj/PYield
 
 extra_javascript:
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

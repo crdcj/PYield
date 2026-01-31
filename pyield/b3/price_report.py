@@ -295,7 +295,7 @@ def fetch_price_report(
 
     Args:
         date: The date of the report to fetch.
-        asset_code: The asset code to filter the report for (e.g., 'DI1').
+        contract_code: The contract code to filter the report for (e.g., 'DI1').
         source_type: The type of report to fetch, either 'PR' (Full Price
             Report) or 'SPR' (Simplified Price Report). Defaults to 'SPR'.
 
@@ -327,12 +327,11 @@ def read_price_report(file_path: Path, contract_code: str) -> pl.DataFrame:
 
     Args:
         file_path: The path to the zipped XML report file.
-        asset_code: The asset code to filter the report for (e.g., 'DI1').
+        contract_code: The contract code to filter the report for (e.g., 'DI1').
 
     Returns:
         A Pandas DataFrame containing the processed data.
-        For 'DI1' asset codes, an additional 'DV01' column is calculated.
-
+        For 'DI1' contract codes, an additional 'DV01' column is calculated.
     Raises:
         ValueError: If the provided `file_path` is not a Path object.
         FileNotFoundError: If no file is found at the specified `file_path`.
