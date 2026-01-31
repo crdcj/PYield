@@ -274,17 +274,11 @@ def process_zip_file(zip_data: bytes, contract_code: str) -> pl.DataFrame:
 
     di_data = _extract_data_from_xml(xml_file, contract_code)
 
-    df_raw = _create_df_from_data(di_data)
-
-    df = _rename_columns(df_raw)
-
+    df = _create_df_from_data(di_data)
+    df = _rename_columns(df)
     df = _fill_zero_cols(df)
-
-    expiration_day = 15 if contract_code == "DAP" else 1
-    df = add_expiration_date(df, "TickerSymbol", expiration_day)
-
+    df = add_expiration_date(df, contract_code, "TickerSymbol")
     df = _process_df(df, contract_code)
-
     df = _select_and_reorder_columns(df)
 
     return df

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def add_expiration_date(
-    df: pl.DataFrame, ticker_column: str, expiration_day: int = 1
+    df: pl.DataFrame, contract_code: str, ticker_column: str
 ) -> pl.DataFrame:
     """
     Recebe um DataFrame Polars e ADICIONA a coluna 'ExpirationDate'.
@@ -35,6 +35,7 @@ def add_expiration_date(
         "X": 11,
         "Z": 12,
     }
+    expiration_day = 15 if "DAP" in contract_code else 1
     df = df.with_columns(
         pl.date(
             # Ano: Pega os 2 últimos dígitos -> Int -> Soma 2000

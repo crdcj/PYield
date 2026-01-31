@@ -207,8 +207,7 @@ def fetch_new_historical_df(date: dt.date, contract_code: str) -> pl.DataFrame:
         if df.is_empty():
             return pl.DataFrame()
 
-        day = 15 if contract_code == "DAP" else 1
-        df = add_expiration_date(df, ticker_column="TickerSymbol", expiration_day=day)
+        df = add_expiration_date(df, contract_code, ticker_column="TickerSymbol")
 
         df = _process_df(df, date, contract_code)
         df = _select_and_reorder_columns(df)
@@ -216,9 +215,6 @@ def fetch_new_historical_df(date: dt.date, contract_code: str) -> pl.DataFrame:
         return df.sort("ExpirationDate")
 
     except Exception as e:
-        # 1. Pega Exception genérico (qualquer erro).
-        # 2. logger.exception grava o erro E a pilha de chamadas (traceback).
-        # 3. Retorna DataFrame vazio para não quebrar a API.
         logger.exception(
             f"CRITICAL: Failed to process {contract_code} for {date}. Error: {e}"
         )

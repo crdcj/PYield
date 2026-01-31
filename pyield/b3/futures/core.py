@@ -48,7 +48,8 @@ def futures(
             Supported contract codes are:
             - "DI1": One-day Interbank Deposit Futures (Futuro de DI) from B3.
             - "DDI": DI x U.S. Dollar Spread Futures (Futuro de Cupom Cambial) from B3.
-            - "FRC": Forward Rate Agreement (FRA) from B3.
+            - "FRC": Forward Rate Agreement (FRA).
+            - "FRO": FRA DE CUPOM CAMBIAL EM OC1
             - "DAP": DI x IPCA Spread Futures.
             - "DOL": U.S. Dollar Futures from B3.
             - "WDO": Mini U.S. Dollar Futures from B3.
