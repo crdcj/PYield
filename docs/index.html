@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="css/timeago.css">
+    
     <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -129,9 +131,9 @@
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo claro"  type="radio" name="__palette" id="__palette_0">
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Alternar para modo claro"  type="radio" name="__palette" id="__palette_0">
     
-      <label class="md-header__button md-icon" title="Modo claro" for="__palette_1" hidden>
+      <label class="md-header__button md-icon" title="Alternar para modo claro" for="__palette_1" hidden>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg>
       </label>
     
@@ -139,9 +141,9 @@
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo escuro"  type="radio" name="__palette" id="__palette_1">
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Alternar para modo escuro"  type="radio" name="__palette" id="__palette_1">
     
-      <label class="md-header__button md-icon" title="Modo escuro" for="__palette_0" hidden>
+      <label class="md-header__button md-icon" title="Alternar para modo escuro" for="__palette_0" hidden>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>
       </label>
     
@@ -270,8 +272,15 @@
   
     
     
+      
+  
+  
+  
+  
+    
+    
       <li class="md-tabs__item">
-        <a href="anbima/" class="md-tabs__link">
+        <a href="bday/" class="md-tabs__link">
           
   
   
@@ -279,6 +288,9 @@
 
         </a>
       </li>
+    
+  
+
     
   
 
@@ -403,106 +415,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#examples-quickstart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples &amp; Quickstart
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Examples &amp; Quickstart">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#polars-migration-from-version-0400-onwards" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ✅ Polars migration from version 0.40.0 onwards:
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#key-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Features
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#overview-navigation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview &amp; Navigation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Overview &amp; Navigation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#top-level-namespace-cheat-sheet" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Top-Level Namespace (Cheat Sheet)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#minimal-quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Minimal Quick Start
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#brazilian-clock-helpers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Brazilian Clock Helpers
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -514,22 +426,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-to-use-pyield" class="md-nav__link">
+  <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How to use PYield
+        Quick Start
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="How to use PYield">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-building-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Building Blocks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Building Blocks">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#brazilian-treasury-bonds-tools" class="md-nav__link">
+  <a href="#business-days-bday" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Brazilian Treasury Bonds Tools
+        Business Days (bday)
       
     </span>
   </a>
@@ -537,10 +460,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#business-days-tools-brazilian-holidays-automatically-considered" class="md-nav__link">
+  <a href="#rate-interpolation-interpolator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Business Days Tools (Brazilian holidays automatically considered)
+        Rate Interpolation (Interpolator)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forward-rates-forward-forwards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forward Rates (forward, forwards)
       
     </span>
   </a>
@@ -553,85 +487,68 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#custom-types-data-handling" class="md-nav__link">
+  <a href="#modules-overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Custom Types &amp; Data Handling
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Custom Types &amp; Data Handling">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#datelike-scalar-inputs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DateLike (scalar inputs)
+        Modules Overview
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#arraylike-collection-inputs" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#treasury-bonds" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ArrayLike (collection inputs)
+        Treasury Bonds
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#supported-date-string-formats" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#futures-data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported Date String Formats
+        Futures Data
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#conversion-summary" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#date-handling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Conversion Summary
+        Date Handling
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#nullability-early-short-circuit" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#polars-migration-v0400" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Nullability &amp; Early Short-Circuit
+        Polars Migration (v0.40.0+)
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#practical-examples" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Practical Examples
+        Documentation
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -795,15 +712,29 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="anbima/" class="md-nav__link">
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
     
   
-    Anbima Data
+    Core
   
 
     
@@ -811,11 +742,19 @@
   
   
 
-      </a>
-    </li>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core
   
 
-              
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
             
               
                 
@@ -832,62 +771,6 @@
     
   
     Business Day Tools
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="bc/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    BC Data
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="ipca/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    IPCA Data
   
 
     
@@ -936,6 +819,376 @@
   
   
     <li class="md-nav__item">
+      <a href="forwards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Forwards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Sources
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data Sources
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="anbima/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anbima
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="bc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Banco Central (BC)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_3" id="__nav_3_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    B3
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    B3
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="b3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="di1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DI Futures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="futures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Futures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ipca/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IPCA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Treasury Bonds
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Treasury Bonds
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="tn/" class="md-nav__link">
         
   
@@ -943,7 +1196,7 @@
   <span class="md-ellipsis">
     
   
-    Tesouro Data
+    Overview
   
 
     
@@ -1055,7 +1308,7 @@
   <span class="md-ellipsis">
     
   
-    NTN-B Princ
+    NTN-B Principal
   
 
     
@@ -1181,85 +1434,9 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="di1/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    DI Futures Data
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="futures/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Futures Data
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="forwards/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Forwards
-  
-
-    
-  </span>
-  
-  
-
-      </a>
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1296,334 +1473,185 @@
 <a href="https://python.org" title="Go to Python homepage"><img alt="Made with Python" src="https://img.shields.io/badge/Python-&gt;=3.12-blue?logo=python&amp;logoColor=white" /></a>
 <a href="https://github.com/crdcj/PYield/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-blue" /></a></p>
 <h1 id="pyield-brazilian-fixed-income-toolkit">PYield: Brazilian Fixed Income Toolkit</h1>
-<p>PYield is a Python library designed for the analysis of Brazilian fixed income instruments. Leveraging the power of Polars and Requests, PYield simplifies the process of obtaining and processing data from key sources such as ANBIMA, BCB, IBGE and B3.</p>
-<h2 id="examples-quickstart">Examples &amp; Quickstart</h2>
-<p>A quickstart notebook is available in the examples/ directory and can be opened directly in Google Colab: </p>
-<p><a href="https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg" /></a></p>
-<p>It demonstrates:</p>
-<ul>
-<li>Package installation.</li>
-<li>Basic use of the business day calendar (bday.count, bday.offset).</li>
-<li>DI futures query (futures).</li>
-</ul>
-<p>More examples may be added later (treasury bonds, curve interpolation, inflation). Contributions are welcome.</p>
-<hr />
-<h3 id="polars-migration-from-version-0400-onwards">✅ Polars migration from version 0.40.0 onwards:</h3>
-<p>All public functions now return <strong>Polars DataFrames or Series</strong> as the canonical format. This provides stronger typing, faster execution and more reliable date/rate handling. The last version to return Pandas objects by default was <strong>0.39.xx</strong>.</p>
-<p>Need Pandas? Convert explicitly:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">df_pandas</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">(</span><span class="n">use_pyarrow_extension_array</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">series_pandas</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">(</span><span class="n">use_pyarrow_extension_array</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<p>PYield is a Python library for analyzing Brazilian fixed income instruments. It fetches and processes data from ANBIMA, BCB, IBGE and B3, returning Polars DataFrames for fast, type-safe data pipelines.</p>
+<h2 id="installation">Installation</h2>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>pyield
 </span></code></pre></div>
-The internal typing relies on PyArrow-backed dtypes for consistency across numeric and date operations.</p>
-<h2 id="documentation">Documentation</h2>
-<p>Visit the <a href="https://crdcj.github.io/PYield/">full documentation for PYield</a>.</p>
-<h2 id="key-features">Key Features</h2>
-<ul>
-<li><strong>Data Collection</strong>: Automated fetching of data from ANBIMA and B3.</li>
-<li><strong>Data Processing</strong>: Efficient processing and normalization of fixed income data.</li>
-<li><strong>Analysis Tools</strong>: Built-in functions for common analysis tasks in fixed income markets.</li>
-<li><strong>Easy Integration</strong>: Seamless integration with pandas data analysis workflows.</li>
-<li><strong>Type Hints</strong>: Full support for static type checking, enhancing development experience and code quality.</li>
-</ul>
-<h2 id="overview-navigation">Overview &amp; Navigation</h2>
-<p>PYield is split into focused namespaces. Each function and class has a rich docstring (the online site is generated from them via MkDocs). The quickest learning path is accessing the documentation and following the function/class examples verbatim.</p>
-<h3 id="top-level-namespace-cheat-sheet">Top-Level Namespace (Cheat Sheet)</h3>
+<h2 id="quick-start">Quick Start</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">yd</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Business days (foundation of all calculations)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">yd</span><span class="o">.</span><span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;02-01-2025&quot;</span><span class="p">,</span> <span class="s2">&quot;15-01-2025&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 9</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">yd</span><span class="o">.</span><span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>            <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># DI Futures curve</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># Columns: TradeDate, TickerSymbol, ExpirationDate, BDaysToExp, SettlementRate, ...</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># Rate interpolation (flat forward, 252 bdays/year convention)</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">interp</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">Interpolator</span><span class="p">(</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;BDaysToExp&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;SettlementRate&quot;</span><span class="p">])</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">interp</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>       <span class="c1"># -&gt; 0.04833...</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">interp</span><span class="p">([</span><span class="mi">30</span><span class="p">,</span> <span class="mi">60</span><span class="p">])</span> <span class="c1"># -&gt; pl.Series with interpolated rates</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="c1"># Treasury bond pricing</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.061490</span><span class="p">)</span>  <span class="c1"># -&gt; 99.3651</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="c1"># BCB indicators</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">yd</span><span class="o">.</span><span class="n">bc</span><span class="o">.</span><span class="n">selic_over</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 0.000414...</span>
+</span></code></pre></div>
+<p>A Colab notebook with more examples is available:</p>
+<p><a href="https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg" /></a></p>
+<h2 id="core-building-blocks">Core Building Blocks</h2>
+<h3 id="business-days-bday">Business Days (<code>bday</code>)</h3>
+<p>The <code>bday</code> module is the foundation of PYield. All date calculations (pricing, duration, forward rates) depend on accurate business day counting with Brazilian holidays.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">bday</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Count business days (start inclusive, end exclusive)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 1</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Offset by N business days</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Adjust non-business day to next business day</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;30-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="c1"># Generate business day range</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">bday</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c1"># -&gt; Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="c1"># Check if date is business day</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">bday</span><span class="o">.</span><span class="n">is_business_day</span><span class="p">(</span><span class="s2">&quot;25-12-2023&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; False (Christmas)</span>
+</span></code></pre></div>
+<p>All functions support vectorized operations with lists, Series, or arrays.</p>
+<h3 id="rate-interpolation-interpolator">Rate Interpolation (<code>Interpolator</code>)</h3>
+<p>The <code>Interpolator</code> class interpolates interest rates using the 252 business days/year convention standard in Brazil.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">Interpolator</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">known_bdays</span> <span class="o">=</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">90</span><span class="p">]</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">known_rates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.045</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.055</span><span class="p">]</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1"># Flat forward interpolation (market standard)</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">interp</span> <span class="o">=</span> <span class="n">Interpolator</span><span class="p">(</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span> <span class="n">known_bdays</span><span class="p">,</span> <span class="n">known_rates</span><span class="p">)</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">interp</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>  <span class="c1"># -&gt; 0.04833...</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># Linear interpolation</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">linear</span> <span class="o">=</span> <span class="n">Interpolator</span><span class="p">(</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">known_bdays</span><span class="p">,</span> <span class="n">known_rates</span><span class="p">)</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="n">linear</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>  <span class="c1"># -&gt; 0.0475</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="c1"># Vectorized</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="n">interp</span><span class="p">([</span><span class="mi">15</span><span class="p">,</span> <span class="mi">45</span><span class="p">,</span> <span class="mi">75</span><span class="p">])</span>  <span class="c1"># -&gt; pl.Series with 3 rates</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="c1"># Extrapolation (disabled by default, returns NaN)</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="n">interp</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># -&gt; nan</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="n">Interpolator</span><span class="p">(</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span> <span class="n">known_bdays</span><span class="p">,</span> <span class="n">known_rates</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">)(</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># -&gt; 0.055</span>
+</span></code></pre></div>
+<h3 id="forward-rates-forward-forwards">Forward Rates (<code>forward</code>, <code>forwards</code>)</h3>
+<p>Calculate forward rates from spot curves:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">forward</span><span class="p">,</span> <span class="n">forwards</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Single forward rate between two points</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">forward</span><span class="p">(</span><span class="n">bday1</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">bday2</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">rate1</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">rate2</span><span class="o">=</span><span class="mf">0.06</span><span class="p">)</span>  <span class="c1"># -&gt; 0.0700952...</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># Vectorized forward curve from spot rates</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">bdays</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">]</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">rates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.06</span><span class="p">,</span> <span class="mf">0.07</span><span class="p">]</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">forwards</span><span class="p">(</span><span class="n">bdays</span><span class="p">,</span> <span class="n">rates</span><span class="p">)</span>  <span class="c1"># -&gt; Series: [0.05, 0.070095, 0.090284]</span>
+</span></code></pre></div>
+<h2 id="modules-overview">Modules Overview</h2>
 <table>
 <thead>
 <tr>
-<th>Symbol</th>
-<th>Kind</th>
+<th>Module</th>
 <th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>bday</code></td>
-<td>module</td>
-<td>Business day calendar (count, offset, generate).</td>
-</tr>
-<tr>
-<td><code>anbima</code></td>
-<td>module</td>
-<td>ANBIMA diffusion &amp; curve endpoints.</td>
-</tr>
-<tr>
-<td><code>bc</code></td>
-<td>module</td>
-<td>BCB indicators (SELIC Over, PTAX, repo rates).</td>
-</tr>
-<tr>
-<td><code>b3</code></td>
-<td>module</td>
-<td>B3 domain (futures submodules).</td>
-</tr>
-<tr>
-<td><code>di1</code></td>
-<td>module</td>
-<td>DI1 futures data &amp; analytics.</td>
+<td>Business day calendar with Brazilian holidays</td>
 </tr>
 <tr>
 <td><code>futures</code></td>
-<td>function</td>
-<td>Fetch futures (see <code>help(futures)</code>).</td>
-</tr>
-<tr>
-<td><code>forward</code></td>
-<td>function</td>
-<td>Single period forward rate from spot curve.</td>
-</tr>
-<tr>
-<td><code>forwards</code></td>
-<td>function</td>
-<td>Vectorized forward rate construction.</td>
-</tr>
-<tr>
-<td><code>today</code></td>
-<td>function</td>
-<td>Brazilian current date (America/Sao_Paulo).</td>
-</tr>
-<tr>
-<td><code>now</code></td>
-<td>function</td>
-<td>Current local time in Brazil (time only).</td>
+<td>B3 futures data (DI1, DDI, FRC, DAP, DOL, WDO, IND, WIN)</td>
 </tr>
 <tr>
 <td><code>Interpolator</code></td>
-<td>class</td>
-<td>Rate interpolation (linear / flat_forward).</td>
+<td>Rate interpolation (flat_forward, linear)</td>
 </tr>
 <tr>
-<td><code>ltn</code></td>
-<td>module</td>
-<td>LTN bond data &amp; analytics.</td>
+<td><code>forward</code> / <code>forwards</code></td>
+<td>Forward rate calculation</td>
 </tr>
 <tr>
-<td><code>ntnb</code></td>
-<td>module</td>
-<td>NTN-B pricing, spot, forward, BEI.</td>
+<td><code>ltn</code>, <code>ntnb</code>, <code>ntnf</code>, <code>lft</code>, <code>ntnc</code></td>
+<td>Treasury bond pricing and analytics</td>
 </tr>
 <tr>
-<td><code>ntnc</code></td>
-<td>module</td>
-<td>NTN-C (if available in current dataset).</td>
+<td><code>anbima</code></td>
+<td>ANBIMA data (TPF prices, yield curves, IMA indices)</td>
 </tr>
 <tr>
-<td><code>ntnf</code></td>
-<td>module</td>
-<td>NTN-F DI spreads &amp; related analytics.</td>
-</tr>
-<tr>
-<td><code>lft</code></td>
-<td>module</td>
-<td>LFT bond tools.</td>
-</tr>
-<tr>
-<td><code>pre</code></td>
-<td>module</td>
-<td>Zero-coupon (pré-fixado) helpers.</td>
+<td><code>bc</code></td>
+<td>BCB indicators (SELIC, PTAX, repo rates, VNA)</td>
 </tr>
 <tr>
 <td><code>ipca</code></td>
-<td>module</td>
-<td>Inflation historical &amp; projections.</td>
+<td>Inflation data (historical and projections)</td>
+</tr>
+<tr>
+<td><code>today</code> / <code>now</code></td>
+<td>Current date/time in Brazil (America/Sao_Paulo)</td>
 </tr>
 </tbody>
 </table>
-<h3 id="minimal-quick-start">Minimal Quick Start</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">bday</span><span class="p">,</span> <span class="n">ntnb</span><span class="p">,</span> <span class="n">bc</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Calendar</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">business_days</span> <span class="o">=</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;02-01-2025&quot;</span><span class="p">,</span> <span class="s2">&quot;15-01-2025&quot;</span><span class="p">)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Bond quotation (base 100)</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">q</span> <span class="o">=</span> <span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.06149</span><span class="p">)</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># SELIC Over single day</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">selic</span> <span class="o">=</span> <span class="n">bc</span><span class="o">.</span><span class="n">selic_over</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">)</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">business_days</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">selic</span><span class="p">)</span>
+<h2 id="treasury-bonds">Treasury Bonds</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">ltn</span><span class="p">,</span> <span class="n">ntnb</span><span class="p">,</span> <span class="n">ntnf</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Fetch ANBIMA indicative rates</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">ltn</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>   <span class="c1"># -&gt; DataFrame with LTN bonds</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; DataFrame with NTN-B bonds</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Calculate bond quotation (base 100)</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.061490</span><span class="p">)</span>  <span class="c1"># -&gt; 99.3651</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-08-2060&quot;</span><span class="p">,</span> <span class="mf">0.061878</span><span class="p">)</span>  <span class="c1"># -&gt; 99.5341</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># DI spreads (bps=True multiplies by 10,000)</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">ntnf</span><span class="o">.</span><span class="n">di_spreads</span><span class="p">(</span><span class="s2">&quot;30-05-2025&quot;</span><span class="p">,</span> <span class="n">bps</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1"># -&gt; DataFrame: BondType, MaturityDate, DISpread</span>
 </span></code></pre></div>
-<h3 id="brazilian-clock-helpers">Brazilian Clock Helpers</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">today</span><span class="p">,</span> <span class="n">now</span><span class="p">,</span> <span class="n">now_datetime</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Date in Brazil timezone</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">d</span> <span class="o">=</span> <span class="n">today</span><span class="p">()</span>            <span class="c1"># -&gt; datetime.date</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Time in Brazil (naive time, no tz info embedded)</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">t</span> <span class="o">=</span> <span class="n">now</span><span class="p">()</span>              <span class="c1"># -&gt; datetime.time</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Timezone-aware datetime (America/Sao_Paulo)</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">dt</span> <span class="o">=</span> <span class="n">now_datetime</span><span class="p">()</span>    <span class="c1"># -&gt; datetime.datetime (aware)</span>
+<h2 id="futures-data">Futures Data</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">futures</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># DI1 (Interbank Deposit Futures)</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Other contracts: DDI, FRC, DAP, DOL, WDO, IND, WIN</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DAP&quot;</span><span class="p">)</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># Intraday data (when market is open)</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;16-01-2025&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>  <span class="c1"># Returns live data if called during trading hours</span>
 </span></code></pre></div>
-<h2 id="installation">Installation</h2>
-<p>You can install PYield using pip:
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>pyield
-</span></code></pre></div></p>
-<h2 id="how-to-use-pyield">How to use PYield</h2>
-<h3 id="brazilian-treasury-bonds-tools">Brazilian Treasury Bonds Tools</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">ltn</span><span class="p">,</span> <span class="n">ntnb</span><span class="p">,</span> <span class="n">ntnf</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Get ANBIMA LTN data for a given date</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">ltn</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">shape</span><span class="p">:</span> <span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">)</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="err">┌──────────────┬─────────┬──────────┬──────────────┬───┬─────────┬─────────┬───────────────┬────────┐</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="err">│</span> <span class="n">ReferenceDate</span><span class="err">│</span> <span class="n">BondType</span><span class="err">│</span> <span class="n">SelicCode</span><span class="err">│</span> <span class="n">IssueBaseDate</span><span class="err">│</span> <span class="err">…</span> <span class="err">│</span> <span class="n">BidRate</span> <span class="err">│</span> <span class="n">AskRate</span> <span class="err">│</span> <span class="n">IndicativeRate</span><span class="err">│</span> <span class="n">DIRate</span> <span class="err">│</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="err">│</span> <span class="o">---</span>          <span class="err">│</span> <span class="o">---</span>     <span class="err">│</span> <span class="o">---</span>      <span class="err">│</span> <span class="o">---</span>          <span class="err">│</span>   <span class="err">│</span> <span class="o">---</span>     <span class="err">│</span> <span class="o">---</span>     <span class="err">│</span> <span class="o">---</span>           <span class="err">│</span> <span class="o">---</span>    <span class="err">│</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="err">│</span> <span class="n">date</span>         <span class="err">│</span> <span class="nb">str</span>     <span class="err">│</span> <span class="n">i64</span>      <span class="err">│</span> <span class="n">date</span>         <span class="err">│</span>   <span class="err">│</span> <span class="n">f64</span>     <span class="err">│</span> <span class="n">f64</span>     <span class="err">│</span> <span class="n">f64</span>           <span class="err">│</span> <span class="n">f64</span>    <span class="err">│</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="err">├──────────────┼─────────┼──────────┼──────────────┼───┼─────────┼─────────┼───────────────┼────────┤</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="err">│</span> <span class="mi">2024</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">23</span>   <span class="err">│</span> <span class="n">LTN</span>     <span class="err">│</span> <span class="mi">100000</span>   <span class="err">│</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">08</span>   <span class="err">│</span> <span class="err">…</span> <span class="err">│</span> <span class="mf">0.10459</span> <span class="err">│</span> <span class="mf">0.104252</span><span class="err">│</span> <span class="mf">0.104416</span>      <span class="err">│</span> <span class="mf">0.10472</span><span class="err">│</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="err">│</span> <span class="mi">2024</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">23</span>   <span class="err">│</span> <span class="n">LTN</span>     <span class="err">│</span> <span class="mi">100000</span>   <span class="err">│</span> <span class="mi">2018</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">01</span>   <span class="err">│</span> <span class="err">…</span> <span class="err">│</span> <span class="mf">0.107366</span><span class="err">│</span> <span class="mf">0.107016</span><span class="err">│</span> <span class="mf">0.107171</span>      <span class="err">│</span> <span class="mf">0.10823</span><span class="err">│</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="err">│</span> <span class="mi">2024</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">23</span>   <span class="err">│</span> <span class="n">LTN</span>     <span class="err">│</span> <span class="mi">100000</span>   <span class="err">│</span> <span class="mi">2023</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">06</span>   <span class="err">│</span> <span class="err">…</span> <span class="err">│</span> <span class="mf">0.110992</span><span class="err">│</span> <span class="mf">0.110746</span><span class="err">│</span> <span class="mf">0.110866</span>      <span class="err">│</span> <span class="mf">0.11179</span><span class="err">│</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="err">│</span> <span class="err">…</span>            <span class="err">│</span> <span class="err">…</span>       <span class="err">│</span> <span class="err">…</span>        <span class="err">│</span> <span class="err">…</span>            <span class="err">│</span> <span class="err">…</span> <span class="err">│</span> <span class="err">…</span>       <span class="err">│</span> <span class="err">…</span>       <span class="err">│</span> <span class="err">…</span>             <span class="err">│</span> <span class="err">…</span>      <span class="err">│</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="err">└──────────────┴─────────┴──────────┴──────────────┴───┴─────────┴─────────┴───────────────┴────────┘</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="c1"># Calculate the quotation of an NTN-B bond (base 100, truncated to 4 decimals)</span>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.061490</span><span class="p">)</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="mf">99.3651</span>
-</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-08-2060&quot;</span><span class="p">,</span> <span class="mf">0.061878</span><span class="p">)</span>
-</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="mf">99.5341</span>
-</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>
-</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="c1"># DI Spreads: IndicativeRate - SettlementRate (bps=True multiplies by 10_000)</span>
-</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">ntnf</span><span class="o">.</span><span class="n">di_spreads</span><span class="p">(</span><span class="s2">&quot;30-05-2025&quot;</span><span class="p">,</span> <span class="n">bps</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="n">shape</span><span class="p">:</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="err">┌─────────┬─────────────┬──────────┐</span>
-</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="err">│</span> <span class="n">BondType</span><span class="err">│</span> <span class="n">MaturityDate</span><span class="err">│</span> <span class="n">DISpread</span> <span class="err">│</span>
-</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="err">│</span> <span class="o">---</span>     <span class="err">│</span> <span class="o">---</span>         <span class="err">│</span> <span class="o">---</span>      <span class="err">│</span>
-</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="err">│</span> <span class="nb">str</span>     <span class="err">│</span> <span class="n">date</span>        <span class="err">│</span> <span class="n">f64</span>      <span class="err">│</span>
-</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="err">├─────────┼─────────────┼──────────┤</span>
-</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="err">│</span> <span class="n">NTN</span><span class="o">-</span><span class="n">F</span>   <span class="err">│</span> <span class="mi">2027</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span>  <span class="err">│</span> <span class="o">-</span><span class="mf">3.31</span>    <span class="err">│</span>
-</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="err">│</span> <span class="n">NTN</span><span class="o">-</span><span class="n">F</span>   <span class="err">│</span> <span class="mi">2029</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span>  <span class="err">│</span> <span class="mf">14.21</span>    <span class="err">│</span>
-</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="err">│</span> <span class="n">NTN</span><span class="o">-</span><span class="n">F</span>   <span class="err">│</span> <span class="mi">2031</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span>  <span class="err">│</span> <span class="mf">21.61</span>    <span class="err">│</span>
-</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a><span class="err">│</span> <span class="n">NTN</span><span class="o">-</span><span class="n">F</span>   <span class="err">│</span> <span class="mi">2033</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span>  <span class="err">│</span> <span class="mf">11.51</span>    <span class="err">│</span>
-</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="err">│</span> <span class="n">NTN</span><span class="o">-</span><span class="n">F</span>   <span class="err">│</span> <span class="mi">2035</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span>  <span class="err">│</span> <span class="mf">22.0</span>     <span class="err">│</span>
-</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="err">└─────────┴─────────────┴──────────┘</span>
-</span></code></pre></div>
-<h3 id="business-days-tools-brazilian-holidays-automatically-considered">Business Days Tools (Brazilian holidays automatically considered)</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">bday</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># Count business days (start inclusive, end exclusive)</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="mi">1</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Next business day after given date (offset=1)</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Adjust to next business day when not a business day (offset=0)</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;30-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="c1"># Returns same date if already business day (offset=0)</span>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2023</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">29</span><span class="p">)</span>
-</span></code></pre></div>
-<h2 id="custom-types-data-handling">Custom Types &amp; Data Handling</h2>
-<p>This section documents the internal typing and data normalization rules adopted across PYield so users can rely on predictable inputs/outputs and null semantics.</p>
-<h3 id="datelike-scalar-inputs">DateLike (scalar inputs)</h3>
-<p><code>DateLike</code> is a union used anywhere a single date is accepted:</p>
-<ul>
-<li><code>str</code> (accepted formats below)</li>
-<li><code>datetime.date</code></li>
-<li><code>datetime.datetime</code></li>
-<li><code>pandas.Timestamp</code></li>
-<li><code>numpy.datetime64</code></li>
-</ul>
-<p>Returned scalar dates are normalized to <code>datetime.date</code> (no timezone).</p>
-<h3 id="arraylike-collection-inputs">ArrayLike (collection inputs)</h3>
-<p><code>ArrayLike</code> covers any homogeneous collection of values accepted by vectorized functions:</p>
-<ul>
-<li><code>Sequence[Any]</code> (e.g. <code>list</code>, <code>tuple</code>)</li>
-<li><code>pandas.Series</code></li>
-<li><code>polars.Series</code></li>
-<li><code>numpy.ndarray</code></li>
-</ul>
-<p>Internally collections of date-like values are converted to a <code>polars.Series</code> with dtype <code>Date</code>.</p>
-<h3 id="supported-date-string-formats">Supported Date String Formats</h3>
-<ul>
-<li>Brazilian day‑first (dash): <code>DD-MM-YYYY</code>  (e.g. <code>31-05-2024</code>)</li>
-<li>Brazilian day‑first (slash): <code>DD/MM/YYYY</code> (e.g. <code>31/05/2024</code>)</li>
-<li>ISO: <code>YYYY-MM-DD</code> (e.g. <code>2024-05-31</code>)</li>
-</ul>
-<p>Rules:
-1. No ambiguous inference: <code>2024-05-06</code> is always ISO (<code>YYYY-MM-DD</code>).
-2. Collections: the first non-null/non-empty string determines the format for the entire collection.
-3. Strings not matching that inferred format become <code>null</code> (instead of raising) to keep vectorization robust.
-4. A collection containing only null/empty strings becomes a <code>Date</code> Series of all nulls.</p>
-<p>Recommendation (defensive pipelines):
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">dt_val</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2">-%m-%Y&quot;</span><span class="p">)</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">iso_val</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="s2">&quot;2024-05-31&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
-</span></code></pre></div></p>
-<h3 id="conversion-summary">Conversion Summary</h3>
-<table>
-<thead>
-<tr>
-<th>Input</th>
-<th>Output Normalization</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"31-05-2024"</td>
-<td>datetime.date(2024, 5, 31)</td>
-</tr>
-<tr>
-<td>["31-05-2024", "01-06-2024"]</td>
-<td>polars.Series<Date>[2024-05-31,…]</td>
-</tr>
-<tr>
-<td>["31-05-2024", None]</td>
-<td>polars.Series<Date>[2024-05-31,null]</td>
-</tr>
-<tr>
-<td>["31-05-2024", "2024-06-01"]</td>
-<td>second -&gt; null (mismatched format)</td>
-</tr>
-<tr>
-<td>[] (where shape mandatory)</td>
-<td>ValueError (function-dependent)</td>
-</tr>
-</tbody>
-</table>
-<h3 id="nullability-early-short-circuit">Nullability &amp; Early Short-Circuit</h3>
-<p>The internal helper <code>has_nullable_args(*args)</code> returns <code>True</code> if any argument is considered "nullable". An argument is nullable when it is:</p>
-<ul>
-<li><code>None</code></li>
-<li><code>NaN</code> (float)</li>
-<li>Empty string <code>""</code></li>
-<li>Empty collection: <code>[]</code>, <code>()</code>, <code>{}</code></li>
-<li>Empty pandas <code>DataFrame</code> / <code>Series</code> / <code>Index</code></li>
-<li>Empty polars <code>DataFrame</code> / <code>Series</code></li>
-<li>NumPy <code>ndarray</code> with <code>size == 0</code></li>
-</ul>
-<p>Policy:
-* Scalar-style functions:
-    * Pure date counters/adjusters may return <code>None</code> when a required scalar date is missing.
-    * Valuation / rate functions (<code>quotation</code>, <code>price</code>, <code>duration</code>, <code>dv01</code>) return <code>float('nan')</code> when inputs are nullable or a cash-flow schedule cannot be built.
-* Vectorized functions: an entirely missing/empty driving input yields an empty <code>DataFrame</code>/<code>Series</code> (or <code>None</code> if semantics are purely scalar); element-level nulls propagate.
-* Arithmetic emits <code>NaN</code> only for truly undefined operations—most missing cases short-circuit sooner (or return <code>nan</code> as above for valuation functions).</p>
-<h3 id="practical-examples">Practical Examples</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">ntnb</span><span class="p">,</span> <span class="n">bday</span>
+<h2 id="date-handling">Date Handling</h2>
+<p>PYield accepts flexible date inputs (<code>DateLike</code>):
+- Strings: <code>"31-05-2024"</code>, <code>"31/05/2024"</code>, <code>"2024-05-31"</code>
+- <code>datetime.date</code>, <code>datetime.datetime</code>
+- <code>pandas.Timestamp</code>, <code>numpy.datetime64</code></p>
+<p>Scalar functions return <code>datetime.date</code>. Vectorized functions return <code>polars.Series</code>.</p>
+<p>Null handling: scalar functions return <code>float('nan')</code> for missing inputs (propagates through calculations). Vectorized functions propagate <code>null</code> element-wise.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">ntnb</span><span class="p">,</span> <span class="n">bday</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># Missing settlement -&gt; nan (empty cash-flow schedule)</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.06149</span><span class="p">)</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">nan</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Date output with null start date -&gt; None</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;01-01-2025&quot;</span><span class="p">)</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="kc">None</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="c1"># Element-level null propagation</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">([</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">)</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="n">shape</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,)</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="n">Series</span><span class="p">:</span> <span class="s1">&#39;bdays&#39;</span> <span class="p">[</span><span class="n">i64</span><span class="p">]</span>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="p">[</span>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>    <span class="mi">22</span>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>    <span class="n">null</span>
-</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="p">]</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.06149</span><span class="p">)</span>  <span class="c1"># -&gt; nan</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">([</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; Series: [22, null]</span>
 </span></code></pre></div>
+<h2 id="polars-migration-v0400">Polars Migration (v0.40.0+)</h2>
+<p>All functions return <strong>Polars DataFrames/Series</strong>. To convert to Pandas:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">df_pandas</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">(</span><span class="n">use_pyarrow_extension_array</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="documentation">Documentation</h2>
+<p>Full documentation: <a href="https://crdcj.github.io/PYield/">crdcj.github.io/PYield</a></p>
 <h2 id="tests">Tests</h2>
-<p>To run the test suite, use the following command:
-pytest pyield --doctest-modules</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pytest<span class="w"> </span>pyield<span class="w"> </span>--doctest-modules
+</span></code></pre></div>
 
 
 
@@ -1631,6 +1659,38 @@ pytest pyield --doctest-modules</p>
 
 
 
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Última atualização">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="26 de janeiro de 2026 11:39:47 UTC"><span class="timeago" datetime="2026-01-26T11:39:47+00:00" locale="pt_BR"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="26 de janeiro de 2026 11:39:47 UTC">2026-01-26</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Criado em">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="14 de dezembro de 2023 08:34:58 UTC"><span class="timeago" datetime="2023-12-14T08:34:58+00:00" locale="pt_BR"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="14 de dezembro de 2023 08:34:58 UTC">2023-12-14</span>
+  </span>
+
+    
+    
+    
+  </aside>
 
 
 
@@ -1683,7 +1743,7 @@ pytest pyield --doctest-modules</p>
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      @ 2024 <strong>Carlos Carvalho</strong>. Todos os direitos reservados.
+      @ 2024-2026 <strong>Carlos Carvalho</strong>. Todos os direitos reservados.
     </div>
   
   
@@ -1728,7 +1788,9 @@ pytest pyield --doctest-modules</p>
     
       <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+        <script src="js/timeago.min.js"></script>
+      
+        <script src="js/timeago_mkdocs_material.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       
