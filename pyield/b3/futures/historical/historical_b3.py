@@ -190,7 +190,7 @@ def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(existing_cols)
 
 
-def fetch_new_historical_df(date: dt.date, contract_code: str) -> pl.DataFrame:
+def fetch_b3_historical_df(date: dt.date, contract_code: str) -> pl.DataFrame:
     """Fetchs the futures data for a given date from B3."""
     try:
         # Tenta baixar os dados
