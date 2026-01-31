@@ -2,11 +2,10 @@ import datetime as dt
 import math
 from typing import Any, Sequence, TypeAlias
 
-import pandas as pd
 import polars as pl
 
-DateLike: TypeAlias = str | pd.Timestamp | dt.datetime | dt.date
-ArrayLike: TypeAlias = Sequence[Any] | pd.Series | pl.Series
+DateLike: TypeAlias = str | dt.datetime | dt.date
+ArrayLike: TypeAlias = Sequence[Any] | pl.Series
 
 
 def _has_nullable_arg(arg) -> bool:  # noqa
@@ -15,27 +14,23 @@ def _has_nullable_arg(arg) -> bool:  # noqa
         case None:
             return True
 
-        # 2. Padrão de tipo para Pandas (expandido para incluir pd.Index)
-        case pd.DataFrame() | pd.Series() | pd.Index() as pd_obj:
-            return pd_obj.empty
-
-        # 3. Padrão de tipo para Polars
+        # 2. Padrão de tipo para Polars
         case pl.DataFrame() | pl.Series() as pl_obj:
             return pl_obj.is_empty()
 
-        # 4. Padrão de tipo para NaN
+        # 3. Padrão de tipo para NaN
         case float() as f:
             return math.isnan(f)
 
-        # 5. Padrão para string
+        # 4. Padrão para string
         case str() if not arg:
             return True
 
-        # 6. Padrão para coleções vazias
+        # 5. Padrão para coleções vazias
         case [] | () | {}:
             return True
 
-        # 7. Caso padrão (catch-all)
+        # 6. Caso padrão (catch-all)
         case _:
             return False
 

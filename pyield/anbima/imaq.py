@@ -11,10 +11,11 @@ import io
 import logging
 import re
 
-import pandas as pd
 import polars as pl
 import polars.selectors as ps
 import requests
+from lxml.html import HTMLParser
+from lxml.html import fromstring as html_fromstring
 
 import pyield.converters as cv
 from pyield.anbima.tpf import tpf_data
@@ -72,19 +73,77 @@ def _extract_reference_date(html_content: bytes) -> dt.date | None:
     return dt.datetime.strptime(date_string, "%d/%m/%Y").date()
 
 
-def _parse_html_data(html_content: bytes) -> str:
-    dfs = pd.read_html(
-        io.BytesIO(html_content),  # type: ignore[arg-type]
-        flavor="lxml",
-        attrs={"width": "100%"},
-        header=0,
-        thousands=".",
-        decimal=",",
-        dtype_backend="pyarrow",
-        na_values="--",
-        encoding="iso-8859-1",
-    )
-    return pd.concat(dfs).to_csv(index=False)
+def _normalize_column_name(text: str) -> str:
+    """Normalize column header by removing line breaks and extra spaces."""
+    return " ".join(text.strip().split())
+
+
+def _parse_cell_value(text: str) -> str:
+    """
+    Parse cell value, converting Brazilian number format to standard.
+
+    Brazilian format: 129.253,568 -> 129253.568
+    Handles missing values (--) by returning empty string.
+    """
+    text = text.strip()
+
+    if text == "--" or not text:
+        return ""
+
+    # Convert Brazilian number format
+    if "," in text or "." in text:
+        if any(c.isdigit() for c in text):
+            text = text.replace(".", "")  # Remove thousands separator
+            text = text.replace(",", ".")  # Replace decimal separator
+
+    return text
+
+
+def _parse_html_tables(html_content: bytes) -> str:
+    """
+    Parse HTML tables using lxml and return CSV string.
+
+    Extracts data from nested tables (those with parent::td),
+    handles Brazilian number format, and returns concatenated CSV.
+    """
+    # Replace <br> tags with spaces to preserve word boundaries
+    html_text = html_content.decode("iso-8859-1")
+    html_text = html_text.replace("<br>", " ").replace("<BR>", " ")
+    html_bytes = html_text.encode("iso-8859-1")
+
+    # Parse with ISO-8859-1 encoding
+    parser = HTMLParser(encoding="iso-8859-1")
+    tree = html_fromstring(html_bytes, parser=parser)
+
+    # Find nested data tables (actual bond data, not wrapper tables)
+    nested_tables = tree.xpath("//table[@width='100%'][parent::td]")
+
+    all_data = []
+    col_names = None
+
+    for table in nested_tables:  # type: ignore[misc]
+        # Extract headers
+        headers = table.xpath(".//thead//th")
+        if not col_names:
+            col_names = [_normalize_column_name(h.text_content()) for h in headers]
+
+        # Extract data rows (skip empty separator rows)
+        data_rows = table.xpath(".//tbody//tr[td]")
+
+        for row in data_rows:
+            cells = row.xpath(".//td")
+            if len(cells) != len(col_names):
+                continue  # Skip separator rows
+
+            row_data = [_parse_cell_value(c.text_content()) for c in cells]
+            all_data.append(row_data)
+
+    # Convert to CSV
+    if not all_data or not col_names:
+        return ""
+
+    df = pl.DataFrame(all_data, schema=col_names, orient="row")
+    return df.write_csv()
 
 
 def _pre_process_data(raw_csv: str) -> str:
@@ -236,7 +295,7 @@ def imaq(date: DateLike) -> pl.DataFrame:
                 f"got {reference_date.strftime('%d/%m/%Y')}"
             )
 
-        raw_csv = _parse_html_data(url_content)
+        raw_csv = _parse_html_tables(url_content)
         clean_csv = _pre_process_data(raw_csv)
         df = _process_data(clean_csv, date)
         df = _add_dv01(df, date)
