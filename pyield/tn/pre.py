@@ -1,6 +1,3 @@
-import logging
-
-import pandas as pd
 import polars as pl
 
 from pyield import anbima, bday
@@ -8,10 +5,8 @@ from pyield.anbima import tpf
 from pyield.tn import ntnf
 from pyield.types import DateLike
 
-logger = logging.getLogger(__name__)
 
-
-def spot_rates(date: DateLike) -> pd.DataFrame:
+def spot_rates(date: DateLike) -> pl.DataFrame:
     """
     Create the PRE curve (zero coupon rates) for Brazilian fixed rate bonds.
 
@@ -22,7 +17,7 @@ def spot_rates(date: DateLike) -> pd.DataFrame:
         date (DateLike): The reference date for fetching the data.
 
     Returns:
-        pd.DataFrame: DataFrame with columns "MaturityDate", "BDToMat", and "SpotRate".
+        pl.DataFrame: DataFrame with columns "MaturityDate", "BDToMat", and "SpotRate".
                      Contains zero coupon rates for all available maturities.
 
     Raises:
@@ -32,121 +27,104 @@ def spot_rates(date: DateLike) -> pd.DataFrame:
     Examples:
         >>> from pyield import pre
         >>> pre.spot_rates("18-06-2025")
-           MaturityDate  BDToMat  SpotRate
-        0    2025-07-01        8   0.14835
-        1    2025-10-01       74  0.147463
-        2    2026-01-01      138  0.147752
-        3    2026-04-01      199  0.147947
-        4    2026-07-01      260  0.147069
-        5    2026-10-01      325  0.144733
-        6    2027-01-01      387  0.142496
-        7    2027-04-01      447  0.140924
-        8    2027-07-01      510  0.139024
-        9    2028-01-01      638  0.136595
-        10   2028-07-01      762  0.135664
-        11   2029-01-01      886  0.136484
-        12   2030-01-01     1135  0.137279
-        13   2031-01-01     1387  0.138154
-        14   2032-01-01     1639   0.13876
-        15   2033-01-01     1891    0.1393
-        16   2035-01-01     2390  0.141068
+        shape: (17, 3)
+        ┌──────────────┬─────────┬──────────┐
+        │ MaturityDate ┆ BDToMat ┆ SpotRate │
+        │ ---          ┆ ---     ┆ ---      │
+        │ date         ┆ i64     ┆ f64      │
+        ╞══════════════╪═════════╪══════════╡
+        │ 2025-07-01   ┆ 8       ┆ 0.14835  │
+        │ 2025-10-01   ┆ 74      ┆ 0.147463 │
+        │ 2026-01-01   ┆ 138     ┆ 0.147752 │
+        │ 2026-04-01   ┆ 199     ┆ 0.147947 │
+        │ 2026-07-01   ┆ 260     ┆ 0.147069 │
+        │ …            ┆ …       ┆ …        │
+        │ 2030-01-01   ┆ 1135    ┆ 0.137279 │
+        │ 2031-01-01   ┆ 1387    ┆ 0.138154 │
+        │ 2032-01-01   ┆ 1639    ┆ 0.13876  │
+        │ 2033-01-01   ┆ 1891    ┆ 0.1393   │
+        │ 2035-01-01   ┆ 2390    ┆ 0.141068 │
+        └──────────────┴─────────┴──────────┘
     """
     # Fetch LTN data (zero coupon bonds)
-    df_ltn = anbima.tpf_data(date, "LTN").to_pandas(use_pyarrow_extension_array=True)
+    df_ltn = anbima.tpf_data(date, "LTN")
 
     # Fetch NTN-F data (coupon bonds)
-    df_ntnf = anbima.tpf_data(date, "NTN-F").to_pandas(use_pyarrow_extension_array=True)
+    df_ntnf = anbima.tpf_data(date, "NTN-F")
 
     # Check if we have data for both bond types
-    if df_ltn.empty and df_ntnf.empty:
-        return pd.DataFrame(columns=["MaturityDate", "BDToMat", "SpotRate"])
-
-    # If we only have LTN data, return it directly
-    if df_ntnf.empty:
-        pass
-        # return _process_ltn_only(date, df_ltn)
+    if df_ltn.is_empty() and df_ntnf.is_empty():
+        return pl.DataFrame(
+            schema={
+                "MaturityDate": pl.Date,
+                "BDToMat": pl.Int64,
+                "SpotRate": pl.Float64,
+            }
+        )
 
     # If we only have NTN-F data, we can't bootstrap without LTN rates
-    if df_ltn.empty:
+    if df_ltn.is_empty():
         raise ValueError(
             "Cannot construct PRE curve without LTN rates for bootstrapping"
         )
 
-    # Use the existing spot_rates function to calculate zero coupon rates
-    df_spots = ntnf.spot_rates(
-        settlement=date,
-        ltn_maturities=df_ltn["MaturityDate"],
-        ltn_rates=df_ltn["IndicativeRate"],
-        ntnf_maturities=df_ntnf["MaturityDate"],
-        ntnf_rates=df_ntnf["IndicativeRate"],
-        show_coupons=False,
-    ).to_pandas(use_pyarrow_extension_array=True)
-
-    # Find LTN maturities that are not in the NTN-F result
-    ltn_mask = ~df_ltn["MaturityDate"].isin(df_spots["MaturityDate"])
-    ltn_not_in_ntnf = df_ltn.loc[ltn_mask].copy()
-
-    if not ltn_not_in_ntnf.empty:
-        # Process additional LTN maturities
-        ltn_subset = _process_additional_ltn(date, ltn_not_in_ntnf)
-
-        # Ensure consistent data types
-        ltn_subset["BDToMat"] = ltn_subset["BDToMat"].astype("int64[pyarrow]")
-        df_spots["BDToMat"] = df_spots["BDToMat"].astype("int64[pyarrow]")
-
-        # Combine LTN and NTN-F derived spot rates
-        df_combined = pd.concat([df_spots, ltn_subset], ignore_index=True)
+    # If we only have LTN data, return it directly (LTN are already zero coupon)
+    if df_ntnf.is_empty():
+        df_combined = _process_additional_ltn(date, df_ltn)
     else:
-        df_combined = df_spots.copy()
-        df_combined["BDToMat"] = df_combined["BDToMat"].astype("int64[pyarrow]")
+        # Use the existing spot_rates function to calculate zero coupon rates
+        df_spots = ntnf.spot_rates(
+            settlement=date,
+            ltn_maturities=df_ltn["MaturityDate"],
+            ltn_rates=df_ltn["IndicativeRate"],
+            ntnf_maturities=df_ntnf["MaturityDate"],
+            ntnf_rates=df_ntnf["IndicativeRate"],
+            show_coupons=False,
+        )
+
+        # Find LTN maturities that are not in the NTN-F result
+        ltn_mask = ~df_ltn["MaturityDate"].is_in(df_spots["MaturityDate"].to_list())
+        ltn_not_in_ntnf = df_ltn.filter(ltn_mask)
+
+        if not ltn_not_in_ntnf.is_empty():
+            # Process additional LTN maturities
+            ltn_subset = _process_additional_ltn(date, ltn_not_in_ntnf)
+
+            # Combine LTN and NTN-F derived spot rates
+            df_combined = pl.concat([df_spots, ltn_subset])
+        else:
+            df_combined = df_spots
 
     # Final validation - ensure no NaN values in the result
     _validate_final_result(df_combined)
 
     # Sort by maturity date and return
-    return df_combined.sort_values("MaturityDate").reset_index(drop=True)
+    return df_combined.sort("MaturityDate")
 
 
 def _process_additional_ltn(
-    date: DateLike, ltn_not_in_ntnf: pd.DataFrame
-) -> pd.DataFrame:
+    date: DateLike, ltn_not_in_ntnf: pl.DataFrame
+) -> pl.DataFrame:
     """Process additional LTN maturities not covered by NTN-F bootstrap."""
-    # Validate and calculate business days
-    bdays_list = []
-    for idx, maturity in enumerate(ltn_not_in_ntnf["MaturityDate"]):
-        if pd.isna(maturity):
-            raise ValueError(
-                f"Additional LTN row {idx} has invalid (NaT) maturity date"
-            )
+    # Calculate business days using vectorized operation
+    bdays = bday.count(date, ltn_not_in_ntnf["MaturityDate"])
 
-        try:
-            bdays = bday.count(date, maturity)
-            if pd.isna(bdays):
-                raise ValueError(
-                    f"Business days calculation returned NaN for additional LTN"
-                    f"maturity {maturity}"
-                )
-            bdays_list.append(bdays)
-        except Exception as e:
-            raise ValueError(
-                "Failed to calculate business days for additional LTN"
-                f" maturity {maturity}: {str(e)}"
-            )
-
-    # Create result DataFrame (avoiding the warning by working with a proper copy)
-    result = ltn_not_in_ntnf[["MaturityDate", "IndicativeRate"]].copy()
-    result["BDToMat"] = bdays_list
-    result = result.rename(columns={"IndicativeRate": "SpotRate"})
-
-    return result[["MaturityDate", "BDToMat", "SpotRate"]]
+    # Create result DataFrame
+    return pl.DataFrame(
+        {
+            "MaturityDate": ltn_not_in_ntnf["MaturityDate"],
+            "BDToMat": bdays,
+            "SpotRate": ltn_not_in_ntnf["IndicativeRate"],
+        }
+    )
 
 
-def _validate_final_result(df_combined: pd.DataFrame) -> None:
+def _validate_final_result(df_combined: pl.DataFrame) -> None:
     """Validate the final combined DataFrame."""
-    if df_combined["BDToMat"].isna().any():
+    if df_combined["BDToMat"].is_null().any():
         raise ValueError("Final result contains NaN values in BDToMat column")
 
-    if df_combined["SpotRate"].isna().any():
+    if df_combined["SpotRate"].is_null().any():
         raise ValueError("Final result contains NaN values in SpotRate column")
 
 
