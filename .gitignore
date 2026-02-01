@@ -20,4 +20,5 @@ site/
 # Claude md file
 CLAUDE.md
 
-tests/data/*.zip
+# Test data
+tests/data/
