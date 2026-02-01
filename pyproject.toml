@@ -30,6 +30,7 @@ Source = "https://github.com/crdcj/PYield"
 
 [dependency-groups]
 dev = [
+    "pandas>=3.0.0",
     "python-dotenv>=1.0.0",
     "ipykernel>=6.20.0",
     "pytest>=8.0.0",

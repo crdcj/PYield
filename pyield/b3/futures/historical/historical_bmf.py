@@ -2,7 +2,6 @@ import datetime as dt
 import logging
 
 import polars as pl
-import polars.selectors as cs
 import requests
 from lxml import html
 
@@ -226,9 +225,7 @@ def _add_expiration_dates(
 
 
 def _convert_zeros_to_null(df: pl.DataFrame) -> pl.DataFrame:
-    return df.with_columns(
-        (cs.contains("Rate") | cs.contains("Price")).replace(0, None)
-    )
+    return df.with_columns(pl.all().replace(0, None))
 
 
 def _adjust_legacy_di1_rates(df: pl.DataFrame, rate_cols: list) -> pl.DataFrame:

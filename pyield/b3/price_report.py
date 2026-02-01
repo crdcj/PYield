@@ -11,9 +11,9 @@ import requests
 from lxml import etree
 from lxml.etree import _Element
 
+import pyield.b3.common as cm
 import pyield.converters as cv
 from pyield import bday
-from pyield.b3.common import add_expiration_date
 from pyield.fwd import forwards
 from pyield.retry import DataNotAvailableError, default_retry
 from pyield.types import DateLike, has_nullable_args
@@ -255,18 +255,6 @@ def _convert_to_dataframe(records: list[dict]) -> pl.DataFrame:
     return df.cast(column_types, strict=False)  # type: ignore
 
 
-def _fill_zero_columns(df: pl.DataFrame) -> pl.DataFrame:
-    zero_fill_cols = ["OpenContracts", "TradeCount", "TradeVolume", "FinancialVolume"]
-    # Fill null values with 0 for volume/contract columns. Uses already-renamed
-    # column names (applied by process_zip_file before calling this function).
-    current_cols = set(df.columns)
-    cols_to_fill = [c for c in zero_fill_cols if c in current_cols]
-
-    if cols_to_fill:
-        df = df.with_columns(pl.col(cols_to_fill).fill_null(0))
-    return df
-
-
 def _process_dataframe(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
     # 1. Add date-based metrics
     df = df.with_columns(
@@ -314,12 +302,8 @@ def process_zip_file(
     # Apply dynamic column renaming based on contract type
     # 1. Generate correct rename map (Rate or Price suffix)
     rename_map = _get_column_rename_map(contract_code)
-
-    # 2. Apply renaming (once only)
     df = df.rename(rename_map, strict=False)
-
-    df = _fill_zero_columns(df)  # Now uses renamed columns (OpenContracts, etc.)
-    df = add_expiration_date(df, contract_code, "TickerSymbol")
+    df = cm.add_expiration_date(df, contract_code, "TickerSymbol")
     df = _process_dataframe(df, contract_code)
 
     return df.sort("ExpirationDate")
@@ -369,14 +353,14 @@ def fetch_price_report(
 
     Example:
         >>> import pyield as yd
-        >>> df = yd.fetch_price_report("26-04-2024", "DI1")
+        >>> df = yd.b3.fetch_price_report("26-04-2024", "DI1")
         >>> df.columns[:5]
         ['TradeDate', 'TickerSymbol', 'ExpirationDate', 'BDaysToExp', 'DaysToExp']
         >>> df.shape[0] > 0  # Check if we have contracts
         True
 
         >>> # Handle a weekend or holiday (returns empty DataFrame)
-        >>> df = yd.fetch_price_report("25-12-2023", "DI1")  # Christmas Eve
+        >>> df = yd.b3.fetch_price_report("25-12-2023", "DI1")  # Christmas Eve
         >>> df.is_empty()
         True
     """
@@ -385,8 +369,13 @@ def fetch_price_report(
         logger.warning(empty_msg)
         return pl.DataFrame()
 
+    date = cv.convert_dates(date)
+    # Validação centralizada (evita chamadas desnecessárias às APIs B3)
+    if not cm.is_trade_date_valid(date):
+        logger.warning(f"{date} is not a valid date. Returning empty DataFrame.")
+        return pl.DataFrame()
+
     try:
-        date = cv.convert_dates(date)
         zip_data = _fetch_zip_from_url(date, source_type)
 
         if not zip_data:

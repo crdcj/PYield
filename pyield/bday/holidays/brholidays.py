@@ -26,9 +26,7 @@ class BrHolidays:
             has_header=False,
             new_columns=["date"],
             comment_prefix="#",
-        ).with_columns(
-            pl.col("date").str.strptime(pl.Date, format="%d/%m/%Y", strict=True)
-        )
+        ).with_columns(pl.col("date").str.to_date(format="%d/%m/%Y"))
         return df["date"]
 
     def get_holiday_series(
@@ -51,13 +49,17 @@ class BrHolidays:
                 if dates is None:
                     raise ValueError("'dates' obrigatório em 'infer'.")
                 if isinstance(dates, dt.date):
-                    earliest = dates
+                    min_date = dates
                 else:
-                    earliest = dates.drop_nulls().min()
-                return (
-                    self.old_holidays
-                    if earliest < self.TRANSITION_DATE
-                    else self.new_holidays
-                )
+                    min_date = dates.drop_nulls().min()
+
+                if not isinstance(min_date, dt.date):
+                    raise ValueError("Não foi possível inferir a data mínima.")
+
+                if min_date < self.TRANSITION_DATE:
+                    return self.old_holidays
+                else:
+                    return self.new_holidays
+
             case _:
                 raise ValueError("Opção inválida para holiday_option.")

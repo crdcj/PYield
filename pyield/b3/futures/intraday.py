@@ -125,10 +125,10 @@ def _process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
         TradeDate=trade_date,
         LastUpdate=clock.now() - dt.timedelta(minutes=15),
         DaysToExp=(pl.col("ExpirationDate") - trade_date).dt.total_days(),
-    ).filter(pl.col("DaysToExp") > 0)  # Remove expiring contracts
+    )
 
     bdays_to_exp = bday.count(trade_date, df["ExpirationDate"])
-    df = df.with_columns(bdays_to_exp.alias("BDaysToExp"))
+    df = df.with_columns(BDaysToExp=bdays_to_exp)
 
     if contract_code in {"DI1", "DAP"}:  # Add LastPrice for DI1 and DAP
         fwd_rate = forwards(bdays=df["BDaysToExp"], rates=df["LastRate"])
@@ -143,7 +143,8 @@ def _process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
         duration = pl.col("BDaysToExp") / 252
         modified_duration = duration / (1 + pl.col("LastRate"))
         df = df.with_columns(DV01=0.0001 * modified_duration * pl.col("LastPrice"))
-    return df
+
+    return df.filter(pl.col("DaysToExp") > 0)  # Remove expiring contracts
 
 
 def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
@@ -174,14 +175,6 @@ def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
     ]
     reordered_columns = [col for col in all_columns if col in df.columns]
     return df.select(reordered_columns)
-
-
-def _empty_logger(contract_code: str) -> None:
-    log_timestamp = clock.now().strftime("%d-%m-%Y %H:%M")
-    logger.warning(
-        f"No intraday data available for {contract_code} on {log_timestamp}. "
-        f"Returning an empty DataFrame."
-    )
 
 
 def fetch_intraday_df(contract_code: str) -> pl.DataFrame:

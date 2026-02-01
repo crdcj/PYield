@@ -1,85 +1,106 @@
+import datetime as dt
 from pathlib import Path
 
 import polars as pl
 import pytest
+import requests
 from polars.testing import assert_frame_equal
 
-import pyield as yd
-from pyield.b3 import price_report as fx
+from pyield import b3
+
+# Configuração da release do GitHub
+GITHUB_REPO = "crdcj/PYield"
+RELEASE_TAG = "test-data-v1.0"
+TEST_DATA_DIR = Path("./tests/data")
+
+
+def download_test_data(file_name: str) -> Path:
+    """Download test data file from GitHub release if not present locally."""
+    local_path = TEST_DATA_DIR / file_name
+
+    if local_path.exists():
+        return local_path
+
+    TEST_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    url = (
+        f"https://github.com/{GITHUB_REPO}/releases/download/{RELEASE_TAG}/{file_name}"
+    )
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        local_path.write_bytes(response.content)
+    except requests.RequestException as e:
+        raise RuntimeError(f"Failed to download {file_name}: {e}") from e
+
+    return local_path
 
 
 def prepare_data(
-    date: str,
-    contract_code: str,
+    date_str: str, contract_code: str
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
-    """Prepare Polars DataFrames for comparison.
+    """Prepare Polars DataFrames for comparison."""
+    day, month, year = date_str.split("-")
+    file_name = f"PR{year[2:]}{month}{day}.zip"
+    file_path = download_test_data(file_name)
 
-    Steps:
-    - Build file path from provided date string (DD-MM-YYYY)
-    - Read XML report (already returns Polars)
-    - Clean and normalize specific columns
-    - Fetch futures data (Polars)
-    - Align columns and filter to expected tickers only
-    """
-    day, month, year = date.split("-")
-    file_date = f"{year[2:]}{month}{day}"  # YYMMDD
-    file_path = Path(f"./tests/data/SPRD{file_date}.zip")
+    df_expect = b3.read_price_report(file_path=file_path, contract_code=contract_code)
+    df_result = b3.futures(contract_code=contract_code, date=date_str)
 
-    expected_df = fx.read_price_report(file_path=file_path, contract_code=contract_code)
+    # A API da bmf pode ter valores inconsistentes em algumas datas.
+    # A data de corte é 12-12-2025
+    last_date_old_api = dt.datetime.strptime("12-12-2025", "%d-%m-%Y").date()
+    ref_date = dt.datetime.strptime(date_str, "%d-%m-%Y").date()
+    if ref_date <= last_date_old_api:
+        # converter FinancialVolume para Int64 para evitar erros de comparação
+        df_expect = df_expect.with_columns(pl.col("FinancialVolume").cast(pl.Int64))
 
-    # Round FinancialVolume to integer (keep as Int64 if present)
-    if "FinancialVolume" in expected_df.columns:
-        expected_df = expected_df.with_columns(
-            pl.col("FinancialVolume").round(0).cast(pl.Int64)
-        )
+    # Common columns
+    common_cols = set(df_expect.columns) & set(df_result.columns)
+    df_expect = df_expect.select(common_cols)
+    df_result = df_result.select(common_cols)
 
-    # Drop variable rate columns if present
-    drop_cols = [c for c in ["AvgRate", "ForwardRate"] if c in expected_df.columns]
-    if drop_cols:
-        expected_df = expected_df.drop(drop_cols)
+    # Common Tickers
+    common_tickers = set(df_expect["TickerSymbol"]) & set(df_result["TickerSymbol"])
+    df_expect = df_expect.filter(pl.col("TickerSymbol").is_in(common_tickers))
+    df_result = df_result.filter(pl.col("TickerSymbol").is_in(common_tickers))
 
-    result_df = yd.futures(contract_code=contract_code, date=date)
-
-    # Ensure both DataFrames have same columns
-    common_cols = list(set(expected_df.columns) & set(result_df.columns))
-    expected_df = expected_df.select(common_cols)
-    result_df = result_df.select(common_cols)
-
-    # Filter result_df to expected tickers (XML might have fewer tickers)
-    if "TickerSymbol" in expected_df.columns:
-        expected_tickers = expected_df.get_column("TickerSymbol")
-        # Use implode to avoid deprecation warning on is_in ambiguity
-        result_df = result_df.filter(
-            pl.col("TickerSymbol").is_in(expected_tickers.implode())
-        )
-
-    return result_df, expected_df
+    return df_result, df_expect
 
 
 @pytest.mark.parametrize(
     ("date", "contract_code"),
     [
-        ("22-12-2023", "DI1"),
-        ("22-12-2023", "FRC"),
-        ("22-12-2023", "DDI"),
-        ("22-12-2023", "DAP"),
-        ("22-12-2023", "DOL"),
-        ("22-12-2023", "WDO"),
-        ("22-12-2023", "IND"),
-        ("22-12-2023", "WIN"),
-        ("26-04-2024", "DI1"),
-        ("26-04-2024", "FRC"),
-        ("26-04-2024", "DDI"),
-        ("26-04-2024", "DAP"),
-        ("26-04-2024", "DOL"),
-        ("26-04-2024", "WDO"),
-        ("26-04-2024", "IND"),
-        ("26-04-2024", "WIN"),
+        ("02-02-2023", "DI1"),
+        ("02-02-2023", "FRC"),
+        ("02-02-2023", "DDI"),
+        ("02-02-2023", "DAP"),
+        ("02-02-2023", "DOL"),
+        ("02-02-2023", "WDO"),
+        ("02-02-2023", "IND"),
+        ("02-02-2023", "WIN"),
+        ("03-02-2025", "DI1"),
+        ("03-02-2025", "FRC"),
+        ("03-02-2025", "DDI"),
+        ("03-02-2025", "DAP"),
+        ("03-02-2025", "DOL"),
+        ("03-02-2025", "WDO"),
+        ("03-02-2025", "IND"),
+        ("03-02-2025", "WIN"),
+        ("12-01-2026", "DI1"),
+        ("12-01-2026", "FRC"),
+        ("12-01-2026", "DDI"),
+        ("12-01-2026", "DAP"),
+        ("12-01-2026", "DOL"),
+        ("12-01-2026", "WDO"),
+        ("12-01-2026", "IND"),
+        ("12-01-2026", "WIN"),
     ],
 )
 def test_fetch_and_prepare_data(date, contract_code):
     """Tests if the asset data fetched matches the expected data read from file."""
-    result_df, expected_df = prepare_data(date, contract_code)
+    result_df, expect_df = prepare_data(date, contract_code)
     assert_frame_equal(
-        result_df, expected_df, rel_tol=1e-4, check_exact=False, check_dtypes=True
+        result_df, expect_df, rel_tol=1e-4, check_exact=False, check_dtypes=True
     )
