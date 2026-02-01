@@ -20,13 +20,17 @@ from pyield.types import DateLike, has_nullable_args
 
 logger = logging.getLogger(__name__)
 
-# --- CONFIGURAÇÃO DE CONTRATOS ---
+# --- Contract Configuration ---
+# Rate-based contracts (use "Rate" suffix in columns like "OpenRate", "CloseRate")
+# Price-based contracts use "Price" suffix (like "OpenPrice", "ClosePrice")
 RATE_CONTRACTS = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 
 # --- XML Processing Constants ---
 B3_NAMESPACE = "urn:bvmf.217.01.xsd"
 NAMESPACES = {"ns": B3_NAMESPACE}
+# Minimum valid price report ZIP is ~2KB; 1KB threshold detects "no data" stub files
 MIN_ZIP_SIZE_BYTES = 1024
+# B3 ticker format: AAAnYY (e.g., DI1F26 = DI1 contract, January 2026)
 TICKER_LENGTH = 6
 TICKER_XPATH_TEMPLATE = '//ns:TckrSymb[starts-with(text(), "{asset_code}")]'
 TRADE_DATE_XPATH = ".//ns:TradDt/ns:Dt"
@@ -34,7 +38,7 @@ FIN_INSTRM_ATTRBTS_XPATH = ".//ns:FinInstrmAttrbts"
 
 # --- Column Mappings ---
 
-# 1. Colunas FIXAS: O nome de destino é sempre o mesmo, independente do ativo
+# 1. Fixed columns: Destination name is always the same regardless of asset
 # Format: {XML_Name: (New_Name, DataType)}
 BASE_MAPPING = {
     "TradDt": ("TradeDate", pl.Date),
@@ -43,8 +47,11 @@ BASE_MAPPING = {
     "RglrTxsQty": ("TradeCount", pl.Int64),
     "FinInstrmQty": ("TradeVolume", pl.Int64),
     "NtlFinVol": ("FinancialVolume", pl.Float64),
-    "AdjstdQt": ("SettlementPrice", pl.Float64),  # PU / Ajuste é sempre Preço
-    "AdjstdQtTax": ("SettlementRate", pl.Float64),  # Taxa de Ajuste (comum em DI)
+    "AdjstdQt": ("SettlementPrice", pl.Float64),  # Settlement price (PU - Unit Price)
+    "AdjstdQtTax": (
+        "SettlementRate",
+        pl.Float64,
+    ),  # Settlement rate (common in DI contracts)
     "RglrTraddCtrcts": ("RegularTradedContracts", pl.Int64),
     "NtlRglrVol": ("NationalRegularVolume", pl.Float64),
     "IntlRglrVol": ("InternationalRegularVolume", pl.Float64),
@@ -59,7 +66,7 @@ BASE_MAPPING = {
     "PrvsAdjstdQtStin": ("PreviousAdjustedIndicator", pl.String),
 }
 
-# 2. Colunas VARIÁVEIS: O nome de destino depende do sufixo (Rate ou Price)
+# 2. Variable columns: Destination name depends on suffix (Rate or Price)
 # Format: {XML_Name: (Prefix, DataType)}
 VARIABLE_MAPPING = {
     "MinTradLmt": ("MinLimit", pl.Float64),
@@ -73,7 +80,7 @@ VARIABLE_MAPPING = {
     "LastPric": ("Close", pl.Float64),
 }
 
-# Agregamos todos os tipos para o casting inicial (que usa o nome original do XML)
+# Aggregate all types for initial casting (using original XML names)
 ALL_XML_TYPES = {k: v[1] for k, v in BASE_MAPPING.items()}
 ALL_XML_TYPES.update({k: v[1] for k, v in VARIABLE_MAPPING.items()})
 
@@ -89,7 +96,7 @@ OUTPUT_COLUMNS = [
     "FinancialVolume",
     "DV01",
     "SettlementPrice",
-    # Campos que podem ser Rate ou Price
+    # Columns that can be Rate or Price depending on contract type
     "MinLimitRate",
     "MinLimitPrice",
     "MaxLimitRate",
@@ -110,7 +117,7 @@ OUTPUT_COLUMNS = [
     "ClosePrice",
     "SettlementRate",
     "ForwardRate",
-    # Outros campos
+    # Other fields
     "RegularTradedContracts",
     "NationalRegularVolume",
     "InternationalRegularVolume",
@@ -171,13 +178,18 @@ def _fetch_zip_from_url(date: dt.date, source_type: str) -> bytes:
 def _extract_xml_from_nested_zip(zip_data: bytes) -> bytes:
     zip_file = io.BytesIO(zip_data)
     with zipfile.ZipFile(zip_file, "r") as outer_zip:
-        outer_file_name = outer_zip.namelist()[0]
+        outer_files = outer_zip.namelist()
+        if not outer_files:
+            raise ValueError("Outer ZIP file is empty")
+        outer_file_name = outer_files[0]
         outer_file_content = outer_zip.read(outer_file_name)
     outer_file = io.BytesIO(outer_file_content)
 
     with zipfile.ZipFile(outer_file, "r") as inner_zip:
         filenames = inner_zip.namelist()
         xml_filenames = [name for name in filenames if name.endswith(".xml")]
+        if not xml_filenames:
+            raise ValueError("No XML files found in nested ZIP")
         xml_filenames.sort()
         inner_file_content = inner_zip.read(xml_filenames[-1])
     return inner_file_content
@@ -245,11 +257,8 @@ def _convert_to_dataframe(records: list[dict]) -> pl.DataFrame:
 
 def _fill_zero_columns(df: pl.DataFrame) -> pl.DataFrame:
     zero_fill_cols = ["OpenContracts", "TradeCount", "TradeVolume", "FinancialVolume"]
-    # Aqui precisamos usar os nomes já traduzidos (veja a ordem no process_zip_file)
-    # Ou podemos fazer isso antes do rename.
-    # Vamos fazer DEPOIS do rename para facilitar a leitura.
-    # Mas atenção: precisamos garantir que o rename aconteceu.
-
+    # Fill null values with 0 for volume/contract columns. Uses already-renamed
+    # column names (applied by process_zip_file before calling this function).
     current_cols = set(df.columns)
     cols_to_fill = [c for c in zero_fill_cols if c in current_cols]
 
@@ -259,21 +268,21 @@ def _fill_zero_columns(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def _process_dataframe(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
-    # 1. Datas
+    # 1. Add date-based metrics
     df = df.with_columns(
         BDaysToExp=bday.count(df["TradeDate"], df["ExpirationDate"]),
         DaysToExp=(pl.col("ExpirationDate") - pl.col("TradeDate")).dt.total_days(),
     )
 
-    # 2. Tratamento de Taxas (divisão por 100)
-    # Seleciona apenas colunas que terminam ou contêm "Rate"
-    # Como já renomeamos corretamente (OpenPrice ou OpenRate),
-    # o cs.contains("Rate") vai ignorar colunas de preço do DOL.
+    # 2. Normalize rates (divide by 100)
+    # Selects only columns containing "Rate". Since we renamed correctly
+    # (OpenPrice for DOL vs OpenRate for DI1), cs.contains("Rate") ignores
+    # price columns and only affects rate columns.
     df = df.with_columns(cs.contains("Rate").truediv(100).round(5))
 
-    # 3. Derivados Específicos
+    # 3. Contract-specific derived columns
     if contract_code == "DI1":
-        # DV01 precisa de SettlementRate e SettlementPrice
+        # DV01 requires both SettlementRate and SettlementPrice
         if "SettlementRate" in df.columns and "SettlementPrice" in df.columns:
             byears = pl.col("BDaysToExp") / 252
             mduration = byears / (1 + pl.col("SettlementRate"))
@@ -302,14 +311,14 @@ def process_zip_file(
 
     df = _convert_to_dataframe(records)
 
-    # --- MUDANÇA PRINCIPAL AQUI ---
-    # 1. Gera o mapa correto (Rate ou Price)
+    # Apply dynamic column renaming based on contract type
+    # 1. Generate correct rename map (Rate or Price suffix)
     rename_map = _get_column_rename_map(contract_code)
 
-    # 2. Aplica a renomeação (uma única vez)
+    # 2. Apply renaming (once only)
     df = df.rename(rename_map, strict=False)
 
-    df = _fill_zero_columns(df)  # Agora usa nomes traduzidos (OpenContracts, etc)
+    df = _fill_zero_columns(df)  # Now uses renamed columns (OpenContracts, etc.)
     df = add_expiration_date(df, contract_code, "TickerSymbol")
     df = _process_dataframe(df, contract_code)
 
@@ -319,7 +328,58 @@ def process_zip_file(
 def fetch_price_report(
     date: DateLike, contract_code: str, source_type: Literal["PR", "SPR"] = "SPR"
 ) -> pl.DataFrame:
-    """Fetch and process B3 price report from website."""
+    """Fetch and process B3 price report from website.
+
+    Downloads a nested ZIP file containing XML price data from B3's official website,
+    extracts the XML, parses it for the specified contract, and returns a standardized
+    Polars DataFrame with contract details, pricing data, and calculated metrics.
+
+    The function automatically determines column naming (Rate vs Price) based on the
+    contract type:
+    - Rate contracts (DI1, DAP, DDI, FRC, FRO): Columns like "OpenRate", "CloseRate"
+    - Price contracts (DOL, WDO, IND, WIN, etc.): Columns like "OpenPrice", "ClosePrice"
+
+    Additional calculated columns include:
+    - BDaysToExp: Business days until expiration
+    - DaysToExp: Calendar days until expiration
+    - DV01: Dollar value of 1 basis point (for DI1 contracts)
+    - ForwardRate: Forward rate calculated from settlement rate (for DI1, DAP)
+
+    Args:
+        date (DateLike): Trade date in format 'DD-MM-YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD',
+            or datetime.date object.
+        contract_code (str): B3 contract code (e.g., 'DI1', 'DOL', 'DAP', 'FRC', 'DDI',
+            'WDO', 'IND', 'WIN'). First 3 characters are used to match tickers in XML.
+        source_type (str, optional): Type of price report file. 'SPR' for settlement
+            price report (default), 'PR' for regular price report. Defaults to "SPR".
+
+    Returns:
+        pl.DataFrame: DataFrame with columns ordered as per OUTPUT_COLUMNS, filtered to
+            exclude expired contracts (DaysToExp <= 0). Contains:
+            - Identification: TradeDate, TickerSymbol, ExpirationDate
+            - Volume & Count: TradeCount, TradeVolume, FinancialVolume, OpenContracts
+            - Pricing: Settlement data, Open/High/Low/Close prices or rates
+            - Metrics: DaysToExp, BDaysToExp, DV01, ForwardRate, etc.
+            Empty DataFrame if no data available or date is invalid.
+
+    Raises:
+        ValueError: If source_type is invalid (not 'PR' or 'SPR').
+        DataNotAvailableError: If the date is valid but has no price report data.
+        requests.HTTPError: If the download request fails with HTTP error.
+
+    Example:
+        >>> import pyield as yd
+        >>> df = yd.fetch_price_report("26-04-2024", "DI1")
+        >>> df.columns[:5]
+        ['TradeDate', 'TickerSymbol', 'ExpirationDate', 'BDaysToExp', 'DaysToExp']
+        >>> df.shape[0] > 0  # Check if we have contracts
+        True
+
+        >>> # Handle a weekend or holiday (returns empty DataFrame)
+        >>> df = yd.fetch_price_report("25-12-2023", "DI1")  # Christmas Eve
+        >>> df.is_empty()
+        True
+    """
     empty_msg = f"No data for {contract_code} on {date}. Returning empty DataFrame."
     if has_nullable_args(date):
         logger.warning(empty_msg)
@@ -342,6 +402,9 @@ def fetch_price_report(
 
     except (ValueError, DataNotAvailableError, requests.HTTPError):
         raise
+    except (zipfile.BadZipFile, etree.XMLSyntaxError):
+        logger.warning(f"Failed to parse price report for {contract_code} on {date}")
+        return pl.DataFrame()
     except Exception:
         logger.exception(
             f"CRITICAL: Failed to process {contract_code} {source_type} for {date}"
@@ -354,7 +417,7 @@ def read_price_report(
     contract_code: str,
     source_type: Literal["PR", "SPR"] | None = None,
 ) -> pl.DataFrame:
-    """Read and process B3 price report from local file."""
+    """Read and process B3 price report from a local ZIP file."""
     if source_type is None:
         filename = file_path.name
         source_type = "SPR" if filename.startswith("SPRD") else "PR"
