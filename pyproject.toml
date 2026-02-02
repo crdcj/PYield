@@ -14,7 +14,7 @@ classifiers = [
     "Topic :: Office/Business :: Financial :: Investment",
 ]
 dependencies = [
-    "polars[pyarrow]>=1.33.0",
+    "polars>=1.33.0",
     "lxml>=6.0.0",    
     "python-dateutil>=2.8.0",
     "requests>=2.31.0",
@@ -31,7 +31,7 @@ Source = "https://github.com/crdcj/PYield"
 [dependency-groups]
 dev = [
     "pandas>=3.0.0",
-    "python-dotenv>=1.0.0",
+    "python-dotenv[cli]>=1.0.0",
     "ipykernel>=6.20.0",
     "pytest>=8.0.0",
     "pyright>=1.1.350",

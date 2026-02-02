@@ -1,9 +1,11 @@
 import functools
+import io
 import logging
 from enum import Enum
 from typing import Literal
 
 import polars as pl
+import requests
 
 from pyield.clock import now
 
@@ -31,7 +33,23 @@ def _get_today_date_key() -> str:
 
 
 def _load_github_file(file_url: str) -> pl.DataFrame:
-    return pl.read_parquet(file_url, use_pyarrow=True)
+    """
+    Baixa o arquivo usando requests e lê com Polars.
+    Isso evita erros de 'object-store' em ambientes com proxies/firewalls
+    sem precisar da dependência pesada do PyArrow.
+    """
+    # 1. Baixa os bytes usando requests (já lida com redirects e proxies do sistema)
+    # Adicionando timeout para não travar o processo indefinidamente
+    response = requests.get(file_url, timeout=10)
+
+    # Garante que a requisição foi sucesso (200 OK), senão levanta erro
+    response.raise_for_status()
+
+    # 2. Transforma os bytes em um objeto de arquivo em memória
+    file_buffer = io.BytesIO(response.content)
+
+    # 3. O Polars lê o buffer como se fosse um arquivo local
+    return pl.read_parquet(file_buffer)
 
 
 @functools.lru_cache(maxsize=8)
