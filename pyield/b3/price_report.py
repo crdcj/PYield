@@ -114,10 +114,16 @@ OUTPUT_COLUMNS = [
     "ClosePrice",
     "SettlementRate",
     "ForwardRate",
-    # Other fields
+    # Other fields normally not used for analysis but included for completeness
+    "MarketDataStreamId",
+    "AdjustedQuotationIndicator",
     "RegularTradedContracts",
     "NationalRegularVolume",
     "InternationalRegularVolume",
+    "InternationalFinancialVolume",
+    "PreviousAdjustedQuotation",
+    "PreviousAdjustedRate",
+    "PreviousAdjustedIndicator",
     "OscillationPercentage",
     "VariationPoints",
     "AdjustedValueContract",
