@@ -48,10 +48,7 @@ BASE_MAPPING = {
     "FinInstrmQty": ("TradeVolume", pl.Int64),
     "NtlFinVol": ("FinancialVolume", pl.Float64),
     "AdjstdQt": ("SettlementPrice", pl.Float64),  # Settlement price (PU - Unit Price)
-    "AdjstdQtTax": (
-        "SettlementRate",
-        pl.Float64,
-    ),  # Settlement rate (common in DI contracts)
+    "AdjstdQtTax": ("SettlementRate", pl.Float64),  # DI1, DAP, ...
     "RglrTraddCtrcts": ("RegularTradedContracts", pl.Int64),
     "NtlRglrVol": ("NationalRegularVolume", pl.Float64),
     "IntlRglrVol": ("InternationalRegularVolume", pl.Float64),
