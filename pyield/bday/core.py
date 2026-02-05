@@ -33,45 +33,48 @@ def count(
     start: None | DateLike | ArrayLike,
     end: None | DateLike | ArrayLike,
 ) -> None | int | pl.Series:
-    """
-    Count business days between `start` (inclusive) and `end` (exclusive) with
-    Brazilian holiday adjustment and per-row holiday regime selection.
+    """Conta dias úteis entre ``start`` (inclusivo) e ``end`` (exclusivo).
 
-    ORDER PRESERVATION (critical): The output order ALWAYS matches the element-wise
-    order of the original inputs. No sorting, deduplication, alignment or reshaping is
-    performed. If you pass arrays, the i-th result corresponds to the i-th pair of
-    (`start`, `end`) after broadcasting. This guarantees safe assignment back to the
-    originating DataFrame.
+    Considera feriados brasileiros com seleção de regime de feriados por elemento.
 
-    Holiday regime: For each `start` value, the holiday list (old vs. new) is chosen
-    based on the transition date 2023-12-26 (`TRANSITION_DATE`). Starts before the
-    transition use the old list for that row's count; starts on/after use the new list.
+    PRESERVAÇÃO DE ORDEM (crítico): A ordem de saída SEMPRE corresponde à ordem
+    elemento a elemento das entradas originais. Nenhuma ordenação, deduplicação,
+    alinhamento ou remodelação é realizada. Se você passar arrays, o i-ésimo
+    resultado corresponde ao i-ésimo par de (``start``, ``end``) após broadcasting.
+    Isso garante atribuição segura de volta ao DataFrame de origem.
 
-    Null propagation: If any scalar argument is null, returns `None`. Nulls inside
-    array inputs yield nulls in corresponding result positions.
+    Regime de feriados: Para cada valor de ``start``, a lista de feriados (antiga vs.
+    nova) é escolhida com base na data de transição 2023-12-26 (``TRANSITION_DATE``).
+    Datas de início antes da transição usam a lista antiga; datas na transição ou
+    após usam a lista nova.
 
-    Return type: If both inputs are scalars (non-null) an `int` is returned; otherwise
-    a `polars.Series` of int counts (name: 'bday_count').
-    If a null scalar short-circuits, `None` is returned.
+    Propagação de nulos: Se qualquer argumento escalar for nulo, retorna ``None``.
+    Nulos dentro de arrays de entrada produzem nulos nas posições correspondentes
+    do resultado.
+
+    Tipo de retorno: Se ambas as entradas forem escalares (não-nulos), um ``int``
+    é retornado; caso contrário, uma ``polars.Series`` de contagens inteiras
+    (nome: 'bday_count'). Se um escalar nulo causar curto-circuito, ``None`` é
+    retornado.
 
     Args:
-        start: Single date or collection (inclusive boundary).
-        end: Single date or collection (exclusive boundary).
+        start: Data única ou coleção (limite inclusivo).
+        end: Data única ou coleção (limite exclusivo).
 
     Returns:
-        int | pl.Series | None: Returns an integer or None if `start` and `end` are
-            single dates, or a Series if any of them is an array of dates.
+        Inteiro ou ``None`` se ``start`` e ``end`` forem datas únicas, ou Series
+        se qualquer um deles for um array de datas.
 
     Notes:
-        - This function is a wrapper around `polars.business_day_count`.
-        - The holiday list is determined per-row based on the `start` date.
+        - Esta função é um wrapper em torno de ``polars.business_day_count``.
+        - A lista de feriados é determinada por linha com base na data ``start``.
 
     Examples:
         >>> from pyield import bday
         >>> bday.count("15-12-2023", "01-01-2024")
         10
 
-        Total business days in January and February since the start of the year
+        Total de dias úteis em janeiro e fevereiro desde o início do ano:
         >>> bday.count(start="01-01-2024", end=["01-02-2024", "01-03-2024"])
         shape: (2,)
         Series: 'bday_count' [i64]
@@ -80,7 +83,7 @@ def count(
             41
         ]
 
-        The remaining business days from January/February until the end of the year
+        Dias úteis restantes de janeiro/fevereiro até o fim do ano:
         >>> bday.count(["01-01-2024", "01-02-2024"], "01-01-2025")
         shape: (2,)
         Series: 'bday_count' [i64]
@@ -89,7 +92,7 @@ def count(
             231
         ]
 
-        The total business days in January and February of 2024
+        Total de dias úteis em janeiro e fevereiro de 2024:
         >>> bday.count(["01-01-2024", "01-02-2024"], ["01-02-2024", "01-03-2024"])
         shape: (2,)
         Series: 'bday_count' [i64]
@@ -98,12 +101,12 @@ def count(
             19
         ]
 
-        Null values are propagated
-        >>> bday.count(None, "01-01-2024")  # None start
+        Valores nulos são propagados:
+        >>> bday.count(None, "01-01-2024")  # None em start
 
-        >>> bday.count("01-01-2024", None)  # None end
+        >>> bday.count("01-01-2024", None)  # None em end
 
-        >>> bday.count("01-01-2024", ["01-02-2024", None])  # None in end array
+        >>> bday.count("01-01-2024", ["01-02-2024", None])  # None dentro do array
         shape: (2,)
         Series: 'bday_count' [i64]
         [
@@ -189,100 +192,105 @@ def offset(
     offset: int | ArrayLike | None,
     roll: Literal["forward", "backward"] = "forward",
 ) -> dt.date | pl.Series | None:
-    """
-    Offset date(s) by a number of business days with per-row Brazilian holiday
-    regime selection. The operation is performed in two steps per element:
-    1) ROLL: If the original date falls on a weekend or holiday, move it according
-       to ``roll`` ("forward" -> next business day; "backward" -> previous).
-    2) ADD: Apply the signed business-day ``offset`` (positive forward, negative
-       backward, zero = stay on the rolled date).
+    """Desloca data(s) por um número de dias úteis com regime de feriados brasileiro.
 
-    ORDER PRESERVATION (critical): Output ordering strictly matches the element-wise
-    pairing after broadcasting between ``dates`` and ``offset``. No sorting,
-    deduplication or shape changes occur. The i-th result corresponds to the i-th
-    (date, offset) pair, enabling safe assignment back into the originating DataFrame.
+    A operação é realizada em duas etapas por elemento:
+    1) ROLL: Se a data original cair em fim de semana ou feriado, move-a de acordo
+       com ``roll`` ("forward" -> próximo dia útil; "backward" -> anterior).
+    2) ADD: Aplica o ``offset`` de dias úteis com sinal (positivo avança, negativo
+       retrocede, zero = permanece na data após roll).
 
-    Holiday regime: For EACH date the appropriate holiday list (old vs. new) is
-    chosen based on the transition date ``2023-12-26`` (``TRANSITION_DATE``). Dates
-    before the transition use the *old* list; dates on/after use the *new* list.
+    PRESERVAÇÃO DE ORDEM (crítico): A ordenação de saída corresponde estritamente
+    ao pareamento elemento a elemento após broadcasting entre ``dates`` e ``offset``.
+    Nenhuma ordenação, deduplicação ou mudança de forma ocorre. O i-ésimo resultado
+    corresponde ao i-ésimo par (date, offset), permitindo atribuição segura de volta
+    ao DataFrame de origem.
 
-    Roll semantics: ``roll`` only acts when the original date is not already a
-    business day under its regime. After rolling, the subsequent business-day
-    addition is applied from that rolled anchor. An ``offset`` of 0 therefore
-    returns either the original date (if already a business day) or the rolled
-    business day.
+    Regime de feriados: Para CADA data, a lista de feriados apropriada (antiga vs.
+    nova) é escolhida com base na data de transição ``2023-12-26`` (``TRANSITION_DATE``).
+    Datas antes da transição usam a lista *antiga*; datas na transição ou após
+    usam a lista *nova*.
 
-    Null propagation: If any scalar argument is null, the function short-circuits
-    to ``None``. Nulls inside array inputs propagate to their corresponding output
-    positions.
+    Semântica do roll: ``roll`` só atua quando a data original não é um dia útil
+    sob seu regime. Após o roll, a adição de dias úteis subsequente é aplicada a
+    partir dessa âncora. Um ``offset`` de 0 portanto retorna ou a data original
+    (se já for dia útil) ou o dia útil após roll.
 
-    Broadcasting: ``dates`` and ``offset`` may be scalars or array-like. Standard
-    Polars broadcasting rules apply when constructing the per-row pairs.
+    Propagação de nulos: Se qualquer argumento escalar for nulo, a função faz
+    curto-circuito para ``None``. Nulos dentro de arrays de entrada propagam para
+    suas posições correspondentes na saída.
 
-    Return type: If both inputs are non-null scalars a ``datetime.date`` is returned.
-    Otherwise a ``polars.Series`` of dates named ``'adjusted_date'`` is produced.
-    Null scalar inputs yield ``None``.
+    Broadcasting: ``dates`` e ``offset`` podem ser escalares ou array-like. Regras
+    padrão de broadcasting do Polars aplicam-se ao construir os pares por linha.
+
+    Tipo de retorno: Se ambas as entradas forem escalares não-nulos, um
+    ``datetime.date`` é retornado. Caso contrário, uma ``polars.Series`` de datas
+    nomeada ``'adjusted_date'`` é produzida. Entradas escalares nulas resultam
+    em ``None``.
 
     Args:
-        dates: Single date or collection of dates to be rolled (if needed) and then
-            offset. Each date independently selects the holiday regime.
-        offset: Signed count of business days to apply after rolling. Positive moves
-            forward, negative backward, zero keeps the rolled anchor.
-        roll: Direction to roll a non-business starting date ("forward" or
-            "backward"). Defaults to "forward".
+        dates: Data única ou coleção de datas a serem ajustadas (roll, se necessário)
+            e então deslocadas. Cada data seleciona independentemente o regime de
+            feriados.
+        offset: Contagem com sinal de dias úteis a aplicar após o roll. Positivo
+            move para frente, negativo para trás, zero mantém a âncora após roll.
+        roll: Direção para ajustar uma data inicial não-útil ("forward" ou
+            "backward"). Padrão é "forward".
 
     Returns:
-        dt.date | pl.Series | None: A Python ``date`` for scalar inputs, a Polars
-        Series of dates for any array input, or ``None`` if a null scalar argument
-        was provided.
+        Um ``date`` Python para entradas escalares, uma Series Polars de datas para
+        qualquer entrada de array, ou ``None`` se um argumento escalar nulo foi
+        fornecido.
 
     Notes:
-        - Wrapper around ``polars.Expr.dt.add_business_days`` applied conditionally.
-        - Holiday regime is decided per element by comparing to ``TRANSITION_DATE``.
-        - Weekends are always treated as non-business days.
+        - Wrapper em torno de ``polars.Expr.dt.add_business_days`` aplicado
+          condicionalmente.
+        - O regime de feriados é decidido por elemento comparando com
+          ``TRANSITION_DATE``.
+        - Fins de semana são sempre tratados como não-úteis.
 
     Examples:
         >>> from pyield import bday
 
-        Offset Saturday before Christmas to the next b. day (Tuesday after Christmas)
+        Desloca sábado antes do Natal para o próximo dia útil (terça após Natal):
         >>> bday.offset("23-12-2023", 0)
         datetime.date(2023, 12, 26)
 
-        Offset Friday before Christmas (no offset because it's a business day)
+        Desloca sexta antes do Natal (sem deslocamento pois é dia útil):
         >>> bday.offset("22-12-2023", 0)
         datetime.date(2023, 12, 22)
 
-        Offset to the previous business day if not a bday (offset=0 and roll="backward")
+        Desloca para o dia útil anterior se não for útil (offset=0 e roll="backward"):
 
-        No offset because it's a business day
+        Sem deslocamento pois é dia útil:
         >>> bday.offset("22-12-2023", 0, roll="backward")
         datetime.date(2023, 12, 22)
 
-        Offset to the first business day before "23-12-2023"
+        Desloca para o primeiro dia útil antes de "23-12-2023":
         >>> bday.offset("23-12-2023", 0, roll="backward")
         datetime.date(2023, 12, 22)
 
-        Jump to the next business day (1 offset and roll="forward")
+        Avança para o próximo dia útil (offset=1 e roll="forward"):
 
-        Offset Friday to the next business day (Friday is jumped -> Monday)
+        Desloca sexta para o próximo dia útil (sexta é pulada -> segunda):
         >>> bday.offset("27-09-2024", 1)
         datetime.date(2024, 9, 30)
 
-        Offset Saturday to the next business day (Monday is jumped -> Tuesday)
+        Desloca sábado para o próximo dia útil (segunda é pulada -> terça):
         >>> bday.offset("28-09-2024", 1)
         datetime.date(2024, 10, 1)
 
-        Jump to the previous business day (-1 offset and roll="backward")
+        Volta para o dia útil anterior (offset=-1 e roll="backward"):
 
-        Offset Friday to the previous business day (Friday is jumped -> Thursday)
+        Desloca sexta para o dia útil anterior (sexta é pulada -> quinta):
         >>> bday.offset("27-09-2024", -1, roll="backward")
         datetime.date(2024, 9, 26)
 
-        Offset Saturday to the previous business day (Friday is jumped -> Thursday)
+        Desloca sábado para o dia útil anterior (sexta é pulada -> quinta):
         >>> bday.offset("28-09-2024", -1, roll="backward")
         datetime.date(2024, 9, 26)
 
-        # List of dates and offsets
+        Lista de datas e offsets:
         >>> bday.offset(["19-09-2024", "20-09-2024"], 1)
         shape: (2,)
         Series: 'adjusted_date' [date]
@@ -291,7 +299,7 @@ def offset(
             2024-09-23
         ]
 
-        >>> bday.offset("19-09-2024", [1, 2])  # a list of offsets
+        >>> bday.offset("19-09-2024", [1, 2])  # lista de offsets
         shape: (2,)
         Series: 'adjusted_date' [date]
         [
@@ -299,11 +307,11 @@ def offset(
             2024-09-23
         ]
 
-        # Scalar nulls propagate to None
+        Nulos escalares propagam para None:
         >>> print(bday.offset(None, 1))
         None
 
-        # Scalar null propagates inside arrays
+        Nulo escalar propaga dentro de arrays:
         >>> bday.offset(None, [1, 2])
         shape: (2,)
         Series: 'adjusted_date' [date]
@@ -312,7 +320,7 @@ def offset(
             null
         ]
 
-        # Nulls inside arrays are preserved
+        Nulos dentro de arrays são preservados:
         >>> bday.offset(["19-09-2024", None], 1)
         shape: (2,)
         Series: 'adjusted_date' [date]
@@ -330,10 +338,6 @@ def offset(
             2024-09-23
             2024-09-24
         ]
-
-    Note:
-        This function uses `polars.Expr.dt.add_business_days` under the hood. For
-        detailed information, refer to the Polars documentation.
     """
     # Coloca as entradas em um DataFrame para trabalhar com expressões em colunas
     df = pl.DataFrame(
@@ -377,22 +381,22 @@ def generate(
     closed: Literal["both", "left", "right", "none"] = "both",
     holiday_option: Literal["old", "new", "infer"] = "new",
 ) -> pl.Series:
-    """
-    Generates a Series of business days between a `start` and `end` date, considering
-    the list of Brazilian holidays.
+    """Gera uma Series de dias úteis entre ``start`` e ``end``.
+
+    Considera a lista de feriados brasileiros.
 
     Args:
-        start: The start date. If None, the current date is used.
-        end: The end date. If None, the current date is used.
-        closed: Define which sides of the range are closed (inclusive).
-            Valid options are 'both', 'left', 'right', 'none'. Defaults to 'both'.
-        holiday_option: Specifies the list of holidays to consider. Defaults to "new".
-            - 'old': Uses the holiday list effective before 2023-12-26.
-            - 'new': Uses the holiday list effective on and after 2023-12-26.
-            - 'infer': Selects based on `start` date relative to the transition.
+        start: Data inicial. Se None, usa a data atual.
+        end: Data final. Se None, usa a data atual.
+        closed: Define quais lados do intervalo são fechados (inclusivos).
+            Opções válidas: 'both', 'left', 'right', 'none'. Padrão: 'both'.
+        holiday_option: Especifica a lista de feriados a considerar. Padrão: "new".
+            - 'old': Usa a lista de feriados vigente antes de 2023-12-26.
+            - 'new': Usa a lista de feriados vigente a partir de 2023-12-26.
+            - 'infer': Seleciona com base na data ``start`` relativa à transição.
 
     Returns:
-        pl.Series: A Series of business days (name: 'bday').
+        Series de dias úteis (nome: 'bday').
 
     Examples:
         >>> from pyield import bday
@@ -433,48 +437,49 @@ def is_business_day(dates: ArrayLike) -> pl.Series: ...
 
 
 def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Series:
-    """Determine whether date(s) are Brazilian business days with per-element
-    holiday regime selection.
+    """Determina se data(s) são dias úteis brasileiros com seleção de regime por elemento.
 
-    PER-ROW HOLIDAY REGIME: For EACH input date the appropriate holiday list
-    ("old" vs. "new") is selected by comparing to the transition date
-    ``2023-12-26`` (``TRANSITION_DATE``). Dates strictly before the transition
-    use the old list; dates on or after it use the new list. This mirrors the
-    behavior of ``count`` and ``offset`` which apply regime logic element-wise.
+    REGIME DE FERIADOS POR LINHA: Para CADA data de entrada, a lista de feriados
+    apropriada ("antiga" vs. "nova") é selecionada comparando com a data de
+    transição ``2023-12-26`` (``TRANSITION_DATE``). Datas estritamente antes da
+    transição usam a lista antiga; datas na transição ou após usam a lista nova.
+    Isso espelha o comportamento de ``count`` e ``offset`` que aplicam a lógica
+    de regime elemento a elemento.
 
-    ORDER & SHAPE PRESERVATION: The output preserves the original element order.
-    No sorting, deduplication, reshaping or alignment is performed; the i-th
-    result corresponds to the i-th provided date after broadcasting (if any
-    broadcasting occurred from a scalar input elsewhere in the call chain).
+    PRESERVAÇÃO DE ORDEM E FORMA: A saída preserva a ordem original dos elementos.
+    Nenhuma ordenação, deduplicação, remodelação ou alinhamento é realizado; o
+    i-ésimo resultado corresponde à i-ésima data fornecida após broadcasting (se
+    algum broadcasting ocorreu de uma entrada escalar em outro lugar da cadeia
+    de chamadas).
 
-    NULL PROPAGATION: A null scalar argument short-circuits to ``None``. Null
-    values inside array-like inputs produce nulls at the corresponding output
-    positions.
+    PROPAGAÇÃO DE NULOS: Um argumento escalar nulo faz curto-circuito para ``None``.
+    Valores nulos dentro de entradas array-like produzem nulos nas posições
+    correspondentes da saída.
 
-    RETURN TYPE: If the (non-null) input resolves to a single element a Python
-    ``bool`` is returned. If that lone element is null, ``None`` is returned.
-    Otherwise a ``polars.Series`` of booleans named ``'is_bday'`` is produced.
+    TIPO DE RETORNO: Se a entrada (não-nula) resolve para um único elemento, um
+    ``bool`` Python é retornado. Se esse único elemento for nulo, ``None`` é
+    retornado. Caso contrário, uma ``polars.Series`` de booleanos nomeada
+    ``'is_bday'`` é produzida.
 
-    WEEKENDS: Saturdays and Sundays are never business days regardless of the
-    holiday regime.
+    FINS DE SEMANA: Sábados e domingos nunca são dias úteis independentemente do
+    regime de feriados.
 
     Args:
-        dates: Single date or collection (list/tuple/ndarray/Polars/Pandas
-            Series). May include nulls which propagate. Null scalar input
-            returns ``None``.
+        dates: Data única ou coleção (list/tuple/ndarray/Polars/Pandas Series).
+            Pode incluir nulos que propagam. Entrada escalar nula retorna ``None``.
 
     Returns:
-        bool | pl.Series | None: ``True`` if business day, ``False`` otherwise
-        for scalar input; ``None`` for null scalar input; or a Polars boolean
-        Series (name: ``'is_bday'``) for array inputs.
+        ``True`` se for dia útil, ``False`` caso contrário para entrada escalar;
+        ``None`` para entrada escalar nula; ou uma Series Polars de booleanos
+        (nome: ``'is_bday'``) para entradas de array.
 
     Examples:
         >>> from pyield import bday
-        >>> bday.is_business_day("25-12-2023")  # Christmas (old calendar)
+        >>> bday.is_business_day("25-12-2023")  # Natal (calendário antigo)
         False
-        >>> bday.is_business_day("20-11-2024")  # National Zumbi Day (new holiday)
+        >>> bday.is_business_day("20-11-2024")  # Dia Nacional de Zumbi (novo feriado)
         False
-        >>> bday.is_business_day(["22-12-2023", "26-12-2023"])  # Mixed periods
+        >>> bday.is_business_day(["22-12-2023", "26-12-2023"])  # Períodos mistos
         shape: (2,)
         Series: 'is_bday' [bool]
         [
@@ -483,10 +488,10 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
         ]
 
     Notes:
-        - Transition date defined in ``TRANSITION_DATE``.
-        - Mirrors per-row logic used in ``count`` and ``offset``.
-        - Weekends always evaluate to ``False``.
-        - Null elements propagate.
+        - Data de transição definida em ``TRANSITION_DATE``.
+        - Espelha a lógica por linha usada em ``count`` e ``offset``.
+        - Fins de semana sempre avaliam como ``False``.
+        - Elementos nulos propagam.
     """
     # Build DataFrame to allow conditional expression selecting the right holiday list
     df = pl.DataFrame(
@@ -515,19 +520,17 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
 
 
 def last_business_day() -> dt.date:
-    """
-    Returns the last business day in Brazil. If the current date is a business day, it
-    returns the current date. If it is a weekend or holiday, it returns the last
-    business day before the current date.
+    """Retorna o último dia útil no Brasil.
+
+    Se a data atual for um dia útil, retorna a data atual. Se for fim de semana
+    ou feriado, retorna o último dia útil antes da data atual.
 
     Returns:
-        dt.date: The last business day in Brazil.
+        O último dia útil no Brasil.
 
     Notes:
-        - The determination of the last business day considers the correct Brazilian
-        holiday list (before or after the 2023-12-26 transition) applicable to
-        the current date.
-
+        - A determinação do último dia útil considera a lista de feriados brasileiros
+          correta (antes ou depois da transição 2023-12-26) aplicável à data atual.
     """
     # Get the current date in Brazil without timezone information
     bz_today = clock.today()

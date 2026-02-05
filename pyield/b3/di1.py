@@ -12,7 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 def _load_with_intraday(dates: list[dt.date]) -> pl.DataFrame:
-    """Busca dados de DI, incluindo dados intraday para datas ausentes no cache."""
+    """Busca dados de DI, incluindo dados intraday para datas ausentes no cache.
+
+    Args:
+        dates: Lista de datas a buscar.
+
+    Returns:
+        DataFrame com dados de DI para as datas solicitadas.
+    """
     # 1. Busca inicial no cache com as datas solicitadas pelo usuário.
     df_cached = get_cached_dataset("di1").filter(pl.col("TradeDate").is_in(dates))
 
@@ -72,26 +79,26 @@ def data(
     month_start: bool = False,
     pre_filter: bool = False,
 ) -> pl.DataFrame:
-    """
-    Retrieves DI Futures contract data for a specific trade date.
+    """Obtém dados de contratos de futuros de DI para datas de negociação específicas.
 
-    Provides access to DI futures data, allowing adjustments to expiration dates
-    (to month start) and optional filtering based on LTN and NTN-F bond maturities.
+    Fornece acesso aos dados de futuros de DI, permitindo ajustes nas datas de
+    vencimento (para início do mês) e filtragem opcional com base nos vencimentos
+    de títulos públicos prefixados (LTN e NTN-F).
 
     Args:
-        dates (DateLike): The trade dates for which to retrieve DI contract data.
-        month_start (bool, optional): If True, adjusts all expiration dates to the
-            first day of their respective month (e.g., 2025-02-01 becomes
-            2025-01-01). Defaults to False.
-        pre_filter (bool, optional): If True, filters DI contracts to include only
-            those whose expiration dates match known prefixed Treasury bond (LTN, NTN-F)
-            maturities from the TPF dataset nearest to the given trade date.
-            Defaults to False.
+        dates: Datas de negociação para as quais obter dados de contratos DI.
+        month_start: Se True, ajusta todas as datas de vencimento para o primeiro
+            dia de seus respectivos meses (ex: 2025-02-01 vira 2025-01-01).
+            Padrão: False.
+        pre_filter: Se True, filtra contratos DI para incluir apenas aqueles cujas
+            datas de vencimento coincidem com vencimentos conhecidos de títulos
+            públicos prefixados (LTN, NTN-F) do dataset TPF mais próximo da data
+            de negociação fornecida. Padrão: False.
 
     Returns:
-        pl.DataFrame: A DataFrame containing the DI futures contract
-            data for the specified dates, sorted by trade dates and expiration dates.
-            Returns an empty DataFrame if no data is found
+        DataFrame contendo dados de contratos de futuros de DI para as datas
+        especificadas, ordenados por datas de negociação e vencimento. Retorna
+        DataFrame vazio se nenhum dado for encontrado.
 
     Examples:
         >>> from pyield import di1
@@ -191,39 +198,46 @@ def interpolate_rates(
     expirations: DateLike | ArrayLike,
     extrapolate: bool = True,
 ) -> pl.Series:
-    """
-    Interpolates DI rates for specified trade dates and expiration dates.
+    """Interpola taxas de DI para datas de negociação e vencimentos especificados.
 
-    Calculates interpolated DI rates using the **flat-forward** method for given
-    sets of trade dates and expiration dates. This function is well-suited
-    for vectorized calculations across multiple date pairs.
+    Calcula taxas de DI interpoladas usando o método **flat-forward** para
+    conjuntos de datas de negociação e vencimentos. Esta função é adequada para
+    cálculos vetorizados com múltiplos pares de datas.
 
-    If DI rates are unavailable for a given trade date, the corresponding
-    interpolated rate(s) will be NaN.
+    Se taxas de DI não estiverem disponíveis para uma data de negociação, as
+    taxas interpoladas correspondentes serão NaN.
 
-    Handles broadcasting: If one argument is a scalar and the other is an array,
-    the scalar value is applied to all elements of the array.
+    Trata broadcasting: Se um argumento for escalar e o outro for array, o valor
+    escalar é aplicado a todos os elementos do array.
 
     Args:
-        dates (DateLike | ArrayLike): The trade date(s) for the rates.
-        expirations (DateLike | ArrayLike): The corresponding expiration date(s).
-            Must be compatible in length with `dates` if both are arrays.
-        extrapolate (bool, optional): Whether to allow extrapolation beyond the
-            range of known DI rates for a given trade date. Defaults to True.
+        dates: Data(s) de negociação para as taxas.
+        expirations: Data(s) de vencimento correspondentes. Deve ser compatível
+            em tamanho com ``dates`` se ambos forem arrays.
+        extrapolate: Se permite extrapolação além do intervalo de taxas DI
+            conhecidas para uma data de negociação. Padrão: True.
 
     Returns:
-        pl.Series: A Series containing the interpolated DI rates (as floats).
-            Values will be NaN where interpolation is not possible
-            (e.g., no DI data for the trade date).
+        Series contendo as taxas DI interpoladas (como floats). Valores serão
+        NaN onde interpolação não for possível (ex: sem dados DI para a data
+        de negociação).
+
+    Raises:
+        ValueError: Se ``dates`` e ``expirations`` forem ambos array-like mas
+            tiverem tamanhos diferentes.
+
+    Notes:
+        - Todas as taxas de liquidação disponíveis são usadas para interpolação
+          flat-forward.
+        - A função trata broadcasting de entradas escalares e array-like.
 
     Examples:
-        - Interpolate rates for multiple trade and expiration dates
-        >>> # For contract with expiration 01-01-2027 in 08-05-2025
-        >>> # The rate is not interpolated (settlement rate is used)
-        >>> # There is no contract with expiration 25-11-2027 in 09-05-2025
-        >>> # The rate is interpolated (flat-forward method)
-        >>> # There is no data for trade date 10-05-2025 (Saturday) -> NaN
-        >>> # Note: 0.13461282461562996 is shown as 0.134613
+        Interpola taxas para múltiplas datas de negociação e vencimento:
+        >>> # Para contrato com vencimento 01-01-2027 em 08-05-2025
+        >>> # A taxa não é interpolada (taxa de liquidação é usada)
+        >>> # Não há contrato com vencimento 25-11-2027 em 09-05-2025
+        >>> # A taxa é interpolada (método flat-forward)
+        >>> # Não há dados para 10-05-2025 (sábado) -> NaN
         >>> from pyield import di1
         >>> di1.interpolate_rates(
         ...     dates=["08-05-2025", "09-05-2025", "10-05-2025"],
@@ -237,10 +251,9 @@ def interpolate_rates(
             null
         ]
 
-        - Interpolate rates for a single trade date and multiple expiration dates
-        >>> # There is no DI Contract in 09-05-2025 with expiration 01-01-2050
-        >>> # The longest available contract is used to extrapolate the rate
-        >>> # Note: extrapolation is allowed by default
+        Interpola taxas para uma data de negociação e múltiplos vencimentos:
+        >>> # Não há contrato DI em 09-05-2025 com vencimento 01-01-2050
+        >>> # O contrato mais longo disponível é usado para extrapolar
         >>> di1.interpolate_rates(
         ...     dates="25-04-2025",
         ...     expirations=["01-01-2027", "01-01-2050"],
@@ -252,8 +265,7 @@ def interpolate_rates(
             0.13881
         ]
 
-        >>> # With extrapolation set to False, the second rate will be null
-        >>> # Note: 0.13576348733268917 is shown as 0.135763
+        >>> # Com extrapolação desabilitada, a segunda taxa será null
         >>> di1.interpolate_rates(
         ...     dates="25-04-2025",
         ...     expirations=["01-11-2027", "01-01-2050"],
@@ -265,14 +277,6 @@ def interpolate_rates(
             0.135763
             null
         ]
-
-    Raises:
-        ValueError: If `dates` and `expirations` are both array-like but have
-            different lengths.
-
-    Notes:
-        - All available settlement rates are used for the flat-forward interpolation.
-        - The function handles broadcasting of scalar and array-like inputs.
     """
     if has_nullable_args(dates, expirations):
         logger.warning(
@@ -349,40 +353,39 @@ def interpolate_rate(
     expiration: DateLike,
     extrapolate: bool = False,
 ) -> float:
-    """
-    Interpolates or retrieves the DI rate for a single expiration date.
+    """Interpola ou obtém a taxa DI para uma única data de vencimento.
 
-    Fetches DI contract data for the specified trade `date` and determines the
-    settlement rate for the given `expiration`. If an exact match for the
-    expiration date exists, its rate is returned. Otherwise, the rate is
-    interpolated using the flat-forward method based on the rates of surrounding
-    contracts.
+    Busca dados de contratos DI para a data de negociação especificada e determina
+    a taxa de liquidação para o vencimento fornecido. Se existir uma correspondência
+    exata para a data de vencimento, sua taxa é retornada. Caso contrário, a taxa
+    é interpolada usando o método flat-forward baseado nas taxas dos contratos
+    adjacentes.
 
     Args:
-        date (DateLike): The trade date for which to retrieve DI data.
-        expiration (DateLike): The target expiration date for the rate.
-        extrapolate (bool, optional): If True, allows extrapolation if the
-            `expiration` date falls outside the range of available contract
-            expirations for the given `date`. Defaults to False.
+        date: Data de negociação para a qual obter dados de DI.
+        expiration: Data de vencimento alvo para a taxa.
+        extrapolate: Se True, permite extrapolação se o ``expiration`` estiver
+            fora do intervalo de vencimentos de contratos disponíveis para a
+            ``date``. Padrão: False.
 
     Returns:
-        float: The exact or interpolated DI settlement rate for the specified
-            date and expiration. Returns `float("nan")` if:
-                - No DI data is found for the `date`.
-                - The `expiration` is outside range and `extrapolate` is False.
-                - An interpolation calculation fails.
+        Taxa de liquidação DI exata ou interpolada para a data e vencimento
+        especificados. Retorna ``float("nan")`` se:
+        - Não há dados DI para a ``date``.
+        - O ``expiration`` está fora do intervalo e ``extrapolate`` é False.
+        - O cálculo de interpolação falhou.
 
     Examples:
         >>> from pyield import di1
-        >>> # Get rate for an existing contract expiration
+        >>> # Obtém taxa para um vencimento de contrato existente
         >>> di1.interpolate_rate("25-04-2025", "01-01-2027")
         0.13901
 
-        >>> # Get rate for a non-existing contract expiration
+        >>> # Obtém taxa para um vencimento não existente
         >>> di1.interpolate_rate("25-04-2025", "01-11-2027")
         0.13576348733268917
 
-        >>> # Extrapolate rate for a future expiration date
+        >>> # Extrapola taxa para uma data de vencimento futura
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
@@ -416,19 +419,18 @@ def interpolate_rate(
 
 
 def available_trade_dates() -> pl.Series:
-    """
-    Returns all available (completed) trading dates in the DI dataset.
+    """Retorna todas as datas de negociação disponíveis (completas) no dataset de DI.
 
-    Retrieves distinct 'TradeDate' values present in the
-    historical DI futures data cache, sorted chronologically.
+    Obtém valores distintos de 'TradeDate' presentes no cache de dados históricos
+    de futuros de DI, ordenados cronologicamente.
 
     Returns:
-        pl.Series: A sorted Series of unique trade dates (dt.date)
-            for which DI data is available.
+        Series ordenada de datas de negociação únicas (dt.date) para as quais
+        dados de DI estão disponíveis.
 
     Examples:
         >>> from pyield import di1
-        >>> # DI Futures series starts from 1995-01-02
+        >>> # Série de futuros de DI começa em 1995-01-02
         >>> di1.available_trade_dates().head(5)
         shape: (5,)
         Series: 'available_dates' [date]

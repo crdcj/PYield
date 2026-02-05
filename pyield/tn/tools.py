@@ -55,13 +55,38 @@ def calculate_present_value(
     rates: pl.Series | list[float],
     periods: pl.Series | list[float],
 ) -> float:
-    """
-    Calcula o valor presente de uma série de fluxos de caixa de forma estrita.
+    """Calcula o valor presente de uma série de fluxos de caixa de forma estrita.
 
-    Retorna float('nan') se qualquer uma das condições abaixo ocorrer:
-    - As listas/séries de entrada estiverem vazias.
-    - As listas/séries de entrada tiverem tamanhos diferentes.
-    - Qualquer valor de entrada ou resultado do cálculo for null, NaN ou inf.
+    O valor presente é calculado descontando cada fluxo de caixa pela taxa
+    correspondente e período, usando a fórmula: VP = CF / (1 + r)^t
+
+    Args:
+        cash_flows: Fluxos de caixa a descontar.
+        rates: Taxas de desconto para cada fluxo (em decimal, ex: 0.10 para 10%).
+        periods: Períodos (em anos) para cada fluxo de caixa.
+
+    Returns:
+        Soma dos valores presentes. Retorna ``float('nan')`` se:
+        - As listas/séries de entrada estiverem vazias.
+        - As listas/séries de entrada tiverem tamanhos diferentes.
+        - Qualquer valor de entrada ou resultado do cálculo for null, NaN ou inf.
+
+    Examples:
+        Título com cupons anuais de 10% e principal de R$1000, descontado a 8% a.a.:
+        >>> cash_flows = [100, 100, 1100]  # Cupons de R$100 + principal no vencimento
+        >>> rates = [0.08, 0.08, 0.08]  # Taxa de desconto de 8% a.a.
+        >>> periods = [1.0, 2.0, 3.0]  # Pagamentos anuais
+        >>> round(calculate_present_value(cash_flows, rates, periods), 2)
+        1051.54
+
+        Retorna NaN para entradas vazias:
+        >>> import math
+        >>> math.isnan(calculate_present_value([], [], []))
+        True
+
+        Retorna NaN para tamanhos incompatíveis:
+        >>> math.isnan(calculate_present_value([100], [0.10, 0.10], [1.0]))
+        True
     """
     try:
         # A criação do DataFrame agora pode levantar um ShapeError

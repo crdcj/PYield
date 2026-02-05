@@ -1,17 +1,15 @@
-"""
-This module provides functions to fetch various financial indicators from
-the Brazilian Central Bank's API using Polars.
+"""Funções para buscar indicadores financeiros da API do Banco Central do Brasil.
 
-Implementation Notes:
-    - Values are retrieved in percentage format and converted to decimal format
-      (divided by 100).
-    - Each rate type is rounded to maintain the same precision as provided by
-      the Central Bank:
-        - SELIC Over and SELIC Target: 4 decimal places
-        - DI Over: 8 decimal places for daily rates. For annualized rates,
-          the value is rounded to 4 decimal places.
-    - For requests spanning more than 10 years, the date range is automatically
-      chunked using Polars' native calendar-aware date functionalities.
+Notas de implementação:
+    - Valores são obtidos em formato percentual e convertidos para decimal
+      (divididos por 100).
+    - Cada tipo de taxa é arredondado para manter a mesma precisão fornecida pelo
+      Banco Central:
+        - SELIC Over e SELIC Meta: 4 casas decimais
+        - DI Over: 8 casas decimais para taxas diárias. Para taxas anualizadas,
+          o valor é arredondado para 4 casas decimais.
+    - Para requisições que abrangem mais de 10 anos, o intervalo de datas é
+      automaticamente dividido usando funcionalidades nativas do Polars.
 """
 
 import logging
@@ -62,16 +60,15 @@ def _do_api_call(api_url: str) -> list[dict[str, Any]]:
 def _build_download_url(
     serie: BCSerie, start: DateLike, end: DateLike | None = None
 ) -> str:
-    """
-    Builds the URL for downloading data from the Central Bank series.
+    """Constrói a URL para download de dados das séries do Banco Central.
 
     Args:
-        serie: The series enum value to fetch
-        start: The start date for the data to fetch
-        end: The end date for the data
+        serie: Valor enum da série a buscar.
+        start: Data inicial para os dados a buscar.
+        end: Data final para os dados.
 
     Returns:
-        The formatted URL for the API request
+        URL formatada para a requisição da API.
     """
     start = convert_dates(start)
     start_str = start.strftime("%d/%m/%Y")
@@ -93,9 +90,7 @@ def _fetch_request(
     start: DateLike,
     end: DateLike | None,
 ) -> pl.DataFrame:
-    """
-    Worker function that fetches data from the API.
-    """
+    """Função worker que busca dados da API."""
     # Define o esquema esperado para o DataFrame de retorno.
     # Isso é crucial para os casos em que a API não retorna dados.
     expected_schema = {"Date": pl.Date, "Value": pl.Float64}
@@ -132,17 +127,18 @@ def _fetch_request(
 def _fetch_data_from_url(
     serie: BCSerie, start: DateLike, end: DateLike | None = None
 ) -> pl.DataFrame:
-    """
-    Orchestrates fetching data from the Central Bank API, handling requests longer
-    than 10 years by splitting them into smaller chunks using polars date_range.
+    """Orquestra a busca de dados da API do Banco Central.
+
+    Trata requisições maiores que 10 anos dividindo-as em chunks menores usando
+    polars date_range.
 
     Args:
-        serie: The series enum to fetch
-        start: The start date for the data to fetch
-        end: The end date for the data
+        serie: Enum da série a buscar.
+        start: Data inicial para os dados a buscar.
+        end: Data final para os dados.
 
     Returns:
-        DataFrame with the requested data
+        DataFrame com os dados requisitados.
     """
     # 1. Converter datas usando a função auxiliar existente
     start_date = convert_dates(start)
@@ -189,29 +185,28 @@ def selic_over_series(
     start: DateLike,
     end: DateLike | None = None,
 ) -> pl.DataFrame:
-    """
-    Fetches the SELIC Over rate from the Brazilian Central Bank.
+    """Busca a taxa SELIC Over do Banco Central do Brasil.
 
-    The SELIC Over rate is the daily average interest rate effectively practiced
-    between banks in the interbank market, using public securities as collateral.
+    A taxa SELIC Over é a taxa de juros média diária efetivamente praticada
+    entre bancos no mercado interbancário, usando títulos públicos como garantia.
 
-    API URL Example:
+    Exemplo de URL da API:
         https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
 
     Args:
-        start: The start date for the data to fetch. If None, returns data from
-              the earliest available date.
-        end: The end date for the data to fetch. If None, returns data up to
-             the latest available date.
+        start: Data inicial para buscar os dados. Se None, retorna dados desde
+            a data mais antiga disponível.
+        end: Data final para buscar os dados. Se None, retorna dados até a
+            data mais recente disponível.
 
     Returns:
-        DataFrame containing Date and Value columns with the SELIC Over rate,
-        or empty DataFrame if data is not available.
+        DataFrame contendo colunas Date e Value com a taxa SELIC Over, ou
+        DataFrame vazio se dados não estiverem disponíveis.
 
     Examples:
         >>> from pyield import bc
-        >>> # No data on 26-01-2025 (sunday). Selic changed due to Copom meeting.
-        >>> bc.selic_over_series("26-01-2025").head(5)  # Showing first 5 rows
+        >>> # Sem dados em 26-01-2025 (domingo). Selic mudou por reunião do Copom.
+        >>> bc.selic_over_series("26-01-2025").head(5)  # Primeiras 5 linhas
         shape: (5, 2)
         ┌────────────┬────────┐
         │ Date       ┆ Value  │
@@ -225,7 +220,7 @@ def selic_over_series(
         │ 2025-01-31 ┆ 0.1315 │
         └────────────┴────────┘
 
-        >>> # Fetching data for a specific date range
+        >>> # Buscando dados para um intervalo específico
         >>> bc.selic_over_series("14-09-2025", "17-09-2025")
         shape: (3, 2)
         ┌────────────┬───────┐
@@ -245,17 +240,16 @@ def selic_over_series(
 
 
 def selic_over(date: DateLike) -> float:
-    """
-    Fetches the SELIC Over rate value for a specific date.
+    """Busca o valor da taxa SELIC Over para uma data específica.
 
-    This is a convenience function that returns only the value (not the DataFrame)
-    for the specified date.
+    Função de conveniência que retorna apenas o valor (não o DataFrame) para a
+    data especificada.
 
     Args:
-        date: The reference date to fetch the SELIC Over rate for.
+        date: Data de referência para buscar a taxa SELIC Over.
 
     Returns:
-        The SELIC Over rate as a float or None if not available.
+        Taxa SELIC Over como float ou NaN se não disponível.
 
     Examples:
         >>> from pyield import bc
@@ -274,23 +268,22 @@ def selic_target_series(
     start: DateLike,
     end: DateLike | None = None,
 ) -> pl.DataFrame:
-    """
-    Fetches the SELIC Target rate from the Brazilian Central Bank.
+    """Busca a taxa SELIC Meta do Banco Central do Brasil.
 
-    The SELIC Target rate is the official interest rate set by the
-    Central Bank of Brazil's Monetary Policy Committee (COPOM).
+    A taxa SELIC Meta é a taxa de juros oficial definida pelo Comitê de Política
+    Monetária (COPOM) do Banco Central do Brasil.
 
-    API URL Example:
+    Exemplo de URL da API:
         https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
 
     Args:
-        start: The start date for the data to fetch.
-        end: The end date for the data to fetch. If None, returns data up to
-             the latest available date.
+        start: Data inicial para buscar os dados.
+        end: Data final para buscar os dados. Se None, retorna dados até a
+            data mais recente disponível.
 
     Returns:
-        DataFrame containing Date and Value columns with the SELIC Target rate,
-        or empty DataFrame if data is not available
+        DataFrame contendo colunas Date e Value com a taxa SELIC Meta, ou
+        DataFrame vazio se dados não estiverem disponíveis.
 
     Examples:
         >>> from pyield import bc
@@ -312,17 +305,16 @@ def selic_target_series(
 
 
 def selic_target(date: DateLike) -> float:
-    """
-    Fetches the SELIC Target rate value for a specific date.
+    """Busca o valor da taxa SELIC Meta para uma data específica.
 
-    This is a convenience function that returns only the value (not the DataFrame)
-    for the specified date.
+    Função de conveniência que retorna apenas o valor (não o DataFrame) para a
+    data especificada.
 
     Args:
-        date: The reference date to fetch the SELIC Target rate for.
+        date: Data de referência para buscar a taxa SELIC Meta.
 
     Returns:
-        The SELIC Target rate as a float or None if not available.
+        Taxa SELIC Meta como float ou NaN se não disponível.
 
     Examples:
         >>> from pyield import bc
@@ -342,31 +334,29 @@ def di_over_series(
     end: DateLike | None = None,
     annualized: bool = True,
 ) -> pl.DataFrame:
-    """
-    Fetches the DI (Interbank Deposit) rate from the Brazilian Central Bank.
+    """Busca a taxa DI (Depósito Interbancário) do Banco Central do Brasil.
 
-    The DI rate represents the average interest rate of interbank loans.
+    A taxa DI representa a taxa de juros média dos empréstimos interbancários.
 
-    API URL Example:
+    Exemplo de URL da API:
         https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
-        https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial=12/04/2024&dataFinal=12/04/2024
 
     Args:
-        start: The start date for the data to fetch. If None, returns data from
-              the earliest available date.
-        end: The end date for the data to fetch. If None, returns data up to
-             the latest available date.
-        annualized: If True, returns the annualized rate (252 trading
-            days per year), otherwise returns the daily rate.
+        start: Data inicial para buscar os dados. Se None, retorna dados desde
+            a data mais antiga disponível.
+        end: Data final para buscar os dados. Se None, retorna dados até a
+            data mais recente disponível.
+        annualized: Se True, retorna a taxa anualizada (252 dias úteis por ano),
+            caso contrário retorna a taxa diária.
 
     Returns:
-        DataFrame containing Date and Value columns with the DI rate,
-        or empty DataFrame if data is not available.
+        DataFrame contendo colunas Date e Value com a taxa DI, ou DataFrame
+        vazio se dados não estiverem disponíveis.
 
     Examples:
         >>> from pyield import bc
-        >>> # Returns all data since 29-01-2025
-        >>> bc.di_over_series("29-01-2025").head(5)  # Showing only first 5 rows
+        >>> # Retorna todos os dados desde 29-01-2025
+        >>> bc.di_over_series("29-01-2025").head(5)  # Primeiras 5 linhas
         shape: (5, 2)
         ┌────────────┬────────┐
         │ Date       ┆ Value  │
@@ -397,19 +387,18 @@ def di_over_series(
 
 
 def di_over(date: DateLike, annualized: bool = True) -> float:
-    """
-    Fetches the DI Over rate value for a specific date.
+    """Busca o valor da taxa DI Over para uma data específica.
 
-    This is a convenience function that returns only the value (not the DataFrame)
-    for the specified date.
+    Função de conveniência que retorna apenas o valor (não o DataFrame) para a
+    data especificada.
 
     Args:
-        date: The reference date to fetch the DI Over rate for.
-        annualized: If True, returns the annualized rate (252 trading
-            days per year), otherwise returns the daily rate.
+        date: Data de referência para buscar a taxa DI Over.
+        annualized: Se True, retorna a taxa anualizada (252 dias úteis por ano),
+            caso contrário retorna a taxa diária.
 
     Returns:
-        The DI Over rate as a float or float("nan") if not available.
+        Taxa DI Over como float ou NaN se não disponível.
 
     Examples:
         >>> from pyield import bc
