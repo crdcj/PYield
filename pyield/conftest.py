@@ -11,9 +11,9 @@ def add_np(doctest_namespace):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def set_pandas_display_options():
+def set_polars_display_options():
     """
-    Define as opções de exibição do Pandas para a sessão de testes.
+    Define as opções de exibição do Polars para a sessão de testes.
     Isso afeta como os DataFrames são impressos nos doctests.
     """
     pl.Config.set_tbl_width_chars(150)  # largura grande

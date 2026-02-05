@@ -10,11 +10,14 @@ from tenacity import (
 
 logger = logging.getLogger(__name__)
 
+# Constantes para valores de retry
+_MAX_EXCEPTION_LENGTH = 150
+_HTTP_TOO_MANY_REQUESTS = 429
+_HTTP_SERVER_ERROR_MIN = 500
+
 
 class DataNotAvailableError(Exception):
     """Levantada quando o dado baixado for considerado inválido (dado vazio/pequeno)."""
-
-    pass
 
 
 def _log_before_sleep(retry_state: RetryCallState):
@@ -31,11 +34,15 @@ def _log_before_sleep(retry_state: RetryCallState):
         return
 
     sleep_duration = next_action.sleep
-    truncated_exc = str(exception).replace("\n", " ")[:150]
+    exc_str = str(exception).replace("\n", " ")
+    if len(exc_str) > _MAX_EXCEPTION_LENGTH:
+        truncated_exc = exc_str[:_MAX_EXCEPTION_LENGTH] + "..."
+    else:
+        truncated_exc = exc_str
 
     logger.warning(
         f"Tentativa {retry_state.attempt_number} falhou com "
-        f"{type(exception).__name__}: {truncated_exc}... Tentando novamente em "
+        f"{type(exception).__name__}: {truncated_exc} Tentando novamente em "
         f"{sleep_duration:.2f} segundos..."
     )
 
@@ -50,9 +57,13 @@ def should_retry_exception(retry_state: RetryCallState) -> bool:
         return True
 
     # HTTPError: apenas 429 e 5xx são transitórios
-    if isinstance(exception, HTTPError):
+    if isinstance(exception, HTTPError) and exception.response is not None:
         status_code = exception.response.status_code
-        if status_code == 429 or status_code >= 500:  # noqa
+        is_transient = (
+            status_code == _HTTP_TOO_MANY_REQUESTS
+            or status_code >= _HTTP_SERVER_ERROR_MIN
+        )
+        if is_transient:
             return True
 
     return False
