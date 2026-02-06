@@ -40,11 +40,11 @@ def _load_with_intraday(dates: list[dt.date]) -> pl.DataFrame:
                 dfs_to_concat.append(df_missing)
             else:
                 logger.warning(
-                    f"Dados para {ref_date} não contêm 'SettlementPrice'. "
-                    "Pulando esta data."
+                    "Dados para %s não contêm 'SettlementPrice'. Pulando esta data.",
+                    ref_date,
                 )
         except Exception as e:
-            logger.error(f"Falha ao buscar dados para {ref_date}: {e}")
+            logger.error("Falha ao buscar dados para %s: %s", ref_date, e)
 
     # 4. Retorna concatenação de todos os DataFrames disponíveis
     if len(dfs_to_concat) == 0:
@@ -88,7 +88,7 @@ def data(
     Args:
         dates: Datas de negociação para as quais obter dados de contratos DI.
         month_start: Se True, ajusta todas as datas de vencimento para o primeiro
-            dia de seus respectivos meses (ex: 2025-02-01 vira 2025-01-01).
+            dia de seus respectivos meses (ex: 2025-02-03 vira 2025-02-01).
             Padrão: False.
         pre_filter: Se True, filtra contratos DI para incluir apenas aqueles cujas
             datas de vencimento coincidem com vencimentos conhecidos de títulos
@@ -129,34 +129,39 @@ def data(
         return pl.DataFrame()
     df = _get_data(dates=dates)
 
+    if pre_filter:
+        df_tpf = (
+            get_cached_dataset("tpf")
+            .filter(pl.col("BondType").is_in(["LTN", "NTN-F"]))
+            .unique(subset=["MaturityDate", "ReferenceDate"])
+            .select(
+                TradeDate_tpf=pl.col("ReferenceDate"),
+                ExpirationDate=pl.col("MaturityDate"),
+            )
+            .sort("TradeDate_tpf", "ExpirationDate")
+        )
+
+        # Ajustar as datas de vencimento para dias úteis, como está no DI1
+        exp_dates = bday.offset(df_tpf["ExpirationDate"], 0)
+        df_tpf = df_tpf.with_columns(ExpirationDate=exp_dates)
+
+        # Mapear cada TradeDate do DI para a data TPF mais próxima
+        df = df.join_asof(
+            df_tpf.select("TradeDate_tpf").unique().sort("TradeDate_tpf"),
+            left_on="TradeDate",
+            right_on="TradeDate_tpf",
+            strategy="backward",
+        )
+
+        # Filtrar apenas vencimentos que existem no TPF
+        df = df.join(df_tpf, on=["TradeDate_tpf", "ExpirationDate"], how="inner").drop(
+            "TradeDate_tpf"
+        )
+
     if month_start:
         df = df.with_columns(pl.col("ExpirationDate").dt.truncate("1mo"))
 
-    if pre_filter:
-        df_pre = (
-            get_cached_dataset("tpf")
-            .filter(pl.col("BondType").is_in(["LTN", "NTN-F"]))
-            .unique(subset=["ReferenceDate", "MaturityDate"])
-            .select(
-                TradeDate=pl.col("ReferenceDate"),
-                ExpirationDate=pl.col("MaturityDate"),
-            )
-        )
-
-        # garante que os dois lados estão ordenados pelas chaves necessárias
-        df = df.sort("TradeDate", "ExpirationDate")
-        df_pre = df_pre.sort("TradeDate", "ExpirationDate")
-
-        df = df.join_asof(
-            df_pre,
-            left_on="TradeDate",
-            right_on="TradeDate",
-            by="ExpirationDate",  # garante matching por vértice
-            strategy="backward",  # pega a data anterior se não tiver exata
-            check_sortedness=False,  # já garantimos a ordenação
-        )
-
-    return df
+    return df.sort("TradeDate", "ExpirationDate")
 
 
 def _build_input_dataframe(
@@ -252,11 +257,10 @@ def interpolate_rates(
         ]
 
         Interpola taxas para uma data de negociação e múltiplos vencimentos:
-        >>> # Não há contrato DI em 09-05-2025 com vencimento 01-01-2050
-        >>> # O contrato mais longo disponível é usado para extrapolar
         >>> di1.interpolate_rates(
         ...     dates="25-04-2025",
         ...     expirations=["01-01-2027", "01-01-2050"],
+        ...     extrapolate=True,
         ... )
         shape: (2,)
         Series: 'FlatFwdRate' [f64]
@@ -265,7 +269,7 @@ def interpolate_rates(
             0.13881
         ]
 
-        >>> # Com extrapolação desabilitada, a segunda taxa será null
+        >>> # Com extrapolação desabilitada, vencimentos fora do intervalo retornam null
         >>> di1.interpolate_rates(
         ...     dates="25-04-2025",
         ...     expirations=["01-11-2027", "01-01-2050"],
@@ -289,9 +293,10 @@ def interpolate_rates(
         logger.warning("Invalid inputs provided. Returning empty Series.")
         return pl.Series(dtype=pl.Float64)
 
-    # Load DI rates dataset filtered by the provided reference dates
+    # Carrega dataset de taxas DI filtrado pelas datas de referência fornecidas
+    # Usa datas já convertidas do DataFrame de entrada para evitar conversão dupla
     dfr = _get_data(dates=dates)
-    # Return an empty DataFrame if no rates are found
+    # Retorna Series vazia se nenhuma taxa for encontrada
     if dfr.is_empty():
         return pl.Series(dtype=pl.Float64)
 
@@ -306,7 +311,7 @@ def interpolate_rates(
     # Lista para armazenar os pedaços processados
     processed_chunks = []
 
-    # Iterate over each unique reference date
+    # Itera sobre cada data de referência única
     for date in dfi["TradeDate"].unique():
         # 1. Filtra apenas as linhas desta data (Particionamento)
         df_subset = dfi.filter(pl.col("TradeDate") == date)
@@ -320,7 +325,7 @@ def interpolate_rates(
             processed_chunks.append(df_subset)
             continue
 
-        # Initialize the interpolator with known rates and business days
+        # Inicializa o interpolador com taxas e dias úteis conhecidos
         interp = interpolator.Interpolator(
             method="flat_forward",
             known_bdays=dfr_subset["BDaysToExp"],
@@ -401,7 +406,7 @@ def interpolate_rate(
     ):
         raise ValueError("Both 'date' and 'expiration' must be single date values.")
 
-    # Get the DI contract DataFrame
+    # Obtém o DataFrame de contratos DI
     df = _get_data(dates=converted_date)
 
     if df.is_empty():

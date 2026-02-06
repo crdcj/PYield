@@ -42,7 +42,7 @@ def _process_ipca_dataframe(
         pl.col("Value").cast(pl.Float64),
     )
     if is_in_pct:
-        df = df.with_columns((pl.col("Value") / 100).round(4))
+        df = df.with_columns(pl.col("Value").truediv(100).round(4))
     return df
 
 

@@ -174,7 +174,7 @@ def forwards(
         df_orig.drop_nans()
         .drop_nulls()
         .unique(subset=["du_k", "group_by"], keep="last")
-        .sort(["group_by", "du_k"])
+        .sort("group_by", "du_k")
         .with_columns(time_k=pl.col("du_k") / 252)  # Criar coluna de tempo em anos
         .with_columns(
             # Calcular os valores deslocados (shift) dentro de cada grupo
