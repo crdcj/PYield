@@ -211,18 +211,18 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
 
     except HTTPError as e:
         if e.response.status_code == 404:  # noqa
-            msg = f"Resource not found (404) at {url}. Returning an empty DataFrame."
+            msg = f"Resource not found (404) at {url}. Returning an empty DataFrame."  # type: ignore[possibly-unbound]
             logger.warning(msg)
             return pl.DataFrame()
         else:
             # Captures the full traceback for unexpected HTTP errors
-            msg = f"Unexpected HTTP error ({e.code}) while accessing URL: {url}"
+            msg = f"Unexpected HTTP error ({e.code}) while accessing URL: {url}"  # type: ignore[attr-defined, possibly-unbound]
             logger.exception(msg)
             raise e
 
     except Exception:
         # Captures the full traceback for any other errors
-        msg = f"An unexpected error occurred while processing data from {url}."
+        msg = f"An unexpected error occurred while processing data from {url}."  # type: ignore[possibly-unbound]
         logger.exception(msg)
         raise
 

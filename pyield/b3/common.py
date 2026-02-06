@@ -49,8 +49,7 @@ def add_expiration_date(
         ).alias("ExpirationDate")
     )
     # Garantee que a data de vencimento é um dia útil
-    adj_dates = bday.offset(dates=df["ExpirationDate"], offset=0)
-    df = df.with_columns(ExpirationDate=adj_dates)
+    df = df.with_columns(ExpirationDate=bday.offset_expr("ExpirationDate", 0))
     return df
 
 

@@ -139,8 +139,7 @@ def _process_raw_df(df: pl.DataFrame) -> pl.DataFrame:
         cs.contains("Rate").truediv(100).round(6),
         cs.ends_with("Date").str.to_date(format="%Y%m%d"),
     )
-    bd_to_mat = bday.count(start=df["ReferenceDate"], end=df["MaturityDate"])
-    df = df.with_columns(BDToMat=bd_to_mat)
+    df = df.with_columns(BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"))
     return df
 
 

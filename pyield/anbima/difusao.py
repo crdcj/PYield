@@ -183,20 +183,19 @@ def _process_csv_data(csv_data: str) -> pl.DataFrame:
         )
     )
 
-    dias_uteis = bday.count(df["data_referencia"], df["data_vencimento"])
     df = (
         df.with_columns(
-            pl.Series("dias_uteis", dias_uteis),
+            bday.count_expr("data_referencia", "data_vencimento").alias("dias_uteis"),
             # Converte as colunas de taxa de percentual para decimal
             # São 6 casas decimais no máximo.
             # Arredondar na 8a para minimizar erros de ponto flutuante.
-            (cs.starts_with("taxa_") / 100).round(8),
+            cs.starts_with("taxa_").truediv(100).round(8),
             pl.col("data_referencia")
             .dt.combine(pl.col("horario"))
             .alias("data_hora_referencia"),
         )
         .select(FINAL_COLUMN_ORDER)
-        .sort(by=["titulo", "data_vencimento", "data_hora_referencia"])
+        .sort("titulo", "data_vencimento", "data_hora_referencia")
     )
 
     return df

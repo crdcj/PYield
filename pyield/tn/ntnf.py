@@ -1,3 +1,4 @@
+import datetime as dt
 import logging
 import math
 from collections.abc import Callable
@@ -200,8 +201,7 @@ def cash_flows(
     )
 
     if adj_payment_dates:
-        adj_pay_dates = bday.offset(pmt_dates, 0)
-        df = df.with_columns(PaymentDate=adj_pay_dates)
+        df = df.with_columns(PaymentDate=bday.offset_expr("PaymentDate", 0))
     return df
 
 
@@ -337,6 +337,7 @@ def spot_rates(  # noqa
 
     # 3. Gerar todas as datas de cupom até o último vencimento NTN-F
     last_maturity = ntnf_maturities.max()
+    assert isinstance(last_maturity, dt.date)
     all_coupon_dates = payment_dates(settlement, last_maturity)
 
     # 4. Construir DataFrame inicial
@@ -355,16 +356,19 @@ def spot_rates(  # noqa
 
     # 5. Loop de bootstrap (iterativo por dependência sequencial)
     last_ltn_maturity = ltn_maturities.max()
+    assert isinstance(last_ltn_maturity, dt.date)
+
     maturities_list = df["MaturityDate"]
     bdays_list = df["BDToMat"]
     byears_list = df["BYears"]
     ytm_list = df["YTM"]
 
-    solved_spot_rates: list[float] = []
-    spot_map: dict[pl.Date, float] = {}
+    solved_spot_rates: list[float | None] = []
+    spot_map: dict[dt.date, float | None] = {}
 
     for i in range(len(df)):
         mat_date = maturities_list[i]
+        assert isinstance(mat_date, dt.date)
         bdays_val = int(bdays_list[i])
         byears_val = float(byears_list[i])
         ytm_val = float(ytm_list[i])
@@ -596,7 +600,7 @@ def premium(  # noqa
 
     ff_interpolator = ip.Interpolator(
         "flat_forward",
-        bday.count(settlement, di_expirations),
+        bday.count(settlement, di_expirations),  # type: ignore[arg-type]
         di_rates,
     )
 

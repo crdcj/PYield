@@ -20,21 +20,21 @@ class BrHolidays:
         self.old_holidays = self._load_holidays(base / "br_holidays_old.txt")
 
     @staticmethod
-    def _load_holidays(file_path: Path) -> pl.Series:
+    def _load_holidays(file_path: Path) -> list[dt.date]:
         df = pl.read_csv(
             file_path,
             has_header=False,
             new_columns=["date"],
             comment_prefix="#",
         ).with_columns(pl.col("date").str.to_date(format="%d/%m/%Y"))
-        return df["date"]
+        return df["date"].to_list()
 
-    def get_holiday_series(
+    def get_holidays(
         self,
         dates: dt.date | pl.Series | None = None,
         holiday_option: Literal["old", "new", "infer"] = "infer",
-    ) -> pl.Series:
-        """Retorna a série de feriados conforme opção ou inferência.
+    ) -> list[dt.date]:
+        """Retorna a lista de feriados conforme opção ou inferência.
 
         dates: data única ou série de datas para inferir (quando
             holiday_option='infer').

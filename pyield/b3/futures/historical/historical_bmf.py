@@ -218,7 +218,7 @@ def _add_expiration_dates(
         df = add_expiration_date(df, contract_code, "TickerSymbol")
 
     df = df.with_columns(
-        BDaysToExp=bday.count(date, df["ExpirationDate"]),
+        BDaysToExp=bday.count_expr(date, "ExpirationDate"),
         DaysToExp=(pl.col("ExpirationDate") - pl.col("TradeDate")).dt.total_days(),
     ).filter(pl.col("DaysToExp") > 0)
     return df

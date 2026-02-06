@@ -204,10 +204,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
             .alias("AvgPrice")
         )
     )
-    bdays_to_mat = bday.count(
-        start=df.get_column("Settlement"), end=df.get_column("Maturity")
-    )
-    df = df.with_columns(bdays_to_mat.alias("BDToMat"))
+    df = df.with_columns(BDToMat=bday.count_expr("Settlement", "Maturity"))
     return df
 
 

@@ -124,6 +124,7 @@ def convert_dates(
         # Usa primeiro valor não-nulo para determinar o formato.
         first_str = s.str.strip_chars().replace("", None).drop_nulls().first()
         if first_str:
+            assert isinstance(first_str, str)
             fmt = validate_date_format(first_str)
             s = s.str.to_date(format=fmt, strict=False)
         else:
@@ -134,6 +135,6 @@ def convert_dates(
         s = s.cast(pl.Date)
 
     if is_scalar:
-        return s.first()
+        return s.first()  # type: ignore[return-value]
 
     return s

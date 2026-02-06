@@ -2,27 +2,25 @@ from typing import overload
 
 import polars as pl
 
-from pyield.types import ArrayLike, is_array_like
-
 
 @overload
-def truncate(values: float, decimal_places: int) -> float: ...
+def truncate(values: float, decimals: int) -> float: ...
 @overload
-def truncate(values: ArrayLike, decimal_places: int) -> pl.Series: ...
+def truncate(values: pl.Series, decimals: int) -> pl.Series: ...
 
 
-def truncate(values: float | ArrayLike, decimals: int) -> float | pl.Series:
+def truncate(values: float | pl.Series, decimals: int) -> float | pl.Series:
     """Trunca números (scalar ou ``polars.Series``) em direção a zero.
 
     Implementação unificada usando apenas operações de ``polars``: escalares
     são embrulhados em uma série temporária e depois desembrulhados.
 
     Args:
-        values: Escalar (int/float) ou ``pl.Series``.
-        decimal_places: Casas decimais (>= 0).
+        values: Escalar (float) ou ``pl.Series``.
+        decimals: Casas decimais (>= 0).
 
     Returns:
-        Float se entrada era escalar, ou ``pl.Series`` se entrada era série.
+        Float se entrada era escalar ou ``pl.Series`` se entrada era série.
 
     Examples:
         >>> truncate(3.14159, 3)
@@ -34,20 +32,18 @@ def truncate(values: float | ArrayLike, decimals: int) -> float | pl.Series:
            3.141
            2.718
         ]
-
     """
-    if values is None:
-        return float("nan")
-
     if decimals < 0:
-        raise ValueError("decimal_places must be non-negative")
+        raise ValueError("decimals must be non-negative")
 
     factor = 10.0**decimals
 
-    if not is_array_like(values):
+    if isinstance(values, float):
         return int(values * factor) / factor
-
-    return (values * factor).cast(pl.Int64).cast(pl.Float64) / factor
+    elif isinstance(values, pl.Series):
+        return (values * factor).cast(pl.Int64).cast(pl.Float64) / factor
+    else:
+        raise TypeError("values must be a float or pl.Series")
 
 
 def calculate_present_value(

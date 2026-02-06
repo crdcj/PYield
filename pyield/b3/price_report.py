@@ -261,7 +261,7 @@ def _convert_to_dataframe(records: list[dict]) -> pl.DataFrame:
 def _process_dataframe(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
     # 1. Add date-based metrics
     df = df.with_columns(
-        BDaysToExp=bday.count(df["TradeDate"], df["ExpirationDate"]),
+        BDaysToExp=bday.count_expr("TradeDate", "ExpirationDate"),
         DaysToExp=(pl.col("ExpirationDate") - pl.col("TradeDate")).dt.total_days(),
     )
 

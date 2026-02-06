@@ -3,18 +3,38 @@ from typing import Literal, overload
 
 import polars as pl
 
-import pyield.bday.holidays as hl
 import pyield.converters as cv
 import pyield.types as tp
 from pyield import clock
+from pyield.bday.holidays.brholidays import BrHolidays
 from pyield.types import ArrayLike, DateLike
 
-# Initialize Brazilian holidays class
-br_holidays = hl.BrHolidays()
-OLD_HOLIDAYS_ARRAY = br_holidays.get_holiday_series(holiday_option="old")
-NEW_HOLIDAYS_ARRAY = br_holidays.get_holiday_series(holiday_option="new")
-TRANSITION_DATE = br_holidays.TRANSITION_DATE
 SATURDAY_INDEX = 6
+
+br_holidays = BrHolidays()
+OLD_HOLIDAYS = br_holidays.get_holidays(holiday_option="old")
+NEW_HOLIDAYS = br_holidays.get_holidays(holiday_option="new")
+TRANSITION_DATE = BrHolidays.TRANSITION_DATE
+
+
+def count_expr(
+    start: pl.Expr | str | dt.date, end: pl.Expr | str | dt.date
+) -> pl.Expr:
+    """Build expression that counts business days with holiday regime."""
+    if isinstance(start, str):
+        start = pl.col(start)
+    elif isinstance(start, dt.date):
+        start = pl.lit(start)
+    if isinstance(end, str):
+        end = pl.col(end)
+    elif isinstance(end, dt.date):
+        end = pl.lit(end)
+    return (
+        pl.when(start < TRANSITION_DATE)
+        .then(pl.business_day_count(start=start, end=end, holidays=OLD_HOLIDAYS))
+        .otherwise(pl.business_day_count(start=start, end=end, holidays=NEW_HOLIDAYS))
+        .cast(pl.Int64)
+    )
 
 
 @overload
@@ -131,28 +151,31 @@ def count(
         nan_to_null=True,
     )
 
-    count_expr = (
-        pl.when(pl.col("start") < TRANSITION_DATE)
-        .then(
-            pl.business_day_count(
-                start=pl.col("start"), end=pl.col("end"), holidays=OLD_HOLIDAYS_ARRAY
-            ),
-        )
-        .otherwise(
-            pl.business_day_count(
-                start=pl.col("start"), end=pl.col("end"), holidays=NEW_HOLIDAYS_ARRAY
-            )
-        )
-        .cast(pl.Int64)
-        .alias("bday_count")
-    )
+    bday_count = count_expr(pl.col("start"), pl.col("end")).alias("bday_count")
 
-    s = df.select(count_expr)["bday_count"]
+    s = df.select(bday_count)["bday_count"]
 
     if not tp.has_array_like_args(start, end):
         return s.first()  # type: ignore[return-value]
 
     return s
+
+
+def offset_expr(
+    expr: pl.Expr | str,
+    n: int | pl.Expr | str,
+    roll: Literal["forward", "backward"] = "forward",
+) -> pl.Expr:
+    """Build expression that adds business days with holiday regime."""
+    if isinstance(expr, str):
+        expr = pl.col(expr)
+    if isinstance(n, str):
+        n = pl.col(n)
+    return (
+        pl.when(expr < TRANSITION_DATE)
+        .then(expr.dt.add_business_days(n=n, roll=roll, holidays=OLD_HOLIDAYS))
+        .otherwise(expr.dt.add_business_days(n=n, roll=roll, holidays=NEW_HOLIDAYS))
+    )
 
 
 @overload
@@ -207,7 +230,7 @@ def offset(
     ao DataFrame de origem.
 
     Regime de feriados: Para CADA data, a lista de feriados apropriada (antiga vs.
-    nova) é escolhida com base na data de transição ``2023-12-26`` (``TRANSITION_DATE``).
+    nova) é escolhida com base na data de transição 2023-12-26 (``TRANSITION_DATE``).
     Datas antes da transição usam a lista *antiga*; datas na transição ou após
     usam a lista *nova*.
 
@@ -347,27 +370,12 @@ def offset(
     )
 
     # Cria a expressão condicional para aplicar a lista de feriados correta
-    offset_expr = (
-        pl.when(pl.col("dates") < TRANSITION_DATE)
-        .then(
-            pl.col("dates").dt.add_business_days(
-                n=pl.col("offset"),
-                roll=roll,
-                holidays=OLD_HOLIDAYS_ARRAY,
-            )
-        )
-        .otherwise(
-            pl.col("dates").dt.add_business_days(
-                n=pl.col("offset"),
-                roll=roll,
-                holidays=NEW_HOLIDAYS_ARRAY,
-            )
-        )
-        .alias("adjusted_date")
+    adjusted_date = offset_expr(pl.col("dates"), n=pl.col("offset"), roll=roll).alias(
+        "adjusted_date"
     )
 
     # Executa a expressão e obtém a série de resultados
-    s = df.select(offset_expr)["adjusted_date"]
+    s = df.select(adjusted_date)["adjusted_date"]
 
     if not tp.has_array_like_args(dates, offset):
         return s.first()  # type: ignore[return-value]
@@ -420,12 +428,21 @@ def generate(
     s = pl.date_range(conv_start, conv_end, closed=closed, eager=True).alias("bday")
 
     # Pega feriados aplicáveis
-    holidays = br_holidays.get_holiday_series(
-        dates=conv_start, holiday_option=holiday_option
-    ).implode()
+    holidays = br_holidays.get_holidays(dates=conv_start, holiday_option=holiday_option)
 
     # Filtra: só dias úteis (seg-sex e não feriado)
     return s.filter((s.dt.weekday() < SATURDAY_INDEX) & (~s.is_in(holidays)))
+
+
+def is_business_day_expr(expr: pl.Expr | str) -> pl.Expr:
+    """Build expression that checks business-day status with holiday regime."""
+    if isinstance(expr, str):
+        expr = pl.col(expr)
+    return (
+        pl.when(expr < TRANSITION_DATE)
+        .then(expr.dt.is_business_day(holidays=OLD_HOLIDAYS))
+        .otherwise(expr.dt.is_business_day(holidays=NEW_HOLIDAYS))
+    )
 
 
 @overload
@@ -437,11 +454,11 @@ def is_business_day(dates: ArrayLike) -> pl.Series: ...
 
 
 def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Series:
-    """Determina se data(s) são dias úteis brasileiros com seleção de regime por elemento.
+    """Determina se data(s) são dias úteis brasileiros.
 
     REGIME DE FERIADOS POR LINHA: Para CADA data de entrada, a lista de feriados
     apropriada ("antiga" vs. "nova") é selecionada comparando com a data de
-    transição ``2023-12-26`` (``TRANSITION_DATE``). Datas estritamente antes da
+    transição 2023-12-26 (``TRANSITION_DATE``). Datas estritamente antes da
     transição usam a lista antiga; datas na transição ou após usam a lista nova.
     Isso espelha o comportamento de ``count`` e ``offset`` que aplicam a lógica
     de regime elemento a elemento.
@@ -500,18 +517,9 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
         nan_to_null=True,
     )
 
-    is_bday_expr = (
-        pl.when(pl.col("dates") < TRANSITION_DATE)
-        .then(
-            pl.col("dates").dt.is_business_day(holidays=OLD_HOLIDAYS_ARRAY),
-        )
-        .otherwise(
-            pl.col("dates").dt.is_business_day(holidays=NEW_HOLIDAYS_ARRAY),
-        )
-        .alias("is_bday")
-    )
+    is_bday = is_business_day_expr(pl.col("dates")).alias("is_bday")
 
-    s = df.select(is_bday_expr)["is_bday"]
+    s = df.select(is_bday)["is_bday"]
 
     if not tp.has_array_like_args(dates):
         return s.first()  # type: ignore[return-value]

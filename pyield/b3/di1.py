@@ -136,14 +136,14 @@ def data(
             .unique(subset=["MaturityDate", "ReferenceDate"])
             .select(
                 TradeDate_tpf=pl.col("ReferenceDate"),
-                ExpirationDate=pl.col("MaturityDate"),
+                ExpirationDate=bday.offset_expr("MaturityDate", 0),
             )
             .sort("TradeDate_tpf", "ExpirationDate")
         )
 
         # Ajustar as datas de vencimento para dias úteis, como está no DI1
-        exp_dates = bday.offset(df_tpf["ExpirationDate"], 0)
-        df_tpf = df_tpf.with_columns(ExpirationDate=exp_dates)
+        # exp_dates = bday.offset(df_tpf["ExpirationDate"], 0)
+        # df_tpf = df_tpf.with_columns(ExpirationDate=exp_dates)
 
         # Mapear cada TradeDate do DI para a data TPF mais próxima
         df = df.join_asof(
@@ -304,9 +304,11 @@ def interpolate_rates(
     # Isso garante que saberemos a ordem exata depois
     dfi = dfi.with_row_index("_temp_idx")
 
-    s_bdays = bday.count(dfi["TradeDate"], dfi["ExpirationDate"])
     # Inicializa FlatFwdRate como None
-    dfi = dfi.with_columns(BDaysToExp=s_bdays, FlatFwdRate=None)
+    dfi = dfi.with_columns(
+        BDaysToExp=bday.count_expr("TradeDate", "ExpirationDate"),
+        FlatFwdRate=None,
+    )
 
     # Lista para armazenar os pedaços processados
     processed_chunks = []

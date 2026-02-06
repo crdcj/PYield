@@ -1,5 +1,3 @@
-""" """  # noqa
-
 import datetime as dt
 import logging
 
@@ -16,53 +14,33 @@ from pyield.types import DateLike, has_nullable_args
 
 logger = logging.getLogger(__name__)
 
-DATA_SCHEMA = {
-    "quantidade_bcb": pl.Int64,
-    "data_leilao": pl.String,
-    "oferta": pl.Int64,
-    "titulo": pl.String,
-    "liquidacao": pl.String,
-    "quantidade_aceita": pl.Int64,
-    # "prazo": pl.Int64, algumas vezes vem sem esse campo na API
-    "vencimento": pl.String,
-    "benchmark": pl.String,
-    "pu_medio": pl.Float64,
-    "taxa_media": pl.Float64,
-    "financeiro_aceito": pl.Float64,
-    "pu_minimo": pl.Float64,
-    "numero_edital": pl.Int64,
-    "taxa_maxima": pl.Float64,
-    "tipo_leilao": pl.String,
-    "financeiro_bcb": pl.Int64,
-    "liquidacao_segunda_volta": pl.String,
-    "oferta_segunda_volta": pl.Int64,
-    "financeiro_aceito_segunda_volta": pl.Float64,
-    "quantidade_aceita_segunda_volta": pl.Int64,
+# Definição unificada das colunas: chave_api -> (novo_nome, tipo)
+# "prazo" foi omitido pois algumas vezes não vem na API
+COLUMN_DEFINITIONS: dict[str, tuple[str, type[pl.DataType]]] = {
+    "data_leilao": ("data_1v", pl.String),
+    "liquidacao": ("data_liquidacao_1v", pl.String),
+    "liquidacao_segunda_volta": ("data_liquidacao_2v", pl.String),
+    "numero_edital": ("numero_edital", pl.Int64),
+    "tipo_leilao": ("tipo_leilao", pl.String),
+    "titulo": ("titulo", pl.String),
+    "benchmark": ("benchmark", pl.String),
+    "vencimento": ("data_vencimento", pl.String),
+    "oferta": ("quantidade_ofertada_1v", pl.Int64),
+    "quantidade_aceita": ("quantidade_aceita_1v", pl.Int64),
+    "oferta_segunda_volta": ("quantidade_ofertada_2v", pl.Int64),
+    "quantidade_aceita_segunda_volta": ("quantidade_aceita_2v", pl.Int64),
+    "financeiro_aceito": ("financeiro_aceito_1v", pl.Float64),
+    "financeiro_aceito_segunda_volta": ("financeiro_aceito_2v", pl.Float64),
+    "quantidade_bcb": ("quantidade_bcb", pl.Int64),
+    "financeiro_bcb": ("financeiro_bcb", pl.Int64),
+    "pu_minimo": ("pu_minimo", pl.Float64),
+    "pu_medio": ("pu_medio", pl.Float64),
+    "taxa_media": ("taxa_media", pl.Float64),
+    "taxa_maxima": ("taxa_maxima", pl.Float64),
 }
 
-COLUMN_MAP = {
-    "data_leilao": "data_1v",
-    "liquidacao": "data_liquidacao_1v",
-    "liquidacao_segunda_volta": "data_liquidacao_2v",
-    "numero_edital": "numero_edital",
-    "tipo_leilao": "tipo_leilao",
-    "titulo": "titulo",
-    "benchmark": "benchmark",
-    "vencimento": "data_vencimento",
-    "oferta": "quantidade_ofertada_1v",
-    "quantidade_aceita": "quantidade_aceita_1v",
-    "oferta_segunda_volta": "quantidade_ofertada_2v",
-    "quantidade_aceita_segunda_volta": "quantidade_aceita_2v",
-    "financeiro_aceito": "financeiro_aceito_1v",
-    "financeiro_aceito_segunda_volta": "financeiro_aceito_2v",
-    "quantidade_bcb": "quantidade_bcb",
-    "financeiro_bcb": "financeiro_bcb",
-    # "prazo": "dias_corridos",
-    "pu_minimo": "pu_minimo",
-    "pu_medio": "pu_medio",
-    "taxa_media": "taxa_media",
-    "taxa_maxima": "taxa_maxima",
-}
+DATA_SCHEMA = {k: v[1] for k, v in COLUMN_DEFINITIONS.items()}
+COLUMN_MAP = {k: v[0] for k, v in COLUMN_DEFINITIONS.items()}
 
 FINAL_COLUMN_ORDER = [
     "data_1v",
@@ -222,8 +200,9 @@ def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
     )
 
     # Cálculo de dias úteis (requer acesso a colunas já convertidas)
-    dias_uteis = bday.count(df["data_liquidacao_1v"], df["data_vencimento"])
-    df = df.with_columns(dias_uteis.alias("dias_uteis"))
+    df = df.with_columns(
+        dias_uteis=bday.count_expr("data_liquidacao_1v", "data_vencimento")
+    )
     return df.sort("data_1v", "titulo", "data_vencimento")
 
 
@@ -320,6 +299,7 @@ def _add_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     Adiciona o DV01 em USD usando um join_asof para encontrar a PTAX mais recente.
     """
     auction_date = df["data_1v"].first()
+    assert isinstance(auction_date, dt.date)
     # Busca o DataFrame da PTAX
     df_ptax = _fetch_ptax_data(auction_date=auction_date)
     if df_ptax.is_empty():

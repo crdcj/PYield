@@ -11,6 +11,7 @@ from pathlib import Path
 import polars as pl
 import requests
 from polars import selectors as cs
+from polars.type_aliases import SchemaDict
 
 from pyield import bday, clock
 
@@ -53,7 +54,7 @@ API_COL_MAPPING = {
     "financeiro_duplicated_0": "FwdValue",
 }
 
-DATA_SCHEMA = {
+DATA_SCHEMA: SchemaDict = {
     "SelicCode": pl.Int64,
     "LastPrice": pl.Float64,
     "LastRate": pl.Float64,

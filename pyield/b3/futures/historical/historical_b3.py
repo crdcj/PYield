@@ -96,9 +96,8 @@ def _process_df(
     df: pl.DataFrame, trade_date: dt.date, contract_code: str
 ) -> pl.DataFrame:
     # 1. Datas de Vencimento
-    bdays_to_exp = bday.count(trade_date, df["ExpirationDate"])
     df = df.with_columns(
-        BDaysToExp=bdays_to_exp,
+        BDaysToExp=bday.count_expr(trade_date, "ExpirationDate"),
         DaysToExp=(df["ExpirationDate"] - pl.lit(trade_date)).dt.total_days(),
         TradeDate=trade_date,
     ).filter(pl.col("DaysToExp") > 0)

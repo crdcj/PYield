@@ -127,8 +127,7 @@ def _process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
         DaysToExp=(pl.col("ExpirationDate") - trade_date).dt.total_days(),
     )
 
-    bdays_to_exp = bday.count(trade_date, df["ExpirationDate"])
-    df = df.with_columns(BDaysToExp=bdays_to_exp)
+    df = df.with_columns(BDaysToExp=bday.count_expr(trade_date, "ExpirationDate"))
 
     if contract_code in {"DI1", "DAP"}:  # Add LastPrice for DI1 and DAP
         fwd_rate = forwards(bdays=df["BDaysToExp"], rates=df["LastRate"])

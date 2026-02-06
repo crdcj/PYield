@@ -22,7 +22,7 @@ COLUMN_MAPPING = {
     "BENCHMARK": "Benchmark",
 }
 
-DATA_SCHEMA = {
+DATA_SCHEMA: dict[str, type[pl.DataType]] = {
     "BondType": pl.String,
     "MaturityDate": pl.Date,
     "Benchmark": pl.String,
@@ -78,7 +78,9 @@ def _process_api_data(raw_data: list[dict]) -> pl.DataFrame:
     )
 
 
-def benchmarks(bond_type: str = None, include_history: bool = False) -> pl.DataFrame:
+def benchmarks(
+    bond_type: str | None = None, include_history: bool = False
+) -> pl.DataFrame:
     """Fetches benchmark data for Brazilian Treasury Bonds from the TN API.
 
     This function retrieves current or historical benchmark data for various Brazilian

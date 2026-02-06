@@ -4,8 +4,8 @@ import polars as pl
 from dateutil.relativedelta import relativedelta
 
 import pyield.converters as cv
-import pyield.tn.tools as bt
 from pyield import bday
+from pyield.tn import tools
 from pyield.types import DateLike, has_nullable_args
 
 """
@@ -228,7 +228,7 @@ def quotation(
     b_days = bday.count(settlement, cf_dates)
 
     # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = bt.truncate(b_days / 252, 14)
+    num_of_years = tools.truncate(b_days / 252, 14)
 
     discount_factor = (1 + rate) ** num_of_years
 
@@ -236,7 +236,7 @@ def quotation(
     cf_present_value = (cf_values / discount_factor).round(10)
 
     # Return the quotation (the dcf sum) truncated as per Anbima rules
-    return bt.truncate(cf_present_value.sum(), 6)
+    return tools.truncate(cf_present_value.sum(), 6)
 
 
 def price(
@@ -265,7 +265,7 @@ def price(
     """
     if has_nullable_args(vna, quotation):
         return float("nan")
-    return bt.truncate(vna * quotation, 6)
+    return tools.truncate(vna * quotation, 6)
 
 
 def duration(
@@ -303,7 +303,7 @@ def duration(
     duration = (s_dcf * s_byears).sum() / s_dcf.sum()
 
     # Truncate duration to 14 decimal places for result reproducibility
-    return bt.truncate(duration, 14)
+    return tools.truncate(duration, 14)
 
 
 def dv01(
