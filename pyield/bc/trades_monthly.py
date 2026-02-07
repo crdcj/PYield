@@ -1,7 +1,7 @@
 """
 Module to fetch monthly secondary trading data for the domestic 'Federal Public Debt'
 (TPF - títulos públicos federais) registered in the Brazilian Central Bank (BCB) Selic system.
-The data is downloaded as a ZIP file, extracted, and loaded into a Pandas DataFrame.
+The data is downloaded as a ZIP file, extracted, and loaded into a Polars DataFrame.
 Example of the data format (first 3 lines):
 DATA MOV  ; SIGLA; CODIGO; CODIGO ISIN ; EMISSAO   ; VENCIMENTO; NUM DE OPER; QUANT NEGOCIADA; VALOR NEGOCIADO; PU MIN        ; PU MED        ; PU MAX        ; PU LASTRO     ; VALOR PAR     ; TAXA MIN; TAXA MED; TAXA MAX; NUM OPER COM CORRETAGEM; QUANT NEG COM CORRETAGEM
 02/09/2024; LFT  ; 210100; BRSTNCLF1RC4; 26/10/2018; 01/03/2025;          48;          100221;                ; 15288,00898200; 15292,57098100; 15302,77742100; 15285,54813387; 15288,23830700; -0,1897 ; -0,0565 ; 0,0032  ;                      20;                    16155
@@ -17,7 +17,6 @@ import zipfile as zf
 
 import polars as pl
 import requests
-from requests.exceptions import HTTPError
 
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
@@ -27,72 +26,68 @@ logger = logging.getLogger(__name__)
 
 BASE_URL = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
 
-
-# Using the original column names from the source file
-TPF_TRADES_SCHEMA = {
-    "DATA MOV": pl.String,  # Read as string, parse to date later for more control
-    "SIGLA": pl.String,
-    "CODIGO": pl.Int64,  # Selic unique code is integer
-    "CODIGO ISIN": pl.String,
-    "EMISSAO": pl.String,  # Read as string, parse to date later
-    "VENCIMENTO": pl.String,  # Read as string, parse to date later
-    "NUM DE OPER": pl.Int64,
-    "QUANT NEGOCIADA": pl.Int64,
-    "VALOR NEGOCIADO": pl.Float64,
-    "PU MIN": pl.Float64,
-    "PU MED": pl.Float64,
-    "PU MAX": pl.Float64,
-    "PU LASTRO": pl.Float64,
-    "VALOR PAR": pl.Float64,
-    "TAXA MIN": pl.Float64,
-    "TAXA MED": pl.Float64,
-    "TAXA MAX": pl.Float64,
-    "NUM OPER COM CORRETAGEM": pl.Int64,
-    "QUANT NEG COM CORRETAGEM": pl.Int64,
+COLUMN_MAP = {
+    "DATA MOV": ("SettlementDate", pl.String),
+    "SIGLA": ("BondType", pl.String),
+    "CODIGO": ("SelicCode", pl.Int64),
+    "CODIGO ISIN": ("ISIN", pl.String),
+    "EMISSAO": ("IssueDate", pl.String),
+    "VENCIMENTO": ("MaturityDate", pl.String),
+    "NUM DE OPER": ("Trades", pl.Int64),
+    "QUANT NEGOCIADA": ("Quantity", pl.Int64),
+    "VALOR NEGOCIADO": ("Value", pl.Float64),
+    "PU MIN": ("MinPrice", pl.Float64),
+    "PU MED": ("AvgPrice", pl.Float64),
+    "PU MAX": ("MaxPrice", pl.Float64),
+    "PU LASTRO": ("UnderlyingPrice", pl.Float64),
+    "VALOR PAR": ("ParValue", pl.Float64),
+    "TAXA MIN": ("MinRate", pl.Float64),
+    "TAXA MED": ("AvgRate", pl.Float64),
+    "TAXA MAX": ("MaxRate", pl.Float64),
+    "NUM OPER COM CORRETAGEM": ("BrokerageTrades", pl.Int64),
+    "QUANT NEG COM CORRETAGEM": ("BrokerageQuantity", pl.Int64),
 }
 
-COLUMN_MAPPING = {
-    "DATA MOV": "SettlementDate",
-    "SIGLA": "BondType",
-    "CODIGO": "SelicCode",
-    "CODIGO ISIN": "ISIN",
-    "EMISSAO": "IssueDate",
-    "VENCIMENTO": "MaturityDate",
-    "NUM DE OPER": "Trades",
-    "QUANT NEGOCIADA": "Quantity",
-    "VALOR NEGOCIADO": "Value",
-    "PU MIN": "MinPrice",
-    "PU MED": "AvgPrice",
-    "PU MAX": "MaxPrice",
-    "PU LASTRO": "UnderlyingPrice",
-    "VALOR PAR": "ParValue",
-    "TAXA MIN": "MinRate",
-    "TAXA MED": "AvgRate",
-    "TAXA MAX": "MaxRate",
-    "NUM OPER COM CORRETAGEM": "BrokerageTrades",
-    "QUANT NEG COM CORRETAGEM": "BrokerageQuantity",
-}
+CSV_SCHEMA = {col: dtype for col, (_, dtype) in COLUMN_MAP.items()}
+COLUMN_MAPPING = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
+
+FINAL_COLUMN_ORDER = [
+    "SettlementDate",
+    "BondType",
+    "SelicCode",
+    "ISIN",
+    "IssueDate",
+    "MaturityDate",
+    "Trades",
+    "Quantity",
+    "Value",
+    "MinPrice",
+    "AvgPrice",
+    "MaxPrice",
+    "UnderlyingPrice",
+    "ParValue",
+    "MinRate",
+    "AvgRate",
+    "MaxRate",
+    "BrokerageTrades",
+    "BrokerageQuantity",
+]
+
+SORTING_KEYS = ["SettlementDate", "BondType", "MaturityDate"]
 
 
-def _build_filename(target_date: dt.date, extragroup: bool) -> str:
-    """
+def _build_url(target_date: dt.date, extragroup: bool) -> str:
+    """Monta a URL de download do arquivo ZIP de negociações mensais.
+
     URL com todos os arquivos disponíveis:
     https://www4.bcb.gov.br/pom/demab/negociacoes/apresentacao.asp?frame=1
 
-    Exemplo de URL para download:
-    https://www4.bcb.gov.br/pom/demab/negociacoes/download/NegE202409.ZIP
-
-    All Operations File format: NegTYYYYMM.ZIP
-    Only Extra Group File format: NegEYYYYMM.ZIP
+    Formato do arquivo com todas as operações: NegTYYYYMM.ZIP
+    Formato do arquivo apenas extragrupo: NegEYYYYMM.ZIP
     """
     year_month = target_date.strftime("%Y%m")
     operation_acronym = "E" if extragroup else "T"
-    return f"Neg{operation_acronym}{year_month}.ZIP"
-
-
-def _build_file_url(target_date: dt.date, extragroup: bool) -> str:
-    filename = _build_filename(target_date, extragroup)
-    return f"{BASE_URL}/{filename}"
+    return f"{BASE_URL}/Neg{operation_acronym}{year_month}.ZIP"
 
 
 @default_retry
@@ -102,77 +97,85 @@ def _fetch_zip_from_url(file_url: str) -> bytes:
     return response.content
 
 
-def _uncompress_zip(zip_content: bytes) -> io.BytesIO:
+def _uncompress_zip(zip_content: bytes) -> bytes:
     with zf.ZipFile(io.BytesIO(zip_content), "r") as file_zip:
-        # Lê o conteúdo do arquivo CSV para a memória como um objeto de bytes
-        csv_bytes = file_zip.read(file_zip.namelist()[0])
-        return io.BytesIO(csv_bytes)
+        return file_zip.read(file_zip.namelist()[0])
 
 
-def _read_dataframe_from_zip(buffer: io.BytesIO) -> pl.DataFrame:
-    df = pl.read_csv(
-        buffer,
+def _read_dataframe_from_zip(csv_content: bytes) -> pl.DataFrame:
+    return pl.read_csv(
+        csv_content,
         decimal_comma=True,
         encoding="latin1",
         separator=";",
-        schema_overrides=TPF_TRADES_SCHEMA,
+        schema_overrides=CSV_SCHEMA,
     )
-    return df
 
 
 def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     date_cols = ["SettlementDate", "IssueDate", "MaturityDate"]
-    df = (
+    return (
         df.rename(COLUMN_MAPPING)
         .with_columns(
-            pl.col(date_cols).str.strptime(pl.Date, format="%d/%m/%Y", strict=False),
-            # Refazer o cálculo do valor pois ele vem vazio no arquivo
+            pl.col(date_cols).str.to_date(format="%d/%m/%Y", strict=False),
             Value=(pl.col("Quantity") * pl.col("AvgPrice")).round(2),
         )
-        .sort("SettlementDate", "BondType", "MaturityDate")
+        .sort(by=SORTING_KEYS)
     )
-    return df
+
+
+def _sort_and_select_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """Reordena colunas e ordena linhas para saída consistente e determinística."""
+    selected_cols = [col for col in FINAL_COLUMN_ORDER if col in df.columns]
+    return df.select(selected_cols).sort(by=SORTING_KEYS)
 
 
 def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.DataFrame:
-    """Fetches monthly secondary trading data for the domestic 'Federal Public Debt'
-    (TPF - títulos públicos federais) registered in the Brazilian Central Bank (BCB)
-    Selic system.
+    """Consulta negociações mensais no mercado secundário de Títulos Públicos Federais (TPF)
+    registradas no sistema Selic do Banco Central do Brasil (BCB).
 
-    Downloads the monthly bond trading data from the Brazilian Central Bank (BCB)
-    website for the month corresponding to the provided date. The data is downloaded
-    as a ZIP file, extracted, and loaded into a Pandas DataFrame. The data contains
-    all trades executed during the month, separated by each 'SettlementDate'.
+    Baixa os dados mensais de negociação do site do BCB para o mês correspondente
+    à data fornecida. Os dados são baixados como arquivo ZIP, extraídos e carregados
+    em um DataFrame Polars. Contém todas as negociações do mês, separadas por
+    data de liquidação (SettlementDate).
 
     Args:
-        target_date (DateLike): The reference date for fetching the monthly trading
-            data. Only the year and month are used to download the corresponding file.
-        extragroup (bool): If True, fetches only the trades that are considered
-            'extragroup' (between different economic groups)".
-            If False, fetches all trades. Default is False.
-            Extragroup trades are those where the transferring counterparty's
-            conglomerate is different from the receiving counterparty's conglomerate, or
-            when at least one of the counterparties does not belong to a conglomerate.
-            In the case of funds, the conglomerate considered is that of the
-            administrator.
+        target_date: Data de referência. Apenas ano e mês são utilizados para
+            baixar o arquivo correspondente.
+        extragroup: Se True, busca apenas negociações extragrupo (entre grupos
+            econômicos distintos). Se False, busca todas. Default é False.
+            Negociações extragrupo são aquelas em que o conglomerado da contraparte
+            cedente difere do conglomerado da contraparte cessionária, ou quando ao
+            menos uma das contrapartes não pertence a um conglomerado. No caso de
+            fundos, considera-se o conglomerado do administrador.
 
     Returns:
-        pl.DataFrame: A DataFrame containing the bond trading data for the specified
-            month.
+        DataFrame com dados de negociação do mês especificado. Em caso de erro
+        retorna DataFrame vazio e registra log da exceção.
 
-    DataFrame columns:
-        - SettlementDate: Date when the trade settled
-        - BondType: Security type abbreviation
-        - SelicCode: Unique code in the SELIC system
-        - ISIN: International Securities Identification Number
-        - IssueDate: Date when the security was issued
-        - MaturityDate: Security's maturity date
-        - Trades: Number of trades executed
-        - Quantity: Quantity traded
-        - Value: Value traded
-        - AvgPrice: Average price
-        - AvgRate: Average rate
-        And additional trading metrics like min/max prices and rates.
+    Output Columns:
+        * SettlementDate (Date): data de liquidação da negociação.
+        * BondType (str): sigla do título (ex: LFT, LTN, NTN-B, NTN-F).
+        * SelicCode (Int64): código único no sistema Selic.
+        * ISIN (str): código ISIN (International Securities Identification Number).
+        * IssueDate (Date): data de emissão do título.
+        * MaturityDate (Date): data de vencimento do título.
+        * Trades (Int64): número de operações realizadas.
+        * Quantity (Int64): quantidade negociada.
+        * Value (Float64): valor financeiro negociado (Quantity * AvgPrice).
+        * MinPrice (Float64): preço unitário mínimo.
+        * AvgPrice (Float64): preço unitário médio.
+        * MaxPrice (Float64): preço unitário máximo.
+        * UnderlyingPrice (Float64): PU lastro.
+        * ParValue (Float64): valor par.
+        * MinRate (Float64): taxa mínima.
+        * AvgRate (Float64): taxa média.
+        * MaxRate (Float64): taxa máxima.
+        * BrokerageTrades (Int64): número de operações com corretagem.
+        * BrokerageQuantity (Int64): quantidade negociada com corretagem.
+
+    Notes:
+        - Dados ordenados por: SettlementDate, BondType, MaturityDate.
 
     Examples:
         >>> from pyield import bc
@@ -203,31 +206,16 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         return pl.DataFrame()
     try:
         target_date = convert_dates(target_date)
-        url = _build_file_url(target_date, extragroup)
+        url = _build_url(target_date, extragroup)
+        logger.debug(f"Consultando BCB: {url}")
         zip_content = _fetch_zip_from_url(url)
         extracted_file = _uncompress_zip(zip_content)
         df = _read_dataframe_from_zip(extracted_file)
         df = _process_df(df)
+        df = _sort_and_select_columns(df)
+    except Exception as e:
+        logger.exception(f"Error fetching monthly trades data from BCB: {e}")
+        return pl.DataFrame()
 
-    except HTTPError as e:
-        if e.response.status_code == 404:  # noqa
-            msg = f"Resource not found (404) at {url}. Returning an empty DataFrame."  # type: ignore[possibly-unbound]
-            logger.warning(msg)
-            return pl.DataFrame()
-        else:
-            # Captures the full traceback for unexpected HTTP errors
-            msg = f"Unexpected HTTP error ({e.code}) while accessing URL: {url}"  # type: ignore[attr-defined, possibly-unbound]
-            logger.exception(msg)
-            raise e
-
-    except Exception:
-        # Captures the full traceback for any other errors
-        msg = f"An unexpected error occurred while processing data from {url}."  # type: ignore[possibly-unbound]
-        logger.exception(msg)
-        raise
-
-    # LOG DE SUCESSO
-    msg = f"Successfully processed data from {url}. Found {len(df)} records."
-    logger.info(msg)
-
+    logger.info(f"Successfully processed data from {url}. Found {len(df)} records.")
     return df

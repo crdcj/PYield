@@ -24,8 +24,8 @@ def _load_expected() -> pl.DataFrame:
 
 
 def _process_zip(zip_content: bytes) -> pl.DataFrame:
-    buffer = _uncompress_zip(zip_content)
-    df = _read_dataframe_from_zip(buffer)
+    csv_content = _uncompress_zip(zip_content)
+    df = _read_dataframe_from_zip(csv_content)
     return _process_df(df)
 
 
