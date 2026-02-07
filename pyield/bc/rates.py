@@ -162,10 +162,7 @@ def _fetch_data_from_url(
     chunk_ends = chunk_starts.dt.offset_by(duration_str)
 
     chunks_df = pl.DataFrame({"start": chunk_starts, "end": chunk_ends}).with_columns(
-        pl.when(pl.col("end") > end_date)
-        .then(pl.lit(end_date))
-        .otherwise("end")
-        .alias("end")
+        pl.when(pl.col("end") > end_date).then(end_date).otherwise("end").alias("end")
     )
 
     all_dfs = [

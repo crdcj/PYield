@@ -10,7 +10,6 @@ Raw data file example from ANBIMA:
 """  # noqa
 
 import datetime as dt
-import io
 import logging
 import socket
 from typing import Literal
@@ -111,17 +110,17 @@ def _build_file_url(date: dt.date) -> str:
 
 
 @default_retry
-def _get_csv_data(date: dt.date) -> str:
+def _get_csv_data(date: dt.date) -> bytes:
     file_url = _build_file_url(date)
     r = requests.get(file_url, timeout=10)
     r.raise_for_status()
     r.encoding = "latin1"
-    return r.text
+    return r.content
 
 
-def _read_csv_data(csv_text: str) -> pl.DataFrame:
+def _read_csv_data(csv_text: bytes) -> pl.DataFrame:
     df = pl.read_csv(
-        source=io.StringIO(csv_text),
+        source=csv_text,
         skip_lines=2,
         separator="@",
         null_values=["--"],
@@ -132,14 +131,19 @@ def _read_csv_data(csv_text: str) -> pl.DataFrame:
 
 
 def _process_raw_df(df: pl.DataFrame) -> pl.DataFrame:
-    df = df.rename(COLUMN_NAME_MAPPING).with_columns(
-        # Remove o percentual das taxas
-        # Colunas de taxa têm valores percentuais com 4 casas decimais
-        # Arredonda para 6 casas decimais para minimizar erros de ponto flutuante
-        cs.contains("Rate").truediv(100).round(6),
-        cs.ends_with("Date").str.to_date(format="%Y%m%d"),
+    df = (
+        df.rename(COLUMN_NAME_MAPPING)
+        .with_columns(
+            # Remove o percentual das taxas
+            # Colunas de taxa têm valores percentuais com 4 casas decimais
+            # Arredonda para 6 casas decimais para minimizar erros de ponto flutuante
+            cs.contains("Rate").truediv(100).round(6),
+            cs.ends_with("Date").str.to_date(format="%Y%m%d"),
+        )
+        .with_columns(
+            BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"),
+        )
     )
-    df = df.with_columns(BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"))
     return df
 
 

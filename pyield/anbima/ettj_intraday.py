@@ -133,7 +133,7 @@ def intraday_ettj() -> pl.DataFrame:
         # convertendo de % para decimal e arredondando
         pl.col("real_rate").truediv(100).round(ROUND_DIGITS),
         pl.col("nominal_rate").truediv(100).round(ROUND_DIGITS),
-        pl.lit(data_ref).alias("date"),
+        date=data_ref,
     ).with_columns(
         ((pl.col("nominal_rate") + 1) / (pl.col("real_rate") + 1) - 1)
         .round(ROUND_DIGITS)
