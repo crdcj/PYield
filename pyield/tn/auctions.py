@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Definição unificada das colunas: chave_api -> (novo_nome, tipo)
 # "prazo" foi omitido pois algumas vezes não vem na API
-COLUMN_DEFINITIONS: dict[str, tuple[str, type[pl.DataType]]] = {
+COLUMN_DEFINITIONS = {
     "data_leilao": ("data_1v", pl.String),
     "liquidacao": ("data_liquidacao_1v", pl.String),
     "liquidacao_segunda_volta": ("data_liquidacao_2v", pl.String),

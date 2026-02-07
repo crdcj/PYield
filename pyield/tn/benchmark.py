@@ -14,22 +14,16 @@ API_BASE_URL = (
 API_HISTORY_PARAM = "incluir_historico"
 
 
-COLUMN_MAPPING = {
-    "INÍCIO": "StartDate",
-    "TERMINO": "EndDate",
-    "TÍTULO": "BondType",
-    "VENCIMENTO": "MaturityDate",
-    "BENCHMARK": "Benchmark",
+COLUMN_MAP = {
+    "TÍTULO": ("BondType", pl.String),
+    "VENCIMENTO": ("MaturityDate", pl.Date),
+    "BENCHMARK": ("Benchmark", pl.String),
+    "INÍCIO": ("StartDate", pl.Date),
+    "TERMINO": ("EndDate", pl.Date),
 }
 
-DATA_SCHEMA: dict[str, type[pl.DataType]] = {
-    "BondType": pl.String,
-    "MaturityDate": pl.Date,
-    "Benchmark": pl.String,
-    "StartDate": pl.Date,
-    "EndDate": pl.Date,
-}
-
+COLUMN_MAPPING = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
+DATA_SCHEMA = {alias: dtype for _, (alias, dtype) in COLUMN_MAP.items()}
 FINAL_COLUMN_ORDER = list(DATA_SCHEMA.keys())
 
 
@@ -138,7 +132,7 @@ def benchmarks(
         sort_columns = ["BondType", "MaturityDate"]
         # Filtrar apenas os dados atuais
         today = clock.today()
-        df = df.filter(pl.lit(today).is_between(pl.col("StartDate"), pl.col("EndDate")))
+        df = df.filter(pl.lit(today).is_between("StartDate", "EndDate"))
 
     if bond_type:
         df = df.filter(pl.col("BondType") == bond_type)

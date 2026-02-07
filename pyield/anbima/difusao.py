@@ -10,7 +10,6 @@ import pyield.converters as cv
 from pyield import bday
 from pyield.types import DateLike, has_nullable_args
 
-# --- 1. Centralização e Organização das Constantes ---
 API_VERSION = "1.0018"
 BASE_URL = (
     f"https://www.anbima.com.br/sistemas/taxasonline/consulta/versao/{API_VERSION}"
@@ -20,51 +19,31 @@ URL_PAGINA_INICIAL = f"{BASE_URL}/taxasOnline.asp"
 URL_CONSULTA_DADOS = f"{BASE_URL}/exibedados.asp"
 URL_DOWNLOAD = f"{BASE_URL}/download_dados.asp?extensao=csv"
 
-API_SCHEMA = {
-    "Título": pl.String,
-    "Vencimento": pl.String,
-    "Código ISIN": pl.String,
-    "Provedor": pl.String,
-    "Edital": pl.String,
-    "Horário": pl.String,
-    "Prazo": pl.Int64,
-    "Lote": pl.String,
-    "Fech D-1": pl.Float64,
-    "Indicativo Superior": pl.Float64,
-    "Máxima": pl.Float64,
-    "Média": pl.Float64,
-    "Mínima": pl.Float64,
-    "Indicativo Inferior": pl.Float64,
-    "Última": pl.Float64,
-    "Oferta Compra": pl.Float64,
-    "Oferta Venda": pl.Float64,
-    "Nº de Negócios": pl.Int64,
-    "Quantidade Negociada": pl.Int64,
-    "Volume Negociado (R$)": pl.Float64,
+COLUMN_MAP = {
+    "Título": ("titulo", pl.String),
+    "Vencimento": ("data_vencimento", pl.String),
+    "Código ISIN": ("codigo_isin", pl.String),
+    "Provedor": ("provedor", pl.String),
+    "Edital": ("edital", pl.String),
+    "Horário": ("horario", pl.String),
+    "Prazo": ("prazo", pl.Int64),
+    "Lote": ("lote", pl.String),
+    "Fech D-1": ("taxa_indicativa_anterior", pl.Float64),
+    "Indicativo Superior": ("taxa_limite_superior", pl.Float64),
+    "Máxima": ("taxa_maxima", pl.Float64),
+    "Média": ("taxa_media", pl.Float64),
+    "Mínima": ("taxa_minima", pl.Float64),
+    "Indicativo Inferior": ("taxa_limite_inferior", pl.Float64),
+    "Última": ("taxa_ultima", pl.Float64),
+    "Oferta Compra": ("taxa_compra", pl.Float64),
+    "Oferta Venda": ("taxa_venda", pl.Float64),
+    "Nº de Negócios": ("num_negocios", pl.Int64),
+    "Quantidade Negociada": ("quantidade_negociada", pl.Int64),
+    "Volume Negociado (R$)": ("volume_negociado", pl.Float64),
 }
 
-COLUMN_ALIASES = {
-    "Título": "titulo",
-    "Vencimento": "data_vencimento",
-    "Código ISIN": "codigo_isin",
-    "Provedor": "provedor",
-    "Edital": "edital",
-    "Horário": "horario",
-    "Prazo": "prazo",
-    "Lote": "lote",
-    "Fech D-1": "taxa_indicativa_anterior",
-    "Indicativo Superior": "taxa_limite_superior",
-    "Máxima": "taxa_maxima",
-    "Média": "taxa_media",
-    "Mínima": "taxa_minima",
-    "Indicativo Inferior": "taxa_limite_inferior",
-    "Última": "taxa_ultima",
-    "Oferta Compra": "taxa_compra",
-    "Oferta Venda": "taxa_venda",
-    "Nº de Negócios": "num_negocios",
-    "Quantidade Negociada": "quantidade_negociada",
-    "Volume Negociado (R$)": "volume_negociado",
-}
+API_SCHEMA = {col: dtype for col, (_alias, dtype) in COLUMN_MAP.items()}
+COLUMN_ALIASES = {col: alias for col, (alias, _dtype) in COLUMN_MAP.items()}
 
 # Colunas não selecionadas estão vazias na API.
 FINAL_COLUMN_ORDER = [
@@ -74,18 +53,7 @@ FINAL_COLUMN_ORDER = [
     "data_vencimento",
     "codigo_isin",
     "dias_uteis",
-    # "edital",
-    # "prazo",
-    # "lote", # é sempre "P"
-    # "num_negocios",
-    # "quantidade_negociada",
-    # "volume_negociado",
-    # "taxa_minima",
-    # "taxa_media",
-    # "taxa_maxima",
     "taxa_indicativa_anterior",
-    # "taxa_limite_inferior",
-    # "taxa_limite_superior",
     "taxa_venda",
     "taxa_compra",
     "taxa_media",
@@ -173,12 +141,12 @@ def _process_csv_data(csv_data: str) -> pl.DataFrame:
         .rename(COLUMN_ALIASES)
         .with_columns(pl.col(pl.String).str.strip_chars())  # Remove espaços em branco
         .with_columns(
-            pl.col("data_vencimento").str.strptime(pl.Date, format="%d/%m/%Y"),
+            pl.col("data_vencimento").str.to_date(format="%d/%m/%Y"),
             data_referencia=data_ref,  # Adiciona a coluna de data de referência
             # Ajusta o horário para 12:00:00 quando o provedor for "ANBIMA 12H"
             horario=pl.when(pl.col("provedor") == "ANBIMA 12H")
-            .then(pl.lit(dt.time(12, 0)))  # <-- Cria um literal do tipo Time
-            .otherwise(pl.col("horario").str.strptime(pl.Time, format="%H:%M:%S")),
+            .then(dt.time(12, 0))
+            .otherwise(pl.col("horario").str.to_time(format="%H:%M:%S")),
             taxa_media=pl.mean_horizontal("taxa_compra", "taxa_venda"),
         )
     )
@@ -206,8 +174,7 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
     Obtém a TPF Difusão da Anbima para uma data de referência específica.
 
     Args:
-        data_referencia (str | dt.date | dt.datetime):
-            Data de referência (ex: "DD/MM/AAAA").
+        data_referencia (DateLike): Data de referência.
 
     Returns:
         pl.DataFrame: DataFrame com os dados. Retorna um DataFrame vazio se
@@ -238,8 +205,7 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
         return pl.DataFrame()
 
     try:
-        df = _process_csv_data(csv_data)
-        return df
+        return _process_csv_data(csv_data)
     except Exception as e:
         logger.error("Falha ao processar o CSV para a data '%s': %s", data_str, e)
         return pl.DataFrame()
