@@ -7,7 +7,6 @@ HTML page example:
 """  # noqa
 
 import datetime as dt
-import io
 import logging
 import re
 
@@ -21,22 +20,47 @@ import pyield.converters as cv
 from pyield.anbima.tpf import tpf_data
 from pyield.types import DateLike, has_nullable_args
 
-# Configura o logger do módulo
 logger = logging.getLogger(__name__)
 
-# --- Configurações Centralizadas ---
 IMA_URL = "https://www.anbima.com.br/informacoes/ima/ima-quantidade-mercado.asp"
-COLUMN_MAPPING = {
-    "Título": "BondType",
-    "Codigo Selic": "SelicCode",
-    "Código ISIN": "ISIN",
-    "Data de Vencimento": "MaturityDate",
-    "Quantidade em Mercado (1.000 Títulos)": "MarketQuantity",
-    "PU (R$)": "Price",
-    "Valor de Mercado (R$ Mil)": "MarketValue",
-    "Variação da Quantidade (1.000 Títulos)": "QuantityVariation",
-    "Status do Titulo": "BondStatus",
+
+COLUMN_MAP = {
+    "Título": ("BondType", pl.String),
+    "Codigo Selic": ("SelicCode", pl.Int64),
+    "Código ISIN": ("ISIN", pl.String),
+    "Data de Vencimento": ("MaturityDate", pl.String),
+    "Quantidade em Mercado (1.000 Títulos)": ("MarketQuantity", pl.Float64),
+    "PU (R$)": ("Price", pl.Float64),
+    "Valor de Mercado (R$ Mil)": ("MarketValue", pl.Float64),
+    "Variação da Quantidade (1.000 Títulos)": ("QuantityVariation", pl.Float64),
+    "Status do Titulo": ("BondStatus", pl.String),
 }
+
+COLUMN_ALIASES = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
+DATA_SCHEMA = {alias: dtype for _, (alias, dtype) in COLUMN_MAP.items()}
+
+INT_COLUMNS = [
+    "MarketQuantity",
+    "MarketValue",
+    "QuantityVariation",
+    "MarketDV01",
+    "MarketDV01USD",
+]
+
+FINAL_COLUMN_ORDER = [
+    "Date",
+    "BondType",
+    "MaturityDate",
+    "SelicCode",
+    "ISIN",
+    "Price",
+    "MarketQuantity",
+    "MarketDV01",
+    "MarketDV01USD",
+    "MarketValue",
+    "QuantityVariation",
+    "BondStatus",
+]
 
 
 def _fetch_url_content(target_date: dt.date) -> bytes:
@@ -99,82 +123,67 @@ def _parse_cell_value(text: str) -> str:
     return text
 
 
-def _parse_html_tables(html_content: bytes) -> str:
-    """
-    Parse HTML tables using lxml and return CSV string.
+def _parse_html_tables(html_content: bytes) -> pl.DataFrame:
+    """Parse HTML tables using lxml e retorna DataFrame (colunas String).
 
-    Extracts data from nested tables (those with parent::td),
-    handles Brazilian number format, and returns concatenated CSV.
+    Extrai dados das tabelas aninhadas (com parent::td),
+    converte formato numérico brasileiro e retorna DataFrame bruto.
     """
-    # Replace <br> tags with spaces to preserve word boundaries
-    html_text = html_content.decode("iso-8859-1")
-    html_text = html_text.replace("<br>", " ").replace("<BR>", " ")
-    html_bytes = html_text.encode("iso-8859-1")
+    html_content = html_content.replace(b"<br>", b" ").replace(b"<BR>", b" ")
 
-    # Parse with ISO-8859-1 encoding
     parser = HTMLParser(encoding="iso-8859-1")
-    tree = html_fromstring(html_bytes, parser=parser)
+    tree = html_fromstring(html_content, parser=parser)
 
-    # Find nested data tables (actual bond data, not wrapper tables)
     nested_tables = tree.xpath("//table[@width='100%'][parent::td]")
 
     all_data = []
     col_names = None
 
     for table in nested_tables:  # type: ignore[misc]
-        # Extract headers
         headers = table.xpath(".//thead//th")
         if not col_names:
             col_names = [_normalize_column_name(h.text_content()) for h in headers]
 
-        # Extract data rows (skip empty separator rows)
         data_rows = table.xpath(".//tbody//tr[td]")
-
         for row in data_rows:
             cells = row.xpath(".//td")
             if len(cells) != len(col_names):
-                continue  # Skip separator rows
+                continue
+            all_data.append([_parse_cell_value(c.text_content()) for c in cells])
 
-            row_data = [_parse_cell_value(c.text_content()) for c in cells]
-            all_data.append(row_data)
-
-    # Convert to CSV
     if not all_data or not col_names:
-        return ""
+        return pl.DataFrame()
 
-    df = pl.DataFrame(all_data, schema=col_names, orient="row")
-    return df.write_csv()
+    return pl.DataFrame(all_data, schema=col_names, orient="row")
 
 
-def _pre_process_data(raw_csv: str) -> str:
-    csv = (
-        pl.read_csv(io.StringIO(raw_csv))
-        .rename(COLUMN_MAPPING)
+def _process_df(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
+    """Renomeia, filtra, converte tipos e aplica transformações numéricas."""
+    return (
+        df.rename(COLUMN_ALIASES)
+        # Strip whitespace e converte strings vazias em null
         .with_columns(ps.string().str.strip_chars().name.keep())
+        .with_columns(
+            pl.when(ps.string().str.len_chars() == 0)
+            .then(None)
+            .otherwise(ps.string())
+            .name.keep()
+        )
         .filter(
             pl.col("MaturityDate").is_not_null(),
             pl.col("BondType") != "Título",
         )
         .unique(subset="ISIN")
-        .write_csv()
-    )
-    return csv
-
-
-def _process_data(csv: str, reference_date: dt.date) -> pl.DataFrame:
-    df = (
-        pl.read_csv(io.StringIO(csv))
+        .cast(DATA_SCHEMA)
         .with_columns(
             pl.col("MaturityDate").str.to_date(format="%d/%m/%Y"),
-            (pl.col("MarketQuantity") * 1000),
-            (pl.col("MarketValue") * 1000),
-            (pl.col("QuantityVariation") * 1000),
+            pl.col("MarketQuantity") * 1000,
+            pl.col("MarketValue") * 1000,
+            pl.col("QuantityVariation") * 1000,
             Date=reference_date,
         )
         .sort("BondType", "MaturityDate")
     )
-
-    return df
 
 
 def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
@@ -194,77 +203,45 @@ def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
     return df
 
 
-def _cast_int_columns(df: pl.DataFrame) -> pl.DataFrame:
-    integer_cols = [
-        "MarketQuantity",
-        "MarketValue",
-        "QuantityVariation",
-        "MarketDV01",
-        "MarketDV01USD",
-    ]
-    df = df.with_columns(pl.col(integer_cols).round(0).cast(pl.Int64))
-    return df
-
-
-def _reorder_df(df: pl.DataFrame) -> pl.DataFrame:
-    # Reorder the DataFrame columns
-    column_order = [
-        "Date",
-        "BondType",
-        "MaturityDate",
-        "SelicCode",
-        "ISIN",
-        "Price",
-        "MarketQuantity",
-        "MarketDV01",
-        "MarketDV01USD",
-        "MarketValue",
-        "QuantityVariation",
-        "BondStatus",
-    ]
-    return df.select(column_order)
+def _finalize(df: pl.DataFrame) -> pl.DataFrame:
+    """Converte colunas inteiras e reordena colunas para saída final."""
+    return (
+        df.with_columns(pl.col(INT_COLUMNS).round(0).cast(pl.Int64))
+        .select(FINAL_COLUMN_ORDER)
+    )
 
 
 def imaq(date: DateLike) -> pl.DataFrame:
-    """
-    Fetch and process IMA market data for a given date.
-
-    This function retrieves IMA quantity market data from ANBIMA for a given date,
-    processes the data into a structured DataFrame, and returns the resulting DataFrame.
-    It handles conversion of date formats, renames columns to English, and converts
-    certain numeric columns to integer types. In the event of an error during data
-    fetching or processing, an empty DataFrame is returned.
+    """Consulta e processa dados de estoque IMA-Q da ANBIMA para uma data.
 
     Args:
-        date (DateLike): The reference date for fetching the data. Only the last 5
-            business days are available. The latest is typically from 2 bdays ago.
+        date: Data de referência. Apenas os últimos 5 dias úteis estão
+            disponíveis; o mais recente é tipicamente 2 dias úteis atrás.
 
     Returns:
-        pl.DataFrame: A DataFrame containing the IMA data.
+        DataFrame com dados processados. Em caso de erro retorna DataFrame
+        vazio e registra log da exceção.
 
-    DataFrame columns:
-        - Date: Reference date of the data.
-        - BondType: Type of bond.
-        - Maturity: Bond maturity date.
-        - SelicCode: Code representing the SELIC rate.
-        - ISIN: International Securities Identification Number.
-        - Price: Bond price.
-        - MarketQuantity: Market quantity .
-        - MarketDV01: Market DV01 .
-        - MarketDV01USD: Market DV01 in USD.
-        - MarketValue: Market value .
-        - QuantityVariation: Variation in quantity .
-        - BondStatus: Status of the bond.
+    Output Columns:
+        * Date (Date): data de referência dos dados.
+        * BondType (String): tipo do título (LTN, NTN-B, NTN-F, LFT, …).
+        * MaturityDate (Date): data de vencimento do título.
+        * SelicCode (Int64): código SELIC do título.
+        * ISIN (String): código ISIN (International Securities Id Number).
+        * Price (Float64): PU do título em R$.
+        * MarketQuantity (Int64): quantidade em mercado (unidades).
+        * MarketDV01 (Int64): DV01 do estoque em R$.
+        * MarketDV01USD (Int64): DV01 do estoque em USD.
+        * MarketValue (Int64): valor de mercado em R$.
+        * QuantityVariation (Int64): variação diária da quantidade.
+        * BondStatus (String): status do título.
 
     Notes:
-        - Values are converted to pure units (e.g., MarketQuantity multiplied by 1,000).
-
-    Raises:
-        Exception: Logs error and returns an empty DataFrame if any error occurs during
-            fetching or processing.
+        - Valores convertidos para unidades puras (ex: MarketQuantity × 1.000).
+        - DV01 obtidos via cruzamento com tpf_data(); nulos se indisponível.
 
     Examples:
-        >>> from pyield import bday, clock
+        >>> from pyield import bday
         >>> target_date = bday.offset(bday.last_business_day(), -2)
         >>> df = imaq(target_date)
         >>> df["Date"].first() == target_date
@@ -295,13 +272,12 @@ def imaq(date: DateLike) -> pl.DataFrame:
                 f"got {reference_date.strftime('%d/%m/%Y')}"
             )
 
-        raw_csv = _parse_html_tables(url_content)
-        clean_csv = _pre_process_data(raw_csv)
-        df = _process_data(clean_csv, date)
+        df = _parse_html_tables(url_content)
+        if df.is_empty():
+            return pl.DataFrame()
+        df = _process_df(df, date)
         df = _add_dv01(df, date)
-        df = _cast_int_columns(df)
-        df = _reorder_df(df)
-        return df
+        return _finalize(df)
     except Exception:  # Erro inesperado
         msg = f"Error fetching IMA for {date_str}. Returning empty DataFrame."
         logger.exception(msg)

@@ -124,7 +124,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     df = df.rename(COLUMN_MAPPING).with_columns(
         volume_aceito=1000 * pl.col("volume_aceito"),
         # porcentagem -> fração
-        taxa_corte=(pl.col("taxa_corte") / 100).round(6),
+        taxa_corte=pl.col("taxa_corte").truediv(100).round(6),
         # converte percentual rejeitado original em percentual aceito
         percentual_aceito=100 - pl.col("percentual_corte"),
     )
@@ -149,7 +149,8 @@ def _handle_zero_volume(df: pl.DataFrame) -> pl.DataFrame:
 
 def _sort_and_select_columns(df: pl.DataFrame) -> pl.DataFrame:
     """Reordena colunas e ordena linhas para saída consistente e determinística."""
-    return df.select(FINAL_COLUMN_ORDER).sort(by=SORTING_KEYS)
+    selected_cols = [col for col in FINAL_COLUMN_ORDER if col in df.columns]
+    return df.select(selected_cols).sort(by=SORTING_KEYS)
 
 
 def repos(
