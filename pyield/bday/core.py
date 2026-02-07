@@ -17,9 +17,7 @@ NEW_HOLIDAYS = br_holidays.get_holidays(holiday_option="new")
 TRANSITION_DATE = BrHolidays.TRANSITION_DATE
 
 
-def count_expr(
-    start: pl.Expr | str | dt.date, end: pl.Expr | str | dt.date
-) -> pl.Expr:
+def count_expr(start: pl.Expr | str | dt.date, end: pl.Expr | str | dt.date) -> pl.Expr:
     """Build expression that counts business days with holiday regime."""
     if isinstance(start, str):
         start = pl.col(start)
@@ -156,7 +154,7 @@ def count(
     s = df.select(bday_count)["bday_count"]
 
     if not tp.has_array_like_args(start, end):
-        return s.first()  # type: ignore[return-value]
+        return s.item()
 
     return s
 
@@ -378,7 +376,7 @@ def offset(
     s = df.select(adjusted_date)["adjusted_date"]
 
     if not tp.has_array_like_args(dates, offset):
-        return s.first()  # type: ignore[return-value]
+        return s.item()
 
     return s
 
@@ -522,7 +520,7 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
     s = df.select(is_bday)["is_bday"]
 
     if not tp.has_array_like_args(dates):
-        return s.first()  # type: ignore[return-value]
+        return s.item()
 
     return s
 

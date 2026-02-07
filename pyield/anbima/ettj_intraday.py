@@ -5,6 +5,8 @@ from io import StringIO
 import polars as pl
 import requests
 
+from pyield.retry import default_retry
+
 logger = logging.getLogger(__name__)
 
 INTRADAY_ETTJ_URL = (
@@ -16,10 +18,12 @@ INTRADAY_ETTJ_URL = (
 ROUND_DIGITS = 6
 
 
+@default_retry
 def _fetch_intraday_text() -> str:
     request_payload = {"Dt_Ref": "", "saida": "csv"}
-    response = requests.post(INTRADAY_ETTJ_URL, data=request_payload)
+    response = requests.post(INTRADAY_ETTJ_URL, data=request_payload, timeout=10)
     response.raise_for_status()
+    response.encoding = "latin1"
     return response.text
 
 
@@ -95,25 +99,24 @@ def _parse_intraday_table(texto: str) -> pl.DataFrame:
 
 
 def intraday_ettj() -> pl.DataFrame:
-    """
-    Retrieves and processes the intraday Brazilian yield curve data from ANBIMA.
+    """Obtém e processa a curva de juros intradiária da ANBIMA.
 
-    This function fetches the most recent intraday yield curve data published by ANBIMA,
-    containing real rates (IPCA-indexed), nominal rates, and implied inflation
-    at various vertices (time points). The curve is published at around 12:30 PM BRT.
+    Busca os dados mais recentes da curva de juros intradiária publicada pela
+    ANBIMA, contendo taxas reais (indexadas ao IPCA), taxas nominais e inflação
+    implícita em diversos vértices. A curva é publicada por volta das 12h30 BRT.
 
     Returns:
-        pl.DataFrame: A DataFrame containing the intraday ETTJ data.
+        pl.DataFrame: DataFrame com os dados intradiários da ETTJ.
 
-    DataFrame columns:
-        - date: Reference date of the yield curve
-        - vertex: Time point in business days
-        - nominal_rate: Zero-coupon nominal interest rate
-        - real_rate: Zero-coupon real interest rate (IPCA-indexed)
-        - implied_inflation: Implied inflation rate (break-even inflation)
+    Output Columns:
+        * date (Date): data de referência da curva de juros.
+        * vertex (Int64): vértice em dias úteis.
+        * nominal_rate (Float64): taxa de juros nominal zero-cupom.
+        * real_rate (Float64): taxa de juros real zero-cupom (indexada ao IPCA).
+        * implied_inflation (Float64): taxa de inflação implícita (breakeven).
 
     Note:
-        All rates are expressed in decimal format (e.g., 0.12 for 12%).
+        Todas as taxas são expressas em formato decimal (ex: 0.12 para 12%).
     """
     api_text = _fetch_intraday_text()
 

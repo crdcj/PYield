@@ -3,6 +3,7 @@ from typing import overload
 
 import polars as pl
 
+from pyield import types
 from pyield.types import ArrayLike, DateLike
 
 
@@ -113,7 +114,7 @@ def convert_dates(
             null
         ]
     """
-    if not hasattr(dates, "__len__") or isinstance(dates, str):
+    if not types.is_array_like(dates):
         is_scalar = True
         s = pl.Series(values=[dates])
     else:
@@ -122,9 +123,8 @@ def convert_dates(
 
     if s.dtype == pl.String:
         # Usa primeiro valor não-nulo para determinar o formato.
-        first_str = s.str.strip_chars().replace("", None).drop_nulls().first()
+        first_str = s.str.strip_chars().replace("", None).drop_nulls().item(0)
         if first_str:
-            assert isinstance(first_str, str)
             fmt = validate_date_format(first_str)
             s = s.str.to_date(format=fmt, strict=False)
         else:
@@ -135,6 +135,6 @@ def convert_dates(
         s = s.cast(pl.Date)
 
     if is_scalar:
-        return s.first()  # type: ignore[return-value]
+        return s.item()
 
     return s

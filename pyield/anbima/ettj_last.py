@@ -9,9 +9,6 @@ from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
 LAST_ETTJ_URL = "https://www.anbima.com.br/informacoes/est-termo/CZ-down.asp"
-INTRADAY_ETTJ_URL = (
-    "https://www.anbima.com.br/informacoes/curvas-intradiarias/cIntra-down.asp"
-)
 
 # Anbima ETTJ data has 4 decimal places in percentage values
 # We will round to 6 decimal places to avoid floating point errors
@@ -20,7 +17,7 @@ ROUND_DIGITS = 6
 
 @default_retry
 def _get_last_content_text() -> str:
-    """Fetches the raw yield curve data from ANBIMA."""
+    """Busca o texto bruto da curva de juros na ANBIMA."""
     request_payload = {
         "Idioma": "PT",
         "Dt_Ref": "",
@@ -61,17 +58,13 @@ def _filter_ettf_text(texto_completo: str) -> str:
     return "\n".join(trecho_filtrado).replace(".", "").replace(",", ".")
 
 
-def _convert_text_to_df(text: str, reference_date: dt.date) -> pl.DataFrame:
-    """Converts the raw yield curve text to a Polars DataFrame."""
-    df = pl.read_csv(
-        StringIO(text),
-        separator=";",
-    ).with_columns(pl.lit(reference_date).alias("date"))
-    return df
+def _convert_csv_to_df(text: str) -> pl.DataFrame:
+    """Converte o texto CSV da curva de juros em um DataFrame Polars."""
+    return pl.read_csv(StringIO(text), separator=";")
 
 
-def _process_df(df: pl.DataFrame) -> pl.DataFrame:
-    """Processes the raw yield curve DataFrame to calculate rates and forward rates."""
+def _process_df(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
+    """Processa o DataFrame bruto, renomeando colunas e convertendo taxas."""
     # Rename columns
     rename_dict = {
         "Vertices": "vertex",
@@ -79,10 +72,10 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
         "ETTJ PREF": "nominal_rate",
         "Inflação Implícita": "implied_inflation",
     }
+    rate_columns = ["real_rate", "nominal_rate", "implied_inflation"]
     df = df.rename(rename_dict).with_columns(
-        (pl.col("real_rate") / 100).round(ROUND_DIGITS),
-        (pl.col("nominal_rate") / 100).round(ROUND_DIGITS),
-        (pl.col("implied_inflation") / 100).round(ROUND_DIGITS),
+        pl.col(rate_columns).truediv(100).round(ROUND_DIGITS),
+        date=reference_date,
     )
     column_order = [
         "date",
@@ -95,29 +88,28 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def last_ettj() -> pl.DataFrame:
-    """
-    Retrieves and processes the latest Brazilian yield curve data from ANBIMA.
+    """Obtém e processa a última curva de juros (ETTJ) publicada pela ANBIMA.
 
-    This function fetches the most recent yield curve data published by ANBIMA,
-    containing real rates (IPCA-indexed), nominal rates, and implied inflation
-    at various vertices (time points).
+    Busca os dados mais recentes da curva de juros de fechamento publicada pela
+    ANBIMA, contendo taxas reais (indexadas ao IPCA), taxas nominais e inflação
+    implícita em diversos vértices.
 
     Returns:
-        pl.DataFrame: A DataFrame containing the latest ETTJ data.
+        pl.DataFrame: DataFrame com os dados da ETTJ de fechamento.
 
-    DataFrame columns:
-        - date: Reference date of the yield curve
-        - vertex: Time point in business days
-        - nominal_rate: Zero-coupon nominal interest rate
-        - real_rate: Zero-coupon real interest rate (IPCA-indexed)
-        - implied_inflation: Implied inflation rate (break-even inflation)
+    Output Columns:
+        * date (Date): data de referência da curva de juros.
+        * vertex (Int64): vértice em dias úteis.
+        * nominal_rate (Float64): taxa de juros nominal zero-cupom.
+        * real_rate (Float64): taxa de juros real zero-cupom (indexada ao IPCA).
+        * implied_inflation (Float64): taxa de inflação implícita (breakeven).
 
     Note:
-        All rates are expressed in decimal format (e.g., 0.12 for 12%).
+        Todas as taxas são expressas em formato decimal (ex: 0.12 para 12%).
     """
     text = _get_last_content_text()
     reference_date = _get_reference_date(text)
     text = _filter_ettf_text(text)
-    df = _convert_text_to_df(text, reference_date)
-    df = _process_df(df)
+    df = _convert_csv_to_df(text)
+    df = _process_df(df, reference_date)
     return df

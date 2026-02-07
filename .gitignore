@@ -17,8 +17,5 @@ dev/
 
 site/
 
-# Claude md file
-CLAUDE.md
-
 # Test data
 tests/data/

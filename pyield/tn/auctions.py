@@ -298,8 +298,7 @@ def _add_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     """
     Adiciona o DV01 em USD usando um join_asof para encontrar a PTAX mais recente.
     """
-    auction_date = df["data_1v"].first()
-    assert isinstance(auction_date, dt.date)
+    auction_date = df["data_1v"].item()
     # Busca o DataFrame da PTAX
     df_ptax = _fetch_ptax_data(auction_date=auction_date)
     if df_ptax.is_empty():
