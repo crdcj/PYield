@@ -141,12 +141,12 @@ def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
             financeiro_ofertado_1v=pl.when(
                 pl.col("quantidade_ofertada_1v") == pl.col("quantidade_aceita_1v")
             )
-            .then(pl.col("financeiro_aceito_1v"))
+            .then("financeiro_aceito_1v")
             .otherwise(pl.col("quantidade_ofertada_1v") * pl.col("pu_medio")),
             financeiro_ofertado_2v=pl.when(
                 pl.col("quantidade_ofertada_2v") == pl.col("quantidade_aceita_2v")
             )
-            .then(pl.col("financeiro_aceito_2v"))
+            .then("financeiro_aceito_2v")
             .otherwise(pl.col("quantidade_ofertada_2v") * pl.col("pu_medio")),
             # Cálculo das taxas de colocação
             colocacao_1v=(
@@ -175,7 +175,7 @@ def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
             # Algumas vezes o PU médio vem zero da API, então recalculamos
             pu_medio=pl.when(pl.col("pu_medio") == 0)
             .then((pl.col("financeiro_aceito_1v") / pl.col("quantidade_aceita_1v")))
-            .otherwise(pl.col("pu_medio"))
+            .otherwise("pu_medio")
             .round(6),
         )
         .with_columns(
@@ -250,7 +250,7 @@ def _add_avg_maturity(df: pl.DataFrame) -> pl.DataFrame:
     df = df.with_columns(
         pl.when(pl.col("titulo") == "LFT")
         .then(pl.col("dias_uteis") / 252)
-        .otherwise(pl.col("duration"))
+        .otherwise("duration")
         .alias("prazo_medio")
     )
 

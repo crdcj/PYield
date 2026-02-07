@@ -322,7 +322,7 @@ def _add_avg_maturity(df: pl.DataFrame) -> pl.DataFrame:
     df = df.with_columns(
         pl.when(pl.col("BondType") == "LFT")
         .then(pl.col("BDToMat") / 252)
-        .otherwise(pl.col("Duration"))
+        .otherwise("Duration")
         .alias("AvgMaturity")
     )
 

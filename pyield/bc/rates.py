@@ -164,7 +164,7 @@ def _fetch_data_from_url(
     chunks_df = pl.DataFrame({"start": chunk_starts, "end": chunk_ends}).with_columns(
         pl.when(pl.col("end") > end_date)
         .then(pl.lit(end_date))
-        .otherwise(pl.col("end"))
+        .otherwise("end")
         .alias("end")
     )
 

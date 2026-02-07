@@ -104,7 +104,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
             ((pl.col("BuyRate") + pl.col("SellRate")) / 2).round(5).alias("MidRate"),
         )
         .unique(subset=["Date"], keep="last")
-        .select(["Date", "DateTime", "BuyRate", "SellRate", "MidRate"])
+        .select("Date", "DateTime", "BuyRate", "SellRate", "MidRate")
         .sort("DateTime")
     )
     return df

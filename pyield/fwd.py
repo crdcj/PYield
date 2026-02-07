@@ -187,8 +187,8 @@ def forwards(
             # sem nulos e ordenada por group_by e du_k. Então, basta
             # ajustar a primeira taxa fwd de cada grupo para ser igual à taxa spot!
             fwd=pl.when(pl.col("du_k") == pl.first("du_k").over("group_by"))
-            .then(pl.col("rate_k"))
-            .otherwise(pl.col("fwd"))
+            .then("rate_k")
+            .otherwise("fwd")
         )
     )
     # 5. Reunir os resultados na ordem original

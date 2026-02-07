@@ -103,14 +103,14 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
         df.rename(IMA_COL_MAPPING)
         .select(IMA_COL_MAPPING.values())
         .with_columns(
-            pl.col("Date").str.strptime(pl.Date, "%d/%m/%Y"),
-            pl.col("Maturity").str.strptime(pl.Date, "%d/%m/%Y"),
-            (pl.col("IndicativeRate") / 100).round(6),
-            (pl.col("MarketQuantity") * 1000).cast(pl.Int64),
-            (pl.col("MarketValue") * 1000).round(2),
-            (pl.col("NegotiatedQuantity") * 1000).cast(pl.Int64),
-            (pl.col("NegotiatedValue") * 1000).round(2),
-            pl.col("Duration") / 252,
+            pl.col("Date").str.to_date("%d/%m/%Y"),
+            pl.col("Maturity").str.to_date("%d/%m/%Y"),
+            pl.col("IndicativeRate").truediv(100).round(6),
+            pl.col("MarketQuantity").mul(1000).cast(pl.Int64),
+            pl.col("MarketValue").mul(1000).round(2),
+            pl.col("NegotiatedQuantity").mul(1000).cast(pl.Int64),
+            pl.col("NegotiatedValue").mul(1000).round(2),
+            pl.col("Duration").truediv(252),
         )
         .with_columns(
             dv01_expr.alias("DV01"),

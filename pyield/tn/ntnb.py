@@ -410,7 +410,7 @@ def _update_spot_rate(
     return df.with_columns(
         pl.when(pl.col("MaturityDate") == maturity)
         .then(spot_rate)
-        .otherwise(pl.col("SpotRate"))
+        .otherwise("SpotRate")
         .alias("SpotRate")
     )
 
