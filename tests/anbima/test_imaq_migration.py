@@ -5,14 +5,16 @@ import polars as pl
 
 from pyield.anbima.imaq import imaq
 
+DATA_DIR = Path(__file__).parent / "data"
+BASELINE_PATH = DATA_DIR / "baseline_imaq_20260129.parquet"
+
 
 def test_save_baseline():
     """Save baseline data for migration comparison."""
     baseline_date = dt.date(2026, 1, 29)
     df = imaq(baseline_date)
 
-    baseline_path = Path(__file__).parent / "baseline_imaq_20260129.parquet"
-    df.write_parquet(baseline_path)
+    df.write_parquet(BASELINE_PATH)
 
     # Validations
     assert df.shape[0] > 0, "Should have data rows"
@@ -24,9 +26,8 @@ def test_save_baseline():
 def test_migration_matches_baseline():
     """Verify migrated implementation matches baseline."""
     baseline_date = dt.date(2026, 1, 29)
-    baseline_path = Path(__file__).parent / "baseline_imaq_20260129.parquet"
 
-    baseline_df = pl.read_parquet(baseline_path)
+    baseline_df = pl.read_parquet(BASELINE_PATH)
     migrated_df = imaq(baseline_date)
 
     # Shape comparison

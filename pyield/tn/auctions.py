@@ -318,6 +318,12 @@ def _add_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
+def _select_and_order_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """Seleciona as colunas finais e ordena o DataFrame para saída."""
+    selected_cols = [col for col in FINAL_COLUMN_ORDER if col in df.columns]
+    return df.select(selected_cols).sort("data_1v", "titulo", "data_vencimento")
+
+
 def auction(auction_date: DateLike) -> pl.DataFrame:
     """
     Fetches and processes Brazilian Treasury auction data for a given date.
@@ -427,10 +433,10 @@ def auction(auction_date: DateLike) -> pl.DataFrame:
         df = _add_dv01(df)
         df = _add_dv01_usd(df)
         df = _add_avg_maturity(df)
-        df = df.select(FINAL_COLUMN_ORDER)
-
         # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
         df = df.with_columns(cs.float().fill_nan(None))
+        df = _select_and_order_columns(df)
+
         return df
 
     except requests.exceptions.RequestException as e:

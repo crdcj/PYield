@@ -25,39 +25,41 @@ from pyield.types import DateLike
 
 logger = logging.getLogger(__name__)
 
-API_SCHEMA = {
-    # Esquema explícito para leitura consistente via Polars.
-    "id": pl.String,
-    "dataMovimento": pl.Date,
-    "horaInicio": pl.Time,
-    "publicoPermitidoLeilao": pl.String,
-    "numeroComunicado": pl.Int64,
-    "nomeTipoOferta": pl.String,
-    "ofertante": pl.String,
-    "prazoDiasCorridos": pl.Int64,
-    "dataLiquidacao": pl.Date,
-    "dataRetorno": pl.Date,
-    "volumeAceito": pl.Int64,
-    "taxaCorte": pl.Float64,
-    "percentualCorte": pl.Float64,
+COLUMN_MAP = {
+    "id": ("id", pl.String),
+    "dataMovimento": ("data_leilao", pl.Date),
+    "horaInicio": ("hora_inicio", pl.Time),
+    "publicoPermitidoLeilao": ("publico_permitido", pl.String),
+    "numeroComunicado": ("numero_comunicado", pl.Int64),
+    "nomeTipoOferta": ("tipo_oferta", pl.String),
+    "ofertante": ("ofertante", pl.String),
+    "prazoDiasCorridos": ("prazo_dias_corridos", pl.Int64),
+    "dataLiquidacao": ("data_liquidacao", pl.Date),
+    "dataRetorno": ("data_retorno", pl.Date),
+    "volumeAceito": ("volume_aceito", pl.Int64),
+    "taxaCorte": ("taxa_corte", pl.Float64),
+    "percentualCorte": ("percentual_corte", pl.Float64),
 }
 
-# Mapeamento das colunas originais da API para nomes padronizados em português.
-COLUMN_MAPPING = {
-    "id": "id",  # Identificador único do leilão (UUID)
-    "dataMovimento": "data_leilao",
-    "horaInicio": "hora_inicio",
-    "publicoPermitidoLeilao": "publico_permitido",  # ['SomenteDealer', 'TodoMercado']
-    "numeroComunicado": "numero_comunicado",
-    "nomeTipoOferta": "tipo_oferta",
-    "ofertante": "ofertante",  # Only Banco Central offers repos
-    "prazoDiasCorridos": "prazo_dias_corridos",
-    "dataLiquidacao": "data_liquidacao",
-    "dataRetorno": "data_retorno",
-    "volumeAceito": "volume_aceito",
-    "taxaCorte": "taxa_corte",
-    "percentualCorte": "percentual_corte",
-}
+API_SCHEMA = {col: dtype for col, (_, dtype) in COLUMN_MAP.items()}
+COLUMN_MAPPING = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
+
+FINAL_COLUMN_ORDER = [
+    "data_leilao",
+    "data_liquidacao",
+    "data_retorno",
+    "hora_inicio",
+    "prazo_dias_corridos",
+    "prazo_dias_uteis",
+    "numero_comunicado",
+    "tipo_oferta",
+    "publico_permitido",
+    "volume_aceito",
+    "taxa_corte",
+    "percentual_aceito",
+]
+
+SORTING_KEYS = ["data_leilao", "hora_inicio", "tipo_oferta"]
 
 API_BASE_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloes_compromissadas(dataLancamentoInicio=@dataLancamentoInicio,dataLancamentoFim=@dataLancamentoFim,horaInicio=@horaInicio,dataLiquidacao=@dataLiquidacao,dataRetorno=@dataRetorno,publicoPermitidoLeilao=@publicoPermitidoLeilao,nomeTipoOferta=@nomeTipoOferta)?"
 
@@ -138,33 +140,16 @@ def _handle_zero_volume(df: pl.DataFrame) -> pl.DataFrame:
     return df.with_columns(
         taxa_corte=pl.when(pl.col("volume_aceito") == 0)
         .then(None)
-        .otherwise(pl.col("taxa_corte")),
+        .otherwise("taxa_corte"),
         percentual_aceito=pl.when(pl.col("volume_aceito") == 0)
         .then(0)
-        .otherwise(pl.col("percentual_aceito")),
+        .otherwise("percentual_aceito"),
     )
 
 
 def _sort_and_select_columns(df: pl.DataFrame) -> pl.DataFrame:
     """Reordena colunas e ordena linhas para saída consistente e determinística."""
-    column_sequence = [
-        # "id", # ID não é relevante para o usuário final
-        "data_leilao",
-        "data_liquidacao",
-        "data_retorno",
-        "hora_inicio",
-        "prazo_dias_corridos",
-        "prazo_dias_uteis",
-        "numero_comunicado",
-        "tipo_oferta",
-        "publico_permitido",
-        # "ofertante", # Sempre "Banco Central", não é relevante para o usuário final
-        "volume_aceito",
-        "taxa_corte",
-        "percentual_aceito",
-    ]
-    sorting_keys = ["data_leilao", "hora_inicio", "tipo_oferta"]
-    return df.select(column_sequence).sort(by=sorting_keys)
+    return df.select(FINAL_COLUMN_ORDER).sort(by=SORTING_KEYS)
 
 
 def repos(
@@ -187,19 +172,19 @@ def repos(
         enriquecidos (frações decimais, inteiros, datas). Em caso de erro
         retorna DataFrame vazio e registra log da exceção.
 
-    DataFrame columns:
-        - data_leilao: data de ocorrência do leilão.
-        - data_liquidacao: data de liquidação (início da operação).
-        - data_retorno: data de recompra / término da operação.
-        - hora_inicio: horário de início do leilão.
-        - prazo_dias_corridos: dias corridos até a data de retorno.
-        - prazo_dias_uteis: dias úteis entre liquidação e retorno (bday.count).
-        - numero_comunicado: número do comunicado/aviso do BC (pode ser nulo).
-        - tipo_oferta: classif. do tipo de oferta (ex: Tomador, Compromissada 1047).
-        - publico_permitido: escopo de participantes (SomenteDealer, TodoMercado).
-        - volume_aceito: volume aceito no leilão em reais (convertido de milhares).
-        - taxa_corte: taxa de corte (ex. 0.1490 = 14,90%). Nula se volume_aceito = 0.
-        - percentual_aceito: percentual do volume ofertado efetivamente aceito (0-100).
+    Output Columns:
+        * data_leilao (Date): data de ocorrência do leilão.
+        * data_liquidacao (Date): data de liquidação (início da operação).
+        * data_retorno (Date): data de recompra / término da operação.
+        * hora_inicio (Time): horário de início do leilão.
+        * prazo_dias_corridos (Int64): dias corridos até a data de retorno.
+        * prazo_dias_uteis (Int64): dias úteis entre liquidação e retorno (bday.count).
+        * numero_comunicado (Int64): número do comunicado/aviso do BC (pode ser nulo).
+        * tipo_oferta (String): classif. do tipo de oferta (ex: Tomador, Compromissada 1047).
+        * publico_permitido (String): escopo de participantes (SomenteDealer, TodoMercado).
+        * volume_aceito (Int64): volume aceito no leilão em reais (convertido de milhares).
+        * taxa_corte (Float64): taxa de corte (ex. 0.1490 = 14,90%). Nula se volume_aceito = 0.
+        * percentual_aceito (Float64): percentual do volume ofertado efetivamente aceito (0-100).
           100 = nenhuma rejeição. 0 indica nada aceito (volume_aceito = 0).
 
     Notes:

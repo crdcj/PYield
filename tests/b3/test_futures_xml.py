@@ -11,7 +11,7 @@ from pyield import b3
 # Configuração da release do GitHub
 GITHUB_REPO = "crdcj/PYield"
 RELEASE_TAG = "test-data-v1.0"
-TEST_DATA_DIR = Path("./tests/data")
+TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 def download_test_data(file_name: str) -> Path:

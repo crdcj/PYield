@@ -1,4 +1,4 @@
-# tests/test_daily_dataframe.py
+# tests/tn/test_auction.py
 from datetime import date
 from pathlib import Path
 
@@ -6,7 +6,8 @@ import polars as pl
 
 from pyield.tn import auction
 
-SNAPSHOT_DIR = Path(__file__).parent / "data" / "auction_23-10-2025.parquet"
+DATA_DIR = Path(__file__).parent / "data"
+SNAPSHOT_DIR = DATA_DIR / "auction_23-10-2025.parquet"
 
 
 def test_dataframe_matches_snapshot():
