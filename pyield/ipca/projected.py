@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 import requests
 
+from pyield.retry import default_retry
+
 
 @dataclass
 class IndicatorProjection:
@@ -12,6 +14,7 @@ class IndicatorProjection:
     projected_value: float  # Projected value
 
 
+@default_retry
 def _get_page_text() -> str:
     """
     Faz a requisição e retorna o HTML decodificado como string.
@@ -29,89 +32,86 @@ def _get_page_text() -> str:
 
 def projected_rate() -> IndicatorProjection:
     """
-    Retrieves the current IPCA projection from the ANBIMA website.
+    Obtém a projeção atual do IPCA no site da ANBIMA.
 
-    This function makes an HTTP request to the ANBIMA website and extracts the
-    IPCA projection data directly from the raw HTML using regular expressions.
-
-    Process:
-        1. Accesses the ANBIMA indicators webpage.
-        2. Searches for the "Last Update" text pattern to parse the timestamp.
-        3. Searches for the specific IPCA block containing the "Projeção" label.
-        4. Extracts the reference period (e.g., "jan/26") and the value.
-        5. Converts the percentage string to a decimal float.
+    A função acessa a página de indicadores da ANBIMA e extrai os dados da
+    projeção do IPCA diretamente do HTML usando expressões regulares.
 
     Returns:
-        IndicatorProjection: An object containing:
-            - last_updated (dt.datetime): Date and time of the last data update.
-            - reference_period (str): Reference period of the projection as a string in
-              "MMM/YY" brazilian format (e.g., "set/25").
-            - projected_value (float): Projected IPCA value as a decimal number.
+        IndicatorProjection: Objeto contendo:
+            - last_updated (dt.datetime): Data e hora da última atualização.
+            - reference_period (str): Período de referência no formato "MMM/YY"
+              (ex.: "jan/26").
+            - projected_value (float): Valor projetado do IPCA (decimal).
 
     Raises:
-        ConnectionError: If there are connection issues with the ANBIMA site.
-        ValueError: If the expected data patterns are not found in the page text.
-
-    Example:
-        >>> from pyield import ipca
-        >>> # Retrieve the current IPCA projection from ANBIMA
-        >>> ipca.projected_rate()
-        IndicatorProjection(last_updated=..., reference_period=..., projected_value=...)
+        ConnectionError: Se houver erro de conexão com o site da ANBIMA.
+        ValueError: Se os padrões esperados não forem encontrados no HTML.
 
     Notes:
-        - The function requires internet connection to access the ANBIMA website.
-        - The extraction relies on text patterns (Regex). Significant changes to the
-          HTML structure or label text by ANBIMA may affect the function.
+        - Requer conexão com a internet para acessar o site da ANBIMA.
+        - A extração depende de padrões de texto no HTML. Mudanças na estrutura
+          da página podem afetar o resultado.
+
+    Examples:
+        >>> from pyield import ipca
+        >>> # Obter a projeção atual do IPCA na ANBIMA
+        >>> ipca.projected_rate()
+        IndicatorProjection(last_updated=..., reference_period=..., projected_value=...)
     """
     # 1. Obtém o texto já decodificado (str)
-    html_content = _get_page_text()
+    html = _get_page_text()
 
     # 2. Extrair Data de Atualização
     # Procura por: "Data e Hora da Última Atualização: 23/01/2026 - 16:48 h"
-    update_pattern = r"Data e Hora da Última Atualização:\s*([0-9]{2}/[0-9]{2}/[0-9]{4}\s*-\s*[0-9]{2}:[0-9]{2})"  # noqa:E501
+    padrao_atualizacao = r"Data e Hora da Última Atualização:\s*([0-9]{2}/[0-9]{2}/[0-9]{4}\s*-\s*[0-9]{2}:[0-9]{2})"  # noqa:E501
 
-    match_update = re.search(update_pattern, html_content)
-    if not match_update:
+    correspondencia_atualizacao = re.search(padrao_atualizacao, html)
+    if not correspondencia_atualizacao:
         raise ValueError("Não foi possível encontrar a data de atualização na página.")
 
-    last_update_str = match_update.group(1)
+    texto_atualizacao = correspondencia_atualizacao.group(1)
     # Remove espaços extras que possam existir na captura
-    last_update_str = last_update_str.replace(" - ", "-").strip()
+    texto_atualizacao = texto_atualizacao.replace(" - ", "-").strip()
 
     # Formato esperado: "23/01/2026-16:48"
     try:
-        last_updated = dt.datetime.strptime(last_update_str, "%d/%m/%Y-%H:%M")
+        ultima_atualizacao = dt.datetime.strptime(texto_atualizacao, "%d/%m/%Y-%H:%M")
     except ValueError:
         # Fallback caso o espaço seja mantido ou o formato varie levemente
-        last_updated = dt.datetime.strptime(match_update.group(1), "%d/%m/%Y - %H:%M")
+        ultima_atualizacao = dt.datetime.strptime(
+            correspondencia_atualizacao.group(1), "%d/%m/%Y - %H:%M"
+        )
 
     # 3. Extrair Bloco do IPCA
     # Regex explicado:
-    # IPCA.*?        -> Encontra IPCA e avança (ignora o IPCA índice, busca o próximo)
-    # Projeção\s*\(  -> Encontra 'Projeção ('
-    # (.*?)          -> GRUPO 1: Captura o período (ex: jan/26)
-    # \)             -> Fecha parênteses
-    # .*?>           -> Avança até fechar a próxima tag HTML (<td>)
-    # ([0-9]+,[0-9]+)-> GRUPO 2: Captura o valor (ex: 0,36)
-    # <              -> Garante que o número acabou
+    # IPCA.*?         -> Encontra IPCA e avança (ignora o IPCA índice, busca o próximo)
+    # Projeção\s*\(   -> Encontra "Projeção ("
+    # (.*?)           -> GRUPO 1: Captura o período (ex.: jan/26)
+    # \)              -> Fecha parênteses
+    # .*?>            -> Avança até fechar a próxima tag HTML (<td>)
+    # ([0-9]+,[0-9]+) -> GRUPO 2: Captura o valor (ex.: 0,36)
+    # <               -> Garante que o número acabou
 
-    ipca_pattern = r"IPCA.*?Projeção\s*\((.*?)\).*?>([0-9]+,[0-9]+)<"
+    padrao_ipca = r"IPCA.*?Projeção\s*\((.*?)\).*?>([0-9]+,[0-9]+)<"
 
     # Passamos flags= explicitamente para satisfazer linters estritos
-    match_ipca = re.search(ipca_pattern, html_content, flags=re.DOTALL | re.IGNORECASE)
+    correspondencia_ipca = re.search(
+        padrao_ipca, html, flags=re.DOTALL | re.IGNORECASE
+    )
 
-    if not match_ipca:
+    if not correspondencia_ipca:
         raise ValueError("Não foi possível encontrar os dados de projeção do IPCA.")
 
-    period_str = match_ipca.group(1)  # Ex: jan/26
-    value_str = match_ipca.group(2)  # Ex: 0,36
+    periodo_referencia = correspondencia_ipca.group(1)  # Ex.: jan/26
+    texto_valor = correspondencia_ipca.group(2)  # Ex.: 0,36
 
     # Conversão de valores
-    projected_value = float(value_str.replace(",", ".")) / 100
-    projected_value = round(projected_value, 4)
+    valor_projetado = float(texto_valor.replace(",", ".")) / 100
+    valor_projetado = round(valor_projetado, 4)
 
     return IndicatorProjection(
-        last_updated=last_updated,
-        reference_period=period_str,
-        projected_value=projected_value,
+        last_updated=ultima_atualizacao,
+        reference_period=periodo_referencia,
+        projected_value=valor_projetado,
     )
