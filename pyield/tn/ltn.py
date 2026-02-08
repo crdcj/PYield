@@ -5,18 +5,40 @@ from pyield.tn import tools
 from pyield.tn.pre import di_spreads as pre_di_spreads
 from pyield.types import DateLike, any_is_empty
 
-FACE_VALUE = 1000
+VALOR_FACE = 1000
 
 
 def data(date: DateLike) -> pl.DataFrame:
     """
-    Fetch the LTN Anbima indicative rates for the given reference date.
+    Busca as taxas indicativas de LTN na ANBIMA para a data de referência.
 
     Args:
-        date (DateLike): The reference date for fetching the data.
+        date (DateLike): Data de referência para a consulta.
 
     Returns:
-        pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
+        pl.DataFrame: DataFrame Polars com os dados de LTN.
+
+    Output Columns:
+        * BondType (String): Tipo do título (ex.: "LTN").
+        * ReferenceDate (Date): Data de referência dos dados.
+        * SelicCode (Int64): Código do título no SELIC.
+        * IssueBaseDate (Date): Data base/emissão do título.
+        * MaturityDate (Date): Data de vencimento do título.
+        * BDToMat (Int64): Dias úteis entre referência e vencimento.
+        * Duration (Float64): Macaulay Duration do título (anos).
+        * DV01 (Float64): Variação no preço para 1bp de taxa.
+        * DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
+        * Price (Float64): Preço unitário (PU).
+        * BidRate (Float64): Taxa de compra (decimal).
+        * AskRate (Float64): Taxa de venda (decimal).
+        * IndicativeRate (Float64): Taxa indicativa (decimal).
+        * DIRate (Float64): Taxa DI interpolada (flat forward).
+        * StdDev (Float64): Desvio padrão da taxa indicativa.
+        * LowerBoundRateD0 (Float64): Limite inferior do intervalo (D+0).
+        * UpperBoundRateD0 (Float64): Limite superior do intervalo (D+0).
+        * LowerBoundRateD1 (Float64): Limite inferior do intervalo (D+1).
+        * UpperBoundRateD1 (Float64): Limite superior do intervalo (D+1).
+        * Criteria (String): Critério utilizado pela ANBIMA.
 
     Examples:
         >>> from pyield import ltn
@@ -45,13 +67,13 @@ def data(date: DateLike) -> pl.DataFrame:
 
 def maturities(date: DateLike) -> pl.Series:
     """
-    Fetch the bond maturities available for the given reference date.
+    Busca os vencimentos disponíveis para a data de referência.
 
     Args:
-        date (DateLike): The reference date for fetching the data.
+        date (DateLike): Data de referência para a consulta.
 
     Returns:
-        pl.Series: A Series of bond maturities available for the reference date.
+        pl.Series: Série de datas de vencimento disponíveis.
 
     Examples:
         >>> from pyield import ltn
@@ -81,15 +103,15 @@ def price(
     rate: float,
 ) -> float:
     """
-    Calculate the LTN price using Anbima rules.
+    Calcula o preço da LTN pelas regras da ANBIMA.
 
     Args:
-        settlement (DateLike): The settlement date.
-        maturity (DateLike): The maturity date.
-        rate (float): The discount rate (yield to maturity) of the bond.
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        rate (float): Taxa de desconto (YTM) do título.
 
     Returns:
-        float: The LTN price using Anbima rules.
+        float: Preço da LTN conforme ANBIMA.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -99,31 +121,31 @@ def price(
         >>> ltn.price("05-07-2024", "01-01-2030", 0.12145)
         535.279902
     """
-    # Validate and normalize inputs
+    # Valida e normaliza entradas
     if any_is_empty(settlement, maturity, rate):
         return float("nan")
-    # Calculate the number of business days between settlement and cash flow dates
-    bdays = bday.count(settlement, maturity)
+    # Calcula dias úteis entre liquidação e vencimento
+    dias_uteis = bday.count(settlement, maturity)
 
-    # Calculate the number of periods truncated as per Anbima rule
-    num_of_years = tools.truncate(bdays / 252, 14)
+    # Calcula anos úteis truncados conforme ANBIMA
+    anos_truncados = tools.truncate(dias_uteis / 252, 14)
 
-    discount_factor = (1 + rate) ** num_of_years
+    fator_desconto = (1 + rate) ** anos_truncados
 
-    # Truncate the price to 6 decimal places as per Anbima rules
-    return tools.truncate(FACE_VALUE / discount_factor, 6)
+    # Trunca o preço em 6 casas conforme ANBIMA
+    return tools.truncate(VALOR_FACE / fator_desconto, 6)
 
 
 def premium(ltn_rate: float, di_rate: float) -> float:
     """
-    Calculate the premium of the LTN bond over the DI Future rate using provided rates.
+    Calcula o prêmio da LTN sobre a taxa de DI Futuro.
 
     Args:
-        ltn_rate (float): The annualized LTN rate.
-        di_rate (float): The annualized DI Future rate.
+        ltn_rate (float): Taxa anualizada da LTN.
+        di_rate (float): Taxa anualizada do DI Futuro.
 
     Returns:
-        float: The premium of the LTN bond over the DI Future rate.
+        float: Prêmio da LTN sobre o DI.
 
     Examples:
         Reference date: 22-08-2024
@@ -136,11 +158,11 @@ def premium(ltn_rate: float, di_rate: float) -> float:
     if any_is_empty(ltn_rate, di_rate):
         return float("nan")
     # Cálculo das taxas diárias
-    ltn_daily_rate = (1 + ltn_rate) ** (1 / 252) - 1
-    di_daily_rate = (1 + di_rate) ** (1 / 252) - 1
+    taxa_diaria_ltn = (1 + ltn_rate) ** (1 / 252) - 1
+    taxa_diaria_di = (1 + di_rate) ** (1 / 252) - 1
 
     # Retorno do cálculo do prêmio
-    return ltn_daily_rate / di_daily_rate
+    return taxa_diaria_ltn / taxa_diaria_di
 
 
 def dv01(
@@ -149,34 +171,33 @@ def dv01(
     rate: float,
 ) -> float:
     """
-    Calculate the DV01 (Dollar Value of 01) for an LTN in R$.
+    Calcula o DV01 (Dollar Value of 01) da LTN em R$.
 
-    Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.
+    Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
 
     Args:
-        settlement (DateLike): The settlement date.
-        maturity (DateLike): The maturity date.
-        rate (float): The discount rate (yield to maturity) of the bond.
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        rate (float): Taxa de desconto (YTM) do título.
 
     Returns:
-        float: The DV01 value, representing the price change for a 1 basis point
-            increase in yield.
+        float: DV01, variação de preço para 1 bp.
 
     Examples:
         >>> from pyield import ltn
         >>> ltn.dv01("26-03-2025", "01-01-2032", 0.150970)
         0.2269059999999854
 
-        Nullable inputs return float('nan')
+        Entradas nulas retornam float('nan')
         >>> ltn.dv01(None, "01-01-2032", 0.150970)
         nan
     """
     if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
-    price1 = price(settlement, maturity, rate)
-    price2 = price(settlement, maturity, rate + 0.0001)
-    return price1 - price2
+    preco_1 = price(settlement, maturity, rate)
+    preco_2 = price(settlement, maturity, rate + 0.0001)
+    return preco_1 - preco_2
 
 
 def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
@@ -193,13 +214,15 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
     Args:
         date (DateLike): Data de referência para buscar as taxas.
         bps (bool): Se True, retorna DISpread já convertido em basis points.
-            Default False.
+            Padrão False.
 
     Returns:
-        pl.DataFrame com colunas:
-            - BondType
-            - MaturityDate
-            - DISpread (decimal ou bps conforme parâmetro)
+        pl.DataFrame: DataFrame com as colunas do spread.
+
+    Output Columns:
+        * BondType (String): Tipo do título.
+        * MaturityDate (Date): Data de vencimento.
+        * DISpread (Float64): Spread em decimal ou bps conforme parâmetro.
 
     Raises:
         ValueError: Se os dados de DI não possuem 'SettlementRate' ou estão vazios.
@@ -240,11 +263,13 @@ def forwards(date: DateLike) -> pl.DataFrame:
         date (DateLike): Data de referência das taxas indicativas.
 
     Returns:
-        pl.DataFrame com colunas:
-            - MaturityDate
-            - BDToMat
-            - IndicativeRate (spot)
-            - ForwardRate
+        pl.DataFrame: DataFrame com as taxas forward.
+
+    Output Columns:
+        * MaturityDate (Date): Data de vencimento.
+        * BDToMat (Int64): Dias úteis entre referência e vencimento.
+        * IndicativeRate (Float64): Taxa spot (zero cupom).
+        * ForwardRate (Float64): Taxa forward.
 
     Examples:
         >>> from pyield import ltn
@@ -271,5 +296,5 @@ def forwards(date: DateLike) -> pl.DataFrame:
     if any_is_empty(date):
         return pl.DataFrame()
     df = data(date).select("MaturityDate", "BDToMat", "IndicativeRate")
-    fwd_rates = fwd.forwards(bdays=df["BDToMat"], rates=df["IndicativeRate"])
-    return df.with_columns(ForwardRate=fwd_rates).sort("MaturityDate")
+    taxas_forward = fwd.forwards(bdays=df["BDToMat"], rates=df["IndicativeRate"])
+    return df.with_columns(ForwardRate=taxas_forward).sort("MaturityDate")
