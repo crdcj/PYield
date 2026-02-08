@@ -16,7 +16,6 @@ cotacaoCompra, cotacaoVenda, dataHoraCotacao
 """
 
 import datetime as dt
-import io
 import logging
 
 import polars as pl
@@ -29,12 +28,15 @@ from pyield.types import DateLike
 
 logger = logging.getLogger(__name__)
 
-# Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
-COLUMN_MAPPING = {
-    "dataHoraCotacao": "DateTime",
-    "cotacaoCompra": "BuyRate",
-    "cotacaoVenda": "SellRate",
+# Mapeamento unificado: coluna da API → (nome final, dtype)
+COLUMN_MAP = {
+    "cotacaoCompra": ("BuyRate", pl.Float64),
+    "cotacaoVenda": ("SellRate", pl.Float64),
+    "dataHoraCotacao": ("DateTime", pl.String),
 }
+
+API_SCHEMA = {col: dtype for col, (_, dtype) in COLUMN_MAP.items()}
+COLUMN_MAPPING = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
 
 PTAX_API_URL = "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?"
 
@@ -52,56 +54,37 @@ def _build_api_url(start: dt.date, end: dt.date) -> str:
 
 
 @default_retry
-def _fetch_text_from_api(url: str) -> str:
+def _fetch_text_from_api(url: str) -> bytes:
     response = requests.get(url, timeout=10)
     response.raise_for_status()
-    return response.text
+    return response.content
 
 
-def _parse_csv(csv_text: str) -> pl.DataFrame:
-    """Faz o parse seguro do CSV da API PTAX.
+def _read_csv_data(csv_content: bytes) -> pl.DataFrame:
+    """Lê o CSV (texto) da API PTAX em um DataFrame Polars com esquema definido.
 
-    Evita depender de inferência heurística do Polars (que levou a tentar
-    ler *i64* em valores decimais como "13,77") definindo dtypes explícitos e
-    aplicando `strptime` controlado para a coluna de data/hora.
-
-    Estratégia:
-      1. Ler as colunas de taxas como Float64 (ou poderíamos usar Decimal futuramente)
-         já aproveitando `decimal_comma=True` para normalizar a vírgula.
-      2. Ler `dataHoraCotacao` como string e depois fazer parse explícito para
-         Datetime em milissegundos usando o formato conhecido `%Y-%m-%d %H:%M:%S%.3f`.
-      3. Forçar unidade de tempo "ms" (a API só tem milissegundos) removendo
-         qualquer precisão fantasma.
+    Usa decimal_comma=True para tratar números no formato brasileiro ("5,4372").
+    Mantém dataHoraCotacao como String para parse manual posterior em _process_df.
     """
-
-    # Schema mínimo explícito. Mantemos dataHoraCotacao como Utf8 para parse manual.
-    schema = {
-        "cotacaoCompra": pl.Float64,
-        "cotacaoVenda": pl.Float64,
-        "dataHoraCotacao": pl.String,
-    }
-
-    df = pl.read_csv(
-        io.StringIO(csv_text),
-        decimal_comma=True,  # converte "5,4372" para "5.4372" antes do cast
-        schema_overrides=schema,
+    return pl.read_csv(
+        csv_content,
+        decimal_comma=True,
+        schema_overrides=API_SCHEMA,
     )
-    return df
 
 
 def _process_df(df: pl.DataFrame) -> pl.DataFrame:
-    parsed_dt = pl.col("DateTime").str.strptime(
-        pl.Datetime(time_unit="ms"),
-        format="%Y-%m-%d %H:%M:%S%.3f",
-        strict=True,
-    )
 
     df = (
         df.rename(COLUMN_MAPPING)
         .with_columns(
-            parsed_dt.alias("DateTime"),
-            parsed_dt.cast(pl.Date).alias("Date"),
-            ((pl.col("BuyRate") + pl.col("SellRate")) / 2).round(5).alias("MidRate"),
+            pl.col("DateTime").str.to_datetime(
+                format="%Y-%m-%d %H:%M:%S%.3f", strict=False
+            )
+        )
+        .with_columns(
+            Date=pl.col("DateTime").cast(pl.Date),
+            MidRate=((pl.col("BuyRate") + pl.col("SellRate")) / 2).round(5),
         )
         .unique(subset=["Date"], keep="last")
         .select("Date", "DateTime", "BuyRate", "SellRate", "MidRate")
@@ -227,17 +210,14 @@ def ptax_series(
     try:
         url = _build_api_url(start, end)
         text = _fetch_text_from_api(url)
-        df = _parse_csv(text)
+        df = _read_csv_data(text)
         if df.is_empty():
-            logging.warning("No data found for the specified period.")
+            logger.warning("No data found for the specified period.")
             return pl.DataFrame()
         df = _process_df(df)
         return df
-    except requests.exceptions.HTTPError as http_err:
-        logger.error(f"HTTP error occurred: {http_err}")
-        return pl.DataFrame()
     except Exception as e:
-        logger.exception("Error fetching PTAX data from BC API: %s", e)
+        logger.exception(f"Erro ao buscar dados PTAX na API do BC: {e}")
         return pl.DataFrame()
 
 
@@ -253,7 +233,7 @@ def ptax(date: DateLike) -> float:
 
     Returns:
         float: O valor da PTAX (taxa média) para a data especificada.
-               Retorna None se não houver cotação para a data
+               Retorna nan se não houver cotação para a data
                (ex: feriado, fim de semana ou data futura).
 
     Examples:

@@ -45,8 +45,8 @@ def validate_date_format(date_str: str) -> str:
         except ValueError:
             pass
     raise ValueError(
-        f"Invalid date format: '{date_str}'."
-        + " Accepted formats: dd-mm-YYYY, dd/mm/YYYY ou YYYY-mm-dd."
+        f"Formato de data inválido: '{date_str}'."
+        " Formatos aceitos: dd-mm-YYYY, dd/mm/YYYY ou YYYY-mm-dd."
     )
 
 
@@ -123,9 +123,9 @@ def convert_dates(
 
     if s.dtype == pl.String:
         # Usa primeiro valor não-nulo para determinar o formato.
-        first_str = s.str.strip_chars().replace("", None).drop_nulls().item(0)
-        if first_str:
-            fmt = validate_date_format(first_str)
+        non_empty = s.str.strip_chars().replace("", None).drop_nulls()
+        if non_empty.len() > 0:
+            fmt = validate_date_format(non_empty.item(0))
             s = s.str.to_date(format=fmt, strict=False)
         else:
             s = pl.Series(values=[None] * s.len(), dtype=pl.Date)
