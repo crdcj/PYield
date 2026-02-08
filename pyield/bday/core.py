@@ -18,7 +18,47 @@ TRANSITION_DATE = BrHolidays.TRANSITION_DATE
 
 
 def count_expr(start: pl.Expr | str | dt.date, end: pl.Expr | str | dt.date) -> pl.Expr:
-    """Build expression that counts business days with holiday regime."""
+    """Cria uma expressão Polars para contar dias úteis (com suporte a LazyFrame).
+
+    Esta função foi projetada para ser usada dentro de contextos do Polars,
+    como ``df.select()``, ``df.with_columns()`` ou ``df.filter()``.
+
+    Args:
+        start: Nome da coluna, expressão Polars ou data literal.
+        end: Nome da coluna, expressão Polars ou data literal.
+
+    Returns:
+        Uma ``pl.Expr`` que resulta em Int64.
+
+    Examples:
+        >>> import polars as pl
+        >>> from pyield.bday import count_expr
+        >>> start = [dt.date(2024, 1, 1), dt.date(2024, 2, 9)]
+        >>> end = [dt.date(2024, 1, 5), dt.date(2024, 2, 12)]
+        >>> df = pl.DataFrame({"start": start, "end": end})
+        >>> df.select(count_expr("start", "end").alias("bdays"))
+        shape: (2, 1)
+        ┌───────┐
+        │ bdays │
+        │ ---   │
+        │ i64   │
+        ╞═══════╡
+        │ 3     │
+        │ 1     │
+        └───────┘
+
+        Uso com literais (ex: contar dias até o fim do ano):
+        >>> df.select(bdays=count_expr("start", dt.date(2024, 12, 31)))
+        shape: (2, 1)
+        ┌───────┐
+        │ bdays │
+        │ ---   │
+        │ i64   │
+        ╞═══════╡
+        │ 252   │
+        │ 224   │
+        └───────┘
+    """
     if isinstance(start, str):
         start = pl.col(start)
     elif isinstance(start, dt.date):
@@ -164,7 +204,50 @@ def offset_expr(
     n: int | pl.Expr | str,
     roll: Literal["forward", "backward"] = "forward",
 ) -> pl.Expr:
-    """Build expression that adds business days with holiday regime."""
+    """Cria uma expressão Polars para somar dias úteis.
+
+    Ideal para operações vetorizadas em DataFrames ou LazyFrames.
+
+    Args:
+        expr: Coluna de data original.
+        n: Número de dias úteis a somar. Pode ser um inteiro fixo ou outra coluna.
+        roll: Como tratar a data inicial se ela cair em fim de semana/feriado.
+
+    Returns:
+        Uma ``pl.Expr`` que resulta em Date.
+
+    Examples:
+        >>> import datetime as dt
+        >>> import polars as pl
+        >>> from pyield.bday import offset_expr
+        >>> dates = [dt.date(2023, 12, 22), dt.date(2023, 12, 29)]
+        >>> offsets = [1, 5]
+        >>> df = pl.DataFrame({"dt": dates, "n": offsets})
+
+        Adicionando um valor fixo (1 dia útil):
+        >>> df.select(offset_expr("dt", 1).alias("t_plus_1"))
+        shape: (2, 1)
+        ┌────────────┐
+        │ t_plus_1   │
+        │ ---        │
+        │ date       │
+        ╞════════════╡
+        │ 2023-12-26 │
+        │ 2024-01-02 │
+        └────────────┘
+
+        Adicionando uma coluna dinâmica (prazo variável por linha):
+        >>> df.select(offset_expr("dt", "n").alias("vencimento"))
+        shape: (2, 1)
+        ┌────────────┐
+        │ vencimento │
+        │ ---        │
+        │ date       │
+        ╞════════════╡
+        │ 2023-12-26 │
+        │ 2024-01-08 │
+        └────────────┘
+    """
     if isinstance(expr, str):
         expr = pl.col(expr)
     if isinstance(n, str):
@@ -433,7 +516,44 @@ def generate(
 
 
 def is_business_day_expr(expr: pl.Expr | str) -> pl.Expr:
-    """Build expression that checks business-day status with holiday regime."""
+    """Cria expressão Polars para verificar se é dia útil (True/False).
+
+    Args:
+        expr: Coluna de datas ou expressão Polars.
+
+    Returns:
+        Uma ``pl.Expr`` booleana.
+
+    Examples:
+        >>> import datetime as dt
+        >>> import polars as pl
+        >>> from pyield.bday import is_business_day_expr
+        >>> dates = [dt.date(2023, 12, 25), dt.date(2023, 12, 26)]
+        >>> df = pl.DataFrame({"data": dates})
+
+        Criando uma flag booleana:
+        >>> df.with_columns(is_bd=is_business_day_expr("data"))
+        shape: (2, 2)
+        ┌────────────┬───────┐
+        │ data       ┆ is_bd │
+        │ ---        ┆ ---   │
+        │ date       ┆ bool  │
+        ╞════════════╪═══════╡
+        │ 2023-12-25 ┆ false │
+        │ 2023-12-26 ┆ true  │
+        └────────────┴───────┘
+
+        Usando para filtrar apenas dias úteis:
+        >>> df.filter(is_business_day_expr("data"))
+        shape: (1, 1)
+        ┌────────────┐
+        │ data       │
+        │ ---        │
+        │ date       │
+        ╞════════════╡
+        │ 2023-12-26 │
+        └────────────┘
+    """
     if isinstance(expr, str):
         expr = pl.col(expr)
     return (
