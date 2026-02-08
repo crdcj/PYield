@@ -1,5 +1,4 @@
 import datetime as dt
-import io
 import logging
 
 import polars as pl
@@ -43,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 
 @default_retry
-def _buscar_csv(data: dt.date) -> str:
+def _buscar_csv(data: dt.date) -> bytes:
     """Busca o CSV diário de derivativos consolidados na B3."""
     url = "https://arquivos.b3.com.br/bdi/table/export/csv"
     parametros = {"lang": "pt-BR"}
@@ -69,18 +68,19 @@ def _buscar_csv(data: dt.date) -> str:
     )
     resposta.raise_for_status()
     resposta.encoding = "utf-8-sig"
-    return resposta.text
+    return resposta.content
 
 
-def _parsear_df_bruto(csv_texto: str) -> pl.DataFrame:
+def _parsear_df_bruto(csv_bytes: bytes) -> pl.DataFrame:
     """Lê o CSV bruto em um DataFrame Polars."""
     df = pl.read_csv(
-        io.StringIO(csv_texto.replace(".", "")),
+        csv_bytes.replace(b".", b""),
         separator=";",
         skip_lines=2,
         null_values=["-"],
         decimal_comma=True,
         schema_overrides=ESQUEMA_CSV,
+        encoding="utf-8-sig",
     )
     return df
 
@@ -112,9 +112,7 @@ def _processar_df(
     sufixo_destino = "Rate" if eh_taxa else "Price"
 
     colunas_renomear = [c for c in df.columns if c.endswith("Value")]
-    mapa_renomeacao = {
-        c: c.replace("Value", sufixo_destino) for c in colunas_renomear
-    }
+    mapa_renomeacao = {c: c.replace("Value", sufixo_destino) for c in colunas_renomear}
     df = df.rename(mapa_renomeacao)
 
     # 3. Tratamento Específico de Taxas
@@ -137,9 +135,7 @@ def _processar_df(
         # Duration Modificada * PU * 1bp
         duracao = pl.col("BDaysToExp") / 252
         duracao_mod = duracao / (1 + pl.col("SettlementRate"))
-        df = df.with_columns(
-            DV01=duracao_mod * pl.col("SettlementPrice") * 0.0001
-        )
+        df = df.with_columns(DV01=duracao_mod * pl.col("SettlementPrice") * 0.0001)
 
     # 5. Forward Rates (Para DI1 e DAP)
     if codigo_contrato in {"DI1", "DAP"} and "SettlementRate" in df.columns:
@@ -195,9 +191,7 @@ def _selecionar_e_reordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(colunas_existentes)
 
 
-def _buscar_df_historico_b3(
-    data: dt.date, codigo_contrato: str
-) -> pl.DataFrame:
+def _buscar_df_historico_b3(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
     """Busca o histórico de futuros na B3 para a data informada."""
     try:
         # Tenta baixar os dados
