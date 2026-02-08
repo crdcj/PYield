@@ -8,21 +8,24 @@ from pyield.types import DateLike
 
 def spot_rates(date: DateLike) -> pl.DataFrame:
     """
-    Create the PRE curve (zero coupon rates) for Brazilian fixed rate bonds.
+    Cria a curva PRE (taxas zero cupom) para títulos prefixados brasileiros.
 
-    This function combines LTN rates (which are already zero coupon) with
-    spot rates derived from NTN-F bonds using the bootstrap method.
+    Combina taxas de LTN (já zero cupom) com taxas spot derivadas de NTN-F
+    via bootstrap.
 
     Args:
-        date (DateLike): The reference date for fetching the data.
+        date (DateLike): Data de referência para a consulta.
 
     Returns:
-        pl.DataFrame: DataFrame with columns "MaturityDate", "BDToMat", and "SpotRate".
-                     Contains zero coupon rates for all available maturities.
+        pl.DataFrame: DataFrame com as colunas da curva PRE.
+
+    Output Columns:
+        * MaturityDate (Date): Data de vencimento.
+        * BDToMat (Int64): Dias úteis entre referência e vencimento.
+        * SpotRate (Float64): Taxa spot (zero cupom).
 
     Raises:
-        ValueError: If any maturity date cannot be processed or business days cannot be
-            calculated.
+        ValueError: Se algum vencimento não puder ser processado.
 
     Examples:
         >>> from pyield import pre
@@ -46,13 +49,13 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
         │ 2035-01-01   ┆ 2390    ┆ 0.141068 │
         └──────────────┴─────────┴──────────┘
     """
-    # Fetch LTN data (zero coupon bonds)
+    # Busca dados de LTN (zero cupom)
     df_ltn = anbima.tpf_data(date, "LTN")
 
-    # Fetch NTN-F data (coupon bonds)
+    # Busca dados de NTN-F (com cupom)
     df_ntnf = anbima.tpf_data(date, "NTN-F")
 
-    # Check if we have data for both bond types
+    # Verifica se há dados para ambos os tipos
     if df_ltn.is_empty() and df_ntnf.is_empty():
         return pl.DataFrame(
             schema={
@@ -62,17 +65,17 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
             }
         )
 
-    # If we only have NTN-F data, we can't bootstrap without LTN rates
+    # Se só há NTN-F, não é possível fazer bootstrap sem LTN
     if df_ltn.is_empty():
         raise ValueError(
-            "Cannot construct PRE curve without LTN rates for bootstrapping"
+            "Não é possível construir a curva PRE sem taxas de LTN para bootstrap"
         )
 
-    # If we only have LTN data, return it directly (LTN are already zero coupon)
+    # Se só há LTN, retorna direto (LTN já são zero cupom)
     if df_ntnf.is_empty():
-        df_combined = _process_additional_ltn(date, df_ltn)
+        df = _processar_ltn_adicionais(date, df_ltn)
     else:
-        # Use the existing spot_rates function to calculate zero coupon rates
+        # Usa spot_rates de NTN-F para calcular zero cupom
         df_spots = ntnf.spot_rates(
             settlement=date,
             ltn_maturities=df_ltn["MaturityDate"],
@@ -82,50 +85,50 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
             show_coupons=False,
         )
 
-        # Find LTN maturities that are not in the NTN-F result
+        # Encontra vencimentos de LTN que não estão no resultado de NTN-F
         ltn_mask = ~df_ltn["MaturityDate"].is_in(df_spots["MaturityDate"].to_list())
         ltn_not_in_ntnf = df_ltn.filter(ltn_mask)
 
         if not ltn_not_in_ntnf.is_empty():
-            # Process additional LTN maturities
-            ltn_subset = _process_additional_ltn(date, ltn_not_in_ntnf)
+            # Processa vencimentos de LTN adicionais
+            ltn_subset = _processar_ltn_adicionais(date, ltn_not_in_ntnf)
 
-            # Combine LTN and NTN-F derived spot rates
-            df_combined = pl.concat([df_spots, ltn_subset])
+            # Combina LTN e NTN-F
+            df = pl.concat([df_spots, ltn_subset])
         else:
-            df_combined = df_spots
+            df = df_spots
 
-    # Final validation - ensure no NaN values in the result
-    _validate_final_result(df_combined)
+    # Validação final
+    _validar_resultado_final(df)
 
-    # Sort by maturity date and return
-    return df_combined.sort("MaturityDate")
+    # Ordena por vencimento
+    return df.sort("MaturityDate")
 
 
-def _process_additional_ltn(
-    date: DateLike, ltn_not_in_ntnf: pl.DataFrame
+def _processar_ltn_adicionais(
+    date: DateLike, ltn_nao_em_ntnf: pl.DataFrame
 ) -> pl.DataFrame:
-    """Process additional LTN maturities not covered by NTN-F bootstrap."""
-    # Calculate business days using vectorized operation
-    bdays = bday.count(date, ltn_not_in_ntnf["MaturityDate"])
+    """Processa vencimentos de LTN fora do bootstrap de NTN-F."""
+    # Calcula dias úteis de forma vetorizada
+    dias_uteis = bday.count(date, ltn_nao_em_ntnf["MaturityDate"])
 
-    # Create result DataFrame
+    # Cria DataFrame de resultado
     return pl.DataFrame(
         {
-            "MaturityDate": ltn_not_in_ntnf["MaturityDate"],
-            "BDToMat": bdays,
-            "SpotRate": ltn_not_in_ntnf["IndicativeRate"],
+            "MaturityDate": ltn_nao_em_ntnf["MaturityDate"],
+            "BDToMat": dias_uteis,
+            "SpotRate": ltn_nao_em_ntnf["IndicativeRate"],
         }
     )
 
 
-def _validate_final_result(df_combined: pl.DataFrame) -> None:
-    """Validate the final combined DataFrame."""
-    if df_combined["BDToMat"].is_null().any():
-        raise ValueError("Final result contains NaN values in BDToMat column")
+def _validar_resultado_final(df: pl.DataFrame) -> None:
+    """Valida o DataFrame final combinado."""
+    if df["BDToMat"].is_null().any():
+        raise ValueError("Resultado final contém NaN na coluna BDToMat")
 
-    if df_combined["SpotRate"].is_null().any():
-        raise ValueError("Final result contains NaN values in SpotRate column")
+    if df["SpotRate"].is_null().any():
+        raise ValueError("Resultado final contém NaN na coluna SpotRate")
 
 
 def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
@@ -141,13 +144,15 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
     Args:
         date (DateLike): Data de referência para buscar as taxas.
         bps (bool): Se True, retorna DISpread já convertido em basis points.
-            Default False.
+            Padrão False.
 
     Returns:
-        pl.DataFrame com colunas:
-            - BondType
-            - MaturityDate
-            - DISpread (decimal ou bps conforme parâmetro)
+        pl.DataFrame: DataFrame com as colunas do spread.
+
+    Output Columns:
+        * BondType (String): Tipo do título.
+        * MaturityDate (Date): Data de vencimento.
+        * DISpread (Float64): Spread em decimal ou bps conforme parâmetro.
 
     Examples:
         >>> from pyield import pre
@@ -171,7 +176,7 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
         │ NTN-F    ┆ 2035-01-01   ┆ 22.0     │
         └──────────┴──────────────┴──────────┘
     """
-    # Fetch bond rates, filtering for LTN and NTN-F types
+    # Busca taxas dos títulos (LTN e NTN-F)
     df = (
         tpf.tpf_data(date, "PRE")
         .with_columns(DISpread=pl.col("IndicativeRate") - pl.col("DIRate"))
