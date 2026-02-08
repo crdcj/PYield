@@ -4,10 +4,10 @@ from unittest.mock import patch
 import polars as pl
 
 from pyield.bc.repo import (
-    _handle_zero_volume,  # noqa: PLC2701
-    _process_df,  # noqa: PLC2701
-    _read_csv_data,  # noqa: PLC2701
-    _sort_and_select_columns,  # noqa: PLC2701
+    _ajustar_volume_zero,  # noqa: PLC2701
+    _ler_csv,  # noqa: PLC2701
+    _ordenar_selecionar_colunas,  # noqa: PLC2701
+    _processar_df,  # noqa: PLC2701
     repos,
 )
 
@@ -25,10 +25,10 @@ def _load_expected() -> pl.DataFrame:
 
 
 def _process_csv(csv_text: str) -> pl.DataFrame:
-    df = _read_csv_data(csv_text)
-    df = _process_df(df)
-    df = _handle_zero_volume(df)
-    return _sort_and_select_columns(df)
+    df = _ler_csv(csv_text)
+    df = _processar_df(df)
+    df = _ajustar_volume_zero(df)
+    return _ordenar_selecionar_colunas(df)
 
 
 def test_process_csv_data():
@@ -39,14 +39,14 @@ def test_process_csv_data():
 
 def test_repos_with_mock():
     """repos() with mocked fetch must match the reference parquet."""
-    with patch("pyield.bc.repo._fetch_api_csv", return_value=_load_csv()):
+    with patch("pyield.bc.repo._buscar_csv_api", return_value=_load_csv()):
         result = repos(start="21-08-2025", end="21-08-2025")
     assert result.equals(_load_expected())
 
 
 def test_empty_csv_returns_empty():
     """Empty API response returns empty DataFrame."""
-    with patch("pyield.bc.repo._fetch_api_csv", return_value=""):
+    with patch("pyield.bc.repo._buscar_csv_api", return_value=""):
         result = repos(start="21-08-2025", end="21-08-2025")
     assert isinstance(result, pl.DataFrame)
     assert result.is_empty()

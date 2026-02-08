@@ -23,9 +23,9 @@ from pyield import bday
 from pyield.retry import default_retry
 from pyield.types import DateLike
 
-logger = logging.getLogger(__name__)
+registro = logging.getLogger(__name__)
 
-COLUMN_MAP = {
+MAPA_COLUNAS = {
     "id": ("id", pl.String),
     "dataMovimento": ("data_leilao", pl.Date),
     "horaInicio": ("hora_inicio", pl.Time),
@@ -41,10 +41,10 @@ COLUMN_MAP = {
     "percentualCorte": ("percentual_corte", pl.Float64),
 }
 
-API_SCHEMA = {col: dtype for col, (_, dtype) in COLUMN_MAP.items()}
-COLUMN_MAPPING = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
+ESQUEMA_API = {col: dtype for col, (_, dtype) in MAPA_COLUNAS.items()}
+MAPEAMENTO_COLUNAS = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
 
-FINAL_COLUMN_ORDER = [
+ORDEM_COLUNAS_FINAL = [
     "data_leilao",
     "data_liquidacao",
     "data_retorno",
@@ -59,29 +59,29 @@ FINAL_COLUMN_ORDER = [
     "percentual_aceito",
 ]
 
-SORTING_KEYS = ["data_leilao", "hora_inicio", "tipo_oferta"]
+CHAVES_ORDENACAO = ["data_leilao", "hora_inicio", "tipo_oferta"]
 
-API_BASE_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloes_compromissadas(dataLancamentoInicio=@dataLancamentoInicio,dataLancamentoFim=@dataLancamentoFim,horaInicio=@horaInicio,dataLiquidacao=@dataLiquidacao,dataRetorno=@dataRetorno,publicoPermitidoLeilao=@publicoPermitidoLeilao,nomeTipoOferta=@nomeTipoOferta)?"
+URL_BASE_API = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloes_compromissadas(dataLancamentoInicio=@dataLancamentoInicio,dataLancamentoFim=@dataLancamentoFim,horaInicio=@horaInicio,dataLiquidacao=@dataLiquidacao,dataRetorno=@dataRetorno,publicoPermitidoLeilao=@publicoPermitidoLeilao,nomeTipoOferta=@nomeTipoOferta)?"
 
 
-def _build_url(start: DateLike | None, end: DateLike | None) -> str:
+def _montar_url(inicio: DateLike | None, fim: DateLike | None) -> str:
     """Monta URL de consulta conforme parâmetros opcionais de início e fim.
 
     Regras da API:
-        - Apenas start: retorna de start até o fim da série.
-        - Apenas end: retorna do início da série até end.
+        - Apenas início: retorna de início até o fim da série.
+        - Apenas fim: retorna do início da série até fim.
         - Ambos ausentes: retorna a série completa.
     """
-    url = API_BASE_URL
-    if start:
-        start = cv.convert_dates(start)
-        start_str = start.strftime("%Y-%m-%d")
-        url += f"@dataLancamentoInicio='{start_str}'"
+    url = URL_BASE_API
+    if inicio:
+        inicio = cv.convert_dates(inicio)
+        inicio_str = inicio.strftime("%Y-%m-%d")
+        url += f"@dataLancamentoInicio='{inicio_str}'"
 
-    if end:
-        end = cv.convert_dates(end)
-        end_str = end.strftime("%Y-%m-%d")
-        url += f"&@dataLancamentoFim='{end_str}'"
+    if fim:
+        fim = cv.convert_dates(fim)
+        fim_str = fim.strftime("%Y-%m-%d")
+        url += f"&@dataLancamentoFim='{fim_str}'"
 
     url += "&$format=text/csv"  # Adiciona o formato CSV ao final
 
@@ -89,31 +89,31 @@ def _build_url(start: DateLike | None, end: DateLike | None) -> str:
 
 
 @default_retry
-def _fetch_api_csv(url: str) -> str:
+def _buscar_csv_api(url: str) -> str:
     """Executa requisição HTTP e retorna o corpo CSV como string.
 
     Decorado com ``default_retry`` para resiliência a falhas transitórias.
     Levanta exceções de status HTTP para tratamento a montante.
     """
-    response = requests.get(url, timeout=10)
-    response.raise_for_status()
-    return response.text
+    r = requests.get(url, timeout=10)
+    r.raise_for_status()
+    return r.text
 
 
-def _read_csv_data(csv_text: str) -> pl.DataFrame:
+def _ler_csv(csv_texto: str) -> pl.DataFrame:
     """Lê o CSV (texto) em um DataFrame Polars com esquema definido.
 
     Usa decimal_comma=True para tratar números no formato brasileiro ("14,9").
     """
     return pl.read_csv(
-        io.StringIO(csv_text),
+        io.StringIO(csv_texto),
         decimal_comma=True,
         null_values=["null", ""],
-        schema_overrides=API_SCHEMA,
+        schema_overrides=ESQUEMA_API,
     )
 
 
-def _process_df(df: pl.DataFrame) -> pl.DataFrame:
+def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     """Aplica transformações numéricas e calcula prazo em dias úteis.
 
     Transformações:
@@ -121,7 +121,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
         - taxa_corte: porcentagem → fração decimal (rounded 6 casas).
         - prazo_dias_uteis: calculado via calendário de negócios (bday.count).
     """
-    df = df.rename(COLUMN_MAPPING).with_columns(
+    df = df.rename(MAPEAMENTO_COLUNAS).with_columns(
         volume_aceito=1000 * pl.col("volume_aceito"),
         # porcentagem -> fração
         taxa_corte=pl.col("taxa_corte").truediv(100).round(6),
@@ -135,7 +135,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _handle_zero_volume(df: pl.DataFrame) -> pl.DataFrame:
+def _ajustar_volume_zero(df: pl.DataFrame) -> pl.DataFrame:
     """Ajusta a taxa_corte e o percentual_aceito quando volume_aceito = 0."""
     return df.with_columns(
         taxa_corte=pl.when(pl.col("volume_aceito") == 0)
@@ -147,10 +147,10 @@ def _handle_zero_volume(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def _sort_and_select_columns(df: pl.DataFrame) -> pl.DataFrame:
+def _ordenar_selecionar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     """Reordena colunas e ordena linhas para saída consistente e determinística."""
-    selected_cols = [col for col in FINAL_COLUMN_ORDER if col in df.columns]
-    return df.select(selected_cols).sort(by=SORTING_KEYS)
+    colunas_selecionadas = [col for col in ORDEM_COLUNAS_FINAL if col in df.columns]
+    return df.select(colunas_selecionadas).sort(by=CHAVES_ORDENACAO)
 
 
 def repos(
@@ -205,17 +205,17 @@ def repos(
         └─────────────┴─────────────────┴──────────────┴─────────────┴───┴───────────────────┴───────────────┴────────────┴───────────────────┘
     """  # noqa: E501
     try:
-        url = _build_url(start=start, end=end)
-        logger.debug(f"Consultando API do BC: {url}")
-        api_csv = _fetch_api_csv(url)
-        df = _read_csv_data(api_csv)
+        url = _montar_url(inicio=start, fim=end)
+        registro.debug(f"Consultando API do BC: {url}")
+        csv_api = _buscar_csv_api(url)
+        df = _ler_csv(csv_api)
         if df.is_empty():
-            logger.warning("Sem dados de leilões para o período especificado.")
+            registro.warning("Sem dados de leilões para o período especificado.")
             return pl.DataFrame()
-        df = _process_df(df)
-        df = _handle_zero_volume(df)
-        df = _sort_and_select_columns(df)
+        df = _processar_df(df)
+        df = _ajustar_volume_zero(df)
+        df = _ordenar_selecionar_colunas(df)
         return df
     except Exception as e:
-        logger.exception(f"Erro ao buscar dados de leilões na API do BC: {e}")
+        registro.exception(f"Erro ao buscar dados de leilões na API do BC: {e}")
         return pl.DataFrame()
