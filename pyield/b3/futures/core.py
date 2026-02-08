@@ -11,26 +11,26 @@ from pyield import clock
 from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield.types import DateLike, any_is_empty
 
-ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
+OpcoesContrato = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
 logger = logging.getLogger(__name__)
 
 
 # Pregão abre às 9:00, porém os dados têm atraso de 15 minutos.
 # Esperar 1 minuto adicional para garantir que estejam disponíveis (9:16h).
-INTRADAY_START_TIME = dt.time(9, 16)
+HORA_INICIO_INTRADAY = dt.time(9, 16)
 # Pregão fecha às 18:00h, momento em que os dados consolidados começam a ser preparados.
-INTRADAY_END_TIME = dt.time(18, 30)
+HORA_FIM_INTRADAY = dt.time(18, 30)
 
 
-def _is_intraday_date(check_date: dt.date) -> bool:
-    """Check if a date is a trading day."""
+def _data_intraday_valida(data_verificacao: dt.date) -> bool:
+    """Verifica se a data é um dia de negociação intraday."""
     # Primeiro valida regra geral de dia futuro / não útil / datas especiais
-    if not cm._data_negociacao_valida(check_date):
+    if not cm._data_negociacao_valida(data_verificacao):
         return False
 
     # Intraday só existe para 'hoje'
-    today_bz = clock.today()
-    if check_date != today_bz:
+    hoje_brasil = clock.today()
+    if data_verificacao != hoje_brasil:
         return False
 
     return True
@@ -38,7 +38,7 @@ def _is_intraday_date(check_date: dt.date) -> bool:
 
 def futures(
     date: DateLike,
-    contract_code: ContractOptions | str,
+    contract_code: OpcoesContrato | str,
 ) -> pl.DataFrame:
     """
     Fetches data for a specified futures contract based on type and reference date.
@@ -108,31 +108,36 @@ def futures(
     """  # noqa: E501
     if any_is_empty(date, contract_code):
         return pl.DataFrame()
-    trade_date = cv.convert_dates(date)
+    data_negociacao = cv.convert_dates(date)
 
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
-    if not cm._data_negociacao_valida(trade_date):
-        logger.warning(f"{trade_date} is not a valid date. Returning empty DataFrame.")
+    if not cm._data_negociacao_valida(data_negociacao):
+        logger.warning(
+            "A data %s não é válida. Retornando DataFrame vazio.",
+            data_negociacao,
+        )
         return pl.DataFrame()
 
-    selected_contract = str(contract_code).upper()
+    contrato_selecionado = str(contract_code).upper()
 
-    if _is_intraday_date(trade_date):
+    if _data_intraday_valida(data_negociacao):
         # É um dia de negociação intraday
-        time = clock.now().time()
-        if time < INTRADAY_START_TIME:  # Mercado não está aberto ainda
-            logger.warning("Market is not open yet. Returning an empty DataFrame. ")
+        horario_atual = clock.now().time()
+        if horario_atual < HORA_INICIO_INTRADAY:  # Mercado não está aberto ainda
+            logger.warning("Mercado ainda não abriu. Retornando DataFrame vazio.")
             return pl.DataFrame()
 
         # Existe a chance de que os dados consolidados estejam disponíveis após as 18h
-        if time >= INTRADAY_END_TIME:
-            df_hist = hcore._buscar_df_historico(trade_date, selected_contract)
+        if horario_atual >= HORA_FIM_INTRADAY:
+            df_hist = hcore._buscar_df_historico(
+                data_negociacao, contrato_selecionado
+            )
             if not df_hist.is_empty():
-                logger.info("Consolidated data is already available and will be used.")
+                logger.info("Dados consolidados disponíveis. Usando histórico.")
                 return df_hist
 
         # Mercado está aberto e não há dados consolidados disponíveis ainda
-        return fetch_intraday_df(selected_contract)
+        return fetch_intraday_df(contrato_selecionado)
 
     else:  # É um dia histórico
-        return hcore._buscar_df_historico(trade_date, selected_contract)
+        return hcore._buscar_df_historico(data_negociacao, contrato_selecionado)

@@ -1,5 +1,5 @@
 """
-Example of JSON data from B3 API for DI1 contract:
+Exemplo de JSON da API da B3 para o contrato DI1:
 [
     {'SctyQtn': {
         'bottomLmtPric': 12.43,
@@ -38,49 +38,52 @@ from pyield import bday, clock
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
-BASE_URL = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
+URL_BASE = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
 
 
 # Pregão abre às 9:00, porém os dados têm atraso de 15 minutos.
 # Esperar 1 minuto adicional para garantir que estejam disponíveis (9:16h).
-INTRADAY_START_TIME = dt.time(9, 16)
+HORA_INICIO_INTRADAY = dt.time(9, 16)
 
-# Set up logging
 logger = logging.getLogger(__name__)
 
 
 @default_retry
-def _fetch_json(contract_code: str) -> list[dict]:
-    url = f"{BASE_URL}/{contract_code}"
-    headers = {
+def _buscar_json(codigo_contrato: str) -> list[dict]:
+    url = f"{URL_BASE}/{codigo_contrato}"
+    cabecalhos = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"  # noqa: E501
     }
-    r = requests.get(url, headers=headers, timeout=10)
-    r.raise_for_status()
-    r.encoding = "utf-8"
+    resposta = requests.get(url, headers=cabecalhos, timeout=10)
+    resposta.raise_for_status()
+    resposta.encoding = "utf-8"
 
-    # Check if the response contains the expected data
-    if "Quotation not available" in r.text or "curPrc" not in r.text:
-        log_ts = clock.now().strftime("%d-%m-%Y %H:%M")
-        logger.warning(f"No intraday data available for {contract_code} at {log_ts}.")
+    # Verifica se a resposta contém os dados esperados
+    if "Quotation not available" in resposta.text or "curPrc" not in resposta.text:
+        data_log = clock.now().strftime("%d-%m-%Y %H:%M")
+        logger.warning(
+            "Sem dados intraday para %s em %s.",
+            codigo_contrato,
+            data_log,
+        )
         return []
 
-    return r.json()["Scty"]
+    return resposta.json()["Scty"]
 
 
-def _convert_json(json_data: list[dict]) -> pl.DataFrame:
-    if not json_data:
+def _converter_json(dados_json: list[dict]) -> pl.DataFrame:
+    if not dados_json:
         return pl.DataFrame()
     # Normalize JSON response into a flat table
-    return pl.json_normalize(json_data)
+    return pl.json_normalize(dados_json)
 
 
-def _process_columns(df: pl.DataFrame) -> pl.DataFrame:
+def _processar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     df.columns = [
         c.replace("SctyQtn.", "").replace("asset.AsstSummry.", "") for c in df.columns
     ]
 
-    rename_map = {
+    mapa_renomeacao = {
         "symb": "TickerSymbol",
         # "desc": "Description",
         # "asset.code": "AssetCode",
@@ -101,53 +104,53 @@ def _process_columns(df: pl.DataFrame) -> pl.DataFrame:
         "buyOffer.price": "LastAskRate",
         "sellOffer.price": "LastBidRate",
     }
-    df = df.select(rename_map.keys()).rename(rename_map, strict=False)
+    df = df.select(mapa_renomeacao.keys()).rename(mapa_renomeacao, strict=False)
     return df
 
 
-def _pre_process_df(df: pl.DataFrame) -> pl.DataFrame:
+def _preprocessar_df(df: pl.DataFrame) -> pl.DataFrame:
     df = (
         df.with_columns(
             pl.col("ExpirationDate").str.to_date(format="%Y-%m-%d", strict=False)
         )
         .drop_nulls(subset=["ExpirationDate"])
-        .filter(pl.col("TickerSymbol") != "DI1D")  # Remove api dummy contract
+        .filter(pl.col("TickerSymbol") != "DI1D")  # Remove contrato dummy da API
         .sort("ExpirationDate")
     )
     return df
 
 
-def _process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
-    trade_date = bday.last_business_day()
+def _processar_df(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+    data_negociacao = bday.last_business_day()
     df = df.with_columns(
         # Remove percentage in all rate columns
         cs.contains("Rate").truediv(100).round(5),
-        TradeDate=trade_date,
+        TradeDate=data_negociacao,
         LastUpdate=clock.now() - dt.timedelta(minutes=15),
-        DaysToExp=(pl.col("ExpirationDate") - trade_date).dt.total_days(),
+        DaysToExp=(pl.col("ExpirationDate") - data_negociacao).dt.total_days(),
     )
 
-    df = df.with_columns(BDaysToExp=bday.count_expr(trade_date, "ExpirationDate"))
+    df = df.with_columns(BDaysToExp=bday.count_expr(data_negociacao, "ExpirationDate"))
 
-    if contract_code in {"DI1", "DAP"}:  # Add LastPrice for DI1 and DAP
-        fwd_rate = forwards(bdays=df["BDaysToExp"], rates=df["LastRate"])
-        byears = pl.col("BDaysToExp") / 252
-        last_price = 100_000 / ((1 + pl.col("LastRate")) ** byears)
+    if codigo_contrato in {"DI1", "DAP"}:  # Adiciona LastPrice para DI1 e DAP
+        taxa_fwd = forwards(bdays=df["BDaysToExp"], rates=df["LastRate"])
+        anos_uteis = pl.col("BDaysToExp") / 252
+        ultimo_preco = 100_000 / ((1 + pl.col("LastRate")) ** anos_uteis)
         df = df.with_columns(
-            LastPrice=last_price.round(2),
-            ForwardRate=fwd_rate,
+            LastPrice=ultimo_preco.round(2),
+            ForwardRate=taxa_fwd,
         )
 
-    if contract_code == "DI1":  # Add DV01 for DI1
-        duration = pl.col("BDaysToExp") / 252
-        modified_duration = duration / (1 + pl.col("LastRate"))
-        df = df.with_columns(DV01=0.0001 * modified_duration * pl.col("LastPrice"))
+    if codigo_contrato == "DI1":  # Adiciona DV01 para DI1
+        duracao = pl.col("BDaysToExp") / 252
+        duracao_mod = duracao / (1 + pl.col("LastRate"))
+        df = df.with_columns(DV01=0.0001 * duracao_mod * pl.col("LastPrice"))
 
     return df.filter(pl.col("DaysToExp") > 0)  # Remove expiring contracts
 
 
-def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
-    all_columns = [
+def _selecionar_e_reordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
+    todas_colunas = [
         "TradeDate",
         "LastUpdate",
         "TickerSymbol",
@@ -172,27 +175,31 @@ def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
         "LastRate",
         "ForwardRate",
     ]
-    reordered_columns = [col for col in all_columns if col in df.columns]
-    return df.select(reordered_columns)
+    colunas_reordenadas = [col for col in todas_colunas if col in df.columns]
+    return df.select(colunas_reordenadas)
 
 
-def fetch_intraday_df(contract_code: str) -> pl.DataFrame:
+def fetch_intraday_df(codigo_contrato: str) -> pl.DataFrame:
     """
-    Fetch the latest futures data from B3.
+    Busca os dados intraday mais recentes da B3.
 
     Returns:
-        pl.DataFrame: A Polars DataFrame containing the latest DI futures data.
+        pl.DataFrame: DataFrame Polars contendo os dados intraday mais recentes.
     """
     try:
-        json_data = _fetch_json(contract_code)
-        if not json_data:
+        dados_json = _buscar_json(codigo_contrato)
+        if not dados_json:
             return pl.DataFrame()
-        df = _convert_json(json_data)
-        df = _process_columns(df)
-        df = _pre_process_df(df)
-        df = _process_df(df, contract_code)
-        df = _select_and_reorder_columns(df)
+        df = _converter_json(dados_json)
+        df = _processar_colunas(df)
+        df = _preprocessar_df(df)
+        df = _processar_df(df, codigo_contrato)
+        df = _selecionar_e_reordenar_colunas(df)
         return df
     except Exception as e:
-        logger.exception(f"CRITICAL: Pipeline failed for {contract_code}. Error: {e}")
+        logger.exception(
+            "CRITICAL: Pipeline falhou para %s. Erro: %s",
+            codigo_contrato,
+            e,
+        )
         return pl.DataFrame()

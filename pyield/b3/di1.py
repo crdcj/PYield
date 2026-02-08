@@ -189,9 +189,7 @@ def _montar_df_entrada(
 
         # CASO 4: Ambos são escalares
         case dt.date() as d, dt.date() as e:
-            df_entrada = pl.DataFrame(
-                {"TradeDate": [d], "ExpirationDate": [e]}
-            )
+            df_entrada = pl.DataFrame({"TradeDate": [d], "ExpirationDate": [e]})
 
         # QUALQUER OUTRA COISA
         case _:
@@ -286,7 +284,7 @@ def interpolate_rates(
     """
     if any_is_empty(dates, expirations):
         registro.warning(
-            "As entradas 'dates' e 'expirations' são obrigatórias. Retornando Series vazia."
+            "'dates' e 'expirations' são necessários. Retornando série vazia."
         )
         return pl.Series(dtype=pl.Float64)
 
@@ -410,9 +408,7 @@ def interpolate_rate(
     if not isinstance(data_convertida, dt.date) or not isinstance(
         vencimento_convertido, dt.date
     ):
-        raise ValueError(
-            "As entradas 'date' e 'expiration' devem ser datas escalares."
-        )
+        raise ValueError("As entradas 'date' e 'expiration' devem ser datas escalares.")
 
     # Obtém o DataFrame de contratos DI
     df_di = _obter_dados(datas=data_convertida)
