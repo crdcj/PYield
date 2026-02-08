@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Definição unificada das colunas: chave_api -> (novo_nome, tipo)
 # "prazo" foi omitido pois algumas vezes não vem na API
-COLUMN_DEFINITIONS = {
+DEFINICOES_COLUNAS = {
     "data_leilao": ("data_1v", pl.String),
     "liquidacao": ("data_liquidacao_1v", pl.String),
     "liquidacao_segunda_volta": ("data_liquidacao_2v", pl.String),
@@ -39,10 +39,10 @@ COLUMN_DEFINITIONS = {
     "taxa_maxima": ("taxa_maxima", pl.Float64),
 }
 
-DATA_SCHEMA = {k: v[1] for k, v in COLUMN_DEFINITIONS.items()}
-COLUMN_MAP = {k: v[0] for k, v in COLUMN_DEFINITIONS.items()}
+ESQUEMA_DADOS = {k: v[1] for k, v in DEFINICOES_COLUNAS.items()}
+MAPA_COLUNAS = {k: v[0] for k, v in DEFINICOES_COLUNAS.items()}
 
-FINAL_COLUMN_ORDER = [
+ORDEM_FINAL_COLUNAS = [
     "data_1v",
     "data_liquidacao_1v",
     "data_liquidacao_2v",
@@ -124,24 +124,24 @@ def _buscar_dados_leilao(data_leilao: dt.date) -> list[dict]:
         "status": "ok"
         }
     """
-    endpoint = (
+    endpoint_api = (
         "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/resultados"
     )
-    params = {"dataleilao": data_leilao.strftime("%d/%m/%Y")}
+    parametros = {"dataleilao": data_leilao.strftime("%d/%m/%Y")}
 
-    response = requests.get(endpoint, params=params, timeout=10)
-    response.raise_for_status()
-    data = response.json()
-    if "registros" not in data or not data["registros"]:
+    resposta = requests.get(endpoint_api, params=parametros, timeout=10)
+    resposta.raise_for_status()
+    dados = resposta.json()
+    if "registros" not in dados or not dados["registros"]:
         return []
-    return data["registros"]
+    return dados["registros"]
 
 
 def _transformar_dados_brutos(raw_data: list[dict]) -> pl.DataFrame:
     """Converte dados brutos em um DataFrame Polars limpo e tipado."""
     # 1. Criação inicial do DataFrame
     # O schema_overrides ajuda nos tipos, mas não cria colunas que não vieram no JSON
-    df = pl.from_dicts(raw_data, schema_overrides=DATA_SCHEMA)
+    df = pl.from_dicts(raw_data, schema_overrides=ESQUEMA_DADOS)
 
     # 2. Tratamento defensivo para colunas de Segunda Volta (que podem não existir)
     # Lista de colunas opcionais e seus tipos
@@ -159,7 +159,7 @@ def _transformar_dados_brutos(raw_data: list[dict]) -> pl.DataFrame:
             df = df.with_columns(pl.lit(None, dtype=dtype).alias(col_name))
 
     df = (
-        df.rename(COLUMN_MAP)
+        df.rename(MAPA_COLUNAS)
         .with_columns(
             # Conversão de datas
             cs.starts_with("data_").str.strptime(pl.Date, "%d/%m/%Y"),
@@ -191,7 +191,7 @@ def _transformar_dados_brutos(raw_data: list[dict]) -> pl.DataFrame:
             colocacao_2v=(
                 pl.col("quantidade_aceita_2v") / pl.col("quantidade_ofertada_2v")
             ),
-            # Deixar um marcador de que o pu_medio não é original
+            # Define se o pu_medio é original ou recalculado
             tipo_pu_medio=pl.when(pl.col("pu_medio") == 0)
             .then(pl.lit("calculado"))
             .otherwise(pl.lit("original")),
@@ -282,7 +282,7 @@ def _adicionar_duration(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def _adicionar_prazo_medio(df: pl.DataFrame) -> pl.DataFrame:
-    # Na metodolgia do Tesouro Nacional, a maturidade média é a mesma que a duração
+    # Na metodologia do Tesouro Nacional, a maturidade média é a mesma que a duração
     df = df.with_columns(
         pl.when(pl.col("titulo") == "LFT")
         .then(pl.col("dias_uteis") / 252)
@@ -339,7 +339,7 @@ def _adicionar_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     df_ptax = _buscar_ptax(data_leilao=data_leilao)
     if df_ptax.is_empty():
         # Se não houver dados de PTAX, retorna o DataFrame original sem alterações
-        logger.warning("No PTAX data available to calculate DV01 in USD.")
+        logger.warning("Sem dados de PTAX para calcular DV01 em USD.")
         return df
 
     df = (
@@ -354,8 +354,8 @@ def _adicionar_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
 
 def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     """Seleciona as colunas finais e ordena o DataFrame para saída."""
-    selected_cols = [col for col in FINAL_COLUMN_ORDER if col in df.columns]
-    return df.select(selected_cols).sort("data_1v", "titulo", "data_vencimento")
+    colunas_selecionadas = [col for col in ORDEM_FINAL_COLUNAS if col in df.columns]
+    return df.select(colunas_selecionadas).sort("data_1v", "titulo", "data_vencimento")
 
 
 def auction(auction_date: DateLike) -> pl.DataFrame:
@@ -421,15 +421,15 @@ def auction(auction_date: DateLike) -> pl.DataFrame:
         * taxa_maxima (Float64): taxa de juros máxima aceita, taxa de corte (decimal).
     """
     if any_is_empty(auction_date):
-        logger.info("No auction date provided.")
+        logger.info("Nenhuma data de leilão informada.")
         return pl.DataFrame()
     try:
         auction_date = cv.convert_dates(auction_date)
-        data_leilao = _buscar_dados_leilao(auction_date)
-        if not data_leilao:
-            logger.info(f"No auction data available for {auction_date}.")
+        dados_leilao = _buscar_dados_leilao(auction_date)
+        if not dados_leilao:
+            logger.info("Sem dados de leilão disponíveis para %s.", auction_date)
             return pl.DataFrame()
-        df = _transformar_dados_brutos(data_leilao)
+        df = _transformar_dados_brutos(dados_leilao)
         df = _adicionar_duration(df)
         df = _adicionar_dv01(df)
         df = _adicionar_dv01_usd(df)
@@ -441,8 +441,8 @@ def auction(auction_date: DateLike) -> pl.DataFrame:
         return df
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"An error occurred during the API request: {e}")
+        logger.error("Erro durante a requisição da API: %s", e)
         return pl.DataFrame()
     except (ValueError, TypeError) as e:
-        logger.error(f"An error occurred while parsing the JSON response: {e}")
+        logger.error("Erro ao processar a resposta JSON: %s", e)
         return pl.DataFrame()
