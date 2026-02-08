@@ -1,5 +1,5 @@
 """
-HTML page example:
+Exemplo de página HTML:
     Título Codigo Selic  Código ISIN Data de Vencimento Quantidade em Mercado (1.000 Títulos)    PU (R$) Valor de Mercado (R$ Mil)  Variação da Quantidade  (1.000 Títulos)        Status do Titulo
        LTN       100000 BRSTNCLTN863         01/10/2025                           115.870,772 997,241543               115.551.147                                    0,000 Participante Definitivo
        LTN       100000 BRSTNCLTN7U7         01/01/2026                           176.807,732 963,001853               170.266.174                                   -1,987 Participante Definitivo
@@ -22,9 +22,9 @@ from pyield.types import DateLike, any_is_empty
 
 logger = logging.getLogger(__name__)
 
-IMA_URL = "https://www.anbima.com.br/informacoes/ima/ima-quantidade-mercado.asp"
+URL_IMA = "https://www.anbima.com.br/informacoes/ima/ima-quantidade-mercado.asp"
 
-COLUMN_MAP = {
+MAPA_COLUNAS = {
     "Título": ("BondType", pl.String),
     "Codigo Selic": ("SelicCode", pl.Int64),
     "Código ISIN": ("ISIN", pl.String),
@@ -36,10 +36,10 @@ COLUMN_MAP = {
     "Status do Titulo": ("BondStatus", pl.String),
 }
 
-COLUMN_ALIASES = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
-DATA_SCHEMA = {alias: dtype for _, (alias, dtype) in COLUMN_MAP.items()}
+ALIAS_COLUNAS = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
+ESQUEMA_DADOS = {alias: dtype for _, (alias, dtype) in MAPA_COLUNAS.items()}
 
-INT_COLUMNS = [
+COLUNAS_INT = [
     "MarketQuantity",
     "MarketValue",
     "QuantityVariation",
@@ -47,7 +47,7 @@ INT_COLUMNS = [
     "MarketDV01USD",
 ]
 
-FINAL_COLUMN_ORDER = [
+ORDEM_COLUNAS_FINAL = [
     "Date",
     "BondType",
     "MaturityDate",
@@ -63,68 +63,67 @@ FINAL_COLUMN_ORDER = [
 ]
 
 
-def _fetch_url_content(target_date: dt.date) -> bytes:
-    target_date_str = target_date.strftime("%d/%m/%Y")
+def _buscar_conteudo_url(data_referencia: dt.date) -> bytes:
+    data_referencia_str = data_referencia.strftime("%d/%m/%Y")
     payload = {
         "Tipo": "",
         "DataRef": "",
         "Pai": "ima",
         "Dt_Ref_Ver": "20250117",
-        "Dt_Ref": f"{target_date_str}",
+        "Dt_Ref": f"{data_referencia_str}",
     }
 
-    r = requests.post(IMA_URL, data=payload, timeout=10)
-    r.raise_for_status()
-    if "Não há dados disponíveis" in r.text:
+    resposta = requests.post(URL_IMA, data=payload, timeout=10)
+    resposta.raise_for_status()
+    if "Não há dados disponíveis" in resposta.text:
         return b""
-    return r.content
+    return resposta.content
 
 
-def _extract_reference_date(html_content: bytes) -> dt.date | None:
-    """
-    Extract reference date from HTML content.
+def _extrair_data_referencia(html_content: bytes) -> dt.date | None:
+    """Extrai a data de referência a partir do HTML.
 
     Returns:
-        The reference date found in the HTML, or None if not found.
+        A data de referência encontrada ou None se não for possível identificar.
     """
-    date_pattern = r"\b(\d{2}/\d{2}/\d{4})\b"
-    match = re.search(date_pattern, html_content.decode("iso-8859-1"))
+    padrao_data = r"\b(\d{2}/\d{2}/\d{4})\b"
+    match = re.search(padrao_data, html_content.decode("iso-8859-1"))
 
     if not match:
         return None
 
-    date_string = match.group(1)
-    return dt.datetime.strptime(date_string, "%d/%m/%Y").date()
+    data_str = match.group(1)
+    return dt.datetime.strptime(data_str, "%d/%m/%Y").date()
 
 
-def _normalize_column_name(text: str) -> str:
-    """Normalize column header by removing line breaks and extra spaces."""
-    return " ".join(text.strip().split())
+def _normalizar_nome_coluna(texto: str) -> str:
+    """Normaliza cabeçalhos removendo quebras de linha e espaços extras."""
+    return " ".join(texto.strip().split())
 
 
-def _parse_cell_value(text: str) -> str:
+def _parsear_valor_celula(texto: str) -> str:
     """
-    Parse cell value, converting Brazilian number format to standard.
+    Converte valor de célula do formato brasileiro para o padrão.
 
-    Brazilian format: 129.253,568 -> 129253.568
-    Handles missing values (--) by returning empty string.
+    Formato brasileiro: 129.253,568 -> 129253.568
+    Valores ausentes (--) retornam string vazia.
     """
-    text = text.strip()
+    texto = texto.strip()
 
-    if text == "--" or not text:
+    if texto == "--" or not texto:
         return ""
 
     # Convert Brazilian number format
-    if "," in text or "." in text:
-        if any(c.isdigit() for c in text):
-            text = text.replace(".", "")  # Remove thousands separator
-            text = text.replace(",", ".")  # Replace decimal separator
+    if "," in texto or "." in texto:
+        if any(c.isdigit() for c in texto):
+            texto = texto.replace(".", "")  # Remove separador de milhar
+            texto = texto.replace(",", ".")  # Substitui separador decimal
 
-    return text
+    return texto
 
 
-def _parse_html_tables(html_content: bytes) -> pl.DataFrame:
-    """Parse HTML tables using lxml e retorna DataFrame (colunas String).
+def _parsear_tabelas_html(html_content: bytes) -> pl.DataFrame:
+    """Parseia tabelas HTML com lxml e retorna DataFrame (colunas String).
 
     Extrai dados das tabelas aninhadas (com parent::td),
     converte formato numérico brasileiro e retorna DataFrame bruto.
@@ -136,31 +135,33 @@ def _parse_html_tables(html_content: bytes) -> pl.DataFrame:
 
     nested_tables = tree.xpath("//table[@width='100%'][parent::td]")
 
-    all_data = []
-    col_names = None
+    dados = []
+    nomes_colunas = None
 
     for table in nested_tables:  # type: ignore[misc]
         headers = table.xpath(".//thead//th")
-        if not col_names:
-            col_names = [_normalize_column_name(h.text_content()) for h in headers]
+        if not nomes_colunas:
+            nomes_colunas = [
+                _normalizar_nome_coluna(h.text_content()) for h in headers
+            ]
 
         data_rows = table.xpath(".//tbody//tr[td]")
         for row in data_rows:
             cells = row.xpath(".//td")
-            if len(cells) != len(col_names):
+            if len(cells) != len(nomes_colunas):
                 continue
-            all_data.append([_parse_cell_value(c.text_content()) for c in cells])
+            dados.append([_parsear_valor_celula(c.text_content()) for c in cells])
 
-    if not all_data or not col_names:
+    if not dados or not nomes_colunas:
         return pl.DataFrame()
 
-    return pl.DataFrame(all_data, schema=col_names, orient="row")
+    return pl.DataFrame(dados, schema=nomes_colunas, orient="row")
 
 
-def _process_df(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
+def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
     """Renomeia, filtra, converte tipos e aplica transformações numéricas."""
     return (
-        df.rename(COLUMN_ALIASES)
+        df.rename(ALIAS_COLUNAS)
         # Strip whitespace e converte strings vazias em null
         .with_columns(ps.string().str.strip_chars().name.keep())
         .with_columns(
@@ -174,22 +175,22 @@ def _process_df(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
             pl.col("BondType") != "Título",
         )
         .unique(subset="ISIN")
-        .cast(DATA_SCHEMA)
+        .cast(ESQUEMA_DADOS)
         .with_columns(
             pl.col("MaturityDate").str.to_date(format="%d/%m/%Y"),
             pl.col("MarketQuantity") * 1000,
             pl.col("MarketValue") * 1000,
             pl.col("QuantityVariation") * 1000,
-            Date=reference_date,
+            Date=data_referencia,
         )
         .sort("BondType", "MaturityDate")
     )
 
 
-def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
-    df_anbima = tpf_data(reference_date)
-    keep_cols = ["ReferenceDate", "BondType", "MaturityDate", "DV01", "DV01USD"]
-    df_anbima = df_anbima.select(keep_cols).rename({"ReferenceDate": "Date"})
+def _adicionar_dv01(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
+    df_anbima = tpf_data(data_referencia)
+    colunas_manter = ["ReferenceDate", "BondType", "MaturityDate", "DV01", "DV01USD"]
+    df_anbima = df_anbima.select(colunas_manter).rename({"ReferenceDate": "Date"})
     # Guard clause for missing columns
     if "DV01" not in df_anbima.columns or "DV01USD" not in df_anbima.columns:
         return df
@@ -203,10 +204,10 @@ def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
     return df
 
 
-def _finalize(df: pl.DataFrame) -> pl.DataFrame:
+def _finalizar(df: pl.DataFrame) -> pl.DataFrame:
     """Converte colunas inteiras e reordena colunas para saída final."""
-    return df.with_columns(pl.col(INT_COLUMNS).round(0).cast(pl.Int64)).select(
-        FINAL_COLUMN_ORDER
+    return df.with_columns(pl.col(COLUNAS_INT).round(0).cast(pl.Int64)).select(
+        ORDEM_COLUNAS_FINAL
     )
 
 
@@ -241,43 +242,45 @@ def imaq(date: DateLike) -> pl.DataFrame:
 
     Examples:
         >>> from pyield import bday
-        >>> target_date = bday.offset(bday.last_business_day(), -2)
-        >>> df = imaq(target_date)
-        >>> df["Date"].first() == target_date
+        >>> data_ref = bday.offset(bday.last_business_day(), -2)
+        >>> df = imaq(data_ref)
+        >>> df["Date"].first() == data_ref
         True
     """
     if any_is_empty(date):
-        logger.warning("No date provided. Returning empty DataFrame.")
+        logger.warning("Nenhuma data informada. Retornando DataFrame vazio.")
         return pl.DataFrame()
-    date = cv.convert_dates(date)
-    date_str = date.strftime("%d/%m/%Y")
+    data = cv.convert_dates(date)
+    data_str = data.strftime("%d/%m/%Y")
     try:
-        url_content = _fetch_url_content(date)
+        url_content = _buscar_conteudo_url(data)
         if not url_content:
             logger.warning(
-                f"No data available for {date_str}. Returning an empty DataFrame."
+                f"Sem dados disponíveis para {data_str}. Retornando DataFrame vazio."
             )
             return pl.DataFrame()
 
         # ✅ VALIDAÇÃO CRÍTICA EXPLÍCITA NO FLUXO PRINCIPAL
-        reference_date = _extract_reference_date(url_content)
+        data_referencia = _extrair_data_referencia(url_content)
 
-        if reference_date is None:
-            raise ValueError(f"No reference date found in HTML for {date_str}")
-
-        if reference_date != date:
+        if data_referencia is None:
             raise ValueError(
-                f"Reference date mismatch: expected {date_str}, "
-                f"got {reference_date.strftime('%d/%m/%Y')}"
+                f"Não foi possível encontrar data de referência no HTML para {data_str}"
             )
 
-        df = _parse_html_tables(url_content)
+        if data_referencia != data:
+            raise ValueError(
+                f"Data de referência divergente: esperado {data_str}, "
+                f"encontrado {data_referencia.strftime('%d/%m/%Y')}"
+            )
+
+        df = _parsear_tabelas_html(url_content)
         if df.is_empty():
             return pl.DataFrame()
-        df = _process_df(df, date)
-        df = _add_dv01(df, date)
-        return _finalize(df)
+        df = _processar_df(df, data)
+        df = _adicionar_dv01(df, data)
+        return _finalizar(df)
     except Exception:  # Erro inesperado
-        msg = f"Error fetching IMA for {date_str}. Returning empty DataFrame."
+        msg = f"Erro ao buscar IMA para {data_str}. Retornando DataFrame vazio."
         logger.exception(msg)
         return pl.DataFrame()
