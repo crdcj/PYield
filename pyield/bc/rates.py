@@ -23,18 +23,18 @@ from pyield.converters import convert_dates
 from pyield.retry import default_retry
 from pyield.types import DateLike, any_is_empty
 
-logger = logging.getLogger(__name__)
+registro = logging.getLogger(__name__)
 
-BASE_URL = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
-DECIMAL_PLACES_ANNUALIZED = 4  # 2 decimal places in percentage format
-DECIMAL_PLACES_DAILY = 8  # 6 decimal places in percentage format
+URL_BASE = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
+CASAS_DECIMAIS_ANUALIZADA = 4  # 2 casas no formato percentual
+CASAS_DECIMAIS_DIARIA = 8  # 6 casas no formato percentual
 
 # Limite de segurança em dias, correspondendo a ~9.5 anos.
 # Evita a complexidade do cálculo exato de 10 anos-calendário.
-SAFE_DAYS_THRESHOLD = 3500  # aprox 365 * 9.5
+LIMITE_DIAS_SEGURO = 3500  # aprox 365 * 9.5
 
 
-class BCSerie(Enum):
+class SerieBC(Enum):
     """Enum para as séries disponíveis no Banco Central."""
 
     SELIC_OVER = 1178
@@ -43,64 +43,64 @@ class BCSerie(Enum):
 
 
 @default_retry
-def _do_api_call(api_url: str) -> list[dict[str, str]]:
+def _chamar_api(url_api: str) -> list[dict[str, str]]:
     """Executa uma chamada GET na API do BCB e retorna o JSON.
 
     A API retorna um json (lista de dicts com chaves 'data' e 'valor', ambas strings):
         [{"data": "29/01/2025", "valor": "12.15"}, ...]
     """
-    response = requests.get(api_url, timeout=10)
-    response.raise_for_status()
-    return response.json()
+    resposta = requests.get(url_api, timeout=10)
+    resposta.raise_for_status()
+    return resposta.json()
 
 
-def _build_download_url(
-    serie: BCSerie, start: DateLike, end: DateLike | None = None
+def _montar_url_download(
+    serie: SerieBC, inicio: DateLike, fim: DateLike | None = None
 ) -> str:
     """Constrói a URL para download de dados das séries do Banco Central.
 
     Args:
         serie: Valor enum da série a buscar.
-        start: Data inicial para os dados a buscar.
-        end: Data final para os dados.
+        inicio: Data inicial para os dados a buscar.
+        fim: Data final para os dados.
 
     Returns:
         URL formatada para a requisição da API.
     """
-    start = convert_dates(start)
-    start_str = start.strftime("%d/%m/%Y")
+    inicio = convert_dates(inicio)
+    inicio_str = inicio.strftime("%d/%m/%Y")
 
-    api_url = BASE_URL
-    api_url += f"{serie.value}/dados?formato=json"
-    api_url += f"&dataInicial={start_str}"
+    url_api = URL_BASE
+    url_api += f"{serie.value}/dados?formato=json"
+    url_api += f"&dataInicial={inicio_str}"
 
-    if end:
-        end = convert_dates(end)
-        end_str = end.strftime("%d/%m/%Y")
-        api_url += f"&dataFinal={end_str}"
+    if fim:
+        fim = convert_dates(fim)
+        fim_str = fim.strftime("%d/%m/%Y")
+        url_api += f"&dataFinal={fim_str}"
 
-    return api_url
+    return url_api
 
 
-def _fetch_request(
-    serie: BCSerie,
-    start: DateLike,
-    end: DateLike | None,
+def _buscar_requisicao(
+    serie: SerieBC,
+    inicio: DateLike,
+    fim: DateLike | None,
 ) -> pl.DataFrame:
-    """Função worker que busca dados da API."""
+    """Função auxiliar que busca dados da API."""
     # Define o esquema esperado para o DataFrame de retorno.
     # Isso é crucial para os casos em que a API não retorna dados.
-    expected_schema = {"Date": pl.Date, "Value": pl.Float64}
+    esquema_esperado = {"Date": pl.Date, "Value": pl.Float64}
 
-    api_url = _build_download_url(serie, start, end)
+    url_api = _montar_url_download(serie, inicio, fim)
 
     try:
-        data = _do_api_call(api_url)
-        if not data:
-            logger.warning(f"No data available for the requested period: {api_url}")
-            return pl.DataFrame(schema=expected_schema)
+        dados = _chamar_api(url_api)
+        if not dados:
+            registro.warning(f"Sem dados para o período solicitado: {url_api}")
+            return pl.DataFrame(schema=esquema_esperado)
 
-        df = pl.from_dicts(data).select(
+        df = pl.from_dicts(dados).select(
             Date=pl.col("data").str.to_date("%d/%m/%Y"),
             Value=pl.col("valor").cast(pl.Float64) / 100,
         )
@@ -108,67 +108,67 @@ def _fetch_request(
 
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 404:  # noqa
-            logger.warning(
-                f"Resource not found (404), treated as no data: {e.request.url}"
+            registro.warning(
+                f"Recurso não encontrado (404), tratado como sem dados: {e.request.url}"
             )
-            return pl.DataFrame(schema=expected_schema)
+            return pl.DataFrame(schema=esquema_esperado)
 
         # Qualquer outro erro HTTP final para o programa.
         raise
 
 
-def _fetch_data_from_url(
-    serie: BCSerie, start: DateLike, end: DateLike | None = None
+def _buscar_dados_url(
+    serie: SerieBC, inicio: DateLike, fim: DateLike | None = None
 ) -> pl.DataFrame:
     """Orquestra a busca de dados da API do Banco Central.
 
-    Trata requisições maiores que 10 anos dividindo-as em chunks menores usando
+    Trata requisições maiores que 10 anos dividindo-as em blocos menores usando
     polars date_range.
 
     Args:
         serie: Enum da série a buscar.
-        start: Data inicial para os dados a buscar.
-        end: Data final para os dados.
+        inicio: Data inicial para os dados a buscar.
+        fim: Data final para os dados.
 
     Returns:
         DataFrame com os dados requisitados.
     """
     # 1. Converter datas usando a função auxiliar existente
-    start_date = convert_dates(start)
+    data_inicio = convert_dates(inicio)
     # Se a data final não for fornecida, usar a data de hoje para o cálculo do período
-    end_date = convert_dates(end) if end else clock.today()
+    data_fim = convert_dates(fim) if fim else clock.today()
 
     # Verificação simples e pragmática baseada em dias. Se o período for
     # menor que nosso limite de segurança, faz uma chamada única.
-    if (end_date - start_date).days < SAFE_DAYS_THRESHOLD:
-        return _fetch_request(serie, start_date, end_date)
+    if (data_fim - data_inicio).days < LIMITE_DIAS_SEGURO:
+        return _buscar_requisicao(serie, data_inicio, data_fim)
 
-    # 3. Se for maior, quebrar em pedaços (chunking)
-    logger.info("Date range exceeds 10 years. Fetching data in chunks.")
+    # 3. Se for maior, quebrar em blocos
+    registro.info("Intervalo excede 10 anos. Buscando dados em blocos.")
 
-    duration_str = "10y"
+    duracao_str = "10y"
 
-    chunk_starts = pl.date_range(
-        start=start_date, end=end_date, interval=duration_str, eager=True
+    inicios_bloco = pl.date_range(
+        start=data_inicio, end=data_fim, interval=duracao_str, eager=True
     )
 
-    chunk_ends = chunk_starts.dt.offset_by(duration_str)
+    fins_bloco = inicios_bloco.dt.offset_by(duracao_str)
 
-    chunks_df = pl.DataFrame({"start": chunk_starts, "end": chunk_ends}).with_columns(
-        end=pl.when(pl.col("end") > end_date).then(end_date).otherwise("end")
+    blocos_df = pl.DataFrame({"start": inicios_bloco, "end": fins_bloco}).with_columns(
+        end=pl.when(pl.col("end") > data_fim).then(data_fim).otherwise("end")
     )
 
-    all_dfs = [
-        _fetch_request(serie, chunk["start"], chunk["end"])
-        for chunk in chunks_df.iter_rows(named=True)
+    todos_dfs = [
+        _buscar_requisicao(serie, bloco["start"], bloco["end"])
+        for bloco in blocos_df.iter_rows(named=True)
     ]
 
-    all_dfs = [df for df in all_dfs if not df.is_empty()]
+    todos_dfs = [df for df in todos_dfs if not df.is_empty()]
 
-    if not all_dfs:
+    if not todos_dfs:
         return pl.DataFrame()
 
-    return pl.concat(all_dfs).unique(subset=["Date"], keep="first").sort("Date")
+    return pl.concat(todos_dfs).unique(subset=["Date"], keep="first").sort("Date")
 
 
 def selic_over_series(
@@ -223,10 +223,10 @@ def selic_over_series(
         │ 2025-09-17 ┆ 0.149 │
         └────────────┴───────┘
     """
-    if any_is_empty(start):  # Start must be provided
+    if any_is_empty(start):  # start deve ser fornecido
         return pl.DataFrame()
-    df = _fetch_data_from_url(BCSerie.SELIC_OVER, start, end)
-    return df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
+    df = _buscar_dados_url(SerieBC.SELIC_OVER, start, end)
+    return df.with_columns(pl.col("Value").round(CASAS_DECIMAIS_ANUALIZADA))
 
 
 def selic_over(date: DateLike) -> float:
@@ -287,10 +287,10 @@ def selic_target_series(
         │ 2024-05-31 ┆ 0.105 │
         └────────────┴───────┘
     """
-    if any_is_empty(start):  # Start must be provided
+    if any_is_empty(start):  # start deve ser fornecido
         return pl.DataFrame()
-    df = _fetch_data_from_url(BCSerie.SELIC_TARGET, start, end)
-    df = df.with_columns(pl.col("Value").round(DECIMAL_PLACES_ANNUALIZED))
+    df = _buscar_dados_url(SerieBC.SELIC_TARGET, start, end)
+    df = df.with_columns(pl.col("Value").round(CASAS_DECIMAIS_ANUALIZADA))
     return df
 
 
@@ -362,16 +362,16 @@ def di_over_series(
     """
     if any_is_empty(start):
         return pl.DataFrame()
-    df = _fetch_data_from_url(BCSerie.DI_OVER, start, end)
+    df = _buscar_dados_url(SerieBC.DI_OVER, start, end)
     if annualized:
         df = df.with_columns(
             (((pl.col("Value") + 1).pow(252)) - 1)
-            .round(DECIMAL_PLACES_ANNUALIZED)
+            .round(CASAS_DECIMAIS_ANUALIZADA)
             .alias("Value")
         )
 
     else:
-        df = df.with_columns(pl.col("Value").round(DECIMAL_PLACES_DAILY))
+        df = df.with_columns(pl.col("Value").round(CASAS_DECIMAIS_DIARIA))
 
     return df
 
