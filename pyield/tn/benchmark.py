@@ -7,14 +7,14 @@ from pyield import clock
 
 logger = logging.getLogger(__name__)
 
-API_BASE_URL = (
+URL_BASE_API = (
     "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/benchmarks"
 )
 
-API_HISTORY_PARAM = "incluir_historico"
+PARAM_INCLUIR_HISTORICO = "incluir_historico"
 
 
-COLUMN_MAP = {
+MAPA_COLUNAS = {
     "TÍTULO": ("BondType", pl.String),
     "VENCIMENTO": ("MaturityDate", pl.Date),
     "BENCHMARK": ("Benchmark", pl.String),
@@ -22,90 +22,108 @@ COLUMN_MAP = {
     "TERMINO": ("EndDate", pl.Date),
 }
 
-COLUMN_MAPPING = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
-DATA_SCHEMA = {alias: dtype for _, (alias, dtype) in COLUMN_MAP.items()}
-FINAL_COLUMN_ORDER = list(DATA_SCHEMA.keys())
+MAPEAMENTO_COLUNAS = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
+ESQUEMA_DADOS = {alias: dtype for _, (alias, dtype) in MAPA_COLUNAS.items()}
+ORDEM_FINAL_COLUNAS = list(ESQUEMA_DADOS.keys())
 
 
-def _fetch_raw_benchmarks(include_history: bool) -> list[dict]:
+def _buscar_benchmarks_brutos(include_history: bool) -> list[dict]:
     """
-    Fetches the raw benchmark data from the Tesouro Nacional API.
-    Handles network requests, retries, and basic response validation.
+    Busca os dados brutos de benchmarks na API do Tesouro Nacional.
+    Lida com requests de rede, tentativas e validação básica de resposta.
     """
-    session = requests.Session()
-    include_history_param_value = "S" if include_history else "N"
-    api_endpoint = f"{API_BASE_URL}?{API_HISTORY_PARAM}={include_history_param_value}"
+    sessao = requests.Session()
+    valor_param_incluir_historico = "S" if include_history else "N"
+    endpoint_api = (
+        f"{URL_BASE_API}?{PARAM_INCLUIR_HISTORICO}={valor_param_incluir_historico}"
+    )
 
     try:
-        response = session.get(api_endpoint, timeout=10)
-        response.raise_for_status()
+        resposta = sessao.get(endpoint_api, timeout=10)
+        resposta.raise_for_status()
     except requests.exceptions.SSLError as e:
         logger.warning(
-            f"SSL error encountered: {e}. Retrying without certificate verification."
+            "Erro SSL encontrado: %s. Tentando novamente sem verificação de "
+            "certificado (risco de segurança).",
+            e,
         )
-        response = session.get(api_endpoint, verify=False, timeout=10)
-        response.raise_for_status()
+        resposta = sessao.get(endpoint_api, verify=False, timeout=10)
+        resposta.raise_for_status()
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error fetching benchmarks from API: {e}")
+        logger.error("Erro ao buscar benchmarks na API: %s", e)
         return []  # Retorna lista vazia em caso de erro
 
-    response_dict = response.json()
-
-    if not response_dict or "registros" not in response_dict:
-        logger.warning("API response did not contain 'registros' key or was empty.")
+    try:
+        resposta_dict = resposta.json()
+    except ValueError as e:
+        logger.error("Resposta inválida (JSON) da API: %s", e)
         return []
 
-    return response_dict["registros"]
+    if not resposta_dict or "registros" not in resposta_dict:
+        logger.warning("Resposta da API sem a chave 'registros' ou vazia.")
+        return []
+
+    return resposta_dict["registros"]
 
 
-def _process_api_data(raw_data: list[dict]) -> pl.DataFrame:
-    if not raw_data:
-        return pl.DataFrame(schema=DATA_SCHEMA)
+def _processar_dados_api(dados_brutos: list[dict]) -> pl.DataFrame:
+    if not dados_brutos:
+        return pl.DataFrame(schema=ESQUEMA_DADOS)
 
-    return (
-        pl.DataFrame(raw_data)
-        .rename(COLUMN_MAPPING)
-        .drop_nulls()
+    tabela = (
+        pl.DataFrame(dados_brutos)
+        .rename(MAPEAMENTO_COLUNAS)
         .with_columns(pl.col("Benchmark", "BondType").str.strip_chars())
-        .cast(DATA_SCHEMA)
-        .sort("StartDate", "BondType", "MaturityDate")
+        .cast(ESQUEMA_DADOS, strict=False)
     )
+
+    contagem_nulos = tabela.null_count().row(0)
+    total_nulos = sum(contagem_nulos)
+    if total_nulos:
+        logger.warning(
+            "Foram encontradas células nulas após o parse (total=%s). "
+            "Linhas com nulos serão descartadas.",
+            total_nulos,
+        )
+
+    return tabela.drop_nulls()
 
 
 def benchmarks(
     bond_type: str | None = None, include_history: bool = False
 ) -> pl.DataFrame:
-    """Fetches benchmark data for Brazilian Treasury Bonds from the TN API.
+    """Busca benchmarks de títulos públicos brasileiros na API do TN.
 
-    This function retrieves current or historical benchmark data for various Brazilian
-    Treasury bond types (e.g., LTN, LFT, NTN-B). The data is sourced directly from the
-    official Tesouro Nacional API.
+    Recupera dados atuais ou históricos de benchmarks para títulos do Tesouro
+    Nacional (ex.: LTN, LFT, NTN-B). Os dados são obtidos diretamente da
+    API oficial do Tesouro Nacional.
 
     Args:
-        include_history (bool, optional): If `True`, includes historical benchmark data.
-            If `False` (default), only current benchmarks are returned.
+        bond_type (str, optional): Tipo do título a filtrar (ex.: "LFT").
+        include_history (bool, optional): Se `True`, inclui histórico; se `False`
+            (padrão), retorna apenas benchmarks vigentes.
 
     Returns:
-        pl.DataFrame: A Polars DataFrame containing the benchmark data.
-            The DataFrame includes the following columns:
-            *   `BondType` (str): The type of the bond (e.g., 'LTN', 'LFT', 'NTN-B').
-            *   `MaturityDate` (datetime.date): The maturity date of the benchmark.
-            *   `Benchmark` (str): The name or identifier of the benchmark
-                (e.g., 'LFT 3 anos').
-            *   `StartDate` (datetime.date): The start date for the benchmark's period.
-            *   `EndDate` (datetime.date): The end date for the benchmark's period.
+        pl.DataFrame: DataFrame Polars com os benchmarks.
+
+    Output Columns:
+        * `BondType` (String): Tipo do título (ex.: "LTN", "LFT", "NTN-B").
+        * `MaturityDate` (Date): Data de vencimento do benchmark.
+        * `Benchmark` (String): Nome/identificador do benchmark.
+        * `StartDate` (Date): Data de início da vigência.
+        * `EndDate` (Date): Data de término da vigência.
 
     Notes:
-        *   Data is sourced from the official Tesouro Nacional (Brazilian Treasury) API.
-        *   An retry mechanism is implemented for SSL certificate verification errors.
-        *   The API documentation can be found at:
-            https://portal-conhecimento.tesouro.gov.br/catalogo-componentes/api-leil%C3%B5es
-        *   Rows with any `NaN` values are dropped before returning the DataFrame.
+        * Dados obtidos da API oficial do Tesouro Nacional.
+        * Há retry sem verificação de certificado apenas em caso de erro SSL.
+        * Linhas com valores nulos são descartadas antes do retorno.
+        * Documentação da API:
+          https://portal-conhecimento.tesouro.gov.br/catalogo-componentes/api-leil%C3%B5es
 
     Examples:
         >>> from pyield import tn
         >>> df_current = tn.benchmarks()
-        >>> # Get historical benchmarks
+        >>> # Benchmarks históricos
         >>> tn.benchmarks(bond_type="LFT", include_history=True).head()
         shape: (5, 5)
         ┌──────────┬──────────────┬────────────┬────────────┬────────────┐
@@ -120,21 +138,21 @@ def benchmarks(
         │ LFT      ┆ 2022-03-01   ┆ LFT 6 anos ┆ 2016-01-01 ┆ 2016-06-30 │
         └──────────┴──────────────┴────────────┴────────────┴────────────┘
     """
-    api_data = _fetch_raw_benchmarks(include_history=include_history)
-    df = _process_api_data(api_data)
+    dados_api = _buscar_benchmarks_brutos(include_history=include_history)
+    tabela = _processar_dados_api(dados_api)
 
     # Definir a ordenação final com base no caso de uso
     if include_history:
         # Para dados históricos, a ordem cronológica é mais útil
-        sort_columns = ["StartDate", "BondType", "MaturityDate"]
+        colunas_ordenacao = ["StartDate", "BondType", "MaturityDate"]
     else:
         # Para dados atuais, agrupar por tipo de título é mais útil
-        sort_columns = ["BondType", "MaturityDate"]
+        colunas_ordenacao = ["BondType", "MaturityDate"]
         # Filtrar apenas os dados atuais
-        today = clock.today()
-        df = df.filter(pl.lit(today).is_between("StartDate", "EndDate"))
+        hoje = clock.today()
+        tabela = tabela.filter(pl.lit(hoje).is_between("StartDate", "EndDate"))
 
     if bond_type:
-        df = df.filter(pl.col("BondType") == bond_type)
+        tabela = tabela.filter(pl.col("BondType") == bond_type.upper())
 
-    return df.select(FINAL_COLUMN_ORDER).sort(sort_columns)
+    return tabela.select(ORDEM_FINAL_COLUNAS).sort(colunas_ordenacao)
