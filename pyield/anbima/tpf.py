@@ -1,5 +1,5 @@
 """
-Raw data file example from ANBIMA:
+Exemplo de arquivo bruto da ANBIMA:
     ANBIMA - Associação Brasileira das Entidades dos Mercados Financeiro e de Capitais
 
     Titulo@Data Referencia@Codigo SELIC@Data Base/Emissao@Data Vencimento@Tx. Compra@Tx. Venda@Tx. Indicativas@PU@Desvio padrao@Interv. Ind. Inf. (D0)@Interv. Ind. Sup. (D0)@Interv. Ind. Inf. (D+1)@Interv. Ind. Sup. (D+1)@Criterio
@@ -38,13 +38,13 @@ ANBIMA_RTM_URL = f"http://{ANBIMA_RTM_HOSTNAME}/merc_sec/arqs"
 # Exemplo de URL: https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
 
 # Antes de 13/05/2014 o arquivo era zipado e o endpoint terminava com ".exe"
-FORMAT_CHANGE_DATE = dt.date(2014, 5, 13)
+DATA_MUDANCA_FORMATO = dt.date(2014, 5, 13)
 
-PUBLIC_DATA_RETENTION_DAYS = 5
+DIAS_RETENCAO_PUBLICA = 5
 
 # Única fonte de verdade para colunas do CSV: (novo_nome, tipo)
-# Colunas de data são lidas como String e convertidas em _process_raw_df
-TPF_COLUMNS = {
+# Colunas de data são lidas como String e convertidas em _processar_df_bruto
+TPF_COLUNAS = {
     "Titulo": ("BondType", pl.String),
     "Data Referencia": ("ReferenceDate", pl.String),
     "Codigo SELIC": ("SelicCode", pl.Int64),
@@ -63,76 +63,76 @@ TPF_COLUMNS = {
 }
 
 # Derivados automaticamente
-TPF_SCHEMA = {k: v[1] for k, v in TPF_COLUMNS.items()}
-COLUMN_NAME_MAPPING = {k: v[0] for k, v in TPF_COLUMNS.items()}
+ESQUEMA_TPF = {k: v[1] for k, v in TPF_COLUNAS.items()}
+MAPA_NOMES_COLUNAS = {k: v[0] for k, v in TPF_COLUNAS.items()}
 
 logger = logging.getLogger(__name__)
 
 
-def _validate_not_future_date(date: dt.date):
+def _validar_data_nao_futura(data: dt.date):
     """Levanta ValueError se a data for no futuro."""
-    if date > clock.today():
-        date_log = date.strftime("%d/%m/%Y")
-        msg = f"Cannot process data for a future date ({date_log})."
+    if data > clock.today():
+        data_log = data.strftime("%d/%m/%Y")
+        msg = f"Não é possível processar dados para data futura ({data_log})."
         raise ValueError(msg)
 
 
-def _bond_type_mapping(bond_type: str) -> list[str]:
-    bond_type = bond_type.upper()
-    bond_type_mapping = {
+def _mapear_tipo_titulo(tipo_titulo: str) -> list[str]:
+    tipo_titulo = tipo_titulo.upper()
+    mapa_titulos = {
         "PRE": ["LTN", "NTN-F"],
         "NTNB": ["NTN-B"],
         "NTNC": ["NTN-C"],
         "NTNF": ["NTN-F"],
     }
-    return bond_type_mapping.get(bond_type, [bond_type])
+    return mapa_titulos.get(tipo_titulo, [tipo_titulo])
 
 
-def _build_file_name(date: dt.date) -> str:
-    url_date = date.strftime("%y%m%d")
-    if date < FORMAT_CHANGE_DATE:
-        file_name = f"ms{url_date}.exe"
+def _montar_nome_arquivo(data: dt.date) -> str:
+    data_url = data.strftime("%y%m%d")
+    if data < DATA_MUDANCA_FORMATO:
+        nome_arquivo = f"ms{data_url}.exe"
     else:
-        file_name = f"ms{url_date}.txt"
-    return file_name
+        nome_arquivo = f"ms{data_url}.txt"
+    return nome_arquivo
 
 
-def _build_file_url(date: dt.date) -> str:
-    last_bday = bday.last_business_day()
-    business_days_count = bday.count(date, last_bday)
-    if business_days_count > PUBLIC_DATA_RETENTION_DAYS:
+def _montar_url_arquivo(data: dt.date) -> str:
+    ultimo_dia_util = bday.last_business_day()
+    qtd_dias_uteis = bday.count(data, ultimo_dia_util)
+    if qtd_dias_uteis > DIAS_RETENCAO_PUBLICA:
         # Para datas com mais de 5 dias úteis, apenas os dados da RTM estão disponíveis
-        logger.info(f"Tentando buscar dados RTM para {date.strftime('%d/%m/%Y')}")
-        file_url = f"{ANBIMA_RTM_URL}/{_build_file_name(date)}"
+        logger.info("Tentando buscar dados RTM para %s", data.strftime("%d/%m/%Y"))
+        url_arquivo = f"{ANBIMA_RTM_URL}/{_montar_nome_arquivo(data)}"
     else:
-        file_url = f"{ANBIMA_URL}/{_build_file_name(date)}"
-    return file_url
+        url_arquivo = f"{ANBIMA_URL}/{_montar_nome_arquivo(data)}"
+    return url_arquivo
 
 
 @default_retry
-def _get_csv_data(date: dt.date) -> bytes:
-    file_url = _build_file_url(date)
-    r = requests.get(file_url, timeout=10)
-    r.raise_for_status()
-    r.encoding = "latin1"
-    return r.content
+def _obter_csv(data: dt.date) -> bytes:
+    url_arquivo = _montar_url_arquivo(data)
+    resposta = requests.get(url_arquivo, timeout=10)
+    resposta.raise_for_status()
+    resposta.encoding = "latin1"
+    return resposta.content
 
 
-def _read_csv_data(csv_text: bytes) -> pl.DataFrame:
+def _ler_csv(csv_texto: bytes) -> pl.DataFrame:
     df = pl.read_csv(
-        source=csv_text,
+        source=csv_texto,
         skip_lines=2,
         separator="@",
         null_values=["--"],
         decimal_comma=True,
-        schema_overrides=TPF_SCHEMA,
+        schema_overrides=ESQUEMA_TPF,
     )
     return df
 
 
-def _process_raw_df(df: pl.DataFrame) -> pl.DataFrame:
+def _processar_df_bruto(df: pl.DataFrame) -> pl.DataFrame:
     df = (
-        df.rename(COLUMN_NAME_MAPPING)
+        df.rename(MAPA_NOMES_COLUNAS)
         .with_columns(
             # Remove o percentual das taxas
             # Colunas de taxa têm valores percentuais com 4 casas decimais
@@ -147,32 +147,32 @@ def _process_raw_df(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _calculate_duration_per_row(row: dict) -> float:
+def _calcular_duracao_por_linha(linha: dict) -> float:
     """Função auxiliar que será aplicada a cada linha do struct."""
     # Mapeia o BondType para a função de duration correspondente
     # Isso torna a lógica dentro do lambda ainda mais limpa
-    bond_type = row["BondType"]
-    if bond_type == "LTN":
-        return row["BDToMat"] / 252  # A lógica da LTN depende apenas do BDToMat
+    tipo_titulo = linha["BondType"]
+    if tipo_titulo == "LTN":
+        return linha["BDToMat"] / 252  # A lógica da LTN depende apenas do BDToMat
 
-    duration_functions = {
+    funcoes_duracao = {
         "NTN-F": duration_f,
         "NTN-B": duration_b,
         "NTN-C": duration_c,
     }
 
-    duration_func = duration_functions.get(bond_type)  # Busca da função correta
-    if duration_func:
-        return duration_func(
-            row["ReferenceDate"],
-            row["MaturityDate"],
-            row["IndicativeRate"],
+    func_duracao = funcoes_duracao.get(tipo_titulo)  # Busca da função correta
+    if func_duracao:
+        return func_duracao(
+            linha["ReferenceDate"],
+            linha["MaturityDate"],
+            linha["IndicativeRate"],
         )
     # Se o BondType não for reconhecido, retorna 0.0 (LFT ou outros)
     return 0.0
 
 
-def _add_duration(df_input: pl.DataFrame) -> pl.DataFrame:
+def _adicionar_duracao(df_input: pl.DataFrame) -> pl.DataFrame:
     """Adiciona a coluna 'Duration' ao DataFrame Polars de forma otimizada."""
     colunas_necessarias = [
         "BondType",
@@ -184,40 +184,40 @@ def _add_duration(df_input: pl.DataFrame) -> pl.DataFrame:
     # Adiciona a coluna Duration
     df = df_input.with_columns(
         pl.struct(colunas_necessarias)
-        .map_elements(_calculate_duration_per_row, return_dtype=pl.Float64)
+        .map_elements(_calcular_duracao_por_linha, return_dtype=pl.Float64)
         .alias("Duration")
     )
     return df
 
 
-def _add_dv01(df_input: pl.DataFrame, ref_date: dt.date) -> pl.DataFrame:
+def _adicionar_dv01(df_input: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
     """Adiciona as colunas de DV01 ao DataFrame."""
-    mduration_expr = pl.col("Duration") / (1 + pl.col("IndicativeRate"))
-    df = df_input.with_columns(DV01=0.0001 * mduration_expr * pl.col("Price"))
+    expr_duracao_mod = pl.col("Duration") / (1 + pl.col("IndicativeRate"))
+    df = df_input.with_columns(DV01=0.0001 * expr_duracao_mod * pl.col("Price"))
 
     # DV01 em USD
     try:
-        ptax_rate = ptax(date=ref_date)
-        df = df.with_columns(DV01USD=pl.col("DV01") / ptax_rate)
+        taxa_ptax = ptax(date=data_ref)
+        df = df.with_columns(DV01USD=pl.col("DV01") / taxa_ptax)
     except Exception as e:
-        logger.error(f"Error adding USD DV01: {e}")
+        logger.error("Erro ao adicionar DV01 em USD: %s", e)
     return df
 
 
-def _add_di_rate(df: pl.DataFrame, ref_date: dt.date) -> pl.DataFrame:
+def _adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
     """Adiciona a coluna de taxa DI ao DataFrame."""
-    di_rates = di1.interpolate_rates(
-        dates=ref_date,
+    taxas_di = di1.interpolate_rates(
+        dates=data_ref,
         expirations=df["MaturityDate"],
         extrapolate=True,
     )
-    df = df.with_columns(DIRate=di_rates)
+    df = df.with_columns(DIRate=taxas_di)
     return df
 
 
-def _custom_sort_and_order(df: pl.DataFrame) -> pl.DataFrame:
+def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     """Reordena as colunas do DataFrame de acordo com a ordem especificada."""
-    column_order = [
+    ordem_colunas = [
         "BondType",
         "ReferenceDate",
         "SelicCode",
@@ -239,11 +239,11 @@ def _custom_sort_and_order(df: pl.DataFrame) -> pl.DataFrame:
         "UpperBoundRateD1",
         "Criteria",
     ]
-    column_order = [col for col in column_order if col in df.columns]
-    return df.select(column_order).sort("BondType", "MaturityDate")
+    ordem_colunas = [col for col in ordem_colunas if col in df.columns]
+    return df.select(ordem_colunas).sort("BondType", "MaturityDate")
 
 
-def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
+def _buscar_dados_tpf(date: dt.date) -> pl.DataFrame:
     """Busca e processa dados do mercado secundário de TPF diretamente da fonte ANBIMA.
 
     Esta é uma função de baixo nível para uso interno. Ela lida com a lógica
@@ -258,11 +258,11 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
             processados, ou um DataFrame vazio se os dados não estiverem
             disponíveis ou ocorrer um erro de conexão.
     """
-    file_url = _build_file_url(date)
-    date_str = date.strftime("%d/%m/%Y")
+    url_arquivo = _montar_url_arquivo(date)
+    data_str = date.strftime("%d/%m/%Y")
 
     # --- "FAIL-FAST" PARA EVITAR RETRIES DESNECESSÁRIOS NA RTM ---
-    if ANBIMA_RTM_URL in file_url:
+    if ANBIMA_RTM_URL in url_arquivo:
         try:
             # Tenta resolver o hostname da RTM. É uma verificação de rede rápida.
             socket.gethostbyname(ANBIMA_RTM_HOSTNAME)
@@ -270,28 +270,28 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
             # Se falhar (gaierror = get address info error), não estamos na RTM.
             # Não adianta prosseguir para a função com retry.
             logger.warning(
-                f"Could not resolve RTM host for {date_str}. This is expected if "
-                "you are not on the RTM network. Historical data requires RTM access. "
-                "Returning empty DataFrame."
+                f"Não foi possível resolver o host da RTM para {data_str}. "
+                "Isso é esperado fora da rede RTM. Dados históricos exigem acesso "
+                "à RTM. Retornando DataFrame vazio."
             )
             return pl.DataFrame()
 
     try:
         # Se passamos pela verificação da RTM, agora podemos chamar a função com retry.
-        csv_text = _get_csv_data(date)
-        if not csv_text.strip():
+        csv_texto = _obter_csv(date)
+        if not csv_texto.strip():
             logger.info(
-                f"Anbima TPF secondary market data for {date_str} not available. "
-                "Returning empty DataFrame."
+                f"Dados TPF de mercado secundário para {data_str} não disponíveis. "
+                "Retornando DataFrame vazio."
             )
             return pl.DataFrame()
 
-        df = _read_csv_data(csv_text)
-        df = _process_raw_df(df)
-        df = _add_duration(df)
-        df = _add_dv01(df, date)
-        df = _add_di_rate(df, date)
-        df = _custom_sort_and_order(df)
+        df = _ler_csv(csv_texto)
+        df = _processar_df_bruto(df)
+        df = _adicionar_duracao(df)
+        df = _adicionar_dv01(df, date)
+        df = _adicionar_taxa_di(df, date)
+        df = _selecionar_e_ordenar_colunas(df)
         # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
         df = df.with_columns(cs.float().fill_nan(None))
 
@@ -300,20 +300,22 @@ def _fetch_tpf_data(date: dt.date) -> pl.DataFrame:
     except HTTPError as e:
         if e.response.status_code == 404:  # noqa
             logger.info(
-                f"No Anbima TPF secondary market data for {date_str} (HTTP 404). "
-                "Returning empty DataFrame."
+                f"Dados TPF de mercado secundário para {data_str} (HTTP 404). "
+                "Retornando DataFrame vazio."
             )
             return pl.DataFrame()
-        logger.error(f"HTTP Error fetching data for {date_str} from {file_url}: {e}")
+        logger.error(
+            "Erro HTTP ao buscar dados para %s de %s: %s", data_str, url_arquivo, e
+        )
         raise
 
     # Este bloco ainda é útil para outros URLErrors (ex: timeout genuíno na URL pública)
     except RequestException:
-        logger.exception(f"RequestException fetching TPF data for {date_str}")
+        logger.exception("RequestException ao buscar dados TPF para %s", data_str)
         raise
 
     except Exception:
-        msg = f"An unexpected error occurred fetching TPF data for {date_str}"
+        msg = f"Ocorreu um erro inesperado ao buscar dados TPF para {data_str}"
         logger.exception(msg)
         raise
 
@@ -402,11 +404,11 @@ def tpf_data(
     if any_is_empty(date):
         return pl.DataFrame()
     date = convert_dates(date)
-    _validate_not_future_date(date)
+    _validar_data_nao_futura(date)
 
     if fetch_from_source:
         # Tenta buscar os dados diretamente da fonte (ANBIMA)
-        df = _fetch_tpf_data(date)
+        df = _buscar_dados_tpf(date)
     else:
         # Caso contrário, obtém os dados do cache local
         df = get_cached_dataset("tpf").filter(pl.col("ReferenceDate") == date)
@@ -415,7 +417,7 @@ def tpf_data(
         return pl.DataFrame()
 
     if bond_type:
-        norm_bond_type = _bond_type_mapping(bond_type)
+        norm_bond_type = _mapear_tipo_titulo(bond_type)
         df = df.filter(pl.col("BondType").is_in(norm_bond_type))
 
     return df.sort("ReferenceDate", "BondType", "MaturityDate")
@@ -454,6 +456,5 @@ def tpf_maturities(
             2033-01-01
             2035-01-01
         ]
-
     """
     return tpf_data(date, bond_type)["MaturityDate"].unique().sort()
