@@ -14,7 +14,6 @@ Notas de implementação:
 
 import logging
 from enum import Enum
-from typing import Any
 
 import polars as pl
 import requests
@@ -30,12 +29,6 @@ BASE_URL = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
 DECIMAL_PLACES_ANNUALIZED = 4  # 2 decimal places in percentage format
 DECIMAL_PLACES_DAILY = 8  # 6 decimal places in percentage format
 
-# 404 Not Found error code for resource not found in the API
-ERROR_CODE_NOT_FOUND = 404
-
-# 400 Bad Request error code for invalid requests
-ERROR_CODE_BAD_REQUEST = 400
-
 # Limite de segurança em dias, correspondendo a ~9.5 anos.
 # Evita a complexidade do cálculo exato de 10 anos-calendário.
 SAFE_DAYS_THRESHOLD = 3500  # aprox 365 * 9.5
@@ -50,11 +43,15 @@ class BCSerie(Enum):
 
 
 @default_retry
-def _do_api_call(api_url: str) -> list[dict[str, Any]]:
-    """Executa uma chamada GET na API do BCB e retorna o JSON."""
+def _do_api_call(api_url: str) -> list[dict[str, str]]:
+    """Executa uma chamada GET na API do BCB e retorna o JSON.
+
+    A API retorna um json (lista de dicts com chaves 'data' e 'valor', ambas strings):
+        [{"data": "29/01/2025", "valor": "12.15"}, ...]
+    """
     response = requests.get(api_url, timeout=10)
     response.raise_for_status()
-    return response.json()  # type: ignore[return-value]
+    return response.json()
 
 
 def _build_download_url(
@@ -103,13 +100,9 @@ def _fetch_request(
             logger.warning(f"No data available for the requested period: {api_url}")
             return pl.DataFrame(schema=expected_schema)
 
-        df = (
-            pl.from_dicts(data)
-            .with_columns(
-                Date=pl.col("data").str.to_date("%d/%m/%Y"),
-                Value=pl.col("valor").cast(pl.Float64) / 100,
-            )
-            .select("Date", "Value")
+        df = pl.from_dicts(data).select(
+            Date=pl.col("data").str.to_date("%d/%m/%Y"),
+            Value=pl.col("valor").cast(pl.Float64) / 100,
         )
         return df
 
@@ -162,7 +155,7 @@ def _fetch_data_from_url(
     chunk_ends = chunk_starts.dt.offset_by(duration_str)
 
     chunks_df = pl.DataFrame({"start": chunk_starts, "end": chunk_ends}).with_columns(
-        pl.when(pl.col("end") > end_date).then(end_date).otherwise("end").alias("end")
+        end=pl.when(pl.col("end") > end_date).then(end_date).otherwise("end")
     )
 
     all_dfs = [
