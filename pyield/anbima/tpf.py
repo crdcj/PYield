@@ -1,14 +1,3 @@
-"""
-Exemplo de arquivo bruto da ANBIMA:
-    ANBIMA - Associação Brasileira das Entidades dos Mercados Financeiro e de Capitais
-
-    Titulo@Data Referencia@Codigo SELIC@Data Base/Emissao@Data Vencimento@Tx. Compra@Tx. Venda@Tx. Indicativas@PU@Desvio padrao@Interv. Ind. Inf. (D0)@Interv. Ind. Sup. (D0)@Interv. Ind. Inf. (D+1)@Interv. Ind. Sup. (D+1)@Criterio
-    LTN@20250924@100000@20230707@20251001@14,9483@14,9263@14,9375@997,241543@0,00433039162894@14,7341@15,2612@14,7316@15,2689@Calculado
-    LTN@20250924@100000@20200206@20260101@14,7741@14,7485@14,7616@963,001853@0,00729826731971@14,7008@14,9986@14,7021@14,9975@Calculado
-    LTN@20250924@100000@20240105@20260401@14,7357@14,707@14,7205@931,607124@0,00317937979329@14,5525@14,9847@14,5669@14,9959@Calculado
-    ...
-"""  # noqa
-
 import datetime as dt
 import logging
 import socket
@@ -114,11 +103,20 @@ def _obter_csv(data: dt.date) -> bytes:
     url_arquivo = _montar_url_arquivo(data)
     resposta = requests.get(url_arquivo, timeout=10)
     resposta.raise_for_status()
-    resposta.encoding = "latin1"
     return resposta.content
 
 
 def _ler_csv(csv_texto: bytes) -> pl.DataFrame:
+    """
+    Exemplo de arquivo bruto da ANBIMA:
+        ANBIMA - Associação Brasileira das Entidades dos Mercados Financeiro e de Capitais
+
+        Titulo@Data Referencia@Codigo SELIC@Data Base/Emissao@Data Vencimento@Tx. Compra@Tx. Venda@Tx. Indicativas@PU@Desvio padrao@Interv. Ind. Inf. (D0)@Interv. Ind. Sup. (D0)@Interv. Ind. Inf. (D+1)@Interv. Ind. Sup. (D+1)@Criterio
+        LTN@20250924@100000@20230707@20251001@14,9483@14,9263@14,9375@997,241543@0,00433039162894@14,7341@15,2612@14,7316@15,2689@Calculado
+        LTN@20250924@100000@20200206@20260101@14,7741@14,7485@14,7616@963,001853@0,00729826731971@14,7008@14,9986@14,7021@14,9975@Calculado
+        LTN@20250924@100000@20240105@20260401@14,7357@14,707@14,7205@931,607124@0,00317937979329@14,5525@14,9847@14,5669@14,9959@Calculado
+        ...
+    """  # noqa
     df = pl.read_csv(
         source=csv_texto,
         skip_lines=2,
@@ -126,6 +124,7 @@ def _ler_csv(csv_texto: bytes) -> pl.DataFrame:
         null_values=["--"],
         decimal_comma=True,
         schema_overrides=ESQUEMA_TPF,
+        encoding="latin1",
     )
     return df
 
