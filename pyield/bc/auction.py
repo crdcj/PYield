@@ -7,7 +7,6 @@ Exemplo de chamada:
 """  # noqa: E501
 
 import datetime as dt
-import io
 import logging
 from typing import Literal
 
@@ -25,59 +24,71 @@ from pyield.types import DateLike
 
 logger = logging.getLogger(__name__)
 
-"""
-Dicionário com o mapeamento das colunas da API do BC para o DataFrame final
-Chaves com comentário serão descartadas ao final do processamento
-FR = First Round and SR = Second Round
-"""
-NAME_MAPPING = {
-    # "id": "ID",
-    "dataMovimento": "Date",
-    "dataLiquidacao": "Settlement",
-    "tipoOferta": "AuctionType",  # ['Venda', 'Compra', 'Tomador']
-    # "ofertante": "Ofertante",  # ['Tesouro Nacional', 'Banco Central']
-    "edital": "Ordinance",
-    "tipoPublico": "Buyer",  # ['TodoMercado', 'SomenteDealerApto', 'SomenteDealer']
-    # "prazo": "...", # N. de DC entre a data de liquidação e a data de vencimento
-    "codigoTitulo": "SelicCode",  # [100000, 210100, 450000, 760199, 950199]
-    "dataVencimento": "Maturity",
-    "cotacaoMedia": "AvgPrice",
-    "cotacaoCorte": "CutPrice",
-    "taxaMedia": "AvgRate",
-    "taxaCorte": "CutRate",
-    "quantidadeOfertada": "OfferedQuantityFR",
-    "quantidadeAceita": "AcceptedQuantityFR",
-    "quantidadeLiquidada": "SettledQuantityFR",
-    "quantidadeOfertadaSegundaRodada": "OfferedQuantitySR",
-    "quantidadeAceitaSegundaRodada": "AcceptedQuantitySR",
-    "quantidadeLiquidadaSegundaRodada": "SettledQuantitySR",
-    "financeiro": "Value",  # = FR + SR (in millions)
+# FR = First Round (Primeira Rodada), SR = Second Round (Segunda Rodada)
+COLUMN_MAP = {
+    "id": ("ID", pl.String),
+    "dataMovimento": ("Date", pl.Datetime),
+    "dataLiquidacao": ("Settlement", pl.Datetime),
+    "edital": ("Ordinance", pl.Int64),
+    "tipoPublico": ("Buyer", pl.String),
+    "prazo": ("CalendarDays", pl.Int64),
+    "quantidadeOfertada": ("OfferedQuantityFR", pl.Int64),
+    "quantidadeAceita": ("AcceptedQuantityFR", pl.Int64),
+    "codigoTitulo": ("SelicCode", pl.Int64),
+    "dataVencimento": ("Maturity", pl.Datetime),
+    "tipoOferta": ("AuctionType", pl.String),
+    "ofertante": ("Issuer", pl.String),
+    "quantidadeOfertadaSegundaRodada": ("OfferedQuantitySR", pl.Int64),
+    "quantidadeAceitaSegundaRodada": ("AcceptedQuantitySR", pl.Int64),
+    "cotacaoMedia": ("AvgPrice", pl.Float64),
+    "cotacaoCorte": ("CutPrice", pl.Float64),
+    "taxaMedia": ("AvgRate", pl.Float64),
+    "taxaCorte": ("CutRate", pl.Float64),
+    "financeiro": ("Value", pl.Float64),
+    "quantidadeLiquidada": ("SettledQuantityFR", pl.Int64),
+    "quantidadeLiquidadaSegundaRodada": ("SettledQuantitySR", pl.Int64),
 }
 
-# Schema (tipos) esperado para o CSV bruto retornado pela API do BC.
-API_SCHEMA = {
-    "id": pl.String,  # não usamos, mas é retornado
-    "dataMovimento": pl.Datetime,  # será convertido para Date depois
-    "dataLiquidacao": pl.Datetime,
-    "edital": pl.Int64,
-    "tipoPublico": pl.String,
-    "prazo": pl.Int64,  # dias corridos entre liquidação e vencimento
-    "quantidadeOfertada": pl.Int64,
-    "quantidadeAceita": pl.Int64,
-    "codigoTitulo": pl.Int64,
-    "dataVencimento": pl.Datetime,
-    "tipoOferta": pl.String,
-    "ofertante": pl.String,
-    "quantidadeOfertadaSegundaRodada": pl.Int64,
-    "quantidadeAceitaSegundaRodada": pl.Int64,
-    "cotacaoMedia": pl.Float64,
-    "cotacaoCorte": pl.Float64,
-    "taxaMedia": pl.Float64,
-    "taxaCorte": pl.Float64,
-    "financeiro": pl.Float64,
-    "quantidadeLiquidada": pl.Int64,
-    "quantidadeLiquidadaSegundaRodada": pl.Int64,
-}
+API_SCHEMA = {col: dtype for col, (_, dtype) in COLUMN_MAP.items()}
+COLUMN_MAPPING = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
+
+FINAL_COLUMN_ORDER = [
+    "Date",
+    "Settlement",
+    "AuctionType",
+    "Ordinance",
+    "Buyer",
+    "BondType",
+    "SelicCode",
+    "Maturity",
+    "BDToMat",
+    "Duration",
+    "AvgMaturity",
+    "AvgPrice",
+    "CutPrice",
+    "AvgRate",
+    "CutRate",
+    "DV01FR",
+    "DV01SR",
+    "DV01",
+    "DV01FRUSD",
+    "DV01SRUSD",
+    "DV01USD",
+    "SettledQuantityFR",
+    "SettledQuantitySR",
+    "SettledQuantity",
+    "OfferedQuantityFR",
+    "OfferedQuantitySR",
+    "OfferedQuantity",
+    "AcceptedQuantityFR",
+    "AcceptedQuantitySR",
+    "AcceptedQuantity",
+    "ValueFR",
+    "ValueSR",
+    "Value",
+]
+
+SORTING_KEYS = ["Date", "AuctionType", "BondType", "Maturity"]
 
 BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
 
@@ -112,21 +123,23 @@ def _build_url(
 
 
 @default_retry
-def _get_api_csv(url: str) -> str:
+def _get_api_csv(url: str) -> bytes:
     response = requests.get(url, timeout=10)
     response.raise_for_status()
-    response.encoding = "utf-8"
-    return response.text
+    return response.content
 
 
-def _parse_csv(csv_text: str) -> pl.DataFrame:
+def _parse_csv(csv_content: bytes) -> pl.DataFrame:
+    if not csv_content.strip():
+        return pl.DataFrame()
     # Lê usando schema explícito para garantir estabilidade dos tipos.
     # Evitamos try_parse_dates para não promover colunas inesperadas a datas.
     df = pl.read_csv(
-        io.StringIO(csv_text),
+        csv_content,
         decimal_comma=True,
         schema_overrides=API_SCHEMA,
         null_values=["null"],
+        encoding="utf-8",
     )
     # Converte os campos datetime para Date (mantemos apenas a data).
     df = df.with_columns(
@@ -136,12 +149,7 @@ def _parse_csv(csv_text: str) -> pl.DataFrame:
 
 
 def _format_df(df: pl.DataFrame) -> pl.DataFrame:
-    # Seleciona apenas as colunas que foram mapeadas (descartando as comentadas)
-    return (
-        df.filter(pl.col("ofertante") == "Tesouro Nacional")
-        .select([col for col in NAME_MAPPING if col in df.columns])
-        .rename(NAME_MAPPING)
-    )
+    return df.filter(pl.col("ofertante") == "Tesouro Nacional").rename(COLUMN_MAPPING)
 
 
 def _process_df(df: pl.DataFrame) -> pl.DataFrame:
@@ -163,9 +171,9 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     df = (
         df.with_columns(
             # Converte o valor financeiro de milhões para unidades e tipo inteiro
-            (pl.col("Value") * 1_000_000).round(0).cast(pl.Int64),
+            pl.col("Value").mul(1_000_000).cast(pl.Int64),
             # Converte as taxas de % para decimais
-            (pl.col("AvgRate", "CutRate") / 100).round(6),
+            pl.col("AvgRate", "CutRate").truediv(100).round(6),
             # Calcula as quantidades totais, tratando nulos automaticamente.
             OfferedQuantity=pl.sum_horizontal("OfferedQuantityFR", "OfferedQuantitySR"),
             AcceptedQuantity=pl.sum_horizontal(
@@ -187,11 +195,11 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
         )
         .with_columns(
             # 6. Calcula o valor da segunda rodada (ValueSR)
-            (pl.col("Value") - pl.col("ValueFR")).alias("ValueSR"),
+            ValueSR=pl.col("Value") - pl.col("ValueFR"),
             # 7. Mapeia o código SELIC para o tipo de título (BondType)
-            pl.col("SelicCode")
-            .replace_strict(bond_mapping, return_dtype=pl.String)
-            .alias("BondType"),
+            BondType=pl.col("SelicCode").replace_strict(
+                bond_mapping, return_dtype=pl.String
+            ),
         )
         .with_columns(
             # 8. Ajusta o preço médio (AvgPrice) com base na data e tipo do título
@@ -199,7 +207,7 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
                 (pl.col("Date") >= change_date)
                 | (pl.col("BondType").is_in(["LTN", "NTN-F"]))
             )
-            .then(pl.col("AvgPrice"))
+            .then("AvgPrice")
             .otherwise((pl.col("ValueFR") / pl.col("AcceptedQuantityFR")).round(6))
             .alias("AvgPrice")
         )
@@ -269,38 +277,30 @@ def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _get_ptax_df(start_date: dt.date, end_date: dt.date) -> pl.DataFrame:
-    """
-    Busca a série histórica da PTAX no intervalo de datas especificado
-    e retorna como um DataFrame Polars.
-    """
+def _get_ptax_df(df: pl.DataFrame) -> pl.DataFrame:
+    """Busca a série histórica da PTAX para o intervalo de datas do DataFrame."""
+    start_date = df["Date"].min()
+    end_date = df["Date"].max()
+    assert isinstance(start_date, dt.date)
+    assert isinstance(end_date, dt.date)
+
     # Garante que pelo menos um dia útil seja buscado
     # Isso é importante caso seja o leilão do dia atual e não haja PTAX ainda
     bz_last_bday = bday.last_business_day()
     if start_date >= bz_last_bday:
         start_date = bday.offset(bz_last_bday, -1)
 
-    # Busca a série PTAX usando a função já existente
-    df = pt.ptax_series(start=start_date, end=end_date)
-    if df.is_empty():
+    df_ptax = pt.ptax_series(start=start_date, end=end_date)
+    if df_ptax.is_empty():
         return pl.DataFrame()
 
-    # Converte para Polars, seleciona, renomeia e ordena (importante para join_asof)
-    return df.select("Date", "MidRate").rename({"MidRate": "PTAX"}).sort("Date")
+    return df_ptax.select("Date", "MidRate").rename({"MidRate": "PTAX"}).sort("Date")
 
 
-def _add_usd_dv01(df: pl.DataFrame) -> pl.DataFrame:
+def _add_usd_dv01(df: pl.DataFrame, df_ptax: pl.DataFrame) -> pl.DataFrame:
     """
     Adiciona o DV01 em USD usando um join_asof para encontrar a PTAX mais recente.
     """
-    # Determina o intervalo de datas necessário a partir do DataFrame de leilões
-    ptax_start_date = df["Date"].min()
-    ptax_end_date = df["Date"].max()
-    assert isinstance(ptax_start_date, dt.date)
-    assert isinstance(ptax_end_date, dt.date)
-
-    # Busca o DataFrame da PTAX
-    df_ptax = _get_ptax_df(start_date=ptax_start_date, end_date=ptax_end_date)
     if df_ptax.is_empty():
         # Se não houver dados de PTAX, retorna o DataFrame original sem alterações
         logger.warning("No PTAX data available to calculate DV01 in USD.")
@@ -330,44 +330,7 @@ def _add_avg_maturity(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def _sort_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
-    column_sequence = [
-        "Date",
-        "Settlement",
-        "AuctionType",
-        "Ordinance",
-        "Buyer",
-        "BondType",
-        "SelicCode",
-        "Maturity",
-        "BDToMat",
-        "Duration",
-        "AvgMaturity",
-        "AvgPrice",
-        "CutPrice",
-        "AvgRate",
-        "CutRate",
-        "DV01FR",
-        "DV01SR",
-        "DV01",
-        "DV01FRUSD",
-        "DV01SRUSD",
-        "DV01USD",
-        "SettledQuantityFR",
-        "SettledQuantitySR",
-        "SettledQuantity",
-        "OfferedQuantityFR",
-        "OfferedQuantitySR",
-        "OfferedQuantity",
-        "AcceptedQuantityFR",
-        "AcceptedQuantitySR",
-        "AcceptedQuantity",
-        "ValueFR",
-        "ValueSR",
-        "Value",
-    ]
-
-    column_keys = ["Date", "AuctionType", "BondType", "Maturity"]
-    return df.select(column_sequence).sort(column_keys)
+    return df.select(FINAL_COLUMN_ORDER).sort(SORTING_KEYS)
 
 
 def auctions(
@@ -492,7 +455,8 @@ def auctions(
         df = _adjust_values_without_auction(df)
         df = _add_duration(df)
         df = _add_dv01(df)
-        df = _add_usd_dv01(df)
+        df_ptax = _get_ptax_df(df)
+        df = _add_usd_dv01(df, df_ptax)
         df = _add_avg_maturity(df)
         df = _sort_and_reorder_columns(df)
         # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
