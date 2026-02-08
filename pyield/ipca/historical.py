@@ -9,7 +9,7 @@ IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"
 
 
 @default_retry
-def _fetch_api_data(url: str) -> dict[str, str]:
+def _buscar_dados_api(url: str) -> dict[str, str]:
     """Busca dados da API do IBGE e retorna o dicionário da série temporal."""
     response = requests.get(url, timeout=10)
     # Levanta exceção para códigos de erro HTTP
@@ -20,7 +20,7 @@ def _fetch_api_data(url: str) -> dict[str, str]:
     return data[0]["resultados"][0]["series"][0]["serie"]
 
 
-def _process_ipca_dataframe(
+def _processar_df_ipca(
     dados: dict[str, str], em_percentual: bool = False
 ) -> pl.DataFrame:
     """Processa o dicionário de dados do IPCA em um DataFrame formatado.
@@ -62,7 +62,7 @@ def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
 
     Examples:
         >>> from pyield import ipca
-        >>> # Get the IPCA rates for the first quarter of 2025
+        >>> # Obter as taxas do IPCA para o primeiro trimestre de 2025
         >>> ipca.rates("01-01-2025", "01-03-2025")
         shape: (3, 2)
         ┌────────┬────────┐
@@ -83,9 +83,9 @@ def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
     data_inicio = start.strftime("%Y%m")
     data_fim = end.strftime("%Y%m")
     url_api = f"{IPCA_URL}{data_inicio}-{data_fim}/variaveis/63?localidades=N1[all]"
-    dados = _fetch_api_data(url_api)
+    dados = _buscar_dados_api(url_api)
 
-    return _process_ipca_dataframe(dados, em_percentual=True)
+    return _processar_df_ipca(dados, em_percentual=True)
 
 
 def last_rates(qtd_meses: int = 1) -> pl.DataFrame:
@@ -108,18 +108,18 @@ def last_rates(qtd_meses: int = 1) -> pl.DataFrame:
 
     Examples:
         >>> from pyield import ipca
-        >>> # Get the last month's IPCA rate
+        >>> # Obter a taxa do IPCA do último mês
         >>> df = ipca.last_rates(1)
-        >>> # Get the last 3 months' IPCA rates
+        >>> # Obter as taxas do IPCA dos últimos 3 meses
         >>> df = ipca.last_rates(3)
     """
     if qtd_meses <= 0:
         raise ValueError("O número de meses deve ser maior que 0.")
 
     url_api = f"{IPCA_URL}-{qtd_meses}/variaveis/63?localidades=N1[all]"
-    dados = _fetch_api_data(url_api)
+    dados = _buscar_dados_api(url_api)
 
-    return _process_ipca_dataframe(dados, em_percentual=True)
+    return _processar_df_ipca(dados, em_percentual=True)
 
 
 def last_indexes(qtd_meses: int = 1) -> pl.DataFrame:
@@ -143,18 +143,18 @@ def last_indexes(qtd_meses: int = 1) -> pl.DataFrame:
 
     Examples:
         >>> from pyield import ipca
-        >>> # Get the last month's IPCA index
+        >>> # Obter o número-índice do IPCA do último mês
         >>> df = ipca.last_indexes(1)
-        >>> # Get the last 3 months' IPCA indexes
+        >>> # Obter os números-índice do IPCA dos últimos 3 meses
         >>> df = ipca.last_indexes(3)
     """
     if qtd_meses <= 0:
         raise ValueError("O número de meses deve ser maior que 0.")
 
     url_api = f"{IPCA_URL}-{qtd_meses}/variaveis/2266?localidades=N1[all]"
-    dados = _fetch_api_data(url_api)
+    dados = _buscar_dados_api(url_api)
 
-    return _process_ipca_dataframe(dados)
+    return _processar_df_ipca(dados)
 
 
 def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
@@ -175,7 +175,7 @@ def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
 
     Examples:
         >>> from pyield import ipca
-        >>> # Get the IPCA indexes for the first quarter of 2025
+        >>> # Obter os números-índice do IPCA para o primeiro trimestre de 2025
         >>> ipca.indexes(start="01-01-2025", end="01-03-2025")
         shape: (3, 2)
         ┌────────┬─────────┐
@@ -196,6 +196,6 @@ def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
     data_inicio = start.strftime("%Y%m")
     data_fim = end.strftime("%Y%m")
     url_api = f"{IPCA_URL}{data_inicio}-{data_fim}/variaveis/2266?localidades=N1[all]"
-    dados = _fetch_api_data(url_api)
+    dados = _buscar_dados_api(url_api)
 
-    return _process_ipca_dataframe(dados)
+    return _processar_df_ipca(dados)
