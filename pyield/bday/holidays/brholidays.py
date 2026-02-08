@@ -8,28 +8,29 @@ import polars as pl
 class BrHolidays:
     """Calendário de feriados nacionais (lista antiga e nova).
 
-    TRANSITION_DATE (inclusive): 2023-12-26. Antes desta data usa lista antiga.
+    Uso interno do módulo `bday`.
+    DATA_TRANSICAO (inclusive): 2023-12-26. Antes desta data usa lista antiga.
     A partir desta data usa lista nova.
     """
 
-    TRANSITION_DATE = dt.date(2023, 12, 26)
+    DATA_TRANSICAO = dt.date(2023, 12, 26)
 
     def __init__(self) -> None:
         base = Path(__file__).parent
-        self.new_holidays = self._load_holidays(base / "br_holidays_new.txt")
-        self.old_holidays = self._load_holidays(base / "br_holidays_old.txt")
+        self.feriados_novos = self._carregar_feriados(base / "br_holidays_new.txt")
+        self.feriados_antigos = self._carregar_feriados(base / "br_holidays_old.txt")
 
     @staticmethod
-    def _load_holidays(file_path: Path) -> list[dt.date]:
+    def _carregar_feriados(caminho_arquivo: Path) -> list[dt.date]:
         df = pl.read_csv(
-            file_path,
+            caminho_arquivo,
             has_header=False,
             new_columns=["date"],
             comment_prefix="#",
         ).with_columns(pl.col("date").str.to_date(format="%d/%m/%Y"))
         return df["date"].to_list()
 
-    def get_holidays(
+    def obter_feriados(
         self,
         dates: dt.date | pl.Series | None = None,
         holiday_option: Literal["old", "new", "infer"] = "infer",
@@ -42,24 +43,24 @@ class BrHolidays:
         """
         match holiday_option:
             case "old":
-                return self.old_holidays
+                return self.feriados_antigos
             case "new":
-                return self.new_holidays
+                return self.feriados_novos
             case "infer":
                 if dates is None:
                     raise ValueError("'dates' obrigatório em 'infer'.")
                 if isinstance(dates, dt.date):
-                    min_date = dates
+                    data_minima = dates
                 else:
-                    min_date = dates.drop_nulls().min()
+                    data_minima = dates.drop_nulls().min()
 
-                if not isinstance(min_date, dt.date):
+                if not isinstance(data_minima, dt.date):
                     raise ValueError("Não foi possível inferir a data mínima.")
 
-                if min_date < self.TRANSITION_DATE:
-                    return self.old_holidays
+                if data_minima < self.DATA_TRANSICAO:
+                    return self.feriados_antigos
                 else:
-                    return self.new_holidays
+                    return self.feriados_novos
 
             case _:
                 raise ValueError("Opção inválida para holiday_option.")

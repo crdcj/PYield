@@ -216,7 +216,7 @@ def tpf_intraday_trades() -> pl.DataFrame:
 
     Examples:
         >>> from pyield import bc
-        >>> bc.tpf_intraday_trades()
+        >>> df = bc.tpf_intraday_trades()
     """
     if not _mercado_selic_aberto():
         registro.info("Mercado fechado. Retornando DataFrame vazio.")

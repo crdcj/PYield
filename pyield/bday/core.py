@@ -9,12 +9,12 @@ from pyield import clock
 from pyield.bday.holidays.brholidays import BrHolidays
 from pyield.types import ArrayLike, DateLike
 
-SATURDAY_INDEX = 6
+LIMITE_DIA_UTIL = 6
 
 br_holidays = BrHolidays()
-OLD_HOLIDAYS = br_holidays.get_holidays(holiday_option="old")
-NEW_HOLIDAYS = br_holidays.get_holidays(holiday_option="new")
-TRANSITION_DATE = BrHolidays.TRANSITION_DATE
+FERIADOS_ANTIGOS = br_holidays.obter_feriados(holiday_option="old")
+FERIADOS_NOVOS = br_holidays.obter_feriados(holiday_option="new")
+DATA_TRANSICAO = BrHolidays.DATA_TRANSICAO
 
 
 def count_expr(start: pl.Expr | str | dt.date, end: pl.Expr | str | dt.date) -> pl.Expr:
@@ -68,9 +68,9 @@ def count_expr(start: pl.Expr | str | dt.date, end: pl.Expr | str | dt.date) -> 
     elif isinstance(end, dt.date):
         end = pl.lit(end)
     return (
-        pl.when(start < TRANSITION_DATE)
-        .then(pl.business_day_count(start=start, end=end, holidays=OLD_HOLIDAYS))
-        .otherwise(pl.business_day_count(start=start, end=end, holidays=NEW_HOLIDAYS))
+        pl.when(start < DATA_TRANSICAO)
+        .then(pl.business_day_count(start=start, end=end, holidays=FERIADOS_ANTIGOS))
+        .otherwise(pl.business_day_count(start=start, end=end, holidays=FERIADOS_NOVOS))
         .cast(pl.Int64)
     )
 
@@ -102,7 +102,7 @@ def count(
     Isso garante atribuição segura de volta ao DataFrame de origem.
 
     Regime de feriados: Para cada valor de ``start``, a lista de feriados (antiga vs.
-    nova) é escolhida com base na data de transição 2023-12-26 (``TRANSITION_DATE``).
+    nova) é escolhida com base na data de transição 2023-12-26 (``DATA_TRANSICAO``).
     Datas de início antes da transição usam a lista antiga; datas na transição ou
     após usam a lista nova.
 
@@ -253,9 +253,9 @@ def offset_expr(
     if isinstance(n, str):
         n = pl.col(n)
     return (
-        pl.when(expr < TRANSITION_DATE)
-        .then(expr.dt.add_business_days(n=n, roll=roll, holidays=OLD_HOLIDAYS))
-        .otherwise(expr.dt.add_business_days(n=n, roll=roll, holidays=NEW_HOLIDAYS))
+        pl.when(expr < DATA_TRANSICAO)
+        .then(expr.dt.add_business_days(n=n, roll=roll, holidays=FERIADOS_ANTIGOS))
+        .otherwise(expr.dt.add_business_days(n=n, roll=roll, holidays=FERIADOS_NOVOS))
     )
 
 
@@ -509,10 +509,12 @@ def generate(
     s = pl.date_range(conv_start, conv_end, closed=closed, eager=True).alias("bday")
 
     # Pega feriados aplicáveis
-    holidays = br_holidays.get_holidays(dates=conv_start, holiday_option=holiday_option)
+    holidays = br_holidays.obter_feriados(
+        dates=conv_start, holiday_option=holiday_option
+    )
 
     # Filtra: só dias úteis (seg-sex e não feriado)
-    return s.filter((s.dt.weekday() < SATURDAY_INDEX) & (~s.is_in(holidays)))
+    return s.filter((s.dt.weekday() < LIMITE_DIA_UTIL) & (~s.is_in(holidays)))
 
 
 def is_business_day_expr(expr: pl.Expr | str) -> pl.Expr:
@@ -557,9 +559,9 @@ def is_business_day_expr(expr: pl.Expr | str) -> pl.Expr:
     if isinstance(expr, str):
         expr = pl.col(expr)
     return (
-        pl.when(expr < TRANSITION_DATE)
-        .then(expr.dt.is_business_day(holidays=OLD_HOLIDAYS))
-        .otherwise(expr.dt.is_business_day(holidays=NEW_HOLIDAYS))
+        pl.when(expr < DATA_TRANSICAO)
+        .then(expr.dt.is_business_day(holidays=FERIADOS_ANTIGOS))
+        .otherwise(expr.dt.is_business_day(holidays=FERIADOS_NOVOS))
     )
 
 
