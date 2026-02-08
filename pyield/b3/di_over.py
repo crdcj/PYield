@@ -6,71 +6,73 @@ from pyield.types import DateLike, any_is_empty
 
 logger = logging.getLogger(__name__)
 
-# 4 decimal places in rate = 2 decimal places in percentage
-DI_OVER_DECIMAL_PLACES = 4
+# 4 casas decimais na taxa = 2 casas decimais em percentual
+CASAS_DECIMAIS_DI_OVER = 4
 
 
 def di_over(date: DateLike) -> float:
     """
-    Gets the DI (Interbank Deposit) rate for a specific date from B3/CETIP FTP server.
+    Obtém a taxa DI (Depósito Interfinanceiro) para uma data específica do
+    servidor FTP da B3/CETIP.
 
     Args:
-        date (DateLike): The reference date for fetching the DI rate.
+        date (DateLike): Data de referência para buscar a taxa DI.
 
     Returns:
-        float: DI rate for the specified date (e.g., 0.1315 for 13.15%).
-               Returns float("nan") if the file is not found (e.g., weekends, holidays).
+        float: Taxa DI para a data especificada (ex: 0.1315 para 13.15%).
+               Retorna float("nan") se o arquivo não for encontrado (ex: fins
+               de semana, feriados).
 
     Raises:
-        ValueError: If date is not in the correct format.
-        ConnectionError: If connection to the FTP server fails or other transfer
-            errors occur.
+        ValueError: Se a data não estiver no formato correto.
+        ConnectionError: Se a conexão com o servidor FTP falhar ou ocorrerem
+            outros erros de transferência.
 
     Examples:
         >>> di_over("28/02/2025")
         0.1315
-        >>> di_over("01/01/2025")  # Holiday
+        >>> di_over("01/01/2025")  # Feriado
         nan
     """
     if any_is_empty(date):
         return float("nan")
 
     try:
-        # Convert date to expected file format: YYYYMMDD.txt
-        date_obj = convert_dates(date)
-        filename = date_obj.strftime("%Y%m%d.txt")
+        # Converte a data para o formato esperado do arquivo: YYYYMMDD.txt
+        data_ref = convert_dates(date)
+        nome_arquivo = data_ref.strftime("%Y%m%d.txt")
 
-        # Use context manager for safe resource handling (auto-close/quit)
+        # Usa context manager para gerenciamento seguro de recursos (auto-close/quit)
         with ftplib.FTP("ftp.cetip.com.br", timeout=10) as ftp:
             ftp.login()
             ftp.cwd("/MediaCDI")
 
-            lines = []
+            linhas = []
             try:
-                ftp.retrlines(f"RETR {filename}", lines.append)
+                ftp.retrlines(f"RETR {nome_arquivo}", linhas.append)
             except ftplib.error_perm as e:
-                # Code 550 usually means "File not found" (weekend/holiday/future)
+                # Código 550 geralmente significa "Arquivo não encontrado"
                 if str(e).startswith("550"):
-                    logger.warning(f"DI Rate file not found for {date}: {e}")
-                    return float("nan")  # Return NaN instead of raising exception
+                    logger.warning(f"Arquivo DI não encontrado para {date}: {e}")
+                    return float("nan")
 
-                # If it's another type of error, we raise it to be caught below
-                raise e
+                # Se for outro tipo de erro, relança para ser capturado abaixo
+                raise
 
-            if not lines:
-                logger.error(f"File {filename} is empty.")
+            if not linhas:
+                logger.error(f"Arquivo {nome_arquivo} está vazio.")
                 return float("nan")
 
-            # Parse the rate
-            # Format usually: "00001315" -> 13.15% -> 0.1315
-            raw_rate = lines[0].strip()
-            rate = int(raw_rate) / 10000
-            return round(rate, DI_OVER_DECIMAL_PLACES)
+            # Faz o parsing da taxa
+            # Formato usual: "00001315" -> 13.15% -> 0.1315
+            taxa_bruta = linhas[0].strip()
+            taxa = int(taxa_bruta) / 10**CASAS_DECIMAIS_DI_OVER
+            return round(taxa, CASAS_DECIMAIS_DI_OVER)
 
     except ValueError as e:
-        logger.error(f"Date format error for input '{date}': {e}")
+        logger.error(f"Erro no formato da data para entrada '{date}': {e}")
         raise
 
     except ftplib.all_errors as e:
-        logger.error(f"FTP connection or transfer error: {e}")
-        raise ConnectionError(f"Failed to fetch DI rate from FTP: {e}") from e
+        logger.error(f"Erro de conexão ou transferência FTP: {e}")
+        raise ConnectionError(f"Falha ao buscar taxa DI via FTP: {e}") from e

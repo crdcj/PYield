@@ -71,6 +71,11 @@ Most data-fetching functions follow this pattern:
 3. Fetch from external API (with retry logic) or cached parquet
 4. Return Polars DataFrame with standardized column names
 
+## Naming Conventions
+
+- **API pública (inglês):** Nomes de funções públicas, parâmetros, nomes de colunas em DataFrames e classes exportadas permanecem em inglês.
+- **Código interno (português):** Variáveis locais, funções internas (prefixo `_`), constantes de módulo, mensagens de log e mensagens de exceção devem ser em português.
+
 ## Docstring Conventions
 
 - All docstrings must be written in **Portuguese** (both public and internal functions).
@@ -89,3 +94,11 @@ Modules that fetch external data (e.g., `bc/repo.py`, `bc/trades_monthly.py`) us
 1. **Reference data** — A pair of files in `tests/<module>/data/`: the raw input (CSV or ZIP) and the expected output (Parquet).
 2. **Pipeline test** — Processes the local raw input through the internal processing functions and asserts `result.equals(expected_parquet)`.
 3. **Public function test** — Patches the network fetch function to return local raw data, calls the public function, and asserts equality with the reference Parquet.
+
+### Quando doctests são suficientes
+
+Módulos com pipeline trivial que retornam valores escalares simples (float, str) sem transformações complexas de DataFrame. Os doctests já validam o comportamento real e servem como documentação. Exemplos: `di_over.py`, `tn/ltn.py`, `fwd.py`, `interpolator.py`.
+
+### Quando criar test files separados
+
+Módulos com pipelines ETL multi-etapa, transformações complexas de DataFrame (5+ colunas), processamento de arquivos binários (ZIP), ou quando é necessário testar múltiplos cenários de edge case que não cabem em doctests.
