@@ -1,5 +1,3 @@
-import logging
-
 import polars as pl
 import requests
 
@@ -7,61 +5,60 @@ from pyield.converters import convert_dates
 from pyield.retry import default_retry
 from pyield.types import DateLike, any_is_empty
 
-logger = logging.getLogger(__name__)
 IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"
 
 
 @default_retry
 def _fetch_api_data(url: str) -> dict[str, str]:
+    """Busca dados da API do IBGE e retorna o dicionário da série temporal."""
     response = requests.get(url, timeout=10)
-    response.raise_for_status()  # Raises an exception for HTTP error codes
+    # Levanta exceção para códigos de erro HTTP
+    response.raise_for_status()
     data = response.json()
     if not data:
-        raise ValueError(f"No data available for the API URL: {url}")
+        raise ValueError(f"Nenhum dado disponível para a URL: {url}")
     return data[0]["resultados"][0]["series"][0]["serie"]
 
 
 def _process_ipca_dataframe(
-    data_dict: dict[str, str], is_in_pct: bool = False
+    dados: dict[str, str], em_percentual: bool = False
 ) -> pl.DataFrame:
-    """
-    Process the IPCA data dictionary into a DataFrame with proper formatting.
+    """Processa o dicionário de dados do IPCA em um DataFrame formatado.
 
     Args:
-        data_dict (dict[str, str]): Dictionary containing the raw IPCA data
-        is_in_pct (bool, optional): Whether the data represents rates in percentage
-            format (True) or indexes (False). Defaults to False.
+        dados: Dicionário contendo os dados brutos do IPCA.
+        em_percentual: Se os dados representam taxas em formato percentual
+            (True) ou números-índice (False). Padrão: False.
 
     Returns:
-        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame com colunas 'Period' e 'Value'.
     """
     df = pl.DataFrame(
-        {"Period": data_dict.keys(), "Value": data_dict.values()}
+        {"Period": dados.keys(), "Value": dados.values()}
     ).with_columns(
         pl.col("Period").cast(pl.Int64),
         pl.col("Value").cast(pl.Float64),
     )
-    if is_in_pct:
+    if em_percentual:
         df = df.with_columns(pl.col("Value").truediv(100).round(4))
     return df
 
 
 def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
-    """
-    Retrieves the IPCA monthly rates for a specified date range.
+    """Obtém as taxas mensais do IPCA para um intervalo de datas.
 
-    Makes an API call to the IBGE's data portal using the format:
+    Realiza chamada à API do portal de dados do IBGE no formato:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/YYYYMM-YYYYMM/variaveis/63?localidades=N1[all]
 
-    Example: For the date range "01-01-2024" to "31-03-2024", the API URL will be:
+    Exemplo: Para o intervalo "01-01-2024" a "31-03-2024", a URL será:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/202401-202403/variaveis/63?localidades=N1[all]
 
     Args:
-        start (DateLike): The start date of the date range
-        end (DateLike): The end date of the date range
+        start (DateLike): Data de início do intervalo.
+        end (DateLike): Data de fim do intervalo.
 
     Returns:
-        pl.DataFrame: DataFrame with columns 'Period' and 'Rate'
+        pl.DataFrame: DataFrame com colunas 'Period' e 'Value'.
 
     Examples:
         >>> from pyield import ipca
@@ -83,32 +80,31 @@ def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
     start = convert_dates(start)
     end = convert_dates(end)
 
-    start_date = start.strftime("%Y%m")
-    end_date = end.strftime("%Y%m")
-    api_url = f"{IPCA_URL}{start_date}-{end_date}/variaveis/63?localidades=N1[all]"
-    data_dict = _fetch_api_data(api_url)
+    data_inicio = start.strftime("%Y%m")
+    data_fim = end.strftime("%Y%m")
+    url_api = f"{IPCA_URL}{data_inicio}-{data_fim}/variaveis/63?localidades=N1[all]"
+    dados = _fetch_api_data(url_api)
 
-    return _process_ipca_dataframe(data_dict, is_in_pct=True)
+    return _process_ipca_dataframe(dados, em_percentual=True)
 
 
-def last_rates(num_months: int = 1) -> pl.DataFrame:
-    """
-    Retrieves the last IPCA monthly rates for a specified number of months.
+def last_rates(qtd_meses: int = 1) -> pl.DataFrame:
+    """Obtém as últimas taxas mensais do IPCA para um número especificado de meses.
 
-    Makes an API call to the IBGE's data portal using the format:
+    Realiza chamada à API do portal de dados do IBGE no formato:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/-N/variaveis/63?localidades=N1[all]
 
-    Example: For the last 2 months, the API URL will be:
+    Exemplo: Para os últimos 2 meses, a URL será:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/-2/variaveis/63?localidades=N1[all]
 
     Args:
-        num_months (int, optional): Number of months to retrieve. Defaults to 1.
+        qtd_meses (int, optional): Número de meses a recuperar. Padrão: 1.
 
     Returns:
-        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame com colunas 'Period' e 'Value'.
 
     Raises:
-        ValueError: If num_months is 0
+        ValueError: Se qtd_meses for menor ou igual a 0.
 
     Examples:
         >>> from pyield import ipca
@@ -117,31 +113,33 @@ def last_rates(num_months: int = 1) -> pl.DataFrame:
         >>> # Get the last 3 months' IPCA rates
         >>> df = ipca.last_rates(3)
     """
-    num_months = abs(num_months)
-    if num_months == 0:
-        raise ValueError("The number of months must be greater than 0.")
+    if qtd_meses <= 0:
+        raise ValueError("O número de meses deve ser maior que 0.")
 
-    api_url = f"{IPCA_URL}-{num_months}/variaveis/63?localidades=N1[all]"
-    data_dict = _fetch_api_data(api_url)
+    url_api = f"{IPCA_URL}-{qtd_meses}/variaveis/63?localidades=N1[all]"
+    dados = _fetch_api_data(url_api)
 
-    return _process_ipca_dataframe(data_dict, is_in_pct=True)
+    return _process_ipca_dataframe(dados, em_percentual=True)
 
 
-def last_indexes(num_months: int = 1) -> pl.DataFrame:
-    """
-    Retrieves the last IPCA index values for a specified number of months.
+def last_indexes(qtd_meses: int = 1) -> pl.DataFrame:
+    """Obtém os últimos valores do número-índice do IPCA para um número
+    especificado de meses.
 
-    Makes an API call to the IBGE's data portal using the format:
+    Realiza chamada à API do portal de dados do IBGE no formato:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/-N/variaveis/2266?localidades=N1[all]
 
-    Example: For the last 2 months, the API URL will be:
+    Exemplo: Para os últimos 2 meses, a URL será:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/-2/variaveis/2266?localidades=N1[all]
 
     Args:
-        num_months (int, optional): Number of months to retrieve. Defaults to 1.
+        qtd_meses (int, optional): Número de meses a recuperar. Padrão: 1.
 
     Returns:
-        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame com colunas 'Period' e 'Value'.
+
+    Raises:
+        ValueError: Se qtd_meses for menor ou igual a 0.
 
     Examples:
         >>> from pyield import ipca
@@ -150,32 +148,30 @@ def last_indexes(num_months: int = 1) -> pl.DataFrame:
         >>> # Get the last 3 months' IPCA indexes
         >>> df = ipca.last_indexes(3)
     """
-    num_months = abs(num_months)
-    if num_months == 0:
-        return pl.DataFrame()
+    if qtd_meses <= 0:
+        raise ValueError("O número de meses deve ser maior que 0.")
 
-    api_url = f"{IPCA_URL}-{num_months}/variaveis/2266?localidades=N1[all]"
-    data_dict = _fetch_api_data(api_url)
+    url_api = f"{IPCA_URL}-{qtd_meses}/variaveis/2266?localidades=N1[all]"
+    dados = _fetch_api_data(url_api)
 
-    return _process_ipca_dataframe(data_dict)
+    return _process_ipca_dataframe(dados)
 
 
 def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
-    """
-    Retrieves the IPCA index values for a specified date range.
+    """Obtém os valores do número-índice do IPCA para um intervalo de datas.
 
-    Makes an API call to the IBGE's data portal using the format:
+    Realiza chamada à API do portal de dados do IBGE no formato:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/YYYYMM-YYYYMM/variaveis/2266?localidades=N1[all]
 
-    Example: For the date range "01-01-2024" to "31-03-2024", the API URL will be:
+    Exemplo: Para o intervalo "01-01-2024" a "31-03-2024", a URL será:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/202401-202403/variaveis/2266?localidades=N1[all]
 
     Args:
-        start (DateLike): The start date of the date range
-        end (DateLike): The end date of the date range
+        start (DateLike): Data de início do intervalo.
+        end (DateLike): Data de fim do intervalo.
 
     Returns:
-        pl.DataFrame: DataFrame with columns 'Period' and 'Value'
+        pl.DataFrame: DataFrame com colunas 'Period' e 'Value'.
 
     Examples:
         >>> from pyield import ipca
@@ -197,9 +193,9 @@ def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
     start = convert_dates(start)
     end = convert_dates(end)
 
-    start_date = start.strftime("%Y%m")
-    end_date = end.strftime("%Y%m")
-    api_url = f"{IPCA_URL}{start_date}-{end_date}/variaveis/2266?localidades=N1[all]"
-    data_dict = _fetch_api_data(api_url)
+    data_inicio = start.strftime("%Y%m")
+    data_fim = end.strftime("%Y%m")
+    url_api = f"{IPCA_URL}{data_inicio}-{data_fim}/variaveis/2266?localidades=N1[all]"
+    dados = _fetch_api_data(url_api)
 
-    return _process_ipca_dataframe(data_dict)
+    return _process_ipca_dataframe(dados)
