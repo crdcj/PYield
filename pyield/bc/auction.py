@@ -1,9 +1,9 @@
 """
-Documentação da API do BC
+Documentação da API do BC:
     https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/aplicacao#!/recursos/leiloesTitulosPublicos#eyJmb3JtdWxhcmlvIjp7IiRmb3JtYXQiOiJqc29uIiwiJHRvcCI6MTAwfX0=
-Exemplo de chamada:
-    "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='2025-04-08'&@dataMovimentoFim='2025-04-08'&$top=100&$format=json"
 
+Exemplo de chamada:
+    https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='2025-04-08'&@dataMovimentoFim='2025-04-08'&$top=100&$format=json
 """  # noqa: E501
 
 import datetime as dt
@@ -22,10 +22,10 @@ from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
 from pyield.types import DateLike
 
-logger = logging.getLogger(__name__)
+registro = logging.getLogger(__name__)
 
-# FR = First Round (Primeira Rodada), SR = Second Round (Segunda Rodada)
-COLUMN_MAP = {
+# FR = Primeira Rodada, SR = Segunda Rodada
+MAPA_COLUNAS = {
     "id": ("ID", pl.String),
     "dataMovimento": ("Date", pl.Datetime),
     "dataLiquidacao": ("Settlement", pl.Datetime),
@@ -49,10 +49,10 @@ COLUMN_MAP = {
     "quantidadeLiquidadaSegundaRodada": ("SettledQuantitySR", pl.Int64),
 }
 
-API_SCHEMA = {col: dtype for col, (_, dtype) in COLUMN_MAP.items()}
-COLUMN_MAPPING = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
+ESQUEMA_API = {col: dtype for col, (_, dtype) in MAPA_COLUNAS.items()}
+MAPEAMENTO_COLUNAS = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
 
-FINAL_COLUMN_ORDER = [
+ORDEM_COLUNAS_FINAL = [
     "Date",
     "Settlement",
     "AuctionType",
@@ -88,34 +88,34 @@ FINAL_COLUMN_ORDER = [
     "Value",
 ]
 
-SORTING_KEYS = ["Date", "AuctionType", "BondType", "Maturity"]
+CHAVES_ORDENACAO = ["Date", "AuctionType", "BondType", "Maturity"]
 
-BASE_API_URL = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
+URL_BASE_API = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
 
 
-def _build_url(
-    start: DateLike | None = None,
-    end: DateLike | None = None,
-    auction_type: Literal["sell", "buy"] | None = None,
+def _montar_url(
+    inicio: DateLike | None = None,
+    fim: DateLike | None = None,
+    tipo_leilao: Literal["sell", "buy"] | None = None,
 ) -> str:
-    url = BASE_API_URL
-    if start:
-        start = cv.convert_dates(start)
-        start_str = start.strftime("%Y-%m-%d")
-        url += f"@dataMovimentoInicio='{start_str}'"
+    url = URL_BASE_API
+    if inicio:
+        inicio = cv.convert_dates(inicio)
+        inicio_str = inicio.strftime("%Y-%m-%d")
+        url += f"@dataMovimentoInicio='{inicio_str}'"
 
-    if end:
-        end = cv.convert_dates(end)
-        end_str = end.strftime("%Y-%m-%d")
-        url += f"&@dataMovimentoFim='{end_str}'"
+    if fim:
+        fim = cv.convert_dates(fim)
+        fim_str = fim.strftime("%Y-%m-%d")
+        url += f"&@dataMovimentoFim='{fim_str}'"
 
-    # Mapeamento do auction_type para o valor esperado pela API
-    if auction_type:
-        normalized_auction_type = auction_type.lower()
-        auction_type_mapping = {"sell": "Venda", "buy": "Compra"}
-        auction_type_api_value = auction_type_mapping[normalized_auction_type]
-        # Adiciona o parâmetro tipoOferta à URL se auction_type for fornecido
-        url += f"&@tipoOferta='{auction_type_api_value}'"
+    # Mapeamento do tipo_leilao para o valor esperado pela API
+    if tipo_leilao:
+        tipo_leilao_normalizado = tipo_leilao.lower()
+        mapeamento_tipo_leilao = {"sell": "Venda", "buy": "Compra"}
+        valor_tipo_leilao_api = mapeamento_tipo_leilao[tipo_leilao_normalizado]
+        # Adiciona o parâmetro tipoOferta à URL se tipo_leilao for fornecido
+        url += f"&@tipoOferta='{valor_tipo_leilao_api}'"
 
     url += "&$format=text/csv"  # Adiciona o formato CSV ao final
 
@@ -123,21 +123,21 @@ def _build_url(
 
 
 @default_retry
-def _get_api_csv(url: str) -> bytes:
-    response = requests.get(url, timeout=10)
-    response.raise_for_status()
-    return response.content
+def _buscar_csv_api(url: str) -> bytes:
+    resposta = requests.get(url, timeout=10)
+    resposta.raise_for_status()
+    return resposta.content
 
 
-def _parse_csv(csv_content: bytes) -> pl.DataFrame:
-    if not csv_content.strip():
+def _parsear_csv(conteudo_csv: bytes) -> pl.DataFrame:
+    if not conteudo_csv.strip():
         return pl.DataFrame()
     # Lê usando schema explícito para garantir estabilidade dos tipos.
     # Evitamos try_parse_dates para não promover colunas inesperadas a datas.
     df = pl.read_csv(
-        csv_content,
+        conteudo_csv,
         decimal_comma=True,
-        schema_overrides=API_SCHEMA,
+        schema_overrides=ESQUEMA_API,
         null_values=["null"],
         encoding="utf-8",
     )
@@ -148,16 +148,18 @@ def _parse_csv(csv_content: bytes) -> pl.DataFrame:
     return df
 
 
-def _format_df(df: pl.DataFrame) -> pl.DataFrame:
-    return df.filter(pl.col("ofertante") == "Tesouro Nacional").rename(COLUMN_MAPPING)
+def _formatar_df(df: pl.DataFrame) -> pl.DataFrame:
+    return df.filter(pl.col("ofertante") == "Tesouro Nacional").rename(
+        MAPEAMENTO_COLUNAS
+    )
 
 
-def _process_df(df: pl.DataFrame) -> pl.DataFrame:
+def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     # Em 11/06/2024 o BC passou a informar nas colunas de cotacao os valores dos PUs
     # Isso afeta somente os títulos LFT e NTN-B
-    change_date = dt.datetime.strptime("11-06-2024", "%d-%m-%Y").date()
+    data_mudanca = dt.datetime.strptime("11-06-2024", "%d-%m-%Y").date()
 
-    bond_mapping = {
+    mapa_titulos = {
         100000: "LTN",
         210100: "LFT",
         # 450000: "..." # Foi um título ofertado pelo BC em 2009/2010
@@ -198,13 +200,13 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
             ValueSR=pl.col("Value") - pl.col("ValueFR"),
             # 7. Mapeia o código SELIC para o tipo de título (BondType)
             BondType=pl.col("SelicCode").replace_strict(
-                bond_mapping, return_dtype=pl.String
+                mapa_titulos, return_dtype=pl.String
             ),
         )
         .with_columns(
             # 8. Ajusta o preço médio (AvgPrice) com base na data e tipo do título
             pl.when(
-                (pl.col("Date") >= change_date)
+                (pl.col("Date") >= data_mudanca)
                 | (pl.col("BondType").is_in(["LTN", "NTN-F"]))
             )
             .then("AvgPrice")
@@ -216,94 +218,88 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _adjust_values_without_auction(df: pl.DataFrame) -> pl.DataFrame:
+def _ajustar_valores_sem_leilao(df: pl.DataFrame) -> pl.DataFrame:
     # Onde não há quantidade aceita na primeira volta, não há taxa ou PU definidos.
     # A API do BC retorna 0.0 nesses casos, mas vamos ajustar para None.
-    cols_to_update = ["AvgRate", "CutRate", "AvgPrice", "CutPrice"]
+    colunas_para_ajuste = ["AvgRate", "CutRate", "AvgPrice", "CutPrice"]
     df = df.with_columns(
         pl.when(pl.col("AcceptedQuantityFR") == 0)
         .then(None)
-        .otherwise(pl.col(cols_to_update))
+        .otherwise(pl.col(colunas_para_ajuste))
         .name.keep()
     )
     return df
 
 
-def _add_duration(df: pl.DataFrame) -> pl.DataFrame:
-    """
-    Calcula a duration para cada tipo de título, aplicando uma função
-    linha a linha para os casos não-vetorizáveis (NTN-F e NTN-B).
+def _adicionar_duracao(df: pl.DataFrame) -> pl.DataFrame:
+    """Calcula a duration por tipo de título.
+
+    Aplica função linha a linha para os casos não vetorizáveis (NTN-F e NTN-B).
     """
 
-    def calculate_duration_per_row(row: dict) -> float:
-        """Função auxiliar que aplica a lógica para uma única linha."""
-        bond_type = row["BondType"]
+    def _duracao_por_linha(linha: dict) -> float:
+        """Aplica a lógica de duration para uma única linha."""
+        tipo_titulo = linha["BondType"]
 
-        if bond_type == "LTN":
-            return row["BDToMat"] / 252
-        elif bond_type == "NTN-F":
-            # Chamada da sua função externa, linha a linha
-            return duration_f(row["Settlement"], row["Maturity"], row["AvgRate"])
-        elif bond_type == "NTN-B":
-            # Chamada da sua função externa, linha a linha
-            return duration_b(row["Settlement"], row["Maturity"], row["AvgRate"])
-        else:  # LFT e outros casos
-            return 0.0
+        if tipo_titulo == "LTN":
+            return linha["BDToMat"] / 252
+        if tipo_titulo == "NTN-F":
+            return duration_f(linha["Settlement"], linha["Maturity"], linha["AvgRate"])
+        if tipo_titulo == "NTN-B":
+            return duration_b(linha["Settlement"], linha["Maturity"], linha["AvgRate"])
+        # LFT e outros casos
+        return 0.0
 
     df = df.with_columns(
         pl.struct(["BondType", "Settlement", "Maturity", "AvgRate", "BDToMat"])
-        .map_elements(calculate_duration_per_row, return_dtype=pl.Float64)
+        .map_elements(_duracao_por_linha, return_dtype=pl.Float64)
         .alias("Duration")
     )
     return df
 
 
-def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
-    """
-    Calcula o DV01 para o leilão de forma 100% vetorizada em Polars.
-    """
+def _adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
+    """Calcula o DV01 do leilão de forma vetorizada em Polars."""
     # 1. Define a expressão base para o cálculo do DV01 unitário.
-    dv01_unit_expr = (
+    expr_dv01_unitario = (
         0.0001 * pl.col("AvgPrice") * pl.col("Duration") / (1 + pl.col("AvgRate"))
     )
 
     df = df.with_columns(
         # 2. Criar as colunas DV01 multiplicando a expressão base pelas quantidades.
-        DV01=dv01_unit_expr * pl.col("AcceptedQuantity"),
-        DV01FR=dv01_unit_expr * pl.col("AcceptedQuantityFR"),
-        DV01SR=dv01_unit_expr * pl.col("AcceptedQuantitySR"),
+        DV01=expr_dv01_unitario * pl.col("AcceptedQuantity"),
+        DV01FR=expr_dv01_unitario * pl.col("AcceptedQuantityFR"),
+        DV01SR=expr_dv01_unitario * pl.col("AcceptedQuantitySR"),
     )
 
     return df
 
 
-def _get_ptax_df(df: pl.DataFrame) -> pl.DataFrame:
+def _obter_df_ptax(df: pl.DataFrame) -> pl.DataFrame:
     """Busca a série histórica da PTAX para o intervalo de datas do DataFrame."""
-    start_date = df["Date"].min()
-    end_date = df["Date"].max()
-    assert isinstance(start_date, dt.date)
-    assert isinstance(end_date, dt.date)
+    data_inicio = df["Date"].min()
+    data_fim = df["Date"].max()
+    assert isinstance(data_inicio, dt.date)
+    assert isinstance(data_fim, dt.date)
 
     # Garante que pelo menos um dia útil seja buscado
     # Isso é importante caso seja o leilão do dia atual e não haja PTAX ainda
-    bz_last_bday = bday.last_business_day()
-    if start_date >= bz_last_bday:
-        start_date = bday.offset(bz_last_bday, -1)
+    ultimo_dia_util = bday.last_business_day()
+    if data_inicio >= ultimo_dia_util:
+        data_inicio = bday.offset(ultimo_dia_util, -1)
 
-    df_ptax = pt.ptax_series(start=start_date, end=end_date)
+    df_ptax = pt.ptax_series(start=data_inicio, end=data_fim)
     if df_ptax.is_empty():
         return pl.DataFrame()
 
     return df_ptax.select("Date", "MidRate").rename({"MidRate": "PTAX"}).sort("Date")
 
 
-def _add_usd_dv01(df: pl.DataFrame, df_ptax: pl.DataFrame) -> pl.DataFrame:
-    """
-    Adiciona o DV01 em USD usando um join_asof para encontrar a PTAX mais recente.
-    """
+def _adicionar_dv01_usd(df: pl.DataFrame, df_ptax: pl.DataFrame) -> pl.DataFrame:
+    """Adiciona o DV01 em USD usando join_asof com a PTAX mais recente."""
     if df_ptax.is_empty():
         # Se não houver dados de PTAX, retorna o DataFrame original sem alterações
-        logger.warning("No PTAX data available to calculate DV01 in USD.")
+        registro.warning("Sem dados de PTAX para calcular DV01 em USD.")
         return df
 
     df = (
@@ -317,7 +313,7 @@ def _add_usd_dv01(df: pl.DataFrame, df_ptax: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _add_avg_maturity(df: pl.DataFrame) -> pl.DataFrame:
+def _adicionar_prazo_medio(df: pl.DataFrame) -> pl.DataFrame:
     # Na metodolgia do Tesouro Nacional, a maturidade média é a mesma que a duração
     df = df.with_columns(
         pl.when(pl.col("BondType") == "LFT")
@@ -329,8 +325,8 @@ def _add_avg_maturity(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _sort_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
-    return df.select(FINAL_COLUMN_ORDER).sort(SORTING_KEYS)
+def _ordenar_reordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
+    return df.select(ORDEM_COLUNAS_FINAL).sort(CHAVES_ORDENACAO)
 
 
 def auctions(
@@ -341,7 +337,7 @@ def auctions(
     """
     Recupera dados de leilões para um determinado período e tipo de leilão da API do BC.
 
-    **Consultas de Período:**
+    **Consultas de período:**
     - Para consultar dados de um intervalo, forneça as datas de `start` e `end`.
       Exemplo: `auctions(start='2024-10-20', end='2024-10-27')`
     - Se apenas `start` for fornecido, a API do BC retornará dados de leilão a partir
@@ -351,7 +347,7 @@ def auctions(
       data mais antiga disponível até a data de `end`**.
       Exemplo: `auctions(end='2024-10-27')`
 
-    **Série Histórica Completa:**
+    **Série histórica completa:**
     - Para recuperar a série histórica completa de leilões (desde 12/11/2012 até o
       último dia útil), chame a função sem fornecer os parâmetros `start` e `end`.
       Exemplo: `auctions()`
@@ -404,10 +400,10 @@ def auctions(
         └────────────┴────────────┴─────────────┴───────────┴───┴──────────────────┴─────────────┴──────────┴─────────────┘
 
     Notes:
-        FR = First Round (Primeira Rodada)
-        SR = Second Round (Segunda Rodada)
+        FR = Primeira Rodada
+        SR = Segunda Rodada
 
-    DataFrame Columns:
+    Colunas do DataFrame:
         - Date: Data do leilão.
         - Settlement: Data de liquidação do leilão.
         - AuctionType: Tipo de leilão (ex: "Sell" ou "Buy").
@@ -417,9 +413,9 @@ def auctions(
         - SelicCode: Código do título no sistema Selic.
         - Maturity: Data de vencimento do título.
         - BDToMat: Dias úteis entre a liquidação da 1R e a data de vencimento do título.
-        - Duration: Duration (Duração) calculada com base na data de
+        - Duration: Duration (duração) calculada com base na data de
             liquidação da 1R e na data de vencimento do título.
-        - AvgMaturity: Maturidade média do título (em anos).
+        - AvgMaturity: Prazo médio do título (em anos).
         - AvgPrice: Preço médio no leilão.
         - CutPrice: Preço de corte.
         - AvgRate: Taxa de juros média.
@@ -438,31 +434,31 @@ def auctions(
         - AcceptedQuantity: Quantidade total aceita no leilão (FR + SR).
         - SettledQuantityFR: Quantidade liquidada na primeira rodada (FR).
         - SettledQuantitySR: Quantidade liquidada na segunda rodada (SR).
-        - SettledQuantity: Quantidade total liquidada no leilão (FR + SR
+        - SettledQuantity: Quantidade total liquidada no leilão (FR + SR).
         - ValueFR: Valor da primeira rodada (FR) do leilão em R$.
         - ValueSR: Valor da segunda rodada (SR) em R$.
         - Value: Valor total do leilão em R$ (FR + SR).
     """  # noqa: E501
     try:
-        url = _build_url(start=start, end=end, auction_type=auction_type)
-        api_csv_text = _get_api_csv(url)
-        df = _parse_csv(api_csv_text)
+        url = _montar_url(inicio=start, fim=end, tipo_leilao=auction_type)
+        texto_csv_api = _buscar_csv_api(url)
+        df = _parsear_csv(texto_csv_api)
         if df.is_empty():
-            logger.warning("No auction data found after parsing the API response.")
+            registro.warning("Nenhum dado de leilão encontrado após o parse da API.")
             return pl.DataFrame()
-        df = _format_df(df)
-        df = _process_df(df)
-        df = _adjust_values_without_auction(df)
-        df = _add_duration(df)
-        df = _add_dv01(df)
-        df_ptax = _get_ptax_df(df)
-        df = _add_usd_dv01(df, df_ptax)
-        df = _add_avg_maturity(df)
-        df = _sort_and_reorder_columns(df)
+        df = _formatar_df(df)
+        df = _processar_df(df)
+        df = _ajustar_valores_sem_leilao(df)
+        df = _adicionar_duracao(df)
+        df = _adicionar_dv01(df)
+        df_ptax = _obter_df_ptax(df)
+        df = _adicionar_dv01_usd(df, df_ptax)
+        df = _adicionar_prazo_medio(df)
+        df = _ordenar_reordenar_colunas(df)
         # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
         df = df.with_columns(cs.float().fill_nan(None))
 
         return df
     except Exception as e:
-        logger.exception(f"Error fetching auction data from BC API: {e}")
+        registro.exception(f"Erro ao buscar dados de leilões na API do BC: {e}")
         return pl.DataFrame()
