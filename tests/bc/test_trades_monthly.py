@@ -4,9 +4,9 @@ from unittest.mock import patch
 import polars as pl
 
 from pyield.bc.trades_monthly import (
-    _process_df,  # noqa: PLC2701
-    _read_dataframe_from_zip,  # noqa: PLC2701
-    _uncompress_zip,  # noqa: PLC2701
+    _descompactar_zip,  # noqa: PLC2701
+    _ler_df_zip,  # noqa: PLC2701
+    _processar_df,  # noqa: PLC2701
     tpf_monthly_trades,
 )
 
@@ -24,9 +24,9 @@ def _load_expected() -> pl.DataFrame:
 
 
 def _process_zip(zip_content: bytes) -> pl.DataFrame:
-    csv_content = _uncompress_zip(zip_content)
-    df = _read_dataframe_from_zip(csv_content)
-    return _process_df(df)
+    conteudo_csv = _descompactar_zip(zip_content)
+    df = _ler_df_zip(conteudo_csv)
+    return _processar_df(df)
 
 
 def test_process_pipeline():
@@ -36,9 +36,9 @@ def test_process_pipeline():
 
 
 def test_tpf_monthly_trades_with_mock():
-    """tpf_monthly_trades() com mock de _fetch_zip_from_url deve bater com o parquet."""
+    """tpf_monthly_trades() com mock de _baixar_zip deve bater com o parquet."""
     with patch(
-        "pyield.bc.trades_monthly._fetch_zip_from_url",
+        "pyield.bc.trades_monthly._baixar_zip",
         return_value=_load_zip(),
     ):
         result = tpf_monthly_trades("07-01-2025", extragroup=True)

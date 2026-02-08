@@ -83,6 +83,10 @@ Most data-fetching functions follow this pattern:
 - `Output Columns:` lists every column with tipo Polars e descrição (ex: `* SettlementDate (Date): data de liquidação.`).
 - Doctests (section `Examples:`) use real data and are validated by `pytest --doctest-modules`.
 
+## Complexity
+
+- Always prioritize reducing code complexity. Do not increase complexity unless explicitly requested.
+
 ## Testing
 
 Tests are in `tests/` and doctests are embedded in docstrings. Run `pytest pyield --doctest-modules` to execute both.

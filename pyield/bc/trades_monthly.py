@@ -1,8 +1,8 @@
 """
-Module to fetch monthly secondary trading data for the domestic 'Federal Public Debt'
-(TPF - títulos públicos federais) registered in the Brazilian Central Bank (BCB) Selic system.
-The data is downloaded as a ZIP file, extracted, and loaded into a Polars DataFrame.
-Example of the data format (first 3 lines):
+Módulo para buscar dados mensais de negociações secundárias da Dívida Pública
+Federal (TPF) registradas no sistema Selic do Banco Central do Brasil (BCB).
+Os dados são baixados em ZIP, extraídos e carregados em um DataFrame Polars.
+Exemplo do formato dos dados (3 primeiras linhas):
 DATA MOV  ; SIGLA; CODIGO; CODIGO ISIN ; EMISSAO   ; VENCIMENTO; NUM DE OPER; QUANT NEGOCIADA; VALOR NEGOCIADO; PU MIN        ; PU MED        ; PU MAX        ; PU LASTRO     ; VALOR PAR     ; TAXA MIN; TAXA MED; TAXA MAX; NUM OPER COM CORRETAGEM; QUANT NEG COM CORRETAGEM
 02/09/2024; LFT  ; 210100; BRSTNCLF1RC4; 26/10/2018; 01/03/2025;          48;          100221;                ; 15288,00898200; 15292,57098100; 15302,77742100; 15285,54813387; 15288,23830700; -0,1897 ; -0,0565 ; 0,0032  ;                      20;                    16155
 02/09/2024; LFT  ; 210100; BRSTNCLF1RD2; 08/03/2019; 01/09/2025;         101;          230120;                ; 15288,23830700; 15294,25937800; 15311,01778200; 15279,49187722; 15288,23830700; -0,1498 ; -0,0395 ; 0,0000  ;                      21;                    19059
@@ -22,11 +22,11 @@ from pyield.converters import convert_dates
 from pyield.retry import default_retry
 from pyield.types import DateLike, any_is_empty
 
-logger = logging.getLogger(__name__)
+registro = logging.getLogger(__name__)
 
-BASE_URL = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
+URL_BASE = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
 
-COLUMN_MAP = {
+MAPA_COLUNAS = {
     "DATA MOV": ("SettlementDate", pl.String),
     "SIGLA": ("BondType", pl.String),
     "CODIGO": ("SelicCode", pl.Int64),
@@ -48,10 +48,10 @@ COLUMN_MAP = {
     "QUANT NEG COM CORRETAGEM": ("BrokerageQuantity", pl.Int64),
 }
 
-CSV_SCHEMA = {col: dtype for col, (_, dtype) in COLUMN_MAP.items()}
-COLUMN_MAPPING = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
+ESQUEMA_CSV = {col: dtype for col, (_, dtype) in MAPA_COLUNAS.items()}
+MAPEAMENTO_COLUNAS = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
 
-FINAL_COLUMN_ORDER = [
+ORDEM_COLUNAS_FINAL = [
     "SettlementDate",
     "BondType",
     "SelicCode",
@@ -73,10 +73,10 @@ FINAL_COLUMN_ORDER = [
     "BrokerageQuantity",
 ]
 
-SORTING_KEYS = ["SettlementDate", "BondType", "MaturityDate"]
+CHAVES_ORDENACAO = ["SettlementDate", "BondType", "MaturityDate"]
 
 
-def _build_url(target_date: dt.date, extragroup: bool) -> str:
+def _montar_url(data_alvo: dt.date, extragroup: bool) -> str:
     """Monta a URL de download do arquivo ZIP de negociações mensais.
 
     URL com todos os arquivos disponíveis:
@@ -85,49 +85,53 @@ def _build_url(target_date: dt.date, extragroup: bool) -> str:
     Formato do arquivo com todas as operações: NegTYYYYMM.ZIP
     Formato do arquivo apenas extragrupo: NegEYYYYMM.ZIP
     """
-    year_month = target_date.strftime("%Y%m")
-    operation_acronym = "E" if extragroup else "T"
-    return f"{BASE_URL}/Neg{operation_acronym}{year_month}.ZIP"
+    ano_mes = data_alvo.strftime("%Y%m")
+    sufixo_operacao = "E" if extragroup else "T"
+    return f"{URL_BASE}/Neg{sufixo_operacao}{ano_mes}.ZIP"
 
 
 @default_retry
-def _fetch_zip_from_url(file_url: str) -> bytes:
-    response = requests.get(file_url, timeout=10)
-    response.raise_for_status()
-    return response.content
+def _baixar_zip(url_arquivo: str) -> bytes:
+    """Baixa o conteúdo ZIP e retorna os bytes."""
+    resposta = requests.get(url_arquivo, timeout=10)
+    resposta.raise_for_status()
+    return resposta.content
 
 
-def _uncompress_zip(zip_content: bytes) -> bytes:
-    with zf.ZipFile(io.BytesIO(zip_content), "r") as file_zip:
-        return file_zip.read(file_zip.namelist()[0])
+def _descompactar_zip(conteudo_zip: bytes) -> bytes:
+    """Descompacta o ZIP e retorna o conteúdo do primeiro arquivo."""
+    with zf.ZipFile(io.BytesIO(conteudo_zip), "r") as arquivo_zip:
+        return arquivo_zip.read(arquivo_zip.namelist()[0])
 
 
-def _read_dataframe_from_zip(csv_content: bytes) -> pl.DataFrame:
+def _ler_df_zip(conteudo_csv: bytes) -> pl.DataFrame:
+    """Lê o CSV em bytes e retorna DataFrame Polars."""
     return pl.read_csv(
-        csv_content,
+        conteudo_csv,
         decimal_comma=True,
         encoding="latin1",
         separator=";",
-        schema_overrides=CSV_SCHEMA,
+        schema_overrides=ESQUEMA_CSV,
     )
 
 
-def _process_df(df: pl.DataFrame) -> pl.DataFrame:
-    date_cols = ["SettlementDate", "IssueDate", "MaturityDate"]
+def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
+    """Processa tipos, calcula valor e ordena."""
+    colunas_data = ["SettlementDate", "IssueDate", "MaturityDate"]
     return (
-        df.rename(COLUMN_MAPPING)
+        df.rename(MAPEAMENTO_COLUNAS)
         .with_columns(
-            pl.col(date_cols).str.to_date(format="%d/%m/%Y", strict=False),
+            pl.col(colunas_data).str.to_date(format="%d/%m/%Y", strict=False),
             Value=(pl.col("Quantity") * pl.col("AvgPrice")).round(2),
         )
-        .sort(by=SORTING_KEYS)
+        .sort(by=CHAVES_ORDENACAO)
     )
 
 
-def _sort_and_select_columns(df: pl.DataFrame) -> pl.DataFrame:
+def _ordenar_selecionar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     """Reordena colunas e ordena linhas para saída consistente e determinística."""
-    selected_cols = [col for col in FINAL_COLUMN_ORDER if col in df.columns]
-    return df.select(selected_cols).sort(by=SORTING_KEYS)
+    colunas_selecionadas = [col for col in ORDEM_COLUNAS_FINAL if col in df.columns]
+    return df.select(colunas_selecionadas).sort(by=CHAVES_ORDENACAO)
 
 
 def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.DataFrame:
@@ -179,7 +183,7 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
 
     Examples:
         >>> from pyield import bc
-        >>> # Fetches all trades for Jan/2025
+        >>> # Busca todas as negociações de jan/2025
         >>> bc.tpf_monthly_trades("07-01-2025", extragroup=True)
         shape: (1_019, 19)
         ┌────────────────┬──────────┬───────────┬──────────────┬───┬─────────┬─────────┬─────────────────┬───────────────────┐
@@ -202,20 +206,20 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
 
     """  # noqa: E501
     if any_is_empty(target_date):
-        logger.warning("No target_date provided. Returning an empty DataFrame.")
+        registro.warning("Nenhuma data informada. Retornando DataFrame vazio.")
         return pl.DataFrame()
     try:
-        target_date = convert_dates(target_date)
-        url = _build_url(target_date, extragroup)
-        logger.debug(f"Consultando BCB: {url}")
-        zip_content = _fetch_zip_from_url(url)
-        extracted_file = _uncompress_zip(zip_content)
-        df = _read_dataframe_from_zip(extracted_file)
-        df = _process_df(df)
-        df = _sort_and_select_columns(df)
+        data_alvo = convert_dates(target_date)
+        url = _montar_url(data_alvo, extragroup)
+        registro.debug(f"Consultando BCB: {url}")
+        conteudo_zip = _baixar_zip(url)
+        arquivo_extraido = _descompactar_zip(conteudo_zip)
+        df = _ler_df_zip(arquivo_extraido)
+        df = _processar_df(df)
+        df = _ordenar_selecionar_colunas(df)
     except Exception as e:
-        logger.exception(f"Error fetching monthly trades data from BCB: {e}")
+        registro.exception(f"Erro ao coletar dados mensais do BCB: {e}")
         return pl.DataFrame()
 
-    logger.info(f"Successfully processed data from {url}. Found {len(df)} records.")
+    registro.info(f"Dados processados de {url}. Registros: {len(df)}.")
     return df
