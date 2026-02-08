@@ -4,51 +4,51 @@ import logging
 import polars as pl
 from dateutil.relativedelta import relativedelta
 
-import pyield.converters as cv
-import pyield.interpolator as ip
-import pyield.tn.tools as tl
+import pyield.converters as conversores
+import pyield.interpolator as interpolador
+import pyield.tn.tools as ferramentas
 from pyield import anbima, bday, fwd
 from pyield.types import ArrayLike, DateLike, any_is_empty
 
 """
-Constants calculated as per Anbima Rules and in base 100
-COUPON_RATE = (0.06 + 1) ** 0.5 - 1  # 6% annual rate compounded semi-annually
-COUPON_PMT = round(100 * COUPON_RATE, 6) -> 2.956301
-FINAL_PMT = principal + last coupon payment = 100 + 2.956301
-COUPON_DAY = 15
-COUPON_MONTHS = {2, 5, 8, 11}
+Constantes calculadas conforme regras da ANBIMA e em base 100.
+TAXA_CUPOM = (0.06 + 1) ** 0.5 - 1  # 6% a.a. com capitalização semestral
+VALOR_CUPOM = round(100 * TAXA_CUPOM, 6) -> 2.956301
+VALOR_FINAL = principal + último cupom = 100 + 2.956301
+DIA_CUPOM = 15
+MESES_CUPOM = {2, 5, 8, 11}
 """
-COUPON_PMT = 2.956301
-FINAL_PMT = 102.956301
+VALOR_CUPOM = 2.956301
+VALOR_FINAL = 102.956301
 
 logger = logging.getLogger(__name__)
 
 
 def data(date: DateLike) -> pl.DataFrame:
     """
-    Fetch the bond indicative rates for the given reference date.
+    Busca as taxas indicativas de NTN-B para a data de referência.
 
     Args:
-        date (DateLike): The reference date for fetching the data.
+        date (DateLike): Data de referência para a consulta.
 
     Returns:
-        pl.DataFrame: DataFrame with columns "MaturityDate" and "IndicativeRate".
+        pl.DataFrame: DataFrame Polars com os dados de NTN-B.
 
-    Returned columns:
-        - ReferenceDate: The reference date of the data.
-        - BondType: The type of the bond (NTN-B).
-        - SelicCode: The SELIC code of the bond.
-        - IssueBaseDate: The issue base date of the bond.
-        - MaturityDate: The maturity date of the bond.
-        - BDToMat: The number of business days to maturity.
-        - Duration: The duration of the bond.
-        - DV01: The DV01 of the bond.
-        - DV01USD: The DV01 in USD of the bond.
-        - Price: The price of the bond.
-        - BidRate: The bid rate of the bond.
-        - AskRate: The ask rate of the bond.
-        - IndicativeRate: The indicative rate for the bond.
-        - DIRate: The interpolated DI rate for the bond.
+    Output Columns:
+        * BondType (String): Tipo do título (ex.: "NTN-B").
+        * ReferenceDate (Date): Data de referência dos dados.
+        * SelicCode (Int64): Código do título no SELIC.
+        * IssueBaseDate (Date): Data base/emissão do título.
+        * MaturityDate (Date): Data de vencimento do título.
+        * BDToMat (Int64): Dias úteis entre referência e vencimento.
+        * Duration (Float64): Macaulay Duration do título (anos).
+        * DV01 (Float64): Variação no preço para 1bp de taxa.
+        * DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
+        * Price (Float64): Preço unitário (PU).
+        * BidRate (Float64): Taxa de compra (decimal).
+        * AskRate (Float64): Taxa de venda (decimal).
+        * IndicativeRate (Float64): Taxa indicativa (decimal).
+        * DIRate (Float64): Taxa DI interpolada (flat forward).
 
     Examples:
         >>> from pyield import ntnb
@@ -77,13 +77,13 @@ def data(date: DateLike) -> pl.DataFrame:
 
 def maturities(date: DateLike) -> pl.Series:
     """
-    Get the bond maturities available for the given reference date.
+    Busca os vencimentos de NTN-B disponíveis para a data de referência.
 
     Args:
-        date (DateLike): The reference date for fetching the data.
+        date (DateLike): Data de referência para a consulta.
 
     Returns:
-        pl.Series: Series containing the maturity dates for the NTN-B bonds.
+        pl.Series: Série de datas de vencimento de NTN-B.
 
     Examples:
         >>> from pyield import ntnb
@@ -107,33 +107,33 @@ def maturities(date: DateLike) -> pl.Series:
     return data(date)["MaturityDate"]
 
 
-def _generate_all_coupon_dates(
-    start: dt.date,
-    end: dt.date,
+def _gerar_todas_datas_cupom(
+    data_inicio: dt.date,
+    data_fim: dt.date,
 ) -> pl.Series:
     """
-    Generate a map of all possible coupon dates between the start and end dates.
-    The dates are inclusive. Coupon payments are made on the 15th of February, May,
-    August, and November (15-02, 15-05, 15-08, and 15-11 of each year).
+    Gera todas as datas possíveis de cupom entre início e fim (inclusivas).
+
+    Os cupons são pagos em 15/02, 15/05, 15/08 e 15/11.
 
     Args:
-        start (DateLike): The start date.
-        end (DateLike): The end date.
+        data_inicio (DateLike): Data inicial.
+        data_fim (DateLike): Data final.
 
     Returns:
-        pl.Series: Series of coupon dates within the specified range.
+        pl.Series: Série de datas de cupom no intervalo.
     """
-    first_coupon_date = dt.date(start.year, 2, 1)
+    primeira_data_cupom = dt.date(data_inicio.year, 2, 1)
 
-    # Generate coupon dates on the 1st of the month
-    coupon_dates: pl.Series = pl.date_range(
-        start=first_coupon_date, end=end, interval="3mo", eager=True
+    # Gera datas no 1º dia do mês
+    datas_cupom: pl.Series = pl.date_range(
+        start=primeira_data_cupom, end=data_fim, interval="3mo", eager=True
     )
-    # Offset dates to the 15th
-    coupon_dates = coupon_dates.dt.offset_by("14d")
+    # Ajusta para o dia 15
+    datas_cupom = datas_cupom.dt.offset_by("14d")
 
-    # First coupon date must be after the start date
-    return coupon_dates.filter(coupon_dates > start)
+    # Primeira data precisa ser após a data inicial
+    return datas_cupom.filter(datas_cupom > data_inicio)
 
 
 def payment_dates(
@@ -141,19 +141,18 @@ def payment_dates(
     maturity: DateLike,
 ) -> pl.Series:
     """
-    Generate all remaining coupon dates between a given date and the maturity date.
-    The dates are inclusive. Coupon payments are made on the 15th of February, May,
-    August, and November (15-02, 15-05, 15-08, and 15-11 of each year). The NTN-B
-    bond is determined by its maturity date.
+    Gera todas as datas de cupom entre liquidação e vencimento (inclusivas).
+
+    Os cupons são pagos em 15/02, 15/05, 15/08 e 15/11. A NTN-B é definida
+    pela data de vencimento.
 
     Args:
-        settlement (DateLike): The settlement date (exlusive) to start generating
-            the coupon dates.
-        maturity (DateLike): The maturity date.
+        settlement (DateLike): Data de liquidação (exclusiva).
+        maturity (DateLike): Data de vencimento.
 
     Returns:
-        pl.Series: Series of coupon dates within the specified range. Returns an empty
-            Series if the maturity date is before or equal to the settlement date.
+        pl.Series: Série de datas de cupom no intervalo. Retorna série vazia se
+            vencimento for menor ou igual à liquidação.
 
     Examples:
         >>> from pyield import ntnb
@@ -169,20 +168,20 @@ def payment_dates(
     if any_is_empty(settlement, maturity):
         return pl.Series(dtype=pl.Date)
 
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
+    liquidacao = conversores.convert_dates(settlement)
+    vencimento = conversores.convert_dates(maturity)
 
-    if maturity <= settlement:
+    if vencimento <= liquidacao:
         return pl.Series(dtype=pl.Date)
 
-    coupon_date = maturity
-    coupon_dates = []
+    data_cupom = vencimento
+    datas_cupons = []
 
-    while coupon_date > settlement:
-        coupon_dates.append(coupon_date)
-        coupon_date -= relativedelta(months=6)
+    while data_cupom > liquidacao:
+        datas_cupons.append(data_cupom)
+        data_cupom -= relativedelta(months=6)
 
-    return pl.Series(name="payment_dates", values=coupon_dates).sort()
+    return pl.Series(name="payment_dates", values=datas_cupons).sort()
 
 
 def cash_flows(
@@ -190,20 +189,18 @@ def cash_flows(
     maturity: DateLike,
 ) -> pl.DataFrame:
     """
-    Generate the cash flows for NTN-B bonds between the settlement and maturity dates.
+    Gera os fluxos de caixa da NTN-B entre liquidação e vencimento.
 
     Args:
-        settlement (DateLike): The settlement date (exclusive) to start generating
-            the cash flows.
-        maturity (DateLike): The maturity date of the bond.
+        settlement (DateLike): Data de liquidação (exclusiva).
+        maturity (DateLike): Data de vencimento.
 
     Returns:
-        pl.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
-            Returns empty DataFrame if settlement >= maturity.
+        pl.DataFrame: DataFrame com as colunas de fluxo.
 
-    Returned columns:
-        - PaymentDate: The payment date of the cash flow
-        - CashFlow: Cash flow value for the bond
+    Output Columns:
+        * PaymentDate (Date): Data de pagamento do fluxo.
+        * CashFlow (Float64): Valor do fluxo de caixa.
 
     Examples:
         >>> from pyield import ntnb
@@ -222,21 +219,21 @@ def cash_flows(
     if any_is_empty(settlement, maturity):
         return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
 
-    # Get the coupon dates between the settlement and maturity dates
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
-    p_dates = payment_dates(settlement, maturity)
+    # Obtém as datas de cupom entre liquidação e vencimento
+    liquidacao = conversores.convert_dates(settlement)
+    vencimento = conversores.convert_dates(maturity)
+    datas_pagamento = payment_dates(liquidacao, vencimento)
 
-    # Return empty DataFrame if no payment dates (settlement >= maturity)
-    if p_dates.is_empty():
+    # Retorna DataFrame vazio se não houver pagamentos (liquidação >= vencimento)
+    if datas_pagamento.is_empty():
         return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
 
     df = pl.DataFrame(
-        {"PaymentDate": p_dates},
+        {"PaymentDate": datas_pagamento},
     ).with_columns(
-        pl.when(pl.col("PaymentDate") == maturity)
-        .then(FINAL_PMT)
-        .otherwise(COUPON_PMT)
+        pl.when(pl.col("PaymentDate") == vencimento)
+        .then(VALOR_FINAL)
+        .otherwise(VALOR_CUPOM)
         .alias("CashFlow")
     )
 
@@ -249,23 +246,20 @@ def quotation(
     rate: float,
 ) -> float:
     """
-    Calculate the NTN-B quotation in base 100 using Anbima rules.
+    Calcula a cotação da NTN-B em base 100 pelas regras da ANBIMA.
 
     Args:
-        settlement (DateLike): The settlement date of the operation.
-        maturity (DateLike): The maturity date of the NTN-B bond.
-        rate (float): The discount rate used to calculate the present value of
-            the cash flows, which is the yield to maturity (YTM) of the NTN-B.
+        settlement (DateLike): Data de liquidação da operação.
+        maturity (DateLike): Data de vencimento da NTN-B.
+        rate (float): Taxa de desconto (YTM) usada no valor presente.
 
     Returns:
-        float: The NTN-B quotation truncated to 4 decimal places. Returns float('nan')
-            if the calculation cannot be performed due to invalid inputs.
+        float: Cotação da NTN-B truncada em 4 casas. Retorna NaN em erro.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
-        - The semi-annual coupon is set to 2.956301, which represents a 6% annual
-          coupon rate compounded semi-annually and rounded to 6 decimal places as per
-          Anbima rules.
+        - O cupom semestral é 2,956301, equivalente a 6% a.a. com capitalização
+          semestral e arredondamento para 6 casas, conforme ANBIMA.
 
     Examples:
         >>> from pyield import ntnb
@@ -279,26 +273,26 @@ def quotation(
     if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
-    df_cf = cash_flows(settlement, maturity)
-    if df_cf.is_empty():
+    df = cash_flows(settlement, maturity)
+    if df.is_empty():
         return float("nan")
 
-    cf_dates = df_cf["PaymentDate"]
-    cf_values = df_cf["CashFlow"]
+    datas_fluxo = df["PaymentDate"]
+    valores_fluxo = df["CashFlow"]
 
-    # Calculate the number of business days between settlement and cash flow dates
-    bdays = bday.count(settlement, cf_dates)
+    # Calcula dias úteis entre liquidação e datas de fluxo
+    dias_uteis = bday.count(settlement, datas_fluxo)
 
-    # Calculate the number of periods truncated as per Anbima rules
-    byears = tl.truncate(bdays / 252, 14)
+    # Calcula anos úteis truncados conforme ANBIMA
+    anos_uteis = ferramentas.truncate(dias_uteis / 252, 14)
 
-    discount_factor = (1 + rate) ** byears
+    fator_desconto = (1 + rate) ** anos_uteis
 
-    # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
-    cf_present_value = (cf_values / discount_factor).round(10)
+    # Calcula o valor presente de cada fluxo (DCF) com arredondamento ANBIMA
+    valor_presente_fluxos = (valores_fluxo / fator_desconto).round(10)
 
-    # Return the quotation (the dcf sum) truncated as per Anbima rules
-    return tl.truncate(cf_present_value.sum(), 4)
+    # Retorna a cotação (soma do DCF) com truncamento ANBIMA
+    return ferramentas.truncate(valor_presente_fluxos.sum(), 4)
 
 
 def price(
@@ -306,14 +300,14 @@ def price(
     quotation: float,
 ) -> float:
     """
-    Calculate the NTN-B price using Anbima rules.
+    Calcula o preço da NTN-B pelas regras da ANBIMA.
 
     Args:
-        vna (float): The nominal value of the NTN-B bond.
-        quotation (float): The NTN-B quotation in base 100.
+        vna (float): Valor nominal atualizado (VNA).
+        quotation (float): Cotação da NTN-B em base 100.
 
     Returns:
-        float: The NTN-B price truncated to 6 decimal places.
+        float: Preço da NTN-B truncado em 6 casas decimais.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -324,78 +318,78 @@ def price(
         4271.864805
         >>> ntnb.price(4315.498383, 100.6409)
         4343.156412
-        >>> ntnb.price(None, 99.5341)  # Nullable inputs return float('nan')
+        >>> ntnb.price(None, 99.5341)  # Entradas nulas retornam float('nan')
         nan
     """
     if any_is_empty(vna, quotation):
         return float("nan")
-    return tl.truncate(vna * quotation / 100, 6)
+    return ferramentas.truncate(vna * quotation / 100, 6)
 
 
-def _validate_spot_rate_inputs(
+def _validar_entradas_taxa_spot(
     settlement: DateLike,
-    maturities: ArrayLike,
-    rates: ArrayLike,
+    vencimentos: ArrayLike,
+    taxas: ArrayLike,
 ) -> tuple[dt.date, pl.Series, pl.Series]:
-    # Process and validate the input data
-    settlement = cv.convert_dates(settlement)
-    maturities = cv.convert_dates(maturities)
+    # Processa e valida os dados de entrada
+    liquidacao = conversores.convert_dates(settlement)
+    vencimentos = conversores.convert_dates(vencimentos)
 
-    # Structural validation: ensure maturities and rates have the same length
-    if len(maturities) != len(rates):
+    # Validação estrutural: maturities e rates precisam ter o mesmo tamanho
+    if len(vencimentos) != len(taxas):
         raise ValueError(
-            f"Maturities and rates must have the same length. "
-            f"Got {len(maturities)} maturities and {len(rates)} rates."
+            "Vencimentos e taxas devem ter o mesmo tamanho. "
+            f"Recebido: {len(vencimentos)} vencimentos e {len(taxas)} taxas."
         )
 
-    # Create base dataframe and filter out invalid data
-    df_clean = pl.DataFrame(
-        data={"maturities": maturities, "rates": rates},
+    # Cria DataFrame base e filtra vencimentos inválidos
+    df_limpo = pl.DataFrame(
+        data={"maturities": vencimentos, "rates": taxas},
         schema={"maturities": pl.Date, "rates": pl.Float64},
-    ).filter(pl.col("maturities") > settlement)
+    ).filter(pl.col("maturities") > liquidacao)
 
-    # Warn about filtered maturities
-    filtered_count = len(maturities) - df_clean.height
-    if filtered_count > 0:
+    # Aviso sobre vencimentos filtrados
+    total_filtrados = len(vencimentos) - df_limpo.height
+    if total_filtrados > 0:
         logger.warning(
-            "Maturities on or before settlement were ignored: "
-            f"{filtered_count} entries removed."
+            "Vencimentos menores ou iguais à liquidação foram ignorados: %s removidos.",
+            total_filtrados,
         )
 
-    return settlement, df_clean["maturities"], df_clean["rates"]
+    return liquidacao, df_limpo["maturities"], df_limpo["rates"]
 
 
-def _create_bootstrap_dataframe(
+def _criar_df_bootstrap(
     settlement: dt.date,
-    rates: pl.Series,
-    maturities: pl.Series,
+    taxas: pl.Series,
+    vencimentos: pl.Series,
 ) -> pl.DataFrame:
     """Cria o DataFrame base para o bootstrap."""
-    # Create the interpolator to calculate the YTM rates for intermediate dates
-    flat_fwd = ip.Interpolator(
+    # Cria interpolador para taxas YTM em datas intermediárias
+    interpolador_ff = interpolador.Interpolator(
         method="flat_forward",
-        known_bdays=bday.count(settlement, maturities),
-        known_rates=rates,
+        known_bdays=bday.count(settlement, vencimentos),
+        known_rates=taxas,
     )
 
-    # Generate coupon dates up to the longest maturity date
-    last_maturity = maturities.max()
-    assert isinstance(last_maturity, dt.date)
-    all_coupon_dates = _generate_all_coupon_dates(settlement, last_maturity)
-    bdays_to_mat = bday.count(settlement, all_coupon_dates)
-    ytm_rates = flat_fwd.interpolate(bdays_to_mat)
+    # Gera datas de cupom até o último vencimento
+    ultimo_vencimento = vencimentos.max()
+    assert isinstance(ultimo_vencimento, dt.date)
+    todas_datas_cupom = _gerar_todas_datas_cupom(settlement, ultimo_vencimento)
+    dias_uteis_ate_venc = bday.count(settlement, todas_datas_cupom)
+    taxas_ytm = interpolador_ff.interpolate(dias_uteis_ate_venc)
 
     df = (
         pl.DataFrame(
             {
-                "MaturityDate": all_coupon_dates,
-                "BDToMat": bdays_to_mat,
-                "BYears": bdays_to_mat / 252,
-                "YTM": ytm_rates,
+                "MaturityDate": todas_datas_cupom,
+                "BDToMat": dias_uteis_ate_venc,
+                "BYears": dias_uteis_ate_venc / 252,
+                "YTM": taxas_ytm,
             }
         )
         .with_columns(
-            Coupon=pl.lit(COUPON_PMT),
+            Coupon=pl.lit(VALOR_CUPOM),
             SpotRate=pl.lit(None, dtype=pl.Float64),
         )
         .sort("MaturityDate")
@@ -403,28 +397,28 @@ def _create_bootstrap_dataframe(
     return df
 
 
-def _update_spot_rate(
-    df: pl.DataFrame, maturity: dt.date, spot_rate: float
+def _atualizar_taxa_spot(
+    df: pl.DataFrame, vencimento: dt.date, taxa_spot: float
 ) -> pl.DataFrame:
-    """Helper function to update the spot rate inside the bootstrap loop."""
+    """Atualiza a taxa spot dentro do loop de bootstrap."""
     return df.with_columns(
-        pl.when(pl.col("MaturityDate") == maturity)
-        .then(spot_rate)
+        pl.when(pl.col("MaturityDate") == vencimento)
+        .then(taxa_spot)
         .otherwise("SpotRate")
         .alias("SpotRate")
     )
 
 
-def _calculate_coupons_present_value(
+def _calcular_valor_presente_cupons(
     df: pl.DataFrame,
     settlement: dt.date,
-    maturity: dt.date,
+    vencimento: dt.date,
 ) -> float:
     """Calcula o valor presente dos cupons anteriores à maturidade."""
-    prev_cf_dates = payment_dates(settlement, maturity).to_list()[:-1]
-    df_temp = df.filter(pl.col("MaturityDate").is_in(prev_cf_dates))
+    datas_fluxo_anteriores = payment_dates(settlement, vencimento).to_list()[:-1]
+    df_temp = df.filter(pl.col("MaturityDate").is_in(datas_fluxo_anteriores))
 
-    return tl.calculate_present_value(
+    return ferramentas.calculate_present_value(
         df_temp["Coupon"],
         df_temp["SpotRate"],
         df_temp["BYears"],
@@ -438,28 +432,31 @@ def spot_rates(
     show_coupons: bool = False,
 ) -> pl.DataFrame:
     """
-    Calculate the spot rates for NTN-B bonds using the bootstrap method.
+    Calcula as taxas spot da NTN-B usando bootstrap.
 
-    The bootstrap method is a process used to determine spot rates from
-    the yields of a series of bonds. It involves iteratively solving for
-    the spot rates that discount each bond's cash flows to its current
-    price.
+    O bootstrap determina as taxas spot a partir dos yields dos títulos,
+    resolvendo iterativamente as taxas que descontam os fluxos ao preço.
 
     Args:
-        settlement (DateLike): The reference date for settlement.
-        maturities (ArrayLike): Series of maturity dates for the bonds.
-        rates (ArrayLike): Series of yield to maturity rates.
-        show_coupons (bool, optional): If True, the result will include the
-            intermediate coupon dates. Defaults to False.
+        settlement (DateLike): Data de liquidação.
+        maturities (ArrayLike): Datas de vencimento dos títulos.
+        rates (ArrayLike): Taxas YTM correspondentes.
+        show_coupons (bool, optional): Se True, inclui datas intermediárias de cupom.
+            Padrão False.
 
     Returns:
-        pl.DataFrame: DataFrame with columns "MaturityDate", "SpotRate".
+        pl.DataFrame: DataFrame com as taxas spot.
+
+    Output Columns:
+        * MaturityDate (Date): Data de vencimento.
+        * BDToMat (Int64): Dias úteis entre liquidação e vencimento.
+        * SpotRate (Float64): Taxa spot (real).
 
     Examples:
         >>> from pyield import ntnb
-        >>> # Get the NTN-B rates for a specific reference date
+        >>> # Busca as taxas de NTN-B para uma data de referência
         >>> df = ntnb.data("16-08-2024")
-        >>> # Calculate the spot rates considering the settlement at the reference date
+        >>> # Calcula as taxas spot considerando a liquidação na data de referência
         >>> ntnb.spot_rates(
         ...     settlement="16-08-2024",
         ...     maturities=df["MaturityDate"],
@@ -485,45 +482,42 @@ def spot_rates(
         └──────────────┴─────────┴──────────┘
 
     Notes:
-        The calculation of the spot rates for NTN-B bonds considers the following steps:
-            - Map all all possible payment dates up to the longest maturity date.
-            - Interpolate the YTM rates in the intermediate payment dates.
-            - Calculate the NTN-B quotation for each maturity date.
-            - Calculate the real spot rates for each maturity date.
-
-    Columns returned:
-        - MaturityDate: The maturity date of the bond.
-        - BDToMat: The number of business days from settlement to maturities.
-        - SpotRate: The real spot rate for the bond.
+        O cálculo considera:
+        * Mapear todas as datas de pagamento até o último vencimento.
+        * Interpolar as taxas YTM nas datas intermediárias.
+        * Calcular a cotação da NTN-B para cada vencimento.
+        * Calcular as taxas spot reais.
     """
     if any_is_empty(settlement, maturities, rates):
         return pl.DataFrame()
 
-    settlement, maturities, rates = _validate_spot_rate_inputs(
+    settlement, maturities, rates = _validar_entradas_taxa_spot(
         settlement, maturities, rates
     )
 
-    df = _create_bootstrap_dataframe(settlement, rates, maturities)
+    df = _criar_df_bootstrap(settlement, rates, maturities)
 
-    # Bootstrap method to calculate spot rates iteratively
-    df_dicts = df.to_dicts()
-    first_maturity = maturities.min()
-    for row in df_dicts:
-        maturity = row["MaturityDate"]
+    # Bootstrap para calcular taxas spot
+    linhas = df.to_dicts()
+    primeiro_vencimento = maturities.min()
+    for linha in linhas:
+        vencimento = linha["MaturityDate"]
 
-        # Spot rates <= first maturity are YTM rates by definition
-        if maturity <= first_maturity:
-            spot_rate = row["YTM"]
-            df = _update_spot_rate(df, maturity, spot_rate)
+        # Taxas spot <= primeiro vencimento são YTM por definição
+        if vencimento <= primeiro_vencimento:
+            taxa_spot = linha["YTM"]
+            df = _atualizar_taxa_spot(df, vencimento, taxa_spot)
             continue
 
-        # Calculate the spot rate for the current maturity
-        coupons_pv = _calculate_coupons_present_value(df, settlement, maturity)
-        bond_price = quotation(settlement, maturity, row["YTM"])
-        price_factor = FINAL_PMT / (bond_price - coupons_pv)
-        spot_rate = price_factor ** (1 / row["BYears"]) - 1
+        # Calcula taxa spot para o vencimento corrente
+        valor_presente_cupons = _calcular_valor_presente_cupons(
+            df, settlement, vencimento
+        )
+        preco_titulo = quotation(settlement, vencimento, linha["YTM"])
+        fator_preco = VALOR_FINAL / (preco_titulo - valor_presente_cupons)
+        taxa_spot = fator_preco ** (1 / linha["BYears"]) - 1
 
-        df = _update_spot_rate(df, maturity, spot_rate)
+        df = _atualizar_taxa_spot(df, vencimento, taxa_spot)
 
     if not show_coupons:
         df = df.filter(pl.col("MaturityDate").is_in(maturities.to_list()))
@@ -538,45 +532,40 @@ def bei_rates(
     nominal_rates: ArrayLike,
 ) -> pl.DataFrame:
     """
-    Calculate the Breakeven Inflation (BEI) for NTN-B bonds based on nominal and real
-    interest rates. The BEI represents the inflation rate that equalizes the real and
-    nominal yields. The calculation is based on the spot rates for NTN-B bonds.
+    Calcula a inflação implícita (BEI) para NTN-B a partir de taxas nominais e reais.
+
+    A BEI é a inflação que iguala yields reais e nominais, baseada nas taxas spot
+    das NTN-B.
 
     Args:
-        settlement (DateLike): The settlement date of the operation.
-        ntnb_maturities (ArrayLike): The maturity dates for the NTN-B bonds.
-        ntnb_rates (ArrayLike): The real interest rates (Yield to Maturity - YTM)
-            corresponding to the given NTN-B maturities.
-        nominal_maturities (ArrayLike): The maturity dates to be used as reference for
-            nominal rates.
-        nominal_rates (ArrayLike): The nominal interest rates (e.g. DI Futures or
-             zero prefixed bonds rates) used as reference for the calculation.
+        settlement (DateLike): Data de liquidação da operação.
+        ntnb_maturities (ArrayLike): Vencimentos das NTN-B.
+        ntnb_rates (ArrayLike): Taxas reais (YTM) correspondentes.
+        nominal_maturities (ArrayLike): Vencimentos de referência para taxas nominais.
+        nominal_rates (ArrayLike): Taxas nominais (ex.: DI Futuro).
 
     Returns:
-        pl.DataFrame: DataFrame containing the calculated breakeven inflation rates.
+        pl.DataFrame: DataFrame com as BEI calculadas.
 
-    Returned columns:
-        - MaturityDate: The maturity date of the bonds.
-        - BDToMat: The number of business days from the settlement to the maturity.
-        - RIR: The calculated Real Interest Rates based on the spot rates.
-        - NIR: The Nominal Interest Rates interpolated for the maturity date.
-        - BEI: The calculated Breakeven Inflation Rates.
+    Output Columns:
+        * MaturityDate (Date): Data de vencimento.
+        * BDToMat (Int64): Dias úteis entre liquidação e vencimento.
+        * RIR (Float64): Taxa real (spot).
+        * NIR (Float64): Taxa nominal interpolada.
+        * BEI (Float64): Inflação implícita (breakeven).
 
     Notes:
-        The BEI is calculated by comparing the nominal and real interest rates,
-        indicating the market's inflation expectations over the period from the
-        settlement date to the bond's maturity.
+        A BEI indica a inflação esperada pelo mercado entre liquidação e vencimento.
 
     Examples:
-        Get the NTN-B rates for a specific reference date.
-        These are YTM rates and the spot rates are calculated based on them
+        Busca as taxas de NTN-B para uma data de referência.
+        Estas são taxas YTM e as taxas spot são calculadas a partir delas.
         >>> df_ntnb = yd.ntnb.data("05-09-2024")
 
-        Get the DI Futures settlement rates for the same reference date to be used as
-        reference for the nominal rates:
+        Busca as taxas de ajuste do DI Futuro para a mesma data de referência:
         >>> df_di = yd.di1.data("05-09-2024")
 
-        Calculate the BEI rates considering the settlement at the reference date:
+        Calcula as BEI considerando a liquidação na data de referência:
         >>> yd.ntnb.bei_rates(
         ...     settlement="05-09-2024",
         ...     ntnb_maturities=df_ntnb["MaturityDate"],
@@ -607,21 +596,21 @@ def bei_rates(
         settlement, ntnb_maturities, ntnb_rates, nominal_maturities, nominal_rates
     ):
         return pl.DataFrame()
-    # Normalize input dates
-    settlement = cv.convert_dates(settlement)
-    ntnb_maturities = cv.convert_dates(ntnb_maturities)
+    # Normaliza datas de entrada
+    liquidacao = conversores.convert_dates(settlement)
+    ntnb_maturities = conversores.convert_dates(ntnb_maturities)
 
-    ff_interpolator = ip.Interpolator(
+    interpolador_ff = interpolador.Interpolator(
         method="flat_forward",
-        known_bdays=bday.count(settlement, nominal_maturities),
+        known_bdays=bday.count(liquidacao, nominal_maturities),
         known_rates=nominal_rates,
         extrapolate=True,
     )
-    df_spot = spot_rates(settlement, ntnb_maturities, ntnb_rates)
+    df_spot = spot_rates(liquidacao, ntnb_maturities, ntnb_rates)
     df = (
         df_spot.rename({"SpotRate": "RIR"})
         .with_columns(
-            NIR=ff_interpolator(df_spot["BDToMat"]),
+            NIR=interpolador_ff(df_spot["BDToMat"]),
         )
         .with_columns(
             BEI=((pl.col("NIR") + 1) / (pl.col("RIR") + 1)) - 1,
@@ -638,26 +627,26 @@ def duration(
     rate: float,
 ) -> float:
     """
-     Calculate the Macaulay duration of the NTN-B bond in business years.
+    Calcula a Macaulay duration da NTN-B em anos úteis.
 
-    Formula:
+    Fórmula:
                    Sum( t * CFₜ / (1 + y)ᵗ )
          MacD = ---------------------------------
                          Current Bond Price
 
-     Where:
-         t    = time in years until payment
-         CFₜ = cash flow at time t
-         y    = yield to maturity (periodic)
-         Price = Sum( CFₜ / (1 + y)ᵗ )
+    Onde:
+        t    = tempo (anos) até o pagamento
+        CFₜ = fluxo no tempo t
+        y    = taxa YTM (periódica)
+        Price = Soma( CFₜ / (1 + y)ᵗ )
 
-     Args:
-         settlement (DateLike): The settlement date of the operation.
-         maturity (DateLike): The maturity date of the NTN-B bond.
-         rate (float): The discount rate used to calculate the duration.
+    Args:
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        rate (float): Taxa de desconto usada no cálculo.
 
-     Returns:
-         float: The Macaulay duration of the NTN-B bond in business years.
+    Returns:
+        float: Macaulay duration em anos úteis.
 
      Examples:
          >>> from pyield import ntnb
@@ -671,11 +660,11 @@ def duration(
     if df.is_empty():
         return float("nan")
 
-    byears = bday.count(settlement, df["PaymentDate"]) / 252
-    dcf = df["CashFlow"] / (1 + rate) ** byears
-    duration = (dcf * byears).sum() / dcf.sum()
+    anos_uteis = bday.count(settlement, df["PaymentDate"]) / 252
+    dcf = df["CashFlow"] / (1 + rate) ** anos_uteis
+    duracao = (dcf * anos_uteis).sum() / dcf.sum()
     # Truncar para 14 casas decimais para repetibilidade dos resultados
-    return tl.truncate(duration, 14)
+    return ferramentas.truncate(duracao, 14)
 
 
 def dv01(
@@ -685,18 +674,17 @@ def dv01(
     vna: float,
 ) -> float:
     """
-    Calculate the DV01 (Dollar Value of 01) for an NTN-B in R$.
+    Calcula o DV01 (Dollar Value of 01) da NTN-B em R$.
 
-    Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.
+    Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
 
     Args:
-        settlement (DateLike): The settlement date.
-        maturity (DateLike): The maturity date.
-        rate (float): The discount rate (yield to maturity) of the NTN-B bond.
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        rate (float): Taxa de desconto (YTM) da NTN-B.
 
     Returns:
-        float: The DV01 value, representing the price change for a 1 basis point
-            increase in yield.
+        float: DV01, variação de preço para 1 bp.
 
     Examples:
         >>> from pyield import ntnb
@@ -706,11 +694,11 @@ def dv01(
     if any_is_empty(settlement, maturity, rate, vna):
         return float("nan")
 
-    quotation1 = quotation(settlement, maturity, rate)
-    quotation2 = quotation(settlement, maturity, rate + 0.0001)
-    price1 = price(vna, quotation1)
-    price2 = price(vna, quotation2)
-    return price1 - price2
+    cotacao_1 = quotation(settlement, maturity, rate)
+    cotacao_2 = quotation(settlement, maturity, rate + 0.0001)
+    preco_1 = price(vna, cotacao_1)
+    preco_2 = price(vna, cotacao_2)
+    return preco_1 - preco_2
 
 
 def forwards(
@@ -718,22 +706,21 @@ def forwards(
     zero_coupon: bool = True,
 ) -> pl.DataFrame:
     """
-    Calculate the NTN-B forward rates for the given reference date.
+    Calcula as taxas forward da NTN-B para a data de referência.
 
     Args:
-        date (DateLike): The reference date for fetching the data.
-        zero_coupon (bool, optional): If True, use zero-coupon rates for
-            forward rate calculation. Defaults to True. If False, the
-            yield to maturity rates are used instead.
+        date (DateLike): Data de referência para a consulta.
+        zero_coupon (bool, optional): Se True, usa taxas zero cupom no cálculo.
+            Padrão True. Se False, usa as taxas YTM.
 
     Returns:
-        pl.DataFrame: A DataFrame containing the forward rates.
+        pl.DataFrame: DataFrame com as taxas forward.
 
-    Columns returned:
-        - MaturityDate: The maturity date of the bond.
-        - BDToMat: The number of business days to maturity.
-        - IndicativeRate: The indicative rate for the bond.
-        - ForwardRate: The calculated forward rate for the bond.
+    Output Columns:
+        * MaturityDate (Date): Data de vencimento.
+        * BDToMat (Int64): Dias úteis entre referência e vencimento.
+        * IndicativeRate (Float64): Taxa indicativa (spot ou YTM).
+        * ForwardRate (Float64): Taxa forward calculada.
 
     Examples:
         >>> from pyield import ntnb
@@ -760,7 +747,7 @@ def forwards(
     if any_is_empty(date):
         return pl.DataFrame()
 
-    # Validate and normalize the date
+    # Valida e normaliza a data
     df = data(date).select("MaturityDate", "BDToMat", "IndicativeRate")
     if zero_coupon:
         df_ref = spot_rates(
@@ -770,8 +757,8 @@ def forwards(
         ).rename({"SpotRate": "ReferenceRate"})
     else:
         df_ref = df.rename({"IndicativeRate": "ReferenceRate"})
-    fwd_rates = fwd.forwards(bdays=df_ref["BDToMat"], rates=df_ref["ReferenceRate"])
-    df_ref = df_ref.with_columns(ForwardRate=fwd_rates)
+    taxas_forward = fwd.forwards(bdays=df_ref["BDToMat"], rates=df_ref["ReferenceRate"])
+    df_ref = df_ref.with_columns(ForwardRate=taxas_forward)
     df = df.join(
         df_ref.select("MaturityDate", "ForwardRate"),
         on="MaturityDate",

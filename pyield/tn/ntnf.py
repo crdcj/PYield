@@ -144,19 +144,19 @@ def payment_dates(
     if any_is_empty(settlement, maturity):
         return pl.Series(dtype=pl.Date)
     # Normaliza datas
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
+    liquidacao = cv.convert_dates(settlement)
+    vencimento = cv.convert_dates(maturity)
 
     # Verifica se vencimento é posterior à liquidação
-    if maturity <= settlement:
+    if vencimento <= liquidacao:
         return pl.Series(dtype=pl.Date)
 
     # Inicializa variáveis do loop
-    data_cupom = maturity
+    data_cupom = vencimento
     datas_cupons = []
 
     # Itera de trás para frente do vencimento até a liquidação
-    while data_cupom > settlement:
+    while data_cupom > liquidacao:
         datas_cupons.append(data_cupom)
         # Retrocede 6 meses
         data_cupom -= relativedelta(months=6)
@@ -206,11 +206,11 @@ def cash_flows(
     if any_is_empty(settlement, maturity):
         return pl.DataFrame()
     # Normaliza datas de entrada
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
+    liquidacao = cv.convert_dates(settlement)
+    vencimento = cv.convert_dates(maturity)
 
     # Obtém as datas de pagamento entre liquidação e vencimento
-    datas_pagamento = payment_dates(settlement, maturity)
+    datas_pagamento = payment_dates(liquidacao, vencimento)
 
     # Retorna DataFrame vazio se não houver pagamentos (liquidação >= vencimento)
     if datas_pagamento.is_empty():
@@ -220,7 +220,7 @@ def cash_flows(
     df = pl.DataFrame(
         data={"PaymentDate": datas_pagamento},
     ).with_columns(
-        pl.when(pl.col("PaymentDate") == maturity)
+        pl.when(pl.col("PaymentDate") == vencimento)
         .then(VALOR_FINAL)
         .otherwise(VALOR_CUPOM)
         .alias("CashFlow")
@@ -338,7 +338,7 @@ def spot_rates(  # noqa
     if any_is_empty(settlement, ltn_maturities, ltn_rates, ntnf_maturities, ntnf_rates):
         return pl.DataFrame()
     # 1. Converter e normalizar inputs para Polars
-    settlement = cv.convert_dates(settlement)
+    liquidacao = cv.convert_dates(settlement)
     vencimentos_ltn = cv.convert_dates(ltn_maturities)
     vencimentos_ntnf = cv.convert_dates(ntnf_maturities)
     if not isinstance(ltn_rates, pl.Series):
@@ -353,22 +353,22 @@ def spot_rates(  # noqa
     # 2. Criar interpoladores (aceitam pl.Series diretamente)
     interpolador_ltn = ip.Interpolator(
         method="flat_forward",
-        known_bdays=bday.count(settlement, vencimentos_ltn),
+        known_bdays=bday.count(liquidacao, vencimentos_ltn),
         known_rates=taxas_ltn,
     )
     interpolador_ntnf = ip.Interpolator(
         method="flat_forward",
-        known_bdays=bday.count(settlement, vencimentos_ntnf),
+        known_bdays=bday.count(liquidacao, vencimentos_ntnf),
         known_rates=taxas_ntnf,
     )
 
     # 3. Gerar todas as datas de cupom até o último vencimento NTN-F
     ultimo_vencimento = vencimentos_ntnf.max()
     assert isinstance(ultimo_vencimento, dt.date)
-    todas_datas_cupom = payment_dates(settlement, ultimo_vencimento)
+    todas_datas_cupom = payment_dates(liquidacao, ultimo_vencimento)
 
     # 4. Construir DataFrame inicial
-    dias_uteis_ate_venc = bday.count(settlement, todas_datas_cupom)
+    dias_uteis_ate_venc = bday.count(liquidacao, todas_datas_cupom)
     taxas_ytm = interpolador_ntnf(dias_uteis_ate_venc)
     df = pl.DataFrame(
         {
@@ -408,7 +408,7 @@ def spot_rates(  # noqa
             continue
 
         # Datas de cupom (exclui último pagamento) para este vencimento
-        datas_fluxo = payment_dates(settlement, data_venc)[:-1]
+        datas_fluxo = payment_dates(liquidacao, data_venc)[:-1]
         if len(datas_fluxo) == 0:
             # Caso improvável, mas protege contra divisão por zero mais adiante
             taxa_spot = None
@@ -418,7 +418,7 @@ def spot_rates(  # noqa
 
         # Recuperar SpotRates já solucionadas para estes cupons
         taxas_spot_fluxo = [mapa_spot[d] for d in datas_fluxo]
-        periodos_fluxo = bday.count(settlement, datas_fluxo) / 252
+        periodos_fluxo = bday.count(liquidacao, datas_fluxo) / 252
         fluxos = [VALOR_CUPOM] * len(datas_fluxo)
 
         valor_presente_fluxo = tools.calculate_present_value(
@@ -427,7 +427,7 @@ def spot_rates(  # noqa
             periods=periodos_fluxo,
         )
 
-        preco_titulo = price(settlement, data_venc, ytm_val)
+        preco_titulo = price(liquidacao, data_venc, ytm_val)
         fator_preco = VALOR_FINAL / (preco_titulo - valor_presente_fluxo)
         taxa_spot = fator_preco ** (1 / anos_uteis_val) - 1
 
