@@ -3,75 +3,70 @@ from enum import Enum
 import polars as pl
 from dateutil.relativedelta import relativedelta
 
-import pyield.converters as cv
+import pyield.converters as conversores
 from pyield import bday
 from pyield.tn import tools
 from pyield.types import DateLike, any_is_empty
 
 """
-Global parameters for NTN-B1 bonds calculations.
-These parameters are used to define the cash flows and payment structure of the bonds,
-according to Commercial Name.
-The parameters are initialized based on the commercial name of the NTN-B1 bond.
-
+Parâmetros globais para cálculos de NTN-B1.
+Estes parâmetros definem o fluxo de amortização conforme o nome comercial.
 """
-AMORTIZATION_PAYMENT = 0
-FINAL_AMORTIZATION_PAYMENT = 0
-NUMBER_OF_AMORTIZATIONS = 0
 
 
 class CommercialName(Enum):
     """
-    Commercial Name Enum used to identify the kind of used NTN-B1 in the scope of the
-    calculation (Renda+ or Educa+).
+    Enum do nome comercial usado para identificar o tipo de NTN-B1 (Renda+ ou Educa+).
     """
 
     RENDA_MAIS = "Renda+"
     EDUCA_MAIS = "Educa+"
 
 
-# Mapeamento estático do número de meses
-# Isso é uma constante real (não muda durante a execução)
-PARAMS_MAP = {
+# Mapeamento estático do número de meses (constante)
+MAPA_PARAMETROS = {
     CommercialName.RENDA_MAIS: 240,
     CommercialName.EDUCA_MAIS: 60,
 }
 
 
-def _get_bond_parameters(commercial_name: CommercialName) -> tuple[float, float, int]:
+def _obter_parametros_titulo(
+    nome_comercial: CommercialName,
+) -> tuple[float, float, int]:
     """
-    Returns amortization parameters based on commercial name.
-    Returns: (amortization_payment, final_amortization_payment, number_of_amortizations)
+    Retorna parâmetros de amortização conforme o nome comercial.
+
+    Retorna: (pagamento_amortizacao, pagamento_amortizacao_final, numero_amortizacoes)
     """
     try:
-        n_amortizations = PARAMS_MAP[commercial_name]
+        numero_amortizacoes = MAPA_PARAMETROS[nome_comercial]
     except KeyError:
-        raise ValueError(f"Invalid commercial name: {commercial_name}")
+        raise ValueError(f"Nome comercial inválido: {nome_comercial}")
 
-    amortization_payment = 1 / n_amortizations
-    final_amortization_payment = 1 - (amortization_payment * (n_amortizations - 1))
+    pagamento_amortizacao = 1 / numero_amortizacoes
+    pagamento_amortizacao_final = 1 - (
+        pagamento_amortizacao * (numero_amortizacoes - 1)
+    )
 
-    return amortization_payment, final_amortization_payment, n_amortizations
+    return pagamento_amortizacao, pagamento_amortizacao_final, numero_amortizacoes
 
 
 def payment_dates(
     settlement: DateLike, maturity: DateLike, commercial_name: CommercialName
 ) -> pl.Series:
     """
-    Generate all remaining amortization dates between a given date and the maturity
-    date.
-    The dates are inclusive. Payments are made from January 15th of the year of
-    conversion to December 15 of maturity year.
+    Gera todas as datas de amortização entre liquidação e vencimento.
+
+    As datas são inclusivas. Os pagamentos ocorrem de 15/01 do ano de conversão
+    até 15/12 do ano de vencimento.
 
     Args:
-        settlement (DateLike): The settlement date (exclusive) to start generating
-            the amortization dates.
-        maturity (DateLike): The maturity date.
-        commercial_name (CommercialName): The commercial name of the NTN-B1 bond
-            (Renda+ or Educa+).
+        settlement (DateLike): Data de liquidação (exclusiva).
+        maturity (DateLike): Data de vencimento.
+        commercial_name (CommercialName): Nome comercial (Renda+ ou Educa+).
 
     Returns:
-        pl.Series: Series of coupon dates within the specified range.
+        pl.Series: Série de datas de amortização no intervalo.
 
     Examples:
         >>> from pyield import ntnb1
@@ -96,47 +91,49 @@ def payment_dates(
     if any_is_empty(settlement, maturity, commercial_name):
         return pl.Series("payment_dates", dtype=pl.Date)
 
-    # Validate and normalize dates
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
+    # Valida e normaliza datas
+    liquidacao = conversores.convert_dates(settlement)
+    vencimento = conversores.convert_dates(maturity)
 
-    if maturity <= settlement:
-        raise ValueError("Maturity date must be after the settlement date.")
+    if vencimento <= liquidacao:
+        raise ValueError("A data de vencimento deve ser posterior à liquidação.")
 
-    maturity = maturity.replace(day=15)
+    vencimento = vencimento.replace(day=15)
 
-    # Get bond parameters
-    _, _, n_amortizations = _get_bond_parameters(commercial_name)
+    # Parâmetros do título
+    _, _, numero_amortizacoes = _obter_parametros_titulo(commercial_name)
 
-    amtz_dates = [maturity - relativedelta(months=i) for i in range(n_amortizations)]
+    datas_amortizacao = [
+        vencimento - relativedelta(months=i) for i in range(numero_amortizacoes)
+    ]
 
-    if len(amtz_dates) == 0:
-        raise ValueError("No amortization dates found after settlement date.")
+    if len(datas_amortizacao) == 0:
+        raise ValueError("Nenhuma data de amortização após a liquidação.")
 
-    pmt_dates = pl.Series(name="payment_dates", values=amtz_dates).cast(pl.Date)
+    datas_pagamento = pl.Series(name="payment_dates", values=datas_amortizacao).cast(
+        pl.Date
+    )
 
-    return pmt_dates.filter(pmt_dates > settlement).sort()
+    return datas_pagamento.filter(datas_pagamento > liquidacao).sort()
 
 
 def cash_flows(
     settlement: DateLike, maturity: DateLike, commercial_name: CommercialName
 ) -> pl.DataFrame:
     """
-    Generate the cash flows for NTN-B1 bonds between the settlement and maturity dates.
+    Gera os fluxos de caixa da NTN-B1 entre liquidação e vencimento.
 
     Args:
-        settlement (DateLike): The settlement date (exclusive) to start generating
-            the cash flows.
-        maturity (DateLike): The maturity date of the bond.
-        commercial_name (CommercialName): The commercial name of the NTN-B1 bond
-            (Renda+ or Educa+).
+        settlement (DateLike): Data de liquidação (exclusiva).
+        maturity (DateLike): Data de vencimento.
+        commercial_name (CommercialName): Nome comercial (Renda+ ou Educa+).
 
     Returns:
-        pd.DataFrame: DataFrame with columns "PaymentDate" and "CashFlow".
+        pl.DataFrame: DataFrame com as colunas de fluxo.
 
-    Returned columns:
-        - PaymentDate: The payment date of the cash flow
-        - CashFlow: Cash flow value for the bond
+    Output Columns:
+        * PaymentDate (Date): Data de pagamento do fluxo.
+        * CashFlow (Float64): Valor do fluxo.
 
     Examples:
         >>> from pyield import ntnb1
@@ -165,26 +162,28 @@ def cash_flows(
     if any_is_empty(settlement, maturity, commercial_name):
         return pl.DataFrame({"PaymentDate": [], "CashFlow": []})
 
-    # Validate and normalize dates
-    settlement = cv.convert_dates(settlement)
-    maturity = cv.convert_dates(maturity)
+    # Valida e normaliza datas
+    liquidacao = conversores.convert_dates(settlement)
+    vencimento = conversores.convert_dates(maturity)
 
-    # Get the coupon dates between the settlement and maturity dates
-    p_dates = payment_dates(settlement, maturity, commercial_name)
-    df = pl.DataFrame({"PaymentDate": p_dates})
+    # Obtém as datas de amortização
+    datas_pagamento = payment_dates(liquidacao, vencimento, commercial_name)
+    df = pl.DataFrame({"PaymentDate": datas_pagamento})
 
-    # Get bond parameters
-    amort_payment, final_amort_payment, _ = _get_bond_parameters(commercial_name)
+    # Parâmetros do título
+    pagamento_amort, pagamento_amort_final, _ = _obter_parametros_titulo(
+        commercial_name
+    )
 
-    # Set the cash flow at maturity to FINAL_PMT and the others to COUPON_PMT
+    # Define o fluxo final no vencimento e os demais como amortizações
     df = df.with_columns(
-        pl.when(pl.col("PaymentDate") == maturity)
-        .then(final_amort_payment)
-        .otherwise(amort_payment)
+        pl.when(pl.col("PaymentDate") == vencimento)
+        .then(pagamento_amort_final)
+        .otherwise(pagamento_amort)
         .alias("CashFlow")
     )
 
-    # Return a dataframe with the payment dates and cash flows
+    # Retorna o DataFrame com datas e fluxos
     return df
 
 
@@ -195,18 +194,16 @@ def quotation(
     commercial_name: CommercialName,
 ) -> float:
     """
-    Calculate the NTN-B quotation in base 100 using Anbima rules.
+    Calcula a cotação da NTN-B1 em base 100 pelas regras da ANBIMA.
 
     Args:
-        settlement (DateLike): The settlement date of the operation.
-        maturity (DateLike): The maturity date of the NTN-B bond.
-        rate (float): The discount rate used to calculate the present value of
-            the cash flows, which is the yield to maturity (YTM) of the NTN-B.
-        commercial_name (CommercialName): The commercial name of the NTN-B1 bond
-            (Renda+ or Educa+).
+        settlement (DateLike): Data de liquidação da operação.
+        maturity (DateLike): Data de vencimento da NTN-B1.
+        rate (float): Taxa de desconto (YTM) usada no valor presente.
+        commercial_name (CommercialName): Nome comercial (Renda+ ou Educa+).
 
     Returns:
-        float: The NTN-B quotation truncated to 6 decimal places.
+        float: Cotação da NTN-B1 truncada em 6 casas decimais.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -220,23 +217,23 @@ def quotation(
     if any_is_empty(settlement, maturity, rate, commercial_name):
         return float("nan")
 
-    cf_df = cash_flows(settlement, maturity, commercial_name)
-    cf_dates = cf_df["PaymentDate"]
-    cf_values = cf_df["CashFlow"]
+    df = cash_flows(settlement, maturity, commercial_name)
+    datas_fluxo = df["PaymentDate"]
+    valores_fluxo = df["CashFlow"]
 
-    # Calculate the number of business days between settlement and cash flow dates
-    b_days = bday.count(settlement, cf_dates)
+    # Calcula dias úteis entre liquidação e fluxos
+    dias_uteis = bday.count(settlement, datas_fluxo)
 
-    # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = tools.truncate(b_days / 252, 14)
+    # Calcula anos úteis truncados conforme ANBIMA
+    anos_uteis = tools.truncate(dias_uteis / 252, 14)
 
-    discount_factor = (1 + rate) ** num_of_years
+    fator_desconto = (1 + rate) ** anos_uteis
 
-    # Calculate the present value of each cash flow (DCF) rounded as per Anbima rules
-    cf_present_value = (cf_values / discount_factor).round(10)
+    # Calcula o valor presente de cada fluxo (DCF) com arredondamento ANBIMA
+    valor_presente_fluxos = (valores_fluxo / fator_desconto).round(10)
 
-    # Return the quotation (the dcf sum) truncated as per Anbima rules
-    return tools.truncate(cf_present_value.sum(), 6)
+    # Retorna a cotação (soma do DCF) com truncamento ANBIMA
+    return tools.truncate(valor_presente_fluxos.sum(), 6)
 
 
 def price(
@@ -244,14 +241,14 @@ def price(
     quotation: float,
 ) -> float:
     """
-    Calculate the NTN-B1 price using Brazilian Treasury rules.
+    Calcula o preço da NTN-B1 pelas regras do Tesouro Nacional.
 
     Args:
-        vna (float): The nominal value of the NTN-B bond.
-        quotation (float): The NTN-B quotation in base 100.
+        vna (float): Valor nominal atualizado (VNA).
+        quotation (float): Cotação da NTN-B1 em base 100.
 
     Returns:
-        float: The NTN-B1 price truncated to 6 decimal places.
+        float: Preço da NTN-B1 truncado em 6 casas decimais.
 
     References:
          - SEI Proccess 17944.005214/2024-09
@@ -275,17 +272,16 @@ def duration(
     commercial_name: CommercialName,
 ) -> float:
     """
-    Calculate the Macaulay duration of the NTN-B bond in business years.
+    Calcula a Macaulay duration da NTN-B1 em anos úteis.
 
     Args:
-        settlement (DateLike): The settlement date of the operation.
-        maturity (DateLike): The maturity date of the NTN-B bond.
-        rate (float): The discount rate used to calculate the duration.
-        commercial_name (CommercialName): The commercial name of the NTN-B1 bond
-            (Renda+ or Educa+).
+        settlement (DateLike): Data de liquidação da operação.
+        maturity (DateLike): Data de vencimento.
+        rate (float): Taxa de desconto usada no cálculo.
+        commercial_name (CommercialName): Nome comercial (Renda+ ou Educa+).
 
     Returns:
-        float: The Macaulay duration of the NTN-B bond in business years.
+        float: Macaulay duration em anos úteis.
 
     Examples:
         >>> from pyield import ntnb1
@@ -293,17 +289,17 @@ def duration(
         >>> ntnb1.duration("23-06-2025", "15-12-2084", 0.0686, r_mais)
         47.10493458167134
     """
-    # Return NaN if any input is nullable
+    # Retorna NaN se houver entradas nulas
     if any_is_empty(settlement, maturity, rate, commercial_name):
         return float("nan")
 
     df = cash_flows(settlement, maturity, commercial_name)
-    s_byears = bday.count(settlement, df["PaymentDate"]) / 252
-    s_dcf = df["CashFlow"] / (1 + rate) ** s_byears
-    duration = (s_dcf * s_byears).sum() / s_dcf.sum()
+    anos_uteis = bday.count(settlement, df["PaymentDate"]) / 252
+    dcf = df["CashFlow"] / (1 + rate) ** anos_uteis
+    duracao = (dcf * anos_uteis).sum() / dcf.sum()
 
-    # Truncate duration to 14 decimal places for result reproducibility
-    return tools.truncate(duration, 14)
+    # Trunca a duração para 14 casas para reprodutibilidade
+    return tools.truncate(duracao, 14)
 
 
 def dv01(
@@ -314,20 +310,19 @@ def dv01(
     commercial_name: CommercialName = CommercialName.RENDA_MAIS,
 ) -> float:
     """
-    Calculate the DV01 (Dollar Value of 01) for an NTN-B1 in R$.
+    Calcula o DV01 (Dollar Value of 01) da NTN-B1 em R$.
 
-    Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.
+    Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
 
     Args:
-        settlement (DateLike): The settlement date.
-        maturity (DateLike): The maturity date of the NTN-B bond.
-        rate (float): The discount rate (yield to maturity) of the NTN-B bond.
-        vna (float): The nominal value of the NTN-B bond.
-        commercial_name (CommercialName): The commercial name of the NTN-B1 bond
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        rate (float): Taxa de desconto (YTM) da NTN-B1.
+        vna (float): Valor nominal atualizado (VNA).
+        commercial_name (CommercialName): Nome comercial (Renda+ ou Educa+).
 
     Returns:
-        float: The DV01 value, representing the price change for a 1 basis point
-            increase in yield.
+        float: DV01, variação de preço para 1 bp.
 
     Examples:
         >>> from pyield import ntnb1
