@@ -74,6 +74,7 @@ FINAL_COLUMN_ORDER = [
     "dv01_1v",
     "dv01_2v",
     "dv01_total",
+    "ptax",
     "dv01_1v_usd",
     "dv01_2v_usd",
     "dv01_total_usd",
@@ -87,7 +88,42 @@ FINAL_COLUMN_ORDER = [
 
 @default_retry
 def _buscar_dados_leilao(data_leilao: dt.date) -> list[dict]:
-    """Busca os dados brutos da API do Tesouro para uma data específica."""
+    """Busca os dados brutos da API do Tesouro para uma data específica.
+
+    Exemplo de resposta da API de leilões do Tesouro:
+    https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/resultados?dataleilao=30/09/2025
+
+        {
+        "registros": [
+            {...},
+            {
+            "quantidade_bcb": 0,
+            "liquidacao_segunda_volta": "30/09/2025",
+            "oferta_segunda_volta": 37499,
+            "data_leilao": "30/09/2025",
+            "oferta": 150000,
+            "titulo": "LFT",
+            "liquidacao": "01/10/2025",
+            "financeiro_aceito_segunda_volta": 0,
+            "quantidade_aceita": 150000,
+            "prazo": 1067,
+            "vencimento": "01/09/2028",
+            "benchmark": "LFT 3 anos",
+            "pu_medio": 17434.81182753125,
+            "taxa_media": 0.0669,
+            "financeiro_aceito": 2615194916.22,
+            "pu_minimo": 17434.632775,
+            "numero_edital": 230,
+            "taxa_maxima": 0.0669,
+            "tipo_leilao": "Venda",
+            "financeiro_bcb": 0,
+            "quantidade_aceita_segunda_volta": 0
+            },
+            {...},
+        ],
+        "status": "ok"
+        }
+    """
     endpoint = (
         "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/resultados"
     )
@@ -312,7 +348,6 @@ def _adicionar_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
         .with_columns(
             (cs.starts_with("dv01") / pl.col("ptax")).round(2).name.suffix("_usd")
         )
-        .drop("ptax")
     )
     return df
 
@@ -324,99 +359,66 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def auction(auction_date: DateLike) -> pl.DataFrame:
-    """
-    Fetches and processes Brazilian Treasury auction data for a given date.
+    """Consulta e processa os resultados de leilões de títulos do Tesouro Nacional.
 
-    This function queries the Tesouro Nacional API to retrieve auction results
-    for a specific auction_date. It then processes the JSON response using the Polars
-    library to create a well-structured and typed DataFrame.
-
-    Exemplo de resposta da API de leilões do Tesouro:
-    https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/resultados?dataleilao=30/09/2025
-
-        {
-        "registros": [
-            {...},
-            {
-            "quantidade_bcb": 0,
-            "liquidacao_segunda_volta": "30/09/2025",
-            "oferta_segunda_volta": 37499,
-            "data_leilao": "30/09/2025",
-            "oferta": 150000,
-            "titulo": "LFT",
-            "liquidacao": "01/10/2025",
-            "financeiro_aceito_segunda_volta": 0,
-            "quantidade_aceita": 150000,
-            "prazo": 1067,
-            "vencimento": "01/09/2028",
-            "benchmark": "LFT 3 anos",
-            "pu_medio": 17434.81182753125,
-            "taxa_media": 0.0669,
-            "financeiro_aceito": 2615194916.22,
-            "pu_minimo": 17434.632775,
-            "numero_edital": 230,
-            "taxa_maxima": 0.0669,
-            "tipo_leilao": "Venda",
-            "financeiro_bcb": 0,
-            "quantidade_aceita_segunda_volta": 0
-            },
-            {...},
-        ],
-        "status": "ok"
-        }
+    Busca os dados da API do Tesouro para a data informada e retorna um DataFrame
+    estruturado com quantidades, financeiros, taxas de colocação, duration e DV01.
 
     Args:
-        auction_date: The date of the auction in the format accepted by PYield
-            DateLike (e.g., "DD-MM-YYYY", datetime.date, etc.).
+        auction_date: Data do leilão em qualquer formato aceito por DateLike
+            (ex: "DD-MM-YYYY", datetime.date).
 
     Returns:
-        Um DataFrame do Polars contendo os dados processados do leilão. As colunas são:
-        - data_1v: Data de realização do leilão (1ª volta).
-        - data_liquidacao_1v: Data de liquidação financeira da 1ª volta.
-        - data_liquidacao_2v: Data de liquidação financeira da 2ª volta (se houver).
-        - numero_edital: Número do edital que rege o leilão.
-        - tipo_leilao: Tipo da operação (ex: "Venda", "Compra").
-        - titulo: Código do título público leiloado (ex: "NTN-B", "LFT").
-        - benchmark: Descrição de referência do título (ex: "NTN-B 3 anos").
-        - data_vencimento: Data de vencimento do título.
-        - dias_uteis: Número de dias úteis entre a liquidação (1v) e o vencimento.
-        - dias_corridos: Prazo em dias corridos do título, conforme informado pela API.
-        - duration: A Duração de Macaulay do título em anos, calculada entre a
-            liquidação da 1ª volta e o vencimento do título.
-        - prazo_medio: A maturidade média do título em anos, conforme metodologia do
-            Tesouro, calculada entre a liquidação da 1ª volta e o vencimento do título.
-        - quantidade_ofertada_1v: Quantidade de títulos ofertados na 1ª volta.
-        - quantidade_ofertada_2v: Quantidade de títulos ofertados na 2ª volta.
-        - quantidade_aceita_1v: Quantidade de títulos com propostas aceitas na 1ª volta.
-        - quantidade_aceita_2v: Quantidade de títulos aceitos na 2ª volta.
-        - quantidade_aceita_total: Soma das quantidades aceitas nas duas voltas.
-        - financeiro_ofertado_1v: Financeiro ofertado total na 1ª volta (em BRL).
-        - financeiro_ofertado_2v: Financeiro ofertado total na 2ª volta (em BRL).
-        - financeiro_ofertado_total: Financeiro total ofertado nas duas voltas (em BRL).
-        - financeiro_aceito_1v: Financeiro aceito total na 1ª volta (em BRL).
-        - financeiro_aceito_2v: Financeiro aceito total na 2ª volta (em BRL).
-        - financeiro_aceito_total: Soma do financeiro aceito nas duas voltas (em BRL).
-        - quantidade_bcb: Quantidade de títulos adquirida pelo Banco Central.
-        - financeiro_bcb: Financeiro adquirido pelo Banco Central.
-        - colocacao_1v: Taxa de colocação da 1ª volta (quantidade aceita / ofertada).
-        - colocacao_2v: Taxa de colocação da 2ª volta (quantidade aceita / ofertada).
-        - colocacao_total: Taxa de colocação total (quantidade aceita / ofertada).
-        - dv01_1v: DV01 da 1ª volta em BRL.
-        - dv01_2v: DV01 da 2ª volta em BRL.
-        - dv01_total: DV01 total do leilão em BRL.
-        - dv01_1v_usd: DV01 da 1ª volta em USD usando a PTAX do dia.
-        - dv01_2v_usd: DV01 da 2ª volta em USD usando a PTAX do dia.
-        - dv01_total_usd: DV01 total das duas voltas em USD usando a PTAX do dia.
-        - pu_minimo: Preço Unitário mínimo aceito no leilão.
-        - pu_medio: Preço Unitário médio ponderado das propostas aceitas.
-        - tipo_pu_medio: Indica se o PU médio é "original" (fornecido pela API) ou
-            "calculado" (recalculado pela função).
-        - taxa_media: Taxa de juros média das propostas aceitas (em formato decimal).
-        - taxa_maxima: Taxa de juros máxima aceita no leilão (taxa de corte, em formato
-            decimal).
+        DataFrame com os dados processados do leilão. Em caso de erro na
+        requisição, no processamento ou se não houver dados para a data
+        especificada, retorna DataFrame vazio.
 
-    Retorna um DataFrame do Pandas vazio se ocorrer um erro na requisição, no
-    processamento, ou se não houver dados para a data especificada.
+    Output Columns:
+        * data_1v (Date): data de realização do leilão (1ª volta).
+        * data_liquidacao_1v (Date): data de liquidação financeira da 1ª volta.
+        * data_liquidacao_2v (Date): data de liquidação financeira da 2ª volta
+            (se houver).
+        * numero_edital (Int64): número do edital que rege o leilão.
+        * tipo_leilao (String): tipo da operação (ex: "Venda", "Compra").
+        * titulo (String): código do título público leiloado (ex: "NTN-B", "LFT").
+        * benchmark (String): descrição de referência do título (ex: "NTN-B 3 anos").
+        * data_vencimento (Date): data de vencimento do título.
+        * dias_uteis (Int32): dias úteis entre a liquidação (1v) e o vencimento.
+        * dias_corridos (Int32): prazo em dias corridos entre liquidação e vencimento.
+        * duration (Float64): Duração de Macaulay em anos, calculada entre a liquidação
+            da 1ª volta e o vencimento.
+        * prazo_medio (Float64): maturidade média em anos, conforme metodologia do
+            Tesouro Nacional.
+        * quantidade_ofertada_1v (Int64): quantidade de títulos ofertados na 1ª volta.
+        * quantidade_ofertada_2v (Int64): quantidade de títulos ofertados na 2ª volta.
+        * quantidade_aceita_1v (Int64): quantidade de propostas aceitas na 1ª volta.
+        * quantidade_aceita_2v (Int64): quantidade de títulos aceitos na 2ª volta.
+        * quantidade_aceita_total (Int64): soma das quantidades aceitas nas duas voltas.
+        * financeiro_ofertado_1v (Float64): financeiro ofertado na 1ª volta (BRL).
+        * financeiro_ofertado_2v (Float64): financeiro ofertado na 2ª volta (BRL).
+        * financeiro_ofertado_total (Float64): financeiro total ofertado (BRL).
+        * financeiro_aceito_1v (Float64): financeiro aceito na 1ª volta (BRL).
+        * financeiro_aceito_2v (Float64): financeiro aceito na 2ª volta (BRL).
+        * financeiro_aceito_total (Float64): soma do financeiro aceito nas
+            duas voltas (BRL).
+        * quantidade_bcb (Int64): quantidade de títulos adquirida pelo Banco Central.
+        * financeiro_bcb (Int64): financeiro adquirido pelo Banco Central.
+        * colocacao_1v (Float64): taxa de colocação da 1ª volta (aceita / ofertada).
+        * colocacao_2v (Float64): taxa de colocação da 2ª volta (aceita / ofertada).
+        * colocacao_total (Float64): taxa de colocação total (aceita / ofertada).
+        * dv01_1v (Float64): DV01 da 1ª volta em BRL.
+        * dv01_2v (Float64): DV01 da 2ª volta em BRL.
+        * dv01_total (Float64): DV01 total do leilão em BRL.
+        * ptax (Float64): taxa PTAX (venda) utilizada na conversão do DV01 para USD.
+        * dv01_1v_usd (Float64): DV01 da 1ª volta em USD (PTAX do dia).
+        * dv01_2v_usd (Float64): DV01 da 2ª volta em USD (PTAX do dia).
+        * dv01_total_usd (Float64): DV01 total em USD (PTAX do dia).
+        * pu_minimo (Float64): preço unitário mínimo aceito no leilão.
+        * pu_medio (Float64): preço unitário médio ponderado das propostas aceitas.
+        * tipo_pu_medio (String): indica se o PU médio é "original" (da API) ou
+            "calculado" (recalculado pela função).
+        * taxa_media (Float64): taxa de juros média aceita (em formato decimal).
+        * taxa_maxima (Float64): taxa de juros máxima aceita, taxa de corte (decimal).
     """
     if any_is_empty(auction_date):
         logger.info("No auction date provided.")
