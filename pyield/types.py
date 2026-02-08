@@ -1,5 +1,6 @@
 import datetime as dt
 import math
+from collections.abc import Collection, Sized
 from typing import Any, Sequence, TypeAlias
 
 import polars as pl
@@ -8,34 +9,18 @@ DateLike: TypeAlias = str | dt.datetime | dt.date
 ArrayLike: TypeAlias = Sequence[Any] | pl.Series
 
 
-def _is_empty(arg) -> bool:  # noqa
-    match arg:
-        # 1. Singletons
-        case None:
-            return True
-
-        # 2. Padrão de tipo para Polars
-        case pl.DataFrame() | pl.Series() as pl_obj:
-            return pl_obj.is_empty()
-
-        # 3. Padrão de tipo para NaN
-        case float() as f:
-            return math.isnan(f)
-
-        # 4. Padrão para string
-        case str() if not arg:
-            return True
-
-        # 5. Padrão para coleções vazias
-        case [] | () | {}:
-            return True
-
-        # 6. Caso padrão (catch-all)
-        case _:
-            return False
+def _is_empty(arg: Any) -> bool:
+    """Verifica se um argumento é None, NaN ou uma coleção vazia."""
+    if arg is None:
+        return True
+    if isinstance(arg, float):
+        return math.isnan(arg)
+    if isinstance(arg, Sized):
+        return len(arg) == 0
+    return False
 
 
-def any_is_empty(*args) -> bool:
+def any_is_empty(*args: Any) -> bool:
     """Verifica se algum dos argumentos fornecidos é None, NaN ou uma coleção vazia.
 
     Args:
@@ -47,13 +32,12 @@ def any_is_empty(*args) -> bool:
     return any(_is_empty(arg) for arg in args)
 
 
-def is_collection(arg) -> bool:
-    if hasattr(arg, "__len__") and not isinstance(arg, (str, bytes)):
-        return True
-    return False
+def is_collection(arg: Any) -> bool:
+    """Verifica se o argumento é uma coleção (array-like), excluindo strings e bytes."""
+    return isinstance(arg, Collection) and not isinstance(arg, (str, bytes))
 
 
-def any_is_collection(*args) -> bool:
+def any_is_collection(*args: Any) -> bool:
     """Verifica se algum dos argumentos fornecidos é uma coleção (array-like).
 
     Args:

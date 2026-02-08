@@ -49,7 +49,7 @@ The library is organized into domain-specific namespaces, all exposed through `p
 
 ### Key Cross-Cutting Components
 
-- **`types.py`** - Type aliases `DateLike` and `ArrayLike`; `has_nullable_args()` for null/empty detection
+- **`types.py`** - Type aliases `DateLike` and `ArrayLike`; `any_is_empty()` for null/empty detection
 - **`converters.py`** - `convert_dates()` normalizes various date inputs to `datetime.date` or `pl.Series[Date]`
 - **`interpolator.py`** - `Interpolator` class for rate interpolation (linear or flat_forward method, 252 bday/year convention)
 - **`data_cache.py`** - GitHub-hosted parquet data cache with daily TTL using `lru_cache`
