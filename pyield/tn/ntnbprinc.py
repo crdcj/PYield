@@ -10,16 +10,16 @@ def price(
     face_value: float,
 ) -> float:
     """
-    Calculate the NTN-B PRINCIPAL price using Anbima rules.
+    Calcula o preço da NTN-B Principal pelas regras da ANBIMA.
 
     Args:
-        settlement (DateLike): The settlement date.
-        maturity (DateLike): The maturity date.
-        rate (float): The discount rate (yield to maturity) of the bond.
-        face_value (float): The face value of the bond (VNA).
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        rate (float): Taxa de desconto (YTM) do título.
+        face_value (float): Valor nominal atualizado (VNA).
 
     Returns:
-        float: The NTN-B PRINCIPAL price using Anbima rules.
+        float: Preço da NTN-B Principal conforme ANBIMA.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -32,16 +32,16 @@ def price(
     if any_is_empty(settlement, maturity, rate, face_value):
         return float("nan")
 
-    # Calculate the number of business days between settlement and cash flow dates
-    bdays = bday.count(settlement, maturity)
+    # Calcula dias úteis entre liquidação e vencimento
+    dias_uteis = bday.count(settlement, maturity)
 
-    # Calculate the number of periods truncated as per Anbima rule
-    byears = tools.truncate(bdays / 252, 14)
+    # Calcula anos úteis truncados conforme ANBIMA
+    anos_uteis = tools.truncate(dias_uteis / 252, 14)
 
-    discount_factor = (1 + rate) ** byears
+    fator_desconto = (1 + rate) ** anos_uteis
 
-    # Truncate the price to 6 decimal places as per Anbima rules
-    return tools.truncate(face_value / discount_factor, 6)
+    # Trunca o preço em 6 casas conforme ANBIMA
+    return tools.truncate(face_value / fator_desconto, 6)
 
 
 def dv01(
@@ -51,19 +51,18 @@ def dv01(
     face_value: float,
 ) -> float:
     """
-    Calculate the DV01 (Dollar Value of 01) for an LTN in R$.
+    Calcula o DV01 (Dollar Value of 01) da NTN-B Principal em R$.
 
-    Represents the price change in R$ for a 1 basis point (0.01%) increase in yield.
+    Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
 
     Args:
-        settlement (DateLike): The settlement date.
-        maturity (DateLike): The maturity date.
-        rate (float): The discount rate (yield to maturity) of the bond.
-        face_value (float): The face value of the bond (VNA).
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        rate (float): Taxa de desconto (YTM) do título.
+        face_value (float): Valor nominal atualizado (VNA).
 
     Returns:
-        float: The DV01 value, representing the price change for a 1 basis point
-            increase in yield.
+        float: DV01, variação de preço para 1 bp.
 
     Examples:
         >>> from pyield import ntnbprinc as bp
@@ -73,6 +72,6 @@ def dv01(
     if any_is_empty(settlement, maturity, rate, face_value):
         return float("nan")
 
-    price1 = price(settlement, maturity, rate, face_value)
-    price2 = price(settlement, maturity, rate + 0.0001, face_value)
-    return price1 - price2
+    preco_1 = price(settlement, maturity, rate, face_value)
+    preco_2 = price(settlement, maturity, rate + 0.0001, face_value)
+    return preco_1 - preco_2
