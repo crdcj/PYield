@@ -1,5 +1,5 @@
 """
-Fetches real-time secondary trading data for domestic Federal Public Debt (FPD)
+Busca dados intradiários de negociações secundárias da dívida pública federal.
 https://www.bcb.gov.br/htms/selic/selicprecos.asp?frame=1
 """
 
@@ -12,13 +12,17 @@ import polars.selectors as cs
 import requests
 
 from pyield import bday, clock
+from pyield.retry import default_retry
 
-REALTIME_START_TIME = dt.time(9, 0, 0)
-REALTIME_END_TIME = dt.time(22, 0, 0)
+HORA_INICIO_TEMPO_REAL = dt.time(9, 0, 0)
+HORA_FIM_TEMPO_REAL = dt.time(22, 0, 0)
+URL_BASE_TEMPO_REAL = (
+    "https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/"
+)
 
-logger = logging.getLogger(__name__)
+registro = logging.getLogger(__name__)
 
-COLUMN_MAP = {
+MAPA_COLUNAS = {
     "//1": ("RowType", None),
     "código título": ("SelicCode", pl.Int64),
     "data vencimento": ("MaturityDate", None),
@@ -51,12 +55,12 @@ COLUMN_MAP = {
     "financeiro_duplicated_0": ("FwdValue", pl.Float64),
 }
 
-API_COL_MAPPING = {col: alias for col, (alias, _) in COLUMN_MAP.items()}
-DATA_SCHEMA = {
-    alias: dtype for _, (alias, dtype) in COLUMN_MAP.items() if dtype is not None
+MAPEAMENTO_COL_API = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
+ESQUEMA_DADOS = {
+    alias: dtype for _, (alias, dtype) in MAPA_COLUNAS.items() if dtype is not None
 }
 
-FINAL_COLUMN_ORDER = [
+ORDEM_COLUNAS_FINAL = [
     "CollectedAt",
     "SettlementDate",
     "BondType",
@@ -91,136 +95,148 @@ FINAL_COLUMN_ORDER = [
 ]
 
 
-def _fetch_csv_from_url() -> str:
+@default_retry
+def _buscar_csv() -> str:
     """
-    Example URL for the CSV file containing intraday trades data:
+    Exemplo de URL do CSV com dados intradiários:
         https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/02-06-2025
     """
-    today = clock.today()
-    formatted_date = today.strftime("%d-%m-%Y")
-    url = f"https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/{formatted_date}"
-    r = requests.get(url, timeout=30)  # API usually takes 10s to respond
+    hoje = clock.today()
+    data_formatada = hoje.strftime("%d-%m-%Y")
+    url = f"{URL_BASE_TEMPO_REAL}{data_formatada}"
+    r = requests.get(url, timeout=30)  # API costuma levar ~10s
     r.raise_for_status()
-    r.encoding = "utf-8-sig"  # Handle BOM for UTF-8
+    r.encoding = "utf-8-sig"  # Trata BOM em UTF-8
     return r.text
 
 
-def _clean_csv(text: str) -> str:
-    rows = text.splitlines()
-    # Strip spaces from column names so they match COLUMN_MAP keys
-    header = ";".join(col.strip() for col in rows[0].split(";"))
-    valid_rows = [header] + [row for row in rows if row.startswith("1;")]
-    text = "\n".join(valid_rows)
-    text = text.replace(".", "")  # Remove thousands separator
-    text = text.replace(",", ".")  # Replace decimal comma with dot
-    return text
+def _limpar_csv(texto: str) -> str:
+    linhas = texto.splitlines()
+    # Remove espaços nos nomes das colunas para bater com MAPA_COLUNAS
+    cabecalho = ";".join(col.strip() for col in linhas[0].split(";"))
+    linhas_validas = [cabecalho] + [linha for linha in linhas if linha.startswith("1;")]
+    texto = "\n".join(linhas_validas)
+    texto = texto.replace(".", "")  # Remove separador de milhar
+    texto = texto.replace(",", ".")  # Troca vírgula decimal por ponto
+    return texto
 
 
-def _convert_csv_to_df(text: str) -> pl.DataFrame:
+def _csv_para_df(texto: str) -> pl.DataFrame:
     return pl.read_csv(
-        io.StringIO(text),
+        io.StringIO(texto),
         separator=";",
         null_values="-",
     )
 
 
-def _process_df(df: pl.DataFrame) -> pl.DataFrame:
-    now = clock.now()
-    today = now.date()
+def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
+    agora = clock.now()
+    hoje = agora.date()
 
     df = (
-        df.rename(API_COL_MAPPING)
-        .cast(DATA_SCHEMA, strict=False)  # type: ignore[call-arg]
+        df.rename(MAPEAMENTO_COL_API)
+        .cast(ESQUEMA_DADOS, strict=False)  # type: ignore[call-arg]
         .drop("RowType", strict=False)
         .with_columns(
             pl.col("BondType").str.strip_chars(),
             pl.col("MaturityDate").str.to_date("%d/%m/%Y"),
             cs.contains("Rate").truediv(100).round(6),
-            SettlementDate=today,
-            CollectedAt=now,
+            SettlementDate=hoje,
+            CollectedAt=agora,
         )
     )
 
-    # 3. Final selection and reordering
-    final_columns = [col for col in FINAL_COLUMN_ORDER if col in df.columns]
+    # 3. Seleção final e reordenação
+    colunas_finais = [col for col in ORDEM_COLUNAS_FINAL if col in df.columns]
 
-    return df.select(final_columns)
+    return df.select(colunas_finais)
 
 
-def is_selic_open() -> bool:
-    """Verifica se o mercado está aberto no momento."""
-    now = clock.now()
-    today = now.date()
-    time = now.time()
-    is_last_bday = bday.is_business_day(today)
-    is_trading_time = REALTIME_START_TIME <= time <= REALTIME_END_TIME
+def _mercado_selic_aberto() -> bool:
+    """Verifica se o mercado SELIC está aberto no momento."""
+    agora = clock.now()
+    hoje = agora.date()
+    hora = agora.time()
+    eh_dia_util = bday.is_business_day(hoje)
+    eh_horario = HORA_INICIO_TEMPO_REAL <= hora <= HORA_FIM_TEMPO_REAL
 
-    return is_last_bday and is_trading_time
+    return eh_dia_util and eh_horario
 
 
 def tpf_intraday_trades() -> pl.DataFrame:
-    """Fetches real-time secondary trading data for domestic Federal Public Debt
-    (TPF - títulos públicos federais) from the Central Bank of Brazil (BCB).
+    """Obtém dados intradiários de negociações secundárias da dívida pública
+    federal (TPF - títulos públicos federais) no Banco Central do Brasil (BCB).
 
-    Data is available only during SELIC trading hours (09:00–22:00 BRT) on
-    business days. Returns an empty DataFrame outside this window.
+    Os dados ficam disponíveis apenas durante o horário do SELIC
+    (09:00–22:00 BRT) em dias úteis. Retorna DataFrame vazio fora desse período.
+
+    Args:
+        None.
 
     Returns:
-        pl.DataFrame: DataFrame with intraday trades. Empty if market is
-            closed or on error.
+        pl.DataFrame: DataFrame com negociações intradiárias. Vazio se o mercado
+            estiver fechado ou ocorrer erro.
 
     Output Columns:
-        * CollectedAt (datetime): Timestamp of data collection (BRT).
-        * SettlementDate (date): Spot market settlement date.
-        * BondType (str): Bond ticker (e.g., LFT, LTN, NTN-B).
-        * SelicCode (int): SELIC code identifying the bond issue.
-        * MaturityDate (date): Bond maturity date.
-        * MinPrice (float): Minimum traded price.
-        * AvgPrice (float): Average traded price.
-        * MaxPrice (float): Maximum traded price.
-        * LastPrice (float): Last traded price.
-        * MinRate (float): Minimum traded rate (decimal).
-        * AvgRate (float): Average traded rate (decimal).
-        * MaxRate (float): Maximum traded rate (decimal).
-        * LastRate (float): Last traded rate (decimal).
-        * Trades (int): Total number of settled trades.
-        * Quantity (int): Total bonds traded.
-        * Value (float): Total financial value traded (BRL).
-        * BrokeredTrades (int): Number of brokered settled trades.
-        * BrokeredQuantity (int): Bonds traded via brokers.
-        * FwdMinPrice (float): Forward minimum traded price.
-        * FwdAvgPrice (float): Forward average traded price.
-        * FwdMaxPrice (float): Forward maximum traded price.
-        * FwdLastPrice (float): Forward last traded price.
-        * FwdMinRate (float): Forward minimum traded rate (decimal).
-        * FwdAvgRate (float): Forward average traded rate (decimal).
-        * FwdMaxRate (float): Forward maximum traded rate (decimal).
-        * FwdLastRate (float): Forward last traded rate (decimal).
-        * FwdTrades (int): Forward total trades contracted.
-        * FwdQuantity (int): Forward total bonds traded.
-        * FwdValue (float): Forward total value traded (BRL).
-        * FwdBrokeredTrades (int): Forward brokered trades contracted.
-        * FwdBrokeredQuantity (int): Forward bonds traded via brokers.
+        * CollectedAt (datetime): Timestamp da coleta (BRT).
+        * SettlementDate (date): Data de liquidação à vista.
+        * BondType (str): Sigla do título (ex.: LFT, LTN, NTN-B).
+        * SelicCode (int): Código SELIC do título.
+        * MaturityDate (date): Data de vencimento do título.
+        * MinPrice (float): Menor preço negociado.
+        * AvgPrice (float): Preço médio negociado.
+        * MaxPrice (float): Maior preço negociado.
+        * LastPrice (float): Último preço negociado.
+        * MinRate (float): Menor taxa negociada (decimal).
+        * AvgRate (float): Taxa média negociada (decimal).
+        * MaxRate (float): Maior taxa negociada (decimal).
+        * LastRate (float): Última taxa negociada (decimal).
+        * Trades (int): Total de operações liquidadas.
+        * Quantity (int): Quantidade total de títulos negociados.
+        * Value (float): Valor financeiro total negociado (BRL).
+        * BrokeredTrades (int): Operações liquidadas via corretagem.
+        * BrokeredQuantity (int): Títulos negociados via corretagem.
+        * FwdMinPrice (float): Menor preço a termo negociado.
+        * FwdAvgPrice (float): Preço médio a termo negociado.
+        * FwdMaxPrice (float): Maior preço a termo negociado.
+        * FwdLastPrice (float): Último preço a termo negociado.
+        * FwdMinRate (float): Menor taxa a termo negociada (decimal).
+        * FwdAvgRate (float): Taxa média a termo negociada (decimal).
+        * FwdMaxRate (float): Maior taxa a termo negociada (decimal).
+        * FwdLastRate (float): Última taxa a termo negociada (decimal).
+        * FwdTrades (int): Total de operações a termo contratadas.
+        * FwdQuantity (int): Total de títulos a termo negociados.
+        * FwdValue (float): Valor financeiro total a termo (BRL).
+        * FwdBrokeredTrades (int): Operações a termo via corretagem.
+        * FwdBrokeredQuantity (int): Títulos a termo via corretagem.
+
+    Notes:
+        - Retorna DataFrame vazio fora do horário do SELIC (09:00–22:00 BRT).
+        - Em caso de erro na coleta, registra log e retorna DataFrame vazio.
+
+    Examples:
+        >>> from pyield import bc
+        >>> bc.tpf_intraday_trades()
     """
-    if not is_selic_open():
-        logger.info("Market is closed. Returning empty DataFrame.")
+    if not _mercado_selic_aberto():
+        registro.info("Mercado fechado. Retornando DataFrame vazio.")
         return pl.DataFrame()
 
     try:
-        raw_text = _fetch_csv_from_url()
-        cleaned_text = _clean_csv(raw_text)
-        if not cleaned_text:
-            logger.warning("No data found in the FPD intraday trades.")
+        texto_bruto = _buscar_csv()
+        texto_limpo = _limpar_csv(texto_bruto)
+        if not texto_limpo:
+            registro.warning("Nenhum dado encontrado nas negociações intradiárias.")
             return pl.DataFrame()
 
-        df = _convert_csv_to_df(cleaned_text)
-        df = _process_df(df)
+        df = _csv_para_df(texto_limpo)
+        df = _processar_df(df)
 
-        value = df["Value"].sum() / 10**9
-        logger.info(f"Fetched {value:,.1f} billion BRL in FPD intraday trades.")
+        valor = df["Value"].sum() / 10**9
+        registro.info(f"Foram coletados {valor:,.1f} bilhões de BRL em negociações.")
         return df
     except Exception as e:
-        logger.exception(
-            f"Error fetching data from BCB: {e}. Returning empty DataFrame."
+        registro.exception(
+            f"Erro ao coletar dados do BCB: {e}. Retornando DataFrame vazio."
         )
         return pl.DataFrame()

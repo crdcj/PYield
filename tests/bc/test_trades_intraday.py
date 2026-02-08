@@ -3,9 +3,9 @@ from pathlib import Path
 import polars as pl
 
 from pyield.bc.trades_intraday import (
-    _clean_csv,  # noqa: PLC2701
-    _convert_csv_to_df,  # noqa: PLC2701
-    _process_df,  # noqa: PLC2701
+    _csv_para_df,  # noqa: PLC2701
+    _limpar_csv,  # noqa: PLC2701
+    _processar_df,  # noqa: PLC2701
 )
 
 DATA_DIR = Path(__file__).parent / "data"
@@ -18,9 +18,9 @@ IGNORE_COLUMNS = ["CollectedAt", "SettlementDate"]
 
 def _load_and_process() -> pl.DataFrame:
     csv_data = CSV_PATH.read_text(encoding="utf-8")
-    cleaned = _clean_csv(csv_data)
-    df = _convert_csv_to_df(cleaned)
-    return _process_df(df).drop(IGNORE_COLUMNS)
+    texto_limpo = _limpar_csv(csv_data)
+    df = _csv_para_df(texto_limpo)
+    return _processar_df(df).drop(IGNORE_COLUMNS)
 
 
 def _load_expected() -> pl.DataFrame:
