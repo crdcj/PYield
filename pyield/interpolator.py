@@ -4,7 +4,7 @@ from typing import Literal, overload
 
 import polars as pl
 
-from pyield.types import ArrayLike, is_array_like
+from pyield.types import ArrayLike, is_collection
 
 
 class Interpolator:
@@ -177,7 +177,7 @@ class Interpolator:
         Returns:
             Taxa(s) interpolada(s). Float para entrada escalar, pl.Series para array.
         """
-        if is_array_like(bdays):
+        if is_collection(bdays):
             s_bdays = pl.Series(name="interpolated_rate", values=bdays, dtype=pl.Int64)
             result = s_bdays.map_elements(
                 self._interpolated_rate, return_dtype=pl.Float64

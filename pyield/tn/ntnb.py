@@ -8,7 +8,7 @@ import pyield.converters as cv
 import pyield.interpolator as ip
 import pyield.tn.tools as tl
 from pyield import anbima, bday, fwd
-from pyield.types import ArrayLike, DateLike, has_nullable_args
+from pyield.types import ArrayLike, DateLike, any_is_empty
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -166,7 +166,7 @@ def payment_dates(
             2025-05-15
         ]
     """
-    if has_nullable_args(settlement, maturity):
+    if any_is_empty(settlement, maturity):
         return pl.Series(dtype=pl.Date)
 
     settlement = cv.convert_dates(settlement)
@@ -219,7 +219,7 @@ def cash_flows(
         │ 2025-05-15  ┆ 102.956301 │
         └─────────────┴────────────┘
     """
-    if has_nullable_args(settlement, maturity):
+    if any_is_empty(settlement, maturity):
         return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
 
     # Get the coupon dates between the settlement and maturity dates
@@ -276,7 +276,7 @@ def quotation(
         >>> ntnb.quotation("15-08-2024", "15-08-2032", 0.05929)
         100.6409
     """
-    if has_nullable_args(settlement, maturity, rate):
+    if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
     df_cf = cash_flows(settlement, maturity)
@@ -327,7 +327,7 @@ def price(
         >>> ntnb.price(None, 99.5341)  # Nullable inputs return float('nan')
         nan
     """
-    if has_nullable_args(vna, quotation):
+    if any_is_empty(vna, quotation):
         return float("nan")
     return tl.truncate(vna * quotation / 100, 6)
 
@@ -496,7 +496,7 @@ def spot_rates(
         - BDToMat: The number of business days from settlement to maturities.
         - SpotRate: The real spot rate for the bond.
     """
-    if has_nullable_args(settlement, maturities, rates):
+    if any_is_empty(settlement, maturities, rates):
         return pl.DataFrame()
 
     settlement, maturities, rates = _validate_spot_rate_inputs(
@@ -603,7 +603,7 @@ def bei_rates(
         │ 2060-08-15   ┆ 9003    ┆ 0.063001 ┆ 0.11759  ┆ 0.051354 │
         └──────────────┴─────────┴──────────┴──────────┴──────────┘
     """
-    if has_nullable_args(
+    if any_is_empty(
         settlement, ntnb_maturities, ntnb_rates, nominal_maturities, nominal_rates
     ):
         return pl.DataFrame()
@@ -664,7 +664,7 @@ def duration(
          >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
          15.08305431313046
     """
-    if has_nullable_args(settlement, maturity, rate):
+    if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
     df = cash_flows(settlement, maturity)
@@ -703,7 +703,7 @@ def dv01(
         >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, 4470.979474)
         4.640875999999935
     """
-    if has_nullable_args(settlement, maturity, rate, vna):
+    if any_is_empty(settlement, maturity, rate, vna):
         return float("nan")
 
     quotation1 = quotation(settlement, maturity, rate)
@@ -757,7 +757,7 @@ def forwards(
         │ 2060-08-15   ┆ 8722    ┆ 0.073795       ┆ 0.074505    │
         └──────────────┴─────────┴────────────────┴─────────────┘
     """
-    if has_nullable_args(date):
+    if any_is_empty(date):
         return pl.DataFrame()
 
     # Validate and normalize the date

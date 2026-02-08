@@ -1,6 +1,6 @@
 from pyield import bday
 from pyield.tn import tools
-from pyield.types import DateLike, has_nullable_args
+from pyield.types import DateLike, any_is_empty
 
 
 def price(
@@ -29,7 +29,7 @@ def price(
         >>> ntnbprinc.price("02-12-2025", "15-05-2029", 0.0777, 4567.033825)
         3537.763157
     """
-    if has_nullable_args(settlement, maturity, rate, face_value):
+    if any_is_empty(settlement, maturity, rate, face_value):
         return float("nan")
 
     # Calculate the number of business days between settlement and cash flow dates
@@ -70,7 +70,7 @@ def dv01(
         >>> bp.dv01("02-12-2025", "15-05-2029", 0.0777, 4567.033825)
         1.1200559999997495
     """
-    if has_nullable_args(settlement, maturity, rate, face_value):
+    if any_is_empty(settlement, maturity, rate, face_value):
         return float("nan")
 
     price1 = price(settlement, maturity, rate, face_value)

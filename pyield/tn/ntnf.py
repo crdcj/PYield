@@ -11,7 +11,7 @@ import pyield.interpolator as ip
 from pyield import anbima, bday
 from pyield.tn import tools
 from pyield.tn.pre import di_spreads as pre_di_spreads
-from pyield.types import ArrayLike, DateLike, has_nullable_args
+from pyield.types import ArrayLike, DateLike, any_is_empty
 
 """
 Constants calculated as per Anbima Rules
@@ -118,7 +118,7 @@ def payment_dates(
             2027-01-01
         ]
     """
-    if has_nullable_args(settlement, maturity):
+    if any_is_empty(settlement, maturity):
         return pl.Series(dtype=pl.Date)
     # Normalize dates
     settlement = cv.convert_dates(settlement)
@@ -177,7 +177,7 @@ def cash_flows(
         │ 2027-01-01  ┆ 1048.80885 │
         └─────────────┴────────────┘
     """
-    if has_nullable_args(settlement, maturity):
+    if any_is_empty(settlement, maturity):
         return pl.DataFrame()
     # Normalize input dates
     settlement = cv.convert_dates(settlement)
@@ -234,7 +234,7 @@ def price(
         >>> ntnf.price("05-07-2024", "01-01-2035", 0.11921)
         895.359254
     """
-    if has_nullable_args(settlement, maturity, rate):
+    if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
     df_cf = cash_flows(settlement, maturity)
@@ -310,9 +310,7 @@ def spot_rates(  # noqa
         │ 2035-01-01   ┆ 2587    ┆ 0.121398 │
         └──────────────┴─────────┴──────────┘
     """
-    if has_nullable_args(
-        settlement, ltn_maturities, ltn_rates, ntnf_maturities, ntnf_rates
-    ):
+    if any_is_empty(settlement, ltn_maturities, ltn_rates, ntnf_maturities, ntnf_rates):
         return pl.DataFrame()
     # 1. Converter e normalizar inputs para Polars
     settlement = cv.convert_dates(settlement)
@@ -586,9 +584,7 @@ def premium(  # noqa
           the present value of cash flows for the NTN-F bond using DI rates.
 
     """
-    if has_nullable_args(
-        settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates
-    ):
+    if any_is_empty(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
         return float("nan")
 
     if not isinstance(di_rates, pl.Series):
@@ -690,9 +686,7 @@ def di_net_spread(  # noqa
         nan
     """
     # Validação de inputs
-    if has_nullable_args(
-        settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates
-    ):
+    if any_is_empty(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
         return float("nan")
 
     # Force di_rates to be a Polars Series
@@ -759,7 +753,7 @@ def duration(
         >>> ntnf.duration(None, "01-01-2035", 0.121785)
         nan
     """
-    if has_nullable_args(settlement, maturity, rate):
+    if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
     df = cash_flows(settlement, maturity)
@@ -800,7 +794,7 @@ def dv01(
         >>> ntnf.dv01("", "01-01-2035", 0.151375)
         nan
     """
-    if has_nullable_args(settlement, maturity, rate):
+    if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
     price1 = price(settlement, maturity, rate)

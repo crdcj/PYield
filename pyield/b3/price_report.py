@@ -16,7 +16,7 @@ import pyield.converters as cv
 from pyield import bday
 from pyield.fwd import forwards
 from pyield.retry import DataNotAvailableError, default_retry
-from pyield.types import DateLike, has_nullable_args
+from pyield.types import DateLike, any_is_empty
 
 logger = logging.getLogger(__name__)
 
@@ -368,7 +368,7 @@ def fetch_price_report(
         True
     """
     empty_msg = f"No data for {contract_code} on {date}. Returning empty DataFrame."
-    if has_nullable_args(date):
+    if any_is_empty(date):
         logger.warning(empty_msg)
         return pl.DataFrame()
 

@@ -18,7 +18,7 @@ from lxml.html import fromstring as html_fromstring
 
 import pyield.converters as cv
 from pyield.anbima.tpf import tpf_data
-from pyield.types import DateLike, has_nullable_args
+from pyield.types import DateLike, any_is_empty
 
 logger = logging.getLogger(__name__)
 
@@ -205,9 +205,8 @@ def _add_dv01(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
 
 def _finalize(df: pl.DataFrame) -> pl.DataFrame:
     """Converte colunas inteiras e reordena colunas para saída final."""
-    return (
-        df.with_columns(pl.col(INT_COLUMNS).round(0).cast(pl.Int64))
-        .select(FINAL_COLUMN_ORDER)
+    return df.with_columns(pl.col(INT_COLUMNS).round(0).cast(pl.Int64)).select(
+        FINAL_COLUMN_ORDER
     )
 
 
@@ -247,7 +246,7 @@ def imaq(date: DateLike) -> pl.DataFrame:
         >>> df["Date"].first() == target_date
         True
     """
-    if has_nullable_args(date):
+    if any_is_empty(date):
         logger.warning("No date provided. Returning empty DataFrame.")
         return pl.DataFrame()
     date = cv.convert_dates(date)

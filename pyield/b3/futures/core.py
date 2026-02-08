@@ -9,7 +9,7 @@ from pyield import clock
 from pyield.b3.common import is_trade_date_valid
 from pyield.b3.futures.historical.core import fetch_historical_df
 from pyield.b3.futures.intraday import fetch_intraday_df
-from pyield.types import DateLike, has_nullable_args
+from pyield.types import DateLike, any_is_empty
 
 ContractOptions = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
 logger = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ def futures(
         └────────────┴──────────────┴────────────────┴────────────┴───┴──────────────┴───────────┴────────────────┴─────────────┘
 
     """  # noqa: E501
-    if has_nullable_args(date, contract_code):
+    if any_is_empty(date, contract_code):
         return pl.DataFrame()
     trade_date = cv.convert_dates(date)
 

@@ -6,7 +6,7 @@ import polars as pl
 import pyield.converters as cv
 from pyield import b3, bday, interpolator
 from pyield.data_cache import get_cached_dataset
-from pyield.types import ArrayLike, DateLike, has_nullable_args
+from pyield.types import ArrayLike, DateLike, any_is_empty
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ def data(
         └────────────┴────────────────┴──────────────┴───────────┴───┴─────────┴───────────┴────────────────┴─────────────┘
 
     """  # noqa: E501
-    if has_nullable_args(dates):
+    if any_is_empty(dates):
         logger.warning("No valid 'dates' provided. Returning empty DataFrame.")
         return pl.DataFrame()
     df = _get_data(dates=dates)
@@ -282,7 +282,7 @@ def interpolate_rates(
             null
         ]
     """
-    if has_nullable_args(dates, expirations):
+    if any_is_empty(dates, expirations):
         logger.warning(
             "Both 'dates' and 'expirations' must be provided. Returning empty Series."
         )
@@ -396,7 +396,7 @@ def interpolate_rate(
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
-    if has_nullable_args(date, expiration):
+    if any_is_empty(date, expiration):
         logger.warning("Both 'date' and 'expiration' must be provided. Returning NaN.")
         return float("nan")
 

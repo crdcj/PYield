@@ -2,7 +2,7 @@ import ftplib
 import logging
 
 from pyield.converters import convert_dates
-from pyield.types import DateLike, has_nullable_args
+from pyield.types import DateLike, any_is_empty
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def di_over(date: DateLike) -> float:
         >>> di_over("01/01/2025")  # Holiday
         nan
     """
-    if has_nullable_args(date):
+    if any_is_empty(date):
         return float("nan")
 
     try:

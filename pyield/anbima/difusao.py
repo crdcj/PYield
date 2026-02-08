@@ -8,7 +8,7 @@ import requests
 
 import pyield.converters as cv
 from pyield import bday
-from pyield.types import DateLike, has_nullable_args
+from pyield.types import DateLike, any_is_empty
 
 API_VERSION = "1.0018"
 BASE_URL = (
@@ -193,7 +193,7 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
         * taxa_media (float): Média entre a taxa de compra e venda (decimal).
         * taxa_ultima (float): Última taxa negociada (decimal).
     """
-    if has_nullable_args(data_referencia):
+    if any_is_empty(data_referencia):
         logger.warning("Nenhuma data fornecida. Retornando DataFrame vazio.")
         return pl.DataFrame()
     data = cv.convert_dates(data_referencia)

@@ -6,7 +6,7 @@ from dateutil.relativedelta import relativedelta
 import pyield.converters as cv
 import pyield.tn.tools as tl
 from pyield import anbima, bday
-from pyield.types import DateLike, has_nullable_args
+from pyield.types import DateLike, any_is_empty
 
 """
 Constants calculated as per Anbima Rules and in base 100
@@ -103,7 +103,7 @@ def payment_dates(
             2031-01-01
         ]
     """
-    if has_nullable_args(settlement, maturity):
+    if any_is_empty(settlement, maturity):
         return pl.Series(dtype=pl.Date)
 
     # Validate and normalize dates
@@ -168,7 +168,7 @@ def cash_flows(
         │ 2031-01-01  ┆ 105.830052 │
         └─────────────┴────────────┘
     """
-    if has_nullable_args(settlement, maturity):
+    if any_is_empty(settlement, maturity):
         return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
 
     # Validate and normalize dates
@@ -224,7 +224,7 @@ def quotation(
         >>> ntnc.quotation("21-03-2025", "01-01-2031", 0.067626)
         126.4958
     """
-    if has_nullable_args(settlement, maturity, rate):
+    if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
     cf_df = cash_flows(settlement, maturity)
@@ -273,7 +273,7 @@ def price(
         >>> ntnc.price(6598.913723, 126.4958)
         8347.348705
     """
-    if has_nullable_args(vna, quotation):
+    if any_is_empty(vna, quotation):
         return float("nan")
     return tl.truncate(vna * quotation / 100, 6)
 
@@ -299,7 +299,7 @@ def duration(
         >>> ntnc.duration("21-03-2025", "01-01-2031", 0.067626)
         4.405363320448
     """
-    if has_nullable_args(settlement, maturity, rate):
+    if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
     df = cash_flows(settlement, maturity)

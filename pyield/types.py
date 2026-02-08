@@ -8,7 +8,7 @@ DateLike: TypeAlias = str | dt.datetime | dt.date
 ArrayLike: TypeAlias = Sequence[Any] | pl.Series
 
 
-def _has_nullable_arg(arg) -> bool:  # noqa
+def _is_empty(arg) -> bool:  # noqa
     match arg:
         # 1. Singletons
         case None:
@@ -35,7 +35,7 @@ def _has_nullable_arg(arg) -> bool:  # noqa
             return False
 
 
-def has_nullable_args(*args) -> bool:
+def any_is_empty(*args) -> bool:
     """Verifica se algum dos argumentos fornecidos é None, NaN ou uma coleção vazia.
 
     Args:
@@ -44,16 +44,16 @@ def has_nullable_args(*args) -> bool:
     Returns:
         bool: True se algum argumento for considerado "nulo", caso contrário False.
     """
-    return any(_has_nullable_arg(arg) for arg in args)
+    return any(_is_empty(arg) for arg in args)
 
 
-def is_array_like(arg) -> bool:
+def is_collection(arg) -> bool:
     if hasattr(arg, "__len__") and not isinstance(arg, (str, bytes)):
         return True
     return False
 
 
-def has_array_like_args(*args) -> bool:
+def any_is_collection(*args) -> bool:
     """Verifica se algum dos argumentos fornecidos é uma coleção (array-like).
 
     Args:
@@ -62,4 +62,4 @@ def has_array_like_args(*args) -> bool:
     Returns:
         bool: True se algum argumento for uma coleção, caso contrário False.
     """
-    return any(is_array_like(arg) for arg in args)
+    return any(is_collection(arg) for arg in args)

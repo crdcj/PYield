@@ -153,7 +153,7 @@ def count(
 
     s = df.select(bday_count)["bday_count"]
 
-    if not tp.has_array_like_args(start, end):
+    if not tp.any_is_collection(start, end):
         return s.item()
 
     return s
@@ -375,7 +375,7 @@ def offset(
     # Executa a expressão e obtém a série de resultados
     s = df.select(adjusted_date)["adjusted_date"]
 
-    if not tp.has_array_like_args(dates, offset):
+    if not tp.any_is_collection(dates, offset):
         return s.item()
 
     return s
@@ -519,7 +519,7 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
 
     s = df.select(is_bday)["is_bday"]
 
-    if not tp.has_array_like_args(dates):
+    if not tp.any_is_collection(dates):
         return s.item()
 
     return s

@@ -3,7 +3,7 @@ import polars as pl
 from pyield import anbima, bday, fwd
 from pyield.tn import tools
 from pyield.tn.pre import di_spreads as pre_di_spreads
-from pyield.types import DateLike, has_nullable_args
+from pyield.types import DateLike, any_is_empty
 
 FACE_VALUE = 1000
 
@@ -100,7 +100,7 @@ def price(
         535.279902
     """
     # Validate and normalize inputs
-    if has_nullable_args(settlement, maturity, rate):
+    if any_is_empty(settlement, maturity, rate):
         return float("nan")
     # Calculate the number of business days between settlement and cash flow dates
     bdays = bday.count(settlement, maturity)
@@ -133,7 +133,7 @@ def premium(ltn_rate: float, di_rate: float) -> float:
         >>> ltn.premium(0.118746, 0.11725)
         1.0120718007994287
     """
-    if has_nullable_args(ltn_rate, di_rate):
+    if any_is_empty(ltn_rate, di_rate):
         return float("nan")
     # Cálculo das taxas diárias
     ltn_daily_rate = (1 + ltn_rate) ** (1 / 252) - 1
@@ -171,7 +171,7 @@ def dv01(
         >>> ltn.dv01(None, "01-01-2032", 0.150970)
         nan
     """
-    if has_nullable_args(settlement, maturity, rate):
+    if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
     price1 = price(settlement, maturity, rate)
@@ -268,7 +268,7 @@ def forwards(date: DateLike) -> pl.DataFrame:
         │ 2032-01-01   ┆ 1553    ┆ 0.13883        ┆ 0.144812    │
         └──────────────┴─────────┴────────────────┴─────────────┘
     """
-    if has_nullable_args(date):
+    if any_is_empty(date):
         return pl.DataFrame()
     df = data(date).select("MaturityDate", "BDToMat", "IndicativeRate")
     fwd_rates = fwd.forwards(bdays=df["BDToMat"], rates=df["IndicativeRate"])

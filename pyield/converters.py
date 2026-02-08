@@ -114,7 +114,7 @@ def convert_dates(
             null
         ]
     """
-    if not types.is_array_like(dates):
+    if not types.is_collection(dates):
         is_scalar = True
         s = pl.Series(values=[dates])
     else:

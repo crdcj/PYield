@@ -6,7 +6,7 @@ from dateutil.relativedelta import relativedelta
 import pyield.converters as cv
 from pyield import bday
 from pyield.tn import tools
-from pyield.types import DateLike, has_nullable_args
+from pyield.types import DateLike, any_is_empty
 
 """
 Global parameters for NTN-B1 bonds calculations.
@@ -93,7 +93,7 @@ def payment_dates(
             2050-12-15
         ]
     """
-    if has_nullable_args(settlement, maturity, commercial_name):
+    if any_is_empty(settlement, maturity, commercial_name):
         return pl.Series("payment_dates", dtype=pl.Date)
 
     # Validate and normalize dates
@@ -162,7 +162,7 @@ def cash_flows(
         └─────────────┴──────────┘
 
     """
-    if has_nullable_args(settlement, maturity, commercial_name):
+    if any_is_empty(settlement, maturity, commercial_name):
         return pl.DataFrame({"PaymentDate": [], "CashFlow": []})
 
     # Validate and normalize dates
@@ -217,7 +217,7 @@ def quotation(
         >>> ntnb1.quotation("18-06-2025", "15-12-2084", 0.07010, r_mais)
         0.038332
     """
-    if has_nullable_args(settlement, maturity, rate, commercial_name):
+    if any_is_empty(settlement, maturity, rate, commercial_name):
         return float("nan")
 
     cf_df = cash_flows(settlement, maturity, commercial_name)
@@ -263,7 +263,7 @@ def price(
         >>> ntnb1.price(4315.498383, 100.6409 / 100)
         4343.156412
     """
-    if has_nullable_args(vna, quotation):
+    if any_is_empty(vna, quotation):
         return float("nan")
     return tools.truncate(vna * quotation, 6)
 
@@ -294,7 +294,7 @@ def duration(
         47.10493458167134
     """
     # Return NaN if any input is nullable
-    if has_nullable_args(settlement, maturity, rate, commercial_name):
+    if any_is_empty(settlement, maturity, rate, commercial_name):
         return float("nan")
 
     df = cash_flows(settlement, maturity, commercial_name)
@@ -335,7 +335,7 @@ def dv01(
         >>> ntnb1.dv01("23-06-2025", "15-12-2084", 0.0686, 4299.160173, r_mais)
         0.7738490000000127
     """
-    if has_nullable_args(settlement, maturity, rate, vna, commercial_name):
+    if any_is_empty(settlement, maturity, rate, vna, commercial_name):
         return float("nan")
 
     quotation1 = quotation(settlement, maturity, rate, commercial_name)

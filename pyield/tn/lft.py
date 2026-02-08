@@ -2,7 +2,7 @@ import polars as pl
 
 from pyield import anbima, bday
 from pyield.tn import tools
-from pyield.types import DateLike, has_nullable_args
+from pyield.types import DateLike, any_is_empty
 
 
 def data(date: DateLike) -> pl.DataFrame:
@@ -107,7 +107,7 @@ def quotation(
         >>> lft.quotation(settlement=None, maturity="01-09-2030", rate=0.001717)
         nan
     """
-    if has_nullable_args(settlement, maturity, rate):
+    if any_is_empty(settlement, maturity, rate):
         return float("nan")
     # The number of bdays between settlement (inclusive) and the maturity (exclusive)
     bdays = bday.count(settlement, maturity)
@@ -140,7 +140,7 @@ def premium(lft_rate: float, di_rate: float) -> float:
         >>> lft.premium(lft_rate, di_rate)
         1.008594331960501
     """
-    if has_nullable_args(lft_rate, di_rate):
+    if any_is_empty(lft_rate, di_rate):
         return float("nan")
     # daily rate
     ltt_factor = (lft_rate + 1) ** (1 / 252)
@@ -169,6 +169,6 @@ def price(
         >>> lft.price(15785.324502, 99.9291)
         15774.132706
     """
-    if has_nullable_args(vna, quotation):
+    if any_is_empty(vna, quotation):
         return float("nan")
     return tools.truncate(vna * quotation / 100, 6)

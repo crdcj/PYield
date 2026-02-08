@@ -5,7 +5,7 @@ import requests
 
 from pyield.converters import convert_dates
 from pyield.retry import default_retry
-from pyield.types import DateLike, has_nullable_args
+from pyield.types import DateLike, any_is_empty
 
 logger = logging.getLogger(__name__)
 IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"
@@ -78,7 +78,7 @@ def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
         │ 202503 ┆ 0.0056 │
         └────────┴────────┘
     """
-    if has_nullable_args(start, end):
+    if any_is_empty(start, end):
         return pl.DataFrame()
     start = convert_dates(start)
     end = convert_dates(end)
@@ -192,7 +192,7 @@ def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
         │ 202503 ┆ 7245.38 │
         └────────┴─────────┘
     """
-    if has_nullable_args(start, end):
+    if any_is_empty(start, end):
         return pl.DataFrame()
     start = convert_dates(start)
     end = convert_dates(end)
