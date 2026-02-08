@@ -27,13 +27,13 @@ ESQUEMA_DADOS = {alias: dtype for _, (alias, dtype) in MAPA_COLUNAS.items()}
 ORDEM_FINAL_COLUNAS = list(ESQUEMA_DADOS.keys())
 
 
-def _buscar_benchmarks_brutos(include_history: bool) -> list[dict]:
+def _buscar_benchmarks_brutos(incluir_historico: bool) -> list[dict]:
     """
     Busca os dados brutos de benchmarks na API do Tesouro Nacional.
     Lida com requests de rede, tentativas e validação básica de resposta.
     """
     sessao = requests.Session()
-    valor_param_incluir_historico = "S" if include_history else "N"
+    valor_param_incluir_historico = "S" if incluir_historico else "N"
     endpoint_api = (
         f"{URL_BASE_API}?{PARAM_INCLUIR_HISTORICO}={valor_param_incluir_historico}"
     )
@@ -138,7 +138,7 @@ def benchmarks(
         │ LFT      ┆ 2022-03-01   ┆ LFT 6 anos ┆ 2016-01-01 ┆ 2016-06-30 │
         └──────────┴──────────────┴────────────┴────────────┴────────────┘
     """
-    dados_api = _buscar_benchmarks_brutos(include_history=include_history)
+    dados_api = _buscar_benchmarks_brutos(incluir_historico=include_history)
     tabela = _processar_dados_api(dados_api)
 
     # Definir a ordenação final com base no caso de uso

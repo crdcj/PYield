@@ -137,11 +137,11 @@ def _buscar_dados_leilao(data_leilao: dt.date) -> list[dict]:
     return dados["registros"]
 
 
-def _transformar_dados_brutos(raw_data: list[dict]) -> pl.DataFrame:
+def _transformar_dados_brutos(dados_brutos: list[dict]) -> pl.DataFrame:
     """Converte dados brutos em um DataFrame Polars limpo e tipado."""
     # 1. Criação inicial do DataFrame
     # O schema_overrides ajuda nos tipos, mas não cria colunas que não vieram no JSON
-    df = pl.from_dicts(raw_data, schema_overrides=ESQUEMA_DADOS)
+    df = pl.from_dicts(dados_brutos, schema_overrides=ESQUEMA_DADOS)
 
     # 2. Tratamento defensivo para colunas de Segunda Volta (que podem não existir)
     # Lista de colunas opcionais e seus tipos
