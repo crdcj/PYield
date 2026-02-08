@@ -10,93 +10,85 @@ logger = logging.getLogger(__name__)
 
 
 @default_retry
-def _get_text(date: DateLike) -> str:
-    # url example: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
+def _baixar_texto(date: DateLike) -> str:
+    """Baixa o arquivo diário do SELIC no site do BCB."""
+    # Exemplo: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
     date = convert_dates(date)
     url_file = f"{date.strftime('%Y%m%d')}APC238"
-    url_vna = url_base + url_file
+    url = url_base + url_file
 
-    response = requests.get(url_vna, timeout=10)
+    response = requests.get(url, timeout=10)
     response.raise_for_status()
     return response.text
 
 
-def _extract_vna_table_text(text: str) -> str:
-    """Extrai o texto contendo a tabela VNA do texto bruto."""
-    start_of_table = text.find("EMISSAO")
-    end_of_table = text.find("99999999*")
-    table_text = text[start_of_table:end_of_table].strip()
-    return table_text
+def _recortar_tabela(texto: str) -> str:
+    """Recorta o trecho da tabela VNA do texto bruto."""
+    inicio = texto.find("EMISSAO")
+    fim = texto.find("99999999*")
+    return texto[inicio:fim].strip()
 
 
-def _parse_vna_table_lines(table_text: str) -> list[str]:
-    """Processa o texto da tabela VNA para retornar uma lista de linhas."""
-    table_lines = table_text.splitlines()
-    table_lines = [
-        line.strip() for line in table_lines if line.strip()
-    ]  # Remove empty lines
-    body_lines = table_lines[1:]  # Remove first line (header)
-    return body_lines
+def _obter_linhas(texto_tabela: str) -> list[str]:
+    """Retorna as linhas de dados (sem cabeçalho) da tabela VNA."""
+    todas = texto_tabela.splitlines()
+    linhas = [linha.strip() for linha in todas if linha.strip()]
+    return linhas[1:]
 
 
-def _extract_vna_values_from_lines(body_lines: list[str]) -> list[float]:
-    """Extrai valores VNA numéricos de uma lista de linhas de texto."""
-    vnas = []
-    for line in body_lines:
-        vna_str = line.split()[-1].replace(",", ".")
-        vnas.append(float(vna_str))
-    return vnas
+def _extrair_valores(linhas: list[str]) -> list[float]:
+    """Extrai os valores VNA numéricos das linhas de texto."""
+    valores = []
+    for linha in linhas:
+        vna_str = linha.split()[-1].replace(",", ".")
+        valores.append(float(vna_str))
+    return valores
 
 
-def _validate_vna_values(vnas: list[float]) -> float:
+def _validar_valores(valores: list[float]) -> float:
     """Valida se todos os valores VNA são iguais e retorna o valor único."""
-    vna_value = vnas[0]
-    if any(vna_value != vna for vna in vnas):
+    valor = valores[0]
+    if any(valor != v for v in valores):
         bcb_url = "https://www.bcb.gov.br/estabilidadefinanceira/selicbaixar"
-        msg = f"VNA values are not the same. Please check data at {bcb_url}"
+        msg = f"Valores VNA divergentes. Verifique os dados em {bcb_url}"
         raise ValueError(msg)
-    return vna_value
+    return valor
 
 
 def vna_lft(date: DateLike) -> float:
-    """Retrieves the VNA (Valor Nominal Atualizado) from the BCB for a given date.
+    """Obtém o VNA (Valor Nominal Atualizado) da LFT no site do BCB.
 
-    This function fetches daily data from the BCB website, extracts the
-    VNA value from a specific table within the downloaded content, and
-    returns this value.
+    Baixa o arquivo diário do BCB (SELIC), extrai a tabela com os valores
+    VNA e retorna o valor correspondente à data informada.
 
     Args:
-        date (DateLike): The date for which to retrieve the VNA value.
-            This argument accepts various date formats, including string and
-            datetime objects, which are then standardized using the
-            `convert_input_dates` function.
+        date (DateLike): Data de referência. Aceita string, date ou datetime,
+            convertidos internamente por ``convert_dates``.
 
     Returns:
-        float: The VNA (Valor Nominal Atualizado) value for the specified date,
-            or None if the date is invalid or data is not available.
+        float: Valor do VNA para a data especificada. Retorna ``NaN`` se a
+            data for nula ou vazia.
+
+    Raises:
+        ValueError: Se os valores VNA extraídos do site do BCB forem
+            inconsistentes (nem todos iguais), indicando possível divergência
+            nos dados da fonte. A mensagem inclui o link do BCB para
+            verificação manual.
+        requests.exceptions.HTTPError: Se a requisição HTTP ao site do BCB
+            falhar (problemas de rede, site indisponível ou dados não
+            encontrados para a data informada).
 
     Examples:
         >>> from pyield import bc
         >>> bc.vna_lft("31-05-2024")
         14903.01148
-
-    Raises:
-        ValueError: If the extracted VNA values from the BCB website are
-            inconsistent (i.e., not all extracted values are identical),
-            suggesting potential data discrepancies on the source website.
-            The error message includes a link to the BCB website for manual
-            verification.
-        requests.exceptions.HTTPError: If the HTTP request to the BCB website
-            fails. This could be due to network issues, website unavailability,
-            or the requested data not being found for the given date.
     """
     if any_is_empty(date):
         logger.warning("No valid date provided. Returning NaN.")
         return float("nan")
-    text = _get_text(date)
-    table_text = _extract_vna_table_text(text)
-    table_lines = _parse_vna_table_lines(table_text)
-    vnas = _extract_vna_values_from_lines(table_lines)
-    vna_value = _validate_vna_values(vnas)
-    return vna_value
+    texto = _baixar_texto(date)
+    tabela = _recortar_tabela(texto)
+    linhas = _obter_linhas(tabela)
+    valores = _extrair_valores(linhas)
+    return _validar_valores(valores)
