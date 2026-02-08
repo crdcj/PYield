@@ -5,9 +5,9 @@ from typing import Literal
 import polars as pl
 
 import pyield.b3.common as cm
+import pyield.b3.futures.historical.core as hcore
 import pyield.converters as cv
 from pyield import clock
-from pyield.b3.futures.historical.core import fetch_historical_df
 from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield.types import DateLike, any_is_empty
 
@@ -126,7 +126,7 @@ def futures(
 
         # Existe a chance de que os dados consolidados estejam disponíveis após as 18h
         if time >= INTRADAY_END_TIME:
-            df_hist = fetch_historical_df(trade_date, selected_contract)
+            df_hist = hcore._buscar_df_historico(trade_date, selected_contract)
             if not df_hist.is_empty():
                 logger.info("Consolidated data is already available and will be used.")
                 return df_hist
@@ -135,4 +135,4 @@ def futures(
         return fetch_intraday_df(selected_contract)
 
     else:  # É um dia histórico
-        return fetch_historical_df(trade_date, selected_contract)
+        return hcore._buscar_df_historico(trade_date, selected_contract)

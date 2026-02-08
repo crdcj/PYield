@@ -2,16 +2,16 @@ import datetime as dt
 
 import polars as pl
 
-from pyield.b3.futures.historical.historical_b3 import fetch_b3_historical_df
-from pyield.b3.futures.historical.historical_bmf import fetch_bmf_historical_df
+from . import historical_b3 as hb3
+from . import historical_bmf as hmf
 
 LAST_SUPPORTED_DATE_OLD_API = dt.date(2025, 12, 12)
 
 
-def fetch_historical_df(date: dt.date, contract_code: str) -> pl.DataFrame:
-    """Fetches historical data for a specified futures contract and reference date."""
-    if date > LAST_SUPPORTED_DATE_OLD_API:
-        return fetch_b3_historical_df(date, contract_code)
+def _buscar_df_historico(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
+    """Busca o histórico do contrato futuro para a data de referência."""
+    if data > LAST_SUPPORTED_DATE_OLD_API:
+        return hb3._fetch_historical_df(data, codigo_contrato)
     else:
-        # Try to fetch from old historical service
-        return fetch_bmf_historical_df(date, contract_code)
+        # Tenta buscar do serviço histórico antigo
+        return hmf._buscar_df_historico(data, codigo_contrato)
