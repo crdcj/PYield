@@ -7,18 +7,35 @@ from pyield.types import DateLike, any_is_empty
 
 def data(date: DateLike) -> pl.DataFrame:
     """
-    Fetch the LFT indicative rates for the given reference date from ANBIMA.
+    Busca as taxas indicativas de LFT para a data de referência na ANBIMA.
 
     Args:
-        date (DateLike): The reference date for fetching the data.
+        date (DateLike): Data de referência para a consulta.
 
     Returns:
-        pl.DataFrame: DataFrame containing the following columns:
-            - ReferenceDate: The reference date for the data.
-            - BondType: The type of bond.
-            - MaturityDate: The maturity date of the LFT bond.
-            - IndicativeRate: The Anbima indicative rate for the LFT bond.
-            - Price: The price of the LFT bond.
+        pl.DataFrame: DataFrame Polars com os dados de LFT.
+
+    Output Columns:
+        * BondType (String): Tipo do título (ex.: "LFT").
+        * ReferenceDate (Date): Data de referência dos dados.
+        * SelicCode (Int64): Código do título no SELIC.
+        * IssueBaseDate (Date): Data base/emissão do título.
+        * MaturityDate (Date): Data de vencimento do título.
+        * BDToMat (Int64): Dias úteis entre referência e vencimento.
+        * Duration (Float64): Macaulay Duration do título (anos).
+        * DV01 (Float64): Variação no preço para 1bp de taxa.
+        * DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
+        * Price (Float64): Preço unitário (PU).
+        * BidRate (Float64): Taxa de compra (decimal).
+        * AskRate (Float64): Taxa de venda (decimal).
+        * IndicativeRate (Float64): Taxa indicativa (decimal).
+        * DIRate (Float64): Taxa DI interpolada (flat forward).
+        * StdDev (Float64): Desvio padrão da taxa indicativa.
+        * LowerBoundRateD0 (Float64): Limite inferior do intervalo (D+0).
+        * UpperBoundRateD0 (Float64): Limite superior do intervalo (D+0).
+        * LowerBoundRateD1 (Float64): Limite inferior do intervalo (D+1).
+        * UpperBoundRateD1 (Float64): Limite superior do intervalo (D+1).
+        * Criteria (String): Critério utilizado pela ANBIMA.
 
     Examples:
         >>> from pyield import lft
@@ -47,13 +64,13 @@ def data(date: DateLike) -> pl.DataFrame:
 
 def maturities(date: DateLike) -> pl.Series:
     """
-    Fetch the bond maturities available for the given reference date.
+    Busca os vencimentos disponíveis para a data de referência.
 
     Args:
-        date (DateLike): The reference date for fetching the data.
+        date (DateLike): Data de referência para a consulta.
 
     Returns:
-        pl.Series: A Series of bond maturities available for the reference date.
+        pl.Series: Série de datas de vencimento disponíveis.
 
     Examples:
         >>> from pyield import lft
@@ -83,18 +100,18 @@ def quotation(
     rate: float,
 ) -> float:
     """
-    Calculate the quotation of a LFT bond using Anbima rules.
+    Calcula a cotação de uma LFT pelas regras da ANBIMA.
 
     Args:
-        settlement (DateLike): The settlement date of the bond.
-        maturity (DateLike): The maturity date of the bond.
-        rate (float): The annualized yield rate of the bond
+        settlement (DateLike): Data de liquidação do título.
+        maturity (DateLike): Data de vencimento do título.
+        rate (float): Taxa anualizada do título.
 
     Returns:
-        float: The quotation of the bond.
+        float: Cotação do título.
 
     Examples:
-        Calculate the quotation of a LFT bond with a 0.02 yield rate:
+        Calcula a cotação de uma LFT com taxa de 0,02:
         >>> from pyield import lft
         >>> lft.quotation(
         ...     settlement="24-07-2024",
@@ -103,37 +120,37 @@ def quotation(
         ... )
         98.9645
 
-        Nullable inputs return float('nan'):
+        Entradas nulas retornam float('nan'):
         >>> lft.quotation(settlement=None, maturity="01-09-2030", rate=0.001717)
         nan
     """
     if any_is_empty(settlement, maturity, rate):
         return float("nan")
-    # The number of bdays between settlement (inclusive) and the maturity (exclusive)
-    bdays = bday.count(settlement, maturity)
+    # Número de dias úteis entre liquidação (inclusivo) e vencimento (exclusivo)
+    dias_uteis = bday.count(settlement, maturity)
 
-    # Calculate the number of periods truncated as per Anbima rules
-    num_of_years = tools.truncate(bdays / 252, 14)
+    # Número de períodos truncado conforme regras da ANBIMA
+    anos_truncados = tools.truncate(dias_uteis / 252, 14)
 
-    discount_factor = 1 / (1 + rate) ** num_of_years
+    fator_desconto = 1 / (1 + rate) ** anos_truncados
 
-    return tools.truncate(100 * discount_factor, 4)
+    return tools.truncate(100 * fator_desconto, 4)
 
 
 def premium(lft_rate: float, di_rate: float) -> float:
     """
-    Calculate the premium of the LFT bond over the DI Futures rate.
+    Calcula o prêmio da LFT sobre a taxa de DI Futuro.
 
     Args:
-        lft_rate (float): The annualized trading rate over the selic rate for the bond.
-        di_rate (float): The DI Futures annualized yield rate (interpolated to the same
-            maturity as the LFT).
+        lft_rate (float): Taxa anualizada da LFT sobre a Selic.
+        di_rate (float): Taxa DI Futuro anualizada (interpolada para o mesmo
+            vencimento da LFT).
 
     Returns:
-        float: The premium of the LFT bond over the DI Futures rate.
+        float: Prêmio da LFT sobre o DI.
 
     Examples:
-        Calculate the premium of a LFT in 28/04/2025
+        Calcula o prêmio de uma LFT em 28/04/2025:
         >>> from pyield import lft
         >>> lft_rate = 0.001124  # 0.1124%
         >>> di_rate = 0.13967670224373396  # 13.967670224373396%
@@ -142,10 +159,10 @@ def premium(lft_rate: float, di_rate: float) -> float:
     """
     if any_is_empty(lft_rate, di_rate):
         return float("nan")
-    # daily rate
-    ltt_factor = (lft_rate + 1) ** (1 / 252)
-    di_factor = (di_rate + 1) ** (1 / 252)
-    return (ltt_factor * di_factor - 1) / (di_factor - 1)
+    # Taxa diária
+    fator_lft = (lft_rate + 1) ** (1 / 252)
+    fator_di = (di_rate + 1) ** (1 / 252)
+    return (fator_lft * fator_di - 1) / (fator_di - 1)
 
 
 def price(
@@ -153,13 +170,13 @@ def price(
     quotation: float,
 ) -> float:
     """
-    Calculate the LFT price using Brazilian Treasury rules.
+    Calcula o preço da LFT pelas regras do Tesouro Nacional.
 
     Args:
-        vna (float): The nominal value of the LFT bond.
-        quotation (float): The LFT quotation in base 100.
+        vna (float): Valor nominal atualizado (VNA).
+        quotation (float): Cotação da LFT em base 100.
     Returns:
-        float: The LFT price truncated to 6 decimal places.
+        float: Preço da LFT truncado em 6 casas decimais.
 
     References:
          - SEI Proccess 17944.005214/2024-09
