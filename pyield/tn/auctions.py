@@ -86,12 +86,12 @@ FINAL_COLUMN_ORDER = [
 
 
 @default_retry
-def _fetch_auction_data(auction_date: dt.date) -> list[dict]:
+def _buscar_dados_leilao(data_leilao: dt.date) -> list[dict]:
     """Busca os dados brutos da API do Tesouro para uma data específica."""
     endpoint = (
         "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/resultados"
     )
-    params = {"dataleilao": auction_date.strftime("%d/%m/%Y")}
+    params = {"dataleilao": data_leilao.strftime("%d/%m/%Y")}
 
     response = requests.get(endpoint, params=params, timeout=10)
     response.raise_for_status()
@@ -101,7 +101,7 @@ def _fetch_auction_data(auction_date: dt.date) -> list[dict]:
     return data["registros"]
 
 
-def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
+def _transformar_dados_brutos(raw_data: list[dict]) -> pl.DataFrame:
     """Converte dados brutos em um DataFrame Polars limpo e tipado."""
     # 1. Criação inicial do DataFrame
     # O schema_overrides ajuda nos tipos, mas não cria colunas que não vieram no JSON
@@ -181,7 +181,7 @@ def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
         .with_columns(
             # Arredondamentos e transformações que criam/alteram colunas sem condicional
             cs.starts_with("financeiro_ofertado").round(2),
-            (cs.starts_with("taxa") / 100).round(7),  # Percentual -> decimal
+            cs.starts_with("taxa").truediv(100).round(7),  # Percentual -> decimal
         )
     )
     ajustar_cols = [
@@ -206,24 +206,24 @@ def _transform_raw_data(raw_data: list[dict]) -> pl.DataFrame:
     return df.sort("data_1v", "titulo", "data_vencimento")
 
 
-def _add_duration(df: pl.DataFrame) -> pl.DataFrame:
+def _adicionar_duration(df: pl.DataFrame) -> pl.DataFrame:
     """
     Calcula a duration para cada tipo de título, aplicando uma função
     linha a linha para os casos não-vetorizáveis (NTN-F e NTN-B).
     """
 
-    def calculate_duration_per_row(row: dict) -> float:
+    def calcular_duration_por_linha(row: dict) -> float:
         """Função auxiliar que aplica a lógica para uma única linha."""
-        bond_type = row["titulo"]
+        titulo = row["titulo"]
 
-        if bond_type == "LTN":
+        if titulo == "LTN":
             return row["dias_uteis"] / 252
-        elif bond_type == "NTN-F":
+        elif titulo == "NTN-F":
             # Chamada da sua função externa, linha a linha
             return duration_f(
                 row["data_liquidacao_1v"], row["data_vencimento"], row["taxa_media"]
             )
-        elif bond_type == "NTN-B":
+        elif titulo == "NTN-B":
             # Chamada da sua função externa, linha a linha
             return duration_b(
                 row["data_liquidacao_1v"], row["data_vencimento"], row["taxa_media"]
@@ -239,13 +239,13 @@ def _add_duration(df: pl.DataFrame) -> pl.DataFrame:
             "taxa_media",
             "dias_uteis",
         )
-        .map_elements(calculate_duration_per_row, return_dtype=pl.Float64)
+        .map_elements(calcular_duration_por_linha, return_dtype=pl.Float64)
         .alias("duration")
     )
     return df
 
 
-def _add_avg_maturity(df: pl.DataFrame) -> pl.DataFrame:
+def _adicionar_prazo_medio(df: pl.DataFrame) -> pl.DataFrame:
     # Na metodolgia do Tesouro Nacional, a maturidade média é a mesma que a duração
     df = df.with_columns(
         pl.when(pl.col("titulo") == "LFT")
@@ -257,7 +257,7 @@ def _add_avg_maturity(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
+def _adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
     """Calcula o DV01 com base na duration da 1ª volta e nas quantidades aceitas."""
     # 1. Define a expressão base para o cálculo do DV01 unitário.
     dv01_unit_expr = (
@@ -274,16 +274,16 @@ def _add_dv01(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _fetch_ptax_data(auction_date: dt.date) -> pl.DataFrame:
+def _buscar_ptax(data_leilao: dt.date) -> pl.DataFrame:
     """Busca a PTAX para o dia útil anterior e posterior à data de referência."""
     # Voltar um dia útil com relação à data do leilão
     # Isso é importante caso seja o leilão do dia atual e não haja PTAX ainda
-    min_date = bday.offset(auction_date, -1)
+    data_min = bday.offset(data_leilao, -1)
     # Avançar um dia útil com relação à data do leilão por conta da 2ª volta
-    max_date = bday.offset(auction_date, 1)
+    data_max = bday.offset(data_leilao, 1)
 
     # Busca a série PTAX usando a função já existente
-    df = bc.ptax_series(start=min_date, end=max_date)
+    df = bc.ptax_series(start=data_min, end=data_max)
     if df.is_empty():
         return pl.DataFrame()
 
@@ -294,13 +294,13 @@ def _fetch_ptax_data(auction_date: dt.date) -> pl.DataFrame:
     )
 
 
-def _add_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
+def _adicionar_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     """
     Adiciona o DV01 em USD usando um join_asof para encontrar a PTAX mais recente.
     """
-    auction_date = df["data_1v"].item()
+    data_leilao = df["data_1v"].item(0)
     # Busca o DataFrame da PTAX
-    df_ptax = _fetch_ptax_data(auction_date=auction_date)
+    df_ptax = _buscar_ptax(data_leilao=data_leilao)
     if df_ptax.is_empty():
         # Se não houver dados de PTAX, retorna o DataFrame original sem alterações
         logger.warning("No PTAX data available to calculate DV01 in USD.")
@@ -317,7 +317,7 @@ def _add_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _select_and_order_columns(df: pl.DataFrame) -> pl.DataFrame:
+def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     """Seleciona as colunas finais e ordena o DataFrame para saída."""
     selected_cols = [col for col in FINAL_COLUMN_ORDER if col in df.columns]
     return df.select(selected_cols).sort("data_1v", "titulo", "data_vencimento")
@@ -328,7 +328,7 @@ def auction(auction_date: DateLike) -> pl.DataFrame:
     Fetches and processes Brazilian Treasury auction data for a given date.
 
     This function queries the Tesouro Nacional API to retrieve auction results
-    for a specific date. It then processes the JSON response using the Polars
+    for a specific auction_date. It then processes the JSON response using the Polars
     library to create a well-structured and typed DataFrame.
 
     Exemplo de resposta da API de leilões do Tesouro:
@@ -423,18 +423,18 @@ def auction(auction_date: DateLike) -> pl.DataFrame:
         return pl.DataFrame()
     try:
         auction_date = cv.convert_dates(auction_date)
-        data = _fetch_auction_data(auction_date)
-        if not data:
+        data_leilao = _buscar_dados_leilao(auction_date)
+        if not data_leilao:
             logger.info(f"No auction data available for {auction_date}.")
             return pl.DataFrame()
-        df = _transform_raw_data(data)
-        df = _add_duration(df)
-        df = _add_dv01(df)
-        df = _add_dv01_usd(df)
-        df = _add_avg_maturity(df)
+        df = _transformar_dados_brutos(data_leilao)
+        df = _adicionar_duration(df)
+        df = _adicionar_dv01(df)
+        df = _adicionar_dv01_usd(df)
+        df = _adicionar_prazo_medio(df)
         # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
         df = df.with_columns(cs.float().fill_nan(None))
-        df = _select_and_order_columns(df)
+        df = _selecionar_e_ordenar_colunas(df)
 
         return df
 
