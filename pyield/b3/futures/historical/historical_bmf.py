@@ -5,8 +5,8 @@ import polars as pl
 import requests
 from lxml import html
 
+import pyield.b3.common as cm
 from pyield import bday
-from pyield.b3.common import add_expiration_date
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
@@ -215,7 +215,7 @@ def _add_expiration_dates(
         ]
         df = df.with_columns(pl.Series("ExpirationDate", exp_dates))
     else:
-        df = add_expiration_date(df, contract_code, "TickerSymbol")
+        df = cm._adicionar_vencimento(df, contract_code, "TickerSymbol")
 
     df = df.with_columns(
         BDaysToExp=bday.count_expr(date, "ExpirationDate"),

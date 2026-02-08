@@ -5,8 +5,8 @@ import logging
 import polars as pl
 import requests
 
+import pyield.b3.common as cm
 from pyield import bday
-from pyield.b3.common import add_expiration_date
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
@@ -204,7 +204,7 @@ def fetch_b3_historical_df(date: dt.date, contract_code: str) -> pl.DataFrame:
         if df.is_empty():
             return pl.DataFrame()
 
-        df = add_expiration_date(df, contract_code, ticker_column="TickerSymbol")
+        df = cm._adicionar_vencimento(df, contract_code, ticker_column="TickerSymbol")
 
         df = _process_df(df, date, contract_code)
         df = _select_and_reorder_columns(df)

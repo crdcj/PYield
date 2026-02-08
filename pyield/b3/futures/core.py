@@ -4,9 +4,9 @@ from typing import Literal
 
 import polars as pl
 
+import pyield.b3.common as cm
 import pyield.converters as cv
 from pyield import clock
-from pyield.b3.common import is_trade_date_valid
 from pyield.b3.futures.historical.core import fetch_historical_df
 from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield.types import DateLike, any_is_empty
@@ -25,7 +25,7 @@ INTRADAY_END_TIME = dt.time(18, 30)
 def _is_intraday_date(check_date: dt.date) -> bool:
     """Check if a date is a trading day."""
     # Primeiro valida regra geral de dia futuro / não útil / datas especiais
-    if not is_trade_date_valid(check_date):
+    if not cm._data_negociacao_valida(check_date):
         return False
 
     # Intraday só existe para 'hoje'
@@ -111,7 +111,7 @@ def futures(
     trade_date = cv.convert_dates(date)
 
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
-    if not is_trade_date_valid(trade_date):
+    if not cm._data_negociacao_valida(trade_date):
         logger.warning(f"{trade_date} is not a valid date. Returning empty DataFrame.")
         return pl.DataFrame()
 

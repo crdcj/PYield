@@ -8,7 +8,7 @@ from pyield import bday, clock
 logger = logging.getLogger(__name__)
 
 
-def add_expiration_date(
+def _adicionar_vencimento(
     df: pl.DataFrame, contract_code: str, ticker_column: str
 ) -> pl.DataFrame:
     """
@@ -48,12 +48,12 @@ def add_expiration_date(
             day=expiration_day,
         ).alias("ExpirationDate")
     )
-    # Garantee que a data de vencimento é um dia útil
+    # Garante que a data de vencimento é um dia útil
     df = df.with_columns(ExpirationDate=bday.offset_expr("ExpirationDate", 0))
     return df
 
 
-def is_trade_date_valid(trade_date: dt.date) -> bool:
+def _data_negociacao_valida(trade_date: dt.date) -> bool:
     """Valida se a data de referência é utilizável para consulta.
 
     Critérios:
@@ -63,10 +63,10 @@ def is_trade_date_valid(trade_date: dt.date) -> bool:
     Retorna True se válida, False caso contrário (e loga um aviso).
     """
     if trade_date > clock.today():
-        logger.warning(f"The provided date {trade_date} is in the future.")
+        logger.warning(f"A data informada {trade_date} está no futuro.")
         return False
     if not bday.is_business_day(trade_date):
-        logger.warning(f"The provided date {trade_date} is not a business day.")
+        logger.warning(f"A data informada {trade_date} não é dia útil.")
         return False
 
     # Não tem pregão na véspera de Natal e Ano Novo
@@ -75,10 +75,7 @@ def is_trade_date_valid(trade_date: dt.date) -> bool:
         dt.date(trade_date.year, 12, 31),  # Véspera de Ano Novo
     }
     if trade_date in special_closed_dates:
-        logger.warning(
-            "There is no trading session before Christmas and New Year's Eve: "
-            f"{trade_date}"
-        )
+        logger.warning(f"Não há pregão na véspera de Natal e de Ano Novo: {trade_date}")
         return False
 
     return True

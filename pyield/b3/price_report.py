@@ -174,9 +174,7 @@ def _baixar_zip_url(date: dt.date, source_type: str) -> bytes:
 
     if len(resposta.content) < MIN_TAMANHO_ZIP_BYTES:
         data_str_formatada = date.strftime("%Y-%m-%d")
-        raise DataNotAvailableError(
-            f"Sem dados disponíveis para {data_str_formatada}."
-        )
+        raise DataNotAvailableError(f"Sem dados disponíveis para {data_str_formatada}.")
     return resposta.content
 
 
@@ -308,7 +306,7 @@ def _processar_zip(
     # 1. Gera o mapa correto de renomeação (sufixo Rate ou Price)
     mapa_renomeacao = _mapa_renomeacao_colunas(contract_code)
     df = df.rename(mapa_renomeacao, strict=False)
-    df = cm.add_expiration_date(df, contract_code, "TickerSymbol")
+    df = cm._adicionar_vencimento(df, contract_code, "TickerSymbol")
     df = _processar_df(df, contract_code)
 
     return df.sort("ExpirationDate")
@@ -363,16 +361,14 @@ def fetch_price_report(
         >>> df.is_empty()
         True
     """
-    msg_vazia = (
-        f"Sem dados para {contract_code} em {date}. Retornando DataFrame vazio."
-    )
+    msg_vazia = f"Sem dados para {contract_code} em {date}. Retornando DataFrame vazio."
     if any_is_empty(date):
         registro.warning(msg_vazia)
         return pl.DataFrame()
 
     date = cv.convert_dates(date)
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
-    if not cm.is_trade_date_valid(date):
+    if not cm._data_negociacao_valida(date):
         registro.warning(f"{date} não é uma data válida. Retornando DataFrame vazio.")
         return pl.DataFrame()
 
