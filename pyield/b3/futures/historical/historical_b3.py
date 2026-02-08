@@ -10,10 +10,10 @@ from pyield import bday
 from pyield.fwd import forwards
 from pyield.retry import default_retry
 
-# Lista de contratos que negociam por TAXA (Juros/Cupom)
+# Lista de contratos que negociam por taxa (juros/cupom).
 # Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.
-RATE_BASED_CONTRACTS = {"DI1", "DAP", "DDI", "FRC", "FRO", "DAP"}
-COLUMN_CONFIG = {
+CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
+CONFIG_COLUNAS = {
     "Instrumento financeiro": (pl.String, "TickerSymbol"),
     "Código ISIN": (pl.String, "ISINCode"),
     "Segmento": (pl.String, "Segment"),
@@ -36,106 +36,113 @@ COLUMN_CONFIG = {
     "Volume financeiro": (pl.Float64, "FinancialVolume"),
 }
 
-CSV_SCHEMA = {k: v[0] for k, v in COLUMN_CONFIG.items()}
-RENAME_MAP = {k: v[1] for k, v in COLUMN_CONFIG.items()}
+ESQUEMA_CSV = {k: v[0] for k, v in CONFIG_COLUNAS.items()}
+MAPA_RENOMEACAO = {k: v[1] for k, v in CONFIG_COLUNAS.items()}
 
 logger = logging.getLogger(__name__)
 
 
 @default_retry
-def _fetch_csv_data(date: dt.date) -> str:
+def _buscar_csv(data: dt.date) -> str:
+    """Busca o CSV diário de derivativos consolidados na B3."""
     url = "https://arquivos.b3.com.br/bdi/table/export/csv"
-    params = {"lang": "pt-BR"}
-    date_str = date.strftime("%Y-%m-%d")
-    payload = {
+    parametros = {"lang": "pt-BR"}
+    data_str = data.strftime("%Y-%m-%d")
+    carga = {
         "Name": "ConsolidatedTradesDerivatives",
-        "Date": date_str,
-        "FinalDate": date_str,
+        "Date": data_str,
+        "FinalDate": data_str,
         "ClientId": "",
         "Filters": {},
     }
 
     # 3. Cabeçalhos (Headers)
     # O User-Agent é essencial para simular um navegador e evitar bloqueios
-    headers = {
+    cabecalhos = {
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",  # noqa
         "Accept": "application/json, text/plain, */*",
     }
 
-    response = requests.post(
-        url, params=params, json=payload, headers=headers, timeout=(5, 30)
+    resposta = requests.post(
+        url, params=parametros, json=carga, headers=cabecalhos, timeout=(5, 30)
     )
-    response.raise_for_status()
-    response.encoding = "utf-8-sig"
-    return response.text
+    resposta.raise_for_status()
+    resposta.encoding = "utf-8-sig"
+    return resposta.text
 
 
-def _parse_raw_df(csv_data: str) -> pl.DataFrame:
+def _parsear_df_bruto(csv_texto: str) -> pl.DataFrame:
+    """Lê o CSV bruto em um DataFrame Polars."""
     df = pl.read_csv(
-        io.StringIO(csv_data.replace(".", "")),
+        io.StringIO(csv_texto.replace(".", "")),
         separator=";",
         skip_lines=2,
         null_values=["-"],
         decimal_comma=True,
-        schema_overrides=CSV_SCHEMA,
+        schema_overrides=ESQUEMA_CSV,
     )
     return df
 
 
-def _pre_process_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
-    df = df.rename(RENAME_MAP, strict=False).filter(
-        pl.col("TickerSymbol").str.contains(contract_code),
+def _preprocessar_df(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+    """Renomeia e filtra o DataFrame para o contrato desejado."""
+    df = df.rename(MAPA_RENOMEACAO, strict=False).filter(
+        pl.col("TickerSymbol").str.contains(codigo_contrato),
         pl.col("TickerSymbol").str.len_chars() == 6,  # noqa
     )
 
     return df
 
 
-def _process_df(
-    df: pl.DataFrame, trade_date: dt.date, contract_code: str
+def _processar_df(
+    df: pl.DataFrame, data_referencia: dt.date, codigo_contrato: str
 ) -> pl.DataFrame:
     # 1. Datas de Vencimento
     df = df.with_columns(
-        BDaysToExp=bday.count_expr(trade_date, "ExpirationDate"),
-        DaysToExp=(df["ExpirationDate"] - pl.lit(trade_date)).dt.total_days(),
-        TradeDate=trade_date,
+        BDaysToExp=bday.count_expr(data_referencia, "ExpirationDate"),
+        DaysToExp=(df["ExpirationDate"] - pl.lit(data_referencia)).dt.total_days(),
+        TradeDate=data_referencia,
     ).filter(pl.col("DaysToExp") > 0)
 
     # 2. Renomeação Dinâmica (Rate vs Price)
     # Se for contrato de taxa, as colunas "Value" viram "Rate"
     # Se for contrato de preço, as colunas "Value" viram "Price"
-    is_rate_based = contract_code in RATE_BASED_CONTRACTS
-    target_suffix = "Rate" if is_rate_based else "Price"
+    eh_taxa = codigo_contrato in CONTRATOS_TAXA
+    sufixo_destino = "Rate" if eh_taxa else "Price"
 
-    cols_to_rename = [c for c in df.columns if c.endswith("Value")]
-    rename_dict = {c: c.replace("Value", target_suffix) for c in cols_to_rename}
-    df = df.rename(rename_dict)
+    colunas_renomear = [c for c in df.columns if c.endswith("Value")]
+    mapa_renomeacao = {
+        c: c.replace("Value", sufixo_destino) for c in colunas_renomear
+    }
+    df = df.rename(mapa_renomeacao)
 
     # 3. Tratamento Específico de Taxas
-    if is_rate_based:
+    if eh_taxa:
         # Pega todas as colunas que agora terminam em "Rate" (incluindo SettlementRate)
-        rate_cols = [c for c in df.columns if c.endswith("Rate")]
+        colunas_taxa = [c for c in df.columns if c.endswith("Rate")]
 
         # Divide por 100 para transformar percentual em decimal (14.50 -> 0.1450)
-        df = df.with_columns((pl.col(rate_cols) / 100).round(6))
+        df = df.with_columns((pl.col(colunas_taxa) / 100).round(6))
 
     # 4. Cálculo do DV01 (Apenas para DI1 e se tivermos as colunas necessárias)
     # SettlementPrice aqui já é o PU vindo do CSV (Ex: 99.000)
     # SettlementRate aqui já é a taxa decimal (Ex: 0.14)
     if (
-        contract_code == "DI1"
+        codigo_contrato == "DI1"
         and "SettlementPrice" in df.columns
         and "SettlementRate" in df.columns
     ):
         # DV01 = (Duration / (1 + Taxa)) * PU * 0.0001
         # Duration Modificada * PU * 1bp
-        duration = pl.col("BDaysToExp") / 252
-        m_duration = duration / (1 + pl.col("SettlementRate"))
-        df = df.with_columns(DV01=m_duration * pl.col("SettlementPrice") * 0.0001)
+        duracao = pl.col("BDaysToExp") / 252
+        duracao_mod = duracao / (1 + pl.col("SettlementRate"))
+        df = df.with_columns(
+            DV01=duracao_mod * pl.col("SettlementPrice") * 0.0001
+        )
 
     # 5. Forward Rates (Para DI1 e DAP)
-    if contract_code in {"DI1", "DAP"} and "SettlementRate" in df.columns:
+    if codigo_contrato in {"DI1", "DAP"} and "SettlementRate" in df.columns:
         # Assume que forwards aceita taxa decimal e dias úteis
         df = df.with_columns(
             ForwardRate=forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
@@ -144,9 +151,10 @@ def _process_df(
     return df
 
 
-def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
+def _selecionar_e_reordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
+    """Seleciona e ordena colunas conforme a preferência."""
     # Define a ordem preferida, mas só seleciona o que existe no DF
-    preferred_order = [
+    ordem_preferida = [
         "TradeDate",
         "ISINCode",
         "TickerSymbol",
@@ -183,36 +191,41 @@ def _select_and_reorder_columns(df: pl.DataFrame) -> pl.DataFrame:
         "ForwardRate",
     ]
 
-    existing_cols = [c for c in preferred_order if c in df.columns]
-    return df.select(existing_cols)
+    colunas_existentes = [c for c in ordem_preferida if c in df.columns]
+    return df.select(colunas_existentes)
 
 
-def _fetch_historical_df(date: dt.date, contract_code: str) -> pl.DataFrame:
-    """Fetchs the futures data for a given date from B3."""
+def _buscar_df_historico_b3(
+    data: dt.date, codigo_contrato: str
+) -> pl.DataFrame:
+    """Busca o histórico de futuros na B3 para a data informada."""
     try:
         # Tenta baixar os dados
-        csv_text = _fetch_csv_data(date)
+        csv_texto = _buscar_csv(data)
 
         # Se veio vazio ou nulo, retorna vazio
-        if not csv_text:
+        if not csv_texto:
             return pl.DataFrame()
 
         # Tenta fazer o parse e processamento
-        df = _parse_raw_df(csv_text)
-        df = _pre_process_df(df, contract_code)
+        df = _parsear_df_bruto(csv_texto)
+        df = _preprocessar_df(df, codigo_contrato)
 
         if df.is_empty():
             return pl.DataFrame()
 
-        df = cm._adicionar_vencimento(df, contract_code, ticker_column="TickerSymbol")
+        df = cm._adicionar_vencimento(df, codigo_contrato, ticker_column="TickerSymbol")
 
-        df = _process_df(df, date, contract_code)
-        df = _select_and_reorder_columns(df)
+        df = _processar_df(df, data, codigo_contrato)
+        df = _selecionar_e_reordenar_colunas(df)
 
         return df.sort("ExpirationDate")
 
     except Exception as e:
         logger.exception(
-            f"CRITICAL: Failed to process {contract_code} for {date}. Error: {e}"
+            "CRITICAL: Falha ao processar o contrato %s para %s. Erro: %s",
+            codigo_contrato,
+            data,
+            e,
         )
         return pl.DataFrame()
