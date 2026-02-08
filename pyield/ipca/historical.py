@@ -11,13 +11,13 @@ IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"
 @default_retry
 def _buscar_dados_api(url: str) -> dict[str, str]:
     """Busca dados da API do IBGE e retorna o dicionário da série temporal."""
-    response = requests.get(url, timeout=10)
+    resposta = requests.get(url, timeout=10)
     # Levanta exceção para códigos de erro HTTP
-    response.raise_for_status()
-    data = response.json()
-    if not data:
+    resposta.raise_for_status()
+    dados = resposta.json()
+    if not dados:
         raise ValueError(f"Nenhum dado disponível para a URL: {url}")
-    return data[0]["resultados"][0]["series"][0]["serie"]
+    return dados[0]["resultados"][0]["series"][0]["serie"]
 
 
 def _processar_df_ipca(

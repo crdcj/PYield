@@ -11,9 +11,9 @@ from pyield.types import ArrayLike, DateLike
 
 LIMITE_DIA_UTIL = 6
 
-br_holidays = BrHolidays()
-FERIADOS_ANTIGOS = br_holidays.obter_feriados(holiday_option="old")
-FERIADOS_NOVOS = br_holidays.obter_feriados(holiday_option="new")
+feriados_br = BrHolidays()
+FERIADOS_ANTIGOS = feriados_br.obter_feriados(opcao_feriado="old")
+FERIADOS_NOVOS = feriados_br.obter_feriados(opcao_feriado="new")
 DATA_TRANSICAO = BrHolidays.DATA_TRANSICAO
 
 
@@ -509,12 +509,12 @@ def generate(
     s = pl.date_range(conv_start, conv_end, closed=closed, eager=True).alias("bday")
 
     # Pega feriados aplicáveis
-    holidays = br_holidays.obter_feriados(
-        dates=conv_start, holiday_option=holiday_option
+    feriados = feriados_br.obter_feriados(
+        datas=conv_start, opcao_feriado=holiday_option
     )
 
     # Filtra: só dias úteis (seg-sex e não feriado)
-    return s.filter((s.dt.weekday() < LIMITE_DIA_UTIL) & (~s.is_in(holidays)))
+    return s.filter((s.dt.weekday() < LIMITE_DIA_UTIL) & (~s.is_in(feriados)))
 
 
 def is_business_day_expr(expr: pl.Expr | str) -> pl.Expr:

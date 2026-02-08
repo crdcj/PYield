@@ -9,19 +9,19 @@ logger = logging.getLogger(__name__)
 
 
 def _adicionar_vencimento(
-    df: pl.DataFrame, contract_code: str, ticker_column: str
+    df: pl.DataFrame, codigo_contrato: str, coluna_ticker: str
 ) -> pl.DataFrame:
     """
     Recebe um DataFrame Polars e ADICIONA a coluna 'ExpirationDate'.
 
-    - Pega a coluna 'ticker_column'.
+    - Pega a coluna 'coluna_ticker'.
     - Extrai o código de vencimento.
     - Converte para a data "bruta", sem ajuste de feriado.
     - Garante que a data de vencimento é um dia útil.
     - Retorna o DataFrame com a nova coluna ExpirationDate.
     """
 
-    month_map = {
+    mapa_meses = {
         "F": 1,
         "G": 2,
         "H": 3,
@@ -35,17 +35,17 @@ def _adicionar_vencimento(
         "X": 11,
         "Z": 12,
     }
-    expiration_day = 15 if "DAP" in contract_code else 1
+    dia_vencimento = 15 if "DAP" in codigo_contrato else 1
     df = df.with_columns(
         pl.date(
             # Ano: Pega os 2 últimos dígitos -> Int -> Soma 2000
-            year=pl.col(ticker_column).str.slice(-2).cast(pl.Int32, strict=False)
+            year=pl.col(coluna_ticker).str.slice(-2).cast(pl.Int32, strict=False)
             + 2000,
             # Mês: Pega 1ª letra -> Mapeia -> Int
-            month=pl.col(ticker_column)
+            month=pl.col(coluna_ticker)
             .str.slice(-3, 1)
-            .replace_strict(month_map, default=None, return_dtype=pl.Int8),
-            day=expiration_day,
+            .replace_strict(mapa_meses, default=None, return_dtype=pl.Int8),
+            day=dia_vencimento,
         ).alias("ExpirationDate")
     )
     # Garante que a data de vencimento é um dia útil
@@ -53,7 +53,7 @@ def _adicionar_vencimento(
     return df
 
 
-def _data_negociacao_valida(trade_date: dt.date) -> bool:
+def _data_negociacao_valida(data_negociacao: dt.date) -> bool:
     """Valida se a data de referência é utilizável para consulta.
 
     Critérios:
@@ -62,20 +62,23 @@ def _data_negociacao_valida(trade_date: dt.date) -> bool:
 
     Retorna True se válida, False caso contrário (e loga um aviso).
     """
-    if trade_date > clock.today():
-        logger.warning(f"A data informada {trade_date} está no futuro.")
+    if data_negociacao > clock.today():
+        logger.warning(f"A data informada {data_negociacao} está no futuro.")
         return False
-    if not bday.is_business_day(trade_date):
-        logger.warning(f"A data informada {trade_date} não é dia útil.")
+    if not bday.is_business_day(data_negociacao):
+        logger.warning(f"A data informada {data_negociacao} não é dia útil.")
         return False
 
     # Não tem pregão na véspera de Natal e Ano Novo
-    special_closed_dates = {  # Datas especiais
-        dt.date(trade_date.year, 12, 24),  # Véspera de Natal
-        dt.date(trade_date.year, 12, 31),  # Véspera de Ano Novo
+    datas_fechadas_especiais = {  # Datas especiais
+        dt.date(data_negociacao.year, 12, 24),  # Véspera de Natal
+        dt.date(data_negociacao.year, 12, 31),  # Véspera de Ano Novo
     }
-    if trade_date in special_closed_dates:
-        logger.warning(f"Não há pregão na véspera de Natal e de Ano Novo: {trade_date}")
+    if data_negociacao in datas_fechadas_especiais:
+        logger.warning(
+            "Não há pregão na véspera de Natal e de Ano Novo: "
+            f"{data_negociacao}"
+        )
         return False
 
     return True
