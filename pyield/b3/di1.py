@@ -8,68 +8,68 @@ from pyield import b3, bday, interpolator
 from pyield.data_cache import get_cached_dataset
 from pyield.types import ArrayLike, DateLike, any_is_empty
 
-logger = logging.getLogger(__name__)
+registro = logging.getLogger(__name__)
 
 
-def _load_with_intraday(dates: list[dt.date]) -> pl.DataFrame:
+def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
     """Busca dados de DI, incluindo dados intraday para datas ausentes no cache.
 
     Args:
-        dates: Lista de datas a buscar.
+        datas: Lista de datas a buscar.
 
     Returns:
         DataFrame com dados de DI para as datas solicitadas.
     """
     # 1. Busca inicial no cache com as datas solicitadas pelo usuário.
-    df_cached = get_cached_dataset("di1").filter(pl.col("TradeDate").is_in(dates))
+    df_cache = get_cached_dataset("di1").filter(pl.col("TradeDate").is_in(datas))
 
     # 2. Identifica datas solicitadas que não estão no cache
-    requested_dates = set(dates)
-    cached_dates = set(df_cached["TradeDate"].unique())
-    missing_dates = requested_dates - cached_dates
+    datas_solicitadas = set(datas)
+    datas_cache = set(df_cache["TradeDate"].unique())
+    datas_faltantes = datas_solicitadas - datas_cache
 
     # 3. Para cada data faltante, tenta buscar dados via API
-    dfs_to_concat = [df_cached] if not df_cached.is_empty() else []
+    dfs_concat = [df_cache] if not df_cache.is_empty() else []
 
-    for ref_date in missing_dates:
+    for data_ref in datas_faltantes:
         try:
-            df_missing = b3.futures(contract_code="DI1", date=ref_date)
+            df_faltante = b3.futures(contract_code="DI1", date=data_ref)
 
             # Só adiciona se tiver SettlementPrice
-            if "SettlementPrice" in df_missing.columns:
-                dfs_to_concat.append(df_missing)
+            if "SettlementPrice" in df_faltante.columns:
+                dfs_concat.append(df_faltante)
             else:
-                logger.warning(
+                registro.warning(
                     "Dados para %s não contêm 'SettlementPrice'. Pulando esta data.",
-                    ref_date,
+                    data_ref,
                 )
         except Exception as e:
-            logger.error("Falha ao buscar dados para %s: %s", ref_date, e)
+            registro.error("Falha ao buscar dados para %s: %s", data_ref, e)
 
     # 4. Retorna concatenação de todos os DataFrames disponíveis
-    if len(dfs_to_concat) == 0:
+    if len(dfs_concat) == 0:
         return pl.DataFrame()  # Retorna DataFrame vazio se nada foi encontrado
-    elif len(dfs_to_concat) == 1:
-        return dfs_to_concat[0]
+    elif len(dfs_concat) == 1:
+        return dfs_concat[0]
     else:
-        return pl.concat(dfs_to_concat, how="diagonal")
+        return pl.concat(dfs_concat, how="diagonal")
 
 
-def _get_data(dates: DateLike | ArrayLike) -> pl.DataFrame:
-    converted_dates = cv.convert_dates(dates)
+def _obter_dados(datas: DateLike | ArrayLike) -> pl.DataFrame:
+    datas_convertidas = cv.convert_dates(datas)
 
-    match converted_dates:
+    match datas_convertidas:
         case None:
-            logger.warning("No valid dates provided. Returning empty DataFrame.")
+            registro.warning("Nenhuma data válida. Retornando DataFrame vazio.")
             return pl.DataFrame()
         case dt.date():
-            dates_list = [converted_dates]
+            lista_datas = [datas_convertidas]
         case pl.Series():
-            dates_list = (
-                pl.Series("TradeDate", converted_dates).unique().sort().to_list()
+            lista_datas = (
+                pl.Series("TradeDate", datas_convertidas).unique().sort().to_list()
             )
 
-    df = _load_with_intraday(dates_list)
+    df = _carregar_com_intraday(lista_datas)
 
     return df.sort("TradeDate", "ExpirationDate")
 
@@ -125,9 +125,9 @@ def data(
 
     """  # noqa: E501
     if any_is_empty(dates):
-        logger.warning("No valid 'dates' provided. Returning empty DataFrame.")
+        registro.warning("Nenhuma data válida em 'dates'. Retornando DataFrame vazio.")
         return pl.DataFrame()
-    df = _get_data(dates=dates)
+    df = _obter_dados(datas=dates)
 
     if pre_filter:
         df_tpf = (
@@ -164,38 +164,40 @@ def data(
     return df.sort("TradeDate", "ExpirationDate")
 
 
-def _build_input_dataframe(
-    dates: DateLike | ArrayLike,
-    expirations: DateLike | ArrayLike,
+def _montar_df_entrada(
+    datas: DateLike | ArrayLike,
+    vencimentos: DateLike | ArrayLike,
 ) -> pl.DataFrame:
     # 1. Converte as entradas primeiro
-    converted_dates = cv.convert_dates(dates)
-    converted_expirations = cv.convert_dates(expirations)
+    datas_convertidas = cv.convert_dates(datas)
+    vencimentos_convertidos = cv.convert_dates(vencimentos)
 
     # 2. Lida com os 4 casos de forma SIMPLES E LEGÍVEL
-    match (converted_dates, converted_expirations):
+    match (datas_convertidas, vencimentos_convertidos):
         # CASO 1: Data escalar, vencimentos em array
         case dt.date() as d, pl.Series() as e:
-            dfi = pl.DataFrame({"ExpirationDate": e}).with_columns(TradeDate=d)
+            df_entrada = pl.DataFrame({"ExpirationDate": e}).with_columns(TradeDate=d)
 
         # CASO 2: Datas em array, vencimento escalar
         case pl.Series() as d, dt.date() as e:
             # Mesma lógica, invertida
-            dfi = pl.DataFrame({"TradeDate": d}).with_columns(ExpirationDate=e)
+            df_entrada = pl.DataFrame({"TradeDate": d}).with_columns(ExpirationDate=e)
 
         # CASO 3: Ambos são arrays
         case pl.Series() as d, pl.Series() as e:
-            dfi = pl.DataFrame({"TradeDate": d, "ExpirationDate": e})
+            df_entrada = pl.DataFrame({"TradeDate": d, "ExpirationDate": e})
 
         # CASO 4: Ambos são escalares
         case dt.date() as d, dt.date() as e:
-            dfi = pl.DataFrame({"TradeDate": [d], "ExpirationDate": [e]})
+            df_entrada = pl.DataFrame(
+                {"TradeDate": [d], "ExpirationDate": [e]}
+            )
 
         # QUALQUER OUTRA COISA
         case _:
-            dfi = pl.DataFrame()
+            df_entrada = pl.DataFrame()
 
-    return dfi
+    return df_entrada
 
 
 def interpolate_rates(
@@ -283,76 +285,76 @@ def interpolate_rates(
         ]
     """
     if any_is_empty(dates, expirations):
-        logger.warning(
-            "Both 'dates' and 'expirations' must be provided. Returning empty Series."
+        registro.warning(
+            "As entradas 'dates' e 'expirations' são obrigatórias. Retornando Series vazia."
         )
         return pl.Series(dtype=pl.Float64)
 
-    dfi = _build_input_dataframe(dates, expirations)
-    if dfi.is_empty():
-        logger.warning("Invalid inputs provided. Returning empty Series.")
+    df_entrada = _montar_df_entrada(dates, expirations)
+    if df_entrada.is_empty():
+        registro.warning("Entradas inválidas. Retornando Series vazia.")
         return pl.Series(dtype=pl.Float64)
 
     # Carrega dataset de taxas DI filtrado pelas datas de referência fornecidas
     # Usa datas já convertidas do DataFrame de entrada para evitar conversão dupla
-    dfr = _get_data(dates=dates)
+    df_ref = _obter_dados(datas=dates)
     # Retorna Series vazia se nenhuma taxa for encontrada
-    if dfr.is_empty():
+    if df_ref.is_empty():
         return pl.Series(dtype=pl.Float64)
 
     # 1. CRIA O ÍNDICE ORIGINAL AQUI
     # Isso garante que saberemos a ordem exata depois
-    dfi = dfi.with_row_index("_temp_idx")
+    df_entrada = df_entrada.with_row_index("_temp_idx")
 
     # Inicializa FlatFwdRate como None
-    dfi = dfi.with_columns(
+    df_entrada = df_entrada.with_columns(
         BDaysToExp=bday.count_expr("TradeDate", "ExpirationDate"),
         FlatFwdRate=None,
     )
 
-    # Lista para armazenar os pedaços processados
-    processed_chunks = []
+    # Lista para armazenar os blocos processados
+    blocos_processados = []
 
     # Itera sobre cada data de referência única
-    for date in dfi["TradeDate"].unique():
+    for data_ref in df_entrada["TradeDate"].unique():
         # 1. Filtra apenas as linhas desta data (Particionamento)
-        df_subset = dfi.filter(pl.col("TradeDate") == date)
+        df_parcial = df_entrada.filter(pl.col("TradeDate") == data_ref)
 
         # 2. Busca as taxas de referência para esta data
-        dfr_subset = dfr.filter(pl.col("TradeDate") == date)
+        df_referencia = df_ref.filter(pl.col("TradeDate") == data_ref)
 
-        # Se não houver dados de curva (dfr), adicionamos o subset como está (com Nulls)
+        # Se não houver dados de curva, adicionamos o bloco como está (com nulos)
         # e continuamos.
-        if dfr_subset.is_empty():
-            processed_chunks.append(df_subset)
+        if df_referencia.is_empty():
+            blocos_processados.append(df_parcial)
             continue
 
         # Inicializa o interpolador com taxas e dias úteis conhecidos
-        interp = interpolator.Interpolator(
+        interpolador = interpolator.Interpolator(
             method="flat_forward",
-            known_bdays=dfr_subset["BDaysToExp"],
-            known_rates=dfr_subset["SettlementRate"],
+            known_bdays=df_referencia["BDaysToExp"],
+            known_rates=df_referencia["SettlementRate"],
             extrapolate=extrapolate,
         )
 
-        # 4. A Mágica: map_batches passa a Series inteira para o 'interp'
-        # O 'interp' retorna uma Series, que o Polars alinha perfeitamente
-        df_subset = df_subset.with_columns(
+        # 4. A mágica: map_batches passa a Series inteira para o interpolador
+        # O interpolador retorna uma Series, que o Polars alinha perfeitamente
+        df_parcial = df_parcial.with_columns(
             pl.col("BDaysToExp")
-            .map_batches(interp)  # Passa Series -> Recebe Series
+            .map_batches(interpolador)  # Passa Series -> Recebe Series
             .alias("FlatFwdRate")
         )
 
-        processed_chunks.append(df_subset)
+        blocos_processados.append(df_parcial)
 
-    if not processed_chunks:
+    if not blocos_processados:
         return pl.Series(dtype=pl.Float64)
 
     # 2. CONCATENA E ORDENA DE VOLTA
     # O sort("_temp_idx") restaura a ordem original dos inputs
-    df_final = pl.concat(processed_chunks).sort("_temp_idx")
+    df_saida = pl.concat(blocos_processados).sort("_temp_idx")
 
-    return df_final["FlatFwdRate"].fill_nan(None)
+    return df_saida["FlatFwdRate"].fill_nan(None)
 
 
 def interpolate_rate(
@@ -397,32 +399,36 @@ def interpolate_rate(
         0.13881
     """
     if any_is_empty(date, expiration):
-        logger.warning("Both 'date' and 'expiration' must be provided. Returning NaN.")
+        registro.warning(
+            "As entradas 'date' e 'expiration' são obrigatórias. Retornando NaN."
+        )
         return float("nan")
 
-    converted_date = cv.convert_dates(date)
-    converted_expiration = cv.convert_dates(expiration)
+    data_convertida = cv.convert_dates(date)
+    vencimento_convertido = cv.convert_dates(expiration)
 
-    if not isinstance(converted_date, dt.date) or not isinstance(
-        converted_expiration, dt.date
+    if not isinstance(data_convertida, dt.date) or not isinstance(
+        vencimento_convertido, dt.date
     ):
-        raise ValueError("Both 'date' and 'expiration' must be single date values.")
+        raise ValueError(
+            "As entradas 'date' e 'expiration' devem ser datas escalares."
+        )
 
     # Obtém o DataFrame de contratos DI
-    df = _get_data(dates=converted_date)
+    df_di = _obter_dados(datas=data_convertida)
 
-    if df.is_empty():
+    if df_di.is_empty():
         return float("nan")
 
-    ff_interp = interpolator.Interpolator(
+    interpolador = interpolator.Interpolator(
         method="flat_forward",
-        known_bdays=df["BDaysToExp"],
-        known_rates=df["SettlementRate"],
+        known_bdays=df_di["BDaysToExp"],
+        known_rates=df_di["SettlementRate"],
         extrapolate=extrapolate,
     )
 
-    bd = bday.count(converted_date, converted_expiration)
-    return ff_interp(bd)
+    bd = bday.count(data_convertida, vencimento_convertido)
+    return interpolador(bd)
 
 
 def available_trade_dates() -> pl.Series:
@@ -449,11 +455,11 @@ def available_trade_dates() -> pl.Series:
             1995-01-06
         ]
     """
-    available_dates = (
+    datas_disponiveis = (
         get_cached_dataset("di1")
         .get_column("TradeDate")
         .unique()
         .sort()
         .alias("available_dates")
     )
-    return available_dates
+    return datas_disponiveis
