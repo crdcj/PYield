@@ -4,8 +4,8 @@ from unittest.mock import patch
 import polars as pl
 
 from pyield.bc.ptax_api import (
-    _process_df,  # noqa: PLC2701
-    _read_csv_data,  # noqa: PLC2701
+    _ler_csv,  # noqa: PLC2701
+    _processar_df,  # noqa: PLC2701
     ptax,
     ptax_series,
 )
@@ -24,8 +24,8 @@ def _load_expected() -> pl.DataFrame:
 
 
 def _process_csv(csv_content: bytes) -> pl.DataFrame:
-    df = _read_csv_data(csv_content)
-    return _process_df(df)
+    df = _ler_csv(csv_content)
+    return _processar_df(df)
 
 
 def test_process_csv_data():
@@ -36,14 +36,14 @@ def test_process_csv_data():
 
 def test_ptax_series_with_mock():
     """ptax_series() with mocked fetch must match the reference parquet."""
-    with patch("pyield.bc.ptax_api._fetch_text_from_api", return_value=_load_csv()):
+    with patch("pyield.bc.ptax_api._buscar_texto_api", return_value=_load_csv()):
         result = ptax_series(start="22-04-2025", end="25-04-2025")
     assert result.equals(_load_expected())
 
 
 def test_ptax_with_mock():
     """ptax() with mocked fetch must return the correct MidRate float."""
-    with patch("pyield.bc.ptax_api._fetch_text_from_api", return_value=_load_csv()):
+    with patch("pyield.bc.ptax_api._buscar_texto_api", return_value=_load_csv()):
         result = ptax("22-04-2025")
     expected_mid = _load_expected()["MidRate"].item(0)
     assert result == expected_mid
@@ -51,7 +51,7 @@ def test_ptax_with_mock():
 
 def test_empty_csv_returns_empty():
     """Empty API response returns empty DataFrame."""
-    with patch("pyield.bc.ptax_api._fetch_text_from_api", return_value=""):
+    with patch("pyield.bc.ptax_api._buscar_texto_api", return_value=""):
         result = ptax_series(start="22-04-2025", end="25-04-2025")
     assert isinstance(result, pl.DataFrame)
     assert result.is_empty()
