@@ -12,7 +12,7 @@ from pyield import bday, clock
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
 from pyield.converters import converter_datas
-from pyield.data_cache import get_cached_dataset
+from pyield.data_cache import obter_dataset_cacheado
 from pyield.retry import retry_padrao
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnc import duration as duration_c
@@ -410,7 +410,7 @@ def tpf_data(
         df = _buscar_dados_tpf(date)
     else:
         # Caso contrário, obtém os dados do cache local
-        df = get_cached_dataset("tpf").filter(pl.col("ReferenceDate") == date)
+        df = obter_dataset_cacheado("tpf").filter(pl.col("ReferenceDate") == date)
 
     if df.is_empty():
         return pl.DataFrame()

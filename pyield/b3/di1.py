@@ -5,7 +5,7 @@ import polars as pl
 
 import pyield.converters as cv
 from pyield import b3, bday, interpolator
-from pyield.data_cache import get_cached_dataset
+from pyield.data_cache import obter_dataset_cacheado
 from pyield.types import ArrayLike, DateLike, any_is_empty
 
 registro = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
         DataFrame com dados de DI para as datas solicitadas.
     """
     # 1. Busca inicial no cache com as datas solicitadas pelo usuário.
-    df_cache = get_cached_dataset("di1").filter(pl.col("TradeDate").is_in(datas))
+    df_cache = obter_dataset_cacheado("di1").filter(pl.col("TradeDate").is_in(datas))
 
     # 2. Identifica datas solicitadas que não estão no cache
     datas_solicitadas = set(datas)
@@ -131,7 +131,7 @@ def data(
 
     if pre_filter:
         df_tpf = (
-            get_cached_dataset("tpf")
+            obter_dataset_cacheado("tpf")
             .filter(pl.col("BondType").is_in(["LTN", "NTN-F"]))
             .unique(subset=["MaturityDate", "ReferenceDate"])
             .select(
@@ -452,7 +452,7 @@ def available_trade_dates() -> pl.Series:
         ]
     """
     datas_disponiveis = (
-        get_cached_dataset("di1")
+        obter_dataset_cacheado("di1")
         .get_column("TradeDate")
         .unique()
         .sort()

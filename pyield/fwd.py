@@ -15,16 +15,15 @@ def forwards(
     Calcula taxas a termo (forward rates) a partir de taxas zero (spot rates).
 
     A taxa a termo no vértice 'n' é definida como:
-
         fwdₖ = fwdⱼ→ₖ (a taxa a termo de j para k)
 
     A fórmula utilizada é:
-
         fwdₖ = ((1 + txₖ)^(duₖ/252) / (1 + txⱼ)^(duⱼ/252))^(252/(duₖ - duⱼ)) - 1
 
     Como au = du/252 (tempo em anos úteis), a fórmula pode ser simplificada para:
 
         fwdₖ = ((1 + txₖ)^auₖ / (1 + txⱼ)^auⱼ)^(1/(auₖ - auⱼ)) - 1
+
 
     Em LaTeX, a fórmula é representada como:
 

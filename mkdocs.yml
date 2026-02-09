@@ -34,7 +34,7 @@ nav:
           - NTN-B1: ntnb1.md
           - NTN-C: ntnc.md
           - NTN-F: ntnf.md
-          - PRE: pre.md  
+          - PRE: pre.md
 
 theme:
   name: 'material'
