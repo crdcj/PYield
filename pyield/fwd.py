@@ -51,10 +51,10 @@ def forwards(
     A função calcula as taxas a termo para todos os pontos, exceto o primeiro
     de cada grupo, que é tratado separadamente.
 
-     Args:
+    Args:
         bdays (ArrayLike): Número de dias úteis para cada taxa zero.
         rates (ArrayLike): Taxas zero correspondentes aos dias úteis.
-        group_by (GroupingCriteria, optional):
+        group_by (Sequence[str | int | date] | pl.Series | None, optional):
             Critério de agrupamento para os cálculos (ex: datas de referência,
             tickers de títulos). Pode ser uma lista/série de strings, inteiros
             ou datas. Se None, todos os dados são tratados como um único grupo.
@@ -64,7 +64,7 @@ def forwards(
         pl.Series: Série contendo as taxas a termo calculadas (tipo Float64).
             A primeira taxa de cada grupo corresponde à taxa zero inicial.
 
-     Raises:
+    Raises:
         polars.exceptions.ShapeError: Se os comprimentos de `bdays`, `rates`
             e `group_by` (quando fornecido) não forem iguais.
 
@@ -151,6 +151,7 @@ def forwards(
     # Validações iniciais
     if any_is_empty(bdays, rates):
         return pl.Series(dtype=pl.Float64)
+
     # 1. Montar o DataFrame
     # Criar coluna de agrupamento dummy se não for fornecida
     group_by_exp = pl.Series(group_by) if group_by is not None else 0
@@ -162,14 +163,14 @@ def forwards(
         }
     )
 
-    # 3. Definir a fórmula da taxa a termo
+    # 2. Definir a fórmula da taxa a termo
     # fₖ = fⱼ→ₖ = ((1 + rₖ)^tₖ / (1 + rⱼ)^tⱼ) ^ (1/(tₖ - tⱼ)) - 1
     exp1 = (1 + pl.col("rate_k")) ** pl.col("time_k")  # (1 + rₖ)^tₖ
     exp2 = (1 + pl.col("rate_j")) ** pl.col("time_j")  # (1 + rⱼ)^tⱼ
     exp3 = 1 / (pl.col("time_k") - pl.col("time_j"))  # 1/(tₖ - tⱼ)
     fwd_formula = (exp1 / exp2) ** exp3 - 1
 
-    # 4. Calcular as taxas a termo
+    # 3. Calcular as taxas a termo
     df_fwd = (
         df_orig.drop_nans()
         .drop_nulls()
@@ -191,7 +192,7 @@ def forwards(
             .otherwise("fwd")
         )
     )
-    # 5. Reunir os resultados na ordem original
+    # 4. Reunir os resultados na ordem original
     df_orig = df_orig.join(
         df_fwd.drop("rate_k"),  # rate_k já existe em df_orig
         on=["du_k", "group_by"],
@@ -234,7 +235,7 @@ def forward(
 
     Returns:
         float: A taxa a termo calculada entre `bday1` e `bday2`. Retorna
-            `None` se `bday1 >= bday2` ou se qualquer um dos
+            `nan` se `bday1 >= bday2` ou se qualquer um dos
             argumentos de entrada for float('nan') ou None.
 
     Examples:
@@ -253,20 +254,20 @@ def forward(
         `bday2` precisa ser necessariamente maior que `bday1` para que
         o cálculo da taxa a termo seja matematicamente válido.
 
-    A fórmula utilizada é derivada da relação entre taxas zero (spot rates) é:
+    A fórmula utilizada é derivada da relação entre taxas zero (spot rates):
     $$
     f_{1 \rightarrow 2} = \left( \frac{(1 + r_2)^{t_2}}{(1 + r_1)^{t_1}} \right)^{\frac{1}{t_2 - t_1}} - 1
     $$
     """  # noqa: E501
     if any_is_empty(rate1, rate2, bday1, bday2):
-        # If any of the inputs are nullable, return None
+        # Se qualquer entrada for nula/NaN, retorna NaN
         return float("nan")
 
-    # Handle the case where the two dates are the same
+    # Prazo final deve ser maior que o inicial
     if bday2 <= bday1:
         return float("nan")
 
-    # Convert business days to business years
+    # Converter dias úteis para anos úteis
     t1 = bday1 / 252
     t2 = bday2 / 252
 
