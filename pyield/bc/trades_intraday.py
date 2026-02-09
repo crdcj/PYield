@@ -170,9 +170,6 @@ def tpf_intraday_trades() -> pl.DataFrame:
     Os dados ficam disponíveis apenas durante o horário do SELIC
     (09:00–22:00 BRT) em dias úteis. Retorna DataFrame vazio fora desse período.
 
-    Args:
-        None.
-
     Returns:
         pl.DataFrame: DataFrame com negociações intradiárias. Vazio se o mercado
             estiver fechado ou ocorrer erro.

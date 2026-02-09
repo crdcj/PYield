@@ -15,25 +15,28 @@ def forwards(
     Calcula taxas a termo (forward rates) a partir de taxas zero (spot rates).
 
     A taxa a termo no vértice 'n' é definida como:
+
         fwdₖ = fwdⱼ→ₖ (a taxa a termo de j para k)
 
     A fórmula utilizada é:
-        fwdₖ = ((1 + rₖ)^(duₖ/252) / (1 + rⱼ)^(duⱼ/252))^(252/(duₖ - duⱼ)) - 1
 
-    Como du/252 = t (tempo em anos úteis), a fórmula pode ser simplificada para:
+        fwdₖ = ((1 + txₖ)^(duₖ/252) / (1 + txⱼ)^(duⱼ/252))^(252/(duₖ - duⱼ)) - 1
 
-        fwdₖ = ((1 + rₖ)^tₖ / (1 + rⱼ)^tⱼ)^(1/(tₖ - tⱼ)) - 1
+    Como au = du/252 (tempo em anos úteis), a fórmula pode ser simplificada para:
+
+        fwdₖ = ((1 + txₖ)^auₖ / (1 + txⱼ)^auⱼ)^(1/(auₖ - auⱼ)) - 1
 
     Em LaTeX, a fórmula é representada como:
+
     $$
-    fwd_k = \left( \frac{(1 + r_k)^{t_k}}{(1 + r_j)^{t_j}} \right)^{\frac{1}{t_k - t_j}} - 1
+    fwd_k = \left( \frac{(1 + tx_k)^{au_k}}{(1 + tx_j)^{au_j}} \right)^{\frac{1}{au_k - au_j}} - 1
     $$
 
     Onde:
-        - rⱼ é a taxa zero para o vértice anterior.
-        - rₖ é a taxa zero para o vértice atual.
-        - tⱼ é o prazo em anos para o vértice anterior (calculado como duⱼ/252).
-        - tₖ é o prazo em anos para o vértice atual (calculado como duₖ/252).
+        - txⱼ é a taxa zero para o vértice anterior.
+        - txₖ é a taxa zero para o vértice atual.
+        - auⱼ é o prazo em anos úteis no vértice anterior (auⱼ = duⱼ/252).
+        - auₖ é o prazo em anos úteis no vértice atual (auₖ = duₖ/252).
         - A constante 252 representa o número de dias úteis no ano.
 
     A função preserva a ordem original dos dados de entrada e lida com valores nulos
@@ -41,8 +44,8 @@ def forwards(
     nas taxas a termo calculadas.
 
     A primeira taxa a termo de cada grupo é definida como a
-    taxa zero desse primeiro vértice (fwd₁ = r₁), dado que não existe um vértice
-    anterior a r₁ para se calcular a taxa a termo no primeiro ponto.
+    taxa zero desse primeiro vértice (fwd₁ = tx₁), dado que não existe um vértice
+    anterior a tx₁ para se calcular a taxa a termo no primeiro ponto.
 
     A função também lida com agrupamentos opcionais, permitindo calcular taxas
     a termo para diferentes grupos de datas. O agrupamento é feito com base em `group_by`.
@@ -52,8 +55,8 @@ def forwards(
     de cada grupo, que é tratado separadamente.
 
     Args:
-        bdays (ArrayLike): Número de dias úteis para cada taxa zero.
-        rates (ArrayLike): Taxas zero correspondentes aos dias úteis.
+        bdays (ArrayLike): Número de dias úteis (du) para cada taxa zero.
+        rates (ArrayLike): Taxas zero (tx) correspondentes aos dias úteis.
         group_by (Sequence[str | int | date] | pl.Series | None, optional):
             Critério de agrupamento para os cálculos (ex: datas de referência,
             tickers de títulos). Pode ser uma lista/série de strings, inteiros
@@ -156,17 +159,17 @@ def forwards(
     df_orig = pl.DataFrame(
         {
             "du_k": bdays,
-            "rate_k": rates,
+            "tx_k": rates,
             "group_by": 0 if group_by is None else group_by,
         }
     )
 
     # 2. Definir a fórmula da taxa a termo
-    # fₖ = fⱼ→ₖ = ((1 + rₖ)^tₖ / (1 + rⱼ)^tⱼ) ^ (1/(tₖ - tⱼ)) - 1
-    exp1 = (1 + pl.col("rate_k")) ** pl.col("time_k")  # (1 + rₖ)^tₖ
-    exp2 = (1 + pl.col("rate_j")) ** pl.col("time_j")  # (1 + rⱼ)^tⱼ
-    exp3 = 1 / (pl.col("time_k") - pl.col("time_j"))  # 1/(tₖ - tⱼ)
-    fwd_exp = (exp1 / exp2) ** exp3 - 1
+    # fₖ = fⱼ→ₖ = ((1 + txₖ)^auₖ / (1 + txⱼ)^auⱼ) ^ (1/(auₖ - auⱼ)) - 1
+    fator_k = (1 + pl.col("tx_k")) ** pl.col("au_k")  # (1 + txₖ)^auₖ
+    fator_j = (1 + pl.col("tx_j")) ** pl.col("au_j")  # (1 + txⱼ)^auⱼ
+    expoente = 1 / (pl.col("au_k") - pl.col("au_j"))  # 1/(auₖ - auⱼ)
+    fwd_exp = (fator_k / fator_j) ** expoente - 1
 
     # 3. Calcular as taxas a termo
     df_fwd = (
@@ -174,11 +177,11 @@ def forwards(
         .drop_nulls()
         .unique(subset=["du_k", "group_by"], keep="last")
         .sort("group_by", "du_k")
-        .with_columns(time_k=pl.col("du_k") / 252)  # Criar coluna de tempo em anos
+        .with_columns(au_k=pl.col("du_k") / 252)  # Criar coluna de anos úteis
         .with_columns(
             # Calcular os valores deslocados (shift) dentro de cada grupo
-            rate_j=pl.col("rate_k").shift(1).over("group_by"),
-            time_j=pl.col("time_k").shift(1).over("group_by"),
+            tx_j=pl.col("tx_k").shift(1).over("group_by"),
+            au_j=pl.col("au_k").shift(1).over("group_by"),
         )
         .with_columns(fwd=fwd_exp)
         .with_columns(
@@ -186,13 +189,13 @@ def forwards(
             # sem nulos e ordenada por group_by e du_k. Então, basta
             # ajustar a primeira taxa fwd de cada grupo para ser igual à taxa spot!
             fwd=pl.when(pl.col("du_k") == pl.first("du_k").over("group_by"))
-            .then("rate_k")
+            .then("tx_k")
             .otherwise("fwd")
         )
     )
     # 4. Reunir os resultados na ordem original
     df_orig = df_orig.join(
-        df_fwd.drop("rate_k"),  # rate_k já existe em df_orig
+        df_fwd.drop("tx_k"),  # tx_k já existe em df_orig
         on=["du_k", "group_by"],
         how="left",
         maintain_order="left",
@@ -212,18 +215,23 @@ def forward(
     Calcula a taxa a termo (forward rate) entre dois prazos (dias úteis).
 
     Utiliza a fórmula:
-        f₁→₂ = ((1 + r₂)^(du₂/252) / (1 + r₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
+        f₁→₂ = ((1 + tx₂)^(du₂/252) / (1 + tx₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
 
     Onde:
-        - r₁ é a taxa zero para o primeiro prazo (du₁).
-        - r₂ é a taxa zero para o segundo prazo (du₂).
+        - tx₁ é a taxa zero para o primeiro prazo (du₁).
+        - tx₂ é a taxa zero para o segundo prazo (du₂).
         - du₁ é o número de dias úteis até a primeira data.
         - du₂ é o número de dias úteis até a segunda data.
         - A constante 252 representa o número de dias úteis no ano.
 
-    Como du/252 = t (tempo em anos úteis), a fórmula pode ser simplificada para:
+    Como au = du/252 (tempo em anos úteis), a fórmula pode ser simplificada para:
 
-        f₁→₂ = ((1 + r₂)^t₂ / (1 + r₁)^t₁)^(1/(t₂ - t₁)) - 1
+        f₁→₂ = ((1 + tx₂)^au₂ / (1 + tx₁)^au₁)^(1/(au₂ - au₁)) - 1
+
+    Que em latex fica:
+    $$
+    f_{1 \rightarrow 2} = \left( \frac{(1 + tx_2)^{au_2}}{(1 + tx_1)^{au_1}} \right)^{\frac{1}{au_2 - au_1}} - 1
+    $$
 
     Args:
         bday1 (int): Número de dias úteis do primeiro ponto (prazo menor).
@@ -251,11 +259,6 @@ def forward(
     Notes:
         `bday2` precisa ser necessariamente maior que `bday1` para que
         o cálculo da taxa a termo seja matematicamente válido.
-
-    A fórmula utilizada é derivada da relação entre taxas zero (spot rates):
-    $$
-    f_{1 \rightarrow 2} = \left( \frac{(1 + r_2)^{t_2}}{(1 + r_1)^{t_1}} \right)^{\frac{1}{t_2 - t_1}} - 1
-    $$
     """  # noqa: E501
     if any_is_empty(rate1, rate2, bday1, bday2):
         # Se qualquer entrada for nula/NaN, retorna NaN
@@ -269,5 +272,5 @@ def forward(
     au1 = bday1 / 252
     au2 = bday2 / 252
 
-    # f₁→₂ = ((1 + r₂)^t₂ / (1 + r₁)^t₁)^(1/(t₂ - t₁)) - 1
+    # f₁→₂ = ((1 + tx₂)^au₂ / (1 + tx₁)^au₁)^(1/(au₂ - au₁)) - 1
     return ((1 + rate2) ** au2 / (1 + rate1) ** au1) ** (1 / (au2 - au1)) - 1

@@ -5,6 +5,9 @@ site_url: https://crdcj.github.io/PYield/
 site_description: Biblioteca financeira para o mercado brasileiro.
 site_author: Carlos Carvalho
 
+watch:
+  - pyield
+  
 nav:
   - Home: index.md
   - Articles:
