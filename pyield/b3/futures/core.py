@@ -25,7 +25,7 @@ HORA_FIM_INTRADAY = dt.time(18, 30)
 def _data_intraday_valida(data_verificacao: dt.date) -> bool:
     """Verifica se a data é um dia de negociação intraday."""
     # Primeiro valida regra geral de dia futuro / não útil / datas especiais
-    if not cm._data_negociacao_valida(data_verificacao):
+    if not cm.data_negociacao_valida(data_verificacao):
         return False
 
     # Intraday só existe para 'hoje'
@@ -111,7 +111,7 @@ def futures(
     data_negociacao = cv.converter_datas(date)
 
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
-    if not cm._data_negociacao_valida(data_negociacao):
+    if not cm.data_negociacao_valida(data_negociacao):
         logger.warning(
             "A data %s não é válida. Retornando DataFrame vazio.",
             data_negociacao,

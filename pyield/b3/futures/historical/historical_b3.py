@@ -208,7 +208,7 @@ def _buscar_df_historico_b3(data: dt.date, codigo_contrato: str) -> pl.DataFrame
         if df.is_empty():
             return pl.DataFrame()
 
-        df = cm._adicionar_vencimento(df, codigo_contrato, coluna_ticker="TickerSymbol")
+        df = cm.adicionar_vencimento(df, codigo_contrato, coluna_ticker="TickerSymbol")
 
         df = _processar_df(df, data, codigo_contrato)
         df = _selecionar_e_reordenar_colunas(df)

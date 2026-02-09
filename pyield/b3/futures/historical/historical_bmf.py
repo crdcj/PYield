@@ -222,7 +222,7 @@ def _adicionar_vencimentos(
         ]
         df = df.with_columns(pl.Series("ExpirationDate", datas_vencimento))
     else:
-        df = cm._adicionar_vencimento(df, codigo_contrato, "TickerSymbol")
+        df = cm.adicionar_vencimento(df, codigo_contrato, "TickerSymbol")
 
     df = df.with_columns(
         BDaysToExp=bday.count_expr(data, "ExpirationDate"),

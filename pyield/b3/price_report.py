@@ -306,7 +306,7 @@ def _processar_zip(
     # 1. Gera o mapa correto de renomeação (sufixo Rate ou Price)
     mapa_renomeacao = _mapa_renomeacao_colunas(contract_code)
     df = df.rename(mapa_renomeacao, strict=False)
-    df = cm._adicionar_vencimento(df, contract_code, "TickerSymbol")
+    df = cm.adicionar_vencimento(df, contract_code, "TickerSymbol")
     df = _processar_df(df, contract_code)
 
     return df.sort("ExpirationDate")
@@ -368,7 +368,7 @@ def fetch_price_report(
 
     date = cv.converter_datas(date)
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
-    if not cm._data_negociacao_valida(date):
+    if not cm.data_negociacao_valida(date):
         registro.warning(f"{date} não é uma data válida. Retornando DataFrame vazio.")
         return pl.DataFrame()
 
