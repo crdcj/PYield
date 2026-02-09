@@ -50,7 +50,7 @@ The library is organized into domain-specific namespaces, all exposed through `p
 ### Key Cross-Cutting Components
 
 - **`types.py`** - Type aliases `DateLike` and `ArrayLike`; `any_is_empty()` for null/empty detection
-- **`converters.py`** - `convert_dates()` normalizes various date inputs to `datetime.date` or `pl.Series[Date]`
+- **`converters.py`** - `converter_datas()` normalizes various date inputs to `datetime.date` or `pl.Series[Date]`
 - **`interpolator.py`** - `Interpolator` class for rate interpolation (linear or flat_forward method, 252 bday/year convention)
 - **`data_cache.py`** - GitHub-hosted parquet data cache with daily TTL using `lru_cache`
 - **`retry.py`** - Tenacity-based retry decorator for network requests (retries on 429, 5xx, timeouts)
@@ -67,7 +67,7 @@ The library is organized into domain-specific namespaces, all exposed through `p
 
 Most data-fetching functions follow this pattern:
 1. Accept `DateLike` reference date parameter
-2. Convert dates using `convert_dates()`
+2. Convert dates using `converter_datas()`
 3. Fetch from external API (with retry logic) or cached parquet
 4. Return Polars DataFrame with standardized column names
 

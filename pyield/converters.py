@@ -91,23 +91,23 @@ def converter_datas(
     Examples:
         Conversão de string escalar:
         >>> import datetime as dt
-        >>> convert_dates("25-12-2024")
+        >>> converter_datas("25-12-2024")
         datetime.date(2024, 12, 25)
 
         Conversão de string ISO escalar:
-        >>> convert_dates("2024-12-25")
+        >>> converter_datas("2024-12-25")
         datetime.date(2024, 12, 25)
 
         Conversão de objeto date (passthrough):
-        >>> convert_dates(dt.date(2024, 12, 25))
+        >>> converter_datas(dt.date(2024, 12, 25))
         datetime.date(2024, 12, 25)
 
         Conversão de datetime para date:
-        >>> convert_dates(dt.datetime(2024, 12, 25, 14, 30))
+        >>> converter_datas(dt.datetime(2024, 12, 25, 14, 30))
         datetime.date(2024, 12, 25)
 
         Conversão de lista de strings:
-        >>> convert_dates(["01-01-2024", "15-06-2024"])
+        >>> converter_datas(["01-01-2024", "15-06-2024"])
         shape: (2,)
         Series: '' [date]
         [
@@ -116,15 +116,15 @@ def converter_datas(
         ]
 
         Entrada nula retorna None:
-        >>> convert_dates(None) is None
+        >>> converter_datas(None) is None
         True
 
         String vazia retorna None:
-        >>> convert_dates("") is None
+        >>> converter_datas("") is None
         True
 
         Lista com valores nulos propaga os nulls:
-        >>> convert_dates(["01-01-2024", None])
+        >>> converter_datas(["01-01-2024", None])
         shape: (2,)
         Series: '' [date]
         [
@@ -133,7 +133,7 @@ def converter_datas(
         ]
 
         Lista com strings vazias vira série nula:
-        >>> convert_dates(["", "  "])
+        >>> converter_datas(["", "  "])
         shape: (2,)
         Series: '' [date]
         [
@@ -142,7 +142,7 @@ def converter_datas(
         ]
 
         Formatos mistos: formato do primeiro valor válido prevalece:
-        >>> convert_dates(["25-12-2024", "2024-12-26"])
+        >>> converter_datas(["25-12-2024", "2024-12-26"])
         shape: (2,)
         Series: '' [date]
         [

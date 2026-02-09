@@ -64,7 +64,7 @@ def vna_lft(date: DateLike) -> float:
 
     Args:
         date (DateLike): Data de referência. Aceita string, date ou datetime,
-            convertidos internamente por ``convert_dates``.
+            convertidos internamente por ``converter_datas``.
 
     Returns:
         float: Valor do VNA para a data especificada. Retorna ``NaN`` se a
