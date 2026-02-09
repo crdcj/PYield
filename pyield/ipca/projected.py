@@ -8,14 +8,14 @@ from pyield.retry import default_retry
 
 
 @dataclass
-class IndicatorProjection:
-    last_updated: dt.datetime  # Date and time of the last update
-    reference_period: str  # Reference month as a string in "MMM/YY" format
-    projected_value: float  # Projected value
+class ProjecaoIndicador:
+    ultima_atualizacao: dt.datetime  # Data e hora da última atualização
+    periodo_referencia: str  # Mês de referência no formato "MMM/YY"
+    valor_projetado: float  # Valor projetado
 
 
 @default_retry
-def _get_page_text() -> str:
+def _buscar_texto_pagina() -> str:
     """
     Faz a requisição e retorna o HTML decodificado como string.
     Retornar str evita conflitos de tipo no regex e facilita o processamento.
@@ -30,7 +30,7 @@ def _get_page_text() -> str:
         raise ConnectionError(f"Erro ao acessar a página da ANBIMA: {e}")
 
 
-def projected_rate() -> IndicatorProjection:
+def projected_rate() -> ProjecaoIndicador:
     """
     Obtém a projeção atual do IPCA no site da ANBIMA.
 
@@ -38,11 +38,11 @@ def projected_rate() -> IndicatorProjection:
     projeção do IPCA diretamente do HTML usando expressões regulares.
 
     Returns:
-        IndicatorProjection: Objeto contendo:
-            - last_updated (dt.datetime): Data e hora da última atualização.
-            - reference_period (str): Período de referência no formato "MMM/YY"
+        ProjecaoIndicador: Objeto contendo:
+            - ultima_atualizacao (dt.datetime): Data e hora da última atualização.
+            - periodo_referencia (str): Período de referência no formato "MMM/YY"
               (ex.: "jan/26").
-            - projected_value (float): Valor projetado do IPCA (decimal).
+            - valor_projetado (float): Valor projetado do IPCA (decimal).
 
     Raises:
         ConnectionError: Se houver erro de conexão com o site da ANBIMA.
@@ -57,10 +57,10 @@ def projected_rate() -> IndicatorProjection:
         >>> from pyield import ipca
         >>> # Obter a projeção atual do IPCA na ANBIMA
         >>> ipca.projected_rate()
-        IndicatorProjection(last_updated=..., reference_period=..., projected_value=...)
-    """
+        ProjecaoIndicador(ultima_atualizacao=..., periodo_referencia=..., valor_projetado=...)
+    """  # noqa:E501
     # 1. Obtém o texto já decodificado (str)
-    html = _get_page_text()
+    html = _buscar_texto_pagina()
 
     # 2. Extrair Data de Atualização
     # Procura por: "Data e Hora da Última Atualização: 23/01/2026 - 16:48 h"
@@ -96,9 +96,7 @@ def projected_rate() -> IndicatorProjection:
     padrao_ipca = r"IPCA.*?Projeção\s*\((.*?)\).*?>([0-9]+,[0-9]+)<"
 
     # Passamos flags= explicitamente para satisfazer linters estritos
-    correspondencia_ipca = re.search(
-        padrao_ipca, html, flags=re.DOTALL | re.IGNORECASE
-    )
+    correspondencia_ipca = re.search(padrao_ipca, html, flags=re.DOTALL | re.IGNORECASE)
 
     if not correspondencia_ipca:
         raise ValueError("Não foi possível encontrar os dados de projeção do IPCA.")
@@ -110,8 +108,8 @@ def projected_rate() -> IndicatorProjection:
     valor_projetado = float(texto_valor.replace(",", ".")) / 100
     valor_projetado = round(valor_projetado, 4)
 
-    return IndicatorProjection(
-        last_updated=ultima_atualizacao,
-        reference_period=periodo_referencia,
-        projected_value=valor_projetado,
+    return ProjecaoIndicador(
+        ultima_atualizacao=ultima_atualizacao,
+        periodo_referencia=periodo_referencia,
+        valor_projetado=valor_projetado,
     )
