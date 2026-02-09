@@ -14,7 +14,7 @@ def test_intraday_ettj_com_monkeypatch(monkeypatch):
     """intraday_ettj com monkeypatch deve bater com o parquet de referência."""
     monkeypatch.setattr(
         ettj_mod,
-        "_fetch_intraday_text",
+        "_buscar_texto_intraday",
         lambda: CAMINHO_TXT.read_text(encoding="latin1"),
     )
     resultado = ettj_mod.intraday_ettj()

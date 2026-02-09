@@ -15,7 +15,7 @@ def test_tpf_difusao_com_monkeypatch(monkeypatch):
     """tpf_difusao com monkeypatch deve bater com o parquet de referência."""
     monkeypatch.setattr(
         difusao_mod,
-        "_fetch_url_data",
+        "_buscar_dados_url",
         lambda _: CAMINHO_CSV.read_text(encoding="utf-8"),
     )
     resultado = difusao_mod.tpf_difusao(DATA_REFERENCIA)

@@ -9,22 +9,22 @@ from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
 
-INTRADAY_ETTJ_URL = (
+URL_ETTJ_INTRADAY = (
     "https://www.anbima.com.br/informacoes/curvas-intradiarias/cIntra-down.asp"
 )
 
-# Anbima ETTJ data has 4 decimal places in percentage values
-# We will round to 6 decimal places to avoid floating point errors
-ROUND_DIGITS = 6
+# Dados ETTJ têm 4 casas decimais em valores percentuais.
+# Arredondamos para 6 casas para evitar erros de ponto flutuante.
+CASAS_DECIMAIS = 6
 
 
 @default_retry
-def _fetch_intraday_text() -> str:
-    request_payload = {"Dt_Ref": "", "saida": "csv"}
-    response = requests.post(INTRADAY_ETTJ_URL, data=request_payload, timeout=10)
-    response.raise_for_status()
-    response.encoding = "latin1"
-    return response.text
+def _buscar_texto_intraday() -> str:
+    carga_requisicao = {"Dt_Ref": "", "saida": "csv"}
+    resposta = requests.post(URL_ETTJ_INTRADAY, data=carga_requisicao, timeout=10)
+    resposta.raise_for_status()
+    resposta.encoding = "latin1"
+    return resposta.text
 
 
 def _extrair_secao(
@@ -52,7 +52,7 @@ def _extrair_secao(
     return data_ref_str, tabela_str
 
 
-def _extract_date_and_tables(texto: str) -> tuple[dt.date, str, str]:
+def _extrair_data_e_tabelas(texto: str) -> tuple[dt.date, str, str]:
     """Função principal para extrair as tabelas de forma modular."""
     # Títulos que servem como nossos marcadores
     titulo_pre = "ETTJ PREFIXADOS (%a.a./252)"
@@ -94,7 +94,7 @@ def _extract_date_and_tables(texto: str) -> tuple[dt.date, str, str]:
     return data_ref, tabela_pre, tabela_ipca
 
 
-def _parse_intraday_table(texto: str) -> pl.DataFrame:
+def _parsear_tabela_intraday(texto: str) -> pl.DataFrame:
     return pl.read_csv(StringIO(texto), separator=";").drop("Fechamento D -1")
 
 
@@ -118,15 +118,15 @@ def intraday_ettj() -> pl.DataFrame:
     Note:
         Todas as taxas são expressas em formato decimal (ex: 0.12 para 12%).
     """
-    api_text = _fetch_intraday_text()
+    texto_api = _buscar_texto_intraday()
 
     # --- Extração da Tabela 1: PREFIXADOS ---
-    data_ref, tabela_pre, tabela_ipca = _extract_date_and_tables(api_text)
+    data_ref, tabela_pre, tabela_ipca = _extrair_data_e_tabelas(texto_api)
 
-    df_pre = _parse_intraday_table(tabela_pre)
+    df_pre = _parsear_tabela_intraday(tabela_pre)
     df_pre = df_pre.rename({"D0": "nominal_rate"})
 
-    df_ipca = _parse_intraday_table(tabela_ipca)
+    df_ipca = _parsear_tabela_intraday(tabela_ipca)
     df_ipca = df_ipca.rename({"D0": "real_rate"})
 
     df = df_pre.join(df_ipca, on="Vertices", how="right")
@@ -134,13 +134,13 @@ def intraday_ettj() -> pl.DataFrame:
 
     df = df.with_columns(
         # convertendo de % para decimal e arredondando
-        pl.col("real_rate").truediv(100).round(ROUND_DIGITS),
-        pl.col("nominal_rate").truediv(100).round(ROUND_DIGITS),
+        pl.col("real_rate").truediv(100).round(CASAS_DECIMAIS),
+        pl.col("nominal_rate").truediv(100).round(CASAS_DECIMAIS),
         date=data_ref,
     ).with_columns(
         ((pl.col("nominal_rate") + 1) / (pl.col("real_rate") + 1) - 1)
-        .round(ROUND_DIGITS)
+        .round(CASAS_DECIMAIS)
         .alias("implied_inflation"),
     )
-    column_order = ["date", "vertex", "nominal_rate", "real_rate", "implied_inflation"]
-    return df.select(column_order)
+    ordem_colunas = ["date", "vertex", "nominal_rate", "real_rate", "implied_inflation"]
+    return df.select(ordem_colunas)

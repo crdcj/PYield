@@ -10,16 +10,14 @@ import pyield.converters as cv
 from pyield import bday
 from pyield.types import DateLike, any_is_empty
 
-API_VERSION = "1.0018"
-BASE_URL = (
-    f"https://www.anbima.com.br/sistemas/taxasonline/consulta/versao/{API_VERSION}"
-)
+VERSAO_API = "1.0018"
+URL_BASE = f"https://www.anbima.com.br/sistemas/taxasonline/consulta/versao/{VERSAO_API}"
 
-URL_PAGINA_INICIAL = f"{BASE_URL}/taxasOnline.asp"
-URL_CONSULTA_DADOS = f"{BASE_URL}/exibedados.asp"
-URL_DOWNLOAD = f"{BASE_URL}/download_dados.asp?extensao=csv"
+URL_PAGINA_INICIAL = f"{URL_BASE}/taxasOnline.asp"
+URL_CONSULTA_DADOS = f"{URL_BASE}/exibedados.asp"
+URL_DOWNLOAD = f"{URL_BASE}/download_dados.asp?extensao=csv"
 
-COLUMN_MAP = {
+MAPA_COLUNAS = {
     "Título": ("titulo", pl.String),
     "Vencimento": ("data_vencimento", pl.String),
     "Código ISIN": ("codigo_isin", pl.String),
@@ -42,11 +40,11 @@ COLUMN_MAP = {
     "Volume Negociado (R$)": ("volume_negociado", pl.Float64),
 }
 
-API_SCHEMA = {col: dtype for col, (_alias, dtype) in COLUMN_MAP.items()}
-COLUMN_ALIASES = {col: alias for col, (alias, _dtype) in COLUMN_MAP.items()}
+ESQUEMA_API = {col: dtype for col, (_alias, dtype) in MAPA_COLUNAS.items()}
+ALIAS_COLUNAS = {col: alias for col, (alias, _dtype) in MAPA_COLUNAS.items()}
 
 # Colunas não selecionadas estão vazias na API.
-FINAL_COLUMN_ORDER = [
+ORDEM_COLUNAS_FINAL = [
     "data_hora_referencia",
     "provedor",
     "titulo",
@@ -63,14 +61,14 @@ FINAL_COLUMN_ORDER = [
 logger = logging.getLogger(__name__)
 
 
-def _fetch_url_data(data_referencia: str) -> str:
-    headers = {
+def _buscar_dados_url(data_referencia: str) -> str:
+    cabecalhos = {
         "Referer": URL_PAGINA_INICIAL,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",  # noqa
         "Origin": "https://www.anbima.com.br",
         "Content-Type": "application/x-www-form-urlencoded",
     }
-    payload = {
+    carga = {
         "dataref": data_referencia,
         "dtRefIdioma": data_referencia,
         "layoutimprimir": "0",
@@ -86,10 +84,10 @@ def _fetch_url_data(data_referencia: str) -> str:
     }
 
     with requests.Session() as s:
-        s.get(URL_PAGINA_INICIAL, headers=headers, timeout=60)
+        s.get(URL_PAGINA_INICIAL, headers=cabecalhos, timeout=60)
         try:
             response_consulta = s.post(
-                URL_CONSULTA_DADOS, headers=headers, data=payload, timeout=60
+                URL_CONSULTA_DADOS, headers=cabecalhos, data=carga, timeout=60
             )
             response_consulta.raise_for_status()
         except requests.exceptions.RequestException as e:
@@ -98,7 +96,7 @@ def _fetch_url_data(data_referencia: str) -> str:
 
         try:
             response_download = s.post(
-                URL_DOWNLOAD, headers=headers, data=payload, timeout=60
+                URL_DOWNLOAD, headers=cabecalhos, data=carga, timeout=60
             )
             response_download.raise_for_status()
             if "text/html" in response_download.headers.get("Content-Type", ""):
@@ -116,29 +114,29 @@ def _fetch_url_data(data_referencia: str) -> str:
             return ""
 
 
-def _process_csv_data(csv_data: str) -> pl.DataFrame:
+def _processar_csv(csv_data: str) -> pl.DataFrame:
     """Converte o CSV bruto em um DataFrame Polars limpo e estruturado."""
-    csv_rows = csv_data.strip().splitlines()
+    linhas_csv = csv_data.strip().splitlines()
 
     # Extrai a data de referência da primeira linha do arquivo
-    data_ref_str = csv_rows[0].split(":")[1].strip()
+    data_ref_str = linhas_csv[0].split(":")[1].strip()
     data_ref = dt.datetime.strptime(data_ref_str, "%d/%m/%Y").date()
 
     # Prepara o conteúdo do CSV para leitura
     # O arquivo CSV da Anbima contém um ';' extra no final do cabeçalho.
     # Esta linha remove o ';' da última coluna para garantir a leitura correta.
-    cleaned_csv_content = "\n".join(csv_rows[1:]).replace(
+    csv_limpo = "\n".join(linhas_csv[1:]).replace(
         "Volume Negociado (R$);", "Volume Negociado (R$)"
     )
 
     df = (
         pl.read_csv(
-            io.StringIO(cleaned_csv_content),
+            io.StringIO(csv_limpo),
             separator=";",
             decimal_comma=True,
-            schema=API_SCHEMA,
+            schema=ESQUEMA_API,
         )
-        .rename(COLUMN_ALIASES)
+        .rename(ALIAS_COLUNAS)
         .with_columns(pl.col(pl.String).str.strip_chars())  # Remove espaços em branco
         .with_columns(
             pl.col("data_vencimento").str.to_date(format="%d/%m/%Y"),
@@ -162,7 +160,7 @@ def _process_csv_data(csv_data: str) -> pl.DataFrame:
             .dt.combine(pl.col("horario"))
             .alias("data_hora_referencia"),
         )
-        .select(FINAL_COLUMN_ORDER)
+        .select(ORDEM_COLUNAS_FINAL)
         .sort("titulo", "data_vencimento", "data_hora_referencia")
     )
 
@@ -198,14 +196,14 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
         return pl.DataFrame()
     data = cv.convert_dates(data_referencia)
     data_str = data.strftime("%d/%m/%Y")
-    csv_data = _fetch_url_data(data_str)
+    csv_data = _buscar_dados_url(data_str)
 
     if not csv_data:
         logger.warning("Nenhum dado foi retornado para a data '%s'.", data_str)
         return pl.DataFrame()
 
     try:
-        return _process_csv_data(csv_data)
+        return _processar_csv(csv_data)
     except Exception as e:
         logger.error("Falha ao processar o CSV para a data '%s': %s", data_str, e)
         return pl.DataFrame()
