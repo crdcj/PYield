@@ -101,6 +101,16 @@ Modules that fetch external data (e.g., `bc/repo.py`, `bc/trades_monthly.py`) us
 2. **Pipeline test** — Processes the local raw input through the internal processing functions and asserts `result.equals(expected_parquet)`.
 3. **Public function test** — Patches the network fetch function to return local raw data, calls the public function, and asserts equality with the reference Parquet.
 
+#### Padrão recomendado para ETL mais complexos (HTML/CSV/JSON)
+
+Para pipelines ETL com múltiplas etapas e dependência de rede:
+
+1. **Substituir apenas a camada de rede** — Use `pytest` com `monkeypatch` para sobrescrever a função interna de fetch (ex.: `_obter_csv`, `_buscar_conteudo_url`) e retornar o arquivo bruto local.
+2. **Executar o fluxo público completo** — Chame a função pública com a opção de buscar na fonte (`fetch_from_source=True`) para exercitar o mesmo pipeline real.
+3. **Comparar com Parquet de referência** — Valide o resultado final com `DataFrame.equals`, sem repetir etapas do pipeline no teste.
+
+Isso reduz complexidade do teste e mantém a cobertura do fluxo real sem rede.
+
 ### Quando doctests são suficientes
 
 Módulos com pipeline trivial que retornam valores escalares simples (float, str) sem transformações complexas de DataFrame. Os doctests já validam o comportamento real e servem como documentação. Exemplos: `di_over.py`, `tn/ltn.py`, `fwd.py`, `interpolator.py`.
