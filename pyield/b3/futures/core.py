@@ -129,7 +129,7 @@ def futures(
 
         # Existe a chance de que os dados consolidados estejam disponíveis após as 18h
         if horario_atual >= HORA_FIM_INTRADAY:
-            df_hist = hcore._buscar_df_historico(data_negociacao, contrato_selecionado)
+            df_hist = hcore.buscar_df_historico(data_negociacao, contrato_selecionado)
             if not df_hist.is_empty():
                 logger.info("Dados consolidados disponíveis. Usando histórico.")
                 return df_hist
@@ -138,4 +138,4 @@ def futures(
         return fetch_intraday_df(contrato_selecionado)
 
     else:  # É um dia histórico
-        return hcore._buscar_df_historico(data_negociacao, contrato_selecionado)
+        return hcore.buscar_df_historico(data_negociacao, contrato_selecionado)
