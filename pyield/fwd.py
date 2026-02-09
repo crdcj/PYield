@@ -140,7 +140,7 @@ def forwards(
             0.0943
         ]
 
-    Note:
+    Notes:
         - A função ordena os dados de entrada primeiro por `group_by`,
         se for fornecido, e depois por `bdays` para garantir a ordem cronológica
         correta no cálculo das taxas a termo.
@@ -153,13 +153,11 @@ def forwards(
         return pl.Series(dtype=pl.Float64)
 
     # 1. Montar o DataFrame
-    # Criar coluna de agrupamento dummy se não for fornecida
-    group_by_exp = pl.Series(group_by) if group_by is not None else 0
     df_orig = pl.DataFrame(
         {
             "du_k": bdays,
             "rate_k": rates,
-            "group_by": group_by_exp,
+            "group_by": 0 if group_by is None else group_by,
         }
     )
 
@@ -168,7 +166,7 @@ def forwards(
     exp1 = (1 + pl.col("rate_k")) ** pl.col("time_k")  # (1 + rₖ)^tₖ
     exp2 = (1 + pl.col("rate_j")) ** pl.col("time_j")  # (1 + rⱼ)^tⱼ
     exp3 = 1 / (pl.col("time_k") - pl.col("time_j"))  # 1/(tₖ - tⱼ)
-    fwd_formula = (exp1 / exp2) ** exp3 - 1
+    fwd_exp = (exp1 / exp2) ** exp3 - 1
 
     # 3. Calcular as taxas a termo
     df_fwd = (
@@ -182,7 +180,7 @@ def forwards(
             rate_j=pl.col("rate_k").shift(1).over("group_by"),
             time_j=pl.col("time_k").shift(1).over("group_by"),
         )
-        .with_columns(fwd=fwd_formula)
+        .with_columns(fwd=fwd_exp)
         .with_columns(
             # A matriz de cálculo já foi tratada: ela está deduplicada,
             # sem nulos e ordenada por group_by e du_k. Então, basta
@@ -250,7 +248,7 @@ def forward(
         >>> print(yd.forward(10, 20, 0.05, None))
         nan
 
-    Note:
+    Notes:
         `bday2` precisa ser necessariamente maior que `bday1` para que
         o cálculo da taxa a termo seja matematicamente válido.
 
@@ -268,8 +266,8 @@ def forward(
         return float("nan")
 
     # Converter dias úteis para anos úteis
-    t1 = bday1 / 252
-    t2 = bday2 / 252
+    au1 = bday1 / 252
+    au2 = bday2 / 252
 
     # f₁→₂ = ((1 + r₂)^t₂ / (1 + r₁)^t₁)^(1/(t₂ - t₁)) - 1
-    return ((1 + rate2) ** t2 / (1 + rate1) ** t1) ** (1 / (t2 - t1)) - 1
+    return ((1 + rate2) ** au2 / (1 + rate1) ** au1) ** (1 / (au2 - au1)) - 1
