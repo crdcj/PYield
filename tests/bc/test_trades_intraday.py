@@ -2,32 +2,25 @@ from pathlib import Path
 
 import polars as pl
 
-from pyield.bc.trades_intraday import (
-    _csv_para_df,  # noqa: PLC2701
-    _limpar_csv,  # noqa: PLC2701
-    _processar_df,  # noqa: PLC2701
-)
+import pyield.bc.trades_intraday as trades_mod
 
-DATA_DIR = Path(__file__).parent / "data"
-CSV_PATH = DATA_DIR / "trades_intraday_20260206.csv"
-PARQUET_PATH = DATA_DIR / "trades_intraday_20260206.parquet"
+DIRETORIO_DADOS = Path(__file__).parent / "data"
+CAMINHO_CSV = DIRETORIO_DADOS / "trades_intraday_20260206.csv"
+CAMINHO_PARQUET = DIRETORIO_DADOS / "trades_intraday_20260206.parquet"
 
-# Columns that depend on execution time, not on data processing logic.
-IGNORE_COLUMNS = ["CollectedAt", "SettlementDate"]
+# Colunas que dependem do horário de execução, não da lógica de processamento.
+COLUNAS_IGNORAR = ["CollectedAt", "SettlementDate"]
 
 
-def _load_and_process() -> pl.DataFrame:
-    csv_data = CSV_PATH.read_text(encoding="utf-8")
-    texto_limpo = _limpar_csv(csv_data)
-    df = _csv_para_df(texto_limpo)
-    return _processar_df(df).drop(IGNORE_COLUMNS)
+def test_trades_intraday_com_monkeypatch(monkeypatch):
+    """tpf_intraday_trades com monkeypatch deve bater com o parquet."""
+    monkeypatch.setattr(
+        trades_mod,
+        "_buscar_csv",
+        lambda: CAMINHO_CSV.read_text(encoding="utf-8"),
+    )
+    monkeypatch.setattr(trades_mod, "_mercado_selic_aberto", lambda: True)
 
-
-def _load_expected() -> pl.DataFrame:
-    return pl.read_parquet(PARQUET_PATH).drop(IGNORE_COLUMNS)
-
-
-def test_process_matches_reference():
-    """Processed CSV must match the saved reference parquet exactly."""
-    result = _load_and_process()
-    assert result.equals(_load_expected())
+    resultado = trades_mod.tpf_intraday_trades().drop(COLUNAS_IGNORAR)
+    esperado = pl.read_parquet(CAMINHO_PARQUET).drop(COLUNAS_IGNORAR)
+    assert resultado.equals(esperado)
