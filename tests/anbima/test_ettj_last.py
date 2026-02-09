@@ -13,7 +13,7 @@ def test_last_ettj_com_monkeypatch(monkeypatch):
     """last_ettj com monkeypatch deve bater com o parquet de referência."""
     monkeypatch.setattr(
         ettj_mod,
-        "_get_last_content_text",
+        "_buscar_texto_ultima_ettj",
         lambda: CAMINHO_TXT.read_text(encoding="latin1"),
     )
     resultado = ettj_mod.last_ettj()

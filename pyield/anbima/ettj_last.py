@@ -8,34 +8,34 @@ import requests
 from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
-LAST_ETTJ_URL = "https://www.anbima.com.br/informacoes/est-termo/CZ-down.asp"
+URL_ULTIMA_ETTJ = "https://www.anbima.com.br/informacoes/est-termo/CZ-down.asp"
 
-# Anbima ETTJ data has 4 decimal places in percentage values
-# We will round to 6 decimal places to avoid floating point errors
-ROUND_DIGITS = 6
+# Dados ETTJ têm 4 casas decimais em valores percentuais.
+# Arredondamos para 6 casas para evitar erros de ponto flutuante.
+CASAS_DECIMAIS = 6
 
 
 @default_retry
-def _get_last_content_text() -> str:
+def _buscar_texto_ultima_ettj() -> str:
     """Busca o texto bruto da curva de juros na ANBIMA."""
-    request_payload = {
+    carga_requisicao = {
         "Idioma": "PT",
         "Dt_Ref": "",
         "saida": "csv",
     }
-    r = requests.post(LAST_ETTJ_URL, data=request_payload)
-    r.raise_for_status()
-    r.encoding = "latin1"
-    return r.text
+    resposta = requests.post(URL_ULTIMA_ETTJ, data=carga_requisicao)
+    resposta.raise_for_status()
+    resposta.encoding = "latin1"
+    return resposta.text
 
 
-def _get_reference_date(text: str) -> dt.date:
-    file_date_str = text[0:10]  # formato = 09/09/2024
-    file_date = dt.datetime.strptime(file_date_str, "%d/%m/%Y").date()
-    return file_date
+def _obter_data_referencia(texto: str) -> dt.date:
+    data_str = texto[0:10]  # formato = 09/09/2024
+    data_ref = dt.datetime.strptime(data_str, "%d/%m/%Y").date()
+    return data_ref
 
 
-def _filter_ettf_text(texto_completo: str) -> str:
+def _filtrar_texto_ettf(texto_completo: str) -> str:
     # Definir os marcadores de início e fim
     marcador_inicio = "Vertices;ETTJ IPCA;ETTJ PREF;Inflação Implícita"
     marcador_fim = "PREFIXADOS (CIRCULAR 3.361)"
@@ -58,33 +58,33 @@ def _filter_ettf_text(texto_completo: str) -> str:
     return "\n".join(trecho_filtrado).replace(".", "").replace(",", ".")
 
 
-def _convert_csv_to_df(text: str) -> pl.DataFrame:
+def _converter_csv_para_df(texto: str) -> pl.DataFrame:
     """Converte o texto CSV da curva de juros em um DataFrame Polars."""
-    return pl.read_csv(StringIO(text), separator=";")
+    return pl.read_csv(StringIO(texto), separator=";")
 
 
-def _process_df(df: pl.DataFrame, reference_date: dt.date) -> pl.DataFrame:
+def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
     """Processa o DataFrame bruto, renomeando colunas e convertendo taxas."""
     # Rename columns
-    rename_dict = {
+    mapa_renomeacao = {
         "Vertices": "vertex",
         "ETTJ IPCA": "real_rate",
         "ETTJ PREF": "nominal_rate",
         "Inflação Implícita": "implied_inflation",
     }
-    rate_columns = ["real_rate", "nominal_rate", "implied_inflation"]
-    df = df.rename(rename_dict).with_columns(
-        pl.col(rate_columns).truediv(100).round(ROUND_DIGITS),
-        date=reference_date,
+    colunas_taxa = ["real_rate", "nominal_rate", "implied_inflation"]
+    df = df.rename(mapa_renomeacao).with_columns(
+        pl.col(colunas_taxa).truediv(100).round(CASAS_DECIMAIS),
+        date=data_referencia,
     )
-    column_order = [
+    ordem_colunas = [
         "date",
         "vertex",
         "nominal_rate",
         "real_rate",
         "implied_inflation",
     ]
-    return df.select(column_order)
+    return df.select(ordem_colunas)
 
 
 def last_ettj() -> pl.DataFrame:
@@ -107,9 +107,9 @@ def last_ettj() -> pl.DataFrame:
     Note:
         Todas as taxas são expressas em formato decimal (ex: 0.12 para 12%).
     """
-    text = _get_last_content_text()
-    reference_date = _get_reference_date(text)
-    text = _filter_ettf_text(text)
-    df = _convert_csv_to_df(text)
-    df = _process_df(df, reference_date)
+    texto = _buscar_texto_ultima_ettj()
+    data_referencia = _obter_data_referencia(texto)
+    texto = _filtrar_texto_ettf(texto)
+    df = _converter_csv_para_df(texto)
+    df = _processar_df(df, data_referencia)
     return df
