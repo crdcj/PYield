@@ -8,6 +8,7 @@ import polars as pl
 import requests
 
 from pyield.clock import now
+from pyield.retry import default_retry
 
 BASE_URL = "https://github.com/crdcj/pyield-data/releases/latest/download"
 logger = logging.getLogger(__name__)
@@ -32,6 +33,16 @@ def _get_today_date_key() -> str:
     return now().strftime("%Y-%m-%d")
 
 
+def _validar_dataset_id(dataset_id: str) -> _Dataset:
+    dataset_normalizado = dataset_id.lower()
+    try:
+        return _Dataset[dataset_normalizado.upper()]
+    except KeyError as e:
+        msg = f"dataset_id inválido: '{dataset_id}'. Valores aceitos: 'di1', 'tpf'."
+        raise ValueError(msg) from e
+
+
+@default_retry
 def _load_github_file(file_url: str) -> pl.DataFrame:
     """
     Baixa o arquivo usando requests e lê com Polars.
@@ -54,7 +65,7 @@ def _load_github_file(file_url: str) -> pl.DataFrame:
 
 @functools.lru_cache(maxsize=8)
 def _get_dataset_with_ttl(dataset_id: str, date_key: str) -> pl.DataFrame:
-    config = _Dataset[dataset_id.upper()]
+    config = _validar_dataset_id(dataset_id)
     full_url = f"{BASE_URL}/{config.filename}"
     try:
         return _load_github_file(full_url)
