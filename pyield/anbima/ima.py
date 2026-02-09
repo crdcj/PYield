@@ -9,7 +9,7 @@ from pyield.retry import default_retry
 
 logger = logging.getLogger(__name__)
 
-ima_types = Literal[
+TiposIMA = Literal[
     "IRF-M 1",
     "IRF-M 1+",
     "IRF-M",
@@ -24,7 +24,7 @@ ima_types = Literal[
 
 # Única fonte de verdade para colunas do CSV: (novo_nome, tipo)
 # Colunas com None no nome são descartadas após a leitura.
-IMA_COLUMNS = {
+IMA_COLUNAS = {
     "2": (None, pl.Int64),
     "Data de Referência": ("Date", pl.String),
     "INDICE": ("IMAType", pl.String),
@@ -49,10 +49,10 @@ IMA_COLUMNS = {
 }
 
 # Derivados automaticamente
-IMA_SCHEMA = {k: v[1] for k, v in IMA_COLUMNS.items()}
-IMA_COL_MAPPING = {k: v[0] for k, v in IMA_COLUMNS.items() if v[0] is not None}
+ESQUEMA_IMA = {k: v[1] for k, v in IMA_COLUNAS.items()}
+MAPA_COLUNAS_IMA = {k: v[0] for k, v in IMA_COLUNAS.items() if v[0] is not None}
 
-FINAL_COLUMN_ORDER = [
+ORDEM_COLUNAS_FINAL = [
     "Date",
     "IMAType",
     "BondType",
@@ -78,36 +78,36 @@ FINAL_COLUMN_ORDER = [
 ]
 
 
-LAST_IMA_URL = "https://www.anbima.com.br/informacoes/ima/arqs/ima_completo.txt"
+URL_ULTIMO_IMA = "https://www.anbima.com.br/informacoes/ima/arqs/ima_completo.txt"
 
 
 @default_retry
-def _fetch_last_ima_text() -> str:
-    r = requests.get(LAST_IMA_URL, timeout=3)
-    r.raise_for_status()
-    r.encoding = "latin1"
-    return r.text.split("2@COMPOSIÇÃO DE CARTEIRA")[1].strip()
+def _buscar_texto_ultimo_ima() -> str:
+    resposta = requests.get(URL_ULTIMO_IMA, timeout=3)
+    resposta.raise_for_status()
+    resposta.encoding = "latin1"
+    return resposta.text.split("2@COMPOSIÇÃO DE CARTEIRA")[1].strip()
 
 
-def _parse_df(text: str) -> pl.DataFrame:
+def _parsear_df(texto: str) -> pl.DataFrame:
     df = pl.read_csv(
-        io.StringIO(text),
+        io.StringIO(texto),
         separator="@",
         decimal_comma=True,
         null_values="--",
-        schema_overrides=IMA_SCHEMA,
+        schema_overrides=ESQUEMA_IMA,
     )
     return df
 
 
-def _process_df(df: pl.DataFrame) -> pl.DataFrame:
-    dv01_expr = (
+def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
+    expr_dv01 = (
         0.0001 * pl.col("Price") * (pl.col("Duration") / (1 + pl.col("IndicativeRate")))
     )
 
     df = (
-        df.rename(IMA_COL_MAPPING)
-        .select(IMA_COL_MAPPING.values())
+        df.rename(MAPA_COLUNAS_IMA)
+        .select(MAPA_COLUNAS_IMA.values())
         .with_columns(
             pl.col("Date").str.to_date("%d/%m/%Y"),
             pl.col("Maturity").str.to_date("%d/%m/%Y"),
@@ -118,16 +118,14 @@ def _process_df(df: pl.DataFrame) -> pl.DataFrame:
             pl.col("NegotiatedValue").mul(1000).round(2),
             pl.col("Duration").truediv(252),
         )
-        .with_columns(
-            dv01_expr.alias("DV01"),
-        )
+        .with_columns(expr_dv01.alias("DV01"))
         .with_columns(MarketDV01=(pl.col("DV01") * pl.col("MarketQuantity")).round(2))
-        .select(FINAL_COLUMN_ORDER)
+        .select(ORDEM_COLUNAS_FINAL)
     )
     return df
 
 
-def last_ima(ima_type: ima_types | None = None) -> pl.DataFrame:
+def last_ima(ima_type: TiposIMA | None = None) -> pl.DataFrame:
     """Obtém os últimos dados de composição de carteira IMA disponíveis na ANBIMA.
 
     Busca e processa os dados do arquivo IMA completo publicado pela ANBIMA,
@@ -178,13 +176,16 @@ def last_ima(ima_type: ima_types | None = None) -> pl.DataFrame:
         True
     """
     try:
-        ima_text = _fetch_last_ima_text()
-        df = _parse_df(ima_text)
-        df = _process_df(df)
+        texto_ima = _buscar_texto_ultimo_ima()
+        df = _parsear_df(texto_ima)
+        df = _processar_df(df)
         if ima_type:
             df = df.filter(pl.col("IMAType") == ima_type)
         df = df.sort("IMAType", "BondType", "Maturity")
         return df
     except Exception as e:
-        logger.exception(f"Error fetching or processing the last IMA data: {e}")
+        logger.exception(
+            "Erro ao buscar ou processar os últimos dados de IMA: %s",
+            e,
+        )
         return pl.DataFrame()

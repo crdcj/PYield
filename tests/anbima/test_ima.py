@@ -13,7 +13,7 @@ def test_last_ima_com_monkeypatch(monkeypatch):
     """last_ima com monkeypatch deve bater com o parquet de referência."""
     monkeypatch.setattr(
         ima_mod,
-        "_fetch_last_ima_text",
+        "_buscar_texto_ultimo_ima",
         lambda: CAMINHO_TXT.read_text(encoding="latin1"),
     )
     esperado = pl.read_parquet(CAMINHO_PARQUET).sort("IMAType", "BondType", "Maturity")
