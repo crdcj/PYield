@@ -197,12 +197,12 @@ def ptax_series(
         - MidRate: Taxa média entre a compra/venda arredondada para 5 casas decimais.
     """
     if start:
-        start = cv.convert_dates(start)
+        start = cv.converter_datas(start)
     else:
         start = dt.date(1984, 11, 28)  # Primeira data disponível na API
 
     if end:
-        end = cv.convert_dates(end)
+        end = cv.converter_datas(end)
     else:
         end = clock.today()
 

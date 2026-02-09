@@ -184,7 +184,7 @@ def count(
     """
     # Coloca as séries em um DataFrame para trabalhar com expressões em colunas
     df = pl.DataFrame(
-        data={"start": cv.convert_dates(start), "end": cv.convert_dates(end)},
+        data={"start": cv.converter_datas(start), "end": cv.converter_datas(end)},
         schema={"start": pl.Date, "end": pl.Date},
         nan_to_null=True,
     )
@@ -445,7 +445,7 @@ def offset(
     """
     # Coloca as entradas em um DataFrame para trabalhar com expressões em colunas
     df = pl.DataFrame(
-        data={"dates": cv.convert_dates(dates), "offset": offset},
+        data={"dates": cv.converter_datas(dates), "offset": offset},
         schema={"dates": pl.Date, "offset": pl.Int64},
         nan_to_null=True,
     )
@@ -502,8 +502,8 @@ def generate(
         ]
     """
     today = clock.today()
-    conv_start = cv.convert_dates(start) or today
-    conv_end = cv.convert_dates(end) or today
+    conv_start = cv.converter_datas(start) or today
+    conv_end = cv.converter_datas(end) or today
 
     # Gera range completo de datas
     s = pl.date_range(conv_start, conv_end, closed=closed, eager=True).alias("bday")
@@ -632,7 +632,7 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
     """
     # Build DataFrame to allow conditional expression selecting the right holiday list
     df = pl.DataFrame(
-        {"dates": cv.convert_dates(dates)},
+        {"dates": cv.converter_datas(dates)},
         schema={"dates": pl.Date},
         nan_to_null=True,
     )

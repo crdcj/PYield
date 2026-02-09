@@ -1,7 +1,7 @@
 import ftplib
 import logging
 
-from pyield.converters import convert_dates
+from pyield.converters import converter_datas
 from pyield.types import DateLike, any_is_empty
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def di_over(date: DateLike) -> float:
 
     try:
         # Converte a data para o formato esperado do arquivo: YYYYMMDD.txt
-        data_ref = convert_dates(date)
+        data_ref = converter_datas(date)
         nome_arquivo = data_ref.strftime("%Y%m%d.txt")
 
         # Usa context manager para gerenciamento seguro de recursos (auto-close/quit)

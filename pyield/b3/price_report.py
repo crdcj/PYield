@@ -366,7 +366,7 @@ def fetch_price_report(
         registro.warning(msg_vazia)
         return pl.DataFrame()
 
-    date = cv.convert_dates(date)
+    date = cv.converter_datas(date)
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
     if not cm._data_negociacao_valida(date):
         registro.warning(f"{date} não é uma data válida. Retornando DataFrame vazio.")

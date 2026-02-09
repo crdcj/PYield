@@ -108,7 +108,7 @@ def futures(
     """  # noqa: E501
     if any_is_empty(date, contract_code):
         return pl.DataFrame()
-    data_negociacao = cv.convert_dates(date)
+    data_negociacao = cv.converter_datas(date)
 
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
     if not cm._data_negociacao_valida(data_negociacao):
@@ -129,9 +129,7 @@ def futures(
 
         # Existe a chance de que os dados consolidados estejam disponíveis após as 18h
         if horario_atual >= HORA_FIM_INTRADAY:
-            df_hist = hcore._buscar_df_historico(
-                data_negociacao, contrato_selecionado
-            )
+            df_hist = hcore._buscar_df_historico(data_negociacao, contrato_selecionado)
             if not df_hist.is_empty():
                 logger.info("Dados consolidados disponíveis. Usando histórico.")
                 return df_hist

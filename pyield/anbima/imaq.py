@@ -141,9 +141,7 @@ def _parsear_tabelas_html(html_content: bytes) -> pl.DataFrame:
     for table in nested_tables:  # type: ignore[misc]
         headers = table.xpath(".//thead//th")
         if not nomes_colunas:
-            nomes_colunas = [
-                _normalizar_nome_coluna(h.text_content()) for h in headers
-            ]
+            nomes_colunas = [_normalizar_nome_coluna(h.text_content()) for h in headers]
 
         data_rows = table.xpath(".//tbody//tr[td]")
         for row in data_rows:
@@ -250,7 +248,7 @@ def imaq(date: DateLike) -> pl.DataFrame:
     if any_is_empty(date):
         logger.warning("Nenhuma data informada. Retornando DataFrame vazio.")
         return pl.DataFrame()
-    data = cv.convert_dates(date)
+    data = cv.converter_datas(date)
     data_str = data.strftime("%d/%m/%Y")
     try:
         url_content = _buscar_conteudo_url(data)

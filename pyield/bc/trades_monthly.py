@@ -18,7 +18,7 @@ import zipfile as zf
 import polars as pl
 import requests
 
-from pyield.converters import convert_dates
+from pyield.converters import converter_datas
 from pyield.retry import default_retry
 from pyield.types import DateLike, any_is_empty
 
@@ -209,7 +209,7 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         registro.warning("Nenhuma data informada. Retornando DataFrame vazio.")
         return pl.DataFrame()
     try:
-        data_alvo = convert_dates(target_date)
+        data_alvo = converter_datas(target_date)
         url = _montar_url(data_alvo, extragroup)
         registro.debug(f"Consultando BCB: {url}")
         conteudo_zip = _baixar_zip(url)

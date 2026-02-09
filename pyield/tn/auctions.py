@@ -424,7 +424,7 @@ def auction(auction_date: DateLike) -> pl.DataFrame:
         logger.info("Nenhuma data de leilão informada.")
         return pl.DataFrame()
     try:
-        auction_date = cv.convert_dates(auction_date)
+        auction_date = cv.converter_datas(auction_date)
         dados_leilao = _buscar_dados_leilao(auction_date)
         if not dados_leilao:
             logger.info("Sem dados de leilão disponíveis para %s.", auction_date)

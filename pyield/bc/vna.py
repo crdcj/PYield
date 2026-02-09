@@ -2,7 +2,7 @@ import logging
 
 import requests
 
-from pyield.converters import convert_dates
+from pyield.converters import converter_datas
 from pyield.retry import default_retry
 from pyield.types import DateLike, any_is_empty
 
@@ -14,7 +14,7 @@ def _baixar_texto(date: DateLike) -> str:
     """Baixa o arquivo diário do SELIC no site do BCB."""
     # Exemplo: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
-    date = convert_dates(date)
+    date = converter_datas(date)
     url_file = f"{date.strftime('%Y%m%d')}APC238"
     url = url_base + url_file
 

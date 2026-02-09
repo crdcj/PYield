@@ -92,8 +92,8 @@ def payment_dates(
         return pl.Series("payment_dates", dtype=pl.Date)
 
     # Valida e normaliza datas
-    liquidacao = conversores.convert_dates(settlement)
-    vencimento = conversores.convert_dates(maturity)
+    liquidacao = conversores.converter_datas(settlement)
+    vencimento = conversores.converter_datas(maturity)
 
     if vencimento <= liquidacao:
         raise ValueError("A data de vencimento deve ser posterior à liquidação.")
@@ -163,8 +163,8 @@ def cash_flows(
         return pl.DataFrame({"PaymentDate": [], "CashFlow": []})
 
     # Valida e normaliza datas
-    liquidacao = conversores.convert_dates(settlement)
-    vencimento = conversores.convert_dates(maturity)
+    liquidacao = conversores.converter_datas(settlement)
+    vencimento = conversores.converter_datas(maturity)
 
     # Obtém as datas de amortização
     datas_pagamento = payment_dates(liquidacao, vencimento, commercial_name)

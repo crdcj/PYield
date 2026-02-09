@@ -11,7 +11,7 @@ from requests.exceptions import HTTPError, RequestException
 from pyield import bday, clock
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
-from pyield.converters import convert_dates
+from pyield.converters import converter_datas
 from pyield.data_cache import get_cached_dataset
 from pyield.retry import default_retry
 from pyield.tn.ntnb import duration as duration_b
@@ -402,7 +402,7 @@ def tpf_data(
     """  # noqa
     if any_is_empty(date):
         return pl.DataFrame()
-    date = convert_dates(date)
+    date = converter_datas(date)
     _validar_data_nao_futura(date)
 
     if fetch_from_source:

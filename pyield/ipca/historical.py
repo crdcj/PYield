@@ -1,7 +1,7 @@
 import polars as pl
 import requests
 
-from pyield.converters import convert_dates
+from pyield.converters import converter_datas
 from pyield.retry import default_retry
 from pyield.types import DateLike, any_is_empty
 
@@ -33,9 +33,7 @@ def _processar_df_ipca(
     Returns:
         pl.DataFrame: DataFrame com colunas 'Period' e 'Value'.
     """
-    df = pl.DataFrame(
-        {"Period": dados.keys(), "Value": dados.values()}
-    ).with_columns(
+    df = pl.DataFrame({"Period": dados.keys(), "Value": dados.values()}).with_columns(
         pl.col("Period").cast(pl.Int64),
         pl.col("Value").cast(pl.Float64),
     )
@@ -77,8 +75,8 @@ def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
     """
     if any_is_empty(start, end):
         return pl.DataFrame()
-    start = convert_dates(start)
-    end = convert_dates(end)
+    start = converter_datas(start)
+    end = converter_datas(end)
 
     data_inicio = start.strftime("%Y%m")
     data_fim = end.strftime("%Y%m")
@@ -190,8 +188,8 @@ def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
     """
     if any_is_empty(start, end):
         return pl.DataFrame()
-    start = convert_dates(start)
-    end = convert_dates(end)
+    start = converter_datas(start)
+    end = converter_datas(end)
 
     data_inicio = start.strftime("%Y%m")
     data_fim = end.strftime("%Y%m")

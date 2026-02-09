@@ -56,7 +56,7 @@ def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
 
 
 def _obter_dados(datas: DateLike | ArrayLike) -> pl.DataFrame:
-    datas_convertidas = cv.convert_dates(datas)
+    datas_convertidas = cv.converter_datas(datas)
 
     match datas_convertidas:
         case None:
@@ -169,8 +169,8 @@ def _montar_df_entrada(
     vencimentos: DateLike | ArrayLike,
 ) -> pl.DataFrame:
     # 1. Converte as entradas primeiro
-    datas_convertidas = cv.convert_dates(datas)
-    vencimentos_convertidos = cv.convert_dates(vencimentos)
+    datas_convertidas = cv.converter_datas(datas)
+    vencimentos_convertidos = cv.converter_datas(vencimentos)
 
     # 2. Lida com os 4 casos de forma SIMPLES E LEGÍVEL
     match (datas_convertidas, vencimentos_convertidos):
@@ -402,8 +402,8 @@ def interpolate_rate(
         )
         return float("nan")
 
-    data_convertida = cv.convert_dates(date)
-    vencimento_convertido = cv.convert_dates(expiration)
+    data_convertida = cv.converter_datas(date)
+    vencimento_convertido = cv.converter_datas(expiration)
 
     if not isinstance(data_convertida, dt.date) or not isinstance(
         vencimento_convertido, dt.date

@@ -11,7 +11,9 @@ from pyield import bday
 from pyield.types import DateLike, any_is_empty
 
 VERSAO_API = "1.0018"
-URL_BASE = f"https://www.anbima.com.br/sistemas/taxasonline/consulta/versao/{VERSAO_API}"
+URL_BASE = (
+    f"https://www.anbima.com.br/sistemas/taxasonline/consulta/versao/{VERSAO_API}"
+)
 
 URL_PAGINA_INICIAL = f"{URL_BASE}/taxasOnline.asp"
 URL_CONSULTA_DADOS = f"{URL_BASE}/exibedados.asp"
@@ -194,7 +196,7 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
     if any_is_empty(data_referencia):
         logger.warning("Nenhuma data fornecida. Retornando DataFrame vazio.")
         return pl.DataFrame()
-    data = cv.convert_dates(data_referencia)
+    data = cv.converter_datas(data_referencia)
     data_str = data.strftime("%d/%m/%Y")
     csv_data = _buscar_dados_url(data_str)
 

@@ -74,12 +74,12 @@ def _montar_url(inicio: DateLike | None, fim: DateLike | None) -> str:
     """
     url = URL_BASE_API
     if inicio:
-        inicio = cv.convert_dates(inicio)
+        inicio = cv.converter_datas(inicio)
         inicio_str = inicio.strftime("%Y-%m-%d")
         url += f"@dataLancamentoInicio='{inicio_str}'"
 
     if fim:
-        fim = cv.convert_dates(fim)
+        fim = cv.converter_datas(fim)
         fim_str = fim.strftime("%Y-%m-%d")
         url += f"&@dataLancamentoFim='{fim_str}'"
 

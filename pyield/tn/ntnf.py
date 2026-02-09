@@ -144,8 +144,8 @@ def payment_dates(
     if any_is_empty(settlement, maturity):
         return pl.Series(dtype=pl.Date)
     # Normaliza datas
-    liquidacao = cv.convert_dates(settlement)
-    vencimento = cv.convert_dates(maturity)
+    liquidacao = cv.converter_datas(settlement)
+    vencimento = cv.converter_datas(maturity)
 
     # Verifica se vencimento é posterior à liquidação
     if vencimento <= liquidacao:
@@ -206,8 +206,8 @@ def cash_flows(
     if any_is_empty(settlement, maturity):
         return pl.DataFrame()
     # Normaliza datas de entrada
-    liquidacao = cv.convert_dates(settlement)
-    vencimento = cv.convert_dates(maturity)
+    liquidacao = cv.converter_datas(settlement)
+    vencimento = cv.converter_datas(maturity)
 
     # Obtém as datas de pagamento entre liquidação e vencimento
     datas_pagamento = payment_dates(liquidacao, vencimento)
@@ -338,9 +338,9 @@ def spot_rates(  # noqa
     if any_is_empty(settlement, ltn_maturities, ltn_rates, ntnf_maturities, ntnf_rates):
         return pl.DataFrame()
     # 1. Converter e normalizar inputs para Polars
-    liquidacao = cv.convert_dates(settlement)
-    vencimentos_ltn = cv.convert_dates(ltn_maturities)
-    vencimentos_ntnf = cv.convert_dates(ntnf_maturities)
+    liquidacao = cv.converter_datas(settlement)
+    vencimentos_ltn = cv.converter_datas(ltn_maturities)
+    vencimentos_ntnf = cv.converter_datas(ntnf_maturities)
     if not isinstance(ltn_rates, pl.Series):
         taxas_ltn = pl.Series(ltn_rates).cast(pl.Float64)
     else:

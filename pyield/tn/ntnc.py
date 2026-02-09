@@ -120,8 +120,8 @@ def payment_dates(
         return pl.Series(dtype=pl.Date)
 
     # Valida e normaliza datas
-    liquidacao = conversores.convert_dates(settlement)
-    vencimento = conversores.convert_dates(maturity)
+    liquidacao = conversores.converter_datas(settlement)
+    vencimento = conversores.converter_datas(maturity)
 
     # Check if maturity date is after the start date
     if vencimento < liquidacao:
@@ -184,8 +184,8 @@ def cash_flows(
         return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
 
     # Valida e normaliza datas
-    liquidacao = conversores.convert_dates(settlement)
-    vencimento = conversores.convert_dates(maturity)
+    liquidacao = conversores.converter_datas(settlement)
+    vencimento = conversores.converter_datas(maturity)
 
     # Obtém as datas de cupom entre liquidação e vencimento
     datas_pagamento = payment_dates(liquidacao, vencimento)

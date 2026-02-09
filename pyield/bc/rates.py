@@ -19,7 +19,7 @@ import polars as pl
 import requests
 
 from pyield import clock
-from pyield.converters import convert_dates
+from pyield.converters import converter_datas
 from pyield.retry import default_retry
 from pyield.types import DateLike, any_is_empty
 
@@ -67,7 +67,7 @@ def _montar_url_download(
     Returns:
         URL formatada para a requisição da API.
     """
-    inicio = convert_dates(inicio)
+    inicio = converter_datas(inicio)
     inicio_str = inicio.strftime("%d/%m/%Y")
 
     url_api = URL_BASE
@@ -75,7 +75,7 @@ def _montar_url_download(
     url_api += f"&dataInicial={inicio_str}"
 
     if fim:
-        fim = convert_dates(fim)
+        fim = converter_datas(fim)
         fim_str = fim.strftime("%d/%m/%Y")
         url_api += f"&dataFinal={fim_str}"
 
@@ -134,9 +134,9 @@ def _buscar_dados_url(
         DataFrame com os dados requisitados.
     """
     # 1. Converter datas usando a função auxiliar existente
-    data_inicio = convert_dates(inicio)
+    data_inicio = converter_datas(inicio)
     # Se a data final não for fornecida, usar a data de hoje para o cálculo do período
-    data_fim = convert_dates(fim) if fim else clock.today()
+    data_fim = converter_datas(fim) if fim else clock.today()
 
     # Verificação simples e pragmática baseada em dias. Se o período for
     # menor que nosso limite de segurança, faz uma chamada única.

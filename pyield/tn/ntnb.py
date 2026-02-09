@@ -168,8 +168,8 @@ def payment_dates(
     if any_is_empty(settlement, maturity):
         return pl.Series(dtype=pl.Date)
 
-    liquidacao = conversores.convert_dates(settlement)
-    vencimento = conversores.convert_dates(maturity)
+    liquidacao = conversores.converter_datas(settlement)
+    vencimento = conversores.converter_datas(maturity)
 
     if vencimento <= liquidacao:
         return pl.Series(dtype=pl.Date)
@@ -220,8 +220,8 @@ def cash_flows(
         return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
 
     # Obtém as datas de cupom entre liquidação e vencimento
-    liquidacao = conversores.convert_dates(settlement)
-    vencimento = conversores.convert_dates(maturity)
+    liquidacao = conversores.converter_datas(settlement)
+    vencimento = conversores.converter_datas(maturity)
     datas_pagamento = payment_dates(liquidacao, vencimento)
 
     # Retorna DataFrame vazio se não houver pagamentos (liquidação >= vencimento)
@@ -332,8 +332,8 @@ def _validar_entradas_taxa_spot(
     taxas: ArrayLike,
 ) -> tuple[dt.date, pl.Series, pl.Series]:
     # Processa e valida os dados de entrada
-    liquidacao = conversores.convert_dates(settlement)
-    vencimentos = conversores.convert_dates(vencimentos)
+    liquidacao = conversores.converter_datas(settlement)
+    vencimentos = conversores.converter_datas(vencimentos)
 
     # Validação estrutural: maturities e rates precisam ter o mesmo tamanho
     if len(vencimentos) != len(taxas):
@@ -597,8 +597,8 @@ def bei_rates(
     ):
         return pl.DataFrame()
     # Normaliza datas de entrada
-    liquidacao = conversores.convert_dates(settlement)
-    ntnb_maturities = conversores.convert_dates(ntnb_maturities)
+    liquidacao = conversores.converter_datas(settlement)
+    ntnb_maturities = conversores.converter_datas(ntnb_maturities)
 
     interpolador_ff = interpolador.Interpolator(
         method="flat_forward",
