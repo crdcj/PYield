@@ -14,7 +14,7 @@ def test_last_ima_com_monkeypatch(monkeypatch):
     monkeypatch.setattr(
         ima_mod,
         "_fetch_last_ima_text",
-        lambda: CAMINHO_TXT.read_text(encoding="latin1").encode("utf-8"),
+        lambda: CAMINHO_TXT.read_text(encoding="latin1"),
     )
     esperado = pl.read_parquet(CAMINHO_PARQUET).sort("IMAType", "BondType", "Maturity")
     resultado = ima_mod.last_ima()

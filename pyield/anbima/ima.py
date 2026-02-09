@@ -1,3 +1,4 @@
+import io
 import logging
 from typing import Literal
 
@@ -81,17 +82,16 @@ LAST_IMA_URL = "https://www.anbima.com.br/informacoes/ima/arqs/ima_completo.txt"
 
 
 @default_retry
-def _fetch_last_ima_text() -> bytes:
+def _fetch_last_ima_text() -> str:
     r = requests.get(LAST_IMA_URL, timeout=3)
     r.raise_for_status()
     r.encoding = "latin1"
-    text = r.text.split("2@COMPOSIÇÃO DE CARTEIRA")[1].strip()
-    return text.encode("utf-8")
+    return r.text.split("2@COMPOSIÇÃO DE CARTEIRA")[1].strip()
 
 
-def _parse_df(text: bytes) -> pl.DataFrame:
+def _parse_df(text: str) -> pl.DataFrame:
     df = pl.read_csv(
-        text,
+        io.StringIO(text),
         separator="@",
         decimal_comma=True,
         null_values="--",
