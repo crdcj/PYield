@@ -7,7 +7,7 @@ from pyield import types
 from pyield.types import ArrayLike, DateLike
 
 
-def validate_date_format(date_str: str) -> str:
+def _validar_formato_data(date_str: str) -> str:
     """Valida se a string de data está em formatos suportados e retorna o *formato*.
 
     Formatos aceitos:
@@ -29,15 +29,21 @@ def validate_date_format(date_str: str) -> str:
         ValueError: Se não corresponder a nenhum dos formatos suportados.
 
     Examples:
-        >>> validate_date_format("25-12-2024")
+        >>> _validar_formato_data("25-12-2024")
         '%d-%m-%Y'
-
-        >>> validate_date_format("25/12/2024")
+        >>> _validar_formato_data("25/12/2024")
         '%d/%m/%Y'
-
-        >>> validate_date_format("2024-12-25")
+        >>> _validar_formato_data("2024-12-25")
         '%Y-%m-%d'
-    """
+        >>> _validar_formato_data("12.25.2024")
+        Traceback (most recent call last):
+        ...
+        ValueError: Formato de data inválido: '12.25.2024'. Formatos aceitos: dd-mm-YYYY, dd/mm/YYYY ou YYYY-mm-dd.
+        >>> _validar_formato_data("not-a-date")
+        Traceback (most recent call last):
+        ...
+        ValueError: Formato de data inválido: 'not-a-date'. Formatos aceitos: dd-mm-YYYY, dd/mm/YYYY ou YYYY-mm-dd.
+    """  # noqa:E501
     for fmt in ("%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%d"):
         try:
             dt.datetime.strptime(date_str, fmt)
@@ -69,7 +75,7 @@ def convert_dates(
     - Entradas nulas retornam ``None``
 
     O formato da string é detectado automaticamente pelo primeiro valor não-nulo
-    da coleção usando ``validate_date_format()``.
+    da coleção usando ``_validar_formato_data()``.
 
     Args:
         dates: Data(s) a converter. Aceita:
@@ -88,8 +94,16 @@ def convert_dates(
         >>> convert_dates("25-12-2024")
         datetime.date(2024, 12, 25)
 
+        Conversão de string ISO escalar:
+        >>> convert_dates("2024-12-25")
+        datetime.date(2024, 12, 25)
+
         Conversão de objeto date (passthrough):
         >>> convert_dates(dt.date(2024, 12, 25))
+        datetime.date(2024, 12, 25)
+
+        Conversão de datetime para date:
+        >>> convert_dates(dt.datetime(2024, 12, 25, 14, 30))
         datetime.date(2024, 12, 25)
 
         Conversão de lista de strings:
@@ -105,6 +119,10 @@ def convert_dates(
         >>> convert_dates(None) is None
         True
 
+        String vazia retorna None:
+        >>> convert_dates("") is None
+        True
+
         Lista com valores nulos propaga os nulls:
         >>> convert_dates(["01-01-2024", None])
         shape: (2,)
@@ -113,28 +131,46 @@ def convert_dates(
             2024-01-01
             null
         ]
+
+        Lista com strings vazias vira série nula:
+        >>> convert_dates(["", "  "])
+        shape: (2,)
+        Series: '' [date]
+        [
+            null
+            null
+        ]
+
+        Formatos mistos: formato do primeiro valor válido prevalece:
+        >>> convert_dates(["25-12-2024", "2024-12-26"])
+        shape: (2,)
+        Series: '' [date]
+        [
+            2024-12-25
+            null
+        ]
     """
     if not types.is_collection(dates):
-        is_scalar = True
-        s = pl.Series(values=[dates])
+        eh_escalar = True
+        serie = pl.Series(values=[dates])
     else:
-        is_scalar = False
-        s = pl.Series(values=dates)
+        eh_escalar = False
+        serie = pl.Series(values=dates)
 
-    if s.dtype == pl.String:
+    if serie.dtype == pl.String:
         # Usa primeiro valor não-nulo para determinar o formato.
-        non_empty = s.str.strip_chars().replace("", None).drop_nulls()
-        if non_empty.len() > 0:
-            fmt = validate_date_format(non_empty.item(0))
-            s = s.str.to_date(format=fmt, strict=False)
+        valores_validos = serie.str.strip_chars().replace("", None).drop_nulls()
+        if valores_validos.len() > 0:
+            formato = _validar_formato_data(valores_validos.item(0))
+            serie = serie.str.to_date(format=formato, strict=False)
         else:
-            s = pl.Series(values=[None] * s.len(), dtype=pl.Date)
+            serie = pl.Series(values=[None] * serie.len(), dtype=pl.Date)
     else:
         # Para todos os outros dtypes (datetime, date, etc.),
         # o cast nativo do Polars é suficiente e muito rápido.
-        s = s.cast(pl.Date)
+        serie = serie.cast(pl.Date)
 
-    if is_scalar:
-        return s.item()
+    if eh_escalar:
+        return serie.item()
 
-    return s
+    return serie
