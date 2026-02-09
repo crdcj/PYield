@@ -12,7 +12,7 @@ import polars.selectors as cs
 import requests
 
 from pyield import bday, clock
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 
 HORA_INICIO_TEMPO_REAL = dt.time(9, 0, 0)
 HORA_FIM_TEMPO_REAL = dt.time(22, 0, 0)
@@ -95,7 +95,7 @@ ORDEM_COLUNAS_FINAL = [
 ]
 
 
-@default_retry
+@retry_padrao
 def _buscar_csv() -> str:
     """
     Exemplo de URL do CSV com dados intradiários:

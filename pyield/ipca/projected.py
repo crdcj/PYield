@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import requests
 
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 
 
 @dataclass
@@ -14,7 +14,7 @@ class ProjecaoIndicador:
     valor_projetado: float  # Valor projetado
 
 
-@default_retry
+@retry_padrao
 def _buscar_texto_pagina() -> str:
     """
     Faz a requisição e retorna o HTML decodificado como string.

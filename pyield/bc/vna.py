@@ -3,13 +3,13 @@ import logging
 import requests
 
 from pyield.converters import converter_datas
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 from pyield.types import DateLike, any_is_empty
 
 logger = logging.getLogger(__name__)
 
 
-@default_retry
+@retry_padrao
 def _baixar_texto(date: DateLike) -> str:
     """Baixa o arquivo diário do SELIC no site do BCB."""
     # Exemplo: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238

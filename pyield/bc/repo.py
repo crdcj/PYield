@@ -20,7 +20,7 @@ import requests
 
 import pyield.converters as cv
 from pyield import bday
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 from pyield.types import DateLike
 
 registro = logging.getLogger(__name__)
@@ -88,11 +88,11 @@ def _montar_url(inicio: DateLike | None, fim: DateLike | None) -> str:
     return url
 
 
-@default_retry
+@retry_padrao
 def _buscar_csv_api(url: str) -> str:
     """Executa requisição HTTP e retorna o corpo CSV como string.
 
-    Decorado com ``default_retry`` para resiliência a falhas transitórias.
+    Decorado com ``retry_padrao`` para resiliência a falhas transitórias.
     Levanta exceções de status HTTP para tratamento a montante.
     """
     r = requests.get(url, timeout=10)

@@ -5,7 +5,7 @@ from io import StringIO
 import polars as pl
 import requests
 
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 
 logger = logging.getLogger(__name__)
 URL_ULTIMA_ETTJ = "https://www.anbima.com.br/informacoes/est-termo/CZ-down.asp"
@@ -15,7 +15,7 @@ URL_ULTIMA_ETTJ = "https://www.anbima.com.br/informacoes/est-termo/CZ-down.asp"
 CASAS_DECIMAIS = 6
 
 
-@default_retry
+@retry_padrao
 def _buscar_texto_ultima_ettj() -> str:
     """Busca o texto bruto da curva de juros na ANBIMA."""
     carga_requisicao = {

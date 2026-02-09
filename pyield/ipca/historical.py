@@ -2,13 +2,13 @@ import polars as pl
 import requests
 
 from pyield.converters import converter_datas
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 from pyield.types import DateLike, any_is_empty
 
 IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"
 
 
-@default_retry
+@retry_padrao
 def _buscar_dados_api(url: str) -> dict[str, str]:
     """Busca dados da API do IBGE e retorna o dicionário da série temporal."""
     resposta = requests.get(url, timeout=10)

@@ -5,7 +5,7 @@ from typing import Literal
 import polars as pl
 import requests
 
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ ORDEM_COLUNAS_FINAL = [
 URL_ULTIMO_IMA = "https://www.anbima.com.br/informacoes/ima/arqs/ima_completo.txt"
 
 
-@default_retry
+@retry_padrao
 def _buscar_texto_ultimo_ima() -> str:
     resposta = requests.get(URL_ULTIMO_IMA, timeout=3)
     resposta.raise_for_status()

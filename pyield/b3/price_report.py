@@ -15,7 +15,7 @@ import pyield.b3.common as cm
 import pyield.converters as cv
 from pyield import bday
 from pyield.fwd import forwards
-from pyield.retry import DataNotAvailableError, default_retry
+from pyield.retry import DadoIndisponivelError, retry_padrao
 from pyield.types import DateLike, any_is_empty
 
 registro = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ def _ler_zip_arquivo(file_path: Path) -> bytes:
     return file_path.read_bytes()
 
 
-@default_retry
+@retry_padrao
 def _baixar_zip_url(date: dt.date, source_type: str) -> bytes:
     data_str = date.strftime("%y%m%d")
     if source_type == "PR":
@@ -174,7 +174,7 @@ def _baixar_zip_url(date: dt.date, source_type: str) -> bytes:
 
     if len(resposta.content) < MIN_TAMANHO_ZIP_BYTES:
         data_str_formatada = date.strftime("%Y-%m-%d")
-        raise DataNotAvailableError(f"Sem dados disponíveis para {data_str_formatada}.")
+        raise DadoIndisponivelError(f"Sem dados disponíveis para {data_str_formatada}.")
     return resposta.content
 
 
@@ -345,7 +345,7 @@ def fetch_price_report(
 
     Raises:
         ValueError: Se source_type for inválido.
-        DataNotAvailableError: Se a data for válida mas não houver dados.
+        DadoIndisponivelError: Se a data for válida mas não houver dados.
         requests.HTTPError: Se a requisição HTTP falhar.
 
     Examples:
@@ -386,7 +386,7 @@ def fetch_price_report(
 
         return df
 
-    except (ValueError, DataNotAvailableError, requests.HTTPError):
+    except (ValueError, DadoIndisponivelError, requests.HTTPError):
         raise
     except (zipfile.BadZipFile, etree.XMLSyntaxError):
         registro.warning(

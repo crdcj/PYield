@@ -8,7 +8,7 @@ import polars as pl
 import requests
 
 from pyield.clock import now
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 
 BASE_URL = "https://github.com/crdcj/pyield-data/releases/latest/download"
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def _validar_dataset_id(dataset_id: str) -> _Dataset:
         raise ValueError(msg) from e
 
 
-@default_retry
+@retry_padrao
 def _load_github_file(file_url: str) -> pl.DataFrame:
     """
     Baixa o arquivo usando requests e lê com Polars.

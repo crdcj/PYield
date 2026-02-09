@@ -19,7 +19,7 @@ import polars as pl
 import requests
 
 from pyield.converters import converter_datas
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 from pyield.types import DateLike, any_is_empty
 
 registro = logging.getLogger(__name__)
@@ -90,7 +90,7 @@ def _montar_url(data_alvo: dt.date, extragroup: bool) -> str:
     return f"{URL_BASE}/Neg{sufixo_operacao}{ano_mes}.ZIP"
 
 
-@default_retry
+@retry_padrao
 def _baixar_zip(url_arquivo: str) -> bytes:
     """Baixa o conteúdo ZIP e retorna os bytes."""
     resposta = requests.get(url_arquivo, timeout=10)

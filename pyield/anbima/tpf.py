@@ -13,7 +13,7 @@ from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
 from pyield.converters import converter_datas
 from pyield.data_cache import get_cached_dataset
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnc import duration as duration_c
 from pyield.tn.ntnf import duration as duration_f
@@ -98,7 +98,7 @@ def _montar_url_arquivo(data: dt.date) -> str:
     return url_arquivo
 
 
-@default_retry
+@retry_padrao
 def _obter_csv(data: dt.date) -> bytes:
     url_arquivo = _montar_url_arquivo(data)
     resposta = requests.get(url_arquivo, timeout=10)

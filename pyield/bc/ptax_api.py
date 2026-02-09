@@ -23,7 +23,7 @@ import requests
 
 import pyield.converters as cv
 from pyield import clock
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 from pyield.types import DateLike
 
 registro = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ def _montar_url_api(inicio: dt.date, fim: dt.date) -> str:
     return url
 
 
-@default_retry
+@retry_padrao
 def _buscar_texto_api(url: str) -> bytes:
     resposta = requests.get(url, timeout=10)
     resposta.raise_for_status()

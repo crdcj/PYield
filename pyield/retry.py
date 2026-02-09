@@ -1,79 +1,80 @@
 import logging
 
-from requests.exceptions import ConnectionError, HTTPError, Timeout
-from tenacity import (
-    RetryCallState,
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-)
+import tenacity as tnc
+from requests import exceptions as rex
 
-logger = logging.getLogger(__name__)
+registro = logging.getLogger(__name__)
 
 # Constantes para valores de retry
-_MAX_EXCEPTION_LENGTH = 150
-_HTTP_TOO_MANY_REQUESTS = 429
-_HTTP_SERVER_ERROR_MIN = 500
+_TAMANHO_MAXIMO_EXCECAO = 150
+_HTTP_MUITAS_REQUISICOES = 429
+_HTTP_ERRO_SERVIDOR_MINIMO = 500
 
 
-class DataNotAvailableError(Exception):
+class DadoIndisponivelError(Exception):
     """Levantada quando o dado baixado for considerado inválido (dado vazio/pequeno)."""
 
 
-def _log_before_sleep(retry_state: RetryCallState):
+_EXCECOES_TRANSITORIAS = (
+    rex.Timeout,
+    rex.ConnectionError,
+    rex.SSLError,
+    rex.ChunkedEncodingError,
+    DadoIndisponivelError,
+)
+
+
+def _logar_antes_espera(retry_state: tnc.RetryCallState) -> None:
     """Loga uma mensagem ANTES de o Tenacity entrar em espera entre tentativas."""
-    if not (outcome := retry_state.outcome) or not outcome.failed:
+    if not (desfecho := retry_state.outcome) or not desfecho.failed:
         return
 
-    if not (exception := outcome.exception()):
+    if not (excecao := desfecho.exception()):
         return
 
-    if not (next_action := retry_state.next_action) or not hasattr(
-        next_action, "sleep"
+    if not (proxima_acao := retry_state.next_action) or not hasattr(
+        proxima_acao, "sleep"
     ):
         return
 
-    sleep_duration = next_action.sleep
-    exc_str = str(exception).replace("\n", " ")
-    if len(exc_str) > _MAX_EXCEPTION_LENGTH:
-        truncated_exc = exc_str[:_MAX_EXCEPTION_LENGTH] + "..."
-    else:
-        truncated_exc = exc_str
+    tempo_espera = proxima_acao.sleep
+    texto_excecao = str(excecao).replace("\n", " ")
+    texto_excecao_truncado = texto_excecao[:_TAMANHO_MAXIMO_EXCECAO]
+    if len(texto_excecao) > _TAMANHO_MAXIMO_EXCECAO:
+        texto_excecao_truncado += "..."
 
-    logger.warning(
+    registro.warning(
         f"Tentativa {retry_state.attempt_number} falhou com "
-        f"{type(exception).__name__}: {truncated_exc} Tentando novamente em "
-        f"{sleep_duration:.2f} segundos..."
+        f"{type(excecao).__name__}: {texto_excecao_truncado} Tentando novamente em "
+        f"{tempo_espera:.2f} segundos..."
     )
 
 
-def should_retry_exception(retry_state: RetryCallState) -> bool:
+def _deve_tentar_novamente_por_excecao(retry_state: tnc.RetryCallState) -> bool:
     """Determina se uma exceção capturada justifica uma nova tentativa."""
-    if not retry_state.outcome or not (exception := retry_state.outcome.exception()):
+    if not retry_state.outcome or not (excecao := retry_state.outcome.exception()):
         return False
 
     # Erros de rede genéricos são sempre transitórios
-    if isinstance(exception, (Timeout, ConnectionError, DataNotAvailableError)):
+    if isinstance(excecao, _EXCECOES_TRANSITORIAS):
         return True
 
     # HTTPError: apenas 429 e 5xx são transitórios
-    if isinstance(exception, HTTPError) and exception.response is not None:
-        status_code = exception.response.status_code
-        is_transient = (
-            status_code == _HTTP_TOO_MANY_REQUESTS
-            or status_code >= _HTTP_SERVER_ERROR_MIN
+    if isinstance(excecao, rex.HTTPError) and excecao.response is not None:
+        codigo_status = excecao.response.status_code
+        return (
+            codigo_status == _HTTP_MUITAS_REQUISICOES
+            or codigo_status >= _HTTP_ERRO_SERVIDOR_MINIMO
         )
-        if is_transient:
-            return True
 
     return False
 
 
-# Retry policy padrão otimizado para timeouts específicos
-default_retry = retry(
-    retry=should_retry_exception,
-    wait=wait_exponential(multiplier=2, min=1, max=10),
-    stop=stop_after_attempt(3),
-    before_sleep=_log_before_sleep,
+# Retry policy padrão com backoff exponencial + jitter para reduzir rajadas
+retry_padrao = tnc.retry(
+    retry=_deve_tentar_novamente_por_excecao,
+    wait=tnc.wait_random_exponential(multiplier=2, min=1, max=10),
+    stop=tnc.stop_after_attempt(3),
+    before_sleep=_logar_antes_espera,
     reraise=True,
 )

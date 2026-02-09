@@ -7,7 +7,7 @@ from polars import selectors as cs
 
 from pyield import bc, bday
 from pyield import converters as cv
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
 from pyield.types import DateLike, any_is_empty
@@ -86,7 +86,7 @@ ORDEM_FINAL_COLUNAS = [
 ]
 
 
-@default_retry
+@retry_padrao
 def _buscar_dados_leilao(data_leilao: dt.date) -> list[dict]:
     """Busca os dados brutos da API do Tesouro para uma data específica.
 

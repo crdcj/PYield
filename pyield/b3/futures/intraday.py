@@ -36,7 +36,7 @@ import requests
 
 from pyield import bday, clock
 from pyield.fwd import forwards
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 
 URL_BASE = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
 
@@ -48,7 +48,7 @@ HORA_INICIO_INTRADAY = dt.time(9, 16)
 logger = logging.getLogger(__name__)
 
 
-@default_retry
+@retry_padrao
 def _buscar_json(codigo_contrato: str) -> list[dict]:
     url = f"{URL_BASE}/{codigo_contrato}"
     cabecalhos = {

@@ -20,7 +20,7 @@ import requests
 
 from pyield import clock
 from pyield.converters import converter_datas
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 from pyield.types import DateLike, any_is_empty
 
 registro = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class SerieBC(Enum):
     DI_OVER = 11
 
 
-@default_retry
+@retry_padrao
 def _chamar_api(url_api: str) -> list[dict[str, str]]:
     """Executa uma chamada GET na API do BCB e retorna o JSON.
 

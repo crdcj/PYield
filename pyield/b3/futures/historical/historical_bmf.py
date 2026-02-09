@@ -8,7 +8,7 @@ from lxml import html
 import pyield.b3.common as cm
 from pyield import bday
 from pyield.fwd import forwards
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ def _converter_precos_para_taxas(
     return taxas.round(5)
 
 
-@default_retry
+@retry_padrao
 def _buscar_html(data: dt.date, codigo_contrato: str) -> str:
     """Busca o HTML da página de pregão da BMF."""
     data_url = data.strftime("%d/%m/%Y")

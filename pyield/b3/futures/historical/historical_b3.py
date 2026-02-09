@@ -7,7 +7,7 @@ import requests
 import pyield.b3.common as cm
 from pyield import bday
 from pyield.fwd import forwards
-from pyield.retry import default_retry
+from pyield.retry import retry_padrao
 
 # Lista de contratos que negociam por taxa (juros/cupom).
 # Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.
@@ -41,7 +41,7 @@ MAPA_RENOMEACAO = {k: v[1] for k, v in CONFIG_COLUNAS.items()}
 logger = logging.getLogger(__name__)
 
 
-@default_retry
+@retry_padrao
 def _buscar_csv(data: dt.date) -> bytes:
     """Busca o CSV diário de derivativos consolidados na B3."""
     url = "https://arquivos.b3.com.br/bdi/table/export/csv"
