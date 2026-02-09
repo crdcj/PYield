@@ -75,6 +75,7 @@ Most data-fetching functions follow this pattern:
 
 - **API pública (inglês):** Nomes de funções públicas, parâmetros, nomes de colunas em DataFrames e classes exportadas permanecem em inglês.
 - **Código interno (português):** Variáveis locais, funções internas (prefixo `_`), constantes de módulo, mensagens de log e mensagens de exceção devem ser em português.
+- **Exceção para módulos utilitários base:** Módulos transversais e fundacionais de uso interno (ex.: `types.py`, `retry.py`) podem manter identificadores técnicos em inglês (`is_collection`, `retry_state`, etc.) para preservar legibilidade, reduzir churn e evitar renomeações sem ganho funcional.
 - **Exceção para módulos internos com classe de serviço:** Se um módulo não é exposto pela API e é usado apenas internamente por outro módulo, é comum manter **um método principal sem `_`** dentro da classe para sinalizar o ponto de entrada interno. Os demais helpers seguem com `_`. Esse método principal deve permanecer em português e o módulo **não deve** ser exportado em `__init__.py`.
 - **Exceção para módulos internos com função principal:** Se um módulo não é exposto pela API e é usado apenas internamente por outro módulo, pode manter **uma função principal sem `_`** como ponto de entrada interno. As demais funções seguem com `_`. A função principal deve ser em português e o módulo **não deve** ser exportado em `__init__.py`.
 

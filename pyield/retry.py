@@ -20,7 +20,6 @@ _EXCECOES_TRANSITORIAS = (
     rex.ConnectionError,
     rex.SSLError,
     rex.ChunkedEncodingError,
-    DadoIndisponivelError,
 )
 
 
