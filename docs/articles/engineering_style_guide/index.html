@@ -12,25 +12,31 @@
         <meta name="author" content="Carlos Carvalho">
       
       
+        <link rel="canonical" href="https://crdcj.github.io/PYield/articles/engineering_style_guide/">
       
+      
+        <link rel="prev" href="../pyield_intro/">
+      
+      
+        <link rel="next" href="../../bday/">
       
       
         
       
       
-      <link rel="icon" href="/PYield/assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>PYield Docs</title>
+        <title>Engineering Style Guide - PYield Docs</title>
       
     
     
-      <link rel="stylesheet" href="/PYield/assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="/PYield/assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -49,11 +55,11 @@
       
     
     
-      <link rel="stylesheet" href="/PYield/assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="/PYield/css/timeago.css">
+      <link rel="stylesheet" href="../../css/timeago.css">
     
-    <script>__md_scope=new URL("/PYield/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -77,6 +83,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#guia-de-referencia-de-engenharia-pyield" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -89,7 +100,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
-    <a href="/PYield/." title="PYield Docs" class="md-header__button md-logo" aria-label="PYield Docs" data-md-component="logo">
+    <a href="../.." title="PYield Docs" class="md-header__button md-logo" aria-label="PYield Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -109,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Engineering Style Guide
             
           </span>
         </div>
@@ -221,7 +232,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/PYield/." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -238,11 +249,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="/PYield/articles/pyield_intro/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../pyield_intro/" class="md-tabs__link">
           
   
   
@@ -269,7 +282,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/PYield/bday/" class="md-tabs__link">
+        <a href="../../bday/" class="md-tabs__link">
           
   
   
@@ -314,7 +327,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navegação" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/PYield/." title="PYield Docs" class="md-nav__button md-logo" aria-label="PYield Docs" data-md-component="logo">
+    <a href="../.." title="PYield Docs" class="md-nav__button md-logo" aria-label="PYield Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -344,7 +357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -368,24 +381,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -403,7 +421,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -421,7 +439,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/articles/pyield_intro/" class="md-nav__link">
+      <a href="../pyield_intro/" class="md-nav__link">
         
   
   
@@ -446,10 +464,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/PYield/articles/engineering_style_guide/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering Style Guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -465,6 +510,103 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-fronteira-de-api-publica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1) Fronteira de API Pública
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-organizacao-de-internals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2) Organização de Internals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-contrato-de-estabilidade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3) Contrato de Estabilidade
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-conversao-de-datas-dois-caminhos-claros" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4) Conversão de Datas: Dois Caminhos Claros
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-checklist-de-decisao-rapido" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5) Checklist de Decisão (rápido)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-testes-minimos-por-tipo-de-mudanca" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6) Testes Mínimos por Tipo de Mudança
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-bibliotecas-de-referencia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7) Bibliotecas de Referência
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -584,7 +726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/bday/" class="md-nav__link">
+      <a href="../../bday/" class="md-nav__link">
         
   
   
@@ -612,7 +754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/interpolator/" class="md-nav__link">
+      <a href="../../interpolator/" class="md-nav__link">
         
   
   
@@ -640,7 +782,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/forwards/" class="md-nav__link">
+      <a href="../../forwards/" class="md-nav__link">
         
   
   
@@ -726,7 +868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/anbima/" class="md-nav__link">
+      <a href="../../anbima/" class="md-nav__link">
         
   
   
@@ -754,7 +896,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/bc/" class="md-nav__link">
+      <a href="../../bc/" class="md-nav__link">
         
   
   
@@ -832,7 +974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/b3/" class="md-nav__link">
+      <a href="../../b3/" class="md-nav__link">
         
   
   
@@ -860,7 +1002,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/di1/" class="md-nav__link">
+      <a href="../../di1/" class="md-nav__link">
         
   
   
@@ -888,7 +1030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/futures/" class="md-nav__link">
+      <a href="../../futures/" class="md-nav__link">
         
   
   
@@ -924,7 +1066,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/ipca/" class="md-nav__link">
+      <a href="../../ipca/" class="md-nav__link">
         
   
   
@@ -1010,7 +1152,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/tn/" class="md-nav__link">
+      <a href="../../tn/" class="md-nav__link">
         
   
   
@@ -1038,7 +1180,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/lft/" class="md-nav__link">
+      <a href="../../lft/" class="md-nav__link">
         
   
   
@@ -1066,7 +1208,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/ltn/" class="md-nav__link">
+      <a href="../../ltn/" class="md-nav__link">
         
   
   
@@ -1094,7 +1236,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/ntnb/" class="md-nav__link">
+      <a href="../../ntnb/" class="md-nav__link">
         
   
   
@@ -1122,7 +1264,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/ntnbp/" class="md-nav__link">
+      <a href="../../ntnbp/" class="md-nav__link">
         
   
   
@@ -1150,7 +1292,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/ntnb1/" class="md-nav__link">
+      <a href="../../ntnb1/" class="md-nav__link">
         
   
   
@@ -1178,7 +1320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/ntnc/" class="md-nav__link">
+      <a href="../../ntnc/" class="md-nav__link">
         
   
   
@@ -1206,7 +1348,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/ntnf/" class="md-nav__link">
+      <a href="../../ntnf/" class="md-nav__link">
         
   
   
@@ -1234,7 +1376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/PYield/pre/" class="md-nav__link">
+      <a href="../../pre/" class="md-nav__link">
         
   
   
@@ -1283,8 +1425,142 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+  
+
+
+<h1 id="guia-de-referencia-de-engenharia-pyield">Guia de Referência de Engenharia (PYield)</h1>
+<p>Este guia define padrões de arquitetura para decisões recorrentes no projeto.
+Objetivo principal: <strong>reduzir complexidade</strong> sem perder clareza de contrato.</p>
+<h2 id="1-fronteira-de-api-publica">1) Fronteira de API Pública</h2>
+<p>Use esta regra como fonte de verdade:</p>
+<ul>
+<li>Público: o que está documentado e/ou reexportado na API de topo (<code>pyield/__init__.py</code>).</li>
+<li>Interno: módulos auxiliares fora da API de topo, mesmo que importáveis por caminho direto.</li>
+</ul>
+<p>Princípios:</p>
+<ul>
+<li>Não promover utilitário interno para público sem necessidade real de usuário final.</li>
+<li>Evitar “vazamento acidental” de API por conveniência de import.</li>
+<li>Toda adição pública deve ter compromisso de estabilidade e depreciação.</li>
+</ul>
+<h2 id="2-organizacao-de-internals">2) Organização de Internals</h2>
+<p>Para utilitários transversais (ex.: conversão, tipos, retry), preferir namespace interno:</p>
+<ul>
+<li><code>pyield/_internal/converters.py</code></li>
+<li><code>pyield/_internal/types.py</code></li>
+<li><code>pyield/_internal/retry.py</code></li>
+</ul>
+<p>Diretriz de naming:</p>
+<ul>
+<li>Dentro de <code>_internal</code>, usar nomes normais de função (sem <code>_</code> no nome por padrão).</li>
+<li>Reservar <code>_nome</code> para helper local que não deve ser ponto de entrada nem interno.</li>
+</ul>
+<h2 id="3-contrato-de-estabilidade">3) Contrato de Estabilidade</h2>
+<p>Antes de mudar assinatura/comportamento, classificar alvo:</p>
+<ol>
+<li>API pública:</li>
+<li>Exige compatibilidade retroativa ou depreciação explícita.</li>
+<li>Exige release notes.</li>
+<li>API interna:</li>
+<li>Pode evoluir mais rápido.</li>
+<li>Ainda deve manter consistência entre módulos consumidores.</li>
+</ol>
+<h2 id="4-conversao-de-datas-dois-caminhos-claros">4) Conversão de Datas: Dois Caminhos Claros</h2>
+<p>Não unificar camadas diferentes.</p>
+<ul>
+<li>Conversão escalar/array (fora de expressão Polars): manter função dedicada.</li>
+<li>Conversão em <code>pl.Expr</code> (dentro de pipeline Polars): criar função dedicada para <code>Expr</code>.</li>
+</ul>
+<p>Regras sugeridas para <code>Expr</code>:</p>
+<ul>
+<li>Parse tolerante por linha.</li>
+<li>Data inválida vira <code>null</code> (não explode ETL).</li>
+<li>Semântica explicitamente documentada.</li>
+</ul>
+<h2 id="5-checklist-de-decisao-rapido">5) Checklist de Decisão (rápido)</h2>
+<p>Use este checklist antes de implementar:</p>
+<ol>
+<li>Isso é público ou interno?</li>
+<li>Se público, qual política de depreciação?</li>
+<li>Existe utilitário interno que evita duplicação?</li>
+<li>A mudança reduz complexidade acidental?</li>
+<li>Há teste cobrindo comportamento novo e regressão principal?</li>
+<li>O comportamento de erro/null está explícito?</li>
+</ol>
+<h2 id="6-testes-minimos-por-tipo-de-mudanca">6) Testes Mínimos por Tipo de Mudança</h2>
+<ul>
+<li>Mudança em utilitário interno transversal:</li>
+<li>teste unitário do utilitário;</li>
+<li>pelo menos 1 teste de integração no módulo consumidor principal.</li>
+<li>Mudança em API pública:</li>
+<li>testes de contrato (entrada/saída/erro);</li>
+<li>caso de compatibilidade retroativa (quando aplicável).</li>
+<li>Mudança em <code>Expr</code>:</li>
+<li>teste com <code>LazyFrame</code>/<code>select</code>;</li>
+<li>teste com entrada inválida e nula.</li>
+</ul>
+<h2 id="7-bibliotecas-de-referencia">7) Bibliotecas de Referência</h2>
+<p>Projetos para consultar decisões de arquitetura e manutenção:</p>
+<ul>
+<li>Pydantic</li>
+<li>FastAPI</li>
+<li>Pandas</li>
+<li>SciPy</li>
+<li>scikit-learn</li>
+<li>Polars</li>
+<li>HTTPX</li>
+<li>SQLAlchemy</li>
+</ul>
+<p>Use essas referências para padrão de API estável, internals, depreciação e testes.</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Última atualização">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="10 de fevereiro de 2026 10:37:49 UTC"><span class="timeago" datetime="2026-02-10T10:37:49+00:00" locale="pt_BR"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="10 de fevereiro de 2026 10:37:49 UTC">2026-02-10</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Criado em">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="10 de fevereiro de 2026 10:37:49 UTC"><span class="timeago" datetime="2026-02-10T10:37:49+00:00" locale="pt_BR"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="10 de fevereiro de 2026 10:37:49 UTC">2026-02-10</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1302,6 +1578,44 @@
       
         <footer class="md-footer">
   
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Rodapé" >
+        
+          
+          <a href="../pyield_intro/" class="md-footer__link md-footer__link--prev" aria-label="Anterior: Introduction to Pyield">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Anterior
+              </span>
+              <div class="md-ellipsis">
+                Introduction to Pyield
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../bday/" class="md-footer__link md-footer__link--next" aria-label="Próximo: Business Day Tools">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Próximo
+              </span>
+              <div class="md-ellipsis">
+                Business Day Tools
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
     
   
   <div class="md-footer-meta md-typeset">
@@ -1349,14 +1663,14 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/PYield/", "features": ["navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "toc.integrate", "content.code.copy", "content.code.select", "search.suggest", "search.highlight", "search.share"], "search": "/PYield/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "toc.integrate", "content.code.copy", "content.code.select", "search.suggest", "search.highlight", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
     
     
-      <script src="/PYield/assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="/PYield/js/timeago.min.js"></script>
+        <script src="../../js/timeago.min.js"></script>
       
-        <script src="/PYield/js/timeago_mkdocs_material.js"></script>
+        <script src="../../js/timeago_mkdocs_material.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       

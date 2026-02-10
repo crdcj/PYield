@@ -2,82 +2,86 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://crdcj.github.io/PYield/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/anbima/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/b3/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/bc/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/bday/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/di1/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/forwards/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/futures/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/interpolator/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/ipca/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/lft/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/ltn/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/ntnb/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/ntnb1/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/ntnbp/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/ntnc/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/ntnf/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/pre/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/tn/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
+    </url>
+    <url>
+         <loc>https://crdcj.github.io/PYield/articles/engineering_style_guide/</loc>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://crdcj.github.io/PYield/articles/pyield_intro/</loc>
-         <lastmod>2026-01-31</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
 </urlset>

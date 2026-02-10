@@ -18,3 +18,5 @@ venv/
 dev/
 
 CLAUDE.md
+
+uv.lock
