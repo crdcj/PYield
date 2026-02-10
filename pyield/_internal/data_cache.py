@@ -8,7 +8,7 @@ import polars as pl
 import requests
 
 from pyield.clock import now
-from pyield.retry import retry_padrao
+from pyield._internal.retry import retry_padrao
 
 URL_BASE = "https://github.com/crdcj/pyield-data/releases/latest/download"
 registro = logging.getLogger(__name__)

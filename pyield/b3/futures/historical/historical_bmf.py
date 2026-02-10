@@ -8,7 +8,7 @@ from lxml import html
 import pyield.b3.common as cm
 from pyield import bday
 from pyield.fwd import forwards
-from pyield.retry import retry_padrao
+from pyield._internal.retry import retry_padrao
 
 logger = logging.getLogger(__name__)
 

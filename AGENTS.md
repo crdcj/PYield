@@ -49,11 +49,11 @@ The library is organized into domain-specific namespaces, all exposed through `p
 
 ### Key Cross-Cutting Components
 
-- **`types.py`** - Type aliases `DateLike` and `ArrayLike`; `any_is_empty()` for null/empty detection
-- **`converters.py`** - `converter_datas()` normalizes various date inputs to `datetime.date` or `pl.Series[Date]`
+- **`_internal/types.py`** - Type aliases `DateLike` and `ArrayLike`; `any_is_empty()` for null/empty detection
+- **`_internal/converters.py`** - `converter_datas()` normalizes various date inputs to `datetime.date` or `pl.Series[Date]`
 - **`interpolator.py`** - `Interpolator` class for rate interpolation (linear or flat_forward method, 252 bday/year convention)
-- **`data_cache.py`** - GitHub-hosted parquet data cache with daily TTL using `lru_cache`
-- **`retry.py`** - Tenacity-based retry decorator for network requests (retries on 429, 5xx, timeouts)
+- **`_internal/data_cache.py`** - GitHub-hosted parquet data cache with daily TTL using `lru_cache`
+- **`_internal/retry.py`** - Tenacity-based retry decorator for network requests (retries on 429, 5xx, timeouts)
 - **`clock.py`** - `today()` and `now()` return Brazil timezone (America/Sao_Paulo) dates/times
 
 ### Date Handling Conventions
@@ -73,9 +73,11 @@ Most data-fetching functions follow this pattern:
 
 ## Naming Conventions
 
+- **Fronteira da API pública:** Considere público o que está documentado e/ou exportado no namespace de topo (`pyield/__init__.py`). Módulos não exportados no topo são internos, mesmo que importáveis por caminho direto.
 - **API pública (inglês):** Nomes de funções públicas, parâmetros, nomes de colunas em DataFrames e classes exportadas permanecem em inglês.
-- **Código interno (português):** Variáveis locais, funções internas (prefixo `_`), constantes de módulo, mensagens de log e mensagens de exceção devem ser em português.
-- **Exceção para módulos utilitários base:** Módulos transversais e fundacionais de uso interno (ex.: `types.py`, `retry.py`) podem manter identificadores técnicos em inglês (`is_collection`, `retry_state`, etc.) para preservar legibilidade, reduzir churn e evitar renomeações sem ganho funcional.
+- **Código interno (português):** Variáveis locais, constantes de módulo, mensagens de log e mensagens de exceção devem ser em português.
+- **Nomes em módulos internos:** Para módulos de uso interno compartilhado, nomes de função podem permanecer sem prefixo `_` quando isso melhora legibilidade. Use prefixo `_` para helpers locais/privados dentro do módulo.
+- **Exceção para módulos utilitários base:** Módulos transversais e fundacionais de uso interno (ex.: `_internal/types.py`, `_internal/retry.py`) podem manter identificadores técnicos em inglês (`is_collection`, `retry_state`, etc.) para preservar legibilidade, reduzir churn e evitar renomeações sem ganho funcional.
 - **Exceção para módulos internos com classe de serviço:** Se um módulo não é exposto pela API e é usado apenas internamente por outro módulo, é comum manter **um método principal sem `_`** dentro da classe para sinalizar o ponto de entrada interno. Os demais helpers seguem com `_`. Esse método principal deve permanecer em português e o módulo **não deve** ser exportado em `__init__.py`.
 - **Exceção para módulos internos com função principal:** Se um módulo não é exposto pela API e é usado apenas internamente por outro módulo, pode manter **uma função principal sem `_`** como ponto de entrada interno. As demais funções seguem com `_`. A função principal deve ser em português e o módulo **não deve** ser exportado em `__init__.py`.
 

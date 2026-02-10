@@ -7,7 +7,7 @@ import requests
 import pyield.b3.common as cm
 from pyield import bday
 from pyield.fwd import forwards
-from pyield.retry import retry_padrao
+from pyield._internal.retry import retry_padrao
 
 # Lista de contratos que negociam por taxa (juros/cupom).
 # Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.

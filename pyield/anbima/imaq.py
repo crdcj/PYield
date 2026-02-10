@@ -16,9 +16,9 @@ import requests
 from lxml.html import HTMLParser
 from lxml.html import fromstring as html_fromstring
 
-import pyield.converters as cv
+import pyield._internal.converters as cv
 from pyield.anbima.tpf import tpf_data
-from pyield.types import DateLike, any_is_empty
+from pyield._internal.types import DateLike, any_is_empty
 
 logger = logging.getLogger(__name__)
 

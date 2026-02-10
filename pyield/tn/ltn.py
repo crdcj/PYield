@@ -3,7 +3,7 @@ import polars as pl
 from pyield import anbima, bday, fwd
 from pyield.tn import tools
 from pyield.tn.pre import di_spreads as pre_di_spreads
-from pyield.types import DateLike, any_is_empty
+from pyield._internal.types import DateLike, any_is_empty
 
 VALOR_FACE = 1000
 

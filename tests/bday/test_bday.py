@@ -120,3 +120,30 @@ def test_count_iso_format():
     result_br = bday.count(start_br, end_br)
     assert result_br == expected
     assert result_iso == result_br
+
+
+def test_count_mixed_string_formats_and_invalid_value():
+    start = ["02-01-2024", "03/01/2024", "31-02-2024"]
+    end = ["2024-01-09", "2024-01-10", "2024-01-10"]
+    result = bday.count(start, end)
+    assert isinstance(result, pl.Series)
+    assert result.to_list() == [5, 5, None]
+
+
+def test_offset_mixed_string_formats_and_invalid_value():
+    dates = ["02-01-2024", "03/01/2024", "2024-01-04", "31-02-2024"]
+    result = bday.offset(dates, 0)
+    assert isinstance(result, pl.Series)
+    assert result.to_list() == [
+        dt.date(2024, 1, 2),
+        dt.date(2024, 1, 3),
+        dt.date(2024, 1, 4),
+        None,
+    ]
+
+
+def test_is_business_day_mixed_string_formats_and_invalid_value():
+    dates = ["02-01-2024", "03/01/2024", "2024-01-06", "31-02-2024"]
+    result = bday.is_business_day(dates)
+    assert isinstance(result, pl.Series)
+    assert result.to_list() == [True, True, False, None]

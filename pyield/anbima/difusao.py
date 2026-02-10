@@ -6,9 +6,9 @@ import polars as pl
 import polars.selectors as cs
 import requests
 
-import pyield.converters as cv
+import pyield._internal.converters as cv
 from pyield import bday
-from pyield.types import DateLike, any_is_empty
+from pyield._internal.types import DateLike, any_is_empty
 
 VERSAO_API = "1.0018"
 URL_BASE = (

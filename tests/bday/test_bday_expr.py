@@ -55,6 +55,13 @@ def test_is_business_day_null_propagation():
     assert result["d"].to_list() == [True, None]
 
 
+def test_is_business_day_string_and_invalid_inputs():
+    """String dates should parse; invalid values should become null."""
+    df = pl.DataFrame({"d": ["02-01-2024", "03/01/2024", "2024-01-06", "31-02-2024"]})
+    result = df.select(is_business_day_expr(pl.col("d")))
+    assert result["d"].to_list() == [True, True, False, None]
+
+
 def test_is_business_day_matches_core():
     """Results should match pyield.bday.is_business_day for the same inputs."""
 
@@ -142,6 +149,13 @@ def test_offset_null_propagation():
     assert result["d"].to_list() == [dt.date(2024, 1, 3), None]
 
 
+def test_offset_invalid_string_date_becomes_null():
+    """Invalid string dates should not raise and must become null."""
+    df = pl.DataFrame({"d": ["02-01-2024", "31-02-2024", ""]})
+    result = df.select(offset_expr(pl.col("d"), 0))
+    assert result["d"].to_list() == [dt.date(2024, 1, 2), None, None]
+
+
 def test_offset_matches_core():
     """Results should match pyield.bday.offset for the same inputs."""
 
@@ -215,6 +229,18 @@ def test_count_null_propagation():
     )
     result = df.select(count_expr(pl.col("start"), pl.col("end")))
     assert result["start"].to_list() == [5, None]
+
+
+def test_count_with_string_columns_and_invalid_values():
+    """String date columns should parse with invalid values mapped to null."""
+    df = pl.DataFrame(
+        {
+            "start": ["02-01-2024", "03/01/2024", "31-02-2024"],
+            "end": ["2024-01-09", "2024-01-10", "2024-01-10"],
+        }
+    )
+    result = df.select(count_expr(pl.col("start"), pl.col("end")))
+    assert result["start"].to_list() == [5, 5, None]
 
 
 def test_count_dtype_is_int64():

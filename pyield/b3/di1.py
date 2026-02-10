@@ -3,10 +3,10 @@ import logging
 
 import polars as pl
 
-import pyield.converters as cv
+import pyield._internal.converters as cv
 from pyield import b3, bday, interpolator
-from pyield.data_cache import obter_dataset_cacheado
-from pyield.types import ArrayLike, DateLike, any_is_empty
+from pyield._internal.data_cache import obter_dataset_cacheado
+from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 
 registro = logging.getLogger(__name__)
 

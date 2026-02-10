@@ -12,7 +12,7 @@ import polars.selectors as cs
 import requests
 
 from pyield import bday, clock
-from pyield.retry import retry_padrao
+from pyield._internal.retry import retry_padrao
 
 HORA_INICIO_TEMPO_REAL = dt.time(9, 0, 0)
 HORA_FIM_TEMPO_REAL = dt.time(22, 0, 0)

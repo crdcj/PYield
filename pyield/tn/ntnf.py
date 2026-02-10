@@ -6,12 +6,12 @@ from collections.abc import Callable
 import polars as pl
 from dateutil.relativedelta import relativedelta
 
-import pyield.converters as cv
+import pyield._internal.converters as cv
 import pyield.interpolator as ip
 from pyield import anbima, bday
 from pyield.tn import tools
 from pyield.tn.pre import di_spreads as pre_di_spreads
-from pyield.types import ArrayLike, DateLike, any_is_empty
+from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 
 """
 Constantes calculadas conforme regras da ANBIMA

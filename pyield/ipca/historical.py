@@ -1,9 +1,9 @@
 import polars as pl
 import requests
 
-from pyield.converters import converter_datas
-from pyield.retry import retry_padrao
-from pyield.types import DateLike, any_is_empty
+from pyield._internal.converters import converter_datas
+from pyield._internal.retry import retry_padrao
+from pyield._internal.types import DateLike, any_is_empty
 
 IPCA_URL = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"
 

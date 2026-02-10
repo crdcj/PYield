@@ -2,7 +2,7 @@ import polars as pl
 
 from pyield import anbima, bday
 from pyield.tn import tools
-from pyield.types import DateLike, any_is_empty
+from pyield._internal.types import DateLike, any_is_empty
 
 
 def data(date: DateLike) -> pl.DataFrame:

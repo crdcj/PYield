@@ -12,6 +12,7 @@ nav:
   - Home: index.md
   - Articles:
       - Introduction to Pyield: articles/pyield_intro.md
+      - Engineering Style Guide: articles/engineering_style_guide.md
   - Modules:
       - Core:
           - Business Day Tools: bday.md

@@ -21,10 +21,10 @@ import logging
 import polars as pl
 import requests
 
-import pyield.converters as cv
+import pyield._internal.converters as cv
 from pyield import clock
-from pyield.retry import retry_padrao
-from pyield.types import DateLike
+from pyield._internal.retry import retry_padrao
+from pyield._internal.types import DateLike
 
 registro = logging.getLogger(__name__)
 

@@ -5,7 +5,7 @@ from io import StringIO
 import polars as pl
 import requests
 
-from pyield.retry import retry_padrao
+from pyield._internal.retry import retry_padrao
 
 logger = logging.getLogger(__name__)
 

@@ -3,10 +3,10 @@ from enum import Enum
 import polars as pl
 from dateutil.relativedelta import relativedelta
 
-import pyield.converters as conversores
+import pyield._internal.converters as conversores
 from pyield import bday
 from pyield.tn import tools
-from pyield.types import DateLike, any_is_empty
+from pyield._internal.types import DateLike, any_is_empty
 
 """
 Parâmetros globais para cálculos de NTN-B1.

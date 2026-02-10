@@ -3,8 +3,8 @@ from typing import overload
 
 import polars as pl
 
-from pyield import types
-from pyield.types import ArrayLike, DateLike
+from pyield._internal import types
+from pyield._internal.types import ArrayLike, DateLike
 
 
 def _validar_formato_data(date_str: str) -> str:
@@ -174,3 +174,50 @@ def converter_datas(
         return serie.item()
 
     return serie
+
+
+def converter_datas_expr(expr: pl.Expr | str) -> pl.Expr:
+    """Converte expressão Polars para ``Date`` com parse tolerante por linha.
+
+    Esta função é voltada para pipelines em ``DataFrame``/``LazyFrame``.
+    O parse aceita os formatos ``dd-mm-YYYY``, ``dd/mm/YYYY`` e ``YYYY-mm-dd``.
+    Valores inválidos (incluindo string vazia) viram ``null``.
+
+    Args:
+        expr: Expressão Polars ou nome da coluna com datas.
+
+    Returns:
+        Uma ``pl.Expr`` com dtype ``Date``.
+
+    Examples:
+        >>> import polars as pl
+        >>> df = pl.DataFrame(
+        ...     {"d": ["02-01-2024", "03/01/2024", "2024-01-04", "31-02-2024", ""]}
+        ... )
+        >>> df.select(converter_datas_expr("d"))
+        shape: (5, 1)
+        ┌────────────┐
+        │ d          │
+        │ ---        │
+        │ date       │
+        ╞════════════╡
+        │ 2024-01-02 │
+        │ 2024-01-03 │
+        │ 2024-01-04 │
+        │ null       │
+        │ null       │
+        └────────────┘
+    """
+    if isinstance(expr, str):
+        expr = pl.col(expr)
+
+    # Fallback por linha: o primeiro valor não-nulo vence.
+    # Se o elemento já for Date, o cast resolve no 1o termo.
+    # Se o elemento for null, ele permanece null em todos os termos.
+    expr_str = expr.cast(pl.String, strict=False).str.strip_chars()
+    return pl.coalesce(
+        expr.cast(pl.Date, strict=False),
+        expr_str.str.to_date(format="%d-%m-%Y", strict=False),
+        expr_str.str.to_date(format="%d/%m/%Y", strict=False),
+        expr_str.str.to_date(format="%Y-%m-%d", strict=False),
+    )

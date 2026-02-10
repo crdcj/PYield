@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import requests
 
-from pyield.retry import retry_padrao
+from pyield._internal.retry import retry_padrao
 
 
 @dataclass

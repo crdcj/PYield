@@ -3,7 +3,7 @@ from typing import Sequence
 
 import polars as pl
 
-from pyield.types import ArrayLike, any_is_empty
+from pyield._internal.types import ArrayLike, any_is_empty
 
 
 def forwards(

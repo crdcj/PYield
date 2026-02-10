@@ -11,13 +11,13 @@ from requests.exceptions import HTTPError, RequestException
 from pyield import bday, clock
 from pyield.b3 import di1
 from pyield.bc.ptax_api import ptax
-from pyield.converters import converter_datas
-from pyield.data_cache import obter_dataset_cacheado
-from pyield.retry import retry_padrao
+from pyield._internal.converters import converter_datas
+from pyield._internal.data_cache import obter_dataset_cacheado
+from pyield._internal.retry import retry_padrao
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnc import duration as duration_c
 from pyield.tn.ntnf import duration as duration_f
-from pyield.types import DateLike, any_is_empty
+from pyield._internal.types import DateLike, any_is_empty
 
 BOND_TYPES = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
 

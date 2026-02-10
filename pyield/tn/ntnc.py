@@ -3,10 +3,10 @@ import datetime as dt
 import polars as pl
 from dateutil.relativedelta import relativedelta
 
-import pyield.converters as conversores
+import pyield._internal.converters as conversores
 import pyield.tn.tools as ferramentas
 from pyield import anbima, bday
-from pyield.types import DateLike, any_is_empty
+from pyield._internal.types import DateLike, any_is_empty
 
 """
 Constantes calculadas conforme regras da ANBIMA e em base 100.

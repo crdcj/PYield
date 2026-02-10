@@ -4,7 +4,7 @@ from typing import Literal, overload
 
 import polars as pl
 
-from pyield.types import ArrayLike, is_collection
+from pyield._internal.types import ArrayLike, is_collection
 
 
 class Interpolator:

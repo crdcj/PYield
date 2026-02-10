@@ -3,11 +3,11 @@ from typing import Literal, overload
 
 import polars as pl
 
-import pyield.converters as cv
-import pyield.types as tp
+import pyield._internal.converters as cv
+import pyield._internal.types as tp
 from pyield import clock
+from pyield._internal.types import ArrayLike, DateLike
 from pyield.bday.holidays.brholidays import BrHolidays
-from pyield.types import ArrayLike, DateLike
 
 LIMITE_DIA_UTIL = 6
 
@@ -59,18 +59,28 @@ def count_expr(start: pl.Expr | str | dt.date, end: pl.Expr | str | dt.date) -> 
         │ 224   │
         └───────┘
     """
-    if isinstance(start, str):
-        start = pl.col(start)
-    elif isinstance(start, dt.date):
-        start = pl.lit(start)
-    if isinstance(end, str):
-        end = pl.col(end)
-    elif isinstance(end, dt.date):
-        end = pl.lit(end)
+    if isinstance(start, dt.date):
+        start_date = pl.lit(start)
+    else:
+        start_date = cv.converter_datas_expr(start)
+
+    if isinstance(end, dt.date):
+        end_date = pl.lit(end)
+    else:
+        end_date = cv.converter_datas_expr(end)
+
     return (
-        pl.when(start < DATA_TRANSICAO)
-        .then(pl.business_day_count(start=start, end=end, holidays=FERIADOS_ANTIGOS))
-        .otherwise(pl.business_day_count(start=start, end=end, holidays=FERIADOS_NOVOS))
+        pl.when(start_date < DATA_TRANSICAO)
+        .then(
+            pl.business_day_count(
+                start=start_date, end=end_date, holidays=FERIADOS_ANTIGOS
+            )
+        )
+        .otherwise(
+            pl.business_day_count(
+                start=start_date, end=end_date, holidays=FERIADOS_NOVOS
+            )
+        )
         .cast(pl.Int64)
     )
 
@@ -126,6 +136,8 @@ def count(
     Notes:
         - Esta função é um wrapper em torno de ``polars.business_day_count``.
         - A lista de feriados é determinada por linha com base na data ``start``.
+        - Strings de data aceitas: ``DD-MM-YYYY``, ``DD/MM/YYYY`` e ``YYYY-MM-DD``.
+        - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.
 
     Examples:
         >>> from pyield import bday
@@ -182,16 +194,14 @@ def count(
             212
         ]
     """
-    # Coloca as séries em um DataFrame para trabalhar com expressões em colunas
-    df = pl.DataFrame(
-        data={"start": cv.converter_datas(start), "end": cv.converter_datas(end)},
-        schema={"start": pl.Date, "end": pl.Date},
-        nan_to_null=True,
+    s = (
+        pl.DataFrame(
+            data={"start": start, "end": end},
+            nan_to_null=True,
+        )
+        .select(bday_count=count_expr("start", "end"))
+        .get_column("bday_count")
     )
-
-    bday_count = count_expr(pl.col("start"), pl.col("end")).alias("bday_count")
-
-    s = df.select(bday_count)["bday_count"]
 
     if not tp.any_is_collection(start, end):
         return s.item()
@@ -252,10 +262,15 @@ def offset_expr(
         expr = pl.col(expr)
     if isinstance(n, str):
         n = pl.col(n)
+
+    expr_date = cv.converter_datas_expr(expr)
+
     return (
-        pl.when(expr < DATA_TRANSICAO)
-        .then(expr.dt.add_business_days(n=n, roll=roll, holidays=FERIADOS_ANTIGOS))
-        .otherwise(expr.dt.add_business_days(n=n, roll=roll, holidays=FERIADOS_NOVOS))
+        pl.when(expr_date < DATA_TRANSICAO)
+        .then(expr_date.dt.add_business_days(n=n, roll=roll, holidays=FERIADOS_ANTIGOS))
+        .otherwise(
+            expr_date.dt.add_business_days(n=n, roll=roll, holidays=FERIADOS_NOVOS)
+        )
     )
 
 
@@ -352,6 +367,8 @@ def offset(
         - O regime de feriados é decidido por elemento comparando com
           ``TRANSITION_DATE``.
         - Fins de semana são sempre tratados como não-úteis.
+        - Strings de data aceitas: ``DD-MM-YYYY``, ``DD/MM/YYYY`` e ``YYYY-MM-DD``.
+        - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.
 
     Examples:
         >>> from pyield import bday
@@ -443,20 +460,14 @@ def offset(
             2024-09-24
         ]
     """
-    # Coloca as entradas em um DataFrame para trabalhar com expressões em colunas
-    df = pl.DataFrame(
-        data={"dates": cv.converter_datas(dates), "offset": offset},
-        schema={"dates": pl.Date, "offset": pl.Int64},
-        nan_to_null=True,
+    s = (
+        pl.DataFrame(
+            data={"dates": dates, "offset": offset},
+            nan_to_null=True,
+        )
+        .select(adjusted_date=offset_expr("dates", n="offset", roll=roll))
+        .get_column("adjusted_date")
     )
-
-    # Cria a expressão condicional para aplicar a lista de feriados correta
-    adjusted_date = offset_expr(pl.col("dates"), n=pl.col("offset"), roll=roll).alias(
-        "adjusted_date"
-    )
-
-    # Executa a expressão e obtém a série de resultados
-    s = df.select(adjusted_date)["adjusted_date"]
 
     if not tp.any_is_collection(dates, offset):
         return s.item()
@@ -556,12 +567,12 @@ def is_business_day_expr(expr: pl.Expr | str) -> pl.Expr:
         │ 2023-12-26 │
         └────────────┘
     """
-    if isinstance(expr, str):
-        expr = pl.col(expr)
+    expr_date = cv.converter_datas_expr(expr)
+
     return (
-        pl.when(expr < DATA_TRANSICAO)
-        .then(expr.dt.is_business_day(holidays=FERIADOS_ANTIGOS))
-        .otherwise(expr.dt.is_business_day(holidays=FERIADOS_NOVOS))
+        pl.when(expr_date < DATA_TRANSICAO)
+        .then(expr_date.dt.is_business_day(holidays=FERIADOS_ANTIGOS))
+        .otherwise(expr_date.dt.is_business_day(holidays=FERIADOS_NOVOS))
     )
 
 
@@ -629,17 +640,14 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
         - Espelha a lógica por linha usada em ``count`` e ``offset``.
         - Fins de semana sempre avaliam como ``False``.
         - Elementos nulos propagam.
+        - Strings de data aceitas: ``DD-MM-YYYY``, ``DD/MM/YYYY`` e ``YYYY-MM-DD``.
+        - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.
     """
-    # Build DataFrame to allow conditional expression selecting the right holiday list
-    df = pl.DataFrame(
-        {"dates": cv.converter_datas(dates)},
-        schema={"dates": pl.Date},
-        nan_to_null=True,
+    s = (
+        pl.DataFrame({"dates": dates}, nan_to_null=True)
+        .select(is_bday=is_business_day_expr("dates"))
+        .get_column("is_bday")
     )
-
-    is_bday = is_business_day_expr(pl.col("dates")).alias("is_bday")
-
-    s = df.select(is_bday)["is_bday"]
 
     if not tp.any_is_collection(dates):
         return s.item()
