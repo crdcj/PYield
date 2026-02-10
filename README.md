@@ -4,7 +4,7 @@
 
 # PYield: Toolkit de Renda Fixa Brasileira
 
-[Português](README.md) | [English](README.en.md)
+Português | [English](https://github.com/crdcj/PYield/blob/main/README.en.md)
 
 PYield é uma biblioteca Python voltada para análise de títulos públicos brasileiros. Ela busca e processa dados da ANBIMA, BCB, IBGE, B3 e **Tesouro Nacional**, retornando DataFrames do Polars para pipelines rápidos e com tipagem consistente.
 
