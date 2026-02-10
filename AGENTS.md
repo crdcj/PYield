@@ -93,6 +93,12 @@ Most data-fetching functions follow this pattern:
 
 - Always prioritize reducing code complexity. Do not increase complexity unless explicitly requested.
 
+## Logging Conventions
+
+- Não usar `warning` para validações de entrada esperadas (ex.: `None`, vazio, combinação inválida já prevista pelo contrato).
+- Nesses casos, retornar o valor de contrato (`None`, `NaN`, `Series/DataFrame` vazio) ou lançar `ValueError` quando apropriado.
+- Reservar `warning`/`error` para anomalias operacionais reais (falha de rede, fonte indisponível, schema inesperado, erro de parsing fora do contrato, etc.).
+
 ## Testing
 
 Tests are in `tests/` and doctests are embedded in docstrings. Run `pytest pyield --doctest-modules` to execute both.

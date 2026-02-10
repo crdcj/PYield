@@ -6,7 +6,7 @@ import polars as pl
 import pyield._internal.converters as cv
 from pyield import b3, bday, interpolator
 from pyield._internal.data_cache import obter_dataset_cacheado
-from pyield._internal.types import ArrayLike, DateLike, any_is_empty
+from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
 
 registro = logging.getLogger(__name__)
 
@@ -56,18 +56,18 @@ def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
 
 
 def _obter_dados(datas: DateLike | ArrayLike) -> pl.DataFrame:
-    datas_convertidas = cv.converter_datas(datas)
+    df_datas = (
+        pl.DataFrame({"TradeDate": datas})
+        .with_columns(TradeDate=cv.converter_datas_expr("TradeDate"))
+        .drop_nulls(subset=["TradeDate"])
+        .select(pl.col("TradeDate").unique().sort())
+    )
 
-    match datas_convertidas:
-        case None:
-            registro.warning("Nenhuma data válida. Retornando DataFrame vazio.")
-            return pl.DataFrame()
-        case dt.date():
-            lista_datas = [datas_convertidas]
-        case pl.Series():
-            lista_datas = (
-                pl.Series("TradeDate", datas_convertidas).unique().sort().to_list()
-            )
+    if df_datas.is_empty():
+        registro.warning("Nenhuma data válida. Retornando DataFrame vazio.")
+        return pl.DataFrame()
+
+    lista_datas = df_datas.get_column("TradeDate").to_list()
 
     df = _carregar_com_intraday(lista_datas)
 
@@ -249,9 +249,6 @@ def interpolate_rates(
         ]
     """
     if any_is_empty(dates, expirations):
-        registro.warning(
-            "'dates' e 'expirations' são necessários. Retornando série vazia."
-        )
         return pl.Series(dtype=pl.Float64)
 
     df_entrada = pl.DataFrame(
@@ -349,6 +346,7 @@ def interpolate_rate(
     Returns:
         Taxa de liquidação DI exata ou interpolada para a data e vencimento
         especificados. Retorna ``float("nan")`` se:
+        - ``date`` ou ``expiration`` for nulo.
         - Não há dados DI para a ``date``.
         - O ``expiration`` está fora do intervalo e ``extrapolate`` é False.
         - O cálculo de interpolação falhou.
@@ -366,36 +364,27 @@ def interpolate_rate(
         >>> # Extrapola taxa para uma data de vencimento futura
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
+
+        >>> # Entradas nulas retornam NaN
+        >>> di1.interpolate_rate(None, "01-01-2030")
+        nan
     """
-    if any_is_empty(date, expiration):
-        registro.warning(
-            "As entradas 'date' e 'expiration' são obrigatórias. Retornando NaN."
-        )
-        return float("nan")
-
-    data_convertida = cv.converter_datas(date)
-    vencimento_convertido = cv.converter_datas(expiration)
-
-    if not isinstance(data_convertida, dt.date) or not isinstance(
-        vencimento_convertido, dt.date
-    ):
+    if any_is_collection(date, expiration):
         raise ValueError("As entradas 'date' e 'expiration' devem ser datas escalares.")
 
-    # Obtém o DataFrame de contratos DI
-    df_di = _obter_dados(datas=data_convertida)
-
-    if df_di.is_empty():
-        return float("nan")
-
-    interpolador = interpolator.Interpolator(
-        method="flat_forward",
-        known_bdays=df_di["BDaysToExp"],
-        known_rates=df_di["SettlementRate"],
+    taxa = interpolate_rates(
+        dates=date,
+        expirations=expiration,
         extrapolate=extrapolate,
     )
+    if taxa.is_empty():
+        return float("nan")
 
-    bd = bday.count(data_convertida, vencimento_convertido)
-    return interpolador(bd)
+    valor = taxa.item()
+    if valor is None:
+        return float("nan")
+
+    return float(valor)
 
 
 def available_trade_dates() -> pl.Series:
