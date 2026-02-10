@@ -60,7 +60,8 @@ The library is organized into domain-specific namespaces, all exposed through `p
 
 - Accepted string formats: `DD-MM-YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`
 - Scalar dates normalize to `datetime.date`; collections become `pl.Series` with dtype `Date`
-- First non-null string in a collection determines format for entire collection
+- String parsing is element-wise (row-wise) with fallback across the accepted formats
+- Invalid strings are converted to `null` (or `None` for scalar outputs)
 - Nullable inputs (`None`, `NaN`, empty collections) short-circuit: scalar functions return `None` or `nan`, vectorized functions return empty DataFrame/Series
 
 ### Data Flow Pattern
