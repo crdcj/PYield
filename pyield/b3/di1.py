@@ -164,40 +164,6 @@ def data(
     return df.sort("TradeDate", "ExpirationDate")
 
 
-def _montar_df_entrada(
-    datas: DateLike | ArrayLike,
-    vencimentos: DateLike | ArrayLike,
-) -> pl.DataFrame:
-    # 1. Converte as entradas primeiro
-    datas_convertidas = cv.converter_datas(datas)
-    vencimentos_convertidos = cv.converter_datas(vencimentos)
-
-    # 2. Lida com os 4 casos de forma SIMPLES E LEGÍVEL
-    match (datas_convertidas, vencimentos_convertidos):
-        # CASO 1: Data escalar, vencimentos em array
-        case dt.date() as d, pl.Series() as e:
-            df_entrada = pl.DataFrame({"ExpirationDate": e}).with_columns(TradeDate=d)
-
-        # CASO 2: Datas em array, vencimento escalar
-        case pl.Series() as d, dt.date() as e:
-            # Mesma lógica, invertida
-            df_entrada = pl.DataFrame({"TradeDate": d}).with_columns(ExpirationDate=e)
-
-        # CASO 3: Ambos são arrays
-        case pl.Series() as d, pl.Series() as e:
-            df_entrada = pl.DataFrame({"TradeDate": d, "ExpirationDate": e})
-
-        # CASO 4: Ambos são escalares
-        case dt.date() as d, dt.date() as e:
-            df_entrada = pl.DataFrame({"TradeDate": [d], "ExpirationDate": [e]})
-
-        # QUALQUER OUTRA COISA
-        case _:
-            df_entrada = pl.DataFrame()
-
-    return df_entrada
-
-
 def interpolate_rates(
     dates: DateLike | ArrayLike,
     expirations: DateLike | ArrayLike,
@@ -288,7 +254,12 @@ def interpolate_rates(
         )
         return pl.Series(dtype=pl.Float64)
 
-    df_entrada = _montar_df_entrada(dates, expirations)
+    df_entrada = pl.DataFrame(
+        data={"TradeDate": dates, "ExpirationDate": expirations}
+    ).with_columns(
+        TradeDate=cv.converter_datas_expr("TradeDate"),
+        ExpirationDate=cv.converter_datas_expr("ExpirationDate"),
+    )
     if df_entrada.is_empty():
         registro.warning("Entradas inválidas. Retornando Series vazia.")
         return pl.Series(dtype=pl.Float64)

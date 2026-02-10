@@ -35,8 +35,8 @@ import polars.selectors as cs
 import requests
 
 from pyield import bday, clock
-from pyield.fwd import forwards
 from pyield._internal.retry import retry_padrao
+from pyield.fwd import forwards
 
 URL_BASE = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
 
