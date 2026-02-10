@@ -498,6 +498,10 @@ def generate(
     Returns:
         Series de dias úteis (nome: 'bday').
 
+    Notes:
+        - Strings de data aceitas: ``DD-MM-YYYY``, ``DD/MM/YYYY`` e ``YYYY-MM-DD``.
+        - ``start`` e ``end`` nulos usam a data atual.
+
     Examples:
         >>> from pyield import bday
         >>> bday.generate(start="22-12-2023", end="02-01-2024")

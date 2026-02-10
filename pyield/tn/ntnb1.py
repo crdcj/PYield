@@ -5,8 +5,8 @@ from dateutil.relativedelta import relativedelta
 
 import pyield._internal.converters as conversores
 from pyield import bday
-from pyield.tn import tools
 from pyield._internal.types import DateLike, any_is_empty
+from pyield.tn import tools
 
 """
 Parâmetros globais para cálculos de NTN-B1.

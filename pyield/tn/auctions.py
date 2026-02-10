@@ -8,9 +8,9 @@ from polars import selectors as cs
 from pyield import bc, bday
 from pyield._internal import converters as cv
 from pyield._internal.retry import retry_padrao
+from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
-from pyield._internal.types import DateLike, any_is_empty
 
 logger = logging.getLogger(__name__)
 

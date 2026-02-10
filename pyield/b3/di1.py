@@ -64,7 +64,6 @@ def _obter_dados(datas: DateLike | ArrayLike) -> pl.DataFrame:
     )
 
     if df_datas.is_empty():
-        registro.warning("Nenhuma data válida. Retornando DataFrame vazio.")
         return pl.DataFrame()
 
     lista_datas = df_datas.get_column("TradeDate").to_list()
@@ -125,8 +124,8 @@ def data(
 
     """  # noqa: E501
     if any_is_empty(dates):
-        registro.warning("Nenhuma data válida em 'dates'. Retornando DataFrame vazio.")
         return pl.DataFrame()
+
     df = _obter_dados(datas=dates)
 
     if pre_filter:
@@ -258,7 +257,6 @@ def interpolate_rates(
         ExpirationDate=cv.converter_datas_expr("ExpirationDate"),
     )
     if df_entrada.is_empty():
-        registro.warning("Entradas inválidas. Retornando Series vazia.")
         return pl.Series(dtype=pl.Float64)
 
     # Carrega dataset de taxas DI filtrado pelas datas de referência fornecidas

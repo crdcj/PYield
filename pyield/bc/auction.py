@@ -14,13 +14,13 @@ import polars as pl
 import polars.selectors as cs
 import requests
 
-import pyield.bc.ptax_api as pt
 import pyield._internal.converters as cv
+import pyield.bc.ptax_api as pt
 from pyield import bday
 from pyield._internal.retry import retry_padrao
+from pyield._internal.types import DateLike
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
-from pyield._internal.types import DateLike
 
 registro = logging.getLogger(__name__)
 

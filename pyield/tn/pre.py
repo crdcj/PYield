@@ -1,9 +1,9 @@
 import polars as pl
 
 from pyield import anbima, bday
+from pyield._internal.types import DateLike
 from pyield.anbima import tpf
 from pyield.tn import ntnf
-from pyield._internal.types import DateLike
 
 
 def spot_rates(date: DateLike) -> pl.DataFrame:

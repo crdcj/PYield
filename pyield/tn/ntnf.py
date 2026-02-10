@@ -9,9 +9,9 @@ from dateutil.relativedelta import relativedelta
 import pyield._internal.converters as cv
 import pyield.interpolator as ip
 from pyield import anbima, bday
+from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.tn import tools
 from pyield.tn.pre import di_spreads as pre_di_spreads
-from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 
 """
 Constantes calculadas conforme regras da ANBIMA

@@ -4,12 +4,12 @@ from typing import Literal
 
 import polars as pl
 
+import pyield._internal.converters as cv
 import pyield.b3.common as cm
 import pyield.b3.futures.historical.core as hcore
-import pyield._internal.converters as cv
 from pyield import clock
-from pyield.b3.futures.intraday import fetch_intraday_df
 from pyield._internal.types import DateLike, any_is_empty
+from pyield.b3.futures.intraday import fetch_intraday_df
 
 OpcoesContrato = Literal["DI1", "DDI", "FRC", "DAP", "DOL", "WDO", "IND", "WIN"]
 logger = logging.getLogger(__name__)

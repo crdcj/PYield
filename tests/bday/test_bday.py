@@ -147,3 +147,23 @@ def test_is_business_day_mixed_string_formats_and_invalid_value():
     result = bday.is_business_day(dates)
     assert isinstance(result, pl.Series)
     assert result.to_list() == [True, True, False, None]
+
+
+def test_generate_invalid_start_falls_back_to_today(monkeypatch):
+    data_fixa = dt.date(2024, 3, 1)
+    monkeypatch.setattr("pyield.bday.core.clock.today", lambda: data_fixa)
+
+    result = bday.generate(start="31-02-2024", end="04-03-2024")
+    expected = bday.generate(start=None, end="04-03-2024")
+
+    assert result.equals(expected)
+
+
+def test_generate_invalid_end_falls_back_to_today(monkeypatch):
+    data_fixa = dt.date(2024, 3, 4)
+    monkeypatch.setattr("pyield.bday.core.clock.today", lambda: data_fixa)
+
+    result = bday.generate(start="01-03-2024", end="31-02-2024")
+    expected = bday.generate(start="01-03-2024", end=None)
+
+    assert result.equals(expected)

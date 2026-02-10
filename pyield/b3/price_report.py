@@ -11,12 +11,12 @@ import requests
 from lxml import etree
 from lxml.etree import _Element
 
-import pyield.b3.common as cm
 import pyield._internal.converters as cv
+import pyield.b3.common as cm
 from pyield import bday
-from pyield.fwd import forwards
 from pyield._internal.retry import DadoIndisponivelError, retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
+from pyield.fwd import forwards
 
 registro = logging.getLogger(__name__)
 
