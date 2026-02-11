@@ -57,8 +57,6 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../css/timeago.css">
-    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -238,7 +236,7 @@
   
     
   
-  Home
+  Início
 
       </a>
     </li>
@@ -257,7 +255,7 @@
           
   
   
-  Articles
+  Artigos
 
         </a>
       </li>
@@ -288,7 +286,7 @@
           
   
   
-  Modules
+  Módulos
 
         </a>
       </li>
@@ -366,7 +364,7 @@
   <span class="md-ellipsis">
     
   
-    Home
+    Início
   
 
     
@@ -407,7 +405,7 @@
   <span class="md-ellipsis">
     
   
-    Articles
+    Artigos
   
 
     
@@ -423,7 +421,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Articles
+    Artigos
   
 
           </label>
@@ -443,7 +441,7 @@
   <span class="md-ellipsis">
     
   
-    Introduction to Pyield
+    Introdução ao Pyield
   
 
     
@@ -471,7 +469,7 @@
   <span class="md-ellipsis">
     
   
-    Engineering Style Guide
+    Guia de Estilo de Engenharia
   
 
     
@@ -525,7 +523,7 @@
   <span class="md-ellipsis">
     
   
-    Modules
+    Módulos
   
 
     
@@ -541,7 +539,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Modules
+    Módulos
   
 
           </label>
@@ -575,7 +573,7 @@
   <span class="md-ellipsis">
     
   
-    Core
+    Núcleo
   
 
     
@@ -591,7 +589,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Core
+    Núcleo
   
 
           </label>
@@ -611,7 +609,7 @@
   <span class="md-ellipsis">
     
   
-    Business Day Tools
+    Ferramentas de Dias Úteis
   
 
     
@@ -667,7 +665,7 @@
   <span class="md-ellipsis">
     
   
-    Forwards
+    Taxas a Termo
   
 
     
@@ -717,7 +715,7 @@
   <span class="md-ellipsis">
     
   
-    Data Sources
+    Fontes de Dados
   
 
     
@@ -733,7 +731,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Data Sources
+    Fontes de Dados
   
 
           </label>
@@ -781,7 +779,7 @@
   <span class="md-ellipsis">
     
   
-    Banco Central (BC)
+    Banco Central (BCB)
   
 
     
@@ -859,7 +857,7 @@
   <span class="md-ellipsis">
     
   
-    Overview
+    Visão Geral
   
 
     
@@ -887,7 +885,7 @@
   <span class="md-ellipsis">
     
   
-    DI Futures
+    Futuros de DI
   
 
     
@@ -915,7 +913,7 @@
   <span class="md-ellipsis">
     
   
-    Futures
+    Futuros
   
 
     
@@ -1003,7 +1001,7 @@
   <span class="md-ellipsis">
     
   
-    Treasury Bonds
+    Títulos Públicos
   
 
     
@@ -1019,7 +1017,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Treasury Bonds
+    Títulos Públicos
   
 
           </label>
@@ -1039,7 +1037,7 @@
   <span class="md-ellipsis">
     
   
-    Overview
+    Visão Geral
   
 
     
@@ -1624,26 +1622,26 @@
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="sd">        pl.DataFrame: DataFrame Polars com os dados de LFT.</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a>
 </span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="sd">    Output Columns:</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="sd">        * BondType (String): Tipo do título (ex.: &quot;LFT&quot;).</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="sd">        * ReferenceDate (Date): Data de referência dos dados.</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="sd">        * SelicCode (Int64): Código do título no SELIC.</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="sd">        * IssueBaseDate (Date): Data base/emissão do título.</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="sd">        * MaturityDate (Date): Data de vencimento do título.</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">        * BDToMat (Int64): Dias úteis entre referência e vencimento.</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">        * Duration (Float64): Macaulay Duration do título (anos).</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">        * DV01 (Float64): Variação no preço para 1bp de taxa.</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">        * DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">        * Price (Float64): Preço unitário (PU).</span>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">        * BidRate (Float64): Taxa de compra (decimal).</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">        * AskRate (Float64): Taxa de venda (decimal).</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">        * IndicativeRate (Float64): Taxa indicativa (decimal).</span>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">        * DIRate (Float64): Taxa DI interpolada (flat forward).</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">        * StdDev (Float64): Desvio padrão da taxa indicativa.</span>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">        * LowerBoundRateD0 (Float64): Limite inferior do intervalo (D+0).</span>
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        * UpperBoundRateD0 (Float64): Limite superior do intervalo (D+0).</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        * LowerBoundRateD1 (Float64): Limite inferior do intervalo (D+1).</span>
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">        * UpperBoundRateD1 (Float64): Limite superior do intervalo (D+1).</span>
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        * Criteria (String): Critério utilizado pela ANBIMA.</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="sd">        - BondType (String): Tipo do título (ex.: &quot;LFT&quot;).</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="sd">        - ReferenceDate (Date): Data de referência dos dados.</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="sd">        - SelicCode (Int64): Código do título no SELIC.</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="sd">        - IssueBaseDate (Date): Data base/emissão do título.</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="sd">        - MaturityDate (Date): Data de vencimento do título.</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">        - BDToMat (Int64): Dias úteis entre referência e vencimento.</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">        - Duration (Float64): Macaulay Duration do título (anos).</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">        - DV01 (Float64): Variação no preço para 1bp de taxa.</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">        - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">        - Price (Float64): Preço unitário (PU).</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">        - BidRate (Float64): Taxa de compra (decimal).</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">        - AskRate (Float64): Taxa de venda (decimal).</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">        - IndicativeRate (Float64): Taxa indicativa (decimal).</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">        - DIRate (Float64): Taxa DI interpolada (flat forward).</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">        - StdDev (Float64): Desvio padrão da taxa indicativa.</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">        - LowerBoundRateD0 (Float64): Limite inferior do intervalo (D+0).</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        - UpperBoundRateD0 (Float64): Limite superior do intervalo (D+0).</span>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        - LowerBoundRateD1 (Float64): Limite inferior do intervalo (D+1).</span>
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">        - UpperBoundRateD1 (Float64): Limite superior do intervalo (D+1).</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        - Criteria (String): Critério utilizado pela ANBIMA.</span>
 </span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a>
 </span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    Examples:</span>
 </span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">        &gt;&gt;&gt; from pyield import lft</span>
@@ -2335,38 +2333,6 @@ vencimento da LFT).</p>
 
 
 
-  
-    
-  
-  
-    
-  
-
-
-  <aside class="md-source-file">
-    
-      
-  <span class="md-source-file__fact">
-    <span class="md-icon" title="Última atualização">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
-    </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="31 de maio de 2025 17:57:26 UTC"><span class="timeago" datetime="2025-05-31T17:57:26+00:00" locale="pt_BR"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="31 de maio de 2025 17:57:26 UTC">2025-05-31</span>
-  </span>
-
-    
-    
-      
-  <span class="md-source-file__fact">
-    <span class="md-icon" title="Criado em">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
-    </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="29 de julho de 2024 16:22:28 UTC"><span class="timeago" datetime="2024-07-29T16:22:28+00:00" locale="pt_BR"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="29 de julho de 2024 16:22:28 UTC">2024-07-29</span>
-  </span>
-
-    
-    
-    
-  </aside>
 
 
 
@@ -2395,7 +2361,7 @@ vencimento da LFT).</p>
       <nav class="md-footer__inner md-grid" aria-label="Rodapé" >
         
           
-          <a href="../tn/" class="md-footer__link md-footer__link--prev" aria-label="Anterior: Overview">
+          <a href="../tn/" class="md-footer__link md-footer__link--prev" aria-label="Anterior: Visão Geral">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2405,7 +2371,7 @@ vencimento da LFT).</p>
                 Anterior
               </span>
               <div class="md-ellipsis">
-                Overview
+                Visão Geral
               </div>
             </div>
           </a>
@@ -2479,10 +2445,6 @@ vencimento da LFT).</p>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
-      
-        <script src="../js/timeago.min.js"></script>
-      
-        <script src="../js/timeago_mkdocs_material.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       

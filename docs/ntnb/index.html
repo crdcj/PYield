@@ -57,8 +57,6 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../css/timeago.css">
-    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -238,7 +236,7 @@
   
     
   
-  Home
+  Início
 
       </a>
     </li>
@@ -257,7 +255,7 @@
           
   
   
-  Articles
+  Artigos
 
         </a>
       </li>
@@ -288,7 +286,7 @@
           
   
   
-  Modules
+  Módulos
 
         </a>
       </li>
@@ -366,7 +364,7 @@
   <span class="md-ellipsis">
     
   
-    Home
+    Início
   
 
     
@@ -407,7 +405,7 @@
   <span class="md-ellipsis">
     
   
-    Articles
+    Artigos
   
 
     
@@ -423,7 +421,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Articles
+    Artigos
   
 
           </label>
@@ -443,7 +441,7 @@
   <span class="md-ellipsis">
     
   
-    Introduction to Pyield
+    Introdução ao Pyield
   
 
     
@@ -471,7 +469,7 @@
   <span class="md-ellipsis">
     
   
-    Engineering Style Guide
+    Guia de Estilo de Engenharia
   
 
     
@@ -525,7 +523,7 @@
   <span class="md-ellipsis">
     
   
-    Modules
+    Módulos
   
 
     
@@ -541,7 +539,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Modules
+    Módulos
   
 
           </label>
@@ -575,7 +573,7 @@
   <span class="md-ellipsis">
     
   
-    Core
+    Núcleo
   
 
     
@@ -591,7 +589,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Core
+    Núcleo
   
 
           </label>
@@ -611,7 +609,7 @@
   <span class="md-ellipsis">
     
   
-    Business Day Tools
+    Ferramentas de Dias Úteis
   
 
     
@@ -667,7 +665,7 @@
   <span class="md-ellipsis">
     
   
-    Forwards
+    Taxas a Termo
   
 
     
@@ -717,7 +715,7 @@
   <span class="md-ellipsis">
     
   
-    Data Sources
+    Fontes de Dados
   
 
     
@@ -733,7 +731,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Data Sources
+    Fontes de Dados
   
 
           </label>
@@ -781,7 +779,7 @@
   <span class="md-ellipsis">
     
   
-    Banco Central (BC)
+    Banco Central (BCB)
   
 
     
@@ -859,7 +857,7 @@
   <span class="md-ellipsis">
     
   
-    Overview
+    Visão Geral
   
 
     
@@ -887,7 +885,7 @@
   <span class="md-ellipsis">
     
   
-    DI Futures
+    Futuros de DI
   
 
     
@@ -915,7 +913,7 @@
   <span class="md-ellipsis">
     
   
-    Futures
+    Futuros
   
 
     
@@ -1003,7 +1001,7 @@
   <span class="md-ellipsis">
     
   
-    Treasury Bonds
+    Títulos Públicos
   
 
     
@@ -1019,7 +1017,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Treasury Bonds
+    Títulos Públicos
   
 
           </label>
@@ -1039,7 +1037,7 @@
   <span class="md-ellipsis">
     
   
-    Overview
+    Visão Geral
   
 
     
@@ -1812,11 +1810,11 @@ Estas são taxas YTM e as taxas spot são calculadas a partir delas.</p>
 </span><span id="__span-0-548"><a id="__codelineno-0-548" name="__codelineno-0-548"></a><span class="sd">        pl.DataFrame: DataFrame com as BEI calculadas.</span>
 </span><span id="__span-0-549"><a id="__codelineno-0-549" name="__codelineno-0-549"></a>
 </span><span id="__span-0-550"><a id="__codelineno-0-550" name="__codelineno-0-550"></a><span class="sd">    Output Columns:</span>
-</span><span id="__span-0-551"><a id="__codelineno-0-551" name="__codelineno-0-551"></a><span class="sd">        * MaturityDate (Date): Data de vencimento.</span>
-</span><span id="__span-0-552"><a id="__codelineno-0-552" name="__codelineno-0-552"></a><span class="sd">        * BDToMat (Int64): Dias úteis entre liquidação e vencimento.</span>
-</span><span id="__span-0-553"><a id="__codelineno-0-553" name="__codelineno-0-553"></a><span class="sd">        * RIR (Float64): Taxa real (spot).</span>
-</span><span id="__span-0-554"><a id="__codelineno-0-554" name="__codelineno-0-554"></a><span class="sd">        * NIR (Float64): Taxa nominal interpolada.</span>
-</span><span id="__span-0-555"><a id="__codelineno-0-555" name="__codelineno-0-555"></a><span class="sd">        * BEI (Float64): Inflação implícita (breakeven).</span>
+</span><span id="__span-0-551"><a id="__codelineno-0-551" name="__codelineno-0-551"></a><span class="sd">        - MaturityDate (Date): Data de vencimento.</span>
+</span><span id="__span-0-552"><a id="__codelineno-0-552" name="__codelineno-0-552"></a><span class="sd">        - BDToMat (Int64): Dias úteis entre liquidação e vencimento.</span>
+</span><span id="__span-0-553"><a id="__codelineno-0-553" name="__codelineno-0-553"></a><span class="sd">        - RIR (Float64): Taxa real (spot).</span>
+</span><span id="__span-0-554"><a id="__codelineno-0-554" name="__codelineno-0-554"></a><span class="sd">        - NIR (Float64): Taxa nominal interpolada.</span>
+</span><span id="__span-0-555"><a id="__codelineno-0-555" name="__codelineno-0-555"></a><span class="sd">        - BEI (Float64): Inflação implícita (breakeven).</span>
 </span><span id="__span-0-556"><a id="__codelineno-0-556" name="__codelineno-0-556"></a>
 </span><span id="__span-0-557"><a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="sd">    Notes:</span>
 </span><span id="__span-0-558"><a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="sd">        A BEI indica a inflação esperada pelo mercado entre liquidação e vencimento.</span>
@@ -2067,8 +2065,8 @@ Estas são taxas YTM e as taxas spot são calculadas a partir delas.</p>
 </span><span id="__span-0-199"><a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="sd">        pl.DataFrame: DataFrame com as colunas de fluxo.</span>
 </span><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a>
 </span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">    Output Columns:</span>
-</span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">        * PaymentDate (Date): Data de pagamento do fluxo.</span>
-</span><span id="__span-0-203"><a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">        * CashFlow (Float64): Valor do fluxo de caixa.</span>
+</span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">        - PaymentDate (Date): Data de pagamento do fluxo.</span>
+</span><span id="__span-0-203"><a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">        - CashFlow (Float64): Valor do fluxo de caixa.</span>
 </span><span id="__span-0-204"><a id="__codelineno-0-204" name="__codelineno-0-204"></a>
 </span><span id="__span-0-205"><a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">    Examples:</span>
 </span><span id="__span-0-206"><a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnb</span>
@@ -2285,20 +2283,20 @@ Estas são taxas YTM e as taxas spot são calculadas a partir delas.</p>
 </span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        pl.DataFrame: DataFrame Polars com os dados de NTN-B.</span>
 </span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a>
 </span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">    Output Columns:</span>
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        * BondType (String): Tipo do título (ex.: &quot;NTN-B&quot;).</span>
-</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        * ReferenceDate (Date): Data de referência dos dados.</span>
-</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">        * SelicCode (Int64): Código do título no SELIC.</span>
-</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">        * IssueBaseDate (Date): Data base/emissão do título.</span>
-</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">        * MaturityDate (Date): Data de vencimento do título.</span>
-</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">        * BDToMat (Int64): Dias úteis entre referência e vencimento.</span>
-</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="sd">        * Duration (Float64): Macaulay Duration do título (anos).</span>
-</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="sd">        * DV01 (Float64): Variação no preço para 1bp de taxa.</span>
-</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="sd">        * DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.</span>
-</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="sd">        * Price (Float64): Preço unitário (PU).</span>
-</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">        * BidRate (Float64): Taxa de compra (decimal).</span>
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">        * AskRate (Float64): Taxa de venda (decimal).</span>
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">        * IndicativeRate (Float64): Taxa indicativa (decimal).</span>
-</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">        * DIRate (Float64): Taxa DI interpolada (flat forward).</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        - BondType (String): Tipo do título (ex.: &quot;NTN-B&quot;).</span>
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        - ReferenceDate (Date): Data de referência dos dados.</span>
+</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">        - SelicCode (Int64): Código do título no SELIC.</span>
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">        - IssueBaseDate (Date): Data base/emissão do título.</span>
+</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">        - MaturityDate (Date): Data de vencimento do título.</span>
+</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">        - BDToMat (Int64): Dias úteis entre referência e vencimento.</span>
+</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="sd">        - Duration (Float64): Macaulay Duration do título (anos).</span>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="sd">        - DV01 (Float64): Variação no preço para 1bp de taxa.</span>
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="sd">        - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.</span>
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="sd">        - Price (Float64): Preço unitário (PU).</span>
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">        - BidRate (Float64): Taxa de compra (decimal).</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">        - AskRate (Float64): Taxa de venda (decimal).</span>
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">        - IndicativeRate (Float64): Taxa indicativa (decimal).</span>
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">        - DIRate (Float64): Taxa DI interpolada (flat forward).</span>
 </span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a>
 </span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    Examples:</span>
 </span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnb</span>
@@ -2923,10 +2921,10 @@ Padrão True. Se False, usa as taxas YTM.</p>
 </span><span id="__span-0-717"><a id="__codelineno-0-717" name="__codelineno-0-717"></a><span class="sd">        pl.DataFrame: DataFrame com as taxas forward.</span>
 </span><span id="__span-0-718"><a id="__codelineno-0-718" name="__codelineno-0-718"></a>
 </span><span id="__span-0-719"><a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">    Output Columns:</span>
-</span><span id="__span-0-720"><a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="sd">        * MaturityDate (Date): Data de vencimento.</span>
-</span><span id="__span-0-721"><a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">        * BDToMat (Int64): Dias úteis entre referência e vencimento.</span>
-</span><span id="__span-0-722"><a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="sd">        * IndicativeRate (Float64): Taxa indicativa (spot ou YTM).</span>
-</span><span id="__span-0-723"><a id="__codelineno-0-723" name="__codelineno-0-723"></a><span class="sd">        * ForwardRate (Float64): Taxa forward calculada.</span>
+</span><span id="__span-0-720"><a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="sd">        - MaturityDate (Date): Data de vencimento.</span>
+</span><span id="__span-0-721"><a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">        - BDToMat (Int64): Dias úteis entre referência e vencimento.</span>
+</span><span id="__span-0-722"><a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="sd">        - IndicativeRate (Float64): Taxa indicativa (spot ou YTM).</span>
+</span><span id="__span-0-723"><a id="__codelineno-0-723" name="__codelineno-0-723"></a><span class="sd">        - ForwardRate (Float64): Taxa forward calculada.</span>
 </span><span id="__span-0-724"><a id="__codelineno-0-724" name="__codelineno-0-724"></a>
 </span><span id="__span-0-725"><a id="__codelineno-0-725" name="__codelineno-0-725"></a><span class="sd">    Examples:</span>
 </span><span id="__span-0-726"><a id="__codelineno-0-726" name="__codelineno-0-726"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnb</span>
@@ -3894,10 +3892,10 @@ Padrão False.</p>
 <details class="notes" open>
   <summary>Notes</summary>
   <p>O cálculo considera:
-* Mapear todas as datas de pagamento até o último vencimento.
-* Interpolar as taxas YTM nas datas intermediárias.
-* Calcular a cotação da NTN-B para cada vencimento.
-* Calcular as taxas spot reais.</p>
+- Mapear todas as datas de pagamento até o último vencimento.
+- Interpolar as taxas YTM nas datas intermediárias.
+- Calcular a cotação da NTN-B para cada vencimento.
+- Calcular as taxas spot reais.</p>
 </details>
 
             <details class="mkdocstrings-source">
@@ -4021,9 +4019,9 @@ Padrão False.</p>
 </span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">        pl.DataFrame: DataFrame com as taxas spot.</span>
 </span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a>
 </span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">    Output Columns:</span>
-</span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="sd">        * MaturityDate (Date): Data de vencimento.</span>
-</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">        * BDToMat (Int64): Dias úteis entre liquidação e vencimento.</span>
-</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">        * SpotRate (Float64): Taxa spot (real).</span>
+</span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="sd">        - MaturityDate (Date): Data de vencimento.</span>
+</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">        - BDToMat (Int64): Dias úteis entre liquidação e vencimento.</span>
+</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">        - SpotRate (Float64): Taxa spot (real).</span>
 </span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a>
 </span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a><span class="sd">    Examples:</span>
 </span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnb</span>
@@ -4056,10 +4054,10 @@ Padrão False.</p>
 </span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a>
 </span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="sd">    Notes:</span>
 </span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a><span class="sd">        O cálculo considera:</span>
-</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a><span class="sd">        * Mapear todas as datas de pagamento até o último vencimento.</span>
-</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a><span class="sd">        * Interpolar as taxas YTM nas datas intermediárias.</span>
-</span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="sd">        * Calcular a cotação da NTN-B para cada vencimento.</span>
-</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a><span class="sd">        * Calcular as taxas spot reais.</span>
+</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a><span class="sd">        - Mapear todas as datas de pagamento até o último vencimento.</span>
+</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a><span class="sd">        - Interpolar as taxas YTM nas datas intermediárias.</span>
+</span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="sd">        - Calcular a cotação da NTN-B para cada vencimento.</span>
+</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a><span class="sd">        - Calcular as taxas spot reais.</span>
 </span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">settlement</span><span class="p">,</span> <span class="n">maturities</span><span class="p">,</span> <span class="n">rates</span><span class="p">):</span>
 </span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
@@ -4115,38 +4113,6 @@ Padrão False.</p>
 
 
 
-  
-    
-  
-  
-    
-  
-
-
-  <aside class="md-source-file">
-    
-      
-  <span class="md-source-file__fact">
-    <span class="md-icon" title="Última atualização">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
-    </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="31 de maio de 2025 17:57:26 UTC"><span class="timeago" datetime="2025-05-31T17:57:26+00:00" locale="pt_BR"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="31 de maio de 2025 17:57:26 UTC">2025-05-31</span>
-  </span>
-
-    
-    
-      
-  <span class="md-source-file__fact">
-    <span class="md-icon" title="Criado em">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
-    </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="17 de julho de 2024 17:03:40 UTC"><span class="timeago" datetime="2024-07-17T17:03:40+00:00" locale="pt_BR"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="17 de julho de 2024 17:03:40 UTC">2024-07-17</span>
-  </span>
-
-    
-    
-    
-  </aside>
 
 
 
@@ -4259,10 +4225,6 @@ Padrão False.</p>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
-      
-        <script src="../js/timeago.min.js"></script>
-      
-        <script src="../js/timeago_mkdocs_material.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       

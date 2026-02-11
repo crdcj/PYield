@@ -55,8 +55,6 @@
     
       <link rel="stylesheet" href="assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="css/timeago.css">
-    
     <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -118,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              Início
             
           </span>
         </div>
@@ -238,7 +236,7 @@
   
     
   
-  Home
+  Início
 
       </a>
     </li>
@@ -257,7 +255,7 @@
           
   
   
-  Articles
+  Artigos
 
         </a>
       </li>
@@ -284,7 +282,7 @@
           
   
   
-  Modules
+  Módulos
 
         </a>
       </li>
@@ -371,7 +369,7 @@
   <span class="md-ellipsis">
     
   
-    Home
+    Início
   
 
     
@@ -389,7 +387,7 @@
   <span class="md-ellipsis">
     
   
-    Home
+    Início
   
 
     
@@ -599,7 +597,7 @@
   <span class="md-ellipsis">
     
   
-    Articles
+    Artigos
   
 
     
@@ -615,7 +613,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Articles
+    Artigos
   
 
           </label>
@@ -635,7 +633,7 @@
   <span class="md-ellipsis">
     
   
-    Introduction to Pyield
+    Introdução ao Pyield
   
 
     
@@ -663,7 +661,7 @@
   <span class="md-ellipsis">
     
   
-    Engineering Style Guide
+    Guia de Estilo de Engenharia
   
 
     
@@ -712,7 +710,7 @@
   <span class="md-ellipsis">
     
   
-    Modules
+    Módulos
   
 
     
@@ -728,7 +726,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Modules
+    Módulos
   
 
           </label>
@@ -762,7 +760,7 @@
   <span class="md-ellipsis">
     
   
-    Core
+    Núcleo
   
 
     
@@ -778,7 +776,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Core
+    Núcleo
   
 
           </label>
@@ -798,7 +796,7 @@
   <span class="md-ellipsis">
     
   
-    Business Day Tools
+    Ferramentas de Dias Úteis
   
 
     
@@ -854,7 +852,7 @@
   <span class="md-ellipsis">
     
   
-    Forwards
+    Taxas a Termo
   
 
     
@@ -904,7 +902,7 @@
   <span class="md-ellipsis">
     
   
-    Data Sources
+    Fontes de Dados
   
 
     
@@ -920,7 +918,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Data Sources
+    Fontes de Dados
   
 
           </label>
@@ -968,7 +966,7 @@
   <span class="md-ellipsis">
     
   
-    Banco Central (BC)
+    Banco Central (BCB)
   
 
     
@@ -1046,7 +1044,7 @@
   <span class="md-ellipsis">
     
   
-    Overview
+    Visão Geral
   
 
     
@@ -1074,7 +1072,7 @@
   <span class="md-ellipsis">
     
   
-    DI Futures
+    Futuros de DI
   
 
     
@@ -1102,7 +1100,7 @@
   <span class="md-ellipsis">
     
   
-    Futures
+    Futuros
   
 
     
@@ -1188,7 +1186,7 @@
   <span class="md-ellipsis">
     
   
-    Treasury Bonds
+    Títulos Públicos
   
 
     
@@ -1204,7 +1202,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Treasury Bonds
+    Títulos Públicos
   
 
           </label>
@@ -1224,7 +1222,7 @@
   <span class="md-ellipsis">
     
   
-    Overview
+    Visão Geral
   
 
     
@@ -1577,6 +1575,12 @@
 </span></code></pre></div>
 <h3 id="taxas-a-termo-forward-forwards">Taxas a Termo (<code>forward</code>, <code>forwards</code>)</h3>
 <p>Calcula taxas a termo a partir de curvas spot:</p>
+<p>Convenção utilizada:</p>
+<ul>
+<li><code>fwd_k = fwd_{j-&gt;k}</code> (forward do vértice <code>j</code> para <code>k</code>)</li>
+<li><code>f_k = 1 + tx_k</code> (fator de capitalização no vértice <code>k</code>)</li>
+<li><code>fwd_k = (f_k^au_k / f_j^au_j)^(1 / (au_k - au_j)) - 1</code>, com <code>au = du / 252</code></li>
+</ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">forward</span><span class="p">,</span> <span class="n">forwards</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Taxa a termo única entre dois pontos</span>
@@ -1693,38 +1697,6 @@ em saídas vetorizadas).</p>
 
 
 
-  
-    
-  
-  
-    
-  
-
-
-  <aside class="md-source-file">
-    
-      
-  <span class="md-source-file__fact">
-    <span class="md-icon" title="Última atualização">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
-    </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="10 de fevereiro de 2026 11:08:34 UTC"><span class="timeago" datetime="2026-02-10T11:08:34+00:00" locale="pt_BR"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="10 de fevereiro de 2026 11:08:34 UTC">2026-02-10</span>
-  </span>
-
-    
-    
-      
-  <span class="md-source-file__fact">
-    <span class="md-icon" title="Criado em">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
-    </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="14 de dezembro de 2023 08:34:58 UTC"><span class="timeago" datetime="2023-12-14T08:34:58+00:00" locale="pt_BR"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="14 de dezembro de 2023 08:34:58 UTC">2023-12-14</span>
-  </span>
-
-    
-    
-    
-  </aside>
 
 
 
@@ -1754,13 +1726,13 @@ em saídas vetorizadas).</p>
         
         
           
-          <a href="articles/pyield_intro/" class="md-footer__link md-footer__link--next" aria-label="Próximo: Introduction to Pyield">
+          <a href="articles/pyield_intro/" class="md-footer__link md-footer__link--next" aria-label="Próximo: Introdução ao Pyield">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Próximo
               </span>
               <div class="md-ellipsis">
-                Introduction to Pyield
+                Introdução ao Pyield
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -1821,10 +1793,6 @@ em saídas vetorizadas).</p>
     
     
       <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
-      
-        <script src="js/timeago.min.js"></script>
-      
-        <script src="js/timeago_mkdocs_material.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       
