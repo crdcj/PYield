@@ -51,20 +51,20 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de NTN-C.
 
     Output Columns:
-        * BondType (String): Tipo do título (ex.: "NTN-C").
-        * ReferenceDate (Date): Data de referência dos dados.
-        * SelicCode (Int64): Código do título no SELIC.
-        * IssueBaseDate (Date): Data base/emissão do título.
-        * MaturityDate (Date): Data de vencimento do título.
-        * BDToMat (Int64): Dias úteis entre referência e vencimento.
-        * Duration (Float64): Macaulay Duration do título (anos).
-        * DV01 (Float64): Variação no preço para 1bp de taxa.
-        * DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
-        * Price (Float64): Preço unitário (PU).
-        * BidRate (Float64): Taxa de compra (decimal).
-        * AskRate (Float64): Taxa de venda (decimal).
-        * IndicativeRate (Float64): Taxa indicativa (decimal).
-        * DIRate (Float64): Taxa DI interpolada (flat forward).
+        - BondType (String): Tipo do título (ex.: "NTN-C").
+        - ReferenceDate (Date): Data de referência dos dados.
+        - SelicCode (Int64): Código do título no SELIC.
+        - IssueBaseDate (Date): Data base/emissão do título.
+        - MaturityDate (Date): Data de vencimento do título.
+        - BDToMat (Int64): Dias úteis entre referência e vencimento.
+        - Duration (Float64): Macaulay Duration do título (anos).
+        - DV01 (Float64): Variação no preço para 1bp de taxa.
+        - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
+        - Price (Float64): Preço unitário (PU).
+        - BidRate (Float64): Taxa de compra (decimal).
+        - AskRate (Float64): Taxa de venda (decimal).
+        - IndicativeRate (Float64): Taxa indicativa (decimal).
+        - DIRate (Float64): Taxa DI interpolada (flat forward).
 
     Examples:
         >>> from pyield import ntnc
@@ -155,8 +155,8 @@ def cash_flows(
         pl.DataFrame: DataFrame com as colunas de fluxo.
 
     Output Columns:
-        * PaymentDate (Date): Data de pagamento do fluxo.
-        * CashFlow (Float64): Valor do fluxo.
+        - PaymentDate (Date): Data de pagamento do fluxo.
+        - CashFlow (Float64): Valor do fluxo.
 
     Examples:
         >>> from pyield import ntnc

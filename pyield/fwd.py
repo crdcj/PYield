@@ -12,26 +12,33 @@ def forwards(
     group_by: Sequence[str | int | dt.date] | pl.Series | None = None,
 ) -> pl.Series:
     r"""
-    Calcula taxas a termo (forward rates) a partir de taxas zero (spot rates).
+    Calcula taxas a termo a partir de taxas zero.
 
     A taxa a termo no vértice 'n' é definida como:
+
         fwdₖ = fwdⱼ→ₖ (a taxa a termo de j para k)
 
+    Definindo o fator de capitalização no vértice k como:
+
+        fₖ = 1 + txₖ
+
     A fórmula utilizada é:
-        fwdₖ = ((1 + txₖ)^(duₖ/252) / (1 + txⱼ)^(duⱼ/252))^(252/(duₖ - duⱼ)) - 1
+
+        fwdₖ = (fₖ^(duₖ/252) / fⱼ^(duⱼ/252))^(252/(duₖ - duⱼ)) - 1
 
     Como au = du/252 (tempo em anos úteis), a fórmula pode ser simplificada para:
 
-        fwdₖ = ((1 + txₖ)^auₖ / (1 + txⱼ)^auⱼ)^(1/(auₖ - auⱼ)) - 1
-
+        fwdₖ = (fₖ^auₖ / fⱼ^auⱼ)^(1/(auₖ - auⱼ)) - 1
 
     Em LaTeX, a fórmula é representada como:
 
     $$
-    fwd_k = \left( \frac{(1 + tx_k)^{au_k}}{(1 + tx_j)^{au_j}} \right)^{\frac{1}{au_k - au_j}} - 1
+    fwd_k = \left( \frac{f_k^{au_k}}{f_j^{au_j}} \right)^{\frac{1}{au_k - au_j}} - 1
     $$
 
     Onde:
+        - fⱼ é o fator de capitalização no vértice anterior (fⱼ = 1 + txⱼ).
+        - fₖ é o fator de capitalização no vértice atual (fₖ = 1 + txₖ).
         - txⱼ é a taxa zero para o vértice anterior.
         - txₖ é a taxa zero para o vértice atual.
         - auⱼ é o prazo em anos úteis no vértice anterior (auⱼ = duⱼ/252).
@@ -60,7 +67,7 @@ def forwards(
             Critério de agrupamento para os cálculos (ex: datas de referência,
             tickers de títulos). Pode ser uma lista/série de strings, inteiros
             ou datas. Se None, todos os dados são tratados como um único grupo.
-            Default None.
+            Padrão None.
 
     Returns:
         pl.Series: Série contendo as taxas a termo calculadas (tipo Float64).
@@ -144,10 +151,10 @@ def forwards(
 
     Notes:
         - A função ordena os dados de entrada primeiro por `group_by`,
-        se for fornecido, e depois por `bdays` para garantir a ordem cronológica
-        correta no cálculo das taxas a termo.
+          se for fornecido, e depois por `bdays` para garantir a ordem cronológica
+          correta no cálculo das taxas a termo.
         - Valores nulos em `bdays` ou `rates` são ignorados no cálculo,
-        resultando em valores nulos nas posições correspondentes na saída.
+          resultando em valores nulos nas posições correspondentes na saída.
         - Os resultados são retornados na mesma ordem dos dados de entrada.
     """  # noqa: E501
     # Validações iniciais
@@ -164,9 +171,13 @@ def forwards(
     )
 
     # 2. Definir a fórmula da taxa a termo
-    # fₖ = fⱼ→ₖ = ((1 + txₖ)^auₖ / (1 + txⱼ)^auⱼ) ^ (1/(auₖ - auⱼ)) - 1
-    fator_k = (1 + pl.col("tx_k")) ** pl.col("au_k")  # (1 + txₖ)^auₖ
-    fator_j = (1 + pl.col("tx_j")) ** pl.col("au_j")  # (1 + txⱼ)^auⱼ
+    # Definição dos fatores de capitalização:
+    # fₖ = 1 + txₖ e fⱼ = 1 + txⱼ
+    fk = 1 + pl.col("tx_k")
+    fj = 1 + pl.col("tx_j")
+    # fwdₖ  = fwdⱼ→ₖ = (fₖ^auₖ / fⱼ^auⱼ) ^ (1/(auₖ - auⱼ)) - 1
+    fator_k = fk ** pl.col("au_k")
+    fator_j = fj ** pl.col("au_j")
     expoente = 1 / (pl.col("au_k") - pl.col("au_j"))  # 1/(auₖ - auⱼ)
     fwd_exp = (fator_k / fator_j) ** expoente - 1
 
@@ -211,12 +222,15 @@ def forward(
     rate2: float,
 ) -> float:
     r"""
-    Calcula a taxa a termo (forward rate) entre dois prazos (dias úteis).
+    Calcula a taxa a termo entre dois prazos (dias úteis).
 
     Utiliza a fórmula:
-        f₁→₂ = ((1 + tx₂)^(du₂/252) / (1 + tx₁)^(du₁/252))^(252/(du₂ - du₁)) - 1
+
+        f₁→₂ = (f₂^(du₂/252) / f₁^(du₁/252))^(252/(du₂ - du₁)) - 1
 
     Onde:
+        - f₁ é o fator de capitalização do primeiro prazo (f₁ = 1 + tx₁).
+        - f₂ é o fator de capitalização do segundo prazo (f₂ = 1 + tx₂).
         - tx₁ é a taxa zero para o primeiro prazo (du₁).
         - tx₂ é a taxa zero para o segundo prazo (du₂).
         - du₁ é o número de dias úteis até a primeira data.
@@ -225,29 +239,30 @@ def forward(
 
     Como au = du/252 (tempo em anos úteis), a fórmula pode ser simplificada para:
 
-        f₁→₂ = ((1 + tx₂)^au₂ / (1 + tx₁)^au₁)^(1/(au₂ - au₁)) - 1
+        f₁→₂ = (f₂^au₂ / f₁^au₁)^(1/(au₂ - au₁)) - 1
 
     Que em latex fica:
+
     $$
-    f_{1 \rightarrow 2} = \left( \frac{(1 + tx_2)^{au_2}}{(1 + tx_1)^{au_1}} \right)^{\frac{1}{au_2 - au_1}} - 1
+    f_{1 \rightarrow 2} = \left( \frac{f_2^{au_2}}{f_1^{au_1}} \right)^{\frac{1}{au_2 - au_1}} - 1
     $$
 
     Args:
         bday1 (int): Número de dias úteis do primeiro ponto (prazo menor).
         bday2 (int): Número de dias úteis do segundo ponto (prazo maior).
-        rate1 (float): Taxa zero (spot rate) para o prazo `bday1`.
-        rate2 (float): Taxa zero (spot rate) para o prazo `bday2`.
+        rate1 (float): Taxa zero para o prazo `bday1`.
+        rate2 (float): Taxa zero para o prazo `bday2`.
 
     Returns:
-        float: A taxa a termo calculada entre `bday1` e `bday2`. Retorna
-            `nan` se `bday1 >= bday2` ou se qualquer um dos
-            argumentos de entrada for float('nan') ou None.
+        float: A taxa a termo calculada entre `du₁` e `du₂`. Retorna
+            `nan` se `du₁ >= du₂` ou se qualquer um dos
+            argumentos de entrada for `float("nan")` ou `None`.
 
     Examples:
-        >>> # Exemplo válido: bday2 > bday1
+        >>> # Exemplo válido: du₂ > du₁
         >>> yd.forward(10, 20, 0.05, 0.06)
         0.0700952380952371
-        >>> # Exemplo inválido: bday1 >= bday2
+        >>> # Exemplo inválido: du₁ >= du₂
         >>> print(yd.forward(20, 10, 0.06, 0.05))
         nan
 
@@ -256,7 +271,7 @@ def forward(
         nan
 
     Notes:
-        `bday2` precisa ser necessariamente maior que `bday1` para que
+        `du₂` precisa ser necessariamente maior que `du₁` para que
         o cálculo da taxa a termo seja matematicamente válido.
     """  # noqa: E501
     if any_is_empty(rate1, rate2, bday1, bday2):
@@ -271,5 +286,10 @@ def forward(
     au1 = bday1 / 252
     au2 = bday2 / 252
 
-    # f₁→₂ = ((1 + tx₂)^au₂ / (1 + tx₁)^au₁)^(1/(au₂ - au₁)) - 1
-    return ((1 + rate2) ** au2 / (1 + rate1) ** au1) ** (1 / (au2 - au1)) - 1
+    # Definição dos fatores de capitalização:
+    # f₁ = 1 + tx₁ e f₂ = 1 + tx₂
+    f1 = 1 + rate1
+    f2 = 1 + rate2
+
+    # f₁→₂ = (f₂^au₂ / f₁^au₁)^(1/(au₂ - au₁)) - 1
+    return (f2**au2 / f1**au1) ** (1 / (au2 - au1)) - 1

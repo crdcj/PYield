@@ -110,7 +110,6 @@ def ptax_series(
         https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='08-01-2025'&@dataFinalCotacao='08-05-2025'&$format=text/csv
 
     Consultas de Período:
-
     - Para consultar dados de um intervalo, forneça as datas de `start` e `end`.
     Exemplo:
 
@@ -127,7 +126,6 @@ def ptax_series(
         `ptax_series(end='27-10-2024')`
 
     Série Histórica Completa:
-
     - Para recuperar a série histórica completa de leilões (desde 28.11.1984
     até o último dia útil), chame a função sem fornecer os parâmetros `start` e `end`.
     Exemplo:
@@ -135,7 +133,6 @@ def ptax_series(
             `ptax_series()`
 
     Busca dados de cotações de dólar PTAX (taxa de câmbio) para o período:
-
     - Se `start` for fornecido e `end` não, a função retorna dados de `start` até o fim.
     - Se `end` for fornecido e `start` não, a API retorna dados do início até `end`.
     - Se ambos `start` e `end` forem omitidos, a API retorna a série histórica completa.
@@ -189,7 +186,6 @@ def ptax_series(
         - Última data disponível: data atual
 
         O DataFrame possui as seguintes colunas:
-
         - Date: Data da cotação.
         - DateTime: Data e hora da cotação.
         - BuyRate: Taxa de compra.

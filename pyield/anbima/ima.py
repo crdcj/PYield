@@ -141,28 +141,28 @@ def last_ima(ima_type: TiposIMA | None = None) -> pl.DataFrame:
             em caso de erro.
 
     Output Columns:
-        * Date (Date): data de referência.
-        * IMAType (String): tipo de índice IMA (ex: 'IMA-B', 'IRF-M').
-        * BondType (String): tipo de título (ex: 'LTN', 'NTN-B').
-        * Maturity (Date): data de vencimento do título.
-        * SelicCode (Int64): código do título no sistema SELIC.
-        * ISIN (String): código ISIN (International Securities Identification Number).
-        * BDToMat (Int64): dias úteis até o vencimento.
-        * Duration (Float64): duration do título em anos úteis (252 d.u./ano).
-        * IndicativeRate (Float64): taxa indicativa em decimal (ex: 0.10 para 10%).
-        * Price (Float64): preço unitário (PU) em R$.
-        * InterestPrice (Float64): PU de juros em R$.
-        * DV01 (Float64): DV01 em R$.
-        * PMR (Float64): prazo médio de repactuação.
-        * Weight (Float64): peso do título no índice (%).
-        * Convexity (Float64): convexidade do título.
-        * TheoreticalQuantity (Float64): quantidade teórica (em 1.000 títulos).
-        * NumberOfOperations (Int64): número de operações.
-        * NegotiatedQuantity (Int64): quantidade negociada (unidades).
-        * NegotiatedValue (Float64): valor negociado em R$.
-        * MarketDV01 (Float64): DV01 de mercado em R$.
-        * MarketQuantity (Int64): quantidade em carteira (unidades).
-        * MarketValue (Float64): valor de mercado em R$.
+        - Date (Date): data de referência.
+        - IMAType (String): tipo de índice IMA (ex: 'IMA-B', 'IRF-M').
+        - BondType (String): tipo de título (ex: 'LTN', 'NTN-B').
+        - Maturity (Date): data de vencimento do título.
+        - SelicCode (Int64): código do título no sistema SELIC.
+        - ISIN (String): código ISIN (International Securities Identification Number).
+        - BDToMat (Int64): dias úteis até o vencimento.
+        - Duration (Float64): duration do título em anos úteis (252 d.u./ano).
+        - IndicativeRate (Float64): taxa indicativa em decimal (ex: 0.10 para 10%).
+        - Price (Float64): preço unitário (PU) em R$.
+        - InterestPrice (Float64): PU de juros em R$.
+        - DV01 (Float64): DV01 em R$.
+        - PMR (Float64): prazo médio de repactuação.
+        - Weight (Float64): peso do título no índice (%).
+        - Convexity (Float64): convexidade do título.
+        - TheoreticalQuantity (Float64): quantidade teórica (em 1.000 títulos).
+        - NumberOfOperations (Int64): número de operações.
+        - NegotiatedQuantity (Int64): quantidade negociada (unidades).
+        - NegotiatedValue (Float64): valor negociado em R$.
+        - MarketDV01 (Float64): DV01 de mercado em R$.
+        - MarketQuantity (Int64): quantidade em carteira (unidades).
+        - MarketValue (Float64): valor de mercado em R$.
 
     Examples:
         >>> from pyield import anbima

@@ -175,37 +175,37 @@ def tpf_intraday_trades() -> pl.DataFrame:
             estiver fechado ou ocorrer erro.
 
     Output Columns:
-        * CollectedAt (datetime): Timestamp da coleta (BRT).
-        * SettlementDate (date): Data de liquidação à vista.
-        * BondType (str): Sigla do título (ex.: LFT, LTN, NTN-B).
-        * SelicCode (int): Código SELIC do título.
-        * MaturityDate (date): Data de vencimento do título.
-        * MinPrice (float): Menor preço negociado.
-        * AvgPrice (float): Preço médio negociado.
-        * MaxPrice (float): Maior preço negociado.
-        * LastPrice (float): Último preço negociado.
-        * MinRate (float): Menor taxa negociada (decimal).
-        * AvgRate (float): Taxa média negociada (decimal).
-        * MaxRate (float): Maior taxa negociada (decimal).
-        * LastRate (float): Última taxa negociada (decimal).
-        * Trades (int): Total de operações liquidadas.
-        * Quantity (int): Quantidade total de títulos negociados.
-        * Value (float): Valor financeiro total negociado (BRL).
-        * BrokeredTrades (int): Operações liquidadas via corretagem.
-        * BrokeredQuantity (int): Títulos negociados via corretagem.
-        * FwdMinPrice (float): Menor preço a termo negociado.
-        * FwdAvgPrice (float): Preço médio a termo negociado.
-        * FwdMaxPrice (float): Maior preço a termo negociado.
-        * FwdLastPrice (float): Último preço a termo negociado.
-        * FwdMinRate (float): Menor taxa a termo negociada (decimal).
-        * FwdAvgRate (float): Taxa média a termo negociada (decimal).
-        * FwdMaxRate (float): Maior taxa a termo negociada (decimal).
-        * FwdLastRate (float): Última taxa a termo negociada (decimal).
-        * FwdTrades (int): Total de operações a termo contratadas.
-        * FwdQuantity (int): Total de títulos a termo negociados.
-        * FwdValue (float): Valor financeiro total a termo (BRL).
-        * FwdBrokeredTrades (int): Operações a termo via corretagem.
-        * FwdBrokeredQuantity (int): Títulos a termo via corretagem.
+        - CollectedAt (datetime): Timestamp da coleta (BRT).
+        - SettlementDate (date): Data de liquidação à vista.
+        - BondType (str): Sigla do título (ex.: LFT, LTN, NTN-B).
+        - SelicCode (int): Código SELIC do título.
+        - MaturityDate (date): Data de vencimento do título.
+        - MinPrice (float): Menor preço negociado.
+        - AvgPrice (float): Preço médio negociado.
+        - MaxPrice (float): Maior preço negociado.
+        - LastPrice (float): Último preço negociado.
+        - MinRate (float): Menor taxa negociada (decimal).
+        - AvgRate (float): Taxa média negociada (decimal).
+        - MaxRate (float): Maior taxa negociada (decimal).
+        - LastRate (float): Última taxa negociada (decimal).
+        - Trades (int): Total de operações liquidadas.
+        - Quantity (int): Quantidade total de títulos negociados.
+        - Value (float): Valor financeiro total negociado (BRL).
+        - BrokeredTrades (int): Operações liquidadas via corretagem.
+        - BrokeredQuantity (int): Títulos negociados via corretagem.
+        - FwdMinPrice (float): Menor preço a termo negociado.
+        - FwdAvgPrice (float): Preço médio a termo negociado.
+        - FwdMaxPrice (float): Maior preço a termo negociado.
+        - FwdLastPrice (float): Último preço a termo negociado.
+        - FwdMinRate (float): Menor taxa a termo negociada (decimal).
+        - FwdAvgRate (float): Taxa média a termo negociada (decimal).
+        - FwdMaxRate (float): Maior taxa a termo negociada (decimal).
+        - FwdLastRate (float): Última taxa a termo negociada (decimal).
+        - FwdTrades (int): Total de operações a termo contratadas.
+        - FwdQuantity (int): Total de títulos a termo negociados.
+        - FwdValue (float): Valor financeiro total a termo (BRL).
+        - FwdBrokeredTrades (int): Operações a termo via corretagem.
+        - FwdBrokeredQuantity (int): Títulos a termo via corretagem.
 
     Notes:
         - Retorna DataFrame vazio fora do horário do SELIC (09:00–22:00 BRT).

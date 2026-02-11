@@ -107,17 +107,17 @@ def benchmarks(
         pl.DataFrame: DataFrame Polars com os benchmarks.
 
     Output Columns:
-        * `BondType` (String): Tipo do título (ex.: "LTN", "LFT", "NTN-B").
-        * `MaturityDate` (Date): Data de vencimento do benchmark.
-        * `Benchmark` (String): Nome/identificador do benchmark.
-        * `StartDate` (Date): Data de início da vigência.
-        * `EndDate` (Date): Data de término da vigência.
+        - `BondType` (String): Tipo do título (ex.: "LTN", "LFT", "NTN-B").
+        - `MaturityDate` (Date): Data de vencimento do benchmark.
+        - `Benchmark` (String): Nome/identificador do benchmark.
+        - `StartDate` (Date): Data de início da vigência.
+        - `EndDate` (Date): Data de término da vigência.
 
     Notes:
-        * Dados obtidos da API oficial do Tesouro Nacional.
-        * Há retry sem verificação de certificado apenas em caso de erro SSL.
-        * Linhas com valores nulos são descartadas antes do retorno.
-        * Documentação da API:
+        - Dados obtidos da API oficial do Tesouro Nacional.
+        - Há retry sem verificação de certificado apenas em caso de erro SSL.
+        - Linhas com valores nulos são descartadas antes do retorno.
+        - Documentação da API:
           https://portal-conhecimento.tesouro.gov.br/catalogo-componentes/api-leil%C3%B5es
 
     Examples:

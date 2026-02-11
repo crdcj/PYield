@@ -35,20 +35,20 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de NTN-B.
 
     Output Columns:
-        * BondType (String): Tipo do título (ex.: "NTN-B").
-        * ReferenceDate (Date): Data de referência dos dados.
-        * SelicCode (Int64): Código do título no SELIC.
-        * IssueBaseDate (Date): Data base/emissão do título.
-        * MaturityDate (Date): Data de vencimento do título.
-        * BDToMat (Int64): Dias úteis entre referência e vencimento.
-        * Duration (Float64): Macaulay Duration do título (anos).
-        * DV01 (Float64): Variação no preço para 1bp de taxa.
-        * DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
-        * Price (Float64): Preço unitário (PU).
-        * BidRate (Float64): Taxa de compra (decimal).
-        * AskRate (Float64): Taxa de venda (decimal).
-        * IndicativeRate (Float64): Taxa indicativa (decimal).
-        * DIRate (Float64): Taxa DI interpolada (flat forward).
+        - BondType (String): Tipo do título (ex.: "NTN-B").
+        - ReferenceDate (Date): Data de referência dos dados.
+        - SelicCode (Int64): Código do título no SELIC.
+        - IssueBaseDate (Date): Data base/emissão do título.
+        - MaturityDate (Date): Data de vencimento do título.
+        - BDToMat (Int64): Dias úteis entre referência e vencimento.
+        - Duration (Float64): Macaulay Duration do título (anos).
+        - DV01 (Float64): Variação no preço para 1bp de taxa.
+        - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
+        - Price (Float64): Preço unitário (PU).
+        - BidRate (Float64): Taxa de compra (decimal).
+        - AskRate (Float64): Taxa de venda (decimal).
+        - IndicativeRate (Float64): Taxa indicativa (decimal).
+        - DIRate (Float64): Taxa DI interpolada (flat forward).
 
     Examples:
         >>> from pyield import ntnb
@@ -199,8 +199,8 @@ def cash_flows(
         pl.DataFrame: DataFrame com as colunas de fluxo.
 
     Output Columns:
-        * PaymentDate (Date): Data de pagamento do fluxo.
-        * CashFlow (Float64): Valor do fluxo de caixa.
+        - PaymentDate (Date): Data de pagamento do fluxo.
+        - CashFlow (Float64): Valor do fluxo de caixa.
 
     Examples:
         >>> from pyield import ntnb
@@ -448,9 +448,9 @@ def spot_rates(
         pl.DataFrame: DataFrame com as taxas spot.
 
     Output Columns:
-        * MaturityDate (Date): Data de vencimento.
-        * BDToMat (Int64): Dias úteis entre liquidação e vencimento.
-        * SpotRate (Float64): Taxa spot (real).
+        - MaturityDate (Date): Data de vencimento.
+        - BDToMat (Int64): Dias úteis entre liquidação e vencimento.
+        - SpotRate (Float64): Taxa spot (real).
 
     Examples:
         >>> from pyield import ntnb
@@ -483,10 +483,10 @@ def spot_rates(
 
     Notes:
         O cálculo considera:
-        * Mapear todas as datas de pagamento até o último vencimento.
-        * Interpolar as taxas YTM nas datas intermediárias.
-        * Calcular a cotação da NTN-B para cada vencimento.
-        * Calcular as taxas spot reais.
+        - Mapear todas as datas de pagamento até o último vencimento.
+        - Interpolar as taxas YTM nas datas intermediárias.
+        - Calcular a cotação da NTN-B para cada vencimento.
+        - Calcular as taxas spot reais.
     """
     if any_is_empty(settlement, maturities, rates):
         return pl.DataFrame()
@@ -548,11 +548,11 @@ def bei_rates(
         pl.DataFrame: DataFrame com as BEI calculadas.
 
     Output Columns:
-        * MaturityDate (Date): Data de vencimento.
-        * BDToMat (Int64): Dias úteis entre liquidação e vencimento.
-        * RIR (Float64): Taxa real (spot).
-        * NIR (Float64): Taxa nominal interpolada.
-        * BEI (Float64): Inflação implícita (breakeven).
+        - MaturityDate (Date): Data de vencimento.
+        - BDToMat (Int64): Dias úteis entre liquidação e vencimento.
+        - RIR (Float64): Taxa real (spot).
+        - NIR (Float64): Taxa nominal interpolada.
+        - BEI (Float64): Inflação implícita (breakeven).
 
     Notes:
         A BEI indica a inflação esperada pelo mercado entre liquidação e vencimento.
@@ -717,10 +717,10 @@ def forwards(
         pl.DataFrame: DataFrame com as taxas forward.
 
     Output Columns:
-        * MaturityDate (Date): Data de vencimento.
-        * BDToMat (Int64): Dias úteis entre referência e vencimento.
-        * IndicativeRate (Float64): Taxa indicativa (spot ou YTM).
-        * ForwardRate (Float64): Taxa forward calculada.
+        - MaturityDate (Date): Data de vencimento.
+        - BDToMat (Int64): Dias úteis entre referência e vencimento.
+        - IndicativeRate (Float64): Taxa indicativa (spot ou YTM).
+        - ForwardRate (Float64): Taxa forward calculada.
 
     Examples:
         >>> from pyield import ntnb

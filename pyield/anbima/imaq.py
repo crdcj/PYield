@@ -221,18 +221,18 @@ def imaq(date: DateLike) -> pl.DataFrame:
         vazio e registra log da exceção.
 
     Output Columns:
-        * Date (Date): data de referência dos dados.
-        * BondType (String): tipo do título (LTN, NTN-B, NTN-F, LFT, …).
-        * MaturityDate (Date): data de vencimento do título.
-        * SelicCode (Int64): código SELIC do título.
-        * ISIN (String): código ISIN (International Securities Id Number).
-        * Price (Float64): PU do título em R$.
-        * MarketQuantity (Int64): quantidade em mercado (unidades).
-        * MarketDV01 (Int64): DV01 do estoque em R$.
-        * MarketDV01USD (Int64): DV01 do estoque em USD.
-        * MarketValue (Int64): valor de mercado em R$.
-        * QuantityVariation (Int64): variação diária da quantidade.
-        * BondStatus (String): status do título.
+        - Date (Date): data de referência dos dados.
+        - BondType (String): tipo do título (LTN, NTN-B, NTN-F, LFT, …).
+        - MaturityDate (Date): data de vencimento do título.
+        - SelicCode (Int64): código SELIC do título.
+        - ISIN (String): código ISIN (International Securities Id Number).
+        - Price (Float64): PU do título em R$.
+        - MarketQuantity (Int64): quantidade em mercado (unidades).
+        - MarketDV01 (Int64): DV01 do estoque em R$.
+        - MarketDV01USD (Int64): DV01 do estoque em USD.
+        - MarketValue (Int64): valor de mercado em R$.
+        - QuantityVariation (Int64): variação diária da quantidade.
+        - BondStatus (String): status do título.
 
     Notes:
         - Valores convertidos para unidades puras (ex: MarketQuantity × 1.000).

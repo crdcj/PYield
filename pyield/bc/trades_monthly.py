@@ -158,25 +158,25 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         retorna DataFrame vazio e registra log da exceção.
 
     Output Columns:
-        * SettlementDate (Date): data de liquidação da negociação.
-        * BondType (str): sigla do título (ex: LFT, LTN, NTN-B, NTN-F).
-        * SelicCode (Int64): código único no sistema Selic.
-        * ISIN (str): código ISIN (International Securities Identification Number).
-        * IssueDate (Date): data de emissão do título.
-        * MaturityDate (Date): data de vencimento do título.
-        * Trades (Int64): número de operações realizadas.
-        * Quantity (Int64): quantidade negociada.
-        * Value (Float64): valor financeiro negociado (Quantity * AvgPrice).
-        * MinPrice (Float64): preço unitário mínimo.
-        * AvgPrice (Float64): preço unitário médio.
-        * MaxPrice (Float64): preço unitário máximo.
-        * UnderlyingPrice (Float64): PU lastro.
-        * ParValue (Float64): valor par.
-        * MinRate (Float64): taxa mínima.
-        * AvgRate (Float64): taxa média.
-        * MaxRate (Float64): taxa máxima.
-        * BrokerageTrades (Int64): número de operações com corretagem.
-        * BrokerageQuantity (Int64): quantidade negociada com corretagem.
+        - SettlementDate (Date): data de liquidação da negociação.
+        - BondType (str): sigla do título (ex: LFT, LTN, NTN-B, NTN-F).
+        - SelicCode (Int64): código único no sistema Selic.
+        - ISIN (str): código ISIN (International Securities Identification Number).
+        - IssueDate (Date): data de emissão do título.
+        - MaturityDate (Date): data de vencimento do título.
+        - Trades (Int64): número de operações realizadas.
+        - Quantity (Int64): quantidade negociada.
+        - Value (Float64): valor financeiro negociado (Quantity * AvgPrice).
+        - MinPrice (Float64): preço unitário mínimo.
+        - AvgPrice (Float64): preço unitário médio.
+        - MaxPrice (Float64): preço unitário máximo.
+        - UnderlyingPrice (Float64): PU lastro.
+        - ParValue (Float64): valor par.
+        - MinRate (Float64): taxa mínima.
+        - AvgRate (Float64): taxa média.
+        - MaxRate (Float64): taxa máxima.
+        - BrokerageTrades (Int64): número de operações com corretagem.
+        - BrokerageQuantity (Int64): quantidade negociada com corretagem.
 
     Notes:
         - Dados ordenados por: SettlementDate, BondType, MaturityDate.

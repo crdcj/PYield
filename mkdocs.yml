@@ -9,25 +9,25 @@ watch:
   - pyield
   
 nav:
-  - Home: index.md
-  - Articles:
-      - Introduction to Pyield: articles/pyield_intro.md
-      - Engineering Style Guide: articles/engineering_style_guide.md
-  - Modules:
-      - Core:
-          - Business Day Tools: bday.md
+  - Início: index.md
+  - Artigos:
+      - Introdução ao Pyield: articles/pyield_intro.md
+      - Guia de Estilo de Engenharia: articles/engineering_style_guide.md
+  - Módulos:
+      - Núcleo:
+          - Ferramentas de Dias Úteis: bday.md
           - Interpolator: interpolator.md
-          - Forwards: forwards.md
-      - Data Sources:
+          - Taxas a Termo: forwards.md
+      - Fontes de Dados:
           - Anbima: anbima.md
-          - Banco Central (BC): bc.md
+          - Banco Central (BCB): bc.md
           - B3:
-              - Overview: b3.md
-              - DI Futures: di1.md
-              - Futures: futures.md
+              - Visão Geral: b3.md
+              - Futuros de DI: di1.md
+              - Futuros: futures.md
           - IPCA: ipca.md
-      - Treasury Bonds:
-          - Overview: tn.md
+      - Títulos Públicos:
+          - Visão Geral: tn.md
           - LFT: lft.md
           - LTN: ltn.md
           - NTN-B: ntnb.md
@@ -67,12 +67,6 @@ theme:
  
 plugins:
   - search
-  - tags
-  - autorefs
-  - git-revision-date-localized:
-      enable_creation_date: true
-      type: timeago
-      fallback_to_build_date: true
   - mkdocstrings:
       handlers:
         python:
@@ -91,22 +85,10 @@ markdown_extensions:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
   - pymdownx.superfences
   - pymdownx.arithmatex:
       generic: true
-  - admonition
-  - pymdownx.details
   - tables
-  - pymdownx.tasklist:
-      custom_checkbox: true
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
-  - abbr
-  - attr_list
-  - md_in_html
 
 repo_url: 'https://github.com/crdcj/PYield'
 repo_name: 'PYield'

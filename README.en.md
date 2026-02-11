@@ -103,6 +103,12 @@ Interpolator("flat_forward", known_bdays, known_rates, extrapolate=True)(100)  #
 
 Compute forward rates from spot curves:
 
+Convention used:
+
+- `fwd_k = fwd_{j->k}` (forward from vertex `j` to `k`)
+- `f_k = 1 + tx_k` (capitalization factor at `k`)
+- `fwd_k = (f_k^au_k / f_j^au_j)^(1 / (au_k - au_j)) - 1`, with `au = du / 252`
+
 ```python
 from pyield import forward, forwards
 

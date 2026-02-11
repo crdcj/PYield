@@ -174,18 +174,18 @@ def repos(
         retorna DataFrame vazio e registra log da exceção.
 
     Output Columns:
-        * data_leilao (Date): data de ocorrência do leilão.
-        * data_liquidacao (Date): data de liquidação (início da operação).
-        * data_retorno (Date): data de recompra / término da operação.
-        * hora_inicio (Time): horário de início do leilão.
-        * prazo_dias_corridos (Int64): dias corridos até a data de retorno.
-        * prazo_dias_uteis (Int64): dias úteis entre liquidação e retorno (bday.count).
-        * numero_comunicado (Int64): número do comunicado/aviso do BC (pode ser nulo).
-        * tipo_oferta (String): classif. do tipo de oferta (ex: Tomador, Compromissada 1047).
-        * publico_permitido (String): escopo de participantes (SomenteDealer, TodoMercado).
-        * volume_aceito (Int64): volume aceito no leilão em reais (convertido de milhares).
-        * taxa_corte (Float64): taxa de corte (ex. 0.1490 = 14,90%). Nula se volume_aceito = 0.
-        * percentual_aceito (Float64): percentual do volume ofertado efetivamente aceito (0-100).
+        - data_leilao (Date): data de ocorrência do leilão.
+        - data_liquidacao (Date): data de liquidação (início da operação).
+        - data_retorno (Date): data de recompra / término da operação.
+        - hora_inicio (Time): horário de início do leilão.
+        - prazo_dias_corridos (Int64): dias corridos até a data de retorno.
+        - prazo_dias_uteis (Int64): dias úteis entre liquidação e retorno (bday.count).
+        - numero_comunicado (Int64): número do comunicado/aviso do BC (pode ser nulo).
+        - tipo_oferta (String): classif. do tipo de oferta (ex: Tomador, Compromissada 1047).
+        - publico_permitido (String): escopo de participantes (SomenteDealer, TodoMercado).
+        - volume_aceito (Int64): volume aceito no leilão em reais (convertido de milhares).
+        - taxa_corte (Float64): taxa de corte (ex. 0.1490 = 14,90%). Nula se volume_aceito = 0.
+        - percentual_aceito (Float64): percentual do volume ofertado efetivamente aceito (0-100).
           100 = nenhuma rejeição. 0 indica nada aceito (volume_aceito = 0).
 
     Notes:

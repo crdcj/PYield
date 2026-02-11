@@ -132,8 +132,8 @@ def cash_flows(
         pl.DataFrame: DataFrame com as colunas de fluxo.
 
     Output Columns:
-        * PaymentDate (Date): Data de pagamento do fluxo.
-        * CashFlow (Float64): Valor do fluxo.
+        - PaymentDate (Date): Data de pagamento do fluxo.
+        - CashFlow (Float64): Valor do fluxo.
 
     Examples:
         >>> from pyield import ntnb1

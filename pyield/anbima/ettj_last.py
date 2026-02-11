@@ -98,11 +98,11 @@ def last_ettj() -> pl.DataFrame:
         pl.DataFrame: DataFrame com os dados da ETTJ de fechamento.
 
     Output Columns:
-        * date (Date): data de referência da curva de juros.
-        * vertex (Int64): vértice em dias úteis.
-        * nominal_rate (Float64): taxa de juros nominal zero-cupom.
-        * real_rate (Float64): taxa de juros real zero-cupom (indexada ao IPCA).
-        * implied_inflation (Float64): taxa de inflação implícita (breakeven).
+        - date (Date): data de referência da curva de juros.
+        - vertex (Int64): vértice em dias úteis.
+        - nominal_rate (Float64): taxa de juros nominal zero-cupom.
+        - real_rate (Float64): taxa de juros real zero-cupom (indexada ao IPCA).
+        - implied_inflation (Float64): taxa de inflação implícita (breakeven).
 
     Note:
         Todas as taxas são expressas em formato decimal (ex: 0.12 para 12%).

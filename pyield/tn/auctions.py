@@ -374,51 +374,51 @@ def auction(auction_date: DateLike) -> pl.DataFrame:
         especificada, retorna DataFrame vazio.
 
     Output Columns:
-        * data_1v (Date): data de realização do leilão (1ª volta).
-        * data_liquidacao_1v (Date): data de liquidação financeira da 1ª volta.
-        * data_liquidacao_2v (Date): data de liquidação financeira da 2ª volta
+        - data_1v (Date): data de realização do leilão (1ª volta).
+        - data_liquidacao_1v (Date): data de liquidação financeira da 1ª volta.
+        - data_liquidacao_2v (Date): data de liquidação financeira da 2ª volta
             (se houver).
-        * numero_edital (Int64): número do edital que rege o leilão.
-        * tipo_leilao (String): tipo da operação (ex: "Venda", "Compra").
-        * titulo (String): código do título público leiloado (ex: "NTN-B", "LFT").
-        * benchmark (String): descrição de referência do título (ex: "NTN-B 3 anos").
-        * data_vencimento (Date): data de vencimento do título.
-        * dias_uteis (Int32): dias úteis entre a liquidação (1v) e o vencimento.
-        * dias_corridos (Int32): prazo em dias corridos entre liquidação e vencimento.
-        * duration (Float64): Duração de Macaulay em anos, calculada entre a liquidação
+        - numero_edital (Int64): número do edital que rege o leilão.
+        - tipo_leilao (String): tipo da operação (ex: "Venda", "Compra").
+        - titulo (String): código do título público leiloado (ex: "NTN-B", "LFT").
+        - benchmark (String): descrição de referência do título (ex: "NTN-B 3 anos").
+        - data_vencimento (Date): data de vencimento do título.
+        - dias_uteis (Int32): dias úteis entre a liquidação (1v) e o vencimento.
+        - dias_corridos (Int32): prazo em dias corridos entre liquidação e vencimento.
+        - duration (Float64): Duração de Macaulay em anos, calculada entre a liquidação
             da 1ª volta e o vencimento.
-        * prazo_medio (Float64): maturidade média em anos, conforme metodologia do
+        - prazo_medio (Float64): maturidade média em anos, conforme metodologia do
             Tesouro Nacional.
-        * quantidade_ofertada_1v (Int64): quantidade de títulos ofertados na 1ª volta.
-        * quantidade_ofertada_2v (Int64): quantidade de títulos ofertados na 2ª volta.
-        * quantidade_aceita_1v (Int64): quantidade de propostas aceitas na 1ª volta.
-        * quantidade_aceita_2v (Int64): quantidade de títulos aceitos na 2ª volta.
-        * quantidade_aceita_total (Int64): soma das quantidades aceitas nas duas voltas.
-        * financeiro_ofertado_1v (Float64): financeiro ofertado na 1ª volta (BRL).
-        * financeiro_ofertado_2v (Float64): financeiro ofertado na 2ª volta (BRL).
-        * financeiro_ofertado_total (Float64): financeiro total ofertado (BRL).
-        * financeiro_aceito_1v (Float64): financeiro aceito na 1ª volta (BRL).
-        * financeiro_aceito_2v (Float64): financeiro aceito na 2ª volta (BRL).
-        * financeiro_aceito_total (Float64): soma do financeiro aceito nas
+        - quantidade_ofertada_1v (Int64): quantidade de títulos ofertados na 1ª volta.
+        - quantidade_ofertada_2v (Int64): quantidade de títulos ofertados na 2ª volta.
+        - quantidade_aceita_1v (Int64): quantidade de propostas aceitas na 1ª volta.
+        - quantidade_aceita_2v (Int64): quantidade de títulos aceitos na 2ª volta.
+        - quantidade_aceita_total (Int64): soma das quantidades aceitas nas duas voltas.
+        - financeiro_ofertado_1v (Float64): financeiro ofertado na 1ª volta (BRL).
+        - financeiro_ofertado_2v (Float64): financeiro ofertado na 2ª volta (BRL).
+        - financeiro_ofertado_total (Float64): financeiro total ofertado (BRL).
+        - financeiro_aceito_1v (Float64): financeiro aceito na 1ª volta (BRL).
+        - financeiro_aceito_2v (Float64): financeiro aceito na 2ª volta (BRL).
+        - financeiro_aceito_total (Float64): soma do financeiro aceito nas
             duas voltas (BRL).
-        * quantidade_bcb (Int64): quantidade de títulos adquirida pelo Banco Central.
-        * financeiro_bcb (Int64): financeiro adquirido pelo Banco Central.
-        * colocacao_1v (Float64): taxa de colocação da 1ª volta (aceita / ofertada).
-        * colocacao_2v (Float64): taxa de colocação da 2ª volta (aceita / ofertada).
-        * colocacao_total (Float64): taxa de colocação total (aceita / ofertada).
-        * dv01_1v (Float64): DV01 da 1ª volta em BRL.
-        * dv01_2v (Float64): DV01 da 2ª volta em BRL.
-        * dv01_total (Float64): DV01 total do leilão em BRL.
-        * ptax (Float64): taxa PTAX (venda) utilizada na conversão do DV01 para USD.
-        * dv01_1v_usd (Float64): DV01 da 1ª volta em USD (PTAX do dia).
-        * dv01_2v_usd (Float64): DV01 da 2ª volta em USD (PTAX do dia).
-        * dv01_total_usd (Float64): DV01 total em USD (PTAX do dia).
-        * pu_minimo (Float64): preço unitário mínimo aceito no leilão.
-        * pu_medio (Float64): preço unitário médio ponderado das propostas aceitas.
-        * tipo_pu_medio (String): indica se o PU médio é "original" (da API) ou
+        - quantidade_bcb (Int64): quantidade de títulos adquirida pelo Banco Central.
+        - financeiro_bcb (Int64): financeiro adquirido pelo Banco Central.
+        - colocacao_1v (Float64): taxa de colocação da 1ª volta (aceita / ofertada).
+        - colocacao_2v (Float64): taxa de colocação da 2ª volta (aceita / ofertada).
+        - colocacao_total (Float64): taxa de colocação total (aceita / ofertada).
+        - dv01_1v (Float64): DV01 da 1ª volta em BRL.
+        - dv01_2v (Float64): DV01 da 2ª volta em BRL.
+        - dv01_total (Float64): DV01 total do leilão em BRL.
+        - ptax (Float64): taxa PTAX (venda) utilizada na conversão do DV01 para USD.
+        - dv01_1v_usd (Float64): DV01 da 1ª volta em USD (PTAX do dia).
+        - dv01_2v_usd (Float64): DV01 da 2ª volta em USD (PTAX do dia).
+        - dv01_total_usd (Float64): DV01 total em USD (PTAX do dia).
+        - pu_minimo (Float64): preço unitário mínimo aceito no leilão.
+        - pu_medio (Float64): preço unitário médio ponderado das propostas aceitas.
+        - tipo_pu_medio (String): indica se o PU médio é "original" (da API) ou
             "calculado" (recalculado pela função).
-        * taxa_media (Float64): taxa de juros média aceita (em formato decimal).
-        * taxa_maxima (Float64): taxa de juros máxima aceita, taxa de corte (decimal).
+        - taxa_media (Float64): taxa de juros média aceita (em formato decimal).
+        - taxa_maxima (Float64): taxa de juros máxima aceita, taxa de corte (decimal).
     """
     if any_is_empty(auction_date):
         logger.info("Nenhuma data de leilão informada.")

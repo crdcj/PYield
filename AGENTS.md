@@ -88,6 +88,12 @@ Most data-fetching functions follow this pattern:
 - Public functions use Google-style sections: `Args:`, `Returns:`, `Output Columns:`, `Notes:`, `Examples:`.
 - `Output Columns:` lists every column with tipo Polars e descrição (ex: `* SettlementDate (Date): data de liquidação.`).
 - Doctests (section `Examples:`) use real data and are validated by `pytest --doctest-modules`.
+- Renderização Markdown (MkDocs/mkdocstrings): em listas livres dentro do texto (ex.: `Onde:`), evitar linha em branco entre o título e os itens e iniciar os itens imediatamente abaixo.
+  Exemplo recomendado:
+  `Onde:`
+  `- item 1`
+  `- item 2`
+- Após mudanças em docstrings com listas/fórmulas, validar visualmente com `mkdocs serve` e confirmar o HTML gerado (evitar renderização como bloco de código).
 
 ## Complexity
 

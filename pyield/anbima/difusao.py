@@ -181,17 +181,17 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
             não houver dados ou em caso de erro.
 
     Output Columns:
-        * data_hora_referencia (datetime): Data e hora de referência da taxa.
-        * provedor (string): Provedor dos dados.
-        * titulo (string): Nome do título (ex: LFT, LTN).
-        * data_vencimento (date): Data de vencimento do título.
-        * codigo_isin (string): Código ISIN do título.
-        * dias_uteis (int): Dias úteis entre a data de referência e o vencimento.
-        * taxa_indicativa_anterior (float): Taxa indicativa de fechamento D-1 (decimal).
-        * taxa_venda (float): Taxa de oferta de venda (Ask rate) (decimal).
-        * taxa_compra (float): Taxa de oferta de compra (Bid rate) (decimal).
-        * taxa_media (float): Média entre a taxa de compra e venda (decimal).
-        * taxa_ultima (float): Última taxa negociada (decimal).
+        - data_hora_referencia (datetime): Data e hora de referência da taxa.
+        - provedor (string): Provedor dos dados.
+        - titulo (string): Nome do título (ex: LFT, LTN).
+        - data_vencimento (date): Data de vencimento do título.
+        - codigo_isin (string): Código ISIN do título.
+        - dias_uteis (int): Dias úteis entre a data de referência e o vencimento.
+        - taxa_indicativa_anterior (float): Taxa indicativa de fechamento D-1 (decimal).
+        - taxa_venda (float): Taxa de oferta de venda (Ask rate) (decimal).
+        - taxa_compra (float): Taxa de oferta de compra (Bid rate) (decimal).
+        - taxa_media (float): Média entre a taxa de compra e venda (decimal).
+        - taxa_ultima (float): Última taxa negociada (decimal).
     """
     if any_is_empty(data_referencia):
         logger.warning("Nenhuma data fornecida. Retornando DataFrame vazio.")

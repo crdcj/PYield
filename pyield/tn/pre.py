@@ -20,9 +20,9 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame com as colunas da curva PRE.
 
     Output Columns:
-        * MaturityDate (Date): Data de vencimento.
-        * BDToMat (Int64): Dias úteis entre referência e vencimento.
-        * SpotRate (Float64): Taxa spot (zero cupom).
+        - MaturityDate (Date): Data de vencimento.
+        - BDToMat (Int64): Dias úteis entre referência e vencimento.
+        - SpotRate (Float64): Taxa spot (zero cupom).
 
     Raises:
         ValueError: Se algum vencimento não puder ser processado.
@@ -150,9 +150,9 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
         pl.DataFrame: DataFrame com as colunas do spread.
 
     Output Columns:
-        * BondType (String): Tipo do título.
-        * MaturityDate (Date): Data de vencimento.
-        * DISpread (Float64): Spread em decimal ou bps conforme parâmetro.
+        - BondType (String): Tipo do título.
+        - MaturityDate (Date): Data de vencimento.
+        - DISpread (Float64): Spread em decimal ou bps conforme parâmetro.
 
     Examples:
         >>> from pyield import pre

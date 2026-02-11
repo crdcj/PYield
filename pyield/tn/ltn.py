@@ -19,26 +19,26 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de LTN.
 
     Output Columns:
-        * BondType (String): Tipo do título (ex.: "LTN").
-        * ReferenceDate (Date): Data de referência dos dados.
-        * SelicCode (Int64): Código do título no SELIC.
-        * IssueBaseDate (Date): Data base/emissão do título.
-        * MaturityDate (Date): Data de vencimento do título.
-        * BDToMat (Int64): Dias úteis entre referência e vencimento.
-        * Duration (Float64): Macaulay Duration do título (anos).
-        * DV01 (Float64): Variação no preço para 1bp de taxa.
-        * DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
-        * Price (Float64): Preço unitário (PU).
-        * BidRate (Float64): Taxa de compra (decimal).
-        * AskRate (Float64): Taxa de venda (decimal).
-        * IndicativeRate (Float64): Taxa indicativa (decimal).
-        * DIRate (Float64): Taxa DI interpolada (flat forward).
-        * StdDev (Float64): Desvio padrão da taxa indicativa.
-        * LowerBoundRateD0 (Float64): Limite inferior do intervalo (D+0).
-        * UpperBoundRateD0 (Float64): Limite superior do intervalo (D+0).
-        * LowerBoundRateD1 (Float64): Limite inferior do intervalo (D+1).
-        * UpperBoundRateD1 (Float64): Limite superior do intervalo (D+1).
-        * Criteria (String): Critério utilizado pela ANBIMA.
+        - BondType (String): Tipo do título (ex.: "LTN").
+        - ReferenceDate (Date): Data de referência dos dados.
+        - SelicCode (Int64): Código do título no SELIC.
+        - IssueBaseDate (Date): Data base/emissão do título.
+        - MaturityDate (Date): Data de vencimento do título.
+        - BDToMat (Int64): Dias úteis entre referência e vencimento.
+        - Duration (Float64): Macaulay Duration do título (anos).
+        - DV01 (Float64): Variação no preço para 1bp de taxa.
+        - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
+        - Price (Float64): Preço unitário (PU).
+        - BidRate (Float64): Taxa de compra (decimal).
+        - AskRate (Float64): Taxa de venda (decimal).
+        - IndicativeRate (Float64): Taxa indicativa (decimal).
+        - DIRate (Float64): Taxa DI interpolada (flat forward).
+        - StdDev (Float64): Desvio padrão da taxa indicativa.
+        - LowerBoundRateD0 (Float64): Limite inferior do intervalo (D+0).
+        - UpperBoundRateD0 (Float64): Limite superior do intervalo (D+0).
+        - LowerBoundRateD1 (Float64): Limite inferior do intervalo (D+1).
+        - UpperBoundRateD1 (Float64): Limite superior do intervalo (D+1).
+        - Criteria (String): Critério utilizado pela ANBIMA.
 
     Examples:
         >>> from pyield import ltn
@@ -220,9 +220,9 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
         pl.DataFrame: DataFrame com as colunas do spread.
 
     Output Columns:
-        * BondType (String): Tipo do título.
-        * MaturityDate (Date): Data de vencimento.
-        * DISpread (Float64): Spread em decimal ou bps conforme parâmetro.
+        - BondType (String): Tipo do título.
+        - MaturityDate (Date): Data de vencimento.
+        - DISpread (Float64): Spread em decimal ou bps conforme parâmetro.
 
     Raises:
         ValueError: Se os dados de DI não possuem 'SettlementRate' ou estão vazios.
@@ -266,10 +266,10 @@ def forwards(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame com as taxas forward.
 
     Output Columns:
-        * MaturityDate (Date): Data de vencimento.
-        * BDToMat (Int64): Dias úteis entre referência e vencimento.
-        * IndicativeRate (Float64): Taxa spot (zero cupom).
-        * ForwardRate (Float64): Taxa forward.
+        - MaturityDate (Date): Data de vencimento.
+        - BDToMat (Int64): Dias úteis entre referência e vencimento.
+        - IndicativeRate (Float64): Taxa spot (zero cupom).
+        - ForwardRate (Float64): Taxa forward.
 
     Examples:
         >>> from pyield import ltn

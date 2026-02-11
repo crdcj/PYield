@@ -103,6 +103,12 @@ Interpolator("flat_forward", known_bdays, known_rates, extrapolate=True)(100)  #
 
 Calcula taxas a termo a partir de curvas spot:
 
+Convenção utilizada:
+
+- `fwd_k = fwd_{j->k}` (forward do vértice `j` para `k`)
+- `f_k = 1 + tx_k` (fator de capitalização no vértice `k`)
+- `fwd_k = (f_k^au_k / f_j^au_j)^(1 / (au_k - au_j)) - 1`, com `au = du / 252`
+
 ```python
 from pyield import forward, forwards
 
