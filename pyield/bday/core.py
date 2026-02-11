@@ -108,7 +108,7 @@ def count(
     PRESERVAÇÃO DE ORDEM (crítico): A ordem de saída SEMPRE corresponde à ordem
     elemento a elemento das entradas originais. Nenhuma ordenação, deduplicação,
     alinhamento ou remodelação é realizada. Se você passar arrays, o i-ésimo
-    resultado corresponde ao i-ésimo par de (``start``, ``end``) após broadcasting.
+    resultado corresponde ao i-ésimo par de (``start``, ``end``) após expansão.
     Isso garante atribuição segura de volta ao DataFrame de origem.
 
     Regime de feriados: Para cada valor de ``start``, a lista de feriados (antiga vs.
@@ -134,7 +134,7 @@ def count(
         se qualquer um deles for um array de datas.
 
     Notes:
-        - Esta função é um wrapper em torno de ``polars.business_day_count``.
+        - Esta função é um encapsulamento de ``polars.business_day_count``.
         - A lista de feriados é determinada por linha com base na data ``start``.
         - Strings de data aceitas: ``DD-MM-YYYY``, ``DD/MM/YYYY`` e ``YYYY-MM-DD``.
         - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.
@@ -230,9 +230,9 @@ def offset_expr(
         >>> import datetime as dt
         >>> import polars as pl
         >>> from pyield.bday import offset_expr
-        >>> dates = [dt.date(2023, 12, 22), dt.date(2023, 12, 29)]
+        >>> datas = [dt.date(2023, 12, 22), dt.date(2023, 12, 29)]
         >>> offsets = [1, 5]
-        >>> df = pl.DataFrame({"dt": dates, "n": offsets})
+        >>> df = pl.DataFrame({"dt": datas, "n": offsets})
 
         Adicionando um valor fixo (1 dia útil):
         >>> df.select(offset_expr("dt", 1).alias("t_plus_1"))
@@ -320,13 +320,13 @@ def offset(
        retrocede, zero = permanece na data após roll).
 
     PRESERVAÇÃO DE ORDEM (crítico): A ordenação de saída corresponde estritamente
-    ao pareamento elemento a elemento após broadcasting entre ``dates`` e ``offset``.
+    ao pareamento elemento a elemento após expansão entre ``dates`` e ``offset``.
     Nenhuma ordenação, deduplicação ou mudança de forma ocorre. O i-ésimo resultado
     corresponde ao i-ésimo par (date, offset), permitindo atribuição segura de volta
     ao DataFrame de origem.
 
     Regime de feriados: Para CADA data, a lista de feriados apropriada (antiga vs.
-    nova) é escolhida com base na data de transição 2023-12-26 (``TRANSITION_DATE``).
+    nova) é escolhida com base na data de transição 2023-12-26 (``DATA_TRANSICAO``).
     Datas antes da transição usam a lista *antiga*; datas na transição ou após
     usam a lista *nova*.
 
@@ -339,8 +339,8 @@ def offset(
     curto-circuito para ``None``. Nulos dentro de arrays de entrada propagam para
     suas posições correspondentes na saída.
 
-    Broadcasting: ``dates`` e ``offset`` podem ser escalares ou array-like. Regras
-    padrão de broadcasting do Polars aplicam-se ao construir os pares por linha.
+    Expansão: ``dates`` e ``offset`` podem ser escalares ou array-like. Regras
+    padrão de expansão do Polars aplicam-se ao construir os pares por linha.
 
     Tipo de retorno: Se ambas as entradas forem escalares não-nulos, um
     ``datetime.date`` é retornado. Caso contrário, uma ``polars.Series`` de datas
@@ -362,10 +362,10 @@ def offset(
         fornecido.
 
     Notes:
-        - Wrapper em torno de ``polars.Expr.dt.add_business_days`` aplicado
+        - Encapsulamento de ``polars.Expr.dt.add_business_days`` aplicado
           condicionalmente.
         - O regime de feriados é decidido por elemento comparando com
-          ``TRANSITION_DATE``.
+          ``DATA_TRANSICAO``.
         - Fins de semana são sempre tratados como não-úteis.
         - Strings de data aceitas: ``DD-MM-YYYY``, ``DD/MM/YYYY`` e ``YYYY-MM-DD``.
         - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.
@@ -450,8 +450,8 @@ def offset(
             null
         ]
 
-        >>> dates = ["19-09-2024", "20-09-2024", "21-09-2024"]
-        >>> bday.offset(dates, 1)
+        >>> datas = ["19-09-2024", "20-09-2024", "21-09-2024"]
+        >>> bday.offset(datas, 1)
         shape: (3,)
         Series: 'adjusted_date' [date]
         [
@@ -545,8 +545,8 @@ def is_business_day_expr(expr: pl.Expr | str) -> pl.Expr:
         >>> import datetime as dt
         >>> import polars as pl
         >>> from pyield.bday import is_business_day_expr
-        >>> dates = [dt.date(2023, 12, 25), dt.date(2023, 12, 26)]
-        >>> df = pl.DataFrame({"data": dates})
+        >>> datas = [dt.date(2023, 12, 25), dt.date(2023, 12, 26)]
+        >>> df = pl.DataFrame({"data": datas})
 
         Criando uma flag booleana:
         >>> df.with_columns(is_bd=is_business_day_expr("data"))
@@ -593,15 +593,15 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
 
     REGIME DE FERIADOS POR LINHA: Para CADA data de entrada, a lista de feriados
     apropriada ("antiga" vs. "nova") é selecionada comparando com a data de
-    transição 2023-12-26 (``TRANSITION_DATE``). Datas estritamente antes da
+    transição 2023-12-26 (``DATA_TRANSICAO``). Datas estritamente antes da
     transição usam a lista antiga; datas na transição ou após usam a lista nova.
     Isso espelha o comportamento de ``count`` e ``offset`` que aplicam a lógica
     de regime elemento a elemento.
 
     PRESERVAÇÃO DE ORDEM E FORMA: A saída preserva a ordem original dos elementos.
     Nenhuma ordenação, deduplicação, remodelação ou alinhamento é realizado; o
-    i-ésimo resultado corresponde à i-ésima data fornecida após broadcasting (se
-    algum broadcasting ocorreu de uma entrada escalar em outro lugar da cadeia
+    i-ésimo resultado corresponde à i-ésima data fornecida após expansão (se
+    alguma expansão ocorreu de uma entrada escalar em outro lugar da cadeia
     de chamadas).
 
     PROPAGAÇÃO DE NULOS: Um argumento escalar nulo faz curto-circuito para ``None``.
@@ -640,7 +640,7 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
         ]
 
     Notes:
-        - Data de transição definida em ``TRANSITION_DATE``.
+        - Data de transição definida em ``DATA_TRANSICAO``.
         - Espelha a lógica por linha usada em ``count`` e ``offset``.
         - Fins de semana sempre avaliam como ``False``.
         - Elementos nulos propagam.
@@ -672,10 +672,10 @@ def last_business_day() -> dt.date:
         - A determinação do último dia útil considera a lista de feriados brasileiros
           correta (antes ou depois da transição 2023-12-26) aplicável à data atual.
     """
-    # Get the current date in Brazil without timezone information
+    # Obtém a data atual do Brasil sem informação de fuso horário
     bz_today = clock.today()
     result = offset(bz_today, 0, roll="backward")
     assert isinstance(result, dt.date), (
-        "Assumption violated: offset did not return a date for the current date."
+        "Premissa violada: offset não retornou uma data para a data atual."
     )
     return result

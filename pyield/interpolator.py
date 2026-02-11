@@ -130,9 +130,9 @@ class Interpolator:
 
         A taxa interpolada é dada pela fórmula:
 
-        $$
+        \[
         \left(F_j*\left(\frac{F_k}{F_j}\right)^{f_t}\right)^{\frac{1}{au}}-1
-        $$
+        \]
 
         Onde os fatores usados na fórmula são definidos como:
         - ``Fⱼ = fⱼ^auⱼ`` é o fator acumulado no ponto ``j``.

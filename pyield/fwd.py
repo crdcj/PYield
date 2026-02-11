@@ -32,18 +32,18 @@ def forwards(
 
     Em LaTeX, a fórmula é representada como:
 
-    $$
+    \[
     fwd_k = \left( \frac{f_k^{au_k}}{f_j^{au_j}} \right)^{\frac{1}{au_k - au_j}} - 1
-    $$
+    \]
 
     Onde:
-        - fⱼ é o fator de capitalização no vértice anterior (fⱼ = 1 + txⱼ).
-        - fₖ é o fator de capitalização no vértice atual (fₖ = 1 + txₖ).
-        - txⱼ é a taxa zero para o vértice anterior.
-        - txₖ é a taxa zero para o vértice atual.
-        - auⱼ é o prazo em anos úteis no vértice anterior (auⱼ = duⱼ/252).
-        - auₖ é o prazo em anos úteis no vértice atual (auₖ = duₖ/252).
-        - A constante 252 representa o número de dias úteis no ano.
+    - fⱼ é o fator de capitalização no vértice anterior (fⱼ = 1 + txⱼ).
+    - fₖ é o fator de capitalização no vértice atual (fₖ = 1 + txₖ).
+    - txⱼ é a taxa zero para o vértice anterior.
+    - txₖ é a taxa zero para o vértice atual.
+    - auⱼ é o prazo em anos úteis no vértice anterior (auⱼ = duⱼ/252).
+    - auₖ é o prazo em anos úteis no vértice atual (auₖ = duₖ/252).
+    - A constante 252 representa o número de dias úteis no ano.
 
     A função preserva a ordem original dos dados de entrada e lida com valores nulos
     de forma apropriada. Valores nulos nas entradas resultarão em valores nulos
@@ -243,9 +243,9 @@ def forward(
 
     Que em latex fica:
 
-    $$
+    \[
     f_{1 \rightarrow 2} = \left( \frac{f_2^{au_2}}{f_1^{au_1}} \right)^{\frac{1}{au_2 - au_1}} - 1
-    $$
+    \]
 
     Args:
         bday1 (int): Número de dias úteis do primeiro ponto (prazo menor).
