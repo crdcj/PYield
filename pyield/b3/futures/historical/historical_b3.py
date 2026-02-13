@@ -188,7 +188,7 @@ def _selecionar_e_reordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(colunas_existentes)
 
 
-def _buscar_df_historico_b3(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
+def buscar_df_historico(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
     """Busca o histórico de futuros na B3 para a data informada."""
     try:
         # Tenta baixar os dados

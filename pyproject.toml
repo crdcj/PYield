@@ -29,8 +29,8 @@ Source = "https://github.com/crdcj/PYield"
 "Bug Tracker" = "https://github.com/crdcj/PYield/issues"
 
 [dependency-groups]
-dev = [
-    "pandas>=3.0.0",
+dev = [    
+    "pandas[pyarrow]",
     "python-dotenv[cli]>=1.0.0",
     "ipykernel>=6.20.0",
     "pytest>=8.0.0",

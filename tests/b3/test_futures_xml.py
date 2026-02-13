@@ -1,70 +1,56 @@
-import datetime as dt
+import importlib
 from pathlib import Path
 
 import polars as pl
 import pytest
-import requests
 from polars.testing import assert_frame_equal
 
 from pyield import b3
 
-# Configuração da release do GitHub
-GITHUB_REPO = "crdcj/PYield"
-RELEASE_TAG = "test-data-v1.0"
+futures_core = importlib.import_module("pyield.b3.futures.core")
+
 TEST_DATA_DIR = Path(__file__).parent / "data"
+ARQUIVO_POR_DATA = {
+    "02-02-2023": "PR230202.zip",
+    "03-02-2025": "PR250203.zip",
+    "12-01-2026": "PR260112.zip",
+}
 
 
-def download_test_data(file_name: str) -> Path:
-    """Download test data file from GitHub release if not present locally."""
+def obter_arquivo_teste_local(file_name: str) -> Path:
+    """Retorna o caminho de um arquivo de teste local já versionado no repositório."""
     local_path = TEST_DATA_DIR / file_name
-
-    if local_path.exists():
-        return local_path
-
-    TEST_DATA_DIR.mkdir(parents=True, exist_ok=True)
-
-    url = (
-        f"https://github.com/{GITHUB_REPO}/releases/download/{RELEASE_TAG}/{file_name}"
-    )
-
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        local_path.write_bytes(response.content)
-    except requests.RequestException as e:
-        raise RuntimeError(f"Failed to download {file_name}: {e}") from e
-
+    if not local_path.exists():
+        raise FileNotFoundError(f"Arquivo de teste não encontrado: {local_path}")
     return local_path
 
 
+def obter_parquet_referencia(date_str: str, contract_code: str) -> Path:
+    """Retorna o caminho do parquet canônico para a data e contrato."""
+    dia, mes, ano = date_str.split("-")
+    nome = f"futures_xml_{ano}{mes}{dia}_{contract_code}.parquet"
+    return obter_arquivo_teste_local(nome)
+
+
 def prepare_data(
-    date_str: str, contract_code: str
+    date_str: str,
+    contract_code: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
     """Prepare Polars DataFrames for comparison."""
-    day, month, year = date_str.split("-")
-    file_name = f"PR{year[2:]}{month}{day}.zip"
-    file_path = download_test_data(file_name)
+    df_expect = pl.read_parquet(obter_parquet_referencia(date_str, contract_code))
 
-    df_expect = b3.read_price_report(file_path=file_path, contract_code=contract_code)
+    def _buscar_df_historico_local(data, codigo_contrato):
+        data_str = data.strftime("%d-%m-%Y")
+        arquivo_local = obter_arquivo_teste_local(ARQUIVO_POR_DATA[data_str])
+        return b3.read_price_report(
+            file_path=arquivo_local, contract_code=codigo_contrato
+        )
+
+    monkeypatch.setattr(
+        futures_core.hcore, "buscar_df_historico", _buscar_df_historico_local
+    )
     df_result = b3.futures(contract_code=contract_code, date=date_str)
-
-    # A API da bmf pode ter valores inconsistentes em algumas datas.
-    # A data de corte é 12-12-2025
-    last_date_old_api = dt.datetime.strptime("12-12-2025", "%d-%m-%Y").date()
-    ref_date = dt.datetime.strptime(date_str, "%d-%m-%Y").date()
-    if ref_date <= last_date_old_api:
-        # converter FinancialVolume para Int64 para evitar erros de comparação
-        df_expect = df_expect.with_columns(pl.col("FinancialVolume").cast(pl.Int64))
-
-    # Common columns
-    common_cols = set(df_expect.columns) & set(df_result.columns)
-    df_expect = df_expect.select(common_cols)
-    df_result = df_result.select(common_cols)
-
-    # Common Tickers
-    common_tickers = set(df_expect["TickerSymbol"]) & set(df_result["TickerSymbol"])
-    df_expect = df_expect.filter(pl.col("TickerSymbol").is_in(common_tickers))
-    df_result = df_result.filter(pl.col("TickerSymbol").is_in(common_tickers))
 
     return df_result, df_expect
 
@@ -88,19 +74,19 @@ def prepare_data(
         ("03-02-2025", "WDO"),
         ("03-02-2025", "IND"),
         ("03-02-2025", "WIN"),
-        ("15-01-2026", "DI1"),
-        ("15-01-2026", "FRC"),
-        ("15-01-2026", "DDI"),
-        ("15-01-2026", "DAP"),
-        ("15-01-2026", "DOL"),
-        ("15-01-2026", "WDO"),
-        ("15-01-2026", "IND"),
-        ("15-01-2026", "WIN"),
+        ("12-01-2026", "DI1"),
+        ("12-01-2026", "FRC"),
+        ("12-01-2026", "DDI"),
+        ("12-01-2026", "DAP"),
+        ("12-01-2026", "DOL"),
+        ("12-01-2026", "WDO"),
+        ("12-01-2026", "IND"),
+        ("12-01-2026", "WIN"),
     ],
 )
-def test_fetch_and_prepare_data(date, contract_code):
-    """Tests if the asset data fetched matches the expected data read from file."""
-    result_df, expect_df = prepare_data(date, contract_code)
+def test_fetch_and_prepare_data(date, contract_code, monkeypatch):
+    """Compara `futures` com parquet canônico usando dados locais offline."""
+    result_df, expect_df = prepare_data(date, contract_code, monkeypatch=monkeypatch)
     assert_frame_equal(
         result_df, expect_df, rel_tol=1e-4, check_exact=False, check_dtypes=True
     )

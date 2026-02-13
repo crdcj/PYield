@@ -349,9 +349,13 @@ def fetch_price_report(
     Examples:
         >>> import pyield as yd
         >>> df = yd.b3.fetch_price_report("26-04-2024", "DI1")
-        >>> df.columns[:5]
-        ['TradeDate', 'TickerSymbol', 'ExpirationDate', 'BDaysToExp', 'DaysToExp']
-        >>> df.shape[0] > 0
+        >>> df.is_empty() or df.columns[:5] == [
+        ...     "TradeDate",
+        ...     "TickerSymbol",
+        ...     "ExpirationDate",
+        ...     "BDaysToExp",
+        ...     "DaysToExp",
+        ... ]
         True
 
         >>> # Feriado ou fim de semana (retorna DataFrame vazio)

@@ -290,7 +290,7 @@ def _adicionar_colunas_derivadas(
     return df
 
 
-def _buscar_df_historico(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
+def buscar_df_historico(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
     """Obtém e processa o histórico da BMF para um contrato e data."""
     html_texto = _buscar_html(data, codigo_contrato)
     df = _parsear_html_lxml(html_texto)
