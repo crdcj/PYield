@@ -34,6 +34,7 @@ import polars as pl
 import polars.selectors as cs
 import requests
 
+import pyield.b3.common as cm
 from pyield import bday, clock
 from pyield._internal.retry import retry_padrao
 from pyield.fwd import forwards
@@ -142,9 +143,7 @@ def _processar_df(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
         )
 
     if codigo_contrato == "DI1":  # Adiciona DV01 para DI1
-        duracao = pl.col("BDaysToExp") / 252
-        duracao_mod = duracao / (1 + pl.col("LastRate"))
-        df = df.with_columns(DV01=0.0001 * duracao_mod * pl.col("LastPrice"))
+        df = df.with_columns(DV01=cm.expr_dv01("BDaysToExp", "LastRate", "LastPrice"))
 
     return df.filter(pl.col("DaysToExp") > 0)  # Remove expiring contracts
 

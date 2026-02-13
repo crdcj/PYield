@@ -279,9 +279,9 @@ def _adicionar_colunas_derivadas(
     if codigo_contrato == "DI1" and {"SettlementRate", "SettlementPrice"}.issubset(
         df.columns
     ):
-        duracao = pl.col("BDaysToExp") / 252
-        duracao_mod = duracao / (1 + pl.col("SettlementRate"))
-        df = df.with_columns(DV01=0.0001 * duracao_mod * pl.col("SettlementPrice"))
+        df = df.with_columns(
+            DV01=cm.expr_dv01("BDaysToExp", "SettlementRate", "SettlementPrice")
+        )
 
     if codigo_contrato in {"DI1", "DAP"} and "SettlementRate" in df.columns:
         df = df.with_columns(

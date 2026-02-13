@@ -275,9 +275,9 @@ def _processar_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
     if contract_code == "DI1":
         # DV01 requer SettlementRate e SettlementPrice
         if "SettlementRate" in df.columns and "SettlementPrice" in df.columns:
-            anos_base = pl.col("BDaysToExp") / 252
-            duracao_mod = anos_base / (1 + pl.col("SettlementRate"))
-            df = df.with_columns(DV01=0.0001 * duracao_mod * pl.col("SettlementPrice"))
+            df = df.with_columns(
+                DV01=cm.expr_dv01("BDaysToExp", "SettlementRate", "SettlementPrice")
+            )
 
     if contract_code in {"DI1", "DAP"} and "SettlementRate" in df.columns:
         forward_rates = forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
@@ -287,9 +287,7 @@ def _processar_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
     return df.select(coluna_ordem).filter(pl.col("DaysToExp") > 0)
 
 
-def _processar_zip(
-    zip_data: bytes, contract_code: str, source_type: str = "SPR"
-) -> pl.DataFrame:
+def _processar_zip(zip_data: bytes, contract_code: str) -> pl.DataFrame:
     if not zip_data:
         registro.warning("ZIP XML vazio.")
         return pl.DataFrame()
@@ -379,7 +377,7 @@ def fetch_price_report(
             registro.warning(msg_vazia)
             return pl.DataFrame()
 
-        df = _processar_zip(dados_zip, contract_code, source_type)
+        df = _processar_zip(dados_zip, contract_code)
 
         if df.is_empty():
             registro.warning(msg_vazia)
@@ -420,5 +418,5 @@ def read_price_report(
         source_type = "SPR" if filename.startswith("SPRD") else "PR"
 
     dados_zip = _ler_zip_arquivo(file_path)
-    df = _processar_zip(dados_zip, contract_code, source_type)
+    df = _processar_zip(dados_zip, contract_code)
     return df

@@ -67,7 +67,6 @@ def _buscar_csv(data: dt.date) -> bytes:
         url, params=parametros, json=carga, headers=cabecalhos, timeout=(5, 30)
     )
     resposta.raise_for_status()
-    resposta.encoding = "utf-8-sig"
     return resposta.content
 
 
@@ -121,7 +120,7 @@ def _processar_df(
         colunas_taxa = [c for c in df.columns if c.endswith("Rate")]
 
         # Divide por 100 para transformar percentual em decimal (14.50 -> 0.1450)
-        df = df.with_columns((pl.col(colunas_taxa) / 100).round(6))
+        df = df.with_columns(pl.col(colunas_taxa).truediv(100).round(6))
 
     # 4. Cálculo do DV01 (Apenas para DI1 e se tivermos as colunas necessárias)
     # SettlementPrice aqui já é o PU vindo do CSV (Ex: 99.000)
@@ -131,11 +130,9 @@ def _processar_df(
         and "SettlementPrice" in df.columns
         and "SettlementRate" in df.columns
     ):
-        # DV01 = (Duration / (1 + Taxa)) * PU * 0.0001
-        # Duration Modificada * PU * 1bp
-        duracao = pl.col("BDaysToExp") / 252
-        duracao_mod = duracao / (1 + pl.col("SettlementRate"))
-        df = df.with_columns(DV01=duracao_mod * pl.col("SettlementPrice") * 0.0001)
+        df = df.with_columns(
+            DV01=cm.expr_dv01("BDaysToExp", "SettlementRate", "SettlementPrice")
+        )
 
     # 5. Forward Rates (Para DI1 e DAP)
     if codigo_contrato in {"DI1", "DAP"} and "SettlementRate" in df.columns:

@@ -8,6 +8,26 @@ from pyield import bday, clock
 registro = logging.getLogger(__name__)
 
 
+def expr_dv01(
+    coluna_dias_uteis: str,
+    coluna_taxa: str,
+    coluna_preco: str,
+) -> pl.Expr:
+    """Retorna a expressão Polars para cálculo de DV01.
+
+    Fórmula:
+    DV01 = (Duration / (1 + taxa)) * preço * 0,0001
+
+    Onde:
+    - Duration = dias_uteis / 252
+    - taxa deve estar em formato decimal (ex.: 0.145)
+    - preço é o PU do contrato.
+    """
+    duracao = pl.col(coluna_dias_uteis) / 252
+    duracao_modificada = duracao / (1 + pl.col(coluna_taxa))
+    return 0.0001 * duracao_modificada * pl.col(coluna_preco)
+
+
 def adicionar_vencimento(
     df: pl.DataFrame, codigo_contrato: str, coluna_ticker: str
 ) -> pl.DataFrame:
