@@ -339,12 +339,14 @@ def fetch_price_report(
     Returns:
         pl.DataFrame: DataFrame com colunas ordenadas conforme COLUNAS_SAIDA,
         filtrado para excluir contratos vencidos (DaysToExp <= 0). Retorna
-        DataFrame vazio se não houver dados ou se a data for inválida.
+        DataFrame vazio para data inválida, resposta vazia ou falhas de parsing
+        recuperáveis.
 
     Raises:
         ValueError: Se source_type for inválido.
-        DadoIndisponivelError: Se a data for válida mas não houver dados.
-        requests.HTTPError: Se a requisição HTTP falhar.
+        DadoIndisponivelError: Se a data for válida, mas o endpoint não fornecer
+            arquivo para a data consultada.
+        requests.HTTPError: Se a requisição HTTP ao endpoint falhar.
 
     Examples:
         >>> import pyield as yd
