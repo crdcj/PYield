@@ -2,4 +2,3 @@
 
 Este módulo não faz parte da API pública estável do PYield.
 """
-

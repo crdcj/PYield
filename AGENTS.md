@@ -95,6 +95,11 @@ Most data-fetching functions follow this pattern:
   `- item 2`
 - Após mudanças em docstrings com listas/fórmulas, validar visualmente com `mkdocs serve` e confirmar o HTML gerado (evitar renderização como bloco de código).
 
+## Polars Conventions
+
+- Em `with_columns`, preferir sintaxe de keyword `col=expr` em vez de `expr.alias("col")`.
+- Retornos com encadeamento Polars: usar um único `return (...)` com quebras de linha entre métodos, sem variável intermediária.
+
 ## Complexity
 
 - Always prioritize reducing code complexity. Do not increase complexity unless explicitly requested.

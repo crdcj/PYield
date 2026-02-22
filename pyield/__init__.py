@@ -6,7 +6,7 @@ from pyield.b3 import di1, futures
 from pyield.clock import now, today
 from pyield.fwd import forward, forwards
 from pyield.interpolator import Interpolator
-from pyield.tn import lft, ltn, ntnb, ntnb1, ntnbprinc, ntnc, ntnf, pre
+from pyield.tn import lft, ltn, ntnb, ntnb1, ntnbprinc, ntnc, ntnf, pre, rmd
 
 __all__ = [
     "__version__",
@@ -31,6 +31,7 @@ __all__ = [
     "ntnc",
     "ntnf",
     "pre",
+    "rmd",
     "bday",
 ]
 
