@@ -133,6 +133,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | `anbima` | ANBIMA data (government bond prices, yield curves, IMA indexes) |
 | `bc` | BCB indicators (SELIC, PTAX, repos, VNA) |
 | `ipca` | Inflation data (historical and projections) |
+| `rmd` | Monthly Debt Report (RMD) from Tesouro Nacional |
 | `today` / `now` | Current date/time in Brazil (America/Sao_Paulo) |
 
 ## Treasury Bonds

@@ -76,5 +76,8 @@ extend-include = ["*.ipynb"]
 preview = true
 select = ["I", "F", "E", "W", "PL", "PT"]
 
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 120
+
 [tool.ruff.format]
 docstring-code-format = true

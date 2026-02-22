@@ -133,6 +133,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | `anbima` | Dados da ANBIMA (preços de TPF, curvas de juros, índices IMA) |
 | `bc` | Indicadores do BCB (SELIC, PTAX, repos, VNA) |
 | `ipca` | Dados de inflação (histórico e projeções) |
+| `rmd` | Relatório Mensal da Dívida do Tesouro Nacional |
 | `today` / `now` | Data/hora atual no Brasil (America/Sao_Paulo) |
 
 ## Títulos Públicos
