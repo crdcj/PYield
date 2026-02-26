@@ -88,7 +88,7 @@ def _preprocessar_df(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     """Renomeia e filtra o DataFrame para o contrato desejado."""
     df = df.rename(MAPA_RENOMEACAO, strict=False).filter(
         pl.col("TickerSymbol").str.starts_with(codigo_contrato),
-        pl.col("TickerSymbol").str.len_chars() == 6,  # noqa
+        pl.col("TickerSymbol").str.len_chars().is_in([6, 13]),
     )
 
     return df

@@ -30,8 +30,10 @@ NAMESPACE_B3 = "urn:bvmf.217.01.xsd"
 NAMESPACES = {"ns": NAMESPACE_B3}
 # ZIP válido do price report ~2KB; 1KB detecta arquivos "sem dados"
 MIN_TAMANHO_ZIP_BYTES = 1024
-# Formato de ticker B3: AAAnYY (ex.: DI1F26 = DI1, jan/2026)
-TAMANHO_TICKER = 6
+# Comprimentos válidos de ticker B3:
+# - 6 chars: futuros padrão AAAnYY (ex.: DI1F26)
+# - 13 chars: opções sobre futuros AAAnYYTssssss (ex.: CPMF25C100750)
+TAMANHOS_TICKER_VALIDOS = {6, 13}
 TICKER_XPATH_TEMPLATE = '//ns:TckrSymb[starts-with(text(), "{asset_code}")]'
 TRADE_DATE_XPATH = ".//ns:TradDt/ns:Dt"
 FIN_INSTRM_ATTRBTS_XPATH = ".//ns:FinInstrmAttrbts"
@@ -199,7 +201,7 @@ def _extrair_xml_zip_aninhado(conteudo_zip: bytes) -> bytes:
 
 
 def _extrair_dados_contrato(ticker: _Element) -> dict | None:
-    if ticker.text is None or len(ticker.text) != TAMANHO_TICKER:
+    if ticker.text is None or len(ticker.text) not in TAMANHOS_TICKER_VALIDOS:
         return None
     parent = ticker.getparent()
     if parent is None:
