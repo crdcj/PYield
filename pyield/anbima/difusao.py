@@ -1,5 +1,4 @@
 import datetime as dt
-import io
 import logging
 
 import polars as pl
@@ -92,54 +91,56 @@ def _buscar_dados_url(data_referencia: str) -> str:
                 URL_CONSULTA_DADOS, headers=cabecalhos, data=carga, timeout=60
             )
             response_consulta.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Erro ao registrar a data '{data_referencia}' na sessão: {e}")
-            return ""
-
-        try:
             response_download = s.post(
                 URL_DOWNLOAD, headers=cabecalhos, data=carga, timeout=60
             )
             response_download.raise_for_status()
             if "text/html" in response_download.headers.get("Content-Type", ""):
-                logger.error(
-                    "AVISO: O servidor respondeu com HTML em vez de CSV para '%s'.",
-                    data_referencia,
+                raise ValueError(
+                    "Servidor respondeu com HTML em vez de CSV para a data "
+                    f"{data_referencia}."
                 )
-                return ""
             response_download.encoding = "iso-8859-1"
             return response_download.text
         except requests.exceptions.RequestException as e:
-            logger.error(
-                f"Erro durante o download para a data '{data_referencia}': {e}"
-            )
-            return ""
+            logger.error(f"Erro ao buscar dados para a data '{data_referencia}': {e}")
+            raise
 
 
-def _processar_csv(csv_data: str) -> pl.DataFrame:
-    """Converte o CSV bruto em um DataFrame Polars limpo e estruturado."""
+def _extrair_data_referencia_e_csv_limpo(csv_data: str) -> tuple[dt.date, bytes]:
+    """Extrai a data de referência do CSV e devolve o conteúdo pronto para leitura."""
     linhas_csv = csv_data.strip().splitlines()
+    if not linhas_csv:
+        raise ValueError("CSV vazio ou inválido.")
 
-    # Extrai a data de referência da primeira linha do arquivo
+    if ":" not in linhas_csv[0]:
+        raise ValueError("Cabeçalho do CSV inválido: data de referência ausente.")
+
     data_ref_str = linhas_csv[0].split(":")[1].strip()
     data_ref = dt.datetime.strptime(data_ref_str, "%d/%m/%Y").date()
 
-    # Prepara o conteúdo do CSV para leitura
-    # O arquivo CSV da Anbima contém um ';' extra no final do cabeçalho.
-    # Esta linha remove o ';' da última coluna para garantir a leitura correta.
-    csv_limpo = "\n".join(linhas_csv[1:]).replace(
-        "Volume Negociado (R$);", "Volume Negociado (R$)"
+    # O CSV da Anbima contém ';' extra no fim do cabeçalho.
+    # Remove apenas esse caractere para garantir a leitura correta.
+    csv_limpo = (
+        "\n".join(linhas_csv[1:])
+        .replace("Volume Negociado (R$);", "Volume Negociado (R$)")
+        .encode()
     )
 
+    return data_ref, csv_limpo
+
+
+def _processar_csv(data_ref: dt.date, csv_limpo: bytes) -> pl.DataFrame:
+    """Converte o CSV limpo em um DataFrame Polars estruturado."""
     df = (
         pl.read_csv(
-            io.StringIO(csv_limpo),
+            csv_limpo,
             separator=";",
             decimal_comma=True,
             schema=ESQUEMA_API,
         )
         .rename(ALIAS_COLUNAS)
-        .with_columns(pl.col(pl.String).str.strip_chars())  # Remove espaços em branco
+        .with_columns(cs.string().str.strip_chars())  # Remove espaços em branco
         .with_columns(
             pl.col("data_vencimento").str.to_date(format="%d/%m/%Y"),
             data_referencia=data_ref,  # Adiciona a coluna de data de referência
@@ -149,10 +150,7 @@ def _processar_csv(csv_data: str) -> pl.DataFrame:
             .otherwise(pl.col("horario").str.to_time(format="%H:%M:%S")),
             taxa_media=pl.mean_horizontal("taxa_compra", "taxa_venda"),
         )
-    )
-
-    df = (
-        df.with_columns(
+        .with_columns(
             bday.count_expr("data_referencia", "data_vencimento").alias("dias_uteis"),
             # Converte as colunas de taxa de percentual para decimal
             # São 6 casas decimais no máximo.
@@ -160,6 +158,7 @@ def _processar_csv(csv_data: str) -> pl.DataFrame:
             cs.starts_with("taxa_").truediv(100).round(8),
             pl.col("data_referencia")
             .dt.combine(pl.col("horario"))
+            .dt.replace_time_zone("America/Sao_Paulo")
             .alias("data_hora_referencia"),
         )
         .select(ORDEM_COLUNAS_FINAL)
@@ -177,11 +176,15 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
         data_referencia (DateLike): Data de referência.
 
     Returns:
-        pl.DataFrame: DataFrame com os dados. Retorna um DataFrame vazio se
-            não houver dados ou em caso de erro.
+        pl.DataFrame: DataFrame com os dados.
+
+    Raises:
+        requests.RequestException: Em falhas operacionais de rede ou HTTP.
+        ValueError: Em resposta inválida da API ou erro de parsing do CSV.
 
     Output Columns:
-        - data_hora_referencia (datetime): Data e hora de referência da taxa.
+        - data_hora_referencia (datetime[America/Sao_Paulo]): Data e hora de
+            referência da taxa no fuso horário de São Paulo.
         - provedor (string): Provedor dos dados.
         - titulo (string): Nome do título (ex: LFT, LTN).
         - data_vencimento (date): Data de vencimento do título.
@@ -200,12 +203,5 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
     data_str = data.strftime("%d/%m/%Y")
     csv_data = _buscar_dados_url(data_str)
 
-    if not csv_data:
-        logger.warning("Nenhum dado foi retornado para a data '%s'.", data_str)
-        return pl.DataFrame()
-
-    try:
-        return _processar_csv(csv_data)
-    except Exception as e:
-        logger.error("Falha ao processar o CSV para a data '%s': %s", data_str, e)
-        return pl.DataFrame()
+    data_ref, csv_limpo = _extrair_data_referencia_e_csv_limpo(csv_data)
+    return _processar_csv(data_ref, csv_limpo)
