@@ -67,6 +67,7 @@ _MONTH_CODES: dict[str, int] = {
 
 # Polars-compatible replacement map (str → str, cast later)
 _MONTH_CODE_STR: dict[str, str] = {k: str(v) for k, v in _MONTH_CODES.items()}
+_CPM_TICKER_LENGTH = 13
 
 
 def _empty_schema() -> pl.DataFrame:
@@ -102,7 +103,7 @@ def _parse_ticker(ticker: str) -> tuple[int, int, str, float, int]:
     >>> _parse_ticker("CPMH25P100000")
     (3, 2025, 'put', 100.0, 0)
     """
-    if len(ticker) != 13 or not ticker.startswith("CPM"):
+    if len(ticker) != _CPM_TICKER_LENGTH or not ticker.startswith("CPM"):
         raise ValueError(f"Invalid CPM ticker: {ticker!r}")
 
     month_code = ticker[3]
@@ -159,20 +160,24 @@ def data(date: DateLike) -> pl.DataFrame:
     >>> import pyield as yd
     >>> df = yd.selic.cpm.data("29-01-2025")
     >>> df.is_empty() or set(df.schema.keys()) >= {
-    ...     "TradeDate", "TickerSymbol", "MeetingEndDate",
-    ...     "ExpiryDate", "OptionType", "StrikeChangeBps", "SettlementPrice",
+    ...     "TradeDate",
+    ...     "TickerSymbol",
+    ...     "MeetingEndDate",
+    ...     "ExpiryDate",
+    ...     "OptionType",
+    ...     "StrikeChangeBps",
+    ...     "SettlementPrice",
     ... }
     True
     """
-    if date is None:
-        return _empty_schema()
-
-    trade_date = cv.converter_datas(date)
+    trade_date = cv.converter_datas(date) if date is not None else None
     if trade_date is None:
         return _empty_schema()
 
     if not cm.data_negociacao_valida(trade_date):
-        logger.warning("Data %s inválida para CPM. Retornando DataFrame vazio.", trade_date)
+        logger.warning(
+            "Data %s inválida para CPM. Retornando DataFrame vazio.", trade_date
+        )
         return _empty_schema()
 
     try:

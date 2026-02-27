@@ -30,10 +30,11 @@ NAMESPACE_B3 = "urn:bvmf.217.01.xsd"
 NAMESPACES = {"ns": NAMESPACE_B3}
 # ZIP válido do price report ~2KB; 1KB detecta arquivos "sem dados"
 MIN_TAMANHO_ZIP_BYTES = 1024
-# Comprimentos válidos de ticker B3:
+# Comprimentos de ticker B3:
 # - 6 chars: futuros padrão AAAnYY (ex.: DI1F26)
 # - 13 chars: opções sobre futuros AAAnYYTssssss (ex.: CPMF25C100750)
-TAMANHOS_TICKER_VALIDOS = {6, 13}
+TAMANHO_TICKER_FUTURO = 6
+TAMANHO_TICKER_OPCAO = 13
 TICKER_XPATH_TEMPLATE = '//ns:TckrSymb[starts-with(text(), "{asset_code}")]'
 TRADE_DATE_XPATH = ".//ns:TradDt/ns:Dt"
 FIN_INSTRM_ATTRBTS_XPATH = ".//ns:FinInstrmAttrbts"
@@ -200,8 +201,16 @@ def _extrair_xml_zip_aninhado(conteudo_zip: bytes) -> bytes:
     return conteudo_xml
 
 
-def _extrair_dados_contrato(ticker: _Element) -> dict | None:
-    if ticker.text is None or len(ticker.text) not in TAMANHOS_TICKER_VALIDOS:
+def _ticker_valido_para_contrato(ticker: str, contract_code: str) -> bool:
+    if contract_code == "CPM":
+        return len(ticker) == TAMANHO_TICKER_OPCAO
+    return len(ticker) == TAMANHO_TICKER_FUTURO
+
+
+def _extrair_dados_contrato(ticker: _Element, contract_code: str) -> dict | None:
+    if ticker.text is None or not _ticker_valido_para_contrato(
+        ticker.text, contract_code
+    ):
         return None
     parent = ticker.getparent()
     if parent is None:
@@ -247,7 +256,7 @@ def _parsear_xml_registros(xml_bytes: bytes, asset_code: str) -> list[dict]:
     for ticker in tickers:
         if not isinstance(ticker, etree._Element):
             continue
-        dados_contrato = _extrair_dados_contrato(ticker)
+        dados_contrato = _extrair_dados_contrato(ticker, asset_code)
         if dados_contrato is not None:
             registros.append(dados_contrato)
     return registros

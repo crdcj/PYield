@@ -45,25 +45,21 @@ _FUTURE_MEETINGS_2026: list[tuple[datetime.date, datetime.date]] = [
     (datetime.date(2026, 3, 17), datetime.date(2026, 3, 18)),
     (datetime.date(2026, 4, 28), datetime.date(2026, 4, 29)),
     (datetime.date(2026, 6, 16), datetime.date(2026, 6, 17)),
-    (datetime.date(2026, 8,  4), datetime.date(2026, 8,  5)),
+    (datetime.date(2026, 8, 4), datetime.date(2026, 8, 5)),
     (datetime.date(2026, 9, 15), datetime.date(2026, 9, 16)),
-    (datetime.date(2026, 11,  3), datetime.date(2026, 11,  4)),
-    (datetime.date(2026, 12,  8), datetime.date(2026, 12,  9)),
+    (datetime.date(2026, 11, 3), datetime.date(2026, 11, 4)),
+    (datetime.date(2026, 12, 8), datetime.date(2026, 12, 9)),
 ]
 
 # Combine all future meetings here.  When a new year's calendar is
 # published, add _FUTURE_MEETINGS_{YEAR} and append it to this list.
-_ALL_FUTURE_MEETINGS: list[tuple[datetime.date, datetime.date]] = (
-    _FUTURE_MEETINGS_2026
-)
+_ALL_FUTURE_MEETINGS: list[tuple[datetime.date, datetime.date]] = _FUTURE_MEETINGS_2026
 
 
 @retry_padrao
 def _chamar_api_atas(quantidade: int = 500) -> list[dict]:
     """Fetch raw COPOM meeting list from the BCB atas API."""
-    resposta = requests.get(
-        URL_ATAS, params={"quantidade": quantidade}, timeout=10
-    )
+    resposta = requests.get(URL_ATAS, params={"quantidade": quantidade}, timeout=10)
     resposta.raise_for_status()
     return resposta.json().get("conteudo", [])
 
@@ -107,11 +103,7 @@ def _build_future_meetings() -> pl.DataFrame:
     so already-past entries in the hardcoded list are silently skipped.
     """
     hoje = clock.today()
-    rows = [
-        {"StartDate": s, "EndDate": e}
-        for s, e in _ALL_FUTURE_MEETINGS
-        if e > hoje
-    ]
+    rows = [{"StartDate": s, "EndDate": e} for s, e in _ALL_FUTURE_MEETINGS if e > hoje]
 
     if not rows:
         return pl.DataFrame(schema=_SCHEMA_CALENDARIO)
