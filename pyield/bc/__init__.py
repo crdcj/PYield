@@ -1,3 +1,4 @@
+from pyield.bc import copom
 from pyield.bc.auction import auctions
 from pyield.bc.ptax_api import ptax, ptax_series
 from pyield.bc.rates import (
@@ -15,6 +16,7 @@ from pyield.bc.vna import vna_lft
 
 __all__ = [
     "auctions",
+    "copom",
     "di_over",
     "di_over_series",
     "ptax_series",
