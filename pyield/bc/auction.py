@@ -4,7 +4,7 @@ Documentação da API do BC:
 
 Exemplo de chamada:
     https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?@dataMovimentoInicio='2025-04-08'&@dataMovimentoFim='2025-04-08'&$top=100&$format=json
-"""  # noqa: E501
+"""
 
 import datetime as dt
 import logging
@@ -438,7 +438,7 @@ def auctions(
         - ValueFR: Valor da primeira rodada (FR) do leilão em R$.
         - ValueSR: Valor da segunda rodada (SR) em R$.
         - Value: Valor total do leilão em R$ (FR + SR).
-    """  # noqa: E501
+    """
     try:
         url = _montar_url(inicio=start, fim=end, tipo_leilao=auction_type)
         texto_csv_api = _buscar_csv_api(url)

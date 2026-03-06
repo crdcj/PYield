@@ -8,7 +8,7 @@ DATA MOV  ; SIGLA; CODIGO; CODIGO ISIN ; EMISSAO   ; VENCIMENTO; NUM DE OPER; QU
 02/09/2024; LFT  ; 210100; BRSTNCLF1RD2; 08/03/2019; 01/09/2025;         101;          230120;                ; 15288,23830700; 15294,25937800; 15311,01778200; 15279,49187722; 15288,23830700; -0,1498 ; -0,0395 ; 0,0000  ;                      21;                    19059
 02/09/2024; LFT  ; 210100; BRSTNCLF1RE0; 06/09/2019; 01/03/2026;          88;          512642;                ; 15286,63304100; 15288,20025100; 15292,77891300; 15268,60295396; 15288,23830700; -0,0198 ; 0,0002  ; 0,0071  ;                      27;                   121742
 ...
-"""  # noqa: E501
+"""
 
 import datetime as dt
 import io
@@ -204,7 +204,7 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         │ 2025-01-31     ┆ NTN-F    ┆ 950199    ┆ BRSTNCNTF238 ┆ … ┆ null    ┆ null    ┆ 4               ┆ 115000            │
         └────────────────┴──────────┴───────────┴──────────────┴───┴─────────┴─────────┴─────────────────┴───────────────────┘
 
-    """  # noqa: E501
+    """
     if any_is_empty(target_date):
         registro.warning("Nenhuma data informada. Retornando DataFrame vazio.")
         return pl.DataFrame()

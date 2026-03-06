@@ -91,7 +91,7 @@ def futures(
         >>> df.shape[0] > 0
         True
 
-    """  # noqa: E501
+    """
     if any_is_empty(date, contract_code):
         return pl.DataFrame()
     data_negociacao = cv.converter_datas(date)
