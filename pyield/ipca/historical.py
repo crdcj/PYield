@@ -20,9 +20,7 @@ def _buscar_dados_api(url: str) -> dict[str, str]:
     return dados[0]["resultados"][0]["series"][0]["serie"]
 
 
-def _processar_df_ipca(
-    dados: dict[str, str], em_percentual: bool = False
-) -> pl.DataFrame:
+def _processar_ipca(dados: dict[str, str], em_percentual: bool = False) -> pl.DataFrame:
     """Processa o dicionário de dados do IPCA em um DataFrame formatado.
 
     Args:
@@ -83,7 +81,7 @@ def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
     url_api = f"{IPCA_URL}{data_inicio}-{data_fim}/variaveis/63?localidades=N1[all]"
     dados = _buscar_dados_api(url_api)
 
-    return _processar_df_ipca(dados, em_percentual=True)
+    return _processar_ipca(dados, em_percentual=True)
 
 
 def last_rates(qtd_meses: int = 1) -> pl.DataFrame:
@@ -117,7 +115,7 @@ def last_rates(qtd_meses: int = 1) -> pl.DataFrame:
     url_api = f"{IPCA_URL}-{qtd_meses}/variaveis/63?localidades=N1[all]"
     dados = _buscar_dados_api(url_api)
 
-    return _processar_df_ipca(dados, em_percentual=True)
+    return _processar_ipca(dados, em_percentual=True)
 
 
 def last_indexes(qtd_meses: int = 1) -> pl.DataFrame:
@@ -152,7 +150,7 @@ def last_indexes(qtd_meses: int = 1) -> pl.DataFrame:
     url_api = f"{IPCA_URL}-{qtd_meses}/variaveis/2266?localidades=N1[all]"
     dados = _buscar_dados_api(url_api)
 
-    return _processar_df_ipca(dados)
+    return _processar_ipca(dados)
 
 
 def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
@@ -196,4 +194,4 @@ def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
     url_api = f"{IPCA_URL}{data_inicio}-{data_fim}/variaveis/2266?localidades=N1[all]"
     dados = _buscar_dados_api(url_api)
 
-    return _processar_df_ipca(dados)
+    return _processar_ipca(dados)
