@@ -16,24 +16,22 @@ CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 MAPA_RENOMEACAO_DATASET_PR = {
     "TradDt": "TradeDate",
     "TckrSymb": "TickerSymbol",
+    "TradQty": "TradeCount",
+    "FinInstrmQty": "TradeVolume",
+    "NtlFinVol": "FinancialVolume",
     "OpnIntrst": "OpenContracts",
-    "MinTradLmt": "MinLimitValue",
-    "MaxTradLmt": "MaxLimitValue",
+    "BestBidPric": "BestBidValue",
+    "BestAskPric": "BestAskValue",
     "FrstPric": "OpenValue",
     "MinPric": "MinValue",
     "MaxPric": "MaxValue",
     "TradAvrgPric": "AvgValue",
     "LastPric": "CloseValue",
-    "BestBidPric": "BestBidValue",
-    "BestAskPric": "BestAskValue",
     "AdjstdQt": "SettlementPrice",
     "AdjstdQtTax": "SettlementRate",
-    "AdjstdValCtrct": "AdjustmentValuePerContract",
-    "RglrTraddCtrcts": "RegularTradedContracts",
-    "NtlRglrVol": "NationalRegularVolume",
-    "RglrTxsQty": "TradeCount",
-    "FinInstrmQty": "TradeVolume",
-    "NtlFinVol": "FinancialVolume",
+    "AdjstdValCtrct": "AdjustedValueContract",
+    "MaxTradLmt": "MaxLimitValue",
+    "MinTradLmt": "MinLimitValue",
 }
 
 logger = logging.getLogger(__name__)
@@ -41,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 def historical(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
     """Busca histórico de futuros priorizando o dataset PR cacheado."""
-    df_cache = _buscar_df_historico_dataset_pr(data, codigo_contrato)
+    df_cache = _carregar_pr_por_data(data, codigo_contrato)
     if not df_cache.is_empty():
         return df_cache
 
@@ -53,29 +51,25 @@ def historical(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
         return pl.DataFrame()
 
 
-def _buscar_df_historico_dataset_pr(
-    data: dt.date, codigo_contrato: str
-) -> pl.DataFrame:
+def _carregar_pr_por_data(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
     """Busca o histórico de futuros no dataset PR cacheado para a data informada."""
-    return carregar_historico_dataset_pr([data], codigo_contrato)
+    return carregar_pr([data], codigo_contrato)
 
 
-def carregar_historico_dataset_pr(
-    datas: list[dt.date], codigo_contrato: str
-) -> pl.DataFrame:
+def carregar_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
     """Carrega histórico de futuros do dataset PR para uma lista de datas."""
     if not datas:
         return pl.DataFrame()
 
     try:
         df = obter_dataset_cacheado("pr")
-        df = _preprocessar_df_historico_dataset_pr(df, datas, codigo_contrato)
+        df = _filtrar_e_renomear_pr(df, datas, codigo_contrato)
         if df.is_empty():
             return pl.DataFrame()
 
         df = cm.adicionar_vencimento(df, codigo_contrato, coluna_ticker="TickerSymbol")
-        df = _processar_df_historico_recente(df, codigo_contrato)
-        df = _selecionar_e_reordenar_colunas_historico_recente(df)
+        df = _enriquecer_dados(df, codigo_contrato)
+        df = _selecionar_colunas_saida(df)
 
         return df.sort("TradeDate", "ExpirationDate")
     except Exception as erro:
@@ -88,11 +82,10 @@ def carregar_historico_dataset_pr(
         return pl.DataFrame()
 
 
-def listar_datas_disponiveis_dataset_pr(codigo_contrato: str) -> pl.Series:
+def listar_datas_disponiveis_pr(codigo_contrato: str) -> pl.Series:
     """Lista datas disponíveis no dataset PR para um contrato futuro."""
     return (
         obter_dataset_cacheado("pr")
-        .with_columns(TradDt=pl.col("TradDt").cast(pl.Date, strict=False))
         .filter(pl.col("TckrSymb").str.starts_with(codigo_contrato))
         .get_column("TradDt")
         .drop_nulls()
@@ -102,22 +95,16 @@ def listar_datas_disponiveis_dataset_pr(codigo_contrato: str) -> pl.Series:
     )
 
 
-def _preprocessar_df_historico_dataset_pr(
+def _filtrar_e_renomear_pr(
     df: pl.DataFrame, datas: list[dt.date], codigo_contrato: str
 ) -> pl.DataFrame:
-    return (
-        df.with_columns(TradDt=pl.col("TradDt").cast(pl.Date, strict=False))
-        .filter(
-            pl.col("TradDt").is_in(datas),
-            pl.col("TckrSymb").str.starts_with(codigo_contrato),
-        )
-        .rename(MAPA_RENOMEACAO_DATASET_PR, strict=False)
-    )
+    return df.filter(
+        pl.col("TradDt").is_in(datas),
+        pl.col("TckrSymb").str.starts_with(codigo_contrato),
+    ).rename(MAPA_RENOMEACAO_DATASET_PR)
 
 
-def _processar_df_historico_recente(
-    df: pl.DataFrame, codigo_contrato: str
-) -> pl.DataFrame:
+def _enriquecer_dados(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     df = df.with_columns(
         BDaysToExp=bday.count_expr("TradeDate", "ExpirationDate"),
         DaysToExp=(pl.col("ExpirationDate") - pl.col("TradeDate")).dt.total_days(),
@@ -151,7 +138,7 @@ def _processar_df_historico_recente(
     return df
 
 
-def _selecionar_e_reordenar_colunas_historico_recente(df: pl.DataFrame) -> pl.DataFrame:
+def _selecionar_colunas_saida(df: pl.DataFrame) -> pl.DataFrame:
     ordem_preferida = [
         "TradeDate",
         "TickerSymbol",
@@ -163,9 +150,7 @@ def _selecionar_e_reordenar_colunas_historico_recente(df: pl.DataFrame) -> pl.Da
         "TradeCount",
         "TradeVolume",
         "FinancialVolume",
-        "RegularTradedContracts",
-        "NationalRegularVolume",
-        "AdjustmentValuePerContract",
+        "AdjustedValueContract",
         "MinLimitPrice",
         "MaxLimitPrice",
         "OpenPrice",

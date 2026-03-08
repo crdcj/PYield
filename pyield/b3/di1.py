@@ -14,9 +14,7 @@ registro = logging.getLogger(__name__)
 
 def _carregar_cache_pr_di1(datas: list[dt.date]) -> pl.DataFrame:
     """Carrega e processa DI1 a partir do dataset PR para as datas informadas."""
-    return futuros_historico.carregar_historico_dataset_pr(
-        datas=datas, codigo_contrato="DI1"
-    )
+    return futuros_historico.carregar_pr(datas=datas, codigo_contrato="DI1")
 
 
 def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
@@ -404,6 +402,4 @@ def available_trade_dates() -> pl.Series:
             2018-01-08
         ]
     """
-    return futuros_historico.listar_datas_disponiveis_dataset_pr("DI1").alias(
-        "available_dates"
-    )
+    return futuros_historico.listar_datas_disponiveis_pr("DI1").alias("available_dates")

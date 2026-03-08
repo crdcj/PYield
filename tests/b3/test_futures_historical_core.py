@@ -20,7 +20,7 @@ def test_historical_prioriza_dataset_pr(monkeypatch):
 
     monkeypatch.setattr(
         historical_mod,
-        "_buscar_df_historico_dataset_pr",
+        "_carregar_pr_por_data",
         _historico_pr_falso,
     )
     monkeypatch.setattr(historical_mod, "fetch_price_report", _price_report_falso)
@@ -35,7 +35,7 @@ def test_historical_faz_fallback_para_price_report(monkeypatch):
     """Se cache PR vier vazio, deve fazer fallback para SPR."""
     monkeypatch.setattr(
         historical_mod,
-        "_buscar_df_historico_dataset_pr",
+        "_carregar_pr_por_data",
         lambda data, codigo_contrato: pl.DataFrame(),
     )
 
