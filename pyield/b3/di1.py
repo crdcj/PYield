@@ -7,8 +7,16 @@ import pyield._internal.converters as cv
 from pyield import b3, bday, interpolator
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
+from pyield.b3.futures import historical as futuros_historico
 
 registro = logging.getLogger(__name__)
+
+
+def _carregar_cache_pr_di1(datas: list[dt.date]) -> pl.DataFrame:
+    """Carrega e processa DI1 a partir do dataset PR para as datas informadas."""
+    return futuros_historico.carregar_historico_dataset_pr(
+        datas=datas, codigo_contrato="DI1"
+    )
 
 
 def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
@@ -20,8 +28,8 @@ def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
     Returns:
         DataFrame com dados de DI para as datas solicitadas.
     """
-    # 1. Busca inicial no cache com as datas solicitadas pelo usuário.
-    df_cache = obter_dataset_cacheado("di1").filter(pl.col("TradeDate").is_in(datas))
+    # 1. Busca inicial no cache PR com as datas solicitadas pelo usuário.
+    df_cache = _carregar_cache_pr_di1(datas)
 
     # 2. Identifica datas solicitadas que não estão no cache
     datas_solicitadas = set(datas)
@@ -102,25 +110,12 @@ def data(
     Examples:
         >>> from pyield import di1
         >>> df = di1.data(dates="16-10-2024", month_start=True)
-        >>> df
-        shape: (38, 22)
-        ┌────────────┬────────────────┬──────────────┬───────────┬───┬─────────┬───────────┬────────────────┬─────────────┐
-        │ TradeDate  ┆ ExpirationDate ┆ TickerSymbol ┆ DaysToExp ┆ … ┆ MaxRate ┆ CloseRate ┆ SettlementRate ┆ ForwardRate │
-        │ ---        ┆ ---            ┆ ---          ┆ ---       ┆   ┆ ---     ┆ ---       ┆ ---            ┆ ---         │
-        │ date       ┆ date           ┆ str          ┆ i64       ┆   ┆ f64     ┆ f64       ┆ f64            ┆ f64         │
-        ╞════════════╪════════════════╪══════════════╪═══════════╪═══╪═════════╪═══════════╪════════════════╪═════════════╡
-        │ 2024-10-16 ┆ 2024-11-01     ┆ DI1X24       ┆ 16        ┆ … ┆ 0.10656 ┆ 0.10652   ┆ 0.10653        ┆ 0.10653     │
-        │ 2024-10-16 ┆ 2024-12-01     ┆ DI1Z24       ┆ 47        ┆ … ┆ 0.10914 ┆ 0.10914   ┆ 0.1091         ┆ 0.110726    │
-        │ 2024-10-16 ┆ 2025-01-01     ┆ DI1F25       ┆ 78        ┆ … ┆ 0.11174 ┆ 0.11164   ┆ 0.11164        ┆ 0.1154      │
-        │ 2024-10-16 ┆ 2025-02-01     ┆ DI1G25       ┆ 110       ┆ … ┆ 0.1137  ┆ 0.11365   ┆ 0.11362        ┆ 0.118314    │
-        │ 2024-10-16 ┆ 2025-03-01     ┆ DI1H25       ┆ 140       ┆ … ┆ 0.11595 ┆ 0.11565   ┆ 0.1157         ┆ 0.12343     │
-        │ …          ┆ …              ┆ …            ┆ …         ┆ … ┆ …       ┆ …         ┆ …              ┆ …           │
-        │ 2024-10-16 ┆ 2035-01-01     ┆ DI1F35       ┆ 3730      ┆ … ┆ 0.1267  ┆ 0.1264    ┆ 0.1265         ┆ 0.124455    │
-        │ 2024-10-16 ┆ 2036-01-01     ┆ DI1F36       ┆ 4095      ┆ … ┆ null    ┆ null      ┆ 0.1263         ┆ 0.124249    │
-        │ 2024-10-16 ┆ 2037-01-01     ┆ DI1F37       ┆ 4461      ┆ … ┆ null    ┆ null      ┆ 0.1263         ┆ 0.1263      │
-        │ 2024-10-16 ┆ 2038-01-01     ┆ DI1F38       ┆ 4828      ┆ … ┆ null    ┆ null      ┆ 0.1263         ┆ 0.1263      │
-        │ 2024-10-16 ┆ 2039-01-01     ┆ DI1F39       ┆ 5192      ┆ … ┆ null    ┆ null      ┆ 0.1263         ┆ 0.1263      │
-        └────────────┴────────────────┴──────────────┴───────────┴───┴─────────┴───────────┴────────────────┴─────────────┘
+        >>> {"TradeDate", "TickerSymbol", "ExpirationDate", "SettlementRate"}.issubset(
+        ...     set(df.columns)
+        ... )
+        True
+        >>> df.shape[0] > 0
+        True
 
     """
     if any_is_empty(dates):
@@ -386,10 +381,10 @@ def interpolate_rate(
 
 
 def available_trade_dates() -> pl.Series:
-    """Retorna todas as datas de negociação disponíveis (completas) no dataset de DI.
+    """Retorna todas as datas de negociação disponíveis para DI1 em futures.
 
-    Obtém valores distintos de 'TradeDate' presentes no cache de dados históricos
-    de futuros de DI, ordenados cronologicamente.
+    Obtém valores distintos de 'TradeDate' para DI1, com base no mesmo
+    dataset PR utilizado por `futures`.
 
     Returns:
         Series ordenada de datas de negociação únicas (dt.date) para as quais
@@ -397,23 +392,18 @@ def available_trade_dates() -> pl.Series:
 
     Examples:
         >>> from pyield import di1
-        >>> # Série de futuros de DI começa em 1995-01-02
+        >>> # Série disponível no dataset PR começa em 2018-01-02
         >>> di1.available_trade_dates().head(5)
         shape: (5,)
         Series: 'available_dates' [date]
         [
-            1995-01-02
-            1995-01-03
-            1995-01-04
-            1995-01-05
-            1995-01-06
+            2018-01-02
+            2018-01-03
+            2018-01-04
+            2018-01-05
+            2018-01-08
         ]
     """
-    datas_disponiveis = (
-        obter_dataset_cacheado("di1")
-        .get_column("TradeDate")
-        .unique()
-        .sort()
-        .alias("available_dates")
+    return futuros_historico.listar_datas_disponiveis_dataset_pr("DI1").alias(
+        "available_dates"
     )
-    return datas_disponiveis

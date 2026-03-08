@@ -16,7 +16,6 @@ registro = logging.getLogger(__name__)
 
 # Estrutura interna única — usuário não vê isso
 class _Dataset(Enum):
-    DI1 = ("b3_di.parquet", "TradeDate", "Futuro de DI (B3)")
     TPF = ("anbima_tpf.parquet", "ReferenceDate", "TPF (ANBIMA)")
     PR = ("b3_price_report.parquet", "TradeDate", "Price Report (B3)")
 
@@ -26,7 +25,7 @@ class _Dataset(Enum):
         self.descricao = descricao
 
 
-type IdDataset = Literal["di1", "tpf", "pr"]
+type IdDataset = Literal["tpf", "pr"]
 
 
 def _obter_chave_data_hoje() -> str:
@@ -38,9 +37,7 @@ def _validar_id_dataset(id_dataset: str) -> _Dataset:
     try:
         return _Dataset[dataset_normalizado.upper()]
     except KeyError as e:
-        msg = (
-            f"id_dataset inválido: '{id_dataset}'. Valores aceitos: 'di1', 'tpf', 'pr'."
-        )
+        msg = f"id_dataset inválido: '{id_dataset}'. Valores aceitos: 'tpf', 'pr'."
         raise ValueError(msg) from e
 
 
@@ -84,7 +81,7 @@ def obter_dataset_cacheado(id_dataset: IdDataset) -> pl.DataFrame:
     Obtém um dataset pelo ID. Cache expira diariamente.
 
     Args:
-        id_dataset: "di1", "tpf" ou "pr"
+        id_dataset: "tpf" ou "pr"
     """
     df = _obter_dataset_com_ttl(id_dataset.lower(), _obter_chave_data_hoje())
     return df.clone()

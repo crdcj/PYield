@@ -96,8 +96,8 @@ def _processar_colunas_intraday(df: pl.DataFrame) -> pl.DataFrame:
         "opnCtrcts": "OpenContracts",
         "tradQty": "TradeCount",
         "traddCtrctsQty": "TradeVolume",
-        "buyOffer.price": "LastAskRate",
-        "sellOffer.price": "LastBidRate",
+        "buyOffer.price": "BestAskRate",
+        "sellOffer.price": "BestBidRate",
     }
     return df.select(mapa_renomeacao.keys()).rename(mapa_renomeacao, strict=False)
 
@@ -157,8 +157,8 @@ def _selecionar_e_reordenar_colunas_intraday(df: pl.DataFrame) -> pl.DataFrame:
         "MinRate",
         "AvgRate",
         "MaxRate",
-        "LastAskRate",
-        "LastBidRate",
+        "BestAskRate",
+        "BestBidRate",
         "LastRate",
         "ForwardRate",
     ]

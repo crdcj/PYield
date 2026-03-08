@@ -2,69 +2,48 @@ import datetime as dt
 import logging
 
 import polars as pl
-import requests
-from dateutil.relativedelta import relativedelta
 
 import pyield.b3.common as cm
-from pyield import bday, clock
-from pyield._internal.retry import retry_padrao
+from pyield import bday
+from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield.b3.price_report import fetch_price_report
 from pyield.fwd import forwards
-
-JANELA_DADOS_RECENTES = relativedelta(months=1)
 
 # Lista de contratos que negociam por taxa (juros/cupom).
 # Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.
 CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 
-CONFIG_COLUNAS_HISTORICO_RECENTE = {
-    "Instrumento financeiro": (pl.String, "TickerSymbol"),
-    "Código ISIN": (pl.String, "ISINCode"),
-    "Segmento": (pl.String, "Segment"),
-    # Lemos como "Value" genérico, pois pode ser Taxa ou Preço
-    "Preço de abertura": (pl.Float64, "OpenValue"),
-    "Preço mínimo": (pl.Float64, "MinValue"),
-    "Preço máximo": (pl.Float64, "MaxValue"),
-    "Preço médio": (pl.Float64, "AvgValue"),
-    "Preço de fechamento": (pl.Float64, "CloseValue"),
-    "Última oferta de compra": (pl.Float64, "LastBidValue"),
-    "Última oferta de venda": (pl.Float64, "LastAskValue"),
-    "Oscilação": (pl.Float64, "Oscillation"),
-    "Variação": (pl.Float64, "Variation"),
-    "Ajuste": (pl.Float64, "SettlementPrice"),
-    "Preço de referência": (pl.Float64, "ReferencePrice"),
-    "Ajuste de referência": (pl.Float64, "SettlementRate"),
-    "Valor do ajuste por contrato (R$)": (pl.Float64, "AdjustmentValuePerContract"),
-    "Quantidade de negócios": (pl.Int64, "TradeCount"),
-    "Quantidade de contratos": (pl.Int64, "TradeVolume"),
-    "Volume financeiro": (pl.Float64, "FinancialVolume"),
-}
-
-ESQUEMA_CSV_HISTORICO_RECENTE = {
-    k: v[0] for k, v in CONFIG_COLUNAS_HISTORICO_RECENTE.items()
-}
-MAPA_RENOMEACAO_HISTORICO_RECENTE = {
-    k: v[1] for k, v in CONFIG_COLUNAS_HISTORICO_RECENTE.items()
+MAPA_RENOMEACAO_DATASET_PR = {
+    "TradDt": "TradeDate",
+    "TckrSymb": "TickerSymbol",
+    "OpnIntrst": "OpenContracts",
+    "MinTradLmt": "MinLimitValue",
+    "MaxTradLmt": "MaxLimitValue",
+    "FrstPric": "OpenValue",
+    "MinPric": "MinValue",
+    "MaxPric": "MaxValue",
+    "TradAvrgPric": "AvgValue",
+    "LastPric": "CloseValue",
+    "BestBidPric": "BestBidValue",
+    "BestAskPric": "BestAskValue",
+    "AdjstdQt": "SettlementPrice",
+    "AdjstdQtTax": "SettlementRate",
+    "AdjstdValCtrct": "AdjustmentValuePerContract",
+    "RglrTraddCtrcts": "RegularTradedContracts",
+    "NtlRglrVol": "NationalRegularVolume",
+    "RglrTxsQty": "TradeCount",
+    "FinInstrmQty": "TradeVolume",
+    "NtlFinVol": "FinancialVolume",
 }
 
 logger = logging.getLogger(__name__)
 
 
 def historical(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
-    """Busca histórico de futuros com priorização de fonte por recência da data."""
-    data_limite_recente = clock.today() - JANELA_DADOS_RECENTES
-
-    if data <= data_limite_recente:
-        try:
-            return fetch_price_report(
-                date=data, contract_code=codigo_contrato, source_type="SPR"
-            )
-        except Exception:
-            return pl.DataFrame()
-
-    df_recente = _buscar_df_historico_recente(data, codigo_contrato)
-    if not df_recente.is_empty():
-        return df_recente
+    """Busca histórico de futuros priorizando o dataset PR cacheado."""
+    df_cache = _buscar_df_historico_dataset_pr(data, codigo_contrato)
+    if not df_cache.is_empty():
+        return df_cache
 
     try:
         return fetch_price_report(
@@ -74,89 +53,74 @@ def historical(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
         return pl.DataFrame()
 
 
-def _buscar_df_historico_recente(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
-    """Busca o histórico recente de futuros na B3 para a data informada."""
-    try:
-        csv_texto = _buscar_csv_historico_recente(data)
-        if not csv_texto:
-            return pl.DataFrame()
+def _buscar_df_historico_dataset_pr(
+    data: dt.date, codigo_contrato: str
+) -> pl.DataFrame:
+    """Busca o histórico de futuros no dataset PR cacheado para a data informada."""
+    return carregar_historico_dataset_pr([data], codigo_contrato)
 
-        df = _parsear_df_bruto(csv_texto)
-        df = _preprocessar_df_historico_recente(df, codigo_contrato)
+
+def carregar_historico_dataset_pr(
+    datas: list[dt.date], codigo_contrato: str
+) -> pl.DataFrame:
+    """Carrega histórico de futuros do dataset PR para uma lista de datas."""
+    if not datas:
+        return pl.DataFrame()
+
+    try:
+        df = obter_dataset_cacheado("pr")
+        df = _preprocessar_df_historico_dataset_pr(df, datas, codigo_contrato)
         if df.is_empty():
             return pl.DataFrame()
 
         df = cm.adicionar_vencimento(df, codigo_contrato, coluna_ticker="TickerSymbol")
-        df = _processar_df_historico_recente(df, data, codigo_contrato)
+        df = _processar_df_historico_recente(df, codigo_contrato)
         df = _selecionar_e_reordenar_colunas_historico_recente(df)
 
-        return df.sort("ExpirationDate")
+        return df.sort("TradeDate", "ExpirationDate")
     except Exception as erro:
         logger.exception(
-            "CRITICAL: Falha ao processar histórico recente do contrato %s para %s. Erro: %s",
+            "CRITICAL: Falha ao processar histórico no dataset PR do contrato %s para %s. Erro: %s",
             codigo_contrato,
-            data,
+            datas,
             erro,
         )
         return pl.DataFrame()
 
 
-@retry_padrao
-def _buscar_csv_historico_recente(data: dt.date) -> bytes:
-    """Busca o CSV diário de derivativos consolidados na B3."""
-    url = "https://arquivos.b3.com.br/bdi/table/export/csv"
-    parametros = {"lang": "pt-BR"}
-    data_str = data.strftime("%Y-%m-%d")
-    carga = {
-        "Name": "ConsolidatedTradesDerivatives",
-        "Date": data_str,
-        "FinalDate": data_str,
-        "ClientId": "",
-        "Filters": {},
-    }
-
-    cabecalhos = {
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",  # noqa: E501
-        "Accept": "application/json, text/plain, */*",
-    }
-
-    resposta = requests.post(
-        url, params=parametros, json=carga, headers=cabecalhos, timeout=(5, 30)
-    )
-    resposta.raise_for_status()
-    return resposta.content
-
-
-def _parsear_df_bruto(csv_bytes: bytes) -> pl.DataFrame:
-    """Lê o CSV bruto em um DataFrame Polars."""
-    return pl.read_csv(
-        csv_bytes.replace(b".", b""),
-        separator=";",
-        skip_lines=2,
-        null_values=["-"],
-        decimal_comma=True,
-        schema_overrides=ESQUEMA_CSV_HISTORICO_RECENTE,
-        encoding="utf-8-sig",
+def listar_datas_disponiveis_dataset_pr(codigo_contrato: str) -> pl.Series:
+    """Lista datas disponíveis no dataset PR para um contrato futuro."""
+    return (
+        obter_dataset_cacheado("pr")
+        .with_columns(TradDt=pl.col("TradDt").cast(pl.Date, strict=False))
+        .filter(pl.col("TckrSymb").str.starts_with(codigo_contrato))
+        .get_column("TradDt")
+        .drop_nulls()
+        .unique()
+        .sort()
+        .alias("TradeDate")
     )
 
 
-def _preprocessar_df_historico_recente(
-    df: pl.DataFrame, codigo_contrato: str
+def _preprocessar_df_historico_dataset_pr(
+    df: pl.DataFrame, datas: list[dt.date], codigo_contrato: str
 ) -> pl.DataFrame:
-    return df.rename(MAPA_RENOMEACAO_HISTORICO_RECENTE, strict=False).filter(
-        pl.col("TickerSymbol").str.starts_with(codigo_contrato),
-        pl.col("TickerSymbol").str.len_chars().is_in([6, 13]),
+    return (
+        df.with_columns(TradDt=pl.col("TradDt").cast(pl.Date, strict=False))
+        .filter(
+            pl.col("TradDt").is_in(datas),
+            pl.col("TckrSymb").str.starts_with(codigo_contrato),
+        )
+        .rename(MAPA_RENOMEACAO_DATASET_PR, strict=False)
     )
 
 
 def _processar_df_historico_recente(
-    df: pl.DataFrame, data_referencia: dt.date, codigo_contrato: str
+    df: pl.DataFrame, codigo_contrato: str
 ) -> pl.DataFrame:
     df = df.with_columns(
-        BDaysToExp=bday.count_expr(data_referencia, "ExpirationDate"),
-        DaysToExp=(df["ExpirationDate"] - pl.lit(data_referencia)).dt.total_days(),
-        TradeDate=data_referencia,
+        BDaysToExp=bday.count_expr("TradeDate", "ExpirationDate"),
+        DaysToExp=(pl.col("ExpirationDate") - pl.col("TradeDate")).dt.total_days(),
     ).filter(pl.col("DaysToExp") > 0)
 
     eh_taxa = codigo_contrato in CONTRATOS_TAXA
@@ -190,33 +154,37 @@ def _processar_df_historico_recente(
 def _selecionar_e_reordenar_colunas_historico_recente(df: pl.DataFrame) -> pl.DataFrame:
     ordem_preferida = [
         "TradeDate",
-        "ISINCode",
         "TickerSymbol",
         "ExpirationDate",
         "BDaysToExp",
         "DaysToExp",
         "DV01",
+        "OpenContracts",
         "TradeCount",
         "TradeVolume",
         "FinancialVolume",
+        "RegularTradedContracts",
+        "NationalRegularVolume",
         "AdjustmentValuePerContract",
+        "MinLimitPrice",
+        "MaxLimitPrice",
         "OpenPrice",
         "MinPrice",
         "MaxPrice",
         "AvgPrice",
         "ClosePrice",
-        "LastBidPrice",
-        "LastAskPrice",
-        "Oscillation",
-        "Variation",
+        "BestBidPrice",
+        "BestAskPrice",
         "SettlementPrice",
+        "MinLimitRate",
+        "MaxLimitRate",
         "OpenRate",
         "MinRate",
         "MaxRate",
         "AvgRate",
         "CloseRate",
-        "LastBidRate",
-        "LastAskRate",
+        "BestBidRate",
+        "BestAskRate",
         "SettlementRate",
         "ForwardRate",
     ]
