@@ -7,7 +7,7 @@ from polars.testing import assert_frame_equal
 
 from pyield import b3
 
-futures_core = importlib.import_module("pyield.b3.futures")
+historical_mod = importlib.import_module("pyield.b3.futures.historical")
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 ARQUIVO_POR_DATA = {
@@ -47,7 +47,7 @@ def prepare_data(
             file_path=arquivo_local, contract_code=codigo_contrato
         )
 
-    monkeypatch.setattr(futures_core, "buscar_df_historico", _buscar_df_historico_local)
+    monkeypatch.setattr(historical_mod, "historical", _buscar_df_historico_local)
     df_result = b3.futures(contract_code=contract_code, date=date_str)
 
     return df_result, df_expect

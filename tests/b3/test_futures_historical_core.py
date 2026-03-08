@@ -3,12 +3,12 @@ import importlib
 
 import polars as pl
 
-futures_mod = importlib.import_module("pyield.b3.futures")
+historical_mod = importlib.import_module("pyield.b3.futures.historical")
 
 
 def test_data_antiga_usa_apenas_price_report(monkeypatch):
     """Datas antigas devem ignorar endpoint curto e usar price report."""
-    monkeypatch.setattr(futures_mod.clock, "today", lambda: dt.date(2026, 5, 15))
+    monkeypatch.setattr(historical_mod.clock, "today", lambda: dt.date(2026, 5, 15))
 
     hb3_chamou = {"valor": False}
 
@@ -25,11 +25,13 @@ def test_data_antiga_usa_apenas_price_report(monkeypatch):
         return pl.DataFrame()
 
     monkeypatch.setattr(
-        futures_mod, "_buscar_df_historico_recente", _historico_recente_falso
+        historical_mod,
+        "_buscar_df_historico_recente",
+        _historico_recente_falso,
     )
-    monkeypatch.setattr(futures_mod, "fetch_price_report", _price_report_falso)
+    monkeypatch.setattr(historical_mod, "fetch_price_report", _price_report_falso)
 
-    df = futures_mod.buscar_df_historico(dt.date(2026, 1, 15), "DI1")
+    df = historical_mod.historical(dt.date(2026, 1, 15), "DI1")
 
     assert not hb3_chamou["valor"]
     assert chamadas_price_report == [(dt.date(2026, 1, 15), "DI1", "SPR")]
@@ -38,7 +40,7 @@ def test_data_antiga_usa_apenas_price_report(monkeypatch):
 
 def test_data_recente_prioriza_endpoint_curto(monkeypatch):
     """Datas recentes usam endpoint curto quando ele retorna dados."""
-    monkeypatch.setattr(futures_mod.clock, "today", lambda: dt.date(2026, 5, 15))
+    monkeypatch.setattr(historical_mod.clock, "today", lambda: dt.date(2026, 5, 15))
 
     def _historico_recente_falso(data, codigo_contrato):
         return pl.DataFrame({"TickerSymbol": ["DI1N26"]})
@@ -50,11 +52,13 @@ def test_data_recente_prioriza_endpoint_curto(monkeypatch):
         return pl.DataFrame()
 
     monkeypatch.setattr(
-        futures_mod, "_buscar_df_historico_recente", _historico_recente_falso
+        historical_mod,
+        "_buscar_df_historico_recente",
+        _historico_recente_falso,
     )
-    monkeypatch.setattr(futures_mod, "fetch_price_report", _price_report_falso)
+    monkeypatch.setattr(historical_mod, "fetch_price_report", _price_report_falso)
 
-    df = futures_mod.buscar_df_historico(dt.date(2026, 5, 10), "DI1")
+    df = historical_mod.historical(dt.date(2026, 5, 10), "DI1")
 
     assert not df.is_empty()
     assert not chamou_price_report["valor"]
@@ -62,9 +66,9 @@ def test_data_recente_prioriza_endpoint_curto(monkeypatch):
 
 def test_data_recente_faz_fallback_para_price_report(monkeypatch):
     """Se endpoint curto vier vazio, deve fazer fallback para SPR."""
-    monkeypatch.setattr(futures_mod.clock, "today", lambda: dt.date(2026, 5, 15))
+    monkeypatch.setattr(historical_mod.clock, "today", lambda: dt.date(2026, 5, 15))
     monkeypatch.setattr(
-        futures_mod,
+        historical_mod,
         "_buscar_df_historico_recente",
         lambda data, codigo_contrato: pl.DataFrame(),
     )
@@ -75,9 +79,9 @@ def test_data_recente_faz_fallback_para_price_report(monkeypatch):
         chamadas_price_report.append(source_type)
         return pl.DataFrame({"TickerSymbol": ["DI1N26"]})
 
-    monkeypatch.setattr(futures_mod, "fetch_price_report", _price_report_falso)
+    monkeypatch.setattr(historical_mod, "fetch_price_report", _price_report_falso)
 
-    df = futures_mod.buscar_df_historico(dt.date(2026, 5, 10), "DI1")
+    df = historical_mod.historical(dt.date(2026, 5, 10), "DI1")
 
     assert chamadas_price_report == ["SPR"]
     assert not df.is_empty()
