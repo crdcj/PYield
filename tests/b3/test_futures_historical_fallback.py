@@ -2,6 +2,9 @@ import datetime as dt
 import importlib
 
 import polars as pl
+from polars.testing import assert_frame_equal
+
+import pyield as yd
 
 historical_mod = importlib.import_module("pyield.b3.futures.historical")
 
@@ -51,3 +54,22 @@ def test_historical_faz_fallback_para_price_report(monkeypatch):
 
     assert chamadas_price_report == ["SPR"]
     assert not df.is_empty()
+
+
+def test_futures_igual_price_report_release_di1():
+    """`futures` deve bater com o PR remoto do release na mesma data."""
+    data = dt.date(2026, 1, 12)
+
+    df_futures = yd.futures(contract_code="DI1", date=data)
+    df_price_report = historical_mod.carregar_pr([data], "DI1")
+
+    assert not df_futures.is_empty()
+    assert not df_price_report.is_empty()
+
+    assert_frame_equal(
+        df_futures.sort("ExpirationDate"),
+        df_price_report.sort("ExpirationDate"),
+        rel_tol=1e-6,
+        check_exact=False,
+        check_dtypes=True,
+    )
