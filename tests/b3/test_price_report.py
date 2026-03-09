@@ -8,6 +8,7 @@ Os parquets de referência são comparados com o XML remoto em .zst
 publicado no release de dados de teste.
 """
 
+import datetime as dt
 import importlib
 from functools import lru_cache
 from pathlib import Path
@@ -111,3 +112,38 @@ def test_pipeline_bruto_price_report(date: str, contract_code: str):
 
     assert not df_result.is_empty(), f"Resultado vazio para {contract_code}"
     assert_frame_equal(df_result, df_expect, check_exact=True, check_dtypes=True)
+
+
+def test_fetch_price_report_reusa_download_xml_por_data(monkeypatch):
+    pr_mod._obter_xml_price_report.cache_clear()
+
+    chamadas = {"download": 0, "extrair": 0}
+
+    monkeypatch.setattr(pr_mod, "data_negociacao_valida", lambda *_: True)
+
+    def _baixar_zip_falso(*_):
+        chamadas["download"] += 1
+        return b"zip"
+
+    def _extrair_xml_falso(*_):
+        chamadas["extrair"] += 1
+        return b"xml"
+
+    def _processar_xml_falso(_xml, codigo):
+        return pl.DataFrame(
+            {
+                "TickerSymbol": [f"{codigo}F26"],
+                "TradeDate": [dt.date(2026, 1, 12)],
+            }
+        )
+
+    monkeypatch.setattr(pr_mod, "_baixar_zip_url", _baixar_zip_falso)
+    monkeypatch.setattr(pr_mod, "_extrair_xml_zip_aninhado", _extrair_xml_falso)
+    monkeypatch.setattr(pr_mod, "_processar_xml_extraido", _processar_xml_falso)
+
+    _ = pr_mod.fetch_price_report(date="12-01-2026", contract_code="DI1")
+    _ = pr_mod.fetch_price_report(date="12-01-2026", contract_code="DOL")
+
+    assert chamadas == {"download": 1, "extrair": 1}
+
+    pr_mod._obter_xml_price_report.cache_clear()

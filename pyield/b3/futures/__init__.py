@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Sequence
 from typing import Literal
 
 import polars as pl
@@ -6,6 +7,7 @@ import polars as pl
 import pyield._internal.converters as cv
 from pyield import clock
 from pyield._internal.types import DateLike, any_is_empty
+from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3.futures import historical as historico
 from pyield.b3.futures import intraday as intradiario
 from pyield.b3.validar_pregao import data_negociacao_valida
@@ -30,14 +32,14 @@ logger = logging.getLogger(__name__)
 
 def futures(
     date: DateLike,
-    contract_code: OpcoesContrato | str,
+    contract_code: OpcoesContrato | str | Sequence[OpcoesContrato | str] | pl.Series,
     source_type: TipoFonte = "SPR",
 ) -> pl.DataFrame:
     """Busca dados de um contrato futuro da B3 para a data de referência.
 
     Args:
         date: Data de referência para consulta.
-        contract_code: Código do contrato futuro na B3.
+        contract_code: Código do contrato futuro na B3 ou coleção de códigos.
         source_type: Tipo do arquivo de preços da B3. 'SPR' (padrão) para
             settlement price report (arquivo leve, ~2 KB) e 'PR' para price
             report completo (~2 MB). Relevante apenas quando o dado não está
@@ -83,6 +85,10 @@ def futures(
     if any_is_empty(date, contract_code):
         return pl.DataFrame()
 
+    codigos_contrato = normalizar_codigos_contrato(contract_code)
+    if not codigos_contrato:
+        return pl.DataFrame()
+
     data_negociacao = cv.converter_datas(date)
     if not data_negociacao_valida(data_negociacao):
         logger.warning(
@@ -91,7 +97,7 @@ def futures(
         )
         return pl.DataFrame()
 
-    contrato_selecionado = str(contract_code).upper()
+    contrato_selecionado = codigos_contrato[0]
 
     if intradiario.data_intraday_valida(data_negociacao):
         horario_atual = clock.now().time()
@@ -101,15 +107,25 @@ def futures(
 
         if horario_atual >= intradiario.HORA_FIM_INTRADAY:
             df_historico = historico.historical(
-                data_negociacao, contrato_selecionado, source_type
+                data_negociacao, codigos_contrato, source_type
             )
             if not df_historico.is_empty():
                 logger.info("Dados consolidados disponíveis. Usando histórico.")
                 return df_historico
 
-        return intradiario.intraday(contrato_selecionado)
+        dataframes_intraday = [
+            intradiario.intraday(codigo) for codigo in codigos_contrato
+        ]
+        dataframes_intraday = [df for df in dataframes_intraday if not df.is_empty()]
+        if not dataframes_intraday:
+            return pl.DataFrame()
+        if len(dataframes_intraday) == 1:
+            return dataframes_intraday[0]
+        return pl.concat(dataframes_intraday, how="diagonal_relaxed").sort(
+            "TickerSymbol"
+        )
 
-    return historico.historical(data_negociacao, contrato_selecionado, source_type)
+    return historico.historical(data_negociacao, codigos_contrato, source_type)
 
 
 __all__ = ["futures"]

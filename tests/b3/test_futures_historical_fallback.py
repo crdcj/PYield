@@ -80,3 +80,36 @@ def test_futures_igual_price_report_release_di1():
         check_exact=False,
         check_dtypes=True,
     )
+
+
+def test_historical_lista_contratos_faz_um_fetch_remoto(monkeypatch):
+    monkeypatch.setattr(
+        historical_mod,
+        "_carregar_pr_por_data",
+        lambda data, codigo_contrato: pl.DataFrame(),
+    )
+
+    chamadas = []
+
+    def _price_report_falso(date, contract_code, source_type):
+        chamadas.append((date, contract_code, source_type))
+        ticker = "DI1F26" if contract_code == "DI1" else "DOLF26"
+        return pl.DataFrame(
+            {
+                "TickerSymbol": [ticker],
+            }
+        )
+
+    monkeypatch.setattr(historical_mod, "fetch_price_report", _price_report_falso)
+    monkeypatch.setattr(historical_mod, "adicionar_vencimento", lambda df, *_: df)
+    monkeypatch.setattr(historical_mod, "_enriquecer_dados", lambda df, cc: df)
+    monkeypatch.setattr(historical_mod, "_selecionar_colunas_saida", lambda df: df)
+
+    df = historical_mod.historical(
+        dt.date(2026, 5, 10),
+        ["DI1", "DOL"],
+    )
+
+    assert len(chamadas) == 2
+    assert sorted(chamada[1] for chamada in chamadas) == ["DI1", "DOL"]
+    assert sorted(df.get_column("TickerSymbol").to_list()) == ["DI1F26", "DOLF26"]

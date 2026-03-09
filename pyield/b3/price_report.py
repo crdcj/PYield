@@ -2,6 +2,7 @@ import datetime as dt
 import io
 import logging
 import zipfile
+from functools import lru_cache
 from typing import Literal
 
 import polars as pl
@@ -12,6 +13,7 @@ from lxml.etree import _Element
 import pyield._internal.converters as cv
 from pyield._internal.retry import DadoIndisponivelError, retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
+from pyield.b3._contracts import normalizar_codigo_contrato
 from pyield.b3.validar_pregao import data_negociacao_valida
 
 registro = logging.getLogger(__name__)
@@ -85,6 +87,10 @@ TIPOS_XML = {nome_original: tipo for _, nome_original, _, tipo in COLUNAS_PRICE_
 def _mapa_renomeacao_colunas() -> dict[str, str]:
     """
     Constrói o dicionário de renomeação de colunas do XML para nomes canônicos.
+
+    A renomeação é estática e não aplica semântica de contrato (Rate/Price).
+    Colunas numéricas de cotação/limites usam sufixo "Value" no output bruto.
+
     Retorna: {XML_Name: New_Name}
     """
     return {
@@ -188,9 +194,13 @@ def _parsear_xml_registros(xml_bytes: bytes, codigo_ativo: str) -> list[dict]:
     arquivo_xml = io.BytesIO(xml_bytes)
     arvore = etree.parse(arquivo_xml, parser=analisador)
     caminho_xpath = MODELO_XPATH_TICKER.format(codigo_ativo=codigo_ativo)
-    elementos_ticker = arvore.xpath(caminho_xpath, namespaces=NAMESPACES)
+    resultado_xpath = arvore.xpath(caminho_xpath, namespaces=NAMESPACES)
+    if not isinstance(resultado_xpath, list):
+        return []
 
-    if not elementos_ticker or not isinstance(elementos_ticker, list):
+    elementos_ticker = resultado_xpath
+
+    if not elementos_ticker:
         return []
 
     registros = []
@@ -211,7 +221,9 @@ def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
 
 
 def _processar_xml_extraido(xml_bytes: bytes, codigo_contrato: str) -> pl.DataFrame:
-    registros = _parsear_xml_registros(xml_bytes, codigo_contrato)
+    registros = (
+        _parsear_xml_registros(xml_bytes, codigo_contrato) if xml_bytes else []
+    )
     if not registros:
         return pl.DataFrame()
 
@@ -221,17 +233,16 @@ def _processar_xml_extraido(xml_bytes: bytes, codigo_contrato: str) -> pl.DataFr
     return df.sort("TickerSymbol")
 
 
-def _processar_zip(dados_zip: bytes, codigo_contrato: str) -> pl.DataFrame:
-    if not dados_zip:
-        registro.warning("ZIP XML vazio.")
-        return pl.DataFrame()
-
-    xml_bytes = _extrair_xml_zip_aninhado(dados_zip)
-    return _processar_xml_extraido(xml_bytes, codigo_contrato)
+@lru_cache(maxsize=64)
+def _obter_xml_price_report(data: dt.date, tipo_fonte: str) -> bytes:
+    dados_zip = _baixar_zip_url(data, tipo_fonte)
+    return _extrair_xml_zip_aninhado(dados_zip)
 
 
 def fetch_price_report(
-    date: DateLike, contract_code: str, source_type: Literal["PR", "SPR"] = "SPR"
+    date: DateLike,
+    contract_code: str,
+    source_type: Literal["PR", "SPR"] = "SPR",
 ) -> pl.DataFrame:
     """Busca e processa o price report da B3 no site oficial.
 
@@ -239,9 +250,10 @@ def fetch_price_report(
     DataFrame Polars com os dados brutos do XML, tipados e com colunas
     renomeadas para nomes padronizados.
 
-    As colunas OHLC são retornadas com sufixo "Value" (ex.: OpenValue,
-    CloseValue). Conversões para "Rate"/"Price" devem ser feitas no módulo
-    consumidor (ex.: ``futures.historical``).
+    As colunas OHLC e limites são retornadas com sufixo "Value"
+    (ex.: OpenValue, CloseValue, BestBidValue, MaxLimitValue).
+    Conversões para "Rate"/"Price" devem ser feitas no módulo consumidor
+    (ex.: ``futures.historical``).
 
     O DataFrame retornado **não** contém colunas calculadas (BDaysToExp,
     DaysToExp, DV01, ForwardRate) nem normalização de taxas. O enriquecimento
@@ -258,14 +270,17 @@ def fetch_price_report(
     Returns:
         pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
         TickerSymbol. Inclui todos os registros do XML (sem filtro de
-        vencimento). Retorna DataFrame vazio para data inválida, resposta
-        vazia ou falhas de parsing recuperáveis.
+        vencimento). Retorna DataFrame vazio para data inválida ou resposta
+        vazia.
 
     Raises:
         ValueError: Se source_type for inválido.
         DadoIndisponivelError: Se a data for válida, mas o endpoint não fornecer
             arquivo para a data consultada.
         requests.HTTPError: Se a requisição HTTP ao endpoint falhar.
+        zipfile.BadZipFile: Se o arquivo ZIP recebido estiver corrompido.
+        etree.XMLSyntaxError: Se o XML recebido estiver malformado.
+        Exception: Erros críticos inesperados são propagados após log.
 
     Examples:
         >>> import pyield as yd
@@ -280,41 +295,24 @@ def fetch_price_report(
         >>> df.is_empty()
         True
     """
-    msg_vazia = f"Sem dados para {contract_code} em {date}. Retornando DataFrame vazio."
-    if any_is_empty(date):
-        registro.warning(msg_vazia)
+    contrato = normalizar_codigo_contrato(contract_code)
+    if any_is_empty(date) or not contrato:
         return pl.DataFrame()
 
     date = cv.converter_datas(date)
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
     if not data_negociacao_valida(date):
-        registro.warning(f"{date} não é uma data válida. Retornando DataFrame vazio.")
         return pl.DataFrame()
 
     try:
-        dados_zip = _baixar_zip_url(date, source_type)
-
-        if not dados_zip:
-            registro.warning(msg_vazia)
-            return pl.DataFrame()
-
-        df = _processar_zip(dados_zip, contract_code)
-
-        if df.is_empty():
-            registro.warning(msg_vazia)
-
-        return df
-
-    except (ValueError, DadoIndisponivelError, requests.HTTPError):
-        raise
+        xml_bytes = _obter_xml_price_report(date, source_type)
+        return _processar_xml_extraido(xml_bytes, contrato)
     except (zipfile.BadZipFile, etree.XMLSyntaxError):
-        registro.warning(
-            f"Falha ao parsear o price report de {contract_code} em {date}."
-        )
-        return pl.DataFrame()
+        registro.exception(f"Falha ao parsear o price report de {contrato} em {date}.")
+        raise
     except Exception:
         registro.exception(
-            f"ERRO CRÍTICO: Falha ao processar {contract_code} {source_type} em {date}"
+            f"ERRO CRÍTICO: Falha ao processar {contrato} {source_type} em {date}"
         )
         raise
 
@@ -327,6 +325,10 @@ def read_price_report(
 
     Retorna os dados brutos do XML (tipados e renomeados), sem enriquecimento.
 
+    As colunas de cotação/limites são retornadas com sufixo "Value".
+    A interpretação semântica para "Rate"/"Price" deve ser feita no módulo
+    consumidor.
+
     Args:
         xml_bytes: Conteúdo do XML em bytes (já descomprimido).
         contract_code: Código B3 do contrato.
@@ -335,8 +337,8 @@ def read_price_report(
         pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
         TickerSymbol.
     """
-    if not xml_bytes:
-        registro.warning("XML vazio.")
+    contrato = normalizar_codigo_contrato(contract_code)
+    if any_is_empty(xml_bytes) or not contrato:
         return pl.DataFrame()
 
-    return _processar_xml_extraido(xml_bytes, contract_code)
+    return _processar_xml_extraido(xml_bytes, contrato)

@@ -1,11 +1,12 @@
 import datetime as dt
-import logging
+from collections.abc import Sequence
 from typing import Literal
 
 import polars as pl
 
 from pyield import bday
 from pyield._internal.data_cache import obter_dataset_cacheado
+from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3.futures.common import adicionar_vencimento, expr_dv01
 from pyield.b3.price_report import fetch_price_report
 from pyield.fwd import forwards
@@ -14,31 +15,60 @@ from pyield.fwd import forwards
 # Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.
 CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 
-logger = logging.getLogger(__name__)
-
 
 def historical(
     data: dt.date,
-    codigo_contrato: str,
+    codigo_contrato: str | Sequence[str] | pl.Series,
     tipo_fonte: Literal["PR", "SPR"] = "SPR",
 ) -> pl.DataFrame:
     """Busca histórico de futuros priorizando o dataset PR cacheado."""
-    df_cache = _carregar_pr_por_data(data, codigo_contrato)
-    if not df_cache.is_empty():
-        return df_cache
-
-    try:
-        df_bruto = fetch_price_report(
-            date=data, contract_code=codigo_contrato, source_type=tipo_fonte
-        )
-        if df_bruto.is_empty():
-            return pl.DataFrame()
-
-        df_bruto = adicionar_vencimento(df_bruto, codigo_contrato, "TickerSymbol")
-        df = _enriquecer_dados(df_bruto, codigo_contrato)
-        return _selecionar_colunas_saida(df).sort("ExpirationDate")
-    except Exception:
+    codigos = normalizar_codigos_contrato(codigo_contrato)
+    if not codigos:
         return pl.DataFrame()
+
+    dataframes: list[pl.DataFrame] = []
+    codigos_sem_cache: list[str] = []
+
+    for codigo in codigos:
+        df_cache = _carregar_pr_por_data(data, codigo)
+        if df_cache.is_empty():
+            codigos_sem_cache.append(codigo)
+        else:
+            dataframes.append(df_cache)
+
+    if codigos_sem_cache:
+        for codigo in codigos_sem_cache:
+            df_bruto = fetch_price_report(
+                date=data,
+                contract_code=codigo,
+                source_type=tipo_fonte,
+            )
+            if df_bruto.is_empty():
+                continue
+
+            df_bruto = adicionar_vencimento(df_bruto, codigo, "TickerSymbol")
+            df = _enriquecer_dados(df_bruto, codigo)
+            df_saida = _selecionar_colunas_saida(df)
+            if "ExpirationDate" in df_saida.columns:
+                df_saida = df_saida.sort("ExpirationDate")
+            dataframes.append(df_saida)
+
+    if not dataframes:
+        return pl.DataFrame()
+
+    if len(dataframes) == 1:
+        return dataframes[0]
+
+    df_resultado = pl.concat(dataframes, how="diagonal_relaxed")
+    colunas_ordenacao = [
+        coluna
+        for coluna in ["TradeDate", "TickerSymbol", "ExpirationDate"]
+        if coluna in df_resultado.columns
+    ]
+    if not colunas_ordenacao:
+        return df_resultado
+
+    return df_resultado.sort(*colunas_ordenacao)
 
 
 def _carregar_pr_por_data(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
@@ -51,25 +81,16 @@ def carregar_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
     if not datas:
         return pl.DataFrame()
 
-    try:
-        df = obter_dataset_cacheado("pr")
-        df = _filtrar_e_renomear(df, datas, codigo_contrato)
-        if df.is_empty():
-            return pl.DataFrame()
-
-        df = adicionar_vencimento(df, codigo_contrato, coluna_ticker="TickerSymbol")
-        df = _enriquecer_dados(df, codigo_contrato)
-        df = _selecionar_colunas_saida(df)
-
-        return df.sort("TradeDate", "ExpirationDate")
-    except Exception as erro:
-        logger.exception(
-            "CRITICAL: Falha ao processar histórico no dataset PR do contrato %s para %s. Erro: %s",
-            codigo_contrato,
-            datas,
-            erro,
-        )
+    df = obter_dataset_cacheado("pr")
+    df = _filtrar_e_renomear(df, datas, codigo_contrato)
+    if df.is_empty():
         return pl.DataFrame()
+
+    df = adicionar_vencimento(df, codigo_contrato, coluna_ticker="TickerSymbol")
+    df = _enriquecer_dados(df, codigo_contrato)
+    df = _selecionar_colunas_saida(df)
+
+    return df.sort("TradeDate", "ExpirationDate")
 
 
 def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
