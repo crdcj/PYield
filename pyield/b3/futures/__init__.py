@@ -23,7 +23,6 @@ OpcoesContrato = Literal[
     "WDO",
     "IND",
     "WIN",
-    "CPM",
 ]
 
 logger = logging.getLogger(__name__)

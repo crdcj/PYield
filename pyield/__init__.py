@@ -7,6 +7,7 @@ from pyield.clock import now, today
 from pyield.fwd import forward, forwards
 from pyield.interpolator import Interpolator
 from pyield.rmd import rmd
+from pyield.selic.cpm import data as copom_options
 from pyield.tn import lft, ltn, ntnb, ntnb1, ntnbprinc, ntnc, ntnf, pre
 
 __all__ = [
@@ -21,6 +22,7 @@ __all__ = [
     "forwards",
     "forward",
     "futures",
+    "copom_options",
     "Interpolator",
     "today",
     "now",
