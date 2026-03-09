@@ -1,5 +1,6 @@
 import datetime as dt
 import logging
+from typing import Literal
 
 import polars as pl
 
@@ -16,7 +17,11 @@ CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 logger = logging.getLogger(__name__)
 
 
-def historical(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
+def historical(
+    data: dt.date,
+    codigo_contrato: str,
+    tipo_fonte: Literal["PR", "SPR"] = "SPR",
+) -> pl.DataFrame:
     """Busca histórico de futuros priorizando o dataset PR cacheado."""
     df_cache = _carregar_pr_por_data(data, codigo_contrato)
     if not df_cache.is_empty():
@@ -24,7 +29,7 @@ def historical(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
 
     try:
         df_bruto = fetch_price_report(
-            date=data, contract_code=codigo_contrato, source_type="SPR"
+            date=data, contract_code=codigo_contrato, source_type=tipo_fonte
         )
         if df_bruto.is_empty():
             return pl.DataFrame()

@@ -304,7 +304,7 @@ def fetch_price_report(
     Examples:
         >>> import pyield as yd
         >>> df = yd.b3.fetch_price_report("26-04-2024", "DI1")
-        >>> df.is_empty() or {"TradeDate", "TickerSymbol", "ExpirationDate"}.issubset(
+        >>> df.is_empty() or {"TradeDate", "TickerSymbol", "CloseRate"}.issubset(
         ...     set(df.columns)
         ... )
         True

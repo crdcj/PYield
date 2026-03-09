@@ -10,6 +10,8 @@ from pyield.b3.futures import historical as historico
 from pyield.b3.futures import intraday as intradiario
 from pyield.b3.validar_pregao import data_negociacao_valida
 
+TipoFonte = Literal["PR", "SPR"]
+
 OpcoesContrato = Literal[
     "DI1",
     "DDI",
@@ -29,12 +31,17 @@ logger = logging.getLogger(__name__)
 def futures(
     date: DateLike,
     contract_code: OpcoesContrato | str,
+    source_type: TipoFonte = "SPR",
 ) -> pl.DataFrame:
     """Busca dados de um contrato futuro da B3 para a data de referência.
 
     Args:
         date: Data de referência para consulta.
         contract_code: Código do contrato futuro na B3.
+        source_type: Tipo do arquivo de preços da B3. 'SPR' (padrão) para
+            settlement price report (arquivo leve, ~2 KB) e 'PR' para price
+            report completo (~2 MB). Relevante apenas quando o dado não está
+            no cache.
 
     Returns:
         DataFrame Polars com os dados do contrato informado.
@@ -93,14 +100,16 @@ def futures(
             return pl.DataFrame()
 
         if horario_atual >= intradiario.HORA_FIM_INTRADAY:
-            df_historico = historico.historical(data_negociacao, contrato_selecionado)
+            df_historico = historico.historical(
+                data_negociacao, contrato_selecionado, source_type
+            )
             if not df_historico.is_empty():
                 logger.info("Dados consolidados disponíveis. Usando histórico.")
                 return df_historico
 
         return intradiario.intraday(contrato_selecionado)
 
-    return historico.historical(data_negociacao, contrato_selecionado)
+    return historico.historical(data_negociacao, contrato_selecionado, source_type)
 
 
 __all__ = ["futures"]
