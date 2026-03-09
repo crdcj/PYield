@@ -42,7 +42,7 @@ def _processar_bruto(xml_bytes: bytes, contract_code: str) -> pl.DataFrame:
     if not registros:
         return pl.DataFrame()
     df = pr_mod._converter_para_df(registros)
-    mapa = pr_mod._mapa_renomeacao_colunas(contract_code)
+    mapa = pr_mod._mapa_renomeacao_colunas()
     df = df.rename(mapa, strict=False)
     return df.sort("TickerSymbol")
 
@@ -50,6 +50,27 @@ def _processar_bruto(xml_bytes: bytes, contract_code: str) -> pl.DataFrame:
 def _parquet_referencia(date_str: str, contract_code: str) -> Path:
     dia, mes, ano = date_str.split("-")
     return TEST_DATA_DIR / f"price_report_{ano}{mes}{dia}_{contract_code}.parquet"
+
+
+def _normalizar_colunas_valor(df: pl.DataFrame) -> pl.DataFrame:
+    bases = [
+        "MinLimit",
+        "MaxLimit",
+        "BestAsk",
+        "BestBid",
+        "Open",
+        "Min",
+        "Avg",
+        "Max",
+        "Close",
+    ]
+    mapa = {}
+    for base in bases:
+        for sufixo in ("Rate", "Price"):
+            nome = f"{base}{sufixo}"
+            if nome in df.columns:
+                mapa[nome] = f"{base}Value"
+    return df.rename(mapa, strict=False)
 
 
 @pytest.mark.parametrize(
@@ -86,6 +107,7 @@ def test_pipeline_bruto_price_report(date: str, contract_code: str):
     xml_bytes = _baixar_xml_remoto(date)
     df_result = _processar_bruto(xml_bytes, contract_code)
     df_expect = pl.read_parquet(_parquet_referencia(date, contract_code))
+    df_expect = _normalizar_colunas_valor(df_expect)
 
     assert not df_result.is_empty(), f"Resultado vazio para {contract_code}"
     assert_frame_equal(df_result, df_expect, check_exact=True, check_dtypes=True)

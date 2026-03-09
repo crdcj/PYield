@@ -16,11 +16,6 @@ from pyield.b3.validar_pregao import data_negociacao_valida
 
 registro = logging.getLogger(__name__)
 
-# --- Configuração de Contratos ---
-# Contratos de taxa (sufixo "Rate" em colunas como "OpenRate", "CloseRate")
-# Contratos de preço usam sufixo "Price" (como "OpenPrice", "ClosePrice")
-CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
-
 # --- Constantes de Processamento XML ---
 NAMESPACE_B3 = "urn:bvmf.217.01.xsd"
 NAMESPACES = {"ns": NAMESPACE_B3}
@@ -54,13 +49,13 @@ COLUNAS_PRICE_REPORT: list[tuple[str, str, str, type[pl.DataType]]] = [
     ("5.03", "IntlFinVol", "InternationalFinancialVolume", pl.Float64),
     ("5.04", "OpnIntrst", "OpenContracts", pl.Int64),
     ("5.05", "FinInstrmQty", "TradeVolume", pl.Int64),
-    ("5.06", "BestBidPric", "BestBid", pl.Float64),
-    ("5.07", "BestAskPric", "BestAsk", pl.Float64),
-    ("5.08", "FrstPric", "Open", pl.Float64),
-    ("5.09", "MinPric", "Min", pl.Float64),
-    ("5.10", "MaxPric", "Max", pl.Float64),
-    ("5.11", "TradAvrgPric", "Avg", pl.Float64),
-    ("5.12", "LastPric", "Close", pl.Float64),
+    ("5.06", "BestBidPric", "BestBidValue", pl.Float64),
+    ("5.07", "BestAskPric", "BestAskValue", pl.Float64),
+    ("5.08", "FrstPric", "OpenValue", pl.Float64),
+    ("5.09", "MinPric", "MinValue", pl.Float64),
+    ("5.10", "MaxPric", "MaxValue", pl.Float64),
+    ("5.11", "TradAvrgPric", "AvgValue", pl.Float64),
+    ("5.12", "LastPric", "CloseValue", pl.Float64),
     ("5.13", "RglrTxsQty", "RegularTradeCount", pl.Int64),
     ("5.14", "NonRglrTxsQty", "NonRegularTradeCount", pl.Int64),
     ("5.15", "RglrTraddCtrcts", "RegularTradedContracts", pl.Int64),
@@ -72,50 +67,30 @@ COLUNAS_PRICE_REPORT: list[tuple[str, str, str, type[pl.DataType]]] = [
     ("5.21", "AdjstdQt", "SettlementPrice", pl.Float64),
     ("5.22", "AdjstdQtTax", "SettlementRate", pl.Float64),
     ("5.23", "AdjstdQtStin", "AdjustedQuotationIndicator", pl.String),
-    ("5.24", "PrvsAdjstdQt", "PreviousAdjustedQuotation", pl.Float64),
+    ("5.24", "PrvsAdjstdQt", "PreviousAdjustedPrice", pl.Float64),
     ("5.25", "PrvsAdjstdQtTax", "PreviousAdjustedRate", pl.Float64),
     ("5.26", "PrvsAdjstdQtStin", "PreviousAdjustedIndicator", pl.String),
     ("5.27", "OscnPctg", "OscillationPercentage", pl.Float64),
     ("5.28", "VartnPts", "VariationPoints", pl.Float64),
     ("5.29", "EqvtVal", "EquivalentValue", pl.Float64),
     ("5.30", "AdjstdValCtrct", "AdjustedValueContract", pl.Float64),
-    ("5.31", "MaxTradLmt", "MaxLimit", pl.Float64),
-    ("5.32", "MinTradLmt", "MinLimit", pl.Float64),
+    ("5.31", "MaxTradLmt", "MaxLimitValue", pl.Float64),
+    ("5.32", "MinTradLmt", "MinLimitValue", pl.Float64),
 ]
-
-# Colunas cujo nome final recebe sufixo dinâmico (Rate/Price).
-COLUNAS_XML_COM_SUFIXO = {
-    "MinTradLmt",
-    "MaxTradLmt",
-    "BestAskPric",
-    "BestBidPric",
-    "FrstPric",
-    "MinPric",
-    "TradAvrgPric",
-    "MaxPric",
-    "LastPric",
-}
 
 # Mapa de tipos para cast inicial usando os nomes originais do XML.
 TIPOS_XML = {nome_original: tipo for _, nome_original, _, tipo in COLUNAS_PRICE_REPORT}
 
 
-def _mapa_renomeacao_colunas(codigo_contrato: str) -> dict[str, str]:
+def _mapa_renomeacao_colunas() -> dict[str, str]:
     """
-    Constrói o dicionário de renomeação dinamicamente baseado no contrato.
+    Constrói o dicionário de renomeação de colunas do XML para nomes canônicos.
     Retorna: {XML_Name: New_Name}
     """
-    # 1. Determina o sufixo (Rate ou Price)
-    sufixo = "Rate" if codigo_contrato in CONTRATOS_TAXA else "Price"
-
-    mapa_renomeacao = {}
-    for _, nome_original, nome_novo, _ in COLUNAS_PRICE_REPORT:
-        if nome_original in COLUNAS_XML_COM_SUFIXO:
-            mapa_renomeacao[nome_original] = f"{nome_novo}{sufixo}"
-        else:
-            mapa_renomeacao[nome_original] = nome_novo
-
-    return mapa_renomeacao
+    return {
+        nome_original: nome_novo
+        for _, nome_original, nome_novo, _ in COLUNAS_PRICE_REPORT
+    }
 
 
 @retry_padrao
@@ -241,7 +216,7 @@ def _processar_xml_extraido(xml_bytes: bytes, codigo_contrato: str) -> pl.DataFr
         return pl.DataFrame()
 
     df = _converter_para_df(registros)
-    mapa_renomeacao = _mapa_renomeacao_colunas(codigo_contrato)
+    mapa_renomeacao = _mapa_renomeacao_colunas()
     df = df.rename(mapa_renomeacao, strict=False)
     return df.sort("TickerSymbol")
 
@@ -264,9 +239,9 @@ def fetch_price_report(
     DataFrame Polars com os dados brutos do XML, tipados e com colunas
     renomeadas para nomes padronizados.
 
-    O sufixo das colunas OHLC (Rate vs Price) é definido pelo contrato:
-    - Contratos de taxa (DI1, DAP, DDI, FRC, FRO): "OpenRate", "CloseRate"
-    - Contratos de preço (DOL, WDO, IND, WIN, etc.): "OpenPrice", "ClosePrice"
+    As colunas OHLC são retornadas com sufixo "Value" (ex.: OpenValue,
+    CloseValue). Conversões para "Rate"/"Price" devem ser feitas no módulo
+    consumidor (ex.: ``futures.historical``).
 
     O DataFrame retornado **não** contém colunas calculadas (BDaysToExp,
     DaysToExp, DV01, ForwardRate) nem normalização de taxas. O enriquecimento
@@ -295,7 +270,7 @@ def fetch_price_report(
     Examples:
         >>> import pyield as yd
         >>> df = yd.b3.fetch_price_report("26-04-2024", "DI1")
-        >>> df.is_empty() or {"TradeDate", "TickerSymbol", "CloseRate"}.issubset(
+        >>> df.is_empty() or {"TradeDate", "TickerSymbol", "CloseValue"}.issubset(
         ...     set(df.columns)
         ... )
         True

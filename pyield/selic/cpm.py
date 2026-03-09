@@ -196,14 +196,13 @@ def data(date: DateLike) -> pl.DataFrame:
 
     df = _converter_para_df(records)
 
-    # CPM is not in CONTRATOS_TAXA; suffix → Price (ClosePrice, OpenPrice, …)
-    mapa = _mapa_renomeacao_colunas("CPM")
+    mapa = _mapa_renomeacao_colunas()
     df = df.rename(mapa, strict=False)
     df = df.with_columns(TradeDate=trade_date)
 
     # ClosePrice (← LastPric) is the settlement proxy for CPM options;
     # AdjstdQt is absent in the SPR XML for option contracts.
-    price_col = "ClosePrice" if "ClosePrice" in df.columns else "SettlementPrice"
+    price_col = "CloseValue" if "CloseValue" in df.columns else "SettlementPrice"
 
     # Parse option type (ticker[6]) and strike change (ticker[7:13])
     # entirely with Polars string expressions — no Python loops over rows.
