@@ -2,7 +2,6 @@ import datetime as dt
 import io
 import logging
 import zipfile
-from pathlib import Path
 from typing import Literal
 
 import polars as pl
@@ -117,14 +116,6 @@ def _mapa_renomeacao_colunas(codigo_contrato: str) -> dict[str, str]:
             mapa_renomeacao[nome_original] = nome_novo
 
     return mapa_renomeacao
-
-
-def _ler_zip_arquivo(caminho_arquivo: Path) -> bytes:
-    if not isinstance(caminho_arquivo, Path):
-        raise ValueError("É necessário informar um caminho de arquivo.")
-    if not caminho_arquivo.exists():
-        raise FileNotFoundError(f"Nenhum arquivo encontrado em {caminho_arquivo}.")
-    return caminho_arquivo.read_bytes()
 
 
 @retry_padrao
@@ -244,24 +235,24 @@ def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
     return df.cast(tipos_coluna, strict=False)  # type: ignore
 
 
+def _processar_xml_extraido(xml_bytes: bytes, codigo_contrato: str) -> pl.DataFrame:
+    registros = _parsear_xml_registros(xml_bytes, codigo_contrato)
+    if not registros:
+        return pl.DataFrame()
+
+    df = _converter_para_df(registros)
+    mapa_renomeacao = _mapa_renomeacao_colunas(codigo_contrato)
+    df = df.rename(mapa_renomeacao, strict=False)
+    return df.sort("TickerSymbol")
+
+
 def _processar_zip(dados_zip: bytes, codigo_contrato: str) -> pl.DataFrame:
     if not dados_zip:
         registro.warning("ZIP XML vazio.")
         return pl.DataFrame()
 
     xml_bytes = _extrair_xml_zip_aninhado(dados_zip)
-    registros = _parsear_xml_registros(xml_bytes, codigo_contrato)
-
-    if not registros:
-        return pl.DataFrame()
-
-    df = _converter_para_df(registros)
-
-    # Aplica renomeação dinâmica baseada no tipo de contrato
-    mapa_renomeacao = _mapa_renomeacao_colunas(codigo_contrato)
-    df = df.rename(mapa_renomeacao, strict=False)
-
-    return df.sort("TickerSymbol")
+    return _processar_xml_extraido(xml_bytes, codigo_contrato)
 
 
 def fetch_price_report(
@@ -350,31 +341,27 @@ def fetch_price_report(
         registro.exception(
             f"ERRO CRÍTICO: Falha ao processar {contract_code} {source_type} em {date}"
         )
-        return pl.DataFrame()
+        raise
 
 
 def read_price_report(
-    file_path: Path,
+    xml_bytes: bytes,
     contract_code: str,
-    source_type: Literal["PR", "SPR"] | None = None,
 ) -> pl.DataFrame:
-    """Lê e processa o price report da B3 a partir de um ZIP local.
+    """Lê e processa o price report da B3 a partir do conteúdo XML bruto.
 
     Retorna os dados brutos do XML (tipados e renomeados), sem enriquecimento.
 
     Args:
-        file_path: Caminho do arquivo ZIP local.
+        xml_bytes: Conteúdo do XML em bytes (já descomprimido).
         contract_code: Código B3 do contrato.
-        source_type: 'SPR' ou 'PR'. Se None, infere pelo prefixo do arquivo.
 
     Returns:
         pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
         TickerSymbol.
     """
-    if source_type is None:
-        nome_arquivo = file_path.name
-        source_type = "SPR" if nome_arquivo.startswith("SPRD") else "PR"
+    if not xml_bytes:
+        registro.warning("XML vazio.")
+        return pl.DataFrame()
 
-    dados_zip = _ler_zip_arquivo(file_path)
-    df = _processar_zip(dados_zip, contract_code)
-    return df
+    return _processar_xml_extraido(xml_bytes, contract_code)
