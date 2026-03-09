@@ -46,9 +46,17 @@ def test_historical_faz_fallback_para_price_report(monkeypatch):
 
     def _price_report_falso(date, contract_code, source_type):
         chamadas_price_report.append(source_type)
-        return pl.DataFrame({"TickerSymbol": ["DI1N26"]})
+        return pl.DataFrame(
+            {
+                "TickerSymbol": ["DI1N26"],
+                "ExpirationDate": [dt.date(2026, 7, 1)],
+            }
+        )
 
     monkeypatch.setattr(historical_mod, "fetch_price_report", _price_report_falso)
+    # Bypass do enriquecimento para testar apenas o roteamento
+    monkeypatch.setattr(historical_mod, "_enriquecer_dados", lambda df, cc: df)
+    monkeypatch.setattr(historical_mod, "_selecionar_colunas_saida", lambda df: df)
 
     df = historical_mod.historical(dt.date(2026, 5, 10), "DI1")
 

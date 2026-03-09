@@ -23,9 +23,14 @@ def historical(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
         return df_cache
 
     try:
-        return fetch_price_report(
+        df_bruto = fetch_price_report(
             date=data, contract_code=codigo_contrato, source_type="SPR"
         )
+        if df_bruto.is_empty():
+            return pl.DataFrame()
+
+        df = _enriquecer_dados(df_bruto, codigo_contrato)
+        return _selecionar_colunas_saida(df).sort("ExpirationDate")
     except Exception:
         return pl.DataFrame()
 

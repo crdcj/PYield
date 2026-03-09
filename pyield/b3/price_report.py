@@ -6,17 +6,14 @@ from pathlib import Path
 from typing import Literal
 
 import polars as pl
-import polars.selectors as cs
 import requests
 from lxml import etree
 from lxml.etree import _Element
 
 import pyield._internal.converters as cv
 import pyield.b3.common as cm
-from pyield import bday
 from pyield._internal.retry import DadoIndisponivelError, retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.fwd import forwards
 
 registro = logging.getLogger(__name__)
 
@@ -120,25 +117,6 @@ def _mapa_renomeacao_colunas(contract_code: str) -> dict[str, str]:
             mapa_renomeacao[nome_original] = nome_novo
 
     return mapa_renomeacao
-
-
-def _colunas_saida_ordenadas(contract_code: str) -> list[str]:
-    sufixo = "Rate" if contract_code in CONTRATOS_TAXA else "Price"
-    colunas = ["TradeDate", "TickerSymbol", "ExpirationDate", "BDaysToExp", "DaysToExp"]
-
-    for _, nome_original, nome_novo, _ in PRICE_REPORT_COLUMNS:
-        if nome_novo in {"TradeDate", "TickerSymbol"}:
-            continue
-        coluna_final = (
-            f"{nome_novo}{sufixo}"
-            if nome_original in COLUNAS_XML_COM_SUFIXO
-            else nome_novo
-        )
-        if coluna_final not in colunas:
-            colunas.append(coluna_final)
-
-    colunas.extend(["DV01", "ForwardRate"])
-    return colunas
 
 
 def _ler_zip_arquivo(file_path: Path) -> bytes:
@@ -264,36 +242,6 @@ def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
     return df.cast(tipos_coluna, strict=False)  # type: ignore
 
 
-def _processar_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
-    # 1. Adiciona métricas baseadas em datas
-    df = df.with_columns(
-        BDaysToExp=bday.count_expr("TradeDate", "ExpirationDate"),
-        DaysToExp=(pl.col("ExpirationDate") - pl.col("TradeDate")).dt.total_days(),
-    )
-
-    # 2. Normaliza taxas (divide por 100)
-    # Seleciona apenas colunas contendo "Rate". Como renomeamos corretamente
-    # (OpenPrice para DOL vs OpenRate para DI1), cs.contains("Rate") ignora
-    # colunas de preço e afeta apenas colunas de taxa.
-    df = df.with_columns(cs.contains("Rate").truediv(100).round(5))
-
-    # 3. Colunas derivadas específicas do contrato
-    if contract_code == "DI1":
-        # DV01 requer SettlementRate e SettlementPrice
-        if "SettlementRate" in df.columns and "SettlementPrice" in df.columns:
-            df = df.with_columns(
-                DV01=cm.expr_dv01("BDaysToExp", "SettlementRate", "SettlementPrice")
-            )
-
-    if contract_code in {"DI1", "DAP"} and "SettlementRate" in df.columns:
-        forward_rates = forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
-        df = df.with_columns(ForwardRate=forward_rates)
-
-    colunas_saida = _colunas_saida_ordenadas(contract_code)
-    coluna_ordem = [col for col in colunas_saida if col in df.columns]
-    return df.select(coluna_ordem).filter(pl.col("DaysToExp") > 0)
-
-
 def _processar_zip(zip_data: bytes, contract_code: str) -> pl.DataFrame:
     if not zip_data:
         registro.warning("ZIP XML vazio.")
@@ -312,7 +260,6 @@ def _processar_zip(zip_data: bytes, contract_code: str) -> pl.DataFrame:
     mapa_renomeacao = _mapa_renomeacao_colunas(contract_code)
     df = df.rename(mapa_renomeacao, strict=False)
     df = cm.adicionar_vencimento(df, contract_code, "TickerSymbol")
-    df = _processar_df(df, contract_code)
 
     return df.sort("ExpirationDate")
 
@@ -323,17 +270,16 @@ def fetch_price_report(
     """Busca e processa o price report da B3 no site oficial.
 
     Faz o download do ZIP com XML, extrai os dados do contrato e devolve um
-    DataFrame Polars com colunas padronizadas e métricas calculadas.
+    DataFrame Polars com os dados brutos do XML, tipados e com colunas
+    renomeadas para nomes padronizados.
 
-    A função decide o sufixo das colunas (Rate vs Price) conforme o contrato:
+    O sufixo das colunas OHLC (Rate vs Price) é definido pelo contrato:
     - Contratos de taxa (DI1, DAP, DDI, FRC, FRO): "OpenRate", "CloseRate"
     - Contratos de preço (DOL, WDO, IND, WIN, etc.): "OpenPrice", "ClosePrice"
 
-    Métricas calculadas:
-    - BDaysToExp: Dias úteis até o vencimento
-    - DaysToExp: Dias corridos até o vencimento
-    - DV01: Valor de 1 bp (para DI1)
-    - ForwardRate: Taxa forward (para DI1, DAP)
+    O DataFrame retornado **não** contém colunas calculadas (BDaysToExp,
+    DaysToExp, DV01, ForwardRate) nem normalização de taxas. O enriquecimento
+    é responsabilidade do módulo consumidor (ex.: ``futures.historical``).
 
     Args:
         date: Data de negociação no formato 'DD-MM-YYYY', 'DD/MM/YYYY',
@@ -344,10 +290,10 @@ def fetch_price_report(
             report e 'PR' para price report regular.
 
     Returns:
-        pl.DataFrame: DataFrame com colunas ordenadas conforme COLUNAS_SAIDA,
-        filtrado para excluir contratos vencidos (DaysToExp <= 0). Retorna
-        DataFrame vazio para data inválida, resposta vazia ou falhas de parsing
-        recuperáveis.
+        pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
+        ExpirationDate. Inclui todos os registros do XML (sem filtro de
+        vencimento). Retorna DataFrame vazio para data inválida, resposta
+        vazia ou falhas de parsing recuperáveis.
 
     Raises:
         ValueError: Se source_type for inválido.
@@ -358,13 +304,9 @@ def fetch_price_report(
     Examples:
         >>> import pyield as yd
         >>> df = yd.b3.fetch_price_report("26-04-2024", "DI1")
-        >>> df.is_empty() or df.columns[:5] == [
-        ...     "TradeDate",
-        ...     "TickerSymbol",
-        ...     "ExpirationDate",
-        ...     "BDaysToExp",
-        ...     "DaysToExp",
-        ... ]
+        >>> df.is_empty() or {"TradeDate", "TickerSymbol", "ExpirationDate"}.issubset(
+        ...     set(df.columns)
+        ... )
         True
 
         >>> # Feriado ou fim de semana (retorna DataFrame vazio)
@@ -418,13 +360,16 @@ def read_price_report(
 ) -> pl.DataFrame:
     """Lê e processa o price report da B3 a partir de um ZIP local.
 
+    Retorna os dados brutos do XML (tipados e renomeados), sem enriquecimento.
+
     Args:
         file_path: Caminho do arquivo ZIP local.
         contract_code: Código B3 do contrato.
         source_type: 'SPR' ou 'PR'. Se None, infere pelo prefixo do arquivo.
 
     Returns:
-        pl.DataFrame: DataFrame processado com colunas padronizadas.
+        pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
+        ExpirationDate.
     """
     if source_type is None:
         filename = file_path.name

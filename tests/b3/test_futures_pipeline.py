@@ -43,9 +43,11 @@ def prepare_data(
     def _buscar_df_historico_local(data, codigo_contrato):
         data_str = data.strftime("%d-%m-%Y")
         arquivo_local = obter_arquivo_teste_local(ARQUIVO_POR_DATA[data_str])
-        return b3.read_price_report(
+        df_bruto = b3.read_price_report(
             file_path=arquivo_local, contract_code=codigo_contrato
         )
+        df = historical_mod._enriquecer_dados(df_bruto, codigo_contrato)
+        return historical_mod._selecionar_colunas_saida(df).sort("ExpirationDate")
 
     monkeypatch.setattr(historical_mod, "historical", _buscar_df_historico_local)
     df_result = b3.futures(contract_code=contract_code, date=date_str)
