@@ -56,6 +56,22 @@ def futures(
         >>> df.shape[0] > 0
         True
 
+        Véspera de Natal e Ano Novo não têm pregão:
+
+        >>> futures("24-12-2024", "DI1").is_empty()
+        True
+        >>> futures("31-12-2024", "DI1").is_empty()
+        True
+
+        Data futura e fim de semana retornam DataFrame vazio:
+
+        >>> import datetime as dt
+        >>> amanha = dt.date.today() + dt.timedelta(days=1)
+        >>> futures(amanha, "DI1").is_empty()
+        True
+        >>> futures("04-01-2025", "DI1").is_empty()  # sábado
+        True
+
     """
     if any_is_empty(date, contract_code):
         return pl.DataFrame()
