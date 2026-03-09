@@ -13,27 +13,6 @@ from pyield.fwd import forwards
 # Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.
 CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 
-MAPA_RENOMEACAO_DATASET_PR = {
-    "TradDt": "TradeDate",
-    "TckrSymb": "TickerSymbol",
-    "TradQty": "TradeCount",
-    "FinInstrmQty": "TradeVolume",
-    "NtlFinVol": "FinancialVolume",
-    "OpnIntrst": "OpenContracts",
-    "BestBidPric": "BestBidValue",
-    "BestAskPric": "BestAskValue",
-    "FrstPric": "OpenValue",
-    "MinPric": "MinValue",
-    "MaxPric": "MaxValue",
-    "TradAvrgPric": "AvgValue",
-    "LastPric": "CloseValue",
-    "AdjstdQt": "SettlementPrice",
-    "AdjstdQtTax": "SettlementRate",
-    "AdjstdValCtrct": "AdjustedValueContract",
-    "MaxTradLmt": "MaxLimitValue",
-    "MinTradLmt": "MinLimitValue",
-}
-
 logger = logging.getLogger(__name__)
 
 
@@ -86,8 +65,8 @@ def listar_datas_disponiveis_pr(codigo_contrato: str) -> pl.Series:
     """Lista datas disponíveis no dataset PR para um contrato futuro."""
     return (
         obter_dataset_cacheado("pr")
-        .filter(pl.col("TckrSymb").str.starts_with(codigo_contrato))
-        .get_column("TradDt")
+        .filter(pl.col("TickerSymbol").str.starts_with(codigo_contrato))
+        .get_column("TradeDate")
         .drop_nulls()
         .unique()
         .sort()
@@ -99,9 +78,9 @@ def _filtrar_e_renomear_pr(
     df: pl.DataFrame, datas: list[dt.date], codigo_contrato: str
 ) -> pl.DataFrame:
     return df.filter(
-        pl.col("TradDt").is_in(datas),
-        pl.col("TckrSymb").str.starts_with(codigo_contrato),
-    ).rename(MAPA_RENOMEACAO_DATASET_PR)
+        pl.col("TradeDate").is_in(datas),
+        pl.col("TickerSymbol").str.starts_with(codigo_contrato),
+    )
 
 
 def _enriquecer_dados(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
