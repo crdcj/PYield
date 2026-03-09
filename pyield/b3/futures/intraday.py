@@ -3,15 +3,12 @@ import logging
 
 import polars as pl
 import polars.selectors as cs
-import requests
 
 from pyield import bday, clock
-from pyield._internal.retry import retry_padrao
 from pyield.b3._validar_pregao import data_negociacao_valida
+from pyield.b3.derivatives_intraday import fetch_derivative_quotation
 from pyield.b3.futures.common import expr_dv01
 from pyield.fwd import forwards
-
-URL_BASE_INTRADAY = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
 
 # Pregão abre às 9:00, porém os dados têm atraso de 15 minutos.
 # Esperar 1 minuto adicional para garantir que estejam disponíveis (9:16h).
@@ -33,14 +30,12 @@ def data_intraday_valida(data_verificacao: dt.date) -> bool:
 def intraday(codigo_contrato: str) -> pl.DataFrame:
     """Busca os dados intraday mais recentes da B3."""
     try:
-        dados_json = _buscar_json_intraday(codigo_contrato)
-        if not dados_json:
+        df_bruto = fetch_derivative_quotation(codigo_contrato)
+        if df_bruto.is_empty():
             return pl.DataFrame()
 
         return (
-            _converter_json_intraday(dados_json)
-            .pipe(_processar_colunas_intraday)
-            .pipe(_preprocessar_df_intraday)
+            df_bruto.pipe(_preprocessar_df_intraday)
             .pipe(_processar_df_intraday, codigo_contrato)
             .pipe(_selecionar_e_reordenar_colunas_intraday)
         )
@@ -53,63 +48,25 @@ def intraday(codigo_contrato: str) -> pl.DataFrame:
         return pl.DataFrame()
 
 
-@retry_padrao
-def _buscar_json_intraday(codigo_contrato: str) -> list[dict]:
-    url = f"{URL_BASE_INTRADAY}/{codigo_contrato}"
-    cabecalhos = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"  # noqa: E501
-    }
-    resposta = requests.get(url, headers=cabecalhos, timeout=10)
-    resposta.raise_for_status()
-    resposta.encoding = "utf-8"
-
-    if "Quotation not available" in resposta.text or "curPrc" not in resposta.text:
-        data_log = clock.now().strftime("%d-%m-%Y %H:%M")
-        logger.warning("Sem dados intraday para %s em %s.", codigo_contrato, data_log)
-        return []
-
-    return resposta.json()["Scty"]
-
-
-def _converter_json_intraday(dados_json: list[dict]) -> pl.DataFrame:
-    if not dados_json:
-        return pl.DataFrame()
-    return pl.json_normalize(dados_json)
-
-
-def _processar_colunas_intraday(df: pl.DataFrame) -> pl.DataFrame:
-    df.columns = [
-        c.replace("SctyQtn.", "").replace("asset.AsstSummry.", "") for c in df.columns
-    ]
-
-    mapa_renomeacao = {
-        "symb": "TickerSymbol",
-        "bottomLmtPric": "MinLimitRate",
-        "prvsDayAdjstmntPric": "PrevSettlementRate",
-        "topLmtPric": "MaxLimitRate",
-        "opngPric": "OpenRate",
-        "minPric": "MinRate",
-        "maxPric": "MaxRate",
-        "avrgPric": "AvgRate",
-        "curPrc": "LastRate",
-        "grssAmt": "FinancialVolume",
-        "mtrtyCode": "ExpirationDate",
-        "opnCtrcts": "OpenContracts",
-        "tradQty": "TradeCount",
-        "traddCtrctsQty": "TradeVolume",
-        "buyOffer.price": "BestAskRate",
-        "sellOffer.price": "BestBidRate",
-    }
-    return df.select(mapa_renomeacao.keys()).rename(mapa_renomeacao, strict=False)
-
-
 def _preprocessar_df_intraday(df: pl.DataFrame) -> pl.DataFrame:
     return (
-        df.with_columns(
-            pl.col("ExpirationDate").str.to_date(format="%Y-%m-%d", strict=False)
-        )
-        .drop_nulls(subset=["ExpirationDate"])
+        df.filter(pl.col("MarketCode") == "FUT")
         .filter(pl.col("TickerSymbol") != "DI1D")
+        .rename(
+            {
+                "MinLimitValue": "MinLimitRate",
+                "PrevSettlementValue": "PrevSettlementRate",
+                "MaxLimitValue": "MaxLimitRate",
+                "OpenValue": "OpenRate",
+                "MinValue": "MinRate",
+                "MaxValue": "MaxRate",
+                "AvgValue": "AvgRate",
+                "LastValue": "LastRate",
+                "BestAskValue": "BestAskRate",
+                "BestBidValue": "BestBidRate",
+            },
+            strict=False,
+        )
         .sort("ExpirationDate")
     )
 
