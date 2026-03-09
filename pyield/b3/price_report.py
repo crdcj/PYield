@@ -14,7 +14,7 @@ import pyield._internal.converters as cv
 from pyield._internal.retry import DadoIndisponivelError, retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.b3._contracts import normalizar_codigo_contrato
-from pyield.b3.validar_pregao import data_negociacao_valida
+from pyield.b3._validar_pregao import data_negociacao_valida
 
 registro = logging.getLogger(__name__)
 
@@ -221,9 +221,7 @@ def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
 
 
 def _processar_xml_extraido(xml_bytes: bytes, codigo_contrato: str) -> pl.DataFrame:
-    registros = (
-        _parsear_xml_registros(xml_bytes, codigo_contrato) if xml_bytes else []
-    )
+    registros = _parsear_xml_registros(xml_bytes, codigo_contrato) if xml_bytes else []
     if not registros:
         return pl.DataFrame()
 

@@ -7,8 +7,8 @@ import requests
 
 from pyield import bday, clock
 from pyield._internal.retry import retry_padrao
+from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.futures.common import expr_dv01
-from pyield.b3.validar_pregao import data_negociacao_valida
 from pyield.fwd import forwards
 
 URL_BASE_INTRADAY = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"

@@ -38,6 +38,7 @@ import polars as pl
 import pyield._internal.converters as cv
 from pyield._internal.retry import DadoIndisponivelError
 from pyield._internal.types import DateLike
+from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.price_report import (
     _baixar_zip_url,
     _converter_para_df,
@@ -45,7 +46,6 @@ from pyield.b3.price_report import (
     _mapa_renomeacao_colunas,
     _parsear_xml_registros,
 )
-from pyield.b3.validar_pregao import data_negociacao_valida
 
 logger = logging.getLogger(__name__)
 
