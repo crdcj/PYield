@@ -28,7 +28,7 @@ def obter_arquivo_teste_local(file_name: str) -> Path:
 def obter_parquet_referencia(date_str: str, contract_code: str) -> Path:
     """Retorna o caminho do parquet canônico para a data e contrato."""
     dia, mes, ano = date_str.split("-")
-    nome = f"futures_xml_{ano}{mes}{dia}_{contract_code}.parquet"
+    nome = f"futures_{ano}{mes}{dia}_{contract_code}.parquet"
     return obter_arquivo_teste_local(nome)
 
 
