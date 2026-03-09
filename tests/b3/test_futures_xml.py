@@ -53,6 +53,23 @@ def prepare_data(
     return df_result, df_expect
 
 
+def _alinhar_para_canonicidade(
+    df_result: pl.DataFrame,
+    df_expect: pl.DataFrame,
+) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """Alinha DataFrames para comparação usando o canônico como subconjunto obrigatório."""
+    colunas_esperadas = df_expect.columns
+    colunas_faltantes = [
+        col for col in colunas_esperadas if col not in df_result.columns
+    ]
+    if colunas_faltantes:
+        raise AssertionError(
+            f"Colunas esperadas ausentes no resultado: {colunas_faltantes}"
+        )
+
+    return df_result.select(colunas_esperadas), df_expect
+
+
 @pytest.mark.parametrize(
     ("date", "contract_code"),
     [
@@ -85,6 +102,7 @@ def prepare_data(
 def test_fetch_and_prepare_data(date, contract_code, monkeypatch):
     """Compara `futures` com parquet canônico usando dados locais offline."""
     result_df, expect_df = prepare_data(date, contract_code, monkeypatch=monkeypatch)
+    result_df, expect_df = _alinhar_para_canonicidade(result_df, expect_df)
     assert_frame_equal(
         result_df, expect_df, rel_tol=1e-4, check_exact=False, check_dtypes=True
     )

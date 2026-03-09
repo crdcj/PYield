@@ -38,99 +38,70 @@ TAMANHO_TICKER_OPCAO = 13
 TICKER_XPATH_TEMPLATE = '//ns:TckrSymb[starts-with(text(), "{asset_code}")]'
 TRADE_DATE_XPATH = ".//ns:TradDt/ns:Dt"
 FIN_INSTRM_ATTRBTS_XPATH = ".//ns:FinInstrmAttrbts"
+TRADE_DETAILS_XPATH = ".//ns:TradDtls"
 
 # --- Mapeamento de Colunas ---
 
-# 1. Colunas fixas: nome de destino sempre o mesmo
-# Formato: {XML_Name: (New_Name, DataType)}
-MAPEAMENTO_BASE = {
-    "TradDt": ("TradeDate", pl.Date),
-    "TckrSymb": ("TickerSymbol", pl.String),
-    "OpnIntrst": ("OpenContracts", pl.Int64),
-    "RglrTxsQty": ("TradeCount", pl.Int64),
-    "FinInstrmQty": ("TradeVolume", pl.Int64),
-    "NtlFinVol": ("FinancialVolume", pl.Float64),
-    "AdjstdQt": ("SettlementPrice", pl.Float64),  # Settlement price (PU - Unit Price)
-    "AdjstdQtTax": ("SettlementRate", pl.Float64),  # DI1, DAP, ...
-    "RglrTraddCtrcts": ("RegularTradedContracts", pl.Int64),
-    "NtlRglrVol": ("NationalRegularVolume", pl.Float64),
-    "IntlRglrVol": ("InternationalRegularVolume", pl.Float64),
-    "OscnPctg": ("OscillationPercentage", pl.Float64),
-    "VartnPts": ("VariationPoints", pl.Float64),
-    "AdjstdValCtrct": ("AdjustedValueContract", pl.Float64),
-    "MktDataStrmId": ("MarketDataStreamId", pl.String),
-    "IntlFinVol": ("InternationalFinancialVolume", pl.Float64),
-    "AdjstdQtStin": ("AdjustedQuotationIndicator", pl.String),
-    "PrvsAdjstdQt": ("PreviousAdjustedQuotation", pl.Float64),
-    "PrvsAdjstdQtTax": ("PreviousAdjustedRate", pl.Float64),
-    "PrvsAdjstdQtStin": ("PreviousAdjustedIndicator", pl.String),
-}
-
-# 2. Colunas variáveis: nome de destino depende do sufixo (Rate ou Price)
-# Formato: {XML_Name: (Prefix, DataType)}
-MAPEAMENTO_VARIAVEL = {
-    "MinTradLmt": ("MinLimit", pl.Float64),
-    "MaxTradLmt": ("MaxLimit", pl.Float64),
-    "BestAskPric": ("BestAsk", pl.Float64),
-    "BestBidPric": ("BestBid", pl.Float64),
-    "FrstPric": ("Open", pl.Float64),
-    "MinPric": ("Min", pl.Float64),
-    "TradAvrgPric": ("Avg", pl.Float64),
-    "MaxPric": ("Max", pl.Float64),
-    "LastPric": ("Close", pl.Float64),
-}
-
-# Agrega todos os tipos para cast inicial (usando nomes originais do XML)
-TIPOS_XML = {k: v[1] for k, v in MAPEAMENTO_BASE.items()}
-TIPOS_XML.update({k: v[1] for k, v in MAPEAMENTO_VARIAVEL.items()})
-
-COLUNAS_SAIDA = [
-    "TradeDate",
-    "TickerSymbol",
-    "ExpirationDate",
-    "BDaysToExp",
-    "DaysToExp",
-    "OpenContracts",
-    "TradeCount",
-    "TradeVolume",
-    "FinancialVolume",
-    "DV01",
-    "SettlementPrice",
-    # Columns that can be Rate or Price depending on contract type
-    "MinLimitRate",
-    "MinLimitPrice",
-    "MaxLimitRate",
-    "MaxLimitPrice",
-    "BestBidRate",
-    "BestBidPrice",
-    "BestAskRate",
-    "BestAskPrice",
-    "OpenRate",
-    "OpenPrice",
-    "MinRate",
-    "MinPrice",
-    "AvgRate",
-    "AvgPrice",
-    "MaxRate",
-    "MaxPrice",
-    "CloseRate",
-    "ClosePrice",
-    "SettlementRate",
-    "ForwardRate",
-    # Other fields normally not used for analysis but included for completeness
-    "MarketDataStreamId",
-    "AdjustedQuotationIndicator",
-    "RegularTradedContracts",
-    "NationalRegularVolume",
-    "InternationalRegularVolume",
-    "InternationalFinancialVolume",
-    "PreviousAdjustedQuotation",
-    "PreviousAdjustedRate",
-    "PreviousAdjustedIndicator",
-    "OscillationPercentage",
-    "VariationPoints",
-    "AdjustedValueContract",
+# Estrutura: (id_pdf, nome_original_xml, nome_novo, tipo_polars)
+# As colunas comentadas ficam fora do ETL; ao descomentar, entram no fluxo.
+# https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf
+PRICE_REPORT_COLUMNS: list[tuple[str, str, str, type[pl.DataType]]] = [
+    ("1.00", "TradDt", "TradeDate", pl.Date),
+    ("2.01", "TckrSymb", "TickerSymbol", pl.String),
+    ("3.01.01", "Id", "InstrumentId", pl.String),
+    ("3.01.02.01", "Prtry", "IdentifierType", pl.String),
+    ("3.02.01", "MktIdrCd", "MarketIdentifierCode", pl.String),
+    ("4.01", "DaysToSttlm", "DaysToSettlement", pl.String),
+    ("4.02", "TradQty", "TradeCount", pl.Int64),
+    ("5.01", "MktDataStrmId", "MarketDataStreamId", pl.String),
+    ("5.02", "NtlFinVol", "FinancialVolume", pl.Float64),
+    ("5.03", "IntlFinVol", "InternationalFinancialVolume", pl.Float64),
+    ("5.04", "OpnIntrst", "OpenContracts", pl.Int64),
+    ("5.05", "FinInstrmQty", "TradeVolume", pl.Int64),
+    ("5.06", "BestBidPric", "BestBid", pl.Float64),
+    ("5.07", "BestAskPric", "BestAsk", pl.Float64),
+    ("5.08", "FrstPric", "Open", pl.Float64),
+    ("5.09", "MinPric", "Min", pl.Float64),
+    ("5.10", "MaxPric", "Max", pl.Float64),
+    ("5.11", "TradAvrgPric", "Avg", pl.Float64),
+    ("5.12", "LastPric", "Close", pl.Float64),
+    ("5.13", "RglrTxsQty", "RegularTradeCount", pl.Int64),
+    ("5.14", "NonRglrTxsQty", "NonRegularTradeCount", pl.Int64),
+    ("5.15", "RglrTraddCtrcts", "RegularTradedContracts", pl.Int64),
+    ("5.16", "NonRglrTraddCtrcts", "NonRegularTradedContracts", pl.Int64),
+    ("5.17", "NtlRglrVol", "NationalRegularVolume", pl.Float64),
+    ("5.18", "NtlNonRglrVol", "NationalNonRegularVolume", pl.Float64),
+    ("5.19", "IntlRglrVol", "InternationalRegularVolume", pl.Float64),
+    ("5.20", "IntlNonRglrVol", "InternationalNonRegularVolume", pl.Float64),
+    ("5.21", "AdjstdQt", "SettlementPrice", pl.Float64),
+    ("5.22", "AdjstdQtTax", "SettlementRate", pl.Float64),
+    ("5.23", "AdjstdQtStin", "AdjustedQuotationIndicator", pl.String),
+    ("5.24", "PrvsAdjstdQt", "PreviousAdjustedQuotation", pl.Float64),
+    ("5.25", "PrvsAdjstdQtTax", "PreviousAdjustedRate", pl.Float64),
+    ("5.26", "PrvsAdjstdQtStin", "PreviousAdjustedIndicator", pl.String),
+    ("5.27", "OscnPctg", "OscillationPercentage", pl.Float64),
+    ("5.28", "VartnPts", "VariationPoints", pl.Float64),
+    ("5.29", "EqvtVal", "EquivalentValue", pl.Float64),
+    ("5.30", "AdjstdValCtrct", "AdjustedValueContract", pl.Float64),
+    ("5.31", "MaxTradLmt", "MaxLimit", pl.Float64),
+    ("5.32", "MinTradLmt", "MinLimit", pl.Float64),
 ]
+
+# Colunas cujo nome final recebe sufixo dinâmico (Rate/Price).
+COLUNAS_XML_COM_SUFIXO = {
+    "MinTradLmt",
+    "MaxTradLmt",
+    "BestAskPric",
+    "BestBidPric",
+    "FrstPric",
+    "MinPric",
+    "TradAvrgPric",
+    "MaxPric",
+    "LastPric",
+}
+
+# Mapa de tipos para cast inicial usando os nomes originais do XML.
+TIPOS_XML = {nome_original: tipo for _, nome_original, _, tipo in PRICE_REPORT_COLUMNS}
 
 
 def _mapa_renomeacao_colunas(contract_code: str) -> dict[str, str]:
@@ -141,15 +112,33 @@ def _mapa_renomeacao_colunas(contract_code: str) -> dict[str, str]:
     # 1. Determina o sufixo (Rate ou Price)
     sufixo = "Rate" if contract_code in CONTRATOS_TAXA else "Price"
 
-    # 2. Mapeamento Base (Fixo)
-    mapa_renomeacao = {k: v[0] for k, v in MAPEAMENTO_BASE.items()}
-
-    # 3. Mapeamento Variável (Com Sufixo)
-    # Ex: FrstPric -> OpenRate (se DI1) ou OpenPrice (se DOL)
-    for xml_col, (prefix, _) in MAPEAMENTO_VARIAVEL.items():
-        mapa_renomeacao[xml_col] = f"{prefix}{sufixo}"
+    mapa_renomeacao = {}
+    for _, nome_original, nome_novo, _ in PRICE_REPORT_COLUMNS:
+        if nome_original in COLUNAS_XML_COM_SUFIXO:
+            mapa_renomeacao[nome_original] = f"{nome_novo}{sufixo}"
+        else:
+            mapa_renomeacao[nome_original] = nome_novo
 
     return mapa_renomeacao
+
+
+def _colunas_saida_ordenadas(contract_code: str) -> list[str]:
+    sufixo = "Rate" if contract_code in CONTRATOS_TAXA else "Price"
+    colunas = ["TradeDate", "TickerSymbol", "ExpirationDate", "BDaysToExp", "DaysToExp"]
+
+    for _, nome_original, nome_novo, _ in PRICE_REPORT_COLUMNS:
+        if nome_novo in {"TradeDate", "TickerSymbol"}:
+            continue
+        coluna_final = (
+            f"{nome_novo}{sufixo}"
+            if nome_original in COLUNAS_XML_COM_SUFIXO
+            else nome_novo
+        )
+        if coluna_final not in colunas:
+            colunas.append(coluna_final)
+
+    colunas.extend(["DV01", "ForwardRate"])
+    return colunas
 
 
 def _ler_zip_arquivo(file_path: Path) -> bytes:
@@ -231,6 +220,12 @@ def _extrair_dados_contrato(ticker: _Element, contract_code: str) -> dict | None
         tag_name = etree.QName(attr).localname
         dados_ticker[tag_name] = attr.text
 
+    detalhes_negocio = price_report.find(TRADE_DETAILS_XPATH, NAMESPACES)
+    if detalhes_negocio is not None:
+        for detalhe in detalhes_negocio:
+            tag_name = etree.QName(detalhe).localname
+            dados_ticker[tag_name] = detalhe.text
+
     return dados_ticker
 
 
@@ -294,7 +289,8 @@ def _processar_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
         forward_rates = forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
         df = df.with_columns(ForwardRate=forward_rates)
 
-    coluna_ordem = [col for col in COLUNAS_SAIDA if col in df.columns]
+    colunas_saida = _colunas_saida_ordenadas(contract_code)
+    coluna_ordem = [col for col in colunas_saida if col in df.columns]
     return df.select(coluna_ordem).filter(pl.col("DaysToExp") > 0)
 
 
