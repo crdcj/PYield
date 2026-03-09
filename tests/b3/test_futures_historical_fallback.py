@@ -49,7 +49,6 @@ def test_historical_faz_fallback_para_price_report(monkeypatch):
         return pl.DataFrame(
             {
                 "TickerSymbol": ["DI1N26"],
-                "ExpirationDate": [dt.date(2026, 7, 1)],
             }
         )
 

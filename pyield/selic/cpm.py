@@ -36,7 +36,6 @@ import logging
 import polars as pl
 
 import pyield._internal.converters as cv
-import pyield.b3.common as cm
 from pyield._internal.retry import DadoIndisponivelError
 from pyield._internal.types import DateLike
 from pyield.b3.price_report import (
@@ -46,6 +45,7 @@ from pyield.b3.price_report import (
     _mapa_renomeacao_colunas,
     _parsear_xml_registros,
 )
+from pyield.b3.validar_pregao import data_negociacao_valida
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +174,7 @@ def data(date: DateLike) -> pl.DataFrame:
     if trade_date is None:
         return _empty_schema()
 
-    if not cm.data_negociacao_valida(trade_date):
+    if not data_negociacao_valida(trade_date):
         logger.warning(
             "Data %s inválida para CPM. Retornando DataFrame vazio.", trade_date
         )

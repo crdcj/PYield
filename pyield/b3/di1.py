@@ -402,4 +402,4 @@ def available_trade_dates() -> pl.Series:
             2018-01-08
         ]
     """
-    return futuros_historico.listar_datas_disponiveis_pr("DI1").alias("available_dates")
+    return futuros_historico.listar_datas_disponiveis("DI1").alias("available_dates")

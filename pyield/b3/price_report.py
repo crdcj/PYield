@@ -11,9 +11,9 @@ from lxml import etree
 from lxml.etree import _Element
 
 import pyield._internal.converters as cv
-import pyield.b3.common as cm
 from pyield._internal.retry import DadoIndisponivelError, retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
+from pyield.b3.validar_pregao import data_negociacao_valida
 
 registro = logging.getLogger(__name__)
 
@@ -32,17 +32,17 @@ MIN_TAMANHO_ZIP_BYTES = 1024
 # - 13 chars: opções sobre futuros AAAnYYTssssss (ex.: CPMF25C100750)
 TAMANHO_TICKER_FUTURO = 6
 TAMANHO_TICKER_OPCAO = 13
-TICKER_XPATH_TEMPLATE = '//ns:TckrSymb[starts-with(text(), "{asset_code}")]'
-TRADE_DATE_XPATH = ".//ns:TradDt/ns:Dt"
-FIN_INSTRM_ATTRBTS_XPATH = ".//ns:FinInstrmAttrbts"
-TRADE_DETAILS_XPATH = ".//ns:TradDtls"
+MODELO_XPATH_TICKER = '//ns:TckrSymb[starts-with(text(), "{codigo_ativo}")]'
+XPATH_DATA_NEGOCIACAO = ".//ns:TradDt/ns:Dt"
+XPATH_ATRIBUTOS_INSTRUMENTO = ".//ns:FinInstrmAttrbts"
+XPATH_DETALHES_NEGOCIO = ".//ns:TradDtls"
 
 # --- Mapeamento de Colunas ---
 
 # Estrutura: (id_pdf, nome_original_xml, nome_novo, tipo_polars)
 # As colunas comentadas ficam fora do ETL; ao descomentar, entram no fluxo.
 # https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf
-PRICE_REPORT_COLUMNS: list[tuple[str, str, str, type[pl.DataType]]] = [
+COLUNAS_PRICE_REPORT: list[tuple[str, str, str, type[pl.DataType]]] = [
     ("1.00", "TradDt", "TradeDate", pl.Date),
     ("2.01", "TckrSymb", "TickerSymbol", pl.String),
     ("3.01.01", "Id", "InstrumentId", pl.String),
@@ -98,19 +98,19 @@ COLUNAS_XML_COM_SUFIXO = {
 }
 
 # Mapa de tipos para cast inicial usando os nomes originais do XML.
-TIPOS_XML = {nome_original: tipo for _, nome_original, _, tipo in PRICE_REPORT_COLUMNS}
+TIPOS_XML = {nome_original: tipo for _, nome_original, _, tipo in COLUNAS_PRICE_REPORT}
 
 
-def _mapa_renomeacao_colunas(contract_code: str) -> dict[str, str]:
+def _mapa_renomeacao_colunas(codigo_contrato: str) -> dict[str, str]:
     """
     Constrói o dicionário de renomeação dinamicamente baseado no contrato.
     Retorna: {XML_Name: New_Name}
     """
     # 1. Determina o sufixo (Rate ou Price)
-    sufixo = "Rate" if contract_code in CONTRATOS_TAXA else "Price"
+    sufixo = "Rate" if codigo_contrato in CONTRATOS_TAXA else "Price"
 
     mapa_renomeacao = {}
-    for _, nome_original, nome_novo, _ in PRICE_REPORT_COLUMNS:
+    for _, nome_original, nome_novo, _ in COLUNAS_PRICE_REPORT:
         if nome_original in COLUNAS_XML_COM_SUFIXO:
             mapa_renomeacao[nome_original] = f"{nome_novo}{sufixo}"
         else:
@@ -119,20 +119,20 @@ def _mapa_renomeacao_colunas(contract_code: str) -> dict[str, str]:
     return mapa_renomeacao
 
 
-def _ler_zip_arquivo(file_path: Path) -> bytes:
-    if not isinstance(file_path, Path):
+def _ler_zip_arquivo(caminho_arquivo: Path) -> bytes:
+    if not isinstance(caminho_arquivo, Path):
         raise ValueError("É necessário informar um caminho de arquivo.")
-    if not file_path.exists():
-        raise FileNotFoundError(f"Nenhum arquivo encontrado em {file_path}.")
-    return file_path.read_bytes()
+    if not caminho_arquivo.exists():
+        raise FileNotFoundError(f"Nenhum arquivo encontrado em {caminho_arquivo}.")
+    return caminho_arquivo.read_bytes()
 
 
 @retry_padrao
-def _baixar_zip_url(date: dt.date, source_type: str) -> bytes:
-    data_str = date.strftime("%y%m%d")
-    if source_type == "PR":
+def _baixar_zip_url(data: dt.date, tipo_fonte: str) -> bytes:
+    data_str = data.strftime("%y%m%d")
+    if tipo_fonte == "PR":
         url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{data_str}.zip"
-    elif source_type == "SPR":
+    elif tipo_fonte == "SPR":
         url = (
             f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{data_str}.zip"
         )
@@ -143,14 +143,14 @@ def _baixar_zip_url(date: dt.date, source_type: str) -> bytes:
     resposta.raise_for_status()
 
     if len(resposta.content) < MIN_TAMANHO_ZIP_BYTES:
-        data_str_formatada = date.strftime("%Y-%m-%d")
+        data_str_formatada = data.strftime("%Y-%m-%d")
         raise DadoIndisponivelError(f"Sem dados disponíveis para {data_str_formatada}.")
     return resposta.content
 
 
 def _extrair_xml_zip_aninhado(conteudo_zip: bytes) -> bytes:
-    zip_file = io.BytesIO(conteudo_zip)
-    with zipfile.ZipFile(zip_file, "r") as zip_externo:
+    buffer_zip = io.BytesIO(conteudo_zip)
+    with zipfile.ZipFile(buffer_zip, "r") as zip_externo:
         arquivos_externos = zip_externo.namelist()
         if not arquivos_externos:
             raise ValueError("ZIP externo está vazio")
@@ -168,47 +168,49 @@ def _extrair_xml_zip_aninhado(conteudo_zip: bytes) -> bytes:
     return conteudo_xml
 
 
-def _ticker_valido_para_contrato(ticker: str, contract_code: str) -> bool:
-    if contract_code == "CPM":
+def _ticker_valido_para_contrato(ticker: str, codigo_contrato: str) -> bool:
+    if codigo_contrato == "CPM":
         return len(ticker) == TAMANHO_TICKER_OPCAO
     return len(ticker) == TAMANHO_TICKER_FUTURO
 
 
-def _extrair_dados_contrato(ticker: _Element, contract_code: str) -> dict | None:
-    if ticker.text is None or not _ticker_valido_para_contrato(
-        ticker.text, contract_code
+def _extrair_dados_contrato(
+    elemento_ticker: _Element, codigo_contrato: str
+) -> dict | None:
+    if elemento_ticker.text is None or not _ticker_valido_para_contrato(
+        elemento_ticker.text, codigo_contrato
     ):
         return None
-    parent = ticker.getparent()
-    if parent is None:
+    pai = elemento_ticker.getparent()
+    if pai is None:
         return None
-    price_report = parent.getparent()
-    if price_report is None:
+    registro_pregao = pai.getparent()
+    if registro_pregao is None:
         return None
-    date_elem = price_report.find(TRADE_DATE_XPATH, NAMESPACES)
-    if date_elem is None:
+    elemento_data = registro_pregao.find(XPATH_DATA_NEGOCIACAO, NAMESPACES)
+    if elemento_data is None:
         return None
 
-    dados_ticker = {"TradDt": date_elem.text, "TckrSymb": ticker.text}
-    atributos_instr = price_report.find(FIN_INSTRM_ATTRBTS_XPATH, NAMESPACES)
+    dados_ticker = {"TradDt": elemento_data.text, "TckrSymb": elemento_ticker.text}
+    atributos_instr = registro_pregao.find(XPATH_ATRIBUTOS_INSTRUMENTO, NAMESPACES)
     if atributos_instr is None:
         return None
 
     for attr in atributos_instr:
-        tag_name = etree.QName(attr).localname
-        dados_ticker[tag_name] = attr.text
+        nome_tag = etree.QName(attr).localname
+        dados_ticker[nome_tag] = attr.text
 
-    detalhes_negocio = price_report.find(TRADE_DETAILS_XPATH, NAMESPACES)
+    detalhes_negocio = registro_pregao.find(XPATH_DETALHES_NEGOCIO, NAMESPACES)
     if detalhes_negocio is not None:
         for detalhe in detalhes_negocio:
-            tag_name = etree.QName(detalhe).localname
-            dados_ticker[tag_name] = detalhe.text
+            nome_tag = etree.QName(detalhe).localname
+            dados_ticker[nome_tag] = detalhe.text
 
     return dados_ticker
 
 
-def _parsear_xml_registros(xml_bytes: bytes, asset_code: str) -> list[dict]:
-    parser = etree.XMLParser(
+def _parsear_xml_registros(xml_bytes: bytes, codigo_ativo: str) -> list[dict]:
+    analisador = etree.XMLParser(
         ns_clean=True,
         remove_blank_text=True,
         remove_comments=True,
@@ -218,18 +220,18 @@ def _parsear_xml_registros(xml_bytes: bytes, asset_code: str) -> list[dict]:
         load_dtd=False,
     )
     arquivo_xml = io.BytesIO(xml_bytes)
-    tree = etree.parse(arquivo_xml, parser=parser)
-    path = TICKER_XPATH_TEMPLATE.format(asset_code=asset_code)
-    tickers = tree.xpath(path, namespaces=NAMESPACES)
+    arvore = etree.parse(arquivo_xml, parser=analisador)
+    caminho_xpath = MODELO_XPATH_TICKER.format(codigo_ativo=codigo_ativo)
+    elementos_ticker = arvore.xpath(caminho_xpath, namespaces=NAMESPACES)
 
-    if not tickers or not isinstance(tickers, list):
+    if not elementos_ticker or not isinstance(elementos_ticker, list):
         return []
 
     registros = []
-    for ticker in tickers:
-        if not isinstance(ticker, etree._Element):
+    for elemento in elementos_ticker:
+        if not isinstance(elemento, etree._Element):
             continue
-        dados_contrato = _extrair_dados_contrato(ticker, asset_code)
+        dados_contrato = _extrair_dados_contrato(elemento, codigo_ativo)
         if dados_contrato is not None:
             registros.append(dados_contrato)
     return registros
@@ -242,13 +244,13 @@ def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
     return df.cast(tipos_coluna, strict=False)  # type: ignore
 
 
-def _processar_zip(zip_data: bytes, contract_code: str) -> pl.DataFrame:
-    if not zip_data:
+def _processar_zip(dados_zip: bytes, codigo_contrato: str) -> pl.DataFrame:
+    if not dados_zip:
         registro.warning("ZIP XML vazio.")
         return pl.DataFrame()
 
-    xml_bytes = _extrair_xml_zip_aninhado(zip_data)
-    registros = _parsear_xml_registros(xml_bytes, contract_code)
+    xml_bytes = _extrair_xml_zip_aninhado(dados_zip)
+    registros = _parsear_xml_registros(xml_bytes, codigo_contrato)
 
     if not registros:
         return pl.DataFrame()
@@ -256,12 +258,10 @@ def _processar_zip(zip_data: bytes, contract_code: str) -> pl.DataFrame:
     df = _converter_para_df(registros)
 
     # Aplica renomeação dinâmica baseada no tipo de contrato
-    # 1. Gera o mapa correto de renomeação (sufixo Rate ou Price)
-    mapa_renomeacao = _mapa_renomeacao_colunas(contract_code)
+    mapa_renomeacao = _mapa_renomeacao_colunas(codigo_contrato)
     df = df.rename(mapa_renomeacao, strict=False)
-    df = cm.adicionar_vencimento(df, contract_code, "TickerSymbol")
 
-    return df.sort("ExpirationDate")
+    return df.sort("TickerSymbol")
 
 
 def fetch_price_report(
@@ -291,7 +291,7 @@ def fetch_price_report(
 
     Returns:
         pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
-        ExpirationDate. Inclui todos os registros do XML (sem filtro de
+        TickerSymbol. Inclui todos os registros do XML (sem filtro de
         vencimento). Retorna DataFrame vazio para data inválida, resposta
         vazia ou falhas de parsing recuperáveis.
 
@@ -321,7 +321,7 @@ def fetch_price_report(
 
     date = cv.converter_datas(date)
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
-    if not cm.data_negociacao_valida(date):
+    if not data_negociacao_valida(date):
         registro.warning(f"{date} não é uma data válida. Retornando DataFrame vazio.")
         return pl.DataFrame()
 
@@ -369,11 +369,11 @@ def read_price_report(
 
     Returns:
         pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
-        ExpirationDate.
+        TickerSymbol.
     """
     if source_type is None:
-        filename = file_path.name
-        source_type = "SPR" if filename.startswith("SPRD") else "PR"
+        nome_arquivo = file_path.name
+        source_type = "SPR" if nome_arquivo.startswith("SPRD") else "PR"
 
     dados_zip = _ler_zip_arquivo(file_path)
     df = _processar_zip(dados_zip, contract_code)

@@ -1,3 +1,13 @@
+"""Testes do pipeline completo de futures (dado enriquecido).
+
+Valida que o fluxo end-to-end (ZIP → XML → parse → tipagem → renomeação →
+ExpirationDate → BDaysToExp/DaysToExp/DV01/ForwardRate → seleção de colunas)
+produz o DataFrame esperado.
+
+Estratégia: substitui apenas a camada de rede (download do ZIP e cache PR),
+exercitando o pipeline real completo com arquivos ZIP locais.
+"""
+
 import importlib
 from pathlib import Path
 
@@ -8,6 +18,7 @@ from polars.testing import assert_frame_equal
 from pyield import b3
 
 historical_mod = importlib.import_module("pyield.b3.futures.historical")
+pr_mod = importlib.import_module("pyield.b3.price_report")
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 ARQUIVO_POR_DATA = {
@@ -17,7 +28,7 @@ ARQUIVO_POR_DATA = {
 }
 
 
-def obter_arquivo_teste_local(file_name: str) -> Path:
+def _caminho_arquivo_local(file_name: str) -> Path:
     """Retorna o caminho de um arquivo de teste local já versionado no repositório."""
     local_path = TEST_DATA_DIR / file_name
     if not local_path.exists():
@@ -25,37 +36,36 @@ def obter_arquivo_teste_local(file_name: str) -> Path:
     return local_path
 
 
-def obter_parquet_referencia(date_str: str, contract_code: str) -> Path:
+def _parquet_referencia(date_str: str, contract_code: str) -> Path:
     """Retorna o caminho do parquet canônico para a data e contrato."""
     dia, mes, ano = date_str.split("-")
     nome = f"futures_{ano}{mes}{dia}_{contract_code}.parquet"
-    return obter_arquivo_teste_local(nome)
+    return _caminho_arquivo_local(nome)
 
 
-def prepare_data(
+def _preparar(
     date_str: str,
     contract_code: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
-    """Prepare Polars DataFrames for comparison."""
-    df_expect = pl.read_parquet(obter_parquet_referencia(date_str, contract_code))
+    """Substitui a camada de rede e executa o pipeline real completo."""
+    df_expect = pl.read_parquet(_parquet_referencia(date_str, contract_code))
 
-    def _buscar_df_historico_local(data, codigo_contrato):
-        data_str = data.strftime("%d-%m-%Y")
-        arquivo_local = obter_arquivo_teste_local(ARQUIVO_POR_DATA[data_str])
-        df_bruto = b3.read_price_report(
-            file_path=arquivo_local, contract_code=codigo_contrato
-        )
-        df = historical_mod._enriquecer_dados(df_bruto, codigo_contrato)
-        return historical_mod._selecionar_colunas_saida(df).sort("ExpirationDate")
+    arquivo_local = _caminho_arquivo_local(ARQUIVO_POR_DATA[date_str])
+    dados_zip = pr_mod._ler_zip_arquivo(arquivo_local)
 
-    monkeypatch.setattr(historical_mod, "historical", _buscar_df_historico_local)
+    # Pular cache PR → forçar fallback para fetch_price_report
+    monkeypatch.setattr(
+        historical_mod, "_carregar_pr_por_data", lambda d, c: pl.DataFrame()
+    )
+    # Retornar ZIP local em vez de baixar da B3
+    monkeypatch.setattr(pr_mod, "_baixar_zip_url", lambda d, s: dados_zip)
+
     df_result = b3.futures(contract_code=contract_code, date=date_str)
-
     return df_result, df_expect
 
 
-def _alinhar_para_canonicidade(
+def _alinhar_colunas(
     df_result: pl.DataFrame,
     df_expect: pl.DataFrame,
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
@@ -101,10 +111,10 @@ def _alinhar_para_canonicidade(
         ("12-01-2026", "WIN"),
     ],
 )
-def test_fetch_and_prepare_data(date, contract_code, monkeypatch):
+def test_pipeline_futures(date, contract_code, monkeypatch):
     """Compara `futures` com parquet canônico usando dados locais offline."""
-    result_df, expect_df = prepare_data(date, contract_code, monkeypatch=monkeypatch)
-    result_df, expect_df = _alinhar_para_canonicidade(result_df, expect_df)
+    result_df, expect_df = _preparar(date, contract_code, monkeypatch=monkeypatch)
+    result_df, expect_df = _alinhar_colunas(result_df, expect_df)
     assert_frame_equal(
         result_df, expect_df, rel_tol=1e-4, check_exact=False, check_dtypes=True
     )

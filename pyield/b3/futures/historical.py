@@ -3,9 +3,9 @@ import logging
 
 import polars as pl
 
-import pyield.b3.common as cm
 from pyield import bday
 from pyield._internal.data_cache import obter_dataset_cacheado
+from pyield.b3.futures.common import adicionar_vencimento, expr_dv01
 from pyield.b3.price_report import fetch_price_report
 from pyield.fwd import forwards
 
@@ -29,6 +29,7 @@ def historical(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
         if df_bruto.is_empty():
             return pl.DataFrame()
 
+        df_bruto = adicionar_vencimento(df_bruto, codigo_contrato, "TickerSymbol")
         df = _enriquecer_dados(df_bruto, codigo_contrato)
         return _selecionar_colunas_saida(df).sort("ExpirationDate")
     except Exception:
@@ -47,11 +48,11 @@ def carregar_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
 
     try:
         df = obter_dataset_cacheado("pr")
-        df = _filtrar_e_renomear_pr(df, datas, codigo_contrato)
+        df = _filtrar_e_renomear(df, datas, codigo_contrato)
         if df.is_empty():
             return pl.DataFrame()
 
-        df = cm.adicionar_vencimento(df, codigo_contrato, coluna_ticker="TickerSymbol")
+        df = adicionar_vencimento(df, codigo_contrato, coluna_ticker="TickerSymbol")
         df = _enriquecer_dados(df, codigo_contrato)
         df = _selecionar_colunas_saida(df)
 
@@ -66,7 +67,7 @@ def carregar_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
         return pl.DataFrame()
 
 
-def listar_datas_disponiveis_pr(codigo_contrato: str) -> pl.Series:
+def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
     """Lista datas disponíveis no dataset PR para um contrato futuro."""
     return (
         obter_dataset_cacheado("pr")
@@ -79,7 +80,7 @@ def listar_datas_disponiveis_pr(codigo_contrato: str) -> pl.Series:
     )
 
 
-def _filtrar_e_renomear_pr(
+def _filtrar_e_renomear(
     df: pl.DataFrame, datas: list[dt.date], codigo_contrato: str
 ) -> pl.DataFrame:
     return df.filter(
@@ -111,7 +112,7 @@ def _enriquecer_dados(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
         and "SettlementRate" in df.columns
     ):
         df = df.with_columns(
-            DV01=cm.expr_dv01("BDaysToExp", "SettlementRate", "SettlementPrice")
+            DV01=expr_dv01("BDaysToExp", "SettlementRate", "SettlementPrice")
         )
 
     if codigo_contrato in {"DI1", "DAP"} and "SettlementRate" in df.columns:

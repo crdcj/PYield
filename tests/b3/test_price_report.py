@@ -23,8 +23,8 @@ ZIP_PR = TEST_DATA_DIR / "PR260112.zip"
 
 def _processar_bruto(zip_path: Path, contract_code: str) -> pl.DataFrame:
     """Pipeline bruto: ZIP → XML → parse → tipos → renomeação."""
-    zip_data = pr_mod._ler_zip_arquivo(zip_path)
-    xml_bytes = pr_mod._extrair_xml_zip_aninhado(zip_data)
+    dados_zip = pr_mod._ler_zip_arquivo(zip_path)
+    xml_bytes = pr_mod._extrair_xml_zip_aninhado(dados_zip)
     registros = pr_mod._parsear_xml_registros(xml_bytes, contract_code)
     if not registros:
         return pl.DataFrame()

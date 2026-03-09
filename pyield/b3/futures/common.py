@@ -1,11 +1,22 @@
-import datetime as dt
-import logging
-
 import polars as pl
 
-from pyield import bday, clock
+from pyield import bday
 
-registro = logging.getLogger(__name__)
+_MAPA_MESES: dict[str, int] = {
+    "F": 1,
+    "G": 2,
+    "H": 3,
+    "J": 4,
+    "K": 5,
+    "M": 6,
+    "N": 7,
+    "Q": 8,
+    "U": 9,
+    "V": 10,
+    "X": 11,
+    "Z": 12,
+}
+_MAPA_MESES_STR: dict[str, str] = {k: str(v) for k, v in _MAPA_MESES.items()}
 
 
 def expr_dv01(
@@ -26,23 +37,6 @@ def expr_dv01(
     duracao = pl.col(coluna_dias_uteis) / 252
     duracao_modificada = duracao / (1 + pl.col(coluna_taxa))
     return 0.0001 * duracao_modificada * pl.col(coluna_preco)
-
-
-_MAPA_MESES: dict[str, int] = {
-    "F": 1,
-    "G": 2,
-    "H": 3,
-    "J": 4,
-    "K": 5,
-    "M": 6,
-    "N": 7,
-    "Q": 8,
-    "U": 9,
-    "V": 10,
-    "X": 11,
-    "Z": 12,
-}
-_MAPA_MESES_STR: dict[str, str] = {k: str(v) for k, v in _MAPA_MESES.items()}
 
 
 def _corrigir_vencimento_cpm(df: pl.DataFrame, coluna_ticker: str) -> pl.DataFrame:
@@ -73,10 +67,7 @@ def _corrigir_vencimento_cpm(df: pl.DataFrame, coluna_ticker: str) -> pl.DataFra
             .cast(pl.Int32, strict=False)
         ),
         _meeting_year=(
-            pl.col(coluna_ticker)
-            .str.slice(4, 2)
-            .cast(pl.Int32, strict=False)
-            .add(2000)
+            pl.col(coluna_ticker).str.slice(4, 2).cast(pl.Int32, strict=False).add(2000)
         ),
     )
 
@@ -128,34 +119,3 @@ def adicionar_vencimento(
         df = _corrigir_vencimento_cpm(df, coluna_ticker)
 
     return df
-
-
-def data_negociacao_valida(data_negociacao: dt.date) -> bool:
-    """Valida se a data de referência é utilizável para consulta.
-
-    Critérios:
-    - Deve ser um dia útil brasileiro.
-    - Não pode estar no futuro (maior que a data corrente no Brasil).
-
-    Retorna True se válida, False caso contrário (e loga um aviso).
-    """
-    if data_negociacao > clock.today():
-        registro.warning(f"A data informada {data_negociacao} está no futuro.")
-        return False
-    if not bday.is_business_day(data_negociacao):
-        registro.warning(f"A data informada {data_negociacao} não é dia útil.")
-        return False
-
-    # Não tem pregão na véspera de Natal e Ano Novo
-    datas_fechadas_especiais = {  # Datas especiais
-        dt.date(data_negociacao.year, 12, 24),  # Véspera de Natal
-        dt.date(data_negociacao.year, 12, 31),  # Véspera de Ano Novo
-    }
-    if data_negociacao in datas_fechadas_especiais:
-        registro.warning(
-            "Não há pregão na véspera de Natal e de Ano Novo: "
-            f"{data_negociacao}"
-        )
-        return False
-
-    return True

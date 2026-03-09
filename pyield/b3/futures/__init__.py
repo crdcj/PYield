@@ -4,11 +4,11 @@ from typing import Literal
 import polars as pl
 
 import pyield._internal.converters as cv
-import pyield.b3.common as cm
 from pyield import clock
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.b3.futures import historical as historico
 from pyield.b3.futures import intraday as intradiario
+from pyield.b3.validar_pregao import data_negociacao_valida
 
 OpcoesContrato = Literal[
     "DI1",
@@ -77,7 +77,7 @@ def futures(
         return pl.DataFrame()
 
     data_negociacao = cv.converter_datas(date)
-    if not cm.data_negociacao_valida(data_negociacao):
+    if not data_negociacao_valida(data_negociacao):
         logger.warning(
             "A data %s não é válida. Retornando DataFrame vazio.",
             data_negociacao,

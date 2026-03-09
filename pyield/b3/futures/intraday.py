@@ -5,9 +5,10 @@ import polars as pl
 import polars.selectors as cs
 import requests
 
-import pyield.b3.common as cm
 from pyield import bday, clock
 from pyield._internal.retry import retry_padrao
+from pyield.b3.futures.common import expr_dv01
+from pyield.b3.validar_pregao import data_negociacao_valida
 from pyield.fwd import forwards
 
 URL_BASE_INTRADAY = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 def data_intraday_valida(data_verificacao: dt.date) -> bool:
     """Verifica se a data é elegível para consulta intraday."""
-    if not cm.data_negociacao_valida(data_verificacao):
+    if not data_negociacao_valida(data_verificacao):
         return False
 
     return data_verificacao == clock.today()
@@ -131,7 +132,7 @@ def _processar_df_intraday(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFra
         df = df.with_columns(LastPrice=ultimo_preco.round(2), ForwardRate=taxa_fwd)
 
     if codigo_contrato == "DI1":
-        df = df.with_columns(DV01=cm.expr_dv01("BDaysToExp", "LastRate", "LastPrice"))
+        df = df.with_columns(DV01=expr_dv01("BDaysToExp", "LastRate", "LastPrice"))
 
     return df.filter(pl.col("DaysToExp") > 0)
 
