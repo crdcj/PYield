@@ -11,8 +11,6 @@ from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.futures import historical, intraday
 
-TipoFonte = Literal["PR", "SPR"]
-
 OpcoesContrato = Literal[
     "DI1",
     "DDI",
@@ -31,7 +29,7 @@ logger = logging.getLogger(__name__)
 def _buscar_intraday_ou_historico(
     data_negociacao,
     codigos_contrato: list[str],
-    source_type: TipoFonte,
+    full_report: bool,
 ) -> pl.DataFrame:
     horario_atual = clock.now().time()
     if horario_atual < intraday.HORA_INICIO_INTRADAY:
@@ -39,7 +37,7 @@ def _buscar_intraday_ou_historico(
 
     if horario_atual >= intraday.HORA_FIM_INTRADAY:
         df_historico = historical.historical(
-            data_negociacao, codigos_contrato, source_type
+            data_negociacao, codigos_contrato, full_report
         )
         if not df_historico.is_empty():
             logger.info("Dados consolidados disponíveis. Usando histórico.")
@@ -57,17 +55,17 @@ def _buscar_intraday_ou_historico(
 def futures(
     date: DateLike,
     contract_code: OpcoesContrato | str | Sequence[OpcoesContrato | str] | pl.Series,
-    source_type: TipoFonte = "SPR",
+    full_report: bool = False,
 ) -> pl.DataFrame:
     """Busca dados de um contrato futuro da B3 para a data de referência.
 
     Args:
         date: Data de referência para consulta.
         contract_code: Código do contrato futuro na B3 ou coleção de códigos.
-        source_type: Tipo do arquivo de preços da B3. 'SPR' (padrão) para
-            settlement price report (arquivo leve, ~2 KB) e 'PR' para price
-            report completo (~2 MB). Relevante apenas quando o dado não está
-            no cache.
+        full_report: Se False (padrão), usa o settlement price report (SPR),
+            arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
+            price report completo (PR, ~2 MB) com todos os dados de negociação.
+            Relevante apenas quando o dado não está no cache.
 
     Returns:
         DataFrame Polars com os dados do contrato informado.
@@ -121,10 +119,10 @@ def futures(
         return _buscar_intraday_ou_historico(
             data_negociacao=data_negociacao,
             codigos_contrato=codigos_contrato,
-            source_type=source_type,
+            full_report=full_report,
         )
 
-    return historical.historical(data_negociacao, codigos_contrato, source_type)
+    return historical.historical(data_negociacao, codigos_contrato, full_report)
 
 
 __all__ = ["futures"]

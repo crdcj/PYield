@@ -17,7 +17,7 @@ def test_historical_prioriza_dataset_pr(monkeypatch):
 
     chamou_price_report = {"valor": False}
 
-    def _price_report_falso(date, contract_code, source_type):
+    def _price_report_falso(date, contract_code, full_report):
         chamou_price_report["valor"] = True
         return pl.DataFrame()
 
@@ -44,8 +44,8 @@ def test_historical_faz_fallback_para_price_report(monkeypatch):
 
     chamadas_price_report = []
 
-    def _price_report_falso(date, contract_code, source_type):
-        chamadas_price_report.append(source_type)
+    def _price_report_falso(date, contract_code, full_report):
+        chamadas_price_report.append(full_report)
         return pl.DataFrame(
             {
                 "TickerSymbol": ["DI1N26"],
@@ -59,7 +59,7 @@ def test_historical_faz_fallback_para_price_report(monkeypatch):
 
     df = historical_mod.historical(dt.date(2026, 5, 10), "DI1")
 
-    assert chamadas_price_report == ["SPR"]
+    assert chamadas_price_report == [False]
     assert not df.is_empty()
 
 
@@ -91,8 +91,8 @@ def test_historical_lista_contratos_faz_um_fetch_remoto(monkeypatch):
 
     chamadas = []
 
-    def _price_report_falso(date, contract_code, source_type):
-        chamadas.append((date, contract_code, source_type))
+    def _price_report_falso(date, contract_code, full_report):
+        chamadas.append((date, contract_code, full_report))
         ticker = "DI1F26" if contract_code == "DI1" else "DOLF26"
         return pl.DataFrame(
             {
