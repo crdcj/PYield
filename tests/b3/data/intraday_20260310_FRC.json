@@ -1,0 +1,1094 @@
+{
+  "BizSts": {
+    "cd": "OK"
+  },
+  "Msg": {
+    "dtTm": "2026-03-10 07:19:24"
+  },
+  "Scty": [
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.41,
+        "prvsDayAdjstmntPric": 4.81,
+        "topLmtPric": 6.21,
+        "opngPric": 4.78,
+        "minPric": 4.78,
+        "maxPric": 4.81,
+        "avrgPric": 4.805,
+        "curPrc": 4.81
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 2193220467.5,
+          "mtrtyCode": "2027-01-04",
+          "tradQty": 29,
+          "traddCtrctsQty": 9390
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.77
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 4.79
+      },
+      "symb": "FRCF27",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 6.52,
+        "prvsDayAdjstmntPric": 7.42,
+        "topLmtPric": 8.32
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2037-01-02"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 7.24
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCF37",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.2,
+        "prvsDayAdjstmntPric": 5.1,
+        "topLmtPric": 6
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-12-03"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCZ29",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.01,
+        "prvsDayAdjstmntPric": 4.86,
+        "topLmtPric": 6.71,
+        "opngPric": 4.86,
+        "minPric": 4.86,
+        "maxPric": 4.86,
+        "avrgPric": 4.86,
+        "curPrc": 4.86
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 341133277.1,
+          "mtrtyCode": "2026-09-01",
+          "tradQty": 7,
+          "traddCtrctsQty": 3500
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.8
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCU26",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.48,
+        "prvsDayAdjstmntPric": 5.38,
+        "topLmtPric": 6.28
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2030-10-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCV30",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.94,
+        "prvsDayAdjstmntPric": 4.84,
+        "topLmtPric": 5.74
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-07-03"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCN28",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.6,
+        "prvsDayAdjstmntPric": 4.73,
+        "topLmtPric": 5.86
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-07-01"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.71
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 4.81
+      },
+      "symb": "FRCN27",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 1.15,
+        "prvsDayAdjstmntPric": 4.93,
+        "topLmtPric": 8.71,
+        "opngPric": 4.93,
+        "minPric": 4.93,
+        "maxPric": 4.93,
+        "avrgPric": 4.93,
+        "curPrc": 4.93
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 1114610261.82,
+          "mtrtyCode": "2026-06-01",
+          "tradQty": 7,
+          "traddCtrctsQty": 11300
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.88
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCM26",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.49,
+        "prvsDayAdjstmntPric": 4.72,
+        "topLmtPric": 5.95,
+        "opngPric": 4.76,
+        "minPric": 4.72,
+        "maxPric": 4.8,
+        "avrgPric": 4.781,
+        "curPrc": 4.72
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 987468137.85,
+          "mtrtyCode": "2027-04-01",
+          "tradQty": 36,
+          "traddCtrctsQty": 10410
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.72
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 4.76
+      },
+      "symb": "FRCJ27",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.89,
+        "prvsDayAdjstmntPric": 4.79,
+        "topLmtPric": 5.69
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-11-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCX27",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.98,
+        "prvsDayAdjstmntPric": 4.88,
+        "topLmtPric": 5.78
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-10-02"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCV28",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.39,
+        "prvsDayAdjstmntPric": 5.29,
+        "topLmtPric": 6.19
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2030-07-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCN30",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.48,
+        "prvsDayAdjstmntPric": 6.38,
+        "topLmtPric": 7.28
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2034-01-02"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 6.21
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCF34",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 6.22,
+        "prvsDayAdjstmntPric": 7.12,
+        "topLmtPric": 8.02
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2036-01-02"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 6.97
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.07
+      },
+      "symb": "FRCF36",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.4,
+        "prvsDayAdjstmntPric": 4.73,
+        "topLmtPric": 6.06,
+        "opngPric": 4.79,
+        "minPric": 4.73,
+        "maxPric": 4.79,
+        "avrgPric": 4.772,
+        "curPrc": 4.73
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 74353075.96,
+          "mtrtyCode": "2027-03-01",
+          "tradQty": 5,
+          "traddCtrctsQty": 780
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 4.79
+      },
+      "symb": "FRCH27",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.9,
+        "prvsDayAdjstmntPric": 4.8,
+        "topLmtPric": 5.7,
+        "opngPric": 4.82,
+        "minPric": 4.79,
+        "maxPric": 4.82,
+        "avrgPric": 4.8,
+        "curPrc": 4.8
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 490971795.52,
+          "mtrtyCode": "2028-01-03",
+          "tradQty": 9,
+          "traddCtrctsQty": 2200
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.75
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 4.8
+      },
+      "symb": "FRCF28",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 6.81,
+        "prvsDayAdjstmntPric": 7.71,
+        "topLmtPric": 8.61
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2038-01-04"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 7.53
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCF38",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.07,
+        "prvsDayAdjstmntPric": 4.97,
+        "topLmtPric": 5.87
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-12-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCZ28",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.41,
+        "prvsDayAdjstmntPric": 4.78,
+        "topLmtPric": 6.15
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-02-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 4.79
+      },
+      "symb": "FRCG27",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.15,
+        "prvsDayAdjstmntPric": 5.05,
+        "topLmtPric": 5.95
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-07-02"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCN29",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 2.38,
+        "prvsDayAdjstmntPric": 4.93,
+        "topLmtPric": 7.48,
+        "opngPric": 4.9,
+        "minPric": 4.9,
+        "maxPric": 4.93,
+        "avrgPric": 4.924,
+        "curPrc": 4.93
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 6830626920.96,
+          "mtrtyCode": "2026-07-01",
+          "tradQty": 30,
+          "traddCtrctsQty": 28550
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.88
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCN26",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.55,
+        "prvsDayAdjstmntPric": 5.45,
+        "topLmtPric": 6.35
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2031-01-02"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 5.35
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 5.39
+      },
+      "symb": "FRCF31",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 7.67,
+        "prvsDayAdjstmntPric": 8.57,
+        "topLmtPric": 9.47
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2041-01-02"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCF41",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.17,
+        "prvsDayAdjstmntPric": 6.07,
+        "topLmtPric": 6.97
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2033-01-03"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 6
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCF33",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.72,
+        "prvsDayAdjstmntPric": 4.75,
+        "topLmtPric": 5.78
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-08-02"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCQ27",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -0.14,
+        "prvsDayAdjstmntPric": 4.87,
+        "topLmtPric": 9.86
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCJ26",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.3,
+        "prvsDayAdjstmntPric": 5.2,
+        "topLmtPric": 6.1
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2030-04-01"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 5.08
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCJ30",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.08,
+        "prvsDayAdjstmntPric": 4.98,
+        "topLmtPric": 5.88,
+        "opngPric": 4.87,
+        "minPric": 4.87,
+        "maxPric": 4.98,
+        "avrgPric": 4.961,
+        "curPrc": 4.98
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 270303769.19,
+          "mtrtyCode": "2029-01-02",
+          "tradQty": 13,
+          "traddCtrctsQty": 1270
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.87
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 4.92
+      },
+      "symb": "FRCF29",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 7.11,
+        "prvsDayAdjstmntPric": 8.01,
+        "topLmtPric": 8.91
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2039-01-03"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 7.85
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCF39",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.88,
+        "prvsDayAdjstmntPric": 4.78,
+        "topLmtPric": 5.68
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-12-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCZ27",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.13,
+        "prvsDayAdjstmntPric": 5.03,
+        "topLmtPric": 5.93
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-04-02"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCJ29",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.19,
+        "prvsDayAdjstmntPric": 5.09,
+        "topLmtPric": 5.99
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-11-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCX29",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.32,
+        "prvsDayAdjstmntPric": 4.82,
+        "topLmtPric": 6.32,
+        "opngPric": 4.83,
+        "minPric": 4.82,
+        "maxPric": 4.83,
+        "avrgPric": 4.828,
+        "curPrc": 4.82
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 1032113322.69,
+          "mtrtyCode": "2026-10-01",
+          "tradQty": 12,
+          "traddCtrctsQty": 10630
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 4.81
+      },
+      "symb": "FRCV26",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.28,
+        "prvsDayAdjstmntPric": 5.18,
+        "topLmtPric": 6.08
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2030-01-02"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCF30",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 7.4,
+        "prvsDayAdjstmntPric": 8.3,
+        "topLmtPric": 9.2
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2040-01-02"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 8.12
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCF40",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.87,
+        "prvsDayAdjstmntPric": 5.77,
+        "topLmtPric": 6.67
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2032-01-02"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 5.7
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCF32",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 2.7,
+        "prvsDayAdjstmntPric": 4.9,
+        "topLmtPric": 7.1,
+        "opngPric": 4.9,
+        "minPric": 4.9,
+        "maxPric": 4.9,
+        "avrgPric": 4.9,
+        "curPrc": 4.9
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 117423634.07,
+          "mtrtyCode": "2026-08-03",
+          "tradQty": 3,
+          "traddCtrctsQty": 1200
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.85
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCQ26",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.62,
+        "prvsDayAdjstmntPric": 5.52,
+        "topLmtPric": 6.42
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2031-04-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCJ31",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -0.03,
+        "prvsDayAdjstmntPric": 4.97,
+        "topLmtPric": 9.97,
+        "opngPric": 4.95,
+        "minPric": 4.91,
+        "maxPric": 4.97,
+        "avrgPric": 4.958,
+        "curPrc": 4.97
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 2514957165.12,
+          "mtrtyCode": "2026-05-04",
+          "tradQty": 21,
+          "traddCtrctsQty": 25400
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.91
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCK26",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.8,
+        "prvsDayAdjstmntPric": 5.7,
+        "topLmtPric": 6.6
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2031-10-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCV31",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.36,
+        "prvsDayAdjstmntPric": 4.79,
+        "topLmtPric": 6.22,
+        "opngPric": 4.79,
+        "minPric": 4.79,
+        "maxPric": 4.79,
+        "avrgPric": 4.79,
+        "curPrc": 4.79
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 67490875.13,
+          "mtrtyCode": "2026-12-01",
+          "tradQty": 5,
+          "traddCtrctsQty": 700
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.75
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCZ26",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.92,
+        "prvsDayAdjstmntPric": 4.82,
+        "topLmtPric": 5.72
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-04-03"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCJ28",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.85,
+        "prvsDayAdjstmntPric": 4.78,
+        "topLmtPric": 5.71,
+        "opngPric": 4.78,
+        "minPric": 4.78,
+        "maxPric": 4.78,
+        "avrgPric": 4.78,
+        "curPrc": 4.78
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 52839452.37,
+          "mtrtyCode": "2027-10-01",
+          "tradQty": 5,
+          "traddCtrctsQty": 570
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.79
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 4.84
+      },
+      "symb": "FRCV27",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.03,
+        "prvsDayAdjstmntPric": 4.93,
+        "topLmtPric": 5.83
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-11-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCX28",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.14,
+        "prvsDayAdjstmntPric": 5.04,
+        "topLmtPric": 5.94
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-10-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCV29",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.72,
+        "prvsDayAdjstmntPric": 5.62,
+        "topLmtPric": 6.52
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2031-07-01"
+        },
+        "code": "FRC"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCN31",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.32,
+        "prvsDayAdjstmntPric": 4.79,
+        "topLmtPric": 6.26,
+        "opngPric": 4.79,
+        "minPric": 4.79,
+        "maxPric": 4.79,
+        "avrgPric": 4.79,
+        "curPrc": 4.79
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 88010911.85,
+          "mtrtyCode": "2026-11-03",
+          "tradQty": 8,
+          "traddCtrctsQty": 910
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 4.75
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "FRCX26",
+      "desc": "FRA DE CUPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.85,
+        "prvsDayAdjstmntPric": 6.75,
+        "topLmtPric": 7.65
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2035-01-02"
+        },
+        "code": "FRC"
+      },
+      "buyOffer": {
+        "price": 6.64
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 6.7
+      },
+      "symb": "FRCF35",
+      "desc": "FRA DE CUPOM"
+    }
+  ]
+}

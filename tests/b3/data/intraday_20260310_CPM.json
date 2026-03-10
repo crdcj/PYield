@@ -1,0 +1,1574 @@
+{
+  "BizSts": {
+    "cd": "OK"
+  },
+  "Msg": {
+    "dtTm": "2026-03-10 07:19:24"
+  },
+  "Scty": [
+    {
+      "SctyQtn": {
+        "exrcPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C100000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 100.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C100500E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C099250E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C099750E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 101
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C101000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C098000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C098500E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C100000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 100.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C100500E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C099250E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C099750E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C098250E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C098750E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 100.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C100250E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 100.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C100750E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 101
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C101000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C099000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C099500E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C098250E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C098750E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C099000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C099500E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C099000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C099500E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 100.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C100250E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 100.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C100750E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C098000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C098500E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C099250E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 99.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C099750E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 100.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C100250E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 100.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C100750E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C098250E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMM26C098750E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C100000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 100.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C100500E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C098000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 98.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMJ26C098500E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 101
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "CPMH26C101000E",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98.25,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMJ26C098250",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98.75,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMJ26C098750",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30",
+          "opnCtrcts": 477000
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "buyOffer": {
+        "price": 1
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "sellOffer": {
+        "price": 4
+      },
+      "symb": "CPMJ26C099000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99.5,
+        "topLmtPric": 100,
+        "opngPric": 58,
+        "minPric": 58,
+        "maxPric": 62,
+        "avrgPric": 60.2353,
+        "curPrc": 61
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 5120000.0,
+          "mtrtyCode": "2026-04-30",
+          "opnCtrcts": 527800,
+          "tradQty": 9,
+          "traddCtrctsQty": 85000
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMJ26C099500",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C099000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99.5,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18",
+          "opnCtrcts": 226000
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C099500",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMH26C098000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98.5,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMH26C098500",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100.25,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMJ26C100250",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100.75,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMJ26C100750",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 101,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMJ26C101000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C100000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100.5,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C100500",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100,
+        "topLmtPric": 100,
+        "opngPric": 13,
+        "minPric": 13,
+        "maxPric": 16,
+        "avrgPric": 13.6605,
+        "curPrc": 16
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 442600.0,
+          "mtrtyCode": "2026-04-30",
+          "opnCtrcts": 275650,
+          "tradQty": 7,
+          "traddCtrctsQty": 32400
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "sellOffer": {
+        "price": 15
+      },
+      "symb": "CPMJ26C100000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100.5,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMJ26C100500",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99.25,
+        "topLmtPric": 100,
+        "opngPric": 11,
+        "minPric": 11,
+        "maxPric": 12,
+        "avrgPric": 11.4444,
+        "curPrc": 11
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 515000.0,
+          "mtrtyCode": "2026-04-30",
+          "opnCtrcts": 1184800,
+          "tradQty": 5,
+          "traddCtrctsQty": 45000
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "buyOffer": {
+        "price": 2
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMJ26C099250",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99.75,
+        "topLmtPric": 100,
+        "opngPric": 13,
+        "minPric": 13,
+        "maxPric": 13,
+        "avrgPric": 13,
+        "curPrc": 13
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 260000.0,
+          "mtrtyCode": "2026-04-30",
+          "opnCtrcts": 359501,
+          "tradQty": 4,
+          "traddCtrctsQty": 20000
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "sellOffer": {
+        "price": 29
+      },
+      "symb": "CPMJ26C099750",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98.25,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMH26C098250",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98.75,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMH26C098750",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100.25,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C100250",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100.75,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C100750",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100.25,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19",
+          "opnCtrcts": 1000
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMH26C100250",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100.75,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMH26C100750",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 101,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMH26C101000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 101,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C101000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100,
+        "topLmtPric": 100,
+        "opngPric": 30,
+        "minPric": 25,
+        "maxPric": 36,
+        "avrgPric": 28.6491,
+        "curPrc": 29
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 7902000.0,
+          "mtrtyCode": "2026-03-19",
+          "opnCtrcts": 2352968,
+          "tradQty": 36,
+          "traddCtrctsQty": 275820
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "buyOffer": {
+        "price": 11
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "sellOffer": {
+        "price": 29
+      },
+      "symb": "CPMH26C100000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 100.5,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMH26C100500",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C098000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98.5,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C098500",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99.25,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19",
+          "opnCtrcts": 1967251
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "buyOffer": {
+        "price": 1.5
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "sellOffer": {
+        "price": 1.5
+      },
+      "symb": "CPMH26C099250",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99.75,
+        "topLmtPric": 100,
+        "opngPric": 36,
+        "minPric": 32,
+        "maxPric": 42,
+        "avrgPric": 36.5382,
+        "curPrc": 42
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 3815140.0,
+          "mtrtyCode": "2026-03-19",
+          "opnCtrcts": 1938788,
+          "tradQty": 30,
+          "traddCtrctsQty": 104415
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "buyOffer": {
+        "price": 32
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "sellOffer": {
+        "price": 42.9
+      },
+      "symb": "CPMH26C099750",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMJ26C098000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98.5,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-30"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMJ26C098500",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99.25,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C099250",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99.75,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C099750",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98.25,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C098250",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 98.75,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-18"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMM26C098750",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99,
+        "topLmtPric": 100
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-19",
+          "opnCtrcts": 825773
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "symb": "CPMH26C099000",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.1,
+        "exrcPric": 99.5,
+        "topLmtPric": 100,
+        "opngPric": 36,
+        "minPric": 30,
+        "maxPric": 45,
+        "avrgPric": 34.1373,
+        "curPrc": 45
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 11035421.0,
+          "mtrtyCode": "2026-03-19",
+          "opnCtrcts": 2398589,
+          "tradQty": 51,
+          "traddCtrctsQty": 323266
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "CPM"
+      },
+      "buyOffer": {
+        "price": 50
+      },
+      "mkt": {
+        "cd": "SOPT"
+      },
+      "sellOffer": {
+        "price": 54
+      },
+      "symb": "CPMH26C099500",
+      "desc": "Opcao de COPOM"
+    },
+    {
+      "SctyQtn": {},
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "9999-12-31"
+        },
+        "code": "CPM"
+      },
+      "mkt": {
+        "cd": "SPOT"
+      },
+      "symb": "CPMD",
+      "desc": "COPOM CPM"
+    }
+  ]
+}

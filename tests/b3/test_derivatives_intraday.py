@@ -51,6 +51,7 @@ def _payload_api_mock(codigo_contrato: str) -> list[dict]:
             "SctyQtn.maxPric": "maxPric",
             "SctyQtn.avrgPric": "avrgPric",
             "SctyQtn.curPrc": "curPrc",
+            "SctyQtn.exrcPric": "exrcPric",
         }
         mapa_resumo = {
             "asset.AsstSummry.grssAmt": "grssAmt",
@@ -78,6 +79,10 @@ def _payload_api_mock(codigo_contrato: str) -> list[dict]:
             bloco, chave = caminho
             payload[bloco] = {chave: valor}
 
+        valor_lado = linha.get("asset.SdTpCd.desc")
+        if not _valor_nulo(valor_lado):
+            payload["asset"]["SdTpCd"] = {"desc": valor_lado}
+
         registros.append(payload)
 
     return registros
@@ -88,11 +93,6 @@ def _df_bruto_normalizado(codigo_contrato: str) -> pl.DataFrame:
     return (
         derivatives_mod._converter_json_intraday(monkeypatched)
         .pipe(derivatives_mod._processar_colunas_intraday)
-        .with_columns(
-            ExpirationDate=pl.col("ExpirationDate").str.to_date(
-                format="%Y-%m-%d", strict=False
-            )
-        )
         .drop_nulls(subset=["ExpirationDate"])
         .sort(["MarketCode", "TickerSymbol"])
     )
@@ -145,8 +145,8 @@ def test_fetch_derivative_quotation_suporta_colunas_opcionais_ausentes(monkeypat
     resultado = derivatives_mod.fetch_derivative_quotation("DDI")
 
     assert resultado.height == TOTAL_LINHAS_FUTURO_SIMPLES
-    assert "BestAskValue" not in resultado.columns
-    assert "BestBidValue" not in resultado.columns
+    assert "BuyOfferValue" not in resultado.columns
+    assert "SellOfferValue" not in resultado.columns
 
 
 def test_fetch_derivative_quotation_nao_descarta_fro_sem_curprc(monkeypatch):

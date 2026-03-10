@@ -28,7 +28,12 @@ def data_intraday_valida(data_verificacao: dt.date) -> bool:
 
 
 def intraday(codigo_contrato: str) -> pl.DataFrame:
-    """Busca os dados intraday mais recentes da B3."""
+    """Busca os dados intraday mais recentes da B3.
+
+    Os dados intraday da fonte possuem atraso aproximado de 15 minutos.
+    A coluna ``LastUpdate`` reflete essa defasagem ao usar o horário atual
+    menos 15 minutos.
+    """
     try:
         df_bruto = fetch_derivative_quotation(codigo_contrato)
         if df_bruto.is_empty():
@@ -49,26 +54,21 @@ def intraday(codigo_contrato: str) -> pl.DataFrame:
 
 
 def _preprocessar_df_intraday(df: pl.DataFrame) -> pl.DataFrame:
-    return (
-        df.filter(pl.col("MarketCode") == "FUT")
-        .filter(pl.col("TickerSymbol") != "DI1D")
-        .rename(
-            {
-                "MinLimitValue": "MinLimitRate",
-                "PrevSettlementValue": "PrevSettlementRate",
-                "MaxLimitValue": "MaxLimitRate",
-                "OpenValue": "OpenRate",
-                "MinValue": "MinRate",
-                "MaxValue": "MaxRate",
-                "AvgValue": "AvgRate",
-                "LastValue": "LastRate",
-                "BestAskValue": "BestAskRate",
-                "BestBidValue": "BestBidRate",
-            },
-            strict=False,
-        )
-        .sort("ExpirationDate")
-    )
+    return df.rename(
+        {
+            "MinLimitValue": "MinLimitRate",
+            "PrevSettlementValue": "PrevSettlementRate",
+            "MaxLimitValue": "MaxLimitRate",
+            "OpenValue": "OpenRate",
+            "MinValue": "MinRate",
+            "MaxValue": "MaxRate",
+            "AvgValue": "AvgRate",
+            "LastValue": "LastRate",
+            "BuyOfferValue": "BuyOfferRate",
+            "SellOfferValue": "SellOfferRate",
+        },
+        strict=False,
+    ).sort("ExpirationDate")
 
 
 def _processar_df_intraday(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
@@ -115,8 +115,8 @@ def _selecionar_e_reordenar_colunas_intraday(df: pl.DataFrame) -> pl.DataFrame:
         "MinRate",
         "AvgRate",
         "MaxRate",
-        "BestAskRate",
-        "BestBidRate",
+        "BuyOfferRate",
+        "SellOfferRate",
         "LastRate",
         "ForwardRate",
     ]

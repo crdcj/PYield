@@ -1,0 +1,562 @@
+{
+  "BizSts": {
+    "cd": "OK"
+  },
+  "Msg": {
+    "dtTm": "2026-03-10 07:19:24"
+  },
+  "Scty": [
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.77,
+        "prvsDayAdjstmntPric": 7.772,
+        "topLmtPric": 9.77,
+        "opngPric": 7.845,
+        "minPric": 7.76,
+        "maxPric": 7.85,
+        "avrgPric": 7.8074,
+        "curPrc": 7.77
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 2274528246.75,
+          "mtrtyCode": "2031-05-15",
+          "opnCtrcts": 70421,
+          "tradQty": 70,
+          "traddCtrctsQty": 17942
+        },
+        "code": "DAP"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.79
+      },
+      "symb": "DAPK31",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 6.84,
+        "prvsDayAdjstmntPric": 9.893,
+        "topLmtPric": 12.835
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-07-15"
+        },
+        "code": "DAP"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DAPN26",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -0.46,
+        "prvsDayAdjstmntPric": 5.65,
+        "topLmtPric": 11.53
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-16",
+          "opnCtrcts": 11554
+        },
+        "code": "DAP"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DAPH26",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.795,
+        "prvsDayAdjstmntPric": 7.855,
+        "topLmtPric": 10.79
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-05-15",
+          "opnCtrcts": 201
+        },
+        "code": "DAP"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DAPK26",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.785,
+        "prvsDayAdjstmntPric": 7.787,
+        "topLmtPric": 9.785,
+        "opngPric": 7.8,
+        "minPric": 7.785,
+        "maxPric": 7.87,
+        "avrgPric": 7.8261,
+        "curPrc": 7.785
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 2018700306.91,
+          "mtrtyCode": "2030-08-15",
+          "opnCtrcts": 475913,
+          "tradQty": 107,
+          "traddCtrctsQty": 15076
+        },
+        "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 7.655
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DAPQ30",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.06,
+        "prvsDayAdjstmntPric": 7.058,
+        "topLmtPric": 9.055
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2050-08-15",
+          "opnCtrcts": 4645
+        },
+        "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 6.89
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.195
+      },
+      "symb": "DAPQ50",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.285,
+        "prvsDayAdjstmntPric": 7.286,
+        "topLmtPric": 9.285,
+        "opngPric": 7.285,
+        "minPric": 7.285,
+        "maxPric": 7.285,
+        "avrgPric": 7.285,
+        "curPrc": 7.285
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 13594822.0,
+          "mtrtyCode": "2040-08-15",
+          "opnCtrcts": 153770,
+          "tradQty": 15,
+          "traddCtrctsQty": 200
+        },
+        "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 7.24
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.25
+      },
+      "symb": "DAPQ40",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.04,
+        "prvsDayAdjstmntPric": 7.036,
+        "topLmtPric": 9.035
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2060-08-16",
+          "opnCtrcts": 276
+        },
+        "code": "DAP"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DAPQ60",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.695,
+        "prvsDayAdjstmntPric": 7.697,
+        "topLmtPric": 9.695,
+        "opngPric": 7.81,
+        "minPric": 7.695,
+        "maxPric": 7.81,
+        "avrgPric": 7.7203,
+        "curPrc": 7.695
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 204671686.78,
+          "mtrtyCode": "2032-08-16",
+          "opnCtrcts": 330115,
+          "tradQty": 56,
+          "traddCtrctsQty": 1766
+        },
+        "code": "DAP"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.81
+      },
+      "symb": "DAPQ32",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.6,
+        "prvsDayAdjstmntPric": 8.22,
+        "topLmtPric": 12.595
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-15",
+          "opnCtrcts": 950
+        },
+        "code": "DAP"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DAPJ26",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 7.1,
+        "prvsDayAdjstmntPric": 9.119,
+        "topLmtPric": 11.1
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-15",
+          "opnCtrcts": 16771
+        },
+        "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 9
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DAPF27",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.475,
+        "prvsDayAdjstmntPric": 8.527,
+        "topLmtPric": 11.47
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-15",
+          "opnCtrcts": 750
+        },
+        "code": "DAP"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DAPM26",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.535,
+        "prvsDayAdjstmntPric": 7.536,
+        "topLmtPric": 9.535,
+        "opngPric": 7.66,
+        "minPric": 7.535,
+        "maxPric": 7.66,
+        "avrgPric": 7.5891,
+        "curPrc": 7.535
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 687801504.21,
+          "mtrtyCode": "2035-05-15",
+          "opnCtrcts": 494858,
+          "tradQty": 82,
+          "traddCtrctsQty": 7186
+        },
+        "code": "DAP"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.59
+      },
+      "symb": "DAPK35",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.035,
+        "prvsDayAdjstmntPric": 7.034,
+        "topLmtPric": 9.03
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2055-05-17",
+          "opnCtrcts": 2684
+        },
+        "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 6.87
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.155
+      },
+      "symb": "DAPK55",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.14,
+        "prvsDayAdjstmntPric": 7.137,
+        "topLmtPric": 9.135
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2045-05-15",
+          "opnCtrcts": 21842
+        },
+        "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 6.96
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.24
+      },
+      "symb": "DAPK45",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.655,
+        "prvsDayAdjstmntPric": 7.656,
+        "topLmtPric": 9.655,
+        "opngPric": 7.705,
+        "minPric": 7.655,
+        "maxPric": 7.73,
+        "avrgPric": 7.7157,
+        "curPrc": 7.655
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 473713635.66,
+          "mtrtyCode": "2033-05-16",
+          "opnCtrcts": 238761,
+          "tradQty": 43,
+          "traddCtrctsQty": 4318
+        },
+        "code": "DAP"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.71
+      },
+      "symb": "DAPK33",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 6.805,
+        "prvsDayAdjstmntPric": 9.849,
+        "topLmtPric": 12.805,
+        "opngPric": 9.61,
+        "minPric": 9.61,
+        "maxPric": 9.805,
+        "avrgPric": 9.7512,
+        "curPrc": 9.805
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 407897332.18,
+          "mtrtyCode": "2026-08-17",
+          "opnCtrcts": 355437,
+          "tradQty": 30,
+          "traddCtrctsQty": 2278
+        },
+        "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 9.81
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DAPQ26",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.91,
+        "prvsDayAdjstmntPric": 7.915,
+        "topLmtPric": 9.91,
+        "opngPric": 7.92,
+        "minPric": 7.91,
+        "maxPric": 7.98,
+        "avrgPric": 7.9267,
+        "curPrc": 7.91
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 491198223.48,
+          "mtrtyCode": "2028-08-15",
+          "opnCtrcts": 397085,
+          "tradQty": 44,
+          "traddCtrctsQty": 3168
+        },
+        "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 7.89
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.91
+      },
+      "symb": "DAPQ28",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.78,
+        "prvsDayAdjstmntPric": 7.783,
+        "topLmtPric": 9.78,
+        "opngPric": 7.77,
+        "minPric": 7.77,
+        "maxPric": 7.89,
+        "avrgPric": 7.8095,
+        "curPrc": 7.78
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 958559016.35,
+          "mtrtyCode": "2029-05-15",
+          "opnCtrcts": 221383,
+          "tradQty": 59,
+          "traddCtrctsQty": 6514
+        },
+        "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 7.78
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.79
+      },
+      "symb": "DAPK29",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.4,
+        "prvsDayAdjstmntPric": 7.401,
+        "topLmtPric": 9.4,
+        "opngPric": 7.4,
+        "minPric": 7.4,
+        "maxPric": 7.4,
+        "avrgPric": 7.4,
+        "curPrc": 7.4
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 16794129.39,
+          "mtrtyCode": "2037-05-15",
+          "opnCtrcts": 58954,
+          "tradQty": 5,
+          "traddCtrctsQty": 199
+        },
+        "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 7.39
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.4
+      },
+      "symb": "DAPK37",
+      "desc": "CUPOM DE IPCA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 6.42,
+        "prvsDayAdjstmntPric": 8.432,
+        "topLmtPric": 10.42,
+        "opngPric": 8.39,
+        "minPric": 8.35,
+        "maxPric": 8.42,
+        "avrgPric": 8.391,
+        "curPrc": 8.42
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 1180124415.25,
+          "mtrtyCode": "2027-05-17",
+          "opnCtrcts": 365581,
+          "tradQty": 94,
+          "traddCtrctsQty": 6954
+        },
+        "code": "DAP"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 8.39
+      },
+      "symb": "DAPK27",
+      "desc": "CUPOM DE IPCA"
+    }
+  ]
+}

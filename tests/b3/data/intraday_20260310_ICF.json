@@ -1,0 +1,3485 @@
+{
+  "BizSts": {
+    "cd": "OK"
+  },
+  "Msg": {
+    "dtTm": "2026-03-10 07:19:25"
+  },
+  "Scty": [
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 380,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P038000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 370,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 40
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C037000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 375,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 20
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C037500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 470,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C047000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 290,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 2
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P029000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 390,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 1
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P039000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 395,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P039500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 445,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10",
+          "opnCtrcts": 1
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C044500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 400,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P040000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 280,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C028000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 350,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10",
+          "opnCtrcts": 50
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C035000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 380,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 10
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C038000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 415,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P041500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 410,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P041000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 372.5,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P037250",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 320,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 40
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C032000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 335,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C033500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 325,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 20
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C032500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 435,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C043500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 430,
+        "topLmtPric": 99999.01,
+        "opngPric": 5.8,
+        "minPric": 5.8,
+        "maxPric": 5.8,
+        "avrgPric": 5.8,
+        "curPrc": 5.8
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 30483.64,
+          "mtrtyCode": "2026-04-10",
+          "opnCtrcts": 11,
+          "tradQty": 1,
+          "traddCtrctsQty": 10
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C043000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 425,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 2
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C042500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 420,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C042000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 520,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C052000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 365,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 10
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P036500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 330,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C033000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 335,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C033500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 430,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 10
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C043000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 337.5,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P033750",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 470,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P047000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 370,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P037000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 375,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P037500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 340,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C034000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 190,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10",
+          "opnCtrcts": 12
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C019000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 490,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10",
+          "opnCtrcts": 1
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C049000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 440,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 30
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C044000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 312.5,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C031250",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 250,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C025000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 350,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 50
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C035000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 445,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P044500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 450,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 20
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C045000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 280,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 3
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P028000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 350,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P035000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 380,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 3
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P038000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 460,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10",
+          "opnCtrcts": 40
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C046000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 435,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P043500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 430,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P043000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 425,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P042500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 420,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P042000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 335,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P033500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 320,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P032000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 325,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P032500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 520,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P052000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 430,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P043000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 330,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P033000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 335,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P033500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 300,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 45
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C030000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 305,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C030500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 400,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 50
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C040000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 500,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 10
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C050000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 347.5,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C034750",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 190,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P019000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 490,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P049000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 440,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P044000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 340,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P034000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 310,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C031000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 315,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 8
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C031500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 312.5,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P031250",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 250,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P025000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 450,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P045000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 350,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 25
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P035000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 380,
+        "topLmtPric": 99999.01,
+        "opngPric": 24,
+        "minPric": 24,
+        "maxPric": 24,
+        "avrgPric": 24,
+        "curPrc": 24
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 126139.2,
+          "mtrtyCode": "2026-04-10",
+          "opnCtrcts": 10,
+          "tradQty": 1,
+          "traddCtrctsQty": 10
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C038000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 460,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26P046000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 290,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C029000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 390,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 30
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C039000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 395,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C039500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 400,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10",
+          "opnCtrcts": 50
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C040000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 372.5,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C037250",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 415,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10",
+          "opnCtrcts": 10
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "buyOffer": {
+        "price": 2
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C041500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 410,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10",
+          "opnCtrcts": 30
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFK26C041000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 400,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P040000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 300,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 45
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P030000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 305,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P030500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 500,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P050000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 347.5,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P034750",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 310,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 10
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P031000",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 315,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 8
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26P031500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 365,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14",
+          "opnCtrcts": 10
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C036500",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.01,
+        "exrcPric": 337.5,
+        "topLmtPric": 99999.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "ICFU26C033750",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 372.65,
+        "prvsDayAdjstmntPric": 394.75,
+        "topLmtPric": 416.85
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-05-21",
+          "opnCtrcts": 1684
+        },
+        "code": "ICF"
+      },
+      "buyOffer": {
+        "price": 389
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 393
+      },
+      "symb": "ICFK26",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.05,
+        "prvsDayAdjstmntPric": 388.85,
+        "topLmtPric": 999990.05
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-03-23",
+          "opnCtrcts": 111
+        },
+        "code": "ICF"
+      },
+      "buyOffer": {
+        "price": 378.8
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 392.4
+      },
+      "symb": "ICFH26",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 299.95,
+        "prvsDayAdjstmntPric": 317.7,
+        "topLmtPric": 335.45
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-09-22",
+          "opnCtrcts": 111
+        },
+        "code": "ICF"
+      },
+      "buyOffer": {
+        "price": 309
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "ICFU27",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 349.55,
+        "prvsDayAdjstmntPric": 370.25,
+        "topLmtPric": 390.95
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-07-23"
+        },
+        "code": "ICF"
+      },
+      "buyOffer": {
+        "price": 350.5
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 367.3
+      },
+      "symb": "ICFN26",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 322.35,
+        "prvsDayAdjstmntPric": 341.45,
+        "topLmtPric": 360.55
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-03-22",
+          "opnCtrcts": 6
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 348.85
+      },
+      "symb": "ICFH27",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 329.5,
+        "prvsDayAdjstmntPric": 349,
+        "topLmtPric": 368.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-09-22",
+          "opnCtrcts": 4618
+        },
+        "code": "ICF"
+      },
+      "buyOffer": {
+        "price": 350.55
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 350.9
+      },
+      "symb": "ICFU26",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 327.1,
+        "prvsDayAdjstmntPric": 346.5,
+        "topLmtPric": 365.9
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-12-18",
+          "opnCtrcts": 393
+        },
+        "code": "ICF"
+      },
+      "buyOffer": {
+        "price": 338.1
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "ICFZ26",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 445
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P044500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 280
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P028000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 380
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P038000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 415
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P041500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 410
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P041000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 337.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C033750E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 372.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C037250E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 365
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P036500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 312.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P031250E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 400
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P040000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 460
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P046000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 310
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C031000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 315
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C031500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 337.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P033750E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 372.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P037250E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 300
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C030000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 305
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C030500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 190
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C019000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 400
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C040000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 500
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C050000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 490
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C049000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 250
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C025000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 330
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C033000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 335
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C033500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 350
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C035000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 430
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C043000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 450
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C045000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 350
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C035000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 335
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C033500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 310
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P031000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 315
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P031500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 380
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C038000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 435
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C043500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 430
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C043000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 290
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C029000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 390
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C039000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 395
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C039500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 320
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C032000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 325
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C032500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 340
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C034000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 425
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C042500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 420
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C042000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 440
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C044000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 520
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C052000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 370
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C037000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 375
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C037500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 470
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C047000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 347.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C034750E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 400
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P040000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 190
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P019000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 300
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P030000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 305
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P030500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 490
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P049000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 500
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P050000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 445
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C044500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 280
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C028000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 380
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C038000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 250
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P025000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 430
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P043000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 450
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P045000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 330
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P033000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 335
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P033500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 350
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P035000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 415
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C041500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 410
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C041000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 365
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C036500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 435
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P043500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 430
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P043000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 350
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P035000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 335
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P033500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 380
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26P038000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 312.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26C031250E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 290
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P029000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 390
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P039000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 395
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P039500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 425
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P042500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 420
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P042000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 440
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P044000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 320
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P032000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 325
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P032500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 340
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P034000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 520
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P052000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 400
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C040000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 470
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P047000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 370
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P037000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 375
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P037500E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 460
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-10"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFK26C046000E",
+      "desc": "CAFE ARABICA"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 347.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-14"
+        },
+        "code": "ICF"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "ICFU26P034750E",
+      "desc": "CAFE ARABICA"
+    }
+  ]
+}
