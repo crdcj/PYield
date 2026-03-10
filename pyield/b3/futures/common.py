@@ -16,6 +16,8 @@ _MAPA_MESES: dict[str, int] = {
     "X": 11,
     "Z": 12,
 }
+
+
 def expr_dv01(
     coluna_dias_uteis: str,
     coluna_taxa: str,
