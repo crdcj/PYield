@@ -21,7 +21,57 @@ def historical(
     codigo_contrato: str | Sequence[str] | pl.Series,
     tipo_fonte: Literal["PR", "SPR"] = "SPR",
 ) -> pl.DataFrame:
-    """Busca histórico de futuros priorizando o dataset PR cacheado."""
+    """Busca histórico de futuros priorizando o dataset PR cacheado.
+
+    Args:
+        data: Data de negociação.
+        codigo_contrato: Código(s) do contrato futuro na B3.
+        tipo_fonte: Tipo de arquivo. 'SPR' (default) para settlement price
+            report e 'PR' para price report regular.
+
+    Returns:
+        DataFrame Polars com dados históricos de futuros.
+
+    Output Columns:
+        - TradeDate (Date): Data de negociação.
+        - TickerSymbol (String): Código do ticker na B3.
+        - ExpirationDate (Date): Data de vencimento do contrato.
+        - BDaysToExp (Int64): Dias úteis até o vencimento.
+        - DaysToExp (Int64): Dias corridos até o vencimento.
+        - DV01 (Float64): Variação no preço para 1bp de taxa (apenas DI1).
+        - OpenContracts (Int64): Contratos em aberto.
+        - TradeCount (Int64): Número de negócios.
+        - TradeVolume (Int64): Quantidade de contratos negociados.
+        - FinancialVolume (Float64): Volume financeiro bruto.
+        - AdjustedValueContract (Float64): Valor do contrato ajustado.
+        - MinLimitPrice (Float64): Limite mínimo de variação (preço).
+        - MaxLimitPrice (Float64): Limite máximo de variação (preço).
+        - OpenPrice (Float64): Preço de abertura.
+        - MinPrice (Float64): Preço mínimo negociado.
+        - MaxPrice (Float64): Preço máximo negociado.
+        - AvgPrice (Float64): Preço médio negociado.
+        - ClosePrice (Float64): Preço de fechamento.
+        - BestBidPrice (Float64): Melhor oferta de compra (preço).
+        - BestAskPrice (Float64): Melhor oferta de venda (preço).
+        - SettlementPrice (Float64): Preço de ajuste.
+        - MinLimitRate (Float64): Limite mínimo de variação (taxa).
+        - MaxLimitRate (Float64): Limite máximo de variação (taxa).
+        - OpenRate (Float64): Taxa de abertura.
+        - MinRate (Float64): Taxa mínima negociada.
+        - MaxRate (Float64): Taxa máxima negociada.
+        - AvgRate (Float64): Taxa média negociada.
+        - CloseRate (Float64): Taxa de fechamento.
+        - BestBidRate (Float64): Melhor oferta de compra (taxa).
+        - BestAskRate (Float64): Melhor oferta de venda (taxa).
+        - SettlementRate (Float64): Taxa de ajuste.
+        - ForwardRate (Float64): Taxa a termo (apenas DI1/DAP).
+
+    Notes:
+        As colunas com sufixo ``Price`` aparecem para contratos cotados por
+        preço (ex.: DOL, IND). As com sufixo ``Rate`` aparecem para contratos
+        cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO). Nem todas as colunas
+        estarão presentes em todos os contratos.
+    """
     codigos = normalizar_codigos_contrato(codigo_contrato)
     if not codigos:
         return pl.DataFrame()

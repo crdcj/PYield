@@ -33,6 +33,37 @@ def intraday(codigo_contrato: str) -> pl.DataFrame:
     Os dados intraday da fonte possuem atraso aproximado de 15 minutos.
     A coluna ``LastUpdate`` reflete essa defasagem ao usar o horário atual
     menos 15 minutos.
+
+    Args:
+        codigo_contrato: Código base do contrato futuro na B3.
+
+    Returns:
+        DataFrame Polars com dados intraday processados.
+
+    Output Columns:
+        - TradeDate (Date): Data de negociação.
+        - LastUpdate (Datetime): Horário da última atualização (com atraso de 15 min).
+        - TickerSymbol (String): Código do ticker na B3.
+        - ExpirationDate (Date): Data de vencimento do contrato.
+        - BDaysToExp (Int64): Dias úteis até o vencimento.
+        - DaysToExp (Int64): Dias corridos até o vencimento.
+        - OpenContracts (Int64): Contratos em aberto.
+        - TradeCount (Int64): Número de negócios.
+        - TradeVolume (Int64): Quantidade de contratos negociados.
+        - FinancialVolume (Float64): Volume financeiro bruto.
+        - DV01 (Float64): Variação no preço para 1bp de taxa (apenas DI1).
+        - LastPrice (Float64): Último preço calculado (apenas DI1/DAP).
+        - PrevSettlementRate (Float64): Taxa de ajuste do dia anterior.
+        - MinLimitRate (Float64): Limite mínimo de variação (taxa).
+        - MaxLimitRate (Float64): Limite máximo de variação (taxa).
+        - OpenRate (Float64): Taxa de abertura.
+        - MinRate (Float64): Taxa mínima negociada.
+        - AvgRate (Float64): Taxa média negociada.
+        - MaxRate (Float64): Taxa máxima negociada.
+        - BuyOfferRate (Float64): Melhor oferta de compra (taxa, opcional).
+        - SellOfferRate (Float64): Melhor oferta de venda (taxa, opcional).
+        - LastRate (Float64): Última taxa negociada.
+        - ForwardRate (Float64): Taxa a termo (apenas DI1/DAP).
     """
     try:
         df_bruto = fetch_intraday_derivatives(codigo_contrato)
