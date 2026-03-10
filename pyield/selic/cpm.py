@@ -35,12 +35,13 @@ import datetime as dt
 import logging
 
 import polars as pl
+import requests
 
 import pyield._internal.converters as cv
-import pyield.b3.common as cm
 from pyield import bday
-from pyield._internal.retry import DadoIndisponivelError
+from pyield._internal.retry import DadoIndisponivelError, retry_padrao
 from pyield._internal.types import DateLike
+from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.price_report import (
     _baixar_zip_url,
     _converter_para_df,
@@ -69,6 +70,7 @@ _MONTH_CODES: dict[str, int] = {
 
 # Polars-compatible replacement map (str → str, cast later)
 _MONTH_CODE_STR: dict[str, str] = {k: str(v) for k, v in _MONTH_CODES.items()}
+_CPM_TICKER_LENGTH = 13
 
 
 def _empty_schema() -> pl.DataFrame:
@@ -87,6 +89,65 @@ def _empty_schema() -> pl.DataFrame:
     )
 
 
+# ---------------------------------------------------------------------------
+# B3 CSV endpoint helpers (inlined from the former historical_b3 module)
+# ---------------------------------------------------------------------------
+
+# Column config for the B3 consolidated derivatives CSV.
+_CSV_CONFIG_COLUNAS = {
+    "Instrumento financeiro": (pl.String, "TickerSymbol"),
+    "Preço de referência": (pl.Float64, "ReferencePrice"),
+}
+_CSV_ESQUEMA = {k: v[0] for k, v in _CSV_CONFIG_COLUNAS.items()}
+_CSV_MAPA_RENOMEACAO = {k: v[1] for k, v in _CSV_CONFIG_COLUNAS.items()}
+
+
+@retry_padrao
+def _buscar_csv(data: dt.date) -> bytes:
+    """Busca o CSV diário de derivativos consolidados na B3."""
+    url = "https://arquivos.b3.com.br/bdi/table/export/csv"
+    parametros = {"lang": "pt-BR"}
+    data_str = data.strftime("%Y-%m-%d")
+    carga = {
+        "Name": "ConsolidatedTradesDerivatives",
+        "Date": data_str,
+        "FinalDate": data_str,
+        "ClientId": "",
+        "Filters": {},
+    }
+    cabecalhos = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",  # noqa: E501
+        "Accept": "application/json, text/plain, */*",
+    }
+    resposta = requests.post(
+        url, params=parametros, json=carga, headers=cabecalhos, timeout=(5, 30)
+    )
+    resposta.raise_for_status()
+    return resposta.content
+
+
+def _parsear_df_bruto(csv_bytes: bytes) -> pl.DataFrame:
+    """Lê o CSV bruto em um DataFrame Polars."""
+    return pl.read_csv(
+        csv_bytes.replace(b".", b""),
+        separator=";",
+        skip_lines=2,
+        null_values=["-"],
+        decimal_comma=True,
+        schema_overrides=_CSV_ESQUEMA,
+        encoding="utf-8-sig",
+    )
+
+
+def _preprocessar_df(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+    """Renomeia e filtra o DataFrame para o contrato desejado."""
+    return df.rename(_CSV_MAPA_RENOMEACAO, strict=False).filter(
+        pl.col("TickerSymbol").str.starts_with(codigo_contrato),
+        pl.col("TickerSymbol").str.len_chars().is_in([6, 13]),
+    )
+
+
 def _fetch_settlement_prices(trade_date: dt.date) -> pl.DataFrame:
     """
     Fetch CPM settlement prices from the B3 CSV endpoint.
@@ -98,30 +159,27 @@ def _fetch_settlement_prices(trade_date: dt.date) -> pl.DataFrame:
     Returns an empty DataFrame (correct schema) if the CSV endpoint is
     unavailable or has no data for the date (the endpoint retains ~1 month
     of history).
-
-    The SPR XML used to obtain the contract list does not include a reference
-    price tag (RfPric) for option contracts — only OHLCV fields are present
-    (FrstPric, LastPric, MaxPric, MinPric, TradAvrgPric).
     """
     empty = pl.DataFrame(
         schema={"TickerSymbol": pl.String, "SettlementPrice": pl.Float64}
     )
     try:
-        from pyield.b3.futures.historical.historical_b3 import (  # noqa: PLC0415
-            _buscar_csv,
-            _parsear_df_bruto,
-            _preprocessar_df,
-        )
-
         csv_bytes = _buscar_csv(trade_date)
         df = _parsear_df_bruto(csv_bytes)
         df = _preprocessar_df(df, "CPM")
         if "ReferencePrice" not in df.columns:
             return empty
-        return df.select("TickerSymbol", pl.col("ReferencePrice").alias("SettlementPrice"))
+        return df.select(
+            "TickerSymbol", pl.col("ReferencePrice").alias("SettlementPrice")
+        )
     except Exception:
         logger.debug("CPM: settlement prices unavailable from CSV for %s.", trade_date)
         return empty
+
+
+# ---------------------------------------------------------------------------
+# Ticker parsing
+# ---------------------------------------------------------------------------
 
 
 def _parse_ticker(ticker: str) -> tuple[int, int, str, float, int]:
@@ -142,7 +200,7 @@ def _parse_ticker(ticker: str) -> tuple[int, int, str, float, int]:
     >>> _parse_ticker("CPMH25P100000")
     (3, 2025, 'put', 100.0, 0)
     """
-    if len(ticker) != 13 or not ticker.startswith("CPM"):
+    if len(ticker) != _CPM_TICKER_LENGTH or not ticker.startswith("CPM"):
         raise ValueError(f"Invalid CPM ticker: {ticker!r}")
 
     month_code = ticker[3]
@@ -205,20 +263,24 @@ def data(date: DateLike) -> pl.DataFrame:
     >>> import pyield as yd
     >>> df = yd.selic.cpm.data("29-01-2025")
     >>> df.is_empty() or set(df.schema.keys()) >= {
-    ...     "TradeDate", "TickerSymbol", "MeetingEndDate",
-    ...     "ExpiryDate", "OptionType", "StrikeChangeBps", "SettlementPrice",
+    ...     "TradeDate",
+    ...     "TickerSymbol",
+    ...     "MeetingEndDate",
+    ...     "ExpiryDate",
+    ...     "OptionType",
+    ...     "StrikeChangeBps",
+    ...     "SettlementPrice",
     ... }
     True
     """
-    if date is None:
-        return _empty_schema()
-
-    trade_date = cv.converter_datas(date)
+    trade_date = cv.converter_datas(date) if date is not None else None
     if trade_date is None:
         return _empty_schema()
 
-    if not cm.data_negociacao_valida(trade_date):
-        logger.warning("Data %s inválida para CPM. Retornando DataFrame vazio.", trade_date)
+    if not data_negociacao_valida(trade_date):
+        logger.warning(
+            "Data %s inválida para CPM. Retornando DataFrame vazio.", trade_date
+        )
         return _empty_schema()
 
     try:
@@ -237,8 +299,7 @@ def data(date: DateLike) -> pl.DataFrame:
 
     df = _converter_para_df(records)
 
-    # Rename XML field names to standard column names (TckrSymb → TickerSymbol, etc.)
-    mapa = _mapa_renomeacao_colunas("CPM")
+    mapa = _mapa_renomeacao_colunas()
     df = df.rename(mapa, strict=False)
     df = df.with_columns(TradeDate=trade_date)
 

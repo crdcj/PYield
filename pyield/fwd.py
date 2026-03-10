@@ -156,7 +156,7 @@ def forwards(
         - Valores nulos em `bdays` ou `rates` são ignorados no cálculo,
           resultando em valores nulos nas posições correspondentes na saída.
         - Os resultados são retornados na mesma ordem dos dados de entrada.
-    """  # noqa: E501
+    """
     # Validações iniciais
     if any_is_empty(bdays, rates):
         return pl.Series(dtype=pl.Float64)
@@ -273,7 +273,7 @@ def forward(
     Notes:
         `du₂` precisa ser necessariamente maior que `du₁` para que
         o cálculo da taxa a termo seja matematicamente válido.
-    """  # noqa: E501
+    """
     if any_is_empty(rate1, rate2, bday1, bday2):
         # Se qualquer entrada for nula/NaN, retorna NaN
         return float("nan")

@@ -1,0 +1,288 @@
+{
+  "BizSts": {
+    "cd": "OK"
+  },
+  "Msg": {
+    "dtTm": "2026-03-10 07:19:26"
+  },
+  "Scty": [
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 182305,
+        "prvsDayAdjstmntPric": 202558,
+        "topLmtPric": 222810
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-02-17"
+        },
+        "code": "IND"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "INDG27",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 200295,
+        "prvsDayAdjstmntPric": 222549,
+        "topLmtPric": 244800
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-12-15"
+        },
+        "code": "IND"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "INDZ27",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 204470,
+        "prvsDayAdjstmntPric": 227187,
+        "topLmtPric": 249905
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-02-16"
+        },
+        "code": "IND"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "INDG28",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 168585,
+        "prvsDayAdjstmntPric": 187314,
+        "topLmtPric": 206045
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-17",
+          "opnCtrcts": 285
+        },
+        "code": "IND"
+      },
+      "buyOffer": {
+        "price": 187315
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 188300
+      },
+      "symb": "INDM26",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 171900,
+        "prvsDayAdjstmntPric": 190999,
+        "topLmtPric": 210095
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-08-12",
+          "opnCtrcts": 1190
+        },
+        "code": "IND"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "INDQ26",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 196415,
+        "prvsDayAdjstmntPric": 218237,
+        "topLmtPric": 240060
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-10-13"
+        },
+        "code": "IND"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "INDV27",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 178925,
+        "prvsDayAdjstmntPric": 198801,
+        "topLmtPric": 218680
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-12-16"
+        },
+        "code": "IND"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "INDZ26",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 185555,
+        "prvsDayAdjstmntPric": 206172,
+        "topLmtPric": 226785
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-04-14"
+        },
+        "code": "IND"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "INDJ27",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 189190,
+        "prvsDayAdjstmntPric": 210209,
+        "topLmtPric": 231230
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-06-16"
+        },
+        "code": "IND"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "INDM27",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 193065,
+        "prvsDayAdjstmntPric": 214517,
+        "topLmtPric": 235965
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-08-18"
+        },
+        "code": "IND"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "INDQ27",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 175410,
+        "prvsDayAdjstmntPric": 194899,
+        "topLmtPric": 214385
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-10-14",
+          "opnCtrcts": 145
+        },
+        "code": "IND"
+      },
+      "buyOffer": {
+        "price": 194615
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 198600
+      },
+      "symb": "INDV26",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 165060,
+        "prvsDayAdjstmntPric": 183396,
+        "topLmtPric": 201735,
+        "opngPric": 180550,
+        "minPric": 179990,
+        "maxPric": 184500,
+        "avrgPric": 181888.5,
+        "curPrc": 183390
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 13677963700.0,
+          "mtrtyCode": "2026-04-15",
+          "opnCtrcts": 167506,
+          "tradQty": 13574,
+          "traddCtrctsQty": 75235
+        },
+        "code": "IND"
+      },
+      "buyOffer": {
+        "price": 183750
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 184290
+      },
+      "symb": "INDJ26",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 208105,
+        "prvsDayAdjstmntPric": 231223,
+        "topLmtPric": 254345
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-04-12"
+        },
+        "code": "IND"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "INDJ28",
+      "desc": "INDICE BOVESPA"
+    },
+    {
+      "SctyQtn": {},
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "9999-12-31"
+        },
+        "code": "IND"
+      },
+      "mkt": {
+        "cd": "SPOT"
+      },
+      "symb": "INDD",
+      "desc": "INDICE BOVESPA"
+    }
+  ]
+}

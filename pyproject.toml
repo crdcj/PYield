@@ -75,6 +75,7 @@ extend-include = ["*.ipynb"]
 [tool.ruff.lint]
 preview = true
 select = ["I", "F", "E", "W", "PL", "PT"]
+ignore = ["E501", "W505"]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 120

@@ -1,0 +1,950 @@
+{
+  "BizSts": {
+    "cd": "OK"
+  },
+  "Msg": {
+    "dtTm": "2026-03-10 07:19:26"
+  },
+  "Scty": [
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.56,
+        "prvsDayAdjstmntPric": 4.893,
+        "topLmtPric": 9.78
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-12-01",
+          "opnCtrcts": 3100
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIZ27",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -21.94,
+        "prvsDayAdjstmntPric": 5.604,
+        "topLmtPric": 36.65
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-06-01",
+          "opnCtrcts": 236300
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIM26",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -0.69,
+        "prvsDayAdjstmntPric": 4.874,
+        "topLmtPric": 11.15
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-07-01",
+          "opnCtrcts": 71219
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIN27",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.18,
+        "prvsDayAdjstmntPric": 5.499,
+        "topLmtPric": 8.11
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2031-01-02",
+          "opnCtrcts": 78560
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF31",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 6.89,
+        "prvsDayAdjstmntPric": 8.604,
+        "topLmtPric": 10.54
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2041-01-02",
+          "opnCtrcts": 230
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF41",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 1.88,
+        "prvsDayAdjstmntPric": 5.046,
+        "topLmtPric": 8.62
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-12-01",
+          "opnCtrcts": 690
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIZ28",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -0.33,
+        "prvsDayAdjstmntPric": 4.886,
+        "topLmtPric": 10.76
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-08-02",
+          "opnCtrcts": 22065
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIQ27",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.57,
+        "prvsDayAdjstmntPric": 5.744,
+        "topLmtPric": 8.2
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2031-10-01",
+          "opnCtrcts": 920
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIV31",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 2.49,
+        "prvsDayAdjstmntPric": 5.151,
+        "topLmtPric": 8.15
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-11-01",
+          "opnCtrcts": 530
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIX29",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -5.07,
+        "prvsDayAdjstmntPric": 5.052,
+        "topLmtPric": 16.47
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-11-03",
+          "opnCtrcts": 36120
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIX26",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 2.15,
+        "prvsDayAdjstmntPric": 5.099,
+        "topLmtPric": 8.42
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-04-02",
+          "opnCtrcts": 37800
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIJ29",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.33,
+        "prvsDayAdjstmntPric": 7.154,
+        "topLmtPric": 9.21
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2036-01-02",
+          "opnCtrcts": 28650
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF36",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 1.95,
+        "prvsDayAdjstmntPric": 5.054,
+        "topLmtPric": 8.55
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-01-02",
+          "opnCtrcts": 91700
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF29",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 6.3,
+        "prvsDayAdjstmntPric": 8.043,
+        "topLmtPric": 10.01
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2039-01-03",
+          "opnCtrcts": 4570
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF39",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -4.17,
+        "prvsDayAdjstmntPric": 5.027,
+        "topLmtPric": 15.4
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-12-01",
+          "opnCtrcts": 157149
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIZ26",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -2.74,
+        "prvsDayAdjstmntPric": 4.977,
+        "topLmtPric": 13.68
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-02-01",
+          "opnCtrcts": 34320
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIG27",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 2.41,
+        "prvsDayAdjstmntPric": 5.102,
+        "topLmtPric": 8.14
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-10-01",
+          "opnCtrcts": 23560
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIV29",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -2.28,
+        "prvsDayAdjstmntPric": 4.916,
+        "topLmtPric": 13.03
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-03-01",
+          "opnCtrcts": 13760
+        },
+        "code": "DDI"
+      },
+      "buyOffer": {
+        "price": 6.458
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 6.458
+      },
+      "symb": "DDIH27",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -14.88,
+        "prvsDayAdjstmntPric": 5.431,
+        "topLmtPric": 28.33
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-07-01",
+          "opnCtrcts": 345804
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIN26",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.3,
+        "prvsDayAdjstmntPric": 5.567,
+        "topLmtPric": 8.12
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2031-04-01",
+          "opnCtrcts": 6920
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIJ31",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -1.76,
+        "prvsDayAdjstmntPric": 4.893,
+        "topLmtPric": 12.39
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-04-01",
+          "opnCtrcts": 100053
+        },
+        "code": "DDI"
+      },
+      "buyOffer": {
+        "price": 6.356
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 6.356
+      },
+      "symb": "DDIJ27",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -10.75,
+        "prvsDayAdjstmntPric": 5.298,
+        "topLmtPric": 23.39,
+        "opngPric": 8.95,
+        "minPric": 8.95,
+        "maxPric": 8.95,
+        "avrgPric": 8.95,
+        "curPrc": 8.95
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 5611503.04,
+          "mtrtyCode": "2026-08-03",
+          "opnCtrcts": 79672,
+          "tradQty": 1,
+          "traddCtrctsQty": 22
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIQ26",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.06,
+        "prvsDayAdjstmntPric": 5.431,
+        "topLmtPric": 8.11
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2030-10-01",
+          "opnCtrcts": 8500
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIV30",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 2.3,
+        "prvsDayAdjstmntPric": 5.115,
+        "topLmtPric": 8.29
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-07-02",
+          "opnCtrcts": 31830
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIN29",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 1.11,
+        "prvsDayAdjstmntPric": 4.917,
+        "topLmtPric": 9.21
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-04-03",
+          "opnCtrcts": 44990
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIJ28",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.92,
+        "prvsDayAdjstmntPric": 6.785,
+        "topLmtPric": 8.89
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2035-01-02",
+          "opnCtrcts": 48330
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF35",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.1,
+        "prvsDayAdjstmntPric": 6.109,
+        "topLmtPric": 8.38
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2033-01-03",
+          "opnCtrcts": 30950
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF33",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -8.29,
+        "prvsDayAdjstmntPric": 5.2,
+        "topLmtPric": 20.41
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-09-01",
+          "opnCtrcts": 100945
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIU26",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.2,
+        "prvsDayAdjstmntPric": 4.903,
+        "topLmtPric": 10.21
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-10-01",
+          "opnCtrcts": 63415
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIV27",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 1.67,
+        "prvsDayAdjstmntPric": 4.961,
+        "topLmtPric": 8.67
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-10-02",
+          "opnCtrcts": 33560
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIV28",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.45,
+        "prvsDayAdjstmntPric": 5.665,
+        "topLmtPric": 8.17
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2031-07-01",
+          "opnCtrcts": 1010
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIN31",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 2.74,
+        "prvsDayAdjstmntPric": 5.256,
+        "topLmtPric": 8.09
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2030-04-01",
+          "opnCtrcts": 27320
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIJ30",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -85.78,
+        "prvsDayAdjstmntPric": 7.411,
+        "topLmtPric": 112.47,
+        "opngPric": 25.69,
+        "minPric": 25.69,
+        "maxPric": 30.229,
+        "avrgPric": 28.2449,
+        "curPrc": 26.602
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 3040353167.31,
+          "mtrtyCode": "2026-04-01",
+          "opnCtrcts": 1216180,
+          "tradQty": 12,
+          "traddCtrctsQty": 11707
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIJ26",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 1.41,
+        "prvsDayAdjstmntPric": 4.928,
+        "topLmtPric": 8.9
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-07-03",
+          "opnCtrcts": 53714
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIN28",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 4.49,
+        "prvsDayAdjstmntPric": 6.417,
+        "topLmtPric": 8.59
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2034-01-02",
+          "opnCtrcts": 39500
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF34",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 3.68,
+        "prvsDayAdjstmntPric": 5.813,
+        "topLmtPric": 8.22
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2032-01-02",
+          "opnCtrcts": 48038
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF32",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 2.53,
+        "prvsDayAdjstmntPric": 5.16,
+        "topLmtPric": 8.12
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-12-03",
+          "opnCtrcts": 440
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIZ29",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 2.64,
+        "prvsDayAdjstmntPric": 5.238,
+        "topLmtPric": 8.17
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2030-01-02",
+          "opnCtrcts": 65700
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF30",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 6.61,
+        "prvsDayAdjstmntPric": 8.334,
+        "topLmtPric": 10.28
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2040-01-02",
+          "opnCtrcts": 5340
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF40",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -6.4,
+        "prvsDayAdjstmntPric": 5.117,
+        "topLmtPric": 18.1
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-10-01",
+          "opnCtrcts": 193407
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIV26",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 1.78,
+        "prvsDayAdjstmntPric": 5.009,
+        "topLmtPric": 8.65
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-11-01",
+          "opnCtrcts": 870
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIX28",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.41,
+        "prvsDayAdjstmntPric": 4.907,
+        "topLmtPric": 9.98
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-11-01",
+          "opnCtrcts": 2680
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIX27",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 2.9,
+        "prvsDayAdjstmntPric": 5.343,
+        "topLmtPric": 8.09
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2030-07-01",
+          "opnCtrcts": 19380
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIN30",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -3.3,
+        "prvsDayAdjstmntPric": 5.021,
+        "topLmtPric": 14.4
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04",
+          "opnCtrcts": 389763
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF27",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.67,
+        "prvsDayAdjstmntPric": 7.453,
+        "topLmtPric": 9.47
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2037-01-02",
+          "opnCtrcts": 16590
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF37",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": -34.33,
+        "prvsDayAdjstmntPric": 5.96,
+        "topLmtPric": 51.38
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-05-04",
+          "opnCtrcts": 337492
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIK26",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 0.73,
+        "prvsDayAdjstmntPric": 4.908,
+        "topLmtPric": 9.62
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-01-03",
+          "opnCtrcts": 138208
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF28",
+      "desc": "CUPOM CAMBIAL"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 5.98,
+        "prvsDayAdjstmntPric": 7.743,
+        "topLmtPric": 9.73
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2038-01-04",
+          "opnCtrcts": 4890
+        },
+        "code": "DDI"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DDIF38",
+      "desc": "CUPOM CAMBIAL"
+    }
+  ]
+}

@@ -2,169 +2,109 @@ import datetime as dt
 import io
 import logging
 import zipfile
-from pathlib import Path
+from functools import lru_cache
 from typing import Literal
 
 import polars as pl
-import polars.selectors as cs
 import requests
 from lxml import etree
 from lxml.etree import _Element
 
 import pyield._internal.converters as cv
-import pyield.b3.common as cm
-from pyield import bday
 from pyield._internal.retry import DadoIndisponivelError, retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.fwd import forwards
+from pyield.b3._contracts import normalizar_codigo_contrato
+from pyield.b3._validar_pregao import data_negociacao_valida
 
 registro = logging.getLogger(__name__)
-
-# --- Configuração de Contratos ---
-# Contratos de taxa (sufixo "Rate" em colunas como "OpenRate", "CloseRate")
-# Contratos de preço usam sufixo "Price" (como "OpenPrice", "ClosePrice")
-CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 
 # --- Constantes de Processamento XML ---
 NAMESPACE_B3 = "urn:bvmf.217.01.xsd"
 NAMESPACES = {"ns": NAMESPACE_B3}
 # ZIP válido do price report ~2KB; 1KB detecta arquivos "sem dados"
 MIN_TAMANHO_ZIP_BYTES = 1024
-# Comprimentos válidos de ticker B3:
+# Comprimentos de ticker B3:
 # - 6 chars: futuros padrão AAAnYY (ex.: DI1F26)
 # - 13 chars: opções sobre futuros AAAnYYTssssss (ex.: CPMF25C100750)
-TAMANHOS_TICKER_VALIDOS = {6, 13}
-TICKER_XPATH_TEMPLATE = '//ns:TckrSymb[starts-with(text(), "{asset_code}")]'
-TRADE_DATE_XPATH = ".//ns:TradDt/ns:Dt"
-FIN_INSTRM_ATTRBTS_XPATH = ".//ns:FinInstrmAttrbts"
+TAMANHO_TICKER_FUTURO = 6
+TAMANHO_TICKER_OPCAO = 13
+MODELO_XPATH_TICKER = '//ns:TckrSymb[starts-with(text(), "{codigo_ativo}")]'
+XPATH_DATA_NEGOCIACAO = ".//ns:TradDt/ns:Dt"
+XPATH_ATRIBUTOS_INSTRUMENTO = ".//ns:FinInstrmAttrbts"
+XPATH_DETALHES_NEGOCIO = ".//ns:TradDtls"
 
 # --- Mapeamento de Colunas ---
 
-# 1. Colunas fixas: nome de destino sempre o mesmo
-# Formato: {XML_Name: (New_Name, DataType)}
-MAPEAMENTO_BASE = {
-    "TradDt": ("TradeDate", pl.Date),
-    "TckrSymb": ("TickerSymbol", pl.String),
-    "OpnIntrst": ("OpenContracts", pl.Int64),
-    "RglrTxsQty": ("TradeCount", pl.Int64),
-    "FinInstrmQty": ("TradeVolume", pl.Int64),
-    "NtlFinVol": ("FinancialVolume", pl.Float64),
-    "AdjstdQt": ("SettlementPrice", pl.Float64),  # Settlement price (PU - Unit Price)
-    "AdjstdQtTax": ("SettlementRate", pl.Float64),  # DI1, DAP, ...
-    "RglrTraddCtrcts": ("RegularTradedContracts", pl.Int64),
-    "NtlRglrVol": ("NationalRegularVolume", pl.Float64),
-    "IntlRglrVol": ("InternationalRegularVolume", pl.Float64),
-    "OscnPctg": ("OscillationPercentage", pl.Float64),
-    "VartnPts": ("VariationPoints", pl.Float64),
-    "AdjstdValCtrct": ("AdjustedValueContract", pl.Float64),
-    "MktDataStrmId": ("MarketDataStreamId", pl.String),
-    "IntlFinVol": ("InternationalFinancialVolume", pl.Float64),
-    "AdjstdQtStin": ("AdjustedQuotationIndicator", pl.String),
-    "PrvsAdjstdQt": ("PreviousAdjustedQuotation", pl.Float64),
-    "PrvsAdjstdQtTax": ("PreviousAdjustedRate", pl.Float64),
-    "PrvsAdjstdQtStin": ("PreviousAdjustedIndicator", pl.String),
-}
-
-# 2. Colunas variáveis: nome de destino depende do sufixo (Rate ou Price)
-# Formato: {XML_Name: (Prefix, DataType)}
-MAPEAMENTO_VARIAVEL = {
-    "MinTradLmt": ("MinLimit", pl.Float64),
-    "MaxTradLmt": ("MaxLimit", pl.Float64),
-    "BestAskPric": ("BestAsk", pl.Float64),
-    "BestBidPric": ("BestBid", pl.Float64),
-    "FrstPric": ("Open", pl.Float64),
-    "MinPric": ("Min", pl.Float64),
-    "TradAvrgPric": ("Avg", pl.Float64),
-    "MaxPric": ("Max", pl.Float64),
-    "LastPric": ("Close", pl.Float64),
-}
-
-# Agrega todos os tipos para cast inicial (usando nomes originais do XML)
-TIPOS_XML = {k: v[1] for k, v in MAPEAMENTO_BASE.items()}
-TIPOS_XML.update({k: v[1] for k, v in MAPEAMENTO_VARIAVEL.items()})
-
-COLUNAS_SAIDA = [
-    "TradeDate",
-    "TickerSymbol",
-    "ExpirationDate",
-    "BDaysToExp",
-    "DaysToExp",
-    "OpenContracts",
-    "TradeCount",
-    "TradeVolume",
-    "FinancialVolume",
-    "DV01",
-    "SettlementPrice",
-    # Columns that can be Rate or Price depending on contract type
-    "MinLimitRate",
-    "MinLimitPrice",
-    "MaxLimitRate",
-    "MaxLimitPrice",
-    "BestBidRate",
-    "BestBidPrice",
-    "BestAskRate",
-    "BestAskPrice",
-    "OpenRate",
-    "OpenPrice",
-    "MinRate",
-    "MinPrice",
-    "AvgRate",
-    "AvgPrice",
-    "MaxRate",
-    "MaxPrice",
-    "CloseRate",
-    "ClosePrice",
-    "SettlementRate",
-    "ForwardRate",
-    # Other fields normally not used for analysis but included for completeness
-    "MarketDataStreamId",
-    "AdjustedQuotationIndicator",
-    "RegularTradedContracts",
-    "NationalRegularVolume",
-    "InternationalRegularVolume",
-    "InternationalFinancialVolume",
-    "PreviousAdjustedQuotation",
-    "PreviousAdjustedRate",
-    "PreviousAdjustedIndicator",
-    "OscillationPercentage",
-    "VariationPoints",
-    "AdjustedValueContract",
+# Estrutura: (id_pdf, nome_original_xml, nome_novo, tipo_polars)
+# As colunas comentadas ficam fora do ETL; ao descomentar, entram no fluxo.
+# https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf
+COLUNAS_PRICE_REPORT: list[tuple[str, str, str, type[pl.DataType]]] = [
+    ("1.00", "TradDt", "TradeDate", pl.Date),
+    ("2.01", "TckrSymb", "TickerSymbol", pl.String),
+    ("3.01.01", "Id", "InstrumentId", pl.String),
+    ("3.01.02.01", "Prtry", "IdentifierType", pl.String),
+    ("3.02.01", "MktIdrCd", "MarketIdentifierCode", pl.String),
+    ("4.01", "DaysToSttlm", "DaysToSettlement", pl.String),
+    ("4.02", "TradQty", "TradeCount", pl.Int64),
+    ("5.01", "MktDataStrmId", "MarketDataStreamId", pl.String),
+    ("5.02", "NtlFinVol", "FinancialVolume", pl.Float64),
+    ("5.03", "IntlFinVol", "InternationalFinancialVolume", pl.Float64),
+    ("5.04", "OpnIntrst", "OpenContracts", pl.Int64),
+    ("5.05", "FinInstrmQty", "TradeVolume", pl.Int64),
+    ("5.06", "BestBidPric", "BestBidValue", pl.Float64),
+    ("5.07", "BestAskPric", "BestAskValue", pl.Float64),
+    ("5.08", "FrstPric", "OpenValue", pl.Float64),
+    ("5.09", "MinPric", "MinValue", pl.Float64),
+    ("5.10", "MaxPric", "MaxValue", pl.Float64),
+    ("5.11", "TradAvrgPric", "AvgValue", pl.Float64),
+    ("5.12", "LastPric", "CloseValue", pl.Float64),
+    ("5.13", "RglrTxsQty", "RegularTradeCount", pl.Int64),
+    ("5.14", "NonRglrTxsQty", "NonRegularTradeCount", pl.Int64),
+    ("5.15", "RglrTraddCtrcts", "RegularTradedContracts", pl.Int64),
+    ("5.16", "NonRglrTraddCtrcts", "NonRegularTradedContracts", pl.Int64),
+    ("5.17", "NtlRglrVol", "NationalRegularVolume", pl.Float64),
+    ("5.18", "NtlNonRglrVol", "NationalNonRegularVolume", pl.Float64),
+    ("5.19", "IntlRglrVol", "InternationalRegularVolume", pl.Float64),
+    ("5.20", "IntlNonRglrVol", "InternationalNonRegularVolume", pl.Float64),
+    ("5.21", "AdjstdQt", "SettlementPrice", pl.Float64),
+    ("5.22", "AdjstdQtTax", "SettlementRate", pl.Float64),
+    ("5.23", "AdjstdQtStin", "AdjustedQuotationIndicator", pl.String),
+    ("5.24", "PrvsAdjstdQt", "PreviousAdjustedPrice", pl.Float64),
+    ("5.25", "PrvsAdjstdQtTax", "PreviousAdjustedRate", pl.Float64),
+    ("5.26", "PrvsAdjstdQtStin", "PreviousAdjustedIndicator", pl.String),
+    ("5.27", "OscnPctg", "OscillationPercentage", pl.Float64),
+    ("5.28", "VartnPts", "VariationPoints", pl.Float64),
+    ("5.29", "EqvtVal", "EquivalentValue", pl.Float64),
+    ("5.30", "AdjstdValCtrct", "AdjustedValueContract", pl.Float64),
+    ("5.31", "MaxTradLmt", "MaxLimitValue", pl.Float64),
+    ("5.32", "MinTradLmt", "MinLimitValue", pl.Float64),
 ]
 
+# Mapa de tipos para cast inicial usando os nomes originais do XML.
+TIPOS_XML = {nome_original: tipo for _, nome_original, _, tipo in COLUNAS_PRICE_REPORT}
 
-def _mapa_renomeacao_colunas(contract_code: str) -> dict[str, str]:
+
+def _mapa_renomeacao_colunas() -> dict[str, str]:
     """
-    Constrói o dicionário de renomeação dinamicamente baseado no contrato.
+    Constrói o dicionário de renomeação de colunas do XML para nomes canônicos.
+
+    A renomeação é estática e não aplica semântica de contrato (Rate/Price).
+    Colunas numéricas de cotação/limites usam sufixo "Value" no output bruto.
+
     Retorna: {XML_Name: New_Name}
     """
-    # 1. Determina o sufixo (Rate ou Price)
-    sufixo = "Rate" if contract_code in CONTRATOS_TAXA else "Price"
-
-    # 2. Mapeamento Base (Fixo)
-    mapa_renomeacao = {k: v[0] for k, v in MAPEAMENTO_BASE.items()}
-
-    # 3. Mapeamento Variável (Com Sufixo)
-    # Ex: FrstPric -> OpenRate (se DI1) ou OpenPrice (se DOL)
-    for xml_col, (prefix, _) in MAPEAMENTO_VARIAVEL.items():
-        mapa_renomeacao[xml_col] = f"{prefix}{sufixo}"
-
-    return mapa_renomeacao
-
-
-def _ler_zip_arquivo(file_path: Path) -> bytes:
-    if not isinstance(file_path, Path):
-        raise ValueError("É necessário informar um caminho de arquivo.")
-    if not file_path.exists():
-        raise FileNotFoundError(f"Nenhum arquivo encontrado em {file_path}.")
-    return file_path.read_bytes()
+    return {
+        nome_original: nome_novo
+        for _, nome_original, nome_novo, _ in COLUNAS_PRICE_REPORT
+    }
 
 
 @retry_padrao
-def _baixar_zip_url(date: dt.date, source_type: str) -> bytes:
-    data_str = date.strftime("%y%m%d")
-    if source_type == "PR":
+def _baixar_zip_url(data: dt.date, tipo_fonte: str) -> bytes:
+    data_str = data.strftime("%y%m%d")
+    if tipo_fonte == "PR":
         url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{data_str}.zip"
-    elif source_type == "SPR":
+    elif tipo_fonte == "SPR":
         url = (
             f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{data_str}.zip"
         )
@@ -175,14 +115,14 @@ def _baixar_zip_url(date: dt.date, source_type: str) -> bytes:
     resposta.raise_for_status()
 
     if len(resposta.content) < MIN_TAMANHO_ZIP_BYTES:
-        data_str_formatada = date.strftime("%Y-%m-%d")
+        data_str_formatada = data.strftime("%Y-%m-%d")
         raise DadoIndisponivelError(f"Sem dados disponíveis para {data_str_formatada}.")
     return resposta.content
 
 
 def _extrair_xml_zip_aninhado(conteudo_zip: bytes) -> bytes:
-    zip_file = io.BytesIO(conteudo_zip)
-    with zipfile.ZipFile(zip_file, "r") as zip_externo:
+    buffer_zip = io.BytesIO(conteudo_zip)
+    with zipfile.ZipFile(buffer_zip, "r") as zip_externo:
         arquivos_externos = zip_externo.namelist()
         if not arquivos_externos:
             raise ValueError("ZIP externo está vazio")
@@ -200,33 +140,49 @@ def _extrair_xml_zip_aninhado(conteudo_zip: bytes) -> bytes:
     return conteudo_xml
 
 
-def _extrair_dados_contrato(ticker: _Element) -> dict | None:
-    if ticker.text is None or len(ticker.text) not in TAMANHOS_TICKER_VALIDOS:
+def _ticker_valido_para_contrato(ticker: str, codigo_contrato: str) -> bool:
+    if codigo_contrato == "CPM":
+        return len(ticker) == TAMANHO_TICKER_OPCAO
+    return len(ticker) == TAMANHO_TICKER_FUTURO
+
+
+def _extrair_dados_contrato(
+    elemento_ticker: _Element, codigo_contrato: str
+) -> dict | None:
+    if elemento_ticker.text is None or not _ticker_valido_para_contrato(
+        elemento_ticker.text, codigo_contrato
+    ):
         return None
-    parent = ticker.getparent()
-    if parent is None:
+    pai = elemento_ticker.getparent()
+    if pai is None:
         return None
-    price_report = parent.getparent()
-    if price_report is None:
+    registro_pregao = pai.getparent()
+    if registro_pregao is None:
         return None
-    date_elem = price_report.find(TRADE_DATE_XPATH, NAMESPACES)
-    if date_elem is None:
+    elemento_data = registro_pregao.find(XPATH_DATA_NEGOCIACAO, NAMESPACES)
+    if elemento_data is None:
         return None
 
-    dados_ticker = {"TradDt": date_elem.text, "TckrSymb": ticker.text}
-    atributos_instr = price_report.find(FIN_INSTRM_ATTRBTS_XPATH, NAMESPACES)
+    dados_ticker = {"TradDt": elemento_data.text, "TckrSymb": elemento_ticker.text}
+    atributos_instr = registro_pregao.find(XPATH_ATRIBUTOS_INSTRUMENTO, NAMESPACES)
     if atributos_instr is None:
         return None
 
     for attr in atributos_instr:
-        tag_name = etree.QName(attr).localname
-        dados_ticker[tag_name] = attr.text
+        nome_tag = etree.QName(attr).localname
+        dados_ticker[nome_tag] = attr.text
+
+    detalhes_negocio = registro_pregao.find(XPATH_DETALHES_NEGOCIO, NAMESPACES)
+    if detalhes_negocio is not None:
+        for detalhe in detalhes_negocio:
+            nome_tag = etree.QName(detalhe).localname
+            dados_ticker[nome_tag] = detalhe.text
 
     return dados_ticker
 
 
-def _parsear_xml_registros(xml_bytes: bytes, asset_code: str) -> list[dict]:
-    parser = etree.XMLParser(
+def _parsear_xml_registros(xml_bytes: bytes, codigo_ativo: str) -> list[dict]:
+    analisador = etree.XMLParser(
         ns_clean=True,
         remove_blank_text=True,
         remove_comments=True,
@@ -236,18 +192,22 @@ def _parsear_xml_registros(xml_bytes: bytes, asset_code: str) -> list[dict]:
         load_dtd=False,
     )
     arquivo_xml = io.BytesIO(xml_bytes)
-    tree = etree.parse(arquivo_xml, parser=parser)
-    path = TICKER_XPATH_TEMPLATE.format(asset_code=asset_code)
-    tickers = tree.xpath(path, namespaces=NAMESPACES)
+    arvore = etree.parse(arquivo_xml, parser=analisador)
+    caminho_xpath = MODELO_XPATH_TICKER.format(codigo_ativo=codigo_ativo)
+    resultado_xpath = arvore.xpath(caminho_xpath, namespaces=NAMESPACES)
+    if not isinstance(resultado_xpath, list):
+        return []
 
-    if not tickers or not isinstance(tickers, list):
+    elementos_ticker = resultado_xpath
+
+    if not elementos_ticker:
         return []
 
     registros = []
-    for ticker in tickers:
-        if not isinstance(ticker, etree._Element):
+    for elemento in elementos_ticker:
+        if not isinstance(elemento, etree._Element):
             continue
-        dados_contrato = _extrair_dados_contrato(ticker)
+        dados_contrato = _extrair_dados_contrato(elemento, codigo_ativo)
         if dados_contrato is not None:
             registros.append(dados_contrato)
     return registros
@@ -261,76 +221,42 @@ def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
     return df.cast(tipos_coluna, strict=False)  # type: ignore
 
 
-def _processar_df(df: pl.DataFrame, contract_code: str) -> pl.DataFrame:
-    # 1. Adiciona métricas baseadas em datas
-    df = df.with_columns(
-        BDaysToExp=bday.count_expr("TradeDate", "ExpirationDate"),
-        DaysToExp=(pl.col("ExpirationDate") - pl.col("TradeDate")).dt.total_days(),
-    )
-
-    # 2. Normaliza taxas (divide por 100)
-    # Seleciona apenas colunas contendo "Rate". Como renomeamos corretamente
-    # (OpenPrice para DOL vs OpenRate para DI1), cs.contains("Rate") ignora
-    # colunas de preço e afeta apenas colunas de taxa.
-    df = df.with_columns(cs.contains("Rate").truediv(100).round(5))
-
-    # 3. Colunas derivadas específicas do contrato
-    if contract_code == "DI1":
-        # DV01 requer SettlementRate e SettlementPrice
-        if "SettlementRate" in df.columns and "SettlementPrice" in df.columns:
-            df = df.with_columns(
-                DV01=cm.expr_dv01("BDaysToExp", "SettlementRate", "SettlementPrice")
-            )
-
-    if contract_code in {"DI1", "DAP"} and "SettlementRate" in df.columns:
-        forward_rates = forwards(bdays=df["BDaysToExp"], rates=df["SettlementRate"])
-        df = df.with_columns(ForwardRate=forward_rates)
-
-    coluna_ordem = [col for col in COLUNAS_SAIDA if col in df.columns]
-    return df.select(coluna_ordem).filter(pl.col("DaysToExp") > 0)
-
-
-def _processar_zip(zip_data: bytes, contract_code: str) -> pl.DataFrame:
-    if not zip_data:
-        registro.warning("ZIP XML vazio.")
-        return pl.DataFrame()
-
-    xml_bytes = _extrair_xml_zip_aninhado(zip_data)
-    registros = _parsear_xml_registros(xml_bytes, contract_code)
-
+def _processar_xml_extraido(xml_bytes: bytes, codigo_contrato: str) -> pl.DataFrame:
+    registros = _parsear_xml_registros(xml_bytes, codigo_contrato) if xml_bytes else []
     if not registros:
         return pl.DataFrame()
 
     df = _converter_para_df(registros)
-
-    # Aplica renomeação dinâmica baseada no tipo de contrato
-    # 1. Gera o mapa correto de renomeação (sufixo Rate ou Price)
-    mapa_renomeacao = _mapa_renomeacao_colunas(contract_code)
+    mapa_renomeacao = _mapa_renomeacao_colunas()
     df = df.rename(mapa_renomeacao, strict=False)
+    return df.sort("TickerSymbol")
 
-    df = cm.adicionar_vencimento(df, contract_code, "TickerSymbol")
-    df = _processar_df(df, contract_code)
 
-    return df.sort("ExpirationDate")
+@lru_cache(maxsize=64)
+def _obter_xml_price_report(data: dt.date, tipo_fonte: str) -> bytes:
+    dados_zip = _baixar_zip_url(data, tipo_fonte)
+    return _extrair_xml_zip_aninhado(dados_zip)
 
 
 def fetch_price_report(
-    date: DateLike, contract_code: str, source_type: Literal["PR", "SPR"] = "SPR"
+    date: DateLike,
+    contract_code: str,
+    source_type: Literal["PR", "SPR"] = "SPR",
 ) -> pl.DataFrame:
     """Busca e processa o price report da B3 no site oficial.
 
     Faz o download do ZIP com XML, extrai os dados do contrato e devolve um
-    DataFrame Polars com colunas padronizadas e métricas calculadas.
+    DataFrame Polars com os dados brutos do XML, tipados e com colunas
+    renomeadas para nomes padronizados.
 
-    A função decide o sufixo das colunas (Rate vs Price) conforme o contrato:
-    - Contratos de taxa (DI1, DAP, DDI, FRC, FRO): "OpenRate", "CloseRate"
-    - Contratos de preço (DOL, WDO, IND, WIN, etc.): "OpenPrice", "ClosePrice"
+    As colunas OHLC e limites são retornadas com sufixo "Value"
+    (ex.: OpenValue, CloseValue, BestBidValue, MaxLimitValue).
+    Conversões para "Rate"/"Price" devem ser feitas no módulo consumidor
+    (ex.: ``futures.historical``).
 
-    Métricas calculadas:
-    - BDaysToExp: Dias úteis até o vencimento
-    - DaysToExp: Dias corridos até o vencimento
-    - DV01: Valor de 1 bp (para DI1)
-    - ForwardRate: Taxa forward (para DI1, DAP)
+    O DataFrame retornado **não** contém colunas calculadas (BDaysToExp,
+    DaysToExp, DV01, ForwardRate) nem normalização de taxas. O enriquecimento
+    é responsabilidade do módulo consumidor (ex.: ``futures.historical``).
 
     Args:
         date: Data de negociação no formato 'DD-MM-YYYY', 'DD/MM/YYYY',
@@ -341,27 +267,26 @@ def fetch_price_report(
             report e 'PR' para price report regular.
 
     Returns:
-        pl.DataFrame: DataFrame com colunas ordenadas conforme COLUNAS_SAIDA,
-        filtrado para excluir contratos vencidos (DaysToExp <= 0). Retorna
-        DataFrame vazio para data inválida, resposta vazia ou falhas de parsing
-        recuperáveis.
+        pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
+        TickerSymbol. Inclui todos os registros do XML (sem filtro de
+        vencimento). Retorna DataFrame vazio para data inválida ou resposta
+        vazia.
 
     Raises:
         ValueError: Se source_type for inválido.
         DadoIndisponivelError: Se a data for válida, mas o endpoint não fornecer
             arquivo para a data consultada.
         requests.HTTPError: Se a requisição HTTP ao endpoint falhar.
+        zipfile.BadZipFile: Se o arquivo ZIP recebido estiver corrompido.
+        etree.XMLSyntaxError: Se o XML recebido estiver malformado.
+        Exception: Erros críticos inesperados são propagados após log.
 
     Examples:
         >>> import pyield as yd
         >>> df = yd.b3.fetch_price_report("26-04-2024", "DI1")
-        >>> df.is_empty() or df.columns[:5] == [
-        ...     "TradeDate",
-        ...     "TickerSymbol",
-        ...     "ExpirationDate",
-        ...     "BDaysToExp",
-        ...     "DaysToExp",
-        ... ]
+        >>> df.is_empty() or {"TradeDate", "TickerSymbol", "CloseValue"}.issubset(
+        ...     set(df.columns)
+        ... )
         True
 
         >>> # Feriado ou fim de semana (retorna DataFrame vazio)
@@ -369,64 +294,50 @@ def fetch_price_report(
         >>> df.is_empty()
         True
     """
-    msg_vazia = f"Sem dados para {contract_code} em {date}. Retornando DataFrame vazio."
-    if any_is_empty(date):
-        registro.warning(msg_vazia)
+    contrato = normalizar_codigo_contrato(contract_code)
+    if any_is_empty(date) or not contrato:
         return pl.DataFrame()
 
     date = cv.converter_datas(date)
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
-    if not cm.data_negociacao_valida(date):
-        registro.warning(f"{date} não é uma data válida. Retornando DataFrame vazio.")
+    if not data_negociacao_valida(date):
         return pl.DataFrame()
 
     try:
-        dados_zip = _baixar_zip_url(date, source_type)
-
-        if not dados_zip:
-            registro.warning(msg_vazia)
-            return pl.DataFrame()
-
-        df = _processar_zip(dados_zip, contract_code)
-
-        if df.is_empty():
-            registro.warning(msg_vazia)
-
-        return df
-
-    except (ValueError, DadoIndisponivelError, requests.HTTPError):
-        raise
+        xml_bytes = _obter_xml_price_report(date, source_type)
+        return _processar_xml_extraido(xml_bytes, contrato)
     except (zipfile.BadZipFile, etree.XMLSyntaxError):
-        registro.warning(
-            f"Falha ao parsear o price report de {contract_code} em {date}."
-        )
-        return pl.DataFrame()
+        registro.exception(f"Falha ao parsear o price report de {contrato} em {date}.")
+        raise
     except Exception:
         registro.exception(
-            f"ERRO CRÍTICO: Falha ao processar {contract_code} {source_type} em {date}"
+            f"ERRO CRÍTICO: Falha ao processar {contrato} {source_type} em {date}"
         )
-        return pl.DataFrame()
+        raise
 
 
 def read_price_report(
-    file_path: Path,
+    xml_bytes: bytes,
     contract_code: str,
-    source_type: Literal["PR", "SPR"] | None = None,
 ) -> pl.DataFrame:
-    """Lê e processa o price report da B3 a partir de um ZIP local.
+    """Lê e processa o price report da B3 a partir do conteúdo XML bruto.
+
+    Retorna os dados brutos do XML (tipados e renomeados), sem enriquecimento.
+
+    As colunas de cotação/limites são retornadas com sufixo "Value".
+    A interpretação semântica para "Rate"/"Price" deve ser feita no módulo
+    consumidor.
 
     Args:
-        file_path: Caminho do arquivo ZIP local.
+        xml_bytes: Conteúdo do XML em bytes (já descomprimido).
         contract_code: Código B3 do contrato.
-        source_type: 'SPR' ou 'PR'. Se None, infere pelo prefixo do arquivo.
 
     Returns:
-        pl.DataFrame: DataFrame processado com colunas padronizadas.
+        pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
+        TickerSymbol.
     """
-    if source_type is None:
-        filename = file_path.name
-        source_type = "SPR" if filename.startswith("SPRD") else "PR"
+    contrato = normalizar_codigo_contrato(contract_code)
+    if any_is_empty(xml_bytes) or not contrato:
+        return pl.DataFrame()
 
-    dados_zip = _ler_zip_arquivo(file_path)
-    df = _processar_zip(dados_zip, contract_code)
-    return df
+    return _processar_xml_extraido(xml_bytes, contrato)

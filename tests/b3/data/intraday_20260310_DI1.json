@@ -1,0 +1,1506 @@
+{
+  "BizSts": {
+    "cd": "OK"
+  },
+  "Msg": {
+    "dtTm": "2026-03-10 07:19:24"
+  },
+  "Scty": [
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.59,
+        "prvsDayAdjstmntPric": 13.558,
+        "topLmtPric": 14.835,
+        "opngPric": 13.73,
+        "minPric": 13.47,
+        "maxPric": 13.73,
+        "avrgPric": 13.625,
+        "curPrc": 13.48
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 21233076.74,
+          "mtrtyCode": "2030-04-01",
+          "opnCtrcts": 52139,
+          "tradQty": 48,
+          "traddCtrctsQty": 355
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.34
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DI1J30",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.735,
+        "prvsDayAdjstmntPric": 13.71,
+        "topLmtPric": 15,
+        "opngPric": 13.695,
+        "minPric": 13.695,
+        "maxPric": 13.695,
+        "avrgPric": 13.695,
+        "curPrc": 13.695
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 661327.16,
+          "mtrtyCode": "2031-07-01",
+          "opnCtrcts": 28391,
+          "tradQty": 2,
+          "traddCtrctsQty": 13
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.495
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.545
+      },
+      "symb": "DI1N31",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.535,
+        "prvsDayAdjstmntPric": 13.489,
+        "topLmtPric": 14.76,
+        "opngPric": 13.635,
+        "minPric": 13.33,
+        "maxPric": 13.725,
+        "avrgPric": 13.5075,
+        "curPrc": 13.335
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 127465352.24,
+          "mtrtyCode": "2029-10-01",
+          "opnCtrcts": 80172,
+          "tradQty": 274,
+          "traddCtrctsQty": 1996
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.43
+      },
+      "symb": "DI1V29",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.555,
+        "prvsDayAdjstmntPric": 13.417,
+        "topLmtPric": 14.59,
+        "opngPric": 13.385,
+        "minPric": 13.235,
+        "maxPric": 13.63,
+        "avrgPric": 13.4437,
+        "curPrc": 13.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 24116546360.01,
+          "mtrtyCode": "2027-07-01",
+          "opnCtrcts": 1562197,
+          "tradQty": 44549,
+          "traddCtrctsQty": 284195
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.185
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.205
+      },
+      "symb": "DI1N27",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.795,
+        "prvsDayAdjstmntPric": 13.618,
+        "topLmtPric": 14.52,
+        "opngPric": 13.52,
+        "minPric": 13.52,
+        "maxPric": 13.675,
+        "avrgPric": 13.6167,
+        "curPrc": 13.54
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 179487400.62,
+          "mtrtyCode": "2027-03-01",
+          "opnCtrcts": 21556,
+          "tradQty": 43,
+          "traddCtrctsQty": 2030
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.42
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.455
+      },
+      "symb": "DI1H27",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.995,
+        "prvsDayAdjstmntPric": 13.735,
+        "topLmtPric": 14.54,
+        "opngPric": 13.725,
+        "minPric": 13.585,
+        "maxPric": 13.945,
+        "avrgPric": 13.7685,
+        "curPrc": 13.595
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 138086220514.1,
+          "mtrtyCode": "2027-01-04",
+          "opnCtrcts": 6411819,
+          "tradQty": 59448,
+          "traddCtrctsQty": 1533641
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.555
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.57
+      },
+      "symb": "DI1F27",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.865,
+        "prvsDayAdjstmntPric": 13.845,
+        "topLmtPric": 15.155,
+        "opngPric": 14.095,
+        "minPric": 13.72,
+        "maxPric": 14.11,
+        "avrgPric": 13.8672,
+        "curPrc": 13.74
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 825061685.78,
+          "mtrtyCode": "2037-01-02",
+          "opnCtrcts": 311086,
+          "tradQty": 6276,
+          "traddCtrctsQty": 33341
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.665
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.69
+      },
+      "symb": "DI1F37",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.85,
+        "prvsDayAdjstmntPric": 13.83,
+        "topLmtPric": 15.14,
+        "opngPric": 14,
+        "minPric": 13.705,
+        "maxPric": 14.09,
+        "avrgPric": 13.8681,
+        "curPrc": 13.725
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 3084706648.37,
+          "mtrtyCode": "2035-01-02",
+          "opnCtrcts": 772634,
+          "tradQty": 26456,
+          "traddCtrctsQty": 96248
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.655
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.66
+      },
+      "symb": "DI1F35",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.715,
+        "prvsDayAdjstmntPric": 13.56,
+        "topLmtPric": 14.605,
+        "opngPric": 13.62,
+        "minPric": 13.395,
+        "maxPric": 13.77,
+        "avrgPric": 13.5882,
+        "curPrc": 13.4
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 11327377163.18,
+          "mtrtyCode": "2027-04-01",
+          "opnCtrcts": 1529292,
+          "tradQty": 8623,
+          "traddCtrctsQty": 129514
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.36
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.385
+      },
+      "symb": "DI1J27",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.33,
+        "prvsDayAdjstmntPric": 13.244,
+        "topLmtPric": 14.485,
+        "opngPric": 13.35,
+        "minPric": 13.085,
+        "maxPric": 13.49,
+        "avrgPric": 13.3241,
+        "curPrc": 13.1
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 690507497.91,
+          "mtrtyCode": "2028-04-03",
+          "opnCtrcts": 357895,
+          "tradQty": 1040,
+          "traddCtrctsQty": 8934
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.085
+      },
+      "symb": "DI1J28",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.755,
+        "prvsDayAdjstmntPric": 13.734,
+        "topLmtPric": 15.025,
+        "opngPric": 13.815,
+        "minPric": 13.65,
+        "maxPric": 13.815,
+        "avrgPric": 13.7102,
+        "curPrc": 13.66
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 33080186.71,
+          "mtrtyCode": "2031-10-01",
+          "opnCtrcts": 20902,
+          "tradQty": 7,
+          "traddCtrctsQty": 673
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DI1V31",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.515,
+        "prvsDayAdjstmntPric": 13.378,
+        "topLmtPric": 14.55,
+        "opngPric": 13.47,
+        "minPric": 13.305,
+        "maxPric": 13.47,
+        "avrgPric": 13.4069,
+        "curPrc": 13.305
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 72380081.26,
+          "mtrtyCode": "2027-08-02",
+          "opnCtrcts": 51875,
+          "tradQty": 26,
+          "traddCtrctsQty": 862
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.14
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DI1Q27",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.435,
+        "prvsDayAdjstmntPric": 13.317,
+        "topLmtPric": 14.52,
+        "opngPric": 13.385,
+        "minPric": 13.145,
+        "maxPric": 13.545,
+        "avrgPric": 13.3543,
+        "curPrc": 13.15
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 6153475012.55,
+          "mtrtyCode": "2027-10-01",
+          "opnCtrcts": 1036920,
+          "tradQty": 6810,
+          "traddCtrctsQty": 74820
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.1
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DI1V27",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.785,
+        "prvsDayAdjstmntPric": 13.764,
+        "topLmtPric": 15.055,
+        "opngPric": 13.945,
+        "minPric": 13.615,
+        "maxPric": 14.01,
+        "avrgPric": 13.7838,
+        "curPrc": 13.635
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 6966835140.5,
+          "mtrtyCode": "2032-01-02",
+          "opnCtrcts": 1532020,
+          "tradQty": 17313,
+          "traddCtrctsQty": 146986
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.56
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.58
+      },
+      "symb": "DI1F32",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.565,
+        "prvsDayAdjstmntPric": 13.522,
+        "topLmtPric": 14.79,
+        "opngPric": 13.685,
+        "minPric": 13.36,
+        "maxPric": 13.77,
+        "avrgPric": 13.5702,
+        "curPrc": 13.38
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 15745434384.52,
+          "mtrtyCode": "2030-01-02",
+          "opnCtrcts": 1421879,
+          "tradQty": 31018,
+          "traddCtrctsQty": 254770
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.32
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.38
+      },
+      "symb": "DI1F30",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.79,
+        "prvsDayAdjstmntPric": 13.769,
+        "topLmtPric": 15.075
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2040-01-02",
+          "opnCtrcts": 48929
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DI1F40",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.705,
+        "prvsDayAdjstmntPric": 13.682,
+        "topLmtPric": 14.97,
+        "opngPric": 13.81,
+        "minPric": 13.535,
+        "maxPric": 13.81,
+        "avrgPric": 13.7801,
+        "curPrc": 13.535
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 8521661.64,
+          "mtrtyCode": "2031-04-01",
+          "opnCtrcts": 33975,
+          "tradQty": 14,
+          "traddCtrctsQty": 163
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.475
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.495
+      },
+      "symb": "DI1J31",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 13.265,
+        "prvsDayAdjstmntPric": 13.918,
+        "topLmtPric": 14.63,
+        "opngPric": 14,
+        "minPric": 13.83,
+        "maxPric": 14.01,
+        "avrgPric": 13.9716,
+        "curPrc": 13.83
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 251920125.88,
+          "mtrtyCode": "2026-11-03",
+          "opnCtrcts": 103715,
+          "tradQty": 15,
+          "traddCtrctsQty": 2743
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.745
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.78
+      },
+      "symb": "DI1X26",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.385,
+        "prvsDayAdjstmntPric": 13.332,
+        "topLmtPric": 14.59,
+        "opngPric": 13.42,
+        "minPric": 13.155,
+        "maxPric": 13.575,
+        "avrgPric": 13.3753,
+        "curPrc": 13.175
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 63233772447.86,
+          "mtrtyCode": "2029-01-02",
+          "opnCtrcts": 3815016,
+          "tradQty": 80674,
+          "traddCtrctsQty": 897952
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.13
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.14
+      },
+      "symb": "DI1F29",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.81,
+        "prvsDayAdjstmntPric": 13.786,
+        "topLmtPric": 15.095
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2039-01-03",
+          "opnCtrcts": 43591
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.57
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.67
+      },
+      "symb": "DI1F39",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 14.549,
+        "prvsDayAdjstmntPric": 14.729,
+        "topLmtPric": 14.979,
+        "opngPric": 14.751,
+        "minPric": 14.711,
+        "maxPric": 14.807,
+        "avrgPric": 14.7524,
+        "curPrc": 14.717
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 102733782988.06,
+          "mtrtyCode": "2026-04-01",
+          "opnCtrcts": 5774200,
+          "tradQty": 17376,
+          "traddCtrctsQty": 1036919
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 14.701
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 14.705
+      },
+      "symb": "DI1J26",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.45,
+        "prvsDayAdjstmntPric": 13.395,
+        "topLmtPric": 14.665,
+        "opngPric": 13.55,
+        "minPric": 13.22,
+        "maxPric": 13.625,
+        "avrgPric": 13.4423,
+        "curPrc": 13.22
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 201228269.12,
+          "mtrtyCode": "2029-04-02",
+          "opnCtrcts": 115507,
+          "tradQty": 453,
+          "traddCtrctsQty": 2951
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.31
+      },
+      "symb": "DI1J29",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 13.43,
+        "prvsDayAdjstmntPric": 14.022,
+        "topLmtPric": 14.675,
+        "opngPric": 14.11,
+        "minPric": 13.9,
+        "maxPric": 14.2,
+        "avrgPric": 14.054,
+        "curPrc": 13.91
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 30405670933.2,
+          "mtrtyCode": "2026-10-01",
+          "opnCtrcts": 1907782,
+          "tradQty": 9420,
+          "traddCtrctsQty": 327614
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.86
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.87
+      },
+      "symb": "DI1V26",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 13.145,
+        "prvsDayAdjstmntPric": 13.838,
+        "topLmtPric": 14.62,
+        "opngPric": 13.81,
+        "minPric": 13.715,
+        "maxPric": 13.865,
+        "avrgPric": 13.8325,
+        "curPrc": 13.715
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 103763575.29,
+          "mtrtyCode": "2026-12-01",
+          "opnCtrcts": 557712,
+          "tradQty": 28,
+          "traddCtrctsQty": 1140
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.66
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.68
+      },
+      "symb": "DI1Z26",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.555,
+        "prvsDayAdjstmntPric": 13.51,
+        "topLmtPric": 14.78
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-12-03",
+          "opnCtrcts": 1441
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.43
+      },
+      "symb": "DI1Z29",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.905,
+        "prvsDayAdjstmntPric": 13.676,
+        "topLmtPric": 14.51,
+        "opngPric": 13.77,
+        "minPric": 13.53,
+        "maxPric": 13.855,
+        "avrgPric": 13.7944,
+        "curPrc": 13.53
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 432683992.03,
+          "mtrtyCode": "2027-02-01",
+          "opnCtrcts": 64808,
+          "tradQty": 125,
+          "traddCtrctsQty": 4856
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.485
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.52
+      },
+      "symb": "DI1G27",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.835,
+        "prvsDayAdjstmntPric": 13.813,
+        "topLmtPric": 15.12,
+        "opngPric": 14.005,
+        "minPric": 13.675,
+        "maxPric": 14.06,
+        "avrgPric": 13.8818,
+        "curPrc": 13.695
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 6199657308.57,
+          "mtrtyCode": "2033-01-03",
+          "opnCtrcts": 720196,
+          "tradQty": 24024,
+          "traddCtrctsQty": 149699
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.62
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.635
+      },
+      "symb": "DI1F33",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.675,
+        "prvsDayAdjstmntPric": 13.654,
+        "topLmtPric": 14.945,
+        "opngPric": 13.8,
+        "minPric": 13.5,
+        "maxPric": 13.91,
+        "avrgPric": 13.6989,
+        "curPrc": 13.52
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 31338063982.1,
+          "mtrtyCode": "2031-01-02",
+          "opnCtrcts": 2279635,
+          "tradQty": 67044,
+          "traddCtrctsQty": 579002
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.46
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.465
+      },
+      "symb": "DI1F31",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.8,
+        "prvsDayAdjstmntPric": 13.776,
+        "topLmtPric": 15.085
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2041-01-02",
+          "opnCtrcts": 19667
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DI1F41",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.385,
+        "prvsDayAdjstmntPric": 13.32,
+        "topLmtPric": 14.57,
+        "opngPric": 13.34,
+        "minPric": 13.235,
+        "maxPric": 13.34,
+        "avrgPric": 13.282,
+        "curPrc": 13.235
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 4821148.31,
+          "mtrtyCode": "2028-11-01",
+          "opnCtrcts": 4876,
+          "tradQty": 14,
+          "traddCtrctsQty": 67
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.095
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.12
+      },
+      "symb": "DI1X28",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.5,
+        "prvsDayAdjstmntPric": 13.444,
+        "topLmtPric": 14.715,
+        "opngPric": 13.54,
+        "minPric": 13.27,
+        "maxPric": 13.68,
+        "avrgPric": 13.4988,
+        "curPrc": 13.29
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 6186694563.73,
+          "mtrtyCode": "2029-07-02",
+          "opnCtrcts": 1525137,
+          "tradQty": 10329,
+          "traddCtrctsQty": 93787
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.47
+      },
+      "symb": "DI1N29",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 14.196,
+        "prvsDayAdjstmntPric": 14.519,
+        "topLmtPric": 14.886,
+        "opngPric": 14.55,
+        "minPric": 14.45,
+        "maxPric": 14.604,
+        "avrgPric": 14.538,
+        "curPrc": 14.46
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 1942049971.09,
+          "mtrtyCode": "2026-06-01",
+          "opnCtrcts": 447509,
+          "tradQty": 161,
+          "traddCtrctsQty": 20026
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 14.423
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 14.434
+      },
+      "symb": "DI1M26",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.36,
+        "prvsDayAdjstmntPric": 13.262,
+        "topLmtPric": 14.495,
+        "opngPric": 13.26,
+        "minPric": 13.08,
+        "maxPric": 13.49,
+        "avrgPric": 13.3146,
+        "curPrc": 13.09
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 105468918747.11,
+          "mtrtyCode": "2028-01-03",
+          "opnCtrcts": 4232236,
+          "tradQty": 102784,
+          "traddCtrctsQty": 1322378
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.055
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.06
+      },
+      "symb": "DI1F28",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.825,
+        "prvsDayAdjstmntPric": 13.804,
+        "topLmtPric": 15.11,
+        "opngPric": 14,
+        "minPric": 13.975,
+        "maxPric": 14,
+        "avrgPric": 13.9971,
+        "curPrc": 13.975
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 1095271.05,
+          "mtrtyCode": "2038-01-04",
+          "opnCtrcts": 54071,
+          "tradQty": 13,
+          "traddCtrctsQty": 51
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.585
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.67
+      },
+      "symb": "DI1F38",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.42,
+        "prvsDayAdjstmntPric": 13.304,
+        "topLmtPric": 14.505,
+        "opngPric": 13.335,
+        "minPric": 13.235,
+        "maxPric": 13.335,
+        "avrgPric": 13.2812,
+        "curPrc": 13.235
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 1059705.34,
+          "mtrtyCode": "2027-11-01",
+          "opnCtrcts": 7544,
+          "tradQty": 4,
+          "traddCtrctsQty": 13
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.15
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "symb": "DI1X27",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.63,
+        "prvsDayAdjstmntPric": 13.598,
+        "topLmtPric": 14.875,
+        "opngPric": 13.79,
+        "minPric": 13.44,
+        "maxPric": 13.845,
+        "avrgPric": 13.5986,
+        "curPrc": 13.44
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 62660312.2,
+          "mtrtyCode": "2030-07-01",
+          "opnCtrcts": 89407,
+          "tradQty": 168,
+          "traddCtrctsQty": 1080
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.9
+      },
+      "symb": "DI1N30",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.375,
+        "prvsDayAdjstmntPric": 13.31,
+        "topLmtPric": 14.56,
+        "opngPric": 13.415,
+        "minPric": 13.125,
+        "maxPric": 13.535,
+        "avrgPric": 13.3184,
+        "curPrc": 13.125
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 208576786.43,
+          "mtrtyCode": "2028-10-02",
+          "opnCtrcts": 182219,
+          "tradQty": 650,
+          "traddCtrctsQty": 2871
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.095
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.11
+      },
+      "symb": "DI1V28",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 14,
+        "prvsDayAdjstmntPric": 14.411,
+        "topLmtPric": 14.855,
+        "opngPric": 14.405,
+        "minPric": 14.33,
+        "maxPric": 14.545,
+        "avrgPric": 14.4372,
+        "curPrc": 14.335
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 115051686404.14,
+          "mtrtyCode": "2026-07-01",
+          "opnCtrcts": 3943791,
+          "tradQty": 24960,
+          "traddCtrctsQty": 1199557
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 14.29
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 14.295
+      },
+      "symb": "DI1N26",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.4,
+        "prvsDayAdjstmntPric": 13.285,
+        "topLmtPric": 14.485,
+        "opngPric": 13.22,
+        "minPric": 13.21,
+        "maxPric": 13.22,
+        "avrgPric": 13.2158,
+        "curPrc": 13.21
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 3474100.38,
+          "mtrtyCode": "2027-12-01",
+          "opnCtrcts": 6718,
+          "tradQty": 8,
+          "traddCtrctsQty": 43
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.2
+      },
+      "symb": "DI1Z27",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.395,
+        "prvsDayAdjstmntPric": 13.33,
+        "topLmtPric": 14.58
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2028-12-01",
+          "opnCtrcts": 7171
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.11
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.13
+      },
+      "symb": "DI1Z28",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 13.61,
+        "prvsDayAdjstmntPric": 14.143,
+        "topLmtPric": 14.725,
+        "opngPric": 14.205,
+        "minPric": 14.045,
+        "maxPric": 14.205,
+        "avrgPric": 14.1626,
+        "curPrc": 14.06
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 763816203.29,
+          "mtrtyCode": "2026-09-01",
+          "opnCtrcts": 333334,
+          "tradQty": 54,
+          "traddCtrctsQty": 8144
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.99
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 14.01
+      },
+      "symb": "DI1U26",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 14.414,
+        "prvsDayAdjstmntPric": 14.657,
+        "topLmtPric": 14.984,
+        "opngPric": 14.655,
+        "minPric": 14.623,
+        "maxPric": 14.749,
+        "avrgPric": 14.6933,
+        "curPrc": 14.626
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 18497403072.83,
+          "mtrtyCode": "2026-05-04",
+          "opnCtrcts": 1288987,
+          "tradQty": 1930,
+          "traddCtrctsQty": 188735
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 14.6
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 14.605
+      },
+      "symb": "DI1K26",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.82,
+        "prvsDayAdjstmntPric": 13.798,
+        "topLmtPric": 15.105,
+        "opngPric": 14,
+        "minPric": 13.7,
+        "maxPric": 14.06,
+        "avrgPric": 13.9176,
+        "curPrc": 13.71
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 122783199.2,
+          "mtrtyCode": "2036-01-02",
+          "opnCtrcts": 78756,
+          "tradQty": 569,
+          "traddCtrctsQty": 4374
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.64
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.66
+      },
+      "symb": "DI1F36",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.54,
+        "prvsDayAdjstmntPric": 13.498,
+        "topLmtPric": 14.77
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2029-11-01",
+          "opnCtrcts": 2068
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.415
+      },
+      "symb": "DI1X29",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.84,
+        "prvsDayAdjstmntPric": 13.815,
+        "topLmtPric": 15.125,
+        "opngPric": 14.065,
+        "minPric": 13.7,
+        "maxPric": 14.075,
+        "avrgPric": 13.8827,
+        "curPrc": 13.72
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 140582673.34,
+          "mtrtyCode": "2034-01-02",
+          "opnCtrcts": 239091,
+          "tradQty": 1164,
+          "traddCtrctsQty": 3864
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.65
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.67
+      },
+      "symb": "DI1F34",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.345,
+        "prvsDayAdjstmntPric": 13.27,
+        "topLmtPric": 14.52,
+        "opngPric": 13.34,
+        "minPric": 13.095,
+        "maxPric": 13.51,
+        "avrgPric": 13.3163,
+        "curPrc": 13.11
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 7551568850.18,
+          "mtrtyCode": "2028-07-03",
+          "opnCtrcts": 574596,
+          "tradQty": 17348,
+          "traddCtrctsQty": 100692
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.065
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.51
+      },
+      "symb": "DI1N28",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 12.655,
+        "prvsDayAdjstmntPric": 13.623,
+        "topLmtPric": 14.9,
+        "opngPric": 13.72,
+        "minPric": 13.595,
+        "maxPric": 13.72,
+        "avrgPric": 13.6505,
+        "curPrc": 13.595
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 7223632.03,
+          "mtrtyCode": "2030-10-01",
+          "opnCtrcts": 40232,
+          "tradQty": 12,
+          "traddCtrctsQty": 129
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 13.415
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 13.43
+      },
+      "symb": "DI1V30",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {
+        "bottomLmtPric": 13.79,
+        "prvsDayAdjstmntPric": 14.28,
+        "topLmtPric": 14.785,
+        "opngPric": 14.335,
+        "minPric": 14.235,
+        "maxPric": 14.35,
+        "avrgPric": 14.2834,
+        "curPrc": 14.235
+      },
+      "asset": {
+        "AsstSummry": {
+          "grssAmt": 1038893989.42,
+          "mtrtyCode": "2026-08-03",
+          "opnCtrcts": 174256,
+          "tradQty": 365,
+          "traddCtrctsQty": 10960
+        },
+        "code": "DI1"
+      },
+      "buyOffer": {
+        "price": 14.135
+      },
+      "mkt": {
+        "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 14.155
+      },
+      "symb": "DI1Q26",
+      "desc": "DI DE 1 DIA"
+    },
+    {
+      "SctyQtn": {},
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "9999-12-31"
+        },
+        "code": "DI1"
+      },
+      "mkt": {
+        "cd": "SPOT"
+      },
+      "symb": "DI1D",
+      "desc": "DI1"
+    }
+  ]
+}

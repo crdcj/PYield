@@ -1,0 +1,572 @@
+{
+  "BizSts": {
+    "cd": "OK"
+  },
+  "Msg": {
+    "dtTm": "2026-03-10 07:19:26"
+  },
+  "Scty": [
+    {
+      "SctyQtn": {
+        "exrcPric": 13
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11J26C001300",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11F27C001475",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11F27P001425",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11F27P001450",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11F27C001425",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11F27C001450",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 15
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11F27P001500",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11F27P001400",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11J26P001450",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 15.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01",
+          "opnCtrcts": 5
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11J26P001575",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04",
+          "opnCtrcts": 5
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11F27C001400",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 15
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11F27C001500",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 13
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11J26P001300",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "SdTpCd": {
+          "desc": "P"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11F27P001475",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11J26C001450",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 15.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "SdTpCd": {
+          "desc": "C"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "FOPT"
+      },
+      "symb": "D11J26C001575",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 13
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11J26P001300E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 15.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11J26P001575E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11F27C001475E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 13
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11J26C001300E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 15.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11J26C001575E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11F27P001425E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 15
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11F27P001500E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11F27P001400E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.25
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11F27C001425E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11F27P001450E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11F27C001400E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 15
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11F27C001500E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11J26P001450E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11F27C001450E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.5
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2026-04-01"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11J26C001450E",
+      "desc": "DI1 - TIPO 1"
+    },
+    {
+      "SctyQtn": {
+        "exrcPric": 14.75
+      },
+      "asset": {
+        "AsstSummry": {
+          "mtrtyCode": "2027-01-04"
+        },
+        "code": "D11"
+      },
+      "mkt": {
+        "cd": "OPTEXER"
+      },
+      "symb": "D11F27P001475E",
+      "desc": "DI1 - TIPO 1"
+    }
+  ]
+}

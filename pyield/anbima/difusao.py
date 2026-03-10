@@ -84,15 +84,29 @@ def _buscar_dados_url(data_referencia: str) -> str:
         "fldColunas": ["C2", "C17", "C18", "C19"],
     }
 
+    # Timeouts (conexão, leitura) ajustados ao perfil de cada request:
+    # - GET inicial: página leve, apenas para estabelecer cookies de sessão.
+    # - POST consulta: dispara a query no servidor (~30s observado em uso normal).
+    # - POST download: dados já preparados pelo POST anterior, resposta rápida.
+    timeout_pagina = (10, 20)
+    timeout_consulta = (10, 120)
+    timeout_download = (10, 30)
+
     with requests.Session() as s:
-        s.get(URL_PAGINA_INICIAL, headers=cabecalhos, timeout=60)
+        s.get(URL_PAGINA_INICIAL, headers=cabecalhos, timeout=timeout_pagina)
         try:
             response_consulta = s.post(
-                URL_CONSULTA_DADOS, headers=cabecalhos, data=carga, timeout=60
+                URL_CONSULTA_DADOS,
+                headers=cabecalhos,
+                data=carga,
+                timeout=timeout_consulta,
             )
             response_consulta.raise_for_status()
             response_download = s.post(
-                URL_DOWNLOAD, headers=cabecalhos, data=carga, timeout=60
+                URL_DOWNLOAD,
+                headers=cabecalhos,
+                data=carga,
+                timeout=timeout_download,
             )
             response_download.raise_for_status()
             if "text/html" in response_download.headers.get("Content-Type", ""):
