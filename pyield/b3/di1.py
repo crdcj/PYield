@@ -28,10 +28,13 @@ def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
     """
     # 1. Busca inicial no cache PR com as datas solicitadas pelo usuário.
     df_cache = _carregar_cache_pr_di1(datas)
+    if df_cache.is_empty():
+        datas_cache = set()
+    else:
+        datas_cache = set(df_cache["TradeDate"].drop_nulls())
 
     # 2. Identifica datas solicitadas que não estão no cache
     datas_solicitadas = set(datas)
-    datas_cache = set(df_cache["TradeDate"].unique())
     datas_faltantes = datas_solicitadas - datas_cache
 
     # 3. Para cada data faltante, tenta buscar dados via API
@@ -54,7 +57,7 @@ def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
 
     # 4. Retorna concatenação de todos os DataFrames disponíveis
     if len(dfs_concat) == 0:
-        return pl.DataFrame()  # Retorna DataFrame vazio se nada foi encontrado
+        return pl.DataFrame()
     elif len(dfs_concat) == 1:
         return dfs_concat[0]
     else:
@@ -62,19 +65,19 @@ def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
 
 
 def _obter_dados(datas: DateLike | ArrayLike) -> pl.DataFrame:
-    df_datas = (
-        pl.DataFrame({"TradeDate": datas})
-        .with_columns(TradeDate=cv.converter_datas_expr("TradeDate"))
-        .drop_nulls(subset=["TradeDate"])
-        .select(pl.col("TradeDate").unique().sort())
-    )
-
-    if df_datas.is_empty():
+    datas_unicas = cv.converter_datas(datas)
+    if datas_unicas is None:
         return pl.DataFrame()
 
-    lista_datas = df_datas.get_column("TradeDate").to_list()
+    if isinstance(datas_unicas, pl.Series):
+        datas_unicas = datas_unicas.drop_nulls().unique().sort().to_list()
+    else:
+        datas_unicas = [datas_unicas]
 
-    df = _carregar_com_intraday(lista_datas)
+    df = _carregar_com_intraday(datas_unicas)
+
+    if df.is_empty():
+        return pl.DataFrame()
 
     return df.sort("TradeDate", "ExpirationDate")
 
@@ -120,6 +123,8 @@ def data(
         return pl.DataFrame()
 
     df = _obter_dados(datas=dates)
+    if df.is_empty():
+        return df
 
     if pre_filter:
         df_tpf = (
