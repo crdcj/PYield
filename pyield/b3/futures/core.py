@@ -32,6 +32,13 @@ HORA_INICIO_INTRADAY = dt.time(9, 16)
 HORA_FIM_INTRADAY = dt.time(18, 30)
 
 
+def _filtrar_futuros(df: pl.DataFrame) -> pl.DataFrame:
+    """Filtra apenas contratos futuros (tickers de 6 caracteres), excluindo opções."""
+    if df.is_empty():
+        return df
+    return df.filter(pl.col("TickerSymbol").str.len_chars() == 6)
+
+
 def _data_intraday_valida(data_verificacao: dt.date) -> bool:
     """Verifica se a data é um dia de negociação intraday."""
     # Primeiro valida regra geral de dia futuro / não útil / datas especiais
@@ -118,10 +125,12 @@ def futures(
             df_hist = hcore.buscar_df_historico(data_negociacao, contrato_selecionado)
             if not df_hist.is_empty():
                 logger.info("Dados consolidados disponíveis. Usando histórico.")
-                return df_hist
+                return _filtrar_futuros(df_hist)
 
         # Mercado está aberto e não há dados consolidados disponíveis ainda
-        return fetch_intraday_df(contrato_selecionado)
+        return _filtrar_futuros(fetch_intraday_df(contrato_selecionado))
 
     else:  # É um dia histórico
-        return hcore.buscar_df_historico(data_negociacao, contrato_selecionado)
+        return _filtrar_futuros(
+            hcore.buscar_df_historico(data_negociacao, contrato_selecionado)
+        )

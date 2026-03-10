@@ -254,7 +254,8 @@ def _parsear_xml_registros(xml_bytes: bytes, asset_code: str) -> list[dict]:
 
 
 def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
-    df = pl.DataFrame(registros)
+    # infer_schema_length=None garante que colunas raras não sejam ignoradas
+    df = pl.from_dicts(registros, infer_schema_length=None)
     # Casting usa os nomes originais do XML, que são constantes
     tipos_coluna = {k: v for k, v in TIPOS_XML.items() if k in df.columns}
     return df.cast(tipos_coluna, strict=False)  # type: ignore
@@ -306,6 +307,7 @@ def _processar_zip(zip_data: bytes, contract_code: str) -> pl.DataFrame:
     # 1. Gera o mapa correto de renomeação (sufixo Rate ou Price)
     mapa_renomeacao = _mapa_renomeacao_colunas(contract_code)
     df = df.rename(mapa_renomeacao, strict=False)
+
     df = cm.adicionar_vencimento(df, contract_code, "TickerSymbol")
     df = _processar_df(df, contract_code)
 

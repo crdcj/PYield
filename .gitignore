@@ -19,3 +19,5 @@ site/
 
 # Test data
 tests/data/
+
+cgen.py

@@ -31,12 +31,14 @@ the ticker.  The join is a left join so CPM rows are never dropped even
 if the calendar has gaps for very recently announced future meetings.
 """
 
+import datetime as dt
 import logging
 
 import polars as pl
 
 import pyield._internal.converters as cv
 import pyield.b3.common as cm
+from pyield import bday
 from pyield._internal.retry import DadoIndisponivelError
 from pyield._internal.types import DateLike
 from pyield.b3.price_report import (
@@ -80,8 +82,46 @@ def _empty_schema() -> pl.DataFrame:
             "OptionType": pl.String,
             "StrikeChangeBps": pl.Int32,
             "SettlementPrice": pl.Float64,
+            "BDaysToExp": pl.Int32,
         }
     )
+
+
+def _fetch_settlement_prices(trade_date: dt.date) -> pl.DataFrame:
+    """
+    Fetch CPM settlement prices from the B3 CSV endpoint.
+
+    Returns a DataFrame with columns (TickerSymbol, SettlementPrice), where
+    SettlementPrice is the B3 "Preço de Referência" — the official contract
+    price shown on the B3 dashboard ("Probabilidades da Taxa Selic Meta").
+
+    Returns an empty DataFrame (correct schema) if the CSV endpoint is
+    unavailable or has no data for the date (the endpoint retains ~1 month
+    of history).
+
+    The SPR XML used to obtain the contract list does not include a reference
+    price tag (RfPric) for option contracts — only OHLCV fields are present
+    (FrstPric, LastPric, MaxPric, MinPric, TradAvrgPric).
+    """
+    empty = pl.DataFrame(
+        schema={"TickerSymbol": pl.String, "SettlementPrice": pl.Float64}
+    )
+    try:
+        from pyield.b3.futures.historical.historical_b3 import (  # noqa: PLC0415
+            _buscar_csv,
+            _parsear_df_bruto,
+            _preprocessar_df,
+        )
+
+        csv_bytes = _buscar_csv(trade_date)
+        df = _parsear_df_bruto(csv_bytes)
+        df = _preprocessar_df(df, "CPM")
+        if "ReferencePrice" not in df.columns:
+            return empty
+        return df.select("TickerSymbol", pl.col("ReferencePrice").alias("SettlementPrice"))
+    except Exception:
+        logger.debug("CPM: settlement prices unavailable from CSV for %s.", trade_date)
+        return empty
 
 
 def _parse_ticker(ticker: str) -> tuple[int, int, str, float, int]:
@@ -149,7 +189,13 @@ def data(date: DateLike) -> pl.DataFrame:
                                     (= B3 CPM contract settlement date)
             OptionType     : str    "call" or "put"
             StrikeChangeBps: int    change in bps vs 100.000 strike
-            SettlementPrice: float  last traded price in points (0–100)
+            SettlementPrice: float  B3 official "Preço de Referência" from the
+                                    CSV endpoint, in points (0–100).  This is
+                                    the price shown on the B3 dashboard
+                                    ("Probabilidades da Taxa Selic Meta").
+                                    Null for older dates (> ~1 month) where
+                                    the CSV endpoint is unavailable.
+            BDaysToExp     : int    business days from TradeDate to ExpiryDate
 
         Returns empty DataFrame with correct schema if no CPM data
         exists for the requested date (weekend, holiday, etc.).
@@ -191,14 +237,10 @@ def data(date: DateLike) -> pl.DataFrame:
 
     df = _converter_para_df(records)
 
-    # CPM is not in CONTRATOS_TAXA; suffix → Price (ClosePrice, OpenPrice, …)
+    # Rename XML field names to standard column names (TckrSymb → TickerSymbol, etc.)
     mapa = _mapa_renomeacao_colunas("CPM")
     df = df.rename(mapa, strict=False)
     df = df.with_columns(TradeDate=trade_date)
-
-    # ClosePrice (← LastPric) is the settlement proxy for CPM options;
-    # AdjstdQt is absent in the SPR XML for option contracts.
-    price_col = "ClosePrice" if "ClosePrice" in df.columns else "SettlementPrice"
 
     # Parse option type (ticker[6]) and strike change (ticker[7:13])
     # entirely with Polars string expressions — no Python loops over rows.
@@ -247,6 +289,21 @@ def data(date: DateLike) -> pl.DataFrame:
         "_meeting_month", "_meeting_year"
     )
 
+    # BDaysToExp: business days from TradeDate (inclusive) to ExpiryDate (exclusive).
+    # Vectorized via count_expr — consistent with the DI1 pipeline convention.
+    df = df.with_columns(
+        BDaysToExp=bday.count_expr("TradeDate", "ExpiryDate").cast(pl.Int32)
+    )
+
+    # SettlementPrice: B3 "Preço de Referência" from the CSV endpoint.
+    # The SPR XML for option contracts lacks this field (no RfPric tag);
+    # the XML is only used above to obtain the contract list (tickers).
+    sett_prices = _fetch_settlement_prices(trade_date)
+    if not sett_prices.is_empty():
+        df = df.join(sett_prices, on="TickerSymbol", how="left")
+    else:
+        df = df.with_columns(SettlementPrice=pl.lit(None, dtype=pl.Float64))
+
     return df.select(
         pl.col("TradeDate"),
         pl.col("TickerSymbol"),
@@ -254,5 +311,6 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.col("ExpiryDate"),
         pl.col("OptionType"),
         pl.col("StrikeChangeBps"),
-        pl.col(price_col).alias("SettlementPrice"),
+        pl.col("SettlementPrice"),
+        pl.col("BDaysToExp"),
     ).sort("ExpiryDate", "StrikeChangeBps")
