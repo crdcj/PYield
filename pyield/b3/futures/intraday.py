@@ -6,8 +6,8 @@ import polars.selectors as cs
 
 from pyield import bday, clock
 from pyield.b3._validar_pregao import data_negociacao_valida
-from pyield.b3.derivatives_intraday import fetch_derivative_quotation
 from pyield.b3.futures.common import expr_dv01
+from pyield.b3.intraday_derivatives import fetch_intraday_derivatives
 from pyield.fwd import forwards
 
 # Pregão abre às 9:00, porém os dados têm atraso de 15 minutos.
@@ -35,7 +35,7 @@ def intraday(codigo_contrato: str) -> pl.DataFrame:
     menos 15 minutos.
     """
     try:
-        df_bruto = fetch_derivative_quotation(codigo_contrato)
+        df_bruto = fetch_intraday_derivatives(codigo_contrato)
         if df_bruto.is_empty():
             return pl.DataFrame()
 
@@ -54,21 +54,25 @@ def intraday(codigo_contrato: str) -> pl.DataFrame:
 
 
 def _preprocessar_df_intraday(df: pl.DataFrame) -> pl.DataFrame:
-    return df.rename(
-        {
-            "MinLimitValue": "MinLimitRate",
-            "PrevSettlementValue": "PrevSettlementRate",
-            "MaxLimitValue": "MaxLimitRate",
-            "OpenValue": "OpenRate",
-            "MinValue": "MinRate",
-            "MaxValue": "MaxRate",
-            "AvgValue": "AvgRate",
-            "LastValue": "LastRate",
-            "BuyOfferValue": "BuyOfferRate",
-            "SellOfferValue": "SellOfferRate",
-        },
-        strict=False,
-    ).sort("ExpirationDate")
+    return (
+        df.filter(pl.col("MarketCode") == "FUT")
+        .rename(
+            {
+                "MinLimitValue": "MinLimitRate",
+                "PrevSettlementValue": "PrevSettlementRate",
+                "MaxLimitValue": "MaxLimitRate",
+                "OpenValue": "OpenRate",
+                "MinValue": "MinRate",
+                "MaxValue": "MaxRate",
+                "AvgValue": "AvgRate",
+                "LastValue": "LastRate",
+                "BuyOfferValue": "BuyOfferRate",
+                "SellOfferValue": "SellOfferRate",
+            },
+            strict=False,
+        )
+        .sort("ExpirationDate")
+    )
 
 
 def _processar_df_intraday(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:

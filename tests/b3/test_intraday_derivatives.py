@@ -5,7 +5,7 @@ from pathlib import Path
 
 import polars as pl
 
-derivatives_mod = importlib.import_module("pyield.b3.derivatives_intraday")
+derivatives_mod = importlib.import_module("pyield.b3.intraday_derivatives")
 futures_intraday_mod = importlib.import_module("pyield.b3.futures.intraday")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
@@ -102,7 +102,7 @@ def _buscar_json_intraday_mock(codigo_contrato: str) -> list[dict]:
     return _payload_api_mock(codigo_contrato)
 
 
-def _fetch_derivative_quotation_mock(codigo_contrato: str) -> pl.DataFrame:
+def _fetch_intraday_derivatives_mock(codigo_contrato: str) -> pl.DataFrame:
     return _df_bruto_normalizado(codigo_contrato)
 
 
@@ -114,7 +114,7 @@ def _horario_referencia_mock() -> dt.datetime:
     return HORARIO_REFERENCIA
 
 
-def test_fetch_derivative_quotation_preserva_payload_misto(monkeypatch):
+def test_fetch_intraday_derivatives_preserva_payload_misto(monkeypatch):
     """Módulo bruto deve preservar mercados mistos do payload do dia."""
     monkeypatch.setattr(
         derivatives_mod,
@@ -122,7 +122,7 @@ def test_fetch_derivative_quotation_preserva_payload_misto(monkeypatch):
         _buscar_json_intraday_mock,
     )
 
-    resultado = derivatives_mod.fetch_derivative_quotation("DOL")
+    resultado = derivatives_mod.fetch_intraday_derivatives("DOL")
 
     assert resultado.height == TOTAL_LINHAS_DOL
     assert resultado["MarketCode"].unique().sort().to_list() == [
@@ -134,7 +134,7 @@ def test_fetch_derivative_quotation_preserva_payload_misto(monkeypatch):
     assert resultado["ExpirationDate"].null_count() == 0
 
 
-def test_fetch_derivative_quotation_suporta_colunas_opcionais_ausentes(monkeypatch):
+def test_fetch_intraday_derivatives_suporta_colunas_opcionais_ausentes(monkeypatch):
     """Módulo bruto não deve quebrar quando o payload não tem book de ofertas."""
     monkeypatch.setattr(
         derivatives_mod,
@@ -142,14 +142,14 @@ def test_fetch_derivative_quotation_suporta_colunas_opcionais_ausentes(monkeypat
         _buscar_json_intraday_mock,
     )
 
-    resultado = derivatives_mod.fetch_derivative_quotation("DDI")
+    resultado = derivatives_mod.fetch_intraday_derivatives("DDI")
 
     assert resultado.height == TOTAL_LINHAS_FUTURO_SIMPLES
     assert "BuyOfferValue" not in resultado.columns
     assert "SellOfferValue" not in resultado.columns
 
 
-def test_fetch_derivative_quotation_nao_descarta_fro_sem_curprc(monkeypatch):
+def test_fetch_intraday_derivatives_nao_descarta_fro_sem_curprc(monkeypatch):
     """FRO deve continuar válido mesmo sem coluna curPrc no payload."""
     monkeypatch.setattr(
         derivatives_mod,
@@ -157,7 +157,7 @@ def test_fetch_derivative_quotation_nao_descarta_fro_sem_curprc(monkeypatch):
         _buscar_json_intraday_mock,
     )
 
-    resultado = derivatives_mod.fetch_derivative_quotation("FRO")
+    resultado = derivatives_mod.fetch_intraday_derivatives("FRO")
 
     assert resultado.height == TOTAL_LINHAS_FUTURO_SIMPLES
     assert "LastValue" not in resultado.columns
@@ -168,8 +168,8 @@ def test_futures_intraday_filtra_apenas_futuros(monkeypatch):
     """Camada de futures deve consumir o bruto e manter apenas FUT."""
     monkeypatch.setattr(
         futures_intraday_mod,
-        "fetch_derivative_quotation",
-        _fetch_derivative_quotation_mock,
+        "fetch_intraday_derivatives",
+        _fetch_intraday_derivatives_mock,
     )
     monkeypatch.setattr(
         futures_intraday_mod.bday, "last_business_day", _data_referencia_mock

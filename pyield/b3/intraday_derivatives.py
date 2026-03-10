@@ -84,7 +84,7 @@ def _processar_colunas_intraday(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def fetch_derivative_quotation(contract_code: str) -> pl.DataFrame:
+def fetch_intraday_derivatives(contract_code: str) -> pl.DataFrame:
     """Busca cotações intraday brutas de derivativos da B3.
 
     Faz a chamada ao endpoint ``DerivativeQuotation`` e devolve um DataFrame
