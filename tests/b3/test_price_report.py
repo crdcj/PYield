@@ -16,7 +16,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 import requests
-from compression import zstd
+import zstandard as zstd_mod
 from polars.testing import assert_frame_equal
 
 pr_mod = importlib.import_module("pyield.b3.price_report")
@@ -34,7 +34,7 @@ def _baixar_xml_remoto(date_str: str) -> bytes:
 
     resposta = requests.get(url, timeout=(5, 30))
     resposta.raise_for_status()
-    return zstd.decompress(resposta.content)
+    return zstd_mod.decompress(resposta.content)
 
 
 def _processar_bruto(xml_bytes: bytes, contract_code: str) -> pl.DataFrame:
@@ -130,12 +130,10 @@ def test_fetch_price_report_reusa_download_xml_por_data(monkeypatch):
         return b"xml"
 
     def _processar_xml_falso(_xml, codigo):
-        return pl.DataFrame(
-            {
-                "TickerSymbol": [f"{codigo}F26"],
-                "TradeDate": [dt.date(2026, 1, 12)],
-            }
-        )
+        return pl.DataFrame({
+            "TickerSymbol": [f"{codigo}F26"],
+            "TradeDate": [dt.date(2026, 1, 12)],
+        })
 
     monkeypatch.setattr(pr_mod, "_baixar_zip_url", _baixar_zip_falso)
     monkeypatch.setattr(pr_mod, "_extrair_xml_zip_aninhado", _extrair_xml_falso)

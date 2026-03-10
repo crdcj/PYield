@@ -31,12 +31,15 @@ the ticker.  The join is a left join so CPM rows are never dropped even
 if the calendar has gaps for very recently announced future meetings.
 """
 
+import datetime as dt
 import logging
 
 import polars as pl
+import requests
 
 import pyield._internal.converters as cv
-from pyield._internal.retry import DadoIndisponivelError
+from pyield import bday
+from pyield._internal.retry import DadoIndisponivelError, retry_padrao
 from pyield._internal.types import DateLike
 from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.price_report import (
@@ -81,8 +84,102 @@ def _empty_schema() -> pl.DataFrame:
             "OptionType": pl.String,
             "StrikeChangeBps": pl.Int32,
             "SettlementPrice": pl.Float64,
+            "BDaysToExp": pl.Int32,
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# B3 CSV endpoint helpers (inlined from the former historical_b3 module)
+# ---------------------------------------------------------------------------
+
+# Column config for the B3 consolidated derivatives CSV.
+_CSV_CONFIG_COLUNAS = {
+    "Instrumento financeiro": (pl.String, "TickerSymbol"),
+    "Preço de referência": (pl.Float64, "ReferencePrice"),
+}
+_CSV_ESQUEMA = {k: v[0] for k, v in _CSV_CONFIG_COLUNAS.items()}
+_CSV_MAPA_RENOMEACAO = {k: v[1] for k, v in _CSV_CONFIG_COLUNAS.items()}
+
+
+@retry_padrao
+def _buscar_csv(data: dt.date) -> bytes:
+    """Busca o CSV diário de derivativos consolidados na B3."""
+    url = "https://arquivos.b3.com.br/bdi/table/export/csv"
+    parametros = {"lang": "pt-BR"}
+    data_str = data.strftime("%Y-%m-%d")
+    carga = {
+        "Name": "ConsolidatedTradesDerivatives",
+        "Date": data_str,
+        "FinalDate": data_str,
+        "ClientId": "",
+        "Filters": {},
+    }
+    cabecalhos = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",  # noqa: E501
+        "Accept": "application/json, text/plain, */*",
+    }
+    resposta = requests.post(
+        url, params=parametros, json=carga, headers=cabecalhos, timeout=(5, 30)
+    )
+    resposta.raise_for_status()
+    return resposta.content
+
+
+def _parsear_df_bruto(csv_bytes: bytes) -> pl.DataFrame:
+    """Lê o CSV bruto em um DataFrame Polars."""
+    return pl.read_csv(
+        csv_bytes.replace(b".", b""),
+        separator=";",
+        skip_lines=2,
+        null_values=["-"],
+        decimal_comma=True,
+        schema_overrides=_CSV_ESQUEMA,
+        encoding="utf-8-sig",
+    )
+
+
+def _preprocessar_df(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+    """Renomeia e filtra o DataFrame para o contrato desejado."""
+    return df.rename(_CSV_MAPA_RENOMEACAO, strict=False).filter(
+        pl.col("TickerSymbol").str.starts_with(codigo_contrato),
+        pl.col("TickerSymbol").str.len_chars().is_in([6, 13]),
+    )
+
+
+def _fetch_settlement_prices(trade_date: dt.date) -> pl.DataFrame:
+    """
+    Fetch CPM settlement prices from the B3 CSV endpoint.
+
+    Returns a DataFrame with columns (TickerSymbol, SettlementPrice), where
+    SettlementPrice is the B3 "Preço de Referência" — the official contract
+    price shown on the B3 dashboard ("Probabilidades da Taxa Selic Meta").
+
+    Returns an empty DataFrame (correct schema) if the CSV endpoint is
+    unavailable or has no data for the date (the endpoint retains ~1 month
+    of history).
+    """
+    empty = pl.DataFrame(
+        schema={"TickerSymbol": pl.String, "SettlementPrice": pl.Float64}
+    )
+    try:
+        csv_bytes = _buscar_csv(trade_date)
+        df = _parsear_df_bruto(csv_bytes)
+        df = _preprocessar_df(df, "CPM")
+        if "ReferencePrice" not in df.columns:
+            return empty
+        return df.select(
+            "TickerSymbol", pl.col("ReferencePrice").alias("SettlementPrice")
+        )
+    except Exception:
+        logger.debug("CPM: settlement prices unavailable from CSV for %s.", trade_date)
+        return empty
+
+
+# ---------------------------------------------------------------------------
+# Ticker parsing
+# ---------------------------------------------------------------------------
 
 
 def _parse_ticker(ticker: str) -> tuple[int, int, str, float, int]:
@@ -150,7 +247,13 @@ def data(date: DateLike) -> pl.DataFrame:
                                     (= B3 CPM contract settlement date)
             OptionType     : str    "call" or "put"
             StrikeChangeBps: int    change in bps vs 100.000 strike
-            SettlementPrice: float  last traded price in points (0–100)
+            SettlementPrice: float  B3 official "Preço de Referência" from the
+                                    CSV endpoint, in points (0–100).  This is
+                                    the price shown on the B3 dashboard
+                                    ("Probabilidades da Taxa Selic Meta").
+                                    Null for older dates (> ~1 month) where
+                                    the CSV endpoint is unavailable.
+            BDaysToExp     : int    business days from TradeDate to ExpiryDate
 
         Returns empty DataFrame with correct schema if no CPM data
         exists for the requested date (weekend, holiday, etc.).
@@ -251,6 +354,21 @@ def data(date: DateLike) -> pl.DataFrame:
         "_meeting_month", "_meeting_year"
     )
 
+    # BDaysToExp: business days from TradeDate (inclusive) to ExpiryDate (exclusive).
+    # Vectorized via count_expr — consistent with the DI1 pipeline convention.
+    df = df.with_columns(
+        BDaysToExp=bday.count_expr("TradeDate", "ExpiryDate").cast(pl.Int32)
+    )
+
+    # SettlementPrice: B3 "Preço de Referência" from the CSV endpoint.
+    # The SPR XML for option contracts lacks this field (no RfPric tag);
+    # the XML is only used above to obtain the contract list (tickers).
+    sett_prices = _fetch_settlement_prices(trade_date)
+    if not sett_prices.is_empty():
+        df = df.join(sett_prices, on="TickerSymbol", how="left")
+    else:
+        df = df.with_columns(SettlementPrice=pl.lit(None, dtype=pl.Float64))
+
     return df.select(
         pl.col("TradeDate"),
         pl.col("TickerSymbol"),
@@ -258,5 +376,6 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.col("ExpiryDate"),
         pl.col("OptionType"),
         pl.col("StrikeChangeBps"),
-        pl.col(price_col).alias("SettlementPrice"),
+        pl.col("SettlementPrice"),
+        pl.col("BDaysToExp"),
     ).sort("ExpiryDate", "StrikeChangeBps")

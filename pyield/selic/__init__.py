@@ -5,10 +5,10 @@ Submodules
 ----------
 cpm
     Raw B3 COPOM Digital Option (CPM) contract data.
-probabilities (future)
+probabilities
     Implied COPOM meeting probabilities from CPM prices.
 """
 
-from pyield.selic import cpm
+from pyield.selic import cpm, probabilities
 
-__all__ = ["cpm"]
+__all__ = ["cpm", "probabilities"]

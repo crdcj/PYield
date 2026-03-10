@@ -20,12 +20,15 @@ nav:
           - Taxas a Termo: forwards.md
       - Fontes de Dados:
           - Anbima: anbima.md
-          - Banco Central (BCB): bc.md
+          - Banco Central (BCB):
+              - Visão Geral: bc.md
+              - Calendário COPOM: copom.md
           - B3:
               - Visão Geral: b3.md
               - Futuros de DI: di1.md
               - Futuros: futures.md
           - IPCA: ipca.md
+          - Selic (CPM/COPOM): selic.md
           - Tesouro Nacional (RMD): rmd.md
       - Títulos Públicos:
           - Visão Geral: tn.md
