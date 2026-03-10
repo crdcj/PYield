@@ -272,6 +272,47 @@ def fetch_price_report(
         vencimento). Retorna DataFrame vazio para data inválida ou resposta
         vazia.
 
+    Output Columns:
+        - TradeDate (Date): Data de negociação.
+        - TickerSymbol (String): Código do ticker na B3.
+        - InstrumentId (String): Identificador do instrumento.
+        - IdentifierType (String): Tipo do identificador (Prtry).
+        - MarketIdentifierCode (String): Código do mercado.
+        - DaysToSettlement (String): Dias para liquidação.
+        - TradeCount (Int64): Número de negócios.
+        - MarketDataStreamId (String): Identificador do fluxo de dados.
+        - FinancialVolume (Float64): Volume financeiro nacional bruto.
+        - InternationalFinancialVolume (Float64): Volume financeiro internacional.
+        - OpenContracts (Int64): Contratos em aberto.
+        - TradeVolume (Int64): Quantidade de contratos negociados.
+        - BestBidValue (Float64): Melhor oferta de compra.
+        - BestAskValue (Float64): Melhor oferta de venda.
+        - OpenValue (Float64): Valor de abertura.
+        - MinValue (Float64): Valor mínimo negociado.
+        - MaxValue (Float64): Valor máximo negociado.
+        - AvgValue (Float64): Valor médio negociado.
+        - CloseValue (Float64): Valor de fechamento.
+        - RegularTradeCount (Int64): Número de negócios regulares.
+        - NonRegularTradeCount (Int64): Número de negócios não regulares.
+        - RegularTradedContracts (Int64): Contratos regulares negociados.
+        - NonRegularTradedContracts (Int64): Contratos não regulares negociados.
+        - NationalRegularVolume (Float64): Volume financeiro regular nacional.
+        - NationalNonRegularVolume (Float64): Volume financeiro não regular nacional.
+        - InternationalRegularVolume (Float64): Volume financeiro regular internacional.
+        - InternationalNonRegularVolume (Float64): Volume financeiro não regular internacional.
+        - SettlementPrice (Float64): Preço de ajuste.
+        - SettlementRate (Float64): Taxa de ajuste.
+        - AdjustedQuotationIndicator (String): Indicador de cotação ajustada.
+        - PreviousAdjustedPrice (Float64): Preço de ajuste do dia anterior.
+        - PreviousAdjustedRate (Float64): Taxa de ajuste do dia anterior.
+        - PreviousAdjustedIndicator (String): Indicador de ajuste anterior.
+        - OscillationPercentage (Float64): Percentual de oscilação.
+        - VariationPoints (Float64): Variação em pontos.
+        - EquivalentValue (Float64): Valor equivalente.
+        - AdjustedValueContract (Float64): Valor do contrato ajustado.
+        - MaxLimitValue (Float64): Limite máximo de variação.
+        - MinLimitValue (Float64): Limite mínimo de variação.
+
     Raises:
         ValueError: Se source_type for inválido.
         DadoIndisponivelError: Se a data for válida, mas o endpoint não fornecer
@@ -335,6 +376,47 @@ def read_price_report(
     Returns:
         pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
         TickerSymbol.
+
+    Output Columns:
+        - TradeDate (Date): Data de negociação.
+        - TickerSymbol (String): Código do ticker na B3.
+        - InstrumentId (String): Identificador do instrumento.
+        - IdentifierType (String): Tipo do identificador (Prtry).
+        - MarketIdentifierCode (String): Código do mercado.
+        - DaysToSettlement (String): Dias para liquidação.
+        - TradeCount (Int64): Número de negócios.
+        - MarketDataStreamId (String): Identificador do fluxo de dados.
+        - FinancialVolume (Float64): Volume financeiro nacional bruto.
+        - InternationalFinancialVolume (Float64): Volume financeiro internacional.
+        - OpenContracts (Int64): Contratos em aberto.
+        - TradeVolume (Int64): Quantidade de contratos negociados.
+        - BestBidValue (Float64): Melhor oferta de compra.
+        - BestAskValue (Float64): Melhor oferta de venda.
+        - OpenValue (Float64): Valor de abertura.
+        - MinValue (Float64): Valor mínimo negociado.
+        - MaxValue (Float64): Valor máximo negociado.
+        - AvgValue (Float64): Valor médio negociado.
+        - CloseValue (Float64): Valor de fechamento.
+        - RegularTradeCount (Int64): Número de negócios regulares.
+        - NonRegularTradeCount (Int64): Número de negócios não regulares.
+        - RegularTradedContracts (Int64): Contratos regulares negociados.
+        - NonRegularTradedContracts (Int64): Contratos não regulares negociados.
+        - NationalRegularVolume (Float64): Volume financeiro regular nacional.
+        - NationalNonRegularVolume (Float64): Volume financeiro não regular nacional.
+        - InternationalRegularVolume (Float64): Volume financeiro regular internacional.
+        - InternationalNonRegularVolume (Float64): Volume financeiro não regular internacional.
+        - SettlementPrice (Float64): Preço de ajuste.
+        - SettlementRate (Float64): Taxa de ajuste.
+        - AdjustedQuotationIndicator (String): Indicador de cotação ajustada.
+        - PreviousAdjustedPrice (Float64): Preço de ajuste do dia anterior.
+        - PreviousAdjustedRate (Float64): Taxa de ajuste do dia anterior.
+        - PreviousAdjustedIndicator (String): Indicador de ajuste anterior.
+        - OscillationPercentage (Float64): Percentual de oscilação.
+        - VariationPoints (Float64): Variação em pontos.
+        - EquivalentValue (Float64): Valor equivalente.
+        - AdjustedValueContract (Float64): Valor do contrato ajustado.
+        - MaxLimitValue (Float64): Limite máximo de variação.
+        - MinLimitValue (Float64): Limite mínimo de variação.
     """
     contrato = normalizar_codigo_contrato(contract_code)
     if any_is_empty(xml_bytes) or not contrato:

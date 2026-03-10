@@ -303,6 +303,10 @@ def data(date: DateLike) -> pl.DataFrame:
     df = df.rename(mapa, strict=False)
     df = df.with_columns(TradeDate=trade_date)
 
+    # ClosePrice (← LastPric) is the settlement proxy for CPM options;
+    # AdjstdQt is absent in the SPR XML for option contracts.
+    price_col = "CloseValue" if "CloseValue" in df.columns else "SettlementPrice"
+
     # Parse option type (ticker[6]) and strike change (ticker[7:13])
     # entirely with Polars string expressions — no Python loops over rows.
     df = df.with_columns(

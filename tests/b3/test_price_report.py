@@ -130,12 +130,10 @@ def test_fetch_price_report_reusa_download_xml_por_data(monkeypatch):
         return b"xml"
 
     def _processar_xml_falso(_xml, codigo):
-        return pl.DataFrame(
-            {
-                "TickerSymbol": [f"{codigo}F26"],
-                "TradeDate": [dt.date(2026, 1, 12)],
-            }
-        )
+        return pl.DataFrame({
+            "TickerSymbol": [f"{codigo}F26"],
+            "TradeDate": [dt.date(2026, 1, 12)],
+        })
 
     monkeypatch.setattr(pr_mod, "_baixar_zip_url", _baixar_zip_falso)
     monkeypatch.setattr(pr_mod, "_extrair_xml_zip_aninhado", _extrair_xml_falso)

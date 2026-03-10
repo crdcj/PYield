@@ -6,8 +6,8 @@ import polars.selectors as cs
 
 from pyield import bday, clock
 from pyield.b3._validar_pregao import data_negociacao_valida
-from pyield.b3.derivatives_intraday import fetch_derivative_quotation
 from pyield.b3.futures.common import expr_dv01
+from pyield.b3.intraday_derivatives import fetch_intraday_derivatives
 from pyield.fwd import forwards
 
 # Pregão abre às 9:00, porém os dados têm atraso de 15 minutos.
@@ -33,17 +33,48 @@ def intraday(codigo_contrato: str) -> pl.DataFrame:
     Os dados intraday da fonte possuem atraso aproximado de 15 minutos.
     A coluna ``LastUpdate`` reflete essa defasagem ao usar o horário atual
     menos 15 minutos.
+
+    Args:
+        codigo_contrato: Código base do contrato futuro na B3.
+
+    Returns:
+        DataFrame Polars com dados intraday processados.
+
+    Output Columns:
+        - TradeDate (Date): Data de negociação.
+        - LastUpdate (Datetime): Horário da última atualização (com atraso de 15 min).
+        - TickerSymbol (String): Código do ticker na B3.
+        - ExpirationDate (Date): Data de vencimento do contrato.
+        - BDaysToExp (Int64): Dias úteis até o vencimento.
+        - DaysToExp (Int64): Dias corridos até o vencimento.
+        - OpenContracts (Int64): Contratos em aberto.
+        - TradeCount (Int64): Número de negócios.
+        - TradeVolume (Int64): Quantidade de contratos negociados.
+        - FinancialVolume (Float64): Volume financeiro bruto.
+        - DV01 (Float64): Variação no preço para 1bp de taxa (apenas DI1).
+        - LastPrice (Float64): Último preço calculado (apenas DI1/DAP).
+        - PrevSettlementRate (Float64): Taxa de ajuste do dia anterior.
+        - MinLimitRate (Float64): Limite mínimo de variação (taxa).
+        - MaxLimitRate (Float64): Limite máximo de variação (taxa).
+        - OpenRate (Float64): Taxa de abertura.
+        - MinRate (Float64): Taxa mínima negociada.
+        - AvgRate (Float64): Taxa média negociada.
+        - MaxRate (Float64): Taxa máxima negociada.
+        - BuyOfferRate (Float64): Melhor oferta de compra (taxa, opcional).
+        - SellOfferRate (Float64): Melhor oferta de venda (taxa, opcional).
+        - LastRate (Float64): Última taxa negociada.
+        - ForwardRate (Float64): Taxa a termo (apenas DI1/DAP).
     """
     try:
-        df_bruto = fetch_derivative_quotation(codigo_contrato)
+        df_bruto = fetch_intraday_derivatives(codigo_contrato)
         if df_bruto.is_empty():
             return pl.DataFrame()
 
-        # Manter apenas contratos futuros (excluir opções sobre futuros)
-        if "MarketCode" in df_bruto.columns:
-            df_bruto = df_bruto.filter(pl.col("MarketCode") == "FUT")
-            if df_bruto.is_empty():
-                return pl.DataFrame()
+        # # Manter apenas contratos futuros (excluir opções sobre futuros)
+        # if "MarketCode" in df_bruto.columns:
+        #     df_bruto = df_bruto.filter(pl.col("MarketCode") == "FUT")
+        #     if df_bruto.is_empty():
+        #         return pl.DataFrame()
 
         return (
             df_bruto.pipe(_preprocessar_df_intraday)
@@ -60,21 +91,25 @@ def intraday(codigo_contrato: str) -> pl.DataFrame:
 
 
 def _preprocessar_df_intraday(df: pl.DataFrame) -> pl.DataFrame:
-    return df.rename(
-        {
-            "MinLimitValue": "MinLimitRate",
-            "PrevSettlementValue": "PrevSettlementRate",
-            "MaxLimitValue": "MaxLimitRate",
-            "OpenValue": "OpenRate",
-            "MinValue": "MinRate",
-            "MaxValue": "MaxRate",
-            "AvgValue": "AvgRate",
-            "LastValue": "LastRate",
-            "BuyOfferValue": "BuyOfferRate",
-            "SellOfferValue": "SellOfferRate",
-        },
-        strict=False,
-    ).sort("ExpirationDate")
+    return (
+        df.filter(pl.col("MarketCode") == "FUT")
+        .rename(
+            {
+                "MinLimitValue": "MinLimitRate",
+                "PrevSettlementValue": "PrevSettlementRate",
+                "MaxLimitValue": "MaxLimitRate",
+                "OpenValue": "OpenRate",
+                "MinValue": "MinRate",
+                "MaxValue": "MaxRate",
+                "AvgValue": "AvgRate",
+                "LastValue": "LastRate",
+                "BuyOfferValue": "BuyOfferRate",
+                "SellOfferValue": "SellOfferRate",
+            },
+            strict=False,
+        )
+        .sort("ExpirationDate")
+    )
 
 
 def _processar_df_intraday(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:

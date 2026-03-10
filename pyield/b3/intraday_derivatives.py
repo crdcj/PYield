@@ -84,7 +84,7 @@ def _processar_colunas_intraday(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def fetch_derivative_quotation(contract_code: str) -> pl.DataFrame:
+def fetch_intraday_derivatives(contract_code: str) -> pl.DataFrame:
     """Busca cotações intraday brutas de derivativos da B3.
 
     Faz a chamada ao endpoint ``DerivativeQuotation`` e devolve um DataFrame
@@ -101,6 +101,29 @@ def fetch_derivative_quotation(contract_code: str) -> pl.DataFrame:
 
     Returns:
         DataFrame Polars com o payload normalizado da API.
+
+    Output Columns:
+        - TickerSymbol (String): Código do ticker na B3.
+        - Description (String): Descrição do instrumento.
+        - AssetCode (String): Código do ativo base.
+        - MarketCode (String): Código do mercado (ex.: FUT, OPTEXER, SOPT, SPOT).
+        - ExpirationDate (Date): Data de vencimento do contrato.
+        - PrevSettlementValue (Float64): Valor de ajuste do dia anterior.
+        - MinLimitValue (Float64): Limite mínimo de variação.
+        - MaxLimitValue (Float64): Limite máximo de variação.
+        - OpenValue (Float64): Valor de abertura.
+        - MinValue (Float64): Valor mínimo negociado.
+        - MaxValue (Float64): Valor máximo negociado.
+        - AvgValue (Float64): Valor médio negociado.
+        - LastValue (Float64): Último valor negociado.
+        - ExerciseValue (Float64): Valor de exercício (opções).
+        - OpenContracts (Int64): Contratos em aberto.
+        - FinancialVolume (Float64): Volume financeiro bruto.
+        - TradeCount (Int64): Número de negócios.
+        - TradeVolume (Int64): Quantidade de contratos negociados.
+        - BuyOfferValue (Float64): Melhor oferta de compra (opcional).
+        - SellOfferValue (Float64): Melhor oferta de venda (opcional).
+        - SideTypeDescription (String): Tipo de lado (opcional).
     """
     dados_json = _buscar_json_intraday(contract_code)
     if not dados_json:
