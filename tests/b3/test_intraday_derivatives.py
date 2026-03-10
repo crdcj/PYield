@@ -1,6 +1,6 @@
 import datetime as dt
 import importlib
-import math
+import json
 from pathlib import Path
 
 import polars as pl
@@ -9,97 +9,29 @@ derivatives_mod = importlib.import_module("pyield.b3.intraday_derivatives")
 futures_intraday_mod = importlib.import_module("pyield.b3.futures.intraday")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
-CAMINHO_CSV = DIRETORIO_DADOS / "derivatives_intraday_20260309.csv"
-DATA_REFERENCIA = dt.date(2026, 3, 9)
-HORARIO_REFERENCIA = dt.datetime(2026, 3, 9, 12, 0)
-TOTAL_LINHAS_DOL = 4643
-TOTAL_LINHAS_FUTURO_SIMPLES = 48
+DATA_REFERENCIA = dt.date(2026, 3, 10)
+HORARIO_REFERENCIA = dt.datetime(2026, 3, 10, 12, 0)
 TAMANHO_TICKER_FUTURO = 6
 
 
-def _carregar_csv_bruto() -> pl.DataFrame:
-    return pl.read_csv(CAMINHO_CSV)
+def _carregar_json_scty(codigo_contrato: str) -> list[dict]:
+    """Carrega a lista Scty do JSON bruto de referência."""
+    caminho = DIRETORIO_DADOS / f"intraday_20260310_{codigo_contrato}.json"
+    with open(caminho, encoding="utf-8") as f:
+        return json.load(f)["Scty"]
 
 
-def _valor_nulo(valor) -> bool:
-    return valor is None or (isinstance(valor, float) and math.isnan(valor))
-
-
-def _payload_api_mock(codigo_contrato: str) -> list[dict]:
-    df = _carregar_csv_bruto().filter(pl.col("query_code") == codigo_contrato)
-    registros = []
-    for linha in df.iter_rows(named=True):
-        payload = {
-            "symb": linha["symb"],
-            "desc": linha["desc"],
-            "asset": {
-                "code": linha["asset.code"],
-                "AsstSummry": {
-                    "mtrtyCode": linha["asset.AsstSummry.mtrtyCode"],
-                },
-            },
-            "mkt": {"cd": linha["mkt.cd"]},
-            "SctyQtn": {},
-        }
-
-        mapa_cotacao = {
-            "SctyQtn.bottomLmtPric": "bottomLmtPric",
-            "SctyQtn.prvsDayAdjstmntPric": "prvsDayAdjstmntPric",
-            "SctyQtn.topLmtPric": "topLmtPric",
-            "SctyQtn.opngPric": "opngPric",
-            "SctyQtn.minPric": "minPric",
-            "SctyQtn.maxPric": "maxPric",
-            "SctyQtn.avrgPric": "avrgPric",
-            "SctyQtn.curPrc": "curPrc",
-            "SctyQtn.exrcPric": "exrcPric",
-        }
-        mapa_resumo = {
-            "asset.AsstSummry.grssAmt": "grssAmt",
-            "asset.AsstSummry.opnCtrcts": "opnCtrcts",
-            "asset.AsstSummry.tradQty": "tradQty",
-            "asset.AsstSummry.traddCtrctsQty": "traddCtrctsQty",
-        }
-        for coluna_csv, chave_api in mapa_cotacao.items():
-            valor = linha.get(coluna_csv)
-            if not _valor_nulo(valor):
-                payload["SctyQtn"][chave_api] = valor
-
-        for coluna_csv, chave_api in mapa_resumo.items():
-            valor = linha.get(coluna_csv)
-            if not _valor_nulo(valor):
-                payload["asset"]["AsstSummry"][chave_api] = valor
-
-        for coluna_csv, caminho in {
-            "buyOffer.price": ("buyOffer", "price"),
-            "sellOffer.price": ("sellOffer", "price"),
-        }.items():
-            valor = linha.get(coluna_csv)
-            if _valor_nulo(valor):
-                continue
-            bloco, chave = caminho
-            payload[bloco] = {chave: valor}
-
-        valor_lado = linha.get("asset.SdTpCd.desc")
-        if not _valor_nulo(valor_lado):
-            payload["asset"]["SdTpCd"] = {"desc": valor_lado}
-
-        registros.append(payload)
-
-    return registros
+def _buscar_json_intraday_mock(codigo_contrato: str) -> list[dict]:
+    return _carregar_json_scty(codigo_contrato)
 
 
 def _df_bruto_normalizado(codigo_contrato: str) -> pl.DataFrame:
-    monkeypatched = _payload_api_mock(codigo_contrato)
     return (
-        derivatives_mod._converter_json_intraday(monkeypatched)
+        derivatives_mod._converter_json_intraday(_carregar_json_scty(codigo_contrato))
         .pipe(derivatives_mod._processar_colunas_intraday)
         .drop_nulls(subset=["ExpirationDate"])
         .sort(["MarketCode", "TickerSymbol"])
     )
-
-
-def _buscar_json_intraday_mock(codigo_contrato: str) -> list[dict]:
-    return _payload_api_mock(codigo_contrato)
 
 
 def _fetch_intraday_derivatives_mock(codigo_contrato: str) -> pl.DataFrame:
@@ -123,8 +55,9 @@ def test_fetch_intraday_derivatives_preserva_payload_misto(monkeypatch):
     )
 
     resultado = derivatives_mod.fetch_intraday_derivatives("DOL")
+    total_esperado = len(_carregar_json_scty("DOL"))
 
-    assert resultado.height == TOTAL_LINHAS_DOL
+    assert resultado.height == total_esperado
     assert resultado["MarketCode"].unique().sort().to_list() == [
         "FUT",
         "OPTEXER",
@@ -143,8 +76,9 @@ def test_fetch_intraday_derivatives_suporta_colunas_opcionais_ausentes(monkeypat
     )
 
     resultado = derivatives_mod.fetch_intraday_derivatives("DDI")
+    total_esperado = len(_carregar_json_scty("DDI"))
 
-    assert resultado.height == TOTAL_LINHAS_FUTURO_SIMPLES
+    assert resultado.height == total_esperado
     assert "BuyOfferValue" not in resultado.columns
     assert "SellOfferValue" not in resultado.columns
 
@@ -158,8 +92,9 @@ def test_fetch_intraday_derivatives_nao_descarta_fro_sem_curprc(monkeypatch):
     )
 
     resultado = derivatives_mod.fetch_intraday_derivatives("FRO")
+    total_esperado = len(_carregar_json_scty("FRO"))
 
-    assert resultado.height == TOTAL_LINHAS_FUTURO_SIMPLES
+    assert resultado.height == total_esperado
     assert "LastValue" not in resultado.columns
     assert resultado["MarketCode"].unique().to_list() == ["FUT"]
 
@@ -178,17 +113,15 @@ def test_futures_intraday_filtra_apenas_futuros(monkeypatch):
 
     resultado = futures_intraday_mod.intraday("DOL")
 
-    esperados = (
-        _carregar_csv_bruto()
-        .filter(pl.col("query_code") == "DOL")
-        .filter(pl.col("mkt.cd") == "FUT")
-        .get_column("symb")
-        .sort()
-        .to_list()
-    )
+    tickers_fut_esperados = [
+        item["symb"]
+        for item in _carregar_json_scty("DOL")
+        if item.get("mkt", {}).get("cd") == "FUT"
+    ]
+    tickers_fut_esperados.sort()
 
-    assert resultado.height == len(esperados)
-    assert resultado["TickerSymbol"].sort().to_list() == esperados
+    assert resultado.height == len(tickers_fut_esperados)
+    assert resultado["TickerSymbol"].sort().to_list() == tickers_fut_esperados
     assert all(
         len(ticker) == TAMANHO_TICKER_FUTURO
         for ticker in resultado["TickerSymbol"].to_list()

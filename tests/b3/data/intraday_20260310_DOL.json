@@ -3,7 +3,7 @@
     "cd": "OK"
   },
   "Msg": {
-    "dtTm": "2026-03-10 07:19:25"
+    "dtTm": "2026-03-10 14:51:55"
   },
   "Scty": [
     {
@@ -119,30 +119,30 @@
         "bottomLmtPric": 4930,
         "prvsDayAdjstmntPric": 5268.804,
         "topLmtPric": 5611.5,
-        "opngPric": 5234.5,
-        "minPric": 5234.5,
-        "maxPric": 5234.5,
-        "avrgPric": 5234.5,
-        "curPrc": 5234.5
+        "opngPric": 5240,
+        "minPric": 5240,
+        "maxPric": 5240,
+        "avrgPric": 5240,
+        "curPrc": 5240
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 5234500.0,
+          "grssAmt": 2620000.0,
           "mtrtyCode": "2026-05-04",
           "opnCtrcts": 4335,
-          "tradQty": 4,
-          "traddCtrctsQty": 20
+          "tradQty": 2,
+          "traddCtrctsQty": 10
         },
         "code": "DOL"
       },
       "buyOffer": {
-        "price": 5219
+        "price": 5193.5
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 5241
+        "price": 5206.5
       },
       "symb": "DOLK26",
       "desc": "DOLAR COMERCIAL FUTURO"
@@ -152,30 +152,30 @@
         "bottomLmtPric": 4922,
         "prvsDayAdjstmntPric": 5235.872,
         "topLmtPric": 5550,
-        "opngPric": 5313,
-        "minPric": 5179,
-        "maxPric": 5317,
-        "avrgPric": 5243.089,
-        "curPrc": 5195.5
+        "opngPric": 5185,
+        "minPric": 5159.5,
+        "maxPric": 5216,
+        "avrgPric": 5188.6428,
+        "curPrc": 5168
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 79295556625.0,
+          "grssAmt": 44154097750.0,
           "mtrtyCode": "2026-04-01",
           "opnCtrcts": 867552,
-          "tradQty": 34029,
-          "traddCtrctsQty": 302640
+          "tradQty": 18553,
+          "traddCtrctsQty": 170235
         },
         "code": "DOL"
       },
       "buyOffer": {
-        "price": 5194
+        "price": 5167.5
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 5199
+        "price": 5168.5
       },
       "symb": "DOLJ26",
       "desc": "DOLAR COMERCIAL FUTURO"
@@ -465,13 +465,13 @@
         "code": "DOL"
       },
       "buyOffer": {
-        "price": 5261
+        "price": 5232
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 5346.5
+        "price": 5311.5
       },
       "symb": "DOLN26",
       "desc": "DOLAR COMERCIAL FUTURO"
@@ -489,13 +489,13 @@
         "code": "DOL"
       },
       "buyOffer": {
-        "price": 5236
+        "price": 5224.5
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 5296.5
+        "price": 5247.5
       },
       "symb": "DOLM26",
       "desc": "DOLAR COMERCIAL FUTURO"
@@ -46129,20 +46129,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5100,
-        "topLmtPric": 999999.001,
-        "opngPric": 29,
-        "minPric": 29,
-        "maxPric": 29,
-        "avrgPric": 29,
-        "curPrc": 29
+        "topLmtPric": 999999.001
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 406000.0,
           "mtrtyCode": "2026-04-01",
-          "opnCtrcts": 4630,
-          "tradQty": 1,
-          "traddCtrctsQty": 280
+          "opnCtrcts": 4630
         },
         "SdTpCd": {
           "desc": "P"
@@ -46162,20 +46154,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5200,
-        "topLmtPric": 999999.001,
-        "opngPric": 47,
-        "minPric": 47,
-        "maxPric": 47,
-        "avrgPric": 47,
-        "curPrc": 47
+        "topLmtPric": 999999.001
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 176250.0,
           "mtrtyCode": "2026-04-01",
-          "opnCtrcts": 4050,
-          "tradQty": 1,
-          "traddCtrctsQty": 75
+          "opnCtrcts": 4050
         },
         "SdTpCd": {
           "desc": "P"
@@ -46192,12 +46176,20 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5000,
-        "topLmtPric": 999999.001
+        "topLmtPric": 999999.001,
+        "opngPric": 5.25,
+        "minPric": 5.25,
+        "maxPric": 5.25,
+        "avrgPric": 5.25,
+        "curPrc": 5.25
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 13125.0,
           "mtrtyCode": "2026-04-01",
-          "opnCtrcts": 1940
+          "opnCtrcts": 1940,
+          "tradQty": 1,
+          "traddCtrctsQty": 50
         },
         "SdTpCd": {
           "desc": "P"
@@ -48981,20 +48973,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5600,
-        "topLmtPric": 999999.001,
-        "opngPric": 253,
-        "minPric": 253,
-        "maxPric": 253,
-        "avrgPric": 253,
-        "curPrc": 253
+        "topLmtPric": 999999.001
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 6325000.0,
           "mtrtyCode": "2026-12-01",
-          "opnCtrcts": 500,
-          "tradQty": 1,
-          "traddCtrctsQty": 500
+          "opnCtrcts": 500
         },
         "SdTpCd": {
           "desc": "C"
@@ -51747,20 +51731,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5100,
-        "topLmtPric": 999999.001,
-        "opngPric": 107.25,
-        "minPric": 107.25,
-        "maxPric": 107.25,
-        "avrgPric": 107.25,
-        "curPrc": 107.25
+        "topLmtPric": 999999.001
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 107250.0,
           "mtrtyCode": "2027-04-01",
-          "opnCtrcts": 520,
-          "tradQty": 1,
-          "traddCtrctsQty": 20
+          "opnCtrcts": 520
         },
         "SdTpCd": {
           "desc": "P"
@@ -51928,20 +51904,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 6000,
-        "topLmtPric": 999999.001,
-        "opngPric": 1,
-        "minPric": 1,
-        "maxPric": 1,
-        "avrgPric": 1,
-        "curPrc": 1
+        "topLmtPric": 999999.001
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 2500.0,
           "mtrtyCode": "2026-04-01",
-          "opnCtrcts": 3165,
-          "tradQty": 1,
-          "traddCtrctsQty": 50
+          "opnCtrcts": 3165
         },
         "SdTpCd": {
           "desc": "C"
@@ -60502,19 +60470,19 @@
         "bottomLmtPric": 0.001,
         "exrcPric": 5150,
         "topLmtPric": 999999.001,
-        "opngPric": 52.786,
-        "minPric": 52.786,
-        "maxPric": 52.786,
-        "avrgPric": 52.786,
-        "curPrc": 52.786
+        "opngPric": 49.65,
+        "minPric": 49.65,
+        "maxPric": 49.65,
+        "avrgPric": 49.65,
+        "curPrc": 49.65
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 369502.0,
+          "grssAmt": 1241250.0,
           "mtrtyCode": "2026-04-01",
           "opnCtrcts": 4280,
           "tradQty": 1,
-          "traddCtrctsQty": 140
+          "traddCtrctsQty": 500
         },
         "SdTpCd": {
           "desc": "P"
@@ -66332,20 +66300,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5350,
-        "topLmtPric": 999999.001,
-        "opngPric": 429,
-        "minPric": 429,
-        "maxPric": 429,
-        "avrgPric": 429,
-        "curPrc": 429
+        "topLmtPric": 999999.001
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 858000.0,
           "mtrtyCode": "2027-04-01",
-          "opnCtrcts": 40,
-          "tradQty": 1,
-          "traddCtrctsQty": 40
+          "opnCtrcts": 40
         },
         "SdTpCd": {
           "desc": "C"
@@ -66558,11 +66518,19 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5100,
-        "topLmtPric": 999999.001
+        "topLmtPric": 999999.001,
+        "opngPric": 60.735,
+        "minPric": 60.734,
+        "maxPric": 60.735,
+        "avrgPric": 60.7342,
+        "curPrc": 60.734
       },
       "asset": {
         "AsstSummry": {
-          "mtrtyCode": "2026-07-01"
+          "grssAmt": 2429370.0,
+          "mtrtyCode": "2026-07-01",
+          "tradQty": 2,
+          "traddCtrctsQty": 800
         },
         "SdTpCd": {
           "desc": "P"
@@ -66579,12 +66547,20 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5200,
-        "topLmtPric": 999999.001
+        "topLmtPric": 999999.001,
+        "opngPric": 115.126,
+        "minPric": 115.126,
+        "maxPric": 115.126,
+        "avrgPric": 115.126,
+        "curPrc": 115.126
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 11512600.0,
           "mtrtyCode": "2026-07-01",
-          "opnCtrcts": 225
+          "opnCtrcts": 225,
+          "tradQty": 1,
+          "traddCtrctsQty": 2000
         },
         "SdTpCd": {
           "desc": "P"
@@ -66601,12 +66577,20 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5000,
-        "topLmtPric": 999999.001
+        "topLmtPric": 999999.001,
+        "opngPric": 38.838,
+        "minPric": 38.838,
+        "maxPric": 38.838,
+        "avrgPric": 38.838,
+        "curPrc": 38.838
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 7767600.0,
           "mtrtyCode": "2026-07-01",
-          "opnCtrcts": 4900
+          "opnCtrcts": 4900,
+          "tradQty": 1,
+          "traddCtrctsQty": 4000
         },
         "SdTpCd": {
           "desc": "P"
@@ -68144,20 +68128,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5400,
-        "topLmtPric": 999999.001,
-        "opngPric": 31.75,
-        "minPric": 31.75,
-        "maxPric": 31.75,
-        "avrgPric": 31.75,
-        "curPrc": 31.75
+        "topLmtPric": 999999.001
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 198437.5,
           "mtrtyCode": "2026-04-01",
-          "opnCtrcts": 1295,
-          "tradQty": 1,
-          "traddCtrctsQty": 125
+          "opnCtrcts": 1295
         },
         "SdTpCd": {
           "desc": "C"
@@ -68196,20 +68172,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5500,
-        "topLmtPric": 999999.001,
-        "opngPric": 17,
-        "minPric": 17,
-        "maxPric": 17,
-        "avrgPric": 17,
-        "curPrc": 17
+        "topLmtPric": 999999.001
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 42500.0,
           "mtrtyCode": "2026-04-01",
-          "opnCtrcts": 1580,
-          "tradQty": 1,
-          "traddCtrctsQty": 50
+          "opnCtrcts": 1580
         },
         "SdTpCd": {
           "desc": "C"
@@ -72216,20 +72184,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 6500,
-        "topLmtPric": 999999.001,
-        "opngPric": 507.533,
-        "minPric": 507.533,
-        "maxPric": 507.533,
-        "avrgPric": 507.533,
-        "curPrc": 507.533
+        "topLmtPric": 999999.001
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 7612995.0,
           "mtrtyCode": "2029-01-02",
-          "opnCtrcts": 300,
-          "tradQty": 1,
-          "traddCtrctsQty": 300
+          "opnCtrcts": 300
         },
         "SdTpCd": {
           "desc": "C"
@@ -72565,12 +72525,20 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5250,
-        "topLmtPric": 999999.001
+        "topLmtPric": 999999.001,
+        "opngPric": 115.603,
+        "minPric": 115.603,
+        "maxPric": 115.603,
+        "avrgPric": 115.603,
+        "curPrc": 115.603
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 4624120.0,
           "mtrtyCode": "2026-05-04",
-          "opnCtrcts": 6220
+          "opnCtrcts": 6220,
+          "tradQty": 1,
+          "traddCtrctsQty": 800
         },
         "SdTpCd": {
           "desc": "P"
@@ -82222,12 +82190,20 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5450,
-        "topLmtPric": 999999.001
+        "topLmtPric": 999999.001,
+        "opngPric": 14.75,
+        "minPric": 14.75,
+        "maxPric": 14.75,
+        "avrgPric": 14.75,
+        "curPrc": 14.75
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 73750.0,
           "mtrtyCode": "2026-04-01",
-          "opnCtrcts": 350
+          "opnCtrcts": 350,
+          "tradQty": 1,
+          "traddCtrctsQty": 100
         },
         "SdTpCd": {
           "desc": "C"
@@ -82266,20 +82242,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5550,
-        "topLmtPric": 999999.001,
-        "opngPric": 13,
-        "minPric": 13,
-        "maxPric": 13,
-        "avrgPric": 13,
-        "curPrc": 13
+        "topLmtPric": 999999.001
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 81250.0,
           "mtrtyCode": "2026-04-01",
-          "opnCtrcts": 725,
-          "tradQty": 1,
-          "traddCtrctsQty": 125
+          "opnCtrcts": 725
         },
         "SdTpCd": {
           "desc": "C"
@@ -82317,12 +82285,20 @@
       "SctyQtn": {
         "bottomLmtPric": 0.001,
         "exrcPric": 5750,
-        "topLmtPric": 999999.001
+        "topLmtPric": 999999.001,
+        "opngPric": 2.5,
+        "minPric": 2.5,
+        "maxPric": 2.5,
+        "avrgPric": 2.5,
+        "curPrc": 2.5
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 25000.0,
           "mtrtyCode": "2026-04-01",
-          "opnCtrcts": 175
+          "opnCtrcts": 175,
+          "tradQty": 1,
+          "traddCtrctsQty": 200
         },
         "SdTpCd": {
           "desc": "C"

@@ -3,7 +3,7 @@
     "cd": "OK"
   },
   "Msg": {
-    "dtTm": "2026-03-10 07:19:26"
+    "dtTm": "2026-03-10 14:51:52"
   },
   "Scty": [
     {
@@ -74,13 +74,13 @@
         "code": "IND"
       },
       "buyOffer": {
-        "price": 187315
+        "price": 190810
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 188300
+        "price": 191685
       },
       "symb": "INDM26",
       "desc": "INDICE BOVESPA"
@@ -208,13 +208,13 @@
         "code": "IND"
       },
       "buyOffer": {
-        "price": 194615
+        "price": 194405
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 198600
+        "price": 201875
       },
       "symb": "INDV26",
       "desc": "INDICE BOVESPA"
@@ -224,30 +224,30 @@
         "bottomLmtPric": 165060,
         "prvsDayAdjstmntPric": 183396,
         "topLmtPric": 201735,
-        "opngPric": 180550,
-        "minPric": 179990,
-        "maxPric": 184500,
-        "avrgPric": 181888.5,
-        "curPrc": 183390
+        "opngPric": 183750,
+        "minPric": 182940,
+        "maxPric": 187805,
+        "avrgPric": 185061.4,
+        "curPrc": 187185
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 13677963700.0,
+          "grssAmt": 11034190650.0,
           "mtrtyCode": "2026-04-15",
           "opnCtrcts": 167506,
-          "tradQty": 13574,
-          "traddCtrctsQty": 75235
+          "tradQty": 10901,
+          "traddCtrctsQty": 59670
         },
         "code": "IND"
       },
       "buyOffer": {
-        "price": 183750
+        "price": 187170
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 184290
+        "price": 187190
       },
       "symb": "INDJ26",
       "desc": "INDICE BOVESPA"

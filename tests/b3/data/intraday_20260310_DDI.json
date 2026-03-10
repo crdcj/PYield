@@ -3,7 +3,7 @@
     "cd": "OK"
   },
   "Msg": {
-    "dtTm": "2026-03-10 07:19:26"
+    "dtTm": "2026-03-10 14:51:52"
   },
   "Scty": [
     {
@@ -342,14 +342,8 @@
         },
         "code": "DDI"
       },
-      "buyOffer": {
-        "price": 6.458
-      },
       "mkt": {
         "cd": "FUT"
-      },
-      "sellOffer": {
-        "price": 6.458
       },
       "symb": "DDIH27",
       "desc": "CUPOM CAMBIAL"
@@ -405,14 +399,8 @@
         },
         "code": "DDI"
       },
-      "buyOffer": {
-        "price": 6.356
-      },
       "mkt": {
         "cd": "FUT"
-      },
-      "sellOffer": {
-        "price": 6.356
       },
       "symb": "DDIJ27",
       "desc": "CUPOM CAMBIAL"
@@ -421,20 +409,12 @@
       "SctyQtn": {
         "bottomLmtPric": -10.75,
         "prvsDayAdjstmntPric": 5.298,
-        "topLmtPric": 23.39,
-        "opngPric": 8.95,
-        "minPric": 8.95,
-        "maxPric": 8.95,
-        "avrgPric": 8.95,
-        "curPrc": 8.95
+        "topLmtPric": 23.39
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 5611503.04,
           "mtrtyCode": "2026-08-03",
-          "opnCtrcts": 79672,
-          "tradQty": 1,
-          "traddCtrctsQty": 22
+          "opnCtrcts": 79672
         },
         "code": "DDI"
       },
@@ -639,19 +619,19 @@
         "bottomLmtPric": -85.78,
         "prvsDayAdjstmntPric": 7.411,
         "topLmtPric": 112.47,
-        "opngPric": 25.69,
-        "minPric": 25.69,
-        "maxPric": 30.229,
-        "avrgPric": 28.2449,
-        "curPrc": 26.602
+        "opngPric": 14.628,
+        "minPric": 14.628,
+        "maxPric": 14.628,
+        "avrgPric": 14.628,
+        "curPrc": 14.628
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 3040353167.31,
+          "grssAmt": 645963025.0,
           "mtrtyCode": "2026-04-01",
           "opnCtrcts": 1216180,
-          "tradQty": 12,
-          "traddCtrctsQty": 11707
+          "tradQty": 1,
+          "traddCtrctsQty": 2500
         },
         "code": "DDI"
       },
