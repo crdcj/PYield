@@ -3,7 +3,7 @@
     "cd": "OK"
   },
   "Msg": {
-    "dtTm": "2026-03-10 07:19:25"
+    "dtTm": "2026-03-10 14:51:53"
   },
   "Scty": [
     {
@@ -418,20 +418,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.01,
         "exrcPric": 430,
-        "topLmtPric": 99999.01,
-        "opngPric": 5.8,
-        "minPric": 5.8,
-        "maxPric": 5.8,
-        "avrgPric": 5.8,
-        "curPrc": 5.8
+        "topLmtPric": 99999.01
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 30483.64,
           "mtrtyCode": "2026-04-10",
-          "opnCtrcts": 11,
-          "tradQty": 1,
-          "traddCtrctsQty": 10
+          "opnCtrcts": 11
         },
         "SdTpCd": {
           "desc": "C"
@@ -1514,20 +1506,12 @@
       "SctyQtn": {
         "bottomLmtPric": 0.01,
         "exrcPric": 380,
-        "topLmtPric": 99999.01,
-        "opngPric": 24,
-        "minPric": 24,
-        "maxPric": 24,
-        "avrgPric": 24,
-        "curPrc": 24
+        "topLmtPric": 99999.01
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 126139.2,
           "mtrtyCode": "2026-04-10",
-          "opnCtrcts": 10,
-          "tradQty": 1,
-          "traddCtrctsQty": 10
+          "opnCtrcts": 10
         },
         "SdTpCd": {
           "desc": "C"
@@ -1683,9 +1667,6 @@
           "desc": "C"
         },
         "code": "ICF"
-      },
-      "buyOffer": {
-        "price": 2
       },
       "mkt": {
         "cd": "FOPT"
@@ -1912,23 +1893,31 @@
       "SctyQtn": {
         "bottomLmtPric": 372.65,
         "prvsDayAdjstmntPric": 394.75,
-        "topLmtPric": 416.85
+        "topLmtPric": 416.85,
+        "opngPric": 389.75,
+        "minPric": 388.85,
+        "maxPric": 391,
+        "avrgPric": 389.848,
+        "curPrc": 390.25
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 10340957.05,
           "mtrtyCode": "2026-05-21",
-          "opnCtrcts": 1684
+          "opnCtrcts": 1684,
+          "tradQty": 15,
+          "traddCtrctsQty": 51
         },
         "code": "ICF"
       },
       "buyOffer": {
-        "price": 389
+        "price": 385.05
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 393
+        "price": 394.95
       },
       "symb": "ICFK26",
       "desc": "CAFE ARABICA"
@@ -1946,14 +1935,8 @@
         },
         "code": "ICF"
       },
-      "buyOffer": {
-        "price": 378.8
-      },
       "mkt": {
         "cd": "FUT"
-      },
-      "sellOffer": {
-        "price": 392.4
       },
       "symb": "ICFH26",
       "desc": "CAFE ARABICA"
@@ -1962,20 +1945,31 @@
       "SctyQtn": {
         "bottomLmtPric": 299.95,
         "prvsDayAdjstmntPric": 317.7,
-        "topLmtPric": 335.45
+        "topLmtPric": 335.45,
+        "opngPric": 320.15,
+        "minPric": 320,
+        "maxPric": 320.15,
+        "avrgPric": 320.075,
+        "curPrc": 320
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 332948.42,
           "mtrtyCode": "2027-09-22",
-          "opnCtrcts": 111
+          "opnCtrcts": 111,
+          "tradQty": 2,
+          "traddCtrctsQty": 2
         },
         "code": "ICF"
       },
       "buyOffer": {
-        "price": 309
+        "price": 306.8
       },
       "mkt": {
         "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 335
       },
       "symb": "ICFU27",
       "desc": "CAFE ARABICA"
@@ -1993,13 +1987,10 @@
         "code": "ICF"
       },
       "buyOffer": {
-        "price": 350.5
+        "price": 350
       },
       "mkt": {
         "cd": "FUT"
-      },
-      "sellOffer": {
-        "price": 367.3
       },
       "symb": "ICFN26",
       "desc": "CAFE ARABICA"
@@ -2017,11 +2008,14 @@
         },
         "code": "ICF"
       },
+      "buyOffer": {
+        "price": 323
+      },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 348.85
+        "price": 348
       },
       "symb": "ICFH27",
       "desc": "CAFE ARABICA"
@@ -2030,23 +2024,31 @@
       "SctyQtn": {
         "bottomLmtPric": 329.5,
         "prvsDayAdjstmntPric": 349,
-        "topLmtPric": 368.5
+        "topLmtPric": 368.5,
+        "opngPric": 351,
+        "minPric": 347,
+        "maxPric": 352,
+        "avrgPric": 349.911,
+        "curPrc": 350.5
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 29118748.43,
           "mtrtyCode": "2026-09-22",
-          "opnCtrcts": 4618
+          "opnCtrcts": 4618,
+          "tradQty": 97,
+          "traddCtrctsQty": 160
         },
         "code": "ICF"
       },
       "buyOffer": {
-        "price": 350.55
+        "price": 349.7
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 350.9
+        "price": 351.05
       },
       "symb": "ICFU26",
       "desc": "CAFE ARABICA"
@@ -2065,10 +2067,13 @@
         "code": "ICF"
       },
       "buyOffer": {
-        "price": 338.1
+        "price": 340
       },
       "mkt": {
         "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 348.95
       },
       "symb": "ICFZ26",
       "desc": "CAFE ARABICA"

@@ -3,7 +3,7 @@
     "cd": "OK"
   },
   "Msg": {
-    "dtTm": "2026-03-10 07:19:24"
+    "dtTm": "2026-03-10 14:51:56"
   },
   "Scty": [
     {
@@ -688,14 +688,8 @@
         },
         "code": "CPM"
       },
-      "buyOffer": {
-        "price": 1
-      },
       "mkt": {
         "cd": "SOPT"
-      },
-      "sellOffer": {
-        "price": 4
       },
       "symb": "CPMJ26C099000",
       "desc": "Opcao de COPOM"
@@ -705,19 +699,19 @@
         "bottomLmtPric": 0.1,
         "exrcPric": 99.5,
         "topLmtPric": 100,
-        "opngPric": 58,
-        "minPric": 58,
-        "maxPric": 62,
-        "avrgPric": 60.2353,
-        "curPrc": 61
+        "opngPric": 64,
+        "minPric": 64,
+        "maxPric": 67,
+        "avrgPric": 66.9926,
+        "curPrc": 67
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 5120000.0,
+          "grssAmt": 1007368.0,
           "mtrtyCode": "2026-04-30",
           "opnCtrcts": 527800,
-          "tradQty": 9,
-          "traddCtrctsQty": 85000
+          "tradQty": 4,
+          "traddCtrctsQty": 15037
         },
         "SdTpCd": {
           "desc": "C"
@@ -755,12 +749,20 @@
       "SctyQtn": {
         "bottomLmtPric": 0.1,
         "exrcPric": 99.5,
-        "topLmtPric": 100
+        "topLmtPric": 100,
+        "opngPric": 62,
+        "minPric": 62,
+        "maxPric": 62,
+        "avrgPric": 62,
+        "curPrc": 62
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 1612.0,
           "mtrtyCode": "2026-06-18",
-          "opnCtrcts": 226000
+          "opnCtrcts": 226000,
+          "tradQty": 2,
+          "traddCtrctsQty": 26
         },
         "SdTpCd": {
           "desc": "C"
@@ -925,19 +927,19 @@
         "bottomLmtPric": 0.1,
         "exrcPric": 100,
         "topLmtPric": 100,
-        "opngPric": 13,
-        "minPric": 13,
-        "maxPric": 16,
-        "avrgPric": 13.6605,
-        "curPrc": 16
+        "opngPric": 7,
+        "minPric": 5,
+        "maxPric": 9,
+        "avrgPric": 6.6364,
+        "curPrc": 5
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 442600.0,
+          "grssAmt": 730182.0,
           "mtrtyCode": "2026-04-30",
           "opnCtrcts": 275650,
-          "tradQty": 7,
-          "traddCtrctsQty": 32400
+          "tradQty": 8,
+          "traddCtrctsQty": 110026
         },
         "SdTpCd": {
           "desc": "C"
@@ -948,7 +950,7 @@
         "cd": "SOPT"
       },
       "sellOffer": {
-        "price": 15
+        "price": 10
       },
       "symb": "CPMJ26C100000",
       "desc": "Opcao de COPOM"
@@ -979,27 +981,24 @@
         "bottomLmtPric": 0.1,
         "exrcPric": 99.25,
         "topLmtPric": 100,
-        "opngPric": 11,
-        "minPric": 11,
-        "maxPric": 12,
-        "avrgPric": 11.4444,
-        "curPrc": 11
+        "opngPric": 16,
+        "minPric": 16,
+        "maxPric": 17,
+        "avrgPric": 16.6864,
+        "curPrc": 17
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 515000.0,
+          "grssAmt": 1337000.0,
           "mtrtyCode": "2026-04-30",
           "opnCtrcts": 1184800,
-          "tradQty": 5,
-          "traddCtrctsQty": 45000
+          "tradQty": 8,
+          "traddCtrctsQty": 80125
         },
         "SdTpCd": {
           "desc": "C"
         },
         "code": "CPM"
-      },
-      "buyOffer": {
-        "price": 2
       },
       "mkt": {
         "cd": "SOPT"
@@ -1012,19 +1011,19 @@
         "bottomLmtPric": 0.1,
         "exrcPric": 99.75,
         "topLmtPric": 100,
-        "opngPric": 13,
-        "minPric": 13,
-        "maxPric": 13,
-        "avrgPric": 13,
-        "curPrc": 13
+        "opngPric": 10,
+        "minPric": 7,
+        "maxPric": 10,
+        "avrgPric": 7.0173,
+        "curPrc": 7
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 260000.0,
+          "grssAmt": 35290.0,
           "mtrtyCode": "2026-04-30",
           "opnCtrcts": 359501,
-          "tradQty": 4,
-          "traddCtrctsQty": 20000
+          "tradQty": 3,
+          "traddCtrctsQty": 5029
         },
         "SdTpCd": {
           "desc": "C"
@@ -1035,7 +1034,7 @@
         "cd": "SOPT"
       },
       "sellOffer": {
-        "price": 29
+        "price": 15
       },
       "symb": "CPMJ26C099750",
       "desc": "Opcao de COPOM"
@@ -1214,33 +1213,30 @@
         "bottomLmtPric": 0.1,
         "exrcPric": 100,
         "topLmtPric": 100,
-        "opngPric": 30,
-        "minPric": 25,
-        "maxPric": 36,
-        "avrgPric": 28.6491,
-        "curPrc": 29
+        "opngPric": 13,
+        "minPric": 6,
+        "maxPric": 18,
+        "avrgPric": 10.4813,
+        "curPrc": 6
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 7902000.0,
+          "grssAmt": 1507667.0,
           "mtrtyCode": "2026-03-19",
           "opnCtrcts": 2352968,
-          "tradQty": 36,
-          "traddCtrctsQty": 275820
+          "tradQty": 24,
+          "traddCtrctsQty": 143843
         },
         "SdTpCd": {
           "desc": "C"
         },
         "code": "CPM"
       },
-      "buyOffer": {
-        "price": 11
-      },
       "mkt": {
         "cd": "SOPT"
       },
       "sellOffer": {
-        "price": 29
+        "price": 10
       },
       "symb": "CPMH26C100000",
       "desc": "Opcao de COPOM"
@@ -1312,26 +1308,28 @@
       "SctyQtn": {
         "bottomLmtPric": 0.1,
         "exrcPric": 99.25,
-        "topLmtPric": 100
+        "topLmtPric": 100,
+        "opngPric": 1.5,
+        "minPric": 1.5,
+        "maxPric": 1.5,
+        "avrgPric": 1.5,
+        "curPrc": 1.5
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 22500.0,
           "mtrtyCode": "2026-03-19",
-          "opnCtrcts": 1967251
+          "opnCtrcts": 1967251,
+          "tradQty": 2,
+          "traddCtrctsQty": 15000
         },
         "SdTpCd": {
           "desc": "C"
         },
         "code": "CPM"
       },
-      "buyOffer": {
-        "price": 1.5
-      },
       "mkt": {
         "cd": "SOPT"
-      },
-      "sellOffer": {
-        "price": 1.5
       },
       "symb": "CPMH26C099250",
       "desc": "Opcao de COPOM"
@@ -1341,19 +1339,19 @@
         "bottomLmtPric": 0.1,
         "exrcPric": 99.75,
         "topLmtPric": 100,
-        "opngPric": 36,
-        "minPric": 32,
-        "maxPric": 42,
-        "avrgPric": 36.5382,
-        "curPrc": 42
+        "opngPric": 35,
+        "minPric": 30,
+        "maxPric": 37,
+        "avrgPric": 35.3978,
+        "curPrc": 30
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 3815140.0,
+          "grssAmt": 6241236.0,
           "mtrtyCode": "2026-03-19",
           "opnCtrcts": 1938788,
-          "tradQty": 30,
-          "traddCtrctsQty": 104415
+          "tradQty": 17,
+          "traddCtrctsQty": 176317
         },
         "SdTpCd": {
           "desc": "C"
@@ -1361,13 +1359,13 @@
         "code": "CPM"
       },
       "buyOffer": {
-        "price": 32
+        "price": 30
       },
       "mkt": {
         "cd": "SOPT"
       },
       "sellOffer": {
-        "price": 42.9
+        "price": 34
       },
       "symb": "CPMH26C099750",
       "desc": "Opcao de COPOM"
@@ -1525,19 +1523,19 @@
         "bottomLmtPric": 0.1,
         "exrcPric": 99.5,
         "topLmtPric": 100,
-        "opngPric": 36,
-        "minPric": 30,
-        "maxPric": 45,
-        "avrgPric": 34.1373,
-        "curPrc": 45
+        "opngPric": 49,
+        "minPric": 47,
+        "maxPric": 60,
+        "avrgPric": 50.7819,
+        "curPrc": 60
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 11035421.0,
+          "grssAmt": 14215127.5,
           "mtrtyCode": "2026-03-19",
           "opnCtrcts": 2398589,
-          "tradQty": 51,
-          "traddCtrctsQty": 323266
+          "tradQty": 86,
+          "traddCtrctsQty": 279925
         },
         "SdTpCd": {
           "desc": "C"
@@ -1545,13 +1543,13 @@
         "code": "CPM"
       },
       "buyOffer": {
-        "price": 50
+        "price": 59
       },
       "mkt": {
         "cd": "SOPT"
       },
       "sellOffer": {
-        "price": 54
+        "price": 61
       },
       "symb": "CPMH26C099500",
       "desc": "Opcao de COPOM"

@@ -3,7 +3,7 @@
     "cd": "OK"
   },
   "Msg": {
-    "dtTm": "2026-03-10 07:19:24"
+    "dtTm": "2026-03-10 14:51:57"
   },
   "Scty": [
     {
@@ -11,27 +11,30 @@
         "bottomLmtPric": 5.77,
         "prvsDayAdjstmntPric": 7.772,
         "topLmtPric": 9.77,
-        "opngPric": 7.845,
-        "minPric": 7.76,
-        "maxPric": 7.85,
-        "avrgPric": 7.8074,
-        "curPrc": 7.77
+        "opngPric": 7.77,
+        "minPric": 7.62,
+        "maxPric": 7.77,
+        "avrgPric": 7.6776,
+        "curPrc": 7.65
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 2274528246.75,
+          "grssAmt": 1318784767.51,
           "mtrtyCode": "2031-05-15",
           "opnCtrcts": 70421,
-          "tradQty": 70,
-          "traddCtrctsQty": 17942
+          "tradQty": 35,
+          "traddCtrctsQty": 10332
         },
         "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 7.61
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 7.79
+        "price": 7.68
       },
       "symb": "DAPK31",
       "desc": "CUPOM DE IPCA"
@@ -58,12 +61,20 @@
       "SctyQtn": {
         "bottomLmtPric": -0.46,
         "prvsDayAdjstmntPric": 5.65,
-        "topLmtPric": 11.53
+        "topLmtPric": 11.53,
+        "opngPric": 5.74,
+        "minPric": 5.74,
+        "maxPric": 5.74,
+        "avrgPric": 5.74,
+        "curPrc": 5.74
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 279677250.0,
           "mtrtyCode": "2026-03-16",
-          "opnCtrcts": 11554
+          "opnCtrcts": 11554,
+          "tradQty": 2,
+          "traddCtrctsQty": 1500
         },
         "code": "DAP"
       },
@@ -97,27 +108,30 @@
         "bottomLmtPric": 5.785,
         "prvsDayAdjstmntPric": 7.787,
         "topLmtPric": 9.785,
-        "opngPric": 7.8,
-        "minPric": 7.785,
-        "maxPric": 7.87,
-        "avrgPric": 7.8261,
-        "curPrc": 7.785
+        "opngPric": 7.785,
+        "minPric": 7.69,
+        "maxPric": 7.785,
+        "avrgPric": 7.7254,
+        "curPrc": 7.695
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 2018700306.91,
+          "grssAmt": 473852892.95,
           "mtrtyCode": "2030-08-15",
           "opnCtrcts": 475913,
-          "tradQty": 107,
-          "traddCtrctsQty": 15076
+          "tradQty": 19,
+          "traddCtrctsQty": 3522
         },
         "code": "DAP"
       },
       "buyOffer": {
-        "price": 7.655
+        "price": 7.65
       },
       "mkt": {
         "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 7.7
       },
       "symb": "DAPQ30",
       "desc": "CUPOM DE IPCA"
@@ -126,23 +140,31 @@
       "SctyQtn": {
         "bottomLmtPric": 5.06,
         "prvsDayAdjstmntPric": 7.058,
-        "topLmtPric": 9.055
+        "topLmtPric": 9.055,
+        "opngPric": 7.06,
+        "minPric": 7.06,
+        "maxPric": 7.06,
+        "avrgPric": 7.06,
+        "curPrc": 7.06
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 16735830.5,
           "mtrtyCode": "2050-08-15",
-          "opnCtrcts": 4645
+          "opnCtrcts": 4645,
+          "tradQty": 1,
+          "traddCtrctsQty": 470
         },
         "code": "DAP"
       },
       "buyOffer": {
-        "price": 6.89
+        "price": 6.86
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 7.195
+        "price": 7.06
       },
       "symb": "DAPQ50",
       "desc": "CUPOM DE IPCA"
@@ -154,28 +176,28 @@
         "topLmtPric": 9.285,
         "opngPric": 7.285,
         "minPric": 7.285,
-        "maxPric": 7.285,
-        "avrgPric": 7.285,
-        "curPrc": 7.285
+        "maxPric": 7.29,
+        "avrgPric": 7.2854,
+        "curPrc": 7.29
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 13594822.0,
+          "grssAmt": 35299259.61,
           "mtrtyCode": "2040-08-15",
           "opnCtrcts": 153770,
-          "tradQty": 15,
-          "traddCtrctsQty": 200
+          "tradQty": 3,
+          "traddCtrctsQty": 519
         },
         "code": "DAP"
       },
       "buyOffer": {
-        "price": 7.24
+        "price": 7.14
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 7.25
+        "price": 7.22
       },
       "symb": "DAPQ40",
       "desc": "CUPOM DE IPCA"
@@ -184,12 +206,20 @@
       "SctyQtn": {
         "bottomLmtPric": 5.04,
         "prvsDayAdjstmntPric": 7.036,
-        "topLmtPric": 9.035
+        "topLmtPric": 9.035,
+        "opngPric": 7.035,
+        "minPric": 7.035,
+        "maxPric": 7.035,
+        "avrgPric": 7.035,
+        "curPrc": 7.035
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 5026939.8,
           "mtrtyCode": "2060-08-16",
-          "opnCtrcts": 276
+          "opnCtrcts": 276,
+          "tradQty": 1,
+          "traddCtrctsQty": 276
         },
         "code": "DAP"
       },
@@ -204,27 +234,30 @@
         "bottomLmtPric": 5.695,
         "prvsDayAdjstmntPric": 7.697,
         "topLmtPric": 9.695,
-        "opngPric": 7.81,
-        "minPric": 7.695,
-        "maxPric": 7.81,
-        "avrgPric": 7.7203,
-        "curPrc": 7.695
+        "opngPric": 7.695,
+        "minPric": 7.6,
+        "maxPric": 7.75,
+        "avrgPric": 7.6471,
+        "curPrc": 7.6
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 204671686.78,
+          "grssAmt": 161552610.39,
           "mtrtyCode": "2032-08-16",
           "opnCtrcts": 330115,
-          "tradQty": 56,
-          "traddCtrctsQty": 1766
+          "tradQty": 11,
+          "traddCtrctsQty": 1387
         },
         "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 7.58
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 7.81
+        "price": 7.605
       },
       "symb": "DAPQ32",
       "desc": "CUPOM DE IPCA"
@@ -252,20 +285,28 @@
       "SctyQtn": {
         "bottomLmtPric": 7.1,
         "prvsDayAdjstmntPric": 9.119,
-        "topLmtPric": 11.1
+        "topLmtPric": 11.1,
+        "opngPric": 9.16,
+        "minPric": 9.16,
+        "maxPric": 9.16,
+        "avrgPric": 9.16,
+        "curPrc": 9.16
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 71569492.75,
           "mtrtyCode": "2027-01-15",
-          "opnCtrcts": 16771
+          "opnCtrcts": 16771,
+          "tradQty": 2,
+          "traddCtrctsQty": 413
         },
         "code": "DAP"
       },
-      "buyOffer": {
-        "price": 9
-      },
       "mkt": {
         "cd": "FUT"
+      },
+      "sellOffer": {
+        "price": 9.155
       },
       "symb": "DAPF27",
       "desc": "CUPOM DE IPCA"
@@ -294,27 +335,30 @@
         "bottomLmtPric": 5.535,
         "prvsDayAdjstmntPric": 7.536,
         "topLmtPric": 9.535,
-        "opngPric": 7.66,
-        "minPric": 7.535,
-        "maxPric": 7.66,
-        "avrgPric": 7.5891,
-        "curPrc": 7.535
+        "opngPric": 7.535,
+        "minPric": 7.42,
+        "maxPric": 7.57,
+        "avrgPric": 7.5335,
+        "curPrc": 7.42
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 687801504.21,
+          "grssAmt": 30215501.36,
           "mtrtyCode": "2035-05-15",
           "opnCtrcts": 494858,
-          "tradQty": 82,
-          "traddCtrctsQty": 7186
+          "tradQty": 4,
+          "traddCtrctsQty": 314
         },
         "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 7.4
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 7.59
+        "price": 7.45
       },
       "symb": "DAPK35",
       "desc": "CUPOM DE IPCA"
@@ -323,23 +367,31 @@
       "SctyQtn": {
         "bottomLmtPric": 5.035,
         "prvsDayAdjstmntPric": 7.034,
-        "topLmtPric": 9.03
+        "topLmtPric": 9.03,
+        "opngPric": 7.035,
+        "minPric": 7.035,
+        "maxPric": 7.035,
+        "avrgPric": 7.035,
+        "curPrc": 7.035
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 5612492.16,
           "mtrtyCode": "2055-05-17",
-          "opnCtrcts": 2684
+          "opnCtrcts": 2684,
+          "tradQty": 1,
+          "traddCtrctsQty": 216
         },
         "code": "DAP"
       },
       "buyOffer": {
-        "price": 6.87
+        "price": 6.82
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 7.155
+        "price": 7.02
       },
       "symb": "DAPK55",
       "desc": "CUPOM DE IPCA"
@@ -348,23 +400,31 @@
       "SctyQtn": {
         "bottomLmtPric": 5.14,
         "prvsDayAdjstmntPric": 7.137,
-        "topLmtPric": 9.135
+        "topLmtPric": 9.135,
+        "opngPric": 7.135,
+        "minPric": 7.135,
+        "maxPric": 7.135,
+        "avrgPric": 7.135,
+        "curPrc": 7.135
       },
       "asset": {
         "AsstSummry": {
+          "grssAmt": 15599632.49,
           "mtrtyCode": "2045-05-15",
-          "opnCtrcts": 21842
+          "opnCtrcts": 21842,
+          "tradQty": 1,
+          "traddCtrctsQty": 311
         },
         "code": "DAP"
       },
       "buyOffer": {
-        "price": 6.96
+        "price": 6.91
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 7.24
+        "price": 7.14
       },
       "symb": "DAPK45",
       "desc": "CUPOM DE IPCA"
@@ -374,27 +434,30 @@
         "bottomLmtPric": 5.655,
         "prvsDayAdjstmntPric": 7.656,
         "topLmtPric": 9.655,
-        "opngPric": 7.705,
-        "minPric": 7.655,
-        "maxPric": 7.73,
-        "avrgPric": 7.7157,
-        "curPrc": 7.655
+        "opngPric": 7.655,
+        "minPric": 7.53,
+        "maxPric": 7.7,
+        "avrgPric": 7.5846,
+        "curPrc": 7.53
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 473713635.66,
+          "grssAmt": 147723222.31,
           "mtrtyCode": "2033-05-16",
           "opnCtrcts": 238761,
-          "tradQty": 43,
-          "traddCtrctsQty": 4318
+          "tradQty": 13,
+          "traddCtrctsQty": 1334
         },
         "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 7.52
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 7.71
+        "price": 7.54
       },
       "symb": "DAPK33",
       "desc": "CUPOM DE IPCA"
@@ -404,19 +467,19 @@
         "bottomLmtPric": 6.805,
         "prvsDayAdjstmntPric": 9.849,
         "topLmtPric": 12.805,
-        "opngPric": 9.61,
-        "minPric": 9.61,
-        "maxPric": 9.805,
-        "avrgPric": 9.7512,
-        "curPrc": 9.805
+        "opngPric": 9.805,
+        "minPric": 9.8,
+        "maxPric": 9.83,
+        "avrgPric": 9.8097,
+        "curPrc": 9.81
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 407897332.18,
+          "grssAmt": 112862881.05,
           "mtrtyCode": "2026-08-17",
           "opnCtrcts": 355437,
-          "tradQty": 30,
-          "traddCtrctsQty": 2278
+          "tradQty": 6,
+          "traddCtrctsQty": 630
         },
         "code": "DAP"
       },
@@ -426,6 +489,9 @@
       "mkt": {
         "cd": "FUT"
       },
+      "sellOffer": {
+        "price": 9.98
+      },
       "symb": "DAPQ26",
       "desc": "CUPOM DE IPCA"
     },
@@ -434,30 +500,30 @@
         "bottomLmtPric": 5.91,
         "prvsDayAdjstmntPric": 7.915,
         "topLmtPric": 9.91,
-        "opngPric": 7.92,
-        "minPric": 7.91,
-        "maxPric": 7.98,
-        "avrgPric": 7.9267,
-        "curPrc": 7.91
+        "opngPric": 7.91,
+        "minPric": 7.84,
+        "maxPric": 7.91,
+        "avrgPric": 7.8869,
+        "curPrc": 7.85
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 491198223.48,
+          "grssAmt": 298623968.48,
           "mtrtyCode": "2028-08-15",
           "opnCtrcts": 397085,
-          "tradQty": 44,
-          "traddCtrctsQty": 3168
+          "tradQty": 16,
+          "traddCtrctsQty": 1923
         },
         "code": "DAP"
       },
       "buyOffer": {
-        "price": 7.89
+        "price": 7.84
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 7.91
+        "price": 7.87
       },
       "symb": "DAPQ28",
       "desc": "CUPOM DE IPCA"
@@ -467,30 +533,30 @@
         "bottomLmtPric": 5.78,
         "prvsDayAdjstmntPric": 7.783,
         "topLmtPric": 9.78,
-        "opngPric": 7.77,
-        "minPric": 7.77,
-        "maxPric": 7.89,
-        "avrgPric": 7.8095,
-        "curPrc": 7.78
+        "opngPric": 7.78,
+        "minPric": 7.69,
+        "maxPric": 7.78,
+        "avrgPric": 7.7538,
+        "curPrc": 7.69
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 958559016.35,
+          "grssAmt": 230084591.89,
           "mtrtyCode": "2029-05-15",
           "opnCtrcts": 221383,
-          "tradQty": 59,
-          "traddCtrctsQty": 6514
+          "tradQty": 7,
+          "traddCtrctsQty": 1560
         },
         "code": "DAP"
       },
       "buyOffer": {
-        "price": 7.78
+        "price": 7.68
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 7.79
+        "price": 7.71
       },
       "symb": "DAPK29",
       "desc": "CUPOM DE IPCA"
@@ -508,22 +574,22 @@
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 16794129.39,
+          "grssAmt": 7009059.5,
           "mtrtyCode": "2037-05-15",
           "opnCtrcts": 58954,
-          "tradQty": 5,
-          "traddCtrctsQty": 199
+          "tradQty": 1,
+          "traddCtrctsQty": 83
         },
         "code": "DAP"
       },
       "buyOffer": {
-        "price": 7.39
+        "price": 7.29
       },
       "mkt": {
         "cd": "FUT"
       },
       "sellOffer": {
-        "price": 7.4
+        "price": 7.35
       },
       "symb": "DAPK37",
       "desc": "CUPOM DE IPCA"
@@ -533,21 +599,24 @@
         "bottomLmtPric": 6.42,
         "prvsDayAdjstmntPric": 8.432,
         "topLmtPric": 10.42,
-        "opngPric": 8.39,
-        "minPric": 8.35,
+        "opngPric": 8.42,
+        "minPric": 8.34,
         "maxPric": 8.42,
-        "avrgPric": 8.391,
-        "curPrc": 8.42
+        "avrgPric": 8.3615,
+        "curPrc": 8.37
       },
       "asset": {
         "AsstSummry": {
-          "grssAmt": 1180124415.25,
+          "grssAmt": 699707364.45,
           "mtrtyCode": "2027-05-17",
           "opnCtrcts": 365581,
-          "tradQty": 94,
-          "traddCtrctsQty": 6954
+          "tradQty": 18,
+          "traddCtrctsQty": 4119
         },
         "code": "DAP"
+      },
+      "buyOffer": {
+        "price": 8.34
       },
       "mkt": {
         "cd": "FUT"

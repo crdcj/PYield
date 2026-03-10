@@ -119,9 +119,8 @@ def _processar_df_intraday(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFra
         TradeDate=data_negociacao,
         LastUpdate=clock.now() - dt.timedelta(minutes=15),
         DaysToExp=(pl.col("ExpirationDate") - data_negociacao).dt.total_days(),
+        BDaysToExp=bday.count_expr(data_negociacao, "ExpirationDate"),
     )
-
-    df = df.with_columns(BDaysToExp=bday.count_expr(data_negociacao, "ExpirationDate"))
 
     if codigo_contrato in {"DI1", "DAP"}:
         taxa_fwd = forwards(bdays=df["BDaysToExp"], rates=df["LastRate"])

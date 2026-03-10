@@ -1,6 +1,5 @@
 import datetime as dt
 from collections.abc import Sequence
-from typing import Literal
 
 import polars as pl
 
@@ -19,15 +18,16 @@ CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 def historical(
     data: dt.date,
     codigo_contrato: str | Sequence[str] | pl.Series,
-    tipo_fonte: Literal["PR", "SPR"] = "SPR",
+    full_report: bool = False,
 ) -> pl.DataFrame:
     """Busca histórico de futuros priorizando o dataset PR cacheado.
 
     Args:
         data: Data de negociação.
         codigo_contrato: Código(s) do contrato futuro na B3.
-        tipo_fonte: Tipo de arquivo. 'SPR' (default) para settlement price
-            report e 'PR' para price report regular.
+        full_report: Se False (padrão), usa o simplified price report (SPR),
+            arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
+            price report completo (PR, ~2 MB) com todos os dados de negociação.
 
     Returns:
         DataFrame Polars com dados históricos de futuros.
@@ -91,7 +91,7 @@ def historical(
             df_bruto = fetch_price_report(
                 date=data,
                 contract_code=codigo,
-                source_type=tipo_fonte,
+                full_report=full_report,
             )
             if df_bruto.is_empty():
                 continue

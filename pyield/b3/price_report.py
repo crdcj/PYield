@@ -3,7 +3,6 @@ import io
 import logging
 import zipfile
 from functools import lru_cache
-from typing import Literal
 
 import polars as pl
 import requests
@@ -100,16 +99,14 @@ def _mapa_renomeacao_colunas() -> dict[str, str]:
 
 
 @retry_padrao
-def _baixar_zip_url(data: dt.date, tipo_fonte: str) -> bytes:
+def _baixar_zip_url(data: dt.date, relatorio_completo: bool) -> bytes:
     data_str = data.strftime("%y%m%d")
-    if tipo_fonte == "PR":
+    if relatorio_completo:
         url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{data_str}.zip"
-    elif tipo_fonte == "SPR":
+    else:
         url = (
             f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{data_str}.zip"
         )
-    else:
-        raise ValueError("Tipo de fonte inválido. Deve ser 'PR' ou 'SPR'.")
 
     resposta = requests.get(url, timeout=(5, 30))
     resposta.raise_for_status()
@@ -233,15 +230,15 @@ def _processar_xml_extraido(xml_bytes: bytes, codigo_contrato: str) -> pl.DataFr
 
 
 @lru_cache(maxsize=64)
-def _obter_xml_price_report(data: dt.date, tipo_fonte: str) -> bytes:
-    dados_zip = _baixar_zip_url(data, tipo_fonte)
+def _obter_xml_price_report(data: dt.date, relatorio_completo: bool) -> bytes:
+    dados_zip = _baixar_zip_url(data, relatorio_completo)
     return _extrair_xml_zip_aninhado(dados_zip)
 
 
 def fetch_price_report(
     date: DateLike,
     contract_code: str,
-    source_type: Literal["PR", "SPR"] = "SPR",
+    full_report: bool = False,
 ) -> pl.DataFrame:
     """Busca e processa o price report da B3 no site oficial.
 
@@ -263,8 +260,9 @@ def fetch_price_report(
             'YYYY-MM-DD' ou objeto datetime.date.
         contract_code: Código B3 (ex.: 'DI1', 'DOL', 'DAP', 'FRC', 'DDI',
             'WDO', 'IND', 'WIN'). Os 3 primeiros caracteres são usados no XML.
-        source_type: Tipo de arquivo. 'SPR' (default) para settlement price
-            report e 'PR' para price report regular.
+        full_report: Se False (padrão), usa o simplified price report (SPR),
+            arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
+            price report completo (PR, ~2 MB) com todos os dados de negociação.
 
     Returns:
         pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
@@ -314,7 +312,7 @@ def fetch_price_report(
         - MinLimitValue (Float64): Limite mínimo de variação.
 
     Raises:
-        ValueError: Se source_type for inválido.
+        ValueError: Se full_report não for bool.
         DadoIndisponivelError: Se a data for válida, mas o endpoint não fornecer
             arquivo para a data consultada.
         requests.HTTPError: Se a requisição HTTP ao endpoint falhar.
@@ -345,14 +343,15 @@ def fetch_price_report(
         return pl.DataFrame()
 
     try:
-        xml_bytes = _obter_xml_price_report(date, source_type)
+        xml_bytes = _obter_xml_price_report(date, full_report)
         return _processar_xml_extraido(xml_bytes, contrato)
     except (zipfile.BadZipFile, etree.XMLSyntaxError):
         registro.exception(f"Falha ao parsear o price report de {contrato} em {date}.")
         raise
     except Exception:
+        tipo = "PR" if full_report else "SPR"
         registro.exception(
-            f"ERRO CRÍTICO: Falha ao processar {contrato} {source_type} em {date}"
+            f"ERRO CRÍTICO: Falha ao processar {contrato} {tipo} em {date}"
         )
         raise
 
