@@ -25,7 +25,7 @@ def historical(
     Args:
         data: Data de negociação.
         codigo_contrato: Código(s) do contrato futuro na B3.
-        full_report: Se False (padrão), usa o settlement price report (SPR),
+        full_report: Se False (padrão), usa o simplified price report (SPR),
             arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
             price report completo (PR, ~2 MB) com todos os dados de negociação.
 

@@ -259,7 +259,7 @@ def fetch_price_report(
             'YYYY-MM-DD' ou objeto datetime.date.
         contract_code: Código B3 (ex.: 'DI1', 'DOL', 'DAP', 'FRC', 'DDI',
             'WDO', 'IND', 'WIN'). Os 3 primeiros caracteres são usados no XML.
-        full_report: Se False (padrão), usa o settlement price report (SPR),
+        full_report: Se False (padrão), usa o simplified price report (SPR),
             arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
             price report completo (PR, ~2 MB) com todos os dados de negociação.
 

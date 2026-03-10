@@ -62,7 +62,7 @@ def futures(
     Args:
         date: Data de referência para consulta.
         contract_code: Código do contrato futuro na B3 ou coleção de códigos.
-        full_report: Se False (padrão), usa o settlement price report (SPR),
+        full_report: Se False (padrão), usa o simplified price report (SPR),
             arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
             price report completo (PR, ~2 MB) com todos os dados de negociação.
             Relevante apenas quando o dado não está no cache.
