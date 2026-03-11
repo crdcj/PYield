@@ -26,30 +26,30 @@ registro = logging.getLogger(__name__)
 
 URL_BASE = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
 
-MAPA_COLUNAS = {
-    "DATA MOV": ("SettlementDate", pl.String),
-    "SIGLA": ("BondType", pl.String),
-    "CODIGO": ("SelicCode", pl.Int64),
-    "CODIGO ISIN": ("ISIN", pl.String),
-    "EMISSAO": ("IssueDate", pl.String),
-    "VENCIMENTO": ("MaturityDate", pl.String),
-    "NUM DE OPER": ("Trades", pl.Int64),
-    "QUANT NEGOCIADA": ("Quantity", pl.Int64),
-    "VALOR NEGOCIADO": ("Value", pl.Float64),
-    "PU MIN": ("MinPrice", pl.Float64),
-    "PU MED": ("AvgPrice", pl.Float64),
-    "PU MAX": ("MaxPrice", pl.Float64),
-    "PU LASTRO": ("UnderlyingPrice", pl.Float64),
-    "VALOR PAR": ("ParValue", pl.Float64),
-    "TAXA MIN": ("MinRate", pl.Float64),
-    "TAXA MED": ("AvgRate", pl.Float64),
-    "TAXA MAX": ("MaxRate", pl.Float64),
-    "NUM OPER COM CORRETAGEM": ("BrokerageTrades", pl.Int64),
-    "QUANT NEG COM CORRETAGEM": ("BrokerageQuantity", pl.Int64),
-}
+MAPA_COLUNAS = [
+    ("DATA MOV", "SettlementDate", pl.String),
+    ("SIGLA", "BondType", pl.String),
+    ("CODIGO", "SelicCode", pl.Int64),
+    ("CODIGO ISIN", "ISIN", pl.String),
+    ("EMISSAO", "IssueDate", pl.String),
+    ("VENCIMENTO", "MaturityDate", pl.String),
+    ("NUM DE OPER", "Trades", pl.Int64),
+    ("QUANT NEGOCIADA", "Quantity", pl.Int64),
+    ("VALOR NEGOCIADO", "Value", pl.Float64),
+    ("PU MIN", "MinPrice", pl.Float64),
+    ("PU MED", "AvgPrice", pl.Float64),
+    ("PU MAX", "MaxPrice", pl.Float64),
+    ("PU LASTRO", "UnderlyingPrice", pl.Float64),
+    ("VALOR PAR", "ParValue", pl.Float64),
+    ("TAXA MIN", "MinRate", pl.Float64),
+    ("TAXA MED", "AvgRate", pl.Float64),
+    ("TAXA MAX", "MaxRate", pl.Float64),
+    ("NUM OPER COM CORRETAGEM", "BrokerageTrades", pl.Int64),
+    ("QUANT NEG COM CORRETAGEM", "BrokerageQuantity", pl.Int64),
+]
 
-ESQUEMA_CSV = {col: dtype for col, (_, dtype) in MAPA_COLUNAS.items()}
-MAPEAMENTO_COLUNAS = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
+ESQUEMA_CSV = {csv: tipo for csv, _, tipo in MAPA_COLUNAS}
+MAPEAMENTO_COLUNAS = {csv: novo for csv, novo, _ in MAPA_COLUNAS}
 
 ORDEM_COLUNAS_FINAL = [
     "SettlementDate",

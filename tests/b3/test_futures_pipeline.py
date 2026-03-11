@@ -1,6 +1,6 @@
 """Testes do pipeline completo de futures (dado enriquecido).
 
-Valida que o fluxo end-to-end (PR remoto no release em .zst →
+Valida que o fluxo end-to-end (PR remoto no release em .gz →
 tipagem/renomeação → ExpirationDate → BDaysToExp/DaysToExp/DV01/ForwardRate →
 seleção de colunas) produz o DataFrame esperado.
 

@@ -1,12 +1,10 @@
 import datetime as dt
-import importlib
 
 import polars as pl
 from polars.testing import assert_frame_equal
 
 import pyield as yd
-
-historical_mod = importlib.import_module("pyield.b3.futures.historical")
+from pyield.b3.futures import historical as historical_mod
 
 
 def test_historical_prioriza_dataset_pr(monkeypatch):
@@ -110,6 +108,6 @@ def test_historical_lista_contratos_faz_um_fetch_remoto(monkeypatch):
         ["DI1", "DOL"],
     )
 
-    assert len(chamadas) == 2
+    assert len(chamadas) == 2  # noqa
     assert sorted(chamada[1] for chamada in chamadas) == ["DI1", "DOL"]
     assert sorted(df.get_column("TickerSymbol").to_list()) == ["DI1F26", "DOLF26"]

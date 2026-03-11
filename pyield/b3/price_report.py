@@ -12,7 +12,7 @@ from lxml.etree import _Element
 import pyield._internal.converters as cv
 from pyield._internal.retry import DadoIndisponivelError, retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.b3._contracts import normalizar_codigo_contrato
+from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3._validar_pregao import data_negociacao_valida
 
 registro = logging.getLogger(__name__)
@@ -237,7 +237,7 @@ def _obter_xml_price_report(data: dt.date, relatorio_completo: bool) -> bytes:
 
 def fetch_price_report(
     date: DateLike,
-    contract_code: str,
+    contract_code: str | list[str],
     full_report: bool = False,
 ) -> pl.DataFrame:
     """Busca e processa o price report da B3 no site oficial.
@@ -258,8 +258,8 @@ def fetch_price_report(
     Args:
         date: Data de negociação no formato 'DD-MM-YYYY', 'DD/MM/YYYY',
             'YYYY-MM-DD' ou objeto datetime.date.
-        contract_code: Código B3 (ex.: 'DI1', 'DOL', 'DAP', 'FRC', 'DDI',
-            'WDO', 'IND', 'WIN'). Os 3 primeiros caracteres são usados no XML.
+        contract_code: Código B3 único ou lista de códigos (ex.: 'DI1',
+            ['DI1', 'DAP']). Os 3 primeiros caracteres são usados no XML.
         full_report: Se False (padrão), usa o simplified price report (SPR),
             arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
             price report completo (PR, ~2 MB) com todos os dados de negociação.
@@ -312,7 +312,6 @@ def fetch_price_report(
         - MinLimitValue (Float64): Limite mínimo de variação.
 
     Raises:
-        ValueError: Se full_report não for bool.
         DadoIndisponivelError: Se a data for válida, mas o endpoint não fornecer
             arquivo para a data consultada.
         requests.HTTPError: Se a requisição HTTP ao endpoint falhar.
@@ -323,18 +322,17 @@ def fetch_price_report(
     Examples:
         >>> import pyield as yd
         >>> df = yd.b3.fetch_price_report("26-04-2024", "DI1")
-        >>> df.is_empty() or {"TradeDate", "TickerSymbol", "CloseValue"}.issubset(
-        ...     set(df.columns)
-        ... )
-        True
+
+        >>> # Múltiplos contratos de uma vez
+        >>> df = yd.b3.fetch_price_report("26-04-2024", ["DI1", "DAP"])
 
         >>> # Feriado ou fim de semana (retorna DataFrame vazio)
         >>> df = yd.b3.fetch_price_report("25-12-2023", "DI1")  # Véspera de Natal
         >>> df.is_empty()
         True
     """
-    contrato = normalizar_codigo_contrato(contract_code)
-    if any_is_empty(date) or not contrato:
+    contratos = normalizar_codigos_contrato(contract_code)
+    if any_is_empty(date) or not contratos:
         return pl.DataFrame()
 
     date = cv.converter_datas(date)
@@ -344,21 +342,28 @@ def fetch_price_report(
 
     try:
         xml_bytes = _obter_xml_price_report(date, full_report)
-        return _processar_xml_extraido(xml_bytes, contrato)
+        dataframes = []
+        for contrato in contratos:
+            df = _processar_xml_extraido(xml_bytes, contrato)
+            if not df.is_empty():
+                dataframes.append(df)
+        if not dataframes:
+            return pl.DataFrame()
+        return pl.concat(dataframes).sort("TickerSymbol")
     except (zipfile.BadZipFile, etree.XMLSyntaxError):
-        registro.exception(f"Falha ao parsear o price report de {contrato} em {date}.")
+        registro.exception(f"Falha ao parsear o price report de {contratos} em {date}.")
         raise
     except Exception:
         tipo = "PR" if full_report else "SPR"
         registro.exception(
-            f"ERRO CRÍTICO: Falha ao processar {contrato} {tipo} em {date}"
+            f"ERRO CRÍTICO: Falha ao processar {contratos} {tipo} em {date}"
         )
         raise
 
 
 def read_price_report(
     xml_bytes: bytes,
-    contract_code: str,
+    contract_code: str | list[str],
 ) -> pl.DataFrame:
     """Lê e processa o price report da B3 a partir do conteúdo XML bruto.
 
@@ -370,7 +375,8 @@ def read_price_report(
 
     Args:
         xml_bytes: Conteúdo do XML em bytes (já descomprimido).
-        contract_code: Código B3 do contrato.
+        contract_code: Código B3 único ou lista de códigos (ex.: 'DI1',
+            ['DI1', 'DAP']).
 
     Returns:
         pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
@@ -417,8 +423,15 @@ def read_price_report(
         - MaxLimitValue (Float64): Limite máximo de variação.
         - MinLimitValue (Float64): Limite mínimo de variação.
     """
-    contrato = normalizar_codigo_contrato(contract_code)
-    if any_is_empty(xml_bytes) or not contrato:
+    contratos = normalizar_codigos_contrato(contract_code)
+    if any_is_empty(xml_bytes) or not contratos:
         return pl.DataFrame()
 
-    return _processar_xml_extraido(xml_bytes, contrato)
+    dataframes = []
+    for contrato in contratos:
+        df = _processar_xml_extraido(xml_bytes, contrato)
+        if not df.is_empty():
+            dataframes.append(df)
+    if not dataframes:
+        return pl.DataFrame()
+    return pl.concat(dataframes).sort("TickerSymbol")

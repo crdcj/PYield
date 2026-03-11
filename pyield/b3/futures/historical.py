@@ -1,5 +1,4 @@
 import datetime as dt
-from collections.abc import Sequence
 
 import polars as pl
 
@@ -17,7 +16,7 @@ CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 
 def historical(
     data: dt.date,
-    codigo_contrato: str | Sequence[str] | pl.Series,
+    codigo_contrato: str | list[str],
     full_report: bool = False,
 ) -> pl.DataFrame:
     """Busca histórico de futuros priorizando o dataset PR cacheado.

@@ -24,33 +24,33 @@ TiposIMA = Literal[
 
 # Única fonte de verdade para colunas do CSV: (novo_nome, tipo)
 # Colunas com None no nome são descartadas após a leitura.
-IMA_COLUNAS = {
-    "2": (None, pl.Int64),
-    "Data de Referência": ("Date", pl.String),
-    "INDICE": ("IMAType", pl.String),
-    "Títulos": ("BondType", pl.String),
-    "Data de Vencimento": ("Maturity", pl.String),
-    "Código SELIC": ("SelicCode", pl.Int64),
-    "Código ISIN": ("ISIN", pl.String),
-    "Taxa Indicativa (% a.a.)": ("IndicativeRate", pl.Float64),
-    "PU (R$)": ("Price", pl.Float64),
-    "PU de Juros (R$)": ("InterestPrice", pl.Float64),
-    "Quantidade (1.000 títulos)": ("MarketQuantity", pl.Float64),
-    "Quantidade Teórica (1.000 títulos)": ("TheoreticalQuantity", pl.Float64),
-    "Carteira a Mercado (R$ mil)": ("MarketValue", pl.Float64),
-    "Peso (%)": ("Weight", pl.Float64),
-    "Prazo (d.u.)": ("BDToMat", pl.Int64),
-    "Duration (d.u.)": ("Duration", pl.Int64),
-    "Número de Operações *": ("NumberOfOperations", pl.Int64),
-    "Quant. Negociada (1.000 títulos) *": ("NegotiatedQuantity", pl.Float64),
-    "Valor Negociado (R$ mil) *": ("NegotiatedValue", pl.Float64),
-    "PMR": ("PMR", pl.Float64),
-    "Convexidade": ("Convexity", pl.Float64),
-}
+IMA_COLUNAS = [
+    ("2", None, pl.Int64),
+    ("Data de Referência", "Date", pl.String),
+    ("INDICE", "IMAType", pl.String),
+    ("Títulos", "BondType", pl.String),
+    ("Data de Vencimento", "Maturity", pl.String),
+    ("Código SELIC", "SelicCode", pl.Int64),
+    ("Código ISIN", "ISIN", pl.String),
+    ("Taxa Indicativa (% a.a.)", "IndicativeRate", pl.Float64),
+    ("PU (R$)", "Price", pl.Float64),
+    ("PU de Juros (R$)", "InterestPrice", pl.Float64),
+    ("Quantidade (1.000 títulos)", "MarketQuantity", pl.Float64),
+    ("Quantidade Teórica (1.000 títulos)", "TheoreticalQuantity", pl.Float64),
+    ("Carteira a Mercado (R$ mil)", "MarketValue", pl.Float64),
+    ("Peso (%)", "Weight", pl.Float64),
+    ("Prazo (d.u.)", "BDToMat", pl.Int64),
+    ("Duration (d.u.)", "Duration", pl.Int64),
+    ("Número de Operações *", "NumberOfOperations", pl.Int64),
+    ("Quant. Negociada (1.000 títulos) *", "NegotiatedQuantity", pl.Float64),
+    ("Valor Negociado (R$ mil) *", "NegotiatedValue", pl.Float64),
+    ("PMR", "PMR", pl.Float64),
+    ("Convexidade", "Convexity", pl.Float64),
+]
 
 # Derivados automaticamente
-ESQUEMA_IMA = {k: v[1] for k, v in IMA_COLUNAS.items()}
-MAPA_COLUNAS_IMA = {k: v[0] for k, v in IMA_COLUNAS.items() if v[0] is not None}
+ESQUEMA_IMA = {csv: tipo for csv, _, tipo in IMA_COLUNAS}
+MAPA_COLUNAS_IMA = {csv: novo for csv, novo, _ in IMA_COLUNAS if novo is not None}
 
 ORDEM_COLUNAS_FINAL = [
     "Date",

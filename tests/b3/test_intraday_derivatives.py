@@ -1,12 +1,9 @@
 import datetime as dt
-import importlib
 import json
 from pathlib import Path
 
-import polars as pl
-
-derivatives_mod = importlib.import_module("pyield.b3.intraday_derivatives")
-futures_intraday_mod = importlib.import_module("pyield.b3.futures.intraday")
+import pyield.b3.intraday_derivatives as derivatives_mod
+from pyield.b3.futures import intraday as futures_intraday_mod
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 DATA_REFERENCIA = dt.date(2026, 3, 10)
@@ -23,19 +20,6 @@ def _carregar_json_scty(codigo_contrato: str) -> list[dict]:
 
 def _buscar_json_intraday_mock(codigo_contrato: str) -> list[dict]:
     return _carregar_json_scty(codigo_contrato)
-
-
-def _df_bruto_normalizado(codigo_contrato: str) -> pl.DataFrame:
-    return (
-        derivatives_mod._converter_json_intraday(_carregar_json_scty(codigo_contrato))
-        .pipe(derivatives_mod._processar_colunas_intraday)
-        .drop_nulls(subset=["ExpirationDate"])
-        .sort(["MarketCode", "TickerSymbol"])
-    )
-
-
-def _fetch_intraday_derivatives_mock(codigo_contrato: str) -> pl.DataFrame:
-    return _df_bruto_normalizado(codigo_contrato)
 
 
 def _data_referencia_mock() -> dt.date:
@@ -102,9 +86,14 @@ def test_fetch_intraday_derivatives_nao_descarta_fro_sem_curprc(monkeypatch):
 def test_futures_intraday_filtra_apenas_futuros(monkeypatch):
     """Camada de futures deve consumir o bruto e manter apenas FUT."""
     monkeypatch.setattr(
+        derivatives_mod,
+        "_buscar_json_intraday",
+        _buscar_json_intraday_mock,
+    )
+    monkeypatch.setattr(
         futures_intraday_mod,
         "fetch_intraday_derivatives",
-        _fetch_intraday_derivatives_mock,
+        derivatives_mod.fetch_intraday_derivatives,
     )
     monkeypatch.setattr(
         futures_intraday_mod.bday, "last_business_day", _data_referencia_mock

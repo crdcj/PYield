@@ -25,24 +25,24 @@ from pyield._internal.types import DateLike
 
 registro = logging.getLogger(__name__)
 
-MAPA_COLUNAS = {
-    "id": ("id", pl.String),
-    "dataMovimento": ("data_leilao", pl.Date),
-    "horaInicio": ("hora_inicio", pl.Time),
-    "publicoPermitidoLeilao": ("publico_permitido", pl.String),
-    "numeroComunicado": ("numero_comunicado", pl.Int64),
-    "nomeTipoOferta": ("tipo_oferta", pl.String),
-    "ofertante": ("ofertante", pl.String),
-    "prazoDiasCorridos": ("prazo_dias_corridos", pl.Int64),
-    "dataLiquidacao": ("data_liquidacao", pl.Date),
-    "dataRetorno": ("data_retorno", pl.Date),
-    "volumeAceito": ("volume_aceito", pl.Int64),
-    "taxaCorte": ("taxa_corte", pl.Float64),
-    "percentualCorte": ("percentual_corte", pl.Float64),
-}
+MAPA_COLUNAS = [
+    ("id", "id", pl.String),
+    ("dataMovimento", "data_leilao", pl.Date),
+    ("horaInicio", "hora_inicio", pl.Time),
+    ("publicoPermitidoLeilao", "publico_permitido", pl.String),
+    ("numeroComunicado", "numero_comunicado", pl.Int64),
+    ("nomeTipoOferta", "tipo_oferta", pl.String),
+    ("ofertante", "ofertante", pl.String),
+    ("prazoDiasCorridos", "prazo_dias_corridos", pl.Int64),
+    ("dataLiquidacao", "data_liquidacao", pl.Date),
+    ("dataRetorno", "data_retorno", pl.Date),
+    ("volumeAceito", "volume_aceito", pl.Int64),
+    ("taxaCorte", "taxa_corte", pl.Float64),
+    ("percentualCorte", "percentual_corte", pl.Float64),
+]
 
-ESQUEMA_API = {col: dtype for col, (_, dtype) in MAPA_COLUNAS.items()}
-MAPEAMENTO_COLUNAS = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
+ESQUEMA_API = {api: tipo for api, _, tipo in MAPA_COLUNAS}
+MAPEAMENTO_COLUNAS = {api: novo for api, novo, _ in MAPA_COLUNAS}
 
 ORDEM_COLUNAS_FINAL = [
     "data_leilao",

@@ -14,33 +14,33 @@ from pyield.tn.ntnf import duration as duration_f
 
 logger = logging.getLogger(__name__)
 
-# Definição unificada das colunas: chave_api -> (novo_nome, tipo)
+# Definição unificada das colunas: (chave_api, novo_nome, tipo)
 # "prazo" foi omitido pois algumas vezes não vem na API
-DEFINICOES_COLUNAS = {
-    "data_leilao": ("data_1v", pl.String),
-    "liquidacao": ("data_liquidacao_1v", pl.String),
-    "liquidacao_segunda_volta": ("data_liquidacao_2v", pl.String),
-    "numero_edital": ("numero_edital", pl.Int64),
-    "tipo_leilao": ("tipo_leilao", pl.String),
-    "titulo": ("titulo", pl.String),
-    "benchmark": ("benchmark", pl.String),
-    "vencimento": ("data_vencimento", pl.String),
-    "oferta": ("quantidade_ofertada_1v", pl.Int64),
-    "quantidade_aceita": ("quantidade_aceita_1v", pl.Int64),
-    "oferta_segunda_volta": ("quantidade_ofertada_2v", pl.Int64),
-    "quantidade_aceita_segunda_volta": ("quantidade_aceita_2v", pl.Int64),
-    "financeiro_aceito": ("financeiro_aceito_1v", pl.Float64),
-    "financeiro_aceito_segunda_volta": ("financeiro_aceito_2v", pl.Float64),
-    "quantidade_bcb": ("quantidade_bcb", pl.Int64),
-    "financeiro_bcb": ("financeiro_bcb", pl.Int64),
-    "pu_minimo": ("pu_minimo", pl.Float64),
-    "pu_medio": ("pu_medio", pl.Float64),
-    "taxa_media": ("taxa_media", pl.Float64),
-    "taxa_maxima": ("taxa_maxima", pl.Float64),
-}
+DEFINICOES_COLUNAS = [
+    ("data_leilao", "data_1v", pl.String),
+    ("liquidacao", "data_liquidacao_1v", pl.String),
+    ("liquidacao_segunda_volta", "data_liquidacao_2v", pl.String),
+    ("numero_edital", "numero_edital", pl.Int64),
+    ("tipo_leilao", "tipo_leilao", pl.String),
+    ("titulo", "titulo", pl.String),
+    ("benchmark", "benchmark", pl.String),
+    ("vencimento", "data_vencimento", pl.String),
+    ("oferta", "quantidade_ofertada_1v", pl.Int64),
+    ("quantidade_aceita", "quantidade_aceita_1v", pl.Int64),
+    ("oferta_segunda_volta", "quantidade_ofertada_2v", pl.Int64),
+    ("quantidade_aceita_segunda_volta", "quantidade_aceita_2v", pl.Int64),
+    ("financeiro_aceito", "financeiro_aceito_1v", pl.Float64),
+    ("financeiro_aceito_segunda_volta", "financeiro_aceito_2v", pl.Float64),
+    ("quantidade_bcb", "quantidade_bcb", pl.Int64),
+    ("financeiro_bcb", "financeiro_bcb", pl.Int64),
+    ("pu_minimo", "pu_minimo", pl.Float64),
+    ("pu_medio", "pu_medio", pl.Float64),
+    ("taxa_media", "taxa_media", pl.Float64),
+    ("taxa_maxima", "taxa_maxima", pl.Float64),
+]
 
-ESQUEMA_DADOS = {k: v[1] for k, v in DEFINICOES_COLUNAS.items()}
-MAPA_COLUNAS = {k: v[0] for k, v in DEFINICOES_COLUNAS.items()}
+ESQUEMA_DADOS = {api: tipo for api, _, tipo in DEFINICOES_COLUNAS}
+MAPA_COLUNAS = {api: novo for api, novo, _ in DEFINICOES_COLUNAS}
 
 ORDEM_FINAL_COLUNAS = [
     "data_1v",

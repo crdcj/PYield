@@ -4,22 +4,21 @@ Valida que o parsing XML → tipagem → renomeação de colunas produz o
 DataFrame esperado, **sem** enriquecimento (ExpirationDate, BDaysToExp,
 DaysToExp, DV01, ForwardRate, etc.).
 
-Os parquets de referência são comparados com o XML remoto em .zst
+Os parquets de referência são comparados com o XML remoto em .gz
 publicado no release de dados de teste.
 """
 
 import datetime as dt
-import importlib
+import gzip
 from functools import lru_cache
 from pathlib import Path
 
 import polars as pl
 import pytest
 import requests
-import zstandard as zstd_mod
 from polars.testing import assert_frame_equal
 
-pr_mod = importlib.import_module("pyield.b3.price_report")
+import pyield.b3.price_report as pr_mod
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 URL_BASE_RELEASE = "https://github.com/crdcj/PYield/releases/download/test-data-v1.0"
@@ -27,51 +26,19 @@ URL_BASE_RELEASE = "https://github.com/crdcj/PYield/releases/download/test-data-
 
 @lru_cache(maxsize=8)
 def _baixar_xml_remoto(date_str: str) -> bytes:
-    """Baixa e descompacta o arquivo XML.ZST remoto para a data informada."""
+    """Baixa e descompacta o arquivo XML.GZ remoto para a data informada."""
     dia, mes, ano = date_str.split("-")
-    arquivo = f"PR{ano[2:]}{mes}{dia}.xml.zst"
+    arquivo = f"PR{ano[2:]}{mes}{dia}.xml.gz"
     url = f"{URL_BASE_RELEASE}/{arquivo}"
 
     resposta = requests.get(url, timeout=(5, 30))
     resposta.raise_for_status()
-    return zstd_mod.decompress(resposta.content)
-
-
-def _processar_bruto(xml_bytes: bytes, contract_code: str) -> pl.DataFrame:
-    """Pipeline bruto: XML remoto .zst → parse → tipos → renomeação."""
-    registros = pr_mod._parsear_xml_registros(xml_bytes, contract_code)
-    if not registros:
-        return pl.DataFrame()
-    df = pr_mod._converter_para_df(registros)
-    mapa = pr_mod._mapa_renomeacao_colunas()
-    df = df.rename(mapa, strict=False)
-    return df.sort("TickerSymbol")
+    return gzip.decompress(resposta.content)
 
 
 def _parquet_referencia(date_str: str, contract_code: str) -> Path:
     dia, mes, ano = date_str.split("-")
     return TEST_DATA_DIR / f"price_report_{ano}{mes}{dia}_{contract_code}.parquet"
-
-
-def _normalizar_colunas_valor(df: pl.DataFrame) -> pl.DataFrame:
-    bases = [
-        "MinLimit",
-        "MaxLimit",
-        "BestAsk",
-        "BestBid",
-        "Open",
-        "Min",
-        "Avg",
-        "Max",
-        "Close",
-    ]
-    mapa = {}
-    for base in bases:
-        for sufixo in ("Rate", "Price"):
-            nome = f"{base}{sufixo}"
-            if nome in df.columns:
-                mapa[nome] = f"{base}Value"
-    return df.rename(mapa, strict=False)
 
 
 @pytest.mark.parametrize(
@@ -106,9 +73,8 @@ def _normalizar_colunas_valor(df: pl.DataFrame) -> pl.DataFrame:
 def test_pipeline_bruto_price_report(date: str, contract_code: str):
     """Compara saída bruta do price_report com parquet canônico."""
     xml_bytes = _baixar_xml_remoto(date)
-    df_result = _processar_bruto(xml_bytes, contract_code)
+    df_result = pr_mod.read_price_report(xml_bytes, contract_code)
     df_expect = pl.read_parquet(_parquet_referencia(date, contract_code))
-    df_expect = _normalizar_colunas_valor(df_expect)
 
     assert not df_result.is_empty(), f"Resultado vazio para {contract_code}"
     assert_frame_equal(df_result, df_expect, check_exact=True, check_dtypes=True)
@@ -130,10 +96,12 @@ def test_fetch_price_report_reusa_download_xml_por_data(monkeypatch):
         return b"xml"
 
     def _processar_xml_falso(_xml, codigo):
-        return pl.DataFrame({
-            "TickerSymbol": [f"{codigo}F26"],
-            "TradeDate": [dt.date(2026, 1, 12)],
-        })
+        return pl.DataFrame(
+            {
+                "TickerSymbol": [f"{codigo}F26"],
+                "TradeDate": [dt.date(2026, 1, 12)],
+            }
+        )
 
     monkeypatch.setattr(pr_mod, "_baixar_zip_url", _baixar_zip_falso)
     monkeypatch.setattr(pr_mod, "_extrair_xml_zip_aninhado", _extrair_xml_falso)

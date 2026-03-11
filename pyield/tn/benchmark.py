@@ -14,16 +14,16 @@ URL_BASE_API = (
 PARAM_INCLUIR_HISTORICO = "incluir_historico"
 
 
-MAPA_COLUNAS = {
-    "TÍTULO": ("BondType", pl.String),
-    "VENCIMENTO": ("MaturityDate", pl.Date),
-    "BENCHMARK": ("Benchmark", pl.String),
-    "INÍCIO": ("StartDate", pl.Date),
-    "TERMINO": ("EndDate", pl.Date),
-}
+MAPA_COLUNAS = [
+    ("TÍTULO", "BondType", pl.String),
+    ("VENCIMENTO", "MaturityDate", pl.Date),
+    ("BENCHMARK", "Benchmark", pl.String),
+    ("INÍCIO", "StartDate", pl.Date),
+    ("TERMINO", "EndDate", pl.Date),
+]
 
-MAPEAMENTO_COLUNAS = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
-ESQUEMA_DADOS = {alias: dtype for _, (alias, dtype) in MAPA_COLUNAS.items()}
+MAPEAMENTO_COLUNAS = {api: novo for api, novo, _ in MAPA_COLUNAS}
+ESQUEMA_DADOS = {novo: tipo for _, novo, tipo in MAPA_COLUNAS}
 ORDEM_FINAL_COLUNAS = list(ESQUEMA_DADOS.keys())
 
 

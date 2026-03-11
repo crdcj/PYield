@@ -25,32 +25,32 @@ from pyield.tn.ntnf import duration as duration_f
 registro = logging.getLogger(__name__)
 
 # FR = Primeira Rodada, SR = Segunda Rodada
-MAPA_COLUNAS = {
-    "id": ("ID", pl.String),
-    "dataMovimento": ("Date", pl.Datetime),
-    "dataLiquidacao": ("Settlement", pl.Datetime),
-    "edital": ("Ordinance", pl.Int64),
-    "tipoPublico": ("Buyer", pl.String),
-    "prazo": ("CalendarDays", pl.Int64),
-    "quantidadeOfertada": ("OfferedQuantityFR", pl.Int64),
-    "quantidadeAceita": ("AcceptedQuantityFR", pl.Int64),
-    "codigoTitulo": ("SelicCode", pl.Int64),
-    "dataVencimento": ("Maturity", pl.Datetime),
-    "tipoOferta": ("AuctionType", pl.String),
-    "ofertante": ("Issuer", pl.String),
-    "quantidadeOfertadaSegundaRodada": ("OfferedQuantitySR", pl.Int64),
-    "quantidadeAceitaSegundaRodada": ("AcceptedQuantitySR", pl.Int64),
-    "cotacaoMedia": ("AvgPrice", pl.Float64),
-    "cotacaoCorte": ("CutPrice", pl.Float64),
-    "taxaMedia": ("AvgRate", pl.Float64),
-    "taxaCorte": ("CutRate", pl.Float64),
-    "financeiro": ("Value", pl.Float64),
-    "quantidadeLiquidada": ("SettledQuantityFR", pl.Int64),
-    "quantidadeLiquidadaSegundaRodada": ("SettledQuantitySR", pl.Int64),
-}
+MAPA_COLUNAS = [
+    ("id", "ID", pl.String),
+    ("dataMovimento", "Date", pl.Datetime),
+    ("dataLiquidacao", "Settlement", pl.Datetime),
+    ("edital", "Ordinance", pl.Int64),
+    ("tipoPublico", "Buyer", pl.String),
+    ("prazo", "CalendarDays", pl.Int64),
+    ("quantidadeOfertada", "OfferedQuantityFR", pl.Int64),
+    ("quantidadeAceita", "AcceptedQuantityFR", pl.Int64),
+    ("codigoTitulo", "SelicCode", pl.Int64),
+    ("dataVencimento", "Maturity", pl.Datetime),
+    ("tipoOferta", "AuctionType", pl.String),
+    ("ofertante", "Issuer", pl.String),
+    ("quantidadeOfertadaSegundaRodada", "OfferedQuantitySR", pl.Int64),
+    ("quantidadeAceitaSegundaRodada", "AcceptedQuantitySR", pl.Int64),
+    ("cotacaoMedia", "AvgPrice", pl.Float64),
+    ("cotacaoCorte", "CutPrice", pl.Float64),
+    ("taxaMedia", "AvgRate", pl.Float64),
+    ("taxaCorte", "CutRate", pl.Float64),
+    ("financeiro", "Value", pl.Float64),
+    ("quantidadeLiquidada", "SettledQuantityFR", pl.Int64),
+    ("quantidadeLiquidadaSegundaRodada", "SettledQuantitySR", pl.Int64),
+]
 
-ESQUEMA_API = {col: dtype for col, (_, dtype) in MAPA_COLUNAS.items()}
-MAPEAMENTO_COLUNAS = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
+ESQUEMA_API = {api: tipo for api, _, tipo in MAPA_COLUNAS}
+MAPEAMENTO_COLUNAS = {api: novo for api, novo, _ in MAPA_COLUNAS}
 
 ORDEM_COLUNAS_FINAL = [
     "Date",

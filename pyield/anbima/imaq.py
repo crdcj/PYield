@@ -17,27 +17,28 @@ from lxml.html import HTMLParser
 from lxml.html import fromstring as html_fromstring
 
 import pyield._internal.converters as cv
-from pyield.anbima.tpf import tpf_data
+from pyield import bday
 from pyield._internal.types import DateLike, any_is_empty
+from pyield.anbima.tpf import tpf_data
 
 logger = logging.getLogger(__name__)
 
 URL_IMA = "https://www.anbima.com.br/informacoes/ima/ima-quantidade-mercado.asp"
 
-MAPA_COLUNAS = {
-    "Título": ("BondType", pl.String),
-    "Codigo Selic": ("SelicCode", pl.Int64),
-    "Código ISIN": ("ISIN", pl.String),
-    "Data de Vencimento": ("MaturityDate", pl.String),
-    "Quantidade em Mercado (1.000 Títulos)": ("MarketQuantity", pl.Float64),
-    "PU (R$)": ("Price", pl.Float64),
-    "Valor de Mercado (R$ Mil)": ("MarketValue", pl.Float64),
-    "Variação da Quantidade (1.000 Títulos)": ("QuantityVariation", pl.Float64),
-    "Status do Titulo": ("BondStatus", pl.String),
-}
+MAPA_COLUNAS = [
+    ("Título", "BondType", pl.String),
+    ("Codigo Selic", "SelicCode", pl.Int64),
+    ("Código ISIN", "ISIN", pl.String),
+    ("Data de Vencimento", "MaturityDate", pl.String),
+    ("Quantidade em Mercado (1.000 Títulos)", "MarketQuantity", pl.Float64),
+    ("PU (R$)", "Price", pl.Float64),
+    ("Valor de Mercado (R$ Mil)", "MarketValue", pl.Float64),
+    ("Variação da Quantidade (1.000 Títulos)", "QuantityVariation", pl.Float64),
+    ("Status do Titulo", "BondStatus", pl.String),
+]
 
-ALIAS_COLUNAS = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
-ESQUEMA_DADOS = {alias: dtype for _, (alias, dtype) in MAPA_COLUNAS.items()}
+ALIAS_COLUNAS = {html: novo for html, novo, _ in MAPA_COLUNAS}
+ESQUEMA_DADOS = {novo: tipo for _, novo, tipo in MAPA_COLUNAS}
 
 COLUNAS_INT = [
     "MarketQuantity",
@@ -246,9 +247,10 @@ def imaq(date: DateLike) -> pl.DataFrame:
         True
     """
     if any_is_empty(date):
-        logger.warning("Nenhuma data informada. Retornando DataFrame vazio.")
         return pl.DataFrame()
     data = cv.converter_datas(date)
+    if not bday.is_business_day(data):
+        return pl.DataFrame()
     data_str = data.strftime("%d/%m/%Y")
     try:
         url_content = _buscar_conteudo_url(data)

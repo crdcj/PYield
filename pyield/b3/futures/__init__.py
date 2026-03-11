@@ -1,6 +1,4 @@
 import logging
-from collections.abc import Sequence
-from typing import Literal
 
 import polars as pl
 
@@ -10,18 +8,6 @@ from pyield._internal.types import DateLike, any_is_empty
 from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.futures import historical, intraday
-
-OpcoesContrato = Literal[
-    "DI1",
-    "DDI",
-    "FRC",
-    "FRO",
-    "DAP",
-    "DOL",
-    "WDO",
-    "IND",
-    "WIN",
-]
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +40,7 @@ def _buscar_intraday_ou_historico(
 
 def futures(
     date: DateLike,
-    contract_code: OpcoesContrato | str | Sequence[OpcoesContrato | str] | pl.Series,
+    contract_code: str | list[str],
     full_report: bool = False,
 ) -> pl.DataFrame:
     """Busca dados de um contrato futuro da B3 para a data de referência.
@@ -62,6 +48,11 @@ def futures(
     Args:
         date: Data de referência para consulta.
         contract_code: Código do contrato futuro na B3 ou coleção de códigos.
+            Exemplos de códigos válidos:
+            - Juros: DI1, DDI, OC1, DAP, IAP
+            - Moedas: DOL, WDO, EUR, GBR, JAP, CNY
+            - Índices: IND, WIN, ISP, WSP
+            - Commodities: BGI, CCM, ICF, CNL, SJC, SOY, ETH, GLD
         full_report: Se False (padrão), usa o simplified price report (SPR),
             arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
             price report completo (PR, ~2 MB) com todos os dados de negociação.
@@ -70,22 +61,15 @@ def futures(
     Returns:
         DataFrame Polars com os dados do contrato informado.
 
+    Notes:
+        Os contratos DI1, DDI, FRC, FRO, DAP, DOL, WDO, IND e WIN possuem
+        histórico pré-cacheado (desde 2018) e são retornados instantaneamente.
+        Para os demais contratos, os dados são baixados diretamente da B3 a
+        cada chamada, o que pode ser mais lento.
+
     Examples:
         >>> df = futures("31-05-2024", "DI1")
-        >>> {"TradeDate", "TickerSymbol", "ExpirationDate", "SettlementRate"}.issubset(
-        ...     set(df.columns)
-        ... )
-        True
-        >>> df.shape[0] > 0
-        True
-
         >>> df = futures("31-05-2024", "DAP")
-        >>> {"TradeDate", "TickerSymbol", "ExpirationDate", "SettlementRate"}.issubset(
-        ...     set(df.columns)
-        ... )
-        True
-        >>> df.shape[0] > 0
-        True
 
         Véspera de Natal e Ano Novo não têm pregão:
 

@@ -18,31 +18,31 @@ URL_PAGINA_INICIAL = f"{URL_BASE}/taxasOnline.asp"
 URL_CONSULTA_DADOS = f"{URL_BASE}/exibedados.asp"
 URL_DOWNLOAD = f"{URL_BASE}/download_dados.asp?extensao=csv"
 
-MAPA_COLUNAS = {
-    "Título": ("titulo", pl.String),
-    "Vencimento": ("data_vencimento", pl.String),
-    "Código ISIN": ("codigo_isin", pl.String),
-    "Provedor": ("provedor", pl.String),
-    "Edital": ("edital", pl.String),
-    "Horário": ("horario", pl.String),
-    "Prazo": ("prazo", pl.Int64),
-    "Lote": ("lote", pl.String),
-    "Fech D-1": ("taxa_indicativa_anterior", pl.Float64),
-    "Indicativo Superior": ("taxa_limite_superior", pl.Float64),
-    "Máxima": ("taxa_maxima", pl.Float64),
-    "Média": ("taxa_media", pl.Float64),
-    "Mínima": ("taxa_minima", pl.Float64),
-    "Indicativo Inferior": ("taxa_limite_inferior", pl.Float64),
-    "Última": ("taxa_ultima", pl.Float64),
-    "Oferta Compra": ("taxa_compra", pl.Float64),
-    "Oferta Venda": ("taxa_venda", pl.Float64),
-    "Nº de Negócios": ("num_negocios", pl.Int64),
-    "Quantidade Negociada": ("quantidade_negociada", pl.Int64),
-    "Volume Negociado (R$)": ("volume_negociado", pl.Float64),
-}
+MAPA_COLUNAS = [
+    ("Título", "titulo", pl.String),
+    ("Vencimento", "data_vencimento", pl.String),
+    ("Código ISIN", "codigo_isin", pl.String),
+    ("Provedor", "provedor", pl.String),
+    ("Edital", "edital", pl.String),
+    ("Horário", "horario", pl.String),
+    ("Prazo", "prazo", pl.Int64),
+    ("Lote", "lote", pl.String),
+    ("Fech D-1", "taxa_indicativa_anterior", pl.Float64),
+    ("Indicativo Superior", "taxa_limite_superior", pl.Float64),
+    ("Máxima", "taxa_maxima", pl.Float64),
+    ("Média", "taxa_media", pl.Float64),
+    ("Mínima", "taxa_minima", pl.Float64),
+    ("Indicativo Inferior", "taxa_limite_inferior", pl.Float64),
+    ("Última", "taxa_ultima", pl.Float64),
+    ("Oferta Compra", "taxa_compra", pl.Float64),
+    ("Oferta Venda", "taxa_venda", pl.Float64),
+    ("Nº de Negócios", "num_negocios", pl.Int64),
+    ("Quantidade Negociada", "quantidade_negociada", pl.Int64),
+    ("Volume Negociado (R$)", "volume_negociado", pl.Float64),
+]
 
-ESQUEMA_API = {col: dtype for col, (_alias, dtype) in MAPA_COLUNAS.items()}
-ALIAS_COLUNAS = {col: alias for col, (alias, _dtype) in MAPA_COLUNAS.items()}
+ESQUEMA_API = {csv: tipo for csv, _, tipo in MAPA_COLUNAS}
+ALIAS_COLUNAS = {csv: novo for csv, novo, _ in MAPA_COLUNAS}
 
 # Colunas não selecionadas estão vazias na API.
 ORDEM_COLUNAS_FINAL = [
@@ -211,9 +211,10 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
         - taxa_ultima (float): Última taxa negociada (decimal).
     """
     if any_is_empty(data_referencia):
-        logger.warning("Nenhuma data fornecida. Retornando DataFrame vazio.")
         return pl.DataFrame()
     data = cv.converter_datas(data_referencia)
+    if not bday.is_business_day(data):
+        return pl.DataFrame()
     data_str = data.strftime("%d/%m/%Y")
     csv_data = _buscar_dados_url(data_str)
 

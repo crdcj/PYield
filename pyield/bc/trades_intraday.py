@@ -22,43 +22,41 @@ URL_BASE_TEMPO_REAL = (
 
 registro = logging.getLogger(__name__)
 
-MAPA_COLUNAS = {
-    "//1": ("RowType", None),
-    "código título": ("SelicCode", pl.Int64),
-    "data vencimento": ("MaturityDate", None),
-    "sigla": ("BondType", None),
-    "mercado à vista pu último": ("LastPrice", pl.Float64),
-    "tx último": ("LastRate", pl.Float64),
-    "pu mínimo": ("MinPrice", pl.Float64),
-    "tx mínimo": ("MinRate", pl.Float64),
-    "pu médio": ("AvgPrice", pl.Float64),
-    "tx médio": ("AvgRate", pl.Float64),
-    "pu máximo": ("MaxPrice", pl.Float64),
-    "tx máximo": ("MaxRate", pl.Float64),
-    "totais liquidados operações": ("Trades", pl.Int64),
-    "corretagem liquidados operações": ("BrokeredTrades", pl.Int64),
-    "títulos": ("Quantity", pl.Int64),
-    "corretagem títulos": ("BrokeredQuantity", pl.Int64),
-    "financeiro": ("Value", pl.Float64),
-    "mercado a termo pu último": ("FwdLastPrice", pl.Float64),
-    "tx último_duplicated_0": ("FwdLastRate", pl.Float64),
-    "pu mínimo_duplicated_0": ("FwdMinPrice", pl.Float64),
-    "tx mínimo_duplicated_0": ("FwdMinRate", pl.Float64),
-    "pu médio_duplicated_0": ("FwdAvgPrice", pl.Float64),
-    "tx médio_duplicated_0": ("FwdAvgRate", pl.Float64),
-    "pu máximo_duplicated_0": ("FwdMaxPrice", pl.Float64),
-    "tx máximo_duplicated_0": ("FwdMaxRate", pl.Float64),
-    "totais contratados operações": ("FwdTrades", pl.Int64),
-    "corretagem contratados operações": ("FwdBrokeredTrades", pl.Int64),
-    "títulos_duplicated_0": ("FwdQuantity", pl.Int64),
-    "corretagem títulos_duplicated_0": ("FwdBrokeredQuantity", pl.Int64),
-    "financeiro_duplicated_0": ("FwdValue", pl.Float64),
-}
+MAPA_COLUNAS = [
+    ("//1", "RowType", None),
+    ("código título", "SelicCode", pl.Int64),
+    ("data vencimento", "MaturityDate", None),
+    ("sigla", "BondType", None),
+    ("mercado à vista pu último", "LastPrice", pl.Float64),
+    ("tx último", "LastRate", pl.Float64),
+    ("pu mínimo", "MinPrice", pl.Float64),
+    ("tx mínimo", "MinRate", pl.Float64),
+    ("pu médio", "AvgPrice", pl.Float64),
+    ("tx médio", "AvgRate", pl.Float64),
+    ("pu máximo", "MaxPrice", pl.Float64),
+    ("tx máximo", "MaxRate", pl.Float64),
+    ("totais liquidados operações", "Trades", pl.Int64),
+    ("corretagem liquidados operações", "BrokeredTrades", pl.Int64),
+    ("títulos", "Quantity", pl.Int64),
+    ("corretagem títulos", "BrokeredQuantity", pl.Int64),
+    ("financeiro", "Value", pl.Float64),
+    ("mercado a termo pu último", "FwdLastPrice", pl.Float64),
+    ("tx último_duplicated_0", "FwdLastRate", pl.Float64),
+    ("pu mínimo_duplicated_0", "FwdMinPrice", pl.Float64),
+    ("tx mínimo_duplicated_0", "FwdMinRate", pl.Float64),
+    ("pu médio_duplicated_0", "FwdAvgPrice", pl.Float64),
+    ("tx médio_duplicated_0", "FwdAvgRate", pl.Float64),
+    ("pu máximo_duplicated_0", "FwdMaxPrice", pl.Float64),
+    ("tx máximo_duplicated_0", "FwdMaxRate", pl.Float64),
+    ("totais contratados operações", "FwdTrades", pl.Int64),
+    ("corretagem contratados operações", "FwdBrokeredTrades", pl.Int64),
+    ("títulos_duplicated_0", "FwdQuantity", pl.Int64),
+    ("corretagem títulos_duplicated_0", "FwdBrokeredQuantity", pl.Int64),
+    ("financeiro_duplicated_0", "FwdValue", pl.Float64),
+]
 
-MAPEAMENTO_COL_API = {col: alias for col, (alias, _) in MAPA_COLUNAS.items()}
-ESQUEMA_DADOS = {
-    alias: dtype for _, (alias, dtype) in MAPA_COLUNAS.items() if dtype is not None
-}
+MAPEAMENTO_COL_API = {html: novo for html, novo, _ in MAPA_COLUNAS}
+ESQUEMA_DADOS = {novo: tipo for _, novo, tipo in MAPA_COLUNAS if tipo is not None}
 
 ORDEM_COLUNAS_FINAL = [
     "CollectedAt",

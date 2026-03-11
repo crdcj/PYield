@@ -9,15 +9,15 @@ import requests
 from requests.exceptions import HTTPError, RequestException
 
 from pyield import bday, clock
-from pyield.b3 import di1
-from pyield.bc.ptax_api import ptax
 from pyield._internal.converters import converter_datas
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.retry import retry_padrao
+from pyield._internal.types import DateLike, any_is_empty
+from pyield.b3 import di1
+from pyield.bc.ptax_api import ptax
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnc import duration as duration_c
 from pyield.tn.ntnf import duration as duration_f
-from pyield._internal.types import DateLike, any_is_empty
 
 BOND_TYPES = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
 
@@ -31,29 +31,29 @@ DATA_MUDANCA_FORMATO = dt.date(2014, 5, 13)
 
 DIAS_RETENCAO_PUBLICA = 5
 
-# Única fonte de verdade para colunas do CSV: (novo_nome, tipo)
+# Única fonte de verdade para colunas do CSV: (nome_csv, nome_novo, tipo)
 # Colunas de data são lidas como String e convertidas em _processar_df_bruto
-TPF_COLUNAS = {
-    "Titulo": ("BondType", pl.String),
-    "Data Referencia": ("ReferenceDate", pl.String),
-    "Codigo SELIC": ("SelicCode", pl.Int64),
-    "Data Base/Emissao": ("IssueBaseDate", pl.String),
-    "Data Vencimento": ("MaturityDate", pl.String),
-    "Tx. Compra": ("BidRate", pl.Float64),
-    "Tx. Venda": ("AskRate", pl.Float64),
-    "Tx. Indicativas": ("IndicativeRate", pl.Float64),
-    "PU": ("Price", pl.Float64),
-    "Desvio padrao": ("StdDev", pl.Float64),
-    "Interv. Ind. Inf. (D0)": ("LowerBoundRateD0", pl.Float64),
-    "Interv. Ind. Sup. (D0)": ("UpperBoundRateD0", pl.Float64),
-    "Interv. Ind. Inf. (D+1)": ("LowerBoundRateD1", pl.Float64),
-    "Interv. Ind. Sup. (D+1)": ("UpperBoundRateD1", pl.Float64),
-    "Criterio": ("Criteria", pl.String),
-}
+TPF_COLUNAS = [
+    ("Titulo", "BondType", pl.String),
+    ("Data Referencia", "ReferenceDate", pl.String),
+    ("Codigo SELIC", "SelicCode", pl.Int64),
+    ("Data Base/Emissao", "IssueBaseDate", pl.String),
+    ("Data Vencimento", "MaturityDate", pl.String),
+    ("Tx. Compra", "BidRate", pl.Float64),
+    ("Tx. Venda", "AskRate", pl.Float64),
+    ("Tx. Indicativas", "IndicativeRate", pl.Float64),
+    ("PU", "Price", pl.Float64),
+    ("Desvio padrao", "StdDev", pl.Float64),
+    ("Interv. Ind. Inf. (D0)", "LowerBoundRateD0", pl.Float64),
+    ("Interv. Ind. Sup. (D0)", "UpperBoundRateD0", pl.Float64),
+    ("Interv. Ind. Inf. (D+1)", "LowerBoundRateD1", pl.Float64),
+    ("Interv. Ind. Sup. (D+1)", "UpperBoundRateD1", pl.Float64),
+    ("Criterio", "Criteria", pl.String),
+]
 
 # Derivados automaticamente
-ESQUEMA_TPF = {k: v[1] for k, v in TPF_COLUNAS.items()}
-MAPA_NOMES_COLUNAS = {k: v[0] for k, v in TPF_COLUNAS.items()}
+ESQUEMA_TPF = {csv: tipo for csv, _, tipo in TPF_COLUNAS}
+MAPA_NOMES_COLUNAS = {csv: novo for csv, novo, _ in TPF_COLUNAS}
 
 logger = logging.getLogger(__name__)
 
@@ -345,25 +345,7 @@ def tpf_data(
 
     Examples:
         >>> from pyield import anbima
-        >>> anbima.tpf_data(date="22-08-2025")
-        shape: (49, 14)
-        ┌───────────────┬──────────┬───────────┬───────────────┬───┬───────────┬───────────┬────────────────┬──────────┐
-        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate   ┆ AskRate   ┆ IndicativeRate ┆ DIRate   │
-        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---       ┆ ---       ┆ ---            ┆ ---      │
-        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64       ┆ f64       ┆ f64            ┆ f64      │
-        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪═══════════╪═══════════╪════════════════╪══════════╡
-        │ 2025-08-22    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000198  ┆ 0.0001    ┆ 0.000165       ┆ 0.14906  │
-        │ 2025-08-22    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ -0.000053 ┆ -0.000156 ┆ -0.000116      ┆ 0.14843  │
-        │ 2025-08-22    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ -0.000053 ┆ -0.000143 ┆ -0.000107      ┆ 0.1436   │
-        │ 2025-08-22    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000309  ┆ 0.000292  ┆ 0.000302       ┆ 0.138189 │
-        │ 2025-08-22    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000421  ┆ 0.000399  ┆ 0.000411       ┆ 0.134548 │
-        │ …             ┆ …        ┆ …         ┆ …             ┆ … ┆ …         ┆ …         ┆ …              ┆ …        │
-        │ 2025-08-22    ┆ NTN-F    ┆ 950199    ┆ 2016-01-15    ┆ … ┆ 0.139379  ┆ 0.139163  ┆ 0.139268       ┆ 0.13959  │
-        │ 2025-08-22    ┆ NTN-F    ┆ 950199    ┆ 2018-01-05    ┆ … ┆ 0.134252  ┆ 0.134018  ┆ 0.13414        ┆ 0.1327   │
-        │ 2025-08-22    ┆ NTN-F    ┆ 950199    ┆ 2020-01-10    ┆ … ┆ 0.13846   ┆ 0.138355  ┆ 0.13841        ┆ 0.13626  │
-        │ 2025-08-22    ┆ NTN-F    ┆ 950199    ┆ 2022-01-07    ┆ … ┆ 0.139503  ┆ 0.139321  ┆ 0.139398       ┆ 0.13807  │
-        │ 2025-08-22    ┆ NTN-F    ┆ 950199    ┆ 2024-01-05    ┆ … ┆ 0.140673  ┆ 0.140566  ┆ 0.140633       ┆ 0.13845  │
-        └───────────────┴──────────┴───────────┴───────────────┴───┴───────────┴───────────┴────────────────┴──────────┘
+        >>> df = anbima.tpf_data(date="06-02-2026")
 
     Data columns:
         - BondType: Tipo do título público (e.g., 'LTN', 'NTN-B').
@@ -399,13 +381,15 @@ def tpf_data(
             datas com mais de 5 dias úteis. O acesso ao histórico completo
             requer uma conexão à rede RTM. Sem ela, a consulta para datas
             antigas retornará um DataFrame vazio.
-    """  # noqa
+    """
     if any_is_empty(date):
         return pl.DataFrame()
     date = converter_datas(date)
     _validar_data_nao_futura(date)
 
     if fetch_from_source:
+        if not bday.is_business_day(date):
+            return pl.DataFrame()
         # Tenta buscar os dados diretamente da fonte (ANBIMA)
         df = _buscar_dados_tpf(date)
     else:
