@@ -4,6 +4,7 @@ import polars as pl
 
 import pyield._internal.converters as cv
 from pyield import clock
+from pyield._internal.retry import DadoIndisponivelError
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3._validar_pregao import data_negociacao_valida
@@ -22,12 +23,17 @@ def _buscar_intraday_ou_historico(
         return pl.DataFrame()
 
     if horario_atual >= intraday.HORA_FIM_INTRADAY:
-        df_historico = historical.historical(
-            data_negociacao, codigos_contrato, full_report
-        )
-        if not df_historico.is_empty():
-            logger.info("Dados consolidados disponíveis. Usando histórico.")
-            return df_historico
+        for tentativa_full_report in (full_report, not full_report):
+            try:
+                df_historico = historical.historical(
+                    data_negociacao, codigos_contrato, tentativa_full_report
+                )
+            except DadoIndisponivelError:
+                continue
+            if not df_historico.is_empty():
+                logger.info("Dados consolidados disponíveis. Usando histórico.")
+                return df_historico
+        logger.info("Histórico consolidado indisponível. Tentando intraday.")
 
     dataframes_intraday = [intraday.intraday(codigo) for codigo in codigos_contrato]
     dataframes_intraday = [df for df in dataframes_intraday if not df.is_empty()]
