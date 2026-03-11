@@ -2,6 +2,7 @@ import datetime as dt
 import logging
 from io import StringIO
 
+import cachetools
 import polars as pl
 import requests
 
@@ -15,6 +16,7 @@ URL_ULTIMA_ETTJ = "https://www.anbima.com.br/informacoes/est-termo/CZ-down.asp"
 CASAS_DECIMAIS = 6
 
 
+@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=60))
 @retry_padrao
 def _buscar_texto_ultima_ettj() -> str:
     """Busca o texto bruto da curva de juros na ANBIMA."""

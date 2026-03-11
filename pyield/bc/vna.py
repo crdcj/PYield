@@ -1,5 +1,6 @@
 import logging
 
+import cachetools
 import requests
 
 from pyield._internal.converters import converter_datas
@@ -9,6 +10,7 @@ from pyield._internal.types import DateLike, any_is_empty
 logger = logging.getLogger(__name__)
 
 
+@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=15))
 @retry_padrao
 def _baixar_texto(date: DateLike) -> str:
     """Baixa o arquivo diário do SELIC no site do BCB."""

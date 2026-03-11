@@ -2,6 +2,7 @@ import datetime as dt
 import logging
 from io import StringIO
 
+import cachetools
 import polars as pl
 import requests
 
@@ -18,6 +19,7 @@ URL_ETTJ_INTRADAY = (
 CASAS_DECIMAIS = 6
 
 
+@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=60))
 @retry_padrao
 def _buscar_texto_intraday() -> str:
     carga_requisicao = {"Dt_Ref": "", "saida": "csv"}

@@ -2,6 +2,7 @@ import io
 import logging
 from typing import Literal
 
+import cachetools
 import polars as pl
 import requests
 
@@ -81,6 +82,7 @@ ORDEM_COLUNAS_FINAL = [
 URL_ULTIMO_IMA = "https://www.anbima.com.br/informacoes/ima/arqs/ima_completo.txt"
 
 
+@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=60))
 @retry_padrao
 def _buscar_texto_ultimo_ima() -> str:
     resposta = requests.get(URL_ULTIMO_IMA, timeout=3)

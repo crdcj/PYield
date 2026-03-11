@@ -15,6 +15,7 @@ Notas de implementação:
 import logging
 from enum import Enum
 
+import cachetools
 import polars as pl
 import requests
 
@@ -42,6 +43,7 @@ class SerieBC(Enum):
     DI_OVER = 11
 
 
+@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=15))
 @retry_padrao
 def _chamar_api(url_api: str) -> list[dict[str, str]]:
     """Executa uma chamada GET na API do BCB e retorna o JSON.

@@ -7,6 +7,7 @@ import datetime as dt
 import io
 import logging
 
+import cachetools
 import polars as pl
 import polars.selectors as cs
 import requests
@@ -93,6 +94,7 @@ ORDEM_COLUNAS_FINAL = [
 ]
 
 
+@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=15))
 @retry_padrao
 def _buscar_csv() -> str:
     """

@@ -2,6 +2,7 @@ import datetime as dt
 import re
 from dataclasses import dataclass
 
+import cachetools
 import requests
 
 from pyield._internal.retry import retry_padrao
@@ -14,6 +15,7 @@ class ProjecaoIndicador:
     valor_projetado: float  # Valor projetado
 
 
+@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=60))
 @retry_padrao
 def _buscar_texto_pagina() -> str:
     """

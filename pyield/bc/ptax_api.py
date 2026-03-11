@@ -18,6 +18,7 @@ cotacaoCompra, cotacaoVenda, dataHoraCotacao
 import datetime as dt
 import logging
 
+import cachetools
 import polars as pl
 import requests
 
@@ -53,6 +54,7 @@ def _montar_url_api(inicio: dt.date, fim: dt.date) -> str:
     return url
 
 
+@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=15))
 @retry_padrao
 def _buscar_texto_api(url: str) -> bytes:
     resposta = requests.get(url, timeout=10)
