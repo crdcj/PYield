@@ -211,8 +211,7 @@ def _parsear_xml_registros(xml_bytes: bytes, codigo_ativo: str) -> list[dict]:
 
 
 def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
-    # infer_schema_length=None garante que colunas raras não sejam ignoradas
-    df = pl.from_dicts(registros, infer_schema_length=None)
+    df = pl.DataFrame(registros)
     # Casting usa os nomes originais do XML, que são constantes
     tipos_coluna = {k: v for k, v in TIPOS_XML.items() if k in df.columns}
     return df.cast(tipos_coluna, strict=False)  # type: ignore

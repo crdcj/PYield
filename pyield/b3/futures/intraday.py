@@ -70,12 +70,6 @@ def intraday(codigo_contrato: str) -> pl.DataFrame:
         if df_bruto.is_empty():
             return pl.DataFrame()
 
-        # # Manter apenas contratos futuros (excluir opções sobre futuros)
-        # if "MarketCode" in df_bruto.columns:
-        #     df_bruto = df_bruto.filter(pl.col("MarketCode") == "FUT")
-        #     if df_bruto.is_empty():
-        #         return pl.DataFrame()
-
         return (
             df_bruto.pipe(_preprocessar_df_intraday)
             .pipe(_processar_df_intraday, codigo_contrato)
