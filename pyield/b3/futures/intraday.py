@@ -13,8 +13,8 @@ from pyield.fwd import forwards
 # Pregão abre às 9:00, porém os dados têm atraso de 15 minutos.
 # Esperar 1 minuto adicional para garantir que estejam disponíveis (9:16h).
 HORA_INICIO_INTRADAY = dt.time(9, 16)
-# Pregão fecha às 18:00h, momento em que os dados consolidados começam a ser preparados.
-HORA_FIM_INTRADAY = dt.time(18, 30)
+# Pregão fecha às 18:00h; por volta de 18:30 os arquivos de price report começam a ser publicados.
+HORA_INICIO_PRICE_REPORT = dt.time(18, 30)
 
 logger = logging.getLogger(__name__)
 

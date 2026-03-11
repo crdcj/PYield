@@ -22,7 +22,7 @@ def _buscar_intraday_ou_historico(
     if horario_atual < intraday.HORA_INICIO_INTRADAY:
         return pl.DataFrame()
 
-    if horario_atual >= intraday.HORA_FIM_INTRADAY:
+    if horario_atual >= intraday.HORA_INICIO_PRICE_REPORT:
         for tentativa_full_report in (full_report, not full_report):
             try:
                 df_historico = historical.historical(
