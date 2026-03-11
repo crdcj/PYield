@@ -1,5 +1,6 @@
 import logging
 
+import cachetools
 import polars as pl
 import requests
 
@@ -49,6 +50,7 @@ def _mapa_renomeacao_intraday() -> dict[str, str]:
     return {nome_orig: nome_novo for nome_orig, nome_novo, _ in COLUNAS_INTRADAY}
 
 
+@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=15))
 @retry_padrao
 def _buscar_json_intraday(codigo_contrato: str) -> list[dict]:
     url = f"{URL_BASE_INTRADAY}/{codigo_contrato}"
