@@ -10,7 +10,7 @@ from lxml import etree
 from lxml.etree import _Element
 
 import pyield._internal.converters as cv
-from pyield._internal.retry import DadoIndisponivelError, retry_padrao
+from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3._validar_pregao import data_negociacao_valida
@@ -112,8 +112,7 @@ def _baixar_zip_url(data: dt.date, relatorio_completo: bool) -> bytes:
     resposta.raise_for_status()
 
     if len(resposta.content) < MIN_TAMANHO_ZIP_BYTES:
-        data_str_formatada = data.strftime("%Y-%m-%d")
-        raise DadoIndisponivelError(f"Sem dados disponíveis para {data_str_formatada}.")
+        return bytes()
     return resposta.content
 
 
@@ -231,6 +230,8 @@ def _processar_xml_extraido(xml_bytes: bytes, codigo_contrato: str) -> pl.DataFr
 @lru_cache(maxsize=64)
 def _obter_xml_price_report(data: dt.date, relatorio_completo: bool) -> bytes:
     dados_zip = _baixar_zip_url(data, relatorio_completo)
+    if not dados_zip:
+        return bytes()
     return _extrair_xml_zip_aninhado(dados_zip)
 
 
@@ -311,8 +312,6 @@ def fetch_price_report(
         - MinLimitValue (Float64): Limite mínimo de variação.
 
     Raises:
-        DadoIndisponivelError: Se a data for válida, mas o endpoint não fornecer
-            arquivo para a data consultada.
         requests.HTTPError: Se a requisição HTTP ao endpoint falhar.
         zipfile.BadZipFile: Se o arquivo ZIP recebido estiver corrompido.
         etree.XMLSyntaxError: Se o XML recebido estiver malformado.

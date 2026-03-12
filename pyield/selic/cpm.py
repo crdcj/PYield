@@ -39,7 +39,7 @@ import requests
 
 import pyield._internal.converters as cv
 from pyield import bday
-from pyield._internal.retry import DadoIndisponivelError, retry_padrao
+from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
 from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.price_report import (
@@ -284,12 +284,11 @@ def data(date: DateLike) -> pl.DataFrame:
         return _empty_schema()
 
     try:
-        zip_data = _baixar_zip_url(trade_date, "SPR")
+        zip_data = _baixar_zip_url(trade_date, relatorio_completo=False)
+        if not zip_data:
+            return _empty_schema()
         xml_bytes = _extrair_xml_zip_aninhado(zip_data)
         records = _parsear_xml_registros(xml_bytes, "CPM")
-    except DadoIndisponivelError:
-        logger.warning("CPM: dados SPR indisponíveis para %s.", trade_date)
-        return _empty_schema()
     except Exception:
         logger.exception("CPM: falha ao baixar SPR para %s.", trade_date)
         return _empty_schema()

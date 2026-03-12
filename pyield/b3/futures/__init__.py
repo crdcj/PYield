@@ -4,7 +4,6 @@ import polars as pl
 
 import pyield._internal.converters as cv
 from pyield import clock
-from pyield._internal.retry import DadoIndisponivelError
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3._validar_pregao import data_negociacao_valida
@@ -13,41 +12,10 @@ from pyield.b3.futures import historical, intraday
 logger = logging.getLogger(__name__)
 
 
-def _buscar_intraday_ou_historico(
-    data_negociacao,
-    codigos_contrato: list[str],
-    full_report: bool,
-) -> pl.DataFrame:
-    horario_atual = clock.now().time()
-    if horario_atual < intraday.HORA_INICIO_INTRADAY:
-        return pl.DataFrame()
-
-    if horario_atual >= intraday.HORA_INICIO_PRICE_REPORT:
-        for tentativa_full_report in (full_report, not full_report):
-            try:
-                df_historico = historical.historical(
-                    data_negociacao, codigos_contrato, tentativa_full_report
-                )
-            except DadoIndisponivelError:
-                continue
-            if not df_historico.is_empty():
-                logger.info("Dados consolidados disponíveis. Usando histórico.")
-                return df_historico
-        logger.info("Histórico consolidado indisponível. Tentando intraday.")
-
-    dataframes_intraday = [intraday.intraday(codigo) for codigo in codigos_contrato]
-    dataframes_intraday = [df for df in dataframes_intraday if not df.is_empty()]
-    if not dataframes_intraday:
-        return pl.DataFrame()
-    if len(dataframes_intraday) == 1:
-        return dataframes_intraday[0]
-    return pl.concat(dataframes_intraday, how="diagonal_relaxed").sort("TickerSymbol")
-
-
 def futures(
     date: DateLike,
     contract_code: str | list[str],
-    full_report: bool = False,
+    full_report: bool | None = None,
 ) -> pl.DataFrame:
     """Busca dados de um contrato futuro da B3 para a data de referência.
 
@@ -59,10 +27,12 @@ def futures(
             - Moedas: DOL, WDO, EUR, GBR, JAP, CNY
             - Índices: IND, WIN, ISP, WSP
             - Commodities: BGI, CCM, ICF, CNL, SJC, SOY, ETH, GLD
-        full_report: Se False (padrão), usa o simplified price report (SPR),
-            arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
-            price report completo (PR, ~2 MB) com todos os dados de negociação.
-            Relevante apenas quando o dado não está no cache.
+        full_report: Controla a fonte de dados quando o dado não está no cache.
+            Se None (padrão), prioriza dados intraday (para data de hoje) e
+            usa SPR como fallback — ideal para uso interativo.
+            Se False, usa o simplified price report (SPR, ~2 KB).
+            Se True, usa apenas o price report completo (PR, ~2 MB) —
+            indicado para processos batch noturnos.
 
     Returns:
         DataFrame Polars com os dados do contrato informado.
@@ -105,12 +75,16 @@ def futures(
     if not data_negociacao_valida(data_negociacao):
         return pl.DataFrame()
 
-    if intraday.data_intraday_valida(data_negociacao):
-        return _buscar_intraday_ou_historico(
-            data_negociacao=data_negociacao,
-            codigos_contrato=codigos_contrato,
-            full_report=full_report,
-        )
+    # None: tenta intraday primeiro (só hoje + horário ok)
+    if full_report is None:
+        eh_hoje = intraday.data_intraday_valida(data_negociacao)
+        if eh_hoje:
+            horario = clock.now().time()
+            if horario >= intraday.HORA_INICIO_INTRADAY:
+                df = intraday.intraday(codigos_contrato)
+                if not df.is_empty():
+                    return df
+        full_report = False
 
     return historical.historical(data_negociacao, codigos_contrato, full_report)
 

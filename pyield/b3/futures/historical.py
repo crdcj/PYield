@@ -24,9 +24,8 @@ def historical(
     Args:
         data: Data de negociação.
         codigo_contrato: Código(s) do contrato futuro na B3.
-        full_report: Se False (padrão), usa o simplified price report (SPR),
-            arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
-            price report completo (PR, ~2 MB) com todos os dados de negociação.
+        full_report: Se False (padrão), usa o simplified price report
+            (SPR, ~2 KB). Se True, usa o price report completo (PR, ~2 MB).
 
     Returns:
         DataFrame Polars com dados históricos de futuros.
@@ -88,9 +87,7 @@ def historical(
     if codigos_sem_cache:
         for codigo in codigos_sem_cache:
             df_bruto = fetch_price_report(
-                date=data,
-                contract_code=codigo,
-                full_report=full_report,
+                date=data, contract_code=codigo, full_report=full_report
             )
             if df_bruto.is_empty():
                 continue

@@ -11,10 +11,6 @@ _HTTP_MUITAS_REQUISICOES = 429
 _HTTP_ERRO_SERVIDOR_MINIMO = 500
 
 
-class DadoIndisponivelError(Exception):
-    """Levantada quando o dado baixado for considerado inválido (dado vazio/pequeno)."""
-
-
 _EXCECOES_TRANSITORIAS = (
     rex.Timeout,
     rex.ConnectionError,

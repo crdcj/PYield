@@ -5,6 +5,7 @@ import polars as pl
 import polars.selectors as cs
 
 from pyield import bday, clock
+from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.futures.common import expr_dv01
 from pyield.b3.intraday_derivatives import fetch_intraday_derivatives
@@ -13,8 +14,6 @@ from pyield.fwd import forwards
 # Pregão abre às 9:00, porém os dados têm atraso de 15 minutos.
 # Esperar 1 minuto adicional para garantir que estejam disponíveis (9:16h).
 HORA_INICIO_INTRADAY = dt.time(9, 16)
-# Pregão fecha às 18:00h; por volta de 18:30 os arquivos de price report começam a ser publicados.
-HORA_INICIO_PRICE_REPORT = dt.time(18, 30)
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ def data_intraday_valida(data_verificacao: dt.date) -> bool:
     return data_verificacao == clock.today()
 
 
-def intraday(codigo_contrato: str) -> pl.DataFrame:
+def intraday(codigo_contrato: str | list[str]) -> pl.DataFrame:
     """Busca os dados intraday mais recentes da B3.
 
     Os dados intraday da fonte possuem atraso aproximado de 15 minutos.
@@ -35,7 +34,8 @@ def intraday(codigo_contrato: str) -> pl.DataFrame:
     menos 15 minutos.
 
     Args:
-        codigo_contrato: Código base do contrato futuro na B3.
+        codigo_contrato: Código base do contrato futuro na B3, ou lista de
+            códigos.
 
     Returns:
         DataFrame Polars com dados intraday processados.
@@ -65,6 +65,21 @@ def intraday(codigo_contrato: str) -> pl.DataFrame:
         - LastRate (Float64): Última taxa negociada.
         - ForwardRate (Float64): Taxa a termo (apenas DI1/DAP).
     """
+    codigos = normalizar_codigos_contrato(codigo_contrato)
+    if not codigos:
+        return pl.DataFrame()
+
+    dfs = [_intraday_contrato(c) for c in codigos]
+    dfs = [df for df in dfs if not df.is_empty()]
+    if not dfs:
+        return pl.DataFrame()
+    if len(dfs) == 1:
+        return dfs[0]
+    return pl.concat(dfs, how="diagonal_relaxed").sort("TickerSymbol")
+
+
+def _intraday_contrato(codigo_contrato: str) -> pl.DataFrame:
+    """Busca e processa dados intraday de um único contrato."""
     try:
         df_bruto = fetch_intraday_derivatives(codigo_contrato)
         if df_bruto.is_empty():
