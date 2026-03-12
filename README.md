@@ -126,13 +126,18 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | Módulo | Finalidade |
 |--------|---------|
 | `bday` | Calendário de dias úteis com feriados brasileiros |
-| `futures` | Dados de futuros da B3 (DI1, DDI, FRC, DAP, DOL, WDO, IND, WIN) |
+| `futures` | Dados de futuros da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
+| `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
 | `Interpolator` | Interpolação de taxas (flat_forward, linear) |
 | `forward` / `forwards` | Cálculo de taxas a termo |
-| `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise de títulos públicos |
+| `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
+| `ntnb1`, `ntnbprinc`, `pre` | Títulos e curvas adicionais (NTN-B1, NTN-B Principal, curva PRE) |
+| `tn.auction` / `tn.benchmarks` | Leilões e benchmarks de títulos públicos |
 | `anbima` | Dados da ANBIMA (preços de TPF, curvas de juros, índices IMA) |
-| `bc` | Indicadores do BCB (SELIC, PTAX, repos, VNA) |
+| `bc` | Indicadores do BCB (SELIC, PTAX, repos, VNA, leilões, negociações) |
+| `b3` | Dados da B3 (DI over, price reports, derivativos intradiários) |
 | `ipca` | Dados de inflação (histórico e projeções) |
+| `selic` | Opções digitais de COPOM e probabilidades implícitas |
 | `rmd` | Relatório Mensal da Dívida do Tesouro Nacional |
 | `today` / `now` | Data/hora atual no Brasil (America/Sao_Paulo) |
 
@@ -162,8 +167,15 @@ from pyield import futures
 # DI1 (Futuro de Depósito Interfinanceiro)
 futures("31-05-2024", "DI1")
 
-# Outros contratos: DDI, FRC, DAP, DOL, WDO, IND, WIN
+# Outros contratos disponíveis:
+# - Juros: DI1, DDI, OC1, DAP, IAP
+# - Moedas: DOL, WDO, EUR, GBR, JAP, CNY
+# - Índices: IND, WIN, ISP, WSP
+# - Commodities: BGI, CCM, ICF, CNL, SJC, SOY, ETH, GLD
 futures("31-05-2024", "DAP")
+
+# Múltiplos contratos de uma vez
+futures("31-05-2024", ["DI1", "DAP"])
 
 # Dados intradiários (quando o mercado estiver aberto)
 futures("16-01-2025", "DI1")  # Retorna dados ao vivo durante o horário de negociação
@@ -207,5 +219,5 @@ Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield
 ## Testes
 
 ```sh
-pytest pyield --doctest-modules
+pytest
 ```

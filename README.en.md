@@ -126,13 +126,18 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | Module | Purpose |
 |--------|---------|
 | `bday` | Business day calendar with Brazilian holidays |
-| `futures` | B3 futures data (DI1, DDI, FRC, DAP, DOL, WDO, IND, WIN) |
+| `futures` | B3 futures data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
+| `di1` | Interpolated DI1 curve and available trade dates |
 | `Interpolator` | Rate interpolation (flat_forward, linear) |
 | `forward` / `forwards` | Forward-rate calculations |
-| `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Treasury bond pricing and analysis |
+| `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
+| `ntnb1`, `ntnbprinc`, `pre` | Additional bonds and curves (NTN-B1, NTN-B Principal, PRE curve) |
+| `tn.auction` / `tn.benchmarks` | Treasury bond auctions and benchmarks |
 | `anbima` | ANBIMA data (government bond prices, yield curves, IMA indexes) |
-| `bc` | BCB indicators (SELIC, PTAX, repos, VNA) |
+| `bc` | BCB indicators (SELIC, PTAX, repos, VNA, auctions, trades) |
+| `b3` | B3 data (DI over, price reports, intraday derivatives) |
 | `ipca` | Inflation data (historical and projections) |
+| `selic` | COPOM digital options and implied probabilities |
 | `rmd` | Monthly Debt Report (RMD) from Tesouro Nacional |
 | `today` / `now` | Current date/time in Brazil (America/Sao_Paulo) |
 
@@ -162,8 +167,15 @@ from pyield import futures
 # DI1 (Interbank Deposit Futures)
 futures("31-05-2024", "DI1")
 
-# Other contracts: DDI, FRC, DAP, DOL, WDO, IND, WIN
+# Other available contracts:
+# - Rates: DI1, DDI, OC1, DAP, IAP
+# - Currencies: DOL, WDO, EUR, GBR, JAP, CNY
+# - Indexes: IND, WIN, ISP, WSP
+# - Commodities: BGI, CCM, ICF, CNL, SJC, SOY, ETH, GLD
 futures("31-05-2024", "DAP")
+
+# Multiple contracts at once
+futures("31-05-2024", ["DI1", "DAP"])
 
 # Intraday data (when the market is open)
 futures("16-01-2025", "DI1")  # Returns live data during trading hours
@@ -204,5 +216,5 @@ Full documentation: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
 ## Tests
 
 ```sh
-pytest pyield --doctest-modules
+pytest
 ```
