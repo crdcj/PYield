@@ -347,7 +347,7 @@ def fetch_price_report(
                 dataframes.append(df)
         if not dataframes:
             return pl.DataFrame()
-        return pl.concat(dataframes).sort("TickerSymbol")
+        return pl.concat(dataframes, how="diagonal").sort("TickerSymbol")
     except (zipfile.BadZipFile, etree.XMLSyntaxError):
         registro.exception(f"Falha ao parsear o price report de {contratos} em {date}.")
         raise
@@ -432,4 +432,4 @@ def read_price_report(
             dataframes.append(df)
     if not dataframes:
         return pl.DataFrame()
-    return pl.concat(dataframes).sort("TickerSymbol")
+    return pl.concat(dataframes, how="diagonal").sort("TickerSymbol")
