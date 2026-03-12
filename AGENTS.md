@@ -1,10 +1,10 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## Project Overview
 
-PYield is a Python library for Brazilian fixed income analysis. It fetches and processes data from ANBIMA, BCB (Central Bank), IBGE, and B3 (Brazilian stock exchange). All public functions return Polars DataFrames/Series (migration from Pandas completed in v0.40.0).
+PYield is a Python library for Brazilian fixed income analysis (requires Python ≥ 3.12). It fetches and processes data from ANBIMA, BCB (Central Bank), IBGE, and B3 (Brazilian stock exchange). All public functions return Polars DataFrames/Series.
 
 ## Build & Development Commands
 
@@ -12,17 +12,18 @@ PYield is a Python library for Brazilian fixed income analysis. It fetches and p
 # Install dependencies (uses uv package manager)
 uv sync
 
-# Run all tests including doctests
-pytest pyield --doctest-modules
+# Run all tests (tests/ + doctests in pyield/)
+# pyproject.toml already configures testpaths and --doctest-modules
+pytest
 
-# Test a single module
-pytest pyield/bday.py --doctest-modules
+# Run only doctests in a single module
+pytest pyield/bday/core.py --doctest-modules
 
 # Run a single test file
-pytest tests/test_bday.py
+pytest tests/bday/test_bday.py
 
 # Run a specific test
-pytest tests/test_bday.py::test_count_with_strings1
+pytest tests/bday/test_bday.py::test_count_with_strings1
 
 # Linting
 ruff check
@@ -40,21 +41,29 @@ mkdocs serve
 
 The library is organized into domain-specific namespaces, all exposed through `pyield/__init__.py`:
 
-- **`bday`** - Business day calendar (Brazilian holidays built-in). Core functions: `count`, `offset`, `generate`, `is_business_day`
-- **`anbima`** - ANBIMA data endpoints (treasury bond pricing, yield curves). Functions: `tpf_data`, `last_ettj`, `last_ima`
-- **`bc`** - BCB indicators (SELIC, PTAX, repo rates, VNA). Functions: `selic_over`, `ptax`, `repos`, `vna_lft`
-- **`b3`** - B3 market data (DI futures, price reports). Key function: `futures()`
-- **`tn`** - Treasury bond modules: `ltn`, `ntnb`, `ntnf`, `ntnc`, `lft`, `pre` (each has `data()`, `quotation()`, pricing functions)
-- **`ipca`** - Inflation data (historical and projected)
+- **`bday`** — Business day calendar (Brazilian holidays built-in). Core functions: `count`, `offset`, `generate`, `is_business_day`, `last_business_day`. Polars expression variants: `count_expr`, `offset_expr`, `is_business_day_expr`.
+- **`anbima`** — ANBIMA data endpoints (treasury bond pricing, yield curves). Functions: `tpf_data`, `tpf_maturities`, `last_ettj`, `intraday_ettj`, `last_ima`, `imaq`, `tpf_difusao`.
+- **`bc`** — BCB indicators. Functions: `selic_over`, `selic_over_series`, `selic_target`, `selic_target_series`, `di_over`, `di_over_series`, `ptax`, `ptax_series`, `repos`, `vna_lft`, `auctions`, `tpf_monthly_trades`, `tpf_intraday_trades`. Submodule: `copom`.
+- **`b3`** — B3 market data. Functions: `futures`, `di_over`, `fetch_price_report`, `read_price_report`, `fetch_intraday_derivatives`. Submodule: `di1`.
+- **`tn`** — Treasury bond modules: `ltn`, `ntnb`, `ntnf`, `ntnc`, `lft`, `pre`, `ntnbprinc`, `ntnb1`. Most have `data()`, `maturities()`, `price()`; `ntnb`, `ntnc`, `lft`, `ntnb1` also have `quotation()`. `pre` only has `spot_rates()` and `di_spreads()`. Also exposes: `tn.auction`, `tn.benchmarks`, `tn.di_spreads`.
+- **`ipca`** — Inflation data. Functions: `indexes`, `last_indexes`, `rates`, `last_rates`, `projected_rate`.
+- **`selic`** — COPOM-related analytics. Submodules: `cpm` (raw B3 COPOM Digital Option data), `probabilities` (implied COPOM meeting probabilities).
+
+Top-level functions also exported from `pyield`:
+- `forwards`, `forward` — Forward rate calculations from `fwd.py`.
+- `rmd` — Treasury monthly debt report (Relatório Mensal da Dívida) from `rmd.py`.
+- `Interpolator` — Rate interpolation class from `interpolator.py`.
+- `today`, `now` — Brazil timezone date/time from `clock.py`.
+- `copom_options` — Alias for `selic.cpm.data`.
 
 ### Key Cross-Cutting Components
 
-- **`_internal/types.py`** - Type aliases `DateLike` and `ArrayLike`; `any_is_empty()` for null/empty detection
-- **`_internal/converters.py`** - `converter_datas()` normalizes various date inputs to `datetime.date` or `pl.Series[Date]`
-- **`interpolator.py`** - `Interpolator` class for rate interpolation (linear or flat_forward method, 252 bday/year convention)
-- **`_internal/data_cache.py`** - GitHub-hosted parquet data cache with daily TTL using `lru_cache`
-- **`_internal/retry.py`** - Tenacity-based retry decorator for network requests (retries on 429, 5xx, timeouts)
-- **`clock.py`** - `today()` and `now()` return Brazil timezone (America/Sao_Paulo) dates/times
+- **`_internal/types.py`** — Type aliases `DateLike` and `ArrayLike`; `any_is_empty()` for null/empty detection; `any_is_collection()` for array-like detection.
+- **`_internal/converters.py`** — `converter_datas()` normalizes various date inputs to `datetime.date` or `pl.Series[Date]`. `converter_datas_expr()` for Polars expression pipelines.
+- **`interpolator.py`** — `Interpolator` class for rate interpolation (linear or flat_forward method, 252 bday/year convention).
+- **`_internal/data_cache.py`** — GitHub-hosted parquet data cache with daily TTL using `lru_cache` (date-key trick for auto-invalidation).
+- **`_internal/retry.py`** — Tenacity-based retry decorator (`retry_padrao`) for network requests (retries on 429, 5xx, timeouts).
+- **`clock.py`** — `today()` and `now()` return Brazil timezone (America/Sao_Paulo) dates/times.
 
 ### Date Handling Conventions
 
@@ -112,7 +121,14 @@ Most data-fetching functions follow this pattern:
 
 ## Testing
 
-Tests are in `tests/` and doctests are embedded in docstrings. Run `pytest pyield --doctest-modules` to execute both.
+Tests are in `tests/` and doctests are embedded in docstrings. Run `pytest` to execute both (configured in `pyproject.toml` via `testpaths` and `addopts = "--doctest-modules"`).
+
+### Doctest Configuration (conftest.py)
+
+The root `conftest.py` configures the doctest environment:
+- **Namespace injection:** `yd` (pyield) and `pl` (polars) are available in all doctests via `doctest_namespace` fixture.
+- **Polars display:** `pl.Config.set_tbl_width_chars(150)` ensures consistent table output across environments.
+- **Option flags:** `ELLIPSIS` and `NORMALIZE_WHITESPACE` are enabled globally.
 
 ### Test Pattern for Data-Fetching Modules
 
