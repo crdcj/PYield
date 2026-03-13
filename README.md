@@ -186,7 +186,6 @@ futures("16-01-2025", "DI1")  # Retorna dados ao vivo durante o horário de nego
 PYield aceita entradas de data flexíveis (`DateLike`):
 - Strings: `"31-05-2024"`, `"31/05/2024"`, `"2024-05-31"`
 - `datetime.date`, `datetime.datetime`
-- `pandas.Timestamp`, `numpy.datetime64`
 
 Funções escalares retornam `datetime.date`. Funções vetorizadas retornam `polars.Series`.
 
@@ -206,9 +205,14 @@ bday.count(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 
 ## Migração para Polars (v0.40.0+)
 
-Todas as funções retornam **DataFrames/Series do Polars**. Para converter para Pandas:
+A partir da versão 0.40.0, todas as saídas tabulares passaram de Pandas para **Polars**. Entradas vetoriais que antes aceitavam `pd.Series` e `np.ndarray` agora aceitam apenas listas, tuplas ou `pl.Series`. Para converter:
 
 ```python
+# Entrada: converter coleções Pandas/NumPy antes de passar para o PYield
+pl_series = pl.from_pandas(pd_series)   # pd.Series → pl.Series (requer pandas)
+pl_series = pl.Series(np_array)         # np.ndarray → pl.Series (requer numpy)
+
+# Saída: converter DataFrame Polars para Pandas
 df_pandas = df.to_pandas(use_pyarrow_extension_array=True)
 ```
 

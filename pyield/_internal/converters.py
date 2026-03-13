@@ -69,7 +69,7 @@ def converter_datas(
 
     Normaliza datas em diversos formatos para um tipo consistente:
     - Entradas escalares (str, date, datetime) retornam ``datetime.date``
-    - Coleções (list, tuple, ndarray, Series) retornam ``pl.Series`` com dtype ``Date``
+    - Coleções (list, tuple, Series) retornam ``pl.Series`` com dtype ``Date``
     - Entradas nulas retornam ``None``
 
     O parse de strings é feito por elemento com fallback entre formatos
@@ -79,7 +79,7 @@ def converter_datas(
         dates: Data(s) a converter. Aceita:
             - String nos formatos ``dd-mm-YYYY``, ``dd/mm/YYYY`` ou ``YYYY-mm-dd``
             - ``datetime.date`` ou ``datetime.datetime``
-            - Lista, tupla, ndarray ou Series de datas
+            - Lista, tupla ou Series de datas
             - ``None``
 
     Returns:

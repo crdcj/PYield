@@ -32,7 +32,6 @@ Source = "https://github.com/crdcj/PYield"
 
 [dependency-groups]
 dev = [    
-    "pandas[pyarrow]",
     "python-dotenv[cli]>=1.0.0",
     "ipykernel>=6.20.0",
     "pytest>=8.0.0",
@@ -41,8 +40,6 @@ dev = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.0.0",
     "mkdocstrings[python]>=0.24.0",
-    "mkdocs-autorefs>=1.0.0",
-    "mkdocs-git-revision-date-localized-plugin>=1.2.0",
     "types-requests>=2.31.0",
     "lxml-stubs>=0.5.0",
 ]

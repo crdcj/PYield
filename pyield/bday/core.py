@@ -617,7 +617,7 @@ def is_business_day(dates: None | DateLike | ArrayLike) -> None | bool | pl.Seri
     regime de feriados.
 
     Args:
-        dates: Data única ou coleção (list/tuple/ndarray/Polars/Pandas Series).
+        dates: Data única ou coleção (list/tuple/Polars Series).
             Pode incluir nulos que propagam. Entrada escalar nula retorna ``None``.
 
     Returns:
