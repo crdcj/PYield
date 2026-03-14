@@ -1748,7 +1748,11 @@
 </tr>
 <tr>
 <td><code>futures</code></td>
-<td>Dados de futuros da B3 (DI1, DDI, FRC, DAP, DOL, WDO, IND, WIN)</td>
+<td>Dados de futuros da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros)</td>
+</tr>
+<tr>
+<td><code>di1</code></td>
+<td>Curva DI1 interpolada e datas de negociação disponíveis</td>
 </tr>
 <tr>
 <td><code>Interpolator</code></td>
@@ -1760,7 +1764,15 @@
 </tr>
 <tr>
 <td><code>ltn</code>, <code>ntnb</code>, <code>ntnf</code>, <code>lft</code>, <code>ntnc</code></td>
-<td>Precificação e análise de títulos públicos</td>
+<td>Precificação e análise dos títulos públicos principais</td>
+</tr>
+<tr>
+<td><code>ntnb1</code>, <code>ntnbprinc</code>, <code>pre</code></td>
+<td>Títulos e curvas adicionais (NTN-B1, NTN-B Principal, curva PRE)</td>
+</tr>
+<tr>
+<td><code>tn.auction</code> / <code>tn.benchmarks</code></td>
+<td>Leilões e benchmarks de títulos públicos</td>
 </tr>
 <tr>
 <td><code>anbima</code></td>
@@ -1768,11 +1780,19 @@
 </tr>
 <tr>
 <td><code>bc</code></td>
-<td>Indicadores do BCB (SELIC, PTAX, repos, VNA)</td>
+<td>Indicadores do BCB (SELIC, PTAX, repos, VNA, leilões, negociações)</td>
+</tr>
+<tr>
+<td><code>b3</code></td>
+<td>Dados da B3 (DI over, price reports, derivativos intradiários)</td>
 </tr>
 <tr>
 <td><code>ipca</code></td>
 <td>Dados de inflação (histórico e projeções)</td>
+</tr>
+<tr>
+<td><code>selic</code></td>
+<td>Opções digitais de COPOM e probabilidades implícitas</td>
 </tr>
 <tr>
 <td><code>rmd</code></td>
@@ -1805,17 +1825,23 @@
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># DI1 (Futuro de Depósito Interfinanceiro)</span>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Outros contratos: DDI, FRC, DAP, DOL, WDO, IND, WIN</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DAP&quot;</span><span class="p">)</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># Dados intradiários (quando o mercado estiver aberto)</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;16-01-2025&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>  <span class="c1"># Retorna dados ao vivo durante o horário de negociação</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Outros contratos disponíveis:</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># - Juros: DI1, DDI, OC1, DAP, IAP</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># - Moedas: DOL, WDO, EUR, GBR, JAP, CNY</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># - Índices: IND, WIN, ISP, WSP</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># - Commodities: BGI, CCM, ICF, CNL, SJC, SOY, ETH, GLD</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DAP&quot;</span><span class="p">)</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="c1"># Múltiplos contratos de uma vez</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;DI1&quot;</span><span class="p">,</span> <span class="s2">&quot;DAP&quot;</span><span class="p">])</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="c1"># Dados intradiários (quando o mercado estiver aberto)</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;16-01-2025&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>  <span class="c1"># Retorna dados ao vivo durante o horário de negociação</span>
 </span></code></pre></div>
 <h2 id="tratamento-de-datas">Tratamento de Datas</h2>
 <p>PYield aceita entradas de data flexíveis (<code>DateLike</code>):
 - Strings: <code>"31-05-2024"</code>, <code>"31/05/2024"</code>, <code>"2024-05-31"</code>
-- <code>datetime.date</code>, <code>datetime.datetime</code>
-- <code>pandas.Timestamp</code>, <code>numpy.datetime64</code></p>
+- <code>datetime.date</code>, <code>datetime.datetime</code></p>
 <p>Funções escalares retornam <code>datetime.date</code>. Funções vetorizadas retornam <code>polars.Series</code>.</p>
 <p>O parsing de strings é elemento a elemento entre os formatos aceitos. Strings
 inválidas são convertidas para valores nulos (<code>None</code> em saídas escalares e <code>null</code>
@@ -1828,13 +1854,18 @@ em saídas vetorizadas).</p>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">([</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; Series: [22, null]</span>
 </span></code></pre></div>
 <h2 id="migracao-para-polars-v0400">Migração para Polars (v0.40.0+)</h2>
-<p>Todas as funções retornam <strong>DataFrames/Series do Polars</strong>. Para converter para Pandas:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">df_pandas</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">(</span><span class="n">use_pyarrow_extension_array</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<p>A partir da versão 0.40.0, todas as saídas tabulares passaram de Pandas para <strong>Polars</strong>. Entradas vetoriais que antes aceitavam <code>pd.Series</code> e <code>np.ndarray</code> agora aceitam apenas listas, tuplas ou <code>pl.Series</code>. Para converter:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Entrada: converter coleções Pandas/NumPy antes de passar para o PYield</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">pl_series</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">pd_series</span><span class="p">)</span>   <span class="c1"># pd.Series → pl.Series (requer pandas)</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">pl_series</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np_array</span><span class="p">)</span>         <span class="c1"># np.ndarray → pl.Series (requer numpy)</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Saída: converter DataFrame Polars para Pandas</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">df_pandas</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">(</span><span class="n">use_pyarrow_extension_array</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="documentacao">Documentação</h2>
 <p>Documentação completa: <a href="https://crdcj.github.io/PYield/">crdcj.github.io/PYield</a></p>
 <h2 id="testes">Testes</h2>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pytest<span class="w"> </span>pyield<span class="w"> </span>--doctest-modules
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pytest
 </span></code></pre></div>
 
 
