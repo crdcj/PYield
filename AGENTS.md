@@ -6,6 +6,10 @@ This file provides guidance to AI coding agents when working with code in this r
 
 PYield is a Python library for Brazilian fixed income analysis (requires Python ≥ 3.12). It fetches and processes data from ANBIMA, BCB (Central Bank), IBGE, and B3 (Brazilian stock exchange). All public functions return Polars DataFrames/Series.
 
+## Princípio Fundamental: Redução de Complexidade
+
+O objetivo principal ao trabalhar neste repositório é **reduzir a complexidade do código**. Toda alteração deve, por padrão, simplificar — nunca adicionar ramificações, abstrações ou lógica desnecessária. Só aumente a complexidade quando for estritamente necessário e com justificativa clara do solicitante.
+
 ## Build & Development Commands
 
 ```bash
@@ -109,10 +113,6 @@ Most data-fetching functions follow this pattern:
 
 - Em `with_columns`, preferir sintaxe de keyword `col=expr` em vez de `expr.alias("col")`.
 - Retornos com encadeamento Polars: usar um único `return (...)` com quebras de linha entre métodos, sem variável intermediária.
-
-## Complexity
-
-- Always prioritize reducing code complexity. Do not increase complexity unless explicitly requested.
 
 ## Logging Conventions
 
