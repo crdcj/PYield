@@ -121,6 +121,10 @@ def converter_datas(
         >>> converter_datas("") is None
         True
 
+        Data inválida retorna None:
+        >>> converter_datas("31-02-2024") is None
+        True
+
         Lista com valores nulos propaga os nulls:
         >>> converter_datas(["01-01-2024", None])
         shape: (2,)
@@ -140,12 +144,13 @@ def converter_datas(
         ]
 
         Formatos mistos por linha:
-        >>> converter_datas(["25-12-2024", "2024-12-26"])
-        shape: (2,)
+        >>> converter_datas(["25-12-2024", "26/12/2024", "2024-12-27"])
+        shape: (3,)
         Series: 'dates' [date]
         [
             2024-12-25
             2024-12-26
+            2024-12-27
         ]
     """
     if not types.is_collection(dates):

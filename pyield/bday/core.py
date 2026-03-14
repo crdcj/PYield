@@ -143,6 +143,10 @@ def count(
         >>> bday.count("15-12-2023", "01-01-2024")
         10
 
+        Contagem negativa quando ``start`` é posterior a ``end``:
+        >>> bday.count("08-01-2023", "01-01-2023")
+        -5
+
         Total de dias úteis em janeiro e fevereiro desde o início do ano:
         >>> bday.count(start="01-01-2024", end=["01-02-2024", "01-03-2024"])
         shape: (2,)
