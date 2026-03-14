@@ -118,7 +118,7 @@ def _buscar_varias_datas(
     # Bulk: carrega todas as datas de uma vez do cache, por contrato
     resultados = []
     for codigo in codigos:
-        df_cache = historical.carregar_pr(datas_validas, codigo)
+        df_cache = historical.obter_futuros_pr(datas_validas, codigo)
         if not df_cache.is_empty():
             resultados.append(df_cache)
 
@@ -165,4 +165,27 @@ def _buscar_por_fonte(
     return historical.historical(data, codigos, full_report)
 
 
-__all__ = ["futures"]
+def available_dates(contract_code: str) -> pl.Series:
+    """Retorna as datas de negociação disponíveis no dataset histórico PR.
+
+    Args:
+        contract_code: Código do contrato futuro na B3 (ex.: DI1, DOL).
+
+    Returns:
+        Series ordenada de datas (Date) para as quais há dados de ajuste.
+
+    Examples:
+        >>> from pyield.b3.futures import available_dates
+        >>> available_dates("DI1").head(3)
+        shape: (3,)
+        Series: 'TradeDate' [date]
+        [
+            2018-01-02
+            2018-01-03
+            2018-01-04
+        ]
+    """
+    return historical.listar_datas_disponiveis(contract_code)
+
+
+__all__ = ["available_dates", "futures"]

@@ -4,7 +4,7 @@ import pyield._internal.converters as cv
 from pyield import b3, bday, interpolator
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
-from pyield.b3.futures.historical import listar_datas_disponiveis as _listar_datas
+from pyield.b3.futures import available_dates as _listar_datas
 
 
 def data(
@@ -316,7 +316,7 @@ def interpolate_rate(
     return valor
 
 
-def available_trade_dates() -> pl.Series:
+def available_dates() -> pl.Series:
     """Retorna as datas de negociação disponíveis para DI1.
 
     Obtém valores distintos de 'TradeDate' para DI1, com base no dataset histórico
@@ -330,7 +330,7 @@ def available_trade_dates() -> pl.Series:
     Examples:
         >>> from pyield import di1
         >>> # Série disponível no dataset PR começa em 2018-01-02
-        >>> di1.available_trade_dates().head(5)
+        >>> di1.available_dates().head(5)
         shape: (5,)
         Series: 'TradeDate' [date]
         [

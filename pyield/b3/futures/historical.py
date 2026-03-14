@@ -79,7 +79,7 @@ def historical(
     codigos_sem_cache: list[str] = []
 
     for codigo in codigos:
-        df_cache = _carregar_pr_por_data(data, codigo)
+        df_cache = obter_futuros_pr([data], codigo)
         if df_cache.is_empty():
             codigos_sem_cache.append(codigo)
         else:
@@ -116,28 +116,7 @@ def historical(
     return df_resultado.sort(*colunas_ordenacao)
 
 
-def _buscar_price_report(
-    data: dt.date, codigo: str, full_report: bool | None
-) -> pl.DataFrame:
-    """Busca o price report da B3, com fallback SPR→PR quando full_report=None."""
-    if full_report is not None:
-        return fetch_price_report(
-            date=data, contract_code=codigo, full_report=full_report
-        )
-
-    # SPR (leve) primeiro; PR (pesado) como fallback
-    df = fetch_price_report(date=data, contract_code=codigo, full_report=False)
-    if not df.is_empty():
-        return df
-    return fetch_price_report(date=data, contract_code=codigo, full_report=True)
-
-
-def _carregar_pr_por_data(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
-    """Busca o histórico de futuros no dataset PR cacheado para a data informada."""
-    return carregar_pr([data], codigo_contrato)
-
-
-def carregar_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
+def obter_futuros_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
     """Carrega histórico de futuros do dataset PR para uma lista de datas."""
     if not datas:
         return pl.DataFrame()
@@ -165,6 +144,22 @@ def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
         .sort()
         .alias("TradeDate")
     )
+
+
+def _buscar_price_report(
+    data: dt.date, codigo: str, full_report: bool | None
+) -> pl.DataFrame:
+    """Busca o price report da B3, com fallback SPR→PR quando full_report=None."""
+    if full_report is not None:
+        return fetch_price_report(
+            date=data, contract_code=codigo, full_report=full_report
+        )
+
+    # SPR (leve) primeiro; PR (pesado) como fallback
+    df = fetch_price_report(date=data, contract_code=codigo, full_report=False)
+    if not df.is_empty():
+        return df
+    return fetch_price_report(date=data, contract_code=codigo, full_report=True)
 
 
 def _filtrar_e_renomear(
