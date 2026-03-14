@@ -79,7 +79,7 @@ def historical(
     codigos_sem_cache: list[str] = []
 
     for codigo in codigos:
-        df_cache = obter_futuros_pr([data], codigo)
+        df_cache = _obter_futuros_pr([data], codigo)
         if df_cache.is_empty():
             codigos_sem_cache.append(codigo)
         else:
@@ -116,7 +116,7 @@ def historical(
     return df_resultado.sort(*colunas_ordenacao)
 
 
-def obter_futuros_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
+def _obter_futuros_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
     """Carrega histórico de futuros do dataset PR para uma lista de datas."""
     if not datas:
         return pl.DataFrame()
@@ -133,7 +133,7 @@ def obter_futuros_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame
     return df.sort("TradeDate", "ExpirationDate")
 
 
-def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
+def _listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
     """Lista datas disponíveis no dataset PR para um contrato futuro."""
     return (
         obter_dataset_cacheado("pr")

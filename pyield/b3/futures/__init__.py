@@ -118,7 +118,7 @@ def _buscar_varias_datas(
     # Bulk: carrega todas as datas de uma vez do cache, por contrato
     resultados = []
     for codigo in codigos:
-        df_cache = historical.obter_futuros_pr(datas_validas, codigo)
+        df_cache = historical._obter_futuros_pr(datas_validas, codigo)
         if not df_cache.is_empty():
             resultados.append(df_cache)
 
@@ -185,7 +185,7 @@ def available_dates(contract_code: str) -> pl.Series:
             2018-01-04
         ]
     """
-    return historical.listar_datas_disponiveis(contract_code)
+    return historical._listar_datas_disponiveis(contract_code)
 
 
 __all__ = ["available_dates", "futures"]

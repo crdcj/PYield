@@ -18,7 +18,7 @@ HORA_INICIO_INTRADAY = dt.time(9, 16)
 logger = logging.getLogger(__name__)
 
 
-def data_intraday_valida(data_verificacao: dt.date) -> bool:
+def _data_intraday_valida(data_verificacao: dt.date) -> bool:
     """Verifica se a data é elegível para consulta intraday."""
     if not data_negociacao_valida(data_verificacao):
         return False

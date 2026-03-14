@@ -21,7 +21,7 @@ def test_historical_prioriza_dataset_pr(monkeypatch):
 
     monkeypatch.setattr(
         historical_mod,
-        "obter_futuros_pr",
+        "_obter_futuros_pr",
         _historico_pr_falso,
     )
     monkeypatch.setattr(historical_mod, "fetch_price_report", _price_report_falso)
@@ -36,7 +36,7 @@ def test_historical_faz_fallback_para_price_report(monkeypatch):
     """Se cache PR vier vazio, deve fazer fallback para SPR."""
     monkeypatch.setattr(
         historical_mod,
-        "obter_futuros_pr",
+        "_obter_futuros_pr",
         lambda datas, codigo_contrato: pl.DataFrame(),
     )
 
@@ -66,7 +66,7 @@ def test_futures_igual_price_report_release_di1():
     data = dt.date(2026, 1, 12)
 
     df_futures = yd.futures(contract_code="DI1", date=data)
-    df_price_report = historical_mod.obter_futuros_pr([data], "DI1")
+    df_price_report = historical_mod._obter_futuros_pr([data], "DI1")
 
     assert not df_futures.is_empty()
     assert not df_price_report.is_empty()
@@ -83,7 +83,7 @@ def test_futures_igual_price_report_release_di1():
 def test_historical_lista_contratos_faz_um_fetch_remoto(monkeypatch):
     monkeypatch.setattr(
         historical_mod,
-        "obter_futuros_pr",
+        "_obter_futuros_pr",
         lambda datas, codigo_contrato: pl.DataFrame(),
     )
 
