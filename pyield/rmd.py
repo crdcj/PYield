@@ -17,6 +17,7 @@ URL_BASE = (
     "https://www.tesourotransparente.gov.br/publicacoes/relatorio-mensal-da-divida-rmd"
 )
 _ABAS_DISPONIVEIS = ("1.3",)
+_TIMEOUT_SEGUNDOS = 60
 
 # Índices de linha (0-based) na planilha após leitura com fastexcel (sem cabeçalho)
 # O fastexcel compacta linhas totalmente vazias, resultando em 81 linhas ao invés das
@@ -89,17 +90,9 @@ def _parsear_periodo(periodo: str) -> datetime.date | None:
 
 
 @retry_padrao
-def _buscar_pagina(url: str) -> bytes:
+def _buscar_conteudo(url: str) -> bytes:
     """Busca o conteúdo de uma URL, seguindo redirects, com retry."""
-    resposta = requests.get(url, timeout=15)
-    resposta.raise_for_status()
-    return resposta.content
-
-
-@retry_padrao
-def _baixar_zip(url: str) -> bytes:
-    """Baixa o arquivo ZIP com retry."""
-    resposta = requests.get(url, timeout=60)
+    resposta = requests.get(url, timeout=_TIMEOUT_SEGUNDOS)
     resposta.raise_for_status()
     return resposta.content
 
@@ -110,7 +103,7 @@ def _buscar_url_anexo() -> str:
     A URL base redireciona automaticamente para a página do mês atual.
     O lxml localiza o link do anexo ZIP nessa página.
     """
-    conteudo_pagina = _buscar_pagina(URL_BASE)
+    conteudo_pagina = _buscar_conteudo(URL_BASE)
     arvore = html.fromstring(conteudo_pagina)
     resultado = arvore.xpath("//a[contains(@href, 'publicacao-anexo')]/@href")
     if not isinstance(resultado, list) or not resultado:
@@ -169,25 +162,15 @@ def _classificar_categorias(
     return eventos_titulos, eventos_diretos
 
 
-def _construir_grupos(
-    eventos: list[tuple[int, str, str, str]],
-) -> dict[tuple[str, str], dict[str, int]]:
-    """Agrupa eventos por (grupo, subgrupo): {chave → {titulo → índice na matriz}}."""
-    grupos: dict[tuple[str, str], dict[str, int]] = {}
-    for idx, grupo, subgrupo, titulo in eventos:
-        chave = (grupo, subgrupo)
-        if chave not in grupos:
-            grupos[chave] = {}
-        grupos[chave][titulo] = idx
-    return grupos
-
-
 def _montar_df_titulos(
-    grupos: dict[tuple[str, str], dict[str, int]],
+    eventos: list[tuple[int, str, str, str]],
     datas_mensais: list[datetime.date],
     matriz: pl.DataFrame,
 ) -> pl.DataFrame:
     """Monta DataFrame de detalhamento por título na ordem canônica, após unpivot."""
+    grupos: dict[tuple[str, str], dict[str, int]] = {}
+    for idx, grupo, subgrupo, titulo in eventos:
+        grupos.setdefault((grupo, subgrupo), {})[titulo] = idx
     n_periodos = len(datas_mensais)
     partes: list[pl.DataFrame] = []
     for grupo, subgrupo in _ORDEM_SUBGRUPOS:
@@ -267,17 +250,13 @@ def _estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
     # Matriz de valores (apenas períodos mensais), cast para Float64
     matriz = df_dados[:, 1:].cast(pl.Float64, strict=False)[:, indices_mensais]
 
-    grupos = _construir_grupos(eventos_titulos)
-    df_titulos = _montar_df_titulos(grupos, datas_mensais, matriz)
+    df_titulos = _montar_df_titulos(eventos_titulos, datas_mensais, matriz)
     partes_diretas = _montar_partes_diretos(eventos_diretos, datas_mensais, matriz)
     return (
         pl.concat([df_titulos] + partes_diretas)
         .with_columns(valor=pl.col("valor").mul(1_000_000).round(2))
         .filter(pl.col("valor").is_not_null() & (pl.col("valor") != 0))
     )
-
-
-_PROCESSADORES: dict[str, object] = {"1.3": _estruturar_dados}
 
 
 def rmd(tab: str) -> pl.DataFrame:
@@ -353,18 +332,17 @@ def rmd(tab: str) -> pl.DataFrame:
         >>> round(resgates_2025, 2)
         1395109062272.45
     """
-    if tab not in _PROCESSADORES:
-        disponiveis = ", ".join(f'"{t}"' for t in sorted(_PROCESSADORES))
+    if tab not in _ABAS_DISPONIVEIS:
+        disponiveis = ", ".join(f'"{t}"' for t in sorted(_ABAS_DISPONIVEIS))
         raise ValueError(
             f"Aba '{tab}' não disponível. Abas implementadas: {disponiveis}."
         )
-    processador = _PROCESSADORES[tab]
     try:
         url_anexo = _buscar_url_anexo()
         registro.debug(f"URL do anexo RMD: {url_anexo}")
-        conteudo_zip = _baixar_zip(url_anexo)
+        conteudo_zip = _buscar_conteudo(url_anexo)
         conteudo_excel = _extrair_excel(conteudo_zip)
-        df = processador(conteudo_excel)  # type: ignore[operator]
+        df = _estruturar_dados(conteudo_excel)
     except Exception as e:
         registro.exception(f"Erro ao coletar dados do RMD (aba {tab!r}): {e}")
         return pl.DataFrame()
