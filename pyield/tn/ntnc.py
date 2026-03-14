@@ -246,11 +246,10 @@ def quotation(
     dias_uteis = bday.count(settlement, df_fluxos["PaymentDate"])
     anos_uteis = ferramentas.truncate(dias_uteis / 252, 14)
     fatores_desconto = (1 + rate) ** anos_uteis
-    # Calcula o valor presente de cada fluxo (DCF) com arredondamento ANBIMA
-    dcf = (valores_fluxo / fatores_desconto).round(10)
-    # Retorna a cotação (soma do DCF) com truncamento ANBIMA
-    soma_dcf = float(dcf.sum())
-    return ferramentas.truncate(soma_dcf, 4)
+    # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
+    vp = (valores_fluxo / fatores_desconto).round(10)
+    # Retorna a cotação (soma dos valores presentes) com truncamento ANBIMA
+    return ferramentas.truncate(vp.sum(), 4)
 
 
 def price(
@@ -311,7 +310,7 @@ def duration(
         return float("nan")
 
     anos_uteis = bday.count(settlement, df_fluxos["PaymentDate"]) / 252
-    dcf = df_fluxos["CashFlow"] / (1 + rate) ** anos_uteis
-    duracao = float((dcf * anos_uteis).sum()) / float(dcf.sum())
+    vp = df_fluxos["CashFlow"] / (1 + rate) ** anos_uteis
+    duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
     # Truncar para 14 casas decimais para repetibilidade dos resultados
     return ferramentas.truncate(duracao, 14)

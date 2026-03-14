@@ -1,22 +1,25 @@
+from decimal import Decimal
 from typing import overload
 
 import polars as pl
 
 
 @overload
-def truncate(values: float, decimals: int) -> float: ...
+def truncate(values: float | int | Decimal, decimals: int) -> float: ...
 @overload
 def truncate(values: pl.Series, decimals: int) -> pl.Series: ...
 
 
-def truncate(values: float | pl.Series, decimals: int) -> float | pl.Series:
+def truncate(
+    values: float | int | Decimal | pl.Series, decimals: int
+) -> float | pl.Series:
     """Trunca números (scalar ou ``polars.Series``) em direção a zero.
 
     Implementação unificada usando apenas operações de ``polars``: escalares
     são embrulhados em uma série temporária e depois desembrulhados.
 
     Args:
-        values: Escalar (float) ou ``pl.Series``.
+        values: Escalar (float/int/Decimal) ou ``pl.Series``.
         decimals: Casas decimais (>= 0).
 
     Returns:
@@ -38,12 +41,12 @@ def truncate(values: float | pl.Series, decimals: int) -> float | pl.Series:
 
     factor = 10.0**decimals
 
-    if isinstance(values, float):
-        return int(values * factor) / factor
-    elif isinstance(values, pl.Series):
+    if isinstance(values, pl.Series):
         return (values * factor).cast(pl.Int64).cast(pl.Float64) / factor
+    elif isinstance(values, (float, int, Decimal)):
+        return int(float(values) * factor) / factor
     else:
-        raise TypeError("values must be a float or pl.Series")
+        raise TypeError("values must be a float, int, Decimal or pl.Series")
 
 
 def calculate_present_value(
