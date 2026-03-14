@@ -17,6 +17,14 @@ FERIADOS_NOVOS = feriados_br.obter_feriados(opcao_feriado="new")
 DATA_TRANSICAO = BrHolidays.DATA_TRANSICAO
 
 
+def _expressao_feriados(expr_data: pl.Expr) -> pl.Expr:
+    return (
+        pl.when(expr_data < DATA_TRANSICAO)
+        .then(pl.lit(FERIADOS_ANTIGOS))
+        .otherwise(pl.lit(FERIADOS_NOVOS))
+    )
+
+
 def count_expr(start: pl.Expr | str | dt.date, end: pl.Expr | str | dt.date) -> pl.Expr:
     """Cria uma expressão Polars para contar dias úteis (com suporte a LazyFrame).
 
@@ -69,20 +77,11 @@ def count_expr(start: pl.Expr | str | dt.date, end: pl.Expr | str | dt.date) -> 
     else:
         end_date = cv.converter_datas_expr(end)
 
-    return (
-        pl.when(start_date < DATA_TRANSICAO)
-        .then(
-            pl.business_day_count(
-                start=start_date, end=end_date, holidays=FERIADOS_ANTIGOS
-            )
-        )
-        .otherwise(
-            pl.business_day_count(
-                start=start_date, end=end_date, holidays=FERIADOS_NOVOS
-            )
-        )
-        .cast(pl.Int64)
-    )
+    return pl.business_day_count(
+        start=start_date,
+        end=end_date,
+        holidays=_expressao_feriados(start_date),
+    ).cast(pl.Int64)
 
 
 @overload
@@ -265,12 +264,10 @@ def offset_expr(
 
     expr_date = cv.converter_datas_expr(expr)
 
-    return (
-        pl.when(expr_date < DATA_TRANSICAO)
-        .then(expr_date.dt.add_business_days(n=n, roll=roll, holidays=FERIADOS_ANTIGOS))
-        .otherwise(
-            expr_date.dt.add_business_days(n=n, roll=roll, holidays=FERIADOS_NOVOS)
-        )
+    return expr_date.dt.add_business_days(
+        n=n,
+        roll=roll,
+        holidays=_expressao_feriados(expr_date),
     )
 
 
@@ -573,11 +570,7 @@ def is_business_day_expr(expr: pl.Expr | str) -> pl.Expr:
     """
     expr_date = cv.converter_datas_expr(expr)
 
-    return (
-        pl.when(expr_date < DATA_TRANSICAO)
-        .then(expr_date.dt.is_business_day(holidays=FERIADOS_ANTIGOS))
-        .otherwise(expr_date.dt.is_business_day(holidays=FERIADOS_NOVOS))
-    )
+    return expr_date.dt.is_business_day(holidays=_expressao_feriados(expr_date))
 
 
 @overload

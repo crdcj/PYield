@@ -15,7 +15,7 @@ classifiers = [
 ]
 dependencies = [
     "cachetools>=5.0.0",
-    "polars>=1.33.0",
+    "polars>=1.39.0",
     "lxml>=6.0.0",
     "python-dateutil>=2.8.0",
     "requests>=2.31.0",
