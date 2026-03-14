@@ -185,7 +185,7 @@ def available_dates(contract_code: str) -> pl.Series:
             2018-01-04
         ]
     """
-    return historical._listar_datas_disponiveis(contract_code)
+    return historical.listar_datas_disponiveis(contract_code)
 
 
 __all__ = ["available_dates", "futures"]

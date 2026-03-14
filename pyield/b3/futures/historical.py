@@ -133,7 +133,7 @@ def _obter_futuros_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFram
     return df.sort("TradeDate", "ExpirationDate")
 
 
-def _listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
+def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
     """Lista datas disponíveis no dataset PR para um contrato futuro."""
     return (
         obter_dataset_cacheado("pr")
