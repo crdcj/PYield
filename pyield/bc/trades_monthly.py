@@ -135,8 +135,8 @@ def _ordenar_selecionar_colunas(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.DataFrame:
-    """Consulta negociações mensais no mercado secundário de Títulos Públicos Federais (TPF)
-    registradas no sistema Selic do Banco Central do Brasil (BCB).
+    """Consulta negociações mensais no mercado secundário de TPF
+    registradas no sistema Selic do BCB.
 
     Baixa os dados mensais de negociação do site do BCB para o mês correspondente
     à data fornecida. Os dados são baixados como arquivo ZIP, extraídos e carregados
@@ -183,26 +183,7 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
 
     Examples:
         >>> from pyield import bc
-        >>> # Busca todas as negociações de jan/2025
-        >>> bc.tpf_monthly_trades("07-01-2025", extragroup=True)
-        shape: (1_019, 19)
-        ┌────────────────┬──────────┬───────────┬──────────────┬───┬─────────┬─────────┬─────────────────┬───────────────────┐
-        │ SettlementDate ┆ BondType ┆ SelicCode ┆ ISIN         ┆ … ┆ AvgRate ┆ MaxRate ┆ BrokerageTrades ┆ BrokerageQuantity │
-        │ ---            ┆ ---      ┆ ---       ┆ ---          ┆   ┆ ---     ┆ ---     ┆ ---             ┆ ---               │
-        │ date           ┆ str      ┆ i64       ┆ str          ┆   ┆ f64     ┆ f64     ┆ i64             ┆ i64               │
-        ╞════════════════╪══════════╪═══════════╪══════════════╪═══╪═════════╪═════════╪═════════════════╪═══════════════════╡
-        │ 2025-01-02     ┆ LFT      ┆ 210100    ┆ BRSTNCLF1RC4 ┆ … ┆ 0.0132  ┆ 0.0906  ┆ 2               ┆ 9581              │
-        │ 2025-01-02     ┆ LFT      ┆ 210100    ┆ BRSTNCLF1RD2 ┆ … ┆ 0.0561  ┆ 0.101   ┆ 11              ┆ 42823             │
-        │ 2025-01-02     ┆ LFT      ┆ 210100    ┆ BRSTNCLF1RE0 ┆ … ┆ 0.0191  ┆ 0.0405  ┆ 19              ┆ 33330             │
-        │ 2025-01-02     ┆ LFT      ┆ 210100    ┆ BRSTNCLF1RF7 ┆ … ┆ 0.0304  ┆ 0.05    ┆ 10              ┆ 14583             │
-        │ 2025-01-02     ┆ LFT      ┆ 210100    ┆ BRSTNCLF1RG5 ┆ … ┆ 0.0697  ┆ 0.0935  ┆ 12              ┆ 51776             │
-        │ …              ┆ …        ┆ …         ┆ …            ┆ … ┆ …       ┆ …       ┆ …               ┆ …                 │
-        │ 2025-01-31     ┆ NTN-F    ┆ 950199    ┆ BRSTNCNTF1P8 ┆ … ┆ null    ┆ null    ┆ 0               ┆ 0                 │
-        │ 2025-01-31     ┆ NTN-F    ┆ 950199    ┆ BRSTNCNTF1Q6 ┆ … ┆ null    ┆ null    ┆ 0               ┆ 0                 │
-        │ 2025-01-31     ┆ NTN-F    ┆ 950199    ┆ BRSTNCNTF204 ┆ … ┆ null    ┆ null    ┆ 12              ┆ 570000            │
-        │ 2025-01-31     ┆ NTN-F    ┆ 950199    ┆ BRSTNCNTF212 ┆ … ┆ null    ┆ null    ┆ 0               ┆ 0                 │
-        │ 2025-01-31     ┆ NTN-F    ┆ 950199    ┆ BRSTNCNTF238 ┆ … ┆ null    ┆ null    ┆ 4               ┆ 115000            │
-        └────────────────┴──────────┴───────────┴──────────────┴───┴─────────┴─────────┴─────────────────┴───────────────────┘
+        >>> df = bc.tpf_monthly_trades("07-01-2025", extragroup=True)
 
     """
     if any_is_empty(target_date):

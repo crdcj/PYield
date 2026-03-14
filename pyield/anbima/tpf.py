@@ -181,6 +181,17 @@ def _adicionar_duracao(df_input: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
+def _adicionar_prazo_medio(df: pl.DataFrame) -> pl.DataFrame:
+    # Na metodologia do Tesouro Nacional, a maturidade média é a mesma que a duração
+    df = df.with_columns(
+        pl.when(pl.col("BondType") == "LFT")
+        .then(pl.col("BDToMat") / 252)
+        .otherwise("Duration")
+        .alias("AvgMaturity")
+    )
+    return df
+
+
 def _adicionar_dv01(df_input: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
     """Adiciona as colunas de DV01 ao DataFrame."""
     expr_duracao_mod = pl.col("Duration") / (1 + pl.col("IndicativeRate"))
@@ -216,6 +227,7 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
         "MaturityDate",
         "BDToMat",
         "Duration",
+        "AvgMaturity",
         "DV01",
         "DV01USD",
         "Price",
@@ -223,11 +235,11 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
         "AskRate",
         "IndicativeRate",
         "DIRate",
-        "StdDev",
-        "LowerBoundRateD0",
-        "UpperBoundRateD0",
-        "LowerBoundRateD1",
-        "UpperBoundRateD1",
+        # "StdDev",
+        # "LowerBoundRateD0",
+        # "UpperBoundRateD0",
+        # "LowerBoundRateD1",
+        # "UpperBoundRateD1",
         "Criteria",
     ]
     ordem_colunas = [col for col in ordem_colunas if col in df.columns]
@@ -280,6 +292,7 @@ def _buscar_dados_tpf(date: dt.date) -> pl.DataFrame:
         df = _ler_csv(csv_texto)
         df = _processar_df_bruto(df)
         df = _adicionar_duracao(df)
+        df = _adicionar_prazo_medio(df)
         df = _adicionar_dv01(df, date)
         df = _adicionar_taxa_di(df, date)
         df = _selecionar_e_ordenar_colunas(df)
@@ -347,6 +360,8 @@ def tpf_data(
         - MaturityDate: Data de vencimento do título.
         - BDToMat: Número de dias úteis entre a data de referência e o vencimento.
         - Duration: Macaulay Duration do título em anos.
+        - AvgMaturity: Prazo médio do título (em anos), conforme metodologia
+            do Tesouro Nacional.
         - DV01: Variação financeira no preço do título (em BRL) para uma
             mudança de 1 basis point (0,01%) na taxa de juros.
         - DV01USD: O mesmo que DV01, mas convertido para USD pela PTAX do dia.
