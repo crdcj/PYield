@@ -94,6 +94,7 @@ Most data-fetching functions follow this pattern:
 ## Docstring Conventions
 
 - All docstrings must be written in **Portuguese** (both public and internal functions).
+- Docstring line width must respect the project's `line-length = 88` (configured in `pyproject.toml`). This includes the indentation — e.g., a docstring inside a function has 4 spaces of indent, leaving 84 usable characters.
 - Public functions use Google-style sections: `Args:`, `Returns:`, `Output Columns:`, `Notes:`, `Examples:`.
 - `Output Columns:` lists every column with tipo Polars e descrição (ex: `* SettlementDate (Date): data de liquidação.`).
 - Doctests (section `Examples:`) use real data and are validated by `pytest --doctest-modules`.

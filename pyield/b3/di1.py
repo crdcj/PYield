@@ -1,69 +1,10 @@
-import datetime as dt
-import logging
-
 import polars as pl
 
 import pyield._internal.converters as cv
 from pyield import b3, bday, interpolator
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
-from pyield.b3.futures import historical as futuros_historico
-
-registro = logging.getLogger(__name__)
-
-
-def _carregar_cache_pr_di1(datas: list[dt.date]) -> pl.DataFrame:
-    """Carrega e processa DI1 a partir do dataset PR para as datas informadas."""
-    return futuros_historico.carregar_pr(datas=datas, codigo_contrato="DI1")
-
-
-def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
-    """Busca dados de DI, incluindo dados intraday para datas ausentes no cache.
-
-    Args:
-        datas: Lista de datas a buscar.
-
-    Returns:
-        DataFrame com dados de DI para as datas solicitadas.
-    """
-    # 1. Busca inicial no cache PR com as datas solicitadas pelo usuário.
-    df_cache = _carregar_cache_pr_di1(datas)
-    if df_cache.is_empty():
-        datas_cache = set()
-    else:
-        datas_cache = set(df_cache["TradeDate"].drop_nulls())
-
-    # 2. Identifica datas solicitadas que não estão no cache
-    datas_solicitadas = set(datas)
-    datas_faltantes = datas_solicitadas - datas_cache
-
-    # 3. Para cada data faltante, tenta buscar dados via API
-    dfs_concat = [df_cache] if not df_cache.is_empty() else []
-
-    for data_ref in datas_faltantes:
-        try:
-            df_faltante = b3.futures(contract_code="DI1", date=data_ref)
-
-            # Só adiciona se tiver SettlementPrice
-            if "SettlementPrice" in df_faltante.columns:
-                dfs_concat.append(df_faltante)
-            else:
-                registro.warning(
-                    "Dados para %s não contêm 'SettlementPrice'. Pulando esta data.",
-                    data_ref,
-                )
-        except Exception as e:
-            registro.error("Falha ao buscar dados para %s: %s", data_ref, e)
-
-    # 4. Retorna concatenação de todos os DataFrames disponíveis
-    if len(dfs_concat) == 0:
-        return pl.DataFrame()
-    elif len(dfs_concat) == 1:
-        return dfs_concat[0]
-    else:
-        df = pl.concat(dfs_concat, how="diagonal")
-
-    return df.sort("TradeDate", "ExpirationDate")
+from pyield.b3.futures.historical import listar_datas_disponiveis as _listar_datas
 
 
 def data(
@@ -114,7 +55,7 @@ def data(
     else:
         datas_lista = [datas_convertidas]
 
-    df = _carregar_com_intraday(datas_lista)
+    df = b3.futures(date=datas_lista, contract_code="DI1", full_report=False)
     if df.is_empty():
         return df
 
@@ -251,7 +192,7 @@ def interpolate_rates(
 
     # Carrega dataset de taxas DI usando datas já convertidas do df_entrada
     datas_unicas = df_entrada["TradeDate"].drop_nulls().unique().sort().to_list()
-    df_ref = _carregar_com_intraday(datas_unicas)
+    df_ref = b3.futures(date=datas_unicas, contract_code="DI1", full_report=False)
     # Retorna Series vazia se nenhuma taxa for encontrada
     if df_ref.is_empty():
         return pl.Series(dtype=pl.Float64)
@@ -376,21 +317,22 @@ def interpolate_rate(
 
 
 def available_trade_dates() -> pl.Series:
-    """Retorna todas as datas de negociação disponíveis para DI1 em futures.
+    """Retorna as datas de negociação disponíveis para DI1.
 
-    Obtém valores distintos de 'TradeDate' para DI1, com base no mesmo
-    dataset PR utilizado por `futures`.
+    Obtém valores distintos de 'TradeDate' para DI1, com base no dataset histórico
+    PR da B3 (mesmo utilizado por `futures`). Inclui apenas datas com preço e taxa
+    de ajuste já definidos; o pregão do dia corrente não está incluído.
 
     Returns:
-        Series ordenada de datas de negociação únicas (dt.date) para as quais
-        dados de DI estão disponíveis.
+        Series ordenada de datas de negociação (dt.date) para as quais dados de
+        ajuste de DI estão disponíveis.
 
     Examples:
         >>> from pyield import di1
         >>> # Série disponível no dataset PR começa em 2018-01-02
         >>> di1.available_trade_dates().head(5)
         shape: (5,)
-        Series: 'available_dates' [date]
+        Series: 'TradeDate' [date]
         [
             2018-01-02
             2018-01-03
@@ -399,4 +341,4 @@ def available_trade_dates() -> pl.Series:
             2018-01-08
         ]
     """
-    return futuros_historico.listar_datas_disponiveis("DI1").alias("available_dates")
+    return _listar_datas("DI1")

@@ -17,15 +17,16 @@ CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 def historical(
     data: dt.date,
     codigo_contrato: str | list[str],
-    full_report: bool = False,
+    full_report: bool | None = None,
 ) -> pl.DataFrame:
     """Busca histórico de futuros priorizando o dataset PR cacheado.
 
     Args:
         data: Data de negociação.
         codigo_contrato: Código(s) do contrato futuro na B3.
-        full_report: Se False (padrão), usa o simplified price report
-            (SPR, ~2 KB). Se True, usa o price report completo (PR, ~2 MB).
+        full_report: Se None (padrão), tenta SPR primeiro e PR como fallback.
+            Se False, usa o simplified price report (SPR, ~2 KB).
+            Se True, usa o price report completo (PR, ~2 MB).
 
     Returns:
         DataFrame Polars com dados históricos de futuros.
@@ -86,9 +87,7 @@ def historical(
 
     if codigos_sem_cache:
         for codigo in codigos_sem_cache:
-            df_bruto = fetch_price_report(
-                date=data, contract_code=codigo, full_report=full_report
-            )
+            df_bruto = _buscar_price_report(data, codigo, full_report)
             if df_bruto.is_empty():
                 continue
 
@@ -115,6 +114,22 @@ def historical(
         return df_resultado
 
     return df_resultado.sort(*colunas_ordenacao)
+
+
+def _buscar_price_report(
+    data: dt.date, codigo: str, full_report: bool | None
+) -> pl.DataFrame:
+    """Busca o price report da B3, com fallback SPR→PR quando full_report=None."""
+    if full_report is not None:
+        return fetch_price_report(
+            date=data, contract_code=codigo, full_report=full_report
+        )
+
+    # SPR (leve) primeiro; PR (pesado) como fallback
+    df = fetch_price_report(date=data, contract_code=codigo, full_report=False)
+    if not df.is_empty():
+        return df
+    return fetch_price_report(date=data, contract_code=codigo, full_report=True)
 
 
 def _carregar_pr_por_data(data: dt.date, codigo_contrato: str) -> pl.DataFrame:
