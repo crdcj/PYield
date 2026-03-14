@@ -45,6 +45,7 @@ def data(date: DateLike) -> pl.DataFrame:
         - IssueBaseDate (Date): Data base/emissão do título.
         - MaturityDate (Date): Data de vencimento do título.
         - BDToMat (Int64): Dias úteis entre referência e vencimento.
+        - AvgMaturity (Float64): Prazo médio do título em dias corridos.
         - Duration (Float64): Macaulay Duration do título (anos).
         - DV01 (Float64): Variação no preço para 1bp de taxa.
         - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
@@ -53,17 +54,11 @@ def data(date: DateLike) -> pl.DataFrame:
         - AskRate (Float64): Taxa de venda (decimal).
         - IndicativeRate (Float64): Taxa indicativa (decimal).
         - DIRate (Float64): Taxa DI interpolada (flat forward).
-        - StdDev (Float64): Desvio padrão da taxa indicativa.
-        - LowerBoundRateD0 (Float64): Limite inferior do intervalo (D+0).
-        - UpperBoundRateD0 (Float64): Limite superior do intervalo (D+0).
-        - LowerBoundRateD1 (Float64): Limite inferior do intervalo (D+1).
-        - UpperBoundRateD1 (Float64): Limite superior do intervalo (D+1).
-        - Criteria (String): Critério utilizado pela ANBIMA.
 
     Examples:
         >>> from pyield import ntnf
         >>> ntnf.data("23-08-2024")
-        shape: (6, 14)
+        shape: (6, 15)
         ┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬─────────┐
         │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate  │
         │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---     │
@@ -272,7 +267,8 @@ def price(
     # Calcula o valor presente de cada fluxo (DCF) com arredondamento ANBIMA
     dcf = (valores_fluxo / fatores_desconto).round(9)
     # Soma dos fluxos descontados com truncamento ANBIMA
-    return tools.truncate(dcf.sum(), 6)
+    soma_dcf = float(dcf.sum())
+    return tools.truncate(soma_dcf, 6)
 
 
 def spot_rates(  # noqa
@@ -644,7 +640,7 @@ def premium(  # noqa
 
     def diferenca_preco(taxa: float) -> float:
         fluxos_descontados = df["CashFlow"] / (1 + taxa) ** df["BYears"]
-        return fluxos_descontados.sum() - preco_titulo
+        return float(fluxos_descontados.sum()) - preco_titulo
 
     di_ytm = _resolver_spread(diferenca_preco)
 
@@ -749,7 +745,7 @@ def di_net_spread(  # noqa
         fluxos_descontados = (
             fluxos_titulo / (1 + di_interpolada + p) ** anos_uteis_pagamento
         )
-        return fluxos_descontados.sum() - preco_titulo
+        return float(fluxos_descontados.sum()) - preco_titulo
 
     # 7. Resolver para o spread
     return _resolver_spread(diferenca_preco)
@@ -789,7 +785,7 @@ def duration(
 
     anos_uteis = bday.count(settlement, df_fluxos["PaymentDate"]) / 252
     dcf = df_fluxos["CashFlow"] / (1 + rate) ** anos_uteis
-    duracao = (dcf * anos_uteis).sum() / dcf.sum()
+    duracao = float((dcf * anos_uteis).sum()) / float(dcf.sum())
     return duracao
 
 

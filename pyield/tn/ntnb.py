@@ -42,6 +42,7 @@ def data(date: DateLike) -> pl.DataFrame:
         - MaturityDate (Date): Data de vencimento do título.
         - BDToMat (Int64): Dias úteis entre referência e vencimento.
         - Duration (Float64): Macaulay Duration do título (anos).
+        - AvgMaturity (Float64): Prazo médio do título (anos).
         - DV01 (Float64): Variação no preço para 1bp de taxa.
         - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
         - Price (Float64): Preço unitário (PU).
@@ -53,7 +54,7 @@ def data(date: DateLike) -> pl.DataFrame:
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.data("23-08-2024")
-        shape: (14, 14)
+        shape: (14, 15)
         ┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬──────────┐
         │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate   │
         │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---      │
@@ -273,26 +274,19 @@ def quotation(
     if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
-    df = cash_flows(settlement, maturity)
-    if df.is_empty():
+    df_fluxos = cash_flows(settlement, maturity)
+    if df_fluxos.is_empty():
         return float("nan")
 
-    datas_fluxo = df["PaymentDate"]
-    valores_fluxo = df["CashFlow"]
-
-    # Calcula dias úteis entre liquidação e datas de fluxo
-    dias_uteis = bday.count(settlement, datas_fluxo)
-
-    # Calcula anos úteis truncados conforme ANBIMA
+    valores_fluxo = df_fluxos["CashFlow"]
+    dias_uteis = bday.count(settlement, df_fluxos["PaymentDate"])
     anos_uteis = ferramentas.truncate(dias_uteis / 252, 14)
-
-    fator_desconto = (1 + rate) ** anos_uteis
-
+    fatores_desconto = (1 + rate) ** anos_uteis
     # Calcula o valor presente de cada fluxo (DCF) com arredondamento ANBIMA
-    valor_presente_fluxos = (valores_fluxo / fator_desconto).round(10)
-
+    dcf = (valores_fluxo / fatores_desconto).round(10)
     # Retorna a cotação (soma do DCF) com truncamento ANBIMA
-    return ferramentas.truncate(valor_presente_fluxos.sum(), 4)
+    soma_dcf = float(dcf.sum())
+    return ferramentas.truncate(soma_dcf, 4)
 
 
 def price(
@@ -656,13 +650,13 @@ def duration(
     if any_is_empty(settlement, maturity, rate):
         return float("nan")
 
-    df = cash_flows(settlement, maturity)
-    if df.is_empty():
+    df_fluxos = cash_flows(settlement, maturity)
+    if df_fluxos.is_empty():
         return float("nan")
 
-    anos_uteis = bday.count(settlement, df["PaymentDate"]) / 252
-    dcf = df["CashFlow"] / (1 + rate) ** anos_uteis
-    duracao = (dcf * anos_uteis).sum() / dcf.sum()
+    anos_uteis = bday.count(settlement, df_fluxos["PaymentDate"]) / 252
+    dcf = df_fluxos["CashFlow"] / (1 + rate) ** anos_uteis
+    duracao = float((dcf * anos_uteis).sum()) / float(dcf.sum())
     # Truncar para 14 casas decimais para repetibilidade dos resultados
     return ferramentas.truncate(duracao, 14)
 

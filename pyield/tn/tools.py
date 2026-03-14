@@ -109,4 +109,4 @@ def calculate_present_value(
     if present_values_series.has_nulls():
         return float("nan")
 
-    return present_values_series.sum()
+    return float(present_values_series.sum())
