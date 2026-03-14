@@ -58,14 +58,6 @@ MAPA_NOMES_COLUNAS = {csv: novo for csv, novo, _ in TPF_COLUNAS}
 logger = logging.getLogger(__name__)
 
 
-def _validar_data_nao_futura(data: dt.date):
-    """Levanta ValueError se a data for no futuro."""
-    if data > clock.today():
-        data_log = data.strftime("%d/%m/%Y")
-        msg = f"Não é possível processar dados para data futura ({data_log})."
-        raise ValueError(msg)
-
-
 def _mapear_tipo_titulo(tipo_titulo: str) -> list[str]:
     tipo_titulo = tipo_titulo.upper()
     mapa_titulos = {
@@ -385,11 +377,14 @@ def tpf_data(
     if any_is_empty(date):
         return pl.DataFrame()
     date = converter_datas(date)
-    _validar_data_nao_futura(date)
+
+    if not bday.is_business_day(date):
+        return pl.DataFrame()
+
+    if date > clock.today():
+        return pl.DataFrame()
 
     if fetch_from_source:
-        if not bday.is_business_day(date):
-            return pl.DataFrame()
         # Tenta buscar os dados diretamente da fonte (ANBIMA)
         df = _buscar_dados_tpf(date)
     else:

@@ -61,23 +61,7 @@ def _carregar_com_intraday(datas: list[dt.date]) -> pl.DataFrame:
     elif len(dfs_concat) == 1:
         return dfs_concat[0]
     else:
-        return pl.concat(dfs_concat, how="diagonal")
-
-
-def _obter_dados(datas: DateLike | ArrayLike) -> pl.DataFrame:
-    datas_unicas = cv.converter_datas(datas)
-    if datas_unicas is None:
-        return pl.DataFrame()
-
-    if isinstance(datas_unicas, pl.Series):
-        datas_unicas = datas_unicas.drop_nulls().unique().sort().to_list()
-    else:
-        datas_unicas = [datas_unicas]
-
-    df = _carregar_com_intraday(datas_unicas)
-
-    if df.is_empty():
-        return pl.DataFrame()
+        df = pl.concat(dfs_concat, how="diagonal")
 
     return df.sort("TradeDate", "ExpirationDate")
 
@@ -122,7 +106,15 @@ def data(
     if any_is_empty(dates):
         return pl.DataFrame()
 
-    df = _obter_dados(datas=dates)
+    datas_convertidas = cv.converter_datas(dates)
+    if datas_convertidas is None:
+        return pl.DataFrame()
+    if isinstance(datas_convertidas, pl.Series):
+        datas_lista = datas_convertidas.drop_nulls().unique().sort().to_list()
+    else:
+        datas_lista = [datas_convertidas]
+
+    df = _carregar_com_intraday(datas_lista)
     if df.is_empty():
         return df
 
@@ -257,9 +249,9 @@ def interpolate_rates(
     if df_entrada.is_empty():
         return pl.Series(dtype=pl.Float64)
 
-    # Carrega dataset de taxas DI filtrado pelas datas de referência fornecidas
-    # Usa datas já convertidas do DataFrame de entrada para evitar conversão dupla
-    df_ref = _obter_dados(datas=dates)
+    # Carrega dataset de taxas DI usando datas já convertidas do df_entrada
+    datas_unicas = df_entrada["TradeDate"].drop_nulls().unique().sort().to_list()
+    df_ref = _carregar_com_intraday(datas_unicas)
     # Retorna Series vazia se nenhuma taxa for encontrada
     if df_ref.is_empty():
         return pl.Series(dtype=pl.Float64)
@@ -380,7 +372,7 @@ def interpolate_rate(
     if valor is None:
         return float("nan")
 
-    return float(valor)
+    return valor
 
 
 def available_trade_dates() -> pl.Series:
