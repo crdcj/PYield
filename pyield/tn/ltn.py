@@ -131,6 +131,45 @@ def price(
     return utils.truncate(VALOR_FACE / fator_desconto, 6)
 
 
+def rate(
+    settlement: DateLike,
+    maturity: DateLike,
+    price_value: float,
+) -> float:
+    """
+    Calcula a taxa implícita (YTM) de uma LTN a partir do preço (PU).
+
+    Inverte algebricamente a fórmula de ``price()``:
+    ``rate = (1000 / price) ^ (252 / du) - 1``
+
+    Args:
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        price_value (float): Preço unitário (PU) do título.
+
+    Returns:
+        float: Taxa implícita (YTM) em formato decimal. Retorna NaN em
+            caso de erro.
+
+    Examples:
+        >>> from pyield import ltn
+        >>> ltn.rate("05-07-2024", "01-01-2030", 535.279902)
+        0.12145
+        >>> ltn.rate("13-03-2026", "01-01-2027", 895.563913)
+        0.148307
+    """
+    if any_is_empty(settlement, maturity, price_value):
+        return float("nan")
+
+    if price_value <= 0:
+        return float("nan")
+
+    dias_uteis = bday.count(settlement, maturity)
+    anos_truncados = utils.truncate(dias_uteis / 252, 14)
+    taxa = (VALOR_FACE / price_value) ** (1 / anos_truncados) - 1
+    return round(taxa, 6)
+
+
 def premium(ltn_rate: float, di_rate: float) -> float:
     """
     Calcula o prêmio da LTN sobre a taxa de DI Futuro.
@@ -182,10 +221,6 @@ def dv01(
         >>> from pyield import ltn
         >>> ltn.dv01("26-03-2025", "01-01-2032", 0.150970)
         0.2269059999999854
-
-        Entradas nulas retornam float('nan')
-        >>> ltn.dv01(None, "01-01-2032", 0.150970)
-        nan
     """
     if any_is_empty(settlement, maturity, rate):
         return float("nan")

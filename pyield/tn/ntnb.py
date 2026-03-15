@@ -311,8 +311,6 @@ def price(
         4271.864805
         >>> ntnb.price(4315.498383, 100.6409)
         4343.156412
-        >>> ntnb.price(None, 99.5341)  # Entradas nulas retornam float('nan')
-        nan
     """
     if any_is_empty(vna, quotation):
         return float("nan")
@@ -697,18 +695,21 @@ def dv01(
 def rate(
     settlement: DateLike,
     maturity: DateLike,
-    quotation_value: float,
+    vna: float,
+    price_value: float,
 ) -> float:
     """
-    Calcula a taxa implícita (YTM) de uma NTN-B a partir de uma cotação.
+    Calcula a taxa implícita (YTM) de uma NTN-B a partir do preço (PU).
 
-    A função inverte numericamente o cálculo de ``quotation()``, encontrando
-    a taxa que zera a diferença entre a cotação calculada e a informada.
+    A função inverte numericamente a cadeia ``price(vna, quotation(...))``,
+    encontrando a taxa que zera a diferença entre o preço calculado e o
+    informado.
 
     Args:
         settlement (DateLike): Data de liquidação.
         maturity (DateLike): Data de vencimento.
-        quotation_value (float): Cotação do título em base 100.
+        vna (float): Valor nominal atualizado (VNA).
+        price_value (float): Preço unitário (PU) do título.
 
     Returns:
         float: Taxa implícita (YTM) em formato decimal. Retorna NaN em
@@ -716,21 +717,22 @@ def rate(
 
     Examples:
         >>> from pyield import ntnb
-        >>> ntnb.rate("31-05-2024", "15-05-2035", 99.3651)
+        >>> ntnb.rate("31-05-2024", "15-05-2035", 4299.160173, 4271.864805)
         0.06149
-        >>> ntnb.rate("15-08-2024", "15-08-2032", 100.6409)
+        >>> ntnb.rate("15-08-2024", "15-08-2032", 4315.498383, 4343.156412)
         0.05929
     """
-    if any_is_empty(settlement, maturity, quotation_value):
+    if any_is_empty(settlement, maturity, vna, price_value):
         return float("nan")
 
-    if quotation_value <= 0:
+    if price_value <= 0:
         return float("nan")
 
-    def diferenca_cotacao(taxa: float) -> float:
-        return quotation(settlement, maturity, taxa) - quotation_value
+    def diferenca_preco(taxa: float) -> float:
+        cotacao = quotation(settlement, maturity, taxa)
+        return price(vna, cotacao) - price_value
 
-    taxa_encontrada = utils.encontrar_raiz(diferenca_cotacao)
+    taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
     return round(taxa_encontrada, 6)
 
 

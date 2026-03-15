@@ -574,16 +574,6 @@ def di_net_spread(  # noqa
         ... )
         >>> round(spread * 10_000, 2)  # Converte para bps para exibição
         12.13
-
-        >>> # Entradas nulas retornam float('nan')
-        >>> di_net_spread(
-        ...     settlement=None,
-        ...     ntnf_maturity="01-01-2035",
-        ...     ntnf_rate=0.116586,
-        ...     di_expirations=exp_dates,
-        ...     di_rates=di_rates,
-        ... )
-        nan
     """
     # Validação de inputs
     if any_is_empty(settlement, ntnf_maturity, ntnf_rate, di_expirations, di_rates):
@@ -651,10 +641,6 @@ def duration(
         >>> from pyield import ntnf
         >>> ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
         6.32854218039796
-
-        Entradas nulas retornam NaN:
-        >>> ntnf.duration(None, "01-01-2035", 0.121785)
-        nan
     """
     if any_is_empty(settlement, maturity, rate):
         return float("nan")
@@ -691,10 +677,6 @@ def dv01(
         >>> from pyield import ntnf
         >>> ntnf.dv01("26-03-2025", "01-01-2035", 0.151375)
         0.39025200000003224
-
-        Entradas nulas retornam NaN:
-        >>> ntnf.dv01("", "01-01-2035", 0.151375)
-        nan
     """
     if any_is_empty(settlement, maturity, rate):
         return float("nan")

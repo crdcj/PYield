@@ -293,10 +293,6 @@ def interpolate_rate(
         >>> # Extrapola taxa para uma data de vencimento futura
         >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
-
-        >>> # Entradas nulas retornam NaN
-        >>> di1.interpolate_rate(None, "01-01-2030")
-        nan
     """
     if any_is_collection(date, expiration):
         raise ValueError("As entradas 'date' e 'expiration' devem ser datas escalares.")

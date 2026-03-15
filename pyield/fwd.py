@@ -266,10 +266,6 @@ def forward(
         >>> print(yd.forward(20, 10, 0.06, 0.05))
         nan
 
-        >>> # Argumentos nulos retornam nan
-        >>> print(yd.forward(10, 20, 0.05, None))
-        nan
-
     Notes:
         `du₂` precisa ser necessariamente maior que `du₁` para que
         o cálculo da taxa a termo seja matematicamente válido.

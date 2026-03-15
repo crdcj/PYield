@@ -281,6 +281,48 @@ def price(
     return utils.truncate(vna * quotation / 100, 6)
 
 
+def rate(
+    settlement: DateLike,
+    maturity: DateLike,
+    vna: float,
+    price_value: float,
+) -> float:
+    """
+    Calcula a taxa implícita (YTM) de uma NTN-C a partir do preço (PU).
+
+    A função inverte numericamente a cadeia ``price(vna, quotation(...))``,
+    encontrando a taxa que zera a diferença entre o preço calculado e o
+    informado.
+
+    Args:
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        vna (float): Valor nominal atualizado (VNA).
+        price_value (float): Preço unitário (PU) do título.
+
+    Returns:
+        float: Taxa implícita (YTM) em formato decimal. Retorna NaN em
+            caso de erro.
+
+    Examples:
+        >>> from pyield import ntnc
+        >>> ntnc.rate("21-03-2025", "01-01-2031", 6598.913723, 8347.348705)
+        0.067626
+    """
+    if any_is_empty(settlement, maturity, vna, price_value):
+        return float("nan")
+
+    if price_value <= 0:
+        return float("nan")
+
+    def diferenca_preco(taxa: float) -> float:
+        cotacao = quotation(settlement, maturity, taxa)
+        return price(vna, cotacao) - price_value
+
+    taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
+    return round(taxa_encontrada, 6)
+
+
 def duration(
     settlement: DateLike,
     maturity: DateLike,

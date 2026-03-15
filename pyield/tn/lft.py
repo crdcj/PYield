@@ -132,6 +132,49 @@ def quotation(
     return utils.truncate(100 * fator_desconto, 4)
 
 
+def rate(
+    settlement: DateLike,
+    maturity: DateLike,
+    vna: float,
+    price_value: float,
+) -> float:
+    """
+    Calcula a taxa implícita de uma LFT a partir do preço (PU).
+
+    A função inverte numericamente a cadeia ``price(vna, quotation(...))``,
+    encontrando a taxa que zera a diferença entre o preço calculado e o
+    informado.
+
+    Args:
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        vna (float): Valor nominal atualizado (VNA).
+        price_value (float): Preço unitário (PU) do título.
+
+    Returns:
+        float: Taxa implícita em formato decimal. Retorna NaN em
+            caso de erro.
+
+    Examples:
+        >>> from pyield import lft
+        >>> lft.rate("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
+        0.001717
+        >>> lft.rate("24-07-2024", "01-03-2025", 15785.324502, 15774.132706)
+        0.00116
+    """
+    if any_is_empty(settlement, maturity, vna, price_value):
+        return float("nan")
+
+    if price_value <= 0:
+        return float("nan")
+
+    def diferenca_preco(taxa: float) -> float:
+        return price(vna, quotation(settlement, maturity, taxa)) - price_value
+
+    taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
+    return round(taxa_encontrada, 6)
+
+
 def premium(lft_rate: float, di_rate: float) -> float:
     """
     Calcula o prêmio da LFT sobre a taxa de DI Futuro.
