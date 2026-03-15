@@ -18,6 +18,7 @@ import zipfile as zf
 import polars as pl
 import requests
 
+from pyield import bday
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
@@ -52,13 +53,16 @@ ESQUEMA_CSV = {csv: tipo for csv, _, tipo in MAPA_COLUNAS}
 MAPEAMENTO_COLUNAS = {csv: novo for csv, novo, _ in MAPA_COLUNAS}
 
 ORDEM_COLUNAS_FINAL = [
+    "ReferenceDate",
     "SettlementDate",
     "BondType",
     "SelicCode",
     "ISIN",
     "IssueDate",
     "MaturityDate",
+    "BrokerageTrades",
     "Trades",
+    "BrokerageQuantity",
     "Quantity",
     "Value",
     "MinPrice",
@@ -69,8 +73,6 @@ ORDEM_COLUNAS_FINAL = [
     "MinRate",
     "AvgRate",
     "MaxRate",
-    "BrokerageTrades",
-    "BrokerageQuantity",
 ]
 
 CHAVES_ORDENACAO = ["SettlementDate", "BondType", "MaturityDate"]
@@ -124,6 +126,9 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             pl.col(colunas_data).str.to_date(format="%d/%m/%Y", strict=False),
             Value=(pl.col("Quantity") * pl.col("AvgPrice")).round(2),
         )
+        .with_columns(
+            ReferenceDate=bday.offset_expr("SettlementDate", -1),
+        )
         .sort(by=CHAVES_ORDENACAO)
     )
 
@@ -158,25 +163,27 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         retorna DataFrame vazio e registra log da exceção.
 
     Output Columns:
+        - ReferenceDate (Date): data de referência estimada para a operação,
+            dado que a maioria das operações são liquidadas no dia seguinte.
         - SettlementDate (Date): data de liquidação da negociação.
         - BondType (str): sigla do título (ex: LFT, LTN, NTN-B, NTN-F).
         - SelicCode (Int64): código único no sistema Selic.
         - ISIN (str): código ISIN (International Securities Identification Number).
         - IssueDate (Date): data de emissão do título.
         - MaturityDate (Date): data de vencimento do título.
-        - Trades (Int64): número de operações realizadas.
-        - Quantity (Int64): quantidade negociada.
+        - BrokerageTrades (Int64): subconjunto de Trades com corretagem.
+        - Trades (Int64): número total de operações realizadas.
+        - BrokerageQuantity (Int64): subconjunto de Quantity com corretagem.
+        - Quantity (Int64): quantidade total negociada.
         - Value (Float64): valor financeiro negociado (Quantity * AvgPrice).
         - MinPrice (Float64): preço unitário mínimo.
         - AvgPrice (Float64): preço unitário médio.
         - MaxPrice (Float64): preço unitário máximo.
         - UnderlyingPrice (Float64): PU lastro.
-        - ParValue (Float64): valor par.
+        - ParValue (Float64): valor nominal atualizado (VNA) do título.
         - MinRate (Float64): taxa mínima.
         - AvgRate (Float64): taxa média.
         - MaxRate (Float64): taxa máxima.
-        - BrokerageTrades (Int64): número de operações com corretagem.
-        - BrokerageQuantity (Int64): quantidade negociada com corretagem.
 
     Notes:
         - Dados ordenados por: SettlementDate, BondType, MaturityDate.
