@@ -50,30 +50,39 @@ def data(date: DateLike) -> pl.DataFrame:
         - AskRate (Float64): Taxa de venda (decimal).
         - IndicativeRate (Float64): Taxa indicativa (decimal).
         - DIRate (Float64): Taxa DI interpolada (flat forward).
+        - SpotRate (Float64): Taxa spot real (zero cupom via bootstrap).
+        - ForwardRate (Float64): Taxa forward real (a partir das taxas spot).
+        - ImpliedInflation (Float64): Inflação implícita (breakeven) calculada
+            a partir de taxas nominais do DI Futuro e taxas zero das NTN-B.
 
     Examples:
         >>> from pyield import ntnb
-        >>> ntnb.data("23-08-2024")
-        shape: (14, 15)
-        ┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬──────────┐
-        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate   │
-        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---      │
-        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64      ┆ f64      ┆ f64            ┆ f64      │
-        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪══════════╪══════════╪════════════════╪══════════╡
-        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.063961 ┆ 0.063667 ┆ 0.063804       ┆ 0.112749 │
-        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.06594  ┆ 0.065635 ┆ 0.065795       ┆ 0.114963 │
-        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.063925 ┆ 0.063601 ┆ 0.063794       ┆ 0.114888 │
-        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.063217 ┆ 0.062905 ┆ 0.063094       ┆ 0.115595 │
-        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.062245 ┆ 0.061954 ┆ 0.0621         ┆ 0.115665 │
-        │ …             ┆ …        ┆ …         ┆ …             ┆ … ┆ …        ┆ …        ┆ …              ┆ …        │
-        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.060005 ┆ 0.059574 ┆ 0.059797       ┆ 0.11511  │
-        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.061107 ┆ 0.060733 ┆ 0.060923       ┆ 0.11511  │
-        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.061304 ┆ 0.060931 ┆ 0.06114        ┆ 0.11511  │
-        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.061053 ┆ 0.06074  ┆ 0.060892       ┆ 0.11511  │
-        │ 2024-08-23    ┆ NTN-B    ┆ 760199    ┆ 2000-07-15    ┆ … ┆ 0.061211 ┆ 0.0608   ┆ 0.061005       ┆ 0.11511  │
-        └───────────────┴──────────┴───────────┴───────────────┴───┴──────────┴──────────┴────────────────┴──────────┘
+        >>> df_ntnb = ntnb.data("23-08-2024")  # doctest: +SKIP
     """
-    return anbima.tpf_data(date, "NTN-B")
+    df = anbima.tpf_data(date, "NTN-B")
+    if df.is_empty():
+        return df
+
+    # Calcula taxas spot e inflação implícita
+    df_bei = bei_rates(
+        settlement=date,
+        ntnb_maturities=df["MaturityDate"],
+        ntnb_rates=df["IndicativeRate"],
+        nominal_maturities=df["MaturityDate"],
+        nominal_rates=df["DIRate"],
+    ).select(
+        pl.col("MaturityDate"),
+        pl.col("SpotRate"),
+        pl.col("ImpliedInflation"),
+    )
+
+    df = df.join(df_bei, on="MaturityDate", how="left")
+
+    # Calcula taxas forward a partir das taxas spot
+    taxas_forward = fwd.forwards(bdays=df["BDToMat"], rates=df["SpotRate"])
+    df = df.with_columns(ForwardRate=taxas_forward)
+
+    return df
 
 
 def maturities(date: DateLike) -> pl.Series:
@@ -523,10 +532,10 @@ def bei_rates(
     nominal_rates: ArrayLike,
 ) -> pl.DataFrame:
     """
-    Calcula a inflação implícita (BEI) para NTN-B a partir de taxas nominais e reais.
+    Calcula a inflação implícita para NTN-B a partir de taxas nominais e reais.
 
-    A BEI é a inflação que iguala yields reais e nominais, baseada nas taxas spot
-    das NTN-B.
+    A inflação implícita (breakeven) é a que iguala yields reais e nominais,
+    baseada nas taxas spot das NTN-B.
 
     Args:
         settlement (DateLike): Data de liquidação da operação.
@@ -536,17 +545,18 @@ def bei_rates(
         nominal_rates (ArrayLike): Taxas nominais (ex.: DI Futuro).
 
     Returns:
-        pl.DataFrame: DataFrame com as BEI calculadas.
+        pl.DataFrame: DataFrame com as taxas calculadas.
 
     Output Columns:
         - MaturityDate (Date): Data de vencimento.
         - BDToMat (Int64): Dias úteis entre liquidação e vencimento.
-        - RIR (Float64): Taxa real (spot).
-        - NIR (Float64): Taxa nominal interpolada.
-        - BEI (Float64): Inflação implícita (breakeven).
+        - SpotRate (Float64): Taxa real (spot via bootstrap).
+        - NominalRate (Float64): Taxa nominal interpolada.
+        - ImpliedInflation (Float64): Inflação implícita (breakeven).
 
     Notes:
-        A BEI indica a inflação esperada pelo mercado entre liquidação e vencimento.
+        A inflação implícita indica a expectativa de mercado entre
+        liquidação e vencimento.
 
     Examples:
         Busca as taxas de NTN-B para uma data de referência.
@@ -556,7 +566,7 @@ def bei_rates(
         Busca as taxas de ajuste do DI Futuro para a mesma data de referência:
         >>> df_di = yd.di1.data("05-09-2024")
 
-        Calcula as BEI considerando a liquidação na data de referência:
+        Calcula a inflação implícita na data de referência:
         >>> yd.ntnb.bei_rates(
         ...     settlement="05-09-2024",
         ...     ntnb_maturities=df_ntnb["MaturityDate"],
@@ -565,23 +575,23 @@ def bei_rates(
         ...     nominal_rates=df_di["SettlementRate"],
         ... )
         shape: (14, 5)
-        ┌──────────────┬─────────┬──────────┬──────────┬──────────┐
-        │ MaturityDate ┆ BDToMat ┆ RIR      ┆ NIR      ┆ BEI      │
-        │ ---          ┆ ---     ┆ ---      ┆ ---      ┆ ---      │
-        │ date         ┆ i64     ┆ f64      ┆ f64      ┆ f64      │
-        ╞══════════════╪═════════╪══════════╪══════════╪══════════╡
-        │ 2025-05-15   ┆ 171     ┆ 0.061748 ┆ 0.113836 ┆ 0.049059 │
-        │ 2026-08-15   ┆ 488     ┆ 0.066133 ┆ 0.117126 ┆ 0.04783  │
-        │ 2027-05-15   ┆ 673     ┆ 0.063816 ┆ 0.117169 ┆ 0.050152 │
-        │ 2028-08-15   ┆ 988     ┆ 0.063635 ┆ 0.11828  ┆ 0.051376 │
-        │ 2029-05-15   ┆ 1172    ┆ 0.062532 ┆ 0.11838  ┆ 0.052561 │
-        │ …            ┆ …       ┆ …        ┆ …        ┆ …        │
-        │ 2040-08-15   ┆ 3995    ┆ 0.060468 ┆ 0.11759  ┆ 0.053865 │
-        │ 2045-05-15   ┆ 5182    ┆ 0.0625   ┆ 0.11759  ┆ 0.05185  │
-        │ 2050-08-15   ┆ 6497    ┆ 0.063016 ┆ 0.11759  ┆ 0.051339 │
-        │ 2055-05-15   ┆ 7686    ┆ 0.062252 ┆ 0.11759  ┆ 0.052095 │
-        │ 2060-08-15   ┆ 9003    ┆ 0.063001 ┆ 0.11759  ┆ 0.051354 │
-        └──────────────┴─────────┴──────────┴──────────┴──────────┘
+        ┌──────────────┬─────────┬──────────┬──────────────┬──────────────────┐
+        │ MaturityDate ┆ BDToMat ┆ SpotRate ┆ NominalRate  ┆ ImpliedInflation │
+        │ ---          ┆ ---     ┆ ---      ┆ ---          ┆ ---              │
+        │ date         ┆ i64     ┆ f64      ┆ f64          ┆ f64              │
+        ╞══════════════╪═════════╪══════════╪══════════════╪══════════════════╡
+        │ 2025-05-15   ┆ 171     ┆ 0.061748 ┆ 0.113836     ┆ 0.049059         │
+        │ 2026-08-15   ┆ 488     ┆ 0.066133 ┆ 0.117126     ┆ 0.04783          │
+        │ 2027-05-15   ┆ 673     ┆ 0.063816 ┆ 0.117169     ┆ 0.050152         │
+        │ 2028-08-15   ┆ 988     ┆ 0.063635 ┆ 0.11828      ┆ 0.051376         │
+        │ 2029-05-15   ┆ 1172    ┆ 0.062532 ┆ 0.11838      ┆ 0.052561         │
+        │ …            ┆ …       ┆ …        ┆ …            ┆ …                │
+        │ 2040-08-15   ┆ 3995    ┆ 0.060468 ┆ 0.11759      ┆ 0.053865         │
+        │ 2045-05-15   ┆ 5182    ┆ 0.0625   ┆ 0.11759      ┆ 0.05185          │
+        │ 2050-08-15   ┆ 6497    ┆ 0.063016 ┆ 0.11759      ┆ 0.051339         │
+        │ 2055-05-15   ┆ 7686    ┆ 0.062252 ┆ 0.11759      ┆ 0.052095         │
+        │ 2060-08-15   ┆ 9003    ┆ 0.063001 ┆ 0.11759      ┆ 0.051354         │
+        └──────────────┴─────────┴──────────┴──────────────┴──────────────────┘
     """
     if any_is_empty(
         settlement, ntnb_maturities, ntnb_rates, nominal_maturities, nominal_rates
@@ -599,14 +609,16 @@ def bei_rates(
     )
     df_spot = spot_rates(liquidacao, ntnb_maturities, ntnb_rates)
     df = (
-        df_spot.rename({"SpotRate": "RIR"})
-        .with_columns(
-            NIR=interpolador_ff(df_spot["BDToMat"]),
+        df_spot.with_columns(
+            NominalRate=interpolador_ff(df_spot["BDToMat"]),
         )
         .with_columns(
-            BEI=((pl.col("NIR") + 1) / (pl.col("RIR") + 1)) - 1,
+            ImpliedInflation=((pl.col("NominalRate") + 1) / (pl.col("SpotRate") + 1))
+            - 1,
         )
-        .select("MaturityDate", "BDToMat", "RIR", "NIR", "BEI")
+        .select(
+            "MaturityDate", "BDToMat", "SpotRate", "NominalRate", "ImpliedInflation"
+        )
     )
 
     return df

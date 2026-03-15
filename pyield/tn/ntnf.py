@@ -58,6 +58,7 @@ def data(date: DateLike) -> pl.DataFrame:
         - DIRate (Float64): Taxa DI interpolada (flat forward).
         - DISpread (Float64): Spread sobre o DI (IndicativeRate - DIRate).
         - Premium (Float64): Rentabilidade da NTN-F sobre a curva DI.
+        - DINetSpread (Float64): Spread líquido (prêmio limpo) sobre a curva DI.
 
     Examples:
         >>> from pyield import ntnf
@@ -74,12 +75,22 @@ def data(date: DateLike) -> pl.DataFrame:
     df = df.with_columns(
         DISpread=pl.col("IndicativeRate") - pl.col("DIRate"),
         Premium=pl.struct("MaturityDate", "IndicativeRate").map_elements(
-            lambda s: premium(
-                date,
-                s["MaturityDate"],
-                s["IndicativeRate"],
-                df_di["ExpirationDate"],  # type: ignore[arg-type]
-                df_di["SettlementRate"],  # type: ignore[arg-type]
+            lambda row: premium(
+                settlement=date,
+                ntnf_maturity=row["MaturityDate"],
+                ntnf_rate=row["IndicativeRate"],
+                di_expirations=df_di["ExpirationDate"],  # type: ignore[union-attr]
+                di_rates=df_di["SettlementRate"],
+            ),
+            return_dtype=pl.Float64,
+        ),
+        DINetSpread=pl.struct("MaturityDate", "IndicativeRate").map_elements(
+            lambda row: di_net_spread(
+                settlement=date,  # Usa a variável externa explicitamente aqui
+                ntnf_maturity=row["MaturityDate"],
+                ntnf_rate=row["IndicativeRate"],
+                di_expirations=df_di["ExpirationDate"],  # Usa o DataFrame externo aqui
+                di_rates=df_di["SettlementRate"],
             ),
             return_dtype=pl.Float64,
         ),
