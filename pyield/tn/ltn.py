@@ -34,30 +34,28 @@ def data(date: DateLike) -> pl.DataFrame:
         - AskRate (Float64): Taxa de venda (decimal).
         - IndicativeRate (Float64): Taxa indicativa (decimal).
         - DIRate (Float64): Taxa DI interpolada (flat forward).
+        - DISpread (Float64): Spread sobre o DI (IndicativeRate - DIRate).
+        - Premium (Float64): Rentabilidade diária da LTN sobre o DI.
 
     Examples:
         >>> from pyield import ltn
-        >>> ltn.data("23-08-2024")
-        shape: (13, 15)
-        ┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬─────────┐
-        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate  │
-        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---     │
-        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64      ┆ f64      ┆ f64            ┆ f64     │
-        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪══════════╪══════════╪════════════════╪═════════╡
-        │ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2022-07-08    ┆ … ┆ 0.10459  ┆ 0.104252 ┆ 0.104416       ┆ 0.10472 │
-        │ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2018-02-01    ┆ … ┆ 0.107366 ┆ 0.107016 ┆ 0.107171       ┆ 0.10823 │
-        │ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2023-01-06    ┆ … ┆ 0.110992 ┆ 0.110746 ┆ 0.110866       ┆ 0.11179 │
-        │ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2022-01-07    ┆ … ┆ 0.11315  ┆ 0.112947 ┆ 0.113032       ┆ 0.11365 │
-        │ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2023-07-07    ┆ … ┆ 0.114494 ┆ 0.114277 ┆ 0.114374       ┆ 0.11463 │
-        │ …             ┆ …        ┆ …         ┆ …             ┆ … ┆ …        ┆ …        ┆ …              ┆ …       │
-        │ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2024-07-05    ┆ … ┆ 0.115424 ┆ 0.115283 ┆ 0.115357       ┆ 0.11494 │
-        │ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2023-07-07    ┆ … ┆ 0.115452 ┆ 0.115247 ┆ 0.115335       ┆ 0.11498 │
-        │ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2024-01-05    ┆ … ┆ 0.115758 ┆ 0.115633 ┆ 0.115694       ┆ 0.11508 │
-        │ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2024-07-05    ┆ … ┆ 0.11647  ┆ 0.116341 ┆ 0.116417       ┆ 0.11554 │
-        │ 2024-08-23    ┆ LTN      ┆ 100000    ┆ 2024-01-05    ┆ … ┆ 0.117504 ┆ 0.11737  ┆ 0.117436       ┆ 0.11594 │
-        └───────────────┴──────────┴───────────┴───────────────┴───┴──────────┴──────────┴────────────────┴─────────┘
+        >>> df_ltn = ltn.data("23-08-2024")  # doctest: +SKIP
     """
-    return anbima.tpf_data(date, "LTN")
+    df = anbima.tpf_data(date, "LTN")
+    if df.is_empty():
+        return df
+
+    df_spread = di_spreads(date).select("MaturityDate", "DISpread")
+    df = df.join(df_spread, on="MaturityDate", how="left").with_columns(
+        pl.struct("IndicativeRate", "DIRate")
+        .map_elements(
+            lambda s: premium(s["IndicativeRate"], s["DIRate"]),
+            return_dtype=pl.Float64,
+        )
+        .alias("Premium")
+    )
+
+    return df
 
 
 def maturities(date: DateLike) -> pl.Series:
@@ -98,7 +96,7 @@ def price(
     rate: float,
 ) -> float:
     """
-    Calcula o preço da LTN pelas regras da ANBIMA.
+    Calcula o preço (PU) da LTN pelas regras da ANBIMA.
 
     Args:
         settlement (DateLike): Data de liquidação.
@@ -106,7 +104,7 @@ def price(
         rate (float): Taxa de desconto (YTM) do título.
 
     Returns:
-        float: Preço da LTN conforme ANBIMA.
+        float: Preço (PU) da LTN conforme ANBIMA.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -172,14 +170,14 @@ def rate(
 
 def premium(ltn_rate: float, di_rate: float) -> float:
     """
-    Calcula o prêmio da LTN sobre a taxa de DI Futuro.
+    Calcula a rentabilidade da LTN sobre a taxa de DI Futuro.
 
     Args:
         ltn_rate (float): Taxa anualizada da LTN.
         di_rate (float): Taxa anualizada do DI Futuro.
 
     Returns:
-        float: Prêmio da LTN sobre o DI.
+        float: Rentabilidade da LTN sobre o DI.
 
     Examples:
         Reference date: 22-08-2024

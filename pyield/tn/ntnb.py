@@ -293,7 +293,7 @@ def price(
     quotation: float,
 ) -> float:
     """
-    Calcula o preço da NTN-B pelas regras da ANBIMA.
+    Calcula o preço (PU) da NTN-B pelas regras da ANBIMA.
 
     Args:
         vna (float): Valor nominal atualizado (VNA).

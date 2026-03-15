@@ -233,7 +233,7 @@ def price(
     rate: float,
 ) -> float:
     """
-    Calcula o preço da NTN-F pelas regras da ANBIMA, equivalente ao valor
+    Calcula o preço (PU) da NTN-F pelas regras da ANBIMA, equivalente ao valor
     presente dos fluxos descontados pela taxa de YTM informada.
 
     Args:
@@ -451,10 +451,12 @@ def premium(  # noqa
     di_rates: ArrayLike,
 ) -> float:
     """
-    Calcula o prêmio de uma NTN-F sobre a curva DI.
+    Calcula a rentabilidade de uma NTN-F sobre a curva DI.
 
     A função compara o fator de desconto implícito da NTN-F com o da curva DI,
-    determinando o prêmio líquido com base na diferença entre os fatores.
+    determinando quanto a NTN-F rende em relação ao DI. Interpola as taxas DI nas datas
+    de pagamento e calcula o valor presente dos fluxos da NTN-F usando essas taxas.
+    Encontra a taxa de YTM da curva DI que iguala o preço da NTN-F.
 
     Args:
         settlement (DateLike): Data de liquidação para o cálculo.
@@ -464,7 +466,7 @@ def premium(  # noqa
         di_rates (ArrayLike): Taxas DI correspondentes aos vencimentos.
 
     Returns:
-        float: Prêmio da NTN-F sobre a curva DI, em fator. Retorna NaN em erro.
+        float: Rentabilidade da NTN-F sobre a curva DI. Retorna NaN em erro.
 
     Examples:
         >>> # Obs: apenas algumas taxas DI serão usadas no exemplo.
@@ -544,7 +546,7 @@ def di_net_spread(  # noqa
     di_rates: ArrayLike,
 ) -> float:
     """
-    Calcula o spread líquido sobre DI dado a YTM e a curva DI.
+    Calcula o spread líquido (prêmio limpo no jargão de mercado) da NTN-F sobre a curva DI.
 
     A função determina o spread que iguala o valor presente dos fluxos ao preço
     do título. Interpola as taxas DI nas datas de pagamento e encontra o spread
@@ -688,10 +690,10 @@ def dv01(
 
 def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
     """
-    Calcula o DI Spread para títulos prefixados (LTN e NTN-F) em uma data de referência.
+    Calcula o spread bruto das NTN-F sobre a curva DI na data de referência.
 
-    Definição do spread (forma bruta):
-        DISpread_raw = IndicativeRate - SettlementRate
+    Definição do spread (prêmio sujo no jargão de mercado):
+        DISpread = IndicativeRate - SettlementRate
 
     Quando ``bps=False`` a coluna retorna essa diferença em formato decimal
     (ex: 0.000439 ≈ 4.39 bps). Quando ``bps=True`` o valor é automaticamente

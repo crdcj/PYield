@@ -10,7 +10,7 @@ def price(
     face_value: float,
 ) -> float:
     """
-    Calcula o preço da NTN-B Principal pelas regras da ANBIMA.
+    Calcula o preço (PU) da NTN-B Principal pelas regras do Tesouro Nacional.
 
     Args:
         settlement (DateLike): Data de liquidação.
@@ -19,7 +19,7 @@ def price(
         face_value (float): Valor nominal atualizado (VNA).
 
     Returns:
-        float: Preço da NTN-B Principal conforme ANBIMA.
+        float: Preço (PU) da NTN-B Principal conforme as regras do Tesouro Nacional.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
@@ -62,7 +62,7 @@ def dv01(
         face_value (float): Valor nominal atualizado (VNA).
 
     Returns:
-        float: DV01, variação de preço para 1 bp.
+        float: DV01 (Dollar Value of 01), variação de preço para 1 bp.
 
     Examples:
         >>> from pyield import ntnbprinc as bp

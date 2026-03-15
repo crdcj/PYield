@@ -177,7 +177,7 @@ def rate(
 
 def premium(lft_rate: float, di_rate: float) -> float:
     """
-    Calcula o prêmio da LFT sobre a taxa de DI Futuro.
+    Calcula a rentabilidade da LFT sobre a taxa de DI Futuro.
 
     Args:
         lft_rate (float): Taxa anualizada da LFT sobre a Selic.
@@ -185,10 +185,10 @@ def premium(lft_rate: float, di_rate: float) -> float:
             vencimento da LFT).
 
     Returns:
-        float: Prêmio da LFT sobre o DI.
+        float: Rentabilidade da LFT sobre o DI.
 
     Examples:
-        Calcula o prêmio de uma LFT em 28/04/2025:
+        Calcula a rentabilidade de uma LFT em 28/04/2025:
         >>> from pyield import lft
         >>> lft_rate = 0.001124  # 0.1124%
         >>> di_rate = 0.13967670224373396  # 13.967670224373396%
@@ -208,7 +208,7 @@ def price(
     quotation: float,
 ) -> float:
     """
-    Calcula o preço da LFT pelas regras do Tesouro Nacional.
+    Calcula o preço (PU) da LFT pelas regras da Anbima.
 
     Args:
         vna (float): Valor nominal atualizado (VNA).

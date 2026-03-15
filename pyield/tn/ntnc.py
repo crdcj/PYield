@@ -257,7 +257,7 @@ def price(
     quotation: float,
 ) -> float:
     """
-    Calcula o preço da NTN-C pelas regras da ANBIMA.
+    Calcula o preço (PU) da NTN-C pelas regras da ANBIMA.
 
     price = VNA * quotation / 100
 

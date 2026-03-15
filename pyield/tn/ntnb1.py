@@ -233,7 +233,7 @@ def price(
     quotation: float,
 ) -> float:
     """
-    Calcula o preço da NTN-B1 pelas regras do Tesouro Nacional.
+    Calcula o preço (PU) da NTN-B1 pelas regras do Tesouro Nacional.
 
     Args:
         vna (float): Valor nominal atualizado (VNA).
