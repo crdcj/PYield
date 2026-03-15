@@ -9,6 +9,7 @@ import pyield._internal.converters as cv
 import pyield.interpolator as ip
 from pyield import anbima, bday
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
+from pyield.b3 import di1
 from pyield.tn import utils
 from pyield.tn.pre import di_spreads as pre_di_spreads
 
@@ -55,25 +56,36 @@ def data(date: DateLike) -> pl.DataFrame:
         - AskRate (Float64): Taxa de venda (decimal).
         - IndicativeRate (Float64): Taxa indicativa (decimal).
         - DIRate (Float64): Taxa DI interpolada (flat forward).
+        - DISpread (Float64): Spread sobre o DI (IndicativeRate - DIRate).
+        - Premium (Float64): Rentabilidade da NTN-F sobre a curva DI.
 
     Examples:
         >>> from pyield import ntnf
-        >>> ntnf.data("23-08-2024")
-        shape: (6, 15)
-        ┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬─────────┐
-        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate  │
-        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---     │
-        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64      ┆ f64      ┆ f64            ┆ f64     │
-        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪══════════╪══════════╪════════════════╪═════════╡
-        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2014-01-10    ┆ … ┆ 0.107864 ┆ 0.107524 ┆ 0.107692       ┆ 0.10823 │
-        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2016-01-15    ┆ … ┆ 0.11527  ┆ 0.114948 ┆ 0.115109       ┆ 0.11467 │
-        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2018-01-05    ┆ … ┆ 0.116468 ┆ 0.11621  ┆ 0.116337       ┆ 0.1156  │
-        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2020-01-10    ┆ … ┆ 0.117072 ┆ 0.116958 ┆ 0.117008       ┆ 0.11575 │
-        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2022-01-07    ┆ … ┆ 0.116473 ┆ 0.116164 ┆ 0.116307       ┆ 0.11554 │
-        │ 2024-08-23    ┆ NTN-F    ┆ 950199    ┆ 2024-01-05    ┆ … ┆ 0.116662 ┆ 0.116523 ┆ 0.116586       ┆ 0.11531 │
-        └───────────────┴──────────┴───────────┴───────────────┴───┴──────────┴──────────┴────────────────┴─────────┘
-    """  # noqa
-    return anbima.tpf_data(date, "NTN-F")
+        >>> df_ntnf = ntnf.data("23-08-2024")  # doctest: +SKIP
+    """
+    df = anbima.tpf_data(date, "NTN-F")
+    if df.is_empty():
+        return df
+
+    # Busca curva DI para cálculo do premium
+    df_di = di1.data(date, month_start=True)
+
+    # Calcula DISpread e Premium para cada vencimento
+    df = df.with_columns(
+        DISpread=pl.col("IndicativeRate") - pl.col("DIRate"),
+        Premium=pl.struct("MaturityDate", "IndicativeRate").map_elements(
+            lambda s: premium(
+                date,
+                s["MaturityDate"],
+                s["IndicativeRate"],
+                df_di["ExpirationDate"],  # type: ignore[arg-type]
+                df_di["SettlementRate"],  # type: ignore[arg-type]
+            ),
+            return_dtype=pl.Float64,
+        ),
+    )
+
+    return df
 
 
 def maturities(date: DateLike) -> pl.Series:

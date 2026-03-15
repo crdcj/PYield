@@ -45,14 +45,12 @@ def data(date: DateLike) -> pl.DataFrame:
     if df.is_empty():
         return df
 
-    df_spread = di_spreads(date).select("MaturityDate", "DISpread")
-    df = df.join(df_spread, on="MaturityDate", how="left").with_columns(
-        pl.struct("IndicativeRate", "DIRate")
-        .map_elements(
+    df = df.with_columns(
+        DISpread=pl.col("IndicativeRate") - pl.col("DIRate"),
+        Premium=pl.struct("IndicativeRate", "DIRate").map_elements(
             lambda s: premium(s["IndicativeRate"], s["DIRate"]),
             return_dtype=pl.Float64,
-        )
-        .alias("Premium")
+        ),
     )
 
     return df

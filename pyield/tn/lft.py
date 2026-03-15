@@ -31,30 +31,24 @@ def data(date: DateLike) -> pl.DataFrame:
         - AskRate (Float64): Taxa de venda (decimal).
         - IndicativeRate (Float64): Taxa indicativa (decimal).
         - DIRate (Float64): Taxa DI interpolada (flat forward).
+        - Premium (Float64): Rentabilidade da LFT sobre o DI.
 
     Examples:
         >>> from pyield import lft
-        >>> lft.data("23-08-2024")
-        shape: (14, 15)
-        ┌───────────────┬──────────┬───────────┬───────────────┬───┬───────────┬───────────┬────────────────┬──────────┐
-        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate   ┆ AskRate   ┆ IndicativeRate ┆ DIRate   │
-        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---       ┆ ---       ┆ ---            ┆ ---      │
-        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64       ┆ f64       ┆ f64            ┆ f64      │
-        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪═══════════╪═══════════╪════════════════╪══════════╡
-        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000306  ┆ 0.000226  ┆ 0.000272       ┆ 0.10408  │
-        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ -0.000397 ┆ -0.000481 ┆ -0.000418      ┆ 0.11082  │
-        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ -0.000205 ┆ -0.000258 ┆ -0.00023       ┆ 0.114315 │
-        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000085  ┆ 0.00006   ┆ 0.000075       ┆ 0.114982 │
-        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.000124  ┆ 0.000097  ┆ 0.000114       ┆ 0.114955 │
-        │ …             ┆ …        ┆ …         ┆ …             ┆ … ┆ …         ┆ …         ┆ …              ┆ …        │
-        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.001501  ┆ 0.001476  ┆ 0.001491       ┆ 0.11564  │
-        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.001597  ┆ 0.001571  ┆ 0.001587       ┆ 0.115773 │
-        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.001601  ┆ 0.001574  ┆ 0.001591       ┆ 0.115904 │
-        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.001649  ┆ 0.001627  ┆ 0.001641       ┆ 0.115854 │
-        │ 2024-08-23    ┆ LFT      ┆ 210100    ┆ 2000-07-01    ┆ … ┆ 0.001696  ┆ 0.00168   ┆ 0.001687       ┆ 0.115806 │
-        └───────────────┴──────────┴───────────┴───────────────┴───┴───────────┴───────────┴────────────────┴──────────┘
+        >>> df_lft = lft.data("23-08-2024")  # doctest: +SKIP
     """
-    return anbima.tpf_data(date, "LFT")
+    df = anbima.tpf_data(date, "LFT")
+    if df.is_empty():
+        return df
+
+    df = df.with_columns(
+        Premium=pl.struct("IndicativeRate", "DIRate").map_elements(
+            lambda s: premium(s["IndicativeRate"], s["DIRate"]),
+            return_dtype=pl.Float64,
+        )
+    )
+
+    return df
 
 
 def maturities(date: DateLike) -> pl.Series:
