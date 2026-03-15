@@ -19,9 +19,11 @@ TAXA_CUPOM = (0.10 + 1) ** 0.5 - 1  -> 10% a.a. com capitalização semestral
 VALOR_FACE = 1000
 VALOR_CUPOM = round(VALOR_FACE * TAXA_CUPOM, 5)
 VALOR_FINAL = VALOR_FACE + VALOR_CUPOM
+
+A NTN-F paga dois cupons por ano (semestrais). As datas de cupom são derivadas
+do vencimento (retrocedendo 6 em 6 meses), sem depender de meses fixos.
+    Ex.: vencimento 01-01-2027 gera cupons em 01-07-2026, 01-01-2026, ...
 """
-DIA_CUPOM = 1
-MESES_CUPOM = {1, 7}
 VALOR_CUPOM = 48.80885
 VALOR_FINAL = 1048.80885  # 1000 + 48.80885
 
@@ -545,7 +547,7 @@ def _metodo_bissecao(func: Callable[[float], float], a: float, b: float) -> floa
     return (a + b) / 2
 
 
-def _resolver_spread(
+def _encontrar_raiz(
     func_diferenca_preco: Callable,
 ) -> float:
     """
@@ -641,7 +643,7 @@ def premium(  # noqa
         fluxos_descontados = df["CashFlow"] / (1 + taxa) ** df["BYears"]
         return float(fluxos_descontados.sum()) - preco_titulo
 
-    di_ytm = _resolver_spread(diferenca_preco)
+    di_ytm = _encontrar_raiz(diferenca_preco)
 
     if math.isnan(di_ytm):
         return float("nan")
@@ -747,7 +749,7 @@ def di_net_spread(  # noqa
         return float(fluxos_descontados.sum()) - preco_titulo
 
     # 7. Resolver para o spread
-    return _resolver_spread(diferenca_preco)
+    return _encontrar_raiz(diferenca_preco)
 
 
 def duration(
@@ -867,3 +869,41 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
         └──────────┴──────────────┴──────────┘
     """
     return pre_di_spreads(date, bps=bps).filter(pl.col("BondType") == "NTN-F")
+
+
+def rate(
+    settlement: DateLike,
+    maturity: DateLike,
+    price_value: float,
+) -> float:
+    """
+    Calcula a taxa implícita (YTM) de uma NTN-F a partir de um PU informado.
+
+    A função inverte numericamente o cálculo de ``price()``, encontrando a taxa
+    que zera a diferença entre o preço calculado e o preço desejado.
+
+    Args:
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        price_value (float): Preço unitário (PU) do título.
+
+    Returns:
+        float: Taxa implícita (YTM) em formato decimal. Retorna NaN em caso de erro.
+
+    Examples:
+        >>> from pyield import ntnf
+        >>> pu = ntnf.price("05-07-2024", "01-01-2035", 0.11921)
+        >>> ntnf.rate("13-03-2026", "01-01-2035", 820.995125)
+        0.142743
+    """
+    if any_is_empty(settlement, maturity, price_value):
+        return float("nan")
+
+    if price_value <= 0:
+        return float("nan")
+
+    def diferenca_preco(taxa: float) -> float:
+        return price(settlement, maturity, taxa) - price_value
+
+    taxa_encontrada = _encontrar_raiz(diferenca_preco)
+    return round(taxa_encontrada, 6)
