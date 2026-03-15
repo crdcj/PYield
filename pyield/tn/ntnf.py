@@ -56,9 +56,10 @@ def data(date: DateLike) -> pl.DataFrame:
         - AskRate (Float64): Taxa de venda (decimal).
         - IndicativeRate (Float64): Taxa indicativa (decimal).
         - DIRate (Float64): Taxa DI interpolada (flat forward).
+        - SpotRate (Float64): Taxa spot (zero cupom via bootstrap).
         - DISpread (Float64): Spread sobre o DI (IndicativeRate - DIRate).
-        - Premium (Float64): Rentabilidade da NTN-F sobre a curva DI.
         - DINetSpread (Float64): Spread líquido (prêmio limpo) sobre a curva DI.
+        - Premium (Float64): Rentabilidade da NTN-F sobre a curva DI.
 
     Examples:
         >>> from pyield import ntnf
@@ -68,28 +69,39 @@ def data(date: DateLike) -> pl.DataFrame:
     if df.is_empty():
         return df
 
+    # Busca dados de LTN para bootstrap das taxas spot
+    df_ltn = anbima.tpf_data(date, "LTN")
+    df_spots = spot_rates(
+        settlement=date,
+        ltn_maturities=df_ltn["MaturityDate"],
+        ltn_rates=df_ltn["IndicativeRate"],
+        ntnf_maturities=df["MaturityDate"],
+        ntnf_rates=df["IndicativeRate"],
+    ).select("MaturityDate", "SpotRate")
+    df = df.join(df_spots, on="MaturityDate", how="left")
+
     # Busca curva DI para cálculo do premium
     df_di = di1.data(date, month_start=True)
 
     # Calcula DISpread e Premium para cada vencimento
     df = df.with_columns(
         DISpread=pl.col("IndicativeRate") - pl.col("DIRate"),
-        Premium=pl.struct("MaturityDate", "IndicativeRate").map_elements(
-            lambda row: premium(
-                settlement=date,
-                ntnf_maturity=row["MaturityDate"],
-                ntnf_rate=row["IndicativeRate"],
-                di_expirations=df_di["ExpirationDate"],  # type: ignore[union-attr]
-                di_rates=df_di["SettlementRate"],
-            ),
-            return_dtype=pl.Float64,
-        ),
         DINetSpread=pl.struct("MaturityDate", "IndicativeRate").map_elements(
             lambda row: di_net_spread(
                 settlement=date,  # Usa a variável externa explicitamente aqui
                 ntnf_maturity=row["MaturityDate"],
                 ntnf_rate=row["IndicativeRate"],
                 di_expirations=df_di["ExpirationDate"],  # Usa o DataFrame externo aqui
+                di_rates=df_di["SettlementRate"],
+            ),
+            return_dtype=pl.Float64,
+        ),
+        Premium=pl.struct("MaturityDate", "IndicativeRate").map_elements(
+            lambda row: premium(
+                settlement=date,
+                ntnf_maturity=row["MaturityDate"],
+                ntnf_rate=row["IndicativeRate"],
+                di_expirations=df_di["ExpirationDate"],  # type: ignore[union-attr]
                 di_rates=df_di["SettlementRate"],
             ),
             return_dtype=pl.Float64,

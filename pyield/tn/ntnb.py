@@ -50,7 +50,7 @@ def data(date: DateLike) -> pl.DataFrame:
         - AskRate (Float64): Taxa de venda (decimal).
         - IndicativeRate (Float64): Taxa indicativa (decimal).
         - DIRate (Float64): Taxa DI interpolada (flat forward).
-        - SpotRate (Float64): Taxa spot real (zero cupom via bootstrap).
+        - SpotRate (Float64): Taxa spot real (zero cupom via bootstrap das taxas indicativas).
         - ForwardRate (Float64): Taxa forward real (a partir das taxas spot).
         - ImpliedInflation (Float64): Inflação implícita (breakeven) calculada
             a partir de taxas nominais do DI Futuro e taxas zero das NTN-B.
