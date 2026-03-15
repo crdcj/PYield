@@ -1,7 +1,11 @@
+import logging
+from collections.abc import Callable
 from decimal import Decimal
 from typing import overload
 
 import polars as pl
+
+logger = logging.getLogger(__name__)
 
 
 @overload
@@ -113,3 +117,100 @@ def calculate_present_value(
         return float("nan")
 
     return float(present_values_series.sum())
+
+
+def _encontrar_intervalo_raiz(
+    func: Callable[[float], float],
+) -> tuple[float, float] | None:
+    """
+    Encontra um intervalo [a, b] para a TAXA DE JUROS que zera a função.
+
+    Otimizado para o contexto financeiro, buscando a taxa apenas em um
+    intervalo realista. A função 'func' é a que calcula a diferença de
+    preço dado uma taxa.
+    """
+    # --- LIMITES DE BOM SENSO PARA A *TAXA* QUE ESTAMOS PROCURANDO ---
+    taxa_inicial: float = 0.01
+    passo: float = 0.01
+    fator_crescimento: float = 1.6
+    max_tentativas: int = 100
+
+    taxa_min: float = -1.0
+    taxa_max: float = 10.00
+    # -----------------------------------------------------------------
+
+    f0 = func(taxa_inicial)
+    if abs(f0) == 0:
+        return (taxa_inicial, taxa_inicial)
+
+    # 1. Busca na direção positiva
+    a, fa = taxa_inicial, f0
+    b = taxa_inicial + passo
+    passo_atual = passo
+
+    for _ in range(max_tentativas):
+        if b > taxa_max:
+            break
+        fb = func(b)
+        if fa * fb < 0:
+            return (a, b)
+        a, fa = b, fb
+        passo_atual *= fator_crescimento
+        b += passo_atual
+
+    # 2. Busca na direção negativa
+    a, fa = taxa_inicial, f0
+    b = taxa_inicial - passo
+    passo_atual = passo
+
+    for _ in range(max_tentativas):
+        if b < taxa_min:
+            break
+        fb = func(b)
+        if fa * fb < 0:
+            return (b, a)
+        a, fa = b, fb
+        passo_atual *= fator_crescimento
+        b -= passo_atual
+
+    return None
+
+
+def _metodo_bissecao(func: Callable[[float], float], a: float, b: float) -> float:
+    """Método da bisseção para encontrar raiz."""
+    tolerancia = 1e-8
+    max_iter = 100
+    fa, fb = func(a), func(b)
+    if fa * fb > 0:
+        logger.warning(
+            "Falha no método da bisseção: a função não muda de sinal no intervalo."
+        )
+        return float("nan")
+
+    for _ in range(max_iter):
+        ponto_medio = (a + b) / 2
+        fmeio = func(ponto_medio)
+        if abs(fmeio) < tolerancia or (b - a) / 2 < tolerancia:
+            return ponto_medio
+        if fmeio * fa < 0:
+            b, fb = ponto_medio, fmeio
+        else:
+            a, fa = ponto_medio, fmeio
+
+    return (a + b) / 2
+
+
+def encontrar_raiz(func_diferenca_preco: Callable[[float], float]) -> float:
+    """Encontra a raiz de uma função de diferença de preço.
+
+    Versão robusta que encontra automaticamente um intervalo válido e
+    aplica o método da bisseção.
+    """
+    intervalo = _encontrar_intervalo_raiz(func_diferenca_preco)
+
+    if intervalo is None:
+        logger.warning("Não foi possível encontrar intervalo de busca válido")
+        return float("nan")
+
+    a, b = intervalo
+    return _metodo_bissecao(func_diferenca_preco, a, b)

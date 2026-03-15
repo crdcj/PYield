@@ -4,9 +4,9 @@ import polars as pl
 from dateutil.relativedelta import relativedelta
 
 import pyield._internal.converters as conversores
-import pyield.tn.tools as ferramentas
 from pyield import anbima, bday
 from pyield._internal.types import DateLike, any_is_empty
+from pyield.tn import utils
 
 """
 Constantes calculadas conforme regras da ANBIMA e em base 100.
@@ -244,12 +244,12 @@ def quotation(
 
     valores_fluxo = df_fluxos["CashFlow"]
     dias_uteis = bday.count(settlement, df_fluxos["PaymentDate"])
-    anos_uteis = ferramentas.truncate(dias_uteis / 252, 14)
+    anos_uteis = utils.truncate(dias_uteis / 252, 14)
     fatores_desconto = (1 + rate) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
     vp = (valores_fluxo / fatores_desconto).round(10)
     # Retorna a cotação (soma dos valores presentes) com truncamento ANBIMA
-    return ferramentas.truncate(vp.sum(), 4)
+    return utils.truncate(vp.sum(), 4)
 
 
 def price(
@@ -278,7 +278,7 @@ def price(
     """
     if any_is_empty(vna, quotation):
         return float("nan")
-    return ferramentas.truncate(vna * quotation / 100, 6)
+    return utils.truncate(vna * quotation / 100, 6)
 
 
 def duration(
@@ -313,4 +313,4 @@ def duration(
     vp = df_fluxos["CashFlow"] / (1 + rate) ** anos_uteis
     duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
     # Truncar para 14 casas decimais para repetibilidade dos resultados
-    return ferramentas.truncate(duracao, 14)
+    return utils.truncate(duracao, 14)

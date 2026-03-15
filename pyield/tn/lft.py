@@ -2,7 +2,7 @@ import polars as pl
 
 from pyield import anbima, bday
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tn import tools
+from pyield.tn import utils
 
 
 def data(date: DateLike) -> pl.DataFrame:
@@ -125,11 +125,11 @@ def quotation(
     dias_uteis = bday.count(settlement, maturity)
 
     # Número de períodos truncado conforme regras da ANBIMA
-    anos_truncados = tools.truncate(dias_uteis / 252, 14)
+    anos_truncados = utils.truncate(dias_uteis / 252, 14)
 
     fator_desconto = 1 / (1 + rate) ** anos_truncados
 
-    return tools.truncate(100 * fator_desconto, 4)
+    return utils.truncate(100 * fator_desconto, 4)
 
 
 def premium(lft_rate: float, di_rate: float) -> float:
@@ -183,4 +183,4 @@ def price(
     """
     if any_is_empty(vna, quotation):
         return float("nan")
-    return tools.truncate(vna * quotation / 100, 6)
+    return utils.truncate(vna * quotation / 100, 6)

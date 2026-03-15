@@ -6,9 +6,9 @@ from dateutil.relativedelta import relativedelta
 
 import pyield._internal.converters as conversores
 import pyield.interpolator as interpolador
-import pyield.tn.tools as ferramentas
 from pyield import anbima, bday, fwd
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
+from pyield.tn import utils
 
 """
 Constantes calculadas conforme regras da ANBIMA e em base 100.
@@ -280,12 +280,12 @@ def quotation(
 
     valores_fluxo = df_fluxos["CashFlow"]
     dias_uteis = bday.count(settlement, df_fluxos["PaymentDate"])
-    anos_uteis = ferramentas.truncate(dias_uteis / 252, 14)
+    anos_uteis = utils.truncate(dias_uteis / 252, 14)
     fatores_desconto = (1 + rate) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
     vp = (valores_fluxo / fatores_desconto).round(10)
     # Retorna a cotação (soma dos valores presentes) com truncamento ANBIMA
-    return ferramentas.truncate(vp.sum(), 4)
+    return utils.truncate(vp.sum(), 4)
 
 
 def price(
@@ -316,7 +316,7 @@ def price(
     """
     if any_is_empty(vna, quotation):
         return float("nan")
-    return ferramentas.truncate(vna * quotation / 100, 6)
+    return utils.truncate(vna * quotation / 100, 6)
 
 
 def _validar_entradas_taxa_spot(
@@ -411,7 +411,7 @@ def _calcular_valor_presente_cupons(
     datas_fluxo_anteriores = payment_dates(settlement, vencimento).to_list()[:-1]
     df_temp = df.filter(pl.col("MaturityDate").is_in(datas_fluxo_anteriores))
 
-    return ferramentas.calculate_present_value(
+    return utils.calculate_present_value(
         df_temp["Coupon"],
         df_temp["SpotRate"],
         df_temp["BYears"],
@@ -657,7 +657,7 @@ def duration(
     vp = df_fluxos["CashFlow"] / (1 + rate) ** anos_uteis
     duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
     # Truncar para 14 casas decimais para repetibilidade dos resultados
-    return ferramentas.truncate(duracao, 14)
+    return utils.truncate(duracao, 14)
 
 
 def dv01(
@@ -692,6 +692,46 @@ def dv01(
     preco_1 = price(vna, cotacao_1)
     preco_2 = price(vna, cotacao_2)
     return preco_1 - preco_2
+
+
+def rate(
+    settlement: DateLike,
+    maturity: DateLike,
+    quotation_value: float,
+) -> float:
+    """
+    Calcula a taxa implícita (YTM) de uma NTN-B a partir de uma cotação.
+
+    A função inverte numericamente o cálculo de ``quotation()``, encontrando
+    a taxa que zera a diferença entre a cotação calculada e a informada.
+
+    Args:
+        settlement (DateLike): Data de liquidação.
+        maturity (DateLike): Data de vencimento.
+        quotation_value (float): Cotação do título em base 100.
+
+    Returns:
+        float: Taxa implícita (YTM) em formato decimal. Retorna NaN em
+            caso de erro.
+
+    Examples:
+        >>> from pyield import ntnb
+        >>> ntnb.rate("31-05-2024", "15-05-2035", 99.3651)
+        0.06149
+        >>> ntnb.rate("15-08-2024", "15-08-2032", 100.6409)
+        0.05929
+    """
+    if any_is_empty(settlement, maturity, quotation_value):
+        return float("nan")
+
+    if quotation_value <= 0:
+        return float("nan")
+
+    def diferenca_cotacao(taxa: float) -> float:
+        return quotation(settlement, maturity, taxa) - quotation_value
+
+    taxa_encontrada = utils.encontrar_raiz(diferenca_cotacao)
+    return round(taxa_encontrada, 6)
 
 
 def forwards(

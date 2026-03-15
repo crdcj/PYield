@@ -1,6 +1,6 @@
 from pyield import bday
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tn import tools
+from pyield.tn import utils
 
 
 def price(
@@ -36,12 +36,12 @@ def price(
     dias_uteis = bday.count(settlement, maturity)
 
     # Calcula anos úteis truncados conforme ANBIMA
-    anos_uteis = tools.truncate(dias_uteis / 252, 14)
+    anos_uteis = utils.truncate(dias_uteis / 252, 14)
 
     fator_desconto = (1 + rate) ** anos_uteis
 
     # Trunca o preço em 6 casas conforme ANBIMA
-    return tools.truncate(face_value / fator_desconto, 6)
+    return utils.truncate(face_value / fator_desconto, 6)
 
 
 def dv01(

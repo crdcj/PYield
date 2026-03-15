@@ -6,7 +6,7 @@ from dateutil.relativedelta import relativedelta
 import pyield._internal.converters as conversores
 from pyield import bday
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tn import tools
+from pyield.tn import utils
 
 """
 Parâmetros globais para cálculos de NTN-B1.
@@ -220,12 +220,12 @@ def quotation(
     df_fluxos = cash_flows(settlement, maturity, commercial_name)
     valores_fluxo = df_fluxos["CashFlow"]
     dias_uteis = bday.count(settlement, df_fluxos["PaymentDate"])
-    anos_uteis = tools.truncate(dias_uteis / 252, 14)
+    anos_uteis = utils.truncate(dias_uteis / 252, 14)
     fatores_desconto = (1 + rate) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
     vp = (valores_fluxo / fatores_desconto).round(10)
     # Retorna a cotação (soma dos valores presentes) com truncamento ANBIMA
-    return tools.truncate(vp.sum(), 6)
+    return utils.truncate(vp.sum(), 6)
 
 
 def price(
@@ -254,7 +254,7 @@ def price(
     """
     if any_is_empty(vna, quotation):
         return float("nan")
-    return tools.truncate(vna * quotation, 6)
+    return utils.truncate(vna * quotation, 6)
 
 
 def duration(
@@ -291,7 +291,7 @@ def duration(
     duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
 
     # Trunca a duração para 14 casas para reprodutibilidade
-    return tools.truncate(duracao, 14)
+    return utils.truncate(duracao, 14)
 
 
 def dv01(

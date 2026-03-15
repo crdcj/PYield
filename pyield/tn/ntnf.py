@@ -1,7 +1,6 @@
 import datetime as dt
 import logging
 import math
-from collections.abc import Callable
 
 import polars as pl
 from dateutil.relativedelta import relativedelta
@@ -10,7 +9,7 @@ import pyield._internal.converters as cv
 import pyield.interpolator as ip
 from pyield import anbima, bday
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
-from pyield.tn import tools
+from pyield.tn import utils
 from pyield.tn.pre import di_spreads as pre_di_spreads
 
 """
@@ -264,12 +263,12 @@ def price(
 
     valores_fluxo = df_fluxos["CashFlow"]
     dias_uteis = bday.count(settlement, df_fluxos["PaymentDate"])
-    anos_uteis = tools.truncate(dias_uteis / 252, 14)
+    anos_uteis = utils.truncate(dias_uteis / 252, 14)
     fatores_desconto = (1 + rate) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
     vp = (valores_fluxo / fatores_desconto).round(9)
     # Soma dos valores presentes com truncamento ANBIMA
-    return tools.truncate(vp.sum(), 6)
+    return utils.truncate(vp.sum(), 6)
 
 
 def spot_rates(  # noqa
@@ -418,7 +417,7 @@ def spot_rates(  # noqa
         periodos_fluxo = bday.count(liquidacao, datas_fluxo) / 252
         fluxos = [VALOR_CUPOM] * len(datas_fluxo)
 
-        valor_presente_fluxo = tools.calculate_present_value(
+        valor_presente_fluxo = utils.calculate_present_value(
             cash_flows=pl.Series(fluxos),
             rates=pl.Series(taxas_spot_fluxo),
             periods=periodos_fluxo,
@@ -442,126 +441,6 @@ def spot_rates(  # noqa
         df = df.filter(pl.col("MaturityDate").is_in(vencimentos_ntnf.implode()))
 
     return df
-
-
-def _encontrar_intervalo_raiz(
-    func: Callable[[float], float],
-) -> tuple[float, float] | None:
-    """
-    Encontra um intervalo [a, b] para a TAXA DE JUROS que zera a função.
-
-    Otimizado para o contexto financeiro, buscando a taxa apenas em um
-    intervalo realista. A função 'func' é a que calcula a diferença de
-    preço dado uma taxa.
-    """
-    # --- LIMITES DE BOM SENSO PARA A *TAXA* QUE ESTAMOS PROCURANDO ---
-    # Uma taxa/spread não vai ser -50% ou +200%, então limitamos a busca.
-    taxa_inicial: float = 0.01
-    passo: float = 0.01
-    fator_crescimento: float = 1.6
-    max_tentativas: int = 100
-
-    # Limites para a TAXA (variável 'a' e 'b' da busca)
-    taxa_min: float = -1.0  # Limite inferior: -100%
-    taxa_max: float = 10.00  # Limite superior: 1000%
-    # -----------------------------------------------------------------
-
-    # Ponto de partida
-    f0 = func(taxa_inicial)
-    if abs(f0) == 0:
-        return (taxa_inicial, taxa_inicial)
-
-    # 1. Busca na direção positiva
-    a, fa = taxa_inicial, f0
-    b = taxa_inicial + passo
-    passo_atual = passo
-
-    for _ in range(max_tentativas):
-        # Se a PRÓXIMA TAXA A SER TESTADA ('b') for irrealista, paramos.
-        if b > taxa_max:
-            break
-
-        fb = func(b)
-        if fa * fb < 0:
-            return (a, b)
-
-        a, fa = b, fb
-        passo_atual *= fator_crescimento
-        b += passo_atual
-
-    # 2. Busca na direção negativa
-    a, fa = taxa_inicial, f0
-    b = taxa_inicial - passo
-    passo_atual = passo
-
-    for _ in range(max_tentativas):
-        # Se a PRÓXIMA TAXA A SER TESTADA ('b') for irrealista, paramos.
-        if b < taxa_min:
-            break
-
-        fb = func(b)
-        if fa * fb < 0:
-            return (b, a)
-
-        a, fa = b, fb
-        passo_atual *= fator_crescimento
-        b -= passo_atual
-
-    # Se a busca falhou dentro dos limites realistas
-    return None
-
-
-def _metodo_bissecao(func: Callable[[float], float], a: float, b: float) -> float:
-    """Método da bisseção para encontrar raiz.
-
-    Args:
-        func (Callable[[float], float]): Função para a qual se busca a raiz.
-        a (float): Limite inferior do intervalo.
-        b (float): Limite superior do intervalo.
-
-    Returns:
-        float: Raiz aproximada de ``func`` no intervalo ``[a, b]``.
-
-    Raises:
-        ValueError: Se ``func`` não muda de sinal no intervalo ``[a, b]``.
-    """
-    tolerancia = 1e-8
-    max_iter = 100
-    fa, fb = func(a), func(b)
-    if fa * fb > 0:
-        logger.warning(
-            "Falha no método da bisseção: a função não muda de sinal no intervalo."
-        )
-        return float("nan")
-
-    for _ in range(max_iter):
-        ponto_medio = (a + b) / 2
-        fmeio = func(ponto_medio)
-        if abs(fmeio) < tolerancia or (b - a) / 2 < tolerancia:
-            return ponto_medio
-        if fmeio * fa < 0:
-            b, fb = ponto_medio, fmeio
-        else:
-            a, fa = ponto_medio, fmeio
-
-    return (a + b) / 2
-
-
-def _encontrar_raiz(
-    func_diferenca_preco: Callable,
-) -> float:
-    """
-    Versão robusta que encontra automaticamente um intervalo válido.
-    """
-    # Tenta encontrar intervalo válido
-    intervalo = _encontrar_intervalo_raiz(func_diferenca_preco)
-
-    if intervalo is None:
-        logger.warning("Não foi possível encontrar intervalo de busca válido")
-        return float("nan")
-
-    a, b = intervalo
-    return _metodo_bissecao(func_diferenca_preco, a, b)
 
 
 def premium(  # noqa
@@ -630,7 +509,7 @@ def premium(  # noqa
         DIRate=interpolador_ff(dias_uteis_pagamento),
     )
 
-    preco_titulo = tools.calculate_present_value(
+    preco_titulo = utils.calculate_present_value(
         cash_flows=df["CashFlow"],
         rates=df["DIRate"],
         periods=df["BYears"],
@@ -643,7 +522,7 @@ def premium(  # noqa
         fluxos_descontados = df["CashFlow"] / (1 + taxa) ** df["BYears"]
         return float(fluxos_descontados.sum()) - preco_titulo
 
-    di_ytm = _encontrar_raiz(diferenca_preco)
+    di_ytm = utils.encontrar_raiz(diferenca_preco)
 
     if math.isnan(di_ytm):
         return float("nan")
@@ -749,7 +628,7 @@ def di_net_spread(  # noqa
         return float(fluxos_descontados.sum()) - preco_titulo
 
     # 7. Resolver para o spread
-    return _encontrar_raiz(diferenca_preco)
+    return utils.encontrar_raiz(diferenca_preco)
 
 
 def duration(
@@ -905,5 +784,5 @@ def rate(
     def diferenca_preco(taxa: float) -> float:
         return price(settlement, maturity, taxa) - price_value
 
-    taxa_encontrada = _encontrar_raiz(diferenca_preco)
+    taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
     return round(taxa_encontrada, 6)
