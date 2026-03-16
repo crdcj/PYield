@@ -1,9 +1,9 @@
 import logging
 
-import cachetools
 import polars as pl
 import requests
 
+from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
 URL_BASE_INTRADAY = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
@@ -50,7 +50,7 @@ def _mapa_renomeacao_intraday() -> dict[str, str]:
     return {nome_orig: nome_novo for nome_orig, nome_novo, _ in COLUNAS_INTRADAY}
 
 
-@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=15))
+@ttl_cache(ttl=15)
 @retry_padrao
 def _buscar_json_intraday(codigo_contrato: str) -> list[dict]:
     url = f"{URL_BASE_INTRADAY}/{codigo_contrato}"

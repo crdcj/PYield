@@ -18,12 +18,12 @@ cotacaoCompra, cotacaoVenda, dataHoraCotacao
 import datetime as dt
 import logging
 
-import cachetools
 import polars as pl
 import requests
 
 import pyield._internal.converters as cv
 from pyield import clock
+from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
 
@@ -54,7 +54,7 @@ def _montar_url_api(inicio: dt.date, fim: dt.date) -> str:
     return url
 
 
-@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=15))
+@ttl_cache(ttl=15)
 @retry_padrao
 def _buscar_texto_api(url: str) -> bytes:
     resposta = requests.get(url, timeout=10)

@@ -15,11 +15,11 @@ Notas de implementação:
 import logging
 from enum import Enum
 
-import cachetools
 import polars as pl
 import requests
 
 from pyield import clock
+from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
@@ -43,7 +43,7 @@ class SerieBC(Enum):
     DI_OVER = 11
 
 
-@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=15))
+@ttl_cache(ttl=15)
 @retry_padrao
 def _chamar_api(url_api: str) -> list[dict[str, str]]:
     """Executa uma chamada GET na API do BCB e retorna o JSON.

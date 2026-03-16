@@ -7,12 +7,12 @@ import datetime as dt
 import io
 import logging
 
-import cachetools
 import polars as pl
 import polars.selectors as cs
 import requests
 
 from pyield import bday, clock
+from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
 HORA_INICIO_TEMPO_REAL = dt.time(9, 0, 0)
@@ -94,7 +94,7 @@ ORDEM_COLUNAS_FINAL = [
 ]
 
 
-@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=15))
+@ttl_cache(ttl=15)
 @retry_padrao
 def _buscar_csv() -> str:
     """

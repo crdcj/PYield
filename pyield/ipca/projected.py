@@ -1,10 +1,10 @@
 import datetime as dt
 from dataclasses import dataclass
 
-import cachetools
 import polars as pl
 import requests
 
+from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
 _URL_XLS = "https://www.anbima.com.br/informacoes/indicadores/arqs/indicadores.xls"
@@ -17,7 +17,7 @@ class ProjecaoIndicador:
     valor_projetado: float  # Valor projetado
 
 
-@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=60))
+@ttl_cache()
 @retry_padrao
 def _baixar_planilha() -> bytes:
     """Baixa o arquivo XLS de indicadores da ANBIMA e retorna os bytes."""

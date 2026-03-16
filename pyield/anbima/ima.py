@@ -2,10 +2,10 @@ import io
 import logging
 from typing import Literal
 
-import cachetools
 import polars as pl
 import requests
 
+from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ ORDEM_COLUNAS_FINAL = [
 URL_ULTIMO_IMA = "https://www.anbima.com.br/informacoes/ima/arqs/ima_completo.txt"
 
 
-@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=60))
+@ttl_cache()
 @retry_padrao
 def _buscar_texto_ultimo_ima() -> str:
     resposta = requests.get(URL_ULTIMO_IMA, timeout=3)

@@ -11,7 +11,7 @@ from pyield.bc.rates import (
 )
 from pyield.bc.repo import repos
 from pyield.bc.trades_intraday import tpf_intraday_trades
-from pyield.bc.trades_monthly import tpf_monthly_report, tpf_monthly_trades
+from pyield.bc.trades_monthly import tpf_monthly_trades
 from pyield.bc.vna import vna_lft
 
 __all__ = [
@@ -21,7 +21,6 @@ __all__ = [
     "di_over_series",
     "ptax_series",
     "repos",
-    "tpf_monthly_report",
     "tpf_monthly_trades",
     "ptax",
     "tpf_intraday_trades",
