@@ -15,10 +15,10 @@ import io
 import logging
 import zipfile as zf
 
+import cachetools
 import polars as pl
 import requests
 
-from pyield import bday
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
@@ -52,29 +52,6 @@ MAPA_COLUNAS = [
 ESQUEMA_CSV = {csv: tipo for csv, _, tipo in MAPA_COLUNAS}
 MAPEAMENTO_COLUNAS = {csv: novo for csv, novo, _ in MAPA_COLUNAS}
 
-ORDEM_COLUNAS_FINAL = [
-    "ReferenceDate",
-    "SettlementDate",
-    "BondType",
-    "SelicCode",
-    "ISIN",
-    "IssueDate",
-    "MaturityDate",
-    "BrokerageTrades",
-    "Trades",
-    "BrokerageQuantity",
-    "Quantity",
-    "Value",
-    "MinPrice",
-    "AvgPrice",
-    "MaxPrice",
-    "UnderlyingPrice",
-    "ParValue",
-    "MinRate",
-    "AvgRate",
-    "MaxRate",
-]
-
 CHAVES_ORDENACAO = ["SettlementDate", "BondType", "MaturityDate"]
 
 
@@ -92,6 +69,7 @@ def _montar_url(data_alvo: dt.date, extragroup: bool) -> str:
     return f"{URL_BASE}/Neg{sufixo_operacao}{ano_mes}.ZIP"
 
 
+@cachetools.cached(cache=cachetools.TTLCache(maxsize=16, ttl=15))
 @retry_padrao
 def _baixar_zip(url_arquivo: str) -> bytes:
     """Baixa o conteúdo ZIP e retorna os bytes."""
@@ -118,7 +96,7 @@ def _ler_df_zip(conteudo_csv: bytes) -> pl.DataFrame:
 
 
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
-    """Processa tipos, calcula valor e ordena."""
+    """Renomeia colunas, converte datas, calcula valor e ordena."""
     colunas_data = ["SettlementDate", "IssueDate", "MaturityDate"]
     return (
         df.rename(MAPEAMENTO_COLUNAS)
@@ -126,17 +104,8 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             pl.col(colunas_data).str.to_date(format="%d/%m/%Y", strict=False),
             Value=(pl.col("Quantity") * pl.col("AvgPrice")).round(2),
         )
-        .with_columns(
-            ReferenceDate=bday.offset_expr("SettlementDate", -1),
-        )
         .sort(by=CHAVES_ORDENACAO)
     )
-
-
-def _ordenar_selecionar_colunas(df: pl.DataFrame) -> pl.DataFrame:
-    """Reordena colunas e ordena linhas para saída consistente e determinística."""
-    colunas_selecionadas = [col for col in ORDEM_COLUNAS_FINAL if col in df.columns]
-    return df.select(colunas_selecionadas).sort(by=CHAVES_ORDENACAO)
 
 
 def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.DataFrame:
@@ -163,17 +132,13 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         retorna DataFrame vazio e registra log da exceção.
 
     Output Columns:
-        - ReferenceDate (Date): data de referência estimada para a operação,
-            dado que a maioria das operações são liquidadas no dia seguinte.
         - SettlementDate (Date): data de liquidação da negociação.
         - BondType (str): sigla do título (ex: LFT, LTN, NTN-B, NTN-F).
         - SelicCode (Int64): código único no sistema Selic.
         - ISIN (str): código ISIN (International Securities Identification Number).
         - IssueDate (Date): data de emissão do título.
         - MaturityDate (Date): data de vencimento do título.
-        - BrokerageTrades (Int64): subconjunto de Trades com corretagem.
         - Trades (Int64): número total de operações realizadas.
-        - BrokerageQuantity (Int64): subconjunto de Quantity com corretagem.
         - Quantity (Int64): quantidade total negociada.
         - Value (Float64): valor financeiro negociado (Quantity * AvgPrice).
         - MinPrice (Float64): preço unitário mínimo.
@@ -184,6 +149,8 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         - MinRate (Float64): taxa mínima.
         - AvgRate (Float64): taxa média.
         - MaxRate (Float64): taxa máxima.
+        - BrokerageTrades (Int64): subconjunto de Trades com corretagem.
+        - BrokerageQuantity (Int64): subconjunto de Quantity com corretagem.
 
     Notes:
         - Dados ordenados por: SettlementDate, BondType, MaturityDate.
@@ -204,7 +171,6 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         arquivo_extraido = _descompactar_zip(conteudo_zip)
         df = _ler_df_zip(arquivo_extraido)
         df = _processar_df(df)
-        df = _ordenar_selecionar_colunas(df)
     except Exception as e:
         registro.exception(f"Erro ao coletar dados mensais do BCB: {e}")
         return pl.DataFrame()
