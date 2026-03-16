@@ -149,11 +149,14 @@ def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
 def _buscar_price_report(
     data: dt.date, codigo: str, full_report: bool | None
 ) -> pl.DataFrame:
-    """Busca o price report da B3, com fallback SPR→PR quando full_report=None."""
-    if full_report is not None:
-        return fetch_price_report(
-            date=data, contract_code=codigo, full_report=full_report
-        )
+    """Busca o price report da B3, com fallback SPR→PR.
+
+    Quando full_report é True, usa apenas o PR (completo).
+    Nos demais casos (None ou False), tenta o SPR (leve) primeiro
+    e faz fallback para o PR se o SPR estiver vazio.
+    """
+    if full_report is True:
+        return fetch_price_report(date=data, contract_code=codigo, full_report=True)
 
     # SPR (leve) primeiro; PR (pesado) como fallback
     df = fetch_price_report(date=data, contract_code=codigo, full_report=False)

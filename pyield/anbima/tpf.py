@@ -213,6 +213,8 @@ def _adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
         expirations=df["MaturityDate"],
         extrapolate=True,
     )
+    if taxas_di.is_empty():
+        return df
     df = df.with_columns(DIRate=taxas_di)
     return df
 
@@ -400,11 +402,12 @@ def tpf_data(
         return pl.DataFrame()
 
     if fetch_from_source:
-        # Tenta buscar os dados diretamente da fonte (ANBIMA)
         df = _buscar_dados_tpf(date)
     else:
-        # Caso contrário, obtém os dados do cache local
+        # Cache primeiro; se não tiver, tenta a fonte
         df = obter_dataset_cacheado("tpf").filter(pl.col("ReferenceDate") == date)
+        if df.is_empty():
+            df = _buscar_dados_tpf(date)
 
     if df.is_empty():
         return pl.DataFrame()
