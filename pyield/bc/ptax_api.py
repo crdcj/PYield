@@ -54,7 +54,7 @@ def _montar_url_api(inicio: dt.date, fim: dt.date) -> str:
     return url
 
 
-@ttl_cache(ttl=15)
+@ttl_cache()
 @retry_padrao
 def _buscar_texto_api(url: str) -> bytes:
     resposta = requests.get(url, timeout=10)

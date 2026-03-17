@@ -1,5 +1,6 @@
 import polars as pl
 
+import pyield._internal.converters as cv
 from pyield import anbima, bday, fwd
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
@@ -44,6 +45,15 @@ def data(date: DateLike) -> pl.DataFrame:
     df = anbima.tpf_data(date, "LTN")
     if df.is_empty():
         return df
+
+    data_ref = cv.converter_datas(date)
+
+    # Adiciona Duration, AvgMaturity, DV01, DV01USD e DIRate
+    df = df.with_columns(
+        Duration=pl.col("BDToMat") / 252,
+    ).with_columns(AvgMaturity=pl.col("Duration"))
+    df = utils.adicionar_dv01(df, data_ref)
+    df = utils.adicionar_taxa_di(df, data_ref)
 
     df = df.with_columns(
         DISpread=pl.col("IndicativeRate") - pl.col("DIRate"),

@@ -59,20 +59,30 @@ def data(date: DateLike) -> pl.DataFrame:
         >>> from pyield import ntnb
         >>> df_ntnb = ntnb.data("23-08-2024")  # doctest: +SKIP
     """
+    from pyield.b3 import di1  # noqa: PLC0415
+
     df = anbima.tpf_data(date, "NTN-B")
     if df.is_empty():
         return df
 
-    # Calcula taxas spot e inflação implícita
+    data_ref = conversores.converter_datas(date)
+
+    # Adiciona Duration, AvgMaturity, DV01 e DV01USD
+    df = utils.adicionar_duration(df, duration)
+    df = utils.adicionar_dv01(df, data_ref)
+
+    # Busca curva DI bruta e calcula taxas spot, DIRate e inflação implícita
+    df_di = di1.data(date)
     df_bei = bei_rates(
         settlement=date,
         ntnb_maturities=df["MaturityDate"],
         ntnb_rates=df["IndicativeRate"],
-        nominal_maturities=df["MaturityDate"],
-        nominal_rates=df["DIRate"],
+        nominal_maturities=df_di["ExpirationDate"],
+        nominal_rates=df_di["SettlementRate"],
     ).select(
         pl.col("MaturityDate"),
         pl.col("SpotRate"),
+        pl.col("NominalRate").alias("DIRate"),
         pl.col("ImpliedInflation"),
     )
 

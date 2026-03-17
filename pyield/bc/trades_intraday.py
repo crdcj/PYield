@@ -94,7 +94,7 @@ ORDEM_COLUNAS_FINAL = [
 ]
 
 
-@ttl_cache(ttl=15)
+@ttl_cache()
 @retry_padrao
 def _buscar_csv() -> str:
     """

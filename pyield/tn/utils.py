@@ -1,3 +1,4 @@
+import datetime as dt
 import logging
 from collections.abc import Callable
 from decimal import Decimal
@@ -6,6 +7,56 @@ from typing import overload
 import polars as pl
 
 logger = logging.getLogger(__name__)
+
+
+def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
+    """Adiciona a coluna DIRate ao DataFrame via interpolação flat forward do DI."""
+    from pyield.b3 import di1  # noqa: PLC0415
+
+    taxas_di = di1.interpolate_rates(
+        dates=data_ref,
+        expirations=df["MaturityDate"],
+        extrapolate=True,
+    )
+    if taxas_di.is_empty():
+        return df
+    return df.with_columns(DIRate=taxas_di)
+
+
+def adicionar_duration(
+    df: pl.DataFrame,
+    funcao_duration: Callable[[dt.date, dt.date, float], float],
+) -> pl.DataFrame:
+    """Adiciona Duration e AvgMaturity ao DataFrame.
+
+    Calcula a Macaulay Duration via ``funcao_duration`` (row-wise) e define
+    AvgMaturity igual a Duration.
+    """
+    return df.with_columns(
+        Duration=pl.struct(
+            "ReferenceDate", "MaturityDate", "IndicativeRate"
+        ).map_elements(
+            lambda s: funcao_duration(
+                s["ReferenceDate"], s["MaturityDate"], s["IndicativeRate"]
+            ),
+            return_dtype=pl.Float64,
+        ),
+    ).with_columns(AvgMaturity=pl.col("Duration"))
+
+
+def adicionar_dv01(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
+    """Adiciona DV01 e DV01USD ao DataFrame. Requer coluna Duration."""
+    from pyield.bc.ptax_api import ptax  # noqa: PLC0415
+
+    expr_duracao_mod = pl.col("Duration") / (1 + pl.col("IndicativeRate"))
+    df = df.with_columns(DV01=0.0001 * expr_duracao_mod * pl.col("Price"))
+
+    try:
+        taxa_ptax = ptax(date=data_ref)
+        df = df.with_columns(DV01USD=pl.col("DV01") / taxa_ptax)
+    except Exception as e:
+        logger.error("Erro ao adicionar DV01 em USD: %s", e)
+    return df
 
 
 @overload

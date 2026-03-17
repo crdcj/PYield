@@ -69,17 +69,20 @@ def data(date: DateLike) -> pl.DataFrame:
 
     Examples:
         >>> from pyield import ntnc
-        >>> ntnc.data("23-08-2024")
-        shape: (1, 15)
-        ┌───────────────┬──────────┬───────────┬───────────────┬───┬──────────┬──────────┬────────────────┬─────────┐
-        │ ReferenceDate ┆ BondType ┆ SelicCode ┆ IssueBaseDate ┆ … ┆ BidRate  ┆ AskRate  ┆ IndicativeRate ┆ DIRate  │
-        │ ---           ┆ ---      ┆ ---       ┆ ---           ┆   ┆ ---      ┆ ---      ┆ ---            ┆ ---     │
-        │ date          ┆ str      ┆ i64       ┆ date          ┆   ┆ f64      ┆ f64      ┆ f64            ┆ f64     │
-        ╞═══════════════╪══════════╪═══════════╪═══════════════╪═══╪══════════╪══════════╪════════════════╪═════════╡
-        │ 2024-08-23    ┆ NTN-C    ┆ 770100    ┆ 2000-07-01    ┆ … ┆ 0.061591 ┆ 0.057587 ┆ 0.059617       ┆ 0.11575 │
-        └───────────────┴──────────┴───────────┴───────────────┴───┴──────────┴──────────┴────────────────┴─────────┘
+        >>> ntnc.data("23-08-2024")  # doctest: +SKIP
     """
-    return anbima.tpf_data(date, "NTN-C")
+    df = anbima.tpf_data(date, "NTN-C")
+    if df.is_empty():
+        return df
+
+    data_ref = conversores.converter_datas(date)
+
+    # Adiciona Duration, AvgMaturity, DV01, DV01USD e DIRate
+    df = utils.adicionar_duration(df, duration)
+    df = utils.adicionar_dv01(df, data_ref)
+    df = utils.adicionar_taxa_di(df, data_ref)
+
+    return df
 
 
 def payment_dates(

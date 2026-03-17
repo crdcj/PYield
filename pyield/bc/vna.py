@@ -10,7 +10,7 @@ from pyield._internal.types import DateLike, any_is_empty
 logger = logging.getLogger(__name__)
 
 
-@ttl_cache(ttl=15)
+@ttl_cache()
 @retry_padrao
 def _baixar_texto(date: DateLike) -> str:
     """Baixa o arquivo diário do SELIC no site do BCB."""

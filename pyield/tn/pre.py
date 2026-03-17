@@ -1,9 +1,10 @@
 import polars as pl
 
+import pyield._internal.converters as cv
 from pyield import anbima, bday
 from pyield._internal.types import DateLike
 from pyield.anbima import tpf
-from pyield.tn import ntnf
+from pyield.tn import ntnf, utils
 
 
 def spot_rates(date: DateLike) -> pl.DataFrame:
@@ -176,10 +177,18 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
         │ NTN-F    ┆ 2035-01-01   ┆ 22.0     │
         └──────────┴──────────────┴──────────┘
     """
-    # Busca taxas dos títulos (LTN e NTN-F)
+    # Busca taxas dos títulos (LTN e NTN-F) e adiciona DIRate
+    df = tpf.tpf_data(date, "PRE")
+    if df.is_empty():
+        return df.select(
+            pl.lit("").alias("BondType"),
+            pl.lit(None, dtype=pl.Date).alias("MaturityDate"),
+            pl.lit(None, dtype=pl.Float64).alias("DISpread"),
+        ).clear()
+    data_ref = cv.converter_datas(date)
+    df = utils.adicionar_taxa_di(df, data_ref)
     df = (
-        tpf.tpf_data(date, "PRE")
-        .with_columns(DISpread=pl.col("IndicativeRate") - pl.col("DIRate"))
+        df.with_columns(DISpread=pl.col("IndicativeRate") - pl.col("DIRate"))
         .select("BondType", "MaturityDate", "DISpread")
         .sort("BondType", "MaturityDate")
     )

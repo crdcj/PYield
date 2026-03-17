@@ -69,6 +69,13 @@ def data(date: DateLike) -> pl.DataFrame:
     if df.is_empty():
         return df
 
+    data_ref = cv.converter_datas(date)
+
+    # Adiciona Duration, AvgMaturity, DV01, DV01USD e DIRate
+    df = utils.adicionar_duration(df, duration)
+    df = utils.adicionar_dv01(df, data_ref)
+    df = utils.adicionar_taxa_di(df, data_ref)
+
     # Busca dados de LTN para bootstrap das taxas spot
     df_ltn = anbima.tpf_data(date, "LTN")
     df_spots = spot_rates(

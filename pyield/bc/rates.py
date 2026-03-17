@@ -43,7 +43,7 @@ class SerieBC(Enum):
     DI_OVER = 11
 
 
-@ttl_cache(ttl=15)
+@ttl_cache()
 @retry_padrao
 def _chamar_api(url_api: str) -> list[dict[str, str]]:
     """Executa uma chamada GET na API do BCB e retorna o JSON.

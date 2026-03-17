@@ -19,7 +19,6 @@ from lxml.html import fromstring as html_fromstring
 import pyield._internal.converters as cv
 from pyield import bday
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.anbima.tpf import tpf_data
 
 logger = logging.getLogger(__name__)
 
@@ -187,20 +186,36 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
 
 
 def _adicionar_dv01(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
-    df_anbima = tpf_data(data_referencia)
-    colunas_manter = ["ReferenceDate", "BondType", "MaturityDate", "DV01", "DV01USD"]
-    df_anbima = df_anbima.select(colunas_manter).rename({"ReferenceDate": "Date"})
-    # Guard clause for missing columns
-    if "DV01" not in df_anbima.columns or "DV01USD" not in df_anbima.columns:
+    from pyield.tn.lft import data as lft_data  # noqa: PLC0415
+    from pyield.tn.ltn import data as ltn_data  # noqa: PLC0415
+    from pyield.tn.ntnb import data as ntnb_data  # noqa: PLC0415
+    from pyield.tn.ntnc import data as ntnc_data  # noqa: PLC0415
+    from pyield.tn.ntnf import data as ntnf_data  # noqa: PLC0415
+
+    colunas = ["ReferenceDate", "BondType", "MaturityDate", "DV01", "DV01USD"]
+    dfs = []
+    for func in [ltn_data, lft_data, ntnb_data, ntnf_data, ntnc_data]:
+        try:
+            df_titulo = func(data_referencia)
+            if df_titulo.is_empty():
+                continue
+            if "DV01USD" not in df_titulo.columns:
+                df_titulo = df_titulo.with_columns(
+                    DV01USD=pl.lit(None, dtype=pl.Float64)
+                )
+            dfs.append(df_titulo.select(colunas))
+        except Exception:
+            continue
+
+    if not dfs:
         return df
 
-    df = df.join(df_anbima, on=["Date", "BondType", "MaturityDate"], how="left")
-    # Calcular os estoques
-    df = df.with_columns(
+    df_dv01 = pl.concat(dfs).rename({"ReferenceDate": "Date"})
+    df = df.join(df_dv01, on=["Date", "BondType", "MaturityDate"], how="left")
+    return df.with_columns(
         MarketDV01=pl.col("DV01") * pl.col("MarketQuantity"),
         MarketDV01USD=pl.col("DV01USD") * pl.col("MarketQuantity"),
     ).drop("DV01", "DV01USD")
-    return df
 
 
 def _finalizar(df: pl.DataFrame) -> pl.DataFrame:

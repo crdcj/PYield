@@ -13,11 +13,6 @@ from pyield._internal.converters import converter_datas
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.b3 import di1
-from pyield.bc.ptax_api import ptax
-from pyield.tn.ntnb import duration as duration_b
-from pyield.tn.ntnc import duration as duration_c
-from pyield.tn.ntnf import duration as duration_f
 
 BOND_TYPES = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
 
@@ -138,87 +133,6 @@ def _processar_df_bruto(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def _calcular_duracao_por_linha(linha: dict) -> float:
-    """Função auxiliar que será aplicada a cada linha do struct."""
-    # Mapeia o BondType para a função de duration correspondente
-    # Isso torna a lógica dentro do lambda ainda mais limpa
-    tipo_titulo = linha["BondType"]
-    if tipo_titulo == "LTN":
-        return linha["BDToMat"] / 252  # A lógica da LTN depende apenas do BDToMat
-
-    funcoes_duracao = {
-        "NTN-F": duration_f,
-        "NTN-B": duration_b,
-        "NTN-C": duration_c,
-    }
-
-    func_duracao = funcoes_duracao.get(tipo_titulo)  # Busca da função correta
-    if func_duracao:
-        return func_duracao(
-            linha["ReferenceDate"],
-            linha["MaturityDate"],
-            linha["IndicativeRate"],
-        )
-    # Se o BondType não for reconhecido, retorna 0.0 (LFT ou outros)
-    return 0.0
-
-
-def _adicionar_duracao(df_input: pl.DataFrame) -> pl.DataFrame:
-    """Adiciona a coluna 'Duration' ao DataFrame Polars de forma otimizada."""
-    colunas_necessarias = [
-        "BondType",
-        "ReferenceDate",
-        "MaturityDate",
-        "IndicativeRate",
-        "BDToMat",  # Necessário para LTN
-    ]
-    # Adiciona a coluna Duration
-    df = df_input.with_columns(
-        pl.struct(colunas_necessarias)
-        .map_elements(_calcular_duracao_por_linha, return_dtype=pl.Float64)
-        .alias("Duration")
-    )
-    return df
-
-
-def _adicionar_prazo_medio(df: pl.DataFrame) -> pl.DataFrame:
-    # Na metodologia do Tesouro Nacional, a maturidade média é a mesma que a duração
-    df = df.with_columns(
-        pl.when(pl.col("BondType") == "LFT")
-        .then(pl.col("BDToMat") / 252)
-        .otherwise("Duration")
-        .alias("AvgMaturity")
-    )
-    return df
-
-
-def _adicionar_dv01(df_input: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
-    """Adiciona as colunas de DV01 ao DataFrame."""
-    expr_duracao_mod = pl.col("Duration") / (1 + pl.col("IndicativeRate"))
-    df = df_input.with_columns(DV01=0.0001 * expr_duracao_mod * pl.col("Price"))
-
-    # DV01 em USD
-    try:
-        taxa_ptax = ptax(date=data_ref)
-        df = df.with_columns(DV01USD=pl.col("DV01") / taxa_ptax)
-    except Exception as e:
-        logger.error("Erro ao adicionar DV01 em USD: %s", e)
-    return df
-
-
-def _adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
-    """Adiciona a coluna de taxa DI ao DataFrame."""
-    taxas_di = di1.interpolate_rates(
-        dates=data_ref,
-        expirations=df["MaturityDate"],
-        extrapolate=True,
-    )
-    if taxas_di.is_empty():
-        return df
-    df = df.with_columns(DIRate=taxas_di)
-    return df
-
-
 def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     """Reordena as colunas do DataFrame de acordo com a ordem especificada."""
     ordem_colunas = [
@@ -228,20 +142,10 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
         "IssueBaseDate",
         "MaturityDate",
         "BDToMat",
-        "Duration",
-        "AvgMaturity",
-        "DV01",
-        "DV01USD",
         "Price",
         "BidRate",
         "AskRate",
         "IndicativeRate",
-        "DIRate",
-        # "StdDev",
-        # "LowerBoundRateD0",
-        # "UpperBoundRateD0",
-        # "LowerBoundRateD1",
-        # "UpperBoundRateD1",
         "Criteria",
     ]
     ordem_colunas = [col for col in ordem_colunas if col in df.columns]
@@ -293,10 +197,6 @@ def _buscar_dados_tpf(date: dt.date) -> pl.DataFrame:
 
         df = _ler_csv(csv_texto)
         df = _processar_df_bruto(df)
-        df = _adicionar_duracao(df)
-        df = _adicionar_prazo_medio(df)
-        df = _adicionar_dv01(df, date)
-        df = _adicionar_taxa_di(df, date)
         df = _selecionar_e_ordenar_colunas(df)
         # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
         df = df.with_columns(cs.float().fill_nan(None))
@@ -361,22 +261,10 @@ def tpf_data(
         - IssueBaseDate: Data base ou de emissão do título.
         - MaturityDate: Data de vencimento do título.
         - BDToMat: Número de dias úteis entre a data de referência e o vencimento.
-        - Duration: Macaulay Duration do título em anos.
-        - AvgMaturity: Prazo médio do título (em anos), conforme metodologia
-            do Tesouro Nacional.
-        - DV01: Variação financeira no preço do título (em BRL) para uma
-            mudança de 1 basis point (0,01%) na taxa de juros.
-        - DV01USD: O mesmo que DV01, mas convertido para USD pela PTAX do dia.
         - Price: Preço Unitário (PU) do título na data de referência.
         - BidRate: Taxa de compra em formato decimal (e.g., 0.10 para 10%).
         - AskRate: Taxa de venda em formato decimal.
         - IndicativeRate: Taxa indicativa em formato decimal.
-        - DIRate: Taxa DI interpolada (flatforward) no vencimento do título.
-        - StdDev: Desvio padrão da taxa indicativa.
-        - LowerBoundRateD0: Limite inferior do intervalo indicativo para D+0.
-        - UpperBoundRateD0: Limite superior do intervalo indicativo para D+0.
-        - LowerBoundRateD1: Limite inferior do intervalo indicativo para D+1.
-        - UpperBoundRateD1: Limite superior do intervalo indicativo para D+1.
         - Criteria: Critério utilizado pela ANBIMA para o cálculo.
 
     Notes:
@@ -408,6 +296,9 @@ def tpf_data(
         df = obter_dataset_cacheado("tpf").filter(pl.col("ReferenceDate") == date)
         if df.is_empty():
             df = _buscar_dados_tpf(date)
+        else:
+            # Cache pode ter colunas extras; normaliza para o schema base
+            df = _selecionar_e_ordenar_colunas(df)
 
     if df.is_empty():
         return pl.DataFrame()
