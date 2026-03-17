@@ -7,8 +7,6 @@ Exemplo de página HTML:
 """  # noqa
 
 import datetime as dt
-import logging
-import re
 
 import polars as pl
 import polars.selectors as ps
@@ -17,52 +15,15 @@ from lxml.html import HTMLParser
 from lxml.html import fromstring as html_fromstring
 
 import pyield._internal.converters as cv
-from pyield import bday
-from pyield._internal.types import DateLike, any_is_empty
-
-logger = logging.getLogger(__name__)
+from pyield._internal.cache import ttl_cache
+from pyield._internal.retry import retry_padrao
+from pyield._internal.types import DateLike
 
 URL_IMA = "https://www.anbima.com.br/informacoes/ima/ima-quantidade-mercado.asp"
 
-MAPA_COLUNAS = [
-    ("Título", "BondType", pl.String),
-    ("Codigo Selic", "SelicCode", pl.Int64),
-    ("Código ISIN", "ISIN", pl.String),
-    ("Data de Vencimento", "MaturityDate", pl.String),
-    ("Quantidade em Mercado (1.000 Títulos)", "MarketQuantity", pl.Float64),
-    ("PU (R$)", "Price", pl.Float64),
-    ("Valor de Mercado (R$ Mil)", "MarketValue", pl.Float64),
-    ("Variação da Quantidade (1.000 Títulos)", "QuantityVariation", pl.Float64),
-    ("Status do Titulo", "BondStatus", pl.String),
-]
 
-ALIAS_COLUNAS = {html: novo for html, novo, _ in MAPA_COLUNAS}
-ESQUEMA_DADOS = {novo: tipo for _, novo, tipo in MAPA_COLUNAS}
-
-COLUNAS_INT = [
-    "MarketQuantity",
-    "MarketValue",
-    "QuantityVariation",
-    "MarketDV01",
-    "MarketDV01USD",
-]
-
-ORDEM_COLUNAS_FINAL = [
-    "Date",
-    "BondType",
-    "MaturityDate",
-    "SelicCode",
-    "ISIN",
-    "Price",
-    "MarketQuantity",
-    "MarketDV01",
-    "MarketDV01USD",
-    "MarketValue",
-    "QuantityVariation",
-    "BondStatus",
-]
-
-
+@ttl_cache()
+@retry_padrao
 def _buscar_conteudo_url(data_referencia: dt.date) -> bytes:
     data_referencia_str = data_referencia.strftime("%d/%m/%Y")
     payload = {
@@ -80,53 +41,16 @@ def _buscar_conteudo_url(data_referencia: dt.date) -> bytes:
     return resposta.content
 
 
-def _extrair_data_referencia(html_content: bytes) -> dt.date | None:
-    """Extrai a data de referência a partir do HTML.
-
-    Returns:
-        A data de referência encontrada ou None se não for possível identificar.
-    """
-    padrao_data = r"\b(\d{2}/\d{2}/\d{4})\b"
-    match = re.search(padrao_data, html_content.decode("iso-8859-1"))
-
-    if not match:
-        return None
-
-    data_str = match.group(1)
-    return dt.datetime.strptime(data_str, "%d/%m/%Y").date()
-
-
 def _normalizar_nome_coluna(texto: str) -> str:
     """Normaliza cabeçalhos removendo quebras de linha e espaços extras."""
     return " ".join(texto.strip().split())
 
 
-def _parsear_valor_celula(texto: str) -> str:
-    """
-    Converte valor de célula do formato brasileiro para o padrão.
-
-    Formato brasileiro: 129.253,568 -> 129253.568
-    Valores ausentes (--) retornam string vazia.
-    """
-    texto = texto.strip()
-
-    if texto == "--" or not texto:
-        return ""
-
-    # Convert Brazilian number format
-    if "," in texto or "." in texto:
-        if any(c.isdigit() for c in texto):
-            texto = texto.replace(".", "")  # Remove separador de milhar
-            texto = texto.replace(",", ".")  # Substitui separador decimal
-
-    return texto
-
-
 def _parsear_tabelas_html(html_content: bytes) -> pl.DataFrame:
-    """Parseia tabelas HTML com lxml e retorna DataFrame (colunas String).
+    """Parseia tabelas HTML com lxml e retorna DataFrame via read_csv.
 
     Extrai dados das tabelas aninhadas (com parent::td),
-    converte formato numérico brasileiro e retorna DataFrame bruto.
+    converte para CSV (separador tab) e lê com Polars.
     """
     html_content = html_content.replace(b"<br>", b" ").replace(b"<BR>", b" ")
 
@@ -135,7 +59,7 @@ def _parsear_tabelas_html(html_content: bytes) -> pl.DataFrame:
 
     nested_tables = tree.xpath("//table[@width='100%'][parent::td]")
 
-    dados = []
+    linhas = []
     nomes_colunas = None
 
     for table in nested_tables:  # type: ignore[misc]
@@ -148,80 +72,58 @@ def _parsear_tabelas_html(html_content: bytes) -> pl.DataFrame:
             cells = row.xpath(".//td")
             if len(cells) != len(nomes_colunas):
                 continue
-            dados.append([_parsear_valor_celula(c.text_content()) for c in cells])
+            linhas.append("\t".join(c.text_content().strip() for c in cells))
 
-    if not dados or not nomes_colunas:
+    if not linhas or not nomes_colunas:
         return pl.DataFrame()
 
-    return pl.DataFrame(dados, schema=nomes_colunas, orient="row")
-
-
-def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
-    """Renomeia, filtra, converte tipos e aplica transformações numéricas."""
-    return (
-        df.rename(ALIAS_COLUNAS)
-        # Strip whitespace e converte strings vazias em null
-        .with_columns(ps.string().str.strip_chars().name.keep())
-        .with_columns(
-            pl.when(ps.string().str.len_chars() == 0)
-            .then(None)
-            .otherwise(ps.string())
-            .name.keep()
-        )
-        .filter(
-            pl.col("MaturityDate").is_not_null(),
-            pl.col("BondType") != "Título",
-        )
-        .unique(subset="ISIN")
-        .cast(ESQUEMA_DADOS)
-        .with_columns(
-            pl.col("MaturityDate").str.to_date(format="%d/%m/%Y"),
-            pl.col("MarketQuantity") * 1000,
-            pl.col("MarketValue") * 1000,
-            pl.col("QuantityVariation") * 1000,
-            Date=data_referencia,
-        )
-        .sort("BondType", "MaturityDate")
+    cabecalho = "\t".join(nomes_colunas)
+    csv_bytes = ("\n".join([cabecalho, *linhas])).encode("utf-8")
+    return pl.read_csv(
+        csv_bytes,
+        separator="\t",
+        infer_schema=False,
+        null_values="--",
     )
 
 
-def _adicionar_dv01(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
-    from pyield.tn.lft import data as lft_data  # noqa: PLC0415
-    from pyield.tn.ltn import data as ltn_data  # noqa: PLC0415
-    from pyield.tn.ntnb import data as ntnb_data  # noqa: PLC0415
-    from pyield.tn.ntnc import data as ntnc_data  # noqa: PLC0415
-    from pyield.tn.ntnf import data as ntnf_data  # noqa: PLC0415
-
-    colunas = ["ReferenceDate", "BondType", "MaturityDate", "DV01", "DV01USD"]
-    dfs = []
-    for func in [ltn_data, lft_data, ntnb_data, ntnf_data, ntnc_data]:
-        try:
-            df_titulo = func(data_referencia)
-            if df_titulo.is_empty():
-                continue
-            if "DV01USD" not in df_titulo.columns:
-                df_titulo = df_titulo.with_columns(
-                    DV01USD=pl.lit(None, dtype=pl.Float64)
-                )
-            dfs.append(df_titulo.select(colunas))
-        except Exception:
-            continue
-
-    if not dfs:
-        return df
-
-    df_dv01 = pl.concat(dfs).rename({"ReferenceDate": "Date"})
-    df = df.join(df_dv01, on=["Date", "BondType", "MaturityDate"], how="left")
-    return df.with_columns(
-        MarketDV01=pl.col("DV01") * pl.col("MarketQuantity"),
-        MarketDV01USD=pl.col("DV01USD") * pl.col("MarketQuantity"),
-    ).drop("DV01", "DV01USD")
+def _numero_br(coluna: str) -> pl.Expr:
+    """Converte coluna string no formato numérico brasileiro para Float64."""
+    return (
+        pl.col(coluna)
+        .str.replace_all(".", "", literal=True)
+        .str.replace(",", ".", literal=True)
+        .cast(pl.Float64)
+    )
 
 
-def _finalizar(df: pl.DataFrame) -> pl.DataFrame:
-    """Converte colunas inteiras e reordena colunas para saída final."""
-    return df.with_columns(pl.col(COLUNAS_INT).round(0).cast(pl.Int64)).select(
-        ORDEM_COLUNAS_FINAL
+def _inteiro_m(coluna: str) -> pl.Expr:
+    """Converte coluna numérica BR em milhares para inteiro (unidades)."""
+    return (_numero_br(coluna) * 1000).round(0).cast(pl.Int64)
+
+
+def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
+    """Filtra, converte tipos e aplica transformações numéricas."""
+    return (
+        df.with_columns(ps.string().str.strip_chars().name.keep())
+        .filter(
+            pl.col("Data de Vencimento").is_not_null(),
+            pl.col("Título") != "Título",
+        )
+        .unique(subset="Código ISIN")
+        .select(
+            Date=pl.lit(data_referencia),
+            BondType=pl.col("Título"),
+            MaturityDate=pl.col("Data de Vencimento").str.to_date(format="%d/%m/%Y"),
+            SelicCode=pl.col("Codigo Selic").cast(pl.Int64),
+            ISIN=pl.col("Código ISIN"),
+            Price=_numero_br("PU (R$)"),
+            MarketQuantity=_inteiro_m("Quantidade em Mercado (1.000 Títulos)"),
+            MarketValue=_inteiro_m("Valor de Mercado (R$ Mil)"),
+            QuantityVariation=_inteiro_m("Variação da Quantidade (1.000 Títulos)"),
+            BondStatus=pl.col("Status do Titulo"),
+        )
+        .sort("BondType", "MaturityDate")
     )
 
 
@@ -229,12 +131,12 @@ def imaq(date: DateLike) -> pl.DataFrame:
     """Consulta e processa dados de estoque IMA-Q da ANBIMA para uma data.
 
     Args:
-        date: Data de referência. Apenas os últimos 5 dias úteis estão
-            disponíveis; o mais recente é tipicamente 2 dias úteis atrás.
+        date: Data de referência. Apenas os últimos 5 dias úteis estão disponíveis;
+            o dado do dia anterior costuma ser publicado ao longo do dia.
 
     Returns:
-        DataFrame com dados processados. Em caso de erro retorna DataFrame
-        vazio e registra log da exceção.
+        DataFrame com dados processados ou DataFrame vazio se a data for
+        inválida ou não houver dados disponíveis.
 
     Output Columns:
         - Date (Date): data de referência dos dados.
@@ -244,58 +146,25 @@ def imaq(date: DateLike) -> pl.DataFrame:
         - ISIN (String): código ISIN (International Securities Id Number).
         - Price (Float64): PU do título em R$.
         - MarketQuantity (Int64): quantidade em mercado (unidades).
-        - MarketDV01 (Int64): DV01 do estoque em R$.
-        - MarketDV01USD (Int64): DV01 do estoque em USD.
         - MarketValue (Int64): valor de mercado em R$.
         - QuantityVariation (Int64): variação diária da quantidade.
         - BondStatus (String): status do título.
 
     Notes:
-        - Valores convertidos para unidades puras (ex: MarketQuantity × 1.000).
-        - DV01 obtidos via cruzamento com tpf(); nulos se indisponível.
+        Valores convertidos para unidades puras (ex: MarketQuantity × 1.000).
 
     Examples:
-        >>> from pyield import bday
-        >>> data_ref = bday.offset(bday.last_business_day(), -2)
-        >>> df = imaq(data_ref)
-        >>> df["Date"].first() == data_ref
-        True
+        >>> yd.anbima.imaq("04-02-2026")  # doctest: +SKIP
     """
-    if any_is_empty(date):
-        return pl.DataFrame()
     data = cv.converter_datas(date)
-    if not bday.is_business_day(data):
+    if not cv.data_referencia_valida(data):
         return pl.DataFrame()
-    data_str = data.strftime("%d/%m/%Y")
-    try:
-        url_content = _buscar_conteudo_url(data)
-        if not url_content:
-            logger.warning(
-                f"Sem dados disponíveis para {data_str}. Retornando DataFrame vazio."
-            )
-            return pl.DataFrame()
 
-        # ✅ VALIDAÇÃO CRÍTICA EXPLÍCITA NO FLUXO PRINCIPAL
-        data_referencia = _extrair_data_referencia(url_content)
-
-        if data_referencia is None:
-            raise ValueError(
-                f"Não foi possível encontrar data de referência no HTML para {data_str}"
-            )
-
-        if data_referencia != data:
-            raise ValueError(
-                f"Data de referência divergente: esperado {data_str}, "
-                f"encontrado {data_referencia.strftime('%d/%m/%Y')}"
-            )
-
-        df = _parsear_tabelas_html(url_content)
-        if df.is_empty():
-            return pl.DataFrame()
-        df = _processar_df(df, data)
-        df = _adicionar_dv01(df, data)
-        return _finalizar(df)
-    except Exception:  # Erro inesperado
-        msg = f"Erro ao buscar IMA para {data_str}. Retornando DataFrame vazio."
-        logger.exception(msg)
+    url_content = _buscar_conteudo_url(data)
+    if not url_content:
         return pl.DataFrame()
+
+    df = _parsear_tabelas_html(url_content)
+    if df.is_empty():
+        return pl.DataFrame()
+    return _processar_df(df, data)
