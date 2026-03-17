@@ -112,7 +112,7 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
         )
         .unique(subset="Código ISIN")
         .select(
-            Date=pl.lit(data_referencia),
+            Date=data_referencia,
             BondType=pl.col("Título"),
             MaturityDate=pl.col("Data de Vencimento").str.to_date(format="%d/%m/%Y"),
             SelicCode=pl.col("Codigo Selic").cast(pl.Int64),
