@@ -38,11 +38,16 @@ def data(date: DateLike) -> pl.DataFrame:
         >>> from pyield import lft
         >>> df_lft = lft.data("23-08-2024")  # doctest: +SKIP
     """
-    df = anbima.tpf_data(date, "LFT")
+    df = anbima.tpf(date, "LFT")
     if df.is_empty():
         return df
 
     data_ref = cv.converter_datas(date)
+
+    # Adiciona BDToMat (dado derivado, não vem da ANBIMA)
+    df = df.with_columns(
+        BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"),
+    )
 
     # Adiciona Duration, AvgMaturity, DV01, DV01USD e DIRate
     df = df.with_columns(

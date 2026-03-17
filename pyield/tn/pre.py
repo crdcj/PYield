@@ -3,7 +3,6 @@ import polars as pl
 import pyield._internal.converters as cv
 from pyield import anbima, bday
 from pyield._internal.types import DateLike
-from pyield.anbima import tpf
 from pyield.tn import ntnf, utils
 
 
@@ -51,10 +50,10 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
         └──────────────┴─────────┴──────────┘
     """
     # Busca dados de LTN (zero cupom)
-    df_ltn = anbima.tpf_data(date, "LTN")
+    df_ltn = anbima.tpf(date, "LTN")
 
     # Busca dados de NTN-F (com cupom)
-    df_ntnf = anbima.tpf_data(date, "NTN-F")
+    df_ntnf = anbima.tpf(date, "NTN-F")
 
     # Verifica se há dados para ambos os tipos
     if df_ltn.is_empty() and df_ntnf.is_empty():
@@ -178,7 +177,7 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
         └──────────┴──────────────┴──────────┘
     """
     # Busca taxas dos títulos (LTN e NTN-F) e adiciona DIRate
-    df = tpf.tpf_data(date, "PRE")
+    df = anbima.tpf(date, "PRE")
     if df.is_empty():
         return df.select(
             pl.lit("").alias("BondType"),

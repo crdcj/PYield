@@ -61,11 +61,16 @@ def data(date: DateLike) -> pl.DataFrame:
     """
     from pyield.b3 import di1  # noqa: PLC0415
 
-    df = anbima.tpf_data(date, "NTN-B")
+    df = anbima.tpf(date, "NTN-B")
     if df.is_empty():
         return df
 
     data_ref = conversores.converter_datas(date)
+
+    # Adiciona BDToMat (dado derivado, não vem da ANBIMA)
+    df = df.with_columns(
+        BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"),
+    )
 
     # Adiciona Duration, AvgMaturity, DV01 e DV01USD
     df = utils.adicionar_duration(df, duration)

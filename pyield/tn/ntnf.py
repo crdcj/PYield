@@ -65,11 +65,16 @@ def data(date: DateLike) -> pl.DataFrame:
         >>> from pyield import ntnf
         >>> df_ntnf = ntnf.data("23-08-2024")  # doctest: +SKIP
     """
-    df = anbima.tpf_data(date, "NTN-F")
+    df = anbima.tpf(date, "NTN-F")
     if df.is_empty():
         return df
 
     data_ref = cv.converter_datas(date)
+
+    # Adiciona BDToMat (dado derivado, não vem da ANBIMA)
+    df = df.with_columns(
+        BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"),
+    )
 
     # Adiciona Duration, AvgMaturity, DV01, DV01USD e DIRate
     df = utils.adicionar_duration(df, duration)
@@ -77,7 +82,7 @@ def data(date: DateLike) -> pl.DataFrame:
     df = utils.adicionar_taxa_di(df, data_ref)
 
     # Busca dados de LTN para bootstrap das taxas spot
-    df_ltn = anbima.tpf_data(date, "LTN")
+    df_ltn = anbima.tpf(date, "LTN")
     df_spots = spot_rates(
         settlement=date,
         ltn_maturities=df_ltn["MaturityDate"],

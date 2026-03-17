@@ -252,7 +252,7 @@ def imaq(date: DateLike) -> pl.DataFrame:
 
     Notes:
         - Valores convertidos para unidades puras (ex: MarketQuantity × 1.000).
-        - DV01 obtidos via cruzamento com tpf_data(); nulos se indisponível.
+        - DV01 obtidos via cruzamento com tpf(); nulos se indisponível.
 
     Examples:
         >>> from pyield import bday

@@ -8,11 +8,11 @@ import polars.selectors as cs
 import requests
 from requests.exceptions import HTTPError, RequestException
 
-from pyield import bday, clock
-from pyield._internal.converters import converter_datas
+from pyield import bday
+from pyield._internal.converters import converter_datas, data_referencia_valida
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.retry import retry_padrao
-from pyield._internal.types import DateLike, any_is_empty
+from pyield._internal.types import DateLike
 
 BOND_TYPES = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
 
@@ -126,9 +126,8 @@ def _processar_df_bruto(df: pl.DataFrame) -> pl.DataFrame:
             cs.contains("Rate").truediv(100).round(6),
             cs.ends_with("Date").str.to_date(format="%Y%m%d"),
         )
-        .with_columns(
-            BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"),
-        )
+        # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
+        .with_columns(cs.float().fill_nan(None))
     )
     return df
 
@@ -141,12 +140,10 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
         "SelicCode",
         "IssueBaseDate",
         "MaturityDate",
-        "BDToMat",
         "Price",
         "BidRate",
         "AskRate",
         "IndicativeRate",
-        "Criteria",
     ]
     ordem_colunas = [col for col in ordem_colunas if col in df.columns]
     return df.select(ordem_colunas).sort("BondType", "MaturityDate")
@@ -197,9 +194,6 @@ def _buscar_dados_tpf(date: dt.date) -> pl.DataFrame:
 
         df = _ler_csv(csv_texto)
         df = _processar_df_bruto(df)
-        df = _selecionar_e_ordenar_colunas(df)
-        # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
-        df = df.with_columns(cs.float().fill_nan(None))
 
         return df
 
@@ -226,24 +220,21 @@ def _buscar_dados_tpf(date: dt.date) -> pl.DataFrame:
         raise
 
 
-def tpf_data(
+def tpf(
     date: DateLike,
     bond_type: BOND_TYPES | None = None,
-    fetch_from_source: bool = False,
 ) -> pl.DataFrame:
     """Recupera os dados do mercado secundário de TPF da ANBIMA.
 
     Esta função busca taxas indicativas e outros dados de títulos públicos
-    brasileiros. A obtenção dos dados segue uma hierarquia de fontes para
-    otimizar o desempenho e o acesso.
+    brasileiros. Primeiro consulta o cache local; se não houver dados,
+    busca diretamente na fonte (ANBIMA).
 
     Args:
         date (DateLike): A data de referência para os dados (ex: '2024-06-14').
-        bond_type (str, optional): Filtra os resultados por um tipo de título
-            específico (ex: 'LTN', 'NTN-B'). Por padrão, retorna todos os tipos.
-        fetch_from_source (bool, optional): Se True, força a função a ignorar o
-            cache e buscar os dados diretamente da fonte (ANBIMA).
-            Padrão é False.
+        bond_type (str, optional): Filtra por tipo de título. Aceita os tipos
+            individuais ('LTN', 'NTN-F', 'NTN-B', 'NTN-C', 'LFT') ou 'PRE'
+            como atalho para prefixados ('LTN' e 'NTN-F').
 
     Returns:
         pl.DataFrame: Um DataFrame contendo os dados solicitados.
@@ -252,7 +243,7 @@ def tpf_data(
 
     Examples:
         >>> from pyield import anbima
-        >>> df = anbima.tpf_data(date="06-02-2026")
+        >>> df = anbima.tpf(date="06-02-2026")
 
     Data columns:
         - BondType: Tipo do título público (e.g., 'LTN', 'NTN-B').
@@ -260,45 +251,36 @@ def tpf_data(
         - SelicCode: Código do título no SELIC.
         - IssueBaseDate: Data base ou de emissão do título.
         - MaturityDate: Data de vencimento do título.
-        - BDToMat: Número de dias úteis entre a data de referência e o vencimento.
-        - Price: Preço Unitário (PU) do título na data de referência.
-        - BidRate: Taxa de compra em formato decimal (e.g., 0.10 para 10%).
-        - AskRate: Taxa de venda em formato decimal.
-        - IndicativeRate: Taxa indicativa em formato decimal.
-        - Criteria: Critério utilizado pela ANBIMA para o cálculo.
+        - Price: Preço Unitário (PU) calculado para liquidação em D0.
+        - BidRate: Taxa de compra para liquidação em D0 (decimal).
+        - AskRate: Taxa de venda para liquidação em D0 (decimal).
+        - IndicativeRate: Taxa indicativa para liquidação em D0 (decimal).
 
     Notes:
         A fonte dos dados segue a seguinte hierarquia:
 
-        1.  **Cache Local (Padrão):** Fornece acesso rápido a dados históricos
-            desde 01/01/2020. É utilizado por padrão (`fetch_from_source=False`).
-        2.  **Site Público da ANBIMA:** Acessado quando `fetch_from_source=True`,
-            disponibiliza os dados dos últimos 5 dias úteis.
-        3.  **Rede RTM da ANBIMA:** Acessada quando `fetch_from_source=True` para
-            datas com mais de 5 dias úteis. O acesso ao histórico completo
-            requer uma conexão à rede RTM. Sem ela, a consulta para datas
-            antigas retornará um DataFrame vazio.
+        1.  **Cache Local:** Fornece acesso rápido a dados históricos
+            desde 01/01/2020.
+        2.  **Fonte ANBIMA (fallback):** Se a data não estiver no cache,
+            busca automaticamente na fonte. Para datas recentes (até 5 dias
+            úteis), usa o site público. Para datas mais antigas, requer
+            acesso à rede RTM.
+
+        Para obter o dado completo direto da fonte (todas as colunas),
+        use :func:`fetch_tpf`.
     """
-    if any_is_empty(date):
-        return pl.DataFrame()
     date = converter_datas(date)
 
-    if not bday.is_business_day(date):
+    if not data_referencia_valida(date):
         return pl.DataFrame()
 
-    if date > clock.today():
-        return pl.DataFrame()
-
-    if fetch_from_source:
+    # Cache primeiro; se não tiver, busca na fonte
+    df = obter_dataset_cacheado("tpf")
+    if not df.is_empty():
+        df = df.filter(pl.col("ReferenceDate") == date)
+    if df.is_empty():
         df = _buscar_dados_tpf(date)
-    else:
-        # Cache primeiro; se não tiver, tenta a fonte
-        df = obter_dataset_cacheado("tpf").filter(pl.col("ReferenceDate") == date)
-        if df.is_empty():
-            df = _buscar_dados_tpf(date)
-        else:
-            # Cache pode ter colunas extras; normaliza para o schema base
-            df = _selecionar_e_ordenar_colunas(df)
+    df = _selecionar_e_ordenar_colunas(df)
 
     if df.is_empty():
         return pl.DataFrame()
@@ -306,6 +288,33 @@ def tpf_data(
     if bond_type:
         norm_bond_type = _mapear_tipo_titulo(bond_type)
         df = df.filter(pl.col("BondType").is_in(norm_bond_type))
+
+    return df.sort("ReferenceDate", "BondType", "MaturityDate")
+
+
+def fetch_tpf(
+    date: DateLike,
+) -> pl.DataFrame:
+    """Busca os dados do mercado secundário de TPF direto da fonte ANBIMA.
+
+    Retorna todas as colunas publicadas pela ANBIMA, sem cache e sem
+    filtro de colunas. Indicado para uso em jobs e pipelines de dados.
+
+    Args:
+        date (DateLike): Data de referência (ex: '2024-06-14').
+
+    Returns:
+        pl.DataFrame: DataFrame com todas as colunas da ANBIMA.
+            Retorna DataFrame vazio se não houver dados.
+    """
+    date = converter_datas(date)
+
+    if not data_referencia_valida(date):
+        return pl.DataFrame()
+
+    df = _buscar_dados_tpf(date)
+    if df.is_empty():
+        return pl.DataFrame()
 
     return df.sort("ReferenceDate", "BondType", "MaturityDate")
 
@@ -344,4 +353,4 @@ def tpf_maturities(
             2035-01-01
         ]
     """
-    return tpf_data(date, bond_type)["MaturityDate"].unique().sort()
+    return tpf(date, bond_type)["MaturityDate"].unique().sort()

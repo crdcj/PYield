@@ -7,6 +7,15 @@ from pyield._internal import types
 from pyield._internal.types import ArrayLike, DateLike
 
 
+def data_referencia_valida(date: dt.date | None) -> bool:
+    """Verifica se a data é dia útil e não está no futuro."""
+    if date is None:
+        return False
+    from pyield import bday, clock  # noqa: PLC0415
+
+    return bday.is_business_day(date) and date <= clock.today()
+
+
 def converter_datas_expr(expr: pl.Expr | str) -> pl.Expr:
     """Converte expressão Polars para ``Date`` com parse tolerante por linha.
 
