@@ -17,16 +17,13 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de LFT.
 
     Output Columns:
-        - BondType (String): Tipo do título (ex.: "LFT").
         - ReferenceDate (Date): Data de referência dos dados.
+        - BondType (String): Tipo do título (ex.: "LFT").
         - SelicCode (Int64): Código do título no SELIC.
         - IssueBaseDate (Date): Data base/emissão do título.
         - MaturityDate (Date): Data de vencimento do título.
         - BDToMat (Int64): Dias úteis entre referência e vencimento.
-        - AvgMaturity (Float64): Prazo médio do título em dias corridos.
-        - Duration (Float64): Macaulay Duration do título (anos).
-        - DV01 (Float64): Variação no preço para 1bp de taxa.
-        - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
+        - AvgMaturity (Float64): Prazo médio do título em anos.
         - Price (Float64): Preço unitário (PU).
         - BidRate (Float64): Taxa de compra (decimal).
         - AskRate (Float64): Taxa de venda (decimal).
@@ -49,12 +46,10 @@ def data(date: DateLike) -> pl.DataFrame:
         BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"),
     )
 
-    # Adiciona Duration, AvgMaturity, DV01, DV01USD e DIRate
+    # Adiciona AvgMaturity e DIRate
     df = df.with_columns(
-        Duration=pl.lit(0.0),
         AvgMaturity=pl.col("BDToMat") / 252,
     )
-    df = utils.adicionar_dv01(df, data_ref)
     df = utils.adicionar_taxa_di(df, data_ref)
 
     df = df.with_columns(
@@ -64,7 +59,21 @@ def data(date: DateLike) -> pl.DataFrame:
         )
     )
 
-    return df
+    return df.select(
+        "ReferenceDate",
+        "BondType",
+        "SelicCode",
+        "IssueBaseDate",
+        "MaturityDate",
+        "BDToMat",
+        "AvgMaturity",
+        "Price",
+        "BidRate",
+        "AskRate",
+        "IndicativeRate",
+        "DIRate",
+        "Premium",
+    )
 
 
 def maturities(date: DateLike) -> pl.Series:

@@ -51,8 +51,8 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de NTN-C.
 
     Output Columns:
-        - BondType (String): Tipo do título (ex.: "NTN-C").
         - ReferenceDate (Date): Data de referência dos dados.
+        - BondType (String): Tipo do título (ex.: "NTN-C").
         - SelicCode (Int64): Código do título no SELIC.
         - IssueBaseDate (Date): Data base/emissão do título.
         - MaturityDate (Date): Data de vencimento do título.
@@ -87,7 +87,23 @@ def data(date: DateLike) -> pl.DataFrame:
     df = utils.adicionar_dv01(df, data_ref)
     df = utils.adicionar_taxa_di(df, data_ref)
 
-    return df
+    return df.select(
+        "ReferenceDate",
+        "BondType",
+        "SelicCode",
+        "IssueBaseDate",
+        "MaturityDate",
+        "BDToMat",
+        "Duration",
+        "AvgMaturity",
+        "DV01",
+        "DV01USD",
+        "Price",
+        "BidRate",
+        "AskRate",
+        "IndicativeRate",
+        "DIRate",
+    )
 
 
 def payment_dates(

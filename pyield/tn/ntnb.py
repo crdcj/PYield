@@ -35,8 +35,8 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de NTN-B.
 
     Output Columns:
-        - BondType (String): Tipo do título (ex.: "NTN-B").
         - ReferenceDate (Date): Data de referência dos dados.
+        - BondType (String): Tipo do título (ex.: "NTN-B").
         - SelicCode (Int64): Código do título no SELIC.
         - IssueBaseDate (Date): Data base/emissão do título.
         - MaturityDate (Date): Data de vencimento do título.
@@ -97,7 +97,26 @@ def data(date: DateLike) -> pl.DataFrame:
     taxas_forward = fwd.forwards(bdays=df["BDToMat"], rates=df["SpotRate"])
     df = df.with_columns(ForwardRate=taxas_forward)
 
-    return df
+    return df.select(
+        "ReferenceDate",
+        "BondType",
+        "SelicCode",
+        "IssueBaseDate",
+        "MaturityDate",
+        "BDToMat",
+        "Duration",
+        "AvgMaturity",
+        "DV01",
+        "DV01USD",
+        "Price",
+        "BidRate",
+        "AskRate",
+        "IndicativeRate",
+        "DIRate",
+        "SpotRate",
+        "ForwardRate",
+        "ImpliedInflation",
+    )
 
 
 def maturities(date: DateLike) -> pl.Series:

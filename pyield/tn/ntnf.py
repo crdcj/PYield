@@ -41,8 +41,8 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de NTN-F.
 
     Output Columns:
-        - BondType (String): Tipo do título (ex.: "NTN-F").
         - ReferenceDate (Date): Data de referência dos dados.
+        - BondType (String): Tipo do título (ex.: "NTN-F").
         - SelicCode (Int64): Código do título no SELIC.
         - IssueBaseDate (Date): Data base/emissão do título.
         - MaturityDate (Date): Data de vencimento do título.
@@ -120,7 +120,27 @@ def data(date: DateLike) -> pl.DataFrame:
         ),
     )
 
-    return df
+    return df.select(
+        "ReferenceDate",
+        "BondType",
+        "SelicCode",
+        "IssueBaseDate",
+        "MaturityDate",
+        "BDToMat",
+        "AvgMaturity",
+        "Duration",
+        "DV01",
+        "DV01USD",
+        "Price",
+        "BidRate",
+        "AskRate",
+        "IndicativeRate",
+        "DIRate",
+        "SpotRate",
+        "DISpread",
+        "DINetSpread",
+        "Premium",
+    )
 
 
 def maturities(date: DateLike) -> pl.Series:
