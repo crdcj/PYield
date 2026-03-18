@@ -1,5 +1,6 @@
 import datetime as dt
 import logging
+from collections.abc import Sequence
 
 import polars as pl
 import requests
@@ -7,8 +8,9 @@ from polars import selectors as cs
 
 from pyield import bc, bday
 from pyield._internal import converters as cv
+from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
-from pyield._internal.types import DateLike, any_is_empty
+from pyield._internal.types import DateLike, any_is_empty, is_collection
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
 
@@ -86,6 +88,7 @@ ORDEM_FINAL_COLUNAS = [
 ]
 
 
+@ttl_cache()
 @retry_padrao
 def _buscar_dados_leilao(data_leilao: dt.date) -> list[dict]:
     """Busca os dados brutos da API do Tesouro para uma data específica.
@@ -358,15 +361,17 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(colunas_selecionadas).sort("data_1v", "titulo", "data_vencimento")
 
 
-def auction(auction_date: DateLike) -> pl.DataFrame:
+def auction(auction_date: DateLike | Sequence[DateLike]) -> pl.DataFrame:
     """Consulta e processa os resultados de leilões de títulos do Tesouro Nacional.
 
-    Busca os dados da API do Tesouro para a data informada e retorna um DataFrame
-    estruturado com quantidades, financeiros, taxas de colocação, duration e DV01.
+    Busca os dados da API do Tesouro para a(s) data(s) informada(s) e retorna
+    um DataFrame estruturado com quantidades, financeiros, taxas de colocação,
+    duration e DV01.
 
     Args:
-        auction_date: Data do leilão em qualquer formato aceito por DateLike
-            (ex: "DD-MM-YYYY", datetime.date).
+        auction_date: Data ou sequência de datas do leilão em qualquer
+            formato aceito por DateLike (ex: "DD-MM-YYYY", datetime.date,
+            ou lista desses formatos).
 
     Returns:
         DataFrame com os dados processados do leilão. Em caso de erro na
@@ -421,28 +426,28 @@ def auction(auction_date: DateLike) -> pl.DataFrame:
         - taxa_maxima (Float64): taxa de juros máxima aceita, taxa de corte (decimal).
     """
     if any_is_empty(auction_date):
-        logger.info("Nenhuma data de leilão informada.")
         return pl.DataFrame()
-    try:
-        auction_date = cv.converter_datas(auction_date)
-        dados_leilao = _buscar_dados_leilao(auction_date)
-        if not dados_leilao:
-            logger.info("Sem dados de leilão disponíveis para %s.", auction_date)
-            return pl.DataFrame()
-        df = _transformar_dados_brutos(dados_leilao)
-        df = _adicionar_duration(df)
-        df = _adicionar_dv01(df)
-        df = _adicionar_dv01_usd(df)
-        df = _adicionar_prazo_medio(df)
-        # Substituir eventuais NaNs por None para compatibilidade com bancos de dados
-        df = df.with_columns(cs.float().fill_nan(None))
-        df = _selecionar_e_ordenar_colunas(df)
 
-        return df
+    datas: Sequence[DateLike] = (
+        auction_date if is_collection(auction_date) else [auction_date]  # type: ignore[assignment]
+    )
+    resultados = [_processar_data_unica(d) for d in datas]
+    resultados = [df for df in resultados if not df.is_empty()]
+    if not resultados:
+        return pl.DataFrame()
+    return pl.concat(resultados)
 
-    except requests.exceptions.RequestException as e:
-        logger.error("Erro durante a requisição da API: %s", e)
+
+def _processar_data_unica(data_leilao: DateLike) -> pl.DataFrame:
+    """Busca e processa o leilão de uma única data."""
+    data = cv.converter_datas(data_leilao)
+    dados_leilao = _buscar_dados_leilao(data)
+    if not dados_leilao:
         return pl.DataFrame()
-    except (ValueError, TypeError) as e:
-        logger.error("Erro ao processar a resposta JSON: %s", e)
-        return pl.DataFrame()
+    df = _transformar_dados_brutos(dados_leilao)
+    df = _adicionar_duration(df)
+    df = _adicionar_dv01(df)
+    df = _adicionar_dv01_usd(df)
+    df = _adicionar_prazo_medio(df)
+    df = df.with_columns(cs.float().fill_nan(None))
+    return _selecionar_e_ordenar_colunas(df)
