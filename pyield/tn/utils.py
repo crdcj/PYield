@@ -9,6 +9,14 @@ import polars as pl
 logger = logging.getLogger(__name__)
 
 
+def subtrair_meses(data: dt.date, meses: int) -> dt.date:
+    """Subtrai `meses` meses de `data`, preservando o dia."""
+    mes = data.month - meses
+    ano = data.year + (mes - 1) // 12
+    mes = (mes - 1) % 12 + 1
+    return data.replace(year=ano, month=mes)
+
+
 def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
     """Adiciona a coluna DIRate ao DataFrame via interpolação flat forward do DI."""
     from pyield.b3 import di1  # noqa: PLC0415

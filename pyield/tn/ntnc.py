@@ -1,7 +1,6 @@
 import datetime as dt
 
 import polars as pl
-from dateutil.relativedelta import relativedelta
 
 import pyield._internal.converters as conversores
 from pyield import anbima, bday
@@ -160,7 +159,7 @@ def payment_dates(
     while data_cupom > liquidacao:
         datas_cupons.append(data_cupom)
         # Retrocede 6 meses
-        data_cupom -= relativedelta(months=6)
+        data_cupom = utils.subtrair_meses(data_cupom, 6)
 
     return pl.Series(datas_cupons).sort()
 

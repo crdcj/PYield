@@ -2,7 +2,6 @@ import datetime as dt
 import logging
 
 import polars as pl
-from dateutil.relativedelta import relativedelta
 
 import pyield._internal.converters as conversores
 import pyield.interpolator as interpolador
@@ -223,7 +222,7 @@ def payment_dates(
 
     while data_cupom > liquidacao:
         datas_cupons.append(data_cupom)
-        data_cupom -= relativedelta(months=6)
+        data_cupom = utils.subtrair_meses(data_cupom, 6)
 
     return pl.Series(name="payment_dates", values=datas_cupons).sort()
 

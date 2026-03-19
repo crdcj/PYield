@@ -1,6 +1,10 @@
+import functools
 import logging
+import random
+import time
+from collections.abc import Callable
+from typing import ParamSpec, TypeVar
 
-import tenacity as tnc
 from requests import exceptions as rex
 
 registro = logging.getLogger(__name__)
@@ -9,7 +13,10 @@ registro = logging.getLogger(__name__)
 _TAMANHO_MAXIMO_EXCECAO = 150
 _HTTP_MUITAS_REQUISICOES = 429
 _HTTP_ERRO_SERVIDOR_MINIMO = 500
-
+_MAX_TENTATIVAS = 3
+_ESPERA_MINIMA = 1.0
+_ESPERA_MAXIMA = 10.0
+_MULTIPLICADOR_BACKOFF = 2.0
 
 _EXCECOES_TRANSITORIAS = (
     rex.Timeout,
@@ -18,38 +25,30 @@ _EXCECOES_TRANSITORIAS = (
     rex.ChunkedEncodingError,
 )
 
+P = ParamSpec("P")
+R = TypeVar("R")
 
-def _logar_antes_espera(retry_state: tnc.RetryCallState) -> None:
-    """Loga uma mensagem ANTES de o Tenacity entrar em espera entre tentativas."""
-    if not (desfecho := retry_state.outcome) or not desfecho.failed:
-        return
 
-    if not (excecao := desfecho.exception()):
-        return
-
-    if not (proxima_acao := retry_state.next_action) or not hasattr(
-        proxima_acao, "sleep"
-    ):
-        return
-
-    tempo_espera = proxima_acao.sleep
+def _logar_antes_espera(
+    tentativa: int, excecao: Exception, tempo_espera: float
+) -> None:
+    """Loga uma mensagem antes da espera entre tentativas."""
     texto_excecao = str(excecao).replace("\n", " ")
     texto_excecao_truncado = texto_excecao[:_TAMANHO_MAXIMO_EXCECAO]
     if len(texto_excecao) > _TAMANHO_MAXIMO_EXCECAO:
         texto_excecao_truncado += "..."
 
     registro.warning(
-        f"Tentativa {retry_state.attempt_number} falhou com "
-        f"{type(excecao).__name__}: {texto_excecao_truncado} Tentando novamente em "
-        f"{tempo_espera:.2f} segundos..."
+        "Tentativa %s falhou com %s: %s Tentando novamente em %.2f segundos...",
+        tentativa,
+        type(excecao).__name__,
+        texto_excecao_truncado,
+        tempo_espera,
     )
 
 
-def _deve_tentar_novamente_por_excecao(retry_state: tnc.RetryCallState) -> bool:
+def _deve_tentar_novamente_por_excecao(excecao: Exception) -> bool:
     """Determina se uma exceção capturada justifica uma nova tentativa."""
-    if not retry_state.outcome or not (excecao := retry_state.outcome.exception()):
-        return False
-
     # Erros de rede genéricos são sempre transitórios
     if isinstance(excecao, _EXCECOES_TRANSITORIAS):
         return True
@@ -65,11 +64,35 @@ def _deve_tentar_novamente_por_excecao(retry_state: tnc.RetryCallState) -> bool:
     return False
 
 
-# Retry policy padrão com backoff exponencial + jitter para reduzir rajadas
-retry_padrao = tnc.retry(
-    retry=_deve_tentar_novamente_por_excecao,
-    wait=tnc.wait_random_exponential(multiplier=2, min=1, max=10),
-    stop=tnc.stop_after_attempt(3),
-    before_sleep=_logar_antes_espera,
-    reraise=True,
-)
+def _calcular_tempo_espera(tentativa: int) -> float:
+    """Calcula o tempo de espera com backoff exponencial e jitter."""
+    limite_superior = min(
+        _ESPERA_MAXIMA,
+        max(_ESPERA_MINIMA, _MULTIPLICADOR_BACKOFF * (2 ** (tentativa - 1))),
+    )
+    return random.uniform(_ESPERA_MINIMA, limite_superior)
+
+
+def retry_padrao(func: Callable[P, R]) -> Callable[P, R]:
+    """Aplica retry com backoff exponencial e jitter para falhas transitórias."""
+
+    @functools.wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        for tentativa in range(1, _MAX_TENTATIVAS + 1):
+            try:
+                return func(*args, **kwargs)
+            except Exception as excecao:
+                if (
+                    tentativa == _MAX_TENTATIVAS
+                    or not _deve_tentar_novamente_por_excecao(excecao)
+                ):
+                    raise
+
+                tempo_espera = _calcular_tempo_espera(tentativa)
+                _logar_antes_espera(tentativa, excecao, tempo_espera)
+                time.sleep(tempo_espera)
+
+        msg = "Fluxo de retry inválido: laço encerrado sem retorno nem exceção."
+        raise RuntimeError(msg)
+
+    return wrapper

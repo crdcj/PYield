@@ -1,7 +1,6 @@
 from enum import Enum
 
 import polars as pl
-from dateutil.relativedelta import relativedelta
 
 import pyield._internal.converters as conversores
 from pyield import bday
@@ -104,7 +103,7 @@ def payment_dates(
     _, _, numero_amortizacoes = _obter_parametros_titulo(commercial_name)
 
     datas_amortizacao = [
-        vencimento - relativedelta(months=i) for i in range(numero_amortizacoes)
+        utils.subtrair_meses(vencimento, i) for i in range(numero_amortizacoes)
     ]
 
     if len(datas_amortizacao) == 0:
