@@ -14,7 +14,7 @@ def test_repos_com_monkeypatch(monkeypatch):
     monkeypatch.setattr(
         repo_mod,
         "_buscar_csv_api",
-        lambda *_: CAMINHO_CSV.read_text(encoding="utf-8"),
+        lambda *_: CAMINHO_CSV.read_bytes(),
     )
     resultado = repo_mod.repos(start="21-08-2025", end="21-08-2025")
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))

@@ -77,13 +77,16 @@ Top-level functions also exported from `pyield`:
 - Invalid strings are converted to `null` (or `None` for scalar outputs)
 - Nullable inputs (`None`, `NaN`, empty collections) short-circuit: scalar functions return `None` or `nan`, vectorized functions return empty DataFrame/Series
 
-### Data Flow Pattern
+### Data Flow Pattern (ETL)
 
-Most data-fetching functions follow this pattern:
-1. Accept `DateLike` reference date parameter
-2. Convert dates using `converter_datas()`
-3. Fetch from external API (with retry logic) or cached parquet
-4. Return Polars DataFrame with standardized column names
+Módulos que buscam dados externos seguem o padrão ETL de 3 funções internas + função pública:
+
+1. **`_buscar_*()`** — Fetch com `@ttl_cache` e `@retry_padrao`. Retorna dados brutos (`str`, `bytes`, `list[dict]`). Não faz parsing nem transformação.
+2. **`_parsear_df()`** — Converte dados brutos em DataFrame com `infer_schema=False` (tudo string). Sem rename nem conversão de tipos.
+3. **`_processar_df()`** — Rename, conversão de tipos (usando helpers de `br_numbers`) e cálculos derivados. Quando há colunas derivadas que dependem de outras calculadas, usar `with_columns` antes do `select`. O `select` final define a ordem das colunas.
+4. **Função pública** — Orquestra: buscar → parsear → processar → filtrar/ordenar. Erros propagam naturalmente (sem `try/except Exception` genérico).
+
+Referência: `anbima/ima.py` (com colunas derivadas) e `anbima/imaq.py` (sem colunas derivadas).
 
 ## Naming Conventions
 
@@ -135,7 +138,7 @@ The root `conftest.py` configures the doctest environment:
 
 Modules that fetch external data (e.g., `bc/repo.py`, `bc/trades_monthly.py`) use local reference data to test without network access:
 
-1. **Reference data** — A pair of files in `tests/<module>/data/`: the raw input (CSV or ZIP) and the expected output (Parquet).
+1. **Reference data** — Um par de arquivos em `tests/<module>/data/`: o dado bruto (CSV, HTML, ZIP) **exatamente como retornado pela fonte** e o resultado esperado (Parquet). O arquivo bruto deve ser salvo byte-a-byte (`write_bytes(resp.content)`) sem normalização de encoding ou line endings.
 2. **Pipeline test** — Processes the local raw input through the internal processing functions and asserts `result.equals(expected_parquet)`.
 3. **Public function test** — Patches the network fetch function to return local raw data, calls the public function, and asserts equality with the reference Parquet.
 

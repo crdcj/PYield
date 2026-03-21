@@ -12,54 +12,14 @@ ac1b013d13d6fb1d9d9e251b800010ee, 2025-08-21   , 09:00     , SomenteDealer      
 ac1b013d13d6fb1d9d9e251b8000121e, 2025-08-21   , 12:00     , TodoMercado           , 43716           , Compromissada 1047, Banco Central,                91, 2025-08-22    , 2025-11-21 ,      5000000, "99,78"  , "64,13"
 """
 
-import io
-import logging
-
 import polars as pl
 import requests
 
 import pyield._internal.converters as cv
 from pyield import bday
+from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
-
-registro = logging.getLogger(__name__)
-
-MAPA_COLUNAS = [
-    ("id", "id", pl.String),
-    ("dataMovimento", "data_leilao", pl.Date),
-    ("horaInicio", "hora_inicio", pl.Time),
-    ("publicoPermitidoLeilao", "publico_permitido", pl.String),
-    ("numeroComunicado", "numero_comunicado", pl.Int64),
-    ("nomeTipoOferta", "tipo_oferta", pl.String),
-    ("ofertante", "ofertante", pl.String),
-    ("prazoDiasCorridos", "prazo_dias_corridos", pl.Int64),
-    ("dataLiquidacao", "data_liquidacao", pl.Date),
-    ("dataRetorno", "data_retorno", pl.Date),
-    ("volumeAceito", "volume_aceito", pl.Int64),
-    ("taxaCorte", "taxa_corte", pl.Float64),
-    ("percentualCorte", "percentual_corte", pl.Float64),
-]
-
-ESQUEMA_API = {api: tipo for api, _, tipo in MAPA_COLUNAS}
-MAPEAMENTO_COLUNAS = {api: novo for api, novo, _ in MAPA_COLUNAS}
-
-ORDEM_COLUNAS_FINAL = [
-    "data_leilao",
-    "data_liquidacao",
-    "data_retorno",
-    "hora_inicio",
-    "prazo_dias_corridos",
-    "prazo_dias_uteis",
-    "numero_comunicado",
-    "tipo_oferta",
-    "publico_permitido",
-    "volume_aceito",
-    "taxa_corte",
-    "percentual_aceito",
-]
-
-CHAVES_ORDENACAO = ["data_leilao", "hora_inicio", "tipo_oferta"]
 
 URL_BASE_API = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloes_compromissadas(dataLancamentoInicio=@dataLancamentoInicio,dataLancamentoFim=@dataLancamentoFim,horaInicio=@horaInicio,dataLiquidacao=@dataLiquidacao,dataRetorno=@dataRetorno,publicoPermitidoLeilao=@publicoPermitidoLeilao,nomeTipoOferta=@nomeTipoOferta)?"
 
@@ -89,7 +49,7 @@ def _montar_url(inicio: DateLike | None, fim: DateLike | None) -> str:
 
 
 @retry_padrao
-def _buscar_csv_api(url: str) -> str:
+def _buscar_csv_api(url: str) -> bytes:
     """Executa requisição HTTP e retorna o corpo CSV como string.
 
     Decorado com ``retry_padrao`` para resiliência a falhas transitórias.
@@ -97,60 +57,37 @@ def _buscar_csv_api(url: str) -> str:
     """
     r = requests.get(url, timeout=10)
     r.raise_for_status()
-    return r.text
+    return r.content
 
 
-def _ler_csv(csv_texto: str) -> pl.DataFrame:
-    """Lê o CSV (texto) em um DataFrame Polars com esquema definido.
-
-    Usa decimal_comma=True para tratar números no formato brasileiro ("14,9").
-    """
+def _ler_csv(csv_bytes: bytes) -> pl.DataFrame:
+    """Lê o CSV (bytes) em um DataFrame Polars sem inferência de tipos."""
     return pl.read_csv(
-        io.StringIO(csv_texto),
-        decimal_comma=True,
+        csv_bytes,
+        infer_schema=False,
         null_values=["null", ""],
-        schema_overrides=ESQUEMA_API,
     )
 
 
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
-    """Aplica transformações numéricas e calcula prazo em dias úteis.
-
-    Transformações:
-        - volume_aceito: * 1000 (API em milhares de R$) ⇒ inteiro em R$.
-        - taxa_corte: porcentagem → fração decimal (rounded 6 casas).
-        - prazo_dias_uteis: calculado via calendário de negócios (bday.count).
-    """
-    df = df.rename(MAPEAMENTO_COLUNAS).with_columns(
-        volume_aceito=1000 * pl.col("volume_aceito"),
-        # porcentagem -> fração
-        taxa_corte=pl.col("taxa_corte").truediv(100).round(6),
-        # converte percentual rejeitado original em percentual aceito
-        percentual_aceito=100 - pl.col("percentual_corte"),
-    )
-
-    df = df.with_columns(
-        prazo_dias_uteis=bday.count_expr("data_liquidacao", "data_retorno"),
-    )
-    return df
-
-
-def _ajustar_volume_zero(df: pl.DataFrame) -> pl.DataFrame:
-    """Ajusta a taxa_corte e o percentual_aceito quando volume_aceito = 0."""
-    return df.with_columns(
-        taxa_corte=pl.when(pl.col("volume_aceito") == 0)
-        .then(None)
-        .otherwise("taxa_corte"),
-        percentual_aceito=pl.when(pl.col("volume_aceito") == 0)
-        .then(0)
-        .otherwise("percentual_aceito"),
-    )
-
-
-def _ordenar_selecionar_colunas(df: pl.DataFrame) -> pl.DataFrame:
-    """Reordena colunas e ordena linhas para saída consistente e determinística."""
-    colunas_selecionadas = [col for col in ORDEM_COLUNAS_FINAL if col in df.columns]
-    return df.select(colunas_selecionadas).sort(by=CHAVES_ORDENACAO)
+    """Renomeia, converte tipos e calcula colunas derivadas em um único select."""
+    vol_zero = pl.col("volumeAceito").cast(pl.Int64) == 0
+    return df.select(
+        data_leilao=pl.col("dataMovimento").str.to_date("%Y-%m-%d"),
+        data_liquidacao=pl.col("dataLiquidacao").str.to_date("%Y-%m-%d"),
+        data_retorno=pl.col("dataRetorno").str.to_date("%Y-%m-%d"),
+        hora_inicio=pl.col("horaInicio").str.to_time("%H:%M"),
+        prazo_dias_corridos=pl.col("prazoDiasCorridos").cast(pl.Int64),
+        prazo_dias_uteis=bday.count_expr("dataLiquidacao", "dataRetorno"),
+        numero_comunicado=pl.col("numeroComunicado").cast(pl.Int64),
+        tipo_oferta=pl.col("nomeTipoOferta"),
+        publico_permitido=pl.col("publicoPermitidoLeilao"),
+        volume_aceito=1000 * pl.col("volumeAceito").cast(pl.Int64),
+        taxa_corte=pl.when(vol_zero).then(None).otherwise(taxa_br("taxaCorte")),
+        percentual_aceito=pl.when(vol_zero)
+        .then(0.0)
+        .otherwise(100 - float_br("percentualCorte")),
+    ).sort("data_leilao", "hora_inicio", "tipo_oferta")
 
 
 def repos(
@@ -170,8 +107,7 @@ def repos(
 
     Returns:
         DataFrame com colunas normalizadas em português e tipos
-        enriquecidos (frações decimais, inteiros, datas). Em caso de erro
-        retorna DataFrame vazio e registra log da exceção.
+        enriquecidos (frações decimais, inteiros, datas).
 
     Output Columns:
         - data_leilao (Date): data de ocorrência do leilão.
@@ -204,18 +140,9 @@ def repos(
         │ 2025-08-21  ┆ 2025-08-22      ┆ 2025-11-21   ┆ 12:00:00    ┆ … ┆ TodoMercado       ┆ 5000000000    ┆ 0.9978     ┆ 35.87             │
         └─────────────┴─────────────────┴──────────────┴─────────────┴───┴───────────────────┴───────────────┴────────────┴───────────────────┘
     """
-    try:
-        url = _montar_url(inicio=start, fim=end)
-        registro.debug(f"Consultando API do BC: {url}")
-        csv_api = _buscar_csv_api(url)
-        df = _ler_csv(csv_api)
-        if df.is_empty():
-            registro.warning("Sem dados de leilões para o período especificado.")
-            return pl.DataFrame()
-        df = _processar_df(df)
-        df = _ajustar_volume_zero(df)
-        df = _ordenar_selecionar_colunas(df)
-        return df
-    except Exception as e:
-        registro.exception(f"Erro ao buscar dados de leilões na API do BC: {e}")
+    url = _montar_url(inicio=start, fim=end)
+    csv_api = _buscar_csv_api(url)
+    df = _ler_csv(csv_api)
+    if df.is_empty():
         return pl.DataFrame()
+    return _processar_df(df)

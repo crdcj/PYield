@@ -1,4 +1,3 @@
-import io
 from typing import Literal
 
 import polars as pl
@@ -30,12 +29,13 @@ def _buscar_texto_ultimo_ima() -> str:
     resposta = requests.get(URL_ULTIMO_IMA, timeout=3)
     resposta.raise_for_status()
     resposta.encoding = "latin1"
-    return resposta.text.split("2@COMPOSIÇÃO DE CARTEIRA")[1].strip()
+    return resposta.text
 
 
 def _parsear_df(texto: str) -> pl.DataFrame:
+    texto_csv = texto.split("2@COMPOSIÇÃO DE CARTEIRA")[1].strip()
     return pl.read_csv(
-        io.StringIO(texto),
+        texto_csv.encode(),
         separator="@",
         infer_schema=False,
         null_values="--",
