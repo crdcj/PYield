@@ -105,9 +105,7 @@ def _processar_csv(data_ref: dt.date, df: pl.DataFrame) -> pl.DataFrame:
             taxa_compra=taxa_br("Oferta Compra"),
         )
         .select(
-            data_hora_referencia=pl.lit(data_ref)
-            .dt.combine(pl.col("horario"))
-            .dt.replace_time_zone("America/Sao_Paulo"),
+            data_hora_referencia=pl.lit(data_ref).dt.combine(pl.col("horario")),
             provedor=pl.col("Provedor"),
             titulo=pl.col("Título"),
             data_vencimento=pl.col("data_vencimento"),
@@ -140,8 +138,7 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
         ValueError: Em resposta inválida da API ou erro de parsing do CSV.
 
     Output Columns:
-        - data_hora_referencia (datetime[America/Sao_Paulo]): Data e hora de
-            referência da taxa no fuso horário de São Paulo.
+        - data_hora_referencia (Datetime): Data e hora de referência da taxa.
         - provedor (string): Provedor dos dados.
         - titulo (string): Nome do título (ex: LFT, LTN).
         - data_vencimento (date): Data de vencimento do título.

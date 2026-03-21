@@ -5,15 +5,14 @@ from io import StringIO
 import polars as pl
 import requests
 
+from pyield._internal.br_numbers import numero_br, taxa_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
 logger = logging.getLogger(__name__)
 URL_ULTIMA_ETTJ = "https://www.anbima.com.br/informacoes/est-termo/CZ-down.asp"
 
-# Dados ETTJ têm 4 casas decimais em valores percentuais.
-# Arredondamos para 6 casas para evitar erros de ponto flutuante.
-CASAS_DECIMAIS = 6
+# Dados ETTJ: taxas com 4 casas decimais em percentual (ex.: 14,2644%).
 
 
 @ttl_cache()
@@ -31,62 +30,28 @@ def _buscar_texto_ultima_ettj() -> str:
     return resposta.text
 
 
-def _obter_data_referencia(texto: str) -> dt.date:
-    data_str = texto[0:10]  # formato = 09/09/2024
+def _extrair_data_e_tabela(texto: str) -> tuple[dt.date, str]:
+    """Separa o texto bruto em data de referência e a tabela CSV principal."""
+    # Seções separadas por linha em branco: betas, ETTJ, circular, erros
+    secoes = texto.strip().replace("\r\n", "\n").split("\n\n")
+    # A data está na primeira linha da primeira seção (ex.: "20/03/2026;Beta 1;...")
+    data_str = secoes[0].splitlines()[0][:10]
     data_ref = dt.datetime.strptime(data_str, "%d/%m/%Y").date()
-    return data_ref
+    # A tabela ETTJ é a segunda seção; pular o título (primeira linha)
+    linhas_ettj = secoes[1].splitlines()
+    tabela = "\n".join(linhas_ettj[1:])
+    return data_ref, tabela
 
 
-def _filtrar_texto_ettf(texto_completo: str) -> str:
-    # Definir os marcadores de início e fim
-    marcador_inicio = "Vertices;ETTJ IPCA;ETTJ PREF;Inflação Implícita"
-    marcador_fim = "PREFIXADOS (CIRCULAR 3.361)"
-
-    # 2. Dividir o texto em uma lista de linhas
-    linhas = texto_completo.strip().splitlines()
-
-    # 3. Encontrar os índices das linhas de início e fim
-    indice_inicio = linhas.index(marcador_inicio)
-    indice_fim = linhas.index(marcador_fim)
-
-    # 4. Fatiar a lista para extrair o trecho desejado
-    trecho_filtrado = linhas[indice_inicio:indice_fim]
-
-    # Remover linhas vazias que possam ter sido incluídas no final
-    while trecho_filtrado and not trecho_filtrado[-1].strip():
-        trecho_filtrado.pop()
-
-    # 5. Juntar as linhas filtradas em um único texto e retornar
-    return "\n".join(trecho_filtrado).replace(".", "").replace(",", ".")
-
-
-def _converter_csv_para_df(texto: str) -> pl.DataFrame:
-    """Converte o texto CSV da curva de juros em um DataFrame Polars."""
-    return pl.read_csv(StringIO(texto), separator=";")
-
-
-def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
-    """Processa o DataFrame bruto, renomeando colunas e convertendo taxas."""
-    # Rename columns
-    mapa_renomeacao = {
-        "Vertices": "vertex",
-        "ETTJ IPCA": "real_rate",
-        "ETTJ PREF": "nominal_rate",
-        "Inflação Implícita": "implied_inflation",
-    }
-    colunas_taxa = ["real_rate", "nominal_rate", "implied_inflation"]
-    df = df.rename(mapa_renomeacao).with_columns(
-        pl.col(colunas_taxa).truediv(100).round(CASAS_DECIMAIS),
-        date=data_referencia,
+def _processar_tabela(texto: str, data_referencia: dt.date) -> pl.DataFrame:
+    """Lê o CSV e converte para DataFrame com taxas decimais."""
+    return pl.read_csv(StringIO(texto), separator=";", infer_schema=False).select(
+        date=pl.lit(data_referencia),
+        vertex=numero_br("Vertices").cast(pl.Int64),
+        nominal_rate=taxa_br("ETTJ PREF"),
+        real_rate=taxa_br("ETTJ IPCA"),
+        implied_inflation=taxa_br("Inflação Implícita"),
     )
-    ordem_colunas = [
-        "date",
-        "vertex",
-        "nominal_rate",
-        "real_rate",
-        "implied_inflation",
-    ]
-    return df.select(ordem_colunas)
 
 
 def last_ettj() -> pl.DataFrame:
@@ -110,8 +75,5 @@ def last_ettj() -> pl.DataFrame:
         Todas as taxas são expressas em formato decimal (ex: 0.12 para 12%).
     """
     texto = _buscar_texto_ultima_ettj()
-    data_referencia = _obter_data_referencia(texto)
-    texto = _filtrar_texto_ettf(texto)
-    df = _converter_csv_para_df(texto)
-    df = _processar_df(df, data_referencia)
-    return df
+    data_ref, tabela = _extrair_data_e_tabela(texto)
+    return _processar_tabela(tabela, data_ref)
