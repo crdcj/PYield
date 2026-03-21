@@ -15,7 +15,7 @@ from lxml.html import HTMLParser
 from lxml.html import fromstring as html_fromstring
 
 import pyield._internal.converters as cv
-from pyield._internal.br_numbers import inteiro_m, numero_br
+from pyield._internal.br_numbers import float_br, inteiro_m
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
@@ -103,7 +103,7 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
             MaturityDate=pl.col("Data de Vencimento").str.to_date(format="%d/%m/%Y"),
             SelicCode=pl.col("Codigo Selic").cast(pl.Int64),
             ISIN=pl.col("Código ISIN"),
-            Price=numero_br("PU (R$)"),
+            Price=float_br("PU (R$)"),
             MarketQuantity=inteiro_m("Quantidade em Mercado (1.000 Títulos)"),
             MarketValue=inteiro_m("Valor de Mercado (R$ Mil)"),
             QuantityVariation=inteiro_m("Variação da Quantidade (1.000 Títulos)"),

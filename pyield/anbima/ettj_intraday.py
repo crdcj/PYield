@@ -5,7 +5,7 @@ from io import StringIO
 import polars as pl
 import requests
 
-from pyield._internal.br_numbers import numero_br, taxa_br
+from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
@@ -46,7 +46,7 @@ def _extrair_data_e_tabelas(texto: str) -> tuple[dt.date, str, str]:
 
 def _parsear_tabela_intraday(texto: str, nome_taxa: str) -> pl.DataFrame:
     return pl.read_csv(StringIO(texto), separator=";", infer_schema=False).select(
-        vertex=numero_br("Vertices").cast(pl.Int64),
+        vertex=float_br("Vertices").cast(pl.Int64),
         **{nome_taxa: taxa_br("D0")},
     )
 

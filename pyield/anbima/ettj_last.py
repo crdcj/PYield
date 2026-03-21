@@ -5,7 +5,7 @@ from io import StringIO
 import polars as pl
 import requests
 
-from pyield._internal.br_numbers import numero_br, taxa_br
+from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
@@ -47,7 +47,7 @@ def _processar_tabela(texto: str, data_referencia: dt.date) -> pl.DataFrame:
     """Lê o CSV e converte para DataFrame com taxas decimais."""
     return pl.read_csv(StringIO(texto), separator=";", infer_schema=False).select(
         date=pl.lit(data_referencia),
-        vertex=numero_br("Vertices").cast(pl.Int64),
+        vertex=float_br("Vertices").cast(pl.Int64),
         nominal_rate=taxa_br("ETTJ PREF"),
         real_rate=taxa_br("ETTJ IPCA"),
         implied_inflation=taxa_br("Inflação Implícita"),
