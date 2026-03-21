@@ -45,7 +45,7 @@ from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.price_report import (
     _baixar_zip_url,
     _converter_para_df,
-    _extrair_xml_zip_aninhado,
+    _extrair_xml_de_zip,
     _mapa_renomeacao_colunas,
     _parsear_xml_registros,
 )
@@ -287,7 +287,7 @@ def data(date: DateLike) -> pl.DataFrame:
         zip_data = _baixar_zip_url(trade_date, relatorio_completo=False)
         if not zip_data:
             return _empty_schema()
-        xml_bytes = _extrair_xml_zip_aninhado(zip_data)
+        xml_bytes = _extrair_xml_de_zip(zip_data)
         records = _parsear_xml_registros(xml_bytes, "CPM")
     except Exception:
         logger.exception("CPM: falha ao baixar SPR para %s.", trade_date)
@@ -301,10 +301,6 @@ def data(date: DateLike) -> pl.DataFrame:
     mapa = _mapa_renomeacao_colunas()
     df = df.rename(mapa, strict=False)
     df = df.with_columns(TradeDate=trade_date)
-
-    # ClosePrice (← LastPric) is the settlement proxy for CPM options;
-    # AdjstdQt is absent in the SPR XML for option contracts.
-    price_col = "CloseValue" if "CloseValue" in df.columns else "SettlementPrice"
 
     # Parse option type (ticker[6]) and strike change (ticker[7:13])
     # entirely with Polars string expressions — no Python loops over rows.

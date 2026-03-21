@@ -15,6 +15,7 @@ from lxml.html import HTMLParser
 from lxml.html import fromstring as html_fromstring
 
 import pyield._internal.converters as cv
+from pyield._internal.br_numbers import inteiro_m, numero_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
@@ -87,21 +88,6 @@ def _parsear_tabelas_html(html_content: bytes) -> pl.DataFrame:
     )
 
 
-def _numero_br(coluna: str) -> pl.Expr:
-    """Converte coluna string no formato numérico brasileiro para Float64."""
-    return (
-        pl.col(coluna)
-        .str.replace_all(".", "", literal=True)
-        .str.replace(",", ".", literal=True)
-        .cast(pl.Float64)
-    )
-
-
-def _inteiro_m(coluna: str) -> pl.Expr:
-    """Converte coluna numérica BR em milhares para inteiro (unidades)."""
-    return (_numero_br(coluna) * 1000).round(0).cast(pl.Int64)
-
-
 def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
     """Filtra, converte tipos e aplica transformações numéricas."""
     return (
@@ -117,10 +103,10 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
             MaturityDate=pl.col("Data de Vencimento").str.to_date(format="%d/%m/%Y"),
             SelicCode=pl.col("Codigo Selic").cast(pl.Int64),
             ISIN=pl.col("Código ISIN"),
-            Price=_numero_br("PU (R$)"),
-            MarketQuantity=_inteiro_m("Quantidade em Mercado (1.000 Títulos)"),
-            MarketValue=_inteiro_m("Valor de Mercado (R$ Mil)"),
-            QuantityVariation=_inteiro_m("Variação da Quantidade (1.000 Títulos)"),
+            Price=numero_br("PU (R$)"),
+            MarketQuantity=inteiro_m("Quantidade em Mercado (1.000 Títulos)"),
+            MarketValue=inteiro_m("Valor de Mercado (R$ Mil)"),
+            QuantityVariation=inteiro_m("Variação da Quantidade (1.000 Títulos)"),
             BondStatus=pl.col("Status do Titulo"),
         )
         .sort("BondType", "MaturityDate")

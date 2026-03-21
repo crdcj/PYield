@@ -116,24 +116,28 @@ def _baixar_zip_url(data: dt.date, relatorio_completo: bool) -> bytes:
     return resposta.content
 
 
-def _extrair_xml_zip_aninhado(conteudo_zip: bytes) -> bytes:
-    buffer_zip = io.BytesIO(conteudo_zip)
-    with zipfile.ZipFile(buffer_zip, "r") as zip_externo:
-        arquivos_externos = zip_externo.namelist()
-        if not arquivos_externos:
+def _extrair_xml_de_zip(conteudo_zip: bytes) -> bytes:
+    """Extrai o XML de um ZIP, suportando ZIP aninhado (ZIP→ZIP→XML) ou simples (ZIP→XML)."""
+    with zipfile.ZipFile(io.BytesIO(conteudo_zip), "r") as zip_externo:
+        nomes_externos = zip_externo.namelist()
+        if not nomes_externos:
             raise ValueError("ZIP externo está vazio")
-        nome_arquivo_externo = arquivos_externos[0]
-        conteudo_arquivo_externo = zip_externo.read(nome_arquivo_externo)
-    arquivo_externo = io.BytesIO(conteudo_arquivo_externo)
 
-    with zipfile.ZipFile(arquivo_externo, "r") as zip_interno:
-        nomes_arquivos = zip_interno.namelist()
-        xml_nomes = [nome for nome in nomes_arquivos if nome.endswith(".xml")]
+        # Caso 1: ZIP contém XML diretamente
+        xml_nomes = [n for n in nomes_externos if n.endswith(".xml")]
+        if xml_nomes:
+            xml_nomes.sort()
+            return zip_externo.read(xml_nomes[-1])
+
+        # Caso 2: ZIP aninhado — o primeiro arquivo interno é outro ZIP
+        conteudo_interno = zip_externo.read(nomes_externos[0])
+
+    with zipfile.ZipFile(io.BytesIO(conteudo_interno), "r") as zip_interno:
+        xml_nomes = [n for n in zip_interno.namelist() if n.endswith(".xml")]
         if not xml_nomes:
-            raise ValueError("Nenhum XML encontrado no ZIP aninhado")
+            raise ValueError("Nenhum XML encontrado no ZIP")
         xml_nomes.sort()
-        conteudo_xml = zip_interno.read(xml_nomes[-1])
-    return conteudo_xml
+        return zip_interno.read(xml_nomes[-1])
 
 
 def _ticker_valido_para_contrato(ticker: str, codigo_contrato: str) -> bool:
@@ -232,7 +236,7 @@ def _obter_xml_price_report(data: dt.date, relatorio_completo: bool) -> bytes:
     dados_zip = _baixar_zip_url(data, relatorio_completo)
     if not dados_zip:
         return bytes()
-    return _extrair_xml_zip_aninhado(dados_zip)
+    return _extrair_xml_de_zip(dados_zip)
 
 
 def fetch_price_report(

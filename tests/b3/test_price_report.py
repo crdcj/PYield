@@ -104,7 +104,7 @@ def test_fetch_price_report_reusa_download_xml_por_data(monkeypatch):
         )
 
     monkeypatch.setattr(pr_mod, "_baixar_zip_url", _baixar_zip_falso)
-    monkeypatch.setattr(pr_mod, "_extrair_xml_zip_aninhado", _extrair_xml_falso)
+    monkeypatch.setattr(pr_mod, "_extrair_xml_de_zip", _extrair_xml_falso)
     monkeypatch.setattr(pr_mod, "_processar_xml_extraido", _processar_xml_falso)
 
     _ = pr_mod.fetch_price_report(date="12-01-2026", contract_code="DI1")

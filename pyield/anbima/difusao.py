@@ -2,11 +2,12 @@ import datetime as dt
 import logging
 
 import polars as pl
-import polars.selectors as cs
 import requests
 
 import pyield._internal.converters as cv
 from pyield import bday
+from pyield._internal.br_numbers import taxa_br
+from pyield._internal.cache import ttl_cache
 from pyield._internal.types import DateLike, any_is_empty
 
 VERSAO_API = "1.0018"
@@ -18,51 +19,11 @@ URL_PAGINA_INICIAL = f"{URL_BASE}/taxasOnline.asp"
 URL_CONSULTA_DADOS = f"{URL_BASE}/exibedados.asp"
 URL_DOWNLOAD = f"{URL_BASE}/download_dados.asp?extensao=csv"
 
-MAPA_COLUNAS = [
-    ("Título", "titulo", pl.String),
-    ("Vencimento", "data_vencimento", pl.String),
-    ("Código ISIN", "codigo_isin", pl.String),
-    ("Provedor", "provedor", pl.String),
-    ("Edital", "edital", pl.String),
-    ("Horário", "horario", pl.String),
-    ("Prazo", "prazo", pl.Int64),
-    ("Lote", "lote", pl.String),
-    ("Fech D-1", "taxa_indicativa_anterior", pl.Float64),
-    ("Indicativo Superior", "taxa_limite_superior", pl.Float64),
-    ("Máxima", "taxa_maxima", pl.Float64),
-    ("Média", "taxa_media", pl.Float64),
-    ("Mínima", "taxa_minima", pl.Float64),
-    ("Indicativo Inferior", "taxa_limite_inferior", pl.Float64),
-    ("Última", "taxa_ultima", pl.Float64),
-    ("Oferta Compra", "taxa_compra", pl.Float64),
-    ("Oferta Venda", "taxa_venda", pl.Float64),
-    ("Nº de Negócios", "num_negocios", pl.Int64),
-    ("Quantidade Negociada", "quantidade_negociada", pl.Int64),
-    ("Volume Negociado (R$)", "volume_negociado", pl.Float64),
-]
-
-ESQUEMA_API = {csv: tipo for csv, _, tipo in MAPA_COLUNAS}
-ALIAS_COLUNAS = {csv: novo for csv, novo, _ in MAPA_COLUNAS}
-
-# Colunas não selecionadas estão vazias na API.
-ORDEM_COLUNAS_FINAL = [
-    "data_hora_referencia",
-    "provedor",
-    "titulo",
-    "data_vencimento",
-    "codigo_isin",
-    "dias_uteis",
-    "taxa_indicativa_anterior",
-    "taxa_venda",
-    "taxa_compra",
-    "taxa_media",
-    "taxa_ultima",
-]
-
 logger = logging.getLogger(__name__)
 
 
-def _buscar_dados_url(data_referencia: str) -> str:
+@ttl_cache()
+def _buscar_dados_url(data_referencia: str) -> bytes:
     cabecalhos = {
         "Referer": URL_PAGINA_INICIAL,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",  # noqa
@@ -115,71 +76,53 @@ def _buscar_dados_url(data_referencia: str) -> str:
                     f"{data_referencia}."
                 )
             response_download.encoding = "iso-8859-1"
-            return response_download.text
+            return response_download.text.encode("utf-8")
         except requests.exceptions.RequestException as e:
             logger.error(f"Erro ao buscar dados para a data '{data_referencia}': {e}")
             raise
 
 
-def _extrair_data_referencia_e_csv_limpo(csv_data: str) -> tuple[dt.date, bytes]:
-    """Extrai a data de referência do CSV e devolve o conteúdo pronto para leitura."""
-    linhas_csv = csv_data.strip().splitlines()
-    if not linhas_csv:
-        raise ValueError("CSV vazio ou inválido.")
-
-    if ":" not in linhas_csv[0]:
-        raise ValueError("Cabeçalho do CSV inválido: data de referência ausente.")
-
-    data_ref_str = linhas_csv[0].split(":")[1].strip()
-    data_ref = dt.datetime.strptime(data_ref_str, "%d/%m/%Y").date()
-
-    # O CSV da Anbima contém ';' extra no fim do cabeçalho.
-    # Remove apenas esse caractere para garantir a leitura correta.
-    csv_limpo = (
-        "\n".join(linhas_csv[1:])
-        .replace("Volume Negociado (R$);", "Volume Negociado (R$)")
-        .encode()
-    )
-
-    return data_ref, csv_limpo
+def _ler_csv_bruto(csv_bruto: bytes) -> pl.DataFrame:
+    """Lê o CSV bruto da Anbima e devolve DataFrame com todas as colunas string."""
+    return pl.read_csv(
+        csv_bruto,
+        separator=";",
+        infer_schema=False,
+        skip_rows=1,
+    ).with_columns(pl.all().str.strip_chars())
 
 
-def _processar_csv(data_ref: dt.date, csv_limpo: bytes) -> pl.DataFrame:
-    """Converte o CSV limpo em um DataFrame Polars estruturado."""
-    df = (
-        pl.read_csv(
-            csv_limpo,
-            separator=";",
-            decimal_comma=True,
-            schema=ESQUEMA_API,
-        )
-        .rename(ALIAS_COLUNAS)
-        .with_columns(cs.string().str.strip_chars())  # Remove espaços em branco
-        .with_columns(
-            pl.col("data_vencimento").str.to_date(format="%d/%m/%Y"),
-            data_referencia=data_ref,  # Adiciona a coluna de data de referência
-            # Ajusta o horário para 12:00:00 quando o provedor for "ANBIMA 12H"
-            horario=pl.when(pl.col("provedor") == "ANBIMA 12H")
+def _processar_csv(data_ref: dt.date, df: pl.DataFrame) -> pl.DataFrame:
+    """Converte o DataFrame bruto em DataFrame Polars estruturado."""
+
+    return (
+        df.with_columns(
+            data_vencimento=pl.col("Vencimento").str.to_date(format="%d/%m/%Y"),
+            horario=pl.when(pl.col("Provedor") == "ANBIMA 12H")
             .then(dt.time(12, 0))
-            .otherwise(pl.col("horario").str.to_time(format="%H:%M:%S")),
-            taxa_media=pl.mean_horizontal("taxa_compra", "taxa_venda"),
+            .otherwise(pl.col("Horário").str.to_time(format="%H:%M:%S")),
+            taxa_venda=taxa_br("Oferta Venda"),
+            taxa_compra=taxa_br("Oferta Compra"),
         )
-        .with_columns(
-            bday.count_expr("data_referencia", "data_vencimento").alias("dias_uteis"),
-            # Converte as colunas de taxa de percentual para decimal
-            # São 6 casas decimais no máximo.
-            # Arredondar na 8a para minimizar erros de ponto flutuante.
-            cs.starts_with("taxa_").truediv(100).round(8),
-            pl.col("data_referencia")
+        .select(
+            data_hora_referencia=pl.lit(data_ref)
             .dt.combine(pl.col("horario"))
-            .dt.replace_time_zone("America/Sao_Paulo")
-            .alias("data_hora_referencia"),
+            .dt.replace_time_zone("America/Sao_Paulo"),
+            provedor=pl.col("Provedor"),
+            titulo=pl.col("Título"),
+            data_vencimento=pl.col("data_vencimento"),
+            codigo_isin=pl.col("Código ISIN"),
+            dias_uteis=bday.count_expr(data_ref, "data_vencimento"),
+            taxa_indicativa_anterior=taxa_br("Fech D-1"),
+            taxa_indicativa_superior=taxa_br("Indicativo Superior"),
+            taxa_indicativa_inferior=taxa_br("Indicativo Inferior"),
+            taxa_venda=pl.col("taxa_venda"),
+            taxa_compra=pl.col("taxa_compra"),
+            taxa_media=pl.mean_horizontal("taxa_compra", "taxa_venda"),
+            taxa_ultima=taxa_br("Última"),
         )
-        .select(ORDEM_COLUNAS_FINAL)
         .sort("titulo", "data_vencimento", "data_hora_referencia")
     )
-
-    return df
 
 
 def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
@@ -205,6 +148,8 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
         - codigo_isin (string): Código ISIN do título.
         - dias_uteis (int): Dias úteis entre a data de referência e o vencimento.
         - taxa_indicativa_anterior (float): Taxa indicativa de fechamento D-1 (decimal).
+        - taxa_indicativa_superior (float): Limite superior da banda indicativa (decimal).
+        - taxa_indicativa_inferior (float): Limite inferior da banda indicativa (decimal).
         - taxa_venda (float): Taxa de oferta de venda (Ask rate) (decimal).
         - taxa_compra (float): Taxa de oferta de compra (Bid rate) (decimal).
         - taxa_media (float): Média entre a taxa de compra e venda (decimal).
@@ -216,7 +161,6 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
     if not bday.is_business_day(data):
         return pl.DataFrame()
     data_str = data.strftime("%d/%m/%Y")
-    csv_data = _buscar_dados_url(data_str)
-
-    data_ref, csv_limpo = _extrair_data_referencia_e_csv_limpo(csv_data)
-    return _processar_csv(data_ref, csv_limpo)
+    csv_bruto = _buscar_dados_url(data_str)
+    df = _ler_csv_bruto(csv_bruto)
+    return _processar_csv(data, df)

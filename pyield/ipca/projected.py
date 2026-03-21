@@ -10,7 +10,7 @@ from pyield._internal.retry import retry_padrao
 _URL_XLS = "https://www.anbima.com.br/informacoes/indicadores/arqs/indicadores.xls"
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProjecaoIndicador:
     ultima_atualizacao: dt.datetime  # Data e hora da última atualização
     periodo_referencia: str  # Mês de referência no formato "MMM/YY"
