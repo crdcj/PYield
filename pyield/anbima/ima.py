@@ -70,7 +70,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             peso=float_br("Peso (%)"),
             convexidade=float_br("Convexidade"),
             quantidade_teorica=float_br("Quantidade Teórica (1.000 títulos)"),
-            numero_operacoes=pl.col("Número de Operações *").cast(pl.Int64),
+            operacoes=pl.col("Número de Operações *").cast(pl.Int64),
             quantidade_negociada=inteiro_m("Quant. Negociada (1.000 títulos) *"),
             valor_negociado=inteiro_m("Valor Negociado (R$ mil) *"),
             dv01_mercado=dv01_mercado_expr.round(0).cast(pl.Int64),
@@ -111,7 +111,7 @@ def last_ima(ima_type: TiposIMA | None = None) -> pl.DataFrame:
         - peso (Float64): peso do título no índice (%).
         - convexidade (Float64): convexidade do título.
         - quantidade_teorica (Float64): quantidade teórica (em 1.000 títulos).
-        - numero_operacoes (Int64): número de operações.
+        - operacoes (Int64): número de operações.
         - quantidade_negociada (Int64): quantidade negociada (unidades).
         - valor_negociado (Int64): valor negociado em R$.
         - dv01_mercado (Int64): DV01 de mercado em R$.
