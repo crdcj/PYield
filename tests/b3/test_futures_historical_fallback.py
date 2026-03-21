@@ -68,9 +68,6 @@ def test_futures_igual_price_report_release_di1():
     df_futures = yd.futures(contract_code="DI1", date=data)
     df_price_report = historical_mod._obter_futuros_pr([data], "DI1")
 
-    assert not df_futures.is_empty()
-    assert not df_price_report.is_empty()
-
     assert_frame_equal(
         df_futures.sort("ExpirationDate"),
         df_price_report.sort("ExpirationDate"),

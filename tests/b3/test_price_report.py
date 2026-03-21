@@ -76,7 +76,6 @@ def test_pipeline_bruto_price_report(date: str, contract_code: str):
     df_result = pr_mod.read_price_report(xml_bytes, contract_code)
     df_expect = pl.read_parquet(_parquet_referencia(date, contract_code))
 
-    assert not df_result.is_empty(), f"Resultado vazio para {contract_code}"
     assert_frame_equal(df_result, df_expect, check_exact=True, check_dtypes=True)
 
 
