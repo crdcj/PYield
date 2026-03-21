@@ -27,6 +27,14 @@ from pyield._internal.types import DateLike, any_is_empty
 
 registro = logging.getLogger(__name__)
 
+
+def _extrair_valor(df: pl.DataFrame) -> float:
+    """Extrai o valor escalar de um DataFrame ou retorna nan se vazio."""
+    if df.is_empty():
+        return float("nan")
+    return df["Value"].item(0)
+
+
 URL_BASE = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
 CASAS_DECIMAIS_ANUALIZADA = 4  # 2 casas no formato percentual
 CASAS_DECIMAIS_DIARIA = 8  # 6 casas no formato percentual
@@ -102,21 +110,14 @@ def _buscar_dados_url(
     if (data_fim - data_inicio).days < LIMITE_DIAS_SEGURO:
         return _buscar_requisicao(serie, data_inicio, data_fim)
 
-    duracao_str = "10y"
-
-    inicios_bloco = pl.date_range(
-        start=data_inicio, end=data_fim, interval=duracao_str, eager=True
+    inicios = pl.date_range(
+        start=data_inicio, end=data_fim, interval="10y", eager=True
     )
-
-    fins_bloco = inicios_bloco.dt.offset_by(duracao_str)
-
-    blocos_df = pl.DataFrame({"start": inicios_bloco, "end": fins_bloco}).with_columns(
-        end=pl.when(pl.col("end") > data_fim).then(data_fim).otherwise("end")
-    )
+    fins = inicios.dt.offset_by("10y").clip(upper_bound=data_fim)
 
     todos_dfs = [
-        _buscar_requisicao(serie, bloco["start"], bloco["end"])
-        for bloco in blocos_df.iter_rows(named=True)
+        _buscar_requisicao(serie, ini, fim)
+        for ini, fim in zip(inicios, fins)
     ]
 
     todos_dfs = [df for df in todos_dfs if not df.is_empty()]
@@ -195,10 +196,7 @@ def selic_over(date: DateLike) -> float:
     """
     if any_is_empty(date):
         return float("nan")
-    df = selic_over_series(date, date)
-    if df.is_empty():
-        return float("nan")
-    return df["Value"].item(0)
+    return _extrair_valor(selic_over_series(date, date))
 
 
 def selic_target_series(
@@ -250,10 +248,7 @@ def selic_target(date: DateLike) -> float:
     """
     if any_is_empty(date):
         return float("nan")
-    df = selic_target_series(date, date)
-    if df.is_empty():
-        return float("nan")
-    return df["Value"].item(0)
+    return _extrair_valor(selic_target_series(date, date))
 
 
 def di_over_series(
@@ -295,16 +290,12 @@ def di_over_series(
         return pl.DataFrame()
     df = _buscar_dados_url(SerieBC.DI_OVER, start, end)
     if annualized:
-        df = df.with_columns(
-            (((pl.col("Value") + 1).pow(252)) - 1)
-            .round(CASAS_DECIMAIS_ANUALIZADA)
-            .alias("Value")
+        return df.with_columns(
+            Value=(((pl.col("Value") + 1).pow(252)) - 1).round(
+                CASAS_DECIMAIS_ANUALIZADA
+            )
         )
-
-    else:
-        df = df.with_columns(pl.col("Value").round(CASAS_DECIMAIS_DIARIA))
-
-    return df
+    return df.with_columns(Value=pl.col("Value").round(CASAS_DECIMAIS_DIARIA))
 
 
 def di_over(date: DateLike, annualized: bool = True) -> float:
@@ -328,7 +319,4 @@ def di_over(date: DateLike, annualized: bool = True) -> float:
     """
     if any_is_empty(date):
         return float("nan")
-    df = di_over_series(date, date, annualized)
-    if df.is_empty():
-        return float("nan")
-    return df["Value"].item(0)
+    return _extrair_valor(di_over_series(date, date, annualized))

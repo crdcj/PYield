@@ -98,18 +98,18 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
         )
         .unique(subset="Código ISIN")
         .select(
-            Date=data_referencia,
-            BondType=pl.col("Título"),
-            MaturityDate=pl.col("Data de Vencimento").str.to_date(format="%d/%m/%Y"),
-            SelicCode=pl.col("Codigo Selic").cast(pl.Int64),
-            ISIN=pl.col("Código ISIN"),
-            Price=float_br("PU (R$)"),
-            MarketQuantity=inteiro_m("Quantidade em Mercado (1.000 Títulos)"),
-            MarketValue=inteiro_m("Valor de Mercado (R$ Mil)"),
-            QuantityVariation=inteiro_m("Variação da Quantidade (1.000 Títulos)"),
-            BondStatus=pl.col("Status do Titulo"),
+            data_referencia=data_referencia,
+            titulo=pl.col("Título"),
+            data_vencimento=pl.col("Data de Vencimento").str.to_date(format="%d/%m/%Y"),
+            codigo_selic=pl.col("Codigo Selic").cast(pl.Int64),
+            codigo_isin=pl.col("Código ISIN"),
+            pu=float_br("PU (R$)"),
+            quantidade_mercado=inteiro_m("Quantidade em Mercado (1.000 Títulos)"),
+            valor_mercado=inteiro_m("Valor de Mercado (R$ Mil)"),
+            variacao_quantidade=inteiro_m("Variação da Quantidade (1.000 Títulos)"),
+            status_titulo=pl.col("Status do Titulo"),
         )
-        .sort("BondType", "MaturityDate")
+        .sort("titulo", "data_vencimento")
     )
 
 
@@ -125,16 +125,16 @@ def imaq(date: DateLike) -> pl.DataFrame:
         inválida ou não houver dados disponíveis.
 
     Output Columns:
-        - Date (Date): data de referência dos dados.
-        - BondType (String): tipo do título (LTN, NTN-B, NTN-F, LFT, …).
-        - MaturityDate (Date): data de vencimento do título.
-        - SelicCode (Int64): código SELIC do título.
-        - ISIN (String): código ISIN (International Securities Id Number).
-        - Price (Float64): PU do título em R$.
-        - MarketQuantity (Int64): quantidade em mercado (unidades).
-        - MarketValue (Int64): valor de mercado em R$.
-        - QuantityVariation (Int64): variação diária da quantidade.
-        - BondStatus (String): status do título.
+        - data_referencia (Date): data de referência dos dados.
+        - titulo (String): tipo do título (LTN, NTN-B, NTN-F, LFT, …).
+        - data_vencimento (Date): data de vencimento do título.
+        - codigo_selic (Int64): código SELIC do título.
+        - codigo_isin (String): código ISIN (International Securities Id Number).
+        - pu (Float64): PU do título em R$.
+        - quantidade_mercado (Int64): quantidade em mercado (unidades).
+        - valor_mercado (Int64): valor de mercado em R$.
+        - variacao_quantidade (Int64): variação diária da quantidade.
+        - status_titulo (String): status do título.
 
     Notes:
         Valores convertidos para unidades puras (ex: MarketQuantity × 1.000).

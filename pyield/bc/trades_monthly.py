@@ -26,7 +26,7 @@ from pyield._internal.types import DateLike, any_is_empty
 
 URL_BASE = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
 
-CHAVES_ORDENACAO = ["SettlementDate", "BondType", "MaturityDate"]
+CHAVES_ORDENACAO = ["data_liquidacao", "titulo", "data_vencimento"]
 
 
 def _montar_url(data_alvo: dt.date, extragroup: bool) -> str:
@@ -65,29 +65,29 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     return (
         df.with_columns(ps.string().str.strip_chars())
         .with_columns(
-            Quantity=pl.col("QUANT NEGOCIADA").cast(pl.Int64),
-            AvgPrice=float_br("PU MED"),
+            quantidade=pl.col("QUANT NEGOCIADA").cast(pl.Int64),
+            pu_medio=float_br("PU MED"),
         )
         .select(
-            SettlementDate=pl.col("DATA MOV").str.to_date("%d/%m/%Y", strict=False),
-            BondType=pl.col("SIGLA"),
-            SelicCode=pl.col("CODIGO").cast(pl.Int64),
-            ISIN=pl.col("CODIGO ISIN"),
-            IssueDate=pl.col("EMISSAO").str.to_date("%d/%m/%Y", strict=False),
-            MaturityDate=pl.col("VENCIMENTO").str.to_date("%d/%m/%Y", strict=False),
-            Trades=pl.col("NUM DE OPER").cast(pl.Int64),
-            Quantity=pl.col("Quantity"),
-            Value=(pl.col("Quantity") * pl.col("AvgPrice")).round(2),
-            MinPrice=float_br("PU MIN"),
-            AvgPrice=pl.col("AvgPrice"),
-            MaxPrice=float_br("PU MAX"),
-            UnderlyingPrice=float_br("PU LASTRO"),
-            ParValue=float_br("VALOR PAR"),
-            MinRate=float_br("TAXA MIN"),
-            AvgRate=float_br("TAXA MED"),
-            MaxRate=float_br("TAXA MAX"),
-            BrokerageTrades=pl.col("NUM OPER COM CORRETAGEM").cast(pl.Int64),
-            BrokerageQuantity=pl.col("QUANT NEG COM CORRETAGEM").cast(pl.Int64),
+            data_liquidacao=pl.col("DATA MOV").str.to_date("%d/%m/%Y", strict=False),
+            titulo=pl.col("SIGLA"),
+            codigo_selic=pl.col("CODIGO").cast(pl.Int64),
+            codigo_isin=pl.col("CODIGO ISIN"),
+            data_emissao=pl.col("EMISSAO").str.to_date("%d/%m/%Y", strict=False),
+            data_vencimento=pl.col("VENCIMENTO").str.to_date("%d/%m/%Y", strict=False),
+            operacoes=pl.col("NUM DE OPER").cast(pl.Int64),
+            quantidade=pl.col("quantidade"),
+            financeiro=(pl.col("quantidade") * pl.col("pu_medio")).round(2),
+            pu_minimo=float_br("PU MIN"),
+            pu_medio=pl.col("pu_medio"),
+            pu_maximo=float_br("PU MAX"),
+            pu_lastro=float_br("PU LASTRO"),
+            valor_par=float_br("VALOR PAR"),
+            taxa_minima=float_br("TAXA MIN"),
+            taxa_media=float_br("TAXA MED"),
+            taxa_maxima=float_br("TAXA MAX"),
+            operacoes_corretagem=pl.col("NUM OPER COM CORRETAGEM").cast(pl.Int64),
+            quantidade_corretagem=pl.col("QUANT NEG COM CORRETAGEM").cast(pl.Int64),
         )
         .sort(CHAVES_ORDENACAO)
     )
@@ -100,7 +100,7 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
     Baixa os dados mensais de negociação do site do BCB para o mês correspondente
     à data fornecida. Os dados são baixados como arquivo ZIP, extraídos e carregados
     em um DataFrame Polars. Contém todas as negociações do mês, separadas por
-    data de liquidação (SettlementDate).
+    data de liquidação (data_liquidacao).
 
     Args:
         target_date: Data de referência. Apenas ano e mês são utilizados para
@@ -117,28 +117,28 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         retorna DataFrame vazio e registra log da exceção.
 
     Output Columns:
-        - SettlementDate (Date): data de liquidação da negociação.
-        - BondType (str): sigla do título (ex: LFT, LTN, NTN-B, NTN-F).
-        - SelicCode (Int64): código único no sistema Selic.
-        - ISIN (str): código ISIN (International Securities Identification Number).
-        - IssueDate (Date): data de emissão do título.
-        - MaturityDate (Date): data de vencimento do título.
-        - Trades (Int64): número total de operações realizadas.
-        - Quantity (Int64): quantidade total negociada.
-        - Value (Float64): valor financeiro negociado (Quantity * AvgPrice).
-        - MinPrice (Float64): preço unitário mínimo.
-        - AvgPrice (Float64): preço unitário médio.
-        - MaxPrice (Float64): preço unitário máximo.
-        - UnderlyingPrice (Float64): PU lastro.
-        - ParValue (Float64): valor nominal atualizado (VNA) do título.
-        - MinRate (Float64): taxa mínima.
-        - AvgRate (Float64): taxa média.
-        - MaxRate (Float64): taxa máxima.
-        - BrokerageTrades (Int64): subconjunto de Trades com corretagem.
-        - BrokerageQuantity (Int64): subconjunto de Quantity com corretagem.
+        - data_liquidacao (Date): data de liquidação da negociação.
+        - titulo (str): sigla do título (ex: LFT, LTN, NTN-B, NTN-F).
+        - codigo_selic (Int64): código único no sistema Selic.
+        - codigo_isin (str): código ISIN (International Securities Id Number).
+        - data_emissao (Date): data de emissão do título.
+        - data_vencimento (Date): data de vencimento do título.
+        - operacoes (Int64): número total de operações realizadas.
+        - quantidade (Int64): quantidade total negociada.
+        - financeiro (Float64): valor financeiro (quantidade × pu_medio).
+        - pu_minimo (Float64): preço unitário mínimo.
+        - pu_medio (Float64): preço unitário médio.
+        - pu_maximo (Float64): preço unitário máximo.
+        - pu_lastro (Float64): PU lastro.
+        - valor_par (Float64): valor nominal atualizado (VNA) do título.
+        - taxa_minima (Float64): taxa mínima.
+        - taxa_media (Float64): taxa média.
+        - taxa_maxima (Float64): taxa máxima.
+        - operacoes_corretagem (Int64): subconjunto de operacoes com corretagem.
+        - quantidade_corretagem (Int64): subconjunto de quantidade com corretagem.
 
     Notes:
-        - Dados ordenados por: SettlementDate, BondType, MaturityDate.
+        - Dados ordenados por: data_liquidacao, titulo, data_vencimento.
 
     Examples:
         >>> from pyield import bc

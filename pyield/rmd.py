@@ -64,17 +64,6 @@ _MESES_PT = {
     "Dez": 12,
 }
 
-# Ordem canônica das combinações (Section, Subgroup)
-_ORDEM_SUBGRUPOS = [
-    ("Emissões", "Vendas"),
-    ("Emissões", "Trocas"),
-    ("Emissões", "Tesouro Direto"),
-    ("Resgates", "Vencimentos"),
-    ("Resgates", "Compras"),
-    ("Resgates", "Trocas"),
-    ("Resgates", "Tesouro Direto"),
-]
-
 
 def _parsear_periodo(periodo: str) -> datetime.date | None:
     """Converte string de período para datetime.date ou None para totais anuais."""
@@ -124,24 +113,22 @@ def _extrair_excel(conteudo_zip: bytes) -> bytes:
 
 def _classificar_categorias(
     categorias: list[str],
-) -> tuple[list[tuple[int, str, str, str]], list[tuple[int, str, str]]]:
-    """Percorre rótulos de categoria e emite eventos de título e de subgrupo direto.
+) -> list[tuple[int, str, str, str | None]]:
+    """Percorre rótulos de categoria e classifica linhas de dados.
 
-    Implementa uma máquina de estados que rastreia o grupo (Emissões/Resgates) e o
-    subgrupo corrente. Emite dois tipos de evento:
-    - eventos_titulos: linhas de detalhe por título (idx, grupo, subgrupo, titulo)
-    - eventos_diretos: subgrupos sem detalhamento por título (idx, grupo, subgrupo)
+    Máquina de estados que rastreia grupo (Emissões/Resgates) e subgrupo.
+    Retorna lista de eventos (idx, grupo, subgrupo, titulo). Para subgrupos
+    sem detalhamento por título, titulo é None.
 
     Args:
         categorias: Lista de rótulos de categoria lidos da coluna 0 do Excel.
 
     Returns:
-        Par (eventos_titulos, eventos_diretos) com as listas de eventos detectados.
+        Lista de eventos (idx, grupo, subgrupo, titulo) detectados.
     """
     grupo = ""
     subgrupo = ""
-    eventos_titulos: list[tuple[int, str, str, str]] = []
-    eventos_diretos: list[tuple[int, str, str]] = []
+    eventos: list[tuple[int, str, str, str | None]] = []
     for i, cat in enumerate(categorias):
         c = cat.strip()
         if c in _SECOES:
@@ -154,69 +141,38 @@ def _classificar_categorias(
             elif c.startswith(_SUBGRUPO_TD):
                 subgrupo = _SUBGRUPO_TD
             elif c in _TITULOS:
-                eventos_titulos.append((i, grupo, subgrupo, c))
+                eventos.append((i, grupo, subgrupo, c))
             else:
-                prefixo = next((p for p in _SUBGRUPOS_DIRETOS if c.startswith(p)), None)
+                prefixo = next(
+                    (p for p in _SUBGRUPOS_DIRETOS if c.startswith(p)), None
+                )
                 if prefixo:
-                    eventos_diretos.append((i, grupo, prefixo))
-    return eventos_titulos, eventos_diretos
+                    eventos.append((i, grupo, prefixo, None))
+    return eventos
 
 
-def _montar_df_titulos(
-    eventos: list[tuple[int, str, str, str]],
+def _montar_registros(
+    eventos: list[tuple[int, str, str, str | None]],
     datas_mensais: list[datetime.date],
     matriz: pl.DataFrame,
 ) -> pl.DataFrame:
-    """Monta DataFrame de detalhamento por título na ordem canônica, após unpivot."""
-    grupos: dict[tuple[str, str], dict[str, int]] = {}
-    for idx, grupo, subgrupo, titulo in eventos:
-        grupos.setdefault((grupo, subgrupo), {})[titulo] = idx
-    n_periodos = len(datas_mensais)
-    partes: list[pl.DataFrame] = []
-    for grupo, subgrupo in _ORDEM_SUBGRUPOS:
-        chave = (grupo, subgrupo)
-        if chave not in grupos:
-            continue
-        titulos_presentes = grupos[chave]
-        colunas: dict[str, pl.Series] = {
-            "periodo": pl.Series("periodo", datas_mensais, dtype=pl.Date),
-            "grupo": pl.Series("grupo", [grupo] * n_periodos),
-            "subgrupo": pl.Series("subgrupo", [subgrupo] * n_periodos),
-        }
-        for titulo in _TITULOS:
-            if titulo in titulos_presentes:
-                valores = list(matriz.row(titulos_presentes[titulo]))
-            else:
-                valores = [None] * n_periodos
-            colunas[titulo] = pl.Series(titulo, valores, dtype=pl.Float64)
-        partes.append(pl.DataFrame(colunas))
-    return pl.concat(partes).unpivot(
-        on=list(_TITULOS),
-        index=["periodo", "grupo", "subgrupo"],
-        variable_name="titulo",
-        value_name="valor",
-    )
-
-
-def _montar_partes_diretos(
-    eventos: list[tuple[int, str, str]],
-    datas_mensais: list[datetime.date],
-    matriz: pl.DataFrame,
-) -> list[pl.DataFrame]:
-    """Monta lista de DataFrames para subgrupos sem detalhamento por título."""
-    n_periodos = len(datas_mensais)
-    return [
-        pl.DataFrame(
-            {
-                "periodo": pl.Series("periodo", datas_mensais, dtype=pl.Date),
-                "grupo": pl.Series("grupo", [grupo] * n_periodos),
-                "subgrupo": pl.Series("subgrupo", [subgrupo] * n_periodos),
-                "titulo": pl.Series("titulo", [None] * n_periodos, dtype=pl.String),
-                "valor": pl.Series("valor", list(matriz.row(idx)), dtype=pl.Float64),
-            }
-        )
-        for idx, grupo, subgrupo in eventos
+    """Monta DataFrame longo com todos os registros de emissões e resgates."""
+    linhas = [
+        (data, grupo, subgrupo, titulo, val)
+        for idx, grupo, subgrupo, titulo in eventos
+        for data, val in zip(datas_mensais, matriz.row(idx))
     ]
+    return pl.DataFrame(
+        linhas,
+        schema={
+            "periodo": pl.Date,
+            "grupo": pl.String,
+            "subgrupo": pl.String,
+            "titulo": pl.String,
+            "valor": pl.Float64,
+        },
+        orient="row",
+    )
 
 
 def _estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
@@ -243,17 +199,15 @@ def _estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
     df_dados = df_bruto[_LINHA_INICIO_DADOS:_LINHA_FIM_DADOS]
     df_dados = df_dados.filter(df_dados[:, 0].is_not_null())
 
-    eventos_titulos, eventos_diretos = _classificar_categorias(
+    eventos = _classificar_categorias(
         [str(c) for c in df_dados[:, 0].to_list()]
     )
 
     # Matriz de valores (apenas períodos mensais), cast para Float64
     matriz = df_dados[:, 1:].cast(pl.Float64, strict=False)[:, indices_mensais]
 
-    df_titulos = _montar_df_titulos(eventos_titulos, datas_mensais, matriz)
-    partes_diretas = _montar_partes_diretos(eventos_diretos, datas_mensais, matriz)
     return (
-        pl.concat([df_titulos] + partes_diretas)
+        _montar_registros(eventos, datas_mensais, matriz)
         .with_columns(valor=pl.col("valor").mul(1_000_000).round(2))
         .filter(pl.col("valor").is_not_null() & (pl.col("valor") != 0))
     )
