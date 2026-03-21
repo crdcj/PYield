@@ -12,61 +12,27 @@ DATA MOV  ; SIGLA; CODIGO; CODIGO ISIN ; EMISSAO   ; VENCIMENTO; NUM DE OPER; QU
 
 import datetime as dt
 import io
-import logging
 import zipfile as zf
 
 import polars as pl
+import polars.selectors as ps
 import requests
 
+from pyield._internal.br_numbers import float_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 
-registro = logging.getLogger(__name__)
-
 URL_BASE = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
-
-MAPA_COLUNAS = [
-    ("DATA MOV", "SettlementDate", pl.String),
-    ("SIGLA", "BondType", pl.String),
-    ("CODIGO", "SelicCode", pl.Int64),
-    ("CODIGO ISIN", "ISIN", pl.String),
-    ("EMISSAO", "IssueDate", pl.String),
-    ("VENCIMENTO", "MaturityDate", pl.String),
-    ("NUM DE OPER", "Trades", pl.Int64),
-    ("QUANT NEGOCIADA", "Quantity", pl.Int64),
-    ("VALOR NEGOCIADO", "Value", pl.Float64),
-    ("PU MIN", "MinPrice", pl.Float64),
-    ("PU MED", "AvgPrice", pl.Float64),
-    ("PU MAX", "MaxPrice", pl.Float64),
-    ("PU LASTRO", "UnderlyingPrice", pl.Float64),
-    ("VALOR PAR", "ParValue", pl.Float64),
-    ("TAXA MIN", "MinRate", pl.Float64),
-    ("TAXA MED", "AvgRate", pl.Float64),
-    ("TAXA MAX", "MaxRate", pl.Float64),
-    ("NUM OPER COM CORRETAGEM", "BrokerageTrades", pl.Int64),
-    ("QUANT NEG COM CORRETAGEM", "BrokerageQuantity", pl.Int64),
-]
-
-ESQUEMA_CSV = {csv: tipo for csv, _, tipo in MAPA_COLUNAS}
-MAPEAMENTO_COLUNAS = {csv: novo for csv, novo, _ in MAPA_COLUNAS}
 
 CHAVES_ORDENACAO = ["SettlementDate", "BondType", "MaturityDate"]
 
 
 def _montar_url(data_alvo: dt.date, extragroup: bool) -> str:
-    """Monta a URL de download do arquivo ZIP de negociações mensais.
-
-    URL com todos os arquivos disponíveis:
-    https://www4.bcb.gov.br/pom/demab/negociacoes/apresentacao.asp?frame=1
-
-    Formato do arquivo com todas as operações: NegTYYYYMM.ZIP
-    Formato do arquivo apenas extragrupo: NegEYYYYMM.ZIP
-    """
     ano_mes = data_alvo.strftime("%Y%m")
-    sufixo_operacao = "E" if extragroup else "T"
-    return f"{URL_BASE}/Neg{sufixo_operacao}{ano_mes}.ZIP"
+    sufixo = "E" if extragroup else "T"
+    return f"{URL_BASE}/Neg{sufixo}{ano_mes}.ZIP"
 
 
 @ttl_cache()
@@ -84,27 +50,46 @@ def _descompactar_zip(conteudo_zip: bytes) -> bytes:
         return arquivo_zip.read(arquivo_zip.namelist()[0])
 
 
-def _ler_df_zip(conteudo_csv: bytes) -> pl.DataFrame:
-    """Lê o CSV em bytes e retorna DataFrame Polars."""
+def _parsear_df(conteudo_csv: bytes) -> pl.DataFrame:
+    """Lê o CSV extraído do ZIP em DataFrame com todas as colunas como string."""
     return pl.read_csv(
         conteudo_csv,
-        decimal_comma=True,
         encoding="latin1",
         separator=";",
-        schema_overrides=ESQUEMA_CSV,
+        infer_schema=False,
+        null_values="",
     )
 
 
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
-    """Renomeia colunas, converte datas, calcula valor e ordena."""
-    colunas_data = ["SettlementDate", "IssueDate", "MaturityDate"]
     return (
-        df.rename(MAPEAMENTO_COLUNAS)
+        df.with_columns(ps.string().str.strip_chars())
         .with_columns(
-            pl.col(colunas_data).str.to_date(format="%d/%m/%Y", strict=False),
-            Value=(pl.col("Quantity") * pl.col("AvgPrice")).round(2),
+            Quantity=pl.col("QUANT NEGOCIADA").cast(pl.Int64),
+            AvgPrice=float_br("PU MED"),
         )
-        .sort(by=CHAVES_ORDENACAO)
+        .select(
+            SettlementDate=pl.col("DATA MOV").str.to_date("%d/%m/%Y", strict=False),
+            BondType=pl.col("SIGLA"),
+            SelicCode=pl.col("CODIGO").cast(pl.Int64),
+            ISIN=pl.col("CODIGO ISIN"),
+            IssueDate=pl.col("EMISSAO").str.to_date("%d/%m/%Y", strict=False),
+            MaturityDate=pl.col("VENCIMENTO").str.to_date("%d/%m/%Y", strict=False),
+            Trades=pl.col("NUM DE OPER").cast(pl.Int64),
+            Quantity=pl.col("Quantity"),
+            Value=(pl.col("Quantity") * pl.col("AvgPrice")).round(2),
+            MinPrice=float_br("PU MIN"),
+            AvgPrice=pl.col("AvgPrice"),
+            MaxPrice=float_br("PU MAX"),
+            UnderlyingPrice=float_br("PU LASTRO"),
+            ParValue=float_br("VALOR PAR"),
+            MinRate=float_br("TAXA MIN"),
+            AvgRate=float_br("TAXA MED"),
+            MaxRate=float_br("TAXA MAX"),
+            BrokerageTrades=pl.col("NUM OPER COM CORRETAGEM").cast(pl.Int64),
+            BrokerageQuantity=pl.col("QUANT NEG COM CORRETAGEM").cast(pl.Int64),
+        )
+        .sort(CHAVES_ORDENACAO)
     )
 
 
@@ -162,17 +147,9 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
     """
     if any_is_empty(target_date):
         return pl.DataFrame()
-    try:
-        data_alvo = converter_datas(target_date)
-        url = _montar_url(data_alvo, extragroup)
-        registro.debug(f"Consultando BCB: {url}")
-        conteudo_zip = _baixar_zip(url)
-        arquivo_extraido = _descompactar_zip(conteudo_zip)
-        df = _ler_df_zip(arquivo_extraido)
-        df = _processar_df(df)
-    except Exception as e:
-        registro.exception(f"Erro ao coletar dados mensais do BCB: {e}")
-        return pl.DataFrame()
-
-    registro.info(f"Dados processados de {url}. Registros: {len(df)}.")
-    return df
+    data_alvo = converter_datas(target_date)
+    url = _montar_url(data_alvo, extragroup)
+    conteudo_zip = _baixar_zip(url)
+    arquivo_extraido = _descompactar_zip(conteudo_zip)
+    df = _parsear_df(arquivo_extraido)
+    return _processar_df(df)

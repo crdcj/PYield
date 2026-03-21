@@ -12,6 +12,7 @@ Notas de implementação:
       automaticamente dividido usando funcionalidades nativas do Polars.
 """
 
+import datetime as dt
 import logging
 from enum import Enum
 
@@ -57,96 +58,49 @@ def _chamar_api(url_api: str) -> list[dict[str, str]]:
 
 
 def _montar_url_download(
-    serie: SerieBC, inicio: DateLike, fim: DateLike | None = None
+    serie: SerieBC, inicio: dt.date, fim: dt.date | None = None
 ) -> str:
-    """Constrói a URL para download de dados das séries do Banco Central.
-
-    Args:
-        serie: Valor enum da série a buscar.
-        inicio: Data inicial para os dados a buscar.
-        fim: Data final para os dados.
-
-    Returns:
-        URL formatada para a requisição da API.
-    """
-    inicio = converter_datas(inicio)
     inicio_str = inicio.strftime("%d/%m/%Y")
-
-    url_api = URL_BASE
-    url_api += f"{serie.value}/dados?formato=json"
-    url_api += f"&dataInicial={inicio_str}"
-
+    url = f"{URL_BASE}{serie.value}/dados?formato=json&dataInicial={inicio_str}"
     if fim:
-        fim = converter_datas(fim)
-        fim_str = fim.strftime("%d/%m/%Y")
-        url_api += f"&dataFinal={fim_str}"
-
-    return url_api
+        url += f"&dataFinal={fim.strftime('%d/%m/%Y')}"
+    return url
 
 
 def _buscar_requisicao(
     serie: SerieBC,
-    inicio: DateLike,
-    fim: DateLike | None,
+    inicio: dt.date,
+    fim: dt.date | None,
 ) -> pl.DataFrame:
-    """Função auxiliar que busca dados da API."""
-    # Define o esquema esperado para o DataFrame de retorno.
-    # Isso é crucial para os casos em que a API não retorna dados.
+    """Busca dados da API para um intervalo."""
     esquema_esperado = {"Date": pl.Date, "Value": pl.Float64}
-
     url_api = _montar_url_download(serie, inicio, fim)
 
     try:
         dados = _chamar_api(url_api)
-        if not dados:
-            registro.warning(f"Sem dados para o período solicitado: {url_api}")
-            return pl.DataFrame(schema=esquema_esperado)
-
-        df = pl.from_dicts(dados).select(
-            Date=pl.col("data").str.to_date("%d/%m/%Y"),
-            Value=pl.col("valor").cast(pl.Float64) / 100,
-        )
-        return df
-
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 404:  # noqa
-            registro.warning(
-                f"Recurso não encontrado (404), tratado como sem dados: {e.request.url}"
-            )
             return pl.DataFrame(schema=esquema_esperado)
-
-        # Qualquer outro erro HTTP final para o programa.
         raise
+
+    if not dados:
+        return pl.DataFrame(schema=esquema_esperado)
+
+    return pl.from_dicts(dados).select(
+        Date=pl.col("data").str.to_date("%d/%m/%Y"),
+        Value=pl.col("valor").cast(pl.Float64) / 100,
+    )
 
 
 def _buscar_dados_url(
     serie: SerieBC, inicio: DateLike, fim: DateLike | None = None
 ) -> pl.DataFrame:
-    """Orquestra a busca de dados da API do Banco Central.
-
-    Trata requisições maiores que 10 anos dividindo-as em blocos menores usando
-    polars date_range.
-
-    Args:
-        serie: Enum da série a buscar.
-        inicio: Data inicial para os dados a buscar.
-        fim: Data final para os dados.
-
-    Returns:
-        DataFrame com os dados requisitados.
-    """
-    # 1. Converter datas usando a função auxiliar existente
+    """Orquestra a busca, dividindo intervalos > 10 anos em blocos."""
     data_inicio = converter_datas(inicio)
-    # Se a data final não for fornecida, usar a data de hoje para o cálculo do período
     data_fim = converter_datas(fim) if fim else clock.today()
 
-    # Verificação simples e pragmática baseada em dias. Se o período for
-    # menor que nosso limite de segurança, faz uma chamada única.
     if (data_fim - data_inicio).days < LIMITE_DIAS_SEGURO:
         return _buscar_requisicao(serie, data_inicio, data_fim)
-
-    # 3. Se for maior, quebrar em blocos
-    registro.info("Intervalo excede 10 anos. Buscando dados em blocos.")
 
     duracao_str = "10y"
 
@@ -177,23 +131,17 @@ def selic_over_series(
     start: DateLike,
     end: DateLike | None = None,
 ) -> pl.DataFrame:
-    """Busca a taxa SELIC Over do Banco Central do Brasil.
+    """Taxa SELIC Over (série SGS 1178).
 
-    A taxa SELIC Over é a taxa de juros média diária efetivamente praticada
-    entre bancos no mercado interbancário, usando títulos públicos como garantia.
-
-    Exemplo de URL da API:
-        https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
+    Taxa de juros média diária praticada no mercado interbancário,
+    com títulos públicos como garantia.
 
     Args:
-        start: Data inicial para buscar os dados. Se None, retorna dados desde
-            a data mais antiga disponível.
-        end: Data final para buscar os dados. Se None, retorna dados até a
-            data mais recente disponível.
+        start: Data inicial.
+        end: Data final. Se ``None``, usa a data mais recente.
 
     Returns:
-        DataFrame contendo colunas Date e Value com a taxa SELIC Over, ou
-        DataFrame vazio se dados não estiverem disponíveis.
+        DataFrame com colunas Date e Value, ou DataFrame vazio.
 
     Examples:
         >>> from pyield import bc
@@ -232,16 +180,13 @@ def selic_over_series(
 
 
 def selic_over(date: DateLike) -> float:
-    """Busca o valor da taxa SELIC Over para uma data específica.
-
-    Função de conveniência que retorna apenas o valor (não o DataFrame) para a
-    data especificada.
+    """Taxa SELIC Over para uma data específica.
 
     Args:
-        date: Data de referência para buscar a taxa SELIC Over.
+        date: Data de referência.
 
     Returns:
-        Taxa SELIC Over como float ou NaN se não disponível.
+        Taxa SELIC Over ou ``nan`` se não disponível.
 
     Examples:
         >>> from pyield import bc
@@ -260,22 +205,16 @@ def selic_target_series(
     start: DateLike,
     end: DateLike | None = None,
 ) -> pl.DataFrame:
-    """Busca a taxa SELIC Meta do Banco Central do Brasil.
+    """Taxa SELIC Meta (série SGS 432).
 
-    A taxa SELIC Meta é a taxa de juros oficial definida pelo Comitê de Política
-    Monetária (COPOM) do Banco Central do Brasil.
-
-    Exemplo de URL da API:
-        https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
+    Taxa de juros oficial definida pelo COPOM.
 
     Args:
-        start: Data inicial para buscar os dados.
-        end: Data final para buscar os dados. Se None, retorna dados até a
-            data mais recente disponível.
+        start: Data inicial.
+        end: Data final. Se ``None``, usa a data mais recente.
 
     Returns:
-        DataFrame contendo colunas Date e Value com a taxa SELIC Meta, ou
-        DataFrame vazio se dados não estiverem disponíveis.
+        DataFrame com colunas Date e Value, ou DataFrame vazio.
 
     Examples:
         >>> from pyield import bc
@@ -289,24 +228,20 @@ def selic_target_series(
         │ 2024-05-31 ┆ 0.105 │
         └────────────┴───────┘
     """
-    if any_is_empty(start):  # start deve ser fornecido
+    if any_is_empty(start):
         return pl.DataFrame()
     df = _buscar_dados_url(SerieBC.SELIC_TARGET, start, end)
-    df = df.with_columns(pl.col("Value").round(CASAS_DECIMAIS_ANUALIZADA))
-    return df
+    return df.with_columns(pl.col("Value").round(CASAS_DECIMAIS_ANUALIZADA))
 
 
 def selic_target(date: DateLike) -> float:
-    """Busca o valor da taxa SELIC Meta para uma data específica.
-
-    Função de conveniência que retorna apenas o valor (não o DataFrame) para a
-    data especificada.
+    """Taxa SELIC Meta para uma data específica.
 
     Args:
-        date: Data de referência para buscar a taxa SELIC Meta.
+        date: Data de referência.
 
     Returns:
-        Taxa SELIC Meta como float ou NaN se não disponível.
+        Taxa SELIC Meta ou ``nan`` se não disponível.
 
     Examples:
         >>> from pyield import bc
@@ -326,24 +261,18 @@ def di_over_series(
     end: DateLike | None = None,
     annualized: bool = True,
 ) -> pl.DataFrame:
-    """Busca a taxa DI (Depósito Interbancário) do Banco Central do Brasil.
+    """Taxa DI Over (série SGS 11).
 
-    A taxa DI representa a taxa de juros média dos empréstimos interbancários.
-
-    Exemplo de URL da API:
-        https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=json&dataInicial=12/04/2024&dataFinal=12/04/2024
+    Taxa de juros média dos empréstimos interbancários.
 
     Args:
-        start: Data inicial para buscar os dados. Se None, retorna dados desde
-            a data mais antiga disponível.
-        end: Data final para buscar os dados. Se None, retorna dados até a
-            data mais recente disponível.
-        annualized: Se True, retorna a taxa anualizada (252 dias úteis por ano),
-            caso contrário retorna a taxa diária.
+        start: Data inicial.
+        end: Data final. Se ``None``, usa a data mais recente.
+        annualized: Se ``True``, retorna a taxa anualizada (base
+            252 d.u.). Caso contrário, retorna a taxa diária.
 
     Returns:
-        DataFrame contendo colunas Date e Value com a taxa DI, ou DataFrame
-        vazio se dados não estiverem disponíveis.
+        DataFrame com colunas Date e Value, ou DataFrame vazio.
 
     Examples:
         >>> from pyield import bc
@@ -379,18 +308,15 @@ def di_over_series(
 
 
 def di_over(date: DateLike, annualized: bool = True) -> float:
-    """Busca o valor da taxa DI Over para uma data específica.
-
-    Função de conveniência que retorna apenas o valor (não o DataFrame) para a
-    data especificada.
+    """Taxa DI Over para uma data específica.
 
     Args:
-        date: Data de referência para buscar a taxa DI Over.
-        annualized: Se True, retorna a taxa anualizada (252 dias úteis por ano),
-            caso contrário retorna a taxa diária.
+        date: Data de referência.
+        annualized: Se ``True``, retorna a taxa anualizada (base
+            252 d.u.). Caso contrário, retorna a taxa diária.
 
     Returns:
-        Taxa DI Over como float ou NaN se não disponível.
+        Taxa DI Over ou ``nan`` se não disponível.
 
     Examples:
         >>> from pyield import bc

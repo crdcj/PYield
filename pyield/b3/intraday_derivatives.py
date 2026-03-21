@@ -42,12 +42,8 @@ COLUNAS_INTRADAY: list[tuple[str, str, type[pl.DataType]]] = [
 ]
 
 # Mapa de tipos para cast inicial usando os nomes do json_normalize.
-TIPOS_INTRADAY = pl.Schema({nome_orig: tipo for nome_orig, _, tipo in COLUNAS_INTRADAY})
-
-
-def _mapa_renomeacao_intraday() -> dict[str, str]:
-    """Constrói dicionário {nome_json_normalize: nome_canonico}."""
-    return {nome_orig: nome_novo for nome_orig, nome_novo, _ in COLUNAS_INTRADAY}
+MAPEAMENTO = {orig: novo for orig, novo, _ in COLUNAS_INTRADAY}
+TIPOS = {orig: tipo for orig, _, tipo in COLUNAS_INTRADAY}
 
 
 @ttl_cache(ttl=10)
@@ -74,15 +70,12 @@ def _converter_json_intraday(dados_json: list[dict]) -> pl.DataFrame:
 
 
 def _processar_colunas_intraday(df: pl.DataFrame) -> pl.DataFrame:
-    mapa_renomeacao = _mapa_renomeacao_intraday()
-    colunas_disponiveis = [col for col in mapa_renomeacao if col in df.columns]
-    tipos_disponiveis = pl.Schema(
-        {col: TIPOS_INTRADAY[col] for col in colunas_disponiveis}
-    )
+    colunas_disponiveis = [col for col in MAPEAMENTO if col in df.columns]
+    tipos_disponiveis = pl.Schema({col: TIPOS[col] for col in colunas_disponiveis})
     return (
         df.select(colunas_disponiveis)
         .cast(tipos_disponiveis, strict=False)
-        .rename(mapa_renomeacao, strict=False)
+        .rename(MAPEAMENTO, strict=False)
     )
 
 
