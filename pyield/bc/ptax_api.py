@@ -16,28 +16,16 @@ cotacaoCompra, cotacaoVenda, dataHoraCotacao
 """
 
 import datetime as dt
-import logging
 
 import polars as pl
 import requests
 
 import pyield._internal.converters as cv
 from pyield import clock
+from pyield._internal.br_numbers import float_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
-
-registro = logging.getLogger(__name__)
-
-# Mapeamento unificado: (coluna_api, nome_final, dtype)
-MAPA_COLUNAS = [
-    ("cotacaoCompra", "BuyRate", pl.Float64),
-    ("cotacaoVenda", "SellRate", pl.Float64),
-    ("dataHoraCotacao", "DateTime", pl.String),
-]
-
-ESQUEMA_API = {api: tipo for api, _, tipo in MAPA_COLUNAS}
-MAPEAMENTO_COLUNAS = {api: novo for api, novo, _ in MAPA_COLUNAS}
 
 URL_API_PTAX = "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?"
 
@@ -62,26 +50,19 @@ def _buscar_texto_api(url: str) -> bytes:
     return resposta.content
 
 
-def _ler_csv(conteudo_csv: bytes) -> pl.DataFrame:
-    """Lê o CSV (texto) da API PTAX em um DataFrame Polars com esquema definido.
-
-    Usa decimal_comma=True para tratar números no formato brasileiro ("5,4372").
-    Mantém dataHoraCotacao como String para parse manual posterior em _processar_df.
-    """
-    return pl.read_csv(
-        conteudo_csv,
-        decimal_comma=True,
-        schema_overrides=ESQUEMA_API,
-    )
+def _parsear_df(conteudo_csv: bytes) -> pl.DataFrame:
+    """Lê o CSV bruto da API PTAX em DataFrame com todas as colunas como string."""
+    return pl.read_csv(conteudo_csv, infer_schema=False)
 
 
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
-    df = (
-        df.rename(MAPEAMENTO_COLUNAS)
-        .with_columns(
-            pl.col("DateTime").str.to_datetime(
+    return (
+        df.with_columns(
+            BuyRate=float_br("cotacaoCompra"),
+            SellRate=float_br("cotacaoVenda"),
+            DateTime=pl.col("dataHoraCotacao").str.to_datetime(
                 format="%Y-%m-%d %H:%M:%S%.3f", strict=False
-            )
+            ),
         )
         .with_columns(
             Date=pl.col("DateTime").cast(pl.Date),
@@ -91,7 +72,6 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
         .select("Date", "DateTime", "BuyRate", "SellRate", "MidRate")
         .sort("DateTime")
     )
-    return df
 
 
 def ptax_series(
@@ -204,18 +184,12 @@ def ptax_series(
     else:
         end = clock.today()
 
-    try:
-        url = _montar_url_api(start, end)
-        texto = _buscar_texto_api(url)
-        df = _ler_csv(texto)
-        if df.is_empty():
-            registro.warning("Nenhum dado encontrado para o período informado.")
-            return pl.DataFrame()
-        df = _processar_df(df)
-        return df
-    except Exception as e:
-        registro.exception(f"Erro ao buscar dados PTAX na API do BC: {e}")
+    url = _montar_url_api(start, end)
+    texto = _buscar_texto_api(url)
+    df = _parsear_df(texto)
+    if df.is_empty():
         return pl.DataFrame()
+    return _processar_df(df)
 
 
 def ptax(date: DateLike) -> float:
@@ -250,9 +224,5 @@ def ptax(date: DateLike) -> float:
     # Se o DataFrame estiver vazio, não há cotação para a data.
     # Isso ocorre em fins de semana, feriados ou datas futuras.
     if dados_ptax.is_empty():
-        registro.warning(f"Sem dados de PTAX para a data: {date}")
         return float("nan")
-
-    # A API retorna uma única linha para a cotação de fechamento do dia.
-    # A coluna "MidRate" representa a PTAX de fechamento.
     return dados_ptax["MidRate"].item(0)
