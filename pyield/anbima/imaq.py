@@ -102,7 +102,7 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
             titulo=pl.col("Título"),
             data_vencimento=pl.col("Data de Vencimento").str.to_date(format="%d/%m/%Y"),
             codigo_selic=pl.col("Codigo Selic").cast(pl.Int64),
-            codigo_isin=pl.col("Código ISIN"),
+            isin=pl.col("Código ISIN"),
             pu=float_br("PU (R$)"),
             quantidade_mercado=inteiro_m("Quantidade em Mercado (1.000 Títulos)"),
             valor_mercado=inteiro_m("Valor de Mercado (R$ Mil)"),
@@ -129,7 +129,7 @@ def imaq(date: DateLike) -> pl.DataFrame:
         - titulo (String): tipo do título (LTN, NTN-B, NTN-F, LFT, …).
         - data_vencimento (Date): data de vencimento do título.
         - codigo_selic (Int64): código SELIC do título.
-        - codigo_isin (String): código ISIN.
+        - isin (String): código ISIN.
         - pu (Float64): PU do título em R$.
         - quantidade_mercado (Int64): quantidade em mercado (unidades).
         - valor_mercado (Int64): valor de mercado em R$.

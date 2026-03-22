@@ -72,7 +72,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             data_liquidacao=pl.col("DATA MOV").str.to_date("%d/%m/%Y", strict=False),
             titulo=pl.col("SIGLA"),
             codigo_selic=pl.col("CODIGO").cast(pl.Int64),
-            codigo_isin=pl.col("CODIGO ISIN"),
+            isin=pl.col("CODIGO ISIN"),
             data_emissao=pl.col("EMISSAO").str.to_date("%d/%m/%Y", strict=False),
             data_vencimento=pl.col("VENCIMENTO").str.to_date("%d/%m/%Y", strict=False),
             operacoes=pl.col("NUM DE OPER").cast(pl.Int64),
@@ -120,7 +120,7 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         - data_liquidacao (Date): data de liquidação da negociação.
         - titulo (str): sigla do título (ex: LFT, LTN, NTN-B, NTN-F).
         - codigo_selic (Int64): código único no sistema Selic.
-        - codigo_isin (str): código ISIN.
+        - isin (str): código ISIN.
         - data_emissao (Date): data de emissão do título.
         - data_vencimento (Date): data de vencimento do título.
         - operacoes (Int64): número total de operações realizadas.

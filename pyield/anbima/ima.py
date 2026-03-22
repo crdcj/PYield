@@ -59,7 +59,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             titulo=pl.col("Títulos"),
             data_vencimento=pl.col("Data de Vencimento").str.to_date("%d/%m/%Y"),
             codigo_selic=pl.col("Código SELIC").cast(pl.Int64),
-            codigo_isin=pl.col("Código ISIN"),
+            isin=pl.col("Código ISIN"),
             dias_uteis=pl.col("Prazo (d.u.)").cast(pl.Int64),
             duration=pl.col("duration"),
             taxa_indicativa=pl.col("taxa_indicativa"),
@@ -100,7 +100,7 @@ def last_ima(ima_type: TiposIMA | None = None) -> pl.DataFrame:
         - titulo (String): título (ex: 'LTN', 'NTN-B').
         - data_vencimento (Date): data de vencimento do título.
         - codigo_selic (Int64): código do título no sistema SELIC.
-        - codigo_isin (String): código ISIN.
+        - isin (String): código ISIN.
         - dias_uteis (Int64): dias úteis até o vencimento.
         - duration (Float64): duration do título em anos úteis (252 d.u./ano).
         - taxa_indicativa (Float64): taxa indicativa em decimal (ex: 0.10 para 10%).
