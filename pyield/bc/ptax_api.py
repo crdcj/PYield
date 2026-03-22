@@ -57,19 +57,21 @@ def _parsear_df(conteudo_csv: bytes) -> pl.DataFrame:
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     return (
         df.with_columns(
-            BuyRate=float_br("cotacaoCompra"),
-            SellRate=float_br("cotacaoVenda"),
-            DateTime=pl.col("dataHoraCotacao").str.to_datetime(
+            cotacao_compra=float_br("cotacaoCompra"),
+            cotacao_venda=float_br("cotacaoVenda"),
+            data_hora=pl.col("dataHoraCotacao").str.to_datetime(
                 format="%Y-%m-%d %H:%M:%S%.3f", strict=False
             ),
         )
         .with_columns(
-            Date=pl.col("DateTime").cast(pl.Date),
-            MidRate=pl.mean_horizontal("BuyRate", "SellRate").round(5),
+            data=pl.col("data_hora").cast(pl.Date),
+            cotacao_media=pl.mean_horizontal("cotacao_compra", "cotacao_venda").round(
+                5
+            ),
         )
-        .unique(subset=["Date"], keep="last")
-        .select("Date", "DateTime", "BuyRate", "SellRate", "MidRate")
-        .sort("DateTime")
+        .unique(subset=["data"], keep="last")
+        .select("data", "data_hora", "cotacao_compra", "cotacao_venda", "cotacao_media")
+        .sort("data_hora")
     )
 
 
@@ -93,11 +95,11 @@ def ptax_series(
         se não houver dados.
 
     Output Columns:
-        * Date (Date): data da cotação.
-        * DateTime (Datetime): data e hora da cotação.
-        * BuyRate (Float64): taxa de compra em R$.
-        * SellRate (Float64): taxa de venda em R$.
-        * MidRate (Float64): média de compra/venda (5 casas).
+        * data (Date): data da cotação.
+        * data_hora (Datetime): data e hora da cotação.
+        * cotacao_compra (Float64): taxa de compra em R$.
+        * cotacao_venda (Float64): taxa de venda em R$.
+        * cotacao_media (Float64): média de compra/venda (5 casas).
 
     Notes:
         Disponível desde 28.11.1984; refere-se às taxas
@@ -116,16 +118,16 @@ def ptax_series(
         >>> from pyield import bc
         >>> bc.ptax_series(start="20-04-2025", end="25-04-2025")
         shape: (4, 5)
-        ┌────────────┬─────────────────────────┬─────────┬──────────┬─────────┐
-        │ Date       ┆ DateTime                ┆ BuyRate ┆ SellRate ┆ MidRate │
-        │ ---        ┆ ---                     ┆ ---     ┆ ---      ┆ ---     │
-        │ date       ┆ datetime[ms]            ┆ f64     ┆ f64      ┆ f64     │
-        ╞════════════╪═════════════════════════╪═════════╪══════════╪═════════╡
-        │ 2025-04-22 ┆ 2025-04-22 13:09:35.629 ┆ 5.749   ┆ 5.7496   ┆ 5.7493  │
-        │ 2025-04-23 ┆ 2025-04-23 13:06:30.443 ┆ 5.6874  ┆ 5.688    ┆ 5.6877  │
-        │ 2025-04-24 ┆ 2025-04-24 13:04:29.639 ┆ 5.6732  ┆ 5.6738   ┆ 5.6735  │
-        │ 2025-04-25 ┆ 2025-04-25 13:09:26.592 ┆ 5.684   ┆ 5.6846   ┆ 5.6843  │
-        └────────────┴─────────────────────────┴─────────┴──────────┴─────────┘
+        ┌────────────┬─────────────────────────┬────────────────┬───────────────┬───────────────┐
+        │ data       ┆ data_hora               ┆ cotacao_compra ┆ cotacao_venda ┆ cotacao_media │
+        │ ---        ┆ ---                     ┆ ---            ┆ ---           ┆ ---           │
+        │ date       ┆ datetime[ms]            ┆ f64            ┆ f64           ┆ f64           │
+        ╞════════════╪═════════════════════════╪════════════════╪═══════════════╪═══════════════╡
+        │ 2025-04-22 ┆ 2025-04-22 13:09:35.629 ┆ 5.749          ┆ 5.7496        ┆ 5.7493        │
+        │ 2025-04-23 ┆ 2025-04-23 13:06:30.443 ┆ 5.6874         ┆ 5.688         ┆ 5.6877        │
+        │ 2025-04-24 ┆ 2025-04-24 13:04:29.639 ┆ 5.6732         ┆ 5.6738        ┆ 5.6735        │
+        │ 2025-04-25 ┆ 2025-04-25 13:09:26.592 ┆ 5.684          ┆ 5.6846        ┆ 5.6843        │
+        └────────────┴─────────────────────────┴────────────────┴───────────────┴───────────────┘
     """
     if start:
         start = cv.converter_datas(start)
@@ -152,8 +154,8 @@ def ptax(date: DateLike) -> float:
         date: Data desejada.
 
     Returns:
-        Taxa média (MidRate) do dia, ou ``nan`` se não houver
-        cotação (feriado, fim de semana ou data futura).
+        Taxa média (cotacao_media) do dia, ou ``nan`` se não
+        houver cotação (feriado, fim de semana ou data futura).
 
     Examples:
         >>> from pyield import bc
@@ -168,4 +170,4 @@ def ptax(date: DateLike) -> float:
     dados_ptax = ptax_series(start=date, end=date)
     if dados_ptax.is_empty():
         return float("nan")
-    return dados_ptax["MidRate"].item(0)
+    return dados_ptax["cotacao_media"].item(0)

@@ -186,11 +186,11 @@ Obtenha dados de inflação do IBGE:
 ```python
 # Taxas mensais de IPCA
 df_ipca = yd.ipca.rates("01-01-2024", "01-03-2024")
-# Colunas: ReferenceDate, Rate
+# Colunas: periodo, valor
 
 # Índices de IPCA
 df_indices = yd.ipca.indexes("01-01-2024", "01-03-2024")
-# Colunas: ReferenceDate, Index
+# Colunas: periodo, valor
 
 # Projeções futuras (quando disponíveis)
 df_proj = yd.ipca.rates("01-01-2025", "01-12-2025")

@@ -1,6 +1,4 @@
 import datetime as dt
-import logging
-from io import StringIO
 
 import polars as pl
 import requests
@@ -8,8 +6,6 @@ import requests
 from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
-
-logger = logging.getLogger(__name__)
 
 URL_ETTJ_INTRADAY = (
     "https://www.anbima.com.br/informacoes/curvas-intradiarias/cIntra-down.asp"
@@ -45,8 +41,8 @@ def _extrair_data_e_tabelas(texto: str) -> tuple[dt.date, str, str]:
 
 
 def _parsear_tabela_intraday(texto: str, nome_taxa: str) -> pl.DataFrame:
-    return pl.read_csv(StringIO(texto), separator=";", infer_schema=False).select(
-        vertex=float_br("Vertices").cast(pl.Int64),
+    return pl.read_csv(texto.encode(), separator=";", infer_schema=False).select(
+        vertice=float_br("Vertices").cast(pl.Int64),
         **{nome_taxa: taxa_br("D0")},
     )
 
@@ -62,24 +58,26 @@ def intraday_ettj() -> pl.DataFrame:
         pl.DataFrame: DataFrame com os dados intradiários da ETTJ.
 
     Output Columns:
-        - date (Date): data de referência da curva de juros.
-        - vertex (Int64): vértice em dias úteis.
-        - nominal_rate (Float64): taxa de juros nominal zero-cupom.
-        - real_rate (Float64): taxa de juros real zero-cupom (indexada ao IPCA).
-        - implied_inflation (Float64): taxa de inflação implícita (breakeven).
+        - data_referencia (Date): data de referência da curva de juros.
+        - vertice (Int64): vértice em dias úteis.
+        - taxa_nominal (Float64): taxa de juros nominal zero-cupom.
+        - taxa_real (Float64): taxa de juros real zero-cupom (indexada ao IPCA).
+        - inflacao_implicita (Float64): taxa de inflação implícita (breakeven).
 
-    Note:
+    Notes:
         Todas as taxas são expressas em formato decimal (ex: 0.12 para 12%).
     """
     texto_api = _buscar_texto_intraday()
 
     data_ref, tabela_pre, tabela_ipca = _extrair_data_e_tabelas(texto_api)
 
-    df_pre = _parsear_tabela_intraday(tabela_pre, "nominal_rate")
-    df_ipca = _parsear_tabela_intraday(tabela_ipca, "real_rate")
-    expr_inflacao_impl = (pl.col("nominal_rate") + 1) / (pl.col("real_rate") + 1) - 1
-    df = df_pre.join(df_ipca, on="vertex", how="right").with_columns(
-        date=data_ref,
-        implied_inflation=expr_inflacao_impl.round(6),
+    df_pre = _parsear_tabela_intraday(tabela_pre, "taxa_nominal")
+    df_ipca = _parsear_tabela_intraday(tabela_ipca, "taxa_real")
+    expr_inflacao_impl = (pl.col("taxa_nominal") + 1) / (pl.col("taxa_real") + 1) - 1
+    df = df_pre.join(df_ipca, on="vertice", how="right").with_columns(
+        data_referencia=data_ref,
+        inflacao_implicita=expr_inflacao_impl.round(6),
     )
-    return df.select("date", "vertex", "nominal_rate", "real_rate", "implied_inflation")
+    return df.select(
+        "data_referencia", "vertice", "taxa_nominal", "taxa_real", "inflacao_implicita"
+    )

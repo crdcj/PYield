@@ -1,6 +1,4 @@
 import datetime as dt
-import logging
-from io import StringIO
 
 import polars as pl
 import requests
@@ -9,7 +7,6 @@ from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
-logger = logging.getLogger(__name__)
 URL_ULTIMA_ETTJ = "https://www.anbima.com.br/informacoes/est-termo/CZ-down.asp"
 
 # Dados ETTJ: taxas com 4 casas decimais em percentual (ex.: 14,2644%).
@@ -24,7 +21,7 @@ def _buscar_texto_ultima_ettj() -> str:
         "Dt_Ref": "",
         "saida": "csv",
     }
-    resposta = requests.post(URL_ULTIMA_ETTJ, data=carga_requisicao)
+    resposta = requests.post(URL_ULTIMA_ETTJ, data=carga_requisicao, timeout=10)
     resposta.raise_for_status()
     resposta.encoding = "latin1"
     return resposta.text
@@ -45,12 +42,12 @@ def _extrair_data_e_tabela(texto: str) -> tuple[dt.date, str]:
 
 def _processar_tabela(texto: str, data_referencia: dt.date) -> pl.DataFrame:
     """Lê o CSV e converte para DataFrame com taxas decimais."""
-    return pl.read_csv(StringIO(texto), separator=";", infer_schema=False).select(
-        date=pl.lit(data_referencia),
-        vertex=float_br("Vertices").cast(pl.Int64),
-        nominal_rate=taxa_br("ETTJ PREF"),
-        real_rate=taxa_br("ETTJ IPCA"),
-        implied_inflation=taxa_br("Inflação Implícita"),
+    return pl.read_csv(texto.encode(), separator=";", infer_schema=False).select(
+        data_referencia=data_referencia,
+        vertice=float_br("Vertices").cast(pl.Int64),
+        taxa_nominal=taxa_br("ETTJ PREF"),
+        taxa_real=taxa_br("ETTJ IPCA"),
+        inflacao_implicita=taxa_br("Inflação Implícita"),
     )
 
 
@@ -65,13 +62,13 @@ def last_ettj() -> pl.DataFrame:
         pl.DataFrame: DataFrame com os dados da ETTJ de fechamento.
 
     Output Columns:
-        - date (Date): data de referência da curva de juros.
-        - vertex (Int64): vértice em dias úteis.
-        - nominal_rate (Float64): taxa de juros nominal zero-cupom.
-        - real_rate (Float64): taxa de juros real zero-cupom (indexada ao IPCA).
-        - implied_inflation (Float64): taxa de inflação implícita (breakeven).
+        - data_referencia (Date): data de referência da curva de juros.
+        - vertice (Int64): vértice em dias úteis.
+        - taxa_nominal (Float64): taxa de juros nominal zero-cupom.
+        - taxa_real (Float64): taxa de juros real zero-cupom (indexada ao IPCA).
+        - inflacao_implicita (Float64): taxa de inflação implícita (breakeven).
 
-    Note:
+    Notes:
         Todas as taxas são expressas em formato decimal (ex: 0.12 para 12%).
     """
     texto = _buscar_texto_ultima_ettj()

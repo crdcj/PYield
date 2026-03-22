@@ -251,8 +251,8 @@ def _buscar_ptax(df: pl.DataFrame) -> pl.DataFrame:
         return pl.DataFrame()
 
     return (
-        df_ptax.select("Date", "MidRate")
-        .rename({"Date": "data_ref", "MidRate": "ptax"})
+        df_ptax.select("data", "cotacao_media")
+        .rename({"data": "data_ref", "cotacao_media": "ptax"})
         .sort("data_ref")
     )
 

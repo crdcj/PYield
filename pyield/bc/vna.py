@@ -1,4 +1,15 @@
-import logging
+"""VNA (Valor Nominal Atualizado) da LFT no site do BCB.
+
+Exemplo de chamada à API:
+    https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240531APC238
+
+Trecho relevante da resposta (tabela VNA):
+    EMISSAO     VENCIMENTO   DATA BASE    TITULO        INDICE
+    03/02/2021  01/09/2024   01/07/2000   210100       14903,011480
+    30/03/2022  01/03/2025   01/07/2000   210100       14903,011480
+    23/08/2019  01/09/2025   01/07/2000   210100       14903,011480
+    28/06/2023  01/03/2026   01/07/2000   210100       14903,011480
+"""
 
 import requests
 
@@ -6,8 +17,6 @@ from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
-
-logger = logging.getLogger(__name__)
 
 
 @ttl_cache()
@@ -87,7 +96,6 @@ def vna_lft(date: DateLike) -> float:
         14903.01148
     """
     if any_is_empty(date):
-        logger.warning("No valid date provided. Returning NaN.")
         return float("nan")
     texto = _baixar_texto(date)
     tabela = _recortar_tabela(texto)

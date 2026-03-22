@@ -91,7 +91,8 @@ Referência: `anbima/ima.py` (com colunas derivadas) e `anbima/imaq.py` (sem col
 ## Naming Conventions
 
 - **Fronteira da API pública:** Considere público o que está documentado e/ou exportado no namespace de topo (`pyield/__init__.py`). Módulos não exportados no topo são internos, mesmo que importáveis por caminho direto.
-- **API pública (inglês):** Nomes de funções públicas, parâmetros, nomes de colunas em DataFrames e classes exportadas permanecem em inglês.
+- **API pública (inglês):** Nomes de funções públicas, parâmetros e classes exportadas permanecem em inglês.
+- **Nomes de colunas em DataFrames (português):** Colunas de DataFrames retornados por funções públicas usam `snake_case` em português (ex.: `data_referencia`, `taxa_indicativa`, `valor`). Módulos antigos ainda usam PascalCase em inglês, mas estão sendo progressivamente migrados.
 - **Código interno (português):** Variáveis locais, constantes de módulo, mensagens de log e mensagens de exceção devem ser em português.
 - **Nomes em módulos internos:** Para módulos de uso interno compartilhado, nomes de função podem permanecer sem prefixo `_` quando isso melhora legibilidade. Use prefixo `_` para helpers locais/privados dentro do módulo.
 - **Exceção para módulos utilitários base:** Módulos transversais e fundacionais de uso interno (ex.: `_internal/types.py`, `_internal/retry.py`) podem manter identificadores técnicos em inglês (`is_collection`, `retry_state`, etc.) para preservar legibilidade, reduzir churn e evitar renomeações sem ganho funcional.
@@ -103,7 +104,7 @@ Referência: `anbima/ima.py` (com colunas derivadas) e `anbima/imaq.py` (sem col
 - All docstrings must be written in **Portuguese** (both public and internal functions).
 - Docstring line width must respect the project's `line-length = 88` (configured in `pyproject.toml`). This includes the indentation — e.g., a docstring inside a function has 4 spaces of indent, leaving 84 usable characters.
 - Public functions use Google-style sections: `Args:`, `Returns:`, `Output Columns:`, `Notes:`, `Examples:`.
-- `Output Columns:` lists every column with tipo Polars e descrição (ex: `* SettlementDate (Date): data de liquidação.`).
+- `Output Columns:` lists every column with tipo Polars e descrição (ex: `* data_liquidacao (Date): data de liquidação.`).
 - Doctests (section `Examples:`) use real data and are validated by `pytest --doctest-modules`.
 - Renderização Markdown (MkDocs/mkdocstrings): em listas livres dentro do texto (ex.: `Onde:`), evitar linha em branco entre o título e os itens e iniciar os itens imediatamente abaixo.
   Exemplo recomendado:
