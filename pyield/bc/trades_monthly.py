@@ -120,7 +120,7 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         - data_liquidacao (Date): data de liquidação da negociação.
         - titulo (str): sigla do título (ex: LFT, LTN, NTN-B, NTN-F).
         - codigo_selic (Int64): código único no sistema Selic.
-        - codigo_isin (str): código ISIN (International Securities Id Number).
+        - codigo_isin (str): código ISIN.
         - data_emissao (Date): data de emissão do título.
         - data_vencimento (Date): data de vencimento do título.
         - operacoes (Int64): número total de operações realizadas.
@@ -130,11 +130,11 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         - pu_medio (Float64): preço unitário médio.
         - pu_maximo (Float64): preço unitário máximo.
         - pu_lastro (Float64): PU lastro.
-        - valor_par (Float64): valor nominal atualizado (VNA) do título.
+        - valor_par (Float64): valor par do título.
         - taxa_minima (Float64): taxa mínima.
         - taxa_media (Float64): taxa média.
         - taxa_maxima (Float64): taxa máxima.
-        - operacoes_corretagem (Int64): subconjunto de operacoes com corretagem.
+        - operacoes_corretagem (Int64): subconjunto de operações com corretagem.
         - quantidade_corretagem (Int64): subconjunto de quantidade com corretagem.
 
     Notes:

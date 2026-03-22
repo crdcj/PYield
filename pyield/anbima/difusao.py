@@ -142,7 +142,7 @@ def tpf_difusao(data_referencia: DateLike) -> pl.DataFrame:
         - provedor (string): Provedor dos dados.
         - titulo (string): Nome do título (ex: LFT, LTN).
         - data_vencimento (date): Data de vencimento do título.
-        - codigo_isin (string): Código ISIN do título.
+        - codigo_isin (string): código ISIN do título.
         - dias_uteis (int): Dias úteis entre a data de referência e o vencimento.
         - taxa_indicativa_anterior (float): Taxa indicativa de fechamento D-1 (decimal).
         - taxa_indicativa_superior (float): Limite superior da banda indicativa (decimal).

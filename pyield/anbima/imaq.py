@@ -129,7 +129,7 @@ def imaq(date: DateLike) -> pl.DataFrame:
         - titulo (String): tipo do título (LTN, NTN-B, NTN-F, LFT, …).
         - data_vencimento (Date): data de vencimento do título.
         - codigo_selic (Int64): código SELIC do título.
-        - codigo_isin (String): código ISIN (International Securities Id Number).
+        - codigo_isin (String): código ISIN.
         - pu (Float64): PU do título em R$.
         - quantidade_mercado (Int64): quantidade em mercado (unidades).
         - valor_mercado (Int64): valor de mercado em R$.
