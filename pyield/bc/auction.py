@@ -280,54 +280,62 @@ def auctions(
     end: DateLike | None = None,
     auction_type: Literal["sell", "buy"] | None = None,
 ) -> pl.DataFrame:
-    """
-    Recupera dados de leilões para um determinado período e tipo de leilão da API do BC.
+    """Dados de leilões de títulos públicos federais do BCB.
 
-    **Consultas de período:**
-    - Para consultar dados de um intervalo, forneça as datas de `start` e `end`.
-      Exemplo: `auctions(start='2024-10-20', end='2024-10-27')`
-    - Se apenas `start` for fornecido, a API do BC retornará dados de leilão a partir
-      da data de `start` **até a data mais recente disponível**.
-      Exemplo: `auctions(start='2024-10-20')`
-    - Se apenas `end` for fornecido, a API do BC retornará dados de leilão **desde a
-      data mais antiga disponível até a data de `end`**.
-      Exemplo: `auctions(end='2024-10-27')`
+    Fonte: Banco Central do Brasil. Disponível desde 12/11/2012.
 
-    **Série histórica completa:**
-    - Para recuperar a série histórica completa de leilões (desde 12/11/2012 até o
-      último dia útil), chame a função sem fornecer os parâmetros `start` e `end`.
-      Exemplo: `auctions()`
-
-    Busca dados de leilões da API do BC para as datas de início e fim especificadas,
-    filtrando os resultados diretamente na API pelo tipo de leilão, se especificado.
-    O comportamento da função em relação aos parâmetros `start` e `end` segue o padrão
-    da API do Banco Central:
-    - Se `start` for fornecido e `end` não, a função retorna dados de `start` até o fim.
-    - Se `end` for fornecido e `start` não, a API retorna dados do início até `end`.
-    - Se ambos `start` e `end` forem omitidos, a API retorna a série histórica completa.
-
-    Os dados podem ser filtrados pelo tipo de leilão especificado ("Sell" ou "Buy").
-    Leilões de "Sell" são aqueles em que o Tesouro Nacional vende títulos ao mercado.
-    Leilões de "Buy" são aqueles em que o Tesouro Nacional compra títulos do mercado.
+    Se ambos `start` e `end` forem omitidos, retorna a série
+    histórica completa. Se apenas um for informado, a API do BCB
+    usa o início ou fim do histórico como limite.
 
     Args:
-        start (DateLike, opcional): A data de início para a consulta dos leilões.
-            Se `start` for fornecido e `end` for `None`, a API retornará dados de
-            leilão a partir de `start` até a data mais recente disponível.
-            Se `start` e `end` forem `None`, a série histórica completa será retornada.
-            Padrão é `None`.
-        end (DateLike, opcional): A data de fim para a consulta de dados de leilão.
-            Se `end` for fornecido e `start` for `None`, a API retornará dados de
-            leilão desde a data mais antiga disponível até a data de `end`.
-            Se `start` e `end` forem `None`, a série histórica completa será retornada.
-            Padrão é `None`.
-        auction_type (Literal["sell", "buy"], opcional): O tipo de leilão para filtrar
-            diretamente na API. Padrão é `None` (retorna todos os tipos de leilão).
+        start: Data de início. Padrão é ``None``.
+        end: Data de fim. Padrão é ``None``.
+        auction_type: Tipo de leilão (``"sell"`` = venda,
+            ``"buy"`` = compra). Padrão é ``None`` (todos).
 
     Returns:
-        pl.DataFrame: Um DataFrame contendo dados de leilões para o período e tipo
-            especificados. Em caso de erro ao buscar os dados, um DataFrame vazio
-            é retornado e uma mensagem de erro é registrada no log.
+        DataFrame com dados de leilões, ou DataFrame vazio
+        se não houver dados.
+
+    Output Columns:
+        * data_leilao (Date): data do leilão.
+        * data_liquidacao (Date): data de liquidação.
+        * tipo_leilao (String): "Venda" ou "Compra".
+        * numero_edital (Int64): edital normativo.
+        * tipo_publico (String): categoria do comprador.
+        * titulo (String): sigla do título (LTN, LFT, NTN-B, NTN-F).
+        * codigo_selic (Int64): código no sistema Selic.
+        * data_vencimento (Date): data de vencimento.
+        * dias_uteis (Int32): dias úteis até o vencimento.
+        * duration (Float64): duração de Macaulay em anos.
+        * prazo_medio (Float64): prazo médio em anos.
+        * pu_medio (Float64): PU médio no leilão.
+        * pu_corte (Float64): PU de corte.
+        * taxa_media (Float64): taxa média (decimal).
+        * taxa_corte (Float64): taxa de corte (decimal).
+        * dv01_1v (Float64): DV01 da 1ª volta em R$.
+        * dv01_2v (Float64): DV01 da 2ª volta em R$.
+        * dv01_total (Float64): DV01 total em R$.
+        * ptax (Float64): PTAX (venda) para conversão USD.
+        * dv01_1v_usd (Float64): DV01 da 1ª volta em USD.
+        * dv01_2v_usd (Float64): DV01 da 2ª volta em USD.
+        * dv01_total_usd (Float64): DV01 total em USD.
+        * quantidade_liquidada_1v (Int64): qtd liquidada 1ª volta.
+        * quantidade_liquidada_2v (Int64): qtd liquidada 2ª volta.
+        * quantidade_liquidada_total (Int64): qtd total liquidada.
+        * quantidade_ofertada_1v (Int64): qtd ofertada 1ª volta.
+        * quantidade_ofertada_2v (Int64): qtd ofertada 2ª volta.
+        * quantidade_ofertada_total (Int64): qtd total ofertada.
+        * quantidade_aceita_1v (Int64): qtd aceita 1ª volta.
+        * quantidade_aceita_2v (Int64): qtd aceita 2ª volta.
+        * quantidade_aceita_total (Int64): qtd total aceita.
+        * financeiro_1v (Int64): financeiro 1ª volta em R$.
+        * financeiro_2v (Int64): financeiro 2ª volta em R$.
+        * financeiro_total (Int64): financeiro total em R$.
+
+    Notes:
+        1v = primeira volta (rodada), 2v = segunda volta.
 
     Examples:
         >>> from pyield import bc
@@ -344,46 +352,6 @@ def auctions(
         │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 194           ┆ … ┆ 500542                  ┆ 2071654327    ┆ 2245673       ┆ 2073900000       │
         │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 194           ┆ … ┆ 500000                  ┆ 2010700000    ┆ 0             ┆ 2010700000       │
         └─────────────┴─────────────────┴─────────────┴───────────────┴───┴─────────────────────────┴───────────────┴───────────────┴──────────────────┘
-
-    Notes:
-        1v = Primeira Volta (Rodada)
-        2v = Segunda Volta (Rodada)
-
-    Colunas do DataFrame:
-        - data_leilao (Date): data do leilão.
-        - data_liquidacao (Date): data de liquidação do leilão.
-        - tipo_leilao (String): tipo de leilão (ex: "Venda" ou "Compra").
-        - numero_edital (Int64): edital normativo associado ao leilão.
-        - tipo_publico (String): categoria do comprador.
-        - titulo (String): tipo do título (ex: "LTN", "LFT", "NTN-B", "NTN-F").
-        - codigo_selic (Int64): código do título no sistema Selic.
-        - data_vencimento (Date): data de vencimento do título.
-        - dias_uteis (Int32): dias úteis entre a liquidação e o vencimento.
-        - duration (Float64): duração de Macaulay em anos.
-        - prazo_medio (Float64): prazo médio do título em anos.
-        - pu_medio (Float64): preço unitário médio no leilão.
-        - pu_corte (Float64): preço unitário de corte.
-        - taxa_media (Float64): taxa de juros média (formato decimal).
-        - taxa_corte (Float64): taxa de corte (formato decimal).
-        - dv01_1v (Float64): DV01 da 1ª volta em R$.
-        - dv01_2v (Float64): DV01 da 2ª volta em R$.
-        - dv01_total (Float64): DV01 total do leilão em R$.
-        - ptax (Float64): taxa PTAX utilizada na conversão para USD.
-        - dv01_1v_usd (Float64): DV01 da 1ª volta em USD.
-        - dv01_2v_usd (Float64): DV01 da 2ª volta em USD.
-        - dv01_total_usd (Float64): DV01 total em USD.
-        - quantidade_liquidada_1v (Int64): quantidade liquidada na 1ª volta.
-        - quantidade_liquidada_2v (Int64): quantidade liquidada na 2ª volta.
-        - quantidade_liquidada_total (Int64): quantidade total liquidada.
-        - quantidade_ofertada_1v (Int64): quantidade ofertada na 1ª volta.
-        - quantidade_ofertada_2v (Int64): quantidade ofertada na 2ª volta.
-        - quantidade_ofertada_total (Int64): quantidade total ofertada.
-        - quantidade_aceita_1v (Int64): quantidade aceita na 1ª volta.
-        - quantidade_aceita_2v (Int64): quantidade aceita na 2ª volta.
-        - quantidade_aceita_total (Int64): quantidade total aceita.
-        - financeiro_1v (Int64): valor financeiro da 1ª volta em R$.
-        - financeiro_2v (Int64): valor financeiro da 2ª volta em R$.
-        - financeiro_total (Int64): valor financeiro total em R$.
     """
     url = _montar_url(inicio=start, fim=end, tipo_leilao=auction_type)
     dados = _buscar_csv(url)
