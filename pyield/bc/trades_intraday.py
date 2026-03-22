@@ -49,7 +49,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     """Filtra registros, converte tipos e reordena colunas."""
     agora = clock.now()
     return df.filter(pl.col("//1") == "1").select(
-        coletado_em=agora,
+        data_hora_consulta=agora,
         data_liquidacao=agora.date(),
         titulo=pl.col("sigla").str.strip_chars(),
         codigo_selic=inteiro_br("código título"),
@@ -106,7 +106,7 @@ def tpf_intraday_trades() -> pl.DataFrame:
             estiver fechado ou ocorrer erro.
 
     Output Columns:
-        - coletado_em (Datetime): timestamp da coleta (BRT).
+        - data_hora_consulta (Datetime): data e hora da consulta (BRT).
         - data_liquidacao (Date): data de liquidação à vista.
         - titulo (String): sigla do título (ex.: LFT, LTN, NTN-B).
         - codigo_selic (Int64): código SELIC do título.

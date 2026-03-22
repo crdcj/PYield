@@ -9,7 +9,7 @@ CAMINHO_CSV = DIRETORIO_DADOS / "trades_intraday_20260206.csv"
 CAMINHO_PARQUET = DIRETORIO_DADOS / "trades_intraday_20260206.parquet"
 
 # Colunas que dependem do horário de execução, não da lógica de processamento.
-COLUNAS_IGNORAR = ["coletado_em", "data_liquidacao"]
+COLUNAS_IGNORAR = ["data_hora_consulta", "data_liquidacao"]
 
 
 def test_trades_intraday_com_monkeypatch(monkeypatch):
