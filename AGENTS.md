@@ -124,6 +124,13 @@ Referência: `anbima/ima.py` (com colunas derivadas) e `anbima/imaq.py` (sem col
 - Nesses casos, retornar o valor de contrato (`None`, `NaN`, `Series/DataFrame` vazio) ou lançar `ValueError` quando apropriado.
 - Reservar `warning`/`error` para anomalias operacionais reais (falha de rede, fonte indisponível, schema inesperado, erro de parsing fora do contrato, etc.).
 
+## Data Query Return Conventions
+
+- Funções públicas que consultam dados externos retornam **DataFrame vazio** (ou `nan`/`None` para escalares) quando não há dados para os parâmetros fornecidos — independentemente do motivo (data futura, fim de semana, feriado, fonte indisponível).
+- O chamador testa com `.is_empty()` (DataFrame) ou `math.isnan()` (escalar).
+- **Não** lançar `ValueError` para datas válidas sem dados. `ValueError` é reservado para inputs malformados (tipo errado, formato inválido, violação de domínio).
+- Analogia: funciona como um `SELECT` que retorna 0 linhas — não é um erro.
+
 ## Testing
 
 Tests are in `tests/` and doctests are embedded in docstrings. Run `pytest` to execute both (configured in `pyproject.toml` via `testpaths` and `addopts = "--doctest-modules"`).

@@ -150,7 +150,7 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
         return pl.DataFrame()
     data_alvo = converter_datas(target_date)
     if (data_alvo.year, data_alvo.month) > (today().year, today().month):
-        raise ValueError(f"Mês futuro não disponível: {data_alvo.strftime('%Y-%m')}")
+        return pl.DataFrame()
     url = _montar_url(data_alvo, extragroup)
     conteudo_zip = _baixar_zip(url)
     arquivo_extraido = _descompactar_zip(conteudo_zip)

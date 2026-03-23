@@ -203,6 +203,17 @@ ntnb.quotation(None, "15-05-2035", 0.06149)  # -> nan
 bday.count(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
 
+Consultas sem dados disponíveis (data futura, feriado, fim de semana ou
+fonte indisponível) retornam DataFrame vazio ou `nan`, sem lançar exceção:
+
+```python
+from pyield import bc, futures
+
+futures("01-01-2030", "DI1").is_empty()         # -> True (data futura)
+bc.tpf_monthly_trades("01-01-2030").is_empty()  # -> True (mês futuro)
+bc.ptax("25-12-2025")                           # -> nan (feriado)
+```
+
 ## Migração para Polars (v0.40.0+)
 
 A partir da versão 0.40.0, todas as saídas tabulares passaram de Pandas para **Polars**. Entradas vetoriais que antes aceitavam `pd.Series` e `np.ndarray` agora aceitam apenas listas, tuplas ou `pl.Series`. Para converter:
