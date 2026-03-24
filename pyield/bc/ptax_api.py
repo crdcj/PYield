@@ -74,6 +74,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
                 5
             ),
         )
+        .sort("data_hora")
         .unique(subset=["data"], keep="last")
         .select("data", "hora", "cotacao_compra", "cotacao_venda", "cotacao_media")
         .sort("data")
