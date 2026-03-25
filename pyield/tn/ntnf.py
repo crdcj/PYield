@@ -57,9 +57,8 @@ def data(date: DateLike) -> pl.DataFrame:
         - taxa_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo
             método flat forward.
         - taxa_zero (Float64): Taxa zero (zero cupom via bootstrap).
-        - spread_di (Float64): Spread sobre o DI (também conhecido como
-            prêmio).
-        - spread_di_limpo (Float64): Spread limpo sobre a curva DI.
+        - spread_di (Float64): Spread sobre o DI (conhecido como prêmio).
+        - spread_di_limpo (Float64): Spread limpo sobre a curva DI (conhecido como prêmio limpo).
         - rentabilidade (Float64): Rentabilidade da NTN-F sobre a curva DI.
 
     Examples:
@@ -294,9 +293,7 @@ def cash_flows(
     )
 
     if adj_payment_dates:
-        df = df.with_columns(
-            data_pagamento=bday.offset_expr("data_pagamento", 0)
-        )
+        df = df.with_columns(data_pagamento=bday.offset_expr("data_pagamento", 0))
     return df
 
 
