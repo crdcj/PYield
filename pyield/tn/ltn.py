@@ -34,7 +34,7 @@ def data(date: DateLike) -> pl.DataFrame:
         - taxa_compra (Float64): Taxa de compra (decimal).
         - taxa_venda (Float64): Taxa de venda (decimal).
         - taxa_indicativa (Float64): Taxa indicativa (decimal).
-        - taxa_di (Float64): Taxa DI interpolada (flat forward).
+        - taxa_di (Float64): Taxa DI interpolada pelo método flat forward.
         - spread_di (Float64): Spread sobre o DI (também conhecido como
             prêmio).
         - rentabilidade (Float64): Rentabilidade diária da LTN sobre o DI.

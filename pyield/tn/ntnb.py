@@ -48,7 +48,7 @@ def data(date: DateLike) -> pl.DataFrame:
         - taxa_compra (Float64): Taxa de compra (decimal).
         - taxa_venda (Float64): Taxa de venda (decimal).
         - taxa_indicativa (Float64): Taxa indicativa (decimal).
-        - taxa_di (Float64): Taxa DI interpolada (flat forward).
+        - taxa_di (Float64): Taxa DI interpolada pelo método flat forward.
         - taxa_zero (Float64): Taxa zero real (via bootstrap das taxas indicativas).
         - taxa_forward (Float64): Taxa forward real (a partir das taxas zero).
         - inflacao_implicita (Float64): Inflação implícita (breakeven) calculada

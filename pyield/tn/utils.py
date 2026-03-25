@@ -57,7 +57,7 @@ def obter_tpf(
 
 
 def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
-    """Adiciona a coluna `taxa_di` ao DataFrame via interpolação flat forward."""
+    """Adiciona a coluna `taxa_di` ao DataFrame pelo método flat forward."""
     from pyield.b3 import di1  # noqa: PLC0415
 
     taxas_di = di1.interpolate_rates(
