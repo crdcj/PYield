@@ -37,7 +37,7 @@ def data(date: DateLike) -> pl.DataFrame:
         - data_referencia (Date): Data de referência dos dados.
         - titulo (String): Tipo do título (ex.: "NTN-B").
         - codigo_selic (Int64): Código do título no SELIC.
-        - data_base (Date): Data base/emissão do título.
+        - data_base (Date): Data base de emissão do título.
         - data_vencimento (Date): Data de vencimento do título.
         - dias_uteis (Int64): Dias úteis entre referência e vencimento.
         - duration (Float64): Macaulay Duration do título (anos).
@@ -48,7 +48,8 @@ def data(date: DateLike) -> pl.DataFrame:
         - taxa_compra (Float64): Taxa de compra (decimal).
         - taxa_venda (Float64): Taxa de venda (decimal).
         - taxa_indicativa (Float64): Taxa indicativa (decimal).
-        - taxa_di (Float64): Taxa DI interpolada pelo método flat forward.
+        - taxa_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo
+            método flat forward.
         - taxa_zero (Float64): Taxa zero real (via bootstrap das taxas indicativas).
         - taxa_forward (Float64): Taxa forward real (a partir das taxas zero).
         - inflacao_implicita (Float64): Inflação implícita (breakeven) calculada
