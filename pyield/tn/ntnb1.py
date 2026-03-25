@@ -72,7 +72,7 @@ def payment_dates(
         >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
         >>> ntnb1.payment_dates("10-05-2024", "15-12-2050", r_mais)
         shape: (240,)
-        Series: 'payment_dates' [date]
+        Series: 'datas_pagamento' [date]
         [
             2031-01-15
             2031-02-15
@@ -88,7 +88,7 @@ def payment_dates(
         ]
     """
     if any_is_empty(settlement, maturity, commercial_name):
-        return pl.Series("payment_dates", dtype=pl.Date)
+        return pl.Series("datas_pagamento", dtype=pl.Date)
 
     # Valida e normaliza datas
     liquidacao = conversores.converter_datas(settlement)
@@ -109,7 +109,7 @@ def payment_dates(
     if len(datas_amortizacao) == 0:
         raise ValueError("Nenhuma data de amortização após a liquidação.")
 
-    datas_pagamento = pl.Series(name="payment_dates", values=datas_amortizacao).cast(
+    datas_pagamento = pl.Series(name="datas_pagamento", values=datas_amortizacao).cast(
         pl.Date
     )
 
@@ -131,35 +131,35 @@ def cash_flows(
         pl.DataFrame: DataFrame com as colunas de fluxo.
 
     Output Columns:
-        - PaymentDate (Date): Data de pagamento do fluxo.
-        - CashFlow (Float64): Valor do fluxo.
+        - data_pagamento (Date): Data de pagamento.
+        - valor_pagamento (Float64): Valor do pagamento.
 
     Examples:
         >>> from pyield import ntnb1
         >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
         >>> ntnb1.cash_flows("10-05-2024", "15-12-2060", r_mais)
         shape: (240, 2)
-        ┌─────────────┬──────────┐
-        │ PaymentDate ┆ CashFlow │
-        │ ---         ┆ ---      │
-        │ date        ┆ f64      │
-        ╞═════════════╪══════════╡
-        │ 2041-01-15  ┆ 0.004167 │
-        │ 2041-02-15  ┆ 0.004167 │
-        │ 2041-03-15  ┆ 0.004167 │
-        │ 2041-04-15  ┆ 0.004167 │
-        │ 2041-05-15  ┆ 0.004167 │
-        │ …           ┆ …        │
-        │ 2060-08-15  ┆ 0.004167 │
-        │ 2060-09-15  ┆ 0.004167 │
-        │ 2060-10-15  ┆ 0.004167 │
-        │ 2060-11-15  ┆ 0.004167 │
-        │ 2060-12-15  ┆ 0.004167 │
-        └─────────────┴──────────┘
+        ┌────────────────┬─────────────────┐
+        │ data_pagamento ┆ valor_pagamento │
+        │ ---            ┆ ---             │
+        │ date           ┆ f64             │
+        ╞════════════════╪═════════════════╡
+        │ 2041-01-15     ┆ 0.004167        │
+        │ 2041-02-15     ┆ 0.004167        │
+        │ 2041-03-15     ┆ 0.004167        │
+        │ 2041-04-15     ┆ 0.004167        │
+        │ 2041-05-15     ┆ 0.004167        │
+        │ …              ┆ …               │
+        │ 2060-08-15     ┆ 0.004167        │
+        │ 2060-09-15     ┆ 0.004167        │
+        │ 2060-10-15     ┆ 0.004167        │
+        │ 2060-11-15     ┆ 0.004167        │
+        │ 2060-12-15     ┆ 0.004167        │
+        └────────────────┴─────────────────┘
 
     """
     if any_is_empty(settlement, maturity, commercial_name):
-        return pl.DataFrame({"PaymentDate": [], "CashFlow": []})
+        return pl.DataFrame({"data_pagamento": [], "valor_pagamento": []})
 
     # Valida e normaliza datas
     liquidacao = conversores.converter_datas(settlement)
@@ -167,7 +167,7 @@ def cash_flows(
 
     # Obtém as datas de amortização
     datas_pagamento = payment_dates(liquidacao, vencimento, commercial_name)
-    df = pl.DataFrame({"PaymentDate": datas_pagamento})
+    df = pl.DataFrame({"data_pagamento": datas_pagamento})
 
     # Parâmetros do título
     pagamento_amort, pagamento_amort_final, _ = _obter_parametros_titulo(
@@ -176,10 +176,10 @@ def cash_flows(
 
     # Define o fluxo final no vencimento e os demais como amortizações
     df = df.with_columns(
-        pl.when(pl.col("PaymentDate") == vencimento)
+        pl.when(pl.col("data_pagamento") == vencimento)
         .then(pagamento_amort_final)
         .otherwise(pagamento_amort)
-        .alias("CashFlow")
+        .alias("valor_pagamento")
     )
 
     # Retorna o DataFrame com datas e fluxos
@@ -217,8 +217,8 @@ def quotation(
         return float("nan")
 
     df_fluxos = cash_flows(settlement, maturity, commercial_name)
-    valores_fluxo = df_fluxos["CashFlow"]
-    dias_uteis = bday.count(settlement, df_fluxos["PaymentDate"])
+    valores_fluxo = df_fluxos["valor_pagamento"]
+    dias_uteis = bday.count(settlement, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncate(dias_uteis / 252, 14)
     fatores_desconto = (1 + rate) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
@@ -285,8 +285,8 @@ def duration(
         return float("nan")
 
     df_fluxos = cash_flows(settlement, maturity, commercial_name)
-    anos_uteis = bday.count(settlement, df_fluxos["PaymentDate"]) / 252
-    vp = df_fluxos["CashFlow"] / (1 + rate) ** anos_uteis
+    anos_uteis = bday.count(settlement, df_fluxos["data_pagamento"]) / 252
+    vp = df_fluxos["valor_pagamento"] / (1 + rate) ** anos_uteis
     duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
 
     # Trunca a duração para 14 casas para reprodutibilidade

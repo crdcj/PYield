@@ -1,7 +1,7 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import anbima, bday, fwd
+from pyield import bday, fwd
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 from pyield.tn.pre import di_spreads as pre_di_spreads
@@ -20,72 +20,72 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de LTN.
 
     Output Columns:
-        - ReferenceDate (Date): Data de referência dos dados.
-        - BondType (String): Tipo do título (ex.: "LTN").
-        - SelicCode (Int64): Código do título no SELIC.
-        - IssueBaseDate (Date): Data base/emissão do título.
-        - MaturityDate (Date): Data de vencimento do título.
-        - BDToMat (Int64): Dias úteis entre referência e vencimento.
-        - Duration (Float64): Macaulay Duration do título (anos).
-        - AvgMaturity (Float64): Prazo médio do título (anos).
-        - DV01 (Float64): Variação no preço para 1bp de taxa.
-        - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
-        - Price (Float64): Preço unitário (PU).
-        - BidRate (Float64): Taxa de compra (decimal).
-        - AskRate (Float64): Taxa de venda (decimal).
-        - IndicativeRate (Float64): Taxa indicativa (decimal).
-        - DIRate (Float64): Taxa DI interpolada (flat forward).
-        - DISpread (Float64): Spread sobre o DI (IndicativeRate - DIRate).
-        - Premium (Float64): Rentabilidade diária da LTN sobre o DI.
+        - data_referencia (Date): Data de referência dos dados.
+        - titulo (String): Tipo do título (ex.: "LTN").
+        - codigo_selic (Int64): Código do título no SELIC.
+        - data_base (Date): Data base de emissão do título.
+        - data_vencimento (Date): Data de vencimento do título.
+        - dias_uteis (Int64): Dias úteis entre referência e vencimento.
+        - duration (Float64): Macaulay Duration do título (anos).
+        - prazo_medio (Float64): Prazo médio do título (anos).
+        - dv01 (Float64): Variação no preço para 1bp de taxa.
+        - dv01_usd (Float64): DV01 convertido para USD pela PTAX do dia.
+        - pu (Float64): Preço unitário (PU).
+        - taxa_compra (Float64): Taxa de compra (decimal).
+        - taxa_venda (Float64): Taxa de venda (decimal).
+        - taxa_indicativa (Float64): Taxa indicativa (decimal).
+        - taxa_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo
+            método flat forward.
+        - spread_di (Float64): Spread sobre o DI (também conhecido como
+            prêmio).
+        - rentabilidade (Float64): Rentabilidade diária da LTN sobre o DI.
 
     Examples:
         >>> from pyield import ltn
         >>> df_ltn = ltn.data("23-08-2024")  # doctest: +SKIP
     """
-    df = anbima.tpf(date, "LTN")
+    df = utils.obter_tpf(date, "LTN")
     if df.is_empty():
         return df
 
     data_ref = cv.converter_datas(date)
 
-    # Adiciona BDToMat (dado derivado, não vem da ANBIMA)
     df = df.with_columns(
-        BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"),
+        dias_uteis=bday.count_expr("data_referencia", "data_vencimento"),
     )
 
-    # Adiciona Duration, AvgMaturity, DV01, DV01USD e DIRate
     df = df.with_columns(
-        Duration=pl.col("BDToMat") / 252,
-    ).with_columns(AvgMaturity=pl.col("Duration"))
+        duration=pl.col("dias_uteis") / 252,
+    ).with_columns(prazo_medio=pl.col("duration"))
     df = utils.adicionar_dv01(df, data_ref)
     df = utils.adicionar_taxa_di(df, data_ref)
 
     df = df.with_columns(
-        DISpread=pl.col("IndicativeRate") - pl.col("DIRate"),
-        Premium=pl.struct("IndicativeRate", "DIRate").map_elements(
-            lambda s: premium(s["IndicativeRate"], s["DIRate"]),
+        spread_di=pl.col("taxa_indicativa") - pl.col("taxa_di"),
+        rentabilidade=pl.struct("taxa_indicativa", "taxa_di").map_elements(
+            lambda s: premium(s["taxa_indicativa"], s["taxa_di"]),
             return_dtype=pl.Float64,
         ),
     )
 
     return df.select(
-        "ReferenceDate",
-        "BondType",
-        "SelicCode",
-        "IssueBaseDate",
-        "MaturityDate",
-        "BDToMat",
-        "Duration",
-        "AvgMaturity",
-        "DV01",
-        "DV01USD",
-        "Price",
-        "BidRate",
-        "AskRate",
-        "IndicativeRate",
-        "DIRate",
-        "DISpread",
-        "Premium",
+        "data_referencia",
+        "titulo",
+        "codigo_selic",
+        "data_base",
+        "data_vencimento",
+        "dias_uteis",
+        "duration",
+        "prazo_medio",
+        "dv01",
+        "dv01_usd",
+        "pu",
+        "taxa_compra",
+        "taxa_venda",
+        "taxa_indicativa",
+        "taxa_di",
+        "spread_di",
+        "rentabilidade",
     )
 
 
@@ -103,7 +103,7 @@ def maturities(date: DateLike) -> pl.Series:
         >>> from pyield import ltn
         >>> ltn.maturities("22-08-2024")
         shape: (13,)
-        Series: 'MaturityDate' [date]
+        Series: 'data_vencimento' [date]
         [
             2024-10-01
             2025-01-01
@@ -118,7 +118,7 @@ def maturities(date: DateLike) -> pl.Series:
             2030-01-01
         ]
     """
-    return data(date)["MaturityDate"]
+    return data(date)["data_vencimento"]
 
 
 def price(
@@ -224,7 +224,7 @@ def premium(ltn_rate: float, di_rate: float) -> float:
     taxa_diaria_ltn = (1 + ltn_rate) ** (1 / 252) - 1
     taxa_diaria_di = (1 + di_rate) ** (1 / 252) - 1
 
-    # Retorno do cálculo do prêmio
+    # Retorno do cálculo da rentabilidade
     return taxa_diaria_ltn / taxa_diaria_di
 
 
@@ -264,7 +264,7 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
     Calcula o DI Spread para títulos prefixados (LTN e NTN-F) em uma data de referência.
 
     Definição do spread (forma bruta):
-        DISpread_raw = IndicativeRate - SettlementRate
+        spread_di = taxa_indicativa - taxa de ajuste do DI
 
     Quando ``bps=False`` a coluna retorna essa diferença em formato decimal
     (ex: 0.000439 ≈ 4.39 bps). Quando ``bps=True`` o valor é automaticamente
@@ -272,16 +272,17 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
 
     Args:
         date (DateLike): Data de referência para buscar as taxas.
-        bps (bool): Se True, retorna DISpread já convertido em basis points.
+        bps (bool): Se True, retorna spread_di já convertido em basis points.
             Padrão False.
 
     Returns:
         pl.DataFrame: DataFrame com as colunas do spread.
 
     Output Columns:
-        - BondType (String): Tipo do título.
-        - MaturityDate (Date): Data de vencimento.
-        - DISpread (Float64): Spread em decimal ou bps conforme parâmetro.
+        - titulo (String): Tipo do título.
+        - data_vencimento (Date): Data de vencimento.
+        - spread_di (Float64): Spread em decimal ou bps conforme parâmetro
+            (também conhecido como prêmio).
 
     Raises:
         ValueError: Se os dados de DI não possuem 'SettlementRate' ou estão vazios.
@@ -290,25 +291,25 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
         >>> from pyield import ltn
         >>> ltn.di_spreads("30-05-2025", bps=True)
         shape: (13, 3)
-        ┌──────────┬──────────────┬──────────┐
-        │ BondType ┆ MaturityDate ┆ DISpread │
-        │ ---      ┆ ---          ┆ ---      │
-        │ str      ┆ date         ┆ f64      │
-        ╞══════════╪══════════════╪══════════╡
-        │ LTN      ┆ 2025-07-01   ┆ 4.39     │
-        │ LTN      ┆ 2025-10-01   ┆ -9.0     │
-        │ LTN      ┆ 2026-01-01   ┆ -4.88    │
-        │ LTN      ┆ 2026-04-01   ┆ -4.45    │
-        │ LTN      ┆ 2026-07-01   ┆ 0.81     │
-        │ …        ┆ …            ┆ …        │
-        │ LTN      ┆ 2028-01-01   ┆ 0.55     │
-        │ LTN      ┆ 2028-07-01   ┆ 1.5      │
-        │ LTN      ┆ 2029-01-01   ┆ 10.77    │
-        │ LTN      ┆ 2030-01-01   ┆ 11.0     │
-        │ LTN      ┆ 2032-01-01   ┆ 11.24    │
-        └──────────┴──────────────┴──────────┘
+        ┌────────┬─────────────────┬───────────┐
+        │ titulo ┆ data_vencimento ┆ spread_di │
+        │ ---    ┆ ---             ┆ ---       │
+        │ str    ┆ date            ┆ f64       │
+        ╞════════╪═════════════════╪═══════════╡
+        │ LTN    ┆ 2025-07-01      ┆ 4.39      │
+        │ LTN    ┆ 2025-10-01      ┆ -9.0      │
+        │ LTN    ┆ 2026-01-01      ┆ -4.88     │
+        │ LTN    ┆ 2026-04-01      ┆ -4.45     │
+        │ LTN    ┆ 2026-07-01      ┆ 0.81      │
+        │ …      ┆ …               ┆ …         │
+        │ LTN    ┆ 2028-01-01      ┆ 0.55      │
+        │ LTN    ┆ 2028-07-01      ┆ 1.5       │
+        │ LTN    ┆ 2029-01-01      ┆ 10.77     │
+        │ LTN    ┆ 2030-01-01      ┆ 11.0      │
+        │ LTN    ┆ 2032-01-01      ┆ 11.24     │
+        └────────┴─────────────────┴───────────┘
     """
-    return pre_di_spreads(date, bps=bps).filter(pl.col("BondType") == "LTN")
+    return pre_di_spreads(date, bps=bps).filter(pl.col("titulo") == "LTN")
 
 
 def forwards(date: DateLike) -> pl.DataFrame:
@@ -325,35 +326,35 @@ def forwards(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame com as taxas forward.
 
     Output Columns:
-        - MaturityDate (Date): Data de vencimento.
-        - BDToMat (Int64): Dias úteis entre referência e vencimento.
-        - IndicativeRate (Float64): Taxa spot (zero cupom).
-        - ForwardRate (Float64): Taxa forward.
+        - data_vencimento (Date): Data de vencimento.
+        - dias_uteis (Int64): Dias úteis entre referência e vencimento.
+        - taxa_indicativa (Float64): Taxa spot (zero cupom).
+        - taxa_forward (Float64): Taxa forward.
 
     Examples:
         >>> from pyield import ltn
         >>> ltn.forwards("17-10-2025")
         shape: (13, 4)
-        ┌──────────────┬─────────┬────────────────┬─────────────┐
-        │ MaturityDate ┆ BDToMat ┆ IndicativeRate ┆ ForwardRate │
-        │ ---          ┆ ---     ┆ ---            ┆ ---         │
-        │ date         ┆ i64     ┆ f64            ┆ f64         │
-        ╞══════════════╪═════════╪════════════════╪═════════════╡
-        │ 2026-01-01   ┆ 52      ┆ 0.148307       ┆ 0.148307    │
-        │ 2026-04-01   ┆ 113     ┆ 0.147173       ┆ 0.146207    │
-        │ 2026-07-01   ┆ 174     ┆ 0.145206       ┆ 0.141571    │
-        │ 2026-10-01   ┆ 239     ┆ 0.142424       ┆ 0.13501     │
-        │ 2027-04-01   ┆ 361     ┆ 0.138155       ┆ 0.129838    │
-        │ …            ┆ …       ┆ …              ┆ …           │
-        │ 2028-07-01   ┆ 676     ┆ 0.133411       ┆ 0.131654    │
-        │ 2029-01-01   ┆ 800     ┆ 0.134254       ┆ 0.138861    │
-        │ 2029-07-01   ┆ 924     ┆ 0.135264       ┆ 0.141802    │
-        │ 2030-01-01   ┆ 1049    ┆ 0.135967       ┆ 0.141177    │
-        │ 2032-01-01   ┆ 1553    ┆ 0.13883        ┆ 0.144812    │
-        └──────────────┴─────────┴────────────────┴─────────────┘
+        ┌─────────────────┬────────────┬─────────────────┬──────────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_indicativa ┆ taxa_forward │
+        │ ---             ┆ ---        ┆ ---             ┆ ---          │
+        │ date            ┆ i64        ┆ f64             ┆ f64          │
+        ╞═════════════════╪════════════╪═════════════════╪══════════════╡
+        │ 2026-01-01      ┆ 52         ┆ 0.148307        ┆ 0.148307     │
+        │ 2026-04-01      ┆ 113        ┆ 0.147173        ┆ 0.146207     │
+        │ 2026-07-01      ┆ 174        ┆ 0.145206        ┆ 0.141571     │
+        │ 2026-10-01      ┆ 239        ┆ 0.142424        ┆ 0.13501      │
+        │ 2027-04-01      ┆ 361        ┆ 0.138155        ┆ 0.129838     │
+        │ …               ┆ …          ┆ …               ┆ …            │
+        │ 2028-07-01      ┆ 676        ┆ 0.133411        ┆ 0.131654     │
+        │ 2029-01-01      ┆ 800        ┆ 0.134254        ┆ 0.138861     │
+        │ 2029-07-01      ┆ 924        ┆ 0.135264        ┆ 0.141802     │
+        │ 2030-01-01      ┆ 1049       ┆ 0.135967        ┆ 0.141177     │
+        │ 2032-01-01      ┆ 1553       ┆ 0.13883         ┆ 0.144812     │
+        └─────────────────┴────────────┴─────────────────┴──────────────┘
     """
     if any_is_empty(date):
         return pl.DataFrame()
-    df = data(date).select("MaturityDate", "BDToMat", "IndicativeRate")
-    taxas_forward = fwd.forwards(bdays=df["BDToMat"], rates=df["IndicativeRate"])
-    return df.with_columns(ForwardRate=taxas_forward).sort("MaturityDate")
+    df = data(date).select("data_vencimento", "dias_uteis", "taxa_indicativa")
+    taxas_forward = fwd.forwards(bdays=df["dias_uteis"], rates=df["taxa_indicativa"])
+    return df.with_columns(taxa_forward=taxas_forward).sort("data_vencimento")

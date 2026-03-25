@@ -6,7 +6,34 @@ from typing import overload
 
 import polars as pl
 
+from pyield._internal.types import DateLike
+from pyield.anbima.tpf import BOND_TYPES
+
 logger = logging.getLogger(__name__)
+
+MAPA_COLUNAS_TPF = {
+    "ReferenceDate": "data_referencia",
+    "BondType": "titulo",
+    "SelicCode": "codigo_selic",
+    "IssueBaseDate": "data_base",
+    "MaturityDate": "data_vencimento",
+    "Price": "pu",
+    "BidRate": "taxa_compra",
+    "AskRate": "taxa_venda",
+    "IndicativeRate": "taxa_indicativa",
+}
+
+COLUNAS_DADOS_TPF = (
+    "data_referencia",
+    "titulo",
+    "codigo_selic",
+    "data_base",
+    "data_vencimento",
+    "pu",
+    "taxa_compra",
+    "taxa_venda",
+    "taxa_indicativa",
+)
 
 
 def subtrair_meses(data: dt.date, meses: int) -> dt.date:
@@ -17,51 +44,63 @@ def subtrair_meses(data: dt.date, meses: int) -> dt.date:
     return data.replace(year=ano, month=mes)
 
 
+def obter_tpf(
+    date: DateLike,
+    tipo_titulo: BOND_TYPES,
+) -> pl.DataFrame:
+    """Busca dados de ``anbima.tpf()`` no padrão de colunas usado por ``tn``."""
+    from pyield import anbima  # noqa: PLC0415
+
+    return anbima.tpf(date, tipo_titulo).select(tuple(MAPA_COLUNAS_TPF)).rename(
+        MAPA_COLUNAS_TPF
+    )
+
+
 def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
-    """Adiciona a coluna DIRate ao DataFrame via interpolação flat forward do DI."""
+    """Adiciona a coluna `taxa_di` ao DataFrame pelo método flat forward."""
     from pyield.b3 import di1  # noqa: PLC0415
 
     taxas_di = di1.interpolate_rates(
         dates=data_ref,
-        expirations=df["MaturityDate"],
+        expirations=df["data_vencimento"],
         extrapolate=True,
     )
     if taxas_di.is_empty():
         return df
-    return df.with_columns(DIRate=taxas_di)
+    return df.with_columns(taxa_di=taxas_di)
 
 
 def adicionar_duration(
     df: pl.DataFrame,
     funcao_duration: Callable[[dt.date, dt.date, float], float],
 ) -> pl.DataFrame:
-    """Adiciona Duration e AvgMaturity ao DataFrame.
+    """Adiciona `duration` e `prazo_medio` ao DataFrame.
 
     Calcula a Macaulay Duration via ``funcao_duration`` (row-wise) e define
-    AvgMaturity igual a Duration.
+    `prazo_medio` igual a `duration`.
     """
     return df.with_columns(
-        Duration=pl.struct(
-            "ReferenceDate", "MaturityDate", "IndicativeRate"
+        duration=pl.struct(
+            "data_referencia", "data_vencimento", "taxa_indicativa"
         ).map_elements(
             lambda s: funcao_duration(
-                s["ReferenceDate"], s["MaturityDate"], s["IndicativeRate"]
+                s["data_referencia"], s["data_vencimento"], s["taxa_indicativa"]
             ),
             return_dtype=pl.Float64,
         ),
-    ).with_columns(AvgMaturity=pl.col("Duration"))
+    ).with_columns(prazo_medio=pl.col("duration"))
 
 
 def adicionar_dv01(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
-    """Adiciona DV01 e DV01USD ao DataFrame. Requer coluna Duration."""
+    """Adiciona `dv01` e `dv01_usd` ao DataFrame. Requer coluna `duration`."""
     from pyield.bc.ptax_api import ptax  # noqa: PLC0415
 
-    expr_duracao_mod = pl.col("Duration") / (1 + pl.col("IndicativeRate"))
-    df = df.with_columns(DV01=0.0001 * expr_duracao_mod * pl.col("Price"))
+    expr_duracao_mod = pl.col("duration") / (1 + pl.col("taxa_indicativa"))
+    df = df.with_columns(dv01=0.0001 * expr_duracao_mod * pl.col("pu"))
 
     try:
         taxa_ptax = ptax(date=data_ref)
-        df = df.with_columns(DV01USD=pl.col("DV01") / taxa_ptax)
+        df = df.with_columns(dv01_usd=pl.col("dv01") / taxa_ptax)
     except Exception as e:
         logger.error("Erro ao adicionar DV01 em USD: %s", e)
     return df

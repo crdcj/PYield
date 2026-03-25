@@ -1,7 +1,7 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import anbima, bday
+from pyield import bday
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 
@@ -17,62 +17,61 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de LFT.
 
     Output Columns:
-        - ReferenceDate (Date): Data de referência dos dados.
-        - BondType (String): Tipo do título (ex.: "LFT").
-        - SelicCode (Int64): Código do título no SELIC.
-        - IssueBaseDate (Date): Data base/emissão do título.
-        - MaturityDate (Date): Data de vencimento do título.
-        - BDToMat (Int64): Dias úteis entre referência e vencimento.
-        - AvgMaturity (Float64): Prazo médio do título em anos.
-        - Price (Float64): Preço unitário (PU).
-        - BidRate (Float64): Taxa de compra (decimal).
-        - AskRate (Float64): Taxa de venda (decimal).
-        - IndicativeRate (Float64): Taxa indicativa (decimal).
-        - DIRate (Float64): Taxa DI interpolada (flat forward).
-        - Premium (Float64): Rentabilidade da LFT sobre o DI.
+        - data_referencia (Date): Data de referência dos dados.
+        - titulo (String): Tipo do título (ex.: "LFT").
+        - codigo_selic (Int64): Código do título no SELIC.
+        - data_base (Date): Data base de emissão do título.
+        - data_vencimento (Date): Data de vencimento do título.
+        - dias_uteis (Int64): Dias úteis entre referência e vencimento.
+        - prazo_medio (Float64): Prazo médio do título em anos.
+        - pu (Float64): Preço unitário (PU).
+        - taxa_compra (Float64): Taxa de compra (decimal).
+        - taxa_venda (Float64): Taxa de venda (decimal).
+        - taxa_indicativa (Float64): Taxa indicativa (decimal).
+        - taxa_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo
+            método flat forward.
+        - rentabilidade (Float64): Rentabilidade da LFT sobre o DI.
 
     Examples:
         >>> from pyield import lft
         >>> df_lft = lft.data("23-08-2024")  # doctest: +SKIP
     """
-    df = anbima.tpf(date, "LFT")
+    df = utils.obter_tpf(date, "LFT")
     if df.is_empty():
         return df
 
     data_ref = cv.converter_datas(date)
 
-    # Adiciona BDToMat (dado derivado, não vem da ANBIMA)
     df = df.with_columns(
-        BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"),
+        dias_uteis=bday.count_expr("data_referencia", "data_vencimento"),
     )
 
-    # Adiciona AvgMaturity e DIRate
     df = df.with_columns(
-        AvgMaturity=pl.col("BDToMat") / 252,
+        prazo_medio=pl.col("dias_uteis") / 252,
     )
     df = utils.adicionar_taxa_di(df, data_ref)
 
     df = df.with_columns(
-        Premium=pl.struct("IndicativeRate", "DIRate").map_elements(
-            lambda s: premium(s["IndicativeRate"], s["DIRate"]),
+        rentabilidade=pl.struct("taxa_indicativa", "taxa_di").map_elements(
+            lambda s: premium(s["taxa_indicativa"], s["taxa_di"]),
             return_dtype=pl.Float64,
         )
     )
 
     return df.select(
-        "ReferenceDate",
-        "BondType",
-        "SelicCode",
-        "IssueBaseDate",
-        "MaturityDate",
-        "BDToMat",
-        "AvgMaturity",
-        "Price",
-        "BidRate",
-        "AskRate",
-        "IndicativeRate",
-        "DIRate",
-        "Premium",
+        "data_referencia",
+        "titulo",
+        "codigo_selic",
+        "data_base",
+        "data_vencimento",
+        "dias_uteis",
+        "prazo_medio",
+        "pu",
+        "taxa_compra",
+        "taxa_venda",
+        "taxa_indicativa",
+        "taxa_di",
+        "rentabilidade",
     )
 
 
@@ -90,7 +89,7 @@ def maturities(date: DateLike) -> pl.Series:
         >>> from pyield import lft
         >>> lft.maturities("22-08-2024")
         shape: (14,)
-        Series: 'MaturityDate' [date]
+        Series: 'data_vencimento' [date]
         [
             2024-09-01
             2025-03-01
@@ -105,7 +104,7 @@ def maturities(date: DateLike) -> pl.Series:
             2030-09-01
         ]
     """
-    return data(date)["MaturityDate"]
+    return data(date)["data_vencimento"]
 
 
 def quotation(

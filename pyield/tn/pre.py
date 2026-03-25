@@ -1,7 +1,7 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import anbima, bday
+from pyield import bday
 from pyield._internal.types import DateLike
 from pyield.tn import ntnf, utils
 
@@ -20,9 +20,9 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame com as colunas da curva PRE.
 
     Output Columns:
-        - MaturityDate (Date): Data de vencimento.
-        - BDToMat (Int64): Dias úteis entre referência e vencimento.
-        - SpotRate (Float64): Taxa spot (zero cupom).
+        - data_vencimento (Date): Data de vencimento.
+        - dias_uteis (Int64): Dias úteis entre referência e vencimento.
+        - taxa_zero (Float64): Taxa zero (zero cupom).
 
     Raises:
         ValueError: Se algum vencimento não puder ser processado.
@@ -31,37 +31,39 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
         >>> from pyield import pre
         >>> pre.spot_rates("18-06-2025")
         shape: (17, 3)
-        ┌──────────────┬─────────┬──────────┐
-        │ MaturityDate ┆ BDToMat ┆ SpotRate │
-        │ ---          ┆ ---     ┆ ---      │
-        │ date         ┆ i64     ┆ f64      │
-        ╞══════════════╪═════════╪══════════╡
-        │ 2025-07-01   ┆ 8       ┆ 0.14835  │
-        │ 2025-10-01   ┆ 74      ┆ 0.147463 │
-        │ 2026-01-01   ┆ 138     ┆ 0.147752 │
-        │ 2026-04-01   ┆ 199     ┆ 0.147947 │
-        │ 2026-07-01   ┆ 260     ┆ 0.147069 │
-        │ …            ┆ …       ┆ …        │
-        │ 2030-01-01   ┆ 1135    ┆ 0.137279 │
-        │ 2031-01-01   ┆ 1387    ┆ 0.138154 │
-        │ 2032-01-01   ┆ 1639    ┆ 0.13876  │
-        │ 2033-01-01   ┆ 1891    ┆ 0.1393   │
-        │ 2035-01-01   ┆ 2390    ┆ 0.141068 │
-        └──────────────┴─────────┴──────────┘
+        ┌─────────────────┬────────────┬───────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
+        │ ---             ┆ ---        ┆ ---       │
+        │ date            ┆ i64        ┆ f64       │
+        ╞═════════════════╪════════════╪═══════════╡
+        │ 2025-07-01      ┆ 8          ┆ 0.14835   │
+        │ 2025-10-01      ┆ 74         ┆ 0.147463  │
+        │ 2026-01-01      ┆ 138        ┆ 0.147752  │
+        │ 2026-04-01      ┆ 199        ┆ 0.147947  │
+        │ 2026-07-01      ┆ 260        ┆ 0.147069  │
+        │ …               ┆ …          ┆ …         │
+        │ 2030-01-01      ┆ 1135       ┆ 0.137279  │
+        │ 2031-01-01      ┆ 1387       ┆ 0.138154  │
+        │ 2032-01-01      ┆ 1639       ┆ 0.13876   │
+        │ 2033-01-01      ┆ 1891       ┆ 0.1393    │
+        │ 2035-01-01      ┆ 2390       ┆ 0.141068  │
+        └─────────────────┴────────────┴───────────┘
     """
     # Busca dados de LTN (zero cupom)
-    df_ltn = anbima.tpf(date, "LTN")
+    df_ltn = utils.obter_tpf(date, "LTN").select("data_vencimento", "taxa_indicativa")
 
     # Busca dados de NTN-F (com cupom)
-    df_ntnf = anbima.tpf(date, "NTN-F")
+    df_ntnf = utils.obter_tpf(date, "NTN-F").select(
+        "data_vencimento", "taxa_indicativa"
+    )
 
     # Verifica se há dados para ambos os tipos
     if df_ltn.is_empty() and df_ntnf.is_empty():
         return pl.DataFrame(
             schema={
-                "MaturityDate": pl.Date,
-                "BDToMat": pl.Int64,
-                "SpotRate": pl.Float64,
+                "data_vencimento": pl.Date,
+                "dias_uteis": pl.Int64,
+                "taxa_zero": pl.Float64,
             }
         )
 
@@ -78,15 +80,15 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
         # Usa spot_rates de NTN-F para calcular zero cupom
         df_spots = ntnf.spot_rates(
             settlement=date,
-            ltn_maturities=df_ltn["MaturityDate"],
-            ltn_rates=df_ltn["IndicativeRate"],
-            ntnf_maturities=df_ntnf["MaturityDate"],
-            ntnf_rates=df_ntnf["IndicativeRate"],
+            ltn_maturities=df_ltn["data_vencimento"],
+            ltn_rates=df_ltn["taxa_indicativa"],
+            ntnf_maturities=df_ntnf["data_vencimento"],
+            ntnf_rates=df_ntnf["taxa_indicativa"],
             show_coupons=False,
         )
 
         # Encontra vencimentos de LTN que não estão no resultado de NTN-F
-        ltn_mask = ~df_ltn["MaturityDate"].is_in(df_spots["MaturityDate"].to_list())
+        ltn_mask = ~df_ltn["data_vencimento"].is_in(df_spots["data_vencimento"].to_list())
         ltn_not_in_ntnf = df_ltn.filter(ltn_mask)
 
         if not ltn_not_in_ntnf.is_empty():
@@ -102,7 +104,7 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
     _validar_resultado_final(df)
 
     # Ordena por vencimento
-    return df.sort("MaturityDate")
+    return df.sort("data_vencimento")
 
 
 def _processar_ltn_adicionais(
@@ -110,25 +112,25 @@ def _processar_ltn_adicionais(
 ) -> pl.DataFrame:
     """Processa vencimentos de LTN fora do bootstrap de NTN-F."""
     # Calcula dias úteis de forma vetorizada
-    dias_uteis = bday.count(date, ltn_nao_em_ntnf["MaturityDate"])
+    dias_uteis = bday.count(date, ltn_nao_em_ntnf["data_vencimento"])
 
     # Cria DataFrame de resultado
     return pl.DataFrame(
         {
-            "MaturityDate": ltn_nao_em_ntnf["MaturityDate"],
-            "BDToMat": dias_uteis,
-            "SpotRate": ltn_nao_em_ntnf["IndicativeRate"],
+            "data_vencimento": ltn_nao_em_ntnf["data_vencimento"],
+            "dias_uteis": dias_uteis,
+            "taxa_zero": ltn_nao_em_ntnf["taxa_indicativa"],
         }
     )
 
 
 def _validar_resultado_final(df: pl.DataFrame) -> None:
     """Valida o DataFrame final combinado."""
-    if df["BDToMat"].is_null().any():
-        raise ValueError("Resultado final contém NaN na coluna BDToMat")
+    if df["dias_uteis"].is_null().any():
+        raise ValueError("Resultado final contém NaN na coluna dias_uteis")
 
-    if df["SpotRate"].is_null().any():
-        raise ValueError("Resultado final contém NaN na coluna SpotRate")
+    if df["taxa_zero"].is_null().any():
+        raise ValueError("Resultado final contém NaN na coluna taxa_zero")
 
 
 def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
@@ -143,56 +145,59 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
 
     Args:
         date (DateLike): Data de referência para buscar as taxas.
-        bps (bool): Se True, retorna DISpread já convertido em basis points.
+        bps (bool): Se True, retorna spread_di já convertido em basis points.
             Padrão False.
 
     Returns:
         pl.DataFrame: DataFrame com as colunas do spread.
 
     Output Columns:
-        - BondType (String): Tipo do título.
-        - MaturityDate (Date): Data de vencimento.
-        - DISpread (Float64): Spread em decimal ou bps conforme parâmetro.
+        - titulo (String): Tipo do título.
+        - data_vencimento (Date): Data de vencimento.
+        - spread_di (Float64): Spread em decimal ou bps conforme parâmetro
+            (também conhecido como prêmio).
 
     Examples:
         >>> from pyield import pre
         >>> pre.di_spreads("30-05-2025", bps=True)
         shape: (18, 3)
-        ┌──────────┬──────────────┬──────────┐
-        │ BondType ┆ MaturityDate ┆ DISpread │
-        │ ---      ┆ ---          ┆ ---      │
-        │ str      ┆ date         ┆ f64      │
-        ╞══════════╪══════════════╪══════════╡
-        │ LTN      ┆ 2025-07-01   ┆ 4.39     │
-        │ LTN      ┆ 2025-10-01   ┆ -9.0     │
-        │ LTN      ┆ 2026-01-01   ┆ -4.88    │
-        │ LTN      ┆ 2026-04-01   ┆ -4.45    │
-        │ LTN      ┆ 2026-07-01   ┆ 0.81     │
-        │ …        ┆ …            ┆ …        │
-        │ NTN-F    ┆ 2027-01-01   ┆ -3.31    │
-        │ NTN-F    ┆ 2029-01-01   ┆ 14.21    │
-        │ NTN-F    ┆ 2031-01-01   ┆ 21.61    │
-        │ NTN-F    ┆ 2033-01-01   ┆ 11.51    │
-        │ NTN-F    ┆ 2035-01-01   ┆ 22.0     │
-        └──────────┴──────────────┴──────────┘
+        ┌────────┬─────────────────┬───────────┐
+        │ titulo ┆ data_vencimento ┆ spread_di │
+        │ ---    ┆ ---             ┆ ---       │
+        │ str    ┆ date            ┆ f64       │
+        ╞════════╪═════════════════╪═══════════╡
+        │ LTN    ┆ 2025-07-01      ┆ 4.39      │
+        │ LTN    ┆ 2025-10-01      ┆ -9.0      │
+        │ LTN    ┆ 2026-01-01      ┆ -4.88     │
+        │ LTN    ┆ 2026-04-01      ┆ -4.45     │
+        │ LTN    ┆ 2026-07-01      ┆ 0.81      │
+        │ …      ┆ …               ┆ …         │
+        │ NTN-F  ┆ 2027-01-01      ┆ -3.31     │
+        │ NTN-F  ┆ 2029-01-01      ┆ 14.21     │
+        │ NTN-F  ┆ 2031-01-01      ┆ 21.61     │
+        │ NTN-F  ┆ 2033-01-01      ┆ 11.51     │
+        │ NTN-F  ┆ 2035-01-01      ┆ 22.0      │
+        └────────┴─────────────────┴───────────┘
     """
-    # Busca taxas dos títulos (LTN e NTN-F) e adiciona DIRate
-    df = anbima.tpf(date, "PRE")
+    # Busca taxas dos títulos (LTN e NTN-F) e adiciona taxa_di
+    df = utils.obter_tpf(date, "PRE").select(
+        "titulo", "data_vencimento", "taxa_indicativa"
+    )
     if df.is_empty():
         return df.select(
-            pl.lit("").alias("BondType"),
-            pl.lit(None, dtype=pl.Date).alias("MaturityDate"),
-            pl.lit(None, dtype=pl.Float64).alias("DISpread"),
+            pl.lit("").alias("titulo"),
+            pl.lit(None, dtype=pl.Date).alias("data_vencimento"),
+            pl.lit(None, dtype=pl.Float64).alias("spread_di"),
         ).clear()
     data_ref = cv.converter_datas(date)
     df = utils.adicionar_taxa_di(df, data_ref)
     df = (
-        df.with_columns(DISpread=pl.col("IndicativeRate") - pl.col("DIRate"))
-        .select("BondType", "MaturityDate", "DISpread")
-        .sort("BondType", "MaturityDate")
+        df.with_columns(spread_di=pl.col("taxa_indicativa") - pl.col("taxa_di"))
+        .select("titulo", "data_vencimento", "spread_di")
+        .sort("titulo", "data_vencimento")
     )
 
     if bps:
-        df = df.with_columns(pl.col("DISpread") * 10_000)
+        df = df.with_columns(pl.col("spread_di") * 10_000)
 
     return df

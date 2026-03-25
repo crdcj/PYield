@@ -6,7 +6,7 @@ import polars as pl
 
 import pyield._internal.converters as cv
 import pyield.interpolator as ip
-from pyield import anbima, bday
+from pyield import bday
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.b3 import di1
 from pyield.tn import utils
@@ -40,78 +40,79 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de NTN-F.
 
     Output Columns:
-        - ReferenceDate (Date): Data de referência dos dados.
-        - BondType (String): Tipo do título (ex.: "NTN-F").
-        - SelicCode (Int64): Código do título no SELIC.
-        - IssueBaseDate (Date): Data base/emissão do título.
-        - MaturityDate (Date): Data de vencimento do título.
-        - BDToMat (Int64): Dias úteis entre referência e vencimento.
-        - AvgMaturity (Float64): Prazo médio do título em dias corridos.
-        - Duration (Float64): Macaulay Duration do título (anos).
-        - DV01 (Float64): Variação no preço para 1bp de taxa.
-        - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
-        - Price (Float64): Preço unitário (PU).
-        - BidRate (Float64): Taxa de compra (decimal).
-        - AskRate (Float64): Taxa de venda (decimal).
-        - IndicativeRate (Float64): Taxa indicativa (decimal).
-        - DIRate (Float64): Taxa DI interpolada (flat forward).
-        - SpotRate (Float64): Taxa spot (zero cupom via bootstrap).
-        - DISpread (Float64): Spread sobre o DI (IndicativeRate - DIRate).
-        - DINetSpread (Float64): Spread líquido (prêmio limpo) sobre a curva DI.
-        - Premium (Float64): Rentabilidade da NTN-F sobre a curva DI.
+        - data_referencia (Date): Data de referência dos dados.
+        - titulo (String): Tipo do título (ex.: "NTN-F").
+        - codigo_selic (Int64): Código do título no SELIC.
+        - data_base (Date): Data base de emissão do título.
+        - data_vencimento (Date): Data de vencimento do título.
+        - dias_uteis (Int64): Dias úteis entre referência e vencimento.
+        - prazo_medio (Float64): Prazo médio do título em dias corridos.
+        - duration (Float64): Macaulay Duration do título (anos).
+        - dv01 (Float64): Variação no preço para 1bp de taxa.
+        - dv01_usd (Float64): DV01 convertido para USD pela PTAX do dia.
+        - pu (Float64): Preço unitário (PU).
+        - taxa_compra (Float64): Taxa de compra (decimal).
+        - taxa_venda (Float64): Taxa de venda (decimal).
+        - taxa_indicativa (Float64): Taxa indicativa (decimal).
+        - taxa_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo
+            método flat forward.
+        - taxa_zero (Float64): Taxa zero (zero cupom via bootstrap).
+        - spread_di (Float64): Spread sobre o DI (conhecido como prêmio).
+        - spread_di_limpo (Float64): Spread limpo sobre a curva DI (conhecido como prêmio limpo).
+        - rentabilidade (Float64): Rentabilidade da NTN-F sobre a curva DI.
 
     Examples:
         >>> from pyield import ntnf
         >>> df_ntnf = ntnf.data("23-08-2024")  # doctest: +SKIP
     """
-    df = anbima.tpf(date, "NTN-F")
+    df = utils.obter_tpf(date, "NTN-F")
     if df.is_empty():
         return df
 
     data_ref = cv.converter_datas(date)
 
-    # Adiciona BDToMat (dado derivado, não vem da ANBIMA)
+    # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
     df = df.with_columns(
-        BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"),
+        dias_uteis=bday.count_expr("data_referencia", "data_vencimento"),
     )
 
-    # Adiciona Duration, AvgMaturity, DV01, DV01USD e DIRate
+    # Adiciona duration, prazo_medio, dv01, dv01_usd e taxa_di
     df = utils.adicionar_duration(df, duration)
     df = utils.adicionar_dv01(df, data_ref)
     df = utils.adicionar_taxa_di(df, data_ref)
 
     # Busca dados de LTN para bootstrap das taxas spot
-    df_ltn = anbima.tpf(date, "LTN")
+    df_ltn = utils.obter_tpf(date, "LTN").select("data_vencimento", "taxa_indicativa")
     df_spots = spot_rates(
         settlement=date,
-        ltn_maturities=df_ltn["MaturityDate"],
-        ltn_rates=df_ltn["IndicativeRate"],
-        ntnf_maturities=df["MaturityDate"],
-        ntnf_rates=df["IndicativeRate"],
-    ).select("MaturityDate", "SpotRate")
-    df = df.join(df_spots, on="MaturityDate", how="left")
+        ltn_maturities=df_ltn["data_vencimento"],
+        ltn_rates=df_ltn["taxa_indicativa"],
+        ntnf_maturities=df["data_vencimento"],
+        ntnf_rates=df["taxa_indicativa"],
+    ).select("data_vencimento", "taxa_zero")
+    df = df.join(df_spots, on="data_vencimento", how="left")
 
-    # Busca curva DI para cálculo do premium
+    # Busca curva DI para cálculo da rentabilidade
     df_di = di1.data(date, month_start=True)
 
-    # Calcula DISpread e Premium para cada vencimento
+    # Calcula spreads e rentabilidade para cada vencimento
     df = df.with_columns(
-        DISpread=pl.col("IndicativeRate") - pl.col("DIRate"),
-        DINetSpread=pl.struct("MaturityDate", "IndicativeRate").map_elements(
+        spread_di=pl.col("taxa_indicativa") - pl.col("taxa_di"),
+        spread_di_limpo=pl.struct("data_vencimento", "taxa_indicativa").map_elements(
             lambda row: di_net_spread(
                 settlement=date,  # Usa a variável externa explicitamente aqui
-                ntnf_maturity=row["MaturityDate"],
-                ntnf_rate=row["IndicativeRate"],
+                ntnf_maturity=row["data_vencimento"],
+                ntnf_rate=row["taxa_indicativa"],
                 di_expirations=df_di["ExpirationDate"],  # Usa o DataFrame externo aqui
                 di_rates=df_di["SettlementRate"],
             ),
             return_dtype=pl.Float64,
         ),
-        Premium=pl.struct("MaturityDate", "IndicativeRate").map_elements(
+        rentabilidade=pl.struct("data_vencimento", "taxa_indicativa").map_elements(
             lambda row: premium(
                 settlement=date,
-                ntnf_maturity=row["MaturityDate"],
-                ntnf_rate=row["IndicativeRate"],
+                ntnf_maturity=row["data_vencimento"],
+                ntnf_rate=row["taxa_indicativa"],
                 di_expirations=df_di["ExpirationDate"],  # type: ignore[union-attr]
                 di_rates=df_di["SettlementRate"],
             ),
@@ -120,25 +121,25 @@ def data(date: DateLike) -> pl.DataFrame:
     )
 
     return df.select(
-        "ReferenceDate",
-        "BondType",
-        "SelicCode",
-        "IssueBaseDate",
-        "MaturityDate",
-        "BDToMat",
-        "AvgMaturity",
-        "Duration",
-        "DV01",
-        "DV01USD",
-        "Price",
-        "BidRate",
-        "AskRate",
-        "IndicativeRate",
-        "DIRate",
-        "SpotRate",
-        "DISpread",
-        "DINetSpread",
-        "Premium",
+        "data_referencia",
+        "titulo",
+        "codigo_selic",
+        "data_base",
+        "data_vencimento",
+        "dias_uteis",
+        "prazo_medio",
+        "duration",
+        "dv01",
+        "dv01_usd",
+        "pu",
+        "taxa_compra",
+        "taxa_venda",
+        "taxa_indicativa",
+        "taxa_di",
+        "taxa_zero",
+        "spread_di",
+        "spread_di_limpo",
+        "rentabilidade",
     )
 
 
@@ -156,7 +157,7 @@ def maturities(date: DateLike) -> pl.Series:
         >>> from pyield import ntnf
         >>> ntnf.maturities("23-08-2024")
         shape: (6,)
-        Series: 'MaturityDate' [date]
+        Series: 'data_vencimento' [date]
         [
             2025-01-01
             2027-01-01
@@ -166,7 +167,7 @@ def maturities(date: DateLike) -> pl.Series:
             2035-01-01
         ]
     """
-    return data(date)["MaturityDate"]
+    return data(date)["data_vencimento"]
 
 
 def payment_dates(
@@ -193,7 +194,7 @@ def payment_dates(
         >>> from pyield import ntnf
         >>> ntnf.payment_dates("15-05-2024", "01-01-2027")
         shape: (6,)
-        Series: 'payment_dates' [date]
+        Series: 'datas_pagamento' [date]
         [
             2024-07-01
             2025-01-01
@@ -204,14 +205,14 @@ def payment_dates(
         ]
     """
     if any_is_empty(settlement, maturity):
-        return pl.Series(dtype=pl.Date)
+        return pl.Series(name="datas_pagamento", dtype=pl.Date)
     # Normaliza datas
     liquidacao = cv.converter_datas(settlement)
     vencimento = cv.converter_datas(maturity)
 
     # Verifica se vencimento é posterior à liquidação
     if vencimento <= liquidacao:
-        return pl.Series(dtype=pl.Date)
+        return pl.Series(name="datas_pagamento", dtype=pl.Date)
 
     # Inicializa variáveis do loop
     data_cupom = vencimento
@@ -223,7 +224,7 @@ def payment_dates(
         # Retrocede 6 meses
         data_cupom = utils.subtrair_meses(data_cupom, 6)
 
-    return pl.Series(name="payment_dates", values=datas_cupons).sort()
+    return pl.Series(name="datas_pagamento", values=datas_cupons).sort()
 
 
 def cash_flows(
@@ -242,28 +243,29 @@ def cash_flows(
             próximo dia útil.
 
     Returns:
-        pl.DataFrame: DataFrame com as colunas "PaymentDate" e "CashFlow".
+        pl.DataFrame: DataFrame com as colunas `data_pagamento` e
+            `valor_pagamento`.
 
     Output Columns:
-        - PaymentDate (Date): Data de pagamento do fluxo.
-        - CashFlow (Float64): Valor do fluxo de caixa.
+        - data_pagamento (Date): Data de pagamento.
+        - valor_pagamento (Float64): Valor do pagamento.
 
     Examples:
         >>> from pyield import ntnf
         >>> ntnf.cash_flows("15-05-2024", "01-01-2027")
         shape: (6, 2)
-        ┌─────────────┬────────────┐
-        │ PaymentDate ┆ CashFlow   │
-        │ ---         ┆ ---        │
-        │ date        ┆ f64        │
-        ╞═════════════╪════════════╡
-        │ 2024-07-01  ┆ 48.80885   │
-        │ 2025-01-01  ┆ 48.80885   │
-        │ 2025-07-01  ┆ 48.80885   │
-        │ 2026-01-01  ┆ 48.80885   │
-        │ 2026-07-01  ┆ 48.80885   │
-        │ 2027-01-01  ┆ 1048.80885 │
-        └─────────────┴────────────┘
+        ┌────────────────┬─────────────────┐
+        │ data_pagamento ┆ valor_pagamento │
+        │ ---            ┆ ---             │
+        │ date           ┆ f64             │
+        ╞════════════════╪═════════════════╡
+        │ 2024-07-01     ┆ 48.80885        │
+        │ 2025-01-01     ┆ 48.80885        │
+        │ 2025-07-01     ┆ 48.80885        │
+        │ 2026-01-01     ┆ 48.80885        │
+        │ 2026-07-01     ┆ 48.80885        │
+        │ 2027-01-01     ┆ 1048.80885      │
+        └────────────────┴─────────────────┘
     """
     if any_is_empty(settlement, maturity):
         return pl.DataFrame()
@@ -276,20 +278,22 @@ def cash_flows(
 
     # Retorna DataFrame vazio se não houver pagamentos (liquidação >= vencimento)
     if datas_pagamento.is_empty():
-        return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
+        return pl.DataFrame(
+            schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
+        )
 
     # Define o fluxo final no vencimento e os demais como cupom
     df = pl.DataFrame(
-        data={"PaymentDate": datas_pagamento},
+        data={"data_pagamento": datas_pagamento},
     ).with_columns(
-        pl.when(pl.col("PaymentDate") == vencimento)
+        pl.when(pl.col("data_pagamento") == vencimento)
         .then(VALOR_FINAL)
         .otherwise(VALOR_CUPOM)
-        .alias("CashFlow")
+        .alias("valor_pagamento")
     )
 
     if adj_payment_dates:
-        df = df.with_columns(PaymentDate=bday.offset_expr("PaymentDate", 0))
+        df = df.with_columns(data_pagamento=bday.offset_expr("data_pagamento", 0))
     return df
 
 
@@ -300,12 +304,12 @@ def price(
 ) -> float:
     """
     Calcula o preço (PU) da NTN-F pelas regras da ANBIMA, equivalente ao valor
-    presente dos fluxos descontados pela taxa de YTM informada.
+    presente dos fluxos descontados pela TIR informada.
 
     Args:
         settlement (DateLike): Data de liquidação para cálculo do preço.
         maturity (DateLike): Data de vencimento do título.
-        rate (float): Taxa de desconto (YTM) usada para calcular o valor presente.
+        rate (float): Taxa de desconto (TIR) usada para calcular o valor presente.
 
     Returns:
         float: Preço da NTN-F conforme ANBIMA.
@@ -327,8 +331,8 @@ def price(
     if df_fluxos.is_empty():
         return float("nan")
 
-    valores_fluxo = df_fluxos["CashFlow"]
-    dias_uteis = bday.count(settlement, df_fluxos["PaymentDate"])
+    valores_fluxo = df_fluxos["valor_pagamento"]
+    dias_uteis = bday.count(settlement, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncate(dias_uteis / 252, 14)
     fatores_desconto = (1 + rate) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
@@ -364,13 +368,13 @@ def spot_rates(  # noqa
             Padrão False.
 
     Returns:
-        pl.DataFrame: DataFrame com colunas "MaturityDate", "BDToMat" e "SpotRate".
-            "BDToMat" são os dias úteis entre liquidação e vencimento.
+        pl.DataFrame: DataFrame com colunas `data_vencimento`, `dias_uteis`
+            e `taxa_zero`.
 
     Output Columns:
-        - MaturityDate (Date): Data de vencimento.
-        - BDToMat (Int64): Dias úteis entre liquidação e vencimento.
-        - SpotRate (Float64): Taxa spot (zero cupom).
+        - data_vencimento (Date): Data de vencimento.
+        - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.
+        - taxa_zero (Float64): Taxa zero (zero cupom).
 
     Examples:
         >>> from pyield import ntnf, ltn
@@ -378,24 +382,24 @@ def spot_rates(  # noqa
         >>> df_ntnf = ntnf.data("03-09-2024")
         >>> ntnf.spot_rates(
         ...     settlement="03-09-2024",
-        ...     ltn_maturities=df_ltn["MaturityDate"],
-        ...     ltn_rates=df_ltn["IndicativeRate"],
-        ...     ntnf_maturities=df_ntnf["MaturityDate"],
-        ...     ntnf_rates=df_ntnf["IndicativeRate"],
+        ...     ltn_maturities=df_ltn["data_vencimento"],
+        ...     ltn_rates=df_ltn["taxa_indicativa"],
+        ...     ntnf_maturities=df_ntnf["data_vencimento"],
+        ...     ntnf_rates=df_ntnf["taxa_indicativa"],
         ... )
         shape: (6, 3)
-        ┌──────────────┬─────────┬──────────┐
-        │ MaturityDate ┆ BDToMat ┆ SpotRate │
-        │ ---          ┆ ---     ┆ ---      │
-        │ date         ┆ i64     ┆ f64      │
-        ╞══════════════╪═════════╪══════════╡
-        │ 2025-01-01   ┆ 83      ┆ 0.108837 │
-        │ 2027-01-01   ┆ 584     ┆ 0.119981 │
-        │ 2029-01-01   ┆ 1083    ┆ 0.122113 │
-        │ 2031-01-01   ┆ 1584    ┆ 0.122231 │
-        │ 2033-01-01   ┆ 2088    ┆ 0.121355 │
-        │ 2035-01-01   ┆ 2587    ┆ 0.121398 │
-        └──────────────┴─────────┴──────────┘
+        ┌─────────────────┬────────────┬───────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
+        │ ---             ┆ ---        ┆ ---       │
+        │ date            ┆ i64        ┆ f64       │
+        ╞═════════════════╪════════════╪═══════════╡
+        │ 2025-01-01      ┆ 83         ┆ 0.108837  │
+        │ 2027-01-01      ┆ 584        ┆ 0.119981  │
+        │ 2029-01-01      ┆ 1083       ┆ 0.122113  │
+        │ 2031-01-01      ┆ 1584       ┆ 0.122231  │
+        │ 2033-01-01      ┆ 2088       ┆ 0.121355  │
+        │ 2035-01-01      ┆ 2587       ┆ 0.121398  │
+        └─────────────────┴────────────┴───────────┘
     """
     if any_is_empty(settlement, ltn_maturities, ltn_rates, ntnf_maturities, ntnf_rates):
         return pl.DataFrame()
@@ -431,26 +435,26 @@ def spot_rates(  # noqa
 
     # 4. Construir DataFrame inicial
     dias_uteis_ate_venc = bday.count(liquidacao, todas_datas_cupom)
-    taxas_ytm = interpolador_ntnf(dias_uteis_ate_venc)
+    taxas_tir = interpolador_ntnf(dias_uteis_ate_venc)
     df = pl.DataFrame(
         {
-            "MaturityDate": todas_datas_cupom,
-            "BDToMat": dias_uteis_ate_venc,
-            "BYears": dias_uteis_ate_venc / 252,
-            "YTM": taxas_ytm,
+            "data_vencimento": todas_datas_cupom,
+            "dias_uteis": dias_uteis_ate_venc,
+            "anos_uteis": dias_uteis_ate_venc / 252,
+            "taxa_tir": taxas_tir,
         }
     ).with_columns(
-        Coupon=pl.lit(VALOR_CUPOM),
+        cupom=pl.lit(VALOR_CUPOM),
     )
 
     # 5. Loop de bootstrap (iterativo por dependência sequencial)
     ultimo_vencimento_ltn = vencimentos_ltn.max()
     assert isinstance(ultimo_vencimento_ltn, dt.date)
 
-    lista_vencimentos = df["MaturityDate"]
-    lista_dias_uteis = df["BDToMat"]
-    lista_anos_uteis = df["BYears"]
-    lista_ytm = df["YTM"]
+    lista_vencimentos = df["data_vencimento"]
+    lista_dias_uteis = df["dias_uteis"]
+    lista_anos_uteis = df["anos_uteis"]
+    lista_tir = df["taxa_tir"]
 
     taxas_spot_resolvidas: list[float | None] = []
     mapa_spot: dict[dt.date, float | None] = {}
@@ -460,25 +464,25 @@ def spot_rates(  # noqa
         assert isinstance(data_venc, dt.date)
         dias_uteis_val = int(lista_dias_uteis[i])
         anos_uteis_val = float(lista_anos_uteis[i])
-        ytm_val = float(lista_ytm[i])
+        tir_val = float(lista_tir[i])
 
         # Caso esteja antes (ou igual) ao último vencimento LTN: usar interpolador LTN
         if data_venc <= ultimo_vencimento_ltn:
-            taxa_spot = interpolador_ltn(dias_uteis_val)
-            taxas_spot_resolvidas.append(taxa_spot)
-            mapa_spot[data_venc] = taxa_spot
+            taxa_zero = interpolador_ltn(dias_uteis_val)
+            taxas_spot_resolvidas.append(taxa_zero)
+            mapa_spot[data_venc] = taxa_zero
             continue
 
         # Datas de cupom (exclui último pagamento) para este vencimento
         datas_fluxo = payment_dates(liquidacao, data_venc)[:-1]
         if len(datas_fluxo) == 0:
             # Caso improvável, mas protege contra divisão por zero mais adiante
-            taxa_spot = None
-            taxas_spot_resolvidas.append(taxa_spot)
-            mapa_spot[data_venc] = taxa_spot
+            taxa_zero = None
+            taxas_spot_resolvidas.append(taxa_zero)
+            mapa_spot[data_venc] = taxa_zero
             continue
 
-        # Recuperar SpotRates já solucionadas para estes cupons
+        # Recupera taxas spot já solucionadas para estes cupons
         taxas_spot_fluxo = [mapa_spot[d] for d in datas_fluxo]
         periodos_fluxo = bday.count(liquidacao, datas_fluxo) / 252
         fluxos = [VALOR_CUPOM] * len(datas_fluxo)
@@ -489,22 +493,22 @@ def spot_rates(  # noqa
             periods=periodos_fluxo,
         )
 
-        preco_titulo = price(liquidacao, data_venc, ytm_val)
+        preco_titulo = price(liquidacao, data_venc, tir_val)
         fator_preco = VALOR_FINAL / (preco_titulo - valor_presente_fluxo)
-        taxa_spot = fator_preco ** (1 / anos_uteis_val) - 1
+        taxa_zero = fator_preco ** (1 / anos_uteis_val) - 1
 
-        taxas_spot_resolvidas.append(taxa_spot)
-        mapa_spot[data_venc] = taxa_spot
+        taxas_spot_resolvidas.append(taxa_zero)
+        mapa_spot[data_venc] = taxa_zero
 
-    # 6. Anexar coluna SpotRate
-    df = df.with_columns(SpotRate=pl.Series(taxas_spot_resolvidas, dtype=pl.Float64))
+    # 6. Anexa a coluna taxa_zero
+    df = df.with_columns(taxa_zero=pl.Series(taxas_spot_resolvidas, dtype=pl.Float64))
 
     # 7. Selecionar colunas finais
-    df = df.select(["MaturityDate", "BDToMat", "SpotRate"])
+    df = df.select(["data_vencimento", "dias_uteis", "taxa_zero"])
 
     # 8. Remover cupons (Julho) se não solicitado
     if not show_coupons:
-        df = df.filter(pl.col("MaturityDate").is_in(vencimentos_ntnf.implode()))
+        df = df.filter(pl.col("data_vencimento").is_in(vencimentos_ntnf.implode()))
 
     return df
 
@@ -522,12 +526,12 @@ def premium(  # noqa
     A função compara o fator de desconto implícito da NTN-F com o da curva DI,
     determinando quanto a NTN-F rende em relação ao DI. Interpola as taxas DI nas datas
     de pagamento e calcula o valor presente dos fluxos da NTN-F usando essas taxas.
-    Encontra a taxa de YTM da curva DI que iguala o preço da NTN-F.
+    Encontra a TIR da curva DI que iguala o preço da NTN-F.
 
     Args:
         settlement (DateLike): Data de liquidação para o cálculo.
         ntnf_maturity (DateLike): Data de vencimento da NTN-F.
-        ntnf_rate (float): Taxa de YTM da NTN-F.
+        ntnf_rate (float): TIR da NTN-F.
         di_expirations (DateLike): Datas de vencimento da curva DI.
         di_rates (ArrayLike): Taxas DI correspondentes aos vencimentos.
 
@@ -570,38 +574,38 @@ def premium(  # noqa
         taxas_di,
     )
 
-    dias_uteis_pagamento = bday.count(settlement, df_fluxos["PaymentDate"])
+    dias_uteis_pagamento = bday.count(settlement, df_fluxos["data_pagamento"])
     df = df_fluxos.with_columns(
-        BDToMat=dias_uteis_pagamento,
-        BYears=dias_uteis_pagamento / 252,
-        DIRate=interpolador_ff(dias_uteis_pagamento),
+        dias_uteis=dias_uteis_pagamento,
+        anos_uteis=dias_uteis_pagamento / 252,
+        taxa_di=interpolador_ff(dias_uteis_pagamento),
     )
 
     preco_titulo = utils.calculate_present_value(
-        cash_flows=df["CashFlow"],
-        rates=df["DIRate"],
-        periods=df["BYears"],
+        cash_flows=df["valor_pagamento"],
+        rates=df["taxa_di"],
+        periods=df["anos_uteis"],
     )
 
     if math.isnan(preco_titulo):
         return float("nan")
 
     def diferenca_preco(taxa: float) -> float:
-        fluxos_descontados = df["CashFlow"] / (1 + taxa) ** df["BYears"]
+        fluxos_descontados = df["valor_pagamento"] / (1 + taxa) ** df["anos_uteis"]
         return float(fluxos_descontados.sum()) - preco_titulo
 
-    di_ytm = utils.encontrar_raiz(diferenca_preco)
+    di_tir = utils.encontrar_raiz(diferenca_preco)
 
-    if math.isnan(di_ytm):
+    if math.isnan(di_tir):
         return float("nan")
 
     fator_ntnf = (1 + ntnf_rate) ** (1 / 252)
-    fator_di = (1 + di_ytm) ** (1 / 252)
+    fator_di = (1 + di_tir) ** (1 / 252)
     if fator_di == 1:
         return float("inf") if fator_ntnf > 1 else 0.0
 
-    premio = (fator_ntnf - 1) / (fator_di - 1)
-    return premio
+    rentabilidade = (fator_ntnf - 1) / (fator_di - 1)
+    return rentabilidade
 
 
 def di_net_spread(  # noqa
@@ -621,7 +625,7 @@ def di_net_spread(  # noqa
     Args:
         settlement (DateLike): Data de liquidação para o cálculo.
         ntnf_maturity (DateLike): Data de vencimento do título.
-        ntnf_rate (float): Taxa YTM do título.
+        ntnf_rate (float): TIR do título.
         di_rates (ArrayLike): Série de taxas DI.
         di_expirations (ArrayLike): Vencimentos da curva DI.
 
@@ -665,18 +669,18 @@ def di_net_spread(  # noqa
     if df.is_empty():
         return float("nan")
 
-    dias_uteis_pagamento = bday.count(settlement, df["PaymentDate"])
+    dias_uteis_pagamento = bday.count(settlement, df["data_pagamento"])
     anos_uteis_pagamento = dias_uteis_pagamento / 252
 
     df = df.with_columns(
-        BDaysToPayment=dias_uteis_pagamento,
-        DIRateInterp=interpolador_ff(dias_uteis_pagamento),
+        dias_uteis_pagamento=dias_uteis_pagamento,
+        taxa_di_interpolada=interpolador_ff(dias_uteis_pagamento),
     )
 
     # Extração dos dados para o cálculo numérico
     preco_titulo = price(settlement, ntnf_maturity, ntnf_rate)
-    fluxos_titulo = df["CashFlow"]
-    di_interpolada = df["DIRateInterp"]
+    fluxos_titulo = df["valor_pagamento"]
+    di_interpolada = df["taxa_di_interpolada"]
 
     # Função de diferença de preço para o solver
     def diferenca_preco(p: float) -> float:
@@ -700,7 +704,7 @@ def duration(
     Args:
         settlement (DateLike): Data de liquidação para o cálculo.
         maturity (DateLike): Data de vencimento do título.
-        rate (float): Taxa YTM usada para descontar os fluxos.
+        rate (float): TIR usada para descontar os fluxos.
 
     Returns:
         float: Macaulay duration em anos úteis. Retorna NaN se inválido.
@@ -717,8 +721,8 @@ def duration(
     if df_fluxos.is_empty():
         return float("nan")
 
-    anos_uteis = bday.count(settlement, df_fluxos["PaymentDate"]) / 252
-    vp = df_fluxos["CashFlow"] / (1 + rate) ** anos_uteis
+    anos_uteis = bday.count(settlement, df_fluxos["data_pagamento"]) / 252
+    vp = df_fluxos["valor_pagamento"] / (1 + rate) ** anos_uteis
     duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
     return duracao
 
@@ -736,7 +740,7 @@ def dv01(
     Args:
         settlement (DateLike): Data de liquidação.
         maturity (DateLike): Data de vencimento.
-        rate (float): Taxa de desconto (YTM) do título.
+        rate (float): Taxa de desconto (TIR) do título.
 
     Returns:
         float: DV01, variação de preço para 1 bp.
@@ -759,7 +763,7 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
     Calcula o spread bruto das NTN-F sobre a curva DI na data de referência.
 
     Definição do spread (prêmio sujo no jargão de mercado):
-        DISpread = IndicativeRate - SettlementRate
+        spread_di = taxa_indicativa - taxa de ajuste do DI
 
     Quando ``bps=False`` a coluna retorna essa diferença em formato decimal
     (ex: 0.000439 ≈ 4.39 bps). Quando ``bps=True`` o valor é automaticamente
@@ -767,16 +771,17 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
 
     Args:
         date (DateLike): Data de referência para buscar as taxas.
-        bps (bool): Se True, retorna DISpread já convertido em basis points.
+        bps (bool): Se True, retorna spread_di já convertido em basis points.
             Padrão False.
 
     Returns:
         pl.DataFrame: DataFrame com as colunas do spread.
 
     Output Columns:
-        - BondType (String): Tipo do título.
-        - MaturityDate (Date): Data de vencimento.
-        - DISpread (Float64): Spread em decimal ou bps conforme parâmetro.
+        - titulo (String): Tipo do título.
+        - data_vencimento (Date): Data de vencimento.
+        - spread_di (Float64): Spread em decimal ou bps conforme parâmetro
+            (também conhecido como prêmio).
 
     Raises:
         ValueError: Se os dados de DI não possuem 'SettlementRate' ou estão vazios.
@@ -785,19 +790,19 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
         >>> from pyield import ntnf
         >>> ntnf.di_spreads("30-05-2025", bps=True)
         shape: (5, 3)
-        ┌──────────┬──────────────┬──────────┐
-        │ BondType ┆ MaturityDate ┆ DISpread │
-        │ ---      ┆ ---          ┆ ---      │
-        │ str      ┆ date         ┆ f64      │
-        ╞══════════╪══════════════╪══════════╡
-        │ NTN-F    ┆ 2027-01-01   ┆ -3.31    │
-        │ NTN-F    ┆ 2029-01-01   ┆ 14.21    │
-        │ NTN-F    ┆ 2031-01-01   ┆ 21.61    │
-        │ NTN-F    ┆ 2033-01-01   ┆ 11.51    │
-        │ NTN-F    ┆ 2035-01-01   ┆ 22.0     │
-        └──────────┴──────────────┴──────────┘
+        ┌────────┬─────────────────┬───────────┐
+        │ titulo ┆ data_vencimento ┆ spread_di │
+        │ ---    ┆ ---             ┆ ---       │
+        │ str    ┆ date            ┆ f64       │
+        ╞════════╪═════════════════╪═══════════╡
+        │ NTN-F  ┆ 2027-01-01      ┆ -3.31     │
+        │ NTN-F  ┆ 2029-01-01      ┆ 14.21     │
+        │ NTN-F  ┆ 2031-01-01      ┆ 21.61     │
+        │ NTN-F  ┆ 2033-01-01      ┆ 11.51     │
+        │ NTN-F  ┆ 2035-01-01      ┆ 22.0      │
+        └────────┴─────────────────┴───────────┘
     """
-    return pre_di_spreads(date, bps=bps).filter(pl.col("BondType") == "NTN-F")
+    return pre_di_spreads(date, bps=bps).filter(pl.col("titulo") == "NTN-F")
 
 
 def rate(
@@ -806,7 +811,7 @@ def rate(
     price_value: float,
 ) -> float:
     """
-    Calcula a taxa implícita (YTM) de uma NTN-F a partir de um PU informado.
+    Calcula a TIR implícita de uma NTN-F a partir de um PU informado.
 
     A função inverte numericamente o cálculo de ``price()``, encontrando a taxa
     que zera a diferença entre o preço calculado e o preço desejado.
@@ -817,7 +822,7 @@ def rate(
         price_value (float): Preço unitário (PU) do título.
 
     Returns:
-        float: Taxa implícita (YTM) em formato decimal. Retorna NaN em caso de erro.
+        float: TIR implícita em formato decimal. Retorna NaN em caso de erro.
 
     Examples:
         >>> from pyield import ntnf
