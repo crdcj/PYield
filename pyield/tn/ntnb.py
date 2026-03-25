@@ -34,24 +34,24 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de NTN-B.
 
     Output Columns:
-        - ReferenceDate (Date): Data de referência dos dados.
-        - BondType (String): Tipo do título (ex.: "NTN-B").
-        - SelicCode (Int64): Código do título no SELIC.
-        - IssueBaseDate (Date): Data base/emissão do título.
-        - MaturityDate (Date): Data de vencimento do título.
-        - BDToMat (Int64): Dias úteis entre referência e vencimento.
-        - Duration (Float64): Macaulay Duration do título (anos).
-        - AvgMaturity (Float64): Prazo médio do título (anos).
-        - DV01 (Float64): Variação no preço para 1bp de taxa.
-        - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
-        - Price (Float64): Preço unitário (PU).
-        - BidRate (Float64): Taxa de compra (decimal).
-        - AskRate (Float64): Taxa de venda (decimal).
-        - IndicativeRate (Float64): Taxa indicativa (decimal).
-        - DIRate (Float64): Taxa DI interpolada (flat forward).
-        - SpotRate (Float64): Taxa spot real (zero cupom via bootstrap das taxas indicativas).
-        - ForwardRate (Float64): Taxa forward real (a partir das taxas spot).
-        - ImpliedInflation (Float64): Inflação implícita (breakeven) calculada
+        - data_referencia (Date): Data de referência dos dados.
+        - titulo (String): Tipo do título (ex.: "NTN-B").
+        - codigo_selic (Int64): Código do título no SELIC.
+        - data_base (Date): Data base/emissão do título.
+        - data_vencimento (Date): Data de vencimento do título.
+        - dias_uteis (Int64): Dias úteis entre referência e vencimento.
+        - duration (Float64): Macaulay Duration do título (anos).
+        - prazo_medio (Float64): Prazo médio do título (anos).
+        - dv01 (Float64): Variação no preço para 1bp de taxa.
+        - dv01_usd (Float64): DV01 convertido para USD pela PTAX do dia.
+        - pu (Float64): Preço unitário (PU).
+        - taxa_compra (Float64): Taxa de compra (decimal).
+        - taxa_venda (Float64): Taxa de venda (decimal).
+        - taxa_indicativa (Float64): Taxa indicativa (decimal).
+        - taxa_di (Float64): Taxa DI interpolada (flat forward).
+        - taxa_zero (Float64): Taxa zero real (via bootstrap das taxas indicativas).
+        - taxa_forward (Float64): Taxa forward real (a partir das taxas zero).
+        - inflacao_implicita (Float64): Inflação implícita (breakeven) calculada
             a partir de taxas nominais do DI Futuro e taxas zero das NTN-B.
 
     Examples:
@@ -60,61 +60,61 @@ def data(date: DateLike) -> pl.DataFrame:
     """
     from pyield.b3 import di1  # noqa: PLC0415
 
-    df = anbima.tpf(date, "NTN-B")
+    df = utils.renomear_colunas_tpf(anbima.tpf(date, "NTN-B"))
     if df.is_empty():
         return df
 
     data_ref = conversores.converter_datas(date)
 
-    # Adiciona BDToMat (dado derivado, não vem da ANBIMA)
+    # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
     df = df.with_columns(
-        BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"),
+        dias_uteis=bday.count_expr("data_referencia", "data_vencimento"),
     )
 
-    # Adiciona Duration, AvgMaturity, DV01 e DV01USD
+    # Adiciona duration, prazo_medio, dv01 e dv01_usd
     df = utils.adicionar_duration(df, duration)
     df = utils.adicionar_dv01(df, data_ref)
 
-    # Busca curva DI bruta e calcula taxas spot, DIRate e inflação implícita
+    # Busca curva DI bruta e calcula taxa_zero, taxa_di e inflação implícita
     df_di = di1.data(date)
     df_bei = bei_rates(
         settlement=date,
-        ntnb_maturities=df["MaturityDate"],
-        ntnb_rates=df["IndicativeRate"],
+        ntnb_maturities=df["data_vencimento"],
+        ntnb_rates=df["taxa_indicativa"],
         nominal_maturities=df_di["ExpirationDate"],
         nominal_rates=df_di["SettlementRate"],
     ).select(
-        pl.col("MaturityDate"),
-        pl.col("SpotRate"),
-        pl.col("NominalRate").alias("DIRate"),
-        pl.col("ImpliedInflation"),
+        pl.col("data_vencimento"),
+        pl.col("taxa_zero"),
+        pl.col("taxa_nominal").alias("taxa_di"),
+        pl.col("inflacao_implicita"),
     )
 
-    df = df.join(df_bei, on="MaturityDate", how="left")
+    df = df.join(df_bei, on="data_vencimento", how="left")
 
-    # Calcula taxas forward a partir das taxas spot
-    taxas_forward = fwd.forwards(bdays=df["BDToMat"], rates=df["SpotRate"])
-    df = df.with_columns(ForwardRate=taxas_forward)
+    # Calcula taxas forward a partir das taxas zero
+    taxas_forward = fwd.forwards(bdays=df["dias_uteis"], rates=df["taxa_zero"])
+    df = df.with_columns(taxa_forward=taxas_forward)
 
     return df.select(
-        "ReferenceDate",
-        "BondType",
-        "SelicCode",
-        "IssueBaseDate",
-        "MaturityDate",
-        "BDToMat",
-        "Duration",
-        "AvgMaturity",
-        "DV01",
-        "DV01USD",
-        "Price",
-        "BidRate",
-        "AskRate",
-        "IndicativeRate",
-        "DIRate",
-        "SpotRate",
-        "ForwardRate",
-        "ImpliedInflation",
+        "data_referencia",
+        "titulo",
+        "codigo_selic",
+        "data_base",
+        "data_vencimento",
+        "dias_uteis",
+        "duration",
+        "prazo_medio",
+        "dv01",
+        "dv01_usd",
+        "pu",
+        "taxa_compra",
+        "taxa_venda",
+        "taxa_indicativa",
+        "taxa_di",
+        "taxa_zero",
+        "taxa_forward",
+        "inflacao_implicita",
     )
 
 
@@ -132,7 +132,7 @@ def maturities(date: DateLike) -> pl.Series:
         >>> from pyield import ntnb
         >>> ntnb.maturities("16-08-2024")
         shape: (14,)
-        Series: 'MaturityDate' [date]
+        Series: 'data_vencimento' [date]
         [
             2025-05-15
             2026-08-15
@@ -147,7 +147,7 @@ def maturities(date: DateLike) -> pl.Series:
             2060-08-15
         ]
     """
-    return data(date)["MaturityDate"]
+    return data(date)["data_vencimento"]
 
 
 def _gerar_todas_datas_cupom(
@@ -201,7 +201,7 @@ def payment_dates(
         >>> from pyield import ntnb
         >>> ntnb.payment_dates("10-05-2024", "15-05-2025")
         shape: (3,)
-        Series: 'payment_dates' [date]
+        Series: 'datas_pagamento' [date]
         [
             2024-05-15
             2024-11-15
@@ -209,13 +209,13 @@ def payment_dates(
         ]
     """
     if any_is_empty(settlement, maturity):
-        return pl.Series(dtype=pl.Date)
+        return pl.Series(name="datas_pagamento", dtype=pl.Date)
 
     liquidacao = conversores.converter_datas(settlement)
     vencimento = conversores.converter_datas(maturity)
 
     if vencimento <= liquidacao:
-        return pl.Series(dtype=pl.Date)
+        return pl.Series(name="datas_pagamento", dtype=pl.Date)
 
     data_cupom = vencimento
     datas_cupons = []
@@ -224,7 +224,7 @@ def payment_dates(
         datas_cupons.append(data_cupom)
         data_cupom = utils.subtrair_meses(data_cupom, 6)
 
-    return pl.Series(name="payment_dates", values=datas_cupons).sort()
+    return pl.Series(name="datas_pagamento", values=datas_cupons).sort()
 
 
 def cash_flows(
@@ -242,25 +242,27 @@ def cash_flows(
         pl.DataFrame: DataFrame com as colunas de fluxo.
 
     Output Columns:
-        - PaymentDate (Date): Data de pagamento do fluxo.
-        - CashFlow (Float64): Valor do fluxo de caixa.
+        - data_pagamento (Date): Data de pagamento.
+        - valor_pagamento (Float64): Valor do pagamento.
 
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.cash_flows("10-05-2024", "15-05-2025")
         shape: (3, 2)
-        ┌─────────────┬────────────┐
-        │ PaymentDate ┆ CashFlow   │
-        │ ---         ┆ ---        │
-        │ date        ┆ f64        │
-        ╞═════════════╪════════════╡
-        │ 2024-05-15  ┆ 2.956301   │
-        │ 2024-11-15  ┆ 2.956301   │
-        │ 2025-05-15  ┆ 102.956301 │
-        └─────────────┴────────────┘
+        ┌────────────────┬─────────────────┐
+        │ data_pagamento ┆ valor_pagamento │
+        │ ---            ┆ ---             │
+        │ date           ┆ f64             │
+        ╞════════════════╪═════════════════╡
+        │ 2024-05-15     ┆ 2.956301        │
+        │ 2024-11-15     ┆ 2.956301        │
+        │ 2025-05-15     ┆ 102.956301      │
+        └────────────────┴─────────────────┘
     """
     if any_is_empty(settlement, maturity):
-        return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
+        return pl.DataFrame(
+            schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
+        )
 
     # Obtém as datas de cupom entre liquidação e vencimento
     liquidacao = conversores.converter_datas(settlement)
@@ -269,15 +271,17 @@ def cash_flows(
 
     # Retorna DataFrame vazio se não houver pagamentos (liquidação >= vencimento)
     if datas_pagamento.is_empty():
-        return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
+        return pl.DataFrame(
+            schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
+        )
 
     df = pl.DataFrame(
-        {"PaymentDate": datas_pagamento},
+        {"data_pagamento": datas_pagamento},
     ).with_columns(
-        pl.when(pl.col("PaymentDate") == vencimento)
+        pl.when(pl.col("data_pagamento") == vencimento)
         .then(VALOR_FINAL)
         .otherwise(VALOR_CUPOM)
-        .alias("CashFlow")
+        .alias("valor_pagamento")
     )
 
     return df
@@ -294,7 +298,7 @@ def quotation(
     Args:
         settlement (DateLike): Data de liquidação da operação.
         maturity (DateLike): Data de vencimento da NTN-B.
-        rate (float): Taxa de desconto (YTM) usada no valor presente.
+        rate (float): Taxa de desconto (TIR) usada no valor presente.
 
     Returns:
         float: Cotação da NTN-B truncada em 4 casas. Retorna NaN em erro.
@@ -320,8 +324,8 @@ def quotation(
     if df_fluxos.is_empty():
         return float("nan")
 
-    valores_fluxo = df_fluxos["CashFlow"]
-    dias_uteis = bday.count(settlement, df_fluxos["PaymentDate"])
+    valores_fluxo = df_fluxos["valor_pagamento"]
+    dias_uteis = bday.count(settlement, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncate(dias_uteis / 252, 14)
     fatores_desconto = (1 + rate) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
@@ -398,7 +402,7 @@ def _criar_df_bootstrap(
     vencimentos: pl.Series,
 ) -> pl.DataFrame:
     """Cria o DataFrame base para o bootstrap."""
-    # Cria interpolador para taxas YTM em datas intermediárias
+    # Cria interpolador para TIRs em datas intermediárias
     interpolador_ff = interpolador.Interpolator(
         method="flat_forward",
         known_bdays=bday.count(settlement, vencimentos),
@@ -410,35 +414,35 @@ def _criar_df_bootstrap(
     assert isinstance(ultimo_vencimento, dt.date)
     todas_datas_cupom = _gerar_todas_datas_cupom(settlement, ultimo_vencimento)
     dias_uteis_ate_venc = bday.count(settlement, todas_datas_cupom)
-    taxas_ytm = interpolador_ff.interpolate(dias_uteis_ate_venc)
+    taxas_tir = interpolador_ff.interpolate(dias_uteis_ate_venc)
 
     df = (
         pl.DataFrame(
             {
-                "MaturityDate": todas_datas_cupom,
-                "BDToMat": dias_uteis_ate_venc,
-                "BYears": dias_uteis_ate_venc / 252,
-                "YTM": taxas_ytm,
+                "data_vencimento": todas_datas_cupom,
+                "dias_uteis": dias_uteis_ate_venc,
+                "anos_uteis": dias_uteis_ate_venc / 252,
+                "taxa_tir": taxas_tir,
             }
         )
         .with_columns(
-            Coupon=pl.lit(VALOR_CUPOM),
-            SpotRate=pl.lit(None, dtype=pl.Float64),
+            cupom=pl.lit(VALOR_CUPOM),
+            taxa_zero=pl.lit(None, dtype=pl.Float64),
         )
-        .sort("MaturityDate")
+        .sort("data_vencimento")
     )
     return df
 
 
-def _atualizar_taxa_spot(
-    df: pl.DataFrame, vencimento: dt.date, taxa_spot: float
+def _atualizar_taxa_zero(
+    df: pl.DataFrame, vencimento: dt.date, taxa_zero: float
 ) -> pl.DataFrame:
-    """Atualiza a taxa spot dentro do loop de bootstrap."""
+    """Atualiza a taxa zero dentro do loop de bootstrap."""
     return df.with_columns(
-        pl.when(pl.col("MaturityDate") == vencimento)
-        .then(taxa_spot)
-        .otherwise("SpotRate")
-        .alias("SpotRate")
+        pl.when(pl.col("data_vencimento") == vencimento)
+        .then(taxa_zero)
+        .otherwise("taxa_zero")
+        .alias("taxa_zero")
     )
 
 
@@ -449,12 +453,12 @@ def _calcular_valor_presente_cupons(
 ) -> float:
     """Calcula o valor presente dos cupons anteriores à maturidade."""
     datas_fluxo_anteriores = payment_dates(settlement, vencimento).to_list()[:-1]
-    df_temp = df.filter(pl.col("MaturityDate").is_in(datas_fluxo_anteriores))
+    df_temp = df.filter(pl.col("data_vencimento").is_in(datas_fluxo_anteriores))
 
     return utils.calculate_present_value(
-        df_temp["Coupon"],
-        df_temp["SpotRate"],
-        df_temp["BYears"],
+        df_temp["cupom"],
+        df_temp["taxa_zero"],
+        df_temp["anos_uteis"],
     )
 
 
@@ -465,61 +469,61 @@ def spot_rates(
     show_coupons: bool = False,
 ) -> pl.DataFrame:
     """
-    Calcula as taxas spot da NTN-B usando bootstrap.
+    Calcula as taxas zero da NTN-B usando bootstrap.
 
-    O bootstrap determina as taxas spot a partir dos yields dos títulos,
+    O bootstrap determina as taxas zero a partir dos yields dos títulos,
     resolvendo iterativamente as taxas que descontam os fluxos ao preço.
 
     Args:
         settlement (DateLike): Data de liquidação.
         maturities (ArrayLike): Datas de vencimento dos títulos.
-        rates (ArrayLike): Taxas YTM correspondentes.
+        rates (ArrayLike): TIRs correspondentes.
         show_coupons (bool, optional): Se True, inclui datas intermediárias de cupom.
             Padrão False.
 
     Returns:
-        pl.DataFrame: DataFrame com as taxas spot.
+        pl.DataFrame: DataFrame com as taxas zero.
 
     Output Columns:
-        - MaturityDate (Date): Data de vencimento.
-        - BDToMat (Int64): Dias úteis entre liquidação e vencimento.
-        - SpotRate (Float64): Taxa spot (real).
+        - data_vencimento (Date): Data de vencimento.
+        - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.
+        - taxa_zero (Float64): Taxa zero (real).
 
     Examples:
         >>> from pyield import ntnb
         >>> # Busca as taxas de NTN-B para uma data de referência
         >>> df = ntnb.data("16-08-2024")
-        >>> # Calcula as taxas spot considerando a liquidação na data de referência
+        >>> # Calcula as taxas zero considerando a liquidação na data de referência
         >>> ntnb.spot_rates(
         ...     settlement="16-08-2024",
-        ...     maturities=df["MaturityDate"],
-        ...     rates=df["IndicativeRate"],
+        ...     maturities=df["data_vencimento"],
+        ...     rates=df["taxa_indicativa"],
         ... )
         shape: (14, 3)
-        ┌──────────────┬─────────┬──────────┐
-        │ MaturityDate ┆ BDToMat ┆ SpotRate │
-        │ ---          ┆ ---     ┆ ---      │
-        │ date         ┆ i64     ┆ f64      │
-        ╞══════════════╪═════════╪══════════╡
-        │ 2025-05-15   ┆ 185     ┆ 0.063893 │
-        │ 2026-08-15   ┆ 502     ┆ 0.066141 │
-        │ 2027-05-15   ┆ 687     ┆ 0.064087 │
-        │ 2028-08-15   ┆ 1002    ┆ 0.063057 │
-        │ 2029-05-15   ┆ 1186    ┆ 0.061458 │
-        │ …            ┆ …       ┆ …        │
-        │ 2040-08-15   ┆ 4009    ┆ 0.058326 │
-        │ 2045-05-15   ┆ 5196    ┆ 0.060371 │
-        │ 2050-08-15   ┆ 6511    ┆ 0.060772 │
-        │ 2055-05-15   ┆ 7700    ┆ 0.059909 │
-        │ 2060-08-15   ┆ 9017    ┆ 0.060652 │
-        └──────────────┴─────────┴──────────┘
+        ┌─────────────────┬────────────┬───────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
+        │ ---             ┆ ---        ┆ ---       │
+        │ date            ┆ i64        ┆ f64       │
+        ╞═════════════════╪════════════╪═══════════╡
+        │ 2025-05-15      ┆ 185        ┆ 0.063893  │
+        │ 2026-08-15      ┆ 502        ┆ 0.066141  │
+        │ 2027-05-15      ┆ 687        ┆ 0.064087  │
+        │ 2028-08-15      ┆ 1002       ┆ 0.063057  │
+        │ 2029-05-15      ┆ 1186       ┆ 0.061458  │
+        │ …               ┆ …          ┆ …         │
+        │ 2040-08-15      ┆ 4009       ┆ 0.058326  │
+        │ 2045-05-15      ┆ 5196       ┆ 0.060371  │
+        │ 2050-08-15      ┆ 6511       ┆ 0.060772  │
+        │ 2055-05-15      ┆ 7700       ┆ 0.059909  │
+        │ 2060-08-15      ┆ 9017       ┆ 0.060652  │
+        └─────────────────┴────────────┴───────────┘
 
     Notes:
         O cálculo considera:
         - Mapear todas as datas de pagamento até o último vencimento.
-        - Interpolar as taxas YTM nas datas intermediárias.
+        - Interpolar as TIRs nas datas intermediárias.
         - Calcular a cotação da NTN-B para cada vencimento.
-        - Calcular as taxas spot reais.
+        - Calcular as taxas zero reais.
     """
     if any_is_empty(settlement, maturities, rates):
         return pl.DataFrame()
@@ -530,31 +534,31 @@ def spot_rates(
 
     df = _criar_df_bootstrap(settlement, rates, maturities)
 
-    # Bootstrap para calcular taxas spot
+    # Bootstrap para calcular taxas zero
     linhas = df.to_dicts()
     primeiro_vencimento = maturities.min()
     for linha in linhas:
-        vencimento = linha["MaturityDate"]
+        vencimento = linha["data_vencimento"]
 
-        # Taxas spot <= primeiro vencimento são YTM por definição
+        # Taxas zero <= primeiro vencimento são TIR por definição
         if vencimento <= primeiro_vencimento:
-            taxa_spot = linha["YTM"]
-            df = _atualizar_taxa_spot(df, vencimento, taxa_spot)
+            taxa_zero = linha["taxa_tir"]
+            df = _atualizar_taxa_zero(df, vencimento, taxa_zero)
             continue
 
-        # Calcula taxa spot para o vencimento corrente
+        # Calcula taxa zero para o vencimento corrente
         valor_presente_cupons = _calcular_valor_presente_cupons(
             df, settlement, vencimento
         )
-        preco_titulo = quotation(settlement, vencimento, linha["YTM"])
+        preco_titulo = quotation(settlement, vencimento, linha["taxa_tir"])
         fator_preco = VALOR_FINAL / (preco_titulo - valor_presente_cupons)
-        taxa_spot = fator_preco ** (1 / linha["BYears"]) - 1
+        taxa_zero = fator_preco ** (1 / linha["anos_uteis"]) - 1
 
-        df = _atualizar_taxa_spot(df, vencimento, taxa_spot)
+        df = _atualizar_taxa_zero(df, vencimento, taxa_zero)
 
     if not show_coupons:
-        df = df.filter(pl.col("MaturityDate").is_in(maturities.to_list()))
-    return df.select(["MaturityDate", "BDToMat", "SpotRate"])
+        df = df.filter(pl.col("data_vencimento").is_in(maturities.to_list()))
+    return df.select(["data_vencimento", "dias_uteis", "taxa_zero"])
 
 
 def bei_rates(
@@ -568,12 +572,12 @@ def bei_rates(
     Calcula a inflação implícita para NTN-B a partir de taxas nominais e reais.
 
     A inflação implícita (breakeven) é a que iguala yields reais e nominais,
-    baseada nas taxas spot das NTN-B.
+    baseada nas taxas zero das NTN-B.
 
     Args:
         settlement (DateLike): Data de liquidação da operação.
         ntnb_maturities (ArrayLike): Vencimentos das NTN-B.
-        ntnb_rates (ArrayLike): Taxas reais (YTM) correspondentes.
+        ntnb_rates (ArrayLike): TIRs reais correspondentes.
         nominal_maturities (ArrayLike): Vencimentos de referência para taxas nominais.
         nominal_rates (ArrayLike): Taxas nominais (ex.: DI Futuro).
 
@@ -581,11 +585,11 @@ def bei_rates(
         pl.DataFrame: DataFrame com as taxas calculadas.
 
     Output Columns:
-        - MaturityDate (Date): Data de vencimento.
-        - BDToMat (Int64): Dias úteis entre liquidação e vencimento.
-        - SpotRate (Float64): Taxa real (spot via bootstrap).
-        - NominalRate (Float64): Taxa nominal interpolada.
-        - ImpliedInflation (Float64): Inflação implícita (breakeven).
+        - data_vencimento (Date): Data de vencimento.
+        - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.
+        - taxa_zero (Float64): Taxa real zero via bootstrap.
+        - taxa_nominal (Float64): Taxa nominal interpolada.
+        - inflacao_implicita (Float64): Inflação implícita (breakeven).
 
     Notes:
         A inflação implícita indica a expectativa de mercado entre
@@ -593,7 +597,7 @@ def bei_rates(
 
     Examples:
         Busca as taxas de NTN-B para uma data de referência.
-        Estas são taxas YTM e as taxas spot são calculadas a partir delas.
+        Estas são TIRs e as taxas zero são calculadas a partir delas.
         >>> df_ntnb = yd.ntnb.data("05-09-2024")
 
         Busca as taxas de ajuste do DI Futuro para a mesma data de referência:
@@ -602,29 +606,29 @@ def bei_rates(
         Calcula a inflação implícita na data de referência:
         >>> yd.ntnb.bei_rates(
         ...     settlement="05-09-2024",
-        ...     ntnb_maturities=df_ntnb["MaturityDate"],
-        ...     ntnb_rates=df_ntnb["IndicativeRate"],
+        ...     ntnb_maturities=df_ntnb["data_vencimento"],
+        ...     ntnb_rates=df_ntnb["taxa_indicativa"],
         ...     nominal_maturities=df_di["ExpirationDate"],
         ...     nominal_rates=df_di["SettlementRate"],
         ... )
         shape: (14, 5)
-        ┌──────────────┬─────────┬──────────┬─────────────┬──────────────────┐
-        │ MaturityDate ┆ BDToMat ┆ SpotRate ┆ NominalRate ┆ ImpliedInflation │
-        │ ---          ┆ ---     ┆ ---      ┆ ---         ┆ ---              │
-        │ date         ┆ i64     ┆ f64      ┆ f64         ┆ f64              │
-        ╞══════════════╪═════════╪══════════╪═════════════╪══════════════════╡
-        │ 2025-05-15   ┆ 171     ┆ 0.061748 ┆ 0.113836    ┆ 0.049059         │
-        │ 2026-08-15   ┆ 488     ┆ 0.066133 ┆ 0.117126    ┆ 0.04783          │
-        │ 2027-05-15   ┆ 673     ┆ 0.063816 ┆ 0.117169    ┆ 0.050152         │
-        │ 2028-08-15   ┆ 988     ┆ 0.063635 ┆ 0.11828     ┆ 0.051376         │
-        │ 2029-05-15   ┆ 1172    ┆ 0.062532 ┆ 0.11838     ┆ 0.052561         │
-        │ …            ┆ …       ┆ …        ┆ …           ┆ …                │
-        │ 2040-08-15   ┆ 3995    ┆ 0.060468 ┆ 0.11759     ┆ 0.053865         │
-        │ 2045-05-15   ┆ 5182    ┆ 0.0625   ┆ 0.11759     ┆ 0.05185          │
-        │ 2050-08-15   ┆ 6497    ┆ 0.063016 ┆ 0.11759     ┆ 0.051339         │
-        │ 2055-05-15   ┆ 7686    ┆ 0.062252 ┆ 0.11759     ┆ 0.052095         │
-        │ 2060-08-15   ┆ 9003    ┆ 0.063001 ┆ 0.11759     ┆ 0.051354         │
-        └──────────────┴─────────┴──────────┴─────────────┴──────────────────┘
+        ┌─────────────────┬────────────┬───────────┬──────────────┬────────────────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_zero ┆ taxa_nominal ┆ inflacao_implicita │
+        │ ---             ┆ ---        ┆ ---       ┆ ---          ┆ ---                │
+        │ date            ┆ i64        ┆ f64       ┆ f64          ┆ f64                │
+        ╞═════════════════╪════════════╪═══════════╪══════════════╪════════════════════╡
+        │ 2025-05-15      ┆ 171        ┆ 0.061748  ┆ 0.113836     ┆ 0.049059           │
+        │ 2026-08-15      ┆ 488        ┆ 0.066133  ┆ 0.117126     ┆ 0.04783            │
+        │ 2027-05-15      ┆ 673        ┆ 0.063816  ┆ 0.117169     ┆ 0.050152           │
+        │ 2028-08-15      ┆ 988        ┆ 0.063635  ┆ 0.11828      ┆ 0.051376           │
+        │ 2029-05-15      ┆ 1172       ┆ 0.062532  ┆ 0.11838      ┆ 0.052561           │
+        │ …               ┆ …          ┆ …         ┆ …            ┆ …                  │
+        │ 2040-08-15      ┆ 3995       ┆ 0.060468  ┆ 0.11759      ┆ 0.053865           │
+        │ 2045-05-15      ┆ 5182       ┆ 0.0625    ┆ 0.11759      ┆ 0.05185            │
+        │ 2050-08-15      ┆ 6497       ┆ 0.063016  ┆ 0.11759      ┆ 0.051339           │
+        │ 2055-05-15      ┆ 7686       ┆ 0.062252  ┆ 0.11759      ┆ 0.052095           │
+        │ 2060-08-15      ┆ 9003       ┆ 0.063001  ┆ 0.11759      ┆ 0.051354           │
+        └─────────────────┴────────────┴───────────┴──────────────┴────────────────────┘
     """
     if any_is_empty(
         settlement, ntnb_maturities, ntnb_rates, nominal_maturities, nominal_rates
@@ -643,14 +647,14 @@ def bei_rates(
     df_spot = spot_rates(liquidacao, ntnb_maturities, ntnb_rates)
     df = (
         df_spot.with_columns(
-            NominalRate=interpolador_ff(df_spot["BDToMat"]),
+            taxa_nominal=interpolador_ff(df_spot["dias_uteis"]),
         )
         .with_columns(
-            ImpliedInflation=((pl.col("NominalRate") + 1) / (pl.col("SpotRate") + 1))
+            inflacao_implicita=((pl.col("taxa_nominal") + 1) / (pl.col("taxa_zero") + 1))
             - 1,
         )
         .select(
-            "MaturityDate", "BDToMat", "SpotRate", "NominalRate", "ImpliedInflation"
+            "data_vencimento", "dias_uteis", "taxa_zero", "taxa_nominal", "inflacao_implicita"
         )
     )
 
@@ -673,7 +677,7 @@ def duration(
     Onde:
         t    = tempo (anos) até o pagamento
         CFₜ = fluxo no tempo t
-        y    = taxa YTM (periódica)
+        y    = TIR (periódica)
         Price = Soma( CFₜ / (1 + y)ᵗ )
 
     Args:
@@ -696,8 +700,8 @@ def duration(
     if df_fluxos.is_empty():
         return float("nan")
 
-    anos_uteis = bday.count(settlement, df_fluxos["PaymentDate"]) / 252
-    vp = df_fluxos["CashFlow"] / (1 + rate) ** anos_uteis
+    anos_uteis = bday.count(settlement, df_fluxos["data_pagamento"]) / 252
+    vp = df_fluxos["valor_pagamento"] / (1 + rate) ** anos_uteis
     duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
     # Truncar para 14 casas decimais para repetibilidade dos resultados
     return utils.truncate(duracao, 14)
@@ -717,7 +721,7 @@ def dv01(
     Args:
         settlement (DateLike): Data de liquidação.
         maturity (DateLike): Data de vencimento.
-        rate (float): Taxa de desconto (YTM) da NTN-B.
+        rate (float): Taxa de desconto (TIR) da NTN-B.
 
     Returns:
         float: DV01, variação de preço para 1 bp.
@@ -744,7 +748,7 @@ def rate(
     price_value: float,
 ) -> float:
     """
-    Calcula a taxa implícita (YTM) de uma NTN-B a partir do preço (PU).
+    Calcula a TIR implícita de uma NTN-B a partir do preço (PU).
 
     A função inverte numericamente a cadeia ``price(vna, quotation(...))``,
     encontrando a taxa que zera a diferença entre o preço calculado e o
@@ -757,7 +761,7 @@ def rate(
         price_value (float): Preço unitário (PU) do título.
 
     Returns:
-        float: Taxa implícita (YTM) em formato decimal. Retorna NaN em
+        float: TIR implícita em formato decimal. Retorna NaN em
             caso de erro.
 
     Examples:
@@ -791,57 +795,57 @@ def forwards(
     Args:
         date (DateLike): Data de referência para a consulta.
         zero_coupon (bool, optional): Se True, usa taxas zero cupom no cálculo.
-            Padrão True. Se False, usa as taxas YTM.
+            Padrão True. Se False, usa as TIRs.
 
     Returns:
         pl.DataFrame: DataFrame com as taxas forward.
 
     Output Columns:
-        - MaturityDate (Date): Data de vencimento.
-        - BDToMat (Int64): Dias úteis entre referência e vencimento.
-        - IndicativeRate (Float64): Taxa indicativa (spot ou YTM).
-        - ForwardRate (Float64): Taxa forward calculada.
+        - data_vencimento (Date): Data de vencimento.
+        - dias_uteis (Int64): Dias úteis entre referência e vencimento.
+        - taxa_indicativa (Float64): Taxa indicativa (spot ou TIR).
+        - taxa_forward (Float64): Taxa forward calculada.
 
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.forwards("17-10-2025", zero_coupon=True)
         shape: (13, 4)
-        ┌──────────────┬─────────┬────────────────┬─────────────┐
-        │ MaturityDate ┆ BDToMat ┆ IndicativeRate ┆ ForwardRate │
-        │ ---          ┆ ---     ┆ ---            ┆ ---         │
-        │ date         ┆ i64     ┆ f64            ┆ f64         │
-        ╞══════════════╪═════════╪════════════════╪═════════════╡
-        │ 2026-08-15   ┆ 207     ┆ 0.10089        ┆ 0.10089     │
-        │ 2027-05-15   ┆ 392     ┆ 0.088776       ┆ 0.074793    │
-        │ 2028-08-15   ┆ 707     ┆ 0.083615       ┆ 0.076598    │
-        │ 2029-05-15   ┆ 891     ┆ 0.0818         ┆ 0.074148    │
-        │ 2030-08-15   ┆ 1205    ┆ 0.080902       ┆ 0.077857    │
-        │ …            ┆ …       ┆ …              ┆ …           │
-        │ 2040-08-15   ┆ 3714    ┆ 0.076067       ┆ 0.070587    │
-        │ 2045-05-15   ┆ 4901    ┆ 0.075195       ┆ 0.069811    │
-        │ 2050-08-15   ┆ 6216    ┆ 0.074087       ┆ 0.064348    │
-        │ 2055-05-15   ┆ 7405    ┆ 0.073702       ┆ 0.067551    │
-        │ 2060-08-15   ┆ 8722    ┆ 0.073795       ┆ 0.074505    │
-        └──────────────┴─────────┴────────────────┴─────────────┘
+        ┌─────────────────┬────────────┬─────────────────┬──────────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_indicativa ┆ taxa_forward │
+        │ ---             ┆ ---        ┆ ---             ┆ ---          │
+        │ date            ┆ i64        ┆ f64             ┆ f64          │
+        ╞═════════════════╪════════════╪═════════════════╪══════════════╡
+        │ 2026-08-15      ┆ 207        ┆ 0.10089         ┆ 0.10089      │
+        │ 2027-05-15      ┆ 392        ┆ 0.088776        ┆ 0.074793     │
+        │ 2028-08-15      ┆ 707        ┆ 0.083615        ┆ 0.076598     │
+        │ 2029-05-15      ┆ 891        ┆ 0.0818          ┆ 0.074148     │
+        │ 2030-08-15      ┆ 1205       ┆ 0.080902        ┆ 0.077857     │
+        │ …               ┆ …          ┆ …               ┆ …            │
+        │ 2040-08-15      ┆ 3714       ┆ 0.076067        ┆ 0.070587     │
+        │ 2045-05-15      ┆ 4901       ┆ 0.075195        ┆ 0.069811     │
+        │ 2050-08-15      ┆ 6216       ┆ 0.074087        ┆ 0.064348     │
+        │ 2055-05-15      ┆ 7405       ┆ 0.073702        ┆ 0.067551     │
+        │ 2060-08-15      ┆ 8722       ┆ 0.073795        ┆ 0.074505     │
+        └─────────────────┴────────────┴─────────────────┴──────────────┘
     """
     if any_is_empty(date):
         return pl.DataFrame()
 
     # Valida e normaliza a data
-    df = data(date).select("MaturityDate", "BDToMat", "IndicativeRate")
+    df = data(date).select("data_vencimento", "dias_uteis", "taxa_indicativa")
     if zero_coupon:
         df_ref = spot_rates(
             settlement=date,
-            maturities=df["MaturityDate"],
-            rates=df["IndicativeRate"],
-        ).rename({"SpotRate": "ReferenceRate"})
+            maturities=df["data_vencimento"],
+            rates=df["taxa_indicativa"],
+        ).rename({"taxa_zero": "taxa_referencia"})
     else:
-        df_ref = df.rename({"IndicativeRate": "ReferenceRate"})
-    taxas_forward = fwd.forwards(bdays=df_ref["BDToMat"], rates=df_ref["ReferenceRate"])
-    df_ref = df_ref.with_columns(ForwardRate=taxas_forward)
+        df_ref = df.rename({"taxa_indicativa": "taxa_referencia"})
+    taxas_forward = fwd.forwards(bdays=df_ref["dias_uteis"], rates=df_ref["taxa_referencia"])
+    df_ref = df_ref.with_columns(taxa_forward=taxas_forward)
     df = df.join(
-        df_ref.select("MaturityDate", "ForwardRate"),
-        on="MaturityDate",
+        df_ref.select("data_vencimento", "taxa_forward"),
+        on="data_vencimento",
         how="inner",
-    ).sort("MaturityDate")
+    ).sort("data_vencimento")
     return df

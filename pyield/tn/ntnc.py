@@ -50,58 +50,58 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.DataFrame: DataFrame Polars com os dados de NTN-C.
 
     Output Columns:
-        - ReferenceDate (Date): Data de referência dos dados.
-        - BondType (String): Tipo do título (ex.: "NTN-C").
-        - SelicCode (Int64): Código do título no SELIC.
-        - IssueBaseDate (Date): Data base/emissão do título.
-        - MaturityDate (Date): Data de vencimento do título.
-        - BDToMat (Int64): Dias úteis entre referência e vencimento.
-        - Duration (Float64): Macaulay Duration do título (anos).
-        - AvgMaturity (Float64): Prazo médio do título (anos).
-        - DV01 (Float64): Variação no preço para 1bp de taxa.
-        - DV01USD (Float64): DV01 convertido para USD pela PTAX do dia.
-        - Price (Float64): Preço unitário (PU).
-        - BidRate (Float64): Taxa de compra (decimal).
-        - AskRate (Float64): Taxa de venda (decimal).
-        - IndicativeRate (Float64): Taxa indicativa (decimal).
-        - DIRate (Float64): Taxa DI interpolada (flat forward).
+        - data_referencia (Date): Data de referência dos dados.
+        - titulo (String): Tipo do título (ex.: "NTN-C").
+        - codigo_selic (Int64): Código do título no SELIC.
+        - data_base (Date): Data base/emissão do título.
+        - data_vencimento (Date): Data de vencimento do título.
+        - dias_uteis (Int64): Dias úteis entre referência e vencimento.
+        - duration (Float64): Macaulay Duration do título (anos).
+        - prazo_medio (Float64): Prazo médio do título (anos).
+        - dv01 (Float64): Variação no preço para 1bp de taxa.
+        - dv01_usd (Float64): DV01 convertido para USD pela PTAX do dia.
+        - pu (Float64): Preço unitário (PU).
+        - taxa_compra (Float64): Taxa de compra (decimal).
+        - taxa_venda (Float64): Taxa de venda (decimal).
+        - taxa_indicativa (Float64): Taxa indicativa (decimal).
+        - taxa_di (Float64): Taxa DI interpolada (flat forward).
 
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.data("23-08-2024")  # doctest: +SKIP
     """
-    df = anbima.tpf(date, "NTN-C")
+    df = utils.renomear_colunas_tpf(anbima.tpf(date, "NTN-C"))
     if df.is_empty():
         return df
 
     data_ref = conversores.converter_datas(date)
 
-    # Adiciona BDToMat (dado derivado, não vem da ANBIMA)
+    # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
     df = df.with_columns(
-        BDToMat=bday.count_expr("ReferenceDate", "MaturityDate"),
+        dias_uteis=bday.count_expr("data_referencia", "data_vencimento"),
     )
 
-    # Adiciona Duration, AvgMaturity, DV01, DV01USD e DIRate
+    # Adiciona duration, prazo_medio, dv01, dv01_usd e taxa_di
     df = utils.adicionar_duration(df, duration)
     df = utils.adicionar_dv01(df, data_ref)
     df = utils.adicionar_taxa_di(df, data_ref)
 
     return df.select(
-        "ReferenceDate",
-        "BondType",
-        "SelicCode",
-        "IssueBaseDate",
-        "MaturityDate",
-        "BDToMat",
-        "Duration",
-        "AvgMaturity",
-        "DV01",
-        "DV01USD",
-        "Price",
-        "BidRate",
-        "AskRate",
-        "IndicativeRate",
-        "DIRate",
+        "data_referencia",
+        "titulo",
+        "codigo_selic",
+        "data_base",
+        "data_vencimento",
+        "dias_uteis",
+        "duration",
+        "prazo_medio",
+        "dv01",
+        "dv01_usd",
+        "pu",
+        "taxa_compra",
+        "taxa_venda",
+        "taxa_indicativa",
+        "taxa_di",
     )
 
 
@@ -125,7 +125,7 @@ def payment_dates(
         >>> from pyield import ntnc
         >>> ntnc.payment_dates("21-03-2025", "01-01-2031")
         shape: (12,)
-        Series: '' [date]
+        Series: 'datas_pagamento' [date]
         [
             2025-07-01
             2026-01-01
@@ -141,7 +141,7 @@ def payment_dates(
         ]
     """
     if any_is_empty(settlement, maturity):
-        return pl.Series(dtype=pl.Date)
+        return pl.Series(name="datas_pagamento", dtype=pl.Date)
 
     # Valida e normaliza datas
     liquidacao = conversores.converter_datas(settlement)
@@ -149,7 +149,7 @@ def payment_dates(
 
     # Check if maturity date is after the start date
     if vencimento < liquidacao:
-        return pl.Series(dtype=pl.Date)
+        return pl.Series(name="datas_pagamento", dtype=pl.Date)
 
     # Initialize loop variables
     data_cupom = vencimento
@@ -161,7 +161,7 @@ def payment_dates(
         # Retrocede 6 meses
         data_cupom = utils.subtrair_meses(data_cupom, 6)
 
-    return pl.Series(datas_cupons).sort()
+    return pl.Series(name="datas_pagamento", values=datas_cupons).sort()
 
 
 def cash_flows(
@@ -179,33 +179,35 @@ def cash_flows(
         pl.DataFrame: DataFrame com as colunas de fluxo.
 
     Output Columns:
-        - PaymentDate (Date): Data de pagamento do fluxo.
-        - CashFlow (Float64): Valor do fluxo.
+        - data_pagamento (Date): Data de pagamento.
+        - valor_pagamento (Float64): Valor do pagamento.
 
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.cash_flows("21-03-2025", "01-01-2031")
         shape: (12, 2)
-        ┌─────────────┬────────────┐
-        │ PaymentDate ┆ CashFlow   │
-        │ ---         ┆ ---        │
-        │ date        ┆ f64        │
-        ╞═════════════╪════════════╡
-        │ 2025-07-01  ┆ 5.830052   │
-        │ 2026-01-01  ┆ 5.830052   │
-        │ 2026-07-01  ┆ 5.830052   │
-        │ 2027-01-01  ┆ 5.830052   │
-        │ 2027-07-01  ┆ 5.830052   │
-        │ …           ┆ …          │
-        │ 2029-01-01  ┆ 5.830052   │
-        │ 2029-07-01  ┆ 5.830052   │
-        │ 2030-01-01  ┆ 5.830052   │
-        │ 2030-07-01  ┆ 5.830052   │
-        │ 2031-01-01  ┆ 105.830052 │
-        └─────────────┴────────────┘
+        ┌────────────────┬─────────────────┐
+        │ data_pagamento ┆ valor_pagamento │
+        │ ---            ┆ ---             │
+        │ date           ┆ f64             │
+        ╞════════════════╪═════════════════╡
+        │ 2025-07-01     ┆ 5.830052        │
+        │ 2026-01-01     ┆ 5.830052        │
+        │ 2026-07-01     ┆ 5.830052        │
+        │ 2027-01-01     ┆ 5.830052        │
+        │ 2027-07-01     ┆ 5.830052        │
+        │ …              ┆ …               │
+        │ 2029-01-01     ┆ 5.830052        │
+        │ 2029-07-01     ┆ 5.830052        │
+        │ 2030-01-01     ┆ 5.830052        │
+        │ 2030-07-01     ┆ 5.830052        │
+        │ 2031-01-01     ┆ 105.830052      │
+        └────────────────┴─────────────────┘
     """
     if any_is_empty(settlement, maturity):
-        return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
+        return pl.DataFrame(
+            schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
+        )
 
     # Valida e normaliza datas
     liquidacao = conversores.converter_datas(settlement)
@@ -216,18 +218,20 @@ def cash_flows(
 
     # Retorna DataFrame vazio se não houver pagamentos (liquidação >= vencimento)
     if datas_pagamento.is_empty():
-        return pl.DataFrame(schema={"PaymentDate": pl.Date, "CashFlow": pl.Float64})
+        return pl.DataFrame(
+            schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
+        )
 
     # Obtém os valores corretos de cupom e final
     valor_cupom = _obter_valor_cupom(vencimento)
     valor_final = _obter_valor_final(vencimento)
 
     # Build dataframe and assign cash flows using Polars expressions
-    df = pl.DataFrame({"PaymentDate": datas_pagamento}).with_columns(
-        pl.when(pl.col("PaymentDate") == vencimento)
+    df = pl.DataFrame({"data_pagamento": datas_pagamento}).with_columns(
+        pl.when(pl.col("data_pagamento") == vencimento)
         .then(valor_final)
         .otherwise(valor_cupom)
-        .alias("CashFlow")
+        .alias("valor_pagamento")
     )
     return df
 
@@ -265,8 +269,8 @@ def quotation(
     if df_fluxos.is_empty():
         return float("nan")
 
-    valores_fluxo = df_fluxos["CashFlow"]
-    dias_uteis = bday.count(settlement, df_fluxos["PaymentDate"])
+    valores_fluxo = df_fluxos["valor_pagamento"]
+    dias_uteis = bday.count(settlement, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncate(dias_uteis / 252, 14)
     fatores_desconto = (1 + rate) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
@@ -374,8 +378,8 @@ def duration(
     if df_fluxos.is_empty():
         return float("nan")
 
-    anos_uteis = bday.count(settlement, df_fluxos["PaymentDate"]) / 252
-    vp = df_fluxos["CashFlow"] / (1 + rate) ** anos_uteis
+    anos_uteis = bday.count(settlement, df_fluxos["data_pagamento"]) / 252
+    vp = df_fluxos["valor_pagamento"] / (1 + rate) ** anos_uteis
     duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
     # Truncar para 14 casas decimais para repetibilidade dos resultados
     return utils.truncate(duracao, 14)
