@@ -59,7 +59,7 @@ def data(date: DateLike) -> pl.DataFrame:
         - taxa_zero (Float64): Taxa zero (zero cupom via bootstrap).
         - spread_di (Float64): Spread sobre o DI (também conhecido como
             prêmio).
-        - spread_di_liquido (Float64): Spread líquido sobre a curva DI.
+        - spread_di_limpo (Float64): Spread limpo sobre a curva DI.
         - rentabilidade (Float64): Rentabilidade da NTN-F sobre a curva DI.
 
     Examples:
@@ -99,7 +99,7 @@ def data(date: DateLike) -> pl.DataFrame:
     # Calcula spreads e rentabilidade para cada vencimento
     df = df.with_columns(
         spread_di=pl.col("taxa_indicativa") - pl.col("taxa_di"),
-        spread_di_liquido=pl.struct("data_vencimento", "taxa_indicativa").map_elements(
+        spread_di_limpo=pl.struct("data_vencimento", "taxa_indicativa").map_elements(
             lambda row: di_net_spread(
                 settlement=date,  # Usa a variável externa explicitamente aqui
                 ntnf_maturity=row["data_vencimento"],
@@ -139,7 +139,7 @@ def data(date: DateLike) -> pl.DataFrame:
         "taxa_di",
         "taxa_zero",
         "spread_di",
-        "spread_di_liquido",
+        "spread_di_limpo",
         "rentabilidade",
     )
 
