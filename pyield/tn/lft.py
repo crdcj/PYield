@@ -1,7 +1,7 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import anbima, bday
+from pyield import bday
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 
@@ -35,7 +35,7 @@ def data(date: DateLike) -> pl.DataFrame:
         >>> from pyield import lft
         >>> df_lft = lft.data("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.renomear_colunas_tpf(anbima.tpf(date, "LFT"))
+    df = utils.obter_tpf(date, "LFT")
     if df.is_empty():
         return df
 

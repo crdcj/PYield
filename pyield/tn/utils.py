@@ -6,6 +6,9 @@ from typing import overload
 
 import polars as pl
 
+from pyield._internal.types import DateLike
+from pyield.anbima.tpf import BOND_TYPES
+
 logger = logging.getLogger(__name__)
 
 MAPA_COLUNAS_TPF = {
@@ -20,6 +23,18 @@ MAPA_COLUNAS_TPF = {
     "IndicativeRate": "taxa_indicativa",
 }
 
+COLUNAS_DADOS_TPF = (
+    "data_referencia",
+    "titulo",
+    "codigo_selic",
+    "data_base",
+    "data_vencimento",
+    "pu",
+    "taxa_compra",
+    "taxa_venda",
+    "taxa_indicativa",
+)
+
 
 def subtrair_meses(data: dt.date, meses: int) -> dt.date:
     """Subtrai `meses` meses de `data`, preservando o dia."""
@@ -29,14 +44,16 @@ def subtrair_meses(data: dt.date, meses: int) -> dt.date:
     return data.replace(year=ano, month=mes)
 
 
-def renomear_colunas_tpf(df: pl.DataFrame) -> pl.DataFrame:
-    """Renomeia colunas-base vindas de ``anbima.tpf()`` para o padrão atual."""
-    colunas = {
-        antiga: nova for antiga, nova in MAPA_COLUNAS_TPF.items() if antiga in df.columns
-    }
-    if not colunas:
-        return df
-    return df.rename(colunas)
+def obter_tpf(
+    date: DateLike,
+    tipo_titulo: BOND_TYPES,
+) -> pl.DataFrame:
+    """Busca dados de ``anbima.tpf()`` no padrão de colunas usado por ``tn``."""
+    from pyield import anbima  # noqa: PLC0415
+
+    return anbima.tpf(date, tipo_titulo).select(tuple(MAPA_COLUNAS_TPF)).rename(
+        MAPA_COLUNAS_TPF
+    )
 
 
 def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:

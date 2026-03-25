@@ -1,7 +1,7 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import anbima, bday
+from pyield import bday
 from pyield._internal.types import DateLike
 from pyield.tn import ntnf, utils
 
@@ -50,10 +50,12 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
         └─────────────────┴────────────┴───────────┘
     """
     # Busca dados de LTN (zero cupom)
-    df_ltn = utils.renomear_colunas_tpf(anbima.tpf(date, "LTN"))
+    df_ltn = utils.obter_tpf(date, "LTN").select("data_vencimento", "taxa_indicativa")
 
     # Busca dados de NTN-F (com cupom)
-    df_ntnf = utils.renomear_colunas_tpf(anbima.tpf(date, "NTN-F"))
+    df_ntnf = utils.obter_tpf(date, "NTN-F").select(
+        "data_vencimento", "taxa_indicativa"
+    )
 
     # Verifica se há dados para ambos os tipos
     if df_ltn.is_empty() and df_ntnf.is_empty():
@@ -178,7 +180,9 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
         └────────┴─────────────────┴───────────┘
     """
     # Busca taxas dos títulos (LTN e NTN-F) e adiciona taxa_di
-    df = utils.renomear_colunas_tpf(anbima.tpf(date, "PRE"))
+    df = utils.obter_tpf(date, "PRE").select(
+        "titulo", "data_vencimento", "taxa_indicativa"
+    )
     if df.is_empty():
         return df.select(
             pl.lit("").alias("titulo"),

@@ -5,7 +5,7 @@ import polars as pl
 
 import pyield._internal.converters as conversores
 import pyield.interpolator as interpolador
-from pyield import anbima, bday, fwd
+from pyield import bday, fwd
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.tn import utils
 
@@ -60,7 +60,7 @@ def data(date: DateLike) -> pl.DataFrame:
     """
     from pyield.b3 import di1  # noqa: PLC0415
 
-    df = utils.renomear_colunas_tpf(anbima.tpf(date, "NTN-B"))
+    df = utils.obter_tpf(date, "NTN-B")
     if df.is_empty():
         return df
 

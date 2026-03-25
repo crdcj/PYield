@@ -1,7 +1,7 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import anbima, bday, fwd
+from pyield import bday, fwd
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 from pyield.tn.pre import di_spreads as pre_di_spreads
@@ -43,7 +43,7 @@ def data(date: DateLike) -> pl.DataFrame:
         >>> from pyield import ltn
         >>> df_ltn = ltn.data("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.renomear_colunas_tpf(anbima.tpf(date, "LTN"))
+    df = utils.obter_tpf(date, "LTN")
     if df.is_empty():
         return df
 

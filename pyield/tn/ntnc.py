@@ -3,7 +3,7 @@ import datetime as dt
 import polars as pl
 
 import pyield._internal.converters as conversores
-from pyield import anbima, bday
+from pyield import bday
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 
@@ -70,7 +70,7 @@ def data(date: DateLike) -> pl.DataFrame:
         >>> from pyield import ntnc
         >>> ntnc.data("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.renomear_colunas_tpf(anbima.tpf(date, "NTN-C"))
+    df = utils.obter_tpf(date, "NTN-C")
     if df.is_empty():
         return df
 

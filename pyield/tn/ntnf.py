@@ -6,7 +6,7 @@ import polars as pl
 
 import pyield._internal.converters as cv
 import pyield.interpolator as ip
-from pyield import anbima, bday
+from pyield import bday
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.b3 import di1
 from pyield.tn import utils
@@ -65,7 +65,7 @@ def data(date: DateLike) -> pl.DataFrame:
         >>> from pyield import ntnf
         >>> df_ntnf = ntnf.data("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.renomear_colunas_tpf(anbima.tpf(date, "NTN-F"))
+    df = utils.obter_tpf(date, "NTN-F")
     if df.is_empty():
         return df
 
@@ -82,7 +82,7 @@ def data(date: DateLike) -> pl.DataFrame:
     df = utils.adicionar_taxa_di(df, data_ref)
 
     # Busca dados de LTN para bootstrap das taxas spot
-    df_ltn = utils.renomear_colunas_tpf(anbima.tpf(date, "LTN"))
+    df_ltn = utils.obter_tpf(date, "LTN").select("data_vencimento", "taxa_indicativa")
     df_spots = spot_rates(
         settlement=date,
         ltn_maturities=df_ltn["data_vencimento"],
