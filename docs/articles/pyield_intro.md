@@ -104,11 +104,11 @@ Acesse taxas indicativas da ANBIMA e dados de títulos públicos:
 ```python
 # LTN (Letras do Tesouro Nacional - pré-fixado)
 df_ltn = yd.ltn.data("23-08-2024")
-# Colunas: BondType, ReferenceDate, MaturityDate, BidRate, AskRate, IndicativeRate
+# Colunas: titulo, data_referencia, data_vencimento, taxa_compra, taxa_venda, taxa_indicativa
 
 # NTN-B (Notas do Tesouro Nacional série B - IPCA+)
 df_ntnb = yd.ntnb.data("23-08-2024")
-# Colunas: BondType, ReferenceDate, MaturityDate, BidRate, AskRate, IndicativeRate, VNA
+# Colunas: titulo, data_referencia, data_vencimento, taxa_compra, taxa_venda, taxa_indicativa
 
 # NTN-F (Notas do Tesouro Nacional série F - pré-fixado com cupom)
 df_ntnf = yd.ntnf.data("23-08-2024")
@@ -130,7 +130,7 @@ yd.ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
 # Spreads DI para títulos pré-fixados (em pontos-base)
 df_spreads = yd.ltn.di_spreads("30-05-2024", bps=True)
-# Colunas: BondType, MaturityDate, DISpread
+# Colunas: titulo, data_vencimento, spread_di
 
 # Spreads para NTN-F
 df_spreads_ntnf = yd.ntnf.di_spreads("30-05-2024", bps=True)

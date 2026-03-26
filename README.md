@@ -156,7 +156,7 @@ ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
 # Spreads de DI (bps=True multiplica por 10.000)
 ntnf.di_spreads("30-05-2025", bps=True)
-# -> DataFrame: BondType, MaturityDate, DISpread
+# -> DataFrame: titulo, data_vencimento, spread_di
 ```
 
 ## Dados de Futuros
