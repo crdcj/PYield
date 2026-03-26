@@ -11,18 +11,6 @@ from pyield.anbima.tpf import BOND_TYPES
 
 logger = logging.getLogger(__name__)
 
-MAPA_COLUNAS_TPF = {
-    "ReferenceDate": "data_referencia",
-    "BondType": "titulo",
-    "SelicCode": "codigo_selic",
-    "IssueBaseDate": "data_base",
-    "MaturityDate": "data_vencimento",
-    "Price": "pu",
-    "BidRate": "taxa_compra",
-    "AskRate": "taxa_venda",
-    "IndicativeRate": "taxa_indicativa",
-}
-
 COLUNAS_DADOS_TPF = (
     "data_referencia",
     "titulo",
@@ -51,9 +39,7 @@ def obter_tpf(
     """Busca dados de ``anbima.tpf()`` no padrão de colunas usado por ``tn``."""
     from pyield import anbima  # noqa: PLC0415
 
-    return anbima.tpf(date, tipo_titulo).select(tuple(MAPA_COLUNAS_TPF)).rename(
-        MAPA_COLUNAS_TPF
-    )
+    return anbima.tpf(date, tipo_titulo).select(COLUNAS_DADOS_TPF)
 
 
 def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:

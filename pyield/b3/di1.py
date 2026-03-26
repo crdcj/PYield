@@ -62,11 +62,11 @@ def data(
     if pre_filter:
         df_tpf = (
             obter_dataset_cacheado("tpf")
-            .filter(pl.col("BondType").is_in(["LTN", "NTN-F"]))
-            .unique(subset=["MaturityDate", "ReferenceDate"])
+            .filter(pl.col("titulo").is_in(["LTN", "NTN-F"]))
+            .unique(subset=["data_vencimento", "data_referencia"])
             .select(
-                TradeDate_tpf=pl.col("ReferenceDate"),
-                ExpirationDate=bday.offset_expr("MaturityDate", 0),
+                TradeDate_tpf=pl.col("data_referencia"),
+                ExpirationDate=bday.offset_expr("data_vencimento", 0),
             )
             .sort("TradeDate_tpf", "ExpirationDate")
         )
