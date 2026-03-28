@@ -83,18 +83,18 @@ logger = logging.getLogger(__name__)
 def _empty_schema() -> pl.DataFrame:
     return pl.DataFrame(
         schema={
-            "TradeDate": pl.Date,
-            "MeetingEndDate": pl.Date,
-            "ExpiryDate": pl.Date,
-            "MeetingRank": pl.Int32,
-            "StrikeChangeBps": pl.Int32,
-            "BDaysToExp": pl.Int32,
-            "SettlementPrice": pl.Float64,
-            "DI1Rate": pl.Float64,
-            "DiscountExp": pl.Float64,
-            "RawProb": pl.Float64,
-            "Prob": pl.Float64,
-            "CumProb": pl.Float64,
+            "data_referencia": pl.Date,
+            "data_fim_reuniao": pl.Date,
+            "data_expiracao": pl.Date,
+            "ranking_reuniao": pl.Int32,
+            "variacao_strike_bps": pl.Int32,
+            "dias_uteis": pl.Int32,
+            "preco_ajuste": pl.Float64,
+            "taxa_di1": pl.Float64,
+            "fator_desconto": pl.Float64,
+            "prob_bruta": pl.Float64,
+            "prob": pl.Float64,
+            "prob_acumulada": pl.Float64,
         }
     )
 
@@ -106,11 +106,11 @@ def _empty_schema() -> pl.DataFrame:
 
 def _add_meeting_rank(df: pl.DataFrame) -> pl.DataFrame:
     """
-    Add MeetingRank: 1 = nearest ExpiryDate, 2 = next, etc.
-    Computed as dense rank over ExpiryDate.
+    Adiciona ranking_reuniao: 1 = data_expiracao mais próxima, 2 = seguinte, etc.
+    Calculado como dense rank sobre data_expiracao.
     """
     return df.with_columns(
-        MeetingRank=pl.col("ExpiryDate").rank("dense").cast(pl.Int32)
+        ranking_reuniao=pl.col("data_expiracao").rank("dense").cast(pl.Int32)
     )
 
 
@@ -147,31 +147,35 @@ def _add_discount_factors(df: pl.DataFrame) -> pl.DataFrame:
     Falls back to DI1Rate=0.0 / DiscountExp=1.0 when DI1 data is unavailable.
     """
     pairs = (
-        df.select("TradeDate", "ExpiryDate", "BDaysToExp")
-        .unique(subset=["TradeDate", "ExpiryDate"])
-        .sort("TradeDate", "ExpiryDate")
+        df.select("data_referencia", "data_expiracao", "dias_uteis")
+        .unique(subset=["data_referencia", "data_expiracao"])
+        .sort("data_referencia", "data_expiracao")
     )
 
-    # Single vectorized call: one data fetch per unique TradeDate
+    # Chamada vetorizada: um fetch por data_referencia única
     try:
         rates = di1.interpolate_rates(
-            dates=pairs["TradeDate"],
-            expirations=pairs["ExpiryDate"],
+            dates=pairs["data_referencia"],
+            expirations=pairs["data_expiracao"],
             extrapolate=True,
         )
     except Exception:
-        logger.warning("DI1 lookup failed; using rate=0.0 fallback.")
-        rates = pl.Series("FlatFwdRate", [None] * len(pairs), dtype=pl.Float64)
+        logger.warning("Falha na busca DI1; usando fallback taxa=0.0.")
+        rates = pl.Series("taxa_interpolada", [None] * len(pairs), dtype=pl.Float64)
 
-    discount_df = pairs.with_columns(
-        DI1Rate=rates.fill_null(0.0).fill_nan(0.0),
-    ).with_columns(
-        DiscountExp=(
-            (pl.col("BDaysToExp") / 252 * (1 + pl.col("DI1Rate")).log()).exp()
-        ),
-    ).select("TradeDate", "ExpiryDate", "DI1Rate", "DiscountExp")
+    discount_df = (
+        pairs.with_columns(
+            taxa_di1=rates.fill_null(0.0).fill_nan(0.0),
+        )
+        .with_columns(
+            fator_desconto=(
+                (pl.col("dias_uteis") / 252 * (1 + pl.col("taxa_di1")).log()).exp()
+            ),
+        )
+        .select("data_referencia", "data_expiracao", "taxa_di1", "fator_desconto")
+    )
 
-    return df.join(discount_df, on=["TradeDate", "ExpiryDate"], how="left")
+    return df.join(discount_df, on=["data_referencia", "data_expiracao"], how="left")
 
 
 def _add_probabilities(df: pl.DataFrame) -> pl.DataFrame:
@@ -189,19 +193,16 @@ def _add_probabilities(df: pl.DataFrame) -> pl.DataFrame:
     df = _add_discount_factors(df)
 
     return (
-        df.sort(["ExpiryDate", "StrikeChangeBps"])
+        df.sort(["data_expiracao", "variacao_strike_bps"])
         .with_columns(
-            RawProb=(pl.col("SettlementPrice") * pl.col("DiscountExp") / 100),
+            prob_bruta=(pl.col("preco_ajuste") * pl.col("fator_desconto") / 100),
         )
         .with_columns(
-            Prob=(
-                pl.col("RawProb")
-                / pl.col("RawProb").sum().over("ExpiryDate")
+            prob=(
+                pl.col("prob_bruta") / pl.col("prob_bruta").sum().over("data_expiracao")
             ),
         )
-        .with_columns(
-            CumProb=pl.col("Prob").cum_sum().over("ExpiryDate")
-        )
+        .with_columns(prob_acumulada=pl.col("prob").cum_sum().over("data_expiracao"))
     )
 
 
@@ -254,10 +255,10 @@ def all_meetings(
     >>> import pyield as yd
     >>> import polars as pl
     >>> df = yd.selic.probabilities.all_meetings("29-01-2025")
-    >>> df.is_empty() or df["MeetingRank"].min() == 1
+    >>> df.is_empty() or df["ranking_reuniao"].min() == 1
     True
-    >>> sums = df.group_by("ExpiryDate").agg(pl.col("Prob").sum())
-    >>> df.is_empty() or (sums["Prob"] - 1.0).abs().max() < 1e-9
+    >>> sums = df.group_by("data_expiracao").agg(pl.col("prob").sum())
+    >>> df.is_empty() or (sums["prob"] - 1.0).abs().max() < 1e-9
     True
     """
     raw = cpm.data(date)
@@ -265,26 +266,26 @@ def all_meetings(
         return _empty_schema()
 
     df = (
-        raw.filter(pl.col("OptionType") == option_type)
-        # Exclude strikes with no settlement price — see module docstring.
-        .filter(pl.col("SettlementPrice").is_not_null())
+        raw.filter(pl.col("tipo_opcao") == option_type)
+        # Excluir strikes sem preço de ajuste — ver docstring do módulo.
+        .filter(pl.col("preco_ajuste").is_not_null())
         .pipe(_add_meeting_rank)
         .pipe(_add_probabilities)
         .select(
-            "TradeDate",
-            "MeetingEndDate",
-            "ExpiryDate",
-            "MeetingRank",
-            "StrikeChangeBps",
-            "BDaysToExp",
-            "SettlementPrice",
-            "DI1Rate",
-            "DiscountExp",
-            "RawProb",
-            "Prob",
-            "CumProb",
+            "data_referencia",
+            "data_fim_reuniao",
+            "data_expiracao",
+            "ranking_reuniao",
+            "variacao_strike_bps",
+            "dias_uteis",
+            "preco_ajuste",
+            "taxa_di1",
+            "fator_desconto",
+            "prob_bruta",
+            "prob",
+            "prob_acumulada",
         )
-        .sort(["MeetingRank", "StrikeChangeBps"])
+        .sort(["ranking_reuniao", "variacao_strike_bps"])
     )
 
     return df if not df.is_empty() else _empty_schema()
@@ -320,9 +321,9 @@ def meeting(
     --------
     >>> import pyield as yd
     >>> df = yd.selic.probabilities.meeting("29-01-2025")
-    >>> df.is_empty() or abs(df["Prob"].sum() - 1.0) < 1e-9
+    >>> df.is_empty() or abs(df["prob"].sum() - 1.0) < 1e-9
     True
-    >>> df.is_empty() or df["CumProb"].tail(1).item() == 1.0
+    >>> df.is_empty() or df["prob_acumulada"].tail(1).item() == 1.0
     True
     """
     df = all_meetings(date, option_type=option_type)
@@ -330,11 +331,10 @@ def meeting(
         return _empty_schema()
 
     if expiration is None:
-        target_expiry = df.filter(pl.col("MeetingRank") == 1)["ExpiryDate"][0]
+        target_expiry = df.filter(pl.col("ranking_reuniao") == 1)["data_expiracao"][0]
     else:
         target_expiry = converter_datas(expiration)
 
-    return (
-        df.filter(pl.col("ExpiryDate") == target_expiry)
-        .with_columns(MeetingRank=pl.lit(1, dtype=pl.Int32))
+    return df.filter(pl.col("data_expiracao") == target_expiry).with_columns(
+        ranking_reuniao=pl.lit(1, dtype=pl.Int32)
     )

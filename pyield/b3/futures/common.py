@@ -42,21 +42,21 @@ def adicionar_vencimento(
     df: pl.DataFrame, codigo_contrato: str, coluna_ticker: str
 ) -> pl.DataFrame:
     """
-    Recebe um DataFrame Polars e ADICIONA a coluna 'ExpirationDate'.
+    Recebe um DataFrame Polars e ADICIONA a coluna 'data_vencimento'.
 
     - Pega a coluna 'coluna_ticker'.
     - Extrai o código de vencimento.
     - Converte para a data "bruta", sem ajuste de feriado.
     - Garante que a data de vencimento é um dia útil.
-    - Retorna o DataFrame com a nova coluna ExpirationDate.
+    - Retorna o DataFrame com a nova coluna data_vencimento.
 
-    Assume tickers no formato padrão de futuros da B3 (ex.: DI1F25).
+    Assume códigos de negociação no formato padrão de futuros da B3 (ex.: DI1F25).
     """
     dia_vencimento = 15 if "DAP" in codigo_contrato else 1
     df = df.with_columns(
         pl.date(
             # Ano: posição 4-5 (2 dígitos) -> Int -> Soma 2000
-            # Funciona para tickers padrão de futuros (ex.: DI1F25)
+            # Funciona para códigos de negociação padrão de futuros (ex.: DI1F25)
             year=pl.col(coluna_ticker).str.slice(4, 2).cast(pl.Int32, strict=False)
             + 2000,
             # Mês: posição 3 (1 char = código do mês) -> mapeia para Int
@@ -64,9 +64,9 @@ def adicionar_vencimento(
             .str.slice(3, 1)
             .replace_strict(_MAPA_MESES, default=None, return_dtype=pl.Int8),
             day=dia_vencimento,
-        ).alias("ExpirationDate")
+        ).alias("data_vencimento")
     )
     # Garante que a data de vencimento é um dia útil
-    df = df.with_columns(ExpirationDate=bday.offset_expr("ExpirationDate", 0))
+    df = df.with_columns(data_vencimento=bday.offset_expr("data_vencimento", 0))
 
     return df

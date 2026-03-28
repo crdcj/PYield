@@ -285,7 +285,7 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
             (também conhecido como prêmio).
 
     Raises:
-        ValueError: Se os dados de DI não possuem 'SettlementRate' ou estão vazios.
+        ValueError: Se os dados de DI não possuem 'taxa_ajuste' ou estão vazios.
 
     Examples:
         >>> from pyield import ltn

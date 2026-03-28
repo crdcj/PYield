@@ -17,7 +17,7 @@ registro = logging.getLogger(__name__)
 # Estrutura interna única — usuário não vê isso
 class _Dataset(Enum):
     TPF = ("anbima_tpf.parquet", "data_referencia", "TPF (ANBIMA)")
-    PR = ("b3_price_report.parquet", "TradeDate", "Price Report (B3)")
+    PR = ("b3_pr.parquet", "data_referencia", "Price Report (B3)")
 
     def __init__(self, nome_arquivo: str, coluna_data: str, descricao: str):
         self.nome_arquivo = nome_arquivo

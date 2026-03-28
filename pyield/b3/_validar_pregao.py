@@ -2,6 +2,10 @@ import datetime as dt
 
 from pyield import bday, clock
 
+# Pregão abre às 9:00, porém os dados intraday têm atraso de 15 minutos.
+# Esperar 1 minuto adicional para garantir que estejam disponíveis (9:16h).
+HORA_INICIO_INTRADAY = dt.time(9, 16)
+
 
 def data_negociacao_valida(data_negociacao: dt.date) -> bool:
     """Valida se a data de referência é utilizável para consulta.
@@ -26,3 +30,15 @@ def data_negociacao_valida(data_negociacao: dt.date) -> bool:
         return False
 
     return True
+
+
+def intraday_disponivel() -> bool:
+    """Verifica se dados intraday estão disponíveis agora.
+
+    Critérios:
+    - Hoje deve ser um dia de pregão válido.
+    - O horário atual deve ser após o início dos dados intraday (9:16h).
+    """
+    if not data_negociacao_valida(clock.today()):
+        return False
+    return clock.now().time() >= HORA_INICIO_INTRADAY

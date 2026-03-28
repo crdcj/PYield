@@ -36,12 +36,19 @@ def data(
     Examples:
         >>> from pyield import di1
         >>> df = di1.data(dates="16-10-2024", month_start=True)
-        >>> {"TradeDate", "TickerSymbol", "ExpirationDate", "SettlementRate"}.issubset(
-        ...     set(df.columns)
+        >>> df.head(3).select(
+        ...     "codigo_negociacao", "data_vencimento", "dias_uteis", "taxa_ajuste"
         ... )
-        True
-        >>> df.shape[0] > 0
-        True
+        shape: (3, 4)
+        ┌───────────────────┬─────────────────┬────────────┬─────────────┐
+        │ codigo_negociacao ┆ data_vencimento ┆ dias_uteis ┆ taxa_ajuste │
+        │ ---               ┆ ---             ┆ ---        ┆ ---         │
+        │ str               ┆ date            ┆ i64        ┆ f64         │
+        ╞═══════════════════╪═════════════════╪════════════╪═════════════╡
+        │ DI1X24            ┆ 2024-11-01      ┆ 12         ┆ 0.10653     │
+        │ DI1Z24            ┆ 2024-12-01      ┆ 31         ┆ 0.1091      │
+        │ DI1F25            ┆ 2025-01-01      ┆ 52         ┆ 0.11164     │
+        └───────────────────┴─────────────────┴────────────┴─────────────┘
 
     """
     if any_is_empty(dates):
@@ -65,33 +72,29 @@ def data(
             .filter(pl.col("titulo").is_in(["LTN", "NTN-F"]))
             .unique(subset=["data_vencimento", "data_referencia"])
             .select(
-                TradeDate_tpf=pl.col("data_referencia"),
-                ExpirationDate=bday.offset_expr("data_vencimento", 0),
+                data_ref_tpf=pl.col("data_referencia"),
+                data_vencimento=bday.offset_expr("data_vencimento", 0),
             )
-            .sort("TradeDate_tpf", "ExpirationDate")
+            .sort("data_ref_tpf", "data_vencimento")
         )
 
-        # Ajustar as datas de vencimento para dias úteis, como está no DI1
-        # exp_dates = bday.offset(df_tpf["ExpirationDate"], 0)
-        # df_tpf = df_tpf.with_columns(ExpirationDate=exp_dates)
-
-        # Mapear cada TradeDate do DI para a data TPF mais próxima
+        # Mapear cada data_referencia do DI para a data TPF mais próxima
         df = df.join_asof(
-            df_tpf.select("TradeDate_tpf").unique().sort("TradeDate_tpf"),
-            left_on="TradeDate",
-            right_on="TradeDate_tpf",
+            df_tpf.select("data_ref_tpf").unique().sort("data_ref_tpf"),
+            left_on="data_referencia",
+            right_on="data_ref_tpf",
             strategy="backward",
         )
 
         # Filtrar apenas vencimentos que existem no TPF
-        df = df.join(df_tpf, on=["TradeDate_tpf", "ExpirationDate"], how="inner").drop(
-            "TradeDate_tpf"
+        df = df.join(df_tpf, on=["data_ref_tpf", "data_vencimento"], how="inner").drop(
+            "data_ref_tpf"
         )
 
     if month_start:
-        df = df.with_columns(pl.col("ExpirationDate").dt.truncate("1mo"))
+        df = df.with_columns(pl.col("data_vencimento").dt.truncate("1mo"))
 
-    return df.sort("TradeDate", "ExpirationDate")
+    return df.sort("data_referencia", "data_vencimento")
 
 
 def interpolate_rates(
@@ -145,7 +148,7 @@ def interpolate_rates(
         ...     expirations=["01-01-2027", "25-11-2027", "01-01-2030"],
         ... )
         shape: (3,)
-        Series: 'FlatFwdRate' [f64]
+        Series: 'taxa_interpolada' [f64]
         [
             0.13972
             0.134613
@@ -159,7 +162,7 @@ def interpolate_rates(
         ...     extrapolate=True,
         ... )
         shape: (2,)
-        Series: 'FlatFwdRate' [f64]
+        Series: 'taxa_interpolada' [f64]
         [
             0.13901
             0.13881
@@ -172,7 +175,7 @@ def interpolate_rates(
         ...     extrapolate=False,
         ... )
         shape: (2,)
-        Series: 'FlatFwdRate' [f64]
+        Series: 'taxa_interpolada' [f64]
         [
             0.135763
             null
@@ -182,16 +185,16 @@ def interpolate_rates(
         return pl.Series(dtype=pl.Float64)
 
     df_entrada = pl.DataFrame(
-        data={"TradeDate": dates, "ExpirationDate": expirations}
+        data={"data_referencia": dates, "data_vencimento": expirations}
     ).with_columns(
-        TradeDate=cv.converter_datas_expr("TradeDate"),
-        ExpirationDate=cv.converter_datas_expr("ExpirationDate"),
+        data_referencia=cv.converter_datas_expr("data_referencia"),
+        data_vencimento=cv.converter_datas_expr("data_vencimento"),
     )
     if df_entrada.is_empty():
         return pl.Series(dtype=pl.Float64)
 
     # Carrega dataset de taxas DI usando datas já convertidas do df_entrada
-    datas_unicas = df_entrada["TradeDate"].drop_nulls().unique().sort().to_list()
+    datas_unicas = df_entrada["data_referencia"].drop_nulls().unique().sort().to_list()
     df_ref = b3.futures(date=datas_unicas, contract_code="DI1", full_report=False)
     # Retorna Series vazia se nenhuma taxa for encontrada
     if df_ref.is_empty():
@@ -201,22 +204,22 @@ def interpolate_rates(
     # Isso garante que saberemos a ordem exata depois
     df_entrada = df_entrada.with_row_index("_temp_idx")
 
-    # Inicializa FlatFwdRate como None
+    # Inicializa taxa_interpolada como None
     df_entrada = df_entrada.with_columns(
-        BDaysToExp=bday.count_expr("TradeDate", "ExpirationDate"),
-        FlatFwdRate=None,
+        dias_uteis=bday.count_expr("data_referencia", "data_vencimento"),
+        taxa_interpolada=None,
     )
 
     # Lista para armazenar os blocos processados
     blocos_processados = []
 
     # Itera sobre cada data de referência única
-    for data_ref in df_entrada["TradeDate"].unique():
+    for data_ref in df_entrada["data_referencia"].unique():
         # 1. Filtra apenas as linhas desta data (Particionamento)
-        df_parcial = df_entrada.filter(pl.col("TradeDate") == data_ref)
+        df_parcial = df_entrada.filter(pl.col("data_referencia") == data_ref)
 
         # 2. Busca as taxas de referência para esta data
-        df_referencia = df_ref.filter(pl.col("TradeDate") == data_ref)
+        df_referencia = df_ref.filter(pl.col("data_referencia") == data_ref)
 
         # Se não houver dados de curva, adicionamos o bloco como está (com nulos)
         # e continuamos.
@@ -227,17 +230,17 @@ def interpolate_rates(
         # Inicializa o interpolador com taxas e dias úteis conhecidos
         interpolador = interpolator.Interpolator(
             method="flat_forward",
-            known_bdays=df_referencia["BDaysToExp"],
-            known_rates=df_referencia["SettlementRate"],
+            known_bdays=df_referencia["dias_uteis"],
+            known_rates=df_referencia["taxa_ajuste"],
             extrapolate=extrapolate,
         )
 
         # 4. A mágica: map_batches passa a Series inteira para o interpolador
         # O interpolador retorna uma Series, que o Polars alinha perfeitamente
         df_parcial = df_parcial.with_columns(
-            pl.col("BDaysToExp")
+            pl.col("dias_uteis")
             .map_batches(interpolador)  # Passa Series -> Recebe Series
-            .alias("FlatFwdRate")
+            .alias("taxa_interpolada")
         )
 
         blocos_processados.append(df_parcial)
@@ -249,7 +252,7 @@ def interpolate_rates(
     # O sort("_temp_idx") restaura a ordem original dos inputs
     df_saida = pl.concat(blocos_processados).sort("_temp_idx")
 
-    return df_saida["FlatFwdRate"].fill_nan(None)
+    return df_saida["taxa_interpolada"].fill_nan(None)
 
 
 def interpolate_rate(
@@ -315,9 +318,10 @@ def interpolate_rate(
 def available_dates() -> pl.Series:
     """Retorna as datas de negociação disponíveis para DI1.
 
-    Obtém valores distintos de 'TradeDate' para DI1, com base no dataset histórico
-    PR da B3 (mesmo utilizado por `futures`). Inclui apenas datas com preço e taxa
-    de ajuste já definidos; o pregão do dia corrente não está incluído.
+    Obtém valores distintos de 'data_referencia' para DI1, com base no dataset
+    histórico PR da B3 (mesmo utilizado por `futures`). Inclui apenas datas com
+    preço e taxa de ajuste já definidos; o pregão do dia corrente não está
+    incluído.
 
     Returns:
         Series ordenada de datas de negociação (dt.date) para as quais dados de
@@ -328,7 +332,7 @@ def available_dates() -> pl.Series:
         >>> # Série disponível no dataset PR começa em 2018-01-02
         >>> di1.available_dates().head(5)
         shape: (5,)
-        Series: 'TradeDate' [date]
+        Series: 'data_referencia' [date]
         [
             2018-01-02
             2018-01-03

@@ -97,8 +97,8 @@ def test_fetch_price_report_reusa_download_xml_por_data(monkeypatch):
     def _processar_xml_falso(_xml, codigo):
         return pl.DataFrame(
             {
-                "TickerSymbol": [f"{codigo}F26"],
-                "TradeDate": [dt.date(2026, 1, 12)],
+                "TckrSymb": [f"{codigo}F26"],
+                "TradDt": [dt.date(2026, 1, 12)],
             }
         )
 

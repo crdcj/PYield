@@ -11,7 +11,7 @@ def test_historical_prioriza_dataset_pr(monkeypatch):
     """Quando há dados no cache PR, não deve chamar fallback SPR."""
 
     def _historico_pr_falso(datas, codigo_contrato):
-        return pl.DataFrame({"TickerSymbol": ["DI1N26"]})
+        return pl.DataFrame({"codigo_negociacao": ["DI1N26"]})
 
     chamou_price_report = {"valor": False}
 
@@ -46,7 +46,7 @@ def test_historical_faz_fallback_para_price_report(monkeypatch):
         chamadas_price_report.append(full_report)
         return pl.DataFrame(
             {
-                "TickerSymbol": ["DI1N26"],
+                "codigo_negociacao": ["DI1N26"],
             }
         )
 
@@ -69,8 +69,8 @@ def test_futures_igual_price_report_release_di1():
     df_price_report = historical_mod._obter_futuros_pr([data], "DI1")
 
     assert_frame_equal(
-        df_futures.sort("ExpirationDate"),
-        df_price_report.sort("ExpirationDate"),
+        df_futures.sort("data_vencimento"),
+        df_price_report.sort("data_vencimento"),
         rel_tol=1e-6,
         check_exact=False,
         check_dtypes=True,
@@ -91,7 +91,7 @@ def test_historical_lista_contratos_faz_um_fetch_remoto(monkeypatch):
         ticker = "DI1F26" if contract_code == "DI1" else "DOLF26"
         return pl.DataFrame(
             {
-                "TickerSymbol": [ticker],
+                "codigo_negociacao": [ticker],
             }
         )
 
@@ -107,4 +107,4 @@ def test_historical_lista_contratos_faz_um_fetch_remoto(monkeypatch):
 
     assert len(chamadas) == 2  # noqa
     assert sorted(chamada[1] for chamada in chamadas) == ["DI1", "DOL"]
-    assert sorted(df.get_column("TickerSymbol").to_list()) == ["DI1F26", "DOLF26"]
+    assert sorted(df.get_column("codigo_negociacao").to_list()) == ["DI1F26", "DOLF26"]

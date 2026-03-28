@@ -34,68 +34,53 @@ XPATH_DETALHES_NEGOCIO = ".//ns:TradDtls"
 
 # --- Mapeamento de Colunas ---
 
-# Estrutura: (id_pdf, nome_original_xml, nome_novo, tipo_polars)
-# As colunas comentadas ficam fora do ETL; ao descomentar, entram no fluxo.
+# Estrutura: (id_pdf, nome_xml, tipo_polars)
+# Esta camada base preserva os nomes originais do XML da B3.
 # https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf
-COLUNAS_PRICE_REPORT: list[tuple[str, str, str, type[pl.DataType]]] = [
-    ("1.00", "TradDt", "TradeDate", pl.Date),
-    ("2.01", "TckrSymb", "TickerSymbol", pl.String),
-    ("3.01.01", "Id", "InstrumentId", pl.String),
-    ("3.01.02.01", "Prtry", "IdentifierType", pl.String),
-    ("3.02.01", "MktIdrCd", "MarketIdentifierCode", pl.String),
-    ("4.01", "DaysToSttlm", "DaysToSettlement", pl.String),
-    ("4.02", "TradQty", "TradeCount", pl.Int64),
-    ("5.01", "MktDataStrmId", "MarketDataStreamId", pl.String),
-    ("5.02", "NtlFinVol", "FinancialVolume", pl.Float64),
-    ("5.03", "IntlFinVol", "InternationalFinancialVolume", pl.Float64),
-    ("5.04", "OpnIntrst", "OpenContracts", pl.Int64),
-    ("5.05", "FinInstrmQty", "TradeVolume", pl.Int64),
-    ("5.06", "BestBidPric", "BestBidValue", pl.Float64),
-    ("5.07", "BestAskPric", "BestAskValue", pl.Float64),
-    ("5.08", "FrstPric", "OpenValue", pl.Float64),
-    ("5.09", "MinPric", "MinValue", pl.Float64),
-    ("5.10", "MaxPric", "MaxValue", pl.Float64),
-    ("5.11", "TradAvrgPric", "AvgValue", pl.Float64),
-    ("5.12", "LastPric", "CloseValue", pl.Float64),
-    ("5.13", "RglrTxsQty", "RegularTradeCount", pl.Int64),
-    ("5.14", "NonRglrTxsQty", "NonRegularTradeCount", pl.Int64),
-    ("5.15", "RglrTraddCtrcts", "RegularTradedContracts", pl.Int64),
-    ("5.16", "NonRglrTraddCtrcts", "NonRegularTradedContracts", pl.Int64),
-    ("5.17", "NtlRglrVol", "NationalRegularVolume", pl.Float64),
-    ("5.18", "NtlNonRglrVol", "NationalNonRegularVolume", pl.Float64),
-    ("5.19", "IntlRglrVol", "InternationalRegularVolume", pl.Float64),
-    ("5.20", "IntlNonRglrVol", "InternationalNonRegularVolume", pl.Float64),
-    ("5.21", "AdjstdQt", "SettlementPrice", pl.Float64),
-    ("5.22", "AdjstdQtTax", "SettlementRate", pl.Float64),
-    ("5.23", "AdjstdQtStin", "AdjustedQuotationIndicator", pl.String),
-    ("5.24", "PrvsAdjstdQt", "PreviousAdjustedPrice", pl.Float64),
-    ("5.25", "PrvsAdjstdQtTax", "PreviousAdjustedRate", pl.Float64),
-    ("5.26", "PrvsAdjstdQtStin", "PreviousAdjustedIndicator", pl.String),
-    ("5.27", "OscnPctg", "OscillationPercentage", pl.Float64),
-    ("5.28", "VartnPts", "VariationPoints", pl.Float64),
-    ("5.29", "EqvtVal", "EquivalentValue", pl.Float64),
-    ("5.30", "AdjstdValCtrct", "AdjustedValueContract", pl.Float64),
-    ("5.31", "MaxTradLmt", "MaxLimitValue", pl.Float64),
-    ("5.32", "MinTradLmt", "MinLimitValue", pl.Float64),
+COLUNAS_PRICE_REPORT: list[tuple[str, str, type[pl.DataType]]] = [
+    ("1.00", "TradDt", pl.Date),
+    ("2.01", "TckrSymb", pl.String),
+    ("3.01.01", "Id", pl.String),
+    ("3.01.02.01", "Prtry", pl.String),
+    ("3.02.01", "MktIdrCd", pl.String),
+    ("4.01", "DaysToSttlm", pl.String),
+    ("4.02", "TradQty", pl.Int64),
+    ("5.01", "MktDataStrmId", pl.String),
+    ("5.02", "NtlFinVol", pl.Float64),
+    ("5.03", "IntlFinVol", pl.Float64),
+    ("5.04", "OpnIntrst", pl.Int64),
+    ("5.05", "FinInstrmQty", pl.Int64),
+    ("5.06", "BestBidPric", pl.Float64),
+    ("5.07", "BestAskPric", pl.Float64),
+    ("5.08", "FrstPric", pl.Float64),
+    ("5.09", "MinPric", pl.Float64),
+    ("5.10", "MaxPric", pl.Float64),
+    ("5.11", "TradAvrgPric", pl.Float64),
+    ("5.12", "LastPric", pl.Float64),
+    ("5.13", "RglrTxsQty", pl.Int64),
+    ("5.14", "NonRglrTxsQty", pl.Int64),
+    ("5.15", "RglrTraddCtrcts", pl.Int64),
+    ("5.16", "NonRglrTraddCtrcts", pl.Int64),
+    ("5.17", "NtlRglrVol", pl.Float64),
+    ("5.18", "NtlNonRglrVol", pl.Float64),
+    ("5.19", "IntlRglrVol", pl.Float64),
+    ("5.20", "IntlNonRglrVol", pl.Float64),
+    ("5.21", "AdjstdQt", pl.Float64),
+    ("5.22", "AdjstdQtTax", pl.Float64),
+    ("5.23", "AdjstdQtStin", pl.String),
+    ("5.24", "PrvsAdjstdQt", pl.Float64),
+    ("5.25", "PrvsAdjstdQtTax", pl.Float64),
+    ("5.26", "PrvsAdjstdQtStin", pl.String),
+    ("5.27", "OscnPctg", pl.Float64),
+    ("5.28", "VartnPts", pl.Float64),
+    ("5.29", "EqvtVal", pl.Float64),
+    ("5.30", "AdjstdValCtrct", pl.Float64),
+    ("5.31", "MaxTradLmt", pl.Float64),
+    ("5.32", "MinTradLmt", pl.Float64),
 ]
 
 # Mapa de tipos para cast inicial usando os nomes originais do XML.
-TIPOS_XML = {nome_original: tipo for _, nome_original, _, tipo in COLUNAS_PRICE_REPORT}
-
-
-def _mapa_renomeacao_colunas() -> dict[str, str]:
-    """
-    Constrói o dicionário de renomeação de colunas do XML para nomes canônicos.
-
-    A renomeação é estática e não aplica semântica de contrato (Rate/Price).
-    Colunas numéricas de cotação/limites usam sufixo "Value" no output bruto.
-
-    Retorna: {XML_Name: New_Name}
-    """
-    return {
-        nome_original: nome_novo
-        for _, nome_original, nome_novo, _ in COLUNAS_PRICE_REPORT
-    }
+TIPOS_XML = {nome_xml: tipo for _, nome_xml, tipo in COLUNAS_PRICE_REPORT}
 
 
 @retry_padrao
@@ -226,9 +211,7 @@ def _processar_xml_extraido(xml_bytes: bytes, codigo_contrato: str) -> pl.DataFr
         return pl.DataFrame()
 
     df = _converter_para_df(registros)
-    mapa_renomeacao = _mapa_renomeacao_colunas()
-    df = df.rename(mapa_renomeacao, strict=False)
-    return df.sort("TickerSymbol")
+    return df.sort("TckrSymb")
 
 
 @lru_cache(maxsize=64)
@@ -247,17 +230,18 @@ def fetch_price_report(
     """Busca e processa o price report da B3 no site oficial.
 
     Faz o download do ZIP com XML, extrai os dados do contrato e devolve um
-    DataFrame Polars com os dados brutos do XML, tipados e com colunas
-    renomeadas para nomes padronizados.
+    DataFrame Polars com os dados brutos do XML e colunas no padrão
+    original da B3 (nomes em inglês das tags XML).
 
-    As colunas OHLC e limites são retornadas com sufixo "Value"
-    (ex.: OpenValue, CloseValue, BestBidValue, MaxLimitValue).
-    Conversões para "Rate"/"Price" devem ser feitas no módulo consumidor
-    (ex.: ``futures.historical``).
+    O DataFrame retornado **não** contém colunas calculadas
+    (dias_uteis, dias_corridos, dv01, taxa_forward)
+    nem normalização semântica por classe de ativo. O enriquecimento é responsabilidade do
+    módulo consumidor (ex.: ``futures.historical``).
 
-    O DataFrame retornado **não** contém colunas calculadas (BDaysToExp,
-    DaysToExp, DV01, ForwardRate) nem normalização de taxas. O enriquecimento
-    é responsabilidade do módulo consumidor (ex.: ``futures.historical``).
+    Nota:
+        O dataset cacheado ``pr`` (arquivo ``b3_pr.parquet``) pode conter um
+        subconjunto de colunas focado em futuros. Esta função, porém, opera no
+        schema bruto do XML da B3 para a data/relatório consultados.
 
     Args:
         date: Data de negociação no formato 'DD-MM-YYYY', 'DD/MM/YYYY',
@@ -269,51 +253,53 @@ def fetch_price_report(
             price report completo (PR, ~2 MB) com todos os dados de negociação.
 
     Returns:
-        pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
-        TickerSymbol. Inclui todos os registros do XML (sem filtro de
+        pl.DataFrame: DataFrame com colunas tipadas no padrão original do XML,
+        ordenado por ticker (`TckrSymb`). Inclui todos os registros do XML (sem filtro de
         vencimento). Retorna DataFrame vazio para data inválida ou resposta
         vazia.
 
     Output Columns:
-        - TradeDate (Date): Data de negociação.
-        - TickerSymbol (String): Código do ticker na B3.
-        - InstrumentId (String): Identificador do instrumento.
-        - IdentifierType (String): Tipo do identificador (Prtry).
-        - MarketIdentifierCode (String): Código do mercado.
-        - DaysToSettlement (String): Dias para liquidação.
-        - TradeCount (Int64): Número de negócios.
-        - MarketDataStreamId (String): Identificador do fluxo de dados.
-        - FinancialVolume (Float64): Volume financeiro nacional bruto.
-        - InternationalFinancialVolume (Float64): Volume financeiro internacional.
-        - OpenContracts (Int64): Contratos em aberto.
-        - TradeVolume (Int64): Quantidade de contratos negociados.
-        - BestBidValue (Float64): Melhor oferta de compra.
-        - BestAskValue (Float64): Melhor oferta de venda.
-        - OpenValue (Float64): Valor de abertura.
-        - MinValue (Float64): Valor mínimo negociado.
-        - MaxValue (Float64): Valor máximo negociado.
-        - AvgValue (Float64): Valor médio negociado.
-        - CloseValue (Float64): Valor de fechamento.
-        - RegularTradeCount (Int64): Número de negócios regulares.
-        - NonRegularTradeCount (Int64): Número de negócios não regulares.
-        - RegularTradedContracts (Int64): Contratos regulares negociados.
-        - NonRegularTradedContracts (Int64): Contratos não regulares negociados.
-        - NationalRegularVolume (Float64): Volume financeiro regular nacional.
-        - NationalNonRegularVolume (Float64): Volume financeiro não regular nacional.
-        - InternationalRegularVolume (Float64): Volume financeiro regular internacional.
-        - InternationalNonRegularVolume (Float64): Volume financeiro não regular internacional.
-        - SettlementPrice (Float64): Preço de ajuste.
-        - SettlementRate (Float64): Taxa de ajuste.
-        - AdjustedQuotationIndicator (String): Indicador de cotação ajustada.
-        - PreviousAdjustedPrice (Float64): Preço de ajuste do dia anterior.
-        - PreviousAdjustedRate (Float64): Taxa de ajuste do dia anterior.
-        - PreviousAdjustedIndicator (String): Indicador de ajuste anterior.
-        - OscillationPercentage (Float64): Percentual de oscilação.
-        - VariationPoints (Float64): Variação em pontos.
-        - EquivalentValue (Float64): Valor equivalente.
-        - AdjustedValueContract (Float64): Valor do contrato ajustado.
-        - MaxLimitValue (Float64): Limite máximo de variação.
-        - MinLimitValue (Float64): Limite mínimo de variação.
+        * TradDt (Date): data de negociação.
+        * TckrSymb (String): código de negociação na B3.
+        * Id (String): identificador do instrumento.
+        * Prtry (String): tipo do identificador proprietário.
+        * MktIdrCd (String): código do mercado.
+        * DaysToSttlm (String): dias para liquidação.
+        * TradQty (Int64): número de negócios.
+        * MktDataStrmId (String): identificador do fluxo de dados.
+        * NtlFinVol (Float64): volume financeiro nacional bruto.
+        * IntlFinVol (Float64): volume financeiro internacional.
+        * OpnIntrst (Int64): contratos em aberto.
+        * FinInstrmQty (Int64): quantidade negociada de instrumentos financeiros.
+                * BestBidPric (Float64): ultima melhor oferta de compra no snapshot
+                    diario; pode ser nulo.
+                * BestAskPric (Float64): ultima melhor oferta de venda no snapshot
+                    diario; pode ser nulo.
+        * FrstPric (Float64): preço de abertura.
+        * MinPric (Float64): preço mínimo negociado.
+        * MaxPric (Float64): preço máximo negociado.
+        * TradAvrgPric (Float64): preço médio negociado.
+        * LastPric (Float64): preço de fechamento.
+        * RglrTxsQty (Int64): número de negócios regulares.
+        * NonRglrTxsQty (Int64): número de negócios não regulares.
+        * RglrTraddCtrcts (Int64): contratos regulares negociados.
+        * NonRglrTraddCtrcts (Int64): contratos não regulares negociados.
+        * NtlRglrVol (Float64): volume financeiro regular nacional.
+        * NtlNonRglrVol (Float64): volume não regular nacional.
+        * IntlRglrVol (Float64): volume regular internacional.
+        * IntlNonRglrVol (Float64): volume não regular internacional.
+        * AdjstdQt (Float64): preço/cotação de ajuste.
+        * AdjstdQtTax (Float64): taxa de ajuste.
+        * AdjstdQtStin (String): indicador de cotação ajustada.
+        * PrvsAdjstdQt (Float64): preço/cotação de ajuste do dia anterior.
+        * PrvsAdjstdQtTax (Float64): taxa de ajuste do dia anterior.
+        * PrvsAdjstdQtStin (String): indicador de ajuste anterior.
+        * OscnPctg (Float64): percentual de oscilação.
+        * VartnPts (Float64): variação em pontos.
+        * EqvtVal (Float64): valor equivalente.
+        * AdjstdValCtrct (Float64): valor do contrato ajustado.
+        * MaxTradLmt (Float64): limite máximo de variação.
+        * MinTradLmt (Float64): limite mínimo de variação.
 
     Raises:
         requests.HTTPError: Se a requisição HTTP ao endpoint falhar.
@@ -351,7 +337,7 @@ def fetch_price_report(
                 dataframes.append(df)
         if not dataframes:
             return pl.DataFrame()
-        return pl.concat(dataframes, how="diagonal").sort("TickerSymbol")
+        return pl.concat(dataframes, how="diagonal").sort("TckrSymb")
     except (zipfile.BadZipFile, etree.XMLSyntaxError):
         registro.exception(f"Falha ao parsear o price report de {contratos} em {date}.")
         raise
@@ -369,11 +355,8 @@ def read_price_report(
 ) -> pl.DataFrame:
     """Lê e processa o price report da B3 a partir do conteúdo XML bruto.
 
-    Retorna os dados brutos do XML (tipados e renomeados), sem enriquecimento.
-
-    As colunas de cotação/limites são retornadas com sufixo "Value".
-    A interpretação semântica para "Rate"/"Price" deve ser feita no módulo
-    consumidor.
+    Mesma saída de :func:`fetch_price_report`, mas recebe o XML já
+    descomprimido em vez de baixar da rede.
 
     Args:
         xml_bytes: Conteúdo do XML em bytes (já descomprimido).
@@ -381,49 +364,8 @@ def read_price_report(
             ['DI1', 'DAP']).
 
     Returns:
-        pl.DataFrame: DataFrame com colunas tipadas e renomeadas, ordenado por
-        TickerSymbol.
-
-    Output Columns:
-        - TradeDate (Date): Data de negociação.
-        - TickerSymbol (String): Código do ticker na B3.
-        - InstrumentId (String): Identificador do instrumento.
-        - IdentifierType (String): Tipo do identificador (Prtry).
-        - MarketIdentifierCode (String): Código do mercado.
-        - DaysToSettlement (String): Dias para liquidação.
-        - TradeCount (Int64): Número de negócios.
-        - MarketDataStreamId (String): Identificador do fluxo de dados.
-        - FinancialVolume (Float64): Volume financeiro nacional bruto.
-        - InternationalFinancialVolume (Float64): Volume financeiro internacional.
-        - OpenContracts (Int64): Contratos em aberto.
-        - TradeVolume (Int64): Quantidade de contratos negociados.
-        - BestBidValue (Float64): Melhor oferta de compra.
-        - BestAskValue (Float64): Melhor oferta de venda.
-        - OpenValue (Float64): Valor de abertura.
-        - MinValue (Float64): Valor mínimo negociado.
-        - MaxValue (Float64): Valor máximo negociado.
-        - AvgValue (Float64): Valor médio negociado.
-        - CloseValue (Float64): Valor de fechamento.
-        - RegularTradeCount (Int64): Número de negócios regulares.
-        - NonRegularTradeCount (Int64): Número de negócios não regulares.
-        - RegularTradedContracts (Int64): Contratos regulares negociados.
-        - NonRegularTradedContracts (Int64): Contratos não regulares negociados.
-        - NationalRegularVolume (Float64): Volume financeiro regular nacional.
-        - NationalNonRegularVolume (Float64): Volume financeiro não regular nacional.
-        - InternationalRegularVolume (Float64): Volume financeiro regular internacional.
-        - InternationalNonRegularVolume (Float64): Volume financeiro não regular internacional.
-        - SettlementPrice (Float64): Preço de ajuste.
-        - SettlementRate (Float64): Taxa de ajuste.
-        - AdjustedQuotationIndicator (String): Indicador de cotação ajustada.
-        - PreviousAdjustedPrice (Float64): Preço de ajuste do dia anterior.
-        - PreviousAdjustedRate (Float64): Taxa de ajuste do dia anterior.
-        - PreviousAdjustedIndicator (String): Indicador de ajuste anterior.
-        - OscillationPercentage (Float64): Percentual de oscilação.
-        - VariationPoints (Float64): Variação em pontos.
-        - EquivalentValue (Float64): Valor equivalente.
-        - AdjustedValueContract (Float64): Valor do contrato ajustado.
-        - MaxLimitValue (Float64): Limite máximo de variação.
-        - MinLimitValue (Float64): Limite mínimo de variação.
+        pl.DataFrame: DataFrame com as mesmas colunas documentadas em
+        :func:`fetch_price_report`.
     """
     contratos = normalizar_codigos_contrato(contract_code)
     if any_is_empty(xml_bytes) or not contratos:
@@ -436,4 +378,4 @@ def read_price_report(
             dataframes.append(df)
     if not dataframes:
         return pl.DataFrame()
-    return pl.concat(dataframes, how="diagonal").sort("TickerSymbol")
+    return pl.concat(dataframes, how="diagonal").sort("TckrSymb")
