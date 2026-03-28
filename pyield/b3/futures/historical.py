@@ -14,14 +14,16 @@ from pyield.fwd import forwards
 CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
+# Bid/Ask são invertidos: BestBidPric (bid em PU) = menor taxa = venda de taxa;
+# BestAskPric (ask em PU) = maior taxa = compra de taxa.
 _PRECO_PARA_TAXA = {
     "preco_abertura": "taxa_abertura",
     "preco_minimo": "taxa_minima",
     "preco_maximo": "taxa_maxima",
     "preco_medio": "taxa_media",
     "preco_fechamento": "taxa_fechamento",
-    "preco_ultima_oferta_compra": "taxa_ultima_oferta_compra",
-    "preco_ultima_oferta_venda": "taxa_ultima_oferta_venda",
+    "preco_ultima_oferta_compra": "taxa_ultima_oferta_venda",
+    "preco_ultima_oferta_venda": "taxa_ultima_oferta_compra",
     "preco_limite_minimo": "taxa_limite_minimo",
     "preco_limite_maximo": "taxa_limite_maximo",
 }
@@ -105,10 +107,10 @@ def historical(
         * taxa_maxima (Float64): taxa máxima negociada.
         * taxa_media (Float64): taxa média negociada.
         * taxa_fechamento (Float64): última taxa negociada (last).
-        * taxa_ultima_oferta_compra (Float64): melhor taxa de compra
-          (bid) no fim do pregão.
         * taxa_ultima_oferta_venda (Float64): melhor taxa de venda
-          (ask) no fim do pregão.
+          (dar; bid em PU) no fim do pregão.
+        * taxa_ultima_oferta_compra (Float64): melhor taxa de compra
+          (tomar; ask em PU) no fim do pregão.
         * taxa_ajuste (Float64): taxa de ajuste.
         * taxa_forward (Float64): taxa a termo (apenas DI1/DAP).
 
@@ -120,7 +122,10 @@ def historical(
 
         ``*_fechamento`` é o último negócio realizado (last trade).
         ``*_ultima_oferta_*`` é o bid/ask ao fim do pregão — não
-        representa negócio realizado e pode ser nulo.
+        representa negócio realizado e pode ser nulo. Para contratos de
+        taxa (DI1, DAP, etc.), bid/ask são invertidos em relação ao PU:
+        ``taxa_ultima_oferta_compra`` = maior taxa (ask em PU),
+        ``taxa_ultima_oferta_venda`` = menor taxa (bid em PU).
     """
     codigos = normalizar_codigos_contrato(codigo_contrato)
     if not codigos:
@@ -293,8 +298,8 @@ def _selecionar_colunas_saida(df: pl.DataFrame) -> pl.DataFrame:
         "taxa_maxima",
         "taxa_media",
         "taxa_fechamento",
-        "taxa_ultima_oferta_compra",
         "taxa_ultima_oferta_venda",
+        "taxa_ultima_oferta_compra",
         "taxa_ajuste",
         "taxa_forward",
     ]
