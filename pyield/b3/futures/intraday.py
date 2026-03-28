@@ -16,8 +16,7 @@ def intraday(codigo_contrato: str | list[str]) -> pl.DataFrame:
     """Busca os dados intraday mais recentes da B3.
 
     Os dados intraday da fonte possuem atraso aproximado de 15 minutos.
-    A coluna ``LastUpdate`` reflete essa defasagem ao usar o horário atual
-    menos 15 minutos.
+    A coluna ``atualizado_as`` reflete essa defasagem.
 
     Args:
         codigo_contrato: Código base do contrato futuro na B3, ou lista de

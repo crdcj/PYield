@@ -12,7 +12,6 @@ nav:
   - Início: index.md
   - Artigos:
       - Introdução ao Pyield: articles/pyield_intro.md
-      - Guia de Estilo de Engenharia: articles/engineering_style_guide.md
   - Módulos:
       - Núcleo:
           - Ferramentas de Dias Úteis: bday.md
