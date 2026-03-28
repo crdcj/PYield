@@ -30,10 +30,10 @@ _PRECO_PARA_TAXA = {
 _RENOMEAR_COLUNAS_PR = {
     "TradDt": "data_referencia",
     "TckrSymb": "codigo_negociacao",
-    "TradQty": "numero_negocios",
-    "NtlFinVol": "volume_financeiro",
     "OpnIntrst": "contratos_abertos",
+    "TradQty": "numero_negocios",
     "FinInstrmQty": "volume_negociado",
+    "NtlFinVol": "volume_financeiro",
     "BestBidPric": "preco_ultima_oferta_compra",
     "BestAskPric": "preco_ultima_oferta_venda",
     "FrstPric": "preco_abertura",
@@ -43,7 +43,6 @@ _RENOMEAR_COLUNAS_PR = {
     "LastPric": "preco_fechamento",
     "AdjstdQt": "preco_ajuste",
     "AdjstdQtTax": "taxa_ajuste",
-    "AdjstdValCtrct": "valor_contrato_ajustado",
     "MaxTradLmt": "preco_limite_maximo",
     "MinTradLmt": "preco_limite_minimo",
 }
@@ -55,7 +54,7 @@ def _normalizar_colunas_pr(df: pl.DataFrame) -> pl.DataFrame:
 
 def _obter_pr_normalizado() -> pl.DataFrame:
     """Carrega o dataset PR e normaliza nomes de colunas."""
-    df = obter_dataset_cacheado("pr")
+    df = obter_dataset_cacheado("futures")
     return _normalizar_colunas_pr(df)
 
 
@@ -87,7 +86,6 @@ def historical(
         * numero_negocios (Int64): número de negócios.
         * volume_negociado (Int64): quantidade de contratos negociados.
         * volume_financeiro (Float64): volume financeiro bruto.
-        * valor_contrato_ajustado (Float64): valor do contrato ajustado.
         * preco_limite_minimo (Float64): limite mínimo de variação (preço).
         * preco_limite_maximo (Float64): limite máximo de variação (preço).
         * preco_abertura (Float64): preço de abertura.
@@ -278,7 +276,6 @@ def _selecionar_colunas_saida(df: pl.DataFrame) -> pl.DataFrame:
         "numero_negocios",
         "volume_negociado",
         "volume_financeiro",
-        "valor_contrato_ajustado",
         "preco_limite_minimo",
         "preco_limite_maximo",
         "preco_abertura",
