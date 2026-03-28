@@ -17,9 +17,23 @@ import pyield.selic.probabilities as probs
 DATA = Path(__file__).parent / "data"
 
 
+# Mapeamento para renomear colunas do parquet antigo (inglês) para português
+_RENOMEAR_COLUNAS = {
+    "TradeDate": "data_referencia",
+    "TickerSymbol": "codigo_negociacao",
+    "MeetingEndDate": "data_fim_reuniao",
+    "ExpiryDate": "data_expiracao",
+    "OptionType": "tipo_opcao",
+    "StrikeChangeBps": "variacao_strike_bps",
+    "SettlementPrice": "preco_ajuste",
+    "BDaysToExp": "dias_uteis",
+}
+
+
 @pytest.fixture(scope="module")
 def cpm_fixture() -> pl.DataFrame:
-    return pl.read_parquet(DATA / "cpm_29012025.parquet")
+    df = pl.read_parquet(DATA / "cpm_29012025.parquet")
+    return df.rename(_RENOMEAR_COLUNAS, strict=False)
 
 
 @pytest.fixture
@@ -28,7 +42,7 @@ def patched_cpm(monkeypatch, cpm_fixture):
     monkeypatch.setattr(
         probs.di1,
         "interpolate_rates",
-        lambda *a, **kw: pl.Series("FlatFwdRate", [0.0] * len(a[0])),
+        lambda *a, **kw: pl.Series("taxa_interpolada", [0.0] * len(a[0])),
     )
     return cpm_fixture
 
@@ -43,18 +57,18 @@ def test_empty_schema_zero_rows():
 
 def test_empty_schema_columns():
     expected = [
-        "TradeDate",
-        "MeetingEndDate",
-        "ExpiryDate",
-        "MeetingRank",
-        "StrikeChangeBps",
-        "BDaysToExp",
-        "SettlementPrice",
-        "DI1Rate",
-        "DiscountExp",
-        "RawProb",
-        "Prob",
-        "CumProb",
+        "data_referencia",
+        "data_fim_reuniao",
+        "data_expiracao",
+        "ranking_reuniao",
+        "variacao_strike_bps",
+        "dias_uteis",
+        "preco_ajuste",
+        "taxa_di1",
+        "fator_desconto",
+        "prob_bruta",
+        "prob",
+        "prob_acumulada",
     ]
     assert probs._empty_schema().columns == expected
 
@@ -89,36 +103,36 @@ def test_all_meetings_schema(patched_cpm):
 
 def test_prob_sums_to_one(patched_cpm):
     df = probs.all_meetings("29-01-2025")
-    sums = df.group_by("ExpiryDate").agg(pl.col("Prob").sum())
-    assert (sums["Prob"] - 1.0).abs().max() < 1e-9
+    sums = df.group_by("data_expiracao").agg(pl.col("prob").sum())
+    assert (sums["prob"] - 1.0).abs().max() < 1e-9
 
 
 def test_cum_prob_ends_at_one(patched_cpm):
     df = probs.all_meetings("29-01-2025")
     last = (
-        df.sort(["ExpiryDate", "StrikeChangeBps"])
-        .group_by("ExpiryDate")
-        .agg(pl.col("CumProb").last())
+        df.sort(["data_expiracao", "variacao_strike_bps"])
+        .group_by("data_expiracao")
+        .agg(pl.col("prob_acumulada").last())
     )
-    assert (last["CumProb"] - 1.0).abs().max() < 1e-9
+    assert (last["prob_acumulada"] - 1.0).abs().max() < 1e-9
 
 
 def test_raw_prob_non_negative(patched_cpm):
     df = probs.all_meetings("29-01-2025")
-    assert (df["RawProb"] >= 0.0).all()
+    assert (df["prob_bruta"] >= 0.0).all()
 
 
 def test_prob_non_negative(patched_cpm):
     df = probs.all_meetings("29-01-2025")
-    assert (df["Prob"] >= 0.0).all()
+    assert (df["prob"] >= 0.0).all()
 
 
 def test_cum_prob_monotone(patched_cpm):
     df = probs.all_meetings("29-01-2025")
-    for expiry in df["ExpiryDate"].unique().to_list():
-        sub = df.filter(pl.col("ExpiryDate") == expiry).sort("StrikeChangeBps")
-        diffs = sub["CumProb"].diff().drop_nulls()
-        assert (diffs >= -1e-12).all(), f"CumProb not monotone for {expiry}"
+    for expiry in df["data_expiracao"].unique().to_list():
+        sub = df.filter(pl.col("data_expiracao") == expiry).sort("variacao_strike_bps")
+        diffs = sub["prob_acumulada"].diff().drop_nulls()
+        assert (diffs >= -1e-12).all(), f"prob_acumulada not monotone for {expiry}"
 
 
 # ── MeetingRank ───────────────────────────────────────────────────────────
@@ -126,12 +140,12 @@ def test_cum_prob_monotone(patched_cpm):
 
 def test_meeting_rank_starts_at_one(patched_cpm):
     df = probs.all_meetings("29-01-2025")
-    assert df["MeetingRank"].min() == 1
+    assert df["ranking_reuniao"].min() == 1
 
 
 def test_meeting_rank_consecutive(patched_cpm):
     df = probs.all_meetings("29-01-2025")
-    ranks = df["MeetingRank"].unique().sort().to_list()
+    ranks = df["ranking_reuniao"].unique().sort().to_list()
     assert ranks == list(range(1, len(ranks) + 1))
 
 
@@ -139,22 +153,22 @@ def test_meeting_rank_consecutive(patched_cpm):
 
 
 def test_null_price_meeting_excluded(monkeypatch, cpm_fixture):
-    """A meeting where all strikes have null SettlementPrice is excluded."""
+    """A meeting where all strikes have null preco_ajuste is excluded."""
     null_meeting = cpm_fixture.with_columns(
-        pl.when(pl.col("TickerSymbol").str.starts_with("CPMK25"))
+        pl.when(pl.col("codigo_negociacao").str.starts_with("CPMK25"))
         .then(pl.lit(None, dtype=pl.Float64))
-        .otherwise(pl.col("SettlementPrice"))
-        .alias("SettlementPrice")
+        .otherwise(pl.col("preco_ajuste"))
+        .alias("preco_ajuste")
     )
     monkeypatch.setattr(_cpm, "data", lambda _: null_meeting)
     monkeypatch.setattr(
         probs.di1,
         "interpolate_rates",
-        lambda *a, **kw: pl.Series("FlatFwdRate", [0.0] * len(a[0])),
+        lambda *a, **kw: pl.Series("taxa_interpolada", [0.0] * len(a[0])),
     )
     df = probs.all_meetings("29-01-2025")
-    assert datetime.date(2025, 5, 8) not in df["ExpiryDate"].to_list()
-    assert df["MeetingRank"].min() == 1
+    assert datetime.date(2025, 5, 8) not in df["data_expiracao"].to_list()
+    assert df["ranking_reuniao"].min() == 1
 
 
 # ── meeting() selection ───────────────────────────────────────────────────
@@ -162,30 +176,32 @@ def test_null_price_meeting_excluded(monkeypatch, cpm_fixture):
 
 def test_meeting_nearest_is_rank_one(patched_cpm):
     df = probs.meeting("29-01-2025")
-    assert df["MeetingRank"].unique().to_list() == [1]
+    assert df["ranking_reuniao"].unique().to_list() == [1]
 
 
 def test_meeting_nearest_single_expiry(patched_cpm):
     df = probs.meeting("29-01-2025")
-    assert df["ExpiryDate"].n_unique() == 1
+    assert df["data_expiracao"].n_unique() == 1
 
 
 def test_meeting_explicit_expiration(patched_cpm):
     df_all = probs.all_meetings("29-01-2025")
-    max_rank = df_all["MeetingRank"].max()
-    second_expiry = df_all.filter(pl.col("MeetingRank") == max_rank)["ExpiryDate"][0]
+    max_rank = df_all["ranking_reuniao"].max()
+    second_expiry = df_all.filter(pl.col("ranking_reuniao") == max_rank)[
+        "data_expiracao"
+    ][0]
     df = probs.meeting("29-01-2025", expiration=second_expiry)
-    assert df["ExpiryDate"].unique().item() == second_expiry
+    assert df["data_expiracao"].unique().item() == second_expiry
 
 
 def test_meeting_rank_always_one(patched_cpm):
     df = probs.meeting("29-01-2025")
-    assert (df["MeetingRank"] == 1).all()
+    assert (df["ranking_reuniao"] == 1).all()
 
 
 def test_meeting_prob_sums_to_one(patched_cpm):
     df = probs.meeting("29-01-2025")
-    assert abs(df["Prob"].sum() - 1.0) < 1e-9
+    assert abs(df["prob"].sum() - 1.0) < 1e-9
 
 
 # ── Spot checks ───────────────────────────────────────────────────────────
@@ -193,25 +209,25 @@ def test_meeting_prob_sums_to_one(patched_cpm):
 
 def test_nearest_meeting_expiry_date(patched_cpm):
     df = probs.meeting("29-01-2025")
-    assert df["ExpiryDate"].unique().item() == datetime.date(2025, 1, 30)
+    assert df["data_expiracao"].unique().item() == datetime.date(2025, 1, 30)
 
 
 def test_highest_prob_strike_jan2025(patched_cpm):
     """On 2025-01-29, +100 bps was the overwhelmingly dominant strike."""
     df = probs.meeting("29-01-2025")
-    top_strike = df.sort("Prob", descending=True)["StrikeChangeBps"][0]
+    top_strike = df.sort("prob", descending=True)["variacao_strike_bps"][0]
     assert top_strike == 100
 
 
 def test_discount_exp_one_when_rate_zero(patched_cpm):
-    """With di1 patched to return 0.0, DiscountExp must equal 1.0."""
+    """With di1 patched to return 0.0, fator_desconto must equal 1.0."""
     df = probs.all_meetings("29-01-2025")
-    assert (df["DiscountExp"] - 1.0).abs().max() < 1e-12
+    assert (df["fator_desconto"] - 1.0).abs().max() < 1e-12
 
 
 def test_raw_prob_equals_settlement_over_100_when_rate_zero(patched_cpm):
-    """With DiscountExp=1.0, RawProb = SettlementPrice / 100."""
+    """With fator_desconto=1.0, prob_bruta = preco_ajuste / 100."""
     df = probs.all_meetings("29-01-2025")
-    expected = df["SettlementPrice"] / 100
-    diff = (df["RawProb"] - expected).abs().max()
+    expected = df["preco_ajuste"] / 100
+    diff = (df["prob_bruta"] - expected).abs().max()
     assert diff < 1e-12

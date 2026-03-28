@@ -27,10 +27,10 @@ yd.bday.offset("29-12-2023", 1)            # -> datetime.date(2024, 1, 2)
 
 # DI futures curve
 df = yd.futures("31-05-2024", "DI1")
-# Columns: TradeDate, TickerSymbol, ExpirationDate, BDaysToExp, SettlementRate, ...
+# Columns: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Rate interpolation (flat forward, 252 business days/year convention)
-interp = yd.Interpolator("flat_forward", df["BDaysToExp"], df["SettlementRate"])
+interp = yd.Interpolator("flat_forward", df["dias_uteis"], df["taxa_ajuste"])
 interp(45)       # -> 0.04833...
 interp([30, 60]) # -> pl.Series with interpolated rates
 

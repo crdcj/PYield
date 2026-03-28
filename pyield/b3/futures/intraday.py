@@ -1,37 +1,22 @@
-import datetime as dt
 import logging
 
 import polars as pl
 import polars.selectors as cs
 
-from pyield import bday, clock
+from pyield import bday
 from pyield.b3._contracts import normalizar_codigos_contrato
-from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.futures.common import expr_dv01
 from pyield.b3.intraday_derivatives import fetch_intraday_derivatives
 from pyield.fwd import forwards
 
-# Pregão abre às 9:00, porém os dados têm atraso de 15 minutos.
-# Esperar 1 minuto adicional para garantir que estejam disponíveis (9:16h).
-HORA_INICIO_INTRADAY = dt.time(9, 16)
-
 logger = logging.getLogger(__name__)
-
-
-def _data_intraday_valida(data_verificacao: dt.date) -> bool:
-    """Verifica se a data é elegível para consulta intraday."""
-    if not data_negociacao_valida(data_verificacao):
-        return False
-
-    return data_verificacao == clock.today()
 
 
 def intraday(codigo_contrato: str | list[str]) -> pl.DataFrame:
     """Busca os dados intraday mais recentes da B3.
 
     Os dados intraday da fonte possuem atraso aproximado de 15 minutos.
-    A coluna ``LastUpdate`` reflete essa defasagem ao usar o horário atual
-    menos 15 minutos.
+    A coluna ``atualizado_as`` reflete essa defasagem.
 
     Args:
         codigo_contrato: Código base do contrato futuro na B3, ou lista de
@@ -41,29 +26,29 @@ def intraday(codigo_contrato: str | list[str]) -> pl.DataFrame:
         DataFrame Polars com dados intraday processados.
 
     Output Columns:
-        - TradeDate (Date): Data de negociação.
-        - LastUpdate (Datetime): Horário da última atualização (com atraso de 15 min).
-        - TickerSymbol (String): Código do ticker na B3.
-        - ExpirationDate (Date): Data de vencimento do contrato.
-        - BDaysToExp (Int64): Dias úteis até o vencimento.
-        - DaysToExp (Int64): Dias corridos até o vencimento.
-        - OpenContracts (Int64): Contratos em aberto.
-        - TradeCount (Int64): Número de negócios.
-        - TradeVolume (Int64): Quantidade de contratos negociados.
-        - FinancialVolume (Float64): Volume financeiro bruto.
-        - DV01 (Float64): Variação no preço para 1bp de taxa (apenas DI1).
-        - LastPrice (Float64): Último preço calculado (apenas DI1/DAP).
-        - PrevSettlementRate (Float64): Taxa de ajuste do dia anterior.
-        - MinLimitRate (Float64): Limite mínimo de variação (taxa).
-        - MaxLimitRate (Float64): Limite máximo de variação (taxa).
-        - OpenRate (Float64): Taxa de abertura.
-        - MinRate (Float64): Taxa mínima negociada.
-        - AvgRate (Float64): Taxa média negociada.
-        - MaxRate (Float64): Taxa máxima negociada.
-        - BuyOfferRate (Float64): Melhor oferta de compra (taxa, opcional).
-        - SellOfferRate (Float64): Melhor oferta de venda (taxa, opcional).
-        - LastRate (Float64): Última taxa negociada.
-        - ForwardRate (Float64): Taxa a termo (apenas DI1/DAP).
+        * data_referencia (Date): data de negociação.
+        * atualizado_as (Datetime): data e hora a que o dado se refere (com atraso de 15 min).
+        * codigo_negociacao (String): código de negociação na B3.
+        * data_vencimento (Date): data de vencimento do contrato.
+        * dias_uteis (Int64): dias úteis até o vencimento.
+        * dias_corridos (Int64): dias corridos até o vencimento.
+        * contratos_abertos (Int64): contratos em aberto.
+        * numero_negocios (Int64): número de negócios.
+        * volume_negociado (Int64): quantidade de contratos negociados.
+        * volume_financeiro (Float64): volume financeiro bruto.
+        * dv01 (Float64): variação no preço para 1bp de taxa (apenas DI1).
+        * preco_ultimo (Float64): último preço calculado (apenas DI1/DAP).
+        * taxa_ajuste_anterior (Float64): taxa de ajuste do dia anterior.
+        * taxa_limite_minimo (Float64): limite mínimo de variação (taxa).
+        * taxa_limite_maximo (Float64): limite máximo de variação (taxa).
+        * taxa_abertura (Float64): taxa de abertura.
+        * taxa_minima (Float64): taxa mínima negociada.
+        * taxa_media (Float64): taxa média negociada.
+        * taxa_maxima (Float64): taxa máxima negociada.
+        * taxa_oferta_compra (Float64): melhor oferta de compra (taxa, opcional).
+        * taxa_oferta_venda (Float64): melhor oferta de venda (taxa, opcional).
+        * taxa_ultima (Float64): última taxa negociada.
+        * taxa_forward (Float64): taxa a termo (apenas DI1/DAP).
     """
     codigos = normalizar_codigos_contrato(codigo_contrato)
     if not codigos:
@@ -75,7 +60,7 @@ def intraday(codigo_contrato: str | list[str]) -> pl.DataFrame:
         return pl.DataFrame()
     if len(dfs) == 1:
         return dfs[0]
-    return pl.concat(dfs, how="diagonal_relaxed").sort("TickerSymbol")
+    return pl.concat(dfs, how="diagonal_relaxed").sort("codigo_negociacao")
 
 
 def _intraday_contrato(codigo_contrato: str) -> pl.DataFrame:
@@ -101,73 +86,74 @@ def _intraday_contrato(codigo_contrato: str) -> pl.DataFrame:
 
 def _preprocessar_df_intraday(df: pl.DataFrame) -> pl.DataFrame:
     return (
-        df.filter(pl.col("MarketCode") == "FUT")
+        df.filter(pl.col("codigo_mercado") == "FUT")
         .rename(
             {
-                "MinLimitValue": "MinLimitRate",
-                "PrevSettlementValue": "PrevSettlementRate",
-                "MaxLimitValue": "MaxLimitRate",
-                "OpenValue": "OpenRate",
-                "MinValue": "MinRate",
-                "MaxValue": "MaxRate",
-                "AvgValue": "AvgRate",
-                "LastValue": "LastRate",
-                "BuyOfferValue": "BuyOfferRate",
-                "SellOfferValue": "SellOfferRate",
+                "preco_limite_minimo": "taxa_limite_minimo",
+                "preco_ajuste_anterior": "taxa_ajuste_anterior",
+                "preco_limite_maximo": "taxa_limite_maximo",
+                "preco_abertura": "taxa_abertura",
+                "preco_minimo": "taxa_minima",
+                "preco_maximo": "taxa_maxima",
+                "preco_medio": "taxa_media",
+                "preco_ultimo": "taxa_ultima",
+                "preco_oferta_compra": "taxa_oferta_compra",
+                "preco_oferta_venda": "taxa_oferta_venda",
             },
             strict=False,
         )
-        .sort("ExpirationDate")
+        .sort("data_vencimento")
     )
 
 
 def _processar_df_intraday(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     data_negociacao = bday.last_business_day()
     df = df.with_columns(
-        cs.contains("Rate").truediv(100).round(5),
-        TradeDate=data_negociacao,
-        LastUpdate=clock.now() - dt.timedelta(minutes=15),
-        DaysToExp=(pl.col("ExpirationDate") - data_negociacao).dt.total_days(),
-        BDaysToExp=bday.count_expr(data_negociacao, "ExpirationDate"),
+        cs.contains("taxa_").truediv(100).round(5),
+        data_referencia=data_negociacao,
+        dias_corridos=(pl.col("data_vencimento") - data_negociacao).dt.total_days(),
+        dias_uteis=bday.count_expr(data_negociacao, "data_vencimento"),
     )
 
     if codigo_contrato in {"DI1", "DAP"}:
-        taxa_fwd = forwards(bdays=df["BDaysToExp"], rates=df["LastRate"])
-        anos_uteis = pl.col("BDaysToExp") / 252
-        ultimo_preco = 100_000 / ((1 + pl.col("LastRate")) ** anos_uteis)
-        df = df.with_columns(LastPrice=ultimo_preco.round(2), ForwardRate=taxa_fwd)
+        taxa_fwd = forwards(bdays=df["dias_uteis"], rates=df["taxa_ultima"])
+        anos_uteis = pl.col("dias_uteis") / 252
+        preco_ultimo = 100_000 / ((1 + pl.col("taxa_ultima")) ** anos_uteis)
+        df = df.with_columns(preco_ultimo=preco_ultimo.round(2), taxa_forward=taxa_fwd)
 
     if codigo_contrato == "DI1":
-        df = df.with_columns(DV01=expr_dv01("BDaysToExp", "LastRate", "LastPrice"))
+        df = df.with_columns(
+            dv01=expr_dv01("dias_uteis", "taxa_ultima", "preco_ultimo")
+        )
 
-    return df.filter(pl.col("DaysToExp") > 0)
+    return df.filter(pl.col("dias_corridos") > 0)
 
 
 def _selecionar_e_reordenar_colunas_intraday(df: pl.DataFrame) -> pl.DataFrame:
     todas_colunas = [
-        "TradeDate",
-        "LastUpdate",
-        "TickerSymbol",
-        "ExpirationDate",
-        "BDaysToExp",
-        "DaysToExp",
-        "OpenContracts",
-        "TradeCount",
-        "TradeVolume",
-        "FinancialVolume",
-        "DV01",
-        "LastPrice",
-        "PrevSettlementRate",
-        "MinLimitRate",
-        "MaxLimitRate",
-        "OpenRate",
-        "MinRate",
-        "AvgRate",
-        "MaxRate",
-        "BuyOfferRate",
-        "SellOfferRate",
-        "LastRate",
-        "ForwardRate",
+        "data_referencia",
+        "atualizado_as",
+        "codigo_negociacao",
+        "data_vencimento",
+        "dias_uteis",
+        "dias_corridos",
+        "contratos_abertos",
+        "numero_negocios",
+        "volume_negociado",
+        "volume_financeiro",
+        "dv01",
+        "preco_ultimo",
+        "taxa_ajuste_anterior",
+        "taxa_limite_minimo",
+        "taxa_limite_maximo",
+        "taxa_abertura",
+        "taxa_minima",
+        "taxa_media",
+        "taxa_maxima",
+        "taxa_oferta_compra",
+        "taxa_oferta_venda",
+        "taxa_ultima",
+        "taxa_forward",
     ]
     colunas_reordenadas = [coluna for coluna in todas_colunas if coluna in df.columns]
     return df.select(colunas_reordenadas)

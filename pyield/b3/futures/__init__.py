@@ -7,7 +7,7 @@ import pyield._internal.converters as cv
 from pyield import clock
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty, is_collection
 from pyield.b3._contracts import normalizar_codigos_contrato
-from pyield.b3._validar_pregao import data_negociacao_valida
+from pyield.b3._validar_pregao import HORA_INICIO_INTRADAY, data_negociacao_valida
 from pyield.b3.futures import historical, intraday
 
 # A partir desse horário, os dados consolidados (SPR/PR) já estão disponíveis.
@@ -58,7 +58,7 @@ def futures(
         Lista de datas:
 
         >>> df = futures(["29-05-2024", "31-05-2024"], "DI1")
-        >>> df["TradeDate"].unique().sort().to_list()
+        >>> df["data_referencia"].unique().sort().to_list()
         [datetime.date(2024, 5, 29), datetime.date(2024, 5, 31)]
 
         Véspera de Natal e Ano Novo não têm pregão:
@@ -125,7 +125,7 @@ def _buscar_varias_datas(
     # Identifica datas que não vieram do cache
     datas_no_cache: set[dt.date] = set()
     for df in resultados:
-        datas_no_cache.update(df["TradeDate"].unique().to_list())
+        datas_no_cache.update(df["data_referencia"].unique().to_list())
     datas_faltantes = [d for d in datas_validas if d not in datas_no_cache]
 
     # Fallback individual apenas para datas faltantes
@@ -156,7 +156,7 @@ def _buscar_por_fonte(
             return df
         return intraday.intraday(codigos)
 
-    if horario >= intraday.HORA_INICIO_INTRADAY:
+    if horario >= HORA_INICIO_INTRADAY:
         # Intraday primeiro; historical como fallback
         df = intraday.intraday(codigos)
         if not df.is_empty():
@@ -178,7 +178,7 @@ def available_dates(contract_code: str) -> pl.Series:
         >>> from pyield.b3.futures import available_dates
         >>> available_dates("DI1").head(3)
         shape: (3,)
-        Series: 'TradeDate' [date]
+        Series: 'data_referencia' [date]
         [
             2018-01-02
             2018-01-03

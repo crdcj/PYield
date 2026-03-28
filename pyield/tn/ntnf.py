@@ -103,8 +103,8 @@ def data(date: DateLike) -> pl.DataFrame:
                 settlement=date,  # Usa a variável externa explicitamente aqui
                 ntnf_maturity=row["data_vencimento"],
                 ntnf_rate=row["taxa_indicativa"],
-                di_expirations=df_di["ExpirationDate"],  # Usa o DataFrame externo aqui
-                di_rates=df_di["SettlementRate"],
+                di_expirations=df_di["data_vencimento"],  # Usa o DataFrame externo aqui
+                di_rates=df_di["taxa_ajuste"],
             ),
             return_dtype=pl.Float64,
         ),
@@ -113,8 +113,8 @@ def data(date: DateLike) -> pl.DataFrame:
                 settlement=date,
                 ntnf_maturity=row["data_vencimento"],
                 ntnf_rate=row["taxa_indicativa"],
-                di_expirations=df_di["ExpirationDate"],  # type: ignore[union-attr]
-                di_rates=df_di["SettlementRate"],
+                di_expirations=df_di["data_vencimento"],  # type: ignore[union-attr]
+                di_rates=df_di["taxa_ajuste"],
             ),
             return_dtype=pl.Float64,
         ),
@@ -784,7 +784,7 @@ def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
             (também conhecido como prêmio).
 
     Raises:
-        ValueError: Se os dados de DI não possuem 'SettlementRate' ou estão vazios.
+        ValueError: Se os dados de DI não possuem 'taxa_ajuste' ou estão vazios.
 
     Examples:
         >>> from pyield import ntnf

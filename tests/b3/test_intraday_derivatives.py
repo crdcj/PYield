@@ -8,7 +8,7 @@ from pyield.b3.futures import intraday as futures_intraday_mod
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 DATA_REFERENCIA = dt.date(2026, 3, 10)
 HORARIO_REFERENCIA = dt.datetime(2026, 3, 10, 12, 0)
-TAMANHO_TICKER_FUTURO = 6
+TAMANHO_CODIGO_NEGOCIACAO_FUTURO = 6
 
 
 def _carregar_json_scty(codigo_contrato: str) -> list[dict]:
@@ -37,18 +37,19 @@ def test_fetch_intraday_derivatives_preserva_payload_misto(monkeypatch):
         "_buscar_json_intraday",
         _buscar_json_intraday_mock,
     )
+    monkeypatch.setattr(derivatives_mod, "intraday_disponivel", lambda: True)
 
     resultado = derivatives_mod.fetch_intraday_derivatives("DOL")
     total_esperado = len(_carregar_json_scty("DOL"))
 
     assert resultado.height == total_esperado
-    assert resultado["MarketCode"].unique().sort().to_list() == [
+    assert resultado["codigo_mercado"].unique().sort().to_list() == [
         "FUT",
         "OPTEXER",
         "SOPT",
         "SPOT",
     ]
-    assert resultado["ExpirationDate"].null_count() == 0
+    assert resultado["data_vencimento"].null_count() == 0
 
 
 def test_fetch_intraday_derivatives_suporta_colunas_opcionais_ausentes(monkeypatch):
@@ -58,13 +59,14 @@ def test_fetch_intraday_derivatives_suporta_colunas_opcionais_ausentes(monkeypat
         "_buscar_json_intraday",
         _buscar_json_intraday_mock,
     )
+    monkeypatch.setattr(derivatives_mod, "intraday_disponivel", lambda: True)
 
     resultado = derivatives_mod.fetch_intraday_derivatives("DDI")
     total_esperado = len(_carregar_json_scty("DDI"))
 
     assert resultado.height == total_esperado
-    assert "BuyOfferValue" not in resultado.columns
-    assert "SellOfferValue" not in resultado.columns
+    assert "preco_oferta_compra" not in resultado.columns
+    assert "preco_oferta_venda" not in resultado.columns
 
 
 def test_fetch_intraday_derivatives_nao_descarta_fro_sem_curprc(monkeypatch):
@@ -74,13 +76,14 @@ def test_fetch_intraday_derivatives_nao_descarta_fro_sem_curprc(monkeypatch):
         "_buscar_json_intraday",
         _buscar_json_intraday_mock,
     )
+    monkeypatch.setattr(derivatives_mod, "intraday_disponivel", lambda: True)
 
     resultado = derivatives_mod.fetch_intraday_derivatives("FRO")
     total_esperado = len(_carregar_json_scty("FRO"))
 
     assert resultado.height == total_esperado
-    assert "LastValue" not in resultado.columns
-    assert resultado["MarketCode"].unique().to_list() == ["FUT"]
+    assert "preco_ultimo" not in resultado.columns
+    assert resultado["codigo_mercado"].unique().to_list() == ["FUT"]
 
 
 def test_futures_intraday_filtra_apenas_futuros(monkeypatch):
@@ -90,6 +93,8 @@ def test_futures_intraday_filtra_apenas_futuros(monkeypatch):
         "_buscar_json_intraday",
         _buscar_json_intraday_mock,
     )
+    monkeypatch.setattr(derivatives_mod, "intraday_disponivel", lambda: True)
+    monkeypatch.setattr(derivatives_mod.clock, "now", _horario_referencia_mock)
     monkeypatch.setattr(
         futures_intraday_mod,
         "fetch_intraday_derivatives",
@@ -98,20 +103,19 @@ def test_futures_intraday_filtra_apenas_futuros(monkeypatch):
     monkeypatch.setattr(
         futures_intraday_mod.bday, "last_business_day", _data_referencia_mock
     )
-    monkeypatch.setattr(futures_intraday_mod.clock, "now", _horario_referencia_mock)
 
     resultado = futures_intraday_mod.intraday("DOL")
 
-    tickers_fut_esperados = [
+    codigos_fut_esperados = [
         item["symb"]
         for item in _carregar_json_scty("DOL")
         if item.get("mkt", {}).get("cd") == "FUT"
     ]
-    tickers_fut_esperados.sort()
+    codigos_fut_esperados.sort()
 
-    assert resultado.height == len(tickers_fut_esperados)
-    assert resultado["TickerSymbol"].sort().to_list() == tickers_fut_esperados
+    assert resultado.height == len(codigos_fut_esperados)
+    assert resultado["codigo_negociacao"].sort().to_list() == codigos_fut_esperados
     assert all(
-        len(ticker) == TAMANHO_TICKER_FUTURO
-        for ticker in resultado["TickerSymbol"].to_list()
+        len(codigo) == TAMANHO_CODIGO_NEGOCIACAO_FUTURO
+        for codigo in resultado["codigo_negociacao"].to_list()
     )

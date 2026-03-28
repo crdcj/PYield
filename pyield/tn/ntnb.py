@@ -82,8 +82,8 @@ def data(date: DateLike) -> pl.DataFrame:
         settlement=date,
         ntnb_maturities=df["data_vencimento"],
         ntnb_rates=df["taxa_indicativa"],
-        nominal_maturities=df_di["ExpirationDate"],
-        nominal_rates=df_di["SettlementRate"],
+        nominal_maturities=df_di["data_vencimento"],
+        nominal_rates=df_di["taxa_ajuste"],
     ).select(
         pl.col("data_vencimento"),
         pl.col("taxa_zero"),
@@ -609,8 +609,8 @@ def bei_rates(
         ...     settlement="05-09-2024",
         ...     ntnb_maturities=df_ntnb["data_vencimento"],
         ...     ntnb_rates=df_ntnb["taxa_indicativa"],
-        ...     nominal_maturities=df_di["ExpirationDate"],
-        ...     nominal_rates=df_di["SettlementRate"],
+        ...     nominal_maturities=df_di["data_vencimento"],
+        ...     nominal_rates=df_di["taxa_ajuste"],
         ... )
         shape: (14, 5)
         ┌─────────────────┬────────────┬───────────┬──────────────┬────────────────────┐
@@ -651,11 +651,17 @@ def bei_rates(
             taxa_nominal=interpolador_ff(df_spot["dias_uteis"]),
         )
         .with_columns(
-            inflacao_implicita=((pl.col("taxa_nominal") + 1) / (pl.col("taxa_zero") + 1))
+            inflacao_implicita=(
+                (pl.col("taxa_nominal") + 1) / (pl.col("taxa_zero") + 1)
+            )
             - 1,
         )
         .select(
-            "data_vencimento", "dias_uteis", "taxa_zero", "taxa_nominal", "inflacao_implicita"
+            "data_vencimento",
+            "dias_uteis",
+            "taxa_zero",
+            "taxa_nominal",
+            "inflacao_implicita",
         )
     )
 
@@ -842,7 +848,9 @@ def forwards(
         ).rename({"taxa_zero": "taxa_referencia"})
     else:
         df_ref = df.rename({"taxa_indicativa": "taxa_referencia"})
-    taxas_forward = fwd.forwards(bdays=df_ref["dias_uteis"], rates=df_ref["taxa_referencia"])
+    taxas_forward = fwd.forwards(
+        bdays=df_ref["dias_uteis"], rates=df_ref["taxa_referencia"]
+    )
     df_ref = df_ref.with_columns(taxa_forward=taxas_forward)
     df = df.join(
         df_ref.select("data_vencimento", "taxa_forward"),

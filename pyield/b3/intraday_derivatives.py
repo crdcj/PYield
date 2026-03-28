@@ -1,10 +1,13 @@
+import datetime as dt
 import logging
 
 import polars as pl
 import requests
 
+from pyield import clock
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
+from pyield.b3._validar_pregao import intraday_disponivel
 
 URL_BASE_INTRADAY = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
 
@@ -13,32 +16,33 @@ logger = logging.getLogger(__name__)
 # --- Mapeamento de Colunas ---
 
 # Estrutura: (nome_json_normalize, nome_canonico, tipo_polars)
-# Colunas numéricas de cotação/limites usam sufixo "Value" no output bruto.
-# Semântica de contrato (Rate/Price) é responsabilidade do módulo consumidor.
+# Colunas numéricas de cotação/limites usam prefixo "preco_" no output bruto.
+# Para contratos cotados por taxa, a conversão para "taxa_" é responsabilidade
+# do módulo consumidor.
 # Colunas opcionais (ofertas, opções) ficam no final; são incluídas somente
 # quando presentes no payload.
 COLUNAS_INTRADAY: list[tuple[str, str, type[pl.DataType]]] = [
-    ("symb", "TickerSymbol", pl.String),
-    ("desc", "Description", pl.String),
-    ("asset.code", "AssetCode", pl.String),
-    ("mkt.cd", "MarketCode", pl.String),
-    ("asset.AsstSummry.mtrtyCode", "ExpirationDate", pl.Date),
-    ("SctyQtn.prvsDayAdjstmntPric", "PrevSettlementValue", pl.Float64),
-    ("SctyQtn.bottomLmtPric", "MinLimitValue", pl.Float64),
-    ("SctyQtn.topLmtPric", "MaxLimitValue", pl.Float64),
-    ("SctyQtn.opngPric", "OpenValue", pl.Float64),
-    ("SctyQtn.minPric", "MinValue", pl.Float64),
-    ("SctyQtn.maxPric", "MaxValue", pl.Float64),
-    ("SctyQtn.avrgPric", "AvgValue", pl.Float64),
-    ("SctyQtn.curPrc", "LastValue", pl.Float64),
-    ("SctyQtn.exrcPric", "ExerciseValue", pl.Float64),
-    ("asset.AsstSummry.opnCtrcts", "OpenContracts", pl.Int64),
-    ("asset.AsstSummry.grssAmt", "FinancialVolume", pl.Float64),
-    ("asset.AsstSummry.tradQty", "TradeCount", pl.Int64),
-    ("asset.AsstSummry.traddCtrctsQty", "TradeVolume", pl.Int64),
-    ("buyOffer.price", "BuyOfferValue", pl.Float64),
-    ("sellOffer.price", "SellOfferValue", pl.Float64),
-    ("asset.SdTpCd.desc", "SideTypeDescription", pl.String),
+    ("symb", "codigo_negociacao", pl.String),
+    ("desc", "descricao", pl.String),
+    ("asset.code", "codigo_ativo", pl.String),
+    ("mkt.cd", "codigo_mercado", pl.String),
+    ("asset.AsstSummry.mtrtyCode", "data_vencimento", pl.Date),
+    ("SctyQtn.prvsDayAdjstmntPric", "preco_ajuste_anterior", pl.Float64),
+    ("SctyQtn.bottomLmtPric", "preco_limite_minimo", pl.Float64),
+    ("SctyQtn.topLmtPric", "preco_limite_maximo", pl.Float64),
+    ("SctyQtn.opngPric", "preco_abertura", pl.Float64),
+    ("SctyQtn.minPric", "preco_minimo", pl.Float64),
+    ("SctyQtn.maxPric", "preco_maximo", pl.Float64),
+    ("SctyQtn.avrgPric", "preco_medio", pl.Float64),
+    ("SctyQtn.curPrc", "preco_ultimo", pl.Float64),
+    ("SctyQtn.exrcPric", "preco_exercicio", pl.Float64),
+    ("asset.AsstSummry.opnCtrcts", "contratos_abertos", pl.Int64),
+    ("asset.AsstSummry.grssAmt", "volume_financeiro", pl.Float64),
+    ("asset.AsstSummry.tradQty", "numero_negocios", pl.Int64),
+    ("asset.AsstSummry.traddCtrctsQty", "volume_negociado", pl.Int64),
+    ("buyOffer.price", "preco_oferta_compra", pl.Float64),
+    ("sellOffer.price", "preco_oferta_venda", pl.Float64),
+    ("asset.SdTpCd.desc", "tipo_lado", pl.String),
 ]
 
 # Mapa de tipos para cast inicial usando os nomes do json_normalize.
@@ -85,11 +89,10 @@ def fetch_intraday_derivatives(contract_code: str) -> pl.DataFrame:
     Faz a chamada ao endpoint ``DerivativeQuotation`` e devolve um DataFrame
     padronizado, sem enriquecimento de regra de negócio.
 
-    As colunas de cotação e limites são retornadas com sufixo ``Value``.
+    As colunas de cotação e limites são retornadas com prefixo ``preco_``.
     A fonte intraday da B3 opera com atraso aproximado de 15 minutos.
-    Filtros por mercado (ex.: apenas ``FUT``), normalização semântica
-    (``Rate``/``Price``) e cálculos derivados devem ser feitos no módulo
-    consumidor.
+    Para contratos cotados por taxa, a conversão para ``taxa_`` e cálculos
+    derivados devem ser feitos no módulo consumidor.
 
     Args:
         contract_code: Código base do derivativo na B3.
@@ -98,28 +101,31 @@ def fetch_intraday_derivatives(contract_code: str) -> pl.DataFrame:
         DataFrame Polars com o payload normalizado da API.
 
     Output Columns:
-        - TickerSymbol (String): Código do ticker na B3.
-        - Description (String): Descrição do instrumento.
-        - AssetCode (String): Código do ativo base.
-        - MarketCode (String): Código do mercado (ex.: FUT, OPTEXER, SOPT, SPOT).
-        - ExpirationDate (Date): Data de vencimento do contrato.
-        - PrevSettlementValue (Float64): Valor de ajuste do dia anterior.
-        - MinLimitValue (Float64): Limite mínimo de variação.
-        - MaxLimitValue (Float64): Limite máximo de variação.
-        - OpenValue (Float64): Valor de abertura.
-        - MinValue (Float64): Valor mínimo negociado.
-        - MaxValue (Float64): Valor máximo negociado.
-        - AvgValue (Float64): Valor médio negociado.
-        - LastValue (Float64): Último valor negociado.
-        - ExerciseValue (Float64): Valor de exercício (opções).
-        - OpenContracts (Int64): Contratos em aberto.
-        - FinancialVolume (Float64): Volume financeiro bruto.
-        - TradeCount (Int64): Número de negócios.
-        - TradeVolume (Int64): Quantidade de contratos negociados.
-        - BuyOfferValue (Float64): Melhor oferta de compra (opcional).
-        - SellOfferValue (Float64): Melhor oferta de venda (opcional).
-        - SideTypeDescription (String): Tipo de lado (opcional).
+        * codigo_negociacao (String): código de negociação na B3.
+        * descricao (String): descrição do instrumento.
+        * codigo_ativo (String): código do ativo base.
+        * codigo_mercado (String): código do mercado (ex.: FUT, OPTEXER, SOPT, SPOT).
+        * data_vencimento (Date): data de vencimento do contrato.
+        * preco_ajuste_anterior (Float64): preço de ajuste do dia anterior.
+        * preco_limite_minimo (Float64): limite mínimo de variação.
+        * preco_limite_maximo (Float64): limite máximo de variação.
+        * preco_abertura (Float64): preço de abertura.
+        * preco_minimo (Float64): preço mínimo negociado.
+        * preco_maximo (Float64): preço máximo negociado.
+        * preco_medio (Float64): preço médio negociado.
+        * preco_ultimo (Float64): último preço negociado.
+        * preco_exercicio (Float64): preço de exercício (opções).
+        * contratos_abertos (Int64): contratos em aberto.
+        * volume_financeiro (Float64): volume financeiro bruto.
+        * numero_negocios (Int64): número de negócios.
+        * volume_negociado (Int64): quantidade de contratos negociados.
+        * preco_oferta_compra (Float64): melhor oferta de compra (opcional).
+        * preco_oferta_venda (Float64): melhor oferta de venda (opcional).
+        * tipo_lado (String): tipo de lado (opcional).
     """
+    if not intraday_disponivel():
+        return pl.DataFrame()
+
     dados_json = _buscar_json_intraday(contract_code)
     if not dados_json:
         return pl.DataFrame()
@@ -127,6 +133,9 @@ def fetch_intraday_derivatives(contract_code: str) -> pl.DataFrame:
     return (
         _converter_json_intraday(dados_json)
         .pipe(_processar_colunas_intraday)
-        .drop_nulls(subset=["ExpirationDate"])
-        .sort("MarketCode", "TickerSymbol")
+        .drop_nulls(subset=["data_vencimento"])
+        .with_columns(
+            atualizado_as=clock.now() - dt.timedelta(minutes=15),
+        )
+        .sort("codigo_mercado", "codigo_negociacao")
     )

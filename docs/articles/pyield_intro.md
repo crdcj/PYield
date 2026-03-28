@@ -90,8 +90,7 @@ Obtenha dados de contratos futuros negociados na B3:
 df = yd.futures("31-05-2024", "DI1")
 
 # DataFrame retornado contém colunas:
-# TradeDate, TickerSymbol, ExpirationDate, BDaysToExp, SettlementRate,
-# OpeningRate, MinRate, MaxRate, TradesCount, ContractsCount, Volume, ...
+# data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Outros contratos disponíveis: DDI, FRC, DAP, DOL, WDO, IND, WIN
 df_dap = yd.futures("31-05-2024", "DAP")  # Cupom Cambial
@@ -104,11 +103,11 @@ Acesse taxas indicativas da ANBIMA e dados de títulos públicos:
 ```python
 # LTN (Letras do Tesouro Nacional - pré-fixado)
 df_ltn = yd.ltn.data("23-08-2024")
-# Colunas: titulo, data_referencia, data_vencimento, taxa_compra, taxa_venda, taxa_indicativa
+# Colunas: data_referencia, titulo, codigo_selic, data_base, data_vencimento, taxa_indicativa, ...
 
 # NTN-B (Notas do Tesouro Nacional série B - IPCA+)
 df_ntnb = yd.ntnb.data("23-08-2024")
-# Colunas: titulo, data_referencia, data_vencimento, taxa_compra, taxa_venda, taxa_indicativa
+# Colunas: data_referencia, titulo, codigo_selic, data_base, data_vencimento, taxa_indicativa, ...
 
 # NTN-F (Notas do Tesouro Nacional série F - pré-fixado com cupom)
 df_ntnf = yd.ntnf.data("23-08-2024")
@@ -145,7 +144,7 @@ Interpolar taxas de juros usando convenção de mercado (252 dias úteis/ano):
 df = yd.futures("31-05-2024", "DI1")
 
 # Criar interpolador flat forward (padrão de mercado)
-interp = yd.Interpolator("flat_forward", df["BDaysToExp"], df["SettlementRate"])
+interp = yd.Interpolator("flat_forward", df["dias_uteis"], df["taxa_ajuste"])
 
 # Interpolar para 45 dias úteis
 interp(45)  # -> Taxa interpolada (ex: 0.1037)
@@ -154,7 +153,7 @@ interp(45)  # -> Taxa interpolada (ex: 0.1037)
 interp([30, 60, 90])  # -> Polars Series com 3 taxas interpoladas
 
 # Interpolação linear (alternativa)
-linear_interp = yd.Interpolator("linear", df["BDaysToExp"], df["SettlementRate"])
+linear_interp = yd.Interpolator("linear", df["dias_uteis"], df["taxa_ajuste"])
 linear_interp(45)  # -> Taxa interpolada linearmente
 ```
 

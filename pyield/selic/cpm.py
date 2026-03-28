@@ -46,7 +46,6 @@ from pyield.b3.price_report import (
     _baixar_zip_url,
     _converter_para_df,
     _extrair_xml_de_zip,
-    _mapa_renomeacao_colunas,
     _parsear_xml_registros,
 )
 
@@ -72,19 +71,24 @@ _MONTH_CODES: dict[str, int] = {
 _MONTH_CODE_STR: dict[str, str] = {k: str(v) for k, v in _MONTH_CODES.items()}
 _CPM_TICKER_LENGTH = 13
 
+# Mapeamento mínimo para consumo do módulo CPM a partir do schema XML bruto.
+_RENOMEAR_COLUNAS_CPM = {
+    "TckrSymb": "codigo_negociacao",
+}
+
 
 def _empty_schema() -> pl.DataFrame:
-    """Return an empty DataFrame with the canonical CPM output schema."""
+    """Retorna um DataFrame vazio com o schema canônico do CPM."""
     return pl.DataFrame(
         schema={
-            "TradeDate": pl.Date,
-            "TickerSymbol": pl.String,
-            "MeetingEndDate": pl.Date,
-            "ExpiryDate": pl.Date,
-            "OptionType": pl.String,
-            "StrikeChangeBps": pl.Int32,
-            "SettlementPrice": pl.Float64,
-            "BDaysToExp": pl.Int32,
+            "data_referencia": pl.Date,
+            "codigo_negociacao": pl.String,
+            "data_fim_reuniao": pl.Date,
+            "data_expiracao": pl.Date,
+            "tipo_opcao": pl.String,
+            "variacao_strike_bps": pl.Int32,
+            "preco_ajuste": pl.Float64,
+            "dias_uteis": pl.Int32,
         }
     )
 
@@ -95,8 +99,8 @@ def _empty_schema() -> pl.DataFrame:
 
 # Column config for the B3 consolidated derivatives CSV.
 _CSV_CONFIG_COLUNAS = {
-    "Instrumento financeiro": (pl.String, "TickerSymbol"),
-    "Preço de referência": (pl.Float64, "ReferencePrice"),
+    "Instrumento financeiro": (pl.String, "codigo_negociacao"),
+    "Preço de referência": (pl.Float64, "preco_referencia"),
 }
 _CSV_ESQUEMA = {k: v[0] for k, v in _CSV_CONFIG_COLUNAS.items()}
 _CSV_MAPA_RENOMEACAO = {k: v[1] for k, v in _CSV_CONFIG_COLUNAS.items()}
@@ -143,38 +147,34 @@ def _parsear_df_bruto(csv_bytes: bytes) -> pl.DataFrame:
 def _preprocessar_df(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     """Renomeia e filtra o DataFrame para o contrato desejado."""
     return df.rename(_CSV_MAPA_RENOMEACAO, strict=False).filter(
-        pl.col("TickerSymbol").str.starts_with(codigo_contrato),
-        pl.col("TickerSymbol").str.len_chars().is_in([6, 13]),
+        pl.col("codigo_negociacao").str.starts_with(codigo_contrato),
+        pl.col("codigo_negociacao").str.len_chars().is_in([6, 13]),
     )
 
 
 def _fetch_settlement_prices(trade_date: dt.date) -> pl.DataFrame:
     """
-    Fetch CPM settlement prices from the B3 CSV endpoint.
+    Busca preços de ajuste CPM do endpoint CSV da B3.
 
-    Returns a DataFrame with columns (TickerSymbol, SettlementPrice), where
-    SettlementPrice is the B3 "Preço de Referência" — the official contract
-    price shown on the B3 dashboard ("Probabilidades da Taxa Selic Meta").
-
-    Returns an empty DataFrame (correct schema) if the CSV endpoint is
-    unavailable or has no data for the date (the endpoint retains ~1 month
-    of history).
+    Retorna DataFrame com colunas (codigo_negociacao, preco_ajuste).
+    Retorna DataFrame vazio (com schema correto) se o endpoint CSV não
+    estiver disponível ou não tiver dados para a data.
     """
-    empty = pl.DataFrame(
-        schema={"TickerSymbol": pl.String, "SettlementPrice": pl.Float64}
+    vazio = pl.DataFrame(
+        schema={"codigo_negociacao": pl.String, "preco_ajuste": pl.Float64}
     )
     try:
         csv_bytes = _buscar_csv(trade_date)
         df = _parsear_df_bruto(csv_bytes)
         df = _preprocessar_df(df, "CPM")
-        if "ReferencePrice" not in df.columns:
-            return empty
+        if "preco_referencia" not in df.columns:
+            return vazio
         return df.select(
-            "TickerSymbol", pl.col("ReferencePrice").alias("SettlementPrice")
+            "codigo_negociacao", pl.col("preco_referencia").alias("preco_ajuste")
         )
     except Exception:
-        logger.debug("CPM: settlement prices unavailable from CSV for %s.", trade_date)
-        return empty
+        logger.debug("CPM: preços de ajuste indisponíveis via CSV para %s.", trade_date)
+        return vazio
 
 
 # ---------------------------------------------------------------------------
@@ -263,13 +263,13 @@ def data(date: DateLike) -> pl.DataFrame:
     >>> import pyield as yd
     >>> df = yd.selic.cpm.data("29-01-2025")
     >>> df.is_empty() or set(df.schema.keys()) >= {
-    ...     "TradeDate",
-    ...     "TickerSymbol",
-    ...     "MeetingEndDate",
-    ...     "ExpiryDate",
-    ...     "OptionType",
-    ...     "StrikeChangeBps",
-    ...     "SettlementPrice",
+    ...     "data_referencia",
+    ...     "codigo_negociacao",
+    ...     "data_fim_reuniao",
+    ...     "data_expiracao",
+    ...     "tipo_opcao",
+    ...     "variacao_strike_bps",
+    ...     "preco_ajuste",
     ... }
     True
     """
@@ -297,37 +297,33 @@ def data(date: DateLike) -> pl.DataFrame:
         return _empty_schema()
 
     df = _converter_para_df(records)
+    df = df.rename(_RENOMEAR_COLUNAS_CPM, strict=False)
+    df = df.with_columns(data_referencia=trade_date)
 
-    mapa = _mapa_renomeacao_colunas()
-    df = df.rename(mapa, strict=False)
-    df = df.with_columns(TradeDate=trade_date)
-
-    # Parse option type (ticker[6]) and strike change (ticker[7:13])
-    # entirely with Polars string expressions — no Python loops over rows.
+    # Extrai tipo de opção (codigo_negociacao[6]) e variação de strike (codigo_negociacao[7:13])
+    # inteiramente com expressões de string Polars — sem loops Python.
     df = df.with_columns(
-        OptionType=pl.col("TickerSymbol")
+        tipo_opcao=pl.col("codigo_negociacao")
         .str.slice(6, 1)
         .replace({"C": "call", "P": "put"}),
-        # strike_int / 10 − 10_000  ≡  round((strike_int/1000 − 100) * 100)
-        # because CPM strikes are multiples of 250 (25 bp increments).
-        StrikeChangeBps=(
-            pl.col("TickerSymbol")
+        variacao_strike_bps=(
+            pl.col("codigo_negociacao")
             .str.slice(7, 6)
             .cast(pl.Int64, strict=False)
             .floordiv(10)
             .sub(10_000)
             .cast(pl.Int32)
         ),
-        # Meeting month and year extracted from ticker positions 3 and 4-5.
-        # Used as join keys against the COPOM calendar.
-        _meeting_month=(
-            pl.col("TickerSymbol")
+        # Mês e ano da reunião extraídos das posições 3 e 4-5 do código de negociação.
+        # Usados como chaves de junção com o calendário COPOM.
+        _mes_reuniao=(
+            pl.col("codigo_negociacao")
             .str.slice(3, 1)
             .replace(_MONTH_CODE_STR)
             .cast(pl.Int32, strict=False)
         ),
-        _meeting_year=(
-            pl.col("TickerSymbol")
+        _ano_reuniao=(
+            pl.col("codigo_negociacao")
             .str.slice(4, 2)
             .cast(pl.Int32, strict=False)
             .add(2000)
@@ -339,38 +335,37 @@ def data(date: DateLike) -> pl.DataFrame:
     from pyield.bc import copom  # noqa: PLC0415
 
     cal = copom.calendar().select(
-        _meeting_month=pl.col("EndDate").dt.month().cast(pl.Int32),
-        _meeting_year=pl.col("EndDate").dt.year().cast(pl.Int32),
-        MeetingEndDate=pl.col("EndDate"),
-        ExpiryDate=pl.col("ExpiryDate"),
+        _mes_reuniao=pl.col("EndDate").dt.month().cast(pl.Int32),
+        _ano_reuniao=pl.col("EndDate").dt.year().cast(pl.Int32),
+        data_fim_reuniao=pl.col("EndDate"),
+        data_expiracao=pl.col("ExpiryDate"),
     )
 
-    df = df.join(cal, on=["_meeting_month", "_meeting_year"], how="left").drop(
-        "_meeting_month", "_meeting_year"
+    df = df.join(cal, on=["_mes_reuniao", "_ano_reuniao"], how="left").drop(
+        "_mes_reuniao", "_ano_reuniao"
     )
 
-    # BDaysToExp: business days from TradeDate (inclusive) to ExpiryDate (exclusive).
-    # Vectorized via count_expr — consistent with the DI1 pipeline convention.
+    # dias_uteis: dias úteis de data_referencia até data_expiracao.
     df = df.with_columns(
-        BDaysToExp=bday.count_expr("TradeDate", "ExpiryDate").cast(pl.Int32)
+        dias_uteis=bday.count_expr("data_referencia", "data_expiracao").cast(pl.Int32)
     )
 
-    # SettlementPrice: B3 "Preço de Referência" from the CSV endpoint.
-    # The SPR XML for option contracts lacks this field (no RfPric tag);
-    # the XML is only used above to obtain the contract list (tickers).
-    sett_prices = _fetch_settlement_prices(trade_date)
-    if not sett_prices.is_empty():
-        df = df.join(sett_prices, on="TickerSymbol", how="left")
+    # preco_ajuste: "Preço de Referência" da B3 via endpoint CSV.
+    # O XML SPR para contratos de opções não contém este campo;
+    # o XML é usado acima apenas para obter a lista de contratos (códigos de negociação).
+    precos_ajuste = _fetch_settlement_prices(trade_date)
+    if not precos_ajuste.is_empty():
+        df = df.join(precos_ajuste, on="codigo_negociacao", how="left")
     else:
-        df = df.with_columns(SettlementPrice=pl.lit(None, dtype=pl.Float64))
+        df = df.with_columns(preco_ajuste=pl.lit(None, dtype=pl.Float64))
 
     return df.select(
-        pl.col("TradeDate"),
-        pl.col("TickerSymbol"),
-        pl.col("MeetingEndDate"),
-        pl.col("ExpiryDate"),
-        pl.col("OptionType"),
-        pl.col("StrikeChangeBps"),
-        pl.col("SettlementPrice"),
-        pl.col("BDaysToExp"),
-    ).sort("ExpiryDate", "StrikeChangeBps")
+        pl.col("data_referencia"),
+        pl.col("codigo_negociacao"),
+        pl.col("data_fim_reuniao"),
+        pl.col("data_expiracao"),
+        pl.col("tipo_opcao"),
+        pl.col("variacao_strike_bps"),
+        pl.col("preco_ajuste"),
+        pl.col("dias_uteis"),
+    ).sort("data_expiracao", "variacao_strike_bps")
