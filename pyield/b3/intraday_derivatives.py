@@ -1,3 +1,31 @@
+"""Cotações intraday de derivativos da B3 (endpoint DerivativeQuotation).
+
+Exemplo de chamada à API:
+    https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation/DI1
+
+Exemplo de resposta JSON (resumido):
+    {"Scty": [
+        {"symb": "DI1J30",
+         "desc": "DI DE 1 DIA",
+         "asset": {"code": "DI1",
+                   "AsstSummry": {"mtrtyCode": "2030-04-01",
+                                  "opnCtrcts": 64037,
+                                  "grssAmt": 5272867.79,
+                                  "tradQty": 36,
+                                  "traddCtrctsQty": 89}},
+         "mkt": {"cd": "FUT"},
+         "SctyQtn": {"curPrc": 14.105, "opngPric": 14.22,
+                     "minPric": 14.02, "maxPric": 14.22,
+                     "avrgPric": 14.1013,
+                     "prvsDayAdjstmntPric": 14.127,
+                     "bottomLmtPric": 13.16,
+                     "topLmtPric": 15.385},
+         "buyOffer": {"price": 14.105},
+         "sellOffer": {"price": 14.13}},
+        ...
+    ]}
+"""
+
 import datetime as dt
 import logging
 
@@ -122,6 +150,8 @@ def fetch_intraday_derivatives(contract_code: str) -> pl.DataFrame:
         * preco_oferta_compra (Float64): melhor oferta de compra (opcional).
         * preco_oferta_venda (Float64): melhor oferta de venda (opcional).
         * tipo_lado (String): tipo de lado (opcional).
+        * atualizado_as (Datetime): horário aproximado a que o dado se
+          refere (horário da consulta menos 15 min de atraso da fonte).
     """
     if not intraday_disponivel():
         return pl.DataFrame()
@@ -133,9 +163,8 @@ def fetch_intraday_derivatives(contract_code: str) -> pl.DataFrame:
     return (
         _converter_json_intraday(dados_json)
         .pipe(_processar_colunas_intraday)
-        .drop_nulls(subset=["data_vencimento"])
         .with_columns(
             atualizado_as=clock.now() - dt.timedelta(minutes=15),
         )
-        .sort("codigo_mercado", "codigo_negociacao")
+        .sort("codigo_negociacao")
     )

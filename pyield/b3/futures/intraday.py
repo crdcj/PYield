@@ -87,6 +87,7 @@ def _intraday_contrato(codigo_contrato: str) -> pl.DataFrame:
 def _preprocessar_df_intraday(df: pl.DataFrame) -> pl.DataFrame:
     return (
         df.filter(pl.col("codigo_mercado") == "FUT")
+        .drop_nulls(subset=["data_vencimento"])
         .rename(
             {
                 "preco_limite_minimo": "taxa_limite_minimo",

@@ -49,7 +49,6 @@ def test_fetch_intraday_derivatives_preserva_payload_misto(monkeypatch):
         "SOPT",
         "SPOT",
     ]
-    assert resultado["data_vencimento"].null_count() == 0
 
 
 def test_fetch_intraday_derivatives_suporta_colunas_opcionais_ausentes(monkeypatch):
