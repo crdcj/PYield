@@ -1,8 +1,0 @@
-{
-    "chat.tools.terminal.autoApprove": {
-        "/^source \\.venv/bin/activate && pytest tests/bc/test_repo\\.py -v$/": {
-            "approve": true,
-            "matchCommandLine": true
-        }
-    }
-}
