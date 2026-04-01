@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def futures(
     date: DateLike | ArrayLike,
     contract_code: str | list[str],
-    full_report: bool | None = None,
+    full_report: bool = False,
 ) -> pl.DataFrame:
     """Busca dados de um contrato futuro da B3 para a data de referência.
 
@@ -28,28 +28,24 @@ def futures(
             Quando uma coleção é fornecida, os dados são buscados para cada
             data individualmente e concatenados. Datas inválidas (feriados,
             fins de semana, futuras) são silenciosamente ignoradas.
-        contract_code: Código do contrato futuro na B3 ou coleção de códigos.
-            Exemplos de códigos válidos:
-            - Juros: DI1, DDI, OC1, DAP, IAP
-            - Moedas: DOL, WDO, EUR, GBR, JAP, CNY
-            - Índices: IND, WIN, ISP, WSP
-            - Commodities: BGI, CCM, ICF, CNL, SJC, SOY, ETH, GLD
-        full_report: Controla a fonte de dados quando o dado não está no cache.
-            Se None (padrão) e a data é hoje: entre 09:16 e 19:00 prioriza
-            dados intraday; a partir das 19:00 prioriza os dados consolidados
-            (SPR → PR) com intraday como fallback.
-            Se False, usa o simplified price report (SPR, ~2 KB).
-            Se True, usa apenas o price report completo (PR, ~2 MB) —
+        contract_code: Código do contrato futuro na B3 ou coleção de
+            códigos. Aceita qualquer código de contrato futuro listado
+            na B3. Contratos com histórico pré-cacheado (desde 2018)
+            são retornados instantaneamente:
+            - Juros: DI1, DDI, FRC, FRO, DAP
+            - Moedas: DOL, WDO
+            - Índices: IND, WIN
+            Para os demais contratos (OC1, IAP, EUR, GBR, JAP, CNY,
+            ISP, WSP, BGI, CCM, ICF, SJC, SOY, ETH, GLD, etc.),
+            os dados são baixados diretamente da B3 a cada chamada.
+        full_report: Controla a fonte de dados quando o dado não está
+            no cache. Se False (padrão), tenta o simplified price
+            report (SPR, ~2 KB) primeiro e faz fallback para o price
+            report completo (PR, ~2 MB). Se True, usa apenas o PR —
             indicado para processos batch noturnos.
 
     Returns:
         DataFrame Polars com os dados do contrato informado.
-
-    Notes:
-        Os contratos DI1, DDI, FRC, FRO, DAP, DOL, WDO, IND e WIN possuem
-        histórico pré-cacheado (desde 2018) e são retornados instantaneamente.
-        Para os demais contratos, os dados são baixados diretamente da B3 a
-        cada chamada, o que pode ser mais lento.
 
     Examples:
         >>> df = futures("31-05-2024", "DI1")
@@ -101,7 +97,7 @@ def futures(
 def _buscar_varias_datas(
     datas: ArrayLike,
     codigos: list[str],
-    full_report: bool | None,
+    full_report: bool,
 ) -> pl.DataFrame:
     """Busca dados para múltiplas datas e concatena os resultados.
 
@@ -142,27 +138,25 @@ def _buscar_varias_datas(
 def _buscar_por_fonte(
     data: dt.date,
     codigos: list[str],
-    full_report: bool | None,
+    full_report: bool,
 ) -> pl.DataFrame:
-    """Seleciona a fonte de dados com base no horário e parâmetros."""
-    if full_report is not None or data != clock.today():
+    """Seleciona a fonte de dados com base na data e horário.
+
+    Para datas passadas, usa dados consolidados (historical).
+    Para a data de hoje, depende do horário:
+    - Antes das 09:16: sem dados disponíveis (DataFrame vazio).
+    - Entre 09:16 e 19:00: dados intraday.
+    - A partir das 19:00: dados consolidados (historical).
+    """
+    if data != clock.today():
         return historical.historical(data, codigos, full_report)
 
     horario = clock.now().time()
     if horario >= HORA_INICIO_CONSOLIDADO:
-        # Consolidado (SPR → PR) primeiro; intraday como fallback
-        df = historical.historical(data, codigos, full_report)
-        if not df.is_empty():
-            return df
-        return intraday.intraday(codigos)
-
+        return historical.historical(data, codigos, full_report)
     if horario >= HORA_INICIO_INTRADAY:
-        # Intraday primeiro; historical como fallback
-        df = intraday.intraday(codigos)
-        if not df.is_empty():
-            return df
-
-    return historical.historical(data, codigos, full_report)
+        return intraday.intraday(codigos)
+    return pl.DataFrame()
 
 
 def available_dates(contract_code: str) -> pl.Series:

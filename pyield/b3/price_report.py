@@ -102,30 +102,18 @@ def _baixar_zip_url(data: dt.date, relatorio_completo: bool) -> bytes:
 
 
 def _extrair_xml_de_zip(conteudo_zip: bytes) -> bytes:
-    """Extrai o XML de um ZIP, suportando ZIP aninhado (ZIP→ZIP→XML) ou simples (ZIP→XML)."""
+    """Extrai o XML do ZIP aninhado da B3 (ZIP externo → ZIP interno → XML)."""
     with zipfile.ZipFile(io.BytesIO(conteudo_zip), "r") as zip_externo:
-        nomes_externos = zip_externo.namelist()
-        if not nomes_externos:
+        nomes = zip_externo.namelist()
+        if not nomes:
             raise ValueError("ZIP externo está vazio")
 
-        # Caso 1: ZIP contém XML diretamente
-        nomes_xml = sorted(n for n in nomes_externos if n.endswith(".xml"))
-        if nomes_xml:
-            return zip_externo.read(nomes_xml[-1])
-
-        # Caso 2: ZIP aninhado — busca o primeiro ZIP interno válido
-        for nome in nomes_externos:
-            conteudo_interno = zip_externo.read(nome)
-            if conteudo_interno[:4] != b"PK\x03\x04":
-                continue
-            with zipfile.ZipFile(io.BytesIO(conteudo_interno), "r") as zip_interno:
-                nomes_xml = sorted(
-                    n for n in zip_interno.namelist() if n.endswith(".xml")
-                )
-                if nomes_xml:
-                    return zip_interno.read(nomes_xml[-1])
-
-    raise ValueError("Nenhum XML encontrado no ZIP")
+        conteudo_interno = zip_externo.read(nomes[0])
+        with zipfile.ZipFile(io.BytesIO(conteudo_interno), "r") as zip_interno:
+            nomes_xml = sorted(n for n in zip_interno.namelist() if n.endswith(".xml"))
+            if not nomes_xml:
+                raise ValueError("Nenhum XML encontrado no ZIP interno")
+            return zip_interno.read(nomes_xml[-1])
 
 
 def _ticker_valido_para_contrato(ticker: str, codigo_contrato: str) -> bool:

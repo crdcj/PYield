@@ -18,7 +18,7 @@ rmd_mod = sys.modules["pyield.rmd"]
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_PARQUET = DIRETORIO_DADOS / "rmd_1.3.parquet"
 
-URL_BASE_RELEASE = "https://github.com/crdcj/PYield/releases/download/test-data-v1.0"
+URL_BASE_RELEASE = "https://github.com/crdcj/PYield/releases/download/test-data"
 NOME_ZIP = "Anexo.RMD_Janeiro_26.zip"
 
 

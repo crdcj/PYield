@@ -21,7 +21,7 @@ from polars.testing import assert_frame_equal
 import pyield.b3.price_report as pr_mod
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
-URL_BASE_RELEASE = "https://github.com/crdcj/PYield/releases/download/test-data-v1.0"
+URL_BASE_RELEASE = "https://github.com/crdcj/PYield/releases/download/test-data"
 
 
 @lru_cache(maxsize=8)

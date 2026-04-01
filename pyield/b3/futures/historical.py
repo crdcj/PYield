@@ -63,16 +63,15 @@ def _obter_pr_normalizado() -> pl.DataFrame:
 def historical(
     data: dt.date,
     codigo_contrato: str | list[str],
-    full_report: bool | None = None,
+    full_report: bool = False,
 ) -> pl.DataFrame:
     """Busca histórico de futuros priorizando o dataset PR cacheado.
 
     Args:
         data: Data de negociação.
         codigo_contrato: Código(s) do contrato futuro na B3.
-        full_report: Se None (padrão), tenta SPR primeiro e PR como fallback.
-            Se False, usa o simplified price report (SPR, ~2 KB).
-            Se True, usa o price report completo (PR, ~2 MB).
+        full_report: Se False (padrão), tenta SPR primeiro e PR como
+            fallback. Se True, usa apenas o PR completo (~2 MB).
 
     Returns:
         DataFrame Polars com dados históricos de futuros.
@@ -202,16 +201,13 @@ def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
     )
 
 
-def _buscar_price_report(
-    data: dt.date, codigo: str, full_report: bool | None
-) -> pl.DataFrame:
+def _buscar_price_report(data: dt.date, codigo: str, full_report: bool) -> pl.DataFrame:
     """Busca o price report da B3, com fallback SPR→PR.
 
-    Quando full_report é True, usa apenas o PR (completo).
-    Nos demais casos (None ou False), tenta o SPR (leve) primeiro
-    e faz fallback para o PR se o SPR estiver vazio.
+    Se full_report é True, usa apenas o PR (completo).
+    Se False, tenta o SPR (leve) primeiro e faz fallback para o PR.
     """
-    if full_report is True:
+    if full_report:
         return _normalizar_colunas_pr(
             fetch_price_report(date=data, contract_code=codigo, full_report=True)
         )
