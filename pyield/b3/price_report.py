@@ -43,7 +43,7 @@ COLUNAS_PRICE_REPORT: list[tuple[str, str, type[pl.DataType]]] = [
     ("3.01.01", "Id", pl.String),
     ("3.01.02.01", "Prtry", pl.String),
     ("3.02.01", "MktIdrCd", pl.String),
-    ("4.01", "DaysToSttlm", pl.String),
+    ("4.01", "DaysToSttlm", pl.Int64),
     ("4.02", "TradQty", pl.Int64),
     ("5.01", "MktDataStrmId", pl.String),
     ("5.02", "NtlFinVol", pl.Float64),
@@ -109,20 +109,23 @@ def _extrair_xml_de_zip(conteudo_zip: bytes) -> bytes:
             raise ValueError("ZIP externo está vazio")
 
         # Caso 1: ZIP contém XML diretamente
-        xml_nomes = [n for n in nomes_externos if n.endswith(".xml")]
-        if xml_nomes:
-            xml_nomes.sort()
-            return zip_externo.read(xml_nomes[-1])
+        nomes_xml = sorted(n for n in nomes_externos if n.endswith(".xml"))
+        if nomes_xml:
+            return zip_externo.read(nomes_xml[-1])
 
-        # Caso 2: ZIP aninhado — o primeiro arquivo interno é outro ZIP
-        conteudo_interno = zip_externo.read(nomes_externos[0])
+        # Caso 2: ZIP aninhado — busca o primeiro ZIP interno válido
+        for nome in nomes_externos:
+            conteudo_interno = zip_externo.read(nome)
+            if conteudo_interno[:4] != b"PK\x03\x04":
+                continue
+            with zipfile.ZipFile(io.BytesIO(conteudo_interno), "r") as zip_interno:
+                nomes_xml = sorted(
+                    n for n in zip_interno.namelist() if n.endswith(".xml")
+                )
+                if nomes_xml:
+                    return zip_interno.read(nomes_xml[-1])
 
-    with zipfile.ZipFile(io.BytesIO(conteudo_interno), "r") as zip_interno:
-        xml_nomes = [n for n in zip_interno.namelist() if n.endswith(".xml")]
-        if not xml_nomes:
-            raise ValueError("Nenhum XML encontrado no ZIP")
-        xml_nomes.sort()
-        return zip_interno.read(xml_nomes[-1])
+    raise ValueError("Nenhum XML encontrado no ZIP")
 
 
 def _ticker_valido_para_contrato(ticker: str, codigo_contrato: str) -> bool:
@@ -219,7 +222,14 @@ def _obter_xml_price_report(data: dt.date, relatorio_completo: bool) -> bytes:
     dados_zip = _baixar_zip_url(data, relatorio_completo)
     if not dados_zip:
         return bytes()
-    return _extrair_xml_de_zip(dados_zip)
+    try:
+        return _extrair_xml_de_zip(dados_zip)
+    except zipfile.BadZipFile:
+        registro.warning("ZIP corrompido na transmissão, re-baixando...")
+        dados_zip = _baixar_zip_url(data, relatorio_completo)
+        if not dados_zip:
+            return bytes()
+        return _extrair_xml_de_zip(dados_zip)
 
 
 def fetch_price_report(
@@ -264,7 +274,7 @@ def fetch_price_report(
         * Id (String): identificador do instrumento.
         * Prtry (String): tipo do identificador proprietário.
         * MktIdrCd (String): código do mercado.
-        * DaysToSttlm (String): dias para liquidação.
+        * DaysToSttlm (Int64): dias para liquidação.
         * TradQty (Int64): número de negócios.
         * MktDataStrmId (String): identificador do fluxo de dados.
         * NtlFinVol (Float64): volume financeiro nacional bruto.
@@ -303,9 +313,8 @@ def fetch_price_report(
 
     Raises:
         requests.HTTPError: Se a requisição HTTP ao endpoint falhar.
-        zipfile.BadZipFile: Se o arquivo ZIP recebido estiver corrompido.
+        zipfile.BadZipFile: Se o ZIP estiver corrompido após re-download.
         etree.XMLSyntaxError: Se o XML recebido estiver malformado.
-        Exception: Erros críticos inesperados são propagados após log.
 
     Examples:
         >>> import pyield as yd
@@ -328,25 +337,15 @@ def fetch_price_report(
     if not data_negociacao_valida(date):
         return pl.DataFrame()
 
-    try:
-        xml_bytes = _obter_xml_price_report(date, full_report)
-        dataframes = []
-        for contrato in contratos:
-            df = _processar_xml_extraido(xml_bytes, contrato)
-            if not df.is_empty():
-                dataframes.append(df)
-        if not dataframes:
-            return pl.DataFrame()
-        return pl.concat(dataframes, how="diagonal").sort("TckrSymb")
-    except (zipfile.BadZipFile, etree.XMLSyntaxError):
-        registro.exception(f"Falha ao parsear o price report de {contratos} em {date}.")
-        raise
-    except Exception:
-        tipo = "PR" if full_report else "SPR"
-        registro.exception(
-            f"ERRO CRÍTICO: Falha ao processar {contratos} {tipo} em {date}"
-        )
-        raise
+    xml_bytes = _obter_xml_price_report(date, full_report)
+    dataframes = []
+    for contrato in contratos:
+        df = _processar_xml_extraido(xml_bytes, contrato)
+        if not df.is_empty():
+            dataframes.append(df)
+    if not dataframes:
+        return pl.DataFrame()
+    return pl.concat(dataframes, how="diagonal").sort("TckrSymb")
 
 
 def read_price_report(

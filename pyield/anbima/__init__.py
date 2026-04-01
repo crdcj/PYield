@@ -1,4 +1,3 @@
-from pyield.anbima.difusao import tpf_difusao
 from pyield.anbima.ettj_intraday import intraday_ettj
 from pyield.anbima.ettj_last import last_ettj
 from pyield.anbima.ima import last_ima
@@ -13,5 +12,4 @@ __all__ = [
     "fetch_tpf",
     "last_ettj",
     "intraday_ettj",
-    "tpf_difusao",
 ]
