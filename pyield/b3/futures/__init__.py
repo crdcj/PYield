@@ -1,27 +1,22 @@
 import datetime as dt
-import logging
 
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import clock
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty, is_collection
 from pyield.b3._contracts import normalizar_codigos_contrato
-from pyield.b3._validar_pregao import HORA_INICIO_INTRADAY, data_negociacao_valida
+from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.futures import historical, intraday
-
-# A partir desse horário, os dados consolidados (SPR/PR) já estão disponíveis.
-HORA_INICIO_CONSOLIDADO = dt.time(19, 0)
-
-logger = logging.getLogger(__name__)
 
 
 def futures(
     date: DateLike | ArrayLike,
     contract_code: str | list[str],
-    full_report: bool = False,
 ) -> pl.DataFrame:
     """Busca dados de um contrato futuro da B3 para a data de referência.
+
+    Dados obtidos do dataset PR cacheado no GitHub (disponível desde 2018).
+    Para dados do pregão corrente, use ``futures_intraday``.
 
     Args:
         date: Data de referência para consulta ou coleção de datas.
@@ -29,20 +24,10 @@ def futures(
             data individualmente e concatenados. Datas inválidas (feriados,
             fins de semana, futuras) são silenciosamente ignoradas.
         contract_code: Código do contrato futuro na B3 ou coleção de
-            códigos. Aceita qualquer código de contrato futuro listado
-            na B3. Contratos com histórico pré-cacheado (desde 2018)
-            são retornados instantaneamente:
+            códigos. Contratos disponíveis no cache histórico:
             - Juros: DI1, DDI, FRC, FRO, DAP
             - Moedas: DOL, WDO
             - Índices: IND, WIN
-            Para os demais contratos (OC1, IAP, EUR, GBR, JAP, CNY,
-            ISP, WSP, BGI, CCM, ICF, SJC, SOY, ETH, GLD, etc.),
-            os dados são baixados diretamente da B3 a cada chamada.
-        full_report: Controla a fonte de dados quando o dado não está
-            no cache. Se False (padrão), tenta o simplified price
-            report (SPR, ~2 KB) primeiro e faz fallback para o price
-            report completo (PR, ~2 MB). Se True, usa apenas o PR —
-            indicado para processos batch noturnos.
 
     Returns:
         DataFrame Polars com os dados do contrato informado.
@@ -84,26 +69,21 @@ def futures(
     if is_collection(date):
         # date é ArrayLike neste branch
         datas: ArrayLike = date  # type: ignore[assignment]
-        return _buscar_varias_datas(datas, codigos_contrato, full_report)
+        return _buscar_varias_datas(datas, codigos_contrato)
 
     # date é escalar (DateLike) neste branch
     data_negociacao: dt.date = cv.converter_datas(date)  # type: ignore[assignment]
     if not data_negociacao_valida(data_negociacao):
         return pl.DataFrame()
 
-    return _buscar_por_fonte(data_negociacao, codigos_contrato, full_report)
+    return historical.historical(data_negociacao, codigos_contrato)
 
 
 def _buscar_varias_datas(
     datas: ArrayLike,
     codigos: list[str],
-    full_report: bool,
 ) -> pl.DataFrame:
-    """Busca dados para múltiplas datas e concatena os resultados.
-
-    Prioriza o dataset PR cacheado (bulk). Para datas ausentes no cache,
-    busca individualmente via _buscar_por_fonte.
-    """
+    """Busca dados para múltiplas datas do dataset PR cacheado."""
     serie_datas = cv.converter_datas(datas)
     datas_validas = [
         d for d in serie_datas if d is not None and data_negociacao_valida(d)
@@ -111,52 +91,65 @@ def _buscar_varias_datas(
     if not datas_validas:
         return pl.DataFrame()
 
-    # Bulk: carrega todas as datas de uma vez do cache, por contrato
-    resultados = []
-    for codigo in codigos:
-        df_cache = historical._obter_futuros_pr(datas_validas, codigo)
-        if not df_cache.is_empty():
-            resultados.append(df_cache)
-
-    # Identifica datas que não vieram do cache
-    datas_no_cache: set[dt.date] = set()
-    for df in resultados:
-        datas_no_cache.update(df["data_referencia"].unique().to_list())
-    datas_faltantes = [d for d in datas_validas if d not in datas_no_cache]
-
-    # Fallback individual apenas para datas faltantes
-    for data in datas_faltantes:
-        df = _buscar_por_fonte(data, codigos, full_report)
-        if not df.is_empty():
-            resultados.append(df)
+    resultados = [
+        df
+        for codigo in codigos
+        if not (df := historical._obter_futuros_pr(datas_validas, codigo)).is_empty()
+    ]
 
     if not resultados:
         return pl.DataFrame()
     return pl.concat(resultados, how="diagonal_relaxed")
 
 
-def _buscar_por_fonte(
-    data: dt.date,
-    codigos: list[str],
-    full_report: bool,
+def futures_intraday(
+    contract_code: str | list[str],
 ) -> pl.DataFrame:
-    """Seleciona a fonte de dados com base na data e horário.
+    """Busca dados intraday de contratos futuros da B3.
 
-    Para datas passadas, usa dados consolidados (historical).
-    Para a data de hoje, depende do horário:
-    - Antes das 09:16: sem dados disponíveis (DataFrame vazio).
-    - Entre 09:16 e 19:00: dados intraday.
-    - A partir das 19:00: dados consolidados (historical).
+    Retorna os dados mais recentes do pregão corrente, com atraso
+    aproximado de 15 minutos. Para dados históricos consolidados,
+    use ``futures``.
+
+    Args:
+        contract_code: Código do contrato futuro na B3 ou lista de
+            códigos (ex.: 'DI1', ['DI1', 'DAP']).
+
+    Returns:
+        DataFrame Polars com dados intraday. Retorna DataFrame vazio
+        fora do horário de pregão.
+
+    Output Columns:
+        * data_referencia (Date): data de negociação.
+        * atualizado_as (Datetime): horário a que o dado se refere
+          (com atraso de ~15 min).
+        * codigo_negociacao (String): código de negociação na B3.
+        * data_vencimento (Date): data de vencimento do contrato.
+        * dias_uteis (Int64): dias úteis até o vencimento.
+        * dias_corridos (Int64): dias corridos até o vencimento.
+        * contratos_abertos (Int64): contratos em aberto.
+        * numero_negocios (Int64): número de negócios.
+        * volume_negociado (Int64): quantidade de contratos negociados.
+        * volume_financeiro (Float64): volume financeiro bruto.
+        * dv01 (Float64): variação no preço para 1bp (apenas DI1).
+        * preco_ultimo (Float64): último preço (apenas DI1/DAP).
+        * taxa_ajuste_anterior (Float64): taxa de ajuste do dia anterior.
+        * taxa_limite_minimo (Float64): limite mínimo de variação.
+        * taxa_limite_maximo (Float64): limite máximo de variação.
+        * taxa_abertura (Float64): taxa de abertura.
+        * taxa_minima (Float64): taxa mínima negociada.
+        * taxa_media (Float64): taxa média negociada.
+        * taxa_maxima (Float64): taxa máxima negociada.
+        * taxa_oferta_compra (Float64): melhor oferta de compra.
+        * taxa_oferta_venda (Float64): melhor oferta de venda.
+        * taxa_ultima (Float64): última taxa negociada.
+        * taxa_forward (Float64): taxa a termo (apenas DI1/DAP).
     """
-    if data != clock.today():
-        return historical.historical(data, codigos, full_report)
+    codigos = normalizar_codigos_contrato(contract_code)
+    if not codigos:
+        return pl.DataFrame()
 
-    horario = clock.now().time()
-    if horario >= HORA_INICIO_CONSOLIDADO:
-        return historical.historical(data, codigos, full_report)
-    if horario >= HORA_INICIO_INTRADAY:
-        return intraday.intraday(codigos)
-    return pl.DataFrame()
+    return intraday.intraday(codigos)
 
 
 def available_dates(contract_code: str) -> pl.Series:
@@ -182,4 +175,4 @@ def available_dates(contract_code: str) -> pl.Series:
     return historical.listar_datas_disponiveis(contract_code)
 
 
-__all__ = ["available_dates", "futures"]
+__all__ = ["available_dates", "futures", "futures_intraday"]

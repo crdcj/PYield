@@ -62,7 +62,7 @@ def data(
     else:
         datas_lista = [datas_convertidas]
 
-    df = b3.futures(date=datas_lista, contract_code="DI1", full_report=False)
+    df = b3.futures(date=datas_lista, contract_code="DI1")
     if df.is_empty():
         return df
 
@@ -195,7 +195,7 @@ def interpolate_rates(
 
     # Carrega dataset de taxas DI usando datas já convertidas do df_entrada
     datas_unicas = df_entrada["data_referencia"].drop_nulls().unique().sort().to_list()
-    df_ref = b3.futures(date=datas_unicas, contract_code="DI1", full_report=False)
+    df_ref = b3.futures(date=datas_unicas, contract_code="DI1")
     # Retorna Series vazia se nenhuma taxa for encontrada
     if df_ref.is_empty():
         return pl.Series(dtype=pl.Float64)

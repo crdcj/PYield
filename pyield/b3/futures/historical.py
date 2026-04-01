@@ -6,7 +6,6 @@ from pyield import bday
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3.futures.common import adicionar_vencimento, expr_dv01
-from pyield.b3.price_report import fetch_price_report
 from pyield.fwd import forwards
 
 # Lista de contratos que negociam por taxa (juros/cupom).
@@ -63,15 +62,12 @@ def _obter_pr_normalizado() -> pl.DataFrame:
 def historical(
     data: dt.date,
     codigo_contrato: str | list[str],
-    full_report: bool = False,
 ) -> pl.DataFrame:
-    """Busca histórico de futuros priorizando o dataset PR cacheado.
+    """Busca histórico de futuros no dataset PR cacheado.
 
     Args:
         data: Data de negociação.
         codigo_contrato: Código(s) do contrato futuro na B3.
-        full_report: Se False (padrão), tenta SPR primeiro e PR como
-            fallback. Se True, usa apenas o PR completo (~2 MB).
 
     Returns:
         DataFrame Polars com dados históricos de futuros.
@@ -114,6 +110,9 @@ def historical(
         * taxa_forward (Float64): taxa a termo (apenas DI1/DAP).
 
     Notes:
+        Usa exclusivamente o dataset PR cacheado no GitHub. Contratos
+        disponíveis: DI1, DDI, FRC, FRO, DAP, DOL, WDO, IND, WIN.
+
         As colunas com prefixo ``preco_`` aparecem para contratos cotados por
         preço (ex.: DOL, IND). As com prefixo ``taxa_`` aparecem para contratos
         cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO). Nem todas as colunas
@@ -130,28 +129,11 @@ def historical(
     if not codigos:
         return pl.DataFrame()
 
-    dataframes: list[pl.DataFrame] = []
-    codigos_sem_cache: list[str] = []
-
-    for codigo in codigos:
-        df_cache = _obter_futuros_pr([data], codigo)
-        if df_cache.is_empty():
-            codigos_sem_cache.append(codigo)
-        else:
-            dataframes.append(df_cache)
-
-    if codigos_sem_cache:
-        for codigo in codigos_sem_cache:
-            df_bruto = _buscar_price_report(data, codigo, full_report)
-            if df_bruto.is_empty():
-                continue
-
-            df_bruto = adicionar_vencimento(df_bruto, codigo, "codigo_negociacao")
-            df = _enriquecer_dados(df_bruto, codigo)
-            df_saida = _selecionar_colunas_saida(df)
-            if "data_vencimento" in df_saida.columns:
-                df_saida = df_saida.sort("data_vencimento")
-            dataframes.append(df_saida)
+    dataframes = [
+        df
+        for codigo in codigos
+        if not (df := _obter_futuros_pr([data], codigo)).is_empty()
+    ]
 
     if not dataframes:
         return pl.DataFrame()
@@ -198,28 +180,6 @@ def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
         .unique()
         .sort()
         .alias("data_referencia")
-    )
-
-
-def _buscar_price_report(data: dt.date, codigo: str, full_report: bool) -> pl.DataFrame:
-    """Busca o price report da B3, com fallback SPR→PR.
-
-    Se full_report é True, usa apenas o PR (completo).
-    Se False, tenta o SPR (leve) primeiro e faz fallback para o PR.
-    """
-    if full_report:
-        return _normalizar_colunas_pr(
-            fetch_price_report(date=data, contract_code=codigo, full_report=True)
-        )
-
-    # SPR (leve) primeiro; PR (pesado) como fallback
-    df = _normalizar_colunas_pr(
-        fetch_price_report(date=data, contract_code=codigo, full_report=False)
-    )
-    if not df.is_empty():
-        return df
-    return _normalizar_colunas_pr(
-        fetch_price_report(date=data, contract_code=codigo, full_report=True)
     )
 
 

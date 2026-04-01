@@ -2,7 +2,7 @@ import logging
 
 from pyield import anbima, b3, bc, bday, ipca, selic, tn
 from pyield.__about__ import __version__
-from pyield.b3 import di1, futures
+from pyield.b3 import di1, futures, futures_intraday
 from pyield.clock import now, today
 from pyield.fwd import forward, forwards
 from pyield.interpolator import Interpolator
@@ -37,6 +37,7 @@ __all__ = [
     "rmd",
     "bday",
     "selic",
+    "futures_intraday",
 ]
 
 # Configura o logger do pacote principal com um NullHandler
