@@ -1,28 +1,24 @@
 import datetime as dt
 import io
-import logging
 import zipfile
-from functools import lru_cache
 
 import polars as pl
 import requests
 from lxml import etree
-from lxml.etree import _Element
 
 import pyield._internal.converters as cv
+from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3._validar_pregao import data_negociacao_valida
-
-registro = logging.getLogger(__name__)
 
 # --- Constantes de Processamento XML ---
 NAMESPACE_B3 = "urn:bvmf.217.01.xsd"
 NAMESPACES = {"ns": NAMESPACE_B3}
 # ZIP válido do price report ~2KB; 1KB detecta arquivos "sem dados"
 MIN_TAMANHO_ZIP_BYTES = 1024
-MODELO_XPATH_TICKER = '//ns:TckrSymb[starts-with(text(), "{prefixo_ticker}")]'
+XPATH_TODOS_TICKERS = "//ns:TckrSymb"
 XPATH_DATA_NEGOCIACAO = ".//ns:TradDt/ns:Dt"
 XPATH_ATRIBUTOS_INSTRUMENTO = ".//ns:FinInstrmAttrbts"
 XPATH_DETALHES_NEGOCIO = ".//ns:TradDtls"
@@ -74,10 +70,11 @@ COLUNAS_PRICE_REPORT: list[tuple[str, str, type[pl.DataType]]] = [
     ("5.32", "MinTradLmt", pl.Float64),
 ]
 
-# Mapa de tipos para cast inicial usando os nomes originais do XML.
-TIPOS_XML = {nome_xml: tipo for _, nome_xml, tipo in COLUNAS_PRICE_REPORT}
+# Schema completo: nome_xml → tipo_polars. Garante ordem e tipagem constante.
+SCHEMA_PRICE_REPORT = {nome: tipo for _, nome, tipo in COLUNAS_PRICE_REPORT}
 
 
+@ttl_cache()
 @retry_padrao
 def _baixar_zip_url(data: dt.date, relatorio_completo: bool) -> bytes:
     data_str = data.strftime("%y%m%d")
@@ -124,7 +121,7 @@ def price_report_extract(conteudo_zip: bytes) -> bytes:
             return zip_interno.read(nomes_xml[-1])
 
 
-def _extrair_dados_contrato(elemento_ticker: _Element) -> dict | None:
+def _extrair_dados_contrato(elemento_ticker: etree._Element) -> dict | None:
     if elemento_ticker.text is None:
         return None
     pai = elemento_ticker.getparent()
@@ -155,11 +152,7 @@ def _extrair_dados_contrato(elemento_ticker: _Element) -> dict | None:
     return dados_ticker
 
 
-def _parsear_xml_registros(
-    xml_bytes: bytes,
-    prefixo_ticker: str,
-    comprimento_ticker: int | None = None,
-) -> list[dict]:
+def _parsear_xml_registros(xml_bytes: bytes) -> list[dict]:
     analisador = etree.XMLParser(
         ns_clean=True,
         remove_blank_text=True,
@@ -169,72 +162,70 @@ def _parsear_xml_registros(
         no_network=True,
         load_dtd=False,
     )
-    arquivo_xml = io.BytesIO(xml_bytes)
-    arvore = etree.parse(arquivo_xml, parser=analisador)
-    caminho_xpath = MODELO_XPATH_TICKER.format(prefixo_ticker=prefixo_ticker)
-    resultado_xpath = arvore.xpath(caminho_xpath, namespaces=NAMESPACES)
-    if not isinstance(resultado_xpath, list):
-        return []
-
-    elementos_ticker = resultado_xpath
-
-    if not elementos_ticker:
+    arvore = etree.parse(io.BytesIO(xml_bytes), parser=analisador)
+    resultado_xpath = arvore.xpath(XPATH_TODOS_TICKERS, namespaces=NAMESPACES)
+    elementos: list[etree._Element] = resultado_xpath  # type: ignore[assignment]
+    if not elementos:
         return []
 
     registros = []
-    for elemento in elementos_ticker:
-        if not isinstance(elemento, etree._Element):
-            continue
+    for elemento in elementos:
         dados_contrato = _extrair_dados_contrato(elemento)
         if dados_contrato is not None:
-            ticker = dados_contrato["TckrSymb"]
-            if comprimento_ticker is None or len(ticker) == comprimento_ticker:
-                registros.append(dados_contrato)
+            registros.append(dados_contrato)
     return registros
 
 
 def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
     df = pl.DataFrame(registros)
     # Casting usa os nomes originais do XML, que são constantes
-    tipos_coluna = {k: v for k, v in TIPOS_XML.items() if k in df.columns}
-    return df.cast(tipos_coluna, strict=False)  # type: ignore
+    tipos_coluna = {k: v for k, v in SCHEMA_PRICE_REPORT.items() if k in df.columns}
+    df = df.cast(tipos_coluna, strict=False)  # type: ignore
+    # Adiciona colunas ausentes com null e garante ordem/schema constante
+    colunas_faltantes = {
+        nome: pl.lit(None).cast(tipo)
+        for nome, tipo in SCHEMA_PRICE_REPORT.items()
+        if nome not in df.columns
+    }
+    if colunas_faltantes:
+        df = df.with_columns(**colunas_faltantes)
+    return df.select(SCHEMA_PRICE_REPORT.keys())
 
 
-def _processar_xml_extraido(
-    xml_bytes: bytes,
-    prefixo_ticker: str,
-    comprimento_ticker: int | None = None,
-) -> pl.DataFrame:
-    registros = (
-        _parsear_xml_registros(xml_bytes, prefixo_ticker, comprimento_ticker)
-        if xml_bytes
-        else []
-    )
+def _processar_xml_extraido(xml_bytes: bytes) -> pl.DataFrame:
+    registros = _parsear_xml_registros(xml_bytes)
     if not registros:
         return pl.DataFrame()
+    return _converter_para_df(registros).sort("TckrSymb")
 
-    df = _converter_para_df(registros)
+
+def _filtrar_df(
+    df: pl.DataFrame,
+    prefixos: list[str],
+    comprimento_ticker: int | None = None,
+) -> pl.DataFrame:
+    if comprimento_ticker:
+        df = df.filter(pl.col("TckrSymb").str.len_chars() == comprimento_ticker)
+
+    if prefixos:
+        filtro = pl.any_horizontal(
+            pl.col("TckrSymb").str.starts_with(p) for p in prefixos
+        )
+        df = df.filter(filtro)
     return df.sort("TckrSymb")
 
 
-@lru_cache(maxsize=64)
-def _obter_xml_price_report(data: dt.date, relatorio_completo: bool) -> bytes:
+def _obter_df_price_report(data: dt.date, relatorio_completo: bool) -> pl.DataFrame:
     dados_zip = _baixar_zip_url(data, relatorio_completo)
     if not dados_zip:
-        return bytes()
-    try:
-        return price_report_extract(dados_zip)
-    except zipfile.BadZipFile:
-        registro.warning("ZIP corrompido na transmissão, re-baixando...")
-        dados_zip = _baixar_zip_url(data, relatorio_completo)
-        if not dados_zip:
-            return bytes()
-        return price_report_extract(dados_zip)
+        return pl.DataFrame()
+    xml_bytes = price_report_extract(dados_zip)
+    return _processar_xml_extraido(xml_bytes)
 
 
 def price_report_fetch(
     date: DateLike,
-    ticker_prefix: str | list[str],
+    ticker_prefix: str | list[str] | None = None,
     ticker_length: int | None = None,
     full_report: bool = False,
 ) -> pl.DataFrame:
@@ -259,7 +250,8 @@ def price_report_fetch(
             'YYYY-MM-DD' ou objeto datetime.date.
         ticker_prefix: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
             'CPM') ou lista de prefixos (ex.: ['DI1', 'DAP']).
-            Usado como filtro starts-with no XML.
+            Usado como filtro starts-with no XML. Se None (padrão),
+            retorna todos os ativos sem filtro.
         ticker_length: Comprimento exato do ticker para filtrar registros.
             Se None (padrão), retorna todos os tickers que casam com o
             prefixo (ex.: 6 para futuros, 13 para opções).
@@ -333,8 +325,7 @@ def price_report_fetch(
         >>> df.is_empty()
         True
     """
-    prefixos = normalizar_codigos_contrato(ticker_prefix)
-    if any_is_empty(date) or not prefixos:
+    if any_is_empty(date):
         return pl.DataFrame()
 
     date = cv.converter_datas(date)
@@ -342,20 +333,19 @@ def price_report_fetch(
     if not data_negociacao_valida(date):
         return pl.DataFrame()
 
-    xml_bytes = _obter_xml_price_report(date, full_report)
-    dataframes = []
-    for prefixo in prefixos:
-        df = _processar_xml_extraido(xml_bytes, prefixo, ticker_length)
-        if not df.is_empty():
-            dataframes.append(df)
-    if not dataframes:
+    df = _obter_df_price_report(date, full_report)
+    if df.is_empty() or ticker_prefix is None:
+        return df
+
+    prefixos = normalizar_codigos_contrato(ticker_prefix)
+    if not prefixos:
         return pl.DataFrame()
-    return pl.concat(dataframes, how="diagonal").sort("TckrSymb")
+    return _filtrar_df(df, prefixos, ticker_length)
 
 
 def price_report_read(
     xml_bytes: bytes,
-    ticker_prefix: str | list[str],
+    ticker_prefix: str | list[str] | None = None,
     ticker_length: int | None = None,
 ) -> pl.DataFrame:
     """Lê e processa o price report da B3 a partir do conteúdo XML bruto.
@@ -367,6 +357,7 @@ def price_report_read(
         xml_bytes: Conteúdo do XML em bytes (já descomprimido).
         ticker_prefix: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
             'CPM') ou lista de prefixos (ex.: ['DI1', 'DAP']).
+            Se None (padrão), retorna todos os ativos sem filtro.
         ticker_length: Comprimento exato do ticker para filtrar registros.
             Se None (padrão), retorna todos os tickers que casam com o
             prefixo.
@@ -375,15 +366,14 @@ def price_report_read(
         pl.DataFrame: DataFrame com as mesmas colunas documentadas em
         :func:`price_report_fetch`.
     """
-    prefixos = normalizar_codigos_contrato(ticker_prefix)
-    if any_is_empty(xml_bytes) or not prefixos:
+    if any_is_empty(xml_bytes):
         return pl.DataFrame()
 
-    dataframes = []
-    for prefixo in prefixos:
-        df = _processar_xml_extraido(xml_bytes, prefixo, ticker_length)
-        if not df.is_empty():
-            dataframes.append(df)
-    if not dataframes:
+    df = _processar_xml_extraido(xml_bytes)
+    if df.is_empty() or ticker_prefix is None:
+        return df
+
+    prefixos = normalizar_codigos_contrato(ticker_prefix)
+    if not prefixos:
         return pl.DataFrame()
-    return pl.concat(dataframes, how="diagonal").sort("TckrSymb")
+    return _filtrar_df(df, prefixos, ticker_length)

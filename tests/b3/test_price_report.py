@@ -36,6 +36,13 @@ def _baixar_xml_remoto(date_str: str) -> bytes:
     return gzip.decompress(resposta.content)
 
 
+@lru_cache(maxsize=8)
+def _baixar_e_parsear_xml_remoto(date_str: str) -> pl.DataFrame:
+    """Baixa o XML remoto e parseia em DataFrame completo."""
+    xml_bytes = _baixar_xml_remoto(date_str)
+    return pr_mod.price_report_read(xml_bytes)
+
+
 def _parquet_referencia(date_str: str, contract_code: str) -> Path:
     dia, mes, ano = date_str.split("-")
     return TEST_DATA_DIR / f"price_report_{ano}{mes}{dia}_{contract_code}.parquet"
@@ -72,16 +79,14 @@ def _parquet_referencia(date_str: str, contract_code: str) -> Path:
 )
 def test_pipeline_bruto_price_report(date: str, contract_code: str):
     """Compara saída bruta do price_report com parquet canônico."""
-    xml_bytes = _baixar_xml_remoto(date)
-    df_result = pr_mod.price_report_read(xml_bytes, contract_code, ticker_length=6)
+    df_completo = _baixar_e_parsear_xml_remoto(date)
+    df_result = pr_mod._filtrar_df(df_completo, [contract_code], comprimento_ticker=6)
     df_expect = pl.read_parquet(_parquet_referencia(date, contract_code))
 
     assert_frame_equal(df_result, df_expect, check_exact=True, check_dtypes=True)
 
 
 def test_price_report_fetch_reusa_download_xml_por_data(monkeypatch):
-    pr_mod._obter_xml_price_report.cache_clear()
-
     chamadas = {"download": 0, "extrair": 0}
 
     monkeypatch.setattr(pr_mod, "data_negociacao_valida", lambda *_: True)
@@ -94,13 +99,13 @@ def test_price_report_fetch_reusa_download_xml_por_data(monkeypatch):
         chamadas["extrair"] += 1
         return b"xml"
 
-    def _processar_xml_falso(_xml, codigo, _comprimento=None):
+    def _processar_xml_falso(_xml):
         return pl.DataFrame(
             {
-                "TckrSymb": [f"{codigo}F26"],
-                "TradDt": [dt.date(2026, 1, 12)],
+                "TckrSymb": ["DI1F26", "DOLF26"],
+                "TradDt": [dt.date(2026, 1, 12)] * 2,
             }
-        )
+        ).cast({"TradDt": pl.Date})
 
     monkeypatch.setattr(pr_mod, "_baixar_zip_url", _baixar_zip_falso)
     monkeypatch.setattr(pr_mod, "price_report_extract", _extrair_xml_falso)
@@ -109,6 +114,5 @@ def test_price_report_fetch_reusa_download_xml_por_data(monkeypatch):
     _ = pr_mod.price_report_fetch(date="12-01-2026", ticker_prefix="DI1")
     _ = pr_mod.price_report_fetch(date="12-01-2026", ticker_prefix="DOL")
 
-    assert chamadas == {"download": 1, "extrair": 1}
-
-    pr_mod._obter_xml_price_report.cache_clear()
+    # Monkeypatch substitui a função cacheada, então cada chamada passa direto
+    assert chamadas == {"download": 2, "extrair": 2}
