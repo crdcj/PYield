@@ -204,14 +204,12 @@ def _filtrar_df(
     prefixos: list[str],
     comprimento_ticker: int | None = None,
 ) -> pl.DataFrame:
+    ticker = pl.col("TckrSymb")
     if comprimento_ticker:
-        df = df.filter(pl.col("TckrSymb").str.len_chars() == comprimento_ticker)
-
+        df = df.filter(ticker.str.len_chars() == comprimento_ticker)
     if prefixos:
-        filtro = pl.any_horizontal(
-            pl.col("TckrSymb").str.starts_with(p) for p in prefixos
-        )
-        df = df.filter(filtro)
+        padrao = f"^({'|'.join(prefixos)})"  # Regex para starts-with múltiplo (ex.: ^(DI1|DAP))
+        df = df.filter(ticker.str.contains(padrao))
     return df.sort("TckrSymb")
 
 
