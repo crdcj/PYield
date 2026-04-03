@@ -1,6 +1,7 @@
 import datetime as dt
 
 import polars as pl
+import polars.selectors as cs
 
 from pyield import bday
 from pyield._internal.data_cache import obter_dataset_cacheado
@@ -110,11 +111,8 @@ def _enriquecer_dados(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
 
     eh_taxa = codigo_contrato in CONTRATOS_TAXA
     if eh_taxa:
-        df = df.rename({k: v for k, v in _PRECO_PARA_TAXA.items() if k in df.columns})
-
-    if eh_taxa:
-        colunas_taxa = [c for c in df.columns if c.startswith("taxa_")]
-        df = df.with_columns(pl.col(colunas_taxa).truediv(100).round(6))
+        df = df.rename(_PRECO_PARA_TAXA, strict=False)
+        df = df.with_columns(cs.starts_with("taxa_").truediv(100).round(6))
 
     if codigo_contrato == "DI1":
         df = df.with_columns(
