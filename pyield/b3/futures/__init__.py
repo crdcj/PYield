@@ -9,6 +9,28 @@ from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.futures import historical, intraday
 
 
+def futures_enrich(
+    df: pl.DataFrame,
+    contract_code: str,
+) -> pl.DataFrame:
+    """Enriquece DataFrame bruto do Price Report (PR) da B3.
+
+    Aceita um DataFrame com colunas no schema original da B3
+    (ex.: ``TradDt``, ``TckrSymb``) ou já renomeadas para o padrão
+    PYield. Adiciona data de vencimento, dias úteis/corridos e
+    colunas derivadas (dv01, taxa_forward) conforme o contrato.
+
+    Args:
+        df: DataFrame com dados do PR da B3.
+        contract_code: Código do contrato futuro
+            (ex.: "DI1", "DOL").
+
+    Returns:
+        DataFrame Polars enriquecido e ordenado.
+    """
+    return historical.enrich(df, contract_code)
+
+
 def futures(
     date: DateLike | ArrayLike,
     contract_code: str | list[str],

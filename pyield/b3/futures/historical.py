@@ -59,130 +59,6 @@ def _obter_pr_normalizado() -> pl.DataFrame:
     return _normalizar_colunas_pr(df)
 
 
-def historical(
-    data: dt.date,
-    codigo_contrato: str | list[str],
-) -> pl.DataFrame:
-    """Busca histórico de futuros no dataset PR cacheado.
-
-    Args:
-        data: Data de negociação.
-        codigo_contrato: Código(s) do contrato futuro na B3.
-
-    Returns:
-        DataFrame Polars com dados históricos de futuros.
-
-    Output Columns:
-        * data_referencia (Date): data de negociação.
-        * codigo_negociacao (String): código de negociação na B3.
-        * data_vencimento (Date): data de vencimento do contrato.
-        * dias_uteis (Int64): dias úteis até o vencimento.
-        * dias_corridos (Int64): dias corridos até o vencimento.
-        * dv01 (Float64): variação no preço para 1bp de taxa (apenas DI1).
-        * contratos_abertos (Int64): contratos em aberto.
-        * numero_negocios (Int64): número de negócios.
-        * volume_negociado (Int64): quantidade de contratos negociados.
-        * volume_financeiro (Float64): volume financeiro bruto.
-        * preco_limite_minimo (Float64): limite mínimo de variação (preço).
-        * preco_limite_maximo (Float64): limite máximo de variação (preço).
-        * preco_abertura (Float64): preço de abertura.
-        * preco_minimo (Float64): preço mínimo negociado.
-        * preco_maximo (Float64): preço máximo negociado.
-        * preco_medio (Float64): preço médio negociado.
-        * preco_fechamento (Float64): último preço negociado (last).
-        * preco_ultima_oferta_compra (Float64): melhor preço de compra
-          (bid) ao fim do pregão.
-        * preco_ultima_oferta_venda (Float64): melhor preço de venda
-          (ask) ao fim do pregão.
-        * preco_ajuste (Float64): preço de ajuste.
-        * taxa_limite_minimo (Float64): limite mínimo de variação (taxa).
-        * taxa_limite_maximo (Float64): limite máximo de variação (taxa).
-        * taxa_abertura (Float64): taxa de abertura.
-        * taxa_minima (Float64): taxa mínima negociada.
-        * taxa_maxima (Float64): taxa máxima negociada.
-        * taxa_media (Float64): taxa média negociada.
-        * taxa_fechamento (Float64): última taxa negociada (last).
-        * taxa_ultima_oferta_venda (Float64): melhor taxa de venda
-          (dar; bid em PU) no fim do pregão.
-        * taxa_ultima_oferta_compra (Float64): melhor taxa de compra
-          (tomar; ask em PU) no fim do pregão.
-        * taxa_ajuste (Float64): taxa de ajuste.
-        * taxa_forward (Float64): taxa a termo (apenas DI1/DAP).
-
-    Notes:
-        Usa exclusivamente o dataset PR cacheado no GitHub. Contratos
-        disponíveis: DI1, DDI, FRC, FRO, DAP, DOL, WDO, IND, WIN.
-
-        As colunas com prefixo ``preco_`` aparecem para contratos cotados por
-        preço (ex.: DOL, IND). As com prefixo ``taxa_`` aparecem para contratos
-        cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO). Nem todas as colunas
-        estarão presentes em todos os contratos.
-
-        ``*_fechamento`` é o último negócio realizado (last trade).
-        ``*_ultima_oferta_*`` é o bid/ask ao fim do pregão — não
-        representa negócio realizado e pode ser nulo. Para contratos de
-        taxa (DI1, DAP, etc.), bid/ask são invertidos em relação ao PU:
-        ``taxa_ultima_oferta_compra`` = maior taxa (ask em PU),
-        ``taxa_ultima_oferta_venda`` = menor taxa (bid em PU).
-    """
-    codigos = normalizar_codigos_contrato(codigo_contrato)
-    if not codigos:
-        return pl.DataFrame()
-
-    dataframes = [
-        df
-        for codigo in codigos
-        if not (df := _obter_futuros_pr([data], codigo)).is_empty()
-    ]
-
-    if not dataframes:
-        return pl.DataFrame()
-
-    if len(dataframes) == 1:
-        return dataframes[0]
-
-    df_resultado = pl.concat(dataframes, how="diagonal_relaxed")
-    colunas_ordenacao = [
-        coluna
-        for coluna in ["data_referencia", "codigo_negociacao", "data_vencimento"]
-        if coluna in df_resultado.columns
-    ]
-    if not colunas_ordenacao:
-        return df_resultado
-
-    return df_resultado.sort(*colunas_ordenacao)
-
-
-def _obter_futuros_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
-    """Carrega histórico de futuros do dataset PR para uma lista de datas."""
-    if not datas:
-        return pl.DataFrame()
-
-    df = _obter_pr_normalizado()
-    df = _filtrar_e_renomear(df, datas, codigo_contrato)
-    if df.is_empty():
-        return pl.DataFrame()
-
-    df = adicionar_vencimento(df, codigo_contrato, coluna_ticker="codigo_negociacao")
-    df = _enriquecer_dados(df, codigo_contrato)
-    df = _selecionar_colunas_saida(df)
-
-    return df.sort("data_referencia", "data_vencimento")
-
-
-def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
-    """Lista datas disponíveis no dataset PR para um contrato futuro."""
-    return (
-        _obter_pr_normalizado()
-        .filter(pl.col("codigo_negociacao").str.starts_with(codigo_contrato))
-        .get_column("data_referencia")
-        .drop_nulls()
-        .unique()
-        .sort()
-        .alias("data_referencia")
-    )
-
-
 def _filtrar_e_renomear(
     df: pl.DataFrame, datas: list[dt.date], codigo_contrato: str
 ) -> pl.DataFrame:
@@ -261,3 +137,150 @@ def _selecionar_colunas_saida(df: pl.DataFrame) -> pl.DataFrame:
     ]
     colunas_existentes = [c for c in ordem_preferida if c in df.columns]
     return df.select(colunas_existentes)
+
+
+def _obter_futuros_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
+    """Carrega histórico de futuros do dataset PR para uma lista de datas."""
+    if not datas:
+        return pl.DataFrame()
+
+    df = _obter_pr_normalizado()
+    df = _filtrar_e_renomear(df, datas, codigo_contrato)
+    if df.is_empty():
+        return pl.DataFrame()
+
+    return enrich(df, codigo_contrato)
+
+
+def enrich(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+    """Enriquece DataFrame bruto do Price Report (PR) da B3.
+
+    Aceita um DataFrame com colunas no schema original da B3
+    (ex.: ``TradDt``, ``TckrSymb``) ou já renomeadas para o padrão
+    PYield. Adiciona data de vencimento, dias úteis/corridos e
+    colunas derivadas (dv01, taxa_forward) conforme o contrato.
+
+    Args:
+        df: DataFrame com dados do PR da B3.
+        codigo_contrato: Código do contrato futuro
+            (ex.: "DI1", "DOL").
+
+    Returns:
+        DataFrame Polars enriquecido e ordenado.
+    """
+    if df.is_empty():
+        return pl.DataFrame()
+
+    df = _normalizar_colunas_pr(df)
+    df = adicionar_vencimento(df, codigo_contrato, coluna_ticker="codigo_negociacao")
+    df = _enriquecer_dados(df, codigo_contrato)
+    df = _selecionar_colunas_saida(df)
+
+    return df.sort("data_referencia", "data_vencimento")
+
+
+def historical(
+    data: dt.date,
+    codigo_contrato: str | list[str],
+) -> pl.DataFrame:
+    """Busca histórico de futuros no dataset PR cacheado.
+
+    Args:
+        data: Data de negociação.
+        codigo_contrato: Código(s) do contrato futuro na B3.
+
+    Returns:
+        DataFrame Polars com dados históricos de futuros.
+
+    Output Columns:
+        * data_referencia (Date): data de negociação.
+        * codigo_negociacao (String): código de negociação na B3.
+        * data_vencimento (Date): data de vencimento do contrato.
+        * dias_uteis (Int64): dias úteis até o vencimento.
+        * dias_corridos (Int64): dias corridos até o vencimento.
+        * dv01 (Float64): variação no preço para 1bp de taxa (apenas DI1).
+        * contratos_abertos (Int64): contratos em aberto.
+        * numero_negocios (Int64): número de negócios.
+        * volume_negociado (Int64): quantidade de contratos negociados.
+        * volume_financeiro (Float64): volume financeiro bruto.
+        * preco_limite_minimo (Float64): limite mínimo de variação (preço).
+        * preco_limite_maximo (Float64): limite máximo de variação (preço).
+        * preco_abertura (Float64): preço de abertura.
+        * preco_minimo (Float64): preço mínimo negociado.
+        * preco_maximo (Float64): preço máximo negociado.
+        * preco_medio (Float64): preço médio negociado.
+        * preco_fechamento (Float64): último preço negociado (last).
+        * preco_ultima_oferta_compra (Float64): melhor preço de compra
+          (bid) ao fim do pregão.
+        * preco_ultima_oferta_venda (Float64): melhor preço de venda
+          (ask) ao fim do pregão.
+        * preco_ajuste (Float64): preço de ajuste.
+        * taxa_limite_minimo (Float64): limite mínimo de variação (taxa).
+        * taxa_limite_maximo (Float64): limite máximo de variação (taxa).
+        * taxa_abertura (Float64): taxa de abertura.
+        * taxa_minima (Float64): taxa mínima negociada.
+        * taxa_maxima (Float64): taxa máxima negociada.
+        * taxa_media (Float64): taxa média negociada.
+        * taxa_fechamento (Float64): última taxa negociada (last).
+        * taxa_ultima_oferta_venda (Float64): melhor taxa de venda
+          (dar; bid em PU) no fim do pregão.
+        * taxa_ultima_oferta_compra (Float64): melhor taxa de compra
+          (tomar; ask em PU) no fim do pregão.
+        * taxa_ajuste (Float64): taxa de ajuste.
+        * taxa_forward (Float64): taxa a termo (apenas DI1/DAP).
+
+    Notes:
+        Usa exclusivamente o dataset PR cacheado no GitHub. Contratos
+        disponíveis: DI1, DDI, FRC, FRO, DAP, DOL, WDO, IND, WIN.
+
+        As colunas com prefixo ``preco_`` aparecem para contratos cotados por
+        preço (ex.: DOL, IND). As com prefixo ``taxa_`` aparecem para contratos
+        cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO). Nem todas as colunas
+        estarão presentes em todos os contratos.
+
+        ``*_fechamento`` é o último negócio realizado (last trade).
+        ``*_ultima_oferta_*`` é o bid/ask ao fim do pregão — não
+        representa negócio realizado e pode ser nulo. Para contratos de
+        taxa (DI1, DAP, etc.), bid/ask são invertidos em relação ao PU:
+        ``taxa_ultima_oferta_compra`` = maior taxa (ask em PU),
+        ``taxa_ultima_oferta_venda`` = menor taxa (bid em PU).
+    """
+    codigos = normalizar_codigos_contrato(codigo_contrato)
+    if not codigos:
+        return pl.DataFrame()
+
+    dataframes = []
+    for codigo in codigos:
+        df = _obter_futuros_pr([data], codigo)
+        if not df.is_empty():
+            dataframes.append(df)
+
+    if not dataframes:
+        return pl.DataFrame()
+
+    if len(dataframes) == 1:
+        return dataframes[0]
+
+    df_resultado = pl.concat(dataframes, how="diagonal_relaxed")
+    colunas_ordenacao = [
+        coluna
+        for coluna in ["data_referencia", "codigo_negociacao", "data_vencimento"]
+        if coluna in df_resultado.columns
+    ]
+    if not colunas_ordenacao:
+        return df_resultado
+
+    return df_resultado.sort(*colunas_ordenacao)
+
+
+def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
+    """Lista datas disponíveis no dataset PR para um contrato futuro."""
+    return (
+        _obter_pr_normalizado()
+        .filter(pl.col("codigo_negociacao").str.starts_with(codigo_contrato))
+        .get_column("data_referencia")
+        .drop_nulls()
+        .unique()
+        .sort()
+        .alias("data_referencia")
+    )

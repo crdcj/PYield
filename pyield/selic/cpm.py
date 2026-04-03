@@ -45,8 +45,8 @@ from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.price_report import (
     _baixar_zip_url,
     _converter_para_df,
-    _extrair_xml_de_zip,
     _parsear_xml_registros,
+    price_report_extract,
 )
 
 logger = logging.getLogger(__name__)
@@ -287,7 +287,7 @@ def data(date: DateLike) -> pl.DataFrame:
         zip_data = _baixar_zip_url(trade_date, relatorio_completo=False)
         if not zip_data:
             return _empty_schema()
-        xml_bytes = _extrair_xml_de_zip(zip_data)
+        xml_bytes = price_report_extract(zip_data)
         records = _parsear_xml_registros(xml_bytes, "CPM")
     except Exception:
         logger.exception("CPM: falha ao baixar SPR para %s.", trade_date)

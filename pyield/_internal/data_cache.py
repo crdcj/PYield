@@ -1,5 +1,4 @@
 import functools
-import io
 import logging
 from enum import Enum
 from typing import Literal
@@ -55,11 +54,8 @@ def _carregar_arquivo_github(url_arquivo: str) -> pl.DataFrame:
     # Garante que a requisição foi sucesso (200 OK), senão levanta erro
     response.raise_for_status()
 
-    # 2. Transforma os bytes em um objeto de arquivo em memória
-    file_buffer = io.BytesIO(response.content)
-
-    # 3. O Polars lê o buffer como se fosse um arquivo local
-    return pl.read_parquet(file_buffer)
+    # 2. O Polars lê o buffer como se fosse um arquivo local
+    return pl.read_parquet(response.content)
 
 
 @functools.lru_cache(maxsize=8)

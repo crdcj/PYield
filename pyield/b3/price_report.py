@@ -101,8 +101,21 @@ def _baixar_zip_url(data: dt.date, relatorio_completo: bool) -> bytes:
     return resposta.content
 
 
-def _extrair_xml_de_zip(conteudo_zip: bytes) -> bytes:
-    """Extrai o XML do ZIP aninhado da B3 (ZIP externo → ZIP interno → XML)."""
+def price_report_extract(conteudo_zip: bytes) -> bytes:
+    """Extrai o XML válido do ZIP aninhado do Price Report da B3.
+
+    O ZIP da B3 contém um ZIP interno, que por sua vez contém um ou
+    mais XMLs. Esta função extrai o último XML (mais recente).
+
+    Args:
+        conteudo_zip: Conteúdo do ZIP externo em bytes.
+
+    Returns:
+        Conteúdo do XML extraído em bytes.
+
+    Raises:
+        ValueError: Se o ZIP estiver vazio ou não contiver XML.
+    """
     with zipfile.ZipFile(io.BytesIO(conteudo_zip), "r") as zip_externo:
         nomes = zip_externo.namelist()
         if not nomes:
@@ -211,16 +224,16 @@ def _obter_xml_price_report(data: dt.date, relatorio_completo: bool) -> bytes:
     if not dados_zip:
         return bytes()
     try:
-        return _extrair_xml_de_zip(dados_zip)
+        return price_report_extract(dados_zip)
     except zipfile.BadZipFile:
         registro.warning("ZIP corrompido na transmissão, re-baixando...")
         dados_zip = _baixar_zip_url(data, relatorio_completo)
         if not dados_zip:
             return bytes()
-        return _extrair_xml_de_zip(dados_zip)
+        return price_report_extract(dados_zip)
 
 
-def fetch_price_report(
+def price_report_fetch(
     date: DateLike,
     contract_code: str | list[str],
     full_report: bool = False,
@@ -306,13 +319,13 @@ def fetch_price_report(
 
     Examples:
         >>> import pyield as yd
-        >>> df = yd.b3.fetch_price_report("26-04-2024", "DI1")
+        >>> df = yd.b3.price_report_fetch("26-04-2024", "DI1")
 
         >>> # Múltiplos contratos de uma vez
-        >>> df = yd.b3.fetch_price_report("26-04-2024", ["DI1", "DAP"])
+        >>> df = yd.b3.price_report_fetch("26-04-2024", ["DI1", "DAP"])
 
         >>> # Feriado ou fim de semana (retorna DataFrame vazio)
-        >>> df = yd.b3.fetch_price_report("25-12-2023", "DI1")  # Véspera de Natal
+        >>> df = yd.b3.price_report_fetch("25-12-2023", "DI1")  # Véspera de Natal
         >>> df.is_empty()
         True
     """
@@ -336,13 +349,13 @@ def fetch_price_report(
     return pl.concat(dataframes, how="diagonal").sort("TckrSymb")
 
 
-def read_price_report(
+def price_report_read(
     xml_bytes: bytes,
     contract_code: str | list[str],
 ) -> pl.DataFrame:
     """Lê e processa o price report da B3 a partir do conteúdo XML bruto.
 
-    Mesma saída de :func:`fetch_price_report`, mas recebe o XML já
+    Mesma saída de :func:`price_report_fetch`, mas recebe o XML já
     descomprimido em vez de baixar da rede.
 
     Args:
@@ -352,7 +365,7 @@ def read_price_report(
 
     Returns:
         pl.DataFrame: DataFrame com as mesmas colunas documentadas em
-        :func:`fetch_price_report`.
+        :func:`price_report_fetch`.
     """
     contratos = normalizar_codigos_contrato(contract_code)
     if any_is_empty(xml_bytes) or not contratos:

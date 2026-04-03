@@ -5,8 +5,8 @@ import polars.selectors as cs
 
 from pyield import bday
 from pyield.b3._contracts import normalizar_codigos_contrato
+from pyield.b3.derivatives_intraday import derivatives_intraday_fetch
 from pyield.b3.futures.common import expr_dv01
-from pyield.b3.intraday_derivatives import fetch_intraday_derivatives
 from pyield.fwd import forwards
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ def intraday(codigo_contrato: str | list[str]) -> pl.DataFrame:
 def _intraday_contrato(codigo_contrato: str) -> pl.DataFrame:
     """Busca e processa dados intraday de um único contrato."""
     try:
-        df_bruto = fetch_intraday_derivatives(codigo_contrato)
+        df_bruto = derivatives_intraday_fetch(codigo_contrato)
         if df_bruto.is_empty():
             return pl.DataFrame()
 

@@ -73,13 +73,13 @@ def _parquet_referencia(date_str: str, contract_code: str) -> Path:
 def test_pipeline_bruto_price_report(date: str, contract_code: str):
     """Compara saída bruta do price_report com parquet canônico."""
     xml_bytes = _baixar_xml_remoto(date)
-    df_result = pr_mod.read_price_report(xml_bytes, contract_code)
+    df_result = pr_mod.price_report_read(xml_bytes, contract_code)
     df_expect = pl.read_parquet(_parquet_referencia(date, contract_code))
 
     assert_frame_equal(df_result, df_expect, check_exact=True, check_dtypes=True)
 
 
-def test_fetch_price_report_reusa_download_xml_por_data(monkeypatch):
+def test_price_report_fetch_reusa_download_xml_por_data(monkeypatch):
     pr_mod._obter_xml_price_report.cache_clear()
 
     chamadas = {"download": 0, "extrair": 0}
@@ -103,11 +103,11 @@ def test_fetch_price_report_reusa_download_xml_por_data(monkeypatch):
         )
 
     monkeypatch.setattr(pr_mod, "_baixar_zip_url", _baixar_zip_falso)
-    monkeypatch.setattr(pr_mod, "_extrair_xml_de_zip", _extrair_xml_falso)
+    monkeypatch.setattr(pr_mod, "price_report_extract", _extrair_xml_falso)
     monkeypatch.setattr(pr_mod, "_processar_xml_extraido", _processar_xml_falso)
 
-    _ = pr_mod.fetch_price_report(date="12-01-2026", contract_code="DI1")
-    _ = pr_mod.fetch_price_report(date="12-01-2026", contract_code="DOL")
+    _ = pr_mod.price_report_fetch(date="12-01-2026", contract_code="DI1")
+    _ = pr_mod.price_report_fetch(date="12-01-2026", contract_code="DOL")
 
     assert chamadas == {"download": 1, "extrair": 1}
 

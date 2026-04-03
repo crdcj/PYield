@@ -2,7 +2,7 @@ import datetime as dt
 import json
 from pathlib import Path
 
-import pyield.b3.intraday_derivatives as derivatives_mod
+import pyield.b3.derivatives_intraday as derivatives_mod
 from pyield.b3.futures import intraday as futures_intraday_mod
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
@@ -30,7 +30,7 @@ def _horario_referencia_mock() -> dt.datetime:
     return HORARIO_REFERENCIA
 
 
-def test_fetch_intraday_derivatives_preserva_payload_misto(monkeypatch):
+def test_derivatives_intraday_fetch_preserva_payload_misto(monkeypatch):
     """Módulo bruto deve preservar mercados mistos do payload do dia."""
     monkeypatch.setattr(
         derivatives_mod,
@@ -39,7 +39,7 @@ def test_fetch_intraday_derivatives_preserva_payload_misto(monkeypatch):
     )
     monkeypatch.setattr(derivatives_mod, "intraday_disponivel", lambda: True)
 
-    resultado = derivatives_mod.fetch_intraday_derivatives("DOL")
+    resultado = derivatives_mod.derivatives_intraday_fetch("DOL")
     total_esperado = len(_carregar_json_scty("DOL"))
 
     assert resultado.height == total_esperado
@@ -51,7 +51,7 @@ def test_fetch_intraday_derivatives_preserva_payload_misto(monkeypatch):
     ]
 
 
-def test_fetch_intraday_derivatives_suporta_colunas_opcionais_ausentes(monkeypatch):
+def test_derivatives_intraday_fetch_suporta_colunas_opcionais_ausentes(monkeypatch):
     """Módulo bruto não deve quebrar quando o payload não tem book de ofertas."""
     monkeypatch.setattr(
         derivatives_mod,
@@ -60,7 +60,7 @@ def test_fetch_intraday_derivatives_suporta_colunas_opcionais_ausentes(monkeypat
     )
     monkeypatch.setattr(derivatives_mod, "intraday_disponivel", lambda: True)
 
-    resultado = derivatives_mod.fetch_intraday_derivatives("DDI")
+    resultado = derivatives_mod.derivatives_intraday_fetch("DDI")
     total_esperado = len(_carregar_json_scty("DDI"))
 
     assert resultado.height == total_esperado
@@ -68,7 +68,7 @@ def test_fetch_intraday_derivatives_suporta_colunas_opcionais_ausentes(monkeypat
     assert "preco_oferta_venda" not in resultado.columns
 
 
-def test_fetch_intraday_derivatives_nao_descarta_fro_sem_curprc(monkeypatch):
+def test_derivatives_intraday_fetch_nao_descarta_fro_sem_curprc(monkeypatch):
     """FRO deve continuar válido mesmo sem coluna curPrc no payload."""
     monkeypatch.setattr(
         derivatives_mod,
@@ -77,7 +77,7 @@ def test_fetch_intraday_derivatives_nao_descarta_fro_sem_curprc(monkeypatch):
     )
     monkeypatch.setattr(derivatives_mod, "intraday_disponivel", lambda: True)
 
-    resultado = derivatives_mod.fetch_intraday_derivatives("FRO")
+    resultado = derivatives_mod.derivatives_intraday_fetch("FRO")
     total_esperado = len(_carregar_json_scty("FRO"))
 
     assert resultado.height == total_esperado
@@ -96,8 +96,8 @@ def test_futures_intraday_filtra_apenas_futuros(monkeypatch):
     monkeypatch.setattr(derivatives_mod.clock, "now", _horario_referencia_mock)
     monkeypatch.setattr(
         futures_intraday_mod,
-        "fetch_intraday_derivatives",
-        derivatives_mod.fetch_intraday_derivatives,
+        "derivatives_intraday_fetch",
+        derivatives_mod.derivatives_intraday_fetch,
     )
     monkeypatch.setattr(
         futures_intraday_mod.bday, "last_business_day", _data_referencia_mock
