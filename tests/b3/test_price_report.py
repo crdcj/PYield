@@ -116,3 +116,22 @@ def test_price_report_fetch_reusa_download_xml_por_data(monkeypatch):
 
     # Monkeypatch substitui a função cacheada, então cada chamada passa direto
     assert chamadas == {"download": 2, "extrair": 2}
+
+
+def test_filtrar_df_trata_prefixo_como_literal():
+    df = pl.DataFrame(
+        {
+            "TckrSymb": ["D.F26", "DAPF26", "DDIF26"],
+            "TradDt": [dt.date(2026, 1, 12)] * 3,
+        }
+    ).cast({"TradDt": pl.Date})
+
+    df_result = pr_mod._filtrar_df(df, ["D."])
+    df_expect = pl.DataFrame(
+        {
+            "TckrSymb": ["D.F26"],
+            "TradDt": [dt.date(2026, 1, 12)],
+        }
+    ).cast({"TradDt": pl.Date})
+
+    assert_frame_equal(df_result, df_expect, check_exact=True, check_dtypes=True)

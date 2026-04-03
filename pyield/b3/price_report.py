@@ -1,5 +1,6 @@
 import datetime as dt
 import io
+import re
 import zipfile
 
 import polars as pl
@@ -19,11 +20,8 @@ NAMESPACES = {"ns": NAMESPACE_B3}
 # ZIP válido do price report ~2KB; 1KB detecta arquivos "sem dados"
 MIN_TAMANHO_ZIP_BYTES = 1024
 XPATH_PRICE_REPORT = "//ns:PricRpt"
-XPATH_ATRIBUTOS_INSTRUMENTO = ".//ns:FinInstrmAttrbts"
-XPATH_DETALHES_NEGOCIO = ".//ns:TradDtls"
 
 # --- Mapeamento de Colunas ---
-
 # Estrutura: (id_pdf, nome_xml, tipo_polars)
 # Esta camada base preserva os nomes originais do XML da B3.
 # https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf
@@ -217,7 +215,7 @@ def _filtrar_df(
     if comprimento_ticker:
         df = df.filter(ticker.str.len_chars() == comprimento_ticker)
     if prefixos:
-        padrao = f"^({'|'.join(prefixos)})"  # Regex para starts-with múltiplo (ex.: ^(DI1|DAP))
+        padrao = f"^({'|'.join(re.escape(prefixo) for prefixo in prefixos)})"
         df = df.filter(ticker.str.contains(padrao))
     return df.sort("TckrSymb")
 
@@ -285,10 +283,8 @@ def price_report_fetch(
         * IntlFinVol (Float64): volume financeiro internacional.
         * OpnIntrst (Int64): contratos em aberto.
         * FinInstrmQty (Int64): quantidade negociada de instrumentos financeiros.
-                * BestBidPric (Float64): ultima melhor oferta de compra no snapshot
-                    diario; pode ser nulo.
-                * BestAskPric (Float64): ultima melhor oferta de venda no snapshot
-                    diario; pode ser nulo.
+        * BestBidPric (Float64): ultima melhor oferta de compra no snapshot diario; pode ser nulo.
+        * BestAskPric (Float64): ultima melhor oferta de venda no snapshot diario; pode ser nulo.                   diario; pode ser nulo.
         * FrstPric (Float64): preço de abertura.
         * MinPric (Float64): preço mínimo negociado.
         * MaxPric (Float64): preço máximo negociado.
