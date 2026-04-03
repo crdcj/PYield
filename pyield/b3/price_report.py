@@ -18,8 +18,7 @@ NAMESPACE_B3 = "urn:bvmf.217.01.xsd"
 NAMESPACES = {"ns": NAMESPACE_B3}
 # ZIP válido do price report ~2KB; 1KB detecta arquivos "sem dados"
 MIN_TAMANHO_ZIP_BYTES = 1024
-XPATH_TODOS_TICKERS = "//ns:TckrSymb"
-XPATH_DATA_NEGOCIACAO = ".//ns:TradDt/ns:Dt"
+XPATH_PRICE_REPORT = "//ns:PricRpt"
 XPATH_ATRIBUTOS_INSTRUMENTO = ".//ns:FinInstrmAttrbts"
 XPATH_DETALHES_NEGOCIO = ".//ns:TradDtls"
 
@@ -121,35 +120,48 @@ def price_report_extract(conteudo_zip: bytes) -> bytes:
             return zip_interno.read(nomes_xml[-1])
 
 
-def _extrair_dados_contrato(elemento_ticker: etree._Element) -> dict | None:
-    if elemento_ticker.text is None:
-        return None
-    pai = elemento_ticker.getparent()
-    if pai is None:
-        return None
-    registro_pregao = pai.getparent()
-    if registro_pregao is None:
-        return None
-    elemento_data = registro_pregao.find(XPATH_DATA_NEGOCIACAO, NAMESPACES)
-    if elemento_data is None:
+def _extrair_dados_contrato(pric_rpt: etree._Element) -> dict | None:
+    dados = {}
+    tem_ticker = False
+    tem_data = False
+
+    for elem in pric_rpt.iter():
+        text = elem.text
+        if not text:
+            continue
+
+        tag = elem.tag
+        if tag[0] == "{":
+            tag = tag[tag.find("}") + 1 :]
+
+        # 🔑 obrigatórios primeiro
+        if tag == "TckrSymb":
+            dados["TckrSymb"] = text
+            tem_ticker = True
+            continue
+
+        if tag == "Dt":
+            pai = elem.getparent()
+            if pai is None:
+                continue
+
+            parent = pai.tag
+            if parent[0] == "{":
+                parent = parent[parent.find("}") + 1 :]
+
+            if parent == "TradDt":
+                dados["TradDt"] = text
+                tem_data = True
+            continue
+
+        # ⚡ resto
+        if tag in SCHEMA_PRICE_REPORT:
+            dados[tag] = text
+
+    if not tem_ticker or not tem_data:
         return None
 
-    dados_ticker = {"TradDt": elemento_data.text, "TckrSymb": elemento_ticker.text}
-    atributos_instr = registro_pregao.find(XPATH_ATRIBUTOS_INSTRUMENTO, NAMESPACES)
-    if atributos_instr is None:
-        return None
-
-    for attr in atributos_instr:
-        nome_tag = etree.QName(attr).localname
-        dados_ticker[nome_tag] = attr.text
-
-    detalhes_negocio = registro_pregao.find(XPATH_DETALHES_NEGOCIO, NAMESPACES)
-    if detalhes_negocio is not None:
-        for detalhe in detalhes_negocio:
-            nome_tag = etree.QName(detalhe).localname
-            dados_ticker[nome_tag] = detalhe.text
-
-    return dados_ticker
+    return dados
 
 
 def _parsear_xml_registros(xml_bytes: bytes) -> list[dict]:
@@ -163,16 +175,13 @@ def _parsear_xml_registros(xml_bytes: bytes) -> list[dict]:
         load_dtd=False,
     )
     arvore = etree.parse(io.BytesIO(xml_bytes), parser=analisador)
-    resultado_xpath = arvore.xpath(XPATH_TODOS_TICKERS, namespaces=NAMESPACES)
-    elementos: list[etree._Element] = resultado_xpath  # type: ignore[assignment]
-    if not elementos:
-        return []
-
-    registros = []
-    for elemento in elementos:
-        dados_contrato = _extrair_dados_contrato(elemento)
-        if dados_contrato is not None:
-            registros.append(dados_contrato)
+    resultado = arvore.xpath(XPATH_PRICE_REPORT, namespaces=NAMESPACES)
+    elementos: list[etree._Element] = resultado  # type: ignore[assignment]
+    registros = [
+        dados
+        for pric_rpt in elementos
+        if (dados := _extrair_dados_contrato(pric_rpt)) is not None
+    ]
     return registros
 
 
