@@ -35,7 +35,6 @@ import requests
 from pyield import clock
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
-from pyield.b3._validar_pregao import intraday_disponivel
 
 URL_BASE_INTRADAY = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
 
@@ -123,7 +122,8 @@ def derivatives_intraday_fetch(contract_code: str) -> pl.DataFrame:
     derivados devem ser feitos no módulo consumidor.
 
     Args:
-        contract_code: Código base do derivativo na B3.
+        contract_code: Código base do derivativo na B3
+            (ex.: ``DI1``, ``DOL``, ``DAP``, ``DDI``, ``FRC``, ``FRO``, ``IND``).
 
     Returns:
         DataFrame Polars com o payload normalizado da API.
@@ -150,19 +150,17 @@ def derivatives_intraday_fetch(contract_code: str) -> pl.DataFrame:
         * preco_oferta_compra (Float64): melhor oferta de compra (opcional).
         * preco_oferta_venda (Float64): melhor oferta de venda (opcional).
         * tipo_lado (String): tipo de lado (opcional).
-        * atualizado_as (Datetime): horário aproximado a que o dado se
-          refere (horário da consulta menos 15 min de atraso da fonte).
+        * horario_referencia (Time): horário aproximado a que os
+          dados se referem. A fonte intraday da B3 possui atraso de
+          ~15 min; este valor é calculado subtraindo esse atraso do
+          horário da consulta.
     """
-    if not intraday_disponivel():
-        return pl.DataFrame()
-
     dados_json = _buscar_json_intraday(contract_code)
     if not dados_json:
         return pl.DataFrame()
 
     df = _converter_json_intraday(dados_json)
     df = _processar_colunas_intraday(df)
-    df = df.with_columns(
-        atualizado_as=clock.now() - dt.timedelta(minutes=15),
-    )
+    horario = (clock.now() - dt.timedelta(minutes=15)).time()
+    df = df.with_columns(horario_referencia=horario)
     return df.sort("codigo_negociacao")

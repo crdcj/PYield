@@ -37,7 +37,6 @@ def test_derivatives_intraday_fetch_preserva_payload_misto(monkeypatch):
         "_buscar_json_intraday",
         _buscar_json_intraday_mock,
     )
-    monkeypatch.setattr(derivatives_mod, "intraday_disponivel", lambda: True)
 
     resultado = derivatives_mod.derivatives_intraday_fetch("DOL")
     total_esperado = len(_carregar_json_scty("DOL"))
@@ -58,7 +57,6 @@ def test_derivatives_intraday_fetch_suporta_colunas_opcionais_ausentes(monkeypat
         "_buscar_json_intraday",
         _buscar_json_intraday_mock,
     )
-    monkeypatch.setattr(derivatives_mod, "intraday_disponivel", lambda: True)
 
     resultado = derivatives_mod.derivatives_intraday_fetch("DDI")
     total_esperado = len(_carregar_json_scty("DDI"))
@@ -75,7 +73,6 @@ def test_derivatives_intraday_fetch_nao_descarta_fro_sem_curprc(monkeypatch):
         "_buscar_json_intraday",
         _buscar_json_intraday_mock,
     )
-    monkeypatch.setattr(derivatives_mod, "intraday_disponivel", lambda: True)
 
     resultado = derivatives_mod.derivatives_intraday_fetch("FRO")
     total_esperado = len(_carregar_json_scty("FRO"))
@@ -92,7 +89,7 @@ def test_futures_intraday_filtra_apenas_futuros(monkeypatch):
         "_buscar_json_intraday",
         _buscar_json_intraday_mock,
     )
-    monkeypatch.setattr(derivatives_mod, "intraday_disponivel", lambda: True)
+    monkeypatch.setattr(futures_intraday_mod, "intraday_disponivel", lambda: True)
     monkeypatch.setattr(derivatives_mod.clock, "now", _horario_referencia_mock)
     monkeypatch.setattr(
         futures_intraday_mod,
