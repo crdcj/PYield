@@ -162,23 +162,22 @@ ntnf.di_spreads("30-05-2025", bps=True)
 ## Futures Data
 
 ```python
-from pyield import futures
+from pyield import futures, futures_intraday
 
 # DI1 (Interbank Deposit Futures)
 futures("31-05-2024", "DI1")
 
-# Other available contracts:
-# - Rates: DI1, DDI, OC1, DAP, IAP
-# - Currencies: DOL, WDO, EUR, GBR, JAP, CNY
-# - Indexes: IND, WIN, ISP, WSP
-# - Commodities: BGI, CCM, ICF, CNL, SJC, SOY, ETH, GLD
+# Other available contracts in the historical cache:
+# - Rates: DI1, DDI, FRC, FRO, DAP
+# - Currencies: DOL, WDO
+# - Indexes: IND, WIN
 futures("31-05-2024", "DAP")
 
-# Multiple contracts at once
-futures("31-05-2024", ["DI1", "DAP"])
+# Multiple dates at once
+futures(["29-05-2024", "31-05-2024"], "DI1")
 
 # Intraday data (when the market is open)
-futures("16-01-2025", "DI1")  # Returns live data during trading hours
+futures_intraday("DI1")  # Returns live data during trading hours
 ```
 
 ## Date Handling
