@@ -1,3 +1,34 @@
+"""
+Exemplo de trecho do XML bruto da B3:
+    <PricRpt>
+        <TradDt>
+            <Dt>2026-04-01</Dt>
+        </TradDt>
+        <SctyId>
+            <TckrSymb>DI1F31</TckrSymb>
+        </SctyId>
+        <FinInstrmId>
+            <OthrId>
+                <Id>200000235664</Id>
+                <Tp>
+                    <Prtry>8</Prtry>
+                </Tp>
+            </OthrId>
+            <PlcOfListg>
+                <MktIdrCd>BVMF</MktIdrCd>
+            </PlcOfListg>
+        </FinInstrmId>
+        <TradDtls>
+            <TradQty>29880</TradQty>
+        </TradDtls>
+        <FinInstrmAttrbts>
+            <MktDataStrmId>E</MktDataStrmId>
+            ...
+            <MinTradLmt Ccy="BRL">12.87</MinTradLmt>
+        </FinInstrmAttrbts>
+    </PricRpt>
+"""
+
 import datetime as dt
 import io
 import re
