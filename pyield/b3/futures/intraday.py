@@ -1,120 +1,102 @@
-import logging
-
 import polars as pl
 import polars.selectors as cs
 
 from pyield import bday
-from pyield.b3._contracts import normalizar_codigos_contrato
 from pyield.b3.derivatives_intraday import derivatives_intraday_fetch
-from pyield.b3.futures.common import expr_dv01
+from pyield.b3.futures.common import CONTRATOS_TAXA, expr_dv01
 from pyield.fwd import forwards
 
-logger = logging.getLogger(__name__)
+# Renomeação preco_* → taxa_* para contratos cotados por taxa.
+_PRECO_PARA_TAXA_INTRADAY = {
+    "preco_ajuste_anterior": "taxa_ajuste_anterior",
+    "preco_limite_minimo": "taxa_limite_minimo",
+    "preco_limite_maximo": "taxa_limite_maximo",
+    "preco_abertura": "taxa_abertura",
+    "preco_minimo": "taxa_minima",
+    "preco_maximo": "taxa_maxima",
+    "preco_medio": "taxa_media",
+    "preco_ultimo": "taxa_ultima",
+    "preco_oferta_compra": "taxa_oferta_compra",
+    "preco_oferta_venda": "taxa_oferta_venda",
+}
+
+# Ordem preferida de colunas na saída. Colunas preco_* e taxa_* são
+# mutuamente exclusivas — o rename no preprocessamento garante isso.
+_ORDEM_COLUNAS = (
+    "data_referencia",
+    "atualizado_as",
+    "codigo_negociacao",
+    "data_vencimento",
+    "dias_uteis",
+    "dias_corridos",
+    "contratos_abertos",
+    "numero_negocios",
+    "volume_negociado",
+    "volume_financeiro",
+    "dv01",
+    "preco_ajuste_anterior",
+    "preco_limite_minimo",
+    "preco_limite_maximo",
+    "preco_abertura",
+    "preco_minimo",
+    "preco_maximo",
+    "preco_medio",
+    "preco_ultimo",
+    "preco_oferta_compra",
+    "preco_oferta_venda",
+    "taxa_forward",
+    "taxa_ajuste_anterior",
+    "taxa_limite_minimo",
+    "taxa_limite_maximo",
+    "taxa_abertura",
+    "taxa_minima",
+    "taxa_maxima",
+    "taxa_media",
+    "taxa_oferta_compra",
+    "taxa_oferta_venda",
+    "taxa_ultima",
+)
 
 
-def intraday(codigo_contrato: str | list[str]) -> pl.DataFrame:
+def intraday(codigo_contrato: str) -> pl.DataFrame:
     """Busca os dados intraday mais recentes da B3.
 
     Os dados intraday da fonte possuem atraso aproximado de 15 minutos.
     A coluna ``atualizado_as`` reflete essa defasagem.
 
     Args:
-        codigo_contrato: Código base do contrato futuro na B3, ou lista de
-            códigos.
+        codigo_contrato: Código base do contrato futuro na B3.
 
     Returns:
         DataFrame Polars com dados intraday processados.
 
-    Output Columns:
-        * data_referencia (Date): data de negociação.
-        * atualizado_as (Datetime): data e hora a que o dado se refere (com atraso de 15 min).
-        * codigo_negociacao (String): código de negociação na B3.
-        * data_vencimento (Date): data de vencimento do contrato.
-        * dias_uteis (Int64): dias úteis até o vencimento.
-        * dias_corridos (Int64): dias corridos até o vencimento.
-        * contratos_abertos (Int64): contratos em aberto.
-        * numero_negocios (Int64): número de negócios.
-        * volume_negociado (Int64): quantidade de contratos negociados.
-        * volume_financeiro (Float64): volume financeiro bruto.
-        * dv01 (Float64): variação no preço para 1bp de taxa (apenas DI1).
-        * preco_ultimo (Float64): último preço calculado (apenas DI1/DAP).
-        * taxa_ajuste_anterior (Float64): taxa de ajuste do dia anterior.
-        * taxa_limite_minimo (Float64): limite mínimo de variação (taxa).
-        * taxa_limite_maximo (Float64): limite máximo de variação (taxa).
-        * taxa_abertura (Float64): taxa de abertura.
-        * taxa_minima (Float64): taxa mínima negociada.
-        * taxa_media (Float64): taxa média negociada.
-        * taxa_maxima (Float64): taxa máxima negociada.
-        * taxa_oferta_compra (Float64): melhor oferta de compra (taxa, opcional).
-        * taxa_oferta_venda (Float64): melhor oferta de venda (taxa, opcional).
-        * taxa_ultima (Float64): última taxa negociada.
-        * taxa_forward (Float64): taxa a termo (apenas DI1/DAP).
+    Notes:
+        As colunas com prefixo ``preco_`` aparecem para contratos cotados
+        por preço (ex.: DOL, IND). As com prefixo ``taxa_`` aparecem para
+        contratos cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO).
     """
-    codigos = normalizar_codigos_contrato(codigo_contrato)
-    if not codigos:
+    df = derivatives_intraday_fetch(codigo_contrato)
+    if df.is_empty():
         return pl.DataFrame()
 
-    dfs = [_intraday_contrato(c) for c in codigos]
-    dfs = [df for df in dfs if not df.is_empty()]
-    if not dfs:
-        return pl.DataFrame()
-    if len(dfs) == 1:
-        return dfs[0]
-    return pl.concat(dfs, how="diagonal_relaxed").sort("codigo_negociacao")
+    return _processar_intraday(df, codigo_contrato)
 
 
-def _intraday_contrato(codigo_contrato: str) -> pl.DataFrame:
-    """Busca e processa dados intraday de um único contrato."""
-    try:
-        df_bruto = derivatives_intraday_fetch(codigo_contrato)
-        if df_bruto.is_empty():
-            return pl.DataFrame()
+def _processar_intraday(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+    df = df.filter(pl.col("codigo_mercado") == "FUT")
+    if codigo_contrato in CONTRATOS_TAXA:
+        df = df.rename(_PRECO_PARA_TAXA_INTRADAY, strict=False)
+    df = df.drop_nulls("data_vencimento").sort("data_vencimento")
 
-        return (
-            df_bruto.pipe(_preprocessar_df_intraday)
-            .pipe(_processar_df_intraday, codigo_contrato)
-            .pipe(_selecionar_e_reordenar_colunas_intraday)
-        )
-    except Exception as erro:
-        logger.exception(
-            "CRITICAL: Pipeline intraday falhou para %s. Erro: %s",
-            codigo_contrato,
-            erro,
-        )
-        return pl.DataFrame()
-
-
-def _preprocessar_df_intraday(df: pl.DataFrame) -> pl.DataFrame:
-    return (
-        df.filter(pl.col("codigo_mercado") == "FUT")
-        .drop_nulls(subset=["data_vencimento"])
-        .rename(
-            {
-                "preco_limite_minimo": "taxa_limite_minimo",
-                "preco_ajuste_anterior": "taxa_ajuste_anterior",
-                "preco_limite_maximo": "taxa_limite_maximo",
-                "preco_abertura": "taxa_abertura",
-                "preco_minimo": "taxa_minima",
-                "preco_maximo": "taxa_maxima",
-                "preco_medio": "taxa_media",
-                "preco_ultimo": "taxa_ultima",
-                "preco_oferta_compra": "taxa_oferta_compra",
-                "preco_oferta_venda": "taxa_oferta_venda",
-            },
-            strict=False,
-        )
-        .sort("data_vencimento")
-    )
-
-
-def _processar_df_intraday(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     data_negociacao = bday.last_business_day()
     df = df.with_columns(
-        cs.contains("taxa_").truediv(100).round(5),
         data_referencia=data_negociacao,
         dias_corridos=(pl.col("data_vencimento") - data_negociacao).dt.total_days(),
         dias_uteis=bday.count_expr(data_negociacao, "data_vencimento"),
-    )
+    ).filter(pl.col("dias_corridos") > 0)
+
+    if codigo_contrato in CONTRATOS_TAXA:
+        df = df.with_columns(cs.starts_with("taxa_").truediv(100).round(6))
 
     if codigo_contrato in {"DI1", "DAP"}:
         taxa_fwd = forwards(bdays=df["dias_uteis"], rates=df["taxa_ultima"])
@@ -127,34 +109,4 @@ def _processar_df_intraday(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFra
             dv01=expr_dv01("dias_uteis", "taxa_ultima", "preco_ultimo")
         )
 
-    return df.filter(pl.col("dias_corridos") > 0)
-
-
-def _selecionar_e_reordenar_colunas_intraday(df: pl.DataFrame) -> pl.DataFrame:
-    todas_colunas = [
-        "data_referencia",
-        "atualizado_as",
-        "codigo_negociacao",
-        "data_vencimento",
-        "dias_uteis",
-        "dias_corridos",
-        "contratos_abertos",
-        "numero_negocios",
-        "volume_negociado",
-        "volume_financeiro",
-        "dv01",
-        "preco_ultimo",
-        "taxa_ajuste_anterior",
-        "taxa_limite_minimo",
-        "taxa_limite_maximo",
-        "taxa_abertura",
-        "taxa_minima",
-        "taxa_media",
-        "taxa_maxima",
-        "taxa_oferta_compra",
-        "taxa_oferta_venda",
-        "taxa_ultima",
-        "taxa_forward",
-    ]
-    colunas_reordenadas = [coluna for coluna in todas_colunas if coluna in df.columns]
-    return df.select(colunas_reordenadas)
+    return df.select(c for c in _ORDEM_COLUNAS if c in df.columns)

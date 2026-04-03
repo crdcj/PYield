@@ -2,6 +2,10 @@ import polars as pl
 
 from pyield import bday
 
+# Lista de contratos que negociam por taxa (juros/cupom).
+# Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.
+CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
+
 _MAPA_MESES: dict[str, int] = {
     "F": 1,
     "G": 2,

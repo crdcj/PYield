@@ -4,7 +4,7 @@ import pyield._internal.converters as cv
 from pyield import b3, bday, interpolator
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
-from pyield.b3.futures import available_dates as _listar_datas
+from pyield.b3.futures import futures_available_dates as _listar_datas
 
 
 def data(

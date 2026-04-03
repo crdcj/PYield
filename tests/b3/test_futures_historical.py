@@ -15,7 +15,7 @@ def test_historical_usa_dataset_pr(monkeypatch):
 
     monkeypatch.setattr(
         historical_mod,
-        "_obter_futuros_pr",
+        "_buscar_do_cache",
         _historico_pr_falso,
     )
 
@@ -27,7 +27,7 @@ def test_historical_retorna_vazio_sem_cache(monkeypatch):
     """historical() retorna vazio quando contrato não está no cache."""
     monkeypatch.setattr(
         historical_mod,
-        "_obter_futuros_pr",
+        "_buscar_do_cache",
         lambda datas, codigo_contrato: pl.DataFrame(),
     )
 
@@ -40,7 +40,7 @@ def test_futures_igual_dataset_pr_di1():
     data = dt.date(2026, 1, 12)
 
     df_futures = yd.futures(contract_code="DI1", date=data)
-    df_pr = historical_mod._obter_futuros_pr([data], "DI1")
+    df_pr = historical_mod._buscar_do_cache([data], "DI1")
 
     assert_frame_equal(
         df_futures.sort("data_vencimento"),

@@ -4,13 +4,8 @@ import polars as pl
 
 from pyield import bday
 from pyield._internal.data_cache import obter_dataset_cacheado
-from pyield.b3._contracts import normalizar_codigos_contrato
-from pyield.b3.futures.common import adicionar_vencimento, expr_dv01
+from pyield.b3.futures.common import CONTRATOS_TAXA, adicionar_vencimento, expr_dv01
 from pyield.fwd import forwards
-
-# Lista de contratos que negociam por taxa (juros/cupom).
-# Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.
-CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
 # Bid/Ask são invertidos: BestBidPric (bid em PU) = menor taxa = venda de taxa;
@@ -26,6 +21,55 @@ _PRECO_PARA_TAXA = {
     "preco_limite_minimo": "taxa_limite_minimo",
     "preco_limite_maximo": "taxa_limite_maximo",
 }
+
+# Colunas de saída para contratos cotados por preço (DOL, WDO, IND, WIN).
+_COLUNAS_CONTRATO_PRECO = (
+    "data_referencia",
+    "codigo_negociacao",
+    "data_vencimento",
+    "dias_uteis",
+    "dias_corridos",
+    "contratos_abertos",
+    "numero_negocios",
+    "volume_negociado",
+    "volume_financeiro",
+    "preco_limite_minimo",
+    "preco_limite_maximo",
+    "preco_abertura",
+    "preco_minimo",
+    "preco_maximo",
+    "preco_medio",
+    "preco_fechamento",
+    "preco_ultima_oferta_compra",
+    "preco_ultima_oferta_venda",
+    "preco_ajuste",
+)
+
+# Colunas de saída para contratos cotados por taxa (DI1, DAP, DDI, FRC, FRO).
+_COLUNAS_CONTRATO_TAXA = (
+    "data_referencia",
+    "codigo_negociacao",
+    "data_vencimento",
+    "dias_uteis",
+    "dias_corridos",
+    "dv01",
+    "contratos_abertos",
+    "numero_negocios",
+    "volume_negociado",
+    "volume_financeiro",
+    "preco_ajuste",
+    "taxa_limite_minimo",
+    "taxa_limite_maximo",
+    "taxa_abertura",
+    "taxa_minima",
+    "taxa_maxima",
+    "taxa_media",
+    "taxa_fechamento",
+    "taxa_ultima_oferta_venda",
+    "taxa_ultima_oferta_compra",
+    "taxa_ajuste",
+    "taxa_forward",
+)
 
 # Normaliza o schema XML bruto da B3 para o padrão de colunas deste módulo.
 _RENOMEAR_COLUNAS_PR = {
@@ -49,22 +93,10 @@ _RENOMEAR_COLUNAS_PR = {
 }
 
 
-def _normalizar_colunas_pr(df: pl.DataFrame) -> pl.DataFrame:
-    return df.rename({k: v for k, v in _RENOMEAR_COLUNAS_PR.items() if k in df.columns})
-
-
-def _obter_pr_normalizado() -> pl.DataFrame:
-    """Carrega o dataset PR e normaliza nomes de colunas."""
-    df = obter_dataset_cacheado("futures")
-    return _normalizar_colunas_pr(df)
-
-
-def _filtrar_e_renomear(
-    df: pl.DataFrame, datas: list[dt.date], codigo_contrato: str
-) -> pl.DataFrame:
-    return df.filter(
-        pl.col("data_referencia").is_in(datas),
-        pl.col("codigo_negociacao").str.starts_with(codigo_contrato),
+def _obter_cache_filtrado(codigo_contrato: str) -> pl.DataFrame:
+    """Carrega o dataset PR cacheado e filtra por contrato."""
+    return obter_dataset_cacheado("futures").filter(
+        pl.col("TckrSymb").str.starts_with(codigo_contrato)
     )
 
 
@@ -84,16 +116,12 @@ def _enriquecer_dados(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
         colunas_taxa = [c for c in df.columns if c.startswith("taxa_")]
         df = df.with_columns(pl.col(colunas_taxa).truediv(100).round(6))
 
-    if (
-        codigo_contrato == "DI1"
-        and "preco_ajuste" in df.columns
-        and "taxa_ajuste" in df.columns
-    ):
+    if codigo_contrato == "DI1":
         df = df.with_columns(
             dv01=expr_dv01("dias_uteis", "taxa_ajuste", "preco_ajuste")
         )
 
-    if codigo_contrato in {"DI1", "DAP"} and "taxa_ajuste" in df.columns:
+    if codigo_contrato in {"DI1", "DAP"}:
         df = df.with_columns(
             taxa_forward=forwards(bdays=df["dias_uteis"], rates=df["taxa_ajuste"])
         )
@@ -101,51 +129,21 @@ def _enriquecer_dados(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     return df
 
 
-def _selecionar_colunas_saida(df: pl.DataFrame) -> pl.DataFrame:
-    ordem_preferida = [
-        "data_referencia",
-        "codigo_negociacao",
-        "data_vencimento",
-        "dias_uteis",
-        "dias_corridos",
-        "dv01",
-        "contratos_abertos",
-        "numero_negocios",
-        "volume_negociado",
-        "volume_financeiro",
-        "preco_limite_minimo",
-        "preco_limite_maximo",
-        "preco_abertura",
-        "preco_minimo",
-        "preco_maximo",
-        "preco_medio",
-        "preco_fechamento",
-        "preco_ultima_oferta_compra",
-        "preco_ultima_oferta_venda",
-        "preco_ajuste",
-        "taxa_limite_minimo",
-        "taxa_limite_maximo",
-        "taxa_abertura",
-        "taxa_minima",
-        "taxa_maxima",
-        "taxa_media",
-        "taxa_fechamento",
-        "taxa_ultima_oferta_venda",
-        "taxa_ultima_oferta_compra",
-        "taxa_ajuste",
-        "taxa_forward",
-    ]
-    colunas_existentes = [c for c in ordem_preferida if c in df.columns]
-    return df.select(colunas_existentes)
+def _selecionar_colunas_saida(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+    if codigo_contrato in CONTRATOS_TAXA:
+        colunas = _COLUNAS_CONTRATO_TAXA
+    else:
+        colunas = _COLUNAS_CONTRATO_PRECO
+    return df.select(c for c in colunas if c in df.columns)
 
 
-def _obter_futuros_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
+def _buscar_do_cache(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
     """Carrega histórico de futuros do dataset PR para uma lista de datas."""
     if not datas:
         return pl.DataFrame()
 
-    df = _obter_pr_normalizado()
-    df = _filtrar_e_renomear(df, datas, codigo_contrato)
+    df = _obter_cache_filtrado(codigo_contrato)
+    df = df.filter(pl.col("TradDt").is_in(datas))
     if df.is_empty():
         return pl.DataFrame()
 
@@ -155,15 +153,14 @@ def _obter_futuros_pr(datas: list[dt.date], codigo_contrato: str) -> pl.DataFram
 def enrich(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     """Enriquece DataFrame bruto do Price Report (PR) da B3.
 
-    Aceita um DataFrame com colunas no schema original da B3
-    (ex.: ``TradDt``, ``TckrSymb``) ou já renomeadas para o padrão
-    PYield. Adiciona data de vencimento, dias úteis/corridos e
-    colunas derivadas (dv01, taxa_forward) conforme o contrato.
+    Aceita um DataFrame com colunas no schema original da B3 (ex.:
+    ``TradDt``, ``TckrSymb``) ou já renomeadas para o padrão PYield.
+    Adiciona data de vencimento, dias úteis/corridos e colunas derivadas
+    (dv01, taxa_forward) conforme o contrato.
 
     Args:
         df: DataFrame com dados do PR da B3.
-        codigo_contrato: Código do contrato futuro
-            (ex.: "DI1", "DOL").
+        codigo_contrato: Código do contrato futuro (ex.: "DI1", "DOL").
 
     Returns:
         DataFrame Polars enriquecido e ordenado.
@@ -171,23 +168,23 @@ def enrich(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     if df.is_empty():
         return pl.DataFrame()
 
-    df = _normalizar_colunas_pr(df)
+    df = df.rename(_RENOMEAR_COLUNAS_PR)
     df = adicionar_vencimento(df, codigo_contrato, coluna_ticker="codigo_negociacao")
     df = _enriquecer_dados(df, codigo_contrato)
-    df = _selecionar_colunas_saida(df)
+    df = _selecionar_colunas_saida(df, codigo_contrato)
 
     return df.sort("data_referencia", "data_vencimento")
 
 
 def historical(
     data: dt.date,
-    codigo_contrato: str | list[str],
+    codigo_contrato: str,
 ) -> pl.DataFrame:
     """Busca histórico de futuros no dataset PR cacheado.
 
     Args:
         data: Data de negociação.
-        codigo_contrato: Código(s) do contrato futuro na B3.
+        codigo_contrato: Código do contrato futuro na B3.
 
     Returns:
         DataFrame Polars com dados históricos de futuros.
@@ -233,10 +230,10 @@ def historical(
         Usa exclusivamente o dataset PR cacheado no GitHub. Contratos
         disponíveis: DI1, DDI, FRC, FRO, DAP, DOL, WDO, IND, WIN.
 
-        As colunas com prefixo ``preco_`` aparecem para contratos cotados por
-        preço (ex.: DOL, IND). As com prefixo ``taxa_`` aparecem para contratos
-        cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO). Nem todas as colunas
-        estarão presentes em todos os contratos.
+        As colunas com prefixo ``preco_`` aparecem para contratos cotados
+        por preço (ex.: DOL, IND). As com prefixo ``taxa_`` aparecem para
+        contratos cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO). Nem
+        todas as colunas estarão presentes em todos os contratos.
 
         ``*_fechamento`` é o último negócio realizado (last trade).
         ``*_ultima_oferta_*`` é o bid/ask ao fim do pregão — não
@@ -245,40 +242,14 @@ def historical(
         ``taxa_ultima_oferta_compra`` = maior taxa (ask em PU),
         ``taxa_ultima_oferta_venda`` = menor taxa (bid em PU).
     """
-    codigos = normalizar_codigos_contrato(codigo_contrato)
-    if not codigos:
-        return pl.DataFrame()
-
-    dataframes = []
-    for codigo in codigos:
-        df = _obter_futuros_pr([data], codigo)
-        if not df.is_empty():
-            dataframes.append(df)
-
-    if not dataframes:
-        return pl.DataFrame()
-
-    if len(dataframes) == 1:
-        return dataframes[0]
-
-    df_resultado = pl.concat(dataframes, how="diagonal_relaxed")
-    colunas_ordenacao = [
-        coluna
-        for coluna in ["data_referencia", "codigo_negociacao", "data_vencimento"]
-        if coluna in df_resultado.columns
-    ]
-    if not colunas_ordenacao:
-        return df_resultado
-
-    return df_resultado.sort(*colunas_ordenacao)
+    return _buscar_do_cache([data], codigo_contrato)
 
 
 def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
     """Lista datas disponíveis no dataset PR para um contrato futuro."""
     return (
-        _obter_pr_normalizado()
-        .filter(pl.col("codigo_negociacao").str.starts_with(codigo_contrato))
-        .get_column("data_referencia")
+        _obter_cache_filtrado(codigo_contrato)
+        .get_column("TradDt")
         .drop_nulls()
         .unique()
         .sort()

@@ -160,11 +160,9 @@ def derivatives_intraday_fetch(contract_code: str) -> pl.DataFrame:
     if not dados_json:
         return pl.DataFrame()
 
-    return (
-        _converter_json_intraday(dados_json)
-        .pipe(_processar_colunas_intraday)
-        .with_columns(
-            atualizado_as=clock.now() - dt.timedelta(minutes=15),
-        )
-        .sort("codigo_negociacao")
+    df = _converter_json_intraday(dados_json)
+    df = _processar_colunas_intraday(df)
+    df = df.with_columns(
+        atualizado_as=clock.now() - dt.timedelta(minutes=15),
     )
+    return df.sort("codigo_negociacao")

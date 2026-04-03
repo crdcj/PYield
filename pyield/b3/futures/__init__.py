@@ -1,10 +1,7 @@
-import datetime as dt
-
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield._internal.types import ArrayLike, DateLike, any_is_empty, is_collection
-from pyield.b3._contracts import normalizar_codigos_contrato
+from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.futures import historical, intraday
 
@@ -33,7 +30,7 @@ def futures_enrich(
 
 def futures(
     date: DateLike | ArrayLike,
-    contract_code: str | list[str],
+    contract_code: str,
 ) -> pl.DataFrame:
     """Busca dados de um contrato futuro da B3 para a data de referência.
 
@@ -45,8 +42,8 @@ def futures(
             Quando uma coleção é fornecida, os dados são buscados para cada
             data individualmente e concatenados. Datas inválidas (feriados,
             fins de semana, futuras) são silenciosamente ignoradas.
-        contract_code: Código do contrato futuro na B3 ou coleção de
-            códigos. Contratos disponíveis no cache histórico:
+        contract_code: Código do contrato futuro na B3. Contratos
+            disponíveis no cache histórico:
             - Juros: DI1, DDI, FRC, FRO, DAP
             - Moedas: DOL, WDO
             - Índices: IND, WIN
@@ -84,48 +81,22 @@ def futures(
     if any_is_empty(date, contract_code):
         return pl.DataFrame()
 
-    codigos_contrato = normalizar_codigos_contrato(contract_code)
-    if not codigos_contrato:
+    dados_convertidos = cv.converter_datas(date)
+    if isinstance(dados_convertidos, pl.Series):
+        datas_validas = []
+        for d in dados_convertidos:
+            if d is not None and data_negociacao_valida(d):
+                datas_validas.append(d)
+        return historical._buscar_do_cache(datas_validas, contract_code)
+
+    if not data_negociacao_valida(dados_convertidos):
         return pl.DataFrame()
 
-    if is_collection(date):
-        # date é ArrayLike neste branch
-        datas: ArrayLike = date  # type: ignore[assignment]
-        return _buscar_varias_datas(datas, codigos_contrato)
-
-    # date é escalar (DateLike) neste branch
-    data_negociacao: dt.date = cv.converter_datas(date)  # type: ignore[assignment]
-    if not data_negociacao_valida(data_negociacao):
-        return pl.DataFrame()
-
-    return historical.historical(data_negociacao, codigos_contrato)
-
-
-def _buscar_varias_datas(
-    datas: ArrayLike,
-    codigos: list[str],
-) -> pl.DataFrame:
-    """Busca dados para múltiplas datas do dataset PR cacheado."""
-    serie_datas = cv.converter_datas(datas)
-    datas_validas = [
-        d for d in serie_datas if d is not None and data_negociacao_valida(d)
-    ]
-    if not datas_validas:
-        return pl.DataFrame()
-
-    resultados = [
-        df
-        for codigo in codigos
-        if not (df := historical._obter_futuros_pr(datas_validas, codigo)).is_empty()
-    ]
-
-    if not resultados:
-        return pl.DataFrame()
-    return pl.concat(resultados, how="diagonal_relaxed")
+    return historical.historical(dados_convertidos, contract_code)
 
 
 def futures_intraday(
-    contract_code: str | list[str],
+    contract_code: str,
 ) -> pl.DataFrame:
     """Busca dados intraday de contratos futuros da B3.
 
@@ -134,48 +105,26 @@ def futures_intraday(
     use ``futures``.
 
     Args:
-        contract_code: Código do contrato futuro na B3 ou lista de
-            códigos (ex.: 'DI1', ['DI1', 'DAP']).
+        contract_code: Código do contrato futuro na B3
+            (ex.: 'DI1', 'DAP', 'DOL').
 
     Returns:
         DataFrame Polars com dados intraday. Retorna DataFrame vazio
         fora do horário de pregão.
 
-    Output Columns:
-        * data_referencia (Date): data de negociação.
-        * atualizado_as (Datetime): horário a que o dado se refere
-          (com atraso de ~15 min).
-        * codigo_negociacao (String): código de negociação na B3.
-        * data_vencimento (Date): data de vencimento do contrato.
-        * dias_uteis (Int64): dias úteis até o vencimento.
-        * dias_corridos (Int64): dias corridos até o vencimento.
-        * contratos_abertos (Int64): contratos em aberto.
-        * numero_negocios (Int64): número de negócios.
-        * volume_negociado (Int64): quantidade de contratos negociados.
-        * volume_financeiro (Float64): volume financeiro bruto.
-        * dv01 (Float64): variação no preço para 1bp (apenas DI1).
-        * preco_ultimo (Float64): último preço (apenas DI1/DAP).
-        * taxa_ajuste_anterior (Float64): taxa de ajuste do dia anterior.
-        * taxa_limite_minimo (Float64): limite mínimo de variação.
-        * taxa_limite_maximo (Float64): limite máximo de variação.
-        * taxa_abertura (Float64): taxa de abertura.
-        * taxa_minima (Float64): taxa mínima negociada.
-        * taxa_media (Float64): taxa média negociada.
-        * taxa_maxima (Float64): taxa máxima negociada.
-        * taxa_oferta_compra (Float64): melhor oferta de compra.
-        * taxa_oferta_venda (Float64): melhor oferta de venda.
-        * taxa_ultima (Float64): última taxa negociada.
-        * taxa_forward (Float64): taxa a termo (apenas DI1/DAP).
+    Notes:
+        As colunas com prefixo ``preco_`` aparecem para contratos cotados
+        por preço (ex.: DOL, IND). As com prefixo ``taxa_`` aparecem para
+        contratos cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO).
     """
-    codigos = normalizar_codigos_contrato(contract_code)
-    if not codigos:
+    if not contract_code:
         return pl.DataFrame()
 
-    return intraday.intraday(codigos)
+    return intraday.intraday(contract_code)
 
 
-def available_dates(contract_code: str) -> pl.Series:
-    """Retorna as datas de negociação disponíveis no dataset histórico PR.
+def futures_available_dates(contract_code: str) -> pl.Series:
+    """Retorna as datas de negociação disponíveis no dataset cacheado.
 
     Args:
         contract_code: Código do contrato futuro na B3 (ex.: DI1, DOL).
@@ -184,8 +133,8 @@ def available_dates(contract_code: str) -> pl.Series:
         Series ordenada de datas (Date) para as quais há dados de ajuste.
 
     Examples:
-        >>> from pyield.b3.futures import available_dates
-        >>> available_dates("DI1").head(3)
+        >>> from pyield.b3.futures import futures_available_dates
+        >>> futures_available_dates("DI1").head(3)
         shape: (3,)
         Series: 'data_referencia' [date]
         [
@@ -197,4 +146,8 @@ def available_dates(contract_code: str) -> pl.Series:
     return historical.listar_datas_disponiveis(contract_code)
 
 
-__all__ = ["available_dates", "futures", "futures_intraday"]
+__all__ = [
+    "futures",
+    "futures_available_dates",
+    "futures_intraday",
+]
