@@ -4,7 +4,6 @@ import pyield._internal.converters as cv
 from pyield import dus, fwd
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
-from pyield.tn.pre import premio as premio_pre
 
 VALOR_FACE = 1000
 
@@ -312,7 +311,9 @@ def premio(
         │ LTN    ┆ 2032-01-01      ┆ 11.24  │
         └────────┴─────────────────┴────────┘
     """
-    return premio_pre(data, pontos_base=pontos_base).filter(pl.col("titulo") == "LTN")
+    return utils.premio_pre(data, pontos_base=pontos_base).filter(
+        pl.col("titulo") == "LTN"
+    )
 
 
 def taxas_forward(data: DateLike) -> pl.DataFrame:

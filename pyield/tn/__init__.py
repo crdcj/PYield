@@ -1,19 +1,6 @@
 from pyield.tn.benchmark import benchmarks
 from pyield.tn.leiloes import leilao
-from pyield.tn.pre import premio
 from pyield.tn.rmd import rmd
+from pyield.tn.utils import premio_pre
 
-__all__ = [
-    "benchmarks",
-    "leilao",
-    "lft",
-    "ltn",
-    "ntnb",
-    "ntnb1",
-    "ntnbprinc",
-    "ntnc",
-    "ntnf",
-    "pre",
-    "premio",
-    "rmd",
-]
+__all__ = ["benchmarks", "leilao", "premio_pre", "rmd"]

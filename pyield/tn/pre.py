@@ -1,6 +1,5 @@
 import polars as pl
 
-import pyield._internal.converters as cv
 from pyield import dus
 from pyield._internal.types import DateLike
 from pyield.tn import ntnf, utils
@@ -137,81 +136,3 @@ def _validar_resultado_final(df: pl.DataFrame) -> None:
 
     if df["taxa_zero"].is_null().any():
         raise ValueError("Resultado final contém NaN na coluna taxa_zero")
-
-
-def premio(
-    data: DateLike,
-    pontos_base: bool = False,
-) -> pl.DataFrame:
-    """
-    Calcula o prêmio dos títulos prefixados (LTN e NTN-F) sobre o DI.
-
-    Em linguagem de mercado, esse valor é chamado de prêmio. Em termos
-    descritivos, trata-se do spread sobre o DI.
-
-    Definição do prêmio:
-        premio = taxa indicativa do PRE - taxa de ajuste do DI
-
-    Quando ``pontos_base=False`` a coluna retorna essa diferença em formato
-    decimal (ex: 0.000439 ≈ 4.39 bps). Quando ``pontos_base=True`` o valor é
-    automaticamente
-    multiplicado por 10_000 e exibido diretamente em basis points.
-
-    Args:
-        data: Data da consulta para buscar as taxas.
-        pontos_base: Se True, retorna o prêmio já convertido em basis points.
-            Padrão False.
-
-    Returns:
-        pl.DataFrame: DataFrame com as colunas do prêmio.
-
-    Output Columns:
-        - titulo (String): Tipo do título.
-        - data_vencimento (Date): Data de vencimento.
-        - premio (Float64): prêmio em decimal ou bps conforme parâmetro
-            (spread sobre o DI).
-
-    Examples:
-        >>> from pyield.tn import pre
-        >>> pre.premio("30-05-2025", pontos_base=True)
-        shape: (18, 3)
-        ┌────────┬─────────────────┬────────┐
-        │ titulo ┆ data_vencimento ┆ premio │
-        │ ---    ┆ ---             ┆ ---    │
-        │ str    ┆ date            ┆ f64    │
-        ╞════════╪═════════════════╪════════╡
-        │ LTN    ┆ 2025-07-01      ┆ 4.39   │
-        │ LTN    ┆ 2025-10-01      ┆ -9.0   │
-        │ LTN    ┆ 2026-01-01      ┆ -4.88  │
-        │ LTN    ┆ 2026-04-01      ┆ -4.45  │
-        │ LTN    ┆ 2026-07-01      ┆ 0.81   │
-        │ …      ┆ …               ┆ …      │
-        │ NTN-F  ┆ 2027-01-01      ┆ -3.31  │
-        │ NTN-F  ┆ 2029-01-01      ┆ 14.21  │
-        │ NTN-F  ┆ 2031-01-01      ┆ 21.61  │
-        │ NTN-F  ┆ 2033-01-01      ┆ 11.51  │
-        │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
-        └────────┴─────────────────┴────────┘
-    """
-    # Busca taxas dos títulos (LTN e NTN-F) e adiciona taxa_di
-    df = utils.obter_tpf(data, "PRE").select(
-        "titulo", "data_vencimento", "taxa_indicativa"
-    )
-    if df.is_empty():
-        return df.select(
-            pl.lit("").alias("titulo"),
-            pl.lit(None, dtype=pl.Date).alias("data_vencimento"),
-            pl.lit(None, dtype=pl.Float64).alias("premio"),
-        ).clear()
-    data_ref = cv.converter_datas(data)
-    df = utils.adicionar_taxa_di(df, data_ref)
-    df = (
-        df.with_columns(premio=pl.col("taxa_indicativa") - pl.col("taxa_di"))
-        .select("titulo", "data_vencimento", "premio")
-        .sort("titulo", "data_vencimento")
-    )
-
-    if pontos_base:
-        df = df.with_columns(pl.col("premio") * 10_000)
-
-    return df

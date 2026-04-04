@@ -10,7 +10,6 @@ from pyield import dus
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.b3 import di1
 from pyield.tn import utils
-from pyield.tn.pre import premio as premio_pre
 
 """
 Constantes calculadas conforme regras da ANBIMA
@@ -674,7 +673,9 @@ def premio(data: DateLike, pontos_base: bool = False) -> pl.DataFrame:
         │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
         └────────┴─────────────────┴────────┘
     """
-    return premio_pre(data, pontos_base=pontos_base).filter(pl.col("titulo") == "NTN-F")
+    return utils.premio_pre(data, pontos_base=pontos_base).filter(
+        pl.col("titulo") == "NTN-F"
+    )
 
 
 def premio_limpo(  # noqa
