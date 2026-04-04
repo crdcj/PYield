@@ -1,10 +1,10 @@
-from pyield.ipca.historico import indices, taxas, ultimas_taxas, ultimos_indices
+from pyield.ipca.historico import indices, indices_ultimos, taxas, taxas_ultimas
 from pyield.ipca.projetado import taxa_projetada
 
 __all__ = [
     "indices",
-    "taxas",
-    "ultimas_taxas",
-    "ultimos_indices",
+    "indices_ultimos",
     "taxa_projetada",
+    "taxas",
+    "taxas_ultimas",
 ]

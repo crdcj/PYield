@@ -121,7 +121,7 @@ def taxas(data_inicial: DateLike, data_final: DateLike) -> pl.DataFrame:
     return _buscar_periodo(data_inicial, data_final, _VAR_TAXA, em_percentual=True)
 
 
-def ultimas_taxas(qtd_meses: int = 1) -> pl.DataFrame:
+def taxas_ultimas(qtd_meses: int = 1) -> pl.DataFrame:
     """Obtém as últimas taxas mensais do IPCA.
 
     Realiza chamada à API do portal de dados do IBGE no formato:
@@ -143,14 +143,14 @@ def ultimas_taxas(qtd_meses: int = 1) -> pl.DataFrame:
     Examples:
         >>> from pyield import ipca
         >>> # Obter a taxa do IPCA do último mês
-        >>> df = ipca.ultimas_taxas(1)
+        >>> df = ipca.taxas_ultimas(1)
         >>> # Obter as taxas do IPCA dos últimos 3 meses
-        >>> df = ipca.ultimas_taxas(3)
+        >>> df = ipca.taxas_ultimas(3)
     """
     return _buscar_ultimos(qtd_meses, _VAR_TAXA, em_percentual=True)
 
 
-def ultimos_indices(qtd_meses: int = 1) -> pl.DataFrame:
+def indices_ultimos(qtd_meses: int = 1) -> pl.DataFrame:
     """Obtém os últimos valores do número-índice do IPCA.
 
     Realiza chamada à API do portal de dados do IBGE no formato:
@@ -172,9 +172,9 @@ def ultimos_indices(qtd_meses: int = 1) -> pl.DataFrame:
     Examples:
         >>> from pyield import ipca
         >>> # Obter o número-índice do IPCA do último mês
-        >>> df = ipca.ultimos_indices(1)
+        >>> df = ipca.indices_ultimos(1)
         >>> # Obter os números-índice do IPCA dos últimos 3 meses
-        >>> df = ipca.ultimos_indices(3)
+        >>> df = ipca.indices_ultimos(3)
     """
     return _buscar_ultimos(qtd_meses, _VAR_INDICE)
 
