@@ -10,6 +10,12 @@ PYield is a Python library focused on Brazilian treasury bond analysis. It fetch
 
 Although it includes data and tools from other markets (such as DI1, DAP, and PTAX), these resources support the core goal: analysis, pricing, and monitoring of Brazilian treasury bonds.
 
+## Quick Links
+
+- Full documentation: https://crdcj.github.io/PYield/
+- Colab notebook: https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb
+- Package on PyPI: https://pypi.org/project/pyield/
+
 ## Installation
 
 ```sh
@@ -35,7 +41,7 @@ interp(45)       # -> 0.04833...
 interp([30, 60]) # -> pl.Series with interpolated rates
 
 # Treasury bond pricing
-yd.ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # BCB indicators
 yd.bc.selic_over("31-05-2024")  # -> 0.000414...
@@ -148,11 +154,11 @@ from pyield import ltn, ntnb, ntnf
 
 # Fetch ANBIMA indicative rates
 ltn.dados("23-08-2024")  # -> DataFrame with LTN bonds
-ntnb.data("23-08-2024")  # -> DataFrame with NTN-B bonds
+ntnb.dados("23-08-2024")  # -> DataFrame with NTN-B bonds
 
 # Compute bond quotation (base 100)
-ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
-ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
+ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
 # DI spreads (bps=True multiplies by 10,000)
 ntnf.di_spreads("30-05-2025", bps=True)
@@ -196,7 +202,7 @@ Null handling: scalar functions return `float('nan')` for missing inputs (which 
 ```python
 from pyield import ntnb, dus
 
-ntnb.quotation(None, "15-05-2035", 0.06149)  # -> nan
+ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
 dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
 
@@ -207,10 +213,6 @@ All functions return **Polars DataFrames/Series**. To convert to Pandas:
 ```python
 df_pandas = df.to_pandas(use_pyarrow_extension_array=True)
 ```
-
-## Documentation
-
-Full documentation: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
 
 ## Tests
 

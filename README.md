@@ -10,6 +10,12 @@ PYield é uma biblioteca Python voltada para análise de títulos públicos bras
 
 Embora inclua dados e ferramentas de outros mercados (como DI1, DAP e PTAX), esses recursos são auxiliares para o objetivo central: análise, precificação e acompanhamento de títulos públicos.
 
+## Links Rápidos
+
+- Documentação completa: https://crdcj.github.io/PYield/
+- Notebook no Colab: https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb
+- Pacote no PyPI: https://pypi.org/project/pyield/
+
 ## Instalação
 
 ```sh
@@ -35,7 +41,7 @@ interp(45)       # -> 0.04833...
 interp([30, 60]) # -> pl.Series with interpolated rates
 
 # Precificação de títulos públicos
-yd.ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # Indicadores do BCB
 yd.bc.selic_over("31-05-2024")  # -> 0.000414...
@@ -148,11 +154,11 @@ from pyield import ltn, ntnb, ntnf
 
 # Busca taxas indicativas da ANBIMA
 ltn.dados("23-08-2024")  # -> DataFrame with LTN bonds
-ntnb.data("23-08-2024")  # -> DataFrame with NTN-B bonds
+ntnb.dados("23-08-2024")  # -> DataFrame with NTN-B bonds
 
 # Calcula cotação do título (base 100)
-ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
-ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
+ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
 # Spreads de DI (bps=True multiplica por 10.000)
 ntnf.di_spreads("30-05-2025", bps=True)
@@ -198,7 +204,7 @@ Tratamento de nulos: funções escalares retornam `float('nan')` para entradas a
 ```python
 from pyield import ntnb, dus
 
-ntnb.quotation(None, "15-05-2035", 0.06149)  # -> nan
+ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
 dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
 
@@ -225,10 +231,6 @@ pl_series = pl.Series(np_array)         # np.ndarray → pl.Series (requer numpy
 # Saída: converter DataFrame Polars para Pandas
 df_pandas = df.to_pandas(use_pyarrow_extension_array=True)
 ```
-
-## Documentação
-
-Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
 
 ## Testes
 

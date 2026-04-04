@@ -106,11 +106,11 @@ df_ltn = yd.ltn.dados("23-08-2024")
 # Colunas: data_referencia, titulo, codigo_selic, data_base, data_vencimento, taxa_indicativa, ...
 
 # NTN-B (Notas do Tesouro Nacional série B - IPCA+)
-df_ntnb = yd.ntnb.data("23-08-2024")
+df_ntnb = yd.ntnb.dados("23-08-2024")
 # Colunas: data_referencia, titulo, codigo_selic, data_base, data_vencimento, taxa_indicativa, ...
 
 # NTN-F (Notas do Tesouro Nacional série F - pré-fixado com cupom)
-df_ntnf = yd.ntnf.data("23-08-2024")
+df_ntnf = yd.ntnf.dados("23-08-2024")
 
 # Obs: Dados da ANBIMA estão disponíveis para os últimos 5 dias úteis
 # (membros da ANBIMA têm acesso automático ao histórico completo)
@@ -122,10 +122,10 @@ Calcule cotações e preços de títulos públicos:
 
 ```python
 # Cotação de NTN-B (base 100)
-yd.ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # Cotação para vencimento mais longo
-yd.ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
+yd.ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
 # Prêmio sobre DI para títulos pré-fixados (em pontos-base)
 df_spreads = yd.ltn.premio("30-05-2024", pontos_base=True)
@@ -225,7 +225,7 @@ Para valores nulos, funções escalares retornam `float('nan')`. Funções vetor
 
 ```python
 # Exemplo com null
-yd.ntnb.quotation(None, "15-05-2035", 0.06149)  # -> nan
+yd.ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
 yd.dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
 
