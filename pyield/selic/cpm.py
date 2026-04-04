@@ -42,11 +42,11 @@ from pyield import bday
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
 from pyield.b3._validar_pregao import data_negociacao_valida
-from pyield.b3.price_report import (
+from pyield.b3.boletim import (
     _baixar_zip_url,
     _converter_para_df,
     _parsear_xml_registros,
-    price_report_extract,
+    boletim_negociacao_extrair,
 )
 
 logger = logging.getLogger(__name__)
@@ -284,10 +284,10 @@ def data(date: DateLike) -> pl.DataFrame:
         return _empty_schema()
 
     try:
-        zip_data = _baixar_zip_url(trade_date, relatorio_completo=False)
+        zip_data = _baixar_zip_url(trade_date, boletim_completo=False)
         if not zip_data:
             return _empty_schema()
-        xml_bytes = price_report_extract(zip_data)
+        xml_bytes = boletim_negociacao_extrair(zip_data)
         records = _parsear_xml_registros(xml_bytes, "CPM")
     except Exception:
         logger.exception("CPM: falha ao baixar SPR para %s.", trade_date)

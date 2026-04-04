@@ -4,13 +4,13 @@ import pyield._internal.converters as cv
 from pyield import b3, bday, interpolator
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
-from pyield.b3.futures import futures_available_dates as _listar_datas
+from pyield.b3.futuro import futuro_datas_disponiveis as _listar_datas
 
 
 def data(
-    dates: DateLike | ArrayLike,
-    month_start: bool = False,
-    pre_filter: bool = False,
+    datas_referencia: DateLike | ArrayLike,
+    inicio_mes: bool = False,
+    filtrar_pre: bool = False,
 ) -> pl.DataFrame:
     """Obtém dados de contratos de futuros de DI para datas de negociação específicas.
 
@@ -19,11 +19,12 @@ def data(
     de títulos públicos prefixados (LTN e NTN-F).
 
     Args:
-        dates: Datas de negociação para as quais obter dados de contratos DI.
-        month_start: Se True, ajusta todas as datas de vencimento para o primeiro
+        datas_referencia: Datas de negociação para as quais obter dados de
+            contratos DI.
+        inicio_mes: Se True, ajusta todas as datas de vencimento para o primeiro
             dia de seus respectivos meses (ex: 2025-02-03 vira 2025-02-01).
             Padrão: False.
-        pre_filter: Se True, filtra contratos DI para incluir apenas aqueles cujas
+        filtrar_pre: Se True, filtra contratos DI para incluir apenas aqueles cujas
             datas de vencimento coincidem com vencimentos conhecidos de títulos
             públicos prefixados (LTN, NTN-F) do dataset TPF mais próximo da data
             de negociação fornecida. Padrão: False.
@@ -35,7 +36,7 @@ def data(
 
     Examples:
         >>> from pyield import di1
-        >>> df = di1.data(dates="16-10-2024", month_start=True)
+        >>> df = di1.data(datas_referencia="16-10-2024", inicio_mes=True)
         >>> df.head(3).select(
         ...     "codigo_negociacao", "data_vencimento", "dias_uteis", "taxa_ajuste"
         ... )
@@ -51,10 +52,10 @@ def data(
         └───────────────────┴─────────────────┴────────────┴─────────────┘
 
     """
-    if any_is_empty(dates):
+    if any_is_empty(datas_referencia):
         return pl.DataFrame()
 
-    datas_convertidas = cv.converter_datas(dates)
+    datas_convertidas = cv.converter_datas(datas_referencia)
     if datas_convertidas is None:
         return pl.DataFrame()
     if isinstance(datas_convertidas, pl.Series):
@@ -62,11 +63,11 @@ def data(
     else:
         datas_lista = [datas_convertidas]
 
-    df = b3.futures(date=datas_lista, contract_code="DI1")
+    df = b3.futuro(data_referencia=datas_lista, codigo_contrato="DI1")
     if df.is_empty():
         return df
 
-    if pre_filter:
+    if filtrar_pre:
         df_tpf = (
             obter_dataset_cacheado("tpf")
             .filter(pl.col("titulo").is_in(["LTN", "NTN-F"]))
@@ -91,15 +92,15 @@ def data(
             "data_ref_tpf"
         )
 
-    if month_start:
+    if inicio_mes:
         df = df.with_columns(pl.col("data_vencimento").dt.truncate("1mo"))
 
     return df.sort("data_referencia", "data_vencimento")
 
 
-def interpolate_rates(
-    dates: DateLike | ArrayLike,
-    expirations: DateLike | ArrayLike,
+def interpolar_taxas(
+    datas_referencia: DateLike | ArrayLike,
+    datas_vencimento: DateLike | ArrayLike,
     extrapolate: bool = True,
 ) -> pl.Series:
     """Interpola taxas de DI para datas de negociação e vencimentos especificados.
@@ -115,9 +116,9 @@ def interpolate_rates(
     escalar é aplicado a todos os elementos do array.
 
     Args:
-        dates: Data(s) de negociação para as taxas.
-        expirations: Data(s) de vencimento correspondentes. Deve ser compatível
-            em tamanho com ``dates`` se ambos forem arrays.
+        datas_referencia: Data(s) de negociação para as taxas.
+        datas_vencimento: Data(s) de vencimento correspondentes. Deve ser
+            compatível em tamanho com ``datas_referencia`` se ambos forem arrays.
         extrapolate: Se permite extrapolação além do intervalo de taxas DI
             conhecidas para uma data de negociação. Padrão: True.
 
@@ -127,8 +128,8 @@ def interpolate_rates(
         de negociação).
 
     Raises:
-        ValueError: Se ``dates`` e ``expirations`` forem ambos array-like mas
-            tiverem tamanhos diferentes.
+        ValueError: Se ``datas_referencia`` e ``datas_vencimento`` forem ambos
+            array-like mas tiverem tamanhos diferentes.
 
     Notes:
         - Todas as taxas de liquidação disponíveis são usadas para interpolação
@@ -143,9 +144,9 @@ def interpolate_rates(
         >>> # A taxa é interpolada (método flat-forward)
         >>> # Não há dados para 10-05-2025 (sábado) -> NaN
         >>> from pyield import di1
-        >>> di1.interpolate_rates(
-        ...     dates=["08-05-2025", "09-05-2025", "10-05-2025"],
-        ...     expirations=["01-01-2027", "25-11-2027", "01-01-2030"],
+        >>> di1.interpolar_taxas(
+        ...     datas_referencia=["08-05-2025", "09-05-2025", "10-05-2025"],
+        ...     datas_vencimento=["01-01-2027", "25-11-2027", "01-01-2030"],
         ... )
         shape: (3,)
         Series: 'taxa_interpolada' [f64]
@@ -156,9 +157,9 @@ def interpolate_rates(
         ]
 
         Interpola taxas para uma data de negociação e múltiplos vencimentos:
-        >>> di1.interpolate_rates(
-        ...     dates="25-04-2025",
-        ...     expirations=["01-01-2027", "01-01-2050"],
+        >>> di1.interpolar_taxas(
+        ...     datas_referencia="25-04-2025",
+        ...     datas_vencimento=["01-01-2027", "01-01-2050"],
         ...     extrapolate=True,
         ... )
         shape: (2,)
@@ -169,9 +170,9 @@ def interpolate_rates(
         ]
 
         >>> # Com extrapolação desabilitada, vencimentos fora do intervalo retornam null
-        >>> di1.interpolate_rates(
-        ...     dates="25-04-2025",
-        ...     expirations=["01-11-2027", "01-01-2050"],
+        >>> di1.interpolar_taxas(
+        ...     datas_referencia="25-04-2025",
+        ...     datas_vencimento=["01-11-2027", "01-01-2050"],
         ...     extrapolate=False,
         ... )
         shape: (2,)
@@ -181,11 +182,11 @@ def interpolate_rates(
             null
         ]
     """
-    if any_is_empty(dates, expirations):
+    if any_is_empty(datas_referencia, datas_vencimento):
         return pl.Series(dtype=pl.Float64)
 
     df_entrada = pl.DataFrame(
-        data={"data_referencia": dates, "data_vencimento": expirations}
+        data={"data_referencia": datas_referencia, "data_vencimento": datas_vencimento}
     ).with_columns(
         data_referencia=cv.converter_datas_expr("data_referencia"),
         data_vencimento=cv.converter_datas_expr("data_vencimento"),
@@ -195,7 +196,7 @@ def interpolate_rates(
 
     # Carrega dataset de taxas DI usando datas já convertidas do df_entrada
     datas_unicas = df_entrada["data_referencia"].drop_nulls().unique().sort().to_list()
-    df_ref = b3.futures(date=datas_unicas, contract_code="DI1")
+    df_ref = b3.futuro(data_referencia=datas_unicas, codigo_contrato="DI1")
     # Retorna Series vazia se nenhuma taxa for encontrada
     if df_ref.is_empty():
         return pl.Series(dtype=pl.Float64)
@@ -255,9 +256,9 @@ def interpolate_rates(
     return df_saida["taxa_interpolada"].fill_nan(None)
 
 
-def interpolate_rate(
-    date: DateLike,
-    expiration: DateLike,
+def interpolar_taxa(
+    data_referencia: DateLike,
+    data_vencimento: DateLike,
     extrapolate: bool = False,
 ) -> float:
     """Interpola ou obtém a taxa DI para uma única data de vencimento.
@@ -269,40 +270,42 @@ def interpolate_rate(
     adjacentes.
 
     Args:
-        date: Data de negociação para a qual obter dados de DI.
-        expiration: Data de vencimento alvo para a taxa.
-        extrapolate: Se True, permite extrapolação se o ``expiration`` estiver
+        data_referencia: Data de negociação para a qual obter dados de DI.
+        data_vencimento: Data de vencimento alvo para a taxa.
+        extrapolate: Se True, permite extrapolação se o ``data_vencimento`` estiver
             fora do intervalo de vencimentos de contratos disponíveis para a
-            ``date``. Padrão: False.
+            ``data_referencia``. Padrão: False.
 
     Returns:
         Taxa de liquidação DI exata ou interpolada para a data e vencimento
         especificados. Retorna ``float("nan")`` se:
-        - ``date`` ou ``expiration`` for nulo.
-        - Não há dados DI para a ``date``.
-        - O ``expiration`` está fora do intervalo e ``extrapolate`` é False.
+        - ``data_referencia`` ou ``data_vencimento`` for nulo.
+        - Não há dados DI para a ``data_referencia``.
+        - O ``data_vencimento`` está fora do intervalo e ``extrapolate`` é False.
         - O cálculo de interpolação falhou.
 
     Examples:
         >>> from pyield import di1
         >>> # Obtém taxa para um vencimento de contrato existente
-        >>> di1.interpolate_rate("25-04-2025", "01-01-2027")
+        >>> di1.interpolar_taxa("25-04-2025", "01-01-2027")
         0.13901
 
         >>> # Obtém taxa para um vencimento não existente
-        >>> di1.interpolate_rate("25-04-2025", "01-11-2027")
+        >>> di1.interpolar_taxa("25-04-2025", "01-11-2027")
         0.13576348733268917
 
         >>> # Extrapola taxa para uma data de vencimento futura
-        >>> di1.interpolate_rate("25-04-2025", "01-01-2050", extrapolate=True)
+        >>> di1.interpolar_taxa("25-04-2025", "01-01-2050", extrapolate=True)
         0.13881
     """
-    if any_is_collection(date, expiration):
-        raise ValueError("As entradas 'date' e 'expiration' devem ser datas escalares.")
+    if any_is_collection(data_referencia, data_vencimento):
+        raise ValueError(
+            "As entradas 'data_referencia' e 'data_vencimento' devem ser datas escalares."
+        )
 
-    taxa = interpolate_rates(
-        dates=date,
-        expirations=expiration,
+    taxa = interpolar_taxas(
+        datas_referencia=data_referencia,
+        datas_vencimento=data_vencimento,
         extrapolate=extrapolate,
     )
     if taxa.is_empty():
@@ -315,11 +318,11 @@ def interpolate_rate(
     return valor
 
 
-def available_dates() -> pl.Series:
+def datas_disponiveis() -> pl.Series:
     """Retorna as datas de negociação disponíveis para DI1.
 
     Obtém valores distintos de 'data_referencia' para DI1, com base no dataset
-    histórico PR da B3 (mesmo utilizado por `futures`). Inclui apenas datas com
+    histórico PR da B3 (mesmo utilizado por `futuro`). Inclui apenas datas com
     preço e taxa de ajuste já definidos; o pregão do dia corrente não está
     incluído.
 
@@ -330,7 +333,7 @@ def available_dates() -> pl.Series:
     Examples:
         >>> from pyield import di1
         >>> # Série disponível no dataset PR começa em 2018-01-02
-        >>> di1.available_dates().head(5)
+        >>> di1.datas_disponiveis().head(5)
         shape: (5,)
         Series: 'data_referencia' [date]
         [

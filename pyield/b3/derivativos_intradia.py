@@ -1,4 +1,4 @@
-"""Cotações intraday de derivativos da B3 (endpoint DerivativeQuotation).
+"""Cotações intradia de derivativos da B3 (endpoint DerivativeQuotation).
 
 Exemplo de chamada à API:
     https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation/DI1
@@ -36,7 +36,7 @@ from pyield import relogio
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
-URL_BASE_INTRADAY = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
+URL_BASE_INTRADIA = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 # do módulo consumidor.
 # Colunas opcionais (ofertas, opções) ficam no final; são incluídas somente
 # quando presentes no payload.
-COLUNAS_INTRADAY: list[tuple[str, str, type[pl.DataType]]] = [
+COLUNAS_INTRADIA: list[tuple[str, str, type[pl.DataType]]] = [
     ("symb", "codigo_negociacao", pl.String),
     ("desc", "descricao", pl.String),
     ("asset.code", "codigo_ativo", pl.String),
@@ -73,14 +73,14 @@ COLUNAS_INTRADAY: list[tuple[str, str, type[pl.DataType]]] = [
 ]
 
 # Mapa de tipos para cast inicial usando os nomes do json_normalize.
-MAPEAMENTO = {orig: novo for orig, novo, _ in COLUNAS_INTRADAY}
-TIPOS = {orig: tipo for orig, _, tipo in COLUNAS_INTRADAY}
+MAPEAMENTO = {orig: novo for orig, novo, _ in COLUNAS_INTRADIA}
+TIPOS = {orig: tipo for orig, _, tipo in COLUNAS_INTRADIA}
 
 
 @ttl_cache(ttl=10)
 @retry_padrao
-def _buscar_json_intraday(codigo_contrato: str) -> list[dict]:
-    url = f"{URL_BASE_INTRADAY}/{codigo_contrato}"
+def _buscar_json_intradia(codigo_contrato: str) -> list[dict]:
+    url = f"{URL_BASE_INTRADIA}/{codigo_contrato}"
     cabecalhos = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"  # noqa: E501
     }
@@ -94,13 +94,13 @@ def _buscar_json_intraday(codigo_contrato: str) -> list[dict]:
     return resposta.json()["Scty"]
 
 
-def _converter_json_intraday(dados_json: list[dict]) -> pl.DataFrame:
+def _converter_json_intradia(dados_json: list[dict]) -> pl.DataFrame:
     if not dados_json:
         return pl.DataFrame()
     return pl.json_normalize(dados_json)
 
 
-def _processar_colunas_intraday(df: pl.DataFrame) -> pl.DataFrame:
+def _processar_colunas_intradia(df: pl.DataFrame) -> pl.DataFrame:
     colunas_disponiveis = [col for col in MAPEAMENTO if col in df.columns]
     tipos_disponiveis = pl.Schema({col: TIPOS[col] for col in colunas_disponiveis})
     return (
@@ -110,19 +110,19 @@ def _processar_colunas_intraday(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def derivatives_intraday_fetch(contract_code: str) -> pl.DataFrame:
-    """Busca cotações intraday brutas de derivativos da B3.
+def derivativo_intradia(codigo_contrato: str) -> pl.DataFrame:
+    """Busca cotações intradia brutas de derivativos da B3.
 
     Faz a chamada ao endpoint ``DerivativeQuotation`` e devolve um DataFrame
     padronizado, sem enriquecimento de regra de negócio.
 
     As colunas de cotação e limites são retornadas com prefixo ``preco_``.
-    A fonte intraday da B3 opera com atraso aproximado de 15 minutos.
+    A fonte intradia da B3 opera com atraso aproximado de 15 minutos.
     Para contratos cotados por taxa, a conversão para ``taxa_`` e cálculos
     derivados devem ser feitos no módulo consumidor.
 
     Args:
-        contract_code: Código base do derivativo na B3
+        codigo_contrato: Código base do derivativo na B3
             (ex.: ``DI1``, ``DOL``, ``DAP``, ``DDI``, ``FRC``, ``FRO``, ``IND``).
 
     Returns:
@@ -151,16 +151,16 @@ def derivatives_intraday_fetch(contract_code: str) -> pl.DataFrame:
         * preco_oferta_venda (Float64): melhor oferta de venda (opcional).
         * tipo_lado (String): tipo de lado (opcional).
         * horario_referencia (Time): horário aproximado a que os
-          dados se referem. A fonte intraday da B3 possui atraso de
+          dados se referem. A fonte intradia da B3 possui atraso de
           ~15 min; este valor é calculado subtraindo esse atraso do
           horário da consulta.
     """
-    dados_json = _buscar_json_intraday(contract_code)
+    dados_json = _buscar_json_intradia(codigo_contrato)
     if not dados_json:
         return pl.DataFrame()
 
-    df = _converter_json_intraday(dados_json)
-    df = _processar_colunas_intraday(df)
+    df = _converter_json_intradia(dados_json)
+    df = _processar_colunas_intradia(df)
     horario = (relogio.agora() - dt.timedelta(minutes=15)).time()
     df = df.with_columns(horario_referencia=horario)
     return df.sort("codigo_negociacao")

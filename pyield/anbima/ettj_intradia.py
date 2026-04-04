@@ -7,7 +7,7 @@ from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
-URL_ETTJ_INTRADAY = (
+URL_ETTJ_INTRADIA = (
     "https://www.anbima.com.br/informacoes/curvas-intradiarias/cIntra-down.asp"
 )
 
@@ -16,9 +16,9 @@ URL_ETTJ_INTRADAY = (
 
 @ttl_cache()
 @retry_padrao
-def _buscar_texto_intraday() -> str:
+def _buscar_texto_intradia() -> str:
     carga_requisicao = {"Dt_Ref": "", "saida": "csv"}
-    resposta = requests.post(URL_ETTJ_INTRADAY, data=carga_requisicao, timeout=10)
+    resposta = requests.post(URL_ETTJ_INTRADIA, data=carga_requisicao, timeout=10)
     resposta.raise_for_status()
     resposta.encoding = "latin1"
     return resposta.text
@@ -40,14 +40,14 @@ def _extrair_data_e_tabelas(texto: str) -> tuple[dt.date, str, str]:
     return data_ref, tabela_pre, tabela_ipca
 
 
-def _parsear_tabela_intraday(texto: str, nome_taxa: str) -> pl.DataFrame:
+def _parsear_tabela_intradia(texto: str, nome_taxa: str) -> pl.DataFrame:
     return pl.read_csv(texto.encode(), separator=";", infer_schema=False).select(
         vertice=float_br("Vertices").cast(pl.Int64),
         **{nome_taxa: taxa_br("D0")},
     )
 
 
-def ettj_intradiaria() -> pl.DataFrame:
+def ettj_intradia() -> pl.DataFrame:
     """Obtém e processa a curva de juros intradiária da ANBIMA.
 
     Busca os dados mais recentes da curva de juros intradiária publicada pela
@@ -67,12 +67,12 @@ def ettj_intradiaria() -> pl.DataFrame:
     Notes:
         Todas as taxas são expressas em formato decimal (ex: 0.12 para 12%).
     """
-    texto_api = _buscar_texto_intraday()
+    texto_api = _buscar_texto_intradia()
 
     data_ref, tabela_pre, tabela_ipca = _extrair_data_e_tabelas(texto_api)
 
-    df_pre = _parsear_tabela_intraday(tabela_pre, "taxa_nominal")
-    df_ipca = _parsear_tabela_intraday(tabela_ipca, "taxa_real")
+    df_pre = _parsear_tabela_intradia(tabela_pre, "taxa_nominal")
+    df_ipca = _parsear_tabela_intradia(tabela_ipca, "taxa_real")
     expr_inflacao_impl = (pl.col("taxa_nominal") + 1) / (pl.col("taxa_real") + 1) - 1
     df = df_pre.join(df_ipca, on="vertice", how="right").with_columns(
         data_referencia=data_ref,

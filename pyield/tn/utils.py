@@ -46,9 +46,9 @@ def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
     """Adiciona a coluna `taxa_di` ao DataFrame pelo método flat forward."""
     from pyield.b3 import di1  # noqa: PLC0415
 
-    taxas_di = di1.interpolate_rates(
-        dates=data_ref,
-        expirations=df["data_vencimento"],
+    taxas_di = di1.interpolar_taxas(
+        datas_referencia=data_ref,
+        datas_vencimento=df["data_vencimento"],
         extrapolate=True,
     )
     if taxas_di.is_empty():

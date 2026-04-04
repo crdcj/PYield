@@ -2,7 +2,7 @@ import logging
 
 from pyield import anbima, b3, bc, bday, ipca, relogio, selic, tn
 from pyield.__about__ import __version__
-from pyield.b3 import di1, futures
+from pyield.b3 import di1, futuro
 from pyield.fwd import forward, forwards
 from pyield.interpolator import Interpolator
 from pyield.relogio import agora, hoje
@@ -20,7 +20,7 @@ __all__ = [
     "di1",
     "forward",
     "forwards",
-    "futures",
+    "futuro",
     "agora",
     "hoje",
     "lft",

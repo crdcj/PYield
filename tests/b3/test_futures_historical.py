@@ -4,7 +4,7 @@ import polars as pl
 from polars.testing import assert_frame_equal
 
 import pyield as yd
-from pyield.b3.futures import historical as historical_mod
+from pyield.b3.futuro import historico as historical_mod
 
 
 def test_historical_usa_dataset_pr(monkeypatch):
@@ -35,11 +35,11 @@ def test_historical_retorna_vazio_sem_cache(monkeypatch):
     assert df.is_empty()
 
 
-def test_futures_igual_dataset_pr_di1():
-    """`futures` deve bater com o dataset PR na mesma data."""
+def test_futuro_igual_dataset_pr_di1():
+    """`futuro` deve bater com o dataset PR na mesma data."""
     data = dt.date(2026, 1, 12)
 
-    df_futures = yd.futures(contract_code="DI1", date=data)
+    df_futures = yd.futuro(codigo_contrato="DI1", data_referencia=data)
     df_pr = historical_mod._buscar_do_cache([data], "DI1")
 
     assert_frame_equal(

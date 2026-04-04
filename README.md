@@ -26,7 +26,7 @@ yd.bday.count("02-01-2025", "15-01-2025")  # -> 9
 yd.bday.offset("29-12-2023", 1)            # -> datetime.date(2024, 1, 2)
 
 # Curva de DI Futuro
-df = yd.futures("31-05-2024", "DI1")
+df = yd.futuro("31-05-2024", "DI1")
 # Columns: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)
@@ -126,7 +126,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | Módulo | Finalidade |
 |--------|---------|
 | `bday` | Calendário de dias úteis com feriados brasileiros |
-| `futures` | Dados de futuros da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
+| `futuro` | Dados de futuro da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
 | `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
 | `Interpolator` | Interpolação de taxas (flat_forward, linear) |
 | `forward` / `forwards` | Cálculo de taxas a termo |
@@ -162,22 +162,22 @@ ntnf.di_spreads("30-05-2025", bps=True)
 ## Dados de Futuros
 
 ```python
-from pyield import futures, futures_intraday
+from pyield import b3, futuro
 
 # DI1 (Futuro de Depósito Interfinanceiro)
-futures("31-05-2024", "DI1")
+futuro("31-05-2024", "DI1")
 
 # Outros contratos disponíveis no cache histórico:
 # - Juros: DI1, DDI, FRC, FRO, DAP
 # - Moedas: DOL, WDO
 # - Índices: IND, WIN
-futures("31-05-2024", "DAP")
+futuro("31-05-2024", "DAP")
 
 # Múltiplas datas de uma vez
-futures(["29-05-2024", "31-05-2024"], "DI1")
+futuro(["29-05-2024", "31-05-2024"], "DI1")
 
 # Dados intradiários (quando o mercado estiver aberto)
-futures_intraday("DI1")  # Retorna dados ao vivo durante o horário de negociação
+b3.futuro_intradia("DI1")  # Retorna dados ao vivo durante o horário de negociação
 ```
 
 ## Tratamento de Datas
@@ -206,9 +206,9 @@ Consultas sem dados disponíveis (data futura, feriado, fim de semana ou
 fonte indisponível) retornam DataFrame vazio ou `nan`, sem lançar exceção:
 
 ```python
-from pyield import bc, futures
+from pyield import bc, futuro
 
-futures("01-01-2030", "DI1").is_empty()         # -> True (data futura)
+futuro("01-01-2030", "DI1").is_empty()          # -> True (data futura)
 bc.tpf_mensal("01-01-2030").is_empty()  # -> True (mês futuro)
 bc.ptax("25-12-2025")                           # -> nan (feriado)
 ```

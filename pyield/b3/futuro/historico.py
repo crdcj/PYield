@@ -5,7 +5,7 @@ import polars.selectors as cs
 
 from pyield import bday
 from pyield._internal.data_cache import obter_dataset_cacheado
-from pyield.b3.futures.common import CONTRATOS_TAXA, adicionar_vencimento, expr_dv01
+from pyield.b3.futuro.common import CONTRATOS_TAXA, adicionar_vencimento, expr_dv01
 from pyield.fwd import forwards
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
@@ -96,7 +96,7 @@ _RENOMEAR_COLUNAS_PR = {
 
 def _obter_cache_filtrado(codigo_contrato: str) -> pl.DataFrame:
     """Carrega o dataset PR cacheado e filtra por contrato."""
-    return obter_dataset_cacheado("futures").filter(
+    return obter_dataset_cacheado("futuro").filter(
         pl.col("TckrSymb").str.starts_with(codigo_contrato)
     )
 

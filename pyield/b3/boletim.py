@@ -42,7 +42,7 @@ import pyield._internal.converters as cv
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.b3._contracts import normalizar_codigos_contrato
+from pyield.b3._contratos import normalizar_codigos_contrato
 from pyield.b3._validar_pregao import data_negociacao_valida
 
 # --- Constantes de Processamento XML ---
@@ -104,9 +104,9 @@ SCHEMA_PRICE_REPORT = {nome: tipo for _, nome, tipo in COLUNAS_PRICE_REPORT}
 
 @ttl_cache()
 @retry_padrao
-def _baixar_zip_url(data: dt.date, relatorio_completo: bool) -> bytes:
+def _baixar_zip_url(data: dt.date, boletim_completo: bool) -> bytes:
     data_str = data.strftime("%y%m%d")
-    if relatorio_completo:
+    if boletim_completo:
         url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{data_str}.zip"
     else:
         url = (
@@ -121,7 +121,7 @@ def _baixar_zip_url(data: dt.date, relatorio_completo: bool) -> bytes:
     return resposta.content
 
 
-def price_report_extract(conteudo_zip: bytes) -> bytes:
+def boletim_negociacao_extrair(conteudo_zip: bytes) -> bytes:
     """Extrai o XML válido do ZIP aninhado do Price Report da B3.
 
     O ZIP da B3 contém um ZIP interno, que por sua vez contém um ou
@@ -251,21 +251,21 @@ def _filtrar_df(
     return df.sort("TckrSymb")
 
 
-def _obter_df_price_report(data: dt.date, relatorio_completo: bool) -> pl.DataFrame:
-    dados_zip = _baixar_zip_url(data, relatorio_completo)
+def _obter_df_boletim_negociacao(data: dt.date, boletim_completo: bool) -> pl.DataFrame:
+    dados_zip = _baixar_zip_url(data, boletim_completo)
     if not dados_zip:
         return pl.DataFrame()
-    xml_bytes = price_report_extract(dados_zip)
+    xml_bytes = boletim_negociacao_extrair(dados_zip)
     return _processar_xml_extraido(xml_bytes)
 
 
-def price_report_fetch(
-    date: DateLike,
-    ticker_prefix: str | list[str] | None = None,
-    ticker_length: int | None = None,
-    full_report: bool = False,
+def boletim_negociacao(
+    data_referencia: DateLike,
+    prefixo_codigo: str | list[str] | None = None,
+    comprimento_codigo: int | None = None,
+    boletim_completo: bool = False,
 ) -> pl.DataFrame:
-    """Busca e processa o price report da B3 no site oficial.
+    """Busca e processa o Boletim de Negociacao da B3 no site oficial.
 
     Faz o download do ZIP com XML, extrai os dados do contrato e devolve um
     DataFrame Polars com os dados brutos do XML e colunas no padrão
@@ -282,16 +282,16 @@ def price_report_fetch(
         schema bruto do XML da B3 para a data/relatório consultados.
 
     Args:
-        date: Data de negociação no formato 'DD-MM-YYYY', 'DD/MM/YYYY',
+        data_referencia: Data de negociação no formato 'DD-MM-YYYY', 'DD/MM/YYYY',
             'YYYY-MM-DD' ou objeto datetime.date.
-        ticker_prefix: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
+        prefixo_codigo: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
             'CPM') ou lista de prefixos (ex.: ['DI1', 'DAP']).
             Usado como filtro starts-with no XML. Se None (padrão),
             retorna todos os ativos sem filtro.
-        ticker_length: Comprimento exato do ticker para filtrar registros.
+        comprimento_codigo: Comprimento exato do ticker para filtrar registros.
             Se None (padrão), retorna todos os tickers que casam com o
             prefixo (ex.: 6 para futuros, 13 para opções).
-        full_report: Se False (padrão), usa o simplified price report (SPR),
+        boletim_completo: Se False (padrão), usa o simplified price report (SPR),
             arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
             price report completo (PR, ~2 MB) com todos os dados de negociação.
 
@@ -349,65 +349,65 @@ def price_report_fetch(
 
     Examples:
         >>> import pyield as yd
-        >>> df = yd.b3.price_report_fetch("26-04-2024", "DI1")
+        >>> df = yd.b3.boletim_negociacao("26-04-2024", "DI1")
 
         >>> # Múltiplos contratos de uma vez
-        >>> df = yd.b3.price_report_fetch("26-04-2024", ["DI1", "DAP"])
+        >>> df = yd.b3.boletim_negociacao("26-04-2024", ["DI1", "DAP"])
 
         >>> # Feriado ou fim de semana (retorna DataFrame vazio)
-        >>> df = yd.b3.price_report_fetch("25-12-2023", "DI1")  # Véspera de Natal
+        >>> df = yd.b3.boletim_negociacao("25-12-2023", "DI1")  # Véspera de Natal
         >>> df.is_empty()
         True
     """
-    if any_is_empty(date):
+    if any_is_empty(data_referencia):
         return pl.DataFrame()
 
-    date = cv.converter_datas(date)
+    data_referencia = cv.converter_datas(data_referencia)
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
-    if not data_negociacao_valida(date):
+    if not data_negociacao_valida(data_referencia):
         return pl.DataFrame()
 
-    df = _obter_df_price_report(date, full_report)
-    if df.is_empty() or ticker_prefix is None:
+    df = _obter_df_boletim_negociacao(data_referencia, boletim_completo)
+    if df.is_empty() or prefixo_codigo is None:
         return df
 
-    prefixos = normalizar_codigos_contrato(ticker_prefix)
+    prefixos = normalizar_codigos_contrato(prefixo_codigo)
     if not prefixos:
         return pl.DataFrame()
-    return _filtrar_df(df, prefixos, ticker_length)
+    return _filtrar_df(df, prefixos, comprimento_codigo)
 
 
-def price_report_read(
+def boletim_negociacao_ler(
     xml_bytes: bytes,
-    ticker_prefix: str | list[str] | None = None,
-    ticker_length: int | None = None,
+    prefixo_codigo: str | list[str] | None = None,
+    comprimento_codigo: int | None = None,
 ) -> pl.DataFrame:
     """Lê e processa o price report da B3 a partir do conteúdo XML bruto.
 
-    Mesma saída de :func:`price_report_fetch`, mas recebe o XML já
+    Mesma saída de :func:`boletim_negociacao`, mas recebe o XML já
     descomprimido em vez de baixar da rede.
 
     Args:
         xml_bytes: Conteúdo do XML em bytes (já descomprimido).
-        ticker_prefix: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
+        prefixo_codigo: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
             'CPM') ou lista de prefixos (ex.: ['DI1', 'DAP']).
             Se None (padrão), retorna todos os ativos sem filtro.
-        ticker_length: Comprimento exato do ticker para filtrar registros.
+        comprimento_codigo: Comprimento exato do ticker para filtrar registros.
             Se None (padrão), retorna todos os tickers que casam com o
             prefixo.
 
     Returns:
         pl.DataFrame: DataFrame com as mesmas colunas documentadas em
-        :func:`price_report_fetch`.
+        :func:`boletim_negociacao`.
     """
     if any_is_empty(xml_bytes):
         return pl.DataFrame()
 
     df = _processar_xml_extraido(xml_bytes)
-    if df.is_empty() or ticker_prefix is None:
+    if df.is_empty() or prefixo_codigo is None:
         return df
 
-    prefixos = normalizar_codigos_contrato(ticker_prefix)
+    prefixos = normalizar_codigos_contrato(prefixo_codigo)
     if not prefixos:
         return pl.DataFrame()
-    return _filtrar_df(df, prefixos, ticker_length)
+    return _filtrar_df(df, prefixos, comprimento_codigo)

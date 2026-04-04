@@ -25,8 +25,8 @@ import pyield as yd
 yd.bday.count("02-01-2025", "15-01-2025")  # -> 9
 yd.bday.offset("29-12-2023", 1)            # -> datetime.date(2024, 1, 2)
 
-# DI futures curve
-df = yd.futures("31-05-2024", "DI1")
+# DI future curve
+df = yd.futuro("31-05-2024", "DI1")
 # Columns: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Rate interpolation (flat forward, 252 business days/year convention)
@@ -126,7 +126,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | Module | Purpose |
 |--------|---------|
 | `bday` | Business day calendar with Brazilian holidays |
-| `futures` | B3 futures data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
+| `futuro` | B3 future data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
 | `di1` | Interpolated DI1 curve and available trade dates |
 | `Interpolator` | Rate interpolation (flat_forward, linear) |
 | `forward` / `forwards` | Forward-rate calculations |
@@ -135,7 +135,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | `tn.leiloes` / `tn.benchmarks` | Treasury bond auctions and benchmarks |
 | `anbima` | ANBIMA data (government bond prices, yield curves, IMA indexes) |
 | `bc` | BCB indicators (SELIC, PTAX, repos, VNA, auctions, trades) |
-| `b3` | B3 data (DI over, price reports, intraday derivatives) |
+| `b3` | B3 data (DI over, price reports, intradia derivatives) |
 | `ipca` | Inflation data (historical and projections) |
 | `selic` | COPOM digital options and implied probabilities |
 | `tn.rmd` | Monthly Debt Report (RMD) from Tesouro Nacional |
@@ -162,22 +162,22 @@ ntnf.di_spreads("30-05-2025", bps=True)
 ## Futures Data
 
 ```python
-from pyield import futures, futures_intraday
+from pyield import b3, futuro
 
 # DI1 (Interbank Deposit Futures)
-futures("31-05-2024", "DI1")
+futuro("31-05-2024", "DI1")
 
 # Other available contracts in the historical cache:
 # - Rates: DI1, DDI, FRC, FRO, DAP
 # - Currencies: DOL, WDO
 # - Indexes: IND, WIN
-futures("31-05-2024", "DAP")
+futuro("31-05-2024", "DAP")
 
 # Multiple dates at once
-futures(["29-05-2024", "31-05-2024"], "DI1")
+futuro(["29-05-2024", "31-05-2024"], "DI1")
 
 # Intraday data (when the market is open)
-futures_intraday("DI1")  # Returns live data during trading hours
+b3.futuro_intradia("DI1")  # Returns live data during trading hours
 ```
 
 ## Date Handling

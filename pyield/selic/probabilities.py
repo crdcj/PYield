@@ -154,9 +154,9 @@ def _add_discount_factors(df: pl.DataFrame) -> pl.DataFrame:
 
     # Chamada vetorizada: um fetch por data_referencia única
     try:
-        rates = di1.interpolate_rates(
-            dates=pairs["data_referencia"],
-            expirations=pairs["data_expiracao"],
+        rates = di1.interpolar_taxas(
+            datas_referencia=pairs["data_referencia"],
+            datas_vencimento=pairs["data_expiracao"],
             extrapolate=True,
         )
     except Exception:

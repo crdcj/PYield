@@ -2,13 +2,13 @@ import polars as pl
 import polars.selectors as cs
 
 from pyield import bday
-from pyield.b3._validar_pregao import intraday_disponivel
-from pyield.b3.derivatives_intraday import derivatives_intraday_fetch
-from pyield.b3.futures.common import CONTRATOS_TAXA, expr_dv01
+from pyield.b3._validar_pregao import intradia_disponivel
+from pyield.b3.derivativos_intradia import derivativo_intradia
+from pyield.b3.futuro.common import CONTRATOS_TAXA, expr_dv01
 from pyield.fwd import forwards
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
-_PRECO_PARA_TAXA_INTRADAY = {
+_PRECO_PARA_TAXA_INTRADIA = {
     "preco_ajuste_anterior": "taxa_ajuste_anterior",
     "preco_limite_minimo": "taxa_limite_minimo",
     "preco_limite_maximo": "taxa_limite_maximo",
@@ -59,37 +59,37 @@ _ORDEM_COLUNAS = (
 )
 
 
-def intraday(codigo_contrato: str) -> pl.DataFrame:
-    """Busca os dados intraday mais recentes da B3.
+def intradia(codigo_contrato: str) -> pl.DataFrame:
+    """Busca os dados intradia mais recentes da B3.
 
-    Os dados intraday da fonte possuem atraso aproximado de 15 minutos.
+    Os dados intradia da fonte possuem atraso aproximado de 15 minutos.
     A coluna ``horario_referencia`` reflete essa defasagem.
 
     Args:
         codigo_contrato: Código base do contrato futuro na B3.
 
     Returns:
-        DataFrame Polars com dados intraday processados.
+        DataFrame Polars com dados intradia processados.
 
     Notes:
         As colunas com prefixo ``preco_`` aparecem para contratos cotados
         por preço (ex.: DOL, IND). As com prefixo ``taxa_`` aparecem para
         contratos cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO).
     """
-    if not intraday_disponivel():
+    if not intradia_disponivel():
         return pl.DataFrame()
 
-    df = derivatives_intraday_fetch(codigo_contrato)
+    df = derivativo_intradia(codigo_contrato)
     if df.is_empty():
         return pl.DataFrame()
 
-    return _processar_intraday(df, codigo_contrato)
+    return _processar_intradia(df, codigo_contrato)
 
 
-def _processar_intraday(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+def _processar_intradia(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     df = df.filter(pl.col("codigo_mercado") == "FUT")
     if codigo_contrato in CONTRATOS_TAXA:
-        df = df.rename(_PRECO_PARA_TAXA_INTRADAY, strict=False)
+        df = df.rename(_PRECO_PARA_TAXA_INTRADIA, strict=False)
     df = df.drop_nulls("data_vencimento").sort("data_vencimento")
 
     data_negociacao = bday.last_business_day()

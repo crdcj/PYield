@@ -1,4 +1,4 @@
-from pyield.anbima.ettj_intradiaria import ettj_intradiaria
+from pyield.anbima.ettj_intradia import ettj_intradia
 from pyield.anbima.ettj_ultima import ettj_ultima
 from pyield.anbima.ima_ultimo import ima_ultimo
 from pyield.anbima.imaq import imaq
@@ -11,5 +11,5 @@ __all__ = [
     "tpf_vencimentos",
     "tpf_fonte",
     "ettj_ultima",
-    "ettj_intradiaria",
+    "ettj_intradia",
 ]

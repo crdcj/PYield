@@ -16,7 +16,7 @@ registro = logging.getLogger(__name__)
 # Estrutura interna única — usuário não vê isso
 class _Dataset(Enum):
     TPF = ("anbima_tpf.parquet", "data_referencia", "TPF (ANBIMA)")
-    FUTURES = ("b3_futures.parquet", "data_referencia", "Futures (B3)")
+    FUTURO = ("b3_futures.parquet", "data_referencia", "Futuro (B3)")
 
     def __init__(self, nome_arquivo: str, coluna_data: str, descricao: str):
         self.nome_arquivo = nome_arquivo
@@ -24,7 +24,7 @@ class _Dataset(Enum):
         self.descricao = descricao
 
 
-type IdDataset = Literal["tpf", "futures"]
+type IdDataset = Literal["tpf", "futuro"]
 
 
 def _obter_chave_data_hoje() -> str:
@@ -33,10 +33,12 @@ def _obter_chave_data_hoje() -> str:
 
 def _validar_id_dataset(id_dataset: str) -> _Dataset:
     dataset_normalizado = id_dataset.lower()
+    if dataset_normalizado == "futures":
+        dataset_normalizado = "futuro"
     try:
         return _Dataset[dataset_normalizado.upper()]
     except KeyError as e:
-        msg = f"id_dataset inválido: '{id_dataset}'. Valores aceitos: 'tpf', 'futures'."
+        msg = f"id_dataset inválido: '{id_dataset}'. Valores aceitos: 'tpf', 'futuro'."
         raise ValueError(msg) from e
 
 
@@ -77,7 +79,7 @@ def obter_dataset_cacheado(id_dataset: IdDataset) -> pl.DataFrame:
     Obtém um dataset pelo ID. Cache expira diariamente.
 
     Args:
-        id_dataset: "tpf" ou "futures"
+        id_dataset: "tpf" ou "futuro"
     """
     df = _obter_dataset_com_ttl(id_dataset.lower(), _obter_chave_data_hoje())
     return df.clone()

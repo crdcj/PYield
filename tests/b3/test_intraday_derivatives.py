@@ -1,9 +1,11 @@
 import datetime as dt
+import importlib
 import json
 from pathlib import Path
 
-import pyield.b3.derivatives_intraday as derivatives_mod
-from pyield.b3.futures import intraday as futures_intraday_mod
+from pyield.b3.futuro import intradia as futuro_intradia_mod
+
+derivatives_mod = importlib.import_module("pyield.b3.derivativos_intradia")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 DATA_REFERENCIA = dt.date(2026, 3, 10)
@@ -18,7 +20,7 @@ def _carregar_json_scty(codigo_contrato: str) -> list[dict]:
         return json.load(f)["Scty"]
 
 
-def _buscar_json_intraday_mock(codigo_contrato: str) -> list[dict]:
+def _buscar_json_intradia_mock(codigo_contrato: str) -> list[dict]:
     return _carregar_json_scty(codigo_contrato)
 
 
@@ -30,15 +32,15 @@ def _horario_referencia_mock() -> dt.datetime:
     return HORARIO_REFERENCIA
 
 
-def test_derivatives_intraday_fetch_preserva_payload_misto(monkeypatch):
+def test_derivativo_intradia_preserva_payload_misto(monkeypatch):
     """Módulo bruto deve preservar mercados mistos do payload do dia."""
     monkeypatch.setattr(
         derivatives_mod,
-        "_buscar_json_intraday",
-        _buscar_json_intraday_mock,
+        "_buscar_json_intradia",
+        _buscar_json_intradia_mock,
     )
 
-    resultado = derivatives_mod.derivatives_intraday_fetch("DOL")
+    resultado = derivatives_mod.derivativo_intradia("DOL")
     total_esperado = len(_carregar_json_scty("DOL"))
 
     assert resultado.height == total_esperado
@@ -50,15 +52,15 @@ def test_derivatives_intraday_fetch_preserva_payload_misto(monkeypatch):
     ]
 
 
-def test_derivatives_intraday_fetch_suporta_colunas_opcionais_ausentes(monkeypatch):
+def test_derivativo_intradia_suporta_colunas_opcionais_ausentes(monkeypatch):
     """Módulo bruto não deve quebrar quando o payload não tem book de ofertas."""
     monkeypatch.setattr(
         derivatives_mod,
-        "_buscar_json_intraday",
-        _buscar_json_intraday_mock,
+        "_buscar_json_intradia",
+        _buscar_json_intradia_mock,
     )
 
-    resultado = derivatives_mod.derivatives_intraday_fetch("DDI")
+    resultado = derivatives_mod.derivativo_intradia("DDI")
     total_esperado = len(_carregar_json_scty("DDI"))
 
     assert resultado.height == total_esperado
@@ -66,15 +68,15 @@ def test_derivatives_intraday_fetch_suporta_colunas_opcionais_ausentes(monkeypat
     assert "preco_oferta_venda" not in resultado.columns
 
 
-def test_derivatives_intraday_fetch_nao_descarta_fro_sem_curprc(monkeypatch):
+def test_derivativo_intradia_nao_descarta_fro_sem_curprc(monkeypatch):
     """FRO deve continuar válido mesmo sem coluna curPrc no payload."""
     monkeypatch.setattr(
         derivatives_mod,
-        "_buscar_json_intraday",
-        _buscar_json_intraday_mock,
+        "_buscar_json_intradia",
+        _buscar_json_intradia_mock,
     )
 
-    resultado = derivatives_mod.derivatives_intraday_fetch("FRO")
+    resultado = derivatives_mod.derivativo_intradia("FRO")
     total_esperado = len(_carregar_json_scty("FRO"))
 
     assert resultado.height == total_esperado
@@ -82,25 +84,25 @@ def test_derivatives_intraday_fetch_nao_descarta_fro_sem_curprc(monkeypatch):
     assert resultado["codigo_mercado"].unique().to_list() == ["FUT"]
 
 
-def test_futures_intraday_filtra_apenas_futuros(monkeypatch):
-    """Camada de futures deve consumir o bruto e manter apenas FUT."""
+def test_futuro_intradia_filtra_apenas_futuros(monkeypatch):
+    """Camada de futuro deve consumir o bruto e manter apenas FUT."""
     monkeypatch.setattr(
         derivatives_mod,
-        "_buscar_json_intraday",
-        _buscar_json_intraday_mock,
+        "_buscar_json_intradia",
+        _buscar_json_intradia_mock,
     )
-    monkeypatch.setattr(futures_intraday_mod, "intraday_disponivel", lambda: True)
+    monkeypatch.setattr(futuro_intradia_mod, "intradia_disponivel", lambda: True)
     monkeypatch.setattr(derivatives_mod.relogio, "agora", _horario_referencia_mock)
     monkeypatch.setattr(
-        futures_intraday_mod,
-        "derivatives_intraday_fetch",
-        derivatives_mod.derivatives_intraday_fetch,
+        futuro_intradia_mod,
+        "derivativo_intradia",
+        derivatives_mod.derivativo_intradia,
     )
     monkeypatch.setattr(
-        futures_intraday_mod.bday, "last_business_day", _data_referencia_mock
+        futuro_intradia_mod.bday, "last_business_day", _data_referencia_mock
     )
 
-    resultado = futures_intraday_mod.intraday("DOL")
+    resultado = futuro_intradia_mod.intradia("DOL")
 
     codigos_fut_esperados = [
         item["symb"]

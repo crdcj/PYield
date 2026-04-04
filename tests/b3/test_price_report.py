@@ -18,7 +18,7 @@ import pytest
 import requests
 from polars.testing import assert_frame_equal
 
-import pyield.b3.price_report as pr_mod
+import pyield.b3.boletim as pr_mod
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 URL_BASE_RELEASE = "https://github.com/crdcj/PYield/releases/download/test-data"
@@ -40,7 +40,7 @@ def _baixar_xml_remoto(date_str: str) -> bytes:
 def _baixar_e_parsear_xml_remoto(date_str: str) -> pl.DataFrame:
     """Baixa o XML remoto e parseia em DataFrame completo."""
     xml_bytes = _baixar_xml_remoto(date_str)
-    return pr_mod.price_report_read(xml_bytes)
+    return pr_mod.boletim_negociacao_ler(xml_bytes)
 
 
 def _parquet_referencia(date_str: str, contract_code: str) -> Path:
@@ -86,7 +86,7 @@ def test_pipeline_bruto_price_report(date: str, contract_code: str):
     assert_frame_equal(df_result, df_expect, check_exact=True, check_dtypes=True)
 
 
-def test_price_report_fetch_reusa_download_xml_por_data(monkeypatch):
+def test_boletim_negociacao_reusa_download_xml_por_data(monkeypatch):
     chamadas = {"download": 0, "extrair": 0}
 
     monkeypatch.setattr(pr_mod, "data_negociacao_valida", lambda *_: True)
@@ -108,11 +108,11 @@ def test_price_report_fetch_reusa_download_xml_por_data(monkeypatch):
         ).cast({"TradDt": pl.Date})
 
     monkeypatch.setattr(pr_mod, "_baixar_zip_url", _baixar_zip_falso)
-    monkeypatch.setattr(pr_mod, "price_report_extract", _extrair_xml_falso)
+    monkeypatch.setattr(pr_mod, "boletim_negociacao_extrair", _extrair_xml_falso)
     monkeypatch.setattr(pr_mod, "_processar_xml_extraido", _processar_xml_falso)
 
-    _ = pr_mod.price_report_fetch(date="12-01-2026", ticker_prefix="DI1")
-    _ = pr_mod.price_report_fetch(date="12-01-2026", ticker_prefix="DOL")
+    _ = pr_mod.boletim_negociacao(data_referencia="12-01-2026", prefixo_codigo="DI1")
+    _ = pr_mod.boletim_negociacao(data_referencia="12-01-2026", prefixo_codigo="DOL")
 
     # Monkeypatch substitui a função cacheada, então cada chamada passa direto
     assert chamadas == {"download": 2, "extrair": 2}
