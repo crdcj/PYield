@@ -67,14 +67,14 @@ def _validar_valores(valores: list[float]) -> float:
     return valor
 
 
-def vna_lft(data_referencia: DateLike) -> float:
+def vna_lft(data: DateLike) -> float:
     """Obtém o VNA (Valor Nominal Atualizado) da LFT no site do BCB.
 
     Baixa o arquivo diário do BCB (SELIC), extrai a tabela com os valores
     VNA e retorna o valor correspondente à data informada.
 
     Args:
-        data_referencia: Data de referência. Aceita string, date ou datetime,
+        data: Data da consulta. Aceita string, date ou datetime,
             convertidos internamente por ``converter_datas``.
 
     Returns:
@@ -95,9 +95,9 @@ def vna_lft(data_referencia: DateLike) -> float:
         >>> bc.vna_lft("31-05-2024")
         14903.01148
     """
-    if any_is_empty(data_referencia):
+    if any_is_empty(data):
         return float("nan")
-    texto = _baixar_texto(data_referencia)
+    texto = _baixar_texto(data)
     tabela = _recortar_tabela(texto)
     linhas = _obter_linhas(tabela)
     valores = _extrair_valores(linhas)

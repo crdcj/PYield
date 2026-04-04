@@ -95,7 +95,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def tpf_mensal(
-    data_referencia: DateLike,
+    data: DateLike,
     extragrupo: bool = False,
 ) -> pl.DataFrame:
     """Consulta negociações mensais no mercado secundário de TPF
@@ -107,7 +107,7 @@ def tpf_mensal(
     data de liquidação (data_liquidacao).
 
     Args:
-        data_referencia: Data de referência. Apenas ano e mês são utilizados para
+        data: Data da consulta. Apenas ano e mês são utilizados para
             baixar o arquivo correspondente.
         extragrupo: Se True, busca apenas negociações extragrupo (entre grupos
             econômicos distintos). Se False, busca todas. Default é False.
@@ -149,9 +149,9 @@ def tpf_mensal(
         >>> df = bc.tpf_mensal("07-01-2025", extragrupo=True)
 
     """
-    if any_is_empty(data_referencia):
+    if any_is_empty(data):
         return pl.DataFrame()
-    data_alvo = converter_datas(data_referencia)
+    data_alvo = converter_datas(data)
     if (data_alvo.year, data_alvo.month) > (hoje().year, hoje().month):
         return pl.DataFrame()
     url = _montar_url(data_alvo, extragrupo)

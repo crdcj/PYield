@@ -85,7 +85,7 @@ def adicionar_dv01(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
     df = df.with_columns(dv01=0.0001 * expr_duracao_mod * pl.col("pu"))
 
     try:
-        taxa_ptax = ptax(data_referencia=data_ref)
+        taxa_ptax = ptax(data=data_ref)
         df = df.with_columns(dv01_usd=pl.col("dv01") / taxa_ptax)
     except Exception as e:
         logger.error("Erro ao adicionar DV01 em USD: %s", e)

@@ -177,11 +177,11 @@ def selic_over_serie(
     return df.with_columns(pl.col("taxa").round(CASAS_DECIMAIS_ANUALIZADA))
 
 
-def selic_over(data_referencia: DateLike) -> float:
+def selic_over(data: DateLike) -> float:
     """Taxa SELIC Over para uma data específica.
 
     Args:
-        data_referencia: Data de referência.
+        data: Data da consulta.
 
     Returns:
         Taxa SELIC Over ou ``nan`` se não disponível.
@@ -191,9 +191,9 @@ def selic_over(data_referencia: DateLike) -> float:
         >>> bc.selic_over("31-05-2024")
         0.104
     """
-    if any_is_empty(data_referencia):
+    if any_is_empty(data):
         return float("nan")
-    return _extrair_taxa(selic_over_serie(data_referencia, data_referencia))
+    return _extrair_taxa(selic_over_serie(data, data))
 
 
 def selic_meta_serie(
@@ -229,11 +229,11 @@ def selic_meta_serie(
     return df.with_columns(pl.col("taxa").round(CASAS_DECIMAIS_ANUALIZADA))
 
 
-def selic_meta(data_referencia: DateLike) -> float:
+def selic_meta(data: DateLike) -> float:
     """Taxa SELIC Meta para uma data específica.
 
     Args:
-        data_referencia: Data de referência.
+        data: Data da consulta.
 
     Returns:
         Taxa SELIC Meta ou ``nan`` se não disponível.
@@ -243,9 +243,9 @@ def selic_meta(data_referencia: DateLike) -> float:
         >>> bc.selic_meta("31-05-2024")
         0.105
     """
-    if any_is_empty(data_referencia):
+    if any_is_empty(data):
         return float("nan")
-    return _extrair_taxa(selic_meta_serie(data_referencia, data_referencia))
+    return _extrair_taxa(selic_meta_serie(data, data))
 
 
 def di_over_serie(
@@ -293,11 +293,11 @@ def di_over_serie(
     return df.with_columns(taxa=pl.col("taxa").round(CASAS_DECIMAIS_DIARIA))
 
 
-def di_over(data_referencia: DateLike, anualizada: bool = True) -> float:
+def di_over(data: DateLike, anualizada: bool = True) -> float:
     """Taxa DI Over para uma data específica.
 
     Args:
-        data_referencia: Data de referência.
+        data: Data da consulta.
         anualizada: Se ``True``, retorna a taxa anualizada (base
             252 d.u.). Caso contrário, retorna a taxa diária.
 
@@ -312,6 +312,6 @@ def di_over(data_referencia: DateLike, anualizada: bool = True) -> float:
         >>> bc.di_over("28-01-2025", anualizada=False)
         0.00045513
     """
-    if any_is_empty(data_referencia):
+    if any_is_empty(data):
         return float("nan")
-    return _extrair_taxa(di_over_serie(data_referencia, data_referencia, anualizada))
+    return _extrair_taxa(di_over_serie(data, data, anualizada))

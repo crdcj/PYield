@@ -167,11 +167,11 @@ def ptax_serie(
     return _processar_df(df)
 
 
-def ptax(data_referencia: DateLike) -> float:
+def ptax(data: DateLike) -> float:
     """Cotação PTAX média de fechamento para uma data específica.
 
     Args:
-        data_referencia: Data desejada.
+        data: Data desejada.
 
     Returns:
         Taxa média (cotacao_media) do dia, ou ``nan`` se não
@@ -188,8 +188,8 @@ def ptax(data_referencia: DateLike) -> float:
         nan
     """
     dados_ptax = ptax_serie(
-        data_inicial=data_referencia,
-        data_final=data_referencia,
+        data_inicial=data,
+        data_final=data,
     )
     if dados_ptax.is_empty():
         return float("nan")
