@@ -13,7 +13,7 @@ CAMINHO_PARQUET = DIRETORIO_DADOS / "trades_intraday_20260206.parquet"
 COLUNAS_IGNORAR = ["data_hora_consulta", "data_liquidacao"]
 
 
-def test_trades_intraday_com_monkeypatch(monkeypatch):
+def test_tpf_intradiario_com_monkeypatch(monkeypatch):
     """tpf_intradiario com monkeypatch deve bater com o parquet."""
     monkeypatch.setattr(
         trades_mod,

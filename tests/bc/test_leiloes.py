@@ -17,8 +17,8 @@ DF_PTAX = pl.DataFrame(
 )
 
 
-def test_auctions_com_monkeypatch(monkeypatch):
-    """auctions com monkeypatch deve produzir o Parquet de referência."""
+def test_leiloes_com_monkeypatch(monkeypatch):
+    """leiloes com monkeypatch deve produzir o Parquet de referência."""
     monkeypatch.setattr(
         leiloes_mod,
         "_buscar_csv",

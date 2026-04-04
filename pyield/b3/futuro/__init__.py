@@ -133,7 +133,7 @@ def futuro_datas_disponiveis(codigo_contrato: str) -> pl.Series:
         Series ordenada de datas (Date) para as quais há dados de ajuste.
 
     Examples:
-        >>> from pyield.b3.futures import futuro_datas_disponiveis
+        >>> from pyield.b3.futuro import futuro_datas_disponiveis
         >>> futuro_datas_disponiveis("DI1").head(3)
         shape: (3,)
         Series: 'data_referencia' [date]

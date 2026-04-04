@@ -1,7 +1,6 @@
-"""
-Tests for pyield.selic.probabilities — implied COPOM probabilities.
+"""Tests for pyield.selic.probabilities — implied COPOM probabilities.
 
-All tests monkeypatch cpm.data() and di1.interpolate_rate() via the
+All tests monkeypatch cpm.data() and di1.interpolar_taxas() via the
 local patched_cpm fixture. No live network calls.
 """
 
@@ -41,7 +40,7 @@ def patched_cpm(monkeypatch, cpm_fixture):
     monkeypatch.setattr(_cpm, "data", lambda _date: cpm_fixture)
     monkeypatch.setattr(
         probs.di1,
-        "interpolate_rates",
+        "interpolar_taxas",
         lambda *a, **kw: pl.Series("taxa_interpolada", [0.0] * len(a[0])),
     )
     return cpm_fixture
@@ -163,7 +162,7 @@ def test_null_price_meeting_excluded(monkeypatch, cpm_fixture):
     monkeypatch.setattr(_cpm, "data", lambda _: null_meeting)
     monkeypatch.setattr(
         probs.di1,
-        "interpolate_rates",
+        "interpolar_taxas",
         lambda *a, **kw: pl.Series("taxa_interpolada", [0.0] * len(a[0])),
     )
     df = probs.all_meetings("29-01-2025")

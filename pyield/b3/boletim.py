@@ -274,7 +274,7 @@ def boletim_negociacao(
     O DataFrame retornado **não** contém colunas calculadas
     (dias_uteis, dias_corridos, dv01, taxa_forward)
     nem normalização semântica por classe de ativo. O enriquecimento é responsabilidade do
-    módulo consumidor (ex.: ``futures.historical``).
+    módulo consumidor (ex.: ``futuro.historico``).
 
     Nota:
         O dataset cacheado ``pr`` (arquivo ``b3_pr.parquet``) pode conter um

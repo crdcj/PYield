@@ -1,4 +1,4 @@
-"""Testes do pipeline bruto (raw) do price_report.
+"""Testes do pipeline bruto (raw) do boletim de negociacao.
 
 Valida que o parsing XML → tipagem → renomeação de colunas produz o
 DataFrame esperado, **sem** enriquecimento (ExpirationDate, BDaysToExp,
@@ -77,8 +77,8 @@ def _parquet_referencia(date_str: str, contract_code: str) -> Path:
         ("12-01-2026", "WIN"),
     ],
 )
-def test_pipeline_bruto_price_report(date: str, contract_code: str):
-    """Compara saída bruta do price_report com parquet canônico."""
+def test_pipeline_bruto_boletim_negociacao(date: str, contract_code: str):
+    """Compara saída bruta do boletim de negociacao com parquet canônico."""
     df_completo = _baixar_e_parsear_xml_remoto(date)
     df_result = pr_mod._filtrar_df(df_completo, [contract_code], comprimento_ticker=6)
     df_expect = pl.read_parquet(_parquet_referencia(date, contract_code))
