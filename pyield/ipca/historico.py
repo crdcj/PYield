@@ -97,11 +97,11 @@ def taxas(data_inicial: DateLike, data_final: DateLike) -> pl.DataFrame:
         data_final: Data de fim do intervalo.
 
     Returns:
-        pl.DataFrame com colunas 'periodo' e 'valor'.
+        pl.DataFrame com colunas 'periodo' e 'taxa'.
 
     Output Columns:
         * periodo (Int64): período no formato YYYYMM.
-        * valor (Float64): taxa mensal em decimal.
+        * taxa (Float64): taxa mensal em decimal.
 
     Examples:
         >>> from pyield import ipca
@@ -109,7 +109,7 @@ def taxas(data_inicial: DateLike, data_final: DateLike) -> pl.DataFrame:
         >>> ipca.taxas("01-01-2025", "01-03-2025")
         shape: (3, 2)
         ┌─────────┬────────┐
-        │ periodo ┆ valor  │
+        │ periodo ┆ taxa   │
         │ ---     ┆ ---    │
         │ i64     ┆ f64    │
         ╞═════════╪════════╡
@@ -118,7 +118,9 @@ def taxas(data_inicial: DateLike, data_final: DateLike) -> pl.DataFrame:
         │ 202503  ┆ 0.0056 │
         └─────────┴────────┘
     """
-    return _buscar_periodo(data_inicial, data_final, _VAR_TAXA, em_percentual=True)
+    return _buscar_periodo(
+        data_inicial, data_final, _VAR_TAXA, em_percentual=True
+    ).rename({"valor": "taxa"})
 
 
 def taxas_ultimas(qtd_meses: int = 1) -> pl.DataFrame:
@@ -131,11 +133,11 @@ def taxas_ultimas(qtd_meses: int = 1) -> pl.DataFrame:
         qtd_meses: Número de meses a recuperar. Padrão: 1.
 
     Returns:
-        pl.DataFrame com colunas 'periodo' e 'valor'.
+        pl.DataFrame com colunas 'periodo' e 'taxa'.
 
     Output Columns:
         * periodo (Int64): período no formato YYYYMM.
-        * valor (Float64): taxa mensal em decimal.
+        * taxa (Float64): taxa mensal em decimal.
 
     Raises:
         ValueError: Se qtd_meses for menor ou igual a 0.
@@ -147,7 +149,9 @@ def taxas_ultimas(qtd_meses: int = 1) -> pl.DataFrame:
         >>> # Obter as taxas do IPCA dos últimos 3 meses
         >>> df = ipca.taxas_ultimas(3)
     """
-    return _buscar_ultimos(qtd_meses, _VAR_TAXA, em_percentual=True)
+    return _buscar_ultimos(qtd_meses, _VAR_TAXA, em_percentual=True).rename(
+        {"valor": "taxa"}
+    )
 
 
 def indices_ultimos(qtd_meses: int = 1) -> pl.DataFrame:
@@ -160,11 +164,11 @@ def indices_ultimos(qtd_meses: int = 1) -> pl.DataFrame:
         qtd_meses: Número de meses a recuperar. Padrão: 1.
 
     Returns:
-        pl.DataFrame com colunas 'periodo' e 'valor'.
+        pl.DataFrame com colunas 'periodo' e 'indice'.
 
     Output Columns:
         * periodo (Int64): período no formato YYYYMM.
-        * valor (Float64): número-índice do IPCA.
+        * indice (Float64): número-índice do IPCA.
 
     Raises:
         ValueError: Se qtd_meses for menor ou igual a 0.
@@ -176,7 +180,7 @@ def indices_ultimos(qtd_meses: int = 1) -> pl.DataFrame:
         >>> # Obter os números-índice do IPCA dos últimos 3 meses
         >>> df = ipca.indices_ultimos(3)
     """
-    return _buscar_ultimos(qtd_meses, _VAR_INDICE)
+    return _buscar_ultimos(qtd_meses, _VAR_INDICE).rename({"valor": "indice"})
 
 
 def indices(data_inicial: DateLike, data_final: DateLike) -> pl.DataFrame:
@@ -190,11 +194,11 @@ def indices(data_inicial: DateLike, data_final: DateLike) -> pl.DataFrame:
         data_final: Data de fim do intervalo.
 
     Returns:
-        pl.DataFrame com colunas 'periodo' e 'valor'.
+        pl.DataFrame com colunas 'periodo' e 'indice'.
 
     Output Columns:
         * periodo (Int64): período no formato YYYYMM.
-        * valor (Float64): número-índice do IPCA.
+        * indice (Float64): número-índice do IPCA.
 
     Examples:
         >>> from pyield import ipca
@@ -202,7 +206,7 @@ def indices(data_inicial: DateLike, data_final: DateLike) -> pl.DataFrame:
         >>> ipca.indices(data_inicial="01-01-2025", data_final="01-03-2025")
         shape: (3, 2)
         ┌─────────┬─────────┐
-        │ periodo ┆ valor   │
+        │ periodo ┆ indice  │
         │ ---     ┆ ---     │
         │ i64     ┆ f64     │
         ╞═════════╪═════════╡
@@ -211,4 +215,6 @@ def indices(data_inicial: DateLike, data_final: DateLike) -> pl.DataFrame:
         │ 202503  ┆ 7245.38 │
         └─────────┴─────────┘
     """
-    return _buscar_periodo(data_inicial, data_final, _VAR_INDICE)
+    return _buscar_periodo(data_inicial, data_final, _VAR_INDICE).rename(
+        {"valor": "indice"}
+    )
