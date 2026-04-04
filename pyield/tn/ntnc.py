@@ -83,7 +83,7 @@ def dados(data: DateLike) -> pl.DataFrame:
     )
 
     # Adiciona duration, prazo_medio, dv01, dv01_usd e taxa_di
-    df = utils.adicionar_duration(df, duracao)
+    df = utils.adicionar_duration(df, duration)
     df = utils.adicionar_dv01(df, data_ref)
     df = utils.adicionar_taxa_di(df, data_ref)
 
@@ -148,15 +148,13 @@ def datas_pagamento(
     liquidacao = conversores.converter_datas(data_liquidacao)
     vencimento = conversores.converter_datas(data_vencimento)
 
-    # Check if maturity date is after the start date
+    # Retorna vazio se vencimento for anterior à liquidação
     if vencimento < liquidacao:
         return pl.Series(name="datas_pagamento", dtype=pl.Date)
 
-    # Initialize loop variables
+    # Itera de trás para frente, do vencimento até a liquidação
     data_cupom = vencimento
     datas_cupons = []
-
-    # Iterate backwards from the maturity date to the settlement date
     while data_cupom > liquidacao:
         datas_cupons.append(data_cupom)
         # Retrocede 6 meses
@@ -227,7 +225,7 @@ def fluxos_caixa(
     valor_cupom = _obter_valor_cupom(vencimento)
     valor_final = _obter_valor_final(vencimento)
 
-    # Build dataframe and assign cash flows using Polars expressions
+    # Monta DataFrame com fluxos de caixa
     df = pl.DataFrame({"data_pagamento": serie_datas_pagamento}).with_columns(
         pl.when(pl.col("data_pagamento") == vencimento)
         .then(valor_final)
@@ -359,7 +357,7 @@ def taxa(
     return round(taxa_encontrada, 6)
 
 
-def duracao(
+def duration(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float,
@@ -377,7 +375,7 @@ def duracao(
 
     Examples:
         >>> from pyield import ntnc
-        >>> ntnc.duracao("21-03-2025", "01-01-2031", 0.067626)
+        >>> ntnc.duration("21-03-2025", "01-01-2031", 0.067626)
         4.405363320448
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
