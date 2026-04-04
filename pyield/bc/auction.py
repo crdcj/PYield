@@ -246,7 +246,7 @@ def _buscar_ptax(df: pl.DataFrame) -> pl.DataFrame:
     if data_inicio >= ultimo_dia_util:
         data_inicio = bday.offset(ultimo_dia_util, -1)
 
-    df_ptax = pt.ptax_series(start=data_inicio, end=data_fim)
+    df_ptax = pt.ptax_serie(data_inicial=data_inicio, data_final=data_fim)
     if df_ptax.is_empty():
         return pl.DataFrame()
 

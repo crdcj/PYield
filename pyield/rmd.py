@@ -143,9 +143,7 @@ def _classificar_categorias(
             elif c in _TITULOS:
                 eventos.append((i, grupo, subgrupo, c))
             else:
-                prefixo = next(
-                    (p for p in _SUBGRUPOS_DIRETOS if c.startswith(p)), None
-                )
+                prefixo = next((p for p in _SUBGRUPOS_DIRETOS if c.startswith(p)), None)
                 if prefixo:
                     eventos.append((i, grupo, prefixo, None))
     return eventos
@@ -199,9 +197,7 @@ def _estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
     df_dados = df_bruto[_LINHA_INICIO_DADOS:_LINHA_FIM_DADOS]
     df_dados = df_dados.filter(df_dados[:, 0].is_not_null())
 
-    eventos = _classificar_categorias(
-        [str(c) for c in df_dados[:, 0].to_list()]
-    )
+    eventos = _classificar_categorias([str(c) for c in df_dados[:, 0].to_list()])
 
     # Matriz de valores (apenas períodos mensais), cast para Float64
     matriz = df_dados[:, 1:].cast(pl.Float64, strict=False)[:, indices_mensais]
@@ -213,7 +209,7 @@ def _estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
     )
 
 
-def rmd(tab: str) -> pl.DataFrame:
+def rmd(aba: str) -> pl.DataFrame:
     """Retorna dados do Relatório Mensal da Dívida (RMD) do Tesouro Nacional.
 
     Baixa e processa a planilha do RMD, extraindo dados de emissões e resgates
@@ -222,14 +218,14 @@ def rmd(tab: str) -> pl.DataFrame:
     HTML da página oficial.
 
     Args:
-        tab: Número da aba a processar (ex: "1.3"). Abas implementadas: "1.3".
+        aba: Número da aba a processar (ex: "1.3"). Abas implementadas: "1.3".
 
     Returns:
         DataFrame longo com dados de emissões e resgates por período, seção,
         subgrupo e tipo de título. Registros com valor nulo ou zero são excluídos.
         Em caso de erro, retorna DataFrame vazio e registra log da exceção.
 
-    Output Columns (para tab='1.3'):
+    Output Columns (para aba='1.3'):
         * periodo (Date): primeiro dia do mês de referência (ex: date(2006, 11, 1)).
         * grupo (String): seção principal — "Emissões" ou "Resgates".
         * subgrupo (String): categoria dentro do grupo:
@@ -261,7 +257,7 @@ def rmd(tab: str) -> pl.DataFrame:
         * valor (Float64): valor em R$.
 
     Raises:
-        ValueError: Se `tab` não estiver entre as abas implementadas.
+        ValueError: Se `aba` não estiver entre as abas implementadas.
 
     Notes:
         - A função sempre busca a publicação mais recente disponível.
@@ -276,7 +272,7 @@ def rmd(tab: str) -> pl.DataFrame:
     Examples:
         >>> import polars as pl
         >>> from pyield import rmd
-        >>> df = rmd("1.3")
+        >>> df = rmd(aba="1.3")
         >>> df_2025 = df.filter(pl.col("periodo").dt.year() == 2025)
         >>> # Totais de 2025 — ver valores de referência do Tesouro Nacional nas Notes
         >>> emissoes_2025 = df_2025.filter(pl.col("grupo") == "Emissões")["valor"].sum()
@@ -286,10 +282,10 @@ def rmd(tab: str) -> pl.DataFrame:
         >>> round(resgates_2025, 2)
         1395109062272.45
     """
-    if tab not in _ABAS_DISPONIVEIS:
+    if aba not in _ABAS_DISPONIVEIS:
         disponiveis = ", ".join(f'"{t}"' for t in sorted(_ABAS_DISPONIVEIS))
         raise ValueError(
-            f"Aba '{tab}' não disponível. Abas implementadas: {disponiveis}."
+            f"Aba '{aba}' não disponível. Abas implementadas: {disponiveis}."
         )
     try:
         url_anexo = _buscar_url_anexo()
@@ -298,8 +294,8 @@ def rmd(tab: str) -> pl.DataFrame:
         conteudo_excel = _extrair_excel(conteudo_zip)
         df = _estruturar_dados(conteudo_excel)
     except Exception as e:
-        registro.exception(f"Erro ao coletar dados do RMD (aba {tab!r}): {e}")
+        registro.exception(f"Erro ao coletar dados do RMD (aba {aba!r}): {e}")
         return pl.DataFrame()
 
-    registro.info(f"Dados do RMD (aba {tab!r}) processados. Shape: {df.shape}.")
+    registro.info(f"Dados do RMD (aba {aba!r}) processados. Shape: {df.shape}.")
     return df

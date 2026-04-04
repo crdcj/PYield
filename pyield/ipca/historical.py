@@ -60,16 +60,16 @@ def _processar_ipca(
 
 
 def _buscar_periodo(
-    start: DateLike,
-    end: DateLike,
+    data_inicial: DateLike,
+    data_final: DateLike,
     variavel: int,
     em_percentual: bool = False,
 ) -> pl.DataFrame:
     """Busca dados do IPCA para um intervalo de datas."""
-    if any_is_empty(start, end):
+    if any_is_empty(data_inicial, data_final):
         return pl.DataFrame()
-    inicio = converter_datas(start).strftime("%Y%m")
-    fim = converter_datas(end).strftime("%Y%m")
+    inicio = converter_datas(data_inicial).strftime("%Y%m")
+    fim = converter_datas(data_final).strftime("%Y%m")
     url = f"{_URL_BASE}{inicio}-{fim}/variaveis/{variavel}{_SUFIXO_URL}"
     return _processar_ipca(_buscar_dados_api(url), em_percentual)
 
@@ -86,15 +86,15 @@ def _buscar_ultimos(
     return _processar_ipca(_buscar_dados_api(url), em_percentual)
 
 
-def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
+def taxas(data_inicial: DateLike, data_final: DateLike) -> pl.DataFrame:
     """Obtém as taxas mensais do IPCA para um intervalo de datas.
 
     Realiza chamada à API do portal de dados do IBGE no formato:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/YYYYMM-YYYYMM/variaveis/63?localidades=N1[all]
 
     Args:
-        start: Data de início do intervalo.
-        end: Data de fim do intervalo.
+        data_inicial: Data de início do intervalo.
+        data_final: Data de fim do intervalo.
 
     Returns:
         pl.DataFrame com colunas 'periodo' e 'valor'.
@@ -106,7 +106,7 @@ def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
     Examples:
         >>> from pyield import ipca
         >>> # Obter as taxas do IPCA para o primeiro trimestre de 2025
-        >>> ipca.rates("01-01-2025", "01-03-2025")
+        >>> ipca.taxas("01-01-2025", "01-03-2025")
         shape: (3, 2)
         ┌─────────┬────────┐
         │ periodo ┆ valor  │
@@ -118,10 +118,10 @@ def rates(start: DateLike, end: DateLike) -> pl.DataFrame:
         │ 202503  ┆ 0.0056 │
         └─────────┴────────┘
     """
-    return _buscar_periodo(start, end, _VAR_TAXA, em_percentual=True)
+    return _buscar_periodo(data_inicial, data_final, _VAR_TAXA, em_percentual=True)
 
 
-def last_rates(qtd_meses: int = 1) -> pl.DataFrame:
+def ultimas_taxas(qtd_meses: int = 1) -> pl.DataFrame:
     """Obtém as últimas taxas mensais do IPCA.
 
     Realiza chamada à API do portal de dados do IBGE no formato:
@@ -143,14 +143,14 @@ def last_rates(qtd_meses: int = 1) -> pl.DataFrame:
     Examples:
         >>> from pyield import ipca
         >>> # Obter a taxa do IPCA do último mês
-        >>> df = ipca.last_rates(1)
+        >>> df = ipca.ultimas_taxas(1)
         >>> # Obter as taxas do IPCA dos últimos 3 meses
-        >>> df = ipca.last_rates(3)
+        >>> df = ipca.ultimas_taxas(3)
     """
     return _buscar_ultimos(qtd_meses, _VAR_TAXA, em_percentual=True)
 
 
-def last_indexes(qtd_meses: int = 1) -> pl.DataFrame:
+def ultimos_indices(qtd_meses: int = 1) -> pl.DataFrame:
     """Obtém os últimos valores do número-índice do IPCA.
 
     Realiza chamada à API do portal de dados do IBGE no formato:
@@ -172,22 +172,22 @@ def last_indexes(qtd_meses: int = 1) -> pl.DataFrame:
     Examples:
         >>> from pyield import ipca
         >>> # Obter o número-índice do IPCA do último mês
-        >>> df = ipca.last_indexes(1)
+        >>> df = ipca.ultimos_indices(1)
         >>> # Obter os números-índice do IPCA dos últimos 3 meses
-        >>> df = ipca.last_indexes(3)
+        >>> df = ipca.ultimos_indices(3)
     """
     return _buscar_ultimos(qtd_meses, _VAR_INDICE)
 
 
-def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
+def indices(data_inicial: DateLike, data_final: DateLike) -> pl.DataFrame:
     """Obtém os valores do número-índice do IPCA para um intervalo.
 
     Realiza chamada à API do portal de dados do IBGE no formato:
     https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/YYYYMM-YYYYMM/variaveis/2266?localidades=N1[all]
 
     Args:
-        start: Data de início do intervalo.
-        end: Data de fim do intervalo.
+        data_inicial: Data de início do intervalo.
+        data_final: Data de fim do intervalo.
 
     Returns:
         pl.DataFrame com colunas 'periodo' e 'valor'.
@@ -199,7 +199,7 @@ def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
     Examples:
         >>> from pyield import ipca
         >>> # Obter os números-índice do IPCA para o primeiro trimestre
-        >>> ipca.indexes(start="01-01-2025", end="01-03-2025")
+        >>> ipca.indices(data_inicial="01-01-2025", data_final="01-03-2025")
         shape: (3, 2)
         ┌─────────┬─────────┐
         │ periodo ┆ valor   │
@@ -211,4 +211,4 @@ def indexes(start: DateLike, end: DateLike) -> pl.DataFrame:
         │ 202503  ┆ 7245.38 │
         └─────────┴─────────┘
     """
-    return _buscar_periodo(start, end, _VAR_INDICE)
+    return _buscar_periodo(data_inicial, data_final, _VAR_INDICE)

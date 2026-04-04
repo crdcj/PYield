@@ -49,7 +49,7 @@ def _extrair_periodo(texto: str) -> str:
     return texto[inicio:fim]
 
 
-def projected_rate() -> ProjecaoIndicador:
+def taxa_projetada() -> ProjecaoIndicador:
     """
     Obtém a projeção atual do IPCA no site da ANBIMA.
 
@@ -75,7 +75,7 @@ def projected_rate() -> ProjecaoIndicador:
     Examples:
         >>> from pyield import ipca
         >>> # Obter a projeção atual do IPCA na ANBIMA
-        >>> ipca.projected_rate()
+        >>> ipca.taxa_projetada()
         ProjecaoIndicador(ultima_atualizacao=..., periodo_referencia=..., valor_projetado=...)
     """
     conteudo = _baixar_planilha()

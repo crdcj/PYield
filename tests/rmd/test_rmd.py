@@ -39,7 +39,7 @@ def test_pipeline_rmd(monkeypatch):
     monkeypatch.setattr(rmd_mod, "_buscar_url_anexo", lambda: "http://fake")
     monkeypatch.setattr(rmd_mod, "_buscar_conteudo", lambda url: conteudo_zip)
 
-    resultado = rmd_mod.rmd("1.3")
+    resultado = rmd_mod.rmd(aba="1.3")
     esperado = pl.read_parquet(CAMINHO_PARQUET)
     colunas_ordem = ["periodo", "grupo", "subgrupo", "titulo", "valor"]
     assert resultado.sort(colunas_ordem).equals(esperado)

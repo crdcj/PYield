@@ -172,7 +172,7 @@ yd.bc.ptax("31-05-2024")  # -> 5.4407
 yd.bc.di_over("31-05-2024")  # -> 0.104  (10.4% a.a.)
 
 # Taxa SELIC meta (definida pelo COPOM)
-yd.bc.selic_target("31-05-2024")  # -> 0.1075  (10.75% a.a.)
+yd.bc.selic_meta("31-05-2024")  # -> 0.1075  (10.75% a.a.)
 
 # VNA da LFT (Valor Nominal Atualizado)
 yd.bc.vna_lft("31-05-2024")  # -> 15234.56
@@ -184,15 +184,15 @@ Obtenha dados de inflação do IBGE:
 
 ```python
 # Taxas mensais de IPCA
-df_ipca = yd.ipca.rates("01-01-2024", "01-03-2024")
+df_ipca = yd.ipca.taxas("01-01-2024", "01-03-2024")
 # Colunas: periodo, valor
 
 # Índices de IPCA
-df_indices = yd.ipca.indexes("01-01-2024", "01-03-2024")
+df_indices = yd.ipca.indices("01-01-2024", "01-03-2024")
 # Colunas: periodo, valor
 
 # Projeções futuras (quando disponíveis)
-df_proj = yd.ipca.rates("01-01-2025", "01-12-2025")
+df_proj = yd.ipca.taxa_projetada()
 ```
 
 ## Conversão para Pandas

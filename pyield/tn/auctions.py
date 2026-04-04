@@ -322,7 +322,7 @@ def _buscar_ptax(data_leilao: dt.date) -> pl.DataFrame:
     data_max = bday.offset(data_leilao, 1)
 
     # Busca a série PTAX usando a função já existente
-    df = bc.ptax_series(start=data_min, end=data_max)
+    df = bc.ptax_serie(data_inicial=data_min, data_final=data_max)
     if df.is_empty():
         return pl.DataFrame()
 

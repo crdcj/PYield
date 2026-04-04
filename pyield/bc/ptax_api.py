@@ -81,20 +81,20 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def ptax_series(
-    start: DateLike | None = None,
-    end: DateLike | None = None,
+def ptax_serie(
+    data_inicial: DateLike | None = None,
+    data_final: DateLike | None = None,
 ) -> pl.DataFrame:
     """Cotações de fechamento do Dólar PTAX (taxa de câmbio).
 
     Fonte: Banco Central do Brasil (BCB). Frequência diária.
 
-    Se `start` não for informado, usa 28.11.1984 (primeira data
-    disponível). Se `end` não for informado, usa a data de hoje.
+    Se `data_inicial` não for informada, usa 28.11.1984 (primeira data
+    disponível). Se `data_final` não for informada, usa a data de hoje.
 
     Args:
-        start: Data de início da consulta. Padrão é ``None``.
-        end: Data de fim da consulta. Padrão é ``None``.
+        data_inicial: Data de início da consulta. Padrão é ``None``.
+        data_final: Data de fim da consulta. Padrão é ``None``.
 
     Returns:
         DataFrame com as cotações do período, ou DataFrame vazio
@@ -122,7 +122,7 @@ def ptax_series(
 
     Examples:
         >>> from pyield import bc
-        >>> bc.ptax_series(start="20-04-2025", end="25-04-2025")
+        >>> bc.ptax_serie(data_inicial="20-04-2025", data_final="25-04-2025")
         shape: (4, 5)
         ┌────────────┬──────────────┬────────────────┬───────────────┬───────────────┐
         │ data       ┆ hora         ┆ cotacao_compra ┆ cotacao_venda ┆ cotacao_media │
@@ -135,7 +135,7 @@ def ptax_series(
         │ 2025-04-25 ┆ 13:09:26.592 ┆ 5.684          ┆ 5.6846        ┆ 5.6843        │
         └────────────┴──────────────┴────────────────┴───────────────┴───────────────┘
 
-        >>> bc.ptax_series(start="02-01-1995", end="06-01-1995")
+        >>> bc.ptax_serie(data_inicial="02-01-1995", data_final="06-01-1995")
         shape: (5, 5)
         ┌────────────┬──────────┬────────────────┬───────────────┬───────────────┐
         │ data       ┆ hora     ┆ cotacao_compra ┆ cotacao_venda ┆ cotacao_media │
@@ -149,17 +149,17 @@ def ptax_series(
         │ 1995-01-06 ┆ 18:12:00 ┆ 0.839          ┆ 0.841         ┆ 0.84          │
         └────────────┴──────────┴────────────────┴───────────────┴───────────────┘
     """
-    if start:
-        start = cv.converter_datas(start)
+    if data_inicial:
+        data_inicial = cv.converter_datas(data_inicial)
     else:
-        start = dt.date(1984, 11, 28)  # Primeira data disponível na API
+        data_inicial = dt.date(1984, 11, 28)  # Primeira data disponível na API
 
-    if end:
-        end = cv.converter_datas(end)
+    if data_final:
+        data_final = cv.converter_datas(data_final)
     else:
-        end = relogio.hoje()
+        data_final = relogio.hoje()
 
-    url = _montar_url_api(start, end)
+    url = _montar_url_api(data_inicial, data_final)
     texto = _buscar_texto_api(url)
     df = _parsear_df(texto)
     if df.is_empty():
@@ -167,11 +167,11 @@ def ptax_series(
     return _processar_df(df)
 
 
-def ptax(date: DateLike) -> float:
+def ptax(data_referencia: DateLike) -> float:
     """Cotação PTAX média de fechamento para uma data específica.
 
     Args:
-        date: Data desejada.
+        data_referencia: Data desejada.
 
     Returns:
         Taxa média (cotacao_media) do dia, ou ``nan`` se não
@@ -187,7 +187,10 @@ def ptax(date: DateLike) -> float:
         >>> bc.ptax("23-08-2025")
         nan
     """
-    dados_ptax = ptax_series(start=date, end=date)
+    dados_ptax = ptax_serie(
+        data_inicial=data_referencia,
+        data_final=data_referencia,
+    )
     if dados_ptax.is_empty():
         return float("nan")
     return dados_ptax["cotacao_media"].item(0)
