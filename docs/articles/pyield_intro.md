@@ -54,29 +54,29 @@ pip install pyield
 
 ### 1. Dias Úteis (Business Days)
 
-O módulo `bday` é a base de todos os cálculos na biblioteca. Feriados brasileiros são automaticamente considerados.
+O módulo `dus` é a base de todos os cálculos na biblioteca. Feriados brasileiros são automaticamente considerados.
 
 ```python
 import pyield as yd
 
 # Contar dias úteis entre duas datas (início inclusivo, fim exclusivo)
-yd.bday.count("29-12-2023", "02-01-2024")  # -> 1
+yd.dus.contar("29-12-2023", "02-01-2024")  # -> 1
 
 # Avançar N dias úteis a partir de uma data
-yd.bday.offset("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
+yd.dus.deslocar("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
 
 # Ajustar data para o próximo dia útil (se não for dia útil)
-yd.bday.offset("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
+yd.dus.deslocar("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
 
 # Como 29-12-2023 já é dia útil, retorna a mesma data
-yd.bday.offset("29-12-2023", 0)  # -> datetime.date(2023, 12, 29)
+yd.dus.deslocar("29-12-2023", 0)  # -> datetime.date(2023, 12, 29)
 
 # Gerar série de dias úteis entre duas datas
-yd.bday.generate("22-12-2023", "02-01-2024")
+yd.dus.gerar("22-12-2023", "02-01-2024")
 # -> Polars Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
 
 # Verificar se é dia útil
-yd.bday.is_business_day("25-12-2023")  # -> False (Natal)
+yd.dus.e_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
 Todas as funções suportam operações vetorizadas com listas, Series ou arrays.
@@ -86,14 +86,16 @@ Todas as funções suportam operações vetorizadas com listas, Series ou arrays
 Obtenha dados de contratos futuros negociados na B3:
 
 ```python
-# Dados de Futuros de DI em uma data específica
-df = yd.futures("31-05-2024", "DI1")
+from pyield import b3
+
+# Dados de Futuro de DI em uma data específica
+df = b3.futuro("31-05-2024", "DI1")
 
 # DataFrame retornado contém colunas:
 # data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Outros contratos disponíveis: DDI, FRC, DAP, DOL, WDO, IND, WIN
-df_dap = yd.futures("31-05-2024", "DAP")  # Cupom Cambial
+df_dap = b3.futuro("31-05-2024", "DAP")  # Cupom Cambial
 ```
 
 ### 3. Títulos Públicos (Tesouro Nacional)
@@ -102,15 +104,15 @@ Acesse taxas indicativas da ANBIMA e dados de títulos públicos:
 
 ```python
 # LTN (Letras do Tesouro Nacional - pré-fixado)
-df_ltn = yd.ltn.data("23-08-2024")
+df_ltn = yd.ltn.dados("23-08-2024")
 # Colunas: data_referencia, titulo, codigo_selic, data_base, data_vencimento, taxa_indicativa, ...
 
 # NTN-B (Notas do Tesouro Nacional série B - IPCA+)
-df_ntnb = yd.ntnb.data("23-08-2024")
+df_ntnb = yd.ntnb.dados("23-08-2024")
 # Colunas: data_referencia, titulo, codigo_selic, data_base, data_vencimento, taxa_indicativa, ...
 
 # NTN-F (Notas do Tesouro Nacional série F - pré-fixado com cupom)
-df_ntnf = yd.ntnf.data("23-08-2024")
+df_ntnf = yd.ntnf.dados("23-08-2024")
 
 # Obs: Dados da ANBIMA estão disponíveis para os últimos 5 dias úteis
 # (membros da ANBIMA têm acesso automático ao histórico completo)
@@ -122,17 +124,17 @@ Calcule cotações e preços de títulos públicos:
 
 ```python
 # Cotação de NTN-B (base 100)
-yd.ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # Cotação para vencimento mais longo
-yd.ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
+yd.ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
-# Spreads DI para títulos pré-fixados (em pontos-base)
-df_spreads = yd.ltn.di_spreads("30-05-2024", bps=True)
-# Colunas: titulo, data_vencimento, spread_di
+# Prêmio sobre DI para títulos pré-fixados (em pontos-base)
+df_premios = yd.ltn.premio("30-05-2024", pontos_base=True)
+# Colunas: titulo, data_vencimento, premio
 
-# Spreads para NTN-F
-df_spreads_ntnf = yd.ntnf.di_spreads("30-05-2024", bps=True)
+# Prêmio para NTN-F
+df_premios_ntnf = yd.ntnf.premio("30-05-2024", pontos_base=True)
 ```
 
 ### 5. Interpolação de Taxas
@@ -140,11 +142,13 @@ df_spreads_ntnf = yd.ntnf.di_spreads("30-05-2024", bps=True)
 Interpolar taxas de juros usando convenção de mercado (252 dias úteis/ano):
 
 ```python
+from pyield import b3, Interpolador
+
 # Obter curva de DI Futuro
-df = yd.futures("31-05-2024", "DI1")
+df = b3.futuro("31-05-2024", "DI1")
 
 # Criar interpolador flat forward (padrão de mercado)
-interp = yd.Interpolator("flat_forward", df["dias_uteis"], df["taxa_ajuste"])
+interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
 
 # Interpolar para 45 dias úteis
 interp(45)  # -> Taxa interpolada (ex: 0.1037)
@@ -153,7 +157,7 @@ interp(45)  # -> Taxa interpolada (ex: 0.1037)
 interp([30, 60, 90])  # -> Polars Series com 3 taxas interpoladas
 
 # Interpolação linear (alternativa)
-linear_interp = yd.Interpolator("linear", df["dias_uteis"], df["taxa_ajuste"])
+linear_interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="linear")
 linear_interp(45)  # -> Taxa interpolada linearmente
 ```
 
@@ -172,7 +176,7 @@ yd.bc.ptax("31-05-2024")  # -> 5.4407
 yd.bc.di_over("31-05-2024")  # -> 0.104  (10.4% a.a.)
 
 # Taxa SELIC meta (definida pelo COPOM)
-yd.bc.selic_target("31-05-2024")  # -> 0.1075  (10.75% a.a.)
+yd.bc.selic_meta("31-05-2024")  # -> 0.1075  (10.75% a.a.)
 
 # VNA da LFT (Valor Nominal Atualizado)
 yd.bc.vna_lft("31-05-2024")  # -> 15234.56
@@ -184,15 +188,15 @@ Obtenha dados de inflação do IBGE:
 
 ```python
 # Taxas mensais de IPCA
-df_ipca = yd.ipca.rates("01-01-2024", "01-03-2024")
+df_ipca = yd.ipca.taxas("01-01-2024", "01-03-2024")
 # Colunas: periodo, valor
 
 # Índices de IPCA
-df_indices = yd.ipca.indexes("01-01-2024", "01-03-2024")
+df_indices = yd.ipca.indices("01-01-2024", "01-03-2024")
 # Colunas: periodo, valor
 
 # Projeções futuras (quando disponíveis)
-df_proj = yd.ipca.rates("01-01-2025", "01-12-2025")
+df_proj = yd.ipca.taxa_projetada()
 ```
 
 ## Conversão para Pandas
@@ -203,7 +207,7 @@ Embora PYield retorne Polars DataFrames por padrão (desde a versão 0.40.0), é
 import pyield as yd
 
 # Obter DataFrame Polars
-df_polars = yd.ltn.data("23-08-2024")
+df_polars = yd.ltn.dados("23-08-2024")
 
 # Converter para Pandas
 df_pandas = df_polars.to_pandas(use_pyarrow_extension_array=True)
@@ -225,8 +229,8 @@ Para valores nulos, funções escalares retornam `float('nan')`. Funções vetor
 
 ```python
 # Exemplo com null
-yd.ntnb.quotation(None, "15-05-2035", 0.06149)  # -> nan
-yd.bday.count(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
+yd.ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
+yd.dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
 
 ## Recursos Adicionais

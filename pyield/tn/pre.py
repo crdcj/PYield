@@ -1,12 +1,12 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import bday
+from pyield import dus
 from pyield._internal.types import DateLike
 from pyield.tn import ntnf, utils
 
 
-def spot_rates(date: DateLike) -> pl.DataFrame:
+def taxas_zero(data: DateLike) -> pl.DataFrame:
     """
     Cria a curva PRE (taxas zero cupom) para títulos prefixados brasileiros.
 
@@ -14,7 +14,7 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
     via bootstrap.
 
     Args:
-        date (DateLike): Data de referência para a consulta.
+        data: Data da consulta.
 
     Returns:
         pl.DataFrame: DataFrame com as colunas da curva PRE.
@@ -28,8 +28,8 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
         ValueError: Se algum vencimento não puder ser processado.
 
     Examples:
-        >>> from pyield import pre
-        >>> pre.spot_rates("18-06-2025")
+        >>> from pyield.tn import pre
+        >>> pre.taxas_zero("18-06-2025")
         shape: (17, 3)
         ┌─────────────────┬────────────┬───────────┐
         │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
@@ -50,10 +50,10 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
         └─────────────────┴────────────┴───────────┘
     """
     # Busca dados de LTN (zero cupom)
-    df_ltn = utils.obter_tpf(date, "LTN").select("data_vencimento", "taxa_indicativa")
+    df_ltn = utils.obter_tpf(data, "LTN").select("data_vencimento", "taxa_indicativa")
 
     # Busca dados de NTN-F (com cupom)
-    df_ntnf = utils.obter_tpf(date, "NTN-F").select(
+    df_ntnf = utils.obter_tpf(data, "NTN-F").select(
         "data_vencimento", "taxa_indicativa"
     )
 
@@ -75,25 +75,30 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
 
     # Se só há LTN, retorna direto (LTN já são zero cupom)
     if df_ntnf.is_empty():
-        df = _processar_ltn_adicionais(date, df_ltn)
+        df = _processar_ltn_adicionais(data, df_ltn)
     else:
         # Usa spot_rates de NTN-F para calcular zero cupom
-        df_spots = ntnf.spot_rates(
-            settlement=date,
-            ltn_maturities=df_ltn["data_vencimento"],
-            ltn_rates=df_ltn["taxa_indicativa"],
-            ntnf_maturities=df_ntnf["data_vencimento"],
-            ntnf_rates=df_ntnf["taxa_indicativa"],
-            show_coupons=False,
+        df_spots = ntnf.taxas_zero(
+            data_liquidacao=data,
+            ltn_vencimentos=df_ltn["data_vencimento"],
+            ltn_taxas=df_ltn["taxa_indicativa"],
+            ntnf_vencimentos=df_ntnf["data_vencimento"],
+            ntnf_taxas=df_ntnf["taxa_indicativa"],
+            incluir_cupons=False,
         )
 
         # Encontra vencimentos de LTN que não estão no resultado de NTN-F
-        ltn_mask = ~df_ltn["data_vencimento"].is_in(df_spots["data_vencimento"].to_list())
+        ltn_mask = ~df_ltn["data_vencimento"].is_in(
+            df_spots["data_vencimento"].to_list()
+        )
         ltn_not_in_ntnf = df_ltn.filter(ltn_mask)
 
         if not ltn_not_in_ntnf.is_empty():
             # Processa vencimentos de LTN adicionais
-            ltn_subset = _processar_ltn_adicionais(date, ltn_not_in_ntnf)
+            ltn_subset = _processar_ltn_adicionais(
+                data,
+                ltn_not_in_ntnf,
+            )
 
             # Combina LTN e NTN-F
             df = pl.concat([df_spots, ltn_subset])
@@ -108,11 +113,12 @@ def spot_rates(date: DateLike) -> pl.DataFrame:
 
 
 def _processar_ltn_adicionais(
-    date: DateLike, ltn_nao_em_ntnf: pl.DataFrame
+    data_referencia: DateLike,
+    ltn_nao_em_ntnf: pl.DataFrame,
 ) -> pl.DataFrame:
     """Processa vencimentos de LTN fora do bootstrap de NTN-F."""
     # Calcula dias úteis de forma vetorizada
-    dias_uteis = bday.count(date, ltn_nao_em_ntnf["data_vencimento"])
+    dias_uteis = dus.contar(data_referencia, ltn_nao_em_ntnf["data_vencimento"])
 
     # Cria DataFrame de resultado
     return pl.DataFrame(
@@ -133,71 +139,79 @@ def _validar_resultado_final(df: pl.DataFrame) -> None:
         raise ValueError("Resultado final contém NaN na coluna taxa_zero")
 
 
-def di_spreads(date: DateLike, bps: bool = False) -> pl.DataFrame:
+def premio(
+    data: DateLike,
+    pontos_base: bool = False,
+) -> pl.DataFrame:
     """
-    Calcula o DI Spread para títulos prefixados (LTN e NTN-F) em uma data de referência.
+    Calcula o prêmio dos títulos prefixados (LTN e NTN-F) sobre o DI.
 
-    spread = taxa indicativa do PRE - taxa de ajuste do DI
+    Em linguagem de mercado, esse valor é chamado de prêmio. Em termos
+    descritivos, trata-se do spread sobre o DI.
 
-    Quando ``bps=False`` a coluna retorna essa diferença em formato decimal
-    (ex: 0.000439 ≈ 4.39 bps). Quando ``bps=True`` o valor é automaticamente
+    Definição do prêmio:
+        premio = taxa indicativa do PRE - taxa de ajuste do DI
+
+    Quando ``pontos_base=False`` a coluna retorna essa diferença em formato
+    decimal (ex: 0.000439 ≈ 4.39 bps). Quando ``pontos_base=True`` o valor é
+    automaticamente
     multiplicado por 10_000 e exibido diretamente em basis points.
 
     Args:
-        date (DateLike): Data de referência para buscar as taxas.
-        bps (bool): Se True, retorna spread_di já convertido em basis points.
+        data: Data da consulta para buscar as taxas.
+        pontos_base: Se True, retorna o prêmio já convertido em basis points.
             Padrão False.
 
     Returns:
-        pl.DataFrame: DataFrame com as colunas do spread.
+        pl.DataFrame: DataFrame com as colunas do prêmio.
 
     Output Columns:
         - titulo (String): Tipo do título.
         - data_vencimento (Date): Data de vencimento.
-        - spread_di (Float64): Spread em decimal ou bps conforme parâmetro
-            (também conhecido como prêmio).
+        - premio (Float64): prêmio em decimal ou bps conforme parâmetro
+            (spread sobre o DI).
 
     Examples:
-        >>> from pyield import pre
-        >>> pre.di_spreads("30-05-2025", bps=True)
+        >>> from pyield.tn import pre
+        >>> pre.premio("30-05-2025", pontos_base=True)
         shape: (18, 3)
-        ┌────────┬─────────────────┬───────────┐
-        │ titulo ┆ data_vencimento ┆ spread_di │
-        │ ---    ┆ ---             ┆ ---       │
-        │ str    ┆ date            ┆ f64       │
-        ╞════════╪═════════════════╪═══════════╡
-        │ LTN    ┆ 2025-07-01      ┆ 4.39      │
-        │ LTN    ┆ 2025-10-01      ┆ -9.0      │
-        │ LTN    ┆ 2026-01-01      ┆ -4.88     │
-        │ LTN    ┆ 2026-04-01      ┆ -4.45     │
-        │ LTN    ┆ 2026-07-01      ┆ 0.81      │
-        │ …      ┆ …               ┆ …         │
-        │ NTN-F  ┆ 2027-01-01      ┆ -3.31     │
-        │ NTN-F  ┆ 2029-01-01      ┆ 14.21     │
-        │ NTN-F  ┆ 2031-01-01      ┆ 21.61     │
-        │ NTN-F  ┆ 2033-01-01      ┆ 11.51     │
-        │ NTN-F  ┆ 2035-01-01      ┆ 22.0      │
-        └────────┴─────────────────┴───────────┘
+        ┌────────┬─────────────────┬────────┐
+        │ titulo ┆ data_vencimento ┆ premio │
+        │ ---    ┆ ---             ┆ ---    │
+        │ str    ┆ date            ┆ f64    │
+        ╞════════╪═════════════════╪════════╡
+        │ LTN    ┆ 2025-07-01      ┆ 4.39   │
+        │ LTN    ┆ 2025-10-01      ┆ -9.0   │
+        │ LTN    ┆ 2026-01-01      ┆ -4.88  │
+        │ LTN    ┆ 2026-04-01      ┆ -4.45  │
+        │ LTN    ┆ 2026-07-01      ┆ 0.81   │
+        │ …      ┆ …               ┆ …      │
+        │ NTN-F  ┆ 2027-01-01      ┆ -3.31  │
+        │ NTN-F  ┆ 2029-01-01      ┆ 14.21  │
+        │ NTN-F  ┆ 2031-01-01      ┆ 21.61  │
+        │ NTN-F  ┆ 2033-01-01      ┆ 11.51  │
+        │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
+        └────────┴─────────────────┴────────┘
     """
     # Busca taxas dos títulos (LTN e NTN-F) e adiciona taxa_di
-    df = utils.obter_tpf(date, "PRE").select(
+    df = utils.obter_tpf(data, "PRE").select(
         "titulo", "data_vencimento", "taxa_indicativa"
     )
     if df.is_empty():
         return df.select(
             pl.lit("").alias("titulo"),
             pl.lit(None, dtype=pl.Date).alias("data_vencimento"),
-            pl.lit(None, dtype=pl.Float64).alias("spread_di"),
+            pl.lit(None, dtype=pl.Float64).alias("premio"),
         ).clear()
-    data_ref = cv.converter_datas(date)
+    data_ref = cv.converter_datas(data)
     df = utils.adicionar_taxa_di(df, data_ref)
     df = (
-        df.with_columns(spread_di=pl.col("taxa_indicativa") - pl.col("taxa_di"))
-        .select("titulo", "data_vencimento", "spread_di")
+        df.with_columns(premio=pl.col("taxa_indicativa") - pl.col("taxa_di"))
+        .select("titulo", "data_vencimento", "premio")
         .sort("titulo", "data_vencimento")
     )
 
-    if bps:
-        df = df.with_columns(pl.col("spread_di") * 10_000)
+    if pontos_base:
+        df = df.with_columns(pl.col("premio") * 10_000)
 
     return df

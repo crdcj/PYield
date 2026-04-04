@@ -1,27 +1,27 @@
 from pyield.b3 import di1
-from pyield.b3.derivatives_intraday import derivatives_intraday_fetch
-from pyield.b3.di_over import di_over
-from pyield.b3.futures import (
-    futures,
-    futures_available_dates,
-    futures_enrich,
-    futures_intraday,
+from pyield.b3.boletim import (
+    boletim_negociacao,
+    boletim_negociacao_extrair,
+    boletim_negociacao_ler,
 )
-from pyield.b3.price_report import (
-    price_report_extract,
-    price_report_fetch,
-    price_report_read,
+from pyield.b3.derivativos_intradia import derivativo_intradia
+from pyield.b3.di_over import di_over
+from pyield.b3.futuro import (
+    futuro,
+    futuro_datas_disponiveis,
+    futuro_enriquecer,
+    futuro_intradia,
 )
 
 __all__ = [
     "di_over",
     "di1",
-    "futures",
-    "futures_available_dates",
-    "futures_enrich",
-    "futures_intraday",
-    "derivatives_intraday_fetch",
-    "price_report_extract",
-    "price_report_fetch",
-    "price_report_read",
+    "futuro",
+    "futuro_datas_disponiveis",
+    "futuro_enriquecer",
+    "futuro_intradia",
+    "derivativo_intradia",
+    "boletim_negociacao",
+    "boletim_negociacao_extrair",
+    "boletim_negociacao_ler",
 ]

@@ -19,26 +19,27 @@ pip install pyield
 ## Início Rápido
 
 ```python
-import pyield as yd
+from pyield import dus, b3, bc, Interpolador
+from pyield.tn import ntnb
 
 # Dias úteis (base de todos os cálculos)
-yd.bday.count("02-01-2025", "15-01-2025")  # -> 9
-yd.bday.offset("29-12-2023", 1)            # -> datetime.date(2024, 1, 2)
+dus.contar("02-01-2025", "15-01-2025")  # -> 9
+dus.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
 
 # Curva de DI Futuro
-df = yd.futures("31-05-2024", "DI1")
-# Columns: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
+df = b3.futuro("31-05-2024", "DI1")
+# Colunas: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)
-interp = yd.Interpolator("flat_forward", df["dias_uteis"], df["taxa_ajuste"])
+interp = Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
 interp(45)       # -> 0.04833...
-interp([30, 60]) # -> pl.Series with interpolated rates
+interp([30, 60]) # -> Series do Polars com taxas interpoladas
 
 # Precificação de títulos públicos
-yd.ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # Indicadores do BCB
-yd.bc.selic_over("31-05-2024")  # -> 0.000414...
+bc.selic_over("31-05-2024")  # -> 0.000414...
 ```
 
 Um notebook no Colab com mais exemplos:
@@ -47,56 +48,56 @@ Um notebook no Colab com mais exemplos:
 
 ## Blocos Principais
 
-### Dias Úteis (`bday`)
+### Dias Úteis (`dus`)
 
-O módulo `bday` é a base do PYield. Todos os cálculos com datas (preço, duration, taxas a termo) dependem da contagem correta de dias úteis com feriados brasileiros.
+O módulo `dus` é a base do PYield. Todos os cálculos com datas (preço, duration, taxas a termo) dependem da contagem correta de dias úteis com feriados brasileiros.
 
 ```python
-from pyield import bday
+from pyield import dus
 
 # Conta dias úteis (início inclusivo, fim exclusivo)
-bday.count("29-12-2023", "02-01-2024")  # -> 1
+dus.contar("29-12-2023", "02-01-2024")  # -> 1
 
 # Avança N dias úteis
-bday.offset("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
+dus.deslocar("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
 
 # Ajusta dia não útil para o próximo dia útil
-bday.offset("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
+dus.deslocar("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
 
 # Gera intervalo de dias úteis
-bday.generate("22-12-2023", "02-01-2024")
+dus.gerar("22-12-2023", "02-01-2024")
 # -> Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
 
 # Verifica se a data é dia útil
-bday.is_business_day("25-12-2023")  # -> False (Christmas)
+dus.e_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
 Todas as funções suportam operações vetorizadas com listas, Series ou arrays.
 
-### Interpolação de Taxas (`Interpolator`)
+### Interpolação de Taxas (`Interpolador`)
 
-A classe `Interpolator` interpola taxas usando a convenção de 252 dias úteis/ano, padrão no mercado brasileiro.
+A classe `Interpolador` interpola taxas usando a convenção de 252 dias úteis/ano, padrão no mercado brasileiro.
 
 ```python
-from pyield import Interpolator
+from pyield import Interpolador
 
-known_bdays = [30, 60, 90]
-known_rates = [0.045, 0.05, 0.055]
+dias_uteis = [30, 60, 90]
+taxas = [0.045, 0.05, 0.055]
 
 # Interpolação flat forward (padrão de mercado)
-interp = Interpolator("flat_forward", known_bdays, known_rates)
+interp = Interpolador(dias_uteis, taxas, metodo="flat_forward")
 interp(45)  # -> 0.04833...
 
 # Interpolação linear
-linear = Interpolator("linear", known_bdays, known_rates)
+linear = Interpolador(dias_uteis, taxas, metodo="linear")
 linear(45)  # -> 0.0475
 
 # Vetorizado
-interp([15, 45, 75])  # -> pl.Series with 3 rates
+interp([15, 45, 75])  # -> pl.Series com 3 taxas
 
 # Extrapolação (desabilitada por padrão, retorna NaN)
 interp(100)  # -> nan
-Interpolator("flat_forward", known_bdays, known_rates, extrapolate=True)(100)  # -> 0.055
+Interpolador(dias_uteis, taxas, metodo="flat_forward", extrapolar=True)(100)  # -> 0.055
 ```
 
 ### Taxas a Termo (`forward`, `forwards`)
@@ -113,33 +114,33 @@ Convenção utilizada:
 from pyield import forward, forwards
 
 # Taxa a termo única entre dois pontos
-forward(bday1=10, bday2=20, rate1=0.05, rate2=0.06)  # -> 0.0700952...
+forward(10, 20, 0.05, 0.06)  # -> 0.0700952...
 
 # Curva a termo vetorizada a partir de taxas spot
-bdays = [10, 20, 30]
-rates = [0.05, 0.06, 0.07]
-forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
+dias_uteis = [10, 20, 30]
+taxas = [0.05, 0.06, 0.07]
+forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 ```
 
 ## Visão Geral dos Módulos
 
 | Módulo | Finalidade |
 |--------|---------|
-| `bday` | Calendário de dias úteis com feriados brasileiros |
-| `futures` | Dados de futuros da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
-| `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
-| `Interpolator` | Interpolação de taxas (flat_forward, linear) |
+| `dus` | Calendário de dias úteis com feriados brasileiros |
+| `b3.futuro` | Dados históricos de futuros da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
+| `b3.di1` | Curva DI1 interpolada e datas de negociação disponíveis |
+| `Interpolador` | Interpolação de taxas (flat_forward, linear) |
 | `forward` / `forwards` | Cálculo de taxas a termo |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
 | `ntnb1`, `ntnbprinc`, `pre` | Títulos e curvas adicionais (NTN-B1, NTN-B Principal, curva PRE) |
-| `tn.auction` / `tn.benchmarks` | Leilões e benchmarks de títulos públicos |
+| `tn.leiloes` / `tn.benchmarks` | Leilões e benchmarks de títulos públicos |
 | `anbima` | Dados da ANBIMA (preços de TPF, curvas de juros, índices IMA) |
 | `bc` | Indicadores do BCB (SELIC, PTAX, repos, VNA, leilões, negociações) |
 | `b3` | Dados da B3 (DI over, price reports, derivativos intradiários) |
 | `ipca` | Dados de inflação (histórico e projeções) |
 | `selic` | Opções digitais de COPOM e probabilidades implícitas |
-| `rmd` | Relatório Mensal da Dívida do Tesouro Nacional |
-| `today` / `now` | Data/hora atual no Brasil (America/Sao_Paulo) |
+| `tn.rmd` | Relatório Mensal da Dívida do Tesouro Nacional |
+| `hoje` / `agora` | Data/hora atual no Brasil (America/Sao_Paulo) |
 
 ## Títulos Públicos
 
@@ -147,37 +148,37 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 from pyield import ltn, ntnb, ntnf
 
 # Busca taxas indicativas da ANBIMA
-ltn.data("23-08-2024")   # -> DataFrame with LTN bonds
-ntnb.data("23-08-2024")  # -> DataFrame with NTN-B bonds
+ltn.dados("23-08-2024")  # -> DataFrame com títulos LTN
+ntnb.dados("23-08-2024")  # -> DataFrame com títulos NTN-B
 
 # Calcula cotação do título (base 100)
-ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
-ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
+ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
-# Spreads de DI (bps=True multiplica por 10.000)
-ntnf.di_spreads("30-05-2025", bps=True)
-# -> DataFrame: titulo, data_vencimento, spread_di
+# Prêmio sobre o DI (pontos_base=True multiplica por 10.000)
+ntnf.premio("30-05-2025", pontos_base=True)
+# -> DataFrame: titulo, data_vencimento, premio
 ```
 
 ## Dados de Futuros
 
 ```python
-from pyield import futures, futures_intraday
+import pyield as yd
 
 # DI1 (Futuro de Depósito Interfinanceiro)
-futures("31-05-2024", "DI1")
+b3.futuro("31-05-2024", "DI1")
 
 # Outros contratos disponíveis no cache histórico:
 # - Juros: DI1, DDI, FRC, FRO, DAP
 # - Moedas: DOL, WDO
 # - Índices: IND, WIN
-futures("31-05-2024", "DAP")
+b3.futuro("31-05-2024", "DAP")
 
 # Múltiplas datas de uma vez
-futures(["29-05-2024", "31-05-2024"], "DI1")
+b3.futuro(["29-05-2024", "31-05-2024"], "DI1")
 
 # Dados intradiários (quando o mercado estiver aberto)
-futures_intraday("DI1")  # Retorna dados ao vivo durante o horário de negociação
+b3.futuro_intradia("DI1")  # Retorna dados ao vivo durante o horário de negociação
 ```
 
 ## Tratamento de Datas
@@ -196,22 +197,39 @@ Tratamento de nulos: funções escalares retornam `float('nan')` para entradas a
 (propaga nos cálculos). Funções vetorizadas propagam `null` elemento a elemento.
 
 ```python
-from pyield import ntnb, bday
+from pyield.tn import ntnb
+from pyield import dus
 
-ntnb.quotation(None, "15-05-2035", 0.06149)  # -> nan
-bday.count(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
+ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
+dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
 
 Consultas sem dados disponíveis (data futura, feriado, fim de semana ou
 fonte indisponível) retornam DataFrame vazio ou `nan`, sem lançar exceção:
 
 ```python
-from pyield import bc, futures
+from pyield import b3, bc
 
-futures("01-01-2030", "DI1").is_empty()         # -> True (data futura)
-bc.tpf_monthly_trades("01-01-2030").is_empty()  # -> True (mês futuro)
-bc.ptax("25-12-2025")                           # -> nan (feriado)
+b3.futuro("01-01-2030", "DI1").is_empty()  # -> True (data futura)
+bc.tpf_mensal("01-01-2030").is_empty()     # -> True (mês futuro)
+bc.ptax("25-12-2025")                      # -> nan (feriado)
 ```
+
+## Migração para Português (v0.48.0+)
+
+A partir da versão 0.48.0, a API pública foi migrada para o português. Os principais renomes:
+
+| Antes (< 0.48) | Depois (≥ 0.48) |
+|---|---|
+| `yd.bday` | `yd.dus` |
+| `bday.count()` | `dus.contar()` |
+| `bday.offset()` | `dus.deslocar()` |
+| `bday.generate()` | `dus.gerar()` |
+| `bday.is_business_day()` | `dus.e_dia_util()` |
+| `Interpolator(method, bdays, rates)` | `Interpolador(dias_uteis, taxas, metodo=...)` |
+| `extrapolate=True` | `extrapolar=True` |
+| `ntnb.quotation()` | `ntnb.cotacao()` |
+| `ntnb.data()` | `ntnb.dados()` |
 
 ## Migração para Polars (v0.40.0+)
 

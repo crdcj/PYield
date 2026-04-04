@@ -121,13 +121,13 @@ def _add_discount_factors(df: pl.DataFrame) -> pl.DataFrame:
         DiscountExp  : Float64  exp(+n * r_n), the B3 pricing discount factor
                                 where n = BDaysToExp/252, r_n = ln(1+DI1Rate)
 
-    Uses the vectorized di1.interpolate_rates() to fetch all DI1 rates in a
-    single call (one data fetch + one interpolator per unique TradeDate),
+    Uses the vectorized di1.interpolar_taxas() to fetch all DI1 rates in a
+    single call (one data fetch + one interpolador per unique TradeDate),
     then computes discount factors with Polars expressions.
 
     Interpolation method
     --------------------
-    di1.interpolate_rates() implements B3 Manual §1.4.2 — Flat Forward 252,
+    di1.interpolar_taxas() implements B3 Manual §1.4.2 — Flat Forward 252,
     which log-linearly interpolates accumulated DI1 price factors (PU values):
 
         fa_j = (1 + r_j)^(du_j/252)          # accumulated factor at node j
@@ -154,10 +154,10 @@ def _add_discount_factors(df: pl.DataFrame) -> pl.DataFrame:
 
     # Chamada vetorizada: um fetch por data_referencia única
     try:
-        rates = di1.interpolate_rates(
-            dates=pairs["data_referencia"],
-            expirations=pairs["data_expiracao"],
-            extrapolate=True,
+        rates = di1.interpolar_taxas(
+            datas_referencia=pairs["data_referencia"],
+            datas_vencimento=pairs["data_expiracao"],
+            extrapolar=True,
         )
     except Exception:
         logger.warning("Falha na busca DI1; usando fallback taxa=0.0.")

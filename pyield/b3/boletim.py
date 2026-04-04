@@ -1,0 +1,421 @@
+"""
+Exemplo de trecho do XML bruto da B3:
+    <PricRpt>
+        <TradDt>
+            <Dt>2026-04-01</Dt>
+        </TradDt>
+        <SctyId>
+            <TckrSymb>DI1F31</TckrSymb>
+        </SctyId>
+        <FinInstrmId>
+            <OthrId>
+                <Id>200000235664</Id>
+                <Tp>
+                    <Prtry>8</Prtry>
+                </Tp>
+            </OthrId>
+            <PlcOfListg>
+                <MktIdrCd>BVMF</MktIdrCd>
+            </PlcOfListg>
+        </FinInstrmId>
+        <TradDtls>
+            <TradQty>29880</TradQty>
+        </TradDtls>
+        <FinInstrmAttrbts>
+            <MktDataStrmId>E</MktDataStrmId>
+            ...
+            <MinTradLmt Ccy="BRL">12.87</MinTradLmt>
+        </FinInstrmAttrbts>
+    </PricRpt>
+"""
+
+import datetime as dt
+import io
+import re
+import zipfile
+
+import polars as pl
+import requests
+from lxml import etree
+
+import pyield._internal.converters as cv
+from pyield._internal.cache import ttl_cache
+from pyield._internal.retry import retry_padrao
+from pyield._internal.types import DateLike, any_is_empty
+from pyield.b3._contratos import normalizar_contratos
+from pyield.b3._validar_pregao import data_negociacao_valida
+
+# --- Constantes de Processamento XML ---
+NAMESPACE_B3 = "urn:bvmf.217.01.xsd"
+NAMESPACES = {"ns": NAMESPACE_B3}
+# ZIP válido do price report ~2KB; 1KB detecta arquivos "sem dados"
+MIN_TAMANHO_ZIP_BYTES = 1024
+XPATH_PRICE_REPORT = "//ns:PricRpt"
+
+# --- Mapeamento de Colunas ---
+# Estrutura: (id_pdf, nome_xml, tipo_polars)
+# Esta camada base preserva os nomes originais do XML da B3.
+# https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf
+COLUNAS_PRICE_REPORT: list[tuple[str, str, type[pl.DataType]]] = [
+    ("1.00", "TradDt", pl.Date),
+    ("2.01", "TckrSymb", pl.String),
+    ("3.01.01", "Id", pl.String),
+    ("3.01.02.01", "Prtry", pl.String),
+    ("3.02.01", "MktIdrCd", pl.String),
+    ("4.01", "DaysToSttlm", pl.Int64),
+    ("4.02", "TradQty", pl.Int64),
+    ("5.01", "MktDataStrmId", pl.String),
+    ("5.02", "NtlFinVol", pl.Float64),
+    ("5.03", "IntlFinVol", pl.Float64),
+    ("5.04", "OpnIntrst", pl.Int64),
+    ("5.05", "FinInstrmQty", pl.Int64),
+    ("5.06", "BestBidPric", pl.Float64),
+    ("5.07", "BestAskPric", pl.Float64),
+    ("5.08", "FrstPric", pl.Float64),
+    ("5.09", "MinPric", pl.Float64),
+    ("5.10", "MaxPric", pl.Float64),
+    ("5.11", "TradAvrgPric", pl.Float64),
+    ("5.12", "LastPric", pl.Float64),
+    ("5.13", "RglrTxsQty", pl.Int64),
+    ("5.14", "NonRglrTxsQty", pl.Int64),
+    ("5.15", "RglrTraddCtrcts", pl.Int64),
+    ("5.16", "NonRglrTraddCtrcts", pl.Int64),
+    ("5.17", "NtlRglrVol", pl.Float64),
+    ("5.18", "NtlNonRglrVol", pl.Float64),
+    ("5.19", "IntlRglrVol", pl.Float64),
+    ("5.20", "IntlNonRglrVol", pl.Float64),
+    ("5.21", "AdjstdQt", pl.Float64),
+    ("5.22", "AdjstdQtTax", pl.Float64),
+    ("5.23", "AdjstdQtStin", pl.String),
+    ("5.24", "PrvsAdjstdQt", pl.Float64),
+    ("5.25", "PrvsAdjstdQtTax", pl.Float64),
+    ("5.26", "PrvsAdjstdQtStin", pl.String),
+    ("5.27", "OscnPctg", pl.Float64),
+    ("5.28", "VartnPts", pl.Float64),
+    ("5.29", "EqvtVal", pl.Float64),
+    ("5.30", "AdjstdValCtrct", pl.Float64),
+    ("5.31", "MaxTradLmt", pl.Float64),
+    ("5.32", "MinTradLmt", pl.Float64),
+]
+
+# Schema completo: nome_xml → tipo_polars. Garante ordem e tipagem constante.
+SCHEMA_PRICE_REPORT = {nome: tipo for _, nome, tipo in COLUNAS_PRICE_REPORT}
+
+
+@ttl_cache()
+@retry_padrao
+def _baixar_zip_url(data: dt.date, boletim_completo: bool) -> bytes:
+    data_str = data.strftime("%y%m%d")
+    if boletim_completo:
+        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{data_str}.zip"
+    else:
+        url = (
+            f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{data_str}.zip"
+        )
+
+    resposta = requests.get(url, timeout=(5, 30))
+    resposta.raise_for_status()
+
+    if len(resposta.content) < MIN_TAMANHO_ZIP_BYTES:
+        return bytes()
+    return resposta.content
+
+
+def boletim_negociacao_extrair(conteudo_zip: bytes) -> bytes:
+    """Extrai o XML válido do ZIP aninhado do Price Report da B3.
+
+    O ZIP da B3 contém um ZIP interno, que por sua vez contém um ou
+    mais XMLs. Esta função extrai o último XML (mais recente).
+
+    Args:
+        conteudo_zip: Conteúdo do ZIP externo em bytes.
+
+    Returns:
+        Conteúdo do XML extraído em bytes.
+
+    Raises:
+        ValueError: Se o ZIP estiver vazio ou não contiver XML.
+    """
+    with zipfile.ZipFile(io.BytesIO(conteudo_zip), "r") as zip_externo:
+        nomes = zip_externo.namelist()
+        if not nomes:
+            raise ValueError("ZIP externo está vazio")
+
+        conteudo_interno = zip_externo.read(nomes[0])
+        with zipfile.ZipFile(io.BytesIO(conteudo_interno), "r") as zip_interno:
+            nomes_xml = sorted(n for n in zip_interno.namelist() if n.endswith(".xml"))
+            if not nomes_xml:
+                raise ValueError("Nenhum XML encontrado no ZIP interno")
+            return zip_interno.read(nomes_xml[-1])
+
+
+def _extrair_dados_contrato(pric_rpt: etree._Element) -> dict | None:
+    dados = {}
+    tem_ticker = False
+    tem_data = False
+
+    for elem in pric_rpt.iter():
+        text = elem.text
+        if not text:
+            continue
+
+        tag = elem.tag
+        if tag[0] == "{":
+            tag = tag[tag.find("}") + 1 :]
+
+        # 🔑 obrigatórios primeiro
+        if tag == "TckrSymb":
+            dados["TckrSymb"] = text
+            tem_ticker = True
+            continue
+
+        if tag == "Dt":
+            pai = elem.getparent()
+            if pai is None:
+                continue
+
+            parent = pai.tag
+            if parent[0] == "{":
+                parent = parent[parent.find("}") + 1 :]
+
+            if parent == "TradDt":
+                dados["TradDt"] = text
+                tem_data = True
+            continue
+
+        # ⚡ resto
+        if tag in SCHEMA_PRICE_REPORT:
+            dados[tag] = text
+
+    if not tem_ticker or not tem_data:
+        return None
+
+    return dados
+
+
+def _parsear_xml_registros(xml_bytes: bytes) -> list[dict]:
+    analisador = etree.XMLParser(
+        ns_clean=True,
+        remove_blank_text=True,
+        remove_comments=True,
+        recover=True,
+        resolve_entities=False,
+        no_network=True,
+        load_dtd=False,
+    )
+    arvore = etree.parse(io.BytesIO(xml_bytes), parser=analisador)
+    resultado = arvore.xpath(XPATH_PRICE_REPORT, namespaces=NAMESPACES)
+    elementos: list[etree._Element] = resultado  # type: ignore[assignment]
+    registros = [
+        dados
+        for pric_rpt in elementos
+        if (dados := _extrair_dados_contrato(pric_rpt)) is not None
+    ]
+    return registros
+
+
+def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
+    df = pl.DataFrame(registros)
+    # Casting usa os nomes originais do XML, que são constantes
+    tipos_coluna = {k: v for k, v in SCHEMA_PRICE_REPORT.items() if k in df.columns}
+    df = df.cast(tipos_coluna, strict=False)  # type: ignore
+    # Adiciona colunas ausentes com null e garante ordem/schema constante
+    colunas_faltantes = {
+        nome: pl.lit(None).cast(tipo)
+        for nome, tipo in SCHEMA_PRICE_REPORT.items()
+        if nome not in df.columns
+    }
+    if colunas_faltantes:
+        df = df.with_columns(**colunas_faltantes)
+    return df.select(SCHEMA_PRICE_REPORT.keys())
+
+
+def _processar_xml_extraido(xml_bytes: bytes) -> pl.DataFrame:
+    registros = _parsear_xml_registros(xml_bytes)
+    if not registros:
+        return pl.DataFrame()
+    return _converter_para_df(registros).sort("TckrSymb")
+
+
+def _filtrar_df(
+    df: pl.DataFrame,
+    prefixos: list[str],
+    comprimento_ticker: int | None = None,
+) -> pl.DataFrame:
+    ticker = pl.col("TckrSymb")
+    if comprimento_ticker:
+        df = df.filter(ticker.str.len_chars() == comprimento_ticker)
+    if prefixos:
+        padrao = f"^({'|'.join(re.escape(prefixo) for prefixo in prefixos)})"
+        df = df.filter(ticker.str.contains(padrao))
+    return df.sort("TckrSymb")
+
+
+def _obter_df_boletim_negociacao(data: dt.date, boletim_completo: bool) -> pl.DataFrame:
+    dados_zip = _baixar_zip_url(data, boletim_completo)
+    if not dados_zip:
+        return pl.DataFrame()
+    xml_bytes = boletim_negociacao_extrair(dados_zip)
+    return _processar_xml_extraido(xml_bytes)
+
+
+def boletim_negociacao(
+    data: DateLike,
+    prefixo_ticker: str | list[str] | None = None,
+    comprimento_ticker: int | None = None,
+    boletim_completo: bool = False,
+) -> pl.DataFrame:
+    """Busca e processa o Boletim de Negociacao da B3 no site oficial.
+
+    Faz o download do ZIP com XML, extrai os dados do contrato e devolve um
+    DataFrame Polars com os dados brutos do XML e colunas no padrão
+    original da B3 (nomes em inglês das tags XML).
+
+    O DataFrame retornado **não** contém colunas calculadas
+    (dias_uteis, dias_corridos, dv01, taxa_forward)
+    nem normalização semântica por classe de ativo. O enriquecimento é responsabilidade do
+    módulo consumidor (ex.: ``futuro.historico``).
+
+    Como esta é uma camada bruta/intermediária, próxima do XML original da B3,
+    os parâmetros de filtro usam a terminologia da fonte (`ticker`/`TckrSymb`).
+    Nas camadas públicas enriquecidas da biblioteca, o vocabulário preferido é
+    o canônico da lib (ex.: `contrato`, `codigo_negociacao`).
+
+    Nota:
+        O dataset cacheado ``pr`` (arquivo ``b3_pr.parquet``) pode conter um
+        subconjunto de colunas focado em futuros. Esta função, porém, opera no
+        schema bruto do XML da B3 para a data/relatório consultados.
+
+    Args:
+        data: Data de negociação no formato 'DD-MM-YYYY', 'DD/MM/YYYY',
+            'YYYY-MM-DD' ou objeto datetime.date.
+        prefixo_ticker: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
+            'CPM') ou lista de prefixos (ex.: ['DI1', 'DAP']).
+            Usado como filtro starts-with no XML. Se None (padrão),
+            retorna todos os ativos sem filtro.
+        comprimento_ticker: Comprimento exato do ticker para filtrar registros.
+            Se None (padrão), retorna todos os tickers que casam com o
+            prefixo (ex.: 6 para futuros, 13 para opções).
+        boletim_completo: Se False (padrão), usa o simplified price report (SPR),
+            arquivo leve (~2 KB) com apenas preços de ajuste. Se True, usa o
+            price report completo (PR, ~2 MB) com todos os dados de negociação.
+
+    Returns:
+        pl.DataFrame: DataFrame com colunas tipadas no padrão original do XML,
+        ordenado por ticker (`TckrSymb`). Inclui todos os registros do XML (sem filtro de
+        vencimento). Retorna DataFrame vazio para data inválida ou resposta
+        vazia.
+
+    Output Columns:
+        * TradDt (Date): data de negociação.
+        * TckrSymb (String): código de negociação na B3.
+        * Id (String): identificador do instrumento.
+        * Prtry (String): tipo do identificador proprietário.
+        * MktIdrCd (String): código do mercado.
+        * DaysToSttlm (Int64): dias para liquidação.
+        * TradQty (Int64): número de negócios.
+        * MktDataStrmId (String): identificador do fluxo de dados.
+        * NtlFinVol (Float64): volume financeiro nacional bruto.
+        * IntlFinVol (Float64): volume financeiro internacional.
+        * OpnIntrst (Int64): contratos em aberto.
+        * FinInstrmQty (Int64): quantidade negociada de instrumentos financeiros.
+        * BestBidPric (Float64): ultima melhor oferta de compra no snapshot diario; pode ser nulo.
+        * BestAskPric (Float64): ultima melhor oferta de venda no snapshot diario; pode ser nulo.                   diario; pode ser nulo.
+        * FrstPric (Float64): preço de abertura.
+        * MinPric (Float64): preço mínimo negociado.
+        * MaxPric (Float64): preço máximo negociado.
+        * TradAvrgPric (Float64): preço médio negociado.
+        * LastPric (Float64): preço de fechamento.
+        * RglrTxsQty (Int64): número de negócios regulares.
+        * NonRglrTxsQty (Int64): número de negócios não regulares.
+        * RglrTraddCtrcts (Int64): contratos regulares negociados.
+        * NonRglrTraddCtrcts (Int64): contratos não regulares negociados.
+        * NtlRglrVol (Float64): volume financeiro regular nacional.
+        * NtlNonRglrVol (Float64): volume não regular nacional.
+        * IntlRglrVol (Float64): volume regular internacional.
+        * IntlNonRglrVol (Float64): volume não regular internacional.
+        * AdjstdQt (Float64): preço/cotação de ajuste.
+        * AdjstdQtTax (Float64): taxa de ajuste.
+        * AdjstdQtStin (String): indicador de cotação ajustada.
+        * PrvsAdjstdQt (Float64): preço/cotação de ajuste do dia anterior.
+        * PrvsAdjstdQtTax (Float64): taxa de ajuste do dia anterior.
+        * PrvsAdjstdQtStin (String): indicador de ajuste anterior.
+        * OscnPctg (Float64): percentual de oscilação.
+        * VartnPts (Float64): variação em pontos.
+        * EqvtVal (Float64): valor equivalente.
+        * AdjstdValCtrct (Float64): valor do contrato ajustado.
+        * MaxTradLmt (Float64): limite máximo de variação.
+        * MinTradLmt (Float64): limite mínimo de variação.
+
+    Raises:
+        requests.HTTPError: Se a requisição HTTP ao endpoint falhar.
+        zipfile.BadZipFile: Se o ZIP estiver corrompido após re-download.
+        etree.XMLSyntaxError: Se o XML recebido estiver malformado.
+
+    Examples:
+        >>> import pyield as yd
+        >>> df = yd.b3.boletim_negociacao("26-04-2024", "DI1")
+
+        >>> # Múltiplos contratos de uma vez
+        >>> df = yd.b3.boletim_negociacao("26-04-2024", ["DI1", "DAP"])
+
+        >>> # Feriado ou fim de semana (retorna DataFrame vazio)
+        >>> df = yd.b3.boletim_negociacao("25-12-2023", "DI1")  # Véspera de Natal
+        >>> df.is_empty()
+        True
+    """
+    if any_is_empty(data):
+        return pl.DataFrame()
+
+    data = cv.converter_datas(data)
+    # Validação centralizada (evita chamadas desnecessárias às APIs B3)
+    if not data_negociacao_valida(data):
+        return pl.DataFrame()
+
+    df = _obter_df_boletim_negociacao(data, boletim_completo)
+    if df.is_empty() or prefixo_ticker is None:
+        return df
+
+    prefixos = normalizar_contratos(prefixo_ticker)
+    if not prefixos:
+        return pl.DataFrame()
+    return _filtrar_df(df, prefixos, comprimento_ticker)
+
+
+def boletim_negociacao_ler(
+    xml_bytes: bytes,
+    prefixo_ticker: str | list[str] | None = None,
+    comprimento_ticker: int | None = None,
+) -> pl.DataFrame:
+    """Lê e processa o price report da B3 a partir do conteúdo XML bruto.
+
+    Mesma saída de :func:`boletim_negociacao`, mas recebe o XML já
+    descomprimido em vez de baixar da rede.
+
+    Por operar diretamente sobre o XML bruto, esta função preserva a
+    terminologia da fonte para filtros de `TckrSymb`.
+
+    Args:
+        xml_bytes: Conteúdo do XML em bytes (já descomprimido).
+        prefixo_ticker: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
+            'CPM') ou lista de prefixos (ex.: ['DI1', 'DAP']).
+            Se None (padrão), retorna todos os ativos sem filtro.
+        comprimento_ticker: Comprimento exato do ticker para filtrar registros.
+            Se None (padrão), retorna todos os tickers que casam com o
+            prefixo.
+
+    Returns:
+        pl.DataFrame: DataFrame com as mesmas colunas documentadas em
+        :func:`boletim_negociacao`.
+    """
+    if any_is_empty(xml_bytes):
+        return pl.DataFrame()
+
+    df = _processar_xml_extraido(xml_bytes)
+    if df.is_empty() or prefixo_ticker is None:
+        return df
+
+    prefixos = normalizar_contratos(prefixo_ticker)
+    if not prefixos:
+        return pl.DataFrame()
+    return _filtrar_df(df, prefixos, comprimento_ticker)

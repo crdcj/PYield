@@ -1,17 +1,17 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import bday
+from pyield import dus
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 
 
-def data(date: DateLike) -> pl.DataFrame:
+def dados(data: DateLike) -> pl.DataFrame:
     """
     Busca as taxas indicativas de LFT para a data de referência na ANBIMA.
 
     Args:
-        date (DateLike): Data de referência para a consulta.
+        data: Data da consulta.
 
     Returns:
         pl.DataFrame: DataFrame Polars com os dados de LFT.
@@ -33,17 +33,17 @@ def data(date: DateLike) -> pl.DataFrame:
         - rentabilidade (Float64): Rentabilidade da LFT sobre o DI.
 
     Examples:
-        >>> from pyield import lft
-        >>> df_lft = lft.data("23-08-2024")  # doctest: +SKIP
+        >>> from pyield.tn import lft
+        >>> df_lft = lft.dados("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.obter_tpf(date, "LFT")
+    df = utils.obter_tpf(data, "LFT")
     if df.is_empty():
         return df
 
-    data_ref = cv.converter_datas(date)
+    data_ref = cv.converter_datas(data)
 
     df = df.with_columns(
-        dias_uteis=bday.count_expr("data_referencia", "data_vencimento"),
+        dias_uteis=dus.contar_expr("data_referencia", "data_vencimento"),
     )
 
     df = df.with_columns(
@@ -53,7 +53,7 @@ def data(date: DateLike) -> pl.DataFrame:
 
     df = df.with_columns(
         rentabilidade=pl.struct("taxa_indicativa", "taxa_di").map_elements(
-            lambda s: premium(s["taxa_indicativa"], s["taxa_di"]),
+            lambda s: rentabilidade(s["taxa_indicativa"], s["taxa_di"]),
             return_dtype=pl.Float64,
         )
     )
@@ -75,19 +75,19 @@ def data(date: DateLike) -> pl.DataFrame:
     )
 
 
-def maturities(date: DateLike) -> pl.Series:
+def vencimentos(data: DateLike) -> pl.Series:
     """
     Busca os vencimentos disponíveis para a data de referência.
 
     Args:
-        date (DateLike): Data de referência para a consulta.
+        data: Data da consulta.
 
     Returns:
         pl.Series: Série de datas de vencimento disponíveis.
 
     Examples:
-        >>> from pyield import lft
-        >>> lft.maturities("22-08-2024")
+        >>> from pyield.tn import lft
+        >>> lft.vencimentos("22-08-2024")
         shape: (14,)
         Series: 'data_vencimento' [date]
         [
@@ -104,102 +104,104 @@ def maturities(date: DateLike) -> pl.Series:
             2030-09-01
         ]
     """
-    return data(date)["data_vencimento"]
+    return dados(data)["data_vencimento"]
 
 
-def quotation(
-    settlement: DateLike,
-    maturity: DateLike,
-    rate: float,
+def cotacao(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    taxa: float,
 ) -> float:
     """
     Calcula a cotação de uma LFT pelas regras da ANBIMA.
 
     Args:
-        settlement (DateLike): Data de liquidação do título.
-        maturity (DateLike): Data de vencimento do título.
-        rate (float): Taxa anualizada do título.
+        data_liquidacao: Data de liquidação do título.
+        data_vencimento: Data de vencimento do título.
+        taxa: Taxa anualizada do título.
 
     Returns:
         float: Cotação do título.
 
     Examples:
         Calcula a cotação de uma LFT com taxa de 0,02:
-        >>> from pyield import lft
-        >>> lft.quotation(
-        ...     settlement="24-07-2024",
-        ...     maturity="01-09-2030",
-        ...     rate=0.001717,  # 0.1717%
+        >>> from pyield.tn import lft
+        >>> lft.cotacao(
+        ...     data_liquidacao="24-07-2024",
+        ...     data_vencimento="01-09-2030",
+        ...     taxa=0.001717,  # 0.1717%
         ... )
         98.9645
 
         Entradas nulas retornam float('nan'):
-        >>> lft.quotation(settlement=None, maturity="01-09-2030", rate=0.001717)
+        >>> lft.cotacao(
+        ...     data_liquidacao=None, data_vencimento="01-09-2030", taxa=0.001717
+        ... )
         nan
     """
-    if any_is_empty(settlement, maturity, rate):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
     # Número de dias úteis entre liquidação (inclusivo) e vencimento (exclusivo)
-    dias_uteis = bday.count(settlement, maturity)
+    dias_uteis = dus.contar(data_liquidacao, data_vencimento)
 
     # Número de períodos truncado conforme regras da ANBIMA
-    anos_truncados = utils.truncate(dias_uteis / 252, 14)
+    anos_truncados = utils.truncar(dias_uteis / 252, 14)
 
-    fator_desconto = 1 / (1 + rate) ** anos_truncados
+    fator_desconto = 1 / (1 + taxa) ** anos_truncados
 
-    return utils.truncate(100 * fator_desconto, 4)
+    return utils.truncar(100 * fator_desconto, 4)
 
 
-def rate(
-    settlement: DateLike,
-    maturity: DateLike,
+def taxa(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
     vna: float,
-    price_value: float,
+    pu: float,
 ) -> float:
     """
     Calcula a taxa implícita de uma LFT a partir do preço (PU).
 
-    A função inverte numericamente a cadeia ``price(vna, quotation(...))``,
+    A função inverte numericamente a cadeia ``pu(vna, cotacao(...))``,
     encontrando a taxa que zera a diferença entre o preço calculado e o
     informado.
 
     Args:
-        settlement (DateLike): Data de liquidação.
-        maturity (DateLike): Data de vencimento.
+        data_liquidacao: Data de liquidação.
+        data_vencimento: Data de vencimento.
         vna (float): Valor nominal atualizado (VNA).
-        price_value (float): Preço unitário (PU) do título.
+        pu (float): Preço unitário (PU) do título.
 
     Returns:
         float: Taxa implícita em formato decimal. Retorna NaN em
             caso de erro.
 
     Examples:
-        >>> from pyield import lft
-        >>> lft.rate("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
+        >>> from pyield.tn import lft
+        >>> lft.taxa("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
         0.001717
-        >>> lft.rate("24-07-2024", "01-03-2025", 15785.324502, 15774.132706)
+        >>> lft.taxa("24-07-2024", "01-03-2025", 15785.324502, 15774.132706)
         0.00116
     """
-    if any_is_empty(settlement, maturity, vna, price_value):
+    if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
         return float("nan")
 
-    if price_value <= 0:
+    if pu <= 0:
         return float("nan")
 
     def diferenca_preco(taxa: float) -> float:
-        return price(vna, quotation(settlement, maturity, taxa)) - price_value
+        return _calcular_pu(vna, cotacao(data_liquidacao, data_vencimento, taxa)) - pu
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
     return round(taxa_encontrada, 6)
 
 
-def premium(lft_rate: float, di_rate: float) -> float:
+def rentabilidade(taxa_lft: float, taxa_di: float) -> float:
     """
     Calcula a rentabilidade da LFT sobre a taxa de DI Futuro.
 
     Args:
-        lft_rate (float): Taxa anualizada da LFT sobre a Selic.
-        di_rate (float): Taxa DI Futuro anualizada (interpolada para o mesmo
+        taxa_lft: Taxa anualizada da LFT sobre a Selic.
+        taxa_di: Taxa DI Futuro anualizada (interpolada para o mesmo
             vencimento da LFT).
 
     Returns:
@@ -207,30 +209,40 @@ def premium(lft_rate: float, di_rate: float) -> float:
 
     Examples:
         Calcula a rentabilidade de uma LFT em 28/04/2025:
-        >>> from pyield import lft
-        >>> lft_rate = 0.001124  # 0.1124%
-        >>> di_rate = 0.13967670224373396  # 13.967670224373396%
-        >>> lft.premium(lft_rate, di_rate)
+        >>> from pyield.tn import lft
+        >>> taxa_lft = 0.001124  # 0.1124%
+        >>> taxa_di = 0.13967670224373396  # 13.967670224373396%
+        >>> lft.rentabilidade(taxa_lft, taxa_di)
         1.008594331960501
     """
-    if any_is_empty(lft_rate, di_rate):
+    if any_is_empty(taxa_lft, taxa_di):
         return float("nan")
     # Taxa diária
-    fator_lft = (lft_rate + 1) ** (1 / 252)
-    fator_di = (di_rate + 1) ** (1 / 252)
+    fator_lft = (taxa_lft + 1) ** (1 / 252)
+    fator_di = (taxa_di + 1) ** (1 / 252)
     return (fator_lft * fator_di - 1) / (fator_di - 1)
 
 
-def price(
+def _calcular_pu(
     vna: float,
-    quotation: float,
+    cotacao: float,
+) -> float:
+    """Calcula o preço unitário da LFT a partir do VNA e da cotação."""
+    if any_is_empty(vna, cotacao):
+        return float("nan")
+    return utils.truncar(vna * cotacao / 100, 6)
+
+
+def pu(
+    vna: float,
+    cotacao: float,
 ) -> float:
     """
     Calcula o preço (PU) da LFT pelas regras da Anbima.
 
     Args:
         vna (float): Valor nominal atualizado (VNA).
-        quotation (float): Cotação da LFT em base 100.
+        cotacao (float): Cotação da LFT em base 100.
     Returns:
         float: Preço da LFT truncado em 6 casas decimais.
 
@@ -238,10 +250,8 @@ def price(
          - SEI Proccess 17944.005214/2024-09
 
     Examples:
-        >>> from pyield import lft
-        >>> lft.price(15785.324502, 99.9291)
+        >>> from pyield.tn import lft
+        >>> lft.pu(15785.324502, 99.9291)
         15774.132706
     """
-    if any_is_empty(vna, quotation):
-        return float("nan")
-    return utils.truncate(vna * quotation / 100, 6)
+    return _calcular_pu(vna, cotacao)

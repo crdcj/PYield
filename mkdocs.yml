@@ -14,31 +14,31 @@ nav:
       - Introdução ao Pyield: articles/pyield_intro.md
   - Módulos:
       - Núcleo:
-          - Ferramentas de Dias Úteis: bday.md
-          - Interpolator: interpolator.md
+          - Ferramentas de Dias Úteis: dus.md
+          - Interpolador: interpolador.md
           - Taxas a Termo: forwards.md
       - Fontes de Dados:
           - Anbima: anbima.md
           - Banco Central (BCB):
-              - Visão Geral: bc.md
-              - Calendário COPOM: copom.md
+              - Visão Geral: bc/index.md
+              - Calendário COPOM: bc/copom.md
           - B3:
-              - Visão Geral: b3.md
-              - Futuros de DI: di1.md
-              - Futuros: futures.md
+              - Visão Geral: b3/index.md
+              - Futuros de DI: b3/di1.md
+              - Futuro: b3/futuro.md
           - IPCA: ipca.md
           - Selic (CPM/COPOM): selic.md
-          - Tesouro Nacional (RMD): rmd.md
       - Títulos Públicos:
-          - Visão Geral: tn.md
-          - LFT: lft.md
-          - LTN: ltn.md
-          - NTN-B: ntnb.md
-          - NTN-B Principal: ntnbp.md
-          - NTN-B1: ntnb1.md
-          - NTN-C: ntnc.md
-          - NTN-F: ntnf.md
-          - PRE: pre.md
+          - Visão Geral: tn/index.md
+          - RMD: tn/rmd.md
+          - LFT: tn/lft.md
+          - LTN: tn/ltn.md
+          - NTN-B: tn/ntnb.md
+          - NTN-B Principal: tn/ntnbp.md
+          - NTN-B1: tn/ntnb1.md
+          - NTN-C: tn/ntnc.md
+          - NTN-F: tn/ntnf.md
+          - PRE: tn/pre.md
 
 theme:
   name: 'material'

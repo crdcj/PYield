@@ -3,7 +3,7 @@ import datetime as dt
 import polars as pl
 
 import pyield._internal.converters as conversores
-from pyield import bday
+from pyield import dus
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 
@@ -39,12 +39,12 @@ def _obter_valor_final(vencimento: dt.date) -> float:
     return VALOR_FINAL
 
 
-def data(date: DateLike) -> pl.DataFrame:
+def dados(data: DateLike) -> pl.DataFrame:
     """
     Busca as taxas indicativas de NTN-C para a data de referência.
 
     Args:
-        date (DateLike): Data de referência para a consulta.
+        data: Data da consulta.
 
     Returns:
         pl.DataFrame: DataFrame Polars com os dados de NTN-C.
@@ -68,22 +68,22 @@ def data(date: DateLike) -> pl.DataFrame:
             método flat forward.
 
     Examples:
-        >>> from pyield import ntnc
-        >>> ntnc.data("23-08-2024")  # doctest: +SKIP
+        >>> from pyield.tn import ntnc
+        >>> ntnc.dados("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.obter_tpf(date, "NTN-C")
+    df = utils.obter_tpf(data, "NTN-C")
     if df.is_empty():
         return df
 
-    data_ref = conversores.converter_datas(date)
+    data_ref = conversores.converter_datas(data)
 
     # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
     df = df.with_columns(
-        dias_uteis=bday.count_expr("data_referencia", "data_vencimento"),
+        dias_uteis=dus.contar_expr("data_referencia", "data_vencimento"),
     )
 
     # Adiciona duration, prazo_medio, dv01, dv01_usd e taxa_di
-    df = utils.adicionar_duration(df, duration)
+    df = utils.adicionar_duration(df, duracao)
     df = utils.adicionar_dv01(df, data_ref)
     df = utils.adicionar_taxa_di(df, data_ref)
 
@@ -106,25 +106,25 @@ def data(date: DateLike) -> pl.DataFrame:
     )
 
 
-def payment_dates(
-    settlement: DateLike,
-    maturity: DateLike,
+def datas_pagamento(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
 ) -> pl.Series:
     """
     Gera todas as datas de cupom entre liquidação e vencimento (inclusivas).
     A NTN-C é definida pela data de vencimento.
 
     Args:
-        settlement (DateLike): Data de liquidação (exclusiva).
-        maturity (DateLike): Data de vencimento.
+        data_liquidacao: Data de liquidação (exclusiva).
+        data_vencimento: Data de vencimento.
 
     Returns:
         pl.Series: Série de datas de cupom no intervalo. Retorna série vazia se
             vencimento for menor que a liquidação.
 
     Examples:
-        >>> from pyield import ntnc
-        >>> ntnc.payment_dates("21-03-2025", "01-01-2031")
+        >>> from pyield.tn import ntnc
+        >>> ntnc.datas_pagamento("21-03-2025", "01-01-2031")
         shape: (12,)
         Series: 'datas_pagamento' [date]
         [
@@ -141,12 +141,12 @@ def payment_dates(
             2031-01-01
         ]
     """
-    if any_is_empty(settlement, maturity):
+    if any_is_empty(data_liquidacao, data_vencimento):
         return pl.Series(name="datas_pagamento", dtype=pl.Date)
 
     # Valida e normaliza datas
-    liquidacao = conversores.converter_datas(settlement)
-    vencimento = conversores.converter_datas(maturity)
+    liquidacao = conversores.converter_datas(data_liquidacao)
+    vencimento = conversores.converter_datas(data_vencimento)
 
     # Check if maturity date is after the start date
     if vencimento < liquidacao:
@@ -165,16 +165,16 @@ def payment_dates(
     return pl.Series(name="datas_pagamento", values=datas_cupons).sort()
 
 
-def cash_flows(
-    settlement: DateLike,
-    maturity: DateLike,
+def fluxos_caixa(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
 ) -> pl.DataFrame:
     """
     Gera os fluxos de caixa da NTN-C entre liquidação e vencimento.
 
     Args:
-        settlement (DateLike): Data de liquidação (exclusiva).
-        maturity (DateLike): Data de vencimento.
+        data_liquidacao: Data de liquidação (exclusiva).
+        data_vencimento: Data de vencimento.
 
     Returns:
         pl.DataFrame: DataFrame com as colunas de fluxo.
@@ -184,8 +184,8 @@ def cash_flows(
         - valor_pagamento (Float64): Valor do pagamento.
 
     Examples:
-        >>> from pyield import ntnc
-        >>> ntnc.cash_flows("21-03-2025", "01-01-2031")
+        >>> from pyield.tn import ntnc
+        >>> ntnc.fluxos_caixa("21-03-2025", "01-01-2031")
         shape: (12, 2)
         ┌────────────────┬─────────────────┐
         │ data_pagamento ┆ valor_pagamento │
@@ -205,20 +205,20 @@ def cash_flows(
         │ 2031-01-01     ┆ 105.830052      │
         └────────────────┴─────────────────┘
     """
-    if any_is_empty(settlement, maturity):
+    if any_is_empty(data_liquidacao, data_vencimento):
         return pl.DataFrame(
             schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
         )
 
     # Valida e normaliza datas
-    liquidacao = conversores.converter_datas(settlement)
-    vencimento = conversores.converter_datas(maturity)
+    liquidacao = conversores.converter_datas(data_liquidacao)
+    vencimento = conversores.converter_datas(data_vencimento)
 
     # Obtém as datas de cupom entre liquidação e vencimento
-    datas_pagamento = payment_dates(liquidacao, vencimento)
+    serie_datas_pagamento = datas_pagamento(liquidacao, vencimento)
 
     # Retorna DataFrame vazio se não houver pagamentos (liquidação >= vencimento)
-    if datas_pagamento.is_empty():
+    if serie_datas_pagamento.is_empty():
         return pl.DataFrame(
             schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
         )
@@ -228,7 +228,7 @@ def cash_flows(
     valor_final = _obter_valor_final(vencimento)
 
     # Build dataframe and assign cash flows using Polars expressions
-    df = pl.DataFrame({"data_pagamento": datas_pagamento}).with_columns(
+    df = pl.DataFrame({"data_pagamento": serie_datas_pagamento}).with_columns(
         pl.when(pl.col("data_pagamento") == vencimento)
         .then(valor_final)
         .otherwise(valor_cupom)
@@ -237,18 +237,18 @@ def cash_flows(
     return df
 
 
-def quotation(
-    settlement: DateLike,
-    maturity: DateLike,
-    rate: float,
+def cotacao(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    taxa: float,
 ) -> float:
     """
     Calcula a cotação da NTN-C em base 100 pelas regras da ANBIMA.
 
     Args:
-        settlement (DateLike): Data de liquidação da operação.
-        maturity (DateLike): Data de vencimento da NTN-C.
-        rate (float): Taxa de desconto (YTM) usada no valor presente.
+        data_liquidacao: Data de liquidação da operação.
+        data_vencimento: Data de vencimento da NTN-C.
+        taxa: Taxa de desconto (YTM) usada no valor presente.
 
     Returns:
         float: Cotação da NTN-C truncada em 4 casas decimais.
@@ -259,39 +259,49 @@ def quotation(
           semestral e arredondamento para 6 casas, conforme ANBIMA.
 
     Examples:
-        >>> from pyield import ntnc
-        >>> ntnc.quotation("21-03-2025", "01-01-2031", 0.067626)
+        >>> from pyield.tn import ntnc
+        >>> ntnc.cotacao("21-03-2025", "01-01-2031", 0.067626)
         126.4958
     """
-    if any_is_empty(settlement, maturity, rate):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
 
-    df_fluxos = cash_flows(settlement, maturity)
+    df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
     if df_fluxos.is_empty():
         return float("nan")
 
     valores_fluxo = df_fluxos["valor_pagamento"]
-    dias_uteis = bday.count(settlement, df_fluxos["data_pagamento"])
-    anos_uteis = utils.truncate(dias_uteis / 252, 14)
-    fatores_desconto = (1 + rate) ** anos_uteis
+    dias_uteis = dus.contar(data_liquidacao, df_fluxos["data_pagamento"])
+    anos_uteis = utils.truncar(dias_uteis / 252, 14)
+    fatores_desconto = (1 + taxa) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
     vp = (valores_fluxo / fatores_desconto).round(10)
     # Retorna a cotação (soma dos valores presentes) com truncamento ANBIMA
-    return utils.truncate(vp.sum(), 4)
+    return utils.truncar(vp.sum(), 4)
 
 
-def price(
+def _calcular_pu(
     vna: float,
-    quotation: float,
+    cotacao: float,
+) -> float:
+    """Calcula o preço unitário da NTN-C a partir do VNA e da cotação."""
+    if any_is_empty(vna, cotacao):
+        return float("nan")
+    return utils.truncar(vna * cotacao / 100, 6)
+
+
+def pu(
+    vna: float,
+    cotacao: float,
 ) -> float:
     """
     Calcula o preço (PU) da NTN-C pelas regras da ANBIMA.
 
-    price = VNA * quotation / 100
+    pu = VNA * cotacao / 100
 
     Args:
         vna (float): Valor nominal atualizado (VNA).
-        quotation (float): Cotação da NTN-C em base 100.
+        cotacao (float): Cotação da NTN-C em base 100.
 
     Returns:
         float: Preço da NTN-C truncado em 6 casas decimais.
@@ -300,87 +310,85 @@ def price(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> from pyield import ntnc
-        >>> ntnc.price(6598.913723, 126.4958)
+        >>> from pyield.tn import ntnc
+        >>> ntnc.pu(6598.913723, 126.4958)
         8347.348705
     """
-    if any_is_empty(vna, quotation):
-        return float("nan")
-    return utils.truncate(vna * quotation / 100, 6)
+    return _calcular_pu(vna, cotacao)
 
 
-def rate(
-    settlement: DateLike,
-    maturity: DateLike,
+def taxa(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
     vna: float,
-    price_value: float,
+    pu: float,
 ) -> float:
     """
     Calcula a taxa implícita (YTM) de uma NTN-C a partir do preço (PU).
 
-    A função inverte numericamente a cadeia ``price(vna, quotation(...))``,
+    A função inverte numericamente a cadeia ``pu(vna, cotacao(...))``,
     encontrando a taxa que zera a diferença entre o preço calculado e o
     informado.
 
     Args:
-        settlement (DateLike): Data de liquidação.
-        maturity (DateLike): Data de vencimento.
+        data_liquidacao: Data de liquidação.
+        data_vencimento: Data de vencimento.
         vna (float): Valor nominal atualizado (VNA).
-        price_value (float): Preço unitário (PU) do título.
+        pu (float): Preço unitário (PU) do título.
 
     Returns:
         float: Taxa implícita (YTM) em formato decimal. Retorna NaN em
             caso de erro.
 
     Examples:
-        >>> from pyield import ntnc
-        >>> ntnc.rate("21-03-2025", "01-01-2031", 6598.913723, 8347.348705)
+        >>> from pyield.tn import ntnc
+        >>> ntnc.taxa("21-03-2025", "01-01-2031", 6598.913723, 8347.348705)
         0.067626
     """
-    if any_is_empty(settlement, maturity, vna, price_value):
+    if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
         return float("nan")
 
-    if price_value <= 0:
+    if pu <= 0:
         return float("nan")
 
     def diferenca_preco(taxa: float) -> float:
-        cotacao = quotation(settlement, maturity, taxa)
-        return price(vna, cotacao) - price_value
+        cotacao_calc = cotacao(data_liquidacao, data_vencimento, taxa)
+        return _calcular_pu(vna, cotacao_calc) - pu
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
     return round(taxa_encontrada, 6)
 
 
-def duration(
-    settlement: DateLike,
-    maturity: DateLike,
-    rate: float,
+def duracao(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    taxa: float,
 ) -> float:
     """
     Calcula a Macaulay duration da NTN-C em anos úteis.
 
     Args:
-        settlement (DateLike): Data de liquidação da operação.
-        maturity (DateLike): Data de vencimento.
-        rate (float): Taxa de desconto usada no cálculo.
+        data_liquidacao: Data de liquidação da operação.
+        data_vencimento: Data de vencimento.
+        taxa: Taxa de desconto usada no cálculo.
 
     Returns:
         float: Macaulay duration em anos úteis.
 
     Examples:
-        >>> from pyield import ntnc
-        >>> ntnc.duration("21-03-2025", "01-01-2031", 0.067626)
+        >>> from pyield.tn import ntnc
+        >>> ntnc.duracao("21-03-2025", "01-01-2031", 0.067626)
         4.405363320448
     """
-    if any_is_empty(settlement, maturity, rate):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
 
-    df_fluxos = cash_flows(settlement, maturity)
+    df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
     if df_fluxos.is_empty():
         return float("nan")
 
-    anos_uteis = bday.count(settlement, df_fluxos["data_pagamento"]) / 252
-    vp = df_fluxos["valor_pagamento"] / (1 + rate) ** anos_uteis
+    anos_uteis = dus.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
+    vp = df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis
     duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
     # Truncar para 14 casas decimais para repetibilidade dos resultados
-    return utils.truncate(duracao, 14)
+    return utils.truncar(duracao, 14)

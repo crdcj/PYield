@@ -1,15 +1,15 @@
-from pyield.anbima.ettj_intraday import intraday_ettj
-from pyield.anbima.ettj_last import last_ettj
-from pyield.anbima.ima import last_ima
+from pyield.anbima.ettj_intradia import ettj_intradia
+from pyield.anbima.ettj_ultima import ettj_ultima
+from pyield.anbima.ima_ultimo import ima_ultimo
 from pyield.anbima.imaq import imaq
-from pyield.anbima.tpf import fetch_tpf, tpf, tpf_maturities
+from pyield.anbima.tpf import tpf, tpf_fonte, tpf_vencimentos
 
 __all__ = [
-    "last_ima",
+    "ima_ultimo",
     "imaq",
     "tpf",
-    "tpf_maturities",
-    "fetch_tpf",
-    "last_ettj",
-    "intraday_ettj",
+    "tpf_vencimentos",
+    "tpf_fonte",
+    "ettj_ultima",
+    "ettj_intradia",
 ]

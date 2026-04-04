@@ -24,7 +24,7 @@ import logging
 import polars as pl
 import requests
 
-from pyield import clock
+from pyield import relogio
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
@@ -73,7 +73,8 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def benchmarks(
-    bond_type: str | None = None, include_history: bool = False
+    titulo: str | None = None,
+    incluir_historico: bool = False,
 ) -> pl.DataFrame:
     """Busca benchmarks de títulos públicos brasileiros na API do TN.
 
@@ -81,9 +82,9 @@ def benchmarks(
     Tesouro Nacional (ex.: LTN, LFT, NTN-B).
 
     Args:
-        bond_type: Tipo do título a filtrar (ex.: "LFT").
-        include_history: Se ``True``, inclui histórico; se ``False``
-            (padrão), retorna apenas benchmarks vigentes.
+        titulo: Tipo do título a filtrar (ex.: "LFT").
+        incluir_historico: Se ``True``, inclui histórico; se ``False``
+            (padrão), retorna apenas benchmarks vigentes (on-the-run).
 
     Returns:
         DataFrame com os benchmarks, ou DataFrame vazio.
@@ -104,7 +105,7 @@ def benchmarks(
         >>> from pyield import tn
         >>> df_current = tn.benchmarks()
         >>> # Benchmarks históricos
-        >>> tn.benchmarks(bond_type="LFT", include_history=True).head()
+        >>> tn.benchmarks(titulo="LFT", incluir_historico=True).head()
         shape: (5, 5)
         ┌────────┬─────────────────┬────────────┬─────────────┬────────────┐
         │ titulo ┆ data_vencimento ┆ benchmark  ┆ data_inicio ┆ data_fim   │
@@ -118,20 +119,20 @@ def benchmarks(
         │ LFT    ┆ 2022-03-01      ┆ LFT 6 anos ┆ 2016-01-01  ┆ 2016-06-30 │
         └────────┴─────────────────┴────────────┴─────────────┴────────────┘
     """
-    dados = _buscar_json_api(include_history)
+    dados = _buscar_json_api(incluir_historico)
     df = _parsear_df(dados)
     if df.is_empty():
         return pl.DataFrame()
     df = _processar_df(df)
 
-    if include_history:
+    if incluir_historico:
         colunas_ordenacao = ["data_inicio", "titulo", "data_vencimento"]
     else:
         colunas_ordenacao = ["titulo", "data_vencimento"]
-        hoje = clock.today()
+        hoje = relogio.hoje()
         df = df.filter(pl.lit(hoje).is_between("data_inicio", "data_fim"))
 
-    if bond_type:
-        df = df.filter(pl.col("titulo") == bond_type.upper())
+    if titulo:
+        df = df.filter(pl.col("titulo") == titulo.upper())
 
     return df.sort(colunas_ordenacao)

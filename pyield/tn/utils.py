@@ -7,7 +7,7 @@ from typing import overload
 import polars as pl
 
 from pyield._internal.types import DateLike
-from pyield.anbima.tpf import BOND_TYPES
+from pyield.anbima.tpf import TipoTPF
 
 logger = logging.getLogger(__name__)
 
@@ -33,23 +33,23 @@ def subtrair_meses(data: dt.date, meses: int) -> dt.date:
 
 
 def obter_tpf(
-    date: DateLike,
-    tipo_titulo: BOND_TYPES,
+    data_referencia: DateLike,
+    tipo_titulo: TipoTPF,
 ) -> pl.DataFrame:
     """Busca dados de ``anbima.tpf()`` no padrão de colunas usado por ``tn``."""
     from pyield import anbima  # noqa: PLC0415
 
-    return anbima.tpf(date, tipo_titulo).select(COLUNAS_DADOS_TPF)
+    return anbima.tpf(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
 
 
 def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
     """Adiciona a coluna `taxa_di` ao DataFrame pelo método flat forward."""
     from pyield.b3 import di1  # noqa: PLC0415
 
-    taxas_di = di1.interpolate_rates(
-        dates=data_ref,
-        expirations=df["data_vencimento"],
-        extrapolate=True,
+    taxas_di = di1.interpolar_taxas(
+        datas_referencia=data_ref,
+        datas_vencimento=df["data_vencimento"],
+        extrapolar=True,
     )
     if taxas_di.is_empty():
         return df
@@ -79,13 +79,13 @@ def adicionar_duration(
 
 def adicionar_dv01(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
     """Adiciona `dv01` e `dv01_usd` ao DataFrame. Requer coluna `duration`."""
-    from pyield.bc.ptax_api import ptax  # noqa: PLC0415
+    from pyield.bc.ptax import ptax  # noqa: PLC0415
 
     expr_duracao_mod = pl.col("duration") / (1 + pl.col("taxa_indicativa"))
     df = df.with_columns(dv01=0.0001 * expr_duracao_mod * pl.col("pu"))
 
     try:
-        taxa_ptax = ptax(date=data_ref)
+        taxa_ptax = ptax(data=data_ref)
         df = df.with_columns(dv01_usd=pl.col("dv01") / taxa_ptax)
     except Exception as e:
         logger.error("Erro ao adicionar DV01 em USD: %s", e)
@@ -93,12 +93,12 @@ def adicionar_dv01(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
 
 
 @overload
-def truncate(values: float | int | Decimal, decimals: int) -> float: ...
+def truncar(values: float | int | Decimal, decimals: int) -> float: ...
 @overload
-def truncate(values: pl.Series, decimals: int) -> pl.Series: ...
+def truncar(values: pl.Series, decimals: int) -> pl.Series: ...
 
 
-def truncate(
+def truncar(
     values: float | int | Decimal | pl.Series, decimals: int
 ) -> float | pl.Series:
     """Trunca números (scalar ou ``polars.Series``) em direção a zero.
@@ -114,9 +114,9 @@ def truncate(
         Float se entrada era escalar ou ``pl.Series`` se entrada era série.
 
     Examples:
-        >>> truncate(3.14159, 3)
+        >>> truncar(3.14159, 3)
         3.141
-        >>> truncate(pl.Series([3.14159, 2.71828]), 3)
+        >>> truncar(pl.Series([3.14159, 2.71828]), 3)
         shape: (2,)
         Series: '' [f64]
         [
@@ -137,10 +137,10 @@ def truncate(
         raise TypeError("values must be a float, int, Decimal or pl.Series")
 
 
-def calculate_present_value(
-    cash_flows: pl.Series | list[float],
-    rates: pl.Series | list[float],
-    periods: pl.Series | list[float],
+def calcular_pv(
+    fluxos_caixa: pl.Series | list[float],
+    taxas: pl.Series | list[float],
+    prazos: pl.Series | list[float],
 ) -> float:
     """Calcula o valor presente de uma série de fluxos de caixa de forma estrita.
 
@@ -148,9 +148,9 @@ def calculate_present_value(
     correspondente e período, usando a fórmula: VP = CF / (1 + r)^t
 
     Args:
-        cash_flows: Fluxos de caixa a descontar.
-        rates: Taxas de desconto para cada fluxo (em decimal, ex: 0.10 para 10%).
-        periods: Períodos (em anos) para cada fluxo de caixa.
+        fluxos_caixa: Fluxos de caixa a descontar.
+        taxas: Taxas de desconto para cada fluxo (em decimal, ex: 0.10 para 10%).
+        prazos: Prazos (em anos) para cada fluxo de caixa.
 
     Returns:
         Soma dos valores presentes. Retorna ``float('nan')`` se:
@@ -160,33 +160,33 @@ def calculate_present_value(
 
     Examples:
         Título com cupons anuais de 10% e principal de R$1000, descontado a 8% a.a.:
-        >>> cash_flows = [100, 100, 1100]  # Cupons de R$100 + principal no vencimento
-        >>> rates = [0.08, 0.08, 0.08]  # Taxa de desconto de 8% a.a.
-        >>> periods = [1.0, 2.0, 3.0]  # Pagamentos anuais
-        >>> round(calculate_present_value(cash_flows, rates, periods), 2)
+        >>> fluxos_caixa = [100, 100, 1100]  # Cupons de R$100 + principal no vencimento
+        >>> taxas = [0.08, 0.08, 0.08]  # Taxa de desconto de 8% a.a.
+        >>> prazos = [1.0, 2.0, 3.0]  # Pagamentos anuais
+        >>> round(calcular_pv(fluxos_caixa, taxas, prazos), 2)
         1051.54
 
         Retorna NaN para entradas vazias:
         >>> import math
-        >>> math.isnan(calculate_present_value([], [], []))
+        >>> math.isnan(calcular_pv([], [], []))
         True
 
         Retorna NaN para tamanhos incompatíveis:
-        >>> math.isnan(calculate_present_value([100], [0.10, 0.10], [1.0]))
+        >>> math.isnan(calcular_pv([100], [0.10, 0.10], [1.0]))
         True
     """
     try:
         # A criação do DataFrame agora pode levantar um ShapeError
         df = pl.DataFrame(
             {
-                "cash_flows": cash_flows,
-                "rates": rates,
-                "periods": periods,
+                "fluxos_caixa": fluxos_caixa,
+                "taxas": taxas,
+                "prazos": prazos,
             },
             schema={
-                "cash_flows": pl.Float64,
-                "rates": pl.Float64,
-                "periods": pl.Float64,
+                "fluxos_caixa": pl.Float64,
+                "taxas": pl.Float64,
+                "prazos": pl.Float64,
             },
         )
     except pl.exceptions.ShapeError:
@@ -195,12 +195,12 @@ def calculate_present_value(
     if df.is_empty():
         return float("nan")
 
-    present_values_series = df["cash_flows"] / (1 + df["rates"]) ** df["periods"]
+    valores_presentes = df["fluxos_caixa"] / (1 + df["taxas"]) ** df["prazos"]
 
-    if present_values_series.has_nulls():
+    if valores_presentes.has_nulls():
         return float("nan")
 
-    return float(present_values_series.sum())
+    return float(valores_presentes.sum())
 
 
 def _encontrar_intervalo_raiz(

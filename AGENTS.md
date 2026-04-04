@@ -21,13 +21,13 @@ uv sync
 pytest
 
 # Run only doctests in a single module
-pytest pyield/bday/core.py --doctest-modules
+pytest pyield/dus/core.py --doctest-modules
 
 # Run a single test file
-pytest tests/bday/test_bday.py
+pytest tests/dus/test_dus.py
 
 # Run a specific test
-pytest tests/bday/test_bday.py::test_count_with_strings1
+pytest tests/dus/test_dus.py::test_count_new_holiday
 
 # Linting
 ruff check
@@ -45,10 +45,10 @@ mkdocs serve
 
 The library is organized into domain-specific namespaces, all exposed through `pyield/__init__.py`:
 
-- **`bday`** — Business day calendar (Brazilian holidays built-in). Core functions: `count`, `offset`, `generate`, `is_business_day`, `last_business_day`. Polars expression variants: `count_expr`, `offset_expr`, `is_business_day_expr`.
-- **`anbima`** — ANBIMA data endpoints (treasury bond pricing, yield curves). Functions: `tpf`, `tpf_maturities`, `fetch_tpf`, `last_ettj`, `intraday_ettj`, `last_ima`, `imaq`, `tpf_difusao`.
+- **`dus`** — Calendário de dias úteis (feriados brasileiros embutidos). Funções principais: `contar`, `deslocar`, `gerar`, `e_dia_util`, `ultimo_dia_util`. Variantes para expressões Polars: `contar_expr`, `deslocar_expr`, `e_dia_util_expr`.
+- **`anbima`** — ANBIMA data endpoints (treasury bond pricing, yield curves). Functions: `tpf`, `tpf_vencimentos`, `tpf_fonte`, `ettj_ultima`, `ettj_intradia`, `ima_ultimo`, `imaq`, `tpf_difusao`.
 - **`bc`** — BCB indicators. Functions: `selic_over`, `selic_over_series`, `selic_target`, `selic_target_series`, `di_over`, `di_over_series`, `ptax`, `ptax_series`, `repos`, `vna_lft`, `auctions`, `tpf_monthly_trades`, `tpf_intraday_trades`. Submodule: `copom`.
-- **`b3`** — B3 market data. Functions: `futures`, `futures_enrich`, `futures_intraday`, `di_over`, `price_report_fetch`, `price_report_read`, `derivatives_intraday_fetch`. Submodule: `di1`.
+- **`b3`** — B3 market data. Functions: `futuro`, `futuro_enriquecer`, `futuro_intradia`, `futuro_datas_disponiveis`, `di_over`, `boletim_negociacao`, `boletim_negociacao_ler`, `derivativo_intradia`. Submodule: `di1`.
 - **`tn`** — Treasury bond modules: `ltn`, `ntnb`, `ntnf`, `ntnc`, `lft`, `pre`, `ntnbprinc`, `ntnb1`. Most have `data()`, `maturities()`, `price()`; `ntnb`, `ntnc`, `lft`, `ntnb1` also have `quotation()`. `pre` only has `spot_rates()` and `di_spreads()`. Also exposes: `tn.auction`, `tn.benchmarks`, `tn.di_spreads`.
 - **`ipca`** — Inflation data. Functions: `indexes`, `last_indexes`, `rates`, `last_rates`, `projected_rate`.
 - **`selic`** — COPOM-related analytics. Submodules: `cpm` (raw B3 COPOM Digital Option data), `probabilities` (implied COPOM meeting probabilities).
@@ -56,7 +56,7 @@ The library is organized into domain-specific namespaces, all exposed through `p
 Top-level functions also exported from `pyield`:
 - `forwards`, `forward` — Forward rate calculations from `fwd.py`.
 - `rmd` — Treasury monthly debt report (Relatório Mensal da Dívida) from `rmd.py`.
-- `Interpolator` — Rate interpolation class from `interpolator.py`.
+- `Interpolador` — Rate interpolation class from `interpolador.py`.
 - `today`, `now` — Brazil timezone date/time from `clock.py`.
 - `copom_options` — Alias for `selic.cpm.data`.
 
@@ -64,7 +64,7 @@ Top-level functions also exported from `pyield`:
 
 - **`_internal/types.py`** — Type aliases `DateLike` and `ArrayLike`; `any_is_empty()` for null/empty detection; `any_is_collection()` for array-like detection.
 - **`_internal/converters.py`** — `converter_datas()` normalizes various date inputs to `datetime.date` or `pl.Series[Date]`. `converter_datas_expr()` for Polars expression pipelines.
-- **`interpolator.py`** — `Interpolator` class for rate interpolation (linear or flat_forward method, 252 bday/year convention).
+- **`interpolador.py`** — `Interpolador` class for rate interpolation (linear or flat_forward method, convenção de 252 dias úteis/ano).
 - **`_internal/data_cache.py`** — GitHub-hosted parquet data cache with daily TTL using `lru_cache` (date-key trick for auto-invalidation).
 - **`_internal/retry.py`** — Tenacity-based retry decorator (`retry_padrao`) for network requests (retries on 429, 5xx, timeouts).
 - **`clock.py`** — `today()` and `now()` return Brazil timezone (America/Sao_Paulo) dates/times.
@@ -91,13 +91,21 @@ Referência: `anbima/ima.py` (com colunas derivadas) e `anbima/imaq.py` (sem col
 ## Naming Conventions
 
 - **Fronteira da API pública:** Considere público o que está documentado e/ou exportado no namespace de topo (`pyield/__init__.py`). Módulos não exportados no topo são internos, mesmo que importáveis por caminho direto.
-- **API pública (inglês):** Nomes de funções públicas, parâmetros e classes exportadas permanecem em inglês.
+- **API pública (português):** Nomes de funções públicas, parâmetros e classes exportadas devem, por padrão, estar em português.
+- **Exceção para termos técnicos consolidados:** Só manter nomes em inglês na API pública quando houver justificativa clara e o termo técnico já estiver consolidado no domínio ou na base de código. Evitar misturar português e inglês sem necessidade.
 - **Nomes de colunas em DataFrames (português):** Colunas de DataFrames retornados por funções públicas usam `snake_case` em português (ex.: `data_referencia`, `taxa_indicativa`, `valor`). Módulos antigos ainda usam PascalCase em inglês, mas estão sendo progressivamente migrados.
+- **Parâmetros públicos:** Preferir nomes explícitos em português. Abreviações de domínio podem ser usadas quando forem realmente consagradas e melhorarem a leitura sem sacrificar clareza.
 - **Código interno (português):** Variáveis locais, constantes de módulo, mensagens de log e mensagens de exceção devem ser em português.
 - **Nomes em módulos internos:** Para módulos de uso interno compartilhado, nomes de função podem permanecer sem prefixo `_` quando isso melhora legibilidade. Use prefixo `_` para helpers locais/privados dentro do módulo.
 - **Exceção para módulos utilitários base:** Módulos transversais e fundacionais de uso interno (ex.: `_internal/types.py`, `_internal/retry.py`) podem manter identificadores técnicos em inglês (`is_collection`, `retry_state`, etc.) para preservar legibilidade, reduzir churn e evitar renomeações sem ganho funcional.
 - **Exceção para módulos internos com classe de serviço:** Se um módulo não é exposto pela API e é usado apenas internamente por outro módulo, é comum manter **um método principal sem `_`** dentro da classe para sinalizar o ponto de entrada interno. Os demais helpers seguem com `_`. Esse método principal deve permanecer em português e o módulo **não deve** ser exportado em `__init__.py`.
 - **Exceção para módulos internos com função principal:** Se um módulo não é exposto pela API e é usado apenas internamente por outro módulo, pode manter **uma função principal sem `_`** como ponto de entrada interno. As demais funções seguem com `_`. A função principal deve ser em português e o módulo **não deve** ser exportado em `__init__.py`.
+
+### Convenção de nomes por camada na B3
+
+- **Camada pública enriquecida da lib:** Preferir nomes canônicos da biblioteca, mesmo que a fonte original use outra terminologia. Ex.: usar `contrato` para identificadores-base como `DI1`, `DAP`, `WDO`, e `codigo_negociacao` para o identificador completo retornado ao usuário.
+- **Camada bruta/intermediária próxima da fonte:** Quando a função expõe ou filtra diretamente campos do payload original da B3, pode usar a terminologia da fonte para deixar claro que opera no schema bruto. Ex.: em `boletim.py`, parâmetros como `prefixo_ticker` e `comprimento_ticker` são aceitáveis porque o filtro atua diretamente sobre `TckrSymb`.
+- **Regra prática:** Evitar misturar, na mesma camada, vocabulário da fonte e vocabulário canônico da lib para o mesmo conceito. A distinção deve refletir o nível de abstração do módulo.
 
 ## Docstring Conventions
 
@@ -162,7 +170,7 @@ Isso reduz complexidade do teste e mantém a cobertura do fluxo real sem rede.
 
 ### Quando doctests são suficientes
 
-Módulos com pipeline trivial que retornam valores escalares simples (float, str) sem transformações complexas de DataFrame. Os doctests já validam o comportamento real e servem como documentação. Exemplos: `di_over.py`, `tn/ltn.py`, `fwd.py`, `interpolator.py`.
+Módulos com pipeline trivial que retornam valores escalares simples (float, str) sem transformações complexas de DataFrame. Os doctests já validam o comportamento real e servem como documentação. Exemplos: `di_over.py`, `tn/ltn.py`, `fwd.py`, `interpolador.py`.
 
 ### Quando criar test files separados
 

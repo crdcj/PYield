@@ -23,14 +23,14 @@ registro = logging.getLogger(__name__)
 CASAS_DECIMAIS_DI_OVER = 4
 
 
-def di_over(date: DateLike) -> float:
+def di_over(data: DateLike) -> float:
     """Obtém a taxa DI over via FTP da B3/CETIP.
 
     Busca o arquivo de taxa DI (Depósito Interfinanceiro) no servidor
     FTP da CETIP para a data informada.
 
     Args:
-        date: data de referência para buscar a taxa DI.
+        data: data da consulta para buscar a taxa DI.
 
     Returns:
         Taxa DI para a data especificada (ex: 0.1315 para 13,15%).
@@ -42,11 +42,11 @@ def di_over(date: DateLike) -> float:
         >>> di_over("01/01/2025")  # Feriado
         nan
     """
-    if any_is_empty(date):
+    if any_is_empty(data):
         return float("nan")
 
     # Converte a data para o formato esperado do arquivo: YYYYMMDD.txt
-    data_ref = converter_datas(date)
+    data_ref = converter_datas(data)
     nome_arquivo = data_ref.strftime("%Y%m%d.txt")
 
     try:

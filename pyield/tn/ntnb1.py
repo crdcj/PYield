@@ -3,7 +3,7 @@ from enum import Enum
 import polars as pl
 
 import pyield._internal.converters as conversores
-from pyield import bday
+from pyield import dus
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 
@@ -13,7 +13,7 @@ Estes parâmetros definem o fluxo de amortização conforme o nome comercial.
 """
 
 
-class CommercialName(Enum):
+class NomeComercial(Enum):
     """
     Enum do nome comercial usado para identificar o tipo de NTN-B1 (Renda+ ou Educa+).
     """
@@ -24,13 +24,13 @@ class CommercialName(Enum):
 
 # Mapeamento estático do número de meses (constante)
 MAPA_PARAMETROS = {
-    CommercialName.RENDA_MAIS: 240,
-    CommercialName.EDUCA_MAIS: 60,
+    NomeComercial.RENDA_MAIS: 240,
+    NomeComercial.EDUCA_MAIS: 60,
 }
 
 
 def _obter_parametros_titulo(
-    nome_comercial: CommercialName,
+    nome_comercial: NomeComercial,
 ) -> tuple[float, float, int]:
     """
     Retorna parâmetros de amortização conforme o nome comercial.
@@ -50,8 +50,10 @@ def _obter_parametros_titulo(
     return pagamento_amortizacao, pagamento_amortizacao_final, numero_amortizacoes
 
 
-def payment_dates(
-    settlement: DateLike, maturity: DateLike, commercial_name: CommercialName
+def datas_pagamento(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    nome_comercial: NomeComercial,
 ) -> pl.Series:
     """
     Gera todas as datas de amortização entre liquidação e vencimento.
@@ -60,17 +62,17 @@ def payment_dates(
     até 15/12 do ano de vencimento.
 
     Args:
-        settlement (DateLike): Data de liquidação (exclusiva).
-        maturity (DateLike): Data de vencimento.
-        commercial_name (CommercialName): Nome comercial (Renda+ ou Educa+).
+        data_liquidacao (DateLike): Data de liquidação (exclusiva).
+        data_vencimento (DateLike): Data de vencimento.
+        nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
 
     Returns:
         pl.Series: Série de datas de amortização no intervalo.
 
     Examples:
-        >>> from pyield import ntnb1
-        >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
-        >>> ntnb1.payment_dates("10-05-2024", "15-12-2050", r_mais)
+        >>> from pyield.tn import ntnb1
+        >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
+        >>> ntnb1.datas_pagamento("10-05-2024", "15-12-2050", r_mais)
         shape: (240,)
         Series: 'datas_pagamento' [date]
         [
@@ -87,12 +89,12 @@ def payment_dates(
             2050-12-15
         ]
     """
-    if any_is_empty(settlement, maturity, commercial_name):
+    if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
         return pl.Series("datas_pagamento", dtype=pl.Date)
 
     # Valida e normaliza datas
-    liquidacao = conversores.converter_datas(settlement)
-    vencimento = conversores.converter_datas(maturity)
+    liquidacao = conversores.converter_datas(data_liquidacao)
+    vencimento = conversores.converter_datas(data_vencimento)
 
     if vencimento <= liquidacao:
         raise ValueError("A data de vencimento deve ser posterior à liquidação.")
@@ -100,7 +102,7 @@ def payment_dates(
     vencimento = vencimento.replace(day=15)
 
     # Parâmetros do título
-    _, _, numero_amortizacoes = _obter_parametros_titulo(commercial_name)
+    _, _, numero_amortizacoes = _obter_parametros_titulo(nome_comercial)
 
     datas_amortizacao = [
         utils.subtrair_meses(vencimento, i) for i in range(numero_amortizacoes)
@@ -116,16 +118,18 @@ def payment_dates(
     return datas_pagamento.filter(datas_pagamento > liquidacao).sort()
 
 
-def cash_flows(
-    settlement: DateLike, maturity: DateLike, commercial_name: CommercialName
+def fluxos_caixa(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    nome_comercial: NomeComercial,
 ) -> pl.DataFrame:
     """
     Gera os fluxos de caixa da NTN-B1 entre liquidação e vencimento.
 
     Args:
-        settlement (DateLike): Data de liquidação (exclusiva).
-        maturity (DateLike): Data de vencimento.
-        commercial_name (CommercialName): Nome comercial (Renda+ ou Educa+).
+        data_liquidacao (DateLike): Data de liquidação (exclusiva).
+        data_vencimento (DateLike): Data de vencimento.
+        nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
 
     Returns:
         pl.DataFrame: DataFrame com as colunas de fluxo.
@@ -135,9 +139,9 @@ def cash_flows(
         - valor_pagamento (Float64): Valor do pagamento.
 
     Examples:
-        >>> from pyield import ntnb1
-        >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
-        >>> ntnb1.cash_flows("10-05-2024", "15-12-2060", r_mais)
+        >>> from pyield.tn import ntnb1
+        >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
+        >>> ntnb1.fluxos_caixa("10-05-2024", "15-12-2060", r_mais)
         shape: (240, 2)
         ┌────────────────┬─────────────────┐
         │ data_pagamento ┆ valor_pagamento │
@@ -158,21 +162,19 @@ def cash_flows(
         └────────────────┴─────────────────┘
 
     """
-    if any_is_empty(settlement, maturity, commercial_name):
+    if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
         return pl.DataFrame({"data_pagamento": [], "valor_pagamento": []})
 
     # Valida e normaliza datas
-    liquidacao = conversores.converter_datas(settlement)
-    vencimento = conversores.converter_datas(maturity)
+    liquidacao = conversores.converter_datas(data_liquidacao)
+    vencimento = conversores.converter_datas(data_vencimento)
 
     # Obtém as datas de amortização
-    datas_pagamento = payment_dates(liquidacao, vencimento, commercial_name)
-    df = pl.DataFrame({"data_pagamento": datas_pagamento})
+    serie_datas_pagamento = datas_pagamento(liquidacao, vencimento, nome_comercial)
+    df = pl.DataFrame({"data_pagamento": serie_datas_pagamento})
 
     # Parâmetros do título
-    pagamento_amort, pagamento_amort_final, _ = _obter_parametros_titulo(
-        commercial_name
-    )
+    pagamento_amort, pagamento_amort_final, _ = _obter_parametros_titulo(nome_comercial)
 
     # Define o fluxo final no vencimento e os demais como amortizações
     df = df.with_columns(
@@ -186,20 +188,20 @@ def cash_flows(
     return df
 
 
-def quotation(
-    settlement: DateLike,
-    maturity: DateLike,
-    rate: float,
-    commercial_name: CommercialName,
+def cotacao(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    taxa: float,
+    nome_comercial: NomeComercial,
 ) -> float:
     """
     Calcula a cotação da NTN-B1 em base 100 pelas regras da ANBIMA.
 
     Args:
-        settlement (DateLike): Data de liquidação da operação.
-        maturity (DateLike): Data de vencimento da NTN-B1.
-        rate (float): Taxa de desconto (YTM) usada no valor presente.
-        commercial_name (CommercialName): Nome comercial (Renda+ ou Educa+).
+        data_liquidacao (DateLike): Data de liquidação da operação.
+        data_vencimento (DateLike): Data de vencimento da NTN-B1.
+        taxa (float): Taxa de desconto (YTM) usada no valor presente.
+        nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
 
     Returns:
         float: Cotação da NTN-B1 truncada em 6 casas decimais.
@@ -208,35 +210,35 @@ def quotation(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> from pyield import ntnb1
-        >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
-        >>> ntnb1.quotation("18-06-2025", "15-12-2084", 0.07010, r_mais)
+        >>> from pyield.tn import ntnb1
+        >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
+        >>> ntnb1.cotacao("18-06-2025", "15-12-2084", 0.07010, r_mais)
         0.038332
     """
-    if any_is_empty(settlement, maturity, rate, commercial_name):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa, nome_comercial):
         return float("nan")
 
-    df_fluxos = cash_flows(settlement, maturity, commercial_name)
+    df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
     valores_fluxo = df_fluxos["valor_pagamento"]
-    dias_uteis = bday.count(settlement, df_fluxos["data_pagamento"])
-    anos_uteis = utils.truncate(dias_uteis / 252, 14)
-    fatores_desconto = (1 + rate) ** anos_uteis
+    dias_uteis = dus.contar(data_liquidacao, df_fluxos["data_pagamento"])
+    anos_uteis = utils.truncar(dias_uteis / 252, 14)
+    fatores_desconto = (1 + taxa) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
     vp = (valores_fluxo / fatores_desconto).round(10)
     # Retorna a cotação (soma dos valores presentes) com truncamento ANBIMA
-    return utils.truncate(vp.sum(), 6)
+    return utils.truncar(vp.sum(), 6)
 
 
-def price(
+def pu(
     vna: float,
-    quotation: float,
+    cotacao: float,
 ) -> float:
     """
     Calcula o preço (PU) da NTN-B1 pelas regras do Tesouro Nacional.
 
     Args:
         vna (float): Valor nominal atualizado (VNA).
-        quotation (float): Cotação da NTN-B1 em base 100.
+        cotacao (float): Cotação da NTN-B1 em base 100.
 
     Returns:
         float: Preço da NTN-B1 truncado em 6 casas decimais.
@@ -245,60 +247,60 @@ def price(
          - SEI Proccess 17944.005214/2024-09
 
     Examples:
-        >>> from pyield import ntnb1
-        >>> ntnb1.price(4299.160173, 99.3651 / 100)
+        >>> from pyield.tn import ntnb1
+        >>> ntnb1.pu(4299.160173, 99.3651 / 100)
         4271.864805
-        >>> ntnb1.price(4315.498383, 100.6409 / 100)
+        >>> ntnb1.pu(4315.498383, 100.6409 / 100)
         4343.156412
     """
-    if any_is_empty(vna, quotation):
+    if any_is_empty(vna, cotacao):
         return float("nan")
-    return utils.truncate(vna * quotation, 6)
+    return utils.truncar(vna * cotacao, 6)
 
 
 def duration(
-    settlement: DateLike,
-    maturity: DateLike,
-    rate: float,
-    commercial_name: CommercialName,
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    taxa: float,
+    nome_comercial: NomeComercial,
 ) -> float:
     """
     Calcula a Macaulay duration da NTN-B1 em anos úteis.
 
     Args:
-        settlement (DateLike): Data de liquidação da operação.
-        maturity (DateLike): Data de vencimento.
-        rate (float): Taxa de desconto usada no cálculo.
-        commercial_name (CommercialName): Nome comercial (Renda+ ou Educa+).
+        data_liquidacao (DateLike): Data de liquidação da operação.
+        data_vencimento (DateLike): Data de vencimento.
+        taxa (float): Taxa de desconto usada no cálculo.
+        nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
 
     Returns:
         float: Macaulay duration em anos úteis.
 
     Examples:
-        >>> from pyield import ntnb1
-        >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
+        >>> from pyield.tn import ntnb1
+        >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
         >>> ntnb1.duration("23-06-2025", "15-12-2084", 0.0686, r_mais)
         47.10493458167134
     """
     # Retorna NaN se houver entradas nulas
-    if any_is_empty(settlement, maturity, rate, commercial_name):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa, nome_comercial):
         return float("nan")
 
-    df_fluxos = cash_flows(settlement, maturity, commercial_name)
-    anos_uteis = bday.count(settlement, df_fluxos["data_pagamento"]) / 252
-    vp = df_fluxos["valor_pagamento"] / (1 + rate) ** anos_uteis
-    duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
+    df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
+    anos_uteis = dus.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
+    vp = df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis
+    duration = float((vp * anos_uteis).sum()) / float(vp.sum())
 
     # Trunca a duração para 14 casas para reprodutibilidade
-    return utils.truncate(duracao, 14)
+    return utils.truncar(duration, 14)
 
 
 def dv01(
-    settlement: DateLike,
-    maturity: DateLike,
-    rate: float,
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    taxa: float,
     vna: float,
-    commercial_name: CommercialName = CommercialName.RENDA_MAIS,
+    nome_comercial: NomeComercial = NomeComercial.RENDA_MAIS,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da NTN-B1 em R$.
@@ -306,26 +308,31 @@ def dv01(
     Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
 
     Args:
-        settlement (DateLike): Data de liquidação.
-        maturity (DateLike): Data de vencimento.
-        rate (float): Taxa de desconto (YTM) da NTN-B1.
+        data_liquidacao (DateLike): Data de liquidação.
+        data_vencimento (DateLike): Data de vencimento.
+        taxa (float): Taxa de desconto (YTM) da NTN-B1.
         vna (float): Valor nominal atualizado (VNA).
-        commercial_name (CommercialName): Nome comercial (Renda+ ou Educa+).
+        nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
 
     Returns:
         float: DV01, variação de preço para 1 bp.
 
     Examples:
-        >>> from pyield import ntnb1
-        >>> r_mais = ntnb1.CommercialName.RENDA_MAIS
+        >>> from pyield.tn import ntnb1
+        >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
         >>> ntnb1.dv01("23-06-2025", "15-12-2084", 0.0686, 4299.160173, r_mais)
         0.7738490000000127
     """
-    if any_is_empty(settlement, maturity, rate, vna, commercial_name):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa, vna, nome_comercial):
         return float("nan")
 
-    quotation1 = quotation(settlement, maturity, rate, commercial_name)
-    quotation2 = quotation(settlement, maturity, rate + 0.0001, commercial_name)
-    price1 = price(vna, quotation1)
-    price2 = price(vna, quotation2)
-    return price1 - price2
+    cotacao_1 = cotacao(data_liquidacao, data_vencimento, taxa, nome_comercial)
+    cotacao_2 = cotacao(
+        data_liquidacao,
+        data_vencimento,
+        taxa + 0.0001,
+        nome_comercial,
+    )
+    pu_1 = pu(vna, cotacao_1)
+    pu_2 = pu(vna, cotacao_2)
+    return pu_1 - pu_2
