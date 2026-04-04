@@ -102,7 +102,7 @@ Acesse taxas indicativas da ANBIMA e dados de títulos públicos:
 
 ```python
 # LTN (Letras do Tesouro Nacional - pré-fixado)
-df_ltn = yd.ltn.data("23-08-2024")
+df_ltn = yd.ltn.dados("23-08-2024")
 # Colunas: data_referencia, titulo, codigo_selic, data_base, data_vencimento, taxa_indicativa, ...
 
 # NTN-B (Notas do Tesouro Nacional série B - IPCA+)
@@ -127,9 +127,9 @@ yd.ntnb.quotation("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 # Cotação para vencimento mais longo
 yd.ntnb.quotation("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
-# Spreads DI para títulos pré-fixados (em pontos-base)
-df_spreads = yd.ltn.di_spreads("30-05-2024", bps=True)
-# Colunas: titulo, data_vencimento, spread_di
+# Prêmio sobre DI para títulos pré-fixados (em pontos-base)
+df_spreads = yd.ltn.premio("30-05-2024", pontos_base=True)
+# Colunas: titulo, data_vencimento, premio
 
 # Spreads para NTN-F
 df_spreads_ntnf = yd.ntnf.di_spreads("30-05-2024", bps=True)
@@ -203,7 +203,7 @@ Embora PYield retorne Polars DataFrames por padrão (desde a versão 0.40.0), é
 import pyield as yd
 
 # Obter DataFrame Polars
-df_polars = yd.ltn.data("23-08-2024")
+df_polars = yd.ltn.dados("23-08-2024")
 
 # Converter para Pandas
 df_pandas = df_polars.to_pandas(use_pyarrow_extension_array=True)

@@ -93,11 +93,11 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     ).sort("data_leilao", "hora_inicio", "tipo_oferta")
 
 
-def repos(
+def compromissadas(
     data_inicial: DateLike | None = None,
     data_final: DateLike | None = None,
 ) -> pl.DataFrame:
-    """Consulta e retorna leilões de operações compromissadas (repos) do BCB.
+    """Consulta e retorna leilões de operações compromissadas do BCB.
 
     Semântica dos parâmetros de período (API OData):
         - data_inicial somente: dados de data_inicial até o fim da série.
@@ -132,7 +132,7 @@ def repos(
 
     Examples:
         >>> from pyield import bc
-        >>> bc.repos(data_inicial="21-08-2025", data_final="21-08-2025")
+        >>> bc.compromissadas(data_inicial="21-08-2025", data_final="21-08-2025")
         shape: (2, 12)
         ┌─────────────┬─────────────────┬──────────────┬─────────────┬───┬───────────────────┬───────────────┬────────────┬───────────────────┐
         │ data_leilao ┆ data_liquidacao ┆ data_retorno ┆ hora_inicio ┆ … ┆ publico_permitido ┆ volume_aceito ┆ taxa_corte ┆ percentual_aceito │

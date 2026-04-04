@@ -132,7 +132,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | `forward` / `forwards` | Forward-rate calculations |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
 | `ntnb1`, `ntnbprinc`, `pre` | Additional bonds and curves (NTN-B1, NTN-B Principal, PRE curve) |
-| `tn.auction` / `tn.benchmarks` | Treasury bond auctions and benchmarks |
+| `tn.leiloes` / `tn.benchmarks` | Treasury bond auctions and benchmarks |
 | `anbima` | ANBIMA data (government bond prices, yield curves, IMA indexes) |
 | `bc` | BCB indicators (SELIC, PTAX, repos, VNA, auctions, trades) |
 | `b3` | B3 data (DI over, price reports, intraday derivatives) |
@@ -147,7 +147,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 from pyield import ltn, ntnb, ntnf
 
 # Fetch ANBIMA indicative rates
-ltn.data("23-08-2024")   # -> DataFrame with LTN bonds
+ltn.dados("23-08-2024")  # -> DataFrame with LTN bonds
 ntnb.data("23-08-2024")  # -> DataFrame with NTN-B bonds
 
 # Compute bond quotation (base 100)

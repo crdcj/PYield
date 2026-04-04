@@ -1,5 +1,5 @@
-from pyield.bc import compromissadas, copom
-from pyield.bc.compromissadas import repos
+from pyield.bc import compromissada, copom
+from pyield.bc.compromissada import compromissadas
 from pyield.bc.leiloes import leiloes
 from pyield.bc.ptax import ptax, ptax_serie
 from pyield.bc.taxas import (
@@ -16,12 +16,12 @@ from pyield.bc.vna import vna_lft
 
 __all__ = [
     "copom",
-    "compromissadas",
+    "compromissada",
     "di_over",
     "di_over_serie",
     "leiloes",
     "ptax_serie",
-    "repos",
+    "compromissadas",
     "ptax",
     "tpf_intradiario",
     "tpf_mensal",

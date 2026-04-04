@@ -132,7 +132,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | `forward` / `forwards` | Cálculo de taxas a termo |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
 | `ntnb1`, `ntnbprinc`, `pre` | Títulos e curvas adicionais (NTN-B1, NTN-B Principal, curva PRE) |
-| `tn.auction` / `tn.benchmarks` | Leilões e benchmarks de títulos públicos |
+| `tn.leiloes` / `tn.benchmarks` | Leilões e benchmarks de títulos públicos |
 | `anbima` | Dados da ANBIMA (preços de TPF, curvas de juros, índices IMA) |
 | `bc` | Indicadores do BCB (SELIC, PTAX, repos, VNA, leilões, negociações) |
 | `b3` | Dados da B3 (DI over, price reports, derivativos intradiários) |
@@ -147,7 +147,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 from pyield import ltn, ntnb, ntnf
 
 # Busca taxas indicativas da ANBIMA
-ltn.data("23-08-2024")   # -> DataFrame with LTN bonds
+ltn.dados("23-08-2024")  # -> DataFrame with LTN bonds
 ntnb.data("23-08-2024")  # -> DataFrame with NTN-B bonds
 
 # Calcula cotação do título (base 100)

@@ -1,10 +1,11 @@
 import datetime as dt
+import importlib
 import json
 from pathlib import Path
 
 import polars as pl
 
-import pyield.tn.auctions as auctions_mod
+leiloes_mod = importlib.import_module("pyield.tn.leilao")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_JSON = DIRETORIO_DADOS / "auction_20251023.json"
@@ -24,13 +25,13 @@ DF_PTAX = pl.DataFrame(
 )
 
 
-def test_auction_com_monkeypatch(monkeypatch):
-    """auction com monkeypatch deve produzir o Parquet de referência."""
+def test_leiloes_com_monkeypatch(monkeypatch):
+    """leiloes com monkeypatch deve produzir o Parquet de referência."""
     monkeypatch.setattr(
-        auctions_mod,
+        leiloes_mod,
         "_buscar_dados_leilao",
         lambda *_, **__: json.loads(CAMINHO_JSON.read_bytes()),
     )
-    monkeypatch.setattr(auctions_mod, "_buscar_ptax", lambda *_, **__: DF_PTAX)
-    resultado = auctions_mod.auction(auction_date="23-10-2025")
+    monkeypatch.setattr(leiloes_mod, "_buscar_ptax", lambda *_, **__: DF_PTAX)
+    resultado = leiloes_mod.leiloes(data_leilao="23-10-2025")
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))
