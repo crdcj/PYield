@@ -25,8 +25,7 @@ pip install pyield
 ## Quick Start
 
 ```python
-from pyield import dus, b3, bc, Interpolador
-from pyield.tn import ntnb
+from pyield import dus, b3, bc, ntnb, Interpolador
 
 # Business days (foundation for all calculations)
 dus.contar("02-01-2025", "15-01-2025")  # -> 9
@@ -137,9 +136,8 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | `b3.di1` | Interpolated DI1 curve and available trade dates |
 | `Interpolador` | Rate interpolation (flat_forward, linear) |
 | `forward` / `forwards` | Forward-rate calculations |
-| `tn.lft`, `tn.ltn`, `tn.ntnf`, `tn.ntnc` | Pricing and analysis of main treasury bonds |
-| `tn.ntnb`, `tn.ntnb1`, `tn.ntnbprinc` | NTN-B and variants |
-| `tn.pre` | PRE curve and DI spreads |
+| `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
+| `ntnb1`, `ntnbprinc`, `pre` | NTN-B, variants and PRE curve |
 | `tn.leiloes` / `tn.benchmarks` | Treasury bond auctions and benchmarks |
 | `anbima` | ANBIMA data (government bond prices, yield curves, IMA indexes) |
 | `bc` | BCB indicators (SELIC, PTAX, repos, VNA, auctions, trades) |
@@ -152,7 +150,7 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 ## Treasury Bonds
 
 ```python
-from pyield.tn import ltn, ntnb, ntnf
+from pyield import ltn, ntnb, ntnf
 
 # Fetch ANBIMA indicative rates
 ltn.dados("23-08-2024")  # -> DataFrame with LTN bonds
@@ -202,8 +200,7 @@ String parsing is performed element-by-element across supported formats. Invalid
 Null handling: scalar functions return `float('nan')` for missing inputs (which propagates in calculations). Vectorized functions propagate `null` element-by-element.
 
 ```python
-from pyield.tn import ntnb
-from pyield import dus
+from pyield import ntnb, dus
 
 ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
 dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]

@@ -40,7 +40,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         - rentabilidade (Float64): Rentabilidade diária da LTN sobre o DI.
 
     Examples:
-        >>> from pyield.tn import ltn
+        >>> from pyield import ltn
         >>> df_ltn = ltn.dados("23-08-2024")  # doctest: +SKIP
     """
     df = utils.obter_tpf(data, "LTN")
@@ -99,7 +99,7 @@ def vencimentos(data: DateLike) -> pl.Series:
         pl.Series: Série de datas de vencimento disponíveis.
 
     Examples:
-        >>> from pyield.tn import ltn
+        >>> from pyield import ltn
         >>> ltn.vencimentos("22-08-2024")
         shape: (13,)
         Series: 'data_vencimento' [date]
@@ -140,7 +140,7 @@ def pu(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> from pyield.tn import ltn
+        >>> from pyield import ltn
         >>> ltn.pu("05-07-2024", "01-01-2030", 0.12145)
         535.279902
     """
@@ -180,7 +180,7 @@ def taxa(
             caso de erro.
 
     Examples:
-        >>> from pyield.tn import ltn
+        >>> from pyield import ltn
         >>> ltn.taxa("05-07-2024", "01-01-2030", 535.279902)
         0.12145
         >>> ltn.taxa("13-03-2026", "01-01-2027", 895.563913)
@@ -213,7 +213,7 @@ def rentabilidade(taxa_ltn: float, taxa_di: float) -> float:
         Reference date: 22-08-2024
         LTN rate for 01-01-2030: 0.118746
         DI (JAN30) Settlement rate: 0.11725
-        >>> from pyield.tn import ltn
+        >>> from pyield import ltn
         >>> ltn.rentabilidade(0.118746, 0.11725)
         1.0120718007994287
     """
@@ -246,7 +246,7 @@ def dv01(
         float: DV01, variação de preço para 1 bp.
 
     Examples:
-        >>> from pyield.tn import ltn
+        >>> from pyield import ltn
         >>> ltn.dv01("26-03-2025", "01-01-2032", 0.150970)
         0.2269059999999854
     """
@@ -290,7 +290,7 @@ def premio(
         ValueError: Se os dados de DI não possuem 'taxa_ajuste' ou estão vazios.
 
     Examples:
-        >>> from pyield.tn import ltn
+        >>> from pyield import ltn
         >>> ltn.premio("30-05-2025", pontos_base=True)
         shape: (13, 3)
         ┌────────┬─────────────────┬────────┐
@@ -336,7 +336,7 @@ def taxas_forward(data: DateLike) -> pl.DataFrame:
         - taxa_forward (Float64): Taxa forward.
 
     Examples:
-        >>> from pyield.tn import ltn
+        >>> from pyield import ltn
         >>> ltn.taxas_forward("17-10-2025")
         shape: (13, 4)
         ┌─────────────────┬────────────┬─────────────────┬──────────────┐

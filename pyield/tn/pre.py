@@ -27,7 +27,7 @@ def taxas_zero(data: DateLike) -> pl.DataFrame:
         ValueError: Se algum vencimento não puder ser processado.
 
     Examples:
-        >>> from pyield.tn import pre
+        >>> from pyield import pre
         >>> pre.taxas_zero("18-06-2025")
         shape: (17, 3)
         ┌─────────────────┬────────────┬───────────┐

@@ -1,6 +1,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/pyield.svg)](https://pypi.python.org/pypi/pyield)
 [![Made with Python](https://img.shields.io/badge/Python->=3.12-blue?logo=python&logoColor=white)](https://python.org "Go to Python homepage")
 [![License](https://img.shields.io/badge/License-MIT-blue)](https://github.com/crdcj/PYield/blob/main/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue?logo=readthedocs&logoColor=white)](https://crdcj.github.io/PYield/)
 
 # PYield: Toolkit de Renda Fixa Brasileira
 
@@ -19,8 +20,7 @@ pip install pyield
 ## Início Rápido
 
 ```python
-from pyield import dus, b3, bc, Interpolador
-from pyield.tn import ntnb
+from pyield import dus, b3, bc, ntnb, Interpolador
 
 # Dias úteis (base de todos os cálculos)
 dus.contar("02-01-2025", "15-01-2025")  # -> 9
@@ -197,8 +197,7 @@ Tratamento de nulos: funções escalares retornam `float('nan')` para entradas a
 (propaga nos cálculos). Funções vetorizadas propagam `null` elemento a elemento.
 
 ```python
-from pyield.tn import ntnb
-from pyield import dus
+from pyield import ntnb, dus
 
 ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
 dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
