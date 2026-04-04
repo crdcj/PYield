@@ -15,11 +15,11 @@ import polars.selectors as cs
 import requests
 
 import pyield._internal.converters as cv
-import pyield.bc.ptax_api as pt
 from pyield import bday
 from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
+from pyield.bc.ptax import ptax_serie
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
 
@@ -74,21 +74,21 @@ CHAVES_ORDENACAO = ["data_leilao", "tipo_leilao", "titulo", "data_vencimento"]
 URL_BASE_API = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
 
 
-MAPA_TIPO_LEILAO = {"sell": "Venda", "buy": "Compra"}
+MAPA_TIPO_LEILAO = {"venda": "Venda", "compra": "Compra"}
 
 
 def _montar_url(
-    inicio: DateLike | None = None,
-    fim: DateLike | None = None,
-    tipo_leilao: Literal["sell", "buy"] | None = None,
+    data_inicial: DateLike | None = None,
+    data_final: DateLike | None = None,
+    tipo_leilao: Literal["venda", "compra"] | None = None,
 ) -> str:
     url = URL_BASE_API
-    if inicio:
-        inicio = cv.converter_datas(inicio)
-        url += f"@dataMovimentoInicio='{inicio:%Y-%m-%d}'"
-    if fim:
-        fim = cv.converter_datas(fim)
-        url += f"&@dataMovimentoFim='{fim:%Y-%m-%d}'"
+    if data_inicial:
+        data_inicial = cv.converter_datas(data_inicial)
+        url += f"@dataMovimentoInicio='{data_inicial:%Y-%m-%d}'"
+    if data_final:
+        data_final = cv.converter_datas(data_final)
+        url += f"&@dataMovimentoFim='{data_final:%Y-%m-%d}'"
     if tipo_leilao:
         url += f"&@tipoOferta='{MAPA_TIPO_LEILAO[tipo_leilao.lower()]}'"
     url += "&$format=text/csv"
@@ -111,7 +111,6 @@ def _parsear_df(dados: bytes) -> pl.DataFrame:
 
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     """Filtra, converte tipos e calcula colunas derivadas."""
-    # Em 11/06/2024 o BC passou a informar os PUs diretamente nas colunas de cotação
     data_mudanca = dt.date(2024, 6, 11)
 
     def _duracao_por_linha(linha: dict) -> float:
@@ -136,7 +135,6 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
 
     return (
         df.filter(pl.col("ofertante") == "Tesouro Nacional")
-        # 1. Converter tipos
         .with_columns(
             data_leilao=pl.col("dataMovimento").str.to_date("%Y-%m-%d %H:%M:%S"),
             data_liquidacao=pl.col("dataLiquidacao").str.to_date("%Y-%m-%d %H:%M:%S"),
@@ -163,7 +161,6 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
                 pl.Int64
             ),
         )
-        # 2. Colunas derivadas de primeiro nível
         .with_columns(
             titulo=pl.col("codigo_selic").replace_strict(
                 MAPA_TITULOS, return_dtype=pl.String
@@ -179,7 +176,6 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             ),
             dias_uteis=bday.count_expr("data_liquidacao", "data_vencimento"),
         )
-        # 3. Financeiro da 1ª volta (depende de quantidade_aceita_total)
         .with_columns(
             financeiro_1v=pl.when(pl.col("quantidade_aceita_1v") != 0)
             .then(
@@ -190,7 +186,6 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             .round(0)
             .cast(pl.Int64),
         )
-        # 4. Financeiro da 2ª volta e ajuste de PU médio (dependem de financeiro_1v)
         .with_columns(
             financeiro_2v=pl.col("financeiro_total") - pl.col("financeiro_1v"),
             pu_medio=pl.when(
@@ -202,14 +197,12 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
                 (pl.col("financeiro_1v") / pl.col("quantidade_aceita_1v")).round(6)
             ),
         )
-        # 5. Anular taxa/preço onde não houve aceite na 1ª volta
         .with_columns(
             pl.when(pl.col("quantidade_aceita_1v") == 0)
             .then(None)
             .otherwise(pl.col(colunas_preco_taxa))
             .name.keep()
         )
-        # 6. Duration
         .with_columns(
             duration=pl.struct(
                 "titulo",
@@ -219,7 +212,6 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
                 "dias_uteis",
             ).map_elements(_duracao_por_linha, return_dtype=pl.Float64)
         )
-        # 7. DV01 e prazo médio (dependem de duration)
         .with_columns(
             dv01_total=expr_dv01_unitario * pl.col("quantidade_aceita_total"),
             dv01_1v=expr_dv01_unitario * pl.col("quantidade_aceita_1v"),
@@ -228,7 +220,6 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             .then(pl.col("dias_uteis") / 252)
             .otherwise("duration"),
         )
-        # 8. Substituir NaN por None
         .with_columns(cs.float().fill_nan(None))
     )
 
@@ -240,13 +231,11 @@ def _buscar_ptax(df: pl.DataFrame) -> pl.DataFrame:
     assert isinstance(data_inicio, dt.date)
     assert isinstance(data_fim, dt.date)
 
-    # Garante que pelo menos um dia útil seja buscado
-    # Isso é importante caso seja o leilão do dia atual e não haja PTAX ainda
     ultimo_dia_util = bday.last_business_day()
     if data_inicio >= ultimo_dia_util:
         data_inicio = bday.offset(ultimo_dia_util, -1)
 
-    df_ptax = pt.ptax_serie(data_inicial=data_inicio, data_final=data_fim)
+    df_ptax = ptax_serie(data_inicial=data_inicio, data_final=data_fim)
     if df_ptax.is_empty():
         return pl.DataFrame()
 
@@ -275,24 +264,24 @@ def _adicionar_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def auctions(
-    start: DateLike | None = None,
-    end: DateLike | None = None,
-    auction_type: Literal["sell", "buy"] | None = None,
+def leiloes(
+    data_inicial: DateLike | None = None,
+    data_final: DateLike | None = None,
+    tipo_leilao: Literal["venda", "compra"] | None = None,
 ) -> pl.DataFrame:
     """Dados de leilões de títulos públicos federais do BCB.
 
     Fonte: Banco Central do Brasil. Disponível desde 12/11/2012.
 
-    Se ambos `start` e `end` forem omitidos, retorna a série
+    Se ambos `data_inicial` e `data_final` forem omitidos, retorna a série
     histórica completa. Se apenas um for informado, a API do BCB
     usa o início ou fim do histórico como limite.
 
     Args:
-        start: Data de início. Padrão é ``None``.
-        end: Data de fim. Padrão é ``None``.
-        auction_type: Tipo de leilão (``"sell"`` = venda,
-            ``"buy"`` = compra). Padrão é ``None`` (todos).
+        data_inicial: Data de início. Padrão é ``None``.
+        data_final: Data de fim. Padrão é ``None``.
+        tipo_leilao: Tipo de leilão (``"venda"`` ou ``"compra"``).
+            Padrão é ``None`` (todos).
 
     Returns:
         DataFrame com dados de leilões, ou DataFrame vazio
@@ -339,7 +328,7 @@ def auctions(
 
     Examples:
         >>> from pyield import bc
-        >>> bc.auctions(start="19-08-2025", end="19-08-2025")
+        >>> bc.leiloes(data_inicial="19-08-2025", data_final="19-08-2025")
         shape: (5, 34)
         ┌─────────────┬─────────────────┬─────────────┬───────────────┬───┬─────────────────────────┬───────────────┬───────────────┬──────────────────┐
         │ data_leilao ┆ data_liquidacao ┆ tipo_leilao ┆ numero_edital ┆ … ┆ quantidade_aceita_total ┆ financeiro_1v ┆ financeiro_2v ┆ financeiro_total │
@@ -353,7 +342,11 @@ def auctions(
         │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 194           ┆ … ┆ 500000                  ┆ 2010700000    ┆ 0             ┆ 2010700000       │
         └─────────────┴─────────────────┴─────────────┴───────────────┴───┴─────────────────────────┴───────────────┴───────────────┴──────────────────┘
     """
-    url = _montar_url(inicio=start, fim=end, tipo_leilao=auction_type)
+    url = _montar_url(
+        data_inicial=data_inicial,
+        data_final=data_final,
+        tipo_leilao=tipo_leilao,
+    )
     dados = _buscar_csv(url)
     df = _parsear_df(dados)
     if df.is_empty():

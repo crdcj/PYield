@@ -152,7 +152,7 @@ def ptax_serie(
     if data_inicial:
         data_inicial = cv.converter_datas(data_inicial)
     else:
-        data_inicial = dt.date(1984, 11, 28)  # Primeira data disponível na API
+        data_inicial = dt.date(1984, 11, 28)
 
     if data_final:
         data_final = cv.converter_datas(data_final)

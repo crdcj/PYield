@@ -1,9 +1,10 @@
 import datetime as dt
+import importlib
 from pathlib import Path
 
 import polars as pl
 
-import pyield.bc.auction as auction_mod
+leiloes_mod = importlib.import_module("pyield.bc.leiloes")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_CSV = DIRETORIO_DADOS / "auction_20250819.csv"
@@ -19,10 +20,13 @@ DF_PTAX = pl.DataFrame(
 def test_auctions_com_monkeypatch(monkeypatch):
     """auctions com monkeypatch deve produzir o Parquet de referência."""
     monkeypatch.setattr(
-        auction_mod,
+        leiloes_mod,
         "_buscar_csv",
         lambda *_: CAMINHO_CSV.read_bytes(),
     )
-    monkeypatch.setattr(auction_mod, "_buscar_ptax", lambda *_: DF_PTAX)
-    resultado = auction_mod.auctions(start="19-08-2025", end="19-08-2025")
+    monkeypatch.setattr(leiloes_mod, "_buscar_ptax", lambda *_: DF_PTAX)
+    resultado = leiloes_mod.leiloes(
+        data_inicial="19-08-2025",
+        data_final="19-08-2025",
+    )
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))

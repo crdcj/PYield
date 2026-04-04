@@ -24,22 +24,25 @@ from pyield._internal.types import DateLike
 URL_BASE_API = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloes_compromissadas(dataLancamentoInicio=@dataLancamentoInicio,dataLancamentoFim=@dataLancamentoFim,horaInicio=@horaInicio,dataLiquidacao=@dataLiquidacao,dataRetorno=@dataRetorno,publicoPermitidoLeilao=@publicoPermitidoLeilao,nomeTipoOferta=@nomeTipoOferta)?"
 
 
-def _montar_url(inicio: DateLike | None, fim: DateLike | None) -> str:
-    """Monta URL de consulta conforme parâmetros opcionais de início e fim.
+def _montar_url(
+    data_inicial: DateLike | None,
+    data_final: DateLike | None,
+) -> str:
+    """Monta URL de consulta conforme parâmetros opcionais de período.
 
     Regras da API:
-        - Apenas início: retorna de início até o fim da série.
-        - Apenas fim: retorna do início da série até fim.
+        - Apenas data_inicial: retorna de data_inicial até o fim da série.
+        - Apenas data_final: retorna do início da série até data_final.
         - Ambos ausentes: retorna a série completa.
     """
     url = URL_BASE_API
-    if inicio:
-        inicio = cv.converter_datas(inicio)
+    if data_inicial:
+        inicio = cv.converter_datas(data_inicial)
         inicio_str = inicio.strftime("%Y-%m-%d")
         url += f"@dataLancamentoInicio='{inicio_str}'"
 
-    if fim:
-        fim = cv.converter_datas(fim)
+    if data_final:
+        fim = cv.converter_datas(data_final)
         fim_str = fim.strftime("%Y-%m-%d")
         url += f"&@dataLancamentoFim='{fim_str}'"
 
@@ -91,19 +94,19 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def repos(
-    start: DateLike | None = None,
-    end: DateLike | None = None,
+    data_inicial: DateLike | None = None,
+    data_final: DateLike | None = None,
 ) -> pl.DataFrame:
     """Consulta e retorna leilões de operações compromissadas (repos) do BCB.
 
     Semântica dos parâmetros de período (API OData):
-        - start somente: dados de start até o fim da série.
-        - end somente: dados do início da série até end.
+        - data_inicial somente: dados de data_inicial até o fim da série.
+        - data_final somente: dados do início da série até data_final.
         - ambos omitidos: série histórica completa.
 
     Args:
-        start: Data inicial (inclusive) ou None.
-        end: Data final (inclusive) ou None.
+        data_inicial: Data inicial (inclusive) ou None.
+        data_final: Data final (inclusive) ou None.
 
     Returns:
         DataFrame com colunas normalizadas em português e tipos
@@ -129,7 +132,7 @@ def repos(
 
     Examples:
         >>> from pyield import bc
-        >>> bc.repos(start="21-08-2025", end="21-08-2025")
+        >>> bc.repos(data_inicial="21-08-2025", data_final="21-08-2025")
         shape: (2, 12)
         ┌─────────────┬─────────────────┬──────────────┬─────────────┬───┬───────────────────┬───────────────┬────────────┬───────────────────┐
         │ data_leilao ┆ data_liquidacao ┆ data_retorno ┆ hora_inicio ┆ … ┆ publico_permitido ┆ volume_aceito ┆ taxa_corte ┆ percentual_aceito │
@@ -140,7 +143,7 @@ def repos(
         │ 2025-08-21  ┆ 2025-08-22      ┆ 2025-11-21   ┆ 12:00:00    ┆ … ┆ TodoMercado       ┆ 5000000000    ┆ 0.9978     ┆ 35.87             │
         └─────────────┴─────────────────┴──────────────┴─────────────┴───┴───────────────────┴───────────────┴────────────┴───────────────────┘
     """
-    url = _montar_url(inicio=start, fim=end)
+    url = _montar_url(data_inicial=data_inicial, data_final=data_final)
     csv_api = _buscar_csv_api(url)
     df = _ler_csv(csv_api)
     if df.is_empty():

@@ -79,7 +79,7 @@ def adicionar_duration(
 
 def adicionar_dv01(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
     """Adiciona `dv01` e `dv01_usd` ao DataFrame. Requer coluna `duration`."""
-    from pyield.bc.ptax_api import ptax  # noqa: PLC0415
+    from pyield.bc.ptax import ptax  # noqa: PLC0415
 
     expr_duracao_mod = pl.col("duration") / (1 + pl.col("taxa_indicativa"))
     df = df.with_columns(dv01=0.0001 * expr_duracao_mod * pl.col("pu"))
