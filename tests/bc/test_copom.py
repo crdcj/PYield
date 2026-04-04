@@ -10,8 +10,8 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-import pyield.bc.copom as copom
-from pyield import bday
+from pyield import dus
+from pyield.bc import copom
 
 DATA = Path(__file__).parent / "data"
 
@@ -58,9 +58,9 @@ def test_no_duplicate_end_dates(cal):
 
 
 def test_expiry_is_one_bday_after_end(cal):
-    """ExpiryDate must equal bday.offset(EndDate, 1) for every row."""
+    """ExpiryDate must equal dus.deslocar(EndDate, 1) for every row."""
     for row in cal.iter_rows(named=True):
-        expected = bday.offset(row["EndDate"], 1)
+        expected = dus.deslocar(row["EndDate"], 1)
         assert row["ExpiryDate"] == expected, (
             f"MeetingNumber={row['MeetingNumber']}: "
             f"ExpiryDate={row['ExpiryDate']}, expected={expected}"

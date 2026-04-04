@@ -8,7 +8,7 @@ import datetime as dt
 import polars as pl
 import requests
 
-from pyield import bday, relogio
+from pyield import dus, relogio
 from pyield._internal.br_numbers import float_br, inteiro_br, taxa_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
@@ -88,7 +88,7 @@ def _mercado_selic_aberto() -> bool:
     agora = relogio.agora()
     hoje = agora.date()
     hora = agora.time()
-    eh_dia_util = bday.is_business_day(hoje)
+    eh_dia_util = dus.e_dia_util(hoje)
     eh_horario = HORA_INICIO_TEMPO_REAL <= hora <= HORA_FIM_TEMPO_REAL
 
     return eh_dia_util and eh_horario

@@ -54,29 +54,29 @@ pip install pyield
 
 ### 1. Dias Úteis (Business Days)
 
-O módulo `bday` é a base de todos os cálculos na biblioteca. Feriados brasileiros são automaticamente considerados.
+O módulo `dus` é a base de todos os cálculos na biblioteca. Feriados brasileiros são automaticamente considerados.
 
 ```python
 import pyield as yd
 
 # Contar dias úteis entre duas datas (início inclusivo, fim exclusivo)
-yd.bday.count("29-12-2023", "02-01-2024")  # -> 1
+yd.dus.contar("29-12-2023", "02-01-2024")  # -> 1
 
 # Avançar N dias úteis a partir de uma data
-yd.bday.offset("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
+yd.dus.deslocar("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
 
 # Ajustar data para o próximo dia útil (se não for dia útil)
-yd.bday.offset("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
+yd.dus.deslocar("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
 
 # Como 29-12-2023 já é dia útil, retorna a mesma data
-yd.bday.offset("29-12-2023", 0)  # -> datetime.date(2023, 12, 29)
+yd.dus.deslocar("29-12-2023", 0)  # -> datetime.date(2023, 12, 29)
 
 # Gerar série de dias úteis entre duas datas
-yd.bday.generate("22-12-2023", "02-01-2024")
+yd.dus.gerar("22-12-2023", "02-01-2024")
 # -> Polars Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
 
 # Verificar se é dia útil
-yd.bday.is_business_day("25-12-2023")  # -> False (Natal)
+yd.dus.e_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
 Todas as funções suportam operações vetorizadas com listas, Series ou arrays.
@@ -226,7 +226,7 @@ Para valores nulos, funções escalares retornam `float('nan')`. Funções vetor
 ```python
 # Exemplo com null
 yd.ntnb.quotation(None, "15-05-2035", 0.06149)  # -> nan
-yd.bday.count(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
+yd.dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
 
 ## Recursos Adicionais

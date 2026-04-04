@@ -1,7 +1,7 @@
 import polars as pl
 import polars.selectors as cs
 
-from pyield import bday
+from pyield import dus
 from pyield.b3._validar_pregao import intradia_disponivel
 from pyield.b3.derivativos_intradia import derivativo_intradia
 from pyield.b3.futuro.contratos import CONTRATOS_TAXA, expr_dv01
@@ -92,11 +92,11 @@ def _processar_intradia(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
         df = df.rename(_PRECO_PARA_TAXA_INTRADIA, strict=False)
     df = df.drop_nulls("data_vencimento").sort("data_vencimento")
 
-    data_negociacao = bday.last_business_day()
+    data_negociacao = dus.ultimo_dia_util()
     df = df.with_columns(
         data_referencia=data_negociacao,
         dias_corridos=(pl.col("data_vencimento") - data_negociacao).dt.total_days(),
-        dias_uteis=bday.count_expr(data_negociacao, "data_vencimento"),
+        dias_uteis=dus.contar_expr(data_negociacao, "data_vencimento"),
     ).filter(pl.col("dias_corridos") > 0)
 
     if codigo_contrato in CONTRATOS_TAXA:

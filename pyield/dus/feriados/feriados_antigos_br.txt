@@ -1,5 +1,5 @@
-# Brazilian National Holidays
-# Note: dates until 22-12-2023 (inclusive) must use this list
+# Feriados nacionais do Brasil
+# Observação: datas até 22-12-2023 (inclusive) devem usar esta lista
 01/01/1990
 26/02/1990
 27/02/1990

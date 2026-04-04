@@ -1,7 +1,7 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import bday, fwd
+from pyield import dus, fwd
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 from pyield.tn.pre import premio as pre_premio
@@ -51,7 +51,7 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
     data_ref = cv.converter_datas(data_referencia)
 
     df = df.with_columns(
-        dias_uteis=bday.count_expr("data_referencia", "data_vencimento"),
+        dias_uteis=dus.contar_expr("data_referencia", "data_vencimento"),
     )
 
     df = df.with_columns(
@@ -149,7 +149,7 @@ def pu(
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
     # Calcula dias úteis entre liquidação e vencimento
-    dias_uteis = bday.count(data_liquidacao, data_vencimento)
+    dias_uteis = dus.contar(data_liquidacao, data_vencimento)
 
     # Calcula anos úteis truncados conforme ANBIMA
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
@@ -193,7 +193,7 @@ def taxa(
     if preco_unitario <= 0:
         return float("nan")
 
-    dias_uteis = bday.count(data_liquidacao, data_vencimento)
+    dias_uteis = dus.contar(data_liquidacao, data_vencimento)
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
     taxa_calculada = (VALOR_FACE / preco_unitario) ** (1 / anos_truncados) - 1
     return round(taxa_calculada, 6)

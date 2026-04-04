@@ -1,6 +1,6 @@
 import polars as pl
 
-from pyield import bday
+from pyield import dus
 
 # Lista de contratos que negociam por taxa (juros/cupom).
 # Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.
@@ -71,6 +71,6 @@ def adicionar_vencimento(
         ).alias("data_vencimento")
     )
     # Garante que a data de vencimento é um dia útil
-    df = df.with_columns(data_vencimento=bday.offset_expr("data_vencimento", 0))
+    df = df.with_columns(data_vencimento=dus.deslocar_expr("data_vencimento", 0))
 
     return df

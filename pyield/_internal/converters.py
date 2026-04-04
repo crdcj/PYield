@@ -11,9 +11,9 @@ def data_referencia_valida(date: dt.date | None) -> bool:
     """Verifica se a data é dia útil e não está no futuro."""
     if date is None:
         return False
-    from pyield import bday, relogio  # noqa: PLC0415
+    from pyield import dus, relogio  # noqa: PLC0415
 
-    return bday.is_business_day(date) and date <= relogio.hoje()
+    return dus.e_dia_util(date) and date <= relogio.hoje()
 
 
 def converter_datas_expr(expr: pl.Expr | str) -> pl.Expr:

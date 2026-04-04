@@ -21,13 +21,13 @@ uv sync
 pytest
 
 # Run only doctests in a single module
-pytest pyield/bday/core.py --doctest-modules
+pytest pyield/dus/core.py --doctest-modules
 
 # Run a single test file
-pytest tests/bday/test_bday.py
+pytest tests/dus/test_dus.py
 
 # Run a specific test
-pytest tests/bday/test_bday.py::test_count_with_strings1
+pytest tests/dus/test_dus.py::test_count_new_holiday
 
 # Linting
 ruff check
@@ -45,7 +45,7 @@ mkdocs serve
 
 The library is organized into domain-specific namespaces, all exposed through `pyield/__init__.py`:
 
-- **`bday`** — Business day calendar (Brazilian holidays built-in). Core functions: `count`, `offset`, `generate`, `is_business_day`, `last_business_day`. Polars expression variants: `count_expr`, `offset_expr`, `is_business_day_expr`.
+- **`dus`** — Calendário de dias úteis (feriados brasileiros embutidos). Funções principais: `contar`, `deslocar`, `gerar`, `e_dia_util`, `ultimo_dia_util`. Variantes para expressões Polars: `contar_expr`, `deslocar_expr`, `e_dia_util_expr`.
 - **`anbima`** — ANBIMA data endpoints (treasury bond pricing, yield curves). Functions: `tpf`, `tpf_vencimentos`, `tpf_fonte`, `ettj_ultima`, `ettj_intradiaria`, `ima_ultimo`, `imaq`, `tpf_difusao`.
 - **`bc`** — BCB indicators. Functions: `selic_over`, `selic_over_series`, `selic_target`, `selic_target_series`, `di_over`, `di_over_series`, `ptax`, `ptax_series`, `repos`, `vna_lft`, `auctions`, `tpf_monthly_trades`, `tpf_intraday_trades`. Submodule: `copom`.
 - **`b3`** — B3 market data. Functions: `futuro`, `futuro_enriquecer`, `futuro_intradia`, `futuro_datas_disponiveis`, `di_over`, `boletim_negociacao`, `boletim_negociacao_ler`, `derivativo_intradia`. Submodule: `di1`.
@@ -64,7 +64,7 @@ Top-level functions also exported from `pyield`:
 
 - **`_internal/types.py`** — Type aliases `DateLike` and `ArrayLike`; `any_is_empty()` for null/empty detection; `any_is_collection()` for array-like detection.
 - **`_internal/converters.py`** — `converter_datas()` normalizes various date inputs to `datetime.date` or `pl.Series[Date]`. `converter_datas_expr()` for Polars expression pipelines.
-- **`interpolador.py`** — `Interpolador` class for rate interpolation (linear or flat_forward method, 252 bday/year convention).
+- **`interpolador.py`** — `Interpolador` class for rate interpolation (linear or flat_forward method, convenção de 252 dias úteis/ano).
 - **`_internal/data_cache.py`** — GitHub-hosted parquet data cache with daily TTL using `lru_cache` (date-key trick for auto-invalidation).
 - **`_internal/retry.py`** — Tenacity-based retry decorator (`retry_padrao`) for network requests (retries on 429, 5xx, timeouts).
 - **`clock.py`** — `today()` and `now()` return Brazil timezone (America/Sao_Paulo) dates/times.

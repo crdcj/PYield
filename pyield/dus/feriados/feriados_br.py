@@ -7,10 +7,10 @@ from typing import Literal
 import polars as pl
 
 
-class BrHolidays:
+class FeriadosBrasil:
     """Calendário de feriados nacionais (lista antiga e nova).
 
-    Uso interno do módulo `bday`.
+    Uso interno do módulo `dus`.
     DATA_TRANSICAO (inclusive): 2023-12-26. Antes desta data usa lista antiga.
     A partir desta data usa lista nova.
     """
@@ -19,38 +19,42 @@ class BrHolidays:
 
     def __init__(self) -> None:
         base = Path(__file__).parent
-        self.feriados_novos = self._carregar_feriados(base / "br_holidays_new.txt")
-        self.feriados_antigos = self._carregar_feriados(base / "br_holidays_old.txt")
+        self.feriados_novos = self._carregar_feriados(base / "feriados_novos_br.txt")
+        self.feriados_antigos = self._carregar_feriados(
+            base / "feriados_antigos_br.txt"
+        )
 
     @staticmethod
     def _carregar_feriados(caminho_arquivo: Path) -> list[dt.date]:
         df = pl.read_csv(
             caminho_arquivo,
             has_header=False,
-            new_columns=["date"],
+            new_columns=["data"],
             comment_prefix="#",
-        ).with_columns(pl.col("date").str.to_date(format="%d/%m/%Y"))
-        return df["date"].to_list()
+        ).with_columns(pl.col("data").str.to_date(format="%d/%m/%Y"))
+        return df["data"].to_list()
 
     def obter_feriados(
         self,
         datas: dt.date | pl.Series | None = None,
-        opcao_feriado: Literal["old", "new", "infer"] = "infer",
+        opcao_feriado: Literal["antigo", "novo", "inferir"] = "inferir",
     ) -> list[dt.date]:
         """Retorna a lista de feriados conforme opção ou inferência.
 
         datas: data única ou série de datas para inferir (quando
-            opcao_feriado='infer').
-        opcao_feriado: 'old', 'new' ou 'infer'.
+            opcao_feriado='inferir').
+        opcao_feriado: 'antigo', 'novo' ou 'inferir'.
         """
         match opcao_feriado:
-            case "old":
+            case "antigo":
                 return self.feriados_antigos
-            case "new":
+            case "novo":
                 return self.feriados_novos
-            case "infer":
+            case "inferir":
                 if datas is None:
-                    raise ValueError("'datas' obrigatório em 'infer'.")
+                    raise ValueError(
+                        "'datas' é obrigatório quando opcao_feriado='inferir'."
+                    )
                 if isinstance(datas, dt.date):
                     data_minima = datas
                 else:
@@ -65,4 +69,4 @@ class BrHolidays:
                     return self.feriados_novos
 
             case _:
-                raise ValueError("Opção inválida para holiday_option.")
+                raise ValueError("Opção inválida para opcao_feriado.")

@@ -4,7 +4,7 @@ import logging
 import polars as pl
 
 import pyield._internal.converters as conversores
-from pyield import bday, fwd, interpolador
+from pyield import dus, fwd, interpolador
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.tn import utils
 
@@ -68,7 +68,7 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
 
     # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
     df = df.with_columns(
-        dias_uteis=bday.count_expr("data_referencia", "data_vencimento"),
+        dias_uteis=dus.contar_expr("data_referencia", "data_vencimento"),
     )
 
     # Adiciona duration, prazo_medio, dv01 e dv01_usd
@@ -325,7 +325,7 @@ def cotacao(
         return float("nan")
 
     valores_fluxo = df_fluxos["valor_pagamento"]
-    dias_uteis = bday.count(data_liquidacao, df_fluxos["data_pagamento"])
+    dias_uteis = dus.contar(data_liquidacao, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
@@ -411,7 +411,7 @@ def _criar_df_bootstrap(
     """Cria o DataFrame base para o bootstrap."""
     # Cria interpolador para TIRs em datas intermediárias
     interpolador_ff = interpolador.Interpolador(
-        dias_uteis=bday.count(data_liquidacao, vencimentos),
+        dias_uteis=dus.contar(data_liquidacao, vencimentos),
         taxas=taxas,
         metodo="flat_forward",
     )
@@ -420,7 +420,7 @@ def _criar_df_bootstrap(
     ultimo_vencimento = vencimentos.max()
     assert isinstance(ultimo_vencimento, dt.date)
     todas_datas_cupom = _gerar_todas_datas_cupom(data_liquidacao, ultimo_vencimento)
-    dias_uteis_ate_venc = bday.count(data_liquidacao, todas_datas_cupom)
+    dias_uteis_ate_venc = dus.contar(data_liquidacao, todas_datas_cupom)
     taxas_tir = interpolador_ff.interpolar(dias_uteis_ate_venc)
 
     df = (
@@ -651,7 +651,7 @@ def inflacao_implicita(
     nominal_vencimentos = conversores.converter_datas(nominal_vencimentos)
 
     interpolador_ff = interpolador.Interpolador(
-        dias_uteis=bday.count(liquidacao, nominal_vencimentos),
+        dias_uteis=dus.contar(liquidacao, nominal_vencimentos),
         taxas=nominal_taxas,
         metodo="flat_forward",
         extrapolar=True,
@@ -718,7 +718,7 @@ def duration(
     if df_fluxos.is_empty():
         return float("nan")
 
-    anos_uteis = bday.count(data_liquidacao, df_fluxos["data_pagamento"]) / 252
+    anos_uteis = dus.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
     vp = df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis
     duration = float((vp * anos_uteis).sum()) / float(vp.sum())
     # Truncar para 14 casas decimais para repetibilidade dos resultados

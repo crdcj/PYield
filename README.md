@@ -22,8 +22,8 @@ pip install pyield
 import pyield as yd
 
 # Dias úteis (base de todos os cálculos)
-yd.bday.count("02-01-2025", "15-01-2025")  # -> 9
-yd.bday.offset("29-12-2023", 1)            # -> datetime.date(2024, 1, 2)
+yd.dus.contar("02-01-2025", "15-01-2025")  # -> 9
+yd.dus.deslocar("29-12-2023", 1)            # -> datetime.date(2024, 1, 2)
 
 # Curva de DI Futuro
 df = yd.futuro("31-05-2024", "DI1")
@@ -47,28 +47,28 @@ Um notebook no Colab com mais exemplos:
 
 ## Blocos Principais
 
-### Dias Úteis (`bday`)
+### Dias Úteis (`dus`)
 
-O módulo `bday` é a base do PYield. Todos os cálculos com datas (preço, duration, taxas a termo) dependem da contagem correta de dias úteis com feriados brasileiros.
+O módulo `dus` é a base do PYield. Todos os cálculos com datas (preço, duration, taxas a termo) dependem da contagem correta de dias úteis com feriados brasileiros.
 
 ```python
-from pyield import bday
+from pyield import dus
 
 # Conta dias úteis (início inclusivo, fim exclusivo)
-bday.count("29-12-2023", "02-01-2024")  # -> 1
+dus.contar("29-12-2023", "02-01-2024")  # -> 1
 
 # Avança N dias úteis
-bday.offset("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
+dus.deslocar("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
 
 # Ajusta dia não útil para o próximo dia útil
-bday.offset("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
+dus.deslocar("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
 
 # Gera intervalo de dias úteis
-bday.generate("22-12-2023", "02-01-2024")
+dus.gerar("22-12-2023", "02-01-2024")
 # -> Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
 
 # Verifica se a data é dia útil
-bday.is_business_day("25-12-2023")  # -> False (Christmas)
+dus.e_dia_util("25-12-2023")  # -> False (Christmas)
 ```
 
 Todas as funções suportam operações vetorizadas com listas, Series ou arrays.
@@ -125,7 +125,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 
 | Módulo | Finalidade |
 |--------|---------|
-| `bday` | Calendário de dias úteis com feriados brasileiros |
+| `dus` | Calendário de dias úteis com feriados brasileiros |
 | `futuro` | Dados de futuro da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
 | `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
 | `Interpolador` | Interpolação de taxas (flat_forward, linear) |
@@ -196,10 +196,10 @@ Tratamento de nulos: funções escalares retornam `float('nan')` para entradas a
 (propaga nos cálculos). Funções vetorizadas propagam `null` elemento a elemento.
 
 ```python
-from pyield import ntnb, bday
+from pyield import ntnb, dus
 
 ntnb.quotation(None, "15-05-2035", 0.06149)  # -> nan
-bday.count(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
+dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
 
 Consultas sem dados disponíveis (data futura, feriado, fim de semana ou

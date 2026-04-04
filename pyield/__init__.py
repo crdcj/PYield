@@ -1,6 +1,6 @@
 import logging
 
-from pyield import anbima, b3, bc, bday, ipca, relogio, selic, tn
+from pyield import anbima, b3, bc, dus, ipca, relogio, selic, tn
 from pyield.__about__ import __version__
 from pyield.b3 import di1, futuro
 from pyield.fwd import forward, forwards
@@ -15,14 +15,13 @@ __all__ = [
     "anbima",
     "b3",
     "bc",
-    "bday",
     "copom_options",
     "di1",
+    "dus",
     "forward",
     "forwards",
     "futuro",
     "agora",
-    "hoje",
     "lft",
     "ltn",
     "ntnb",
@@ -35,6 +34,7 @@ __all__ = [
     "relogio",
     "selic",
     "tn",
+    "hoje",
 ]
 
 # Configura o logger do pacote principal com um NullHandler

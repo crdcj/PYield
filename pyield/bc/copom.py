@@ -20,7 +20,7 @@ import logging
 import polars as pl
 import requests
 
-from pyield import bday, relogio
+from pyield import dus, relogio
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
@@ -146,8 +146,8 @@ def calendar(
 
     Notes
     -----
-    ExpiryDate is computed with ``bday.offset_expr("EndDate", 1)``, using
-    the Brazilian holiday calendar already embedded in ``pyield.bday``.
+    ExpiryDate is computed with ``dus.deslocar_expr("EndDate", 1)``, using
+    the Brazilian holiday calendar already embedded in ``pyield.dus``.
 
     Examples
     --------
@@ -168,8 +168,8 @@ def calendar(
     )
 
     # ExpiryDate: next business day after the meeting ends.
-    # Vectorized via offset_expr — consistent with the rest of the codebase.
-    df = df.with_columns(ExpiryDate=bday.offset_expr("EndDate", 1))
+    # Vectorized via deslocar_expr — consistent with the rest of the codebase.
+    df = df.with_columns(ExpiryDate=dus.deslocar_expr("EndDate", 1))
 
     # Optional date-range filter on EndDate
     if start is not None:

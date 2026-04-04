@@ -1,8 +1,10 @@
-# Brazilian National Holidays: from 26-12-2023 (inclusive) onwards
-# Data Source: https://www.anbima.com.br/feriados/feriados.asp
-# Direct link to the ANBIMA file: https://www.anbima.com.br/feriados/arqs/feriados_nacionais.xls
-# In december 2023, a new holiday was added: "Dia Nacional de Zumbi"
-# Note: dates until 22-12-2023 (inclusive) must use "old_br_holidays.txt" list
+# Feriados nacionais do Brasil: a partir de 26-12-2023 (inclusive)
+# Fonte dos dados: https://www.anbima.com.br/feriados/feriados.asp
+# Link direto do arquivo da ANBIMA:
+# https://www.anbima.com.br/feriados/arqs/feriados_nacionais.xls
+# Em dezembro de 2023, um novo feriado foi adicionado: "Dia Nacional de Zumbi"
+# Observação: datas até 22-12-2023 (inclusive) devem usar a lista
+# "feriados_antigos_br.txt"
 01/01/1990
 26/02/1990
 27/02/1990

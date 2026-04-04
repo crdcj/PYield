@@ -1,7 +1,7 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import b3, bday, interpolador
+from pyield import b3, dus, interpolador
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
 from pyield.b3.futuro import futuro_datas_disponiveis as _listar_datas
@@ -74,7 +74,7 @@ def dados(
             .unique(subset=["data_vencimento", "data_referencia"])
             .select(
                 data_ref_tpf=pl.col("data_referencia"),
-                data_vencimento=bday.offset_expr("data_vencimento", 0),
+                data_vencimento=dus.deslocar_expr("data_vencimento", 0),
             )
             .sort("data_ref_tpf", "data_vencimento")
         )
@@ -207,7 +207,7 @@ def interpolar_taxas(
 
     # Inicializa taxa_interpolada como None
     df_entrada = df_entrada.with_columns(
-        dias_uteis=bday.count_expr("data_referencia", "data_vencimento"),
+        dias_uteis=dus.contar_expr("data_referencia", "data_vencimento"),
         taxa_interpolada=None,
     )
 

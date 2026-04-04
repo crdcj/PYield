@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit_functions.config as cfg
 
 from pyield import ntnb
-from pyield.bday import core
+from pyield.dus import deslocar
 
 
 def get_coupon_payments(start_date, end_date, maturity_date):
@@ -122,10 +122,10 @@ def decompose_ntnb_return(start_date, end_date, maturity_date):
             coupons_to_add = (1.06) ** (1 / 2) - 1
 
         start_date_coupons = dates_calculation[i + 1]
-        start_date_coupons = core.offset(start_date_coupons, 0).date()
+        start_date_coupons = deslocar(start_date_coupons, 0).date()
 
         end_date_coupons = dates_calculation[i]
-        end_date_coupons = core.offset(end_date_coupons, 0).date()
+        end_date_coupons = deslocar(end_date_coupons, 0).date()
 
         vna_start = cfg.df_vna.query("reference_date == @start_date_coupons")[
             "vna_du"

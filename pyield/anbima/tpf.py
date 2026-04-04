@@ -19,7 +19,7 @@ from typing import Literal
 import polars as pl
 import requests
 
-from pyield import bday
+from pyield import dus
 from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.converters import converter_datas, data_referencia_valida
 from pyield._internal.data_cache import obter_dataset_cacheado
@@ -74,8 +74,8 @@ def _montar_nome_arquivo(data: dt.date) -> str:
 
 
 def _montar_url_arquivo(data: dt.date) -> str:
-    ultimo_dia_util = bday.last_business_day()
-    qtd_dias_uteis = bday.count(data, ultimo_dia_util)
+    ultimo_dia_util = dus.ultimo_dia_util()
+    qtd_dias_uteis = dus.contar(data, ultimo_dia_util)
     if qtd_dias_uteis > DIAS_RETENCAO_PUBLICA:
         # Para datas com mais de 5 dias úteis, apenas os dados da RTM estão disponíveis
         logger.info("Tentando buscar dados RTM para %s", data.strftime("%d/%m/%Y"))
