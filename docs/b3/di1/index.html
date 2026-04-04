@@ -282,7 +282,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../dus/" class="md-tabs__link">
+        <a href="../../du/" class="md-tabs__link">
           
   
   
@@ -574,7 +574,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dus/" class="md-nav__link">
+      <a href="../../du/" class="md-nav__link">
         
   
   
@@ -1847,7 +1847,7 @@ de negociação fornecida. Padrão: False.</p>
 </span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a>            <span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;data_vencimento&quot;</span><span class="p">,</span> <span class="s2">&quot;data_referencia&quot;</span><span class="p">])</span>
 </span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a>            <span class="o">.</span><span class="n">select</span><span class="p">(</span>
 </span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a>                <span class="n">data_ref_tpf</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;data_referencia&quot;</span><span class="p">),</span>
-</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a>                <span class="n">data_vencimento</span><span class="o">=</span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar_expr</span><span class="p">(</span><span class="s2">&quot;data_vencimento&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a>                <span class="n">data_vencimento</span><span class="o">=</span><span class="n">du</span><span class="o">.</span><span class="n">deslocar_expr</span><span class="p">(</span><span class="s2">&quot;data_vencimento&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
 </span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a>            <span class="p">)</span>
 </span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a>            <span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="s2">&quot;data_ref_tpf&quot;</span><span class="p">,</span> <span class="s2">&quot;data_vencimento&quot;</span><span class="p">)</span>
 </span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a>        <span class="p">)</span>
@@ -2787,7 +2787,7 @@ array-like mas tiverem tamanhos diferentes.</p>
 </span><span id="__span-0-207"><a id="__codelineno-0-207" name="__codelineno-0-207"></a>
 </span><span id="__span-0-208"><a id="__codelineno-0-208" name="__codelineno-0-208"></a>    <span class="c1"># Inicializa taxa_interpolada como None</span>
 </span><span id="__span-0-209"><a id="__codelineno-0-209" name="__codelineno-0-209"></a>    <span class="n">df_entrada</span> <span class="o">=</span> <span class="n">df_entrada</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-</span><span id="__span-0-210"><a id="__codelineno-0-210" name="__codelineno-0-210"></a>        <span class="n">dias_uteis</span><span class="o">=</span><span class="n">dus</span><span class="o">.</span><span class="n">contar_expr</span><span class="p">(</span><span class="s2">&quot;data_referencia&quot;</span><span class="p">,</span> <span class="s2">&quot;data_vencimento&quot;</span><span class="p">),</span>
+</span><span id="__span-0-210"><a id="__codelineno-0-210" name="__codelineno-0-210"></a>        <span class="n">dias_uteis</span><span class="o">=</span><span class="n">du</span><span class="o">.</span><span class="n">contar_expr</span><span class="p">(</span><span class="s2">&quot;data_referencia&quot;</span><span class="p">,</span> <span class="s2">&quot;data_vencimento&quot;</span><span class="p">),</span>
 </span><span id="__span-0-211"><a id="__codelineno-0-211" name="__codelineno-0-211"></a>        <span class="n">taxa_interpolada</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-212"><a id="__codelineno-0-212" name="__codelineno-0-212"></a>    <span class="p">)</span>
 </span><span id="__span-0-213"><a id="__codelineno-0-213" name="__codelineno-0-213"></a>

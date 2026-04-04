@@ -12,7 +12,7 @@
         <meta name="author" content="Carlos Carvalho">
       
       
-        <link rel="canonical" href="https://crdcj.github.io/PYield/dus/">
+        <link rel="canonical" href="https://crdcj.github.io/PYield/du/">
       
       
         <link rel="prev" href="../articles/pyield_intro/">
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#pyield.dus.contar" class="md-skip">
+        <a href="#pyield.du.contar" class="md-skip">
           Pular para conteúdo
         </a>
       
@@ -632,7 +632,7 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pyield.dus.contar" class="md-nav__link">
+  <a href="#pyield.du.contar" class="md-nav__link">
     <span class="md-ellipsis">
       
         contar
@@ -643,7 +643,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyield.dus.contar_expr" class="md-nav__link">
+  <a href="#pyield.du.contar_expr" class="md-nav__link">
     <span class="md-ellipsis">
       
         contar_expr
@@ -654,7 +654,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyield.dus.deslocar" class="md-nav__link">
+  <a href="#pyield.du.deslocar" class="md-nav__link">
     <span class="md-ellipsis">
       
         deslocar
@@ -665,7 +665,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyield.dus.deslocar_expr" class="md-nav__link">
+  <a href="#pyield.du.deslocar_expr" class="md-nav__link">
     <span class="md-ellipsis">
       
         deslocar_expr
@@ -676,7 +676,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyield.dus.e_dia_util" class="md-nav__link">
+  <a href="#pyield.du.e_dia_util" class="md-nav__link">
     <span class="md-ellipsis">
       
         e_dia_util
@@ -687,7 +687,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyield.dus.e_dia_util_expr" class="md-nav__link">
+  <a href="#pyield.du.e_dia_util_expr" class="md-nav__link">
     <span class="md-ellipsis">
       
         e_dia_util_expr
@@ -698,7 +698,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyield.dus.gerar" class="md-nav__link">
+  <a href="#pyield.du.gerar" class="md-nav__link">
     <span class="md-ellipsis">
       
         gerar
@@ -709,7 +709,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyield.dus.ultimo_dia_util" class="md-nav__link">
+  <a href="#pyield.du.ultimo_dia_util" class="md-nav__link">
     <span class="md-ellipsis">
       
         ultimo_dia_util
@@ -1587,7 +1587,7 @@
 <div class="doc doc-object doc-function">
 
 
-<h2 id="pyield.dus.contar" class="doc doc-heading">
+<h2 id="pyield.du.contar" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">contar</span><span class="p">(</span><span class="n">inicio</span><span class="p">,</span> <span class="n">fim</span><span class="p">)</span></code>
 
 </h2>
@@ -1706,16 +1706,16 @@ retornado.</p>
 </details>
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">dus</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="s2">&quot;15-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;01-01-2024&quot;</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">du</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="s2">&quot;15-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;01-01-2024&quot;</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">10</span>
 </span></code></pre></div>
     <p>Contagem negativa quando <code>inicio</code> é posterior a <code>fim</code>:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="s2">&quot;08-01-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;01-01-2023&quot;</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="s2">&quot;08-01-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;01-01-2023&quot;</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">-5</span>
 </span></code></pre></div>
     <p>Total de dias úteis em janeiro e fevereiro desde o início do ano:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">inicio</span><span class="o">=</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="n">fim</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;01-02-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-03-2024&quot;</span><span class="p">])</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">inicio</span><span class="o">=</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="n">fim</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;01-02-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-03-2024&quot;</span><span class="p">])</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2,)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">Series: &#39;dias_uteis&#39; [i64]</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">[</span>
@@ -1724,7 +1724,7 @@ retornado.</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">]</span>
 </span></code></pre></div>
     <p>Dias úteis restantes de janeiro/fevereiro até o fim do ano:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">([</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">],</span> <span class="s2">&quot;01-01-2025&quot;</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">([</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">],</span> <span class="s2">&quot;01-01-2025&quot;</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2,)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">Series: &#39;dias_uteis&#39; [i64]</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">[</span>
@@ -1733,7 +1733,7 @@ retornado.</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">]</span>
 </span></code></pre></div>
     <p>Total de dias úteis em janeiro e fevereiro de 2024:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">([</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;01-02-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-03-2024&quot;</span><span class="p">])</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">([</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;01-02-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-03-2024&quot;</span><span class="p">])</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2,)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">Series: &#39;dias_uteis&#39; [i64]</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">[</span>
@@ -1742,11 +1742,11 @@ retornado.</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">]</span>
 </span></code></pre></div>
     <p>Valores nulos são propagados:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;01-01-2024&quot;</span><span class="p">)</span>  <span class="c1"># None em inicio</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;01-01-2024&quot;</span><span class="p">)</span>  <span class="c1"># None em inicio</span>
 </span></code></pre></div>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># None em fim</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># None em fim</span>
 </span></code></pre></div>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;01-02-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span>  <span class="c1"># None dentro do array</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;01-02-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span>  <span class="c1"># None dentro do array</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2,)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">Series: &#39;dias_uteis&#39; [i64]</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">[</span>
@@ -1755,7 +1755,7 @@ retornado.</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">]</span>
 </span></code></pre></div>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">datas_inicio</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-03-2024&quot;</span><span class="p">]</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">datas_inicio</span><span class="p">,</span> <span class="s2">&quot;01-01-2025&quot;</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">datas_inicio</span><span class="p">,</span> <span class="s2">&quot;01-01-2025&quot;</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">shape: (3,)</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">Series: &#39;dias_uteis&#39; [i64]</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="go">[</span>
@@ -1767,7 +1767,7 @@ retornado.</p>
 
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>pyield/dus/core.py</code></summary>
+              <summary>Source code in <code>pyield/du/core.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-101">101</a></span>
 <span class="normal"><a href="#__codelineno-0-102">102</a></span>
 <span class="normal"><a href="#__codelineno-0-103">103</a></span>
@@ -1924,16 +1924,16 @@ retornado.</p>
 </span><span id="__span-0-141"><a id="__codelineno-0-141" name="__codelineno-0-141"></a><span class="sd">        - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.</span>
 </span><span id="__span-0-142"><a id="__codelineno-0-142" name="__codelineno-0-142"></a>
 </span><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-144"><a id="__codelineno-0-144" name="__codelineno-0-144"></a><span class="sd">        &gt;&gt;&gt; from pyield import dus</span>
-</span><span id="__span-0-145"><a id="__codelineno-0-145" name="__codelineno-0-145"></a><span class="sd">        &gt;&gt;&gt; dus.contar(&quot;15-12-2023&quot;, &quot;01-01-2024&quot;)</span>
+</span><span id="__span-0-144"><a id="__codelineno-0-144" name="__codelineno-0-144"></a><span class="sd">        &gt;&gt;&gt; from pyield import du</span>
+</span><span id="__span-0-145"><a id="__codelineno-0-145" name="__codelineno-0-145"></a><span class="sd">        &gt;&gt;&gt; du.contar(&quot;15-12-2023&quot;, &quot;01-01-2024&quot;)</span>
 </span><span id="__span-0-146"><a id="__codelineno-0-146" name="__codelineno-0-146"></a><span class="sd">        10</span>
 </span><span id="__span-0-147"><a id="__codelineno-0-147" name="__codelineno-0-147"></a>
 </span><span id="__span-0-148"><a id="__codelineno-0-148" name="__codelineno-0-148"></a><span class="sd">        Contagem negativa quando ``inicio`` é posterior a ``fim``:</span>
-</span><span id="__span-0-149"><a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">        &gt;&gt;&gt; dus.contar(&quot;08-01-2023&quot;, &quot;01-01-2023&quot;)</span>
+</span><span id="__span-0-149"><a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">        &gt;&gt;&gt; du.contar(&quot;08-01-2023&quot;, &quot;01-01-2023&quot;)</span>
 </span><span id="__span-0-150"><a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="sd">        -5</span>
 </span><span id="__span-0-151"><a id="__codelineno-0-151" name="__codelineno-0-151"></a>
 </span><span id="__span-0-152"><a id="__codelineno-0-152" name="__codelineno-0-152"></a><span class="sd">        Total de dias úteis em janeiro e fevereiro desde o início do ano:</span>
-</span><span id="__span-0-153"><a id="__codelineno-0-153" name="__codelineno-0-153"></a><span class="sd">        &gt;&gt;&gt; dus.contar(inicio=&quot;01-01-2024&quot;, fim=[&quot;01-02-2024&quot;, &quot;01-03-2024&quot;])</span>
+</span><span id="__span-0-153"><a id="__codelineno-0-153" name="__codelineno-0-153"></a><span class="sd">        &gt;&gt;&gt; du.contar(inicio=&quot;01-01-2024&quot;, fim=[&quot;01-02-2024&quot;, &quot;01-03-2024&quot;])</span>
 </span><span id="__span-0-154"><a id="__codelineno-0-154" name="__codelineno-0-154"></a><span class="sd">        shape: (2,)</span>
 </span><span id="__span-0-155"><a id="__codelineno-0-155" name="__codelineno-0-155"></a><span class="sd">        Series: &#39;dias_uteis&#39; [i64]</span>
 </span><span id="__span-0-156"><a id="__codelineno-0-156" name="__codelineno-0-156"></a><span class="sd">        [</span>
@@ -1942,7 +1942,7 @@ retornado.</p>
 </span><span id="__span-0-159"><a id="__codelineno-0-159" name="__codelineno-0-159"></a><span class="sd">        ]</span>
 </span><span id="__span-0-160"><a id="__codelineno-0-160" name="__codelineno-0-160"></a>
 </span><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="sd">        Dias úteis restantes de janeiro/fevereiro até o fim do ano:</span>
-</span><span id="__span-0-162"><a id="__codelineno-0-162" name="__codelineno-0-162"></a><span class="sd">        &gt;&gt;&gt; dus.contar([&quot;01-01-2024&quot;, &quot;01-02-2024&quot;], &quot;01-01-2025&quot;)</span>
+</span><span id="__span-0-162"><a id="__codelineno-0-162" name="__codelineno-0-162"></a><span class="sd">        &gt;&gt;&gt; du.contar([&quot;01-01-2024&quot;, &quot;01-02-2024&quot;], &quot;01-01-2025&quot;)</span>
 </span><span id="__span-0-163"><a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">        shape: (2,)</span>
 </span><span id="__span-0-164"><a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">        Series: &#39;dias_uteis&#39; [i64]</span>
 </span><span id="__span-0-165"><a id="__codelineno-0-165" name="__codelineno-0-165"></a><span class="sd">        [</span>
@@ -1951,7 +1951,7 @@ retornado.</p>
 </span><span id="__span-0-168"><a id="__codelineno-0-168" name="__codelineno-0-168"></a><span class="sd">        ]</span>
 </span><span id="__span-0-169"><a id="__codelineno-0-169" name="__codelineno-0-169"></a>
 </span><span id="__span-0-170"><a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">        Total de dias úteis em janeiro e fevereiro de 2024:</span>
-</span><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">        &gt;&gt;&gt; dus.contar([&quot;01-01-2024&quot;, &quot;01-02-2024&quot;], [&quot;01-02-2024&quot;, &quot;01-03-2024&quot;])</span>
+</span><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">        &gt;&gt;&gt; du.contar([&quot;01-01-2024&quot;, &quot;01-02-2024&quot;], [&quot;01-02-2024&quot;, &quot;01-03-2024&quot;])</span>
 </span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="sd">        shape: (2,)</span>
 </span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a><span class="sd">        Series: &#39;dias_uteis&#39; [i64]</span>
 </span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a><span class="sd">        [</span>
@@ -1960,11 +1960,11 @@ retornado.</p>
 </span><span id="__span-0-177"><a id="__codelineno-0-177" name="__codelineno-0-177"></a><span class="sd">        ]</span>
 </span><span id="__span-0-178"><a id="__codelineno-0-178" name="__codelineno-0-178"></a>
 </span><span id="__span-0-179"><a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="sd">        Valores nulos são propagados:</span>
-</span><span id="__span-0-180"><a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="sd">        &gt;&gt;&gt; dus.contar(None, &quot;01-01-2024&quot;)  # None em inicio</span>
+</span><span id="__span-0-180"><a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="sd">        &gt;&gt;&gt; du.contar(None, &quot;01-01-2024&quot;)  # None em inicio</span>
 </span><span id="__span-0-181"><a id="__codelineno-0-181" name="__codelineno-0-181"></a>
-</span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">        &gt;&gt;&gt; dus.contar(&quot;01-01-2024&quot;, None)  # None em fim</span>
+</span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">        &gt;&gt;&gt; du.contar(&quot;01-01-2024&quot;, None)  # None em fim</span>
 </span><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a>
-</span><span id="__span-0-184"><a id="__codelineno-0-184" name="__codelineno-0-184"></a><span class="sd">        &gt;&gt;&gt; dus.contar(&quot;01-01-2024&quot;, [&quot;01-02-2024&quot;, None])  # None dentro do array</span>
+</span><span id="__span-0-184"><a id="__codelineno-0-184" name="__codelineno-0-184"></a><span class="sd">        &gt;&gt;&gt; du.contar(&quot;01-01-2024&quot;, [&quot;01-02-2024&quot;, None])  # None dentro do array</span>
 </span><span id="__span-0-185"><a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="sd">        shape: (2,)</span>
 </span><span id="__span-0-186"><a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="sd">        Series: &#39;dias_uteis&#39; [i64]</span>
 </span><span id="__span-0-187"><a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="sd">        [</span>
@@ -1973,7 +1973,7 @@ retornado.</p>
 </span><span id="__span-0-190"><a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">        ]</span>
 </span><span id="__span-0-191"><a id="__codelineno-0-191" name="__codelineno-0-191"></a>
 </span><span id="__span-0-192"><a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">        &gt;&gt;&gt; datas_inicio = [&quot;01-01-2024&quot;, &quot;01-02-2024&quot;, &quot;01-03-2024&quot;]</span>
-</span><span id="__span-0-193"><a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">        &gt;&gt;&gt; dus.contar(datas_inicio, &quot;01-01-2025&quot;)</span>
+</span><span id="__span-0-193"><a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">        &gt;&gt;&gt; du.contar(datas_inicio, &quot;01-01-2025&quot;)</span>
 </span><span id="__span-0-194"><a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="sd">        shape: (3,)</span>
 </span><span id="__span-0-195"><a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="sd">        Series: &#39;dias_uteis&#39; [i64]</span>
 </span><span id="__span-0-196"><a id="__codelineno-0-196" name="__codelineno-0-196"></a><span class="sd">        [</span>
@@ -2004,7 +2004,7 @@ retornado.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="pyield.dus.contar_expr" class="doc doc-heading">
+<h2 id="pyield.du.contar_expr" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">contar_expr</span><span class="p">(</span><span class="n">inicio</span><span class="p">,</span> <span class="n">fim</span><span class="p">)</span></code>
 
 </h2>
@@ -2089,11 +2089,11 @@ como <code>df.select()</code>, <code>df.with_columns()</code> ou <code>df.filter
 
 <p><span class="doc-section-title">Examples:</span></p>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">dus</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">du</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">inicio</span> <span class="o">=</span> <span class="p">[</span><span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">)]</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fim</span> <span class="o">=</span> <span class="p">[</span><span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">12</span><span class="p">)]</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;inicio&quot;</span><span class="p">:</span> <span class="n">inicio</span><span class="p">,</span> <span class="s2">&quot;fim&quot;</span><span class="p">:</span> <span class="n">fim</span><span class="p">})</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">dus</span><span class="o">.</span><span class="n">contar_expr</span><span class="p">(</span><span class="s2">&quot;inicio&quot;</span><span class="p">,</span> <span class="s2">&quot;fim&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;dias_uteis&quot;</span><span class="p">))</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">du</span><span class="o">.</span><span class="n">contar_expr</span><span class="p">(</span><span class="s2">&quot;inicio&quot;</span><span class="p">,</span> <span class="s2">&quot;fim&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;dias_uteis&quot;</span><span class="p">))</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">shape: (2, 1)</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="go">┌────────────┐</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="go">│ dias_uteis │</span>
@@ -2105,7 +2105,7 @@ como <code>df.select()</code>, <code>df.with_columns()</code> ou <code>df.filter
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="go">└────────────┘</span>
 </span></code></pre></div>
     <p>Uso com literais (ex: contar dias até o fim do ano):</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">dias_uteis</span><span class="o">=</span><span class="n">dus</span><span class="o">.</span><span class="n">contar_expr</span><span class="p">(</span><span class="s2">&quot;inicio&quot;</span><span class="p">,</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">31</span><span class="p">)))</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">dias_uteis</span><span class="o">=</span><span class="n">du</span><span class="o">.</span><span class="n">contar_expr</span><span class="p">(</span><span class="s2">&quot;inicio&quot;</span><span class="p">,</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">31</span><span class="p">)))</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2, 1)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">┌────────────┐</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">│ dias_uteis │</span>
@@ -2119,7 +2119,7 @@ como <code>df.select()</code>, <code>df.with_columns()</code> ou <code>df.filter
 
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>pyield/dus/core.py</code></summary>
+              <summary>Source code in <code>pyield/du/core.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-28">28</a></span>
 <span class="normal"><a href="#__codelineno-0-29">29</a></span>
 <span class="normal"><a href="#__codelineno-0-30">30</a></span>
@@ -2195,11 +2195,11 @@ como <code>df.select()</code>, <code>df.with_columns()</code> ou <code>df.filter
 </span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42"></a>
 </span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">    Examples:</span>
 </span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="sd">        &gt;&gt;&gt; import polars as pl</span>
-</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="sd">        &gt;&gt;&gt; from pyield import dus</span>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="sd">        &gt;&gt;&gt; from pyield import du</span>
 </span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="sd">        &gt;&gt;&gt; inicio = [dt.date(2024, 1, 1), dt.date(2024, 2, 9)]</span>
 </span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="sd">        &gt;&gt;&gt; fim = [dt.date(2024, 1, 5), dt.date(2024, 2, 12)]</span>
 </span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">        &gt;&gt;&gt; df = pl.DataFrame({&quot;inicio&quot;: inicio, &quot;fim&quot;: fim})</span>
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">        &gt;&gt;&gt; df.select(dus.contar_expr(&quot;inicio&quot;, &quot;fim&quot;).alias(&quot;dias_uteis&quot;))</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">        &gt;&gt;&gt; df.select(du.contar_expr(&quot;inicio&quot;, &quot;fim&quot;).alias(&quot;dias_uteis&quot;))</span>
 </span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">        shape: (2, 1)</span>
 </span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">        ┌────────────┐</span>
 </span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">        │ dias_uteis │</span>
@@ -2211,7 +2211,7 @@ como <code>df.select()</code>, <code>df.with_columns()</code> ou <code>df.filter
 </span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">        └────────────┘</span>
 </span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 </span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">        Uso com literais (ex: contar dias até o fim do ano):</span>
-</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        &gt;&gt;&gt; df.select(dias_uteis=dus.contar_expr(&quot;inicio&quot;, dt.date(2024, 12, 31)))</span>
+</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        &gt;&gt;&gt; df.select(dias_uteis=du.contar_expr(&quot;inicio&quot;, dt.date(2024, 12, 31)))</span>
 </span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">        shape: (2, 1)</span>
 </span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">        ┌────────────┐</span>
 </span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">        │ dias_uteis │</span>
@@ -2246,7 +2246,7 @@ como <code>df.select()</code>, <code>df.with_columns()</code> ou <code>df.filter
 <div class="doc doc-object doc-function">
 
 
-<h2 id="pyield.dus.deslocar" class="doc doc-heading">
+<h2 id="pyield.du.deslocar" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">deslocar</span><span class="p">(</span><span class="n">datas</span><span class="p">,</span> <span class="n">deslocamento</span><span class="p">,</span> <span class="n">rolagem</span><span class="o">=</span><span class="s1">&#39;forward&#39;</span><span class="p">)</span></code>
 
 </h2>
@@ -2408,46 +2408,46 @@ move para frente, negativo para trás, zero mantém a âncora após roll.</p>
 </details>
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">dus</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">du</span>
 </span></code></pre></div>
     <p>Desloca sábado antes do Natal para o próximo dia útil (terça após Natal):</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;23-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;23-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">datetime.date(2023, 12, 26)</span>
 </span></code></pre></div>
     <p>Desloca sexta antes do Natal (sem deslocamento pois é dia útil):</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">datetime.date(2023, 12, 22)</span>
 </span></code></pre></div>
     <p>Desloca para o dia útil anterior se não for útil (deslocamento=0 e
 rolagem="backward"):</p>
 <p>Sem deslocamento pois é dia útil:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rolagem</span><span class="o">=</span><span class="s2">&quot;backward&quot;</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rolagem</span><span class="o">=</span><span class="s2">&quot;backward&quot;</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">datetime.date(2023, 12, 22)</span>
 </span></code></pre></div>
     <p>Desloca para o primeiro dia útil antes de "23-12-2023":</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;23-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rolagem</span><span class="o">=</span><span class="s2">&quot;backward&quot;</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;23-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rolagem</span><span class="o">=</span><span class="s2">&quot;backward&quot;</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">datetime.date(2023, 12, 22)</span>
 </span></code></pre></div>
     <p>Avança para o próximo dia útil (deslocamento=1 e rolagem="forward"):</p>
 <p>Desloca sexta para o próximo dia útil (sexta é pulada -&gt; segunda):</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;27-09-2024&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;27-09-2024&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">datetime.date(2024, 9, 30)</span>
 </span></code></pre></div>
     <p>Desloca sábado para o próximo dia útil (segunda é pulada -&gt; terça):</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;28-09-2024&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;28-09-2024&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">datetime.date(2024, 10, 1)</span>
 </span></code></pre></div>
     <p>Volta para o dia útil anterior (deslocamento=-1 e rolagem="backward"):</p>
 <p>Desloca sexta para o dia útil anterior (sexta é pulada -&gt; quinta):</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;27-09-2024&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">rolagem</span><span class="o">=</span><span class="s2">&quot;backward&quot;</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;27-09-2024&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">rolagem</span><span class="o">=</span><span class="s2">&quot;backward&quot;</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">datetime.date(2024, 9, 26)</span>
 </span></code></pre></div>
     <p>Desloca sábado para o dia útil anterior (sexta é pulada -&gt; quinta):</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;28-09-2024&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">rolagem</span><span class="o">=</span><span class="s2">&quot;backward&quot;</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;28-09-2024&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">rolagem</span><span class="o">=</span><span class="s2">&quot;backward&quot;</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">datetime.date(2024, 9, 26)</span>
 </span></code></pre></div>
     <p>Lista de datas e deslocamentos:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">([</span><span class="s2">&quot;19-09-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;20-09-2024&quot;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">([</span><span class="s2">&quot;19-09-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;20-09-2024&quot;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2,)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">Series: &#39;data_ajustada&#39; [date]</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">[</span>
@@ -2455,7 +2455,7 @@ rolagem="backward"):</p>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="go">    2024-09-23</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">]</span>
 </span></code></pre></div>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;19-09-2024&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>  <span class="c1"># lista de deslocamentos</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;19-09-2024&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>  <span class="c1"># lista de deslocamentos</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2,)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">Series: &#39;data_ajustada&#39; [date]</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">[</span>
@@ -2464,11 +2464,11 @@ rolagem="backward"):</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">]</span>
 </span></code></pre></div>
     <p>Nulos escalares propagam para None:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">None</span>
 </span></code></pre></div>
     <p>Nulo escalar propaga dentro de arrays:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2,)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">Series: &#39;data_ajustada&#39; [date]</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">[</span>
@@ -2477,7 +2477,7 @@ rolagem="backward"):</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">]</span>
 </span></code></pre></div>
     <p>Nulos dentro de arrays são preservados:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">([</span><span class="s2">&quot;19-09-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">([</span><span class="s2">&quot;19-09-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2,)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">Series: &#39;data_ajustada&#39; [date]</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">[</span>
@@ -2486,7 +2486,7 @@ rolagem="backward"):</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">]</span>
 </span></code></pre></div>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">datas</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;19-09-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;20-09-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;21-09-2024&quot;</span><span class="p">]</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="n">datas</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="n">datas</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">shape: (3,)</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">Series: &#39;data_ajustada&#39; [date]</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="go">[</span>
@@ -2498,7 +2498,7 @@ rolagem="backward"):</p>
 
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>pyield/dus/core.py</code></summary>
+              <summary>Source code in <code>pyield/du/core.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-313">313</a></span>
 <span class="normal"><a href="#__codelineno-0-314">314</a></span>
 <span class="normal"><a href="#__codelineno-0-315">315</a></span>
@@ -2735,49 +2735,49 @@ rolagem="backward"):</p>
 </span><span id="__span-0-375"><a id="__codelineno-0-375" name="__codelineno-0-375"></a><span class="sd">        - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.</span>
 </span><span id="__span-0-376"><a id="__codelineno-0-376" name="__codelineno-0-376"></a>
 </span><span id="__span-0-377"><a id="__codelineno-0-377" name="__codelineno-0-377"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-378"><a id="__codelineno-0-378" name="__codelineno-0-378"></a><span class="sd">        &gt;&gt;&gt; from pyield import dus</span>
+</span><span id="__span-0-378"><a id="__codelineno-0-378" name="__codelineno-0-378"></a><span class="sd">        &gt;&gt;&gt; from pyield import du</span>
 </span><span id="__span-0-379"><a id="__codelineno-0-379" name="__codelineno-0-379"></a>
 </span><span id="__span-0-380"><a id="__codelineno-0-380" name="__codelineno-0-380"></a><span class="sd">        Desloca sábado antes do Natal para o próximo dia útil (terça após Natal):</span>
-</span><span id="__span-0-381"><a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar(&quot;23-12-2023&quot;, 0)</span>
+</span><span id="__span-0-381"><a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="sd">        &gt;&gt;&gt; du.deslocar(&quot;23-12-2023&quot;, 0)</span>
 </span><span id="__span-0-382"><a id="__codelineno-0-382" name="__codelineno-0-382"></a><span class="sd">        datetime.date(2023, 12, 26)</span>
 </span><span id="__span-0-383"><a id="__codelineno-0-383" name="__codelineno-0-383"></a>
 </span><span id="__span-0-384"><a id="__codelineno-0-384" name="__codelineno-0-384"></a><span class="sd">        Desloca sexta antes do Natal (sem deslocamento pois é dia útil):</span>
-</span><span id="__span-0-385"><a id="__codelineno-0-385" name="__codelineno-0-385"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar(&quot;22-12-2023&quot;, 0)</span>
+</span><span id="__span-0-385"><a id="__codelineno-0-385" name="__codelineno-0-385"></a><span class="sd">        &gt;&gt;&gt; du.deslocar(&quot;22-12-2023&quot;, 0)</span>
 </span><span id="__span-0-386"><a id="__codelineno-0-386" name="__codelineno-0-386"></a><span class="sd">        datetime.date(2023, 12, 22)</span>
 </span><span id="__span-0-387"><a id="__codelineno-0-387" name="__codelineno-0-387"></a>
 </span><span id="__span-0-388"><a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="sd">        Desloca para o dia útil anterior se não for útil (deslocamento=0 e</span>
 </span><span id="__span-0-389"><a id="__codelineno-0-389" name="__codelineno-0-389"></a><span class="sd">        rolagem=&quot;backward&quot;):</span>
 </span><span id="__span-0-390"><a id="__codelineno-0-390" name="__codelineno-0-390"></a>
 </span><span id="__span-0-391"><a id="__codelineno-0-391" name="__codelineno-0-391"></a><span class="sd">        Sem deslocamento pois é dia útil:</span>
-</span><span id="__span-0-392"><a id="__codelineno-0-392" name="__codelineno-0-392"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar(&quot;22-12-2023&quot;, 0, rolagem=&quot;backward&quot;)</span>
+</span><span id="__span-0-392"><a id="__codelineno-0-392" name="__codelineno-0-392"></a><span class="sd">        &gt;&gt;&gt; du.deslocar(&quot;22-12-2023&quot;, 0, rolagem=&quot;backward&quot;)</span>
 </span><span id="__span-0-393"><a id="__codelineno-0-393" name="__codelineno-0-393"></a><span class="sd">        datetime.date(2023, 12, 22)</span>
 </span><span id="__span-0-394"><a id="__codelineno-0-394" name="__codelineno-0-394"></a>
 </span><span id="__span-0-395"><a id="__codelineno-0-395" name="__codelineno-0-395"></a><span class="sd">        Desloca para o primeiro dia útil antes de &quot;23-12-2023&quot;:</span>
-</span><span id="__span-0-396"><a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar(&quot;23-12-2023&quot;, 0, rolagem=&quot;backward&quot;)</span>
+</span><span id="__span-0-396"><a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="sd">        &gt;&gt;&gt; du.deslocar(&quot;23-12-2023&quot;, 0, rolagem=&quot;backward&quot;)</span>
 </span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">        datetime.date(2023, 12, 22)</span>
 </span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a>
 </span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">        Avança para o próximo dia útil (deslocamento=1 e rolagem=&quot;forward&quot;):</span>
 </span><span id="__span-0-400"><a id="__codelineno-0-400" name="__codelineno-0-400"></a>
 </span><span id="__span-0-401"><a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">        Desloca sexta para o próximo dia útil (sexta é pulada -&gt; segunda):</span>
-</span><span id="__span-0-402"><a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar(&quot;27-09-2024&quot;, 1)</span>
+</span><span id="__span-0-402"><a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">        &gt;&gt;&gt; du.deslocar(&quot;27-09-2024&quot;, 1)</span>
 </span><span id="__span-0-403"><a id="__codelineno-0-403" name="__codelineno-0-403"></a><span class="sd">        datetime.date(2024, 9, 30)</span>
 </span><span id="__span-0-404"><a id="__codelineno-0-404" name="__codelineno-0-404"></a>
 </span><span id="__span-0-405"><a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="sd">        Desloca sábado para o próximo dia útil (segunda é pulada -&gt; terça):</span>
-</span><span id="__span-0-406"><a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar(&quot;28-09-2024&quot;, 1)</span>
+</span><span id="__span-0-406"><a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">        &gt;&gt;&gt; du.deslocar(&quot;28-09-2024&quot;, 1)</span>
 </span><span id="__span-0-407"><a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">        datetime.date(2024, 10, 1)</span>
 </span><span id="__span-0-408"><a id="__codelineno-0-408" name="__codelineno-0-408"></a>
 </span><span id="__span-0-409"><a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">        Volta para o dia útil anterior (deslocamento=-1 e rolagem=&quot;backward&quot;):</span>
 </span><span id="__span-0-410"><a id="__codelineno-0-410" name="__codelineno-0-410"></a>
 </span><span id="__span-0-411"><a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">        Desloca sexta para o dia útil anterior (sexta é pulada -&gt; quinta):</span>
-</span><span id="__span-0-412"><a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar(&quot;27-09-2024&quot;, -1, rolagem=&quot;backward&quot;)</span>
+</span><span id="__span-0-412"><a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">        &gt;&gt;&gt; du.deslocar(&quot;27-09-2024&quot;, -1, rolagem=&quot;backward&quot;)</span>
 </span><span id="__span-0-413"><a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">        datetime.date(2024, 9, 26)</span>
 </span><span id="__span-0-414"><a id="__codelineno-0-414" name="__codelineno-0-414"></a>
 </span><span id="__span-0-415"><a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">        Desloca sábado para o dia útil anterior (sexta é pulada -&gt; quinta):</span>
-</span><span id="__span-0-416"><a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar(&quot;28-09-2024&quot;, -1, rolagem=&quot;backward&quot;)</span>
+</span><span id="__span-0-416"><a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">        &gt;&gt;&gt; du.deslocar(&quot;28-09-2024&quot;, -1, rolagem=&quot;backward&quot;)</span>
 </span><span id="__span-0-417"><a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">        datetime.date(2024, 9, 26)</span>
 </span><span id="__span-0-418"><a id="__codelineno-0-418" name="__codelineno-0-418"></a>
 </span><span id="__span-0-419"><a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">        Lista de datas e deslocamentos:</span>
-</span><span id="__span-0-420"><a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar([&quot;19-09-2024&quot;, &quot;20-09-2024&quot;], 1)</span>
+</span><span id="__span-0-420"><a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">        &gt;&gt;&gt; du.deslocar([&quot;19-09-2024&quot;, &quot;20-09-2024&quot;], 1)</span>
 </span><span id="__span-0-421"><a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">        shape: (2,)</span>
 </span><span id="__span-0-422"><a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">        Series: &#39;data_ajustada&#39; [date]</span>
 </span><span id="__span-0-423"><a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">        [</span>
@@ -2785,7 +2785,7 @@ rolagem="backward"):</p>
 </span><span id="__span-0-425"><a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">            2024-09-23</span>
 </span><span id="__span-0-426"><a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="sd">        ]</span>
 </span><span id="__span-0-427"><a id="__codelineno-0-427" name="__codelineno-0-427"></a>
-</span><span id="__span-0-428"><a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar(&quot;19-09-2024&quot;, [1, 2])  # lista de deslocamentos</span>
+</span><span id="__span-0-428"><a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">        &gt;&gt;&gt; du.deslocar(&quot;19-09-2024&quot;, [1, 2])  # lista de deslocamentos</span>
 </span><span id="__span-0-429"><a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">        shape: (2,)</span>
 </span><span id="__span-0-430"><a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">        Series: &#39;data_ajustada&#39; [date]</span>
 </span><span id="__span-0-431"><a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">        [</span>
@@ -2794,11 +2794,11 @@ rolagem="backward"):</p>
 </span><span id="__span-0-434"><a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">        ]</span>
 </span><span id="__span-0-435"><a id="__codelineno-0-435" name="__codelineno-0-435"></a>
 </span><span id="__span-0-436"><a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">        Nulos escalares propagam para None:</span>
-</span><span id="__span-0-437"><a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">        &gt;&gt;&gt; print(dus.deslocar(None, 1))</span>
+</span><span id="__span-0-437"><a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">        &gt;&gt;&gt; print(du.deslocar(None, 1))</span>
 </span><span id="__span-0-438"><a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">        None</span>
 </span><span id="__span-0-439"><a id="__codelineno-0-439" name="__codelineno-0-439"></a>
 </span><span id="__span-0-440"><a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">        Nulo escalar propaga dentro de arrays:</span>
-</span><span id="__span-0-441"><a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar(None, [1, 2])</span>
+</span><span id="__span-0-441"><a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">        &gt;&gt;&gt; du.deslocar(None, [1, 2])</span>
 </span><span id="__span-0-442"><a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">        shape: (2,)</span>
 </span><span id="__span-0-443"><a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">        Series: &#39;data_ajustada&#39; [date]</span>
 </span><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">        [</span>
@@ -2807,7 +2807,7 @@ rolagem="backward"):</p>
 </span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a><span class="sd">        ]</span>
 </span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a>
 </span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a><span class="sd">        Nulos dentro de arrays são preservados:</span>
-</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar([&quot;19-09-2024&quot;, None], 1)</span>
+</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">        &gt;&gt;&gt; du.deslocar([&quot;19-09-2024&quot;, None], 1)</span>
 </span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="sd">        shape: (2,)</span>
 </span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">        Series: &#39;data_ajustada&#39; [date]</span>
 </span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">        [</span>
@@ -2816,7 +2816,7 @@ rolagem="backward"):</p>
 </span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a><span class="sd">        ]</span>
 </span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a>
 </span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="sd">        &gt;&gt;&gt; datas = [&quot;19-09-2024&quot;, &quot;20-09-2024&quot;, &quot;21-09-2024&quot;]</span>
-</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a><span class="sd">        &gt;&gt;&gt; dus.deslocar(datas, 1)</span>
+</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a><span class="sd">        &gt;&gt;&gt; du.deslocar(datas, 1)</span>
 </span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">        shape: (3,)</span>
 </span><span id="__span-0-461"><a id="__codelineno-0-461" name="__codelineno-0-461"></a><span class="sd">        Series: &#39;data_ajustada&#39; [date]</span>
 </span><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="sd">        [</span>
@@ -2851,7 +2851,7 @@ rolagem="backward"):</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="pyield.dus.deslocar_expr" class="doc doc-heading">
+<h2 id="pyield.du.deslocar_expr" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">deslocar_expr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">deslocamento</span><span class="p">,</span> <span class="n">rolagem</span><span class="o">=</span><span class="s1">&#39;forward&#39;</span><span class="p">)</span></code>
 
 </h2>
@@ -2953,13 +2953,13 @@ outra coluna.</p>
 <p><span class="doc-section-title">Examples:</span></p>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dt</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">dus</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">du</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">datas</span> <span class="o">=</span> <span class="p">[</span><span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2023</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">22</span><span class="p">),</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2023</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">29</span><span class="p">)]</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">offsets</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;dt&quot;</span><span class="p">:</span> <span class="n">datas</span><span class="p">,</span> <span class="s2">&quot;n&quot;</span><span class="p">:</span> <span class="n">offsets</span><span class="p">})</span>
 </span></code></pre></div>
     <p>Adicionando um valor fixo (1 dia útil):</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar_expr</span><span class="p">(</span><span class="s2">&quot;dt&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;t_plus_1&quot;</span><span class="p">))</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">du</span><span class="o">.</span><span class="n">deslocar_expr</span><span class="p">(</span><span class="s2">&quot;dt&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;t_plus_1&quot;</span><span class="p">))</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2, 1)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">┌────────────┐</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">│ t_plus_1   │</span>
@@ -2971,7 +2971,7 @@ outra coluna.</p>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="go">└────────────┘</span>
 </span></code></pre></div>
     <p>Adicionando uma coluna dinâmica (prazo variável por linha):</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar_expr</span><span class="p">(</span><span class="s2">&quot;dt&quot;</span><span class="p">,</span> <span class="s2">&quot;n&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;vencimento&quot;</span><span class="p">))</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">du</span><span class="o">.</span><span class="n">deslocar_expr</span><span class="p">(</span><span class="s2">&quot;dt&quot;</span><span class="p">,</span> <span class="s2">&quot;n&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;vencimento&quot;</span><span class="p">))</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2, 1)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">┌────────────┐</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">│ vencimento │</span>
@@ -2985,7 +2985,7 @@ outra coluna.</p>
 
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>pyield/dus/core.py</code></summary>
+              <summary>Source code in <code>pyield/du/core.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-217">217</a></span>
 <span class="normal"><a href="#__codelineno-0-218">218</a></span>
 <span class="normal"><a href="#__codelineno-0-219">219</a></span>
@@ -3068,13 +3068,13 @@ outra coluna.</p>
 </span><span id="__span-0-235"><a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="sd">    Examples:</span>
 </span><span id="__span-0-236"><a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="sd">        &gt;&gt;&gt; import datetime as dt</span>
 </span><span id="__span-0-237"><a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">        &gt;&gt;&gt; import polars as pl</span>
-</span><span id="__span-0-238"><a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">        &gt;&gt;&gt; from pyield import dus</span>
+</span><span id="__span-0-238"><a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">        &gt;&gt;&gt; from pyield import du</span>
 </span><span id="__span-0-239"><a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">        &gt;&gt;&gt; datas = [dt.date(2023, 12, 22), dt.date(2023, 12, 29)]</span>
 </span><span id="__span-0-240"><a id="__codelineno-0-240" name="__codelineno-0-240"></a><span class="sd">        &gt;&gt;&gt; offsets = [1, 5]</span>
 </span><span id="__span-0-241"><a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">        &gt;&gt;&gt; df = pl.DataFrame({&quot;dt&quot;: datas, &quot;n&quot;: offsets})</span>
 </span><span id="__span-0-242"><a id="__codelineno-0-242" name="__codelineno-0-242"></a>
 </span><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="sd">        Adicionando um valor fixo (1 dia útil):</span>
-</span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="sd">        &gt;&gt;&gt; df.select(dus.deslocar_expr(&quot;dt&quot;, 1).alias(&quot;t_plus_1&quot;))</span>
+</span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="sd">        &gt;&gt;&gt; df.select(du.deslocar_expr(&quot;dt&quot;, 1).alias(&quot;t_plus_1&quot;))</span>
 </span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">        shape: (2, 1)</span>
 </span><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">        ┌────────────┐</span>
 </span><span id="__span-0-247"><a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">        │ t_plus_1   │</span>
@@ -3086,7 +3086,7 @@ outra coluna.</p>
 </span><span id="__span-0-253"><a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">        └────────────┘</span>
 </span><span id="__span-0-254"><a id="__codelineno-0-254" name="__codelineno-0-254"></a>
 </span><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">        Adicionando uma coluna dinâmica (prazo variável por linha):</span>
-</span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">        &gt;&gt;&gt; df.select(dus.deslocar_expr(&quot;dt&quot;, &quot;n&quot;).alias(&quot;vencimento&quot;))</span>
+</span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">        &gt;&gt;&gt; df.select(du.deslocar_expr(&quot;dt&quot;, &quot;n&quot;).alias(&quot;vencimento&quot;))</span>
 </span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        shape: (2, 1)</span>
 </span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">        ┌────────────┐</span>
 </span><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">        │ vencimento │</span>
@@ -3118,7 +3118,7 @@ outra coluna.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="pyield.dus.e_dia_util" class="doc doc-heading">
+<h2 id="pyield.du.e_dia_util" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">e_dia_util</span><span class="p">(</span><span class="n">datas</span><span class="p">)</span></code>
 
 </h2>
@@ -3225,12 +3225,12 @@ Pode incluir nulos que propagam. Entrada escalar nula retorna <code>None</code>.
 
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">dus</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">e_dia_util</span><span class="p">(</span><span class="s2">&quot;25-12-2023&quot;</span><span class="p">)</span>  <span class="c1"># Natal (calendário antigo)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">du</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">e_dia_util</span><span class="p">(</span><span class="s2">&quot;25-12-2023&quot;</span><span class="p">)</span>  <span class="c1"># Natal (calendário antigo)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">False</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">e_dia_util</span><span class="p">(</span><span class="s2">&quot;20-11-2024&quot;</span><span class="p">)</span>  <span class="c1"># Dia Nacional de Zumbi (novo feriado)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">e_dia_util</span><span class="p">(</span><span class="s2">&quot;20-11-2024&quot;</span><span class="p">)</span>  <span class="c1"># Dia Nacional de Zumbi (novo feriado)</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="go">False</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">e_dia_util</span><span class="p">([</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;26-12-2023&quot;</span><span class="p">])</span>  <span class="c1"># Períodos mistos</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">e_dia_util</span><span class="p">([</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;26-12-2023&quot;</span><span class="p">])</span>  <span class="c1"># Períodos mistos</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">shape: (2,)</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="go">Series: &#39;e_dia_util&#39; [bool]</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="go">[</span>
@@ -3253,7 +3253,7 @@ Pode incluir nulos que propagam. Entrada escalar nula retorna <code>None</code>.
 </details>
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>pyield/dus/core.py</code></summary>
+              <summary>Source code in <code>pyield/du/core.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-598">598</a></span>
 <span class="normal"><a href="#__codelineno-0-599">599</a></span>
 <span class="normal"><a href="#__codelineno-0-600">600</a></span>
@@ -3360,12 +3360,12 @@ Pode incluir nulos que propagam. Entrada escalar nula retorna <code>None</code>.
 </span><span id="__span-0-633"><a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="sd">        (nome: ``&#39;e_dia_util&#39;``) para entradas de array.</span>
 </span><span id="__span-0-634"><a id="__codelineno-0-634" name="__codelineno-0-634"></a>
 </span><span id="__span-0-635"><a id="__codelineno-0-635" name="__codelineno-0-635"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-636"><a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">        &gt;&gt;&gt; from pyield import dus</span>
-</span><span id="__span-0-637"><a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">        &gt;&gt;&gt; dus.e_dia_util(&quot;25-12-2023&quot;)  # Natal (calendário antigo)</span>
+</span><span id="__span-0-636"><a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">        &gt;&gt;&gt; from pyield import du</span>
+</span><span id="__span-0-637"><a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">        &gt;&gt;&gt; du.e_dia_util(&quot;25-12-2023&quot;)  # Natal (calendário antigo)</span>
 </span><span id="__span-0-638"><a id="__codelineno-0-638" name="__codelineno-0-638"></a><span class="sd">        False</span>
-</span><span id="__span-0-639"><a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">        &gt;&gt;&gt; dus.e_dia_util(&quot;20-11-2024&quot;)  # Dia Nacional de Zumbi (novo feriado)</span>
+</span><span id="__span-0-639"><a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">        &gt;&gt;&gt; du.e_dia_util(&quot;20-11-2024&quot;)  # Dia Nacional de Zumbi (novo feriado)</span>
 </span><span id="__span-0-640"><a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">        False</span>
-</span><span id="__span-0-641"><a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">        &gt;&gt;&gt; dus.e_dia_util([&quot;22-12-2023&quot;, &quot;26-12-2023&quot;])  # Períodos mistos</span>
+</span><span id="__span-0-641"><a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">        &gt;&gt;&gt; du.e_dia_util([&quot;22-12-2023&quot;, &quot;26-12-2023&quot;])  # Períodos mistos</span>
 </span><span id="__span-0-642"><a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="sd">        shape: (2,)</span>
 </span><span id="__span-0-643"><a id="__codelineno-0-643" name="__codelineno-0-643"></a><span class="sd">        Series: &#39;e_dia_util&#39; [bool]</span>
 </span><span id="__span-0-644"><a id="__codelineno-0-644" name="__codelineno-0-644"></a><span class="sd">        [</span>
@@ -3400,7 +3400,7 @@ Pode incluir nulos que propagam. Entrada escalar nula retorna <code>None</code>.
 <div class="doc doc-object doc-function">
 
 
-<h2 id="pyield.dus.e_dia_util_expr" class="doc doc-heading">
+<h2 id="pyield.du.e_dia_util_expr" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">e_dia_util_expr</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></code>
 
 </h2>
@@ -3468,12 +3468,12 @@ Pode incluir nulos que propagam. Entrada escalar nula retorna <code>None</code>.
 <p><span class="doc-section-title">Examples:</span></p>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dt</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">dus</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">du</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">datas</span> <span class="o">=</span> <span class="p">[</span><span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2023</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">25</span><span class="p">),</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2023</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">26</span><span class="p">)]</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">datas</span><span class="p">})</span>
 </span></code></pre></div>
     <p>Criando uma flag booleana:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">e_dia_util</span><span class="o">=</span><span class="n">dus</span><span class="o">.</span><span class="n">e_dia_util_expr</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">))</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">e_dia_util</span><span class="o">=</span><span class="n">du</span><span class="o">.</span><span class="n">e_dia_util_expr</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">))</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (2, 2)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">┌────────────┬────────────┐</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">│ data       ┆ e_dia_util │</span>
@@ -3485,7 +3485,7 @@ Pode incluir nulos que propagam. Entrada escalar nula retorna <code>None</code>.
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="go">└────────────┴────────────┘</span>
 </span></code></pre></div>
     <p>Usando para filtrar apenas dias úteis:</p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">dus</span><span class="o">.</span><span class="n">e_dia_util_expr</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">))</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">du</span><span class="o">.</span><span class="n">e_dia_util_expr</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">))</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">shape: (1, 1)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">┌────────────┐</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">│ data       │</span>
@@ -3498,7 +3498,7 @@ Pode incluir nulos que propagam. Entrada escalar nula retorna <code>None</code>.
 
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>pyield/dus/core.py</code></summary>
+              <summary>Source code in <code>pyield/du/core.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-546">546</a></span>
 <span class="normal"><a href="#__codelineno-0-547">547</a></span>
 <span class="normal"><a href="#__codelineno-0-548">548</a></span>
@@ -3552,12 +3552,12 @@ Pode incluir nulos que propagam. Entrada escalar nula retorna <code>None</code>.
 </span><span id="__span-0-555"><a id="__codelineno-0-555" name="__codelineno-0-555"></a><span class="sd">    Examples:</span>
 </span><span id="__span-0-556"><a id="__codelineno-0-556" name="__codelineno-0-556"></a><span class="sd">        &gt;&gt;&gt; import datetime as dt</span>
 </span><span id="__span-0-557"><a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="sd">        &gt;&gt;&gt; import polars as pl</span>
-</span><span id="__span-0-558"><a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="sd">        &gt;&gt;&gt; from pyield import dus</span>
+</span><span id="__span-0-558"><a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="sd">        &gt;&gt;&gt; from pyield import du</span>
 </span><span id="__span-0-559"><a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="sd">        &gt;&gt;&gt; datas = [dt.date(2023, 12, 25), dt.date(2023, 12, 26)]</span>
 </span><span id="__span-0-560"><a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="sd">        &gt;&gt;&gt; df = pl.DataFrame({&quot;data&quot;: datas})</span>
 </span><span id="__span-0-561"><a id="__codelineno-0-561" name="__codelineno-0-561"></a>
 </span><span id="__span-0-562"><a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="sd">        Criando uma flag booleana:</span>
-</span><span id="__span-0-563"><a id="__codelineno-0-563" name="__codelineno-0-563"></a><span class="sd">        &gt;&gt;&gt; df.with_columns(e_dia_util=dus.e_dia_util_expr(&quot;data&quot;))</span>
+</span><span id="__span-0-563"><a id="__codelineno-0-563" name="__codelineno-0-563"></a><span class="sd">        &gt;&gt;&gt; df.with_columns(e_dia_util=du.e_dia_util_expr(&quot;data&quot;))</span>
 </span><span id="__span-0-564"><a id="__codelineno-0-564" name="__codelineno-0-564"></a><span class="sd">        shape: (2, 2)</span>
 </span><span id="__span-0-565"><a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="sd">        ┌────────────┬────────────┐</span>
 </span><span id="__span-0-566"><a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">        │ data       ┆ e_dia_util │</span>
@@ -3569,7 +3569,7 @@ Pode incluir nulos que propagam. Entrada escalar nula retorna <code>None</code>.
 </span><span id="__span-0-572"><a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="sd">        └────────────┴────────────┘</span>
 </span><span id="__span-0-573"><a id="__codelineno-0-573" name="__codelineno-0-573"></a>
 </span><span id="__span-0-574"><a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">        Usando para filtrar apenas dias úteis:</span>
-</span><span id="__span-0-575"><a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">        &gt;&gt;&gt; df.filter(dus.e_dia_util_expr(&quot;data&quot;))</span>
+</span><span id="__span-0-575"><a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">        &gt;&gt;&gt; df.filter(du.e_dia_util_expr(&quot;data&quot;))</span>
 </span><span id="__span-0-576"><a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="sd">        shape: (1, 1)</span>
 </span><span id="__span-0-577"><a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="sd">        ┌────────────┐</span>
 </span><span id="__span-0-578"><a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="sd">        │ data       │</span>
@@ -3591,7 +3591,7 @@ Pode incluir nulos que propagam. Entrada escalar nula retorna <code>None</code>.
 <div class="doc doc-object doc-function">
 
 
-<h2 id="pyield.dus.gerar" class="doc doc-heading">
+<h2 id="pyield.du.gerar" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">gerar</span><span class="p">(</span><span class="n">inicio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fechamento</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">,</span> <span class="n">opcao_feriado</span><span class="o">=</span><span class="s1">&#39;novo&#39;</span><span class="p">)</span></code>
 
 </h2>
@@ -3718,8 +3718,8 @@ Opções válidas: 'both', 'left', 'right', 'none'. Padrão: 'both'.</p>
 </details>
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">dus</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">dus</span><span class="o">.</span><span class="n">gerar</span><span class="p">(</span><span class="n">inicio</span><span class="o">=</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="n">fim</span><span class="o">=</span><span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">du</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du</span><span class="o">.</span><span class="n">gerar</span><span class="p">(</span><span class="n">inicio</span><span class="o">=</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="n">fim</span><span class="o">=</span><span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">shape: (6,)</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">Series: &#39;data&#39; [date]</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="go">[</span>
@@ -3734,7 +3734,7 @@ Opções válidas: 'both', 'left', 'right', 'none'. Padrão: 'both'.</p>
 
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>pyield/dus/core.py</code></summary>
+              <summary>Source code in <code>pyield/du/core.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-487">487</a></span>
 <span class="normal"><a href="#__codelineno-0-488">488</a></span>
 <span class="normal"><a href="#__codelineno-0-489">489</a></span>
@@ -3819,8 +3819,8 @@ Opções válidas: 'both', 'left', 'right', 'none'. Padrão: 'both'.</p>
 </span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="sd">        - ``inicio`` e ``fim`` nulos usam a data atual.</span>
 </span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a>
 </span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">        &gt;&gt;&gt; from pyield import dus</span>
-</span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">        &gt;&gt;&gt; dus.gerar(inicio=&quot;22-12-2023&quot;, fim=&quot;02-01-2024&quot;)</span>
+</span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">        &gt;&gt;&gt; from pyield import du</span>
+</span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">        &gt;&gt;&gt; du.gerar(inicio=&quot;22-12-2023&quot;, fim=&quot;02-01-2024&quot;)</span>
 </span><span id="__span-0-517"><a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">        shape: (6,)</span>
 </span><span id="__span-0-518"><a id="__codelineno-0-518" name="__codelineno-0-518"></a><span class="sd">        Series: &#39;data&#39; [date]</span>
 </span><span id="__span-0-519"><a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="sd">        [</span>
@@ -3857,7 +3857,7 @@ Opções válidas: 'both', 'left', 'right', 'none'. Padrão: 'both'.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="pyield.dus.ultimo_dia_util" class="doc doc-heading">
+<h2 id="pyield.du.ultimo_dia_util" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">ultimo_dia_util</span><span class="p">()</span></code>
 
 </h2>
@@ -3902,7 +3902,7 @@ ou feriado, retorna o último dia útil antes da data atual.</p>
 </details>
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>pyield/dus/core.py</code></summary>
+              <summary>Source code in <code>pyield/du/core.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-669">669</a></span>
 <span class="normal"><a href="#__codelineno-0-670">670</a></span>
 <span class="normal"><a href="#__codelineno-0-671">671</a></span>

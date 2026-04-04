@@ -282,7 +282,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../dus/" class="md-tabs__link">
+        <a href="../../du/" class="md-tabs__link">
           
   
   
@@ -574,7 +574,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dus/" class="md-nav__link">
+      <a href="../../du/" class="md-nav__link">
         
   
   
@@ -1638,8 +1638,8 @@ on EndDate, so there is no need to manually keep the lists in sync.</p>
                                 (= B3 CPM contract settlement/expiry date)
     Rows are sorted by EndDate ascending.</p>
 <h4 id="pyield.bc.copom.calendar--notes">Notes</h4>
-<p>ExpiryDate is computed with <code>dus.deslocar_expr("EndDate", 1)</code>, using
-the Brazilian holiday calendar already embedded in <code>pyield.dus</code>.</p>
+<p>ExpiryDate is computed with <code>du.deslocar_expr("EndDate", 1)</code>, using
+the Brazilian holiday calendar already embedded in <code>pyield.du</code>.</p>
 <h4 id="pyield.bc.copom.calendar--examples">Examples</h4>
 <blockquote>
 <blockquote>
@@ -1754,8 +1754,8 @@ True</p>
 </span><span id="__span-0-146"><a id="__codelineno-0-146" name="__codelineno-0-146"></a>
 </span><span id="__span-0-147"><a id="__codelineno-0-147" name="__codelineno-0-147"></a><span class="sd">    Notes</span>
 </span><span id="__span-0-148"><a id="__codelineno-0-148" name="__codelineno-0-148"></a><span class="sd">    -----</span>
-</span><span id="__span-0-149"><a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">    ExpiryDate is computed with ``dus.deslocar_expr(&quot;EndDate&quot;, 1)``, using</span>
-</span><span id="__span-0-150"><a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="sd">    the Brazilian holiday calendar already embedded in ``pyield.dus``.</span>
+</span><span id="__span-0-149"><a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">    ExpiryDate is computed with ``du.deslocar_expr(&quot;EndDate&quot;, 1)``, using</span>
+</span><span id="__span-0-150"><a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="sd">    the Brazilian holiday calendar already embedded in ``pyield.du``.</span>
 </span><span id="__span-0-151"><a id="__codelineno-0-151" name="__codelineno-0-151"></a>
 </span><span id="__span-0-152"><a id="__codelineno-0-152" name="__codelineno-0-152"></a><span class="sd">    Examples</span>
 </span><span id="__span-0-153"><a id="__codelineno-0-153" name="__codelineno-0-153"></a><span class="sd">    --------</span>
@@ -1777,7 +1777,7 @@ True</p>
 </span><span id="__span-0-169"><a id="__codelineno-0-169" name="__codelineno-0-169"></a>
 </span><span id="__span-0-170"><a id="__codelineno-0-170" name="__codelineno-0-170"></a>    <span class="c1"># ExpiryDate: next business day after the meeting ends.</span>
 </span><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a>    <span class="c1"># Vectorized via deslocar_expr — consistent with the rest of the codebase.</span>
-</span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">ExpiryDate</span><span class="o">=</span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar_expr</span><span class="p">(</span><span class="s2">&quot;EndDate&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+</span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">ExpiryDate</span><span class="o">=</span><span class="n">du</span><span class="o">.</span><span class="n">deslocar_expr</span><span class="p">(</span><span class="s2">&quot;EndDate&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
 </span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a>
 </span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a>    <span class="c1"># Optional date-range filter on EndDate</span>
 </span><span id="__span-0-175"><a id="__codelineno-0-175" name="__codelineno-0-175"></a>    <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>

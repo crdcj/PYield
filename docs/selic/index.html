@@ -282,7 +282,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../dus/" class="md-tabs__link">
+        <a href="../du/" class="md-tabs__link">
           
   
   
@@ -574,7 +574,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dus/" class="md-nav__link">
+      <a href="../du/" class="md-nav__link">
         
   
   
@@ -2071,7 +2071,7 @@ True</p>
 </span><span id="__span-0-347"><a id="__codelineno-0-347" name="__codelineno-0-347"></a>
 </span><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a>    <span class="c1"># dias_uteis: dias úteis de data_referencia até data_expiracao.</span>
 </span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-</span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a>        <span class="n">dias_uteis</span><span class="o">=</span><span class="n">dus</span><span class="o">.</span><span class="n">contar_expr</span><span class="p">(</span><span class="s2">&quot;data_referencia&quot;</span><span class="p">,</span> <span class="s2">&quot;data_expiracao&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int32</span><span class="p">)</span>
+</span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a>        <span class="n">dias_uteis</span><span class="o">=</span><span class="n">du</span><span class="o">.</span><span class="n">contar_expr</span><span class="p">(</span><span class="s2">&quot;data_referencia&quot;</span><span class="p">,</span> <span class="s2">&quot;data_expiracao&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int32</span><span class="p">)</span>
 </span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a>    <span class="p">)</span>
 </span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a>
 </span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a>    <span class="c1"># preco_ajuste: &quot;Preço de Referência&quot; da B3 via endpoint CSV.</span>
