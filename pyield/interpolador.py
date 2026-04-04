@@ -87,7 +87,7 @@ class Interpolador:
         self._txs = tuple(df.get_column("txs"))
         self._extrapolate = bool(extrapolar)
 
-    def linear(self, dia_util: int, k: int) -> float:
+    def linear(self, du: int, k: int) -> float:
         """Realiza interpolação de taxa de juros usando o método linear.
 
         A taxa interpolada é dada pela fórmula:
@@ -99,24 +99,23 @@ class Interpolador:
         - (x2, y2) é o próximo ponto conhecido (du_k, tx_k).
 
         Args:
-            dia_util: Número de dias úteis (DU) para os quais a taxa será interpolada.
-            k: O índice tal que dus[k-1] < dia_util < dus[k].
+            du: Número de dias úteis (DU) para os quais a taxa será interpolada.
+            k: O índice tal que dus[k-1] < du < dus[k].
 
         Returns:
             Taxa de juros interpolada em forma decimal.
         """
-        du = dia_util
         # Obtém os pontos imediatamente anterior e posterior ao DU desejado.
         du_j, tx_j = self._dus[k - 1], self._txs[k - 1]
         du_k, tx_k = self._dus[k], self._txs[k]
 
         return tx_j + (du - du_j) * (tx_k - tx_j) / (du_k - du_j)
 
-    def flat_forward(self, dia_util: int, k: int) -> float:
+    def flat_forward(self, du: int, k: int) -> float:
         r"""Realiza interpolação de taxa de juros usando o método flat forward.
 
         Este método calcula a taxa de juros interpolada para um dado número de
-        dias úteis (``dia_util``) usando a metodologia flat forward, baseada em dois
+        dias úteis (``du``) usando a metodologia flat forward, baseada em dois
         pontos conhecidos: o ponto atual (``k``) e o ponto anterior (``j``).
 
         Assumindo taxas de juros em forma decimal, a taxa interpolada é calculada.
@@ -138,7 +137,7 @@ class Interpolador:
         - ``fₜ = (au - auⱼ)/(auₖ - auⱼ)`` é o fator de tempo.
 
         E as variáveis são definidas como:
-        - ``au = du/252`` é o tempo em anos para o ponto interpolado. ``dia_util``
+        - ``au = du/252`` é o tempo em anos para o ponto interpolado. ``du``
           é o número de dias úteis para o ponto interpolado (entrada deste método).
         - ``k`` é o índice do ponto conhecido atual.
         - ``auₖ = duₖ/252`` é o tempo em anos do ponto ``k``.
@@ -148,14 +147,13 @@ class Interpolador:
         - ``txⱼ`` é a taxa de juros (decimal) no ponto ``j``.
 
         Args:
-            dia_util: Número de dias úteis (DU) para os quais a taxa será interpolada.
-            k: Índice tal que ``dus[k-1] < dia_util < dus[k]``. Esse ``k``
-                corresponde ao próximo vértice conhecido após ``dia_util``.
+            du: Número de dias úteis (DU) para os quais a taxa será interpolada.
+            k: Índice tal que ``dus[k-1] < du < dus[k]``. Esse ``k``
+                corresponde ao próximo vértice conhecido após ``du``.
 
         Returns:
             Taxa de juros interpolada em forma decimal.
         """
-        du = dia_util
         tx_j = self._txs[k - 1]
         au_j = self._dus[k - 1] / 252
         tx_k = self._txs[k]
@@ -170,44 +168,40 @@ class Interpolador:
         ft = (au - au_j) / (au_k - au_j)
         return (fa_j * (fa_k / fa_j) ** ft) ** (1 / au) - 1
 
-    def interpolar(self, dias_uteis: int | ArrayLike) -> float | pl.Series:
+    def interpolar(self, du: int | ArrayLike) -> float | pl.Series:
         """Interpola taxas para dia(s) útil(eis) fornecido(s).
 
         Args:
-            dias_uteis: DU(s) para interpolação. Aceita int ou ArrayLike.
+            du: DU(s) para interpolação. Aceita int ou ArrayLike.
 
         Returns:
             Taxa(s) interpolada(s). Float para entrada escalar, pl.Series para array.
         """
-        if is_collection(dias_uteis):
-            s_dus = pl.Series(
-                name="taxa_interpolada", values=dias_uteis, dtype=pl.Int64
-            )
+        if is_collection(du):
+            s_dus = pl.Series(name="taxa_interpolada", values=du, dtype=pl.Int64)
             result = s_dus.map_elements(self._taxa_interpolada, return_dtype=pl.Float64)
             return result.fill_nan(None)
 
         # Aceita qualquer tipo integral (int, np.int64, etc) e rejeita float/string.
-        elif isinstance(dias_uteis, numbers.Integral):
-            return self._taxa_interpolada(int(dias_uteis))
+        elif isinstance(du, numbers.Integral):
+            return self._taxa_interpolada(int(du))
 
         else:
-            raise TypeError("dias_uteis deve ser int ou uma estrutura array-like.")
+            raise TypeError("du deve ser int ou uma estrutura array-like.")
 
-    def _taxa_interpolada(self, dia_util: int) -> float:
+    def _taxa_interpolada(self, du: int) -> float:
         """Encontra o ponto de interpolação apropriado e retorna a taxa de juros.
 
         A taxa é interpolada pelo método especificado a partir desse ponto.
 
         Args:
-            dia_util: Número de dias úteis (DU) para os quais a taxa será calculada.
+            du: Número de dias úteis (DU) para os quais a taxa será calculada.
 
         Returns:
             Taxa de juros interpolada pelo método especificado para o número de
             dias úteis fornecido. Se a entrada estiver fora do intervalo e
             extrapolação estiver desabilitada, retorna float("nan").
         """
-        du = dia_util
-
         # Validação de entrada.
         if not isinstance(du, int) or du < 0:
             return float("nan")
@@ -240,21 +234,21 @@ class Interpolador:
         raise ValueError(f"Método de interpolação '{method}' não reconhecido.")
 
     @overload
-    def __call__(self, dia_util: int) -> float: ...
+    def __call__(self, du: int) -> float: ...
     @overload
-    def __call__(self, dia_util: ArrayLike) -> pl.Series: ...
-    def __call__(self, dia_util: int | ArrayLike) -> float | pl.Series:
+    def __call__(self, du: ArrayLike) -> pl.Series: ...
+    def __call__(self, du: int | ArrayLike) -> float | pl.Series:
         """Permite que a instância seja chamada como função para realizar interpolação.
 
         Args:
-            dia_util: Número de dias úteis (DU) para os quais a taxa será calculada.
+            du: Número de dias úteis (DU) para os quais a taxa será calculada.
 
         Returns:
             Taxa de juros interpolada pelo método especificado para o número de
             dias úteis fornecido. Se a entrada estiver fora do intervalo e
             extrapolação estiver desabilitada, retorna float("nan").
         """
-        return self.interpolar(dia_util)
+        return self.interpolar(du)
 
     def __repr__(self) -> str:
         """Representação textual, usada em terminal ou scripts."""

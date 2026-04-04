@@ -91,8 +91,10 @@ Referência: `anbima/ima.py` (com colunas derivadas) e `anbima/imaq.py` (sem col
 ## Naming Conventions
 
 - **Fronteira da API pública:** Considere público o que está documentado e/ou exportado no namespace de topo (`pyield/__init__.py`). Módulos não exportados no topo são internos, mesmo que importáveis por caminho direto.
-- **API pública (inglês):** Nomes de funções públicas, parâmetros e classes exportadas permanecem em inglês.
+- **API pública (português):** Nomes de funções públicas, parâmetros e classes exportadas devem, por padrão, estar em português.
+- **Exceção para termos técnicos consolidados:** Só manter nomes em inglês na API pública quando houver justificativa clara e o termo técnico já estiver consolidado no domínio ou na base de código. Evitar misturar português e inglês sem necessidade.
 - **Nomes de colunas em DataFrames (português):** Colunas de DataFrames retornados por funções públicas usam `snake_case` em português (ex.: `data_referencia`, `taxa_indicativa`, `valor`). Módulos antigos ainda usam PascalCase em inglês, mas estão sendo progressivamente migrados.
+- **Parâmetros públicos:** Preferir nomes explícitos em português. Abreviações de domínio podem ser usadas quando forem realmente consagradas e melhorarem a leitura sem sacrificar clareza.
 - **Código interno (português):** Variáveis locais, constantes de módulo, mensagens de log e mensagens de exceção devem ser em português.
 - **Nomes em módulos internos:** Para módulos de uso interno compartilhado, nomes de função podem permanecer sem prefixo `_` quando isso melhora legibilidade. Use prefixo `_` para helpers locais/privados dentro do módulo.
 - **Exceção para módulos utilitários base:** Módulos transversais e fundacionais de uso interno (ex.: `_internal/types.py`, `_internal/retry.py`) podem manter identificadores técnicos em inglês (`is_collection`, `retry_state`, etc.) para preservar legibilidade, reduzir churn e evitar renomeações sem ganho funcional.

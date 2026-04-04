@@ -102,7 +102,7 @@ def forwards(
 
         >>> # Exemplo com taxas indicativas de NTN-B em 16-09-2025
         >>> from pyield import ntnb
-        >>> df = ntnb.data("16-09-2025")
+        >>> df = ntnb.dados("16-09-2025")
         >>> yd.forwards(df["dias_uteis"], df["taxa_indicativa"])
         shape: (13,)
         Series: 'fwd' [f64]
