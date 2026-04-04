@@ -6,7 +6,7 @@ from pyield._internal.types import DateLike
 from pyield.tn import ntnf, utils
 
 
-def taxas_zero(data_referencia: DateLike) -> pl.DataFrame:
+def taxas_zero(data: DateLike) -> pl.DataFrame:
     """
     Cria a curva PRE (taxas zero cupom) para títulos prefixados brasileiros.
 
@@ -14,7 +14,7 @@ def taxas_zero(data_referencia: DateLike) -> pl.DataFrame:
     via bootstrap.
 
     Args:
-        data_referencia: Data de referência para a consulta.
+        data: Data da consulta.
 
     Returns:
         pl.DataFrame: DataFrame com as colunas da curva PRE.
@@ -50,12 +50,10 @@ def taxas_zero(data_referencia: DateLike) -> pl.DataFrame:
         └─────────────────┴────────────┴───────────┘
     """
     # Busca dados de LTN (zero cupom)
-    df_ltn = utils.obter_tpf(data_referencia, "LTN").select(
-        "data_vencimento", "taxa_indicativa"
-    )
+    df_ltn = utils.obter_tpf(data, "LTN").select("data_vencimento", "taxa_indicativa")
 
     # Busca dados de NTN-F (com cupom)
-    df_ntnf = utils.obter_tpf(data_referencia, "NTN-F").select(
+    df_ntnf = utils.obter_tpf(data, "NTN-F").select(
         "data_vencimento", "taxa_indicativa"
     )
 
@@ -77,11 +75,11 @@ def taxas_zero(data_referencia: DateLike) -> pl.DataFrame:
 
     # Se só há LTN, retorna direto (LTN já são zero cupom)
     if df_ntnf.is_empty():
-        df = _processar_ltn_adicionais(data_referencia, df_ltn)
+        df = _processar_ltn_adicionais(data, df_ltn)
     else:
         # Usa spot_rates de NTN-F para calcular zero cupom
         df_spots = ntnf.taxas_zero(
-            data_liquidacao=data_referencia,
+            data_liquidacao=data,
             ltn_vencimentos=df_ltn["data_vencimento"],
             ltn_taxas=df_ltn["taxa_indicativa"],
             ntnf_vencimentos=df_ntnf["data_vencimento"],
@@ -98,7 +96,7 @@ def taxas_zero(data_referencia: DateLike) -> pl.DataFrame:
         if not ltn_not_in_ntnf.is_empty():
             # Processa vencimentos de LTN adicionais
             ltn_subset = _processar_ltn_adicionais(
-                data_referencia,
+                data,
                 ltn_not_in_ntnf,
             )
 
@@ -142,7 +140,7 @@ def _validar_resultado_final(df: pl.DataFrame) -> None:
 
 
 def premio(
-    data_referencia: DateLike,
+    data: DateLike,
     pontos_base: bool = False,
 ) -> pl.DataFrame:
     """
@@ -160,7 +158,7 @@ def premio(
     multiplicado por 10_000 e exibido diretamente em basis points.
 
     Args:
-        data_referencia: Data de referência para buscar as taxas.
+        data: Data da consulta para buscar as taxas.
         pontos_base: Se True, retorna o prêmio já convertido em basis points.
             Padrão False.
 
@@ -196,7 +194,7 @@ def premio(
         └────────┴─────────────────┴────────┘
     """
     # Busca taxas dos títulos (LTN e NTN-F) e adiciona taxa_di
-    df = utils.obter_tpf(data_referencia, "PRE").select(
+    df = utils.obter_tpf(data, "PRE").select(
         "titulo", "data_vencimento", "taxa_indicativa"
     )
     if df.is_empty():
@@ -205,7 +203,7 @@ def premio(
             pl.lit(None, dtype=pl.Date).alias("data_vencimento"),
             pl.lit(None, dtype=pl.Float64).alias("premio"),
         ).clear()
-    data_ref = cv.converter_datas(data_referencia)
+    data_ref = cv.converter_datas(data)
     df = utils.adicionar_taxa_di(df, data_ref)
     df = (
         df.with_columns(premio=pl.col("taxa_indicativa") - pl.col("taxa_di"))

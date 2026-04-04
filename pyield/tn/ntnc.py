@@ -39,12 +39,12 @@ def _obter_valor_final(vencimento: dt.date) -> float:
     return VALOR_FINAL
 
 
-def dados(data_referencia: DateLike) -> pl.DataFrame:
+def dados(data: DateLike) -> pl.DataFrame:
     """
     Busca as taxas indicativas de NTN-C para a data de referência.
 
     Args:
-        data_referencia: Data de referência para a consulta.
+        data: Data da consulta.
 
     Returns:
         pl.DataFrame: DataFrame Polars com os dados de NTN-C.
@@ -71,11 +71,11 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
         >>> from pyield import ntnc
         >>> ntnc.dados("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.obter_tpf(data_referencia, "NTN-C")
+    df = utils.obter_tpf(data, "NTN-C")
     if df.is_empty():
         return df
 
-    data_ref = conversores.converter_datas(data_referencia)
+    data_ref = conversores.converter_datas(data)
 
     # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
     df = df.with_columns(

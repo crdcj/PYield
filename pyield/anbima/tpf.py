@@ -158,7 +158,7 @@ def _buscar_dados_tpf(data: dt.date) -> pl.DataFrame:
 
 
 def tpf(
-    data_referencia: DateLike,
+    data: DateLike,
     titulo: TipoTPF | None = None,
 ) -> pl.DataFrame:
     """Recupera os dados do mercado secundário de TPF da ANBIMA.
@@ -168,7 +168,7 @@ def tpf(
     busca diretamente na fonte (ANBIMA).
 
     Args:
-        data_referencia (DateLike): A data de referência para os dados
+        data (DateLike): A data da consulta para os dados
             (ex: '2024-06-14').
         titulo (str, optional): Filtra por tipo de título. Aceita os tipos
             individuais ('LTN', 'NTN-F', 'NTN-B', 'NTN-C', 'LFT') ou 'PRE'
@@ -181,7 +181,7 @@ def tpf(
 
     Examples:
         >>> from pyield import anbima
-        >>> df = anbima.tpf(data_referencia="06-02-2026")
+        >>> df = anbima.tpf(data="06-02-2026")
 
     Output Columns:
         * titulo (String): tipo do título público (ex: 'LTN', 'NTN-B').
@@ -207,17 +207,17 @@ def tpf(
         Para obter o dado completo direto da fonte (todas as colunas),
         use :func:`tpf_fonte`.
     """
-    data_referencia = converter_datas(data_referencia)
+    data = converter_datas(data)
 
-    if not data_referencia_valida(data_referencia):
+    if not data_referencia_valida(data):
         return pl.DataFrame()
 
     # Cache primeiro; se não tiver, busca na fonte
     df = obter_dataset_cacheado("tpf")
     if not df.is_empty():
-        df = df.filter(pl.col("data_referencia") == data_referencia)
+        df = df.filter(pl.col("data_referencia") == data)
     if df.is_empty():
-        df = _buscar_dados_tpf(data_referencia)
+        df = _buscar_dados_tpf(data)
     if df.is_empty():
         return pl.DataFrame()
 
@@ -231,7 +231,7 @@ def tpf(
 
 
 def tpf_fonte(
-    data_referencia: DateLike,
+    data: DateLike,
 ) -> pl.DataFrame:
     """Busca os dados do mercado secundário de TPF direto da fonte ANBIMA.
 
@@ -239,18 +239,18 @@ def tpf_fonte(
     filtro de colunas. Indicado para uso em jobs e pipelines de dados.
 
     Args:
-        data_referencia (DateLike): Data de referência (ex: '2024-06-14').
+        data (DateLike): Data da consulta (ex: '2024-06-14').
 
     Returns:
         pl.DataFrame: DataFrame com todas as colunas da ANBIMA.
             Retorna DataFrame vazio se não houver dados.
     """
-    data_referencia = converter_datas(data_referencia)
+    data = converter_datas(data)
 
-    if not data_referencia_valida(data_referencia):
+    if not data_referencia_valida(data):
         return pl.DataFrame()
 
-    df = _buscar_dados_tpf(data_referencia)
+    df = _buscar_dados_tpf(data)
     if df.is_empty():
         return pl.DataFrame()
 
@@ -258,13 +258,13 @@ def tpf_fonte(
 
 
 def tpf_vencimentos(
-    data_referencia: DateLike,
+    data: DateLike,
     titulo: TipoTPF,
 ) -> pl.Series:
     """Recupera os vencimentos existentes para um tipo de título na data especificada.
 
     Args:
-        data_referencia (DateLike): A data de referência para os vencimentos.
+        data (DateLike): A data da consulta para os vencimentos.
         titulo (TipoTPF): O tipo de título para filtrar (ex: 'PRE' para 'LTN'
             e 'NTN-F', ou especifique 'LTN' ou 'NTN-F' diretamente).
 
@@ -274,7 +274,7 @@ def tpf_vencimentos(
 
     Examples:
         >>> from pyield import anbima
-        >>> anbima.tpf_vencimentos(data_referencia="22-08-2025", titulo="PRE")
+        >>> anbima.tpf_vencimentos(data="22-08-2025", titulo="PRE")
         shape: (18,)
         Series: 'data_vencimento' [date]
         [
@@ -291,4 +291,4 @@ def tpf_vencimentos(
             2035-01-01
         ]
     """
-    return tpf(data_referencia, titulo)["data_vencimento"].unique().sort()
+    return tpf(data, titulo)["data_vencimento"].unique().sort()

@@ -6,12 +6,12 @@ from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 
 
-def dados(data_referencia: DateLike) -> pl.DataFrame:
+def dados(data: DateLike) -> pl.DataFrame:
     """
     Busca as taxas indicativas de LFT para a data de referência na ANBIMA.
 
     Args:
-        data_referencia: Data de referência para a consulta.
+        data: Data da consulta.
 
     Returns:
         pl.DataFrame: DataFrame Polars com os dados de LFT.
@@ -36,11 +36,11 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
         >>> from pyield import lft
         >>> df_lft = lft.dados("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.obter_tpf(data_referencia, "LFT")
+    df = utils.obter_tpf(data, "LFT")
     if df.is_empty():
         return df
 
-    data_ref = cv.converter_datas(data_referencia)
+    data_ref = cv.converter_datas(data)
 
     df = df.with_columns(
         dias_uteis=dus.contar_expr("data_referencia", "data_vencimento"),
@@ -75,12 +75,12 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
     )
 
 
-def vencimentos(data_referencia: DateLike) -> pl.Series:
+def vencimentos(data: DateLike) -> pl.Series:
     """
     Busca os vencimentos disponíveis para a data de referência.
 
     Args:
-        data_referencia: Data de referência para a consulta.
+        data: Data da consulta.
 
     Returns:
         pl.Series: Série de datas de vencimento disponíveis.
@@ -104,7 +104,7 @@ def vencimentos(data_referencia: DateLike) -> pl.Series:
             2030-09-01
         ]
     """
-    return dados(data_referencia)["data_vencimento"]
+    return dados(data)["data_vencimento"]
 
 
 def cotacao(

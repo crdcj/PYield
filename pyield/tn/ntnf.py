@@ -29,12 +29,12 @@ VALOR_FINAL = 1048.80885  # 1000 + 48.80885
 logger = logging.getLogger(__name__)
 
 
-def dados(data_referencia: DateLike) -> pl.DataFrame:
+def dados(data: DateLike) -> pl.DataFrame:
     """
     Busca as taxas indicativas de NTN-F para a data de referência.
 
     Args:
-        data_referencia (DateLike): Data de referência para a consulta.
+        data (DateLike): Data da consulta.
 
     Returns:
         pl.DataFrame: DataFrame Polars com os dados de NTN-F.
@@ -65,11 +65,11 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
         >>> from pyield import ntnf
         >>> df_ntnf = ntnf.dados("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.obter_tpf(data_referencia, "NTN-F")
+    df = utils.obter_tpf(data, "NTN-F")
     if df.is_empty():
         return df
 
-    data_ref = cv.converter_datas(data_referencia)
+    data_ref = cv.converter_datas(data)
 
     # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
     df = df.with_columns(
@@ -82,11 +82,9 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
     df = utils.adicionar_taxa_di(df, data_ref)
 
     # Busca dados de LTN para bootstrap das taxas spot
-    df_ltn = utils.obter_tpf(data_referencia, "LTN").select(
-        "data_vencimento", "taxa_indicativa"
-    )
+    df_ltn = utils.obter_tpf(data, "LTN").select("data_vencimento", "taxa_indicativa")
     df_spots = taxas_zero(
-        data_liquidacao=data_referencia,
+        data_liquidacao=data,
         ltn_vencimentos=df_ltn["data_vencimento"],
         ltn_taxas=df_ltn["taxa_indicativa"],
         ntnf_vencimentos=df["data_vencimento"],
@@ -95,14 +93,14 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
     df = df.join(df_spots, on="data_vencimento", how="left")
 
     # Busca curva DI para cálculo da rentabilidade
-    df_di = di1.dados(data_referencia, inicio_mes=True)
+    df_di = di1.dados(data, inicio_mes=True)
 
     # Calcula prêmios e rentabilidade para cada vencimento
     df = df.with_columns(
         premio=pl.col("taxa_indicativa") - pl.col("taxa_di"),
         premio_limpo=pl.struct("data_vencimento", "taxa_indicativa").map_elements(
             lambda row: premio_limpo(
-                data_liquidacao=data_referencia,
+                data_liquidacao=data,
                 data_vencimento=row["data_vencimento"],
                 taxa_ntnf=row["taxa_indicativa"],
                 vencimentos_di=df_di["data_vencimento"],
@@ -112,7 +110,7 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
         ),
         rentabilidade=pl.struct("data_vencimento", "taxa_indicativa").map_elements(
             lambda row: rentabilidade(
-                data_liquidacao=data_referencia,
+                data_liquidacao=data,
                 data_vencimento=row["data_vencimento"],
                 taxa_ntnf=row["taxa_indicativa"],
                 vencimentos_di=df_di["data_vencimento"],  # type: ignore[union-attr]
@@ -145,12 +143,12 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
     )
 
 
-def vencimentos(data_referencia: DateLike) -> pl.Series:
+def vencimentos(data: DateLike) -> pl.Series:
     """
     Busca os vencimentos de NTN-F disponíveis para a data de referência.
 
     Args:
-        data_referencia (DateLike): Data de referência para a consulta.
+        data (DateLike): Data da consulta.
 
     Returns:
         pl.Series: Série de datas de vencimento de NTN-F.
@@ -169,7 +167,7 @@ def vencimentos(data_referencia: DateLike) -> pl.Series:
             2035-01-01
         ]
     """
-    return dados(data_referencia)["data_vencimento"]
+    return dados(data)["data_vencimento"]
 
 
 def datas_pagamento(
@@ -788,7 +786,7 @@ def dv01(
     return preco_1 - preco_2
 
 
-def premio(data_referencia: DateLike, pontos_base: bool = False) -> pl.DataFrame:
+def premio(data: DateLike, pontos_base: bool = False) -> pl.DataFrame:
     """
     Calcula o prêmio bruto das NTN-F sobre a curva DI na data de referência.
 
@@ -800,7 +798,7 @@ def premio(data_referencia: DateLike, pontos_base: bool = False) -> pl.DataFrame
     multiplicado por 10_000 e exibido diretamente em basis points.
 
     Args:
-        data_referencia (DateLike): Data de referência para buscar as taxas.
+        data (DateLike): Data da consulta para buscar as taxas.
         pontos_base (bool): Se True, retorna o prêmio já convertido em basis points.
             Padrão False.
 
@@ -832,9 +830,7 @@ def premio(data_referencia: DateLike, pontos_base: bool = False) -> pl.DataFrame
         │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
         └────────┴─────────────────┴────────┘
     """
-    return pre_premio(data_referencia, pontos_base=pontos_base).filter(
-        pl.col("titulo") == "NTN-F"
-    )
+    return pre_premio(data, pontos_base=pontos_base).filter(pl.col("titulo") == "NTN-F")
 
 
 def taxa(

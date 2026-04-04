@@ -19,5 +19,5 @@ def test_imaq_com_monkeypatch(monkeypatch):
         "_buscar_conteudo_url",
         lambda _: CAMINHO_HTML.read_bytes(),
     )
-    result = imaq_mod.imaq(data_referencia=DATA_REFERENCIA)
+    result = imaq_mod.imaq(data=DATA_REFERENCIA)
     assert result.equals(pl.read_parquet(CAMINHO_PARQUET))

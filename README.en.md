@@ -119,7 +119,7 @@ Convention used:
 from pyield import forward, forwards
 
 # Single forward rate between two points
-forward(bday1=10, bday2=20, rate1=0.05, rate2=0.06)  # -> 0.0700952...
+forward(10, 20, 0.05, 0.06)  # -> 0.0700952...
 
 # Vectorized forward curve from spot rates
 bdays = [10, 20, 30]

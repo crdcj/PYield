@@ -33,12 +33,12 @@ yd.dus.deslocar("29-12-2023", 1)            # -> datetime.date(2024, 1, 2)
 
 # Curva de DI Futuro
 df = yd.futuro("31-05-2024", "DI1")
-# Columns: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
+# Colunas: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)
 interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
 interp(45)       # -> 0.04833...
-interp([30, 60]) # -> pl.Series with interpolated rates
+interp([30, 60]) # -> Series do Polars com taxas interpoladas
 
 # Precificação de títulos públicos
 yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
@@ -74,7 +74,7 @@ dus.gerar("22-12-2023", "02-01-2024")
 # -> Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
 
 # Verifica se a data é dia útil
-dus.e_dia_util("25-12-2023")  # -> False (Christmas)
+dus.e_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
 Todas as funções suportam operações vetorizadas com listas, Series ou arrays.
@@ -119,7 +119,7 @@ Convenção utilizada:
 from pyield import forward, forwards
 
 # Taxa a termo única entre dois pontos
-forward(bday1=10, bday2=20, rate1=0.05, rate2=0.06)  # -> 0.0700952...
+forward(10, 20, 0.05, 0.06)  # -> 0.0700952...
 
 # Curva a termo vetorizada a partir de taxas spot
 bdays = [10, 20, 30]
@@ -153,8 +153,8 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 from pyield import ltn, ntnb, ntnf
 
 # Busca taxas indicativas da ANBIMA
-ltn.dados("23-08-2024")  # -> DataFrame with LTN bonds
-ntnb.dados("23-08-2024")  # -> DataFrame with NTN-B bonds
+ltn.dados("23-08-2024")  # -> DataFrame com títulos LTN
+ntnb.dados("23-08-2024")  # -> DataFrame com títulos NTN-B
 
 # Calcula cotação do título (base 100)
 ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651

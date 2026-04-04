@@ -113,11 +113,11 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
     )
 
 
-def imaq(data_referencia: DateLike) -> pl.DataFrame:
+def imaq(data: DateLike) -> pl.DataFrame:
     """Consulta e processa dados de estoque IMA-Q da ANBIMA para uma data.
 
     Args:
-        data_referencia: Data de referência. Apenas os últimos 5 dias úteis estão
+        data: Data da consulta. Apenas os últimos 5 dias úteis estão
             disponíveis; o dado do dia anterior costuma ser publicado ao longo do dia.
 
     Returns:
@@ -142,7 +142,7 @@ def imaq(data_referencia: DateLike) -> pl.DataFrame:
     Examples:
         >>> yd.anbima.imaq("04-02-2026")  # doctest: +SKIP
     """
-    data = cv.converter_datas(data_referencia)
+    data = cv.converter_datas(data)
     if not cv.data_referencia_valida(data):
         return pl.DataFrame()
 

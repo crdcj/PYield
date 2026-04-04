@@ -9,12 +9,12 @@ from pyield.tn.pre import premio as pre_premio
 VALOR_FACE = 1000
 
 
-def dados(data_referencia: DateLike) -> pl.DataFrame:
+def dados(data: DateLike) -> pl.DataFrame:
     """
     Busca as taxas indicativas de LTN na ANBIMA para a data de referência.
 
     Args:
-        data_referencia: Data de referência para a consulta.
+        data: Data da consulta.
 
     Returns:
         pl.DataFrame: DataFrame Polars com os dados de LTN.
@@ -44,11 +44,11 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
         >>> from pyield import ltn
         >>> df_ltn = ltn.dados("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.obter_tpf(data_referencia, "LTN")
+    df = utils.obter_tpf(data, "LTN")
     if df.is_empty():
         return df
 
-    data_ref = cv.converter_datas(data_referencia)
+    data_ref = cv.converter_datas(data)
 
     df = df.with_columns(
         dias_uteis=dus.contar_expr("data_referencia", "data_vencimento"),
@@ -89,12 +89,12 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
     )
 
 
-def vencimentos(data_referencia: DateLike) -> pl.Series:
+def vencimentos(data: DateLike) -> pl.Series:
     """
     Busca os vencimentos disponíveis para a data de referência.
 
     Args:
-        data_referencia: Data de referência para a consulta.
+        data: Data da consulta.
 
     Returns:
         pl.Series: Série de datas de vencimento disponíveis.
@@ -118,7 +118,7 @@ def vencimentos(data_referencia: DateLike) -> pl.Series:
             2030-01-01
         ]
     """
-    return dados(data_referencia)["data_vencimento"]
+    return dados(data)["data_vencimento"]
 
 
 def pu(
@@ -260,7 +260,7 @@ def dv01(
 
 
 def premio(
-    data_referencia: DateLike,
+    data: DateLike,
     pontos_base: bool = False,
 ) -> pl.DataFrame:
     """
@@ -274,7 +274,7 @@ def premio(
     multiplicado por 10_000 e exibido diretamente em basis points.
 
     Args:
-        data_referencia: Data de referência para buscar as taxas.
+        data: Data da consulta para buscar as taxas.
         pontos_base: Se True, retorna o prêmio já convertido em basis points.
             Padrão False.
 
@@ -312,12 +312,10 @@ def premio(
         │ LTN    ┆ 2032-01-01      ┆ 11.24  │
         └────────┴─────────────────┴────────┘
     """
-    return pre_premio(data_referencia, pontos_base=pontos_base).filter(
-        pl.col("titulo") == "LTN"
-    )
+    return pre_premio(data, pontos_base=pontos_base).filter(pl.col("titulo") == "LTN")
 
 
-def taxas_forward(data_referencia: DateLike) -> pl.DataFrame:
+def taxas_forward(data: DateLike) -> pl.DataFrame:
     """Calcula as taxas forward da LTN para uma data de referência.
 
     As taxas indicativas da LTN já são spot (zero-coupon) por construção, pois o
@@ -325,7 +323,7 @@ def taxas_forward(data_referencia: DateLike) -> pl.DataFrame:
     estrutura de vencimentos e suas taxas.
 
     Args:
-        data_referencia: Data de referência das taxas indicativas.
+        data: Data das taxas indicativas.
 
     Returns:
         pl.DataFrame: DataFrame com as taxas forward.
@@ -358,9 +356,9 @@ def taxas_forward(data_referencia: DateLike) -> pl.DataFrame:
         │ 2032-01-01      ┆ 1553       ┆ 0.13883         ┆ 0.144812     │
         └─────────────────┴────────────┴─────────────────┴──────────────┘
     """
-    if any_is_empty(data_referencia):
+    if any_is_empty(data):
         return pl.DataFrame()
-    df = dados(data_referencia).select(
+    df = dados(data).select(
         "data_vencimento",
         "dias_uteis",
         "taxa_indicativa",

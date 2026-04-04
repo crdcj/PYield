@@ -29,7 +29,7 @@ def futuro_enriquecer(
 
 
 def futuro(
-    data_referencia: DateLike | ArrayLike,
+    data: DateLike | ArrayLike,
     codigo_contrato: str,
 ) -> pl.DataFrame:
     """Busca dados de um contrato futuro da B3 para a data de referência.
@@ -38,7 +38,7 @@ def futuro(
     Para dados do pregão corrente, use ``futuro_intradia``.
 
     Args:
-        data_referencia: Data de referência para consulta ou coleção de datas.
+        data: Data da consulta ou coleção de datas.
             Quando uma coleção é fornecida, os dados são buscados para cada
             data individualmente e concatenados. Datas inválidas (feriados,
             fins de semana, futuras) são silenciosamente ignoradas.
@@ -78,10 +78,10 @@ def futuro(
         True
 
     """
-    if any_is_empty(data_referencia, codigo_contrato):
+    if any_is_empty(data, codigo_contrato):
         return pl.DataFrame()
 
-    dados_convertidos = cv.converter_datas(data_referencia)
+    dados_convertidos = cv.converter_datas(data)
     if isinstance(dados_convertidos, pl.Series):
         datas_validas = []
         for d in dados_convertidos:

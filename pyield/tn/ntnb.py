@@ -22,12 +22,12 @@ VALOR_FINAL = 102.956301
 logger = logging.getLogger(__name__)
 
 
-def dados(data_referencia: DateLike) -> pl.DataFrame:
+def dados(data: DateLike) -> pl.DataFrame:
     """
     Busca as taxas indicativas de NTN-B para a data de referência.
 
     Args:
-        data_referencia (DateLike): Data de referência para a consulta.
+        data (DateLike): Data da consulta.
 
     Returns:
         pl.DataFrame: DataFrame Polars com os dados de NTN-B.
@@ -60,11 +60,11 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
     """
     from pyield.b3 import di1  # noqa: PLC0415
 
-    df = utils.obter_tpf(data_referencia, "NTN-B")
+    df = utils.obter_tpf(data, "NTN-B")
     if df.is_empty():
         return df
 
-    data_ref = conversores.converter_datas(data_referencia)
+    data_ref = conversores.converter_datas(data)
 
     # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
     df = df.with_columns(
@@ -76,9 +76,9 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
     df = utils.adicionar_dv01(df, data_ref)
 
     # Busca curva DI bruta e calcula taxa_zero, taxa_di e inflação implícita
-    df_di = di1.dados(data_referencia)
+    df_di = di1.dados(data)
     df_bei = inflacao_implicita(
-        data_liquidacao=data_referencia,
+        data_liquidacao=data,
         ntnb_vencimentos=df["data_vencimento"],
         ntnb_taxas=df["taxa_indicativa"],
         nominal_vencimentos=df_di["data_vencimento"],
@@ -118,12 +118,12 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
     )
 
 
-def vencimentos(data_referencia: DateLike) -> pl.Series:
+def vencimentos(data: DateLike) -> pl.Series:
     """
     Busca os vencimentos de NTN-B disponíveis para a data de referência.
 
     Args:
-        data_referencia (DateLike): Data de referência para a consulta.
+        data (DateLike): Data da consulta.
 
     Returns:
         pl.Series: Série de datas de vencimento de NTN-B.
@@ -147,7 +147,7 @@ def vencimentos(data_referencia: DateLike) -> pl.Series:
             2060-08-15
         ]
     """
-    return dados(data_referencia)["data_vencimento"]
+    return dados(data)["data_vencimento"]
 
 
 def _gerar_todas_datas_cupom(
@@ -804,14 +804,14 @@ def taxa(
 
 
 def forward(
-    data_referencia: DateLike,
+    data: DateLike,
     usar_taxa_zero: bool = True,
 ) -> pl.DataFrame:
     """
     Calcula as taxas forward da NTN-B para a data de referência.
 
     Args:
-        data_referencia (DateLike): Data de referência para a consulta.
+        data (DateLike): Data da consulta.
         usar_taxa_zero (bool, optional): Se True, usa taxas zero cupom no cálculo.
             Padrão True. Se False, usa as TIRs.
 
@@ -846,16 +846,14 @@ def forward(
         │ 2060-08-15      ┆ 8722       ┆ 0.073795        ┆ 0.074505     │
         └─────────────────┴────────────┴─────────────────┴──────────────┘
     """
-    if any_is_empty(data_referencia):
+    if any_is_empty(data):
         return pl.DataFrame()
 
     # Valida e normaliza a data
-    df = dados(data_referencia).select(
-        "data_vencimento", "dias_uteis", "taxa_indicativa"
-    )
+    df = dados(data).select("data_vencimento", "dias_uteis", "taxa_indicativa")
     if usar_taxa_zero:
         df_ref = taxas_zero(
-            data_liquidacao=data_referencia,
+            data_liquidacao=data,
             vencimentos=df["data_vencimento"],
             taxas=df["taxa_indicativa"],
         ).rename({"taxa_zero": "taxa_referencia"})
