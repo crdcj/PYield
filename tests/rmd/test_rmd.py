@@ -4,16 +4,14 @@ Baixa o ZIP do release de teste no GitHub e valida o pipeline completo
 contra o parquet de referência local.
 """
 
-import sys
+import importlib
 from functools import lru_cache
 from pathlib import Path
 
 import polars as pl
 import requests
 
-import pyield.rmd  # noqa: F401 — garante que o módulo está carregado
-
-rmd_mod = sys.modules["pyield.rmd"]
+rmd_mod = importlib.import_module("pyield.tn.rmd")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_PARQUET = DIRETORIO_DADOS / "rmd_1.3.parquet"

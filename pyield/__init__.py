@@ -6,7 +6,6 @@ from pyield.b3 import di1, futures
 from pyield.fwd import forward, forwards
 from pyield.interpolator import Interpolator
 from pyield.relogio import agora, hoje
-from pyield.rmd import rmd
 from pyield.selic.cpm import data as copom_options
 from pyield.tn import lft, ltn, ntnb, ntnb1, ntnbprinc, ntnc, ntnf, pre
 
@@ -34,7 +33,6 @@ __all__ = [
     "ipca",
     "pre",
     "relogio",
-    "rmd",
     "selic",
     "tn",
 ]

@@ -181,10 +181,8 @@ def _estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
         has_header=False,
     )
 
-    # Rótulos de período: "Nov/06", "Dez/06", ..., "Dez/25", "2025"
     periodos_raw = [str(p) for p in df_bruto.row(_LINHA_PERIODOS)[1:] if p is not None]
 
-    # Filtra totais anuais e converte para datetime.date
     datas_e_indices = [
         (i, d)
         for i, periodo in enumerate(periodos_raw)
@@ -193,13 +191,11 @@ def _estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
     indices_mensais = [i for i, _ in datas_e_indices]
     datas_mensais = [d for _, d in datas_e_indices]
 
-    # Linhas de dados, excluindo linhas sem rótulo de categoria
     df_dados = df_bruto[_LINHA_INICIO_DADOS:_LINHA_FIM_DADOS]
     df_dados = df_dados.filter(df_dados[:, 0].is_not_null())
 
     eventos = _classificar_categorias([str(c) for c in df_dados[:, 0].to_list()])
 
-    # Matriz de valores (apenas períodos mensais), cast para Float64
     matriz = df_dados[:, 1:].cast(pl.Float64, strict=False)[:, indices_mensais]
 
     return (
@@ -271,8 +267,8 @@ def rmd(aba: str) -> pl.DataFrame:
 
     Examples:
         >>> import polars as pl
-        >>> from pyield import rmd
-        >>> df = rmd(aba="1.3")
+        >>> from pyield import tn
+        >>> df = tn.rmd(aba="1.3")
         >>> df_2025 = df.filter(pl.col("periodo").dt.year() == 2025)
         >>> # Totais de 2025 — ver valores de referência do Tesouro Nacional nas Notes
         >>> emissoes_2025 = df_2025.filter(pl.col("grupo") == "Emissões")["valor"].sum()
