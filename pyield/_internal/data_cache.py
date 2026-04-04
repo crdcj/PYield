@@ -33,8 +33,6 @@ def _obter_chave_data_hoje() -> str:
 
 def _validar_id_dataset(id_dataset: str) -> _Dataset:
     dataset_normalizado = id_dataset.lower()
-    if dataset_normalizado == "futures":
-        dataset_normalizado = "futuro"
     try:
         return _Dataset[dataset_normalizado.upper()]
     except KeyError as e:

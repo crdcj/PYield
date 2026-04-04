@@ -13,7 +13,7 @@ Strike interpretation (Selic Meta context):
     strike_float = int(strike_6digits) / 1000   # e.g. 99.500
     change_bps   = round((strike_float - 100) * 100)  # e.g. -50 bps
 
-Month codes (B3 standard futures convention):
+Month codes (B3 standard future convention):
     F=1, G=2, H=3, J=4, K=5, M=6,
     N=7, Q=8, U=9, V=10, X=11, Z=12
 
@@ -51,7 +51,7 @@ from pyield.b3.boletim import (
 
 logger = logging.getLogger(__name__)
 
-# B3 futures month code → calendar month integer (same mapping as common.py)
+# B3 future month code → calendar month integer (same mapping as contratos.py)
 _MONTH_CODES: dict[str, int] = {
     "F": 1,
     "G": 2,
@@ -94,7 +94,7 @@ def _empty_schema() -> pl.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# B3 CSV endpoint helpers (inlined from the former historical_b3 module)
+# B3 CSV endpoint helpers (inlined from the former historico_b3 module)
 # ---------------------------------------------------------------------------
 
 # Column config for the B3 consolidated derivatives CSV.
