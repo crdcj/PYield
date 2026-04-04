@@ -213,6 +213,22 @@ bc.tpf_mensal("01-01-2030").is_empty()  # -> True (mês futuro)
 bc.ptax("25-12-2025")                           # -> nan (feriado)
 ```
 
+## Migração para Português (v0.48.0+)
+
+A partir da versão 0.48.0, a API pública foi migrada para o português. Os principais renomes:
+
+| Antes (< 0.48) | Depois (≥ 0.48) |
+|---|---|
+| `yd.bday` | `yd.dus` |
+| `bday.count()` | `dus.contar()` |
+| `bday.offset()` | `dus.deslocar()` |
+| `bday.generate()` | `dus.gerar()` |
+| `bday.is_business_day()` | `dus.e_dia_util()` |
+| `Interpolator(method, bdays, rates)` | `Interpolador(dias_uteis, taxas, metodo=...)` |
+| `extrapolate=True` | `extrapolar=True` |
+| `ntnb.quotation()` | `ntnb.cotacao()` |
+| `ntnb.data()` | `ntnb.dados()` |
+
 ## Migração para Polars (v0.40.0+)
 
 A partir da versão 0.40.0, todas as saídas tabulares passaram de Pandas para **Polars**. Entradas vetoriais que antes aceitavam `pd.Series` e `np.ndarray` agora aceitam apenas listas, tuplas ou `pl.Series`. Para converter:
