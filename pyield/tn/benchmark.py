@@ -84,7 +84,7 @@ def benchmarks(
     Args:
         titulo: Tipo do título a filtrar (ex.: "LFT").
         incluir_historico: Se ``True``, inclui histórico; se ``False``
-            (padrão), retorna apenas benchmarks vigentes.
+            (padrão), retorna apenas benchmarks vigentes (on-the-run).
 
     Returns:
         DataFrame com os benchmarks, ou DataFrame vazio.
