@@ -1,6 +1,6 @@
-::: pyield.interpolator.Interpolator
+::: pyield.interpolador.Interpolador
     options:
       members:
         - linear
         - flat_forward
-        - interpolate
+        - interpolar

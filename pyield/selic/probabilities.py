@@ -122,7 +122,7 @@ def _add_discount_factors(df: pl.DataFrame) -> pl.DataFrame:
                                 where n = BDaysToExp/252, r_n = ln(1+DI1Rate)
 
     Uses the vectorized di1.interpolar_taxas() to fetch all DI1 rates in a
-    single call (one data fetch + one interpolator per unique TradeDate),
+    single call (one data fetch + one interpolador per unique TradeDate),
     then computes discount factors with Polars expressions.
 
     Interpolation method

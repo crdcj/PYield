@@ -144,7 +144,7 @@ Interpolar taxas de juros usando convenção de mercado (252 dias úteis/ano):
 df = yd.futuro("31-05-2024", "DI1")
 
 # Criar interpolador flat forward (padrão de mercado)
-interp = yd.Interpolator("flat_forward", df["dias_uteis"], df["taxa_ajuste"])
+interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
 
 # Interpolar para 45 dias úteis
 interp(45)  # -> Taxa interpolada (ex: 0.1037)
@@ -153,7 +153,7 @@ interp(45)  # -> Taxa interpolada (ex: 0.1037)
 interp([30, 60, 90])  # -> Polars Series com 3 taxas interpoladas
 
 # Interpolação linear (alternativa)
-linear_interp = yd.Interpolator("linear", df["dias_uteis"], df["taxa_ajuste"])
+linear_interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="linear")
 linear_interp(45)  # -> Taxa interpolada linearmente
 ```
 

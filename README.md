@@ -30,7 +30,7 @@ df = yd.futuro("31-05-2024", "DI1")
 # Columns: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)
-interp = yd.Interpolator("flat_forward", df["dias_uteis"], df["taxa_ajuste"])
+interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
 interp(45)       # -> 0.04833...
 interp([30, 60]) # -> pl.Series with interpolated rates
 
@@ -73,22 +73,22 @@ bday.is_business_day("25-12-2023")  # -> False (Christmas)
 
 Todas as funções suportam operações vetorizadas com listas, Series ou arrays.
 
-### Interpolação de Taxas (`Interpolator`)
+### Interpolação de Taxas (`Interpolador`)
 
-A classe `Interpolator` interpola taxas usando a convenção de 252 dias úteis/ano, padrão no mercado brasileiro.
+A classe `Interpolador` interpola taxas usando a convenção de 252 dias úteis/ano, padrão no mercado brasileiro.
 
 ```python
-from pyield import Interpolator
+from pyield import Interpolador
 
-known_bdays = [30, 60, 90]
-known_rates = [0.045, 0.05, 0.055]
+dias_uteis = [30, 60, 90]
+taxas = [0.045, 0.05, 0.055]
 
 # Interpolação flat forward (padrão de mercado)
-interp = Interpolator("flat_forward", known_bdays, known_rates)
+interp = Interpolador(dias_uteis, taxas, metodo="flat_forward")
 interp(45)  # -> 0.04833...
 
 # Interpolação linear
-linear = Interpolator("linear", known_bdays, known_rates)
+linear = Interpolador(dias_uteis, taxas, metodo="linear")
 linear(45)  # -> 0.0475
 
 # Vetorizado
@@ -96,7 +96,7 @@ interp([15, 45, 75])  # -> pl.Series with 3 rates
 
 # Extrapolação (desabilitada por padrão, retorna NaN)
 interp(100)  # -> nan
-Interpolator("flat_forward", known_bdays, known_rates, extrapolate=True)(100)  # -> 0.055
+Interpolador(dias_uteis, taxas, metodo="flat_forward", extrapolar=True)(100)  # -> 0.055
 ```
 
 ### Taxas a Termo (`forward`, `forwards`)
@@ -128,7 +128,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | `bday` | Calendário de dias úteis com feriados brasileiros |
 | `futuro` | Dados de futuro da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
 | `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
-| `Interpolator` | Interpolação de taxas (flat_forward, linear) |
+| `Interpolador` | Interpolação de taxas (flat_forward, linear) |
 | `forward` / `forwards` | Cálculo de taxas a termo |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
 | `ntnb1`, `ntnbprinc`, `pre` | Títulos e curvas adicionais (NTN-B1, NTN-B Principal, curva PRE) |

@@ -56,7 +56,7 @@ The library is organized into domain-specific namespaces, all exposed through `p
 Top-level functions also exported from `pyield`:
 - `forwards`, `forward` — Forward rate calculations from `fwd.py`.
 - `rmd` — Treasury monthly debt report (Relatório Mensal da Dívida) from `rmd.py`.
-- `Interpolator` — Rate interpolation class from `interpolator.py`.
+- `Interpolador` — Rate interpolation class from `interpolador.py`.
 - `today`, `now` — Brazil timezone date/time from `clock.py`.
 - `copom_options` — Alias for `selic.cpm.data`.
 
@@ -64,7 +64,7 @@ Top-level functions also exported from `pyield`:
 
 - **`_internal/types.py`** — Type aliases `DateLike` and `ArrayLike`; `any_is_empty()` for null/empty detection; `any_is_collection()` for array-like detection.
 - **`_internal/converters.py`** — `converter_datas()` normalizes various date inputs to `datetime.date` or `pl.Series[Date]`. `converter_datas_expr()` for Polars expression pipelines.
-- **`interpolator.py`** — `Interpolator` class for rate interpolation (linear or flat_forward method, 252 bday/year convention).
+- **`interpolador.py`** — `Interpolador` class for rate interpolation (linear or flat_forward method, 252 bday/year convention).
 - **`_internal/data_cache.py`** — GitHub-hosted parquet data cache with daily TTL using `lru_cache` (date-key trick for auto-invalidation).
 - **`_internal/retry.py`** — Tenacity-based retry decorator (`retry_padrao`) for network requests (retries on 429, 5xx, timeouts).
 - **`clock.py`** — `today()` and `now()` return Brazil timezone (America/Sao_Paulo) dates/times.
@@ -162,7 +162,7 @@ Isso reduz complexidade do teste e mantém a cobertura do fluxo real sem rede.
 
 ### Quando doctests são suficientes
 
-Módulos com pipeline trivial que retornam valores escalares simples (float, str) sem transformações complexas de DataFrame. Os doctests já validam o comportamento real e servem como documentação. Exemplos: `di_over.py`, `tn/ltn.py`, `fwd.py`, `interpolator.py`.
+Módulos com pipeline trivial que retornam valores escalares simples (float, str) sem transformações complexas de DataFrame. Os doctests já validam o comportamento real e servem como documentação. Exemplos: `di_over.py`, `tn/ltn.py`, `fwd.py`, `interpolador.py`.
 
 ### Quando criar test files separados
 

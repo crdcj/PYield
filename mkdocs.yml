@@ -15,7 +15,7 @@ nav:
   - Módulos:
       - Núcleo:
           - Ferramentas de Dias Úteis: bday.md
-          - Interpolator: interpolator.md
+          - Interpolador: interpolador.md
           - Taxas a Termo: forwards.md
       - Fontes de Dados:
           - Anbima: anbima.md

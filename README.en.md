@@ -30,7 +30,7 @@ df = yd.futuro("31-05-2024", "DI1")
 # Columns: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Rate interpolation (flat forward, 252 business days/year convention)
-interp = yd.Interpolator("flat_forward", df["dias_uteis"], df["taxa_ajuste"])
+interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
 interp(45)       # -> 0.04833...
 interp([30, 60]) # -> pl.Series with interpolated rates
 
@@ -73,22 +73,22 @@ bday.is_business_day("25-12-2023")  # -> False (Christmas)
 
 All functions support vectorized operations with lists, Series, or arrays.
 
-### Rate Interpolation (`Interpolator`)
+### Rate Interpolation (`Interpolador`)
 
-The `Interpolator` class interpolates rates using the 252 business days/year convention, standard in the Brazilian market.
+The `Interpolador` class interpolates rates using the 252 business days/year convention, standard in the Brazilian market.
 
 ```python
-from pyield import Interpolator
+from pyield import Interpolador
 
-known_bdays = [30, 60, 90]
-known_rates = [0.045, 0.05, 0.055]
+dias_uteis = [30, 60, 90]
+taxas = [0.045, 0.05, 0.055]
 
 # Flat-forward interpolation (market standard)
-interp = Interpolator("flat_forward", known_bdays, known_rates)
+interp = Interpolador(dias_uteis, taxas, metodo="flat_forward")
 interp(45)  # -> 0.04833...
 
 # Linear interpolation
-linear = Interpolator("linear", known_bdays, known_rates)
+linear = Interpolador(dias_uteis, taxas, metodo="linear")
 linear(45)  # -> 0.0475
 
 # Vectorized
@@ -96,7 +96,7 @@ interp([15, 45, 75])  # -> pl.Series with 3 rates
 
 # Extrapolation (disabled by default, returns NaN)
 interp(100)  # -> nan
-Interpolator("flat_forward", known_bdays, known_rates, extrapolate=True)(100)  # -> 0.055
+Interpolador(dias_uteis, taxas, metodo="flat_forward", extrapolar=True)(100)  # -> 0.055
 ```
 
 ### Forward Rates (`forward`, `forwards`)
@@ -128,7 +128,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | `bday` | Business day calendar with Brazilian holidays |
 | `futuro` | B3 future data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
 | `di1` | Interpolated DI1 curve and available trade dates |
-| `Interpolator` | Rate interpolation (flat_forward, linear) |
+| `Interpolador` | Rate interpolation (flat_forward, linear) |
 | `forward` / `forwards` | Forward-rate calculations |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
 | `ntnb1`, `ntnbprinc`, `pre` | Additional bonds and curves (NTN-B1, NTN-B Principal, PRE curve) |

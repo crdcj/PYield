@@ -4,8 +4,7 @@ import logging
 import polars as pl
 
 import pyield._internal.converters as conversores
-import pyield.interpolator as interpolador
-from pyield import bday, fwd
+from pyield import bday, fwd, interpolador
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.tn import utils
 
@@ -77,7 +76,7 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
     df = utils.adicionar_dv01(df, data_ref)
 
     # Busca curva DI bruta e calcula taxa_zero, taxa_di e inflação implícita
-    df_di = di1.data(data_referencia)
+    df_di = di1.dados(data_referencia)
     df_bei = inflacao_implicita(
         data_liquidacao=data_referencia,
         ntnb_vencimentos=df["data_vencimento"],
@@ -411,10 +410,10 @@ def _criar_df_bootstrap(
 ) -> pl.DataFrame:
     """Cria o DataFrame base para o bootstrap."""
     # Cria interpolador para TIRs em datas intermediárias
-    interpolador_ff = interpolador.Interpolator(
-        method="flat_forward",
-        known_bdays=bday.count(data_liquidacao, vencimentos),
-        known_rates=taxas,
+    interpolador_ff = interpolador.Interpolador(
+        dias_uteis=bday.count(data_liquidacao, vencimentos),
+        taxas=taxas,
+        metodo="flat_forward",
     )
 
     # Gera datas de cupom até o último vencimento
@@ -422,7 +421,7 @@ def _criar_df_bootstrap(
     assert isinstance(ultimo_vencimento, dt.date)
     todas_datas_cupom = _gerar_todas_datas_cupom(data_liquidacao, ultimo_vencimento)
     dias_uteis_ate_venc = bday.count(data_liquidacao, todas_datas_cupom)
-    taxas_tir = interpolador_ff.interpolate(dias_uteis_ate_venc)
+    taxas_tir = interpolador_ff.interpolar(dias_uteis_ate_venc)
 
     df = (
         pl.DataFrame(
@@ -609,7 +608,7 @@ def inflacao_implicita(
         >>> df_ntnb = yd.ntnb.dados("05-09-2024")
 
         Busca as taxas de ajuste do DI Futuro para a mesma data de referência:
-        >>> df_di = yd.di1.data("05-09-2024")
+        >>> df_di = yd.di1.dados("05-09-2024")
 
         Calcula a inflação implícita na data de referência:
         >>> yd.ntnb.inflacao_implicita(
@@ -651,11 +650,11 @@ def inflacao_implicita(
     ntnb_vencimentos = conversores.converter_datas(ntnb_vencimentos)
     nominal_vencimentos = conversores.converter_datas(nominal_vencimentos)
 
-    interpolador_ff = interpolador.Interpolator(
-        method="flat_forward",
-        known_bdays=bday.count(liquidacao, nominal_vencimentos),
-        known_rates=nominal_taxas,
-        extrapolate=True,
+    interpolador_ff = interpolador.Interpolador(
+        dias_uteis=bday.count(liquidacao, nominal_vencimentos),
+        taxas=nominal_taxas,
+        metodo="flat_forward",
+        extrapolar=True,
     )
     df_spot = taxas_zero(liquidacao, ntnb_vencimentos, ntnb_taxas)
     df = (

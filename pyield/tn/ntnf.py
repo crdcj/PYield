@@ -5,7 +5,7 @@ import math
 import polars as pl
 
 import pyield._internal.converters as cv
-import pyield.interpolator as ip
+import pyield.interpolador as ip
 from pyield import bday
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.b3 import di1
@@ -95,7 +95,7 @@ def dados(data_referencia: DateLike) -> pl.DataFrame:
     df = df.join(df_spots, on="data_vencimento", how="left")
 
     # Busca curva DI para cálculo da rentabilidade
-    df_di = di1.data(data_referencia, month_start=True)
+    df_di = di1.dados(data_referencia, inicio_mes=True)
 
     # Calcula prêmios e rentabilidade para cada vencimento
     df = df.with_columns(
@@ -431,15 +431,15 @@ def taxas_zero(  # noqa
         serie_ntnf_taxas = ntnf_taxas
 
     # 2. Criar interpoladores (aceitam pl.Series diretamente)
-    interpolador_ltn = ip.Interpolator(
-        method="flat_forward",
-        known_bdays=bday.count(liquidacao, ltn_vencimentos),
-        known_rates=serie_ltn_taxas,
+    interpolador_ltn = ip.Interpolador(
+        dias_uteis=bday.count(liquidacao, ltn_vencimentos),
+        taxas=serie_ltn_taxas,
+        metodo="flat_forward",
     )
-    interpolador_ntnf = ip.Interpolator(
-        method="flat_forward",
-        known_bdays=bday.count(liquidacao, ntnf_vencimentos),
-        known_rates=serie_ntnf_taxas,
+    interpolador_ntnf = ip.Interpolador(
+        dias_uteis=bday.count(liquidacao, ntnf_vencimentos),
+        taxas=serie_ntnf_taxas,
+        metodo="flat_forward",
     )
 
     # 3. Gerar todas as datas de cupom até o último vencimento NTN-F
@@ -592,10 +592,10 @@ def rentabilidade(  # noqa
     if df_fluxos.is_empty():
         return float("nan")
 
-    interpolador_ff = ip.Interpolator(
-        "flat_forward",
+    interpolador_ff = ip.Interpolador(
         bday.count(data_liquidacao, vencimentos_di),  # type: ignore[arg-type]
         serie_taxas_di,
+        "flat_forward",
     )
 
     dias_uteis_pagamento = bday.count(data_liquidacao, df_fluxos["data_pagamento"])
@@ -688,10 +688,10 @@ def premio_limpo(  # noqa
         serie_taxas_di = taxas_di
 
     # Criação do interpolador
-    interpolador_ff = ip.Interpolator(
-        "flat_forward",
+    interpolador_ff = ip.Interpolador(
         bday.count(data_liquidacao, vencimentos_di),
         serie_taxas_di,
+        "flat_forward",
     )
 
     # Geração dos fluxos de caixa do NTN-F

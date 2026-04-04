@@ -1,13 +1,13 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import b3, bday, interpolator
+from pyield import b3, bday, interpolador
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
 from pyield.b3.futuro import futuro_datas_disponiveis as _listar_datas
 
 
-def data(
+def dados(
     datas_referencia: DateLike | ArrayLike,
     inicio_mes: bool = False,
     filtrar_pre: bool = False,
@@ -36,7 +36,7 @@ def data(
 
     Examples:
         >>> from pyield import di1
-        >>> df = di1.data(datas_referencia="16-10-2024", inicio_mes=True)
+        >>> df = di1.dados(datas_referencia="16-10-2024", inicio_mes=True)
         >>> df.head(3).select(
         ...     "codigo_negociacao", "data_vencimento", "dias_uteis", "taxa_ajuste"
         ... )
@@ -229,18 +229,18 @@ def interpolar_taxas(
             continue
 
         # Inicializa o interpolador com taxas e dias úteis conhecidos
-        interpolador = interpolator.Interpolator(
-            method="flat_forward",
-            known_bdays=df_referencia["dias_uteis"],
-            known_rates=df_referencia["taxa_ajuste"],
-            extrapolate=extrapolate,
+        interpolador_du = interpolador.Interpolador(
+            dias_uteis=df_referencia["dias_uteis"],
+            taxas=df_referencia["taxa_ajuste"],
+            metodo="flat_forward",
+            extrapolar=extrapolate,
         )
 
         # 4. A mágica: map_batches passa a Series inteira para o interpolador
         # O interpolador retorna uma Series, que o Polars alinha perfeitamente
         df_parcial = df_parcial.with_columns(
             pl.col("dias_uteis")
-            .map_batches(interpolador)  # Passa Series -> Recebe Series
+            .map_batches(interpolador_du)  # Passa Series -> Recebe Series
             .alias("taxa_interpolada")
         )
 
