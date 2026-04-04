@@ -21,7 +21,7 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 def _parquet_referencia(data: str, contrato: str) -> Path:
     """Retorna o caminho do parquet canônico para a data e contrato."""
     dia, mes, ano = data.split("-")
-    nome = f"futures_{ano}{mes}{dia}_{contrato}.parquet"
+    nome = f"futuro_{ano}{mes}{dia}_{contrato}.parquet"
     return TEST_DATA_DIR / nome
 
 

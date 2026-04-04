@@ -3,9 +3,9 @@ import importlib
 import json
 from pathlib import Path
 
-from pyield.b3.futuro import intradia as futuro_intradia_mod
+from pyield.b3.futuro import intradia as modulo_futuro_intradia
 
-derivatives_mod = importlib.import_module("pyield.b3.derivativos_intradia")
+modulo_derivativos = importlib.import_module("pyield.b3.derivativos_intradia")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 DATA_REFERENCIA = dt.date(2026, 3, 10)
@@ -15,7 +15,7 @@ TAMANHO_CODIGO_NEGOCIACAO_FUTURO = 6
 
 def _carregar_json_scty(contrato: str) -> list[dict]:
     """Carrega a lista Scty do JSON bruto de referência."""
-    caminho = DIRETORIO_DADOS / f"intraday_20260310_{contrato}.json"
+    caminho = DIRETORIO_DADOS / f"derivativos_intradia_20260310_{contrato}.json"
     with open(caminho, encoding="utf-8") as f:
         return json.load(f)["Scty"]
 
@@ -35,12 +35,12 @@ def _horario_referencia_mock() -> dt.datetime:
 def test_derivativo_intradia_preserva_payload_misto(monkeypatch):
     """Módulo bruto deve preservar mercados mistos do payload do dia."""
     monkeypatch.setattr(
-        derivatives_mod,
+        modulo_derivativos,
         "_buscar_json_intradia",
         _buscar_json_intradia_mock,
     )
 
-    resultado = derivatives_mod.derivativo_intradia("DOL")
+    resultado = modulo_derivativos.derivativo_intradia("DOL")
     total_esperado = len(_carregar_json_scty("DOL"))
 
     assert resultado.height == total_esperado
@@ -55,12 +55,12 @@ def test_derivativo_intradia_preserva_payload_misto(monkeypatch):
 def test_derivativo_intradia_suporta_colunas_opcionais_ausentes(monkeypatch):
     """Módulo bruto não deve quebrar quando o payload não tem book de ofertas."""
     monkeypatch.setattr(
-        derivatives_mod,
+        modulo_derivativos,
         "_buscar_json_intradia",
         _buscar_json_intradia_mock,
     )
 
-    resultado = derivatives_mod.derivativo_intradia("DDI")
+    resultado = modulo_derivativos.derivativo_intradia("DDI")
     total_esperado = len(_carregar_json_scty("DDI"))
 
     assert resultado.height == total_esperado
@@ -71,12 +71,12 @@ def test_derivativo_intradia_suporta_colunas_opcionais_ausentes(monkeypatch):
 def test_derivativo_intradia_nao_descarta_fro_sem_curprc(monkeypatch):
     """FRO deve continuar válido mesmo sem coluna curPrc no payload."""
     monkeypatch.setattr(
-        derivatives_mod,
+        modulo_derivativos,
         "_buscar_json_intradia",
         _buscar_json_intradia_mock,
     )
 
-    resultado = derivatives_mod.derivativo_intradia("FRO")
+    resultado = modulo_derivativos.derivativo_intradia("FRO")
     total_esperado = len(_carregar_json_scty("FRO"))
 
     assert resultado.height == total_esperado
@@ -87,22 +87,22 @@ def test_derivativo_intradia_nao_descarta_fro_sem_curprc(monkeypatch):
 def test_futuro_intradia_filtra_apenas_futuros(monkeypatch):
     """Camada de futuro deve consumir o bruto e manter apenas FUT."""
     monkeypatch.setattr(
-        derivatives_mod,
+        modulo_derivativos,
         "_buscar_json_intradia",
         _buscar_json_intradia_mock,
     )
-    monkeypatch.setattr(futuro_intradia_mod, "intradia_disponivel", lambda: True)
-    monkeypatch.setattr(derivatives_mod.relogio, "agora", _horario_referencia_mock)
+    monkeypatch.setattr(modulo_futuro_intradia, "intradia_disponivel", lambda: True)
+    monkeypatch.setattr(modulo_derivativos.relogio, "agora", _horario_referencia_mock)
     monkeypatch.setattr(
-        futuro_intradia_mod,
+        modulo_futuro_intradia,
         "derivativo_intradia",
-        derivatives_mod.derivativo_intradia,
+        modulo_derivativos.derivativo_intradia,
     )
     monkeypatch.setattr(
-        futuro_intradia_mod.dus, "ultimo_dia_util", _data_referencia_mock
+        modulo_futuro_intradia.dus, "ultimo_dia_util", _data_referencia_mock
     )
 
-    resultado = futuro_intradia_mod.intradia("DOL")
+    resultado = modulo_futuro_intradia.intradia("DOL")
 
     codigos_fut_esperados = [
         item["symb"]

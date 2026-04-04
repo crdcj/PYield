@@ -18,16 +18,16 @@ import pytest
 import requests
 from polars.testing import assert_frame_equal
 
-import pyield.b3.boletim as pr_mod
+import pyield.b3.boletim as modulo_boletim
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 URL_BASE_RELEASE = "https://github.com/crdcj/PYield/releases/download/test-data"
 
 
 @lru_cache(maxsize=8)
-def _baixar_xml_remoto(date_str: str) -> bytes:
+def _baixar_xml_remoto(data: str) -> bytes:
     """Baixa e descompacta o arquivo XML.GZ remoto para a data informada."""
-    dia, mes, ano = date_str.split("-")
+    dia, mes, ano = data.split("-")
     arquivo = f"PR{ano[2:]}{mes}{dia}.xml.gz"
     url = f"{URL_BASE_RELEASE}/{arquivo}"
 
@@ -37,19 +37,19 @@ def _baixar_xml_remoto(date_str: str) -> bytes:
 
 
 @lru_cache(maxsize=8)
-def _baixar_e_parsear_xml_remoto(date_str: str) -> pl.DataFrame:
+def _baixar_e_parsear_xml_remoto(data: str) -> pl.DataFrame:
     """Baixa o XML remoto e parseia em DataFrame completo."""
-    xml_bytes = _baixar_xml_remoto(date_str)
-    return pr_mod.boletim_negociacao_ler(xml_bytes)
+    xml_bytes = _baixar_xml_remoto(data)
+    return modulo_boletim.boletim_negociacao_ler(xml_bytes)
 
 
-def _parquet_referencia(date_str: str, contract_code: str) -> Path:
-    dia, mes, ano = date_str.split("-")
-    return TEST_DATA_DIR / f"price_report_{ano}{mes}{dia}_{contract_code}.parquet"
+def _parquet_referencia(data: str, contrato: str) -> Path:
+    dia, mes, ano = data.split("-")
+    return TEST_DATA_DIR / f"boletim_negociacao_{ano}{mes}{dia}_{contrato}.parquet"
 
 
 @pytest.mark.parametrize(
-    ("date", "contract_code"),
+    ("data", "contrato"),
     [
         ("02-02-2023", "DI1"),
         ("02-02-2023", "FRC"),
@@ -77,19 +77,21 @@ def _parquet_referencia(date_str: str, contract_code: str) -> Path:
         ("12-01-2026", "WIN"),
     ],
 )
-def test_pipeline_bruto_boletim_negociacao(date: str, contract_code: str):
+def test_pipeline_bruto_boletim_negociacao(data: str, contrato: str):
     """Compara saída bruta do boletim de negociacao com parquet canônico."""
-    df_completo = _baixar_e_parsear_xml_remoto(date)
-    df_result = pr_mod._filtrar_df(df_completo, [contract_code], comprimento_ticker=6)
-    df_expect = pl.read_parquet(_parquet_referencia(date, contract_code))
+    df_completo = _baixar_e_parsear_xml_remoto(data)
+    df_resultado = modulo_boletim._filtrar_df(
+        df_completo, [contrato], comprimento_ticker=6
+    )
+    df_esperado = pl.read_parquet(_parquet_referencia(data, contrato))
 
-    assert_frame_equal(df_result, df_expect, check_exact=True, check_dtypes=True)
+    assert_frame_equal(df_resultado, df_esperado, check_exact=True, check_dtypes=True)
 
 
 def test_boletim_negociacao_reusa_download_xml_por_data(monkeypatch):
     chamadas = {"download": 0, "extrair": 0}
 
-    monkeypatch.setattr(pr_mod, "data_negociacao_valida", lambda *_: True)
+    monkeypatch.setattr(modulo_boletim, "data_negociacao_valida", lambda *_: True)
 
     def _baixar_zip_falso(*_):
         chamadas["download"] += 1
@@ -107,12 +109,14 @@ def test_boletim_negociacao_reusa_download_xml_por_data(monkeypatch):
             }
         ).cast({"TradDt": pl.Date})
 
-    monkeypatch.setattr(pr_mod, "_baixar_zip_url", _baixar_zip_falso)
-    monkeypatch.setattr(pr_mod, "boletim_negociacao_extrair", _extrair_xml_falso)
-    monkeypatch.setattr(pr_mod, "_processar_xml_extraido", _processar_xml_falso)
+    monkeypatch.setattr(modulo_boletim, "_baixar_zip_url", _baixar_zip_falso)
+    monkeypatch.setattr(
+        modulo_boletim, "boletim_negociacao_extrair", _extrair_xml_falso
+    )
+    monkeypatch.setattr(modulo_boletim, "_processar_xml_extraido", _processar_xml_falso)
 
-    _ = pr_mod.boletim_negociacao(data="12-01-2026", prefixo_ticker="DI1")
-    _ = pr_mod.boletim_negociacao(data="12-01-2026", prefixo_ticker="DOL")
+    _ = modulo_boletim.boletim_negociacao(data="12-01-2026", prefixo_ticker="DI1")
+    _ = modulo_boletim.boletim_negociacao(data="12-01-2026", prefixo_ticker="DOL")
 
     # Monkeypatch substitui a função cacheada, então cada chamada passa direto
     assert chamadas == {"download": 2, "extrair": 2}
@@ -126,12 +130,12 @@ def test_filtrar_df_trata_prefixo_como_literal():
         }
     ).cast({"TradDt": pl.Date})
 
-    df_result = pr_mod._filtrar_df(df, ["D."])
-    df_expect = pl.DataFrame(
+    df_resultado = modulo_boletim._filtrar_df(df, ["D."])
+    df_esperado = pl.DataFrame(
         {
             "TckrSymb": ["D.F26"],
             "TradDt": [dt.date(2026, 1, 12)],
         }
     ).cast({"TradDt": pl.Date})
 
-    assert_frame_equal(df_result, df_expect, check_exact=True, check_dtypes=True)
+    assert_frame_equal(df_resultado, df_esperado, check_exact=True, check_dtypes=True)

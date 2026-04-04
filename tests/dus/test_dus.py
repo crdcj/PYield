@@ -7,76 +7,84 @@ import polars as pl
 from pyield import dus
 
 
-def test_count_new_holiday():
-    start = "20-11-2024"  # Wednesday (Zumbi Nacional Day)
-    end = "21-11-2024"
-    expected_result = 0
-    result = dus.contar(start, end)
-    assert result == expected_result, f"Expected {expected_result}, but got {result}"
-
-
-def test_count_old_holiday():
-    start = "20-11-2020"  # Friday (was not a holiday in 2020)
-    end = "21-11-2020"
-    expected_result = 1
-    result = dus.contar(start, end)
-    assert result == expected_result, f"Expected {expected_result}, but got {result}"
-
-
-def test_count_old_and_new_holidays_lists():
-    start = ["20-11-2020", "20-11-2024"]
-    end = ["21-11-2020", "21-11-2024"]
-    expected_result = [1, 0]
-    result = dus.contar(start, end)
-    assert isinstance(result, pl.Series)
-    assert result.to_list() == expected_result, (
-        f"Expected {expected_result}, but got {result.to_list()}"
+def test_contar_novo_feriado():
+    inicio = "20-11-2024"  # Wednesday (Zumbi Nacional Day)
+    fim = "21-11-2024"
+    resultado_esperado = 0
+    resultado = dus.contar(inicio, fim)
+    assert resultado == resultado_esperado, (
+        f"Esperado {resultado_esperado}, obtido {resultado}"
     )
 
 
-def test_offset_with_old_holiday():
-    start = "20-11-2020"
-    offset = 0
-    expected_result = dt.date(2020, 11, 20)
-    result = dus.deslocar(start, offset)
-    assert result == expected_result, f"Expected {expected_result}, but got {result}"
+def test_contar_feriado_antigo():
+    inicio = "20-11-2020"  # Friday (was not a holiday in 2020)
+    fim = "21-11-2020"
+    resultado_esperado = 1
+    resultado = dus.contar(inicio, fim)
+    assert resultado == resultado_esperado, (
+        f"Esperado {resultado_esperado}, obtido {resultado}"
+    )
 
 
-def test_offset_with_new_holiday():
-    start = "20-11-2024"
-    offset = 0
-    expected_result = dt.date(2024, 11, 21)
-    result = dus.deslocar(start, offset)
-    assert result == expected_result, f"Expected {expected_result}, but got {result}"
+def test_contar_feriados_antigo_e_novo_em_lista():
+    inicio = ["20-11-2020", "20-11-2024"]
+    fim = ["21-11-2020", "21-11-2024"]
+    resultado_esperado = [1, 0]
+    resultado = dus.contar(inicio, fim)
+    assert isinstance(resultado, pl.Series)
+    assert resultado.to_list() == resultado_esperado, (
+        f"Esperado {resultado_esperado}, obtido {resultado.to_list()}"
+    )
 
 
-def test_offset_with_old_and_new_holidays():
-    start = ["20-11-2020", "20-11-2024"]
-    offset = 0
-    expected_result = [dt.date(2020, 11, 20), dt.date(2024, 11, 21)]
-    result = dus.deslocar(start, offset)
-    assert isinstance(result, pl.Series)
+def test_deslocar_com_feriado_antigo():
+    inicio = "20-11-2020"
+    deslocamento = 0
+    resultado_esperado = dt.date(2020, 11, 20)
+    resultado = dus.deslocar(inicio, deslocamento)
+    assert resultado == resultado_esperado, (
+        f"Esperado {resultado_esperado}, obtido {resultado}"
+    )
+
+
+def test_deslocar_com_novo_feriado():
+    inicio = "20-11-2024"
+    deslocamento = 0
+    resultado_esperado = dt.date(2024, 11, 21)
+    resultado = dus.deslocar(inicio, deslocamento)
+    assert resultado == resultado_esperado, (
+        f"Esperado {resultado_esperado}, obtido {resultado}"
+    )
+
+
+def test_deslocar_com_feriados_antigo_e_novo():
+    inicio = ["20-11-2020", "20-11-2024"]
+    deslocamento = 0
+    resultado_esperado = [dt.date(2020, 11, 20), dt.date(2024, 11, 21)]
+    resultado = dus.deslocar(inicio, deslocamento)
+    assert isinstance(resultado, pl.Series)
     # Polars Series of dates returns python date objects in to_list()
-    assert result.to_list() == expected_result, (
-        f"Expected {expected_result}, but got {result.to_list()}"
+    assert resultado.to_list() == resultado_esperado, (
+        f"Esperado {resultado_esperado}, obtido {resultado.to_list()}"
     )
 
 
-def test_generate_invalid_start_falls_back_to_today(monkeypatch):
+def test_gerar_inicio_invalido_retorna_hoje(monkeypatch):
     data_fixa = dt.date(2024, 3, 1)
     monkeypatch.setattr("pyield.dus.core.relogio.hoje", lambda: data_fixa)
 
-    result = dus.gerar(inicio="31-02-2024", fim="04-03-2024")
-    expected = dus.gerar(inicio=None, fim="04-03-2024")
+    resultado = dus.gerar(inicio="31-02-2024", fim="04-03-2024")
+    esperado = dus.gerar(inicio=None, fim="04-03-2024")
 
-    assert result.equals(expected)
+    assert resultado.equals(esperado)
 
 
-def test_generate_invalid_end_falls_back_to_today(monkeypatch):
+def test_gerar_fim_invalido_retorna_hoje(monkeypatch):
     data_fixa = dt.date(2024, 3, 4)
     monkeypatch.setattr("pyield.dus.core.relogio.hoje", lambda: data_fixa)
 
-    result = dus.gerar(inicio="01-03-2024", fim="31-02-2024")
-    expected = dus.gerar(inicio="01-03-2024", fim=None)
+    resultado = dus.gerar(inicio="01-03-2024", fim="31-02-2024")
+    esperado = dus.gerar(inicio="01-03-2024", fim=None)
 
-    assert result.equals(expected)
+    assert resultado.equals(esperado)

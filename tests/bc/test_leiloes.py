@@ -7,8 +7,8 @@ import polars as pl
 modulo_leiloes = importlib.import_module("pyield.bc.leiloes")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
-CAMINHO_CSV = DIRETORIO_DADOS / "auction_20250819.csv"
-CAMINHO_PARQUET = DIRETORIO_DADOS / "auction_20250819.parquet"
+CAMINHO_CSV = DIRETORIO_DADOS / "leiloes_20250819.csv"
+CAMINHO_PARQUET = DIRETORIO_DADOS / "leiloes_20250819.parquet"
 
 # PTAX do dia 2025-08-19 usada na geração do Parquet de referência
 DF_PTAX_REFERENCIA = pl.DataFrame(

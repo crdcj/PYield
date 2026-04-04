@@ -1,8 +1,7 @@
-"""
-Tests for pyield.selic.cpm — CPM contract data and ticker parsing.
+"""Testes de pyield.selic.cpm.
 
-Ticker parsing tests are pure unit tests (no I/O).
-Data correctness tests use the fixture parquet.
+Os testes de parsing de ticker sao unitarios puros, sem I/O.
+Os testes de corretude dos dados usam o parquet de referencia.
 """
 
 import datetime
@@ -14,7 +13,7 @@ import pytest
 from pyield import dus
 from pyield.selic.cpm import _empty_schema, _parse_ticker
 
-DATA = Path(__file__).parent / "data"
+DIRETORIO_DADOS = Path(__file__).parent / "data"
 
 # Mapeamento para renomear colunas do parquet antigo (inglês) para português
 _RENOMEAR_COLUNAS = {
@@ -31,15 +30,15 @@ _RENOMEAR_COLUNAS = {
 
 @pytest.fixture(scope="module")
 def cpm_fixture() -> pl.DataFrame:
-    df = pl.read_parquet(DATA / "cpm_29012025.parquet")
+    df = pl.read_parquet(DIRETORIO_DADOS / "cpm_29012025.parquet")
     return df.rename(_RENOMEAR_COLUNAS, strict=False)
 
 
-# ── Ticker parsing: valid inputs ──────────────────────────────────────────
+# ── Parsing de ticker: entradas válidas ──────────────────────────────────
 
 
 @pytest.mark.parametrize(
-    "ticker,exp_month,exp_year,exp_type,exp_bps",
+    "ticker,mes_esperado,ano_esperado,tipo_esperado,bps_esperado",
     [
         ("CPMF25C099500", 1, 2025, "call", -50),
         ("CPMZ25C100000", 12, 2025, "call", 0),
@@ -50,15 +49,21 @@ def cpm_fixture() -> pl.DataFrame:
         ("CPMF25P099500", 1, 2025, "put", -50),
     ],
 )
-def test_parse_ticker_valid(ticker, exp_month, exp_year, exp_type, exp_bps):
-    month, year, opt_type, strike, bps = _parse_ticker(ticker)
-    assert month == exp_month
-    assert year == exp_year
-    assert opt_type == exp_type
-    assert bps == exp_bps
+def test_parse_ticker_valid(
+    ticker,
+    mes_esperado,
+    ano_esperado,
+    tipo_esperado,
+    bps_esperado,
+):
+    mes, ano, tipo_opcao, _strike, bps = _parse_ticker(ticker)
+    assert mes == mes_esperado
+    assert ano == ano_esperado
+    assert tipo_opcao == tipo_esperado
+    assert bps == bps_esperado
 
 
-# ── Ticker parsing: invalid inputs ───────────────────────────────────────
+# ── Parsing de ticker: entradas inválidas ────────────────────────────────
 
 
 def test_parse_ticker_wrong_prefix():
@@ -71,7 +76,7 @@ def test_parse_ticker_unknown_month_code():
         _parse_ticker("CPMA25C099500")  # A is not a valid month code
 
 
-# ── Empty schema ──────────────────────────────────────────────────────────
+# ── Schema vazio ──────────────────────────────────────────────────────────
 
 
 def test_empty_schema_zero_rows():
@@ -101,13 +106,13 @@ def test_empty_schema_dtypes():
     assert df["dias_uteis"].dtype == pl.Int32
 
 
-# ── Data correctness (fixture) ────────────────────────────────────────────
+# ── Corretude dos dados (fixture) ────────────────────────────────────────
 
 
 def test_settlement_price_range(cpm_fixture):
-    non_null = cpm_fixture["preco_ajuste"].drop_nulls()
-    assert (non_null >= 0.0).all()
-    assert (non_null <= 100.0).all()
+    nao_nulos = cpm_fixture["preco_ajuste"].drop_nulls()
+    assert (nao_nulos >= 0.0).all()
+    assert (nao_nulos <= 100.0).all()
 
 
 def test_option_type_values(cpm_fixture):
@@ -119,8 +124,8 @@ def test_strike_multiples_of_25(cpm_fixture):
 
 
 def test_meeting_end_before_expiry(cpm_fixture):
-    non_null = cpm_fixture.filter(pl.col("data_fim_reuniao").is_not_null())
-    assert (non_null["data_fim_reuniao"] < non_null["data_expiracao"]).all()
+    nao_nulos = cpm_fixture.filter(pl.col("data_fim_reuniao").is_not_null())
+    assert (nao_nulos["data_fim_reuniao"] < nao_nulos["data_expiracao"]).all()
 
 
 def test_meeting_end_date_not_null(cpm_fixture):
@@ -129,15 +134,15 @@ def test_meeting_end_date_not_null(cpm_fixture):
 
 def test_expiry_is_one_bday_after_meeting_end(cpm_fixture):
     for row in cpm_fixture.iter_rows(named=True):
-        expected = dus.deslocar(row["data_fim_reuniao"], 1)
-        assert row["data_expiracao"] == expected
+        esperado = dus.deslocar(row["data_fim_reuniao"], 1)
+        assert row["data_expiracao"] == esperado
 
 
 def test_bdays_to_exp_positive(cpm_fixture):
     assert (cpm_fixture["dias_uteis"] > 0).all()
 
 
-# ── Spot checks (fixture: 2025-01-29) ────────────────────────────────────
+# ── Checagens pontuais (fixture: 2025-01-29) ─────────────────────────────
 
 
 def test_spot_cpmf25_expiry(cpm_fixture):
@@ -151,9 +156,9 @@ def test_spot_cpmf25_meeting_end(cpm_fixture):
 
 
 def test_spot_hold_strike_is_zero(cpm_fixture):
-    hold = cpm_fixture.filter(pl.col("codigo_negociacao") == "CPMF25C100000")
-    assert len(hold) == 1
-    assert hold["variacao_strike_bps"].item() == 0
+    linha = cpm_fixture.filter(pl.col("codigo_negociacao") == "CPMF25C100000")
+    assert len(linha) == 1
+    assert linha["variacao_strike_bps"].item() == 0
 
 
 def test_spot_most_negative_strike(cpm_fixture):
@@ -164,22 +169,22 @@ def test_spot_most_negative_strike(cpm_fixture):
 
 
 def test_spot_bdays_to_exp_cpmf25(cpm_fixture):
-    bdays = (
+    dias_uteis = (
         cpm_fixture.filter(pl.col("codigo_negociacao").str.starts_with("CPMF25"))[
             "dias_uteis"
         ]
         .unique()
         .item()
     )
-    assert bdays == 1
+    assert dias_uteis == 1
 
 
 def test_spot_bdays_to_exp_cpmk25(cpm_fixture):
-    bdays = (
+    dias_uteis = (
         cpm_fixture.filter(pl.col("codigo_negociacao").str.starts_with("CPMK25"))[
             "dias_uteis"
         ]
         .unique()
         .item()
     )
-    assert bdays == 66
+    assert dias_uteis == 66

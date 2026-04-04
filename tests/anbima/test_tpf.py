@@ -11,10 +11,10 @@ CAMINHO_PARQUET = DIRETORIO_DADOS / "tpf_20260206.parquet"
 DATA_TESTE = dt.date(2026, 2, 6)
 
 
-def test_process_pipeline():
+def test_pipeline_processamento():
     """Pipeline de processamento do CSV bruto deve bater com o parquet de referência."""
     csv_bruto = CAMINHO_CSV.read_bytes()
-    df = _parsear_df(csv_bruto)
-    df = _processar_df(df)
+    df_resultado = _parsear_df(csv_bruto)
+    df_resultado = _processar_df(df_resultado)
 
-    assert df.equals(pl.read_parquet(CAMINHO_PARQUET))
+    assert df_resultado.equals(pl.read_parquet(CAMINHO_PARQUET))

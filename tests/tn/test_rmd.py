@@ -11,7 +11,7 @@ from pathlib import Path
 import polars as pl
 import requests
 
-rmd_mod = importlib.import_module("pyield.tn.rmd")
+modulo_rmd = importlib.import_module("pyield.tn.rmd")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_PARQUET = DIRETORIO_DADOS / "rmd_1.3.parquet"
@@ -34,10 +34,10 @@ def test_pipeline_rmd(monkeypatch):
     conteudo_zip = _baixar_zip_remoto()
 
     # Substitui as duas funções de rede: busca da URL e download do ZIP
-    monkeypatch.setattr(rmd_mod, "_buscar_url_anexo", lambda: "http://fake")
-    monkeypatch.setattr(rmd_mod, "_buscar_conteudo", lambda url: conteudo_zip)
+    monkeypatch.setattr(modulo_rmd, "_buscar_url_anexo", lambda: "http://fake")
+    monkeypatch.setattr(modulo_rmd, "_buscar_conteudo", lambda url: conteudo_zip)
 
-    resultado = rmd_mod.rmd(aba="1.3")
+    resultado = modulo_rmd.rmd(aba="1.3")
     esperado = pl.read_parquet(CAMINHO_PARQUET)
     colunas_ordem = ["periodo", "grupo", "subgrupo", "titulo", "valor"]
     assert resultado.sort(colunas_ordem).equals(esperado)
