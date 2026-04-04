@@ -25,7 +25,7 @@ def pu(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> from pyield import ntnbprinc
+        >>> from pyield.tn import ntnbprinc
         >>> ntnbprinc.pu("02-12-2025", "15-05-2029", 0.0777, 4567.033825)
         3537.763157
     """
@@ -65,7 +65,7 @@ def dv01(
         float: DV01 (Dollar Value of 01), variação de preço para 1 bp.
 
     Examples:
-        >>> from pyield import ntnbprinc as bp
+        >>> from pyield.tn import ntnbprinc as bp
         >>> bp.dv01("02-12-2025", "15-05-2029", 0.0777, 4567.033825)
         1.1200559999997495
     """

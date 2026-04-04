@@ -10,7 +10,7 @@ from pyield import dus
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.b3 import di1
 from pyield.tn import utils
-from pyield.tn.pre import premio as pre_premio
+from pyield.tn.pre import premio as premio_pre
 
 """
 Constantes calculadas conforme regras da ANBIMA
@@ -62,7 +62,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         - rentabilidade (Float64): Rentabilidade da NTN-F sobre a curva DI.
 
     Examples:
-        >>> from pyield import ntnf
+        >>> from pyield.tn import ntnf
         >>> df_ntnf = ntnf.dados("23-08-2024")  # doctest: +SKIP
     """
     df = utils.obter_tpf(data, "NTN-F")
@@ -154,7 +154,7 @@ def vencimentos(data: DateLike) -> pl.Series:
         pl.Series: Série de datas de vencimento de NTN-F.
 
     Examples:
-        >>> from pyield import ntnf
+        >>> from pyield.tn import ntnf
         >>> ntnf.vencimentos("23-08-2024")
         shape: (6,)
         Series: 'data_vencimento' [date]
@@ -191,7 +191,7 @@ def datas_pagamento(
             for menor ou igual à liquidação.
 
     Examples:
-        >>> from pyield import ntnf
+        >>> from pyield.tn import ntnf
         >>> ntnf.datas_pagamento("15-05-2024", "01-01-2027")
         shape: (6,)
         Series: 'datas_pagamento' [date]
@@ -251,7 +251,7 @@ def fluxos_caixa(
         - valor_pagamento (Float64): Valor do pagamento.
 
     Examples:
-        >>> from pyield import ntnf
+        >>> from pyield.tn import ntnf
         >>> ntnf.fluxos_caixa("15-05-2024", "01-01-2027")
         shape: (6, 2)
         ┌────────────────┬─────────────────┐
@@ -340,7 +340,7 @@ def pu(
           semestral e arredondamento para 5 casas, conforme ANBIMA.
 
     Examples:
-        >>> from pyield import ntnf
+        >>> from pyield.tn import ntnf
         >>> ntnf.pu("05-07-2024", "01-01-2035", 0.11921)
         895.359254
     """
@@ -383,7 +383,7 @@ def taxas_zero(  # noqa
         - taxa_zero (Float64): Taxa zero (zero cupom).
 
     Examples:
-        >>> from pyield import ntnf, ltn
+        >>> from pyield.tn import ntnf, ltn
         >>> df_ltn = ltn.dados("03-09-2024")
         >>> df_ntnf = ntnf.dados("03-09-2024")
         >>> ntnf.taxas_zero(
@@ -659,7 +659,7 @@ def premio(data: DateLike, pontos_base: bool = False) -> pl.DataFrame:
         ValueError: Se os dados de DI não possuem 'taxa_ajuste' ou estão vazios.
 
     Examples:
-        >>> from pyield import ntnf
+        >>> from pyield.tn import ntnf
         >>> ntnf.premio("30-05-2025", pontos_base=True)
         shape: (5, 3)
         ┌────────┬─────────────────┬────────┐
@@ -674,7 +674,7 @@ def premio(data: DateLike, pontos_base: bool = False) -> pl.DataFrame:
         │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
         └────────┴─────────────────┴────────┘
     """
-    return pre_premio(data, pontos_base=pontos_base).filter(pl.col("titulo") == "NTN-F")
+    return premio_pre(data, pontos_base=pontos_base).filter(pl.col("titulo") == "NTN-F")
 
 
 def premio_limpo(  # noqa
@@ -778,7 +778,7 @@ def duration(
         float: Macaulay duration em anos úteis. Retorna NaN se inválido.
 
     Examples:
-        >>> from pyield import ntnf
+        >>> from pyield.tn import ntnf
         >>> ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
         6.32854218039796
     """
@@ -814,7 +814,7 @@ def dv01(
         float: DV01, variação de preço para 1 bp.
 
     Examples:
-        >>> from pyield import ntnf
+        >>> from pyield.tn import ntnf
         >>> ntnf.dv01("26-03-2025", "01-01-2035", 0.151375)
         0.39025200000003224
     """
@@ -846,7 +846,7 @@ def taxa(
         float: TIR implícita em formato decimal. Retorna NaN em caso de erro.
 
     Examples:
-        >>> from pyield import ntnf
+        >>> from pyield.tn import ntnf
         >>> pu = ntnf.pu("05-07-2024", "01-01-2035", 0.11921)
         >>> ntnf.taxa("13-03-2026", "01-01-2035", 820.995125)
         0.142743

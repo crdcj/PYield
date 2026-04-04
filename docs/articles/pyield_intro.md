@@ -86,14 +86,16 @@ Todas as funções suportam operações vetorizadas com listas, Series ou arrays
 Obtenha dados de contratos futuros negociados na B3:
 
 ```python
+from pyield import b3
+
 # Dados de Futuro de DI em uma data específica
-df = yd.futuro("31-05-2024", "DI1")
+df = b3.futuro("31-05-2024", "DI1")
 
 # DataFrame retornado contém colunas:
 # data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Outros contratos disponíveis: DDI, FRC, DAP, DOL, WDO, IND, WIN
-df_dap = yd.futuro("31-05-2024", "DAP")  # Cupom Cambial
+df_dap = b3.futuro("31-05-2024", "DAP")  # Cupom Cambial
 ```
 
 ### 3. Títulos Públicos (Tesouro Nacional)
@@ -140,8 +142,10 @@ df_premios_ntnf = yd.ntnf.premio("30-05-2024", pontos_base=True)
 Interpolar taxas de juros usando convenção de mercado (252 dias úteis/ano):
 
 ```python
+from pyield import b3, Interpolador
+
 # Obter curva de DI Futuro
-df = yd.futuro("31-05-2024", "DI1")
+df = b3.futuro("31-05-2024", "DI1")
 
 # Criar interpolador flat forward (padrão de mercado)
 interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")

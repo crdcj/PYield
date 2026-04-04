@@ -19,26 +19,27 @@ pip install pyield
 ## Início Rápido
 
 ```python
-import pyield as yd
+from pyield import dus, b3, bc, Interpolador
+from pyield.tn import ntnb
 
 # Dias úteis (base de todos os cálculos)
-yd.dus.contar("02-01-2025", "15-01-2025")  # -> 9
-yd.dus.deslocar("29-12-2023", 1)            # -> datetime.date(2024, 1, 2)
+dus.contar("02-01-2025", "15-01-2025")  # -> 9
+dus.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
 
 # Curva de DI Futuro
-df = yd.futuro("31-05-2024", "DI1")
+df = b3.futuro("31-05-2024", "DI1")
 # Colunas: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)
-interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
+interp = Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
 interp(45)       # -> 0.04833...
 interp([30, 60]) # -> Series do Polars com taxas interpoladas
 
 # Precificação de títulos públicos
-yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # Indicadores do BCB
-yd.bc.selic_over("31-05-2024")  # -> 0.000414...
+bc.selic_over("31-05-2024")  # -> 0.000414...
 ```
 
 Um notebook no Colab com mais exemplos:
@@ -126,8 +127,8 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | Módulo | Finalidade |
 |--------|---------|
 | `dus` | Calendário de dias úteis com feriados brasileiros |
-| `futuro` | Dados de futuro da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
-| `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
+| `b3.futuro` | Dados históricos de futuros da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
+| `b3.di1` | Curva DI1 interpolada e datas de negociação disponíveis |
 | `Interpolador` | Interpolação de taxas (flat_forward, linear) |
 | `forward` / `forwards` | Cálculo de taxas a termo |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
@@ -162,19 +163,19 @@ ntnf.premio("30-05-2025", pontos_base=True)
 ## Dados de Futuros
 
 ```python
-from pyield import b3, futuro
+import pyield as yd
 
 # DI1 (Futuro de Depósito Interfinanceiro)
-futuro("31-05-2024", "DI1")
+b3.futuro("31-05-2024", "DI1")
 
 # Outros contratos disponíveis no cache histórico:
 # - Juros: DI1, DDI, FRC, FRO, DAP
 # - Moedas: DOL, WDO
 # - Índices: IND, WIN
-futuro("31-05-2024", "DAP")
+b3.futuro("31-05-2024", "DAP")
 
 # Múltiplas datas de uma vez
-futuro(["29-05-2024", "31-05-2024"], "DI1")
+b3.futuro(["29-05-2024", "31-05-2024"], "DI1")
 
 # Dados intradiários (quando o mercado estiver aberto)
 b3.futuro_intradia("DI1")  # Retorna dados ao vivo durante o horário de negociação
@@ -196,7 +197,8 @@ Tratamento de nulos: funções escalares retornam `float('nan')` para entradas a
 (propaga nos cálculos). Funções vetorizadas propagam `null` elemento a elemento.
 
 ```python
-from pyield import ntnb, dus
+from pyield.tn import ntnb
+from pyield import dus
 
 ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
 dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
@@ -206,11 +208,11 @@ Consultas sem dados disponíveis (data futura, feriado, fim de semana ou
 fonte indisponível) retornam DataFrame vazio ou `nan`, sem lançar exceção:
 
 ```python
-from pyield import bc, futuro
+from pyield import b3, bc
 
-futuro("01-01-2030", "DI1").is_empty()          # -> True (data futura)
-bc.tpf_mensal("01-01-2030").is_empty()  # -> True (mês futuro)
-bc.ptax("25-12-2025")                           # -> nan (feriado)
+b3.futuro("01-01-2030", "DI1").is_empty()  # -> True (data futura)
+bc.tpf_mensal("01-01-2030").is_empty()     # -> True (mês futuro)
+bc.ptax("25-12-2025")                      # -> nan (feriado)
 ```
 
 ## Migração para Português (v0.48.0+)

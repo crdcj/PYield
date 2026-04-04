@@ -25,26 +25,27 @@ pip install pyield
 ## Quick Start
 
 ```python
-import pyield as yd
+from pyield import dus, b3, bc, Interpolador
+from pyield.tn import ntnb
 
 # Business days (foundation for all calculations)
-yd.dus.contar("02-01-2025", "15-01-2025")  # -> 9
-yd.dus.deslocar("29-12-2023", 1)            # -> datetime.date(2024, 1, 2)
+dus.contar("02-01-2025", "15-01-2025")  # -> 9
+dus.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
 
 # DI future curve
-df = yd.futuro("31-05-2024", "DI1")
+df = b3.futuro("31-05-2024", "DI1")
 # Columns: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Rate interpolation (flat forward, 252 business days/year convention)
-interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
+interp = Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
 interp(45)       # -> 0.04833...
 interp([30, 60]) # -> pl.Series with interpolated rates
 
 # Treasury bond pricing
-yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # BCB indicators
-yd.bc.selic_over("31-05-2024")  # -> 0.000414...
+bc.selic_over("31-05-2024")  # -> 0.000414...
 ```
 
 A Colab notebook with more examples:
@@ -132,12 +133,13 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | Module | Purpose |
 |--------|---------|
 | `dus` | Business day calendar with Brazilian holidays |
-| `futuro` | B3 future data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
-| `di1` | Interpolated DI1 curve and available trade dates |
+| `b3.futuro` | B3 historical future data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
+| `b3.di1` | Interpolated DI1 curve and available trade dates |
 | `Interpolador` | Rate interpolation (flat_forward, linear) |
 | `forward` / `forwards` | Forward-rate calculations |
-| `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
-| `ntnb1`, `ntnbprinc`, `pre` | Additional bonds and curves (NTN-B1, NTN-B Principal, PRE curve) |
+| `tn.lft`, `tn.ltn`, `tn.ntnf`, `tn.ntnc` | Pricing and analysis of main treasury bonds |
+| `tn.ntnb`, `tn.ntnb1`, `tn.ntnbprinc` | NTN-B and variants |
+| `tn.pre` | PRE curve and DI spreads |
 | `tn.leiloes` / `tn.benchmarks` | Treasury bond auctions and benchmarks |
 | `anbima` | ANBIMA data (government bond prices, yield curves, IMA indexes) |
 | `bc` | BCB indicators (SELIC, PTAX, repos, VNA, auctions, trades) |
@@ -150,7 +152,7 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 ## Treasury Bonds
 
 ```python
-from pyield import ltn, ntnb, ntnf
+from pyield.tn import ltn, ntnb, ntnf
 
 # Fetch ANBIMA indicative rates
 ltn.dados("23-08-2024")  # -> DataFrame with LTN bonds
@@ -168,19 +170,19 @@ ntnf.premio("30-05-2025", pontos_base=True)
 ## Futures Data
 
 ```python
-from pyield import b3, futuro
+from pyield import b3
 
 # DI1 (Interbank Deposit Futures)
-futuro("31-05-2024", "DI1")
+b3.futuro("31-05-2024", "DI1")
 
 # Other available contracts in the historical cache:
 # - Rates: DI1, DDI, FRC, FRO, DAP
 # - Currencies: DOL, WDO
 # - Indexes: IND, WIN
-futuro("31-05-2024", "DAP")
+b3.futuro("31-05-2024", "DAP")
 
 # Multiple dates at once
-futuro(["29-05-2024", "31-05-2024"], "DI1")
+b3.futuro(["29-05-2024", "31-05-2024"], "DI1")
 
 # Intraday data (when the market is open)
 b3.futuro_intradia("DI1")  # Returns live data during trading hours
@@ -200,7 +202,8 @@ String parsing is performed element-by-element across supported formats. Invalid
 Null handling: scalar functions return `float('nan')` for missing inputs (which propagates in calculations). Vectorized functions propagate `null` element-by-element.
 
 ```python
-from pyield import ntnb, dus
+from pyield.tn import ntnb
+from pyield import dus
 
 ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
 dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]

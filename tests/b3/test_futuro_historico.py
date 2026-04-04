@@ -39,7 +39,7 @@ def test_futuro_igual_dataset_pr_di1():
     """`futuro` deve bater com o dataset PR na mesma data."""
     data = dt.date(2026, 1, 12)
 
-    df_futuro = yd.futuro(data=data, contrato="DI1")
+    df_futuro = yd.b3.futuro(data=data, contrato="DI1")
     df_referencia = modulo_historico._buscar_do_cache([data], "DI1")
 
     assert_frame_equal(

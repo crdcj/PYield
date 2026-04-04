@@ -55,7 +55,7 @@ def dados(data: DateLike) -> pl.DataFrame:
             a partir de taxas nominais do DI Futuro e taxas zero das NTN-B.
 
     Examples:
-        >>> from pyield import ntnb
+        >>> from pyield.tn import ntnb
         >>> df_ntnb = ntnb.dados("23-08-2024")  # doctest: +SKIP
     """
     from pyield.b3 import di1  # noqa: PLC0415
@@ -129,7 +129,7 @@ def vencimentos(data: DateLike) -> pl.Series:
         pl.Series: Série de datas de vencimento de NTN-B.
 
     Examples:
-        >>> from pyield import ntnb
+        >>> from pyield.tn import ntnb
         >>> ntnb.vencimentos("16-08-2024")
         shape: (14,)
         Series: 'data_vencimento' [date]
@@ -198,7 +198,7 @@ def datas_pagamento(
             vencimento for menor ou igual à liquidação.
 
     Examples:
-        >>> from pyield import ntnb
+        >>> from pyield.tn import ntnb
         >>> ntnb.datas_pagamento("10-05-2024", "15-05-2025")
         shape: (3,)
         Series: 'datas_pagamento' [date]
@@ -246,7 +246,7 @@ def fluxos_caixa(
         - valor_pagamento (Float64): Valor do pagamento.
 
     Examples:
-        >>> from pyield import ntnb
+        >>> from pyield.tn import ntnb
         >>> ntnb.fluxos_caixa("10-05-2024", "15-05-2025")
         shape: (3, 2)
         ┌────────────────┬─────────────────┐
@@ -309,7 +309,7 @@ def cotacao(
           semestral e arredondamento para 6 casas, conforme ANBIMA.
 
     Examples:
-        >>> from pyield import ntnb
+        >>> from pyield.tn import ntnb
         >>> ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)
         99.3651
         >>> ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)
@@ -361,7 +361,7 @@ def pu(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> from pyield import ntnb
+        >>> from pyield.tn import ntnb
         >>> ntnb.pu(4299.160173, 99.3651)
         4271.864805
         >>> ntnb.pu(4315.498383, 100.6409)
@@ -497,7 +497,7 @@ def taxas_zero(
         - taxa_zero (Float64): Taxa zero (real).
 
     Examples:
-        >>> from pyield import ntnb
+        >>> from pyield.tn import ntnb
         >>> # Busca as taxas de NTN-B para uma data de referência
         >>> df = ntnb.dados("16-08-2024")
         >>> # Calcula as taxas zero considerando a liquidação na data de referência
@@ -605,13 +605,13 @@ def inflacao_implicita(
     Examples:
         Busca as taxas de NTN-B para uma data de referência.
         Estas são TIRs e as taxas zero são calculadas a partir delas.
-        >>> df_ntnb = yd.ntnb.dados("05-09-2024")
+        >>> df_ntnb = yd.tn.ntnb.dados("05-09-2024")
 
         Busca as taxas de ajuste do DI Futuro para a mesma data de referência:
-        >>> df_di = yd.di1.dados("05-09-2024")
+        >>> df_di = yd.b3.di1.dados("05-09-2024")
 
         Calcula a inflação implícita na data de referência:
-        >>> yd.ntnb.inflacao_implicita(
+        >>> yd.tn.ntnb.inflacao_implicita(
         ...     data_liquidacao="05-09-2024",
         ...     ntnb_vencimentos=df_ntnb["data_vencimento"],
         ...     ntnb_taxas=df_ntnb["taxa_indicativa"],
@@ -707,7 +707,7 @@ def duration(
         float: Macaulay duration em anos úteis.
 
      Examples:
-         >>> from pyield import ntnb
+         >>> from pyield.tn import ntnb
          >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
          15.08305431313046
     """
@@ -745,7 +745,7 @@ def dv01(
         float: DV01, variação de preço para 1 bp.
 
     Examples:
-        >>> from pyield import ntnb
+        >>> from pyield.tn import ntnb
         >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, 4470.979474)
         4.640875999999935
     """
@@ -783,7 +783,7 @@ def taxa(
             caso de erro.
 
     Examples:
-        >>> from pyield import ntnb
+        >>> from pyield.tn import ntnb
         >>> ntnb.taxa("31-05-2024", "15-05-2035", 4299.160173, 4271.864805)
         0.06149
         >>> ntnb.taxa("15-08-2024", "15-08-2032", 4315.498383, 4343.156412)
@@ -825,7 +825,7 @@ def forward(
         - taxa_forward (Float64): Taxa forward calculada.
 
     Examples:
-        >>> from pyield import ntnb
+        >>> from pyield.tn import ntnb
         >>> ntnb.forward("17-10-2025", usar_taxa_zero=True)
         shape: (13, 4)
         ┌─────────────────┬────────────┬─────────────────┬──────────────┐

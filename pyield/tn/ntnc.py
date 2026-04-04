@@ -68,7 +68,7 @@ def dados(data: DateLike) -> pl.DataFrame:
             método flat forward.
 
     Examples:
-        >>> from pyield import ntnc
+        >>> from pyield.tn import ntnc
         >>> ntnc.dados("23-08-2024")  # doctest: +SKIP
     """
     df = utils.obter_tpf(data, "NTN-C")
@@ -123,7 +123,7 @@ def datas_pagamento(
             vencimento for menor que a liquidação.
 
     Examples:
-        >>> from pyield import ntnc
+        >>> from pyield.tn import ntnc
         >>> ntnc.datas_pagamento("21-03-2025", "01-01-2031")
         shape: (12,)
         Series: 'datas_pagamento' [date]
@@ -184,7 +184,7 @@ def fluxos_caixa(
         - valor_pagamento (Float64): Valor do pagamento.
 
     Examples:
-        >>> from pyield import ntnc
+        >>> from pyield.tn import ntnc
         >>> ntnc.fluxos_caixa("21-03-2025", "01-01-2031")
         shape: (12, 2)
         ┌────────────────┬─────────────────┐
@@ -259,7 +259,7 @@ def cotacao(
           semestral e arredondamento para 6 casas, conforme ANBIMA.
 
     Examples:
-        >>> from pyield import ntnc
+        >>> from pyield.tn import ntnc
         >>> ntnc.cotacao("21-03-2025", "01-01-2031", 0.067626)
         126.4958
     """
@@ -310,7 +310,7 @@ def pu(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> from pyield import ntnc
+        >>> from pyield.tn import ntnc
         >>> ntnc.pu(6598.913723, 126.4958)
         8347.348705
     """
@@ -341,7 +341,7 @@ def taxa(
             caso de erro.
 
     Examples:
-        >>> from pyield import ntnc
+        >>> from pyield.tn import ntnc
         >>> ntnc.taxa("21-03-2025", "01-01-2031", 6598.913723, 8347.348705)
         0.067626
     """
@@ -376,7 +376,7 @@ def duracao(
         float: Macaulay duration em anos úteis.
 
     Examples:
-        >>> from pyield import ntnc
+        >>> from pyield.tn import ntnc
         >>> ntnc.duracao("21-03-2025", "01-01-2031", 0.067626)
         4.405363320448
     """

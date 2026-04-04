@@ -28,7 +28,7 @@ def taxas_zero(data: DateLike) -> pl.DataFrame:
         ValueError: Se algum vencimento não puder ser processado.
 
     Examples:
-        >>> from pyield import pre
+        >>> from pyield.tn import pre
         >>> pre.taxas_zero("18-06-2025")
         shape: (17, 3)
         ┌─────────────────┬────────────┬───────────┐
@@ -172,7 +172,7 @@ def premio(
             (spread sobre o DI).
 
     Examples:
-        >>> from pyield import pre
+        >>> from pyield.tn import pre
         >>> pre.premio("30-05-2025", pontos_base=True)
         shape: (18, 3)
         ┌────────┬─────────────────┬────────┐

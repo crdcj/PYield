@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit_functions.config as cfg  # pyright: ignore[reportMissingImports]
 
 from pyield.dus import deslocar
-from pyield import ntnb
+from pyield.tn import ntnb
 
 TAXA_REINVESTIMENTO_CUPOM = (1.06) ** (1 / 2) - 1
 TOLERANCIA_CHECAGEM = 0.0001

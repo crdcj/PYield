@@ -33,7 +33,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         - rentabilidade (Float64): Rentabilidade da LFT sobre o DI.
 
     Examples:
-        >>> from pyield import lft
+        >>> from pyield.tn import lft
         >>> df_lft = lft.dados("23-08-2024")  # doctest: +SKIP
     """
     df = utils.obter_tpf(data, "LFT")
@@ -86,7 +86,7 @@ def vencimentos(data: DateLike) -> pl.Series:
         pl.Series: Série de datas de vencimento disponíveis.
 
     Examples:
-        >>> from pyield import lft
+        >>> from pyield.tn import lft
         >>> lft.vencimentos("22-08-2024")
         shape: (14,)
         Series: 'data_vencimento' [date]
@@ -125,7 +125,7 @@ def cotacao(
 
     Examples:
         Calcula a cotação de uma LFT com taxa de 0,02:
-        >>> from pyield import lft
+        >>> from pyield.tn import lft
         >>> lft.cotacao(
         ...     data_liquidacao="24-07-2024",
         ...     data_vencimento="01-09-2030",
@@ -176,7 +176,7 @@ def taxa(
             caso de erro.
 
     Examples:
-        >>> from pyield import lft
+        >>> from pyield.tn import lft
         >>> lft.taxa("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
         0.001717
         >>> lft.taxa("24-07-2024", "01-03-2025", 15785.324502, 15774.132706)
@@ -209,7 +209,7 @@ def rentabilidade(taxa_lft: float, taxa_di: float) -> float:
 
     Examples:
         Calcula a rentabilidade de uma LFT em 28/04/2025:
-        >>> from pyield import lft
+        >>> from pyield.tn import lft
         >>> taxa_lft = 0.001124  # 0.1124%
         >>> taxa_di = 0.13967670224373396  # 13.967670224373396%
         >>> lft.rentabilidade(taxa_lft, taxa_di)
@@ -250,7 +250,7 @@ def pu(
          - SEI Proccess 17944.005214/2024-09
 
     Examples:
-        >>> from pyield import lft
+        >>> from pyield.tn import lft
         >>> lft.pu(15785.324502, 99.9291)
         15774.132706
     """

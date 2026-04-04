@@ -70,7 +70,7 @@ def datas_pagamento(
         pl.Series: Série de datas de amortização no intervalo.
 
     Examples:
-        >>> from pyield import ntnb1
+        >>> from pyield.tn import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
         >>> ntnb1.datas_pagamento("10-05-2024", "15-12-2050", r_mais)
         shape: (240,)
@@ -139,7 +139,7 @@ def fluxos_caixa(
         - valor_pagamento (Float64): Valor do pagamento.
 
     Examples:
-        >>> from pyield import ntnb1
+        >>> from pyield.tn import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
         >>> ntnb1.fluxos_caixa("10-05-2024", "15-12-2060", r_mais)
         shape: (240, 2)
@@ -210,7 +210,7 @@ def cotacao(
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
 
     Examples:
-        >>> from pyield import ntnb1
+        >>> from pyield.tn import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
         >>> ntnb1.cotacao("18-06-2025", "15-12-2084", 0.07010, r_mais)
         0.038332
@@ -247,7 +247,7 @@ def pu(
          - SEI Proccess 17944.005214/2024-09
 
     Examples:
-        >>> from pyield import ntnb1
+        >>> from pyield.tn import ntnb1
         >>> ntnb1.pu(4299.160173, 99.3651 / 100)
         4271.864805
         >>> ntnb1.pu(4315.498383, 100.6409 / 100)
@@ -277,7 +277,7 @@ def duration(
         float: Macaulay duration em anos úteis.
 
     Examples:
-        >>> from pyield import ntnb1
+        >>> from pyield.tn import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
         >>> ntnb1.duration("23-06-2025", "15-12-2084", 0.0686, r_mais)
         47.10493458167134
@@ -318,7 +318,7 @@ def dv01(
         float: DV01, variação de preço para 1 bp.
 
     Examples:
-        >>> from pyield import ntnb1
+        >>> from pyield.tn import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
         >>> ntnb1.dv01("23-06-2025", "15-12-2084", 0.0686, 4299.160173, r_mais)
         0.7738490000000127

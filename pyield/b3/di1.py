@@ -35,7 +35,7 @@ def dados(
         DataFrame vazio se nenhum dado for encontrado.
 
     Examples:
-        >>> from pyield import di1
+        >>> from pyield.b3 import di1
         >>> df = di1.dados(datas="16-10-2024", inicio_mes=True)
         >>> df.head(3).select(
         ...     "codigo_negociacao", "data_vencimento", "dias_uteis", "taxa_ajuste"
@@ -143,7 +143,7 @@ def interpolar_taxas(
         >>> # Não há contrato com vencimento 25-11-2027 em 09-05-2025
         >>> # A taxa é interpolada (método flat-forward)
         >>> # Não há dados para 10-05-2025 (sábado) -> NaN
-        >>> from pyield import di1
+        >>> from pyield.b3 import di1
         >>> di1.interpolar_taxas(
         ...     datas_referencia=["08-05-2025", "09-05-2025", "10-05-2025"],
         ...     datas_vencimento=["01-01-2027", "25-11-2027", "01-01-2030"],
@@ -285,7 +285,7 @@ def interpolar_taxa(
         - O cálculo de interpolação falhou.
 
     Examples:
-        >>> from pyield import di1
+        >>> from pyield.b3 import di1
         >>> # Obtém taxa para um vencimento de contrato existente
         >>> di1.interpolar_taxa("25-04-2025", "01-01-2027")
         0.13901
@@ -331,7 +331,7 @@ def datas_disponiveis() -> pl.Series:
         ajuste de DI estão disponíveis.
 
     Examples:
-        >>> from pyield import di1
+        >>> from pyield.b3 import di1
         >>> # Série disponível no dataset PR começa em 2018-01-02
         >>> di1.datas_disponiveis().head(5)
         shape: (5,)
