@@ -25,7 +25,7 @@ def futuro_enriquecer(
     Returns:
         DataFrame Polars enriquecido e ordenado.
     """
-    return historico.enrich(df, codigo_contrato)
+    return historico.enriquecer(df, codigo_contrato)
 
 
 def futuro(
@@ -92,7 +92,7 @@ def futuro(
     if not data_negociacao_valida(dados_convertidos):
         return pl.DataFrame()
 
-    return historico.historical(dados_convertidos, codigo_contrato)
+    return historico.historico(dados_convertidos, codigo_contrato)
 
 
 def futuro_intradia(

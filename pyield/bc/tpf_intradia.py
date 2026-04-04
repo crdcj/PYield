@@ -94,8 +94,8 @@ def _mercado_selic_aberto() -> bool:
     return eh_dia_util and eh_horario
 
 
-def tpf_intradiario() -> pl.DataFrame:
-    """Obtém dados intradiários de negociações secundárias da dívida pública
+def tpf_intradia() -> pl.DataFrame:
+    """Obtém dados intradia de negociações secundárias da dívida pública
     federal (TPF - títulos públicos federais) no Banco Central do Brasil (BCB).
 
     Os dados ficam disponíveis apenas durante o horário do SELIC
@@ -143,7 +143,7 @@ def tpf_intradiario() -> pl.DataFrame:
 
     Examples:
         >>> from pyield import bc
-        >>> df = bc.tpf_intradiario()
+        >>> df = bc.tpf_intradia()
     """
     if not _mercado_selic_aberto():
         return pl.DataFrame()

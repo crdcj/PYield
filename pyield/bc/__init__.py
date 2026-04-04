@@ -10,7 +10,7 @@ from pyield.bc.taxas import (
     selic_over,
     selic_over_serie,
 )
-from pyield.bc.tpf_intradiario import tpf_intradiario
+from pyield.bc.tpf_intradia import tpf_intradia
 from pyield.bc.tpf_mensal import tpf_mensal
 from pyield.bc.vna import vna_lft
 
@@ -23,7 +23,7 @@ __all__ = [
     "ptax_serie",
     "compromissadas",
     "ptax",
-    "tpf_intradiario",
+    "tpf_intradia",
     "tpf_mensal",
     "selic_over",
     "selic_over_serie",

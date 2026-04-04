@@ -5,7 +5,11 @@ import polars.selectors as cs
 
 from pyield import bday
 from pyield._internal.data_cache import obter_dataset_cacheado
-from pyield.b3.futuro.common import CONTRATOS_TAXA, adicionar_vencimento, expr_dv01
+from pyield.b3.futuro.contratos import (
+    CONTRATOS_TAXA,
+    adicionar_vencimento,
+    expr_dv01,
+)
 from pyield.fwd import forwards
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
@@ -145,10 +149,10 @@ def _buscar_do_cache(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame
     if df.is_empty():
         return pl.DataFrame()
 
-    return enrich(df, codigo_contrato)
+    return enriquecer(df, codigo_contrato)
 
 
-def enrich(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+def enriquecer(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     """Enriquece DataFrame bruto do Price Report (PR) da B3.
 
     Aceita um DataFrame com colunas no schema original da B3 (ex.:
@@ -174,7 +178,7 @@ def enrich(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     return df.sort("data_referencia", "data_vencimento")
 
 
-def historical(
+def historico(
     data: dt.date,
     codigo_contrato: str,
 ) -> pl.DataFrame:

@@ -4,7 +4,7 @@ import polars.selectors as cs
 from pyield import bday
 from pyield.b3._validar_pregao import intradia_disponivel
 from pyield.b3.derivativos_intradia import derivativo_intradia
-from pyield.b3.futuro.common import CONTRATOS_TAXA, expr_dv01
+from pyield.b3.futuro.contratos import CONTRATOS_TAXA, expr_dv01
 from pyield.fwd import forwards
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
