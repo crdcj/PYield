@@ -278,7 +278,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="bday/" class="md-tabs__link">
+        <a href="dus/" class="md-tabs__link">
           
   
   
@@ -447,10 +447,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#dias-uteis-bday" class="md-nav__link">
+  <a href="#dias-uteis-dus" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dias Úteis (bday)
+        Dias Úteis (dus)
       
     </span>
   </a>
@@ -458,10 +458,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#interpolacao-de-taxas-interpolator" class="md-nav__link">
+  <a href="#interpolacao-de-taxas-interpolador" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Interpolação de Taxas (Interpolator)
+        Interpolação de Taxas (Interpolador)
       
     </span>
   </a>
@@ -522,6 +522,17 @@
     <span class="md-ellipsis">
       
         Tratamento de Datas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migracao-para-portugues-v0480" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migração para Português (v0.48.0+)
       
     </span>
   </a>
@@ -761,7 +772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="bday/" class="md-nav__link">
+      <a href="dus/" class="md-nav__link">
         
   
   
@@ -789,14 +800,14 @@
   
   
     <li class="md-nav__item">
-      <a href="interpolator/" class="md-nav__link">
+      <a href="interpolador/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Interpolator
+    Interpolador
   
 
     
@@ -1009,7 +1020,7 @@
   
   
     <li class="md-nav__item">
-      <a href="copom/" class="md-nav__link">
+      <a href="bc/copom/" class="md-nav__link">
         
   
   
@@ -1123,7 +1134,7 @@
   
   
     <li class="md-nav__item">
-      <a href="di1/" class="md-nav__link">
+      <a href="b3/di1/" class="md-nav__link">
         
   
   
@@ -1151,14 +1162,14 @@
   
   
     <li class="md-nav__item">
-      <a href="futures/" class="md-nav__link">
+      <a href="b3/futuro/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Futuros
+    Futuro
   
 
     
@@ -1223,34 +1234,6 @@
     
   
     Selic (CPM/COPOM)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="rmd/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Tesouro Nacional (RMD)
   
 
     
@@ -1357,7 +1340,35 @@
   
   
     <li class="md-nav__item">
-      <a href="lft/" class="md-nav__link">
+      <a href="tn/rmd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RMD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tn/lft/" class="md-nav__link">
         
   
   
@@ -1385,7 +1396,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ltn/" class="md-nav__link">
+      <a href="tn/ltn/" class="md-nav__link">
         
   
   
@@ -1413,7 +1424,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ntnb/" class="md-nav__link">
+      <a href="tn/ntnb/" class="md-nav__link">
         
   
   
@@ -1441,7 +1452,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ntnbp/" class="md-nav__link">
+      <a href="tn/ntnbp/" class="md-nav__link">
         
   
   
@@ -1469,7 +1480,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ntnb1/" class="md-nav__link">
+      <a href="tn/ntnb1/" class="md-nav__link">
         
   
   
@@ -1497,7 +1508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ntnc/" class="md-nav__link">
+      <a href="tn/ntnc/" class="md-nav__link">
         
   
   
@@ -1525,7 +1536,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ntnf/" class="md-nav__link">
+      <a href="tn/ntnf/" class="md-nav__link">
         
   
   
@@ -1553,7 +1564,7 @@
   
   
     <li class="md-nav__item">
-      <a href="pre/" class="md-nav__link">
+      <a href="tn/pre/" class="md-nav__link">
         
   
   
@@ -1620,72 +1631,73 @@
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>pyield
 </span></code></pre></div>
 <h2 id="inicio-rapido">Início Rápido</h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">yd</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Dias úteis (base de todos os cálculos)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">yd</span><span class="o">.</span><span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;02-01-2025&quot;</span><span class="p">,</span> <span class="s2">&quot;15-01-2025&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 9</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">yd</span><span class="o">.</span><span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>            <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Curva de DI Futuro</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># Columns: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">interp</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">Interpolator</span><span class="p">(</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;dias_uteis&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;taxa_ajuste&quot;</span><span class="p">])</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">interp</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>       <span class="c1"># -&gt; 0.04833...</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">interp</span><span class="p">([</span><span class="mi">30</span><span class="p">,</span> <span class="mi">60</span><span class="p">])</span> <span class="c1"># -&gt; pl.Series with interpolated rates</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="c1"># Precificação de títulos públicos</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.061490</span><span class="p">)</span>  <span class="c1"># -&gt; 99.3651</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="c1"># Indicadores do BCB</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">yd</span><span class="o">.</span><span class="n">bc</span><span class="o">.</span><span class="n">selic_over</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 0.000414...</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">dus</span><span class="p">,</span> <span class="n">b3</span><span class="p">,</span> <span class="n">bc</span><span class="p">,</span> <span class="n">Interpolador</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield.tn</span><span class="w"> </span><span class="kn">import</span> <span class="n">ntnb</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Dias úteis (base de todos os cálculos)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="s2">&quot;02-01-2025&quot;</span><span class="p">,</span> <span class="s2">&quot;15-01-2025&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 9</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>           <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># Curva de DI Futuro</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">df</span> <span class="o">=</span> <span class="n">b3</span><span class="o">.</span><span class="n">futuro</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Colunas: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1"># Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">interp</span> <span class="o">=</span> <span class="n">Interpolador</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;dias_uteis&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;taxa_ajuste&quot;</span><span class="p">],</span> <span class="n">metodo</span><span class="o">=</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">)</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">interp</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>       <span class="c1"># -&gt; 0.04833...</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">interp</span><span class="p">([</span><span class="mi">30</span><span class="p">,</span> <span class="mi">60</span><span class="p">])</span> <span class="c1"># -&gt; Series do Polars com taxas interpoladas</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="c1"># Precificação de títulos públicos</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.061490</span><span class="p">)</span>  <span class="c1"># -&gt; 99.3651</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="c1"># Indicadores do BCB</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="n">bc</span><span class="o">.</span><span class="n">selic_over</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 0.000414...</span>
 </span></code></pre></div>
 <p>Um notebook no Colab com mais exemplos:</p>
 <p><a href="https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg" /></a></p>
 <h2 id="blocos-principais">Blocos Principais</h2>
-<h3 id="dias-uteis-bday">Dias Úteis (<code>bday</code>)</h3>
-<p>O módulo <code>bday</code> é a base do PYield. Todos os cálculos com datas (preço, duration, taxas a termo) dependem da contagem correta de dias úteis com feriados brasileiros.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">bday</span>
+<h3 id="dias-uteis-dus">Dias Úteis (<code>dus</code>)</h3>
+<p>O módulo <code>dus</code> é a base do PYield. Todos os cálculos com datas (preço, duration, taxas a termo) dependem da contagem correta de dias úteis com feriados brasileiros.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">dus</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Conta dias úteis (início inclusivo, fim exclusivo)</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 1</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 1</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Avança N dias úteis</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Ajusta dia não útil para o próximo dia útil</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;30-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;30-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="c1"># Gera intervalo de dias úteis</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">bday</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">dus</span><span class="o">.</span><span class="n">gerar</span><span class="p">(</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>
 </span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c1"># -&gt; Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]</span>
 </span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
 </span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="c1"># Verifica se a data é dia útil</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">bday</span><span class="o">.</span><span class="n">is_business_day</span><span class="p">(</span><span class="s2">&quot;25-12-2023&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; False (Christmas)</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">dus</span><span class="o">.</span><span class="n">e_dia_util</span><span class="p">(</span><span class="s2">&quot;25-12-2023&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; False (Natal)</span>
 </span></code></pre></div>
 <p>Todas as funções suportam operações vetorizadas com listas, Series ou arrays.</p>
-<h3 id="interpolacao-de-taxas-interpolator">Interpolação de Taxas (<code>Interpolator</code>)</h3>
-<p>A classe <code>Interpolator</code> interpola taxas usando a convenção de 252 dias úteis/ano, padrão no mercado brasileiro.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">Interpolator</span>
+<h3 id="interpolacao-de-taxas-interpolador">Interpolação de Taxas (<code>Interpolador</code>)</h3>
+<p>A classe <code>Interpolador</code> interpola taxas usando a convenção de 252 dias úteis/ano, padrão no mercado brasileiro.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">Interpolador</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">known_bdays</span> <span class="o">=</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">90</span><span class="p">]</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">known_rates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.045</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.055</span><span class="p">]</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">dias_uteis</span> <span class="o">=</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">90</span><span class="p">]</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">taxas</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.045</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.055</span><span class="p">]</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1"># Interpolação flat forward (padrão de mercado)</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">interp</span> <span class="o">=</span> <span class="n">Interpolator</span><span class="p">(</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span> <span class="n">known_bdays</span><span class="p">,</span> <span class="n">known_rates</span><span class="p">)</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">interp</span> <span class="o">=</span> <span class="n">Interpolador</span><span class="p">(</span><span class="n">dias_uteis</span><span class="p">,</span> <span class="n">taxas</span><span class="p">,</span> <span class="n">metodo</span><span class="o">=</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">)</span>
 </span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">interp</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>  <span class="c1"># -&gt; 0.04833...</span>
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
 </span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># Interpolação linear</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">linear</span> <span class="o">=</span> <span class="n">Interpolator</span><span class="p">(</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">known_bdays</span><span class="p">,</span> <span class="n">known_rates</span><span class="p">)</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">linear</span> <span class="o">=</span> <span class="n">Interpolador</span><span class="p">(</span><span class="n">dias_uteis</span><span class="p">,</span> <span class="n">taxas</span><span class="p">,</span> <span class="n">metodo</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">)</span>
 </span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="n">linear</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>  <span class="c1"># -&gt; 0.0475</span>
 </span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
 </span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="c1"># Vetorizado</span>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="n">interp</span><span class="p">([</span><span class="mi">15</span><span class="p">,</span> <span class="mi">45</span><span class="p">,</span> <span class="mi">75</span><span class="p">])</span>  <span class="c1"># -&gt; pl.Series with 3 rates</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="n">interp</span><span class="p">([</span><span class="mi">15</span><span class="p">,</span> <span class="mi">45</span><span class="p">,</span> <span class="mi">75</span><span class="p">])</span>  <span class="c1"># -&gt; pl.Series com 3 taxas</span>
 </span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>
 </span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="c1"># Extrapolação (desabilitada por padrão, retorna NaN)</span>
 </span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="n">interp</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># -&gt; nan</span>
-</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="n">Interpolator</span><span class="p">(</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span> <span class="n">known_bdays</span><span class="p">,</span> <span class="n">known_rates</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">)(</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># -&gt; 0.055</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="n">Interpolador</span><span class="p">(</span><span class="n">dias_uteis</span><span class="p">,</span> <span class="n">taxas</span><span class="p">,</span> <span class="n">metodo</span><span class="o">=</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span> <span class="n">extrapolar</span><span class="o">=</span><span class="kc">True</span><span class="p">)(</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># -&gt; 0.055</span>
 </span></code></pre></div>
 <h3 id="taxas-a-termo-forward-forwards">Taxas a Termo (<code>forward</code>, <code>forwards</code>)</h3>
 <p>Calcula taxas a termo a partir de curvas spot:</p>
@@ -1698,12 +1710,12 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">forward</span><span class="p">,</span> <span class="n">forwards</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Taxa a termo única entre dois pontos</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">forward</span><span class="p">(</span><span class="n">bday1</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">bday2</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">rate1</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">rate2</span><span class="o">=</span><span class="mf">0.06</span><span class="p">)</span>  <span class="c1"># -&gt; 0.0700952...</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">forward</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.06</span><span class="p">)</span>  <span class="c1"># -&gt; 0.0700952...</span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># Curva a termo vetorizada a partir de taxas spot</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">bdays</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">]</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">rates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.06</span><span class="p">,</span> <span class="mf">0.07</span><span class="p">]</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">forwards</span><span class="p">(</span><span class="n">bdays</span><span class="p">,</span> <span class="n">rates</span><span class="p">)</span>  <span class="c1"># -&gt; Series: [0.05, 0.070095, 0.090284]</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">dias_uteis</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">]</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">taxas</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.06</span><span class="p">,</span> <span class="mf">0.07</span><span class="p">]</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">forwards</span><span class="p">(</span><span class="n">dias_uteis</span><span class="p">,</span> <span class="n">taxas</span><span class="p">)</span>  <span class="c1"># -&gt; Series: [0.05, 0.070095, 0.090284]</span>
 </span></code></pre></div>
 <h2 id="visao-geral-dos-modulos">Visão Geral dos Módulos</h2>
 <table>
@@ -1715,19 +1727,19 @@
 </thead>
 <tbody>
 <tr>
-<td><code>bday</code></td>
+<td><code>dus</code></td>
 <td>Calendário de dias úteis com feriados brasileiros</td>
 </tr>
 <tr>
-<td><code>futures</code></td>
-<td>Dados de futuros da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros)</td>
+<td><code>b3.futuro</code></td>
+<td>Dados históricos de futuros da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros)</td>
 </tr>
 <tr>
-<td><code>di1</code></td>
+<td><code>b3.di1</code></td>
 <td>Curva DI1 interpolada e datas de negociação disponíveis</td>
 </tr>
 <tr>
-<td><code>Interpolator</code></td>
+<td><code>Interpolador</code></td>
 <td>Interpolação de taxas (flat_forward, linear)</td>
 </tr>
 <tr>
@@ -1743,7 +1755,7 @@
 <td>Títulos e curvas adicionais (NTN-B1, NTN-B Principal, curva PRE)</td>
 </tr>
 <tr>
-<td><code>tn.auction</code> / <code>tn.benchmarks</code></td>
+<td><code>tn.leiloes</code> / <code>tn.benchmarks</code></td>
 <td>Leilões e benchmarks de títulos públicos</td>
 </tr>
 <tr>
@@ -1767,11 +1779,11 @@
 <td>Opções digitais de COPOM e probabilidades implícitas</td>
 </tr>
 <tr>
-<td><code>rmd</code></td>
+<td><code>tn.rmd</code></td>
 <td>Relatório Mensal da Dívida do Tesouro Nacional</td>
 </tr>
 <tr>
-<td><code>today</code> / <code>now</code></td>
+<td><code>hoje</code> / <code>agora</code></td>
 <td>Data/hora atual no Brasil (America/Sao_Paulo)</td>
 </tr>
 </tbody>
@@ -1780,35 +1792,34 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">ltn</span><span class="p">,</span> <span class="n">ntnb</span><span class="p">,</span> <span class="n">ntnf</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Busca taxas indicativas da ANBIMA</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">ltn</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>   <span class="c1"># -&gt; DataFrame with LTN bonds</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; DataFrame with NTN-B bonds</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">ltn</span><span class="o">.</span><span class="n">dados</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; DataFrame com títulos LTN</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">dados</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; DataFrame com títulos NTN-B</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
 </span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Calcula cotação do título (base 100)</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.061490</span><span class="p">)</span>  <span class="c1"># -&gt; 99.3651</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-08-2060&quot;</span><span class="p">,</span> <span class="mf">0.061878</span><span class="p">)</span>  <span class="c1"># -&gt; 99.5341</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.061490</span><span class="p">)</span>  <span class="c1"># -&gt; 99.3651</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-08-2060&quot;</span><span class="p">,</span> <span class="mf">0.061878</span><span class="p">)</span>  <span class="c1"># -&gt; 99.5341</span>
 </span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># Spreads de DI (bps=True multiplica por 10.000)</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">ntnf</span><span class="o">.</span><span class="n">di_spreads</span><span class="p">(</span><span class="s2">&quot;30-05-2025&quot;</span><span class="p">,</span> <span class="n">bps</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1"># -&gt; DataFrame: titulo, data_vencimento, spread_di</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># Prêmio sobre o DI (pontos_base=True multiplica por 10.000)</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">ntnf</span><span class="o">.</span><span class="n">premio</span><span class="p">(</span><span class="s2">&quot;30-05-2025&quot;</span><span class="p">,</span> <span class="n">pontos_base</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1"># -&gt; DataFrame: titulo, data_vencimento, premio</span>
 </span></code></pre></div>
 <h2 id="dados-de-futuros">Dados de Futuros</h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">futures</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">yd</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># DI1 (Futuro de Depósito Interfinanceiro)</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">b3</span><span class="o">.</span><span class="n">futuro</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Outros contratos disponíveis:</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># - Juros: DI1, DDI, OC1, DAP, IAP</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># - Moedas: DOL, WDO, EUR, GBR, JAP, CNY</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># - Índices: IND, WIN, ISP, WSP</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># - Commodities: BGI, CCM, ICF, CNL, SJC, SOY, ETH, GLD</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DAP&quot;</span><span class="p">)</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="c1"># Múltiplos contratos de uma vez</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;DI1&quot;</span><span class="p">,</span> <span class="s2">&quot;DAP&quot;</span><span class="p">])</span>
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="c1"># Dados intradiários (quando o mercado estiver aberto)</span>
-</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;16-01-2025&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>  <span class="c1"># Retorna dados ao vivo durante o horário de negociação</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Outros contratos disponíveis no cache histórico:</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># - Juros: DI1, DDI, FRC, FRO, DAP</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># - Moedas: DOL, WDO</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># - Índices: IND, WIN</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">b3</span><span class="o">.</span><span class="n">futuro</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DAP&quot;</span><span class="p">)</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="c1"># Múltiplas datas de uma vez</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">b3</span><span class="o">.</span><span class="n">futuro</span><span class="p">([</span><span class="s2">&quot;29-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;31-05-2024&quot;</span><span class="p">],</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="c1"># Dados intradiários (quando o mercado estiver aberto)</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="n">b3</span><span class="o">.</span><span class="n">futuro_intradia</span><span class="p">(</span><span class="s2">&quot;DI1&quot;</span><span class="p">)</span>  <span class="c1"># Retorna dados ao vivo durante o horário de negociação</span>
 </span></code></pre></div>
 <h2 id="tratamento-de-datas">Tratamento de Datas</h2>
 <p>PYield aceita entradas de data flexíveis (<code>DateLike</code>):
@@ -1820,19 +1831,68 @@ inválidas são convertidas para valores nulos (<code>None</code> em saídas esc
 em saídas vetorizadas).</p>
 <p>Tratamento de nulos: funções escalares retornam <code>float('nan')</code> para entradas ausentes
 (propaga nos cálculos). Funções vetorizadas propagam <code>null</code> elemento a elemento.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">ntnb</span><span class="p">,</span> <span class="n">bday</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.06149</span><span class="p">)</span>  <span class="c1"># -&gt; nan</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">([</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; Series: [22, null]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield.tn</span><span class="w"> </span><span class="kn">import</span> <span class="n">ntnb</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">dus</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">ntnb</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.06149</span><span class="p">)</span>  <span class="c1"># -&gt; nan</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">([</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; Series: [22, null]</span>
 </span></code></pre></div>
 <p>Consultas sem dados disponíveis (data futura, feriado, fim de semana ou
 fonte indisponível) retornam DataFrame vazio ou <code>nan</code>, sem lançar exceção:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">bc</span><span class="p">,</span> <span class="n">futures</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">b3</span><span class="p">,</span> <span class="n">bc</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;01-01-2030&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_empty</span><span class="p">()</span>         <span class="c1"># -&gt; True (data futura)</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">bc</span><span class="o">.</span><span class="n">tpf_monthly_trades</span><span class="p">(</span><span class="s2">&quot;01-01-2030&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_empty</span><span class="p">()</span>  <span class="c1"># -&gt; True (mês futuro)</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">bc</span><span class="o">.</span><span class="n">ptax</span><span class="p">(</span><span class="s2">&quot;25-12-2025&quot;</span><span class="p">)</span>                           <span class="c1"># -&gt; nan (feriado)</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">b3</span><span class="o">.</span><span class="n">futuro</span><span class="p">(</span><span class="s2">&quot;01-01-2030&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_empty</span><span class="p">()</span>  <span class="c1"># -&gt; True (data futura)</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">bc</span><span class="o">.</span><span class="n">tpf_mensal</span><span class="p">(</span><span class="s2">&quot;01-01-2030&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_empty</span><span class="p">()</span>     <span class="c1"># -&gt; True (mês futuro)</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">bc</span><span class="o">.</span><span class="n">ptax</span><span class="p">(</span><span class="s2">&quot;25-12-2025&quot;</span><span class="p">)</span>                      <span class="c1"># -&gt; nan (feriado)</span>
 </span></code></pre></div>
+<h2 id="migracao-para-portugues-v0480">Migração para Português (v0.48.0+)</h2>
+<p>A partir da versão 0.48.0, a API pública foi migrada para o português. Os principais renomes:</p>
+<table>
+<thead>
+<tr>
+<th>Antes (&lt; 0.48)</th>
+<th>Depois (≥ 0.48)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>yd.bday</code></td>
+<td><code>yd.dus</code></td>
+</tr>
+<tr>
+<td><code>bday.count()</code></td>
+<td><code>dus.contar()</code></td>
+</tr>
+<tr>
+<td><code>bday.offset()</code></td>
+<td><code>dus.deslocar()</code></td>
+</tr>
+<tr>
+<td><code>bday.generate()</code></td>
+<td><code>dus.gerar()</code></td>
+</tr>
+<tr>
+<td><code>bday.is_business_day()</code></td>
+<td><code>dus.e_dia_util()</code></td>
+</tr>
+<tr>
+<td><code>Interpolator(method, bdays, rates)</code></td>
+<td><code>Interpolador(dias_uteis, taxas, metodo=...)</code></td>
+</tr>
+<tr>
+<td><code>extrapolate=True</code></td>
+<td><code>extrapolar=True</code></td>
+</tr>
+<tr>
+<td><code>ntnb.quotation()</code></td>
+<td><code>ntnb.cotacao()</code></td>
+</tr>
+<tr>
+<td><code>ntnb.data()</code></td>
+<td><code>ntnb.dados()</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="migracao-para-polars-v0400">Migração para Polars (v0.40.0+)</h2>
 <p>A partir da versão 0.40.0, todas as saídas tabulares passaram de Pandas para <strong>Polars</strong>. Entradas vetoriais que antes aceitavam <code>pd.Series</code> e <code>np.ndarray</code> agora aceitam apenas listas, tuplas ou <code>pl.Series</code>. Para converter:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Entrada: converter coleções Pandas/NumPy antes de passar para o PYield</span>

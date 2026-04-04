@@ -18,7 +18,7 @@
         <link rel="prev" href="../ipca/">
       
       
-        <link rel="next" href="../rmd/">
+        <link rel="next" href="../tn/">
       
       
         
@@ -282,7 +282,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../bday/" class="md-tabs__link">
+        <a href="../dus/" class="md-tabs__link">
           
   
   
@@ -574,7 +574,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../bday/" class="md-nav__link">
+      <a href="../dus/" class="md-nav__link">
         
   
   
@@ -602,14 +602,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../interpolator/" class="md-nav__link">
+      <a href="../interpolador/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Interpolator
+    Interpolador
   
 
     
@@ -824,7 +824,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../copom/" class="md-nav__link">
+      <a href="../bc/copom/" class="md-nav__link">
         
   
   
@@ -938,7 +938,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../di1/" class="md-nav__link">
+      <a href="../b3/di1/" class="md-nav__link">
         
   
   
@@ -966,14 +966,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../futures/" class="md-nav__link">
+      <a href="../b3/futuro/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Futuros
+    Futuro
   
 
     
@@ -1322,34 +1322,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rmd/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Tesouro Nacional (RMD)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1443,7 +1415,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../lft/" class="md-nav__link">
+      <a href="../tn/rmd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RMD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tn/lft/" class="md-nav__link">
         
   
   
@@ -1471,7 +1471,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ltn/" class="md-nav__link">
+      <a href="../tn/ltn/" class="md-nav__link">
         
   
   
@@ -1499,7 +1499,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ntnb/" class="md-nav__link">
+      <a href="../tn/ntnb/" class="md-nav__link">
         
   
   
@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ntnbp/" class="md-nav__link">
+      <a href="../tn/ntnbp/" class="md-nav__link">
         
   
   
@@ -1555,7 +1555,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ntnb1/" class="md-nav__link">
+      <a href="../tn/ntnb1/" class="md-nav__link">
         
   
   
@@ -1583,7 +1583,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ntnc/" class="md-nav__link">
+      <a href="../tn/ntnc/" class="md-nav__link">
         
   
   
@@ -1611,7 +1611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ntnf/" class="md-nav__link">
+      <a href="../tn/ntnf/" class="md-nav__link">
         
   
   
@@ -1639,7 +1639,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pre/" class="md-nav__link">
+      <a href="../tn/pre/" class="md-nav__link">
         
   
   
@@ -1718,7 +1718,7 @@ Example:       CPMZ25C099500
 <p>Strike interpretation (Selic Meta context):
     strike_float = int(strike_6digits) / 1000   # e.g. 99.500
     change_bps   = round((strike_float - 100) * 100)  # e.g. -50 bps</p>
-<p>Month codes (B3 standard futures convention):
+<p>Month codes (B3 standard future convention):
     F=1, G=2, H=3, J=4, K=5, M=6,
     N=7, Q=8, U=9, V=10, X=11, Z=12</p>
 <h3 id="pyield.selic.cpm--implementation-note">Implementation note</h3>
@@ -2008,10 +2008,10 @@ True</p>
 </span><span id="__span-0-284"><a id="__codelineno-0-284" name="__codelineno-0-284"></a>        <span class="k">return</span> <span class="n">_empty_schema</span><span class="p">()</span>
 </span><span id="__span-0-285"><a id="__codelineno-0-285" name="__codelineno-0-285"></a>
 </span><span id="__span-0-286"><a id="__codelineno-0-286" name="__codelineno-0-286"></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-0-287"><a id="__codelineno-0-287" name="__codelineno-0-287"></a>        <span class="n">zip_data</span> <span class="o">=</span> <span class="n">_baixar_zip_url</span><span class="p">(</span><span class="n">trade_date</span><span class="p">,</span> <span class="n">relatorio_completo</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-0-287"><a id="__codelineno-0-287" name="__codelineno-0-287"></a>        <span class="n">zip_data</span> <span class="o">=</span> <span class="n">_baixar_zip_url</span><span class="p">(</span><span class="n">trade_date</span><span class="p">,</span> <span class="n">boletim_completo</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span><span id="__span-0-288"><a id="__codelineno-0-288" name="__codelineno-0-288"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">zip_data</span><span class="p">:</span>
 </span><span id="__span-0-289"><a id="__codelineno-0-289" name="__codelineno-0-289"></a>            <span class="k">return</span> <span class="n">_empty_schema</span><span class="p">()</span>
-</span><span id="__span-0-290"><a id="__codelineno-0-290" name="__codelineno-0-290"></a>        <span class="n">xml_bytes</span> <span class="o">=</span> <span class="n">price_report_extract</span><span class="p">(</span><span class="n">zip_data</span><span class="p">)</span>
+</span><span id="__span-0-290"><a id="__codelineno-0-290" name="__codelineno-0-290"></a>        <span class="n">xml_bytes</span> <span class="o">=</span> <span class="n">boletim_negociacao_extrair</span><span class="p">(</span><span class="n">zip_data</span><span class="p">)</span>
 </span><span id="__span-0-291"><a id="__codelineno-0-291" name="__codelineno-0-291"></a>        <span class="n">records</span> <span class="o">=</span> <span class="n">_parsear_xml_registros</span><span class="p">(</span><span class="n">xml_bytes</span><span class="p">,</span> <span class="s2">&quot;CPM&quot;</span><span class="p">)</span>
 </span><span id="__span-0-292"><a id="__codelineno-0-292" name="__codelineno-0-292"></a>    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
 </span><span id="__span-0-293"><a id="__codelineno-0-293" name="__codelineno-0-293"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;CPM: falha ao baixar SPR para </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">trade_date</span><span class="p">)</span>
@@ -2071,7 +2071,7 @@ True</p>
 </span><span id="__span-0-347"><a id="__codelineno-0-347" name="__codelineno-0-347"></a>
 </span><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a>    <span class="c1"># dias_uteis: dias úteis de data_referencia até data_expiracao.</span>
 </span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-</span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a>        <span class="n">dias_uteis</span><span class="o">=</span><span class="n">bday</span><span class="o">.</span><span class="n">count_expr</span><span class="p">(</span><span class="s2">&quot;data_referencia&quot;</span><span class="p">,</span> <span class="s2">&quot;data_expiracao&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int32</span><span class="p">)</span>
+</span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a>        <span class="n">dias_uteis</span><span class="o">=</span><span class="n">dus</span><span class="o">.</span><span class="n">contar_expr</span><span class="p">(</span><span class="s2">&quot;data_referencia&quot;</span><span class="p">,</span> <span class="s2">&quot;data_expiracao&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int32</span><span class="p">)</span>
 </span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a>    <span class="p">)</span>
 </span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a>
 </span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a>    <span class="c1"># preco_ajuste: &quot;Preço de Referência&quot; da B3 via endpoint CSV.</span>
@@ -2607,13 +2607,13 @@ True</p>
         
         
           
-          <a href="../rmd/" class="md-footer__link md-footer__link--next" aria-label="Próximo: Tesouro Nacional (RMD)">
+          <a href="../tn/" class="md-footer__link md-footer__link--next" aria-label="Próximo: Visão Geral">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Próximo
               </span>
               <div class="md-ellipsis">
-                Tesouro Nacional (RMD)
+                Visão Geral
               </div>
             </div>
             <div class="md-footer__button md-icon">

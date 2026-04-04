@@ -18,7 +18,7 @@
         <link rel="prev" href="../..">
       
       
-        <link rel="next" href="../../bday/">
+        <link rel="next" href="../../dus/">
       
       
         
@@ -280,7 +280,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../bday/" class="md-tabs__link">
+        <a href="../../dus/" class="md-tabs__link">
           
   
   
@@ -840,7 +840,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../bday/" class="md-nav__link">
+      <a href="../../dus/" class="md-nav__link">
         
   
   
@@ -868,14 +868,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../interpolator/" class="md-nav__link">
+      <a href="../../interpolador/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Interpolator
+    Interpolador
   
 
     
@@ -1088,7 +1088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../copom/" class="md-nav__link">
+      <a href="../../bc/copom/" class="md-nav__link">
         
   
   
@@ -1202,7 +1202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../di1/" class="md-nav__link">
+      <a href="../../b3/di1/" class="md-nav__link">
         
   
   
@@ -1230,14 +1230,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../futures/" class="md-nav__link">
+      <a href="../../b3/futuro/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Futuros
+    Futuro
   
 
     
@@ -1302,34 +1302,6 @@
     
   
     Selic (CPM/COPOM)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../rmd/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Tesouro Nacional (RMD)
   
 
     
@@ -1436,7 +1408,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lft/" class="md-nav__link">
+      <a href="../../tn/rmd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RMD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tn/lft/" class="md-nav__link">
         
   
   
@@ -1464,7 +1464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ltn/" class="md-nav__link">
+      <a href="../../tn/ltn/" class="md-nav__link">
         
   
   
@@ -1492,7 +1492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ntnb/" class="md-nav__link">
+      <a href="../../tn/ntnb/" class="md-nav__link">
         
   
   
@@ -1520,7 +1520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ntnbp/" class="md-nav__link">
+      <a href="../../tn/ntnbp/" class="md-nav__link">
         
   
   
@@ -1548,7 +1548,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ntnb1/" class="md-nav__link">
+      <a href="../../tn/ntnb1/" class="md-nav__link">
         
   
   
@@ -1576,7 +1576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ntnc/" class="md-nav__link">
+      <a href="../../tn/ntnc/" class="md-nav__link">
         
   
   
@@ -1604,7 +1604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ntnf/" class="md-nav__link">
+      <a href="../../tn/ntnf/" class="md-nav__link">
         
   
   
@@ -1632,7 +1632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../pre/" class="md-nav__link">
+      <a href="../../tn/pre/" class="md-nav__link">
         
   
   
@@ -1724,52 +1724,54 @@
 <p><strong>Requisitos</strong>: Python &gt;= 3.12</p>
 <h2 id="exemplos-praticos">Exemplos Práticos</h2>
 <h3 id="1-dias-uteis-business-days">1. Dias Úteis (Business Days)</h3>
-<p>O módulo <code>bday</code> é a base de todos os cálculos na biblioteca. Feriados brasileiros são automaticamente considerados.</p>
+<p>O módulo <code>dus</code> é a base de todos os cálculos na biblioteca. Feriados brasileiros são automaticamente considerados.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">yd</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Contar dias úteis entre duas datas (início inclusivo, fim exclusivo)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">yd</span><span class="o">.</span><span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 1</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">yd</span><span class="o">.</span><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 1</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Avançar N dias úteis a partir de uma data</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">yd</span><span class="o">.</span><span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">yd</span><span class="o">.</span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># Ajustar data para o próximo dia útil (se não for dia útil)</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">yd</span><span class="o">.</span><span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;30-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">yd</span><span class="o">.</span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;30-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2024, 1, 2)</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1"># Como 29-12-2023 já é dia útil, retorna a mesma data</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">yd</span><span class="o">.</span><span class="n">bday</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2023, 12, 29)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">yd</span><span class="o">.</span><span class="n">dus</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="s2">&quot;29-12-2023&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># -&gt; datetime.date(2023, 12, 29)</span>
 </span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
 </span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="c1"># Gerar série de dias úteis entre duas datas</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="n">yd</span><span class="o">.</span><span class="n">bday</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="n">yd</span><span class="o">.</span><span class="n">dus</span><span class="o">.</span><span class="n">gerar</span><span class="p">(</span><span class="s2">&quot;22-12-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;02-01-2024&quot;</span><span class="p">)</span>
 </span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="c1"># -&gt; Polars Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]</span>
 </span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
 </span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="c1"># Verificar se é dia útil</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">yd</span><span class="o">.</span><span class="n">bday</span><span class="o">.</span><span class="n">is_business_day</span><span class="p">(</span><span class="s2">&quot;25-12-2023&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; False (Natal)</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">yd</span><span class="o">.</span><span class="n">dus</span><span class="o">.</span><span class="n">e_dia_util</span><span class="p">(</span><span class="s2">&quot;25-12-2023&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; False (Natal)</span>
 </span></code></pre></div>
 <p>Todas as funções suportam operações vetorizadas com listas, Series ou arrays.</p>
 <h3 id="2-futuros-de-di-b3">2. Futuros de DI (B3)</h3>
 <p>Obtenha dados de contratos futuros negociados na B3:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Dados de Futuros de DI em uma data específica</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># DataFrame retornado contém colunas:</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Outros contratos disponíveis: DDI, FRC, DAP, DOL, WDO, IND, WIN</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">df_dap</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DAP&quot;</span><span class="p">)</span>  <span class="c1"># Cupom Cambial</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">b3</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Dados de Futuro de DI em uma data específica</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">df</span> <span class="o">=</span> <span class="n">b3</span><span class="o">.</span><span class="n">futuro</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># DataFrame retornado contém colunas:</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Outros contratos disponíveis: DDI, FRC, DAP, DOL, WDO, IND, WIN</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">df_dap</span> <span class="o">=</span> <span class="n">b3</span><span class="o">.</span><span class="n">futuro</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DAP&quot;</span><span class="p">)</span>  <span class="c1"># Cupom Cambial</span>
 </span></code></pre></div>
 <h3 id="3-titulos-publicos-tesouro-nacional">3. Títulos Públicos (Tesouro Nacional)</h3>
 <p>Acesse taxas indicativas da ANBIMA e dados de títulos públicos:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># LTN (Letras do Tesouro Nacional - pré-fixado)</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">df_ltn</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ltn</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">df_ltn</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ltn</span><span class="o">.</span><span class="n">dados</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Colunas: data_referencia, titulo, codigo_selic, data_base, data_vencimento, taxa_indicativa, ...</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># NTN-B (Notas do Tesouro Nacional série B - IPCA+)</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">df_ntnb</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">df_ntnb</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">dados</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Colunas: data_referencia, titulo, codigo_selic, data_base, data_vencimento, taxa_indicativa, ...</span>
 </span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># NTN-F (Notas do Tesouro Nacional série F - pré-fixado com cupom)</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">df_ntnf</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ntnf</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">df_ntnf</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ntnf</span><span class="o">.</span><span class="n">dados</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>
 </span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
 </span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="c1"># Obs: Dados da ANBIMA estão disponíveis para os últimos 5 dias úteis</span>
 </span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># (membros da ANBIMA têm acesso automático ao histórico completo)</span>
@@ -1777,35 +1779,37 @@
 <h3 id="4-precificacao-de-titulos">4. Precificação de Títulos</h3>
 <p>Calcule cotações e preços de títulos públicos:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Cotação de NTN-B (base 100)</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.061490</span><span class="p">)</span>  <span class="c1"># -&gt; 99.3651</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.061490</span><span class="p">)</span>  <span class="c1"># -&gt; 99.3651</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Cotação para vencimento mais longo</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-08-2060&quot;</span><span class="p">,</span> <span class="mf">0.061878</span><span class="p">)</span>  <span class="c1"># -&gt; 99.5341</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;15-08-2060&quot;</span><span class="p">,</span> <span class="mf">0.061878</span><span class="p">)</span>  <span class="c1"># -&gt; 99.5341</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Spreads DI para títulos pré-fixados (em pontos-base)</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">df_spreads</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ltn</span><span class="o">.</span><span class="n">di_spreads</span><span class="p">(</span><span class="s2">&quot;30-05-2024&quot;</span><span class="p">,</span> <span class="n">bps</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># Colunas: titulo, data_vencimento, spread_di</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Prêmio sobre DI para títulos pré-fixados (em pontos-base)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">df_premios</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ltn</span><span class="o">.</span><span class="n">premio</span><span class="p">(</span><span class="s2">&quot;30-05-2024&quot;</span><span class="p">,</span> <span class="n">pontos_base</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># Colunas: titulo, data_vencimento, premio</span>
 </span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># Spreads para NTN-F</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="n">df_spreads_ntnf</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ntnf</span><span class="o">.</span><span class="n">di_spreads</span><span class="p">(</span><span class="s2">&quot;30-05-2024&quot;</span><span class="p">,</span> <span class="n">bps</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># Prêmio para NTN-F</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="n">df_premios_ntnf</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ntnf</span><span class="o">.</span><span class="n">premio</span><span class="p">(</span><span class="s2">&quot;30-05-2024&quot;</span><span class="p">,</span> <span class="n">pontos_base</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="5-interpolacao-de-taxas">5. Interpolação de Taxas</h3>
 <p>Interpolar taxas de juros usando convenção de mercado (252 dias úteis/ano):</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Obter curva de DI Futuro</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">futures</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Criar interpolador flat forward (padrão de mercado)</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">interp</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">Interpolator</span><span class="p">(</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;dias_uteis&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;taxa_ajuste&quot;</span><span class="p">])</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Interpolar para 45 dias úteis</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">interp</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>  <span class="c1"># -&gt; Taxa interpolada (ex: 0.1037)</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Vetorizado</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">interp</span><span class="p">([</span><span class="mi">30</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">90</span><span class="p">])</span>  <span class="c1"># -&gt; Polars Series com 3 taxas interpoladas</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1"># Interpolação linear (alternativa)</span>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="n">linear_interp</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">Interpolator</span><span class="p">(</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;dias_uteis&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;taxa_ajuste&quot;</span><span class="p">])</span>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="n">linear_interp</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>  <span class="c1"># -&gt; Taxa interpolada linearmente</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">b3</span><span class="p">,</span> <span class="n">Interpolador</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Obter curva de DI Futuro</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">df</span> <span class="o">=</span> <span class="n">b3</span><span class="o">.</span><span class="n">futuro</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;DI1&quot;</span><span class="p">)</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Criar interpolador flat forward (padrão de mercado)</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">interp</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;dias_uteis&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;taxa_ajuste&quot;</span><span class="p">],</span> <span class="n">metodo</span><span class="o">=</span><span class="s2">&quot;flat_forward&quot;</span><span class="p">)</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># Interpolar para 45 dias úteis</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">interp</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>  <span class="c1"># -&gt; Taxa interpolada (ex: 0.1037)</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="c1"># Vetorizado</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="n">interp</span><span class="p">([</span><span class="mi">30</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">90</span><span class="p">])</span>  <span class="c1"># -&gt; Polars Series com 3 taxas interpoladas</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="c1"># Interpolação linear (alternativa)</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">linear_interp</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;dias_uteis&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;taxa_ajuste&quot;</span><span class="p">],</span> <span class="n">metodo</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">)</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="n">linear_interp</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>  <span class="c1"># -&gt; Taxa interpolada linearmente</span>
 </span></code></pre></div>
 <h3 id="6-indicadores-do-banco-central">6. Indicadores do Banco Central</h3>
 <p>Acesse indicadores econômicos do BCB:</p>
@@ -1819,7 +1823,7 @@
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">yd</span><span class="o">.</span><span class="n">bc</span><span class="o">.</span><span class="n">di_over</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 0.104  (10.4% a.a.)</span>
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
 </span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># Taxa SELIC meta (definida pelo COPOM)</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">yd</span><span class="o">.</span><span class="n">bc</span><span class="o">.</span><span class="n">selic_target</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 0.1075  (10.75% a.a.)</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">yd</span><span class="o">.</span><span class="n">bc</span><span class="o">.</span><span class="n">selic_meta</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 0.1075  (10.75% a.a.)</span>
 </span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
 </span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="c1"># VNA da LFT (Valor Nominal Atualizado)</span>
 </span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">yd</span><span class="o">.</span><span class="n">bc</span><span class="o">.</span><span class="n">vna_lft</span><span class="p">(</span><span class="s2">&quot;31-05-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; 15234.56</span>
@@ -1827,22 +1831,22 @@
 <h3 id="7-inflacao-ipca">7. Inflação (IPCA)</h3>
 <p>Obtenha dados de inflação do IBGE:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Taxas mensais de IPCA</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">df_ipca</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">rates</span><span class="p">(</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-03-2024&quot;</span><span class="p">)</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">df_ipca</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">taxas</span><span class="p">(</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-03-2024&quot;</span><span class="p">)</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># Colunas: periodo, valor</span>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># Índices de IPCA</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">df_indices</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">indexes</span><span class="p">(</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-03-2024&quot;</span><span class="p">)</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">df_indices</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;01-03-2024&quot;</span><span class="p">)</span>
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Colunas: periodo, valor</span>
 </span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
 </span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="c1"># Projeções futuras (quando disponíveis)</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">df_proj</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">rates</span><span class="p">(</span><span class="s2">&quot;01-01-2025&quot;</span><span class="p">,</span> <span class="s2">&quot;01-12-2025&quot;</span><span class="p">)</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">df_proj</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">taxa_projetada</span><span class="p">()</span>
 </span></code></pre></div>
 <h2 id="conversao-para-pandas">Conversão para Pandas</h2>
 <p>Embora PYield retorne Polars DataFrames por padrão (desde a versão 0.40.0), é fácil converter para Pandas quando necessário:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">yd</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># Obter DataFrame Polars</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">df_polars</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ltn</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">df_polars</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ltn</span><span class="o">.</span><span class="n">dados</span><span class="p">(</span><span class="s2">&quot;23-08-2024&quot;</span><span class="p">)</span>
 </span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
 </span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># Converter para Pandas</span>
 </span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">df_pandas</span> <span class="o">=</span> <span class="n">df_polars</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">(</span><span class="n">use_pyarrow_extension_array</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -1858,8 +1862,8 @@
 <p>Funções escalares retornam <code>datetime.date</code>. Funções vetorizadas retornam <code>polars.Series</code>.</p>
 <p>Para valores nulos, funções escalares retornam <code>float('nan')</code>. Funções vetorizadas propagam <code>null</code> element-wise:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Exemplo com null</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">quotation</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.06149</span><span class="p">)</span>  <span class="c1"># -&gt; nan</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">yd</span><span class="o">.</span><span class="n">bday</span><span class="o">.</span><span class="n">count</span><span class="p">([</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; Series: [22, null]</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;15-05-2035&quot;</span><span class="p">,</span> <span class="mf">0.06149</span><span class="p">)</span>  <span class="c1"># -&gt; nan</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">yd</span><span class="o">.</span><span class="n">dus</span><span class="o">.</span><span class="n">contar</span><span class="p">([</span><span class="s2">&quot;01-01-2024&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s2">&quot;01-02-2024&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; Series: [22, null]</span>
 </span></code></pre></div>
 <h2 id="recursos-adicionais">Recursos Adicionais</h2>
 <h3 id="colab-notebook">Colab Notebook</h3>
@@ -1930,7 +1934,7 @@
         
         
           
-          <a href="../../bday/" class="md-footer__link md-footer__link--next" aria-label="Próximo: Ferramentas de Dias Úteis">
+          <a href="../../dus/" class="md-footer__link md-footer__link--next" aria-label="Próximo: Ferramentas de Dias Úteis">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Próximo
