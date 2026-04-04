@@ -24,7 +24,7 @@ import logging
 import polars as pl
 import requests
 
-from pyield import clock
+from pyield import relogio
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
@@ -128,7 +128,7 @@ def benchmarks(
         colunas_ordenacao = ["data_inicio", "titulo", "data_vencimento"]
     else:
         colunas_ordenacao = ["titulo", "data_vencimento"]
-        hoje = clock.today()
+        hoje = relogio.hoje()
         df = df.filter(pl.lit(hoje).is_between("data_inicio", "data_fim"))
 
     if bond_type:

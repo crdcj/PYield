@@ -139,7 +139,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | `ipca` | Inflation data (historical and projections) |
 | `selic` | COPOM digital options and implied probabilities |
 | `rmd` | Monthly Debt Report (RMD) from Tesouro Nacional |
-| `today` / `now` | Current date/time in Brazil (America/Sao_Paulo) |
+| `hoje` / `agora` | Current date/time in Brazil (America/Sao_Paulo) |
 
 ## Treasury Bonds
 

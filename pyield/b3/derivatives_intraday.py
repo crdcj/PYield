@@ -32,7 +32,7 @@ import logging
 import polars as pl
 import requests
 
-from pyield import clock
+from pyield import relogio
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
@@ -161,6 +161,6 @@ def derivatives_intraday_fetch(contract_code: str) -> pl.DataFrame:
 
     df = _converter_json_intraday(dados_json)
     df = _processar_colunas_intraday(df)
-    horario = (clock.now() - dt.timedelta(minutes=15)).time()
+    horario = (relogio.agora() - dt.timedelta(minutes=15)).time()
     df = df.with_columns(horario_referencia=horario)
     return df.sort("codigo_negociacao")

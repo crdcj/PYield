@@ -26,7 +26,7 @@ from enum import Enum
 import polars as pl
 import requests
 
-from pyield import clock
+from pyield import relogio
 from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
@@ -105,7 +105,7 @@ def _buscar_dados_url(
 ) -> pl.DataFrame:
     """Orquestra a busca, dividindo intervalos > 10 anos em blocos."""
     data_inicio = converter_datas(inicio)
-    data_fim = converter_datas(fim) if fim else clock.today()
+    data_fim = converter_datas(fim) if fim else relogio.hoje()
 
     if (data_fim - data_inicio).days < LIMITE_DIAS_SEGURO:
         return _buscar_requisicao(serie, data_inicio, data_fim)

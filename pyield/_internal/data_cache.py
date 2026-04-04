@@ -7,7 +7,7 @@ import polars as pl
 import requests
 
 from pyield._internal.retry import retry_padrao
-from pyield.clock import now
+from pyield.relogio import agora
 
 URL_BASE = "https://github.com/crdcj/pyield-data/releases/latest/download"
 registro = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ type IdDataset = Literal["tpf", "futures"]
 
 
 def _obter_chave_data_hoje() -> str:
-    return now().strftime("%Y-%m-%d")
+    return agora().strftime("%Y-%m-%d")
 
 
 def _validar_id_dataset(id_dataset: str) -> _Dataset:

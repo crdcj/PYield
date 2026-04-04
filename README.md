@@ -139,7 +139,7 @@ forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
 | `ipca` | Dados de inflação (histórico e projeções) |
 | `selic` | Opções digitais de COPOM e probabilidades implícitas |
 | `rmd` | Relatório Mensal da Dívida do Tesouro Nacional |
-| `today` / `now` | Data/hora atual no Brasil (America/Sao_Paulo) |
+| `hoje` / `agora` | Data/hora atual no Brasil (America/Sao_Paulo) |
 
 ## Títulos Públicos
 

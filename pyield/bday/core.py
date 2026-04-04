@@ -5,7 +5,7 @@ import polars as pl
 
 import pyield._internal.converters as cv
 import pyield._internal.types as tp
-from pyield import clock
+from pyield import relogio
 from pyield._internal.types import ArrayLike, DateLike
 from pyield.bday.holidays.brholidays import BrHolidays
 
@@ -517,9 +517,9 @@ def generate(
             2024-01-02
         ]
     """
-    today = clock.today()
-    conv_start = cv.converter_datas(start) or today
-    conv_end = cv.converter_datas(end) or today
+    hoje = relogio.hoje()
+    conv_start = cv.converter_datas(start) or hoje
+    conv_end = cv.converter_datas(end) or hoje
 
     # Gera range completo de datas
     s = pl.date_range(conv_start, conv_end, closed=closed, eager=True).alias("bday")
@@ -670,8 +670,8 @@ def last_business_day() -> dt.date:
           correta (antes ou depois da transição 2023-12-26) aplicável à data atual.
     """
     # Obtém a data atual do Brasil sem informação de fuso horário
-    bz_today = clock.today()
-    result = offset(bz_today, 0, roll="backward")
+    hoje_brasil = relogio.hoje()
+    result = offset(hoje_brasil, 0, roll="backward")
     assert isinstance(result, dt.date), (
         "Premissa violada: offset não retornou uma data para a data atual."
     )

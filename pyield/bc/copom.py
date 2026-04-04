@@ -20,7 +20,7 @@ import logging
 import polars as pl
 import requests
 
-from pyield import bday, clock
+from pyield import bday, relogio
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
@@ -102,7 +102,7 @@ def _build_future_meetings() -> pl.DataFrame:
     Only meetings whose EndDate is strictly after today are included,
     so already-past entries in the hardcoded list are silently skipped.
     """
-    hoje = clock.today()
+    hoje = relogio.hoje()
     rows = [{"StartDate": s, "EndDate": e} for s, e in _ALL_FUTURE_MEETINGS if e > hoje]
 
     if not rows:
@@ -198,6 +198,6 @@ def next_meeting(reference: DateLike | None = None) -> pl.DataFrame:
     >>> len(row)
     1
     """
-    ref = clock.today() if reference is None else converter_datas(reference)
+    ref = relogio.hoje() if reference is None else converter_datas(reference)
     cal = calendar()
     return cal.filter(pl.col("EndDate") >= ref).head(1)

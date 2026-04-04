@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 BR_TZ = ZoneInfo("America/Sao_Paulo")
 
 
-def now() -> dt.datetime:
+def agora() -> dt.datetime:
     """Retorna o datetime atual no fuso horário do Brasil.
 
     O fuso horário usado é America/Sao_Paulo, que é o padrão para o mercado
@@ -16,8 +16,8 @@ def now() -> dt.datetime:
 
     Examples:
         >>> import datetime as dt
-        >>> from pyield import clock
-        >>> resultado = clock.now()
+        >>> from pyield import relogio
+        >>> resultado = relogio.agora()
         >>> isinstance(resultado, dt.datetime)
         True
         >>> str(resultado.tzinfo) == "America/Sao_Paulo"
@@ -26,7 +26,7 @@ def now() -> dt.datetime:
     return dt.datetime.now(BR_TZ)
 
 
-def today() -> dt.date:
+def hoje() -> dt.date:
     """Retorna a data de hoje no fuso horário do Brasil.
 
     A data é determinada com base no fuso horário America/Sao_Paulo, que é o
@@ -37,9 +37,9 @@ def today() -> dt.date:
 
     Examples:
         >>> import datetime as dt
-        >>> from pyield import clock
-        >>> resultado = clock.today()
+        >>> from pyield import relogio
+        >>> resultado = relogio.hoje()
         >>> isinstance(resultado, dt.date)
         True
     """
-    return now().date()
+    return agora().date()

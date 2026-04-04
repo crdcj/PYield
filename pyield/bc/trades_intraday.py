@@ -8,7 +8,7 @@ import datetime as dt
 import polars as pl
 import requests
 
-from pyield import bday, clock
+from pyield import bday, relogio
 from pyield._internal.br_numbers import float_br, inteiro_br, taxa_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
@@ -27,7 +27,7 @@ def _buscar_csv() -> bytes:
     Exemplo de URL do CSV com dados intradiários:
         https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/02-06-2025
     """
-    hoje = clock.today()
+    hoje = relogio.hoje()
     data_formatada = hoje.strftime("%d-%m-%Y")
     url = f"{URL_BASE_TEMPO_REAL}{data_formatada}"
     r = requests.get(url, timeout=30)  # API costuma levar ~10s
@@ -47,7 +47,7 @@ def _parsear_df(dados: bytes) -> pl.DataFrame:
 
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     """Filtra registros, converte tipos e reordena colunas."""
-    agora = clock.now()
+    agora = relogio.agora()
     return df.filter(pl.col("//1") == "1").select(
         data_hora_consulta=agora,
         data_liquidacao=agora.date(),
@@ -85,7 +85,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
 
 def _mercado_selic_aberto() -> bool:
     """Verifica se o mercado SELIC está aberto no momento."""
-    agora = clock.now()
+    agora = relogio.agora()
     hoje = agora.date()
     hora = agora.time()
     eh_dia_util = bday.is_business_day(hoje)

@@ -25,7 +25,7 @@ import polars as pl
 import requests
 
 import pyield._internal.converters as cv
-from pyield import clock
+from pyield import relogio
 from pyield._internal.br_numbers import float_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
@@ -157,7 +157,7 @@ def ptax_series(
     if end:
         end = cv.converter_datas(end)
     else:
-        end = clock.today()
+        end = relogio.hoje()
 
     url = _montar_url_api(start, end)
     texto = _buscar_texto_api(url)

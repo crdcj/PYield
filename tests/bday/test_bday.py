@@ -64,7 +64,7 @@ def test_offset_with_old_and_new_holidays():
 
 def test_generate_invalid_start_falls_back_to_today(monkeypatch):
     data_fixa = dt.date(2024, 3, 1)
-    monkeypatch.setattr("pyield.bday.core.clock.today", lambda: data_fixa)
+    monkeypatch.setattr("pyield.bday.core.relogio.hoje", lambda: data_fixa)
 
     result = bday.generate(start="31-02-2024", end="04-03-2024")
     expected = bday.generate(start=None, end="04-03-2024")
@@ -74,7 +74,7 @@ def test_generate_invalid_start_falls_back_to_today(monkeypatch):
 
 def test_generate_invalid_end_falls_back_to_today(monkeypatch):
     data_fixa = dt.date(2024, 3, 4)
-    monkeypatch.setattr("pyield.bday.core.clock.today", lambda: data_fixa)
+    monkeypatch.setattr("pyield.bday.core.relogio.hoje", lambda: data_fixa)
 
     result = bday.generate(start="01-03-2024", end="31-02-2024")
     expected = bday.generate(start="01-03-2024", end=None)

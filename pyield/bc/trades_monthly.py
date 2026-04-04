@@ -23,7 +23,7 @@ from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.clock import today
+from pyield.relogio import hoje
 
 URL_BASE = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
 
@@ -149,7 +149,7 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
     if any_is_empty(target_date):
         return pl.DataFrame()
     data_alvo = converter_datas(target_date)
-    if (data_alvo.year, data_alvo.month) > (today().year, today().month):
+    if (data_alvo.year, data_alvo.month) > (hoje().year, hoje().month):
         return pl.DataFrame()
     url = _montar_url(data_alvo, extragroup)
     conteudo_zip = _baixar_zip(url)

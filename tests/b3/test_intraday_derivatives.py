@@ -90,7 +90,7 @@ def test_futures_intraday_filtra_apenas_futuros(monkeypatch):
         _buscar_json_intraday_mock,
     )
     monkeypatch.setattr(futures_intraday_mod, "intraday_disponivel", lambda: True)
-    monkeypatch.setattr(derivatives_mod.clock, "now", _horario_referencia_mock)
+    monkeypatch.setattr(derivatives_mod.relogio, "agora", _horario_referencia_mock)
     monkeypatch.setattr(
         futures_intraday_mod,
         "derivatives_intraday_fetch",
