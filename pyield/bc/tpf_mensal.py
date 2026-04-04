@@ -30,9 +30,9 @@ URL_BASE = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
 CHAVES_ORDENACAO = ["data_liquidacao", "titulo", "data_vencimento"]
 
 
-def _montar_url(data_alvo: dt.date, extragroup: bool) -> str:
+def _montar_url(data_alvo: dt.date, extragrupo: bool) -> str:
     ano_mes = data_alvo.strftime("%Y%m")
-    sufixo = "E" if extragroup else "T"
+    sufixo = "E" if extragrupo else "T"
     return f"{URL_BASE}/Neg{sufixo}{ano_mes}.ZIP"
 
 
@@ -94,7 +94,10 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.DataFrame:
+def tpf_mensal(
+    data_referencia: DateLike,
+    extragrupo: bool = False,
+) -> pl.DataFrame:
     """Consulta negociações mensais no mercado secundário de TPF
     registradas no sistema Selic do BCB.
 
@@ -104,9 +107,9 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
     data de liquidação (data_liquidacao).
 
     Args:
-        target_date: Data de referência. Apenas ano e mês são utilizados para
+        data_referencia: Data de referência. Apenas ano e mês são utilizados para
             baixar o arquivo correspondente.
-        extragroup: Se True, busca apenas negociações extragrupo (entre grupos
+        extragrupo: Se True, busca apenas negociações extragrupo (entre grupos
             econômicos distintos). Se False, busca todas. Default é False.
             Negociações extragrupo são aquelas em que o conglomerado da contraparte
             cedente difere do conglomerado da contraparte cessionária, ou quando ao
@@ -143,15 +146,15 @@ def tpf_monthly_trades(target_date: DateLike, extragroup: bool = False) -> pl.Da
 
     Examples:
         >>> from pyield import bc
-        >>> df = bc.tpf_monthly_trades("07-01-2025", extragroup=True)
+        >>> df = bc.tpf_mensal("07-01-2025", extragrupo=True)
 
     """
-    if any_is_empty(target_date):
+    if any_is_empty(data_referencia):
         return pl.DataFrame()
-    data_alvo = converter_datas(target_date)
+    data_alvo = converter_datas(data_referencia)
     if (data_alvo.year, data_alvo.month) > (hoje().year, hoje().month):
         return pl.DataFrame()
-    url = _montar_url(data_alvo, extragroup)
+    url = _montar_url(data_alvo, extragrupo)
     conteudo_zip = _baixar_zip(url)
     arquivo_extraido = _descompactar_zip(conteudo_zip)
     df = _parsear_df(arquivo_extraido)

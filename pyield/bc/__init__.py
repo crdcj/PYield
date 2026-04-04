@@ -10,8 +10,8 @@ from pyield.bc.taxas import (
     selic_over,
     selic_over_serie,
 )
-from pyield.bc.trades_intraday import tpf_intraday_trades
-from pyield.bc.trades_monthly import tpf_monthly_trades
+from pyield.bc.tpf_intradiario import tpf_intradiario
+from pyield.bc.tpf_mensal import tpf_mensal
 from pyield.bc.vna import vna_lft
 
 __all__ = [
@@ -22,9 +22,9 @@ __all__ = [
     "leiloes",
     "ptax_serie",
     "repos",
-    "tpf_monthly_trades",
     "ptax",
-    "tpf_intraday_trades",
+    "tpf_intradiario",
+    "tpf_mensal",
     "selic_over",
     "selic_over_serie",
     "selic_meta",

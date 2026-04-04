@@ -209,7 +209,7 @@ fonte indisponível) retornam DataFrame vazio ou `nan`, sem lançar exceção:
 from pyield import bc, futures
 
 futures("01-01-2030", "DI1").is_empty()         # -> True (data futura)
-bc.tpf_monthly_trades("01-01-2030").is_empty()  # -> True (mês futuro)
+bc.tpf_mensal("01-01-2030").is_empty()  # -> True (mês futuro)
 bc.ptax("25-12-2025")                           # -> nan (feriado)
 ```
 

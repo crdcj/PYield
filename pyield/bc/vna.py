@@ -21,12 +21,12 @@ from pyield._internal.types import DateLike, any_is_empty
 
 @ttl_cache()
 @retry_padrao
-def _baixar_texto(date: DateLike) -> str:
+def _baixar_texto(data_referencia: DateLike) -> str:
     """Baixa o arquivo diário do SELIC no site do BCB."""
     # Exemplo: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
-    date = converter_datas(date)
-    url_file = f"{date.strftime('%Y%m%d')}APC238"
+    data = converter_datas(data_referencia)
+    url_file = f"{data.strftime('%Y%m%d')}APC238"
     url = url_base + url_file
 
     response = requests.get(url, timeout=10)
@@ -67,14 +67,14 @@ def _validar_valores(valores: list[float]) -> float:
     return valor
 
 
-def vna_lft(date: DateLike) -> float:
+def vna_lft(data_referencia: DateLike) -> float:
     """Obtém o VNA (Valor Nominal Atualizado) da LFT no site do BCB.
 
     Baixa o arquivo diário do BCB (SELIC), extrai a tabela com os valores
     VNA e retorna o valor correspondente à data informada.
 
     Args:
-        date (DateLike): Data de referência. Aceita string, date ou datetime,
+        data_referencia: Data de referência. Aceita string, date ou datetime,
             convertidos internamente por ``converter_datas``.
 
     Returns:
@@ -95,9 +95,9 @@ def vna_lft(date: DateLike) -> float:
         >>> bc.vna_lft("31-05-2024")
         14903.01148
     """
-    if any_is_empty(date):
+    if any_is_empty(data_referencia):
         return float("nan")
-    texto = _baixar_texto(date)
+    texto = _baixar_texto(data_referencia)
     tabela = _recortar_tabela(texto)
     linhas = _obter_linhas(tabela)
     valores = _extrair_valores(linhas)
