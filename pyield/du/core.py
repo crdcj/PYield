@@ -7,7 +7,7 @@ import pyield._internal.converters as cv
 import pyield._internal.types as tp
 from pyield import relogio
 from pyield._internal.types import ArrayLike, DateLike
-from pyield.dus.feriados.feriados_br import FeriadosBrasil
+from pyield.du.feriados.feriados_br import FeriadosBrasil
 
 LIMITE_DIA_UTIL = 6
 
@@ -42,11 +42,11 @@ def contar_expr(
 
     Examples:
         >>> import polars as pl
-        >>> from pyield import dus
+        >>> from pyield import du
         >>> inicio = [dt.date(2024, 1, 1), dt.date(2024, 2, 9)]
         >>> fim = [dt.date(2024, 1, 5), dt.date(2024, 2, 12)]
         >>> df = pl.DataFrame({"inicio": inicio, "fim": fim})
-        >>> df.select(dus.contar_expr("inicio", "fim").alias("dias_uteis"))
+        >>> df.select(du.contar_expr("inicio", "fim").alias("dias_uteis"))
         shape: (2, 1)
         ┌────────────┐
         │ dias_uteis │
@@ -58,7 +58,7 @@ def contar_expr(
         └────────────┘
 
         Uso com literais (ex: contar dias até o fim do ano):
-        >>> df.select(dias_uteis=dus.contar_expr("inicio", dt.date(2024, 12, 31)))
+        >>> df.select(dias_uteis=du.contar_expr("inicio", dt.date(2024, 12, 31)))
         shape: (2, 1)
         ┌────────────┐
         │ dias_uteis │
@@ -141,16 +141,16 @@ def contar(
         - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.
 
     Examples:
-        >>> from pyield import dus
-        >>> dus.contar("15-12-2023", "01-01-2024")
+        >>> from pyield import du
+        >>> du.contar("15-12-2023", "01-01-2024")
         10
 
         Contagem negativa quando ``inicio`` é posterior a ``fim``:
-        >>> dus.contar("08-01-2023", "01-01-2023")
+        >>> du.contar("08-01-2023", "01-01-2023")
         -5
 
         Total de dias úteis em janeiro e fevereiro desde o início do ano:
-        >>> dus.contar(inicio="01-01-2024", fim=["01-02-2024", "01-03-2024"])
+        >>> du.contar(inicio="01-01-2024", fim=["01-02-2024", "01-03-2024"])
         shape: (2,)
         Series: 'dias_uteis' [i64]
         [
@@ -159,7 +159,7 @@ def contar(
         ]
 
         Dias úteis restantes de janeiro/fevereiro até o fim do ano:
-        >>> dus.contar(["01-01-2024", "01-02-2024"], "01-01-2025")
+        >>> du.contar(["01-01-2024", "01-02-2024"], "01-01-2025")
         shape: (2,)
         Series: 'dias_uteis' [i64]
         [
@@ -168,7 +168,7 @@ def contar(
         ]
 
         Total de dias úteis em janeiro e fevereiro de 2024:
-        >>> dus.contar(["01-01-2024", "01-02-2024"], ["01-02-2024", "01-03-2024"])
+        >>> du.contar(["01-01-2024", "01-02-2024"], ["01-02-2024", "01-03-2024"])
         shape: (2,)
         Series: 'dias_uteis' [i64]
         [
@@ -177,11 +177,11 @@ def contar(
         ]
 
         Valores nulos são propagados:
-        >>> dus.contar(None, "01-01-2024")  # None em inicio
+        >>> du.contar(None, "01-01-2024")  # None em inicio
 
-        >>> dus.contar("01-01-2024", None)  # None em fim
+        >>> du.contar("01-01-2024", None)  # None em fim
 
-        >>> dus.contar("01-01-2024", ["01-02-2024", None])  # None dentro do array
+        >>> du.contar("01-01-2024", ["01-02-2024", None])  # None dentro do array
         shape: (2,)
         Series: 'dias_uteis' [i64]
         [
@@ -190,7 +190,7 @@ def contar(
         ]
 
         >>> datas_inicio = ["01-01-2024", "01-02-2024", "01-03-2024"]
-        >>> dus.contar(datas_inicio, "01-01-2025")
+        >>> du.contar(datas_inicio, "01-01-2025")
         shape: (3,)
         Series: 'dias_uteis' [i64]
         [
@@ -235,13 +235,13 @@ def deslocar_expr(
     Examples:
         >>> import datetime as dt
         >>> import polars as pl
-        >>> from pyield import dus
+        >>> from pyield import du
         >>> datas = [dt.date(2023, 12, 22), dt.date(2023, 12, 29)]
         >>> offsets = [1, 5]
         >>> df = pl.DataFrame({"dt": datas, "n": offsets})
 
         Adicionando um valor fixo (1 dia útil):
-        >>> df.select(dus.deslocar_expr("dt", 1).alias("t_plus_1"))
+        >>> df.select(du.deslocar_expr("dt", 1).alias("t_plus_1"))
         shape: (2, 1)
         ┌────────────┐
         │ t_plus_1   │
@@ -253,7 +253,7 @@ def deslocar_expr(
         └────────────┘
 
         Adicionando uma coluna dinâmica (prazo variável por linha):
-        >>> df.select(dus.deslocar_expr("dt", "n").alias("vencimento"))
+        >>> df.select(du.deslocar_expr("dt", "n").alias("vencimento"))
         shape: (2, 1)
         ┌────────────┐
         │ vencimento │
@@ -375,49 +375,49 @@ def deslocar(
         - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.
 
     Examples:
-        >>> from pyield import dus
+        >>> from pyield import du
 
         Desloca sábado antes do Natal para o próximo dia útil (terça após Natal):
-        >>> dus.deslocar("23-12-2023", 0)
+        >>> du.deslocar("23-12-2023", 0)
         datetime.date(2023, 12, 26)
 
         Desloca sexta antes do Natal (sem deslocamento pois é dia útil):
-        >>> dus.deslocar("22-12-2023", 0)
+        >>> du.deslocar("22-12-2023", 0)
         datetime.date(2023, 12, 22)
 
         Desloca para o dia útil anterior se não for útil (deslocamento=0 e
         rolagem="backward"):
 
         Sem deslocamento pois é dia útil:
-        >>> dus.deslocar("22-12-2023", 0, rolagem="backward")
+        >>> du.deslocar("22-12-2023", 0, rolagem="backward")
         datetime.date(2023, 12, 22)
 
         Desloca para o primeiro dia útil antes de "23-12-2023":
-        >>> dus.deslocar("23-12-2023", 0, rolagem="backward")
+        >>> du.deslocar("23-12-2023", 0, rolagem="backward")
         datetime.date(2023, 12, 22)
 
         Avança para o próximo dia útil (deslocamento=1 e rolagem="forward"):
 
         Desloca sexta para o próximo dia útil (sexta é pulada -> segunda):
-        >>> dus.deslocar("27-09-2024", 1)
+        >>> du.deslocar("27-09-2024", 1)
         datetime.date(2024, 9, 30)
 
         Desloca sábado para o próximo dia útil (segunda é pulada -> terça):
-        >>> dus.deslocar("28-09-2024", 1)
+        >>> du.deslocar("28-09-2024", 1)
         datetime.date(2024, 10, 1)
 
         Volta para o dia útil anterior (deslocamento=-1 e rolagem="backward"):
 
         Desloca sexta para o dia útil anterior (sexta é pulada -> quinta):
-        >>> dus.deslocar("27-09-2024", -1, rolagem="backward")
+        >>> du.deslocar("27-09-2024", -1, rolagem="backward")
         datetime.date(2024, 9, 26)
 
         Desloca sábado para o dia útil anterior (sexta é pulada -> quinta):
-        >>> dus.deslocar("28-09-2024", -1, rolagem="backward")
+        >>> du.deslocar("28-09-2024", -1, rolagem="backward")
         datetime.date(2024, 9, 26)
 
         Lista de datas e deslocamentos:
-        >>> dus.deslocar(["19-09-2024", "20-09-2024"], 1)
+        >>> du.deslocar(["19-09-2024", "20-09-2024"], 1)
         shape: (2,)
         Series: 'data_ajustada' [date]
         [
@@ -425,7 +425,7 @@ def deslocar(
             2024-09-23
         ]
 
-        >>> dus.deslocar("19-09-2024", [1, 2])  # lista de deslocamentos
+        >>> du.deslocar("19-09-2024", [1, 2])  # lista de deslocamentos
         shape: (2,)
         Series: 'data_ajustada' [date]
         [
@@ -434,11 +434,11 @@ def deslocar(
         ]
 
         Nulos escalares propagam para None:
-        >>> print(dus.deslocar(None, 1))
+        >>> print(du.deslocar(None, 1))
         None
 
         Nulo escalar propaga dentro de arrays:
-        >>> dus.deslocar(None, [1, 2])
+        >>> du.deslocar(None, [1, 2])
         shape: (2,)
         Series: 'data_ajustada' [date]
         [
@@ -447,7 +447,7 @@ def deslocar(
         ]
 
         Nulos dentro de arrays são preservados:
-        >>> dus.deslocar(["19-09-2024", None], 1)
+        >>> du.deslocar(["19-09-2024", None], 1)
         shape: (2,)
         Series: 'data_ajustada' [date]
         [
@@ -456,7 +456,7 @@ def deslocar(
         ]
 
         >>> datas = ["19-09-2024", "20-09-2024", "21-09-2024"]
-        >>> dus.deslocar(datas, 1)
+        >>> du.deslocar(datas, 1)
         shape: (3,)
         Series: 'data_ajustada' [date]
         [
@@ -512,8 +512,8 @@ def gerar(
         - ``inicio`` e ``fim`` nulos usam a data atual.
 
     Examples:
-        >>> from pyield import dus
-        >>> dus.gerar(inicio="22-12-2023", fim="02-01-2024")
+        >>> from pyield import du
+        >>> du.gerar(inicio="22-12-2023", fim="02-01-2024")
         shape: (6,)
         Series: 'data' [date]
         [
@@ -555,12 +555,12 @@ def e_dia_util_expr(data: pl.Expr | str) -> pl.Expr:
     Examples:
         >>> import datetime as dt
         >>> import polars as pl
-        >>> from pyield import dus
+        >>> from pyield import du
         >>> datas = [dt.date(2023, 12, 25), dt.date(2023, 12, 26)]
         >>> df = pl.DataFrame({"data": datas})
 
         Criando uma flag booleana:
-        >>> df.with_columns(e_dia_util=dus.e_dia_util_expr("data"))
+        >>> df.with_columns(e_dia_util=du.e_dia_util_expr("data"))
         shape: (2, 2)
         ┌────────────┬────────────┐
         │ data       ┆ e_dia_util │
@@ -572,7 +572,7 @@ def e_dia_util_expr(data: pl.Expr | str) -> pl.Expr:
         └────────────┴────────────┘
 
         Usando para filtrar apenas dias úteis:
-        >>> df.filter(dus.e_dia_util_expr("data"))
+        >>> df.filter(du.e_dia_util_expr("data"))
         shape: (1, 1)
         ┌────────────┐
         │ data       │
@@ -633,12 +633,12 @@ def e_dia_util(datas: None | DateLike | ArrayLike) -> None | bool | pl.Series:
         (nome: ``'e_dia_util'``) para entradas de array.
 
     Examples:
-        >>> from pyield import dus
-        >>> dus.e_dia_util("25-12-2023")  # Natal (calendário antigo)
+        >>> from pyield import du
+        >>> du.e_dia_util("25-12-2023")  # Natal (calendário antigo)
         False
-        >>> dus.e_dia_util("20-11-2024")  # Dia Nacional de Zumbi (novo feriado)
+        >>> du.e_dia_util("20-11-2024")  # Dia Nacional de Zumbi (novo feriado)
         False
-        >>> dus.e_dia_util(["22-12-2023", "26-12-2023"])  # Períodos mistos
+        >>> du.e_dia_util(["22-12-2023", "26-12-2023"])  # Períodos mistos
         shape: (2,)
         Series: 'e_dia_util' [bool]
         [

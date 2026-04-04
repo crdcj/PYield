@@ -20,11 +20,11 @@ pip install pyield
 ## Início Rápido
 
 ```python
-from pyield import dus, b3, bc, ntnb, Interpolador
+from pyield import du, b3, bc, ntnb, Interpolador
 
 # Dias úteis (base de todos os cálculos)
-dus.contar("02-01-2025", "15-01-2025")  # -> 9
-dus.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
+du.contar("02-01-2025", "15-01-2025")  # -> 9
+du.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
 
 # Curva de DI Futuro
 df = b3.futuro("31-05-2024", "DI1")
@@ -48,28 +48,28 @@ Um notebook no Colab com mais exemplos:
 
 ## Blocos Principais
 
-### Dias Úteis (`dus`)
+### Dias Úteis (`du`)
 
-O módulo `dus` é a base do PYield. Todos os cálculos com datas (preço, duration, taxas a termo) dependem da contagem correta de dias úteis com feriados brasileiros.
+O módulo `du` é a base do PYield. Todos os cálculos com datas (preço, duration, taxas a termo) dependem da contagem correta de dias úteis com feriados brasileiros.
 
 ```python
-from pyield import dus
+from pyield import du
 
 # Conta dias úteis (início inclusivo, fim exclusivo)
-dus.contar("29-12-2023", "02-01-2024")  # -> 1
+du.contar("29-12-2023", "02-01-2024")  # -> 1
 
 # Avança N dias úteis
-dus.deslocar("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
+du.deslocar("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
 
 # Ajusta dia não útil para o próximo dia útil
-dus.deslocar("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
+du.deslocar("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
 
 # Gera intervalo de dias úteis
-dus.gerar("22-12-2023", "02-01-2024")
+du.gerar("22-12-2023", "02-01-2024")
 # -> Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
 
 # Verifica se a data é dia útil
-dus.e_dia_util("25-12-2023")  # -> False (Natal)
+du.e_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
 Todas as funções suportam operações vetorizadas com listas, Series ou arrays.
@@ -126,7 +126,7 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 
 | Módulo | Finalidade |
 |--------|---------|
-| `dus` | Calendário de dias úteis com feriados brasileiros |
+| `du` | Calendário de dias úteis com feriados brasileiros |
 | `b3.futuro` | Dados históricos de futuros da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
 | `b3.di1` | Curva DI1 interpolada e datas de negociação disponíveis |
 | `Interpolador` | Interpolação de taxas (flat_forward, linear) |
@@ -197,10 +197,10 @@ Tratamento de nulos: funções escalares retornam `float('nan')` para entradas a
 (propaga nos cálculos). Funções vetorizadas propagam `null` elemento a elemento.
 
 ```python
-from pyield import ntnb, dus
+from pyield import ntnb, du
 
 ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
-dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
+du.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
 
 Consultas sem dados disponíveis (data futura, feriado, fim de semana ou
@@ -220,11 +220,11 @@ A partir da versão 0.48.0, a API pública foi migrada para o português. Os pri
 
 | Antes (< 0.48) | Depois (≥ 0.48) |
 |---|---|
-| `yd.bday` | `yd.dus` |
-| `bday.count()` | `dus.contar()` |
-| `bday.offset()` | `dus.deslocar()` |
-| `bday.generate()` | `dus.gerar()` |
-| `bday.is_business_day()` | `dus.e_dia_util()` |
+| `yd.bday` | `yd.du` |
+| `bday.count()` | `du.contar()` |
+| `bday.offset()` | `du.deslocar()` |
+| `bday.generate()` | `du.gerar()` |
+| `bday.is_business_day()` | `du.e_dia_util()` |
 | `Interpolator(method, bdays, rates)` | `Interpolador(dias_uteis, taxas, metodo=...)` |
 | `extrapolate=True` | `extrapolar=True` |
 | `ntnb.quotation()` | `ntnb.cotacao()` |

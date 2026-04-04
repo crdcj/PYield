@@ -1,7 +1,7 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import dus
+from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 
@@ -43,7 +43,7 @@ def dados(data: DateLike) -> pl.DataFrame:
     data_ref = cv.converter_datas(data)
 
     df = df.with_columns(
-        dias_uteis=dus.contar_expr("data_referencia", "data_vencimento"),
+        dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
     )
 
     df = df.with_columns(
@@ -142,7 +142,7 @@ def cotacao(
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
     # Número de dias úteis entre liquidação (inclusivo) e vencimento (exclusivo)
-    dias_uteis = dus.contar(data_liquidacao, data_vencimento)
+    dias_uteis = du.contar(data_liquidacao, data_vencimento)
 
     # Número de períodos truncado conforme regras da ANBIMA
     anos_truncados = utils.truncar(dias_uteis / 252, 14)

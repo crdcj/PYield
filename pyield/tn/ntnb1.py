@@ -3,7 +3,7 @@ from enum import Enum
 import polars as pl
 
 import pyield._internal.converters as conversores
-from pyield import dus
+from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 
@@ -220,7 +220,7 @@ def cotacao(
 
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
     valores_fluxo = df_fluxos["valor_pagamento"]
-    dias_uteis = dus.contar(data_liquidacao, df_fluxos["data_pagamento"])
+    dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
@@ -287,7 +287,7 @@ def duration(
         return float("nan")
 
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
-    anos_uteis = dus.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
+    anos_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
     vp = df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis
     duration = float((vp * anos_uteis).sum()) / float(vp.sum())
 

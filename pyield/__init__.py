@@ -1,6 +1,6 @@
 import logging
 
-from pyield import anbima, b3, bc, dus, ipca, selic, tn
+from pyield import anbima, b3, bc, du, ipca, selic, tn
 from pyield.__about__ import __version__
 from pyield.b3 import di1
 from pyield.fwd import forward, forwards
@@ -18,7 +18,7 @@ __all__ = [
     "bc",
     "copom_options",
     "di1",
-    "dus",
+    "du",
     "forward",
     "forwards",
     "hoje",

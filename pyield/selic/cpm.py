@@ -38,7 +38,7 @@ import polars as pl
 import requests
 
 import pyield._internal.converters as cv
-from pyield import dus
+from pyield import du
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
 from pyield.b3._validar_pregao import data_negociacao_valida
@@ -347,7 +347,7 @@ def data(date: DateLike) -> pl.DataFrame:
 
     # dias_uteis: dias úteis de data_referencia até data_expiracao.
     df = df.with_columns(
-        dias_uteis=dus.contar_expr("data_referencia", "data_expiracao").cast(pl.Int32)
+        dias_uteis=du.contar_expr("data_referencia", "data_expiracao").cast(pl.Int32)
     )
 
     # preco_ajuste: "Preço de Referência" da B3 via endpoint CSV.

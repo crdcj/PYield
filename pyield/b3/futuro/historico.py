@@ -3,7 +3,7 @@ import datetime as dt
 import polars as pl
 import polars.selectors as cs
 
-from pyield import dus
+from pyield import du
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield.b3.futuro.contratos import (
     CONTRATOS_TAXA,
@@ -107,7 +107,7 @@ def _obter_cache_filtrado(contrato: str) -> pl.DataFrame:
 
 def _enriquecer_dados(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     df = df.with_columns(
-        dias_uteis=dus.contar_expr("data_referencia", "data_vencimento"),
+        dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
         dias_corridos=(
             pl.col("data_vencimento") - pl.col("data_referencia")
         ).dt.total_days(),

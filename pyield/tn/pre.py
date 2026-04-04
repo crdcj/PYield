@@ -1,6 +1,6 @@
 import polars as pl
 
-from pyield import dus
+from pyield import du
 from pyield._internal.types import DateLike
 from pyield.tn import ntnf, utils
 
@@ -117,7 +117,7 @@ def _processar_ltn_adicionais(
 ) -> pl.DataFrame:
     """Processa vencimentos de LTN fora do bootstrap de NTN-F."""
     # Calcula dias úteis de forma vetorizada
-    dias_uteis = dus.contar(data_referencia, ltn_nao_em_ntnf["data_vencimento"])
+    dias_uteis = du.contar(data_referencia, ltn_nao_em_ntnf["data_vencimento"])
 
     # Cria DataFrame de resultado
     return pl.DataFrame(

@@ -6,7 +6,7 @@ import polars as pl
 import requests
 from polars import selectors as cs
 
-from pyield import bc, dus
+from pyield import bc, du
 from pyield._internal import converters as cv
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
@@ -224,7 +224,7 @@ def _transformar_dados_brutos(dados_brutos: list[dict]) -> pl.DataFrame:
     )
 
     df = df.with_columns(
-        dias_uteis=dus.contar_expr("data_liquidacao_1v", "data_vencimento")
+        dias_uteis=du.contar_expr("data_liquidacao_1v", "data_vencimento")
     )
     return df.sort("data_1v", "titulo", "data_vencimento")
 
@@ -284,8 +284,8 @@ def _adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
 
 def _buscar_ptax(data_leilao: dt.date) -> pl.DataFrame:
     """Busca a PTAX para o dia util anterior e posterior a data de referencia."""
-    data_min = dus.deslocar(data_leilao, -1)
-    data_max = dus.deslocar(data_leilao, 1)
+    data_min = du.deslocar(data_leilao, -1)
+    data_max = du.deslocar(data_leilao, 1)
 
     df = bc.ptax_serie(inicio=data_min, fim=data_max)
     if df.is_empty():

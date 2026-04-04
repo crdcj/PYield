@@ -25,11 +25,11 @@ pip install pyield
 ## Quick Start
 
 ```python
-from pyield import dus, b3, bc, ntnb, Interpolador
+from pyield import du, b3, bc, ntnb, Interpolador
 
 # Business days (foundation for all calculations)
-dus.contar("02-01-2025", "15-01-2025")  # -> 9
-dus.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
+du.contar("02-01-2025", "15-01-2025")  # -> 9
+du.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
 
 # DI future curve
 df = b3.futuro("31-05-2024", "DI1")
@@ -53,28 +53,28 @@ A Colab notebook with more examples:
 
 ## Core Building Blocks
 
-### Business Days (`dus`)
+### Business Days (`du`)
 
-The `dus` module is the foundation of PYield. All date-based calculations (price, duration, forward rates) depend on correct business-day counting with Brazilian holidays.
+The `du` module is the foundation of PYield. All date-based calculations (price, duration, forward rates) depend on correct business-day counting with Brazilian holidays.
 
 ```python
-from pyield import dus
+from pyield import du
 
 # Count business days (start inclusive, end exclusive)
-dus.contar("29-12-2023", "02-01-2024")  # -> 1
+du.contar("29-12-2023", "02-01-2024")  # -> 1
 
 # Move by N business days
-dus.deslocar("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
+du.deslocar("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
 
 # Adjust non-business day to next business day
-dus.deslocar("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
+du.deslocar("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
 
 # Generate business day range
-dus.gerar("22-12-2023", "02-01-2024")
+du.gerar("22-12-2023", "02-01-2024")
 # -> Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
 
 # Check whether a date is a business day
-dus.e_dia_util("25-12-2023")  # -> False (Christmas)
+du.e_dia_util("25-12-2023")  # -> False (Christmas)
 ```
 
 All functions support vectorized operations with lists, Series, or arrays.
@@ -131,7 +131,7 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 
 | Module | Purpose |
 |--------|---------|
-| `dus` | Business day calendar with Brazilian holidays |
+| `du` | Business day calendar with Brazilian holidays |
 | `b3.futuro` | B3 historical future data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
 | `b3.di1` | Interpolated DI1 curve and available trade dates |
 | `Interpolador` | Rate interpolation (flat_forward, linear) |
@@ -200,10 +200,10 @@ String parsing is performed element-by-element across supported formats. Invalid
 Null handling: scalar functions return `float('nan')` for missing inputs (which propagates in calculations). Vectorized functions propagate `null` element-by-element.
 
 ```python
-from pyield import ntnb, dus
+from pyield import ntnb, du
 
 ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
-dus.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
+du.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
 
 ## Migration to Polars (v0.40.0+)

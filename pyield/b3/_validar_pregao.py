@@ -1,6 +1,6 @@
 import datetime as dt
 
-from pyield import dus, relogio
+from pyield import du, relogio
 
 # Pregão abre às 9:00, porém os dados intradia têm atraso de 15 minutos.
 # Esperar 1 minuto adicional para garantir que estejam disponíveis (9:16h).
@@ -18,7 +18,7 @@ def data_negociacao_valida(data_negociacao: dt.date) -> bool:
     """
     if data_negociacao > relogio.hoje():
         return False
-    if not dus.e_dia_util(data_negociacao):
+    if not du.e_dia_util(data_negociacao):
         return False
 
     # Não tem pregão na véspera de Natal e Ano Novo

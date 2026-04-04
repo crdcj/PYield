@@ -99,7 +99,7 @@ def test_futuro_intradia_filtra_apenas_futuros(monkeypatch):
         modulo_derivativos.derivativo_intradia,
     )
     monkeypatch.setattr(
-        modulo_futuro_intradia.dus, "ultimo_dia_util", _data_referencia_mock
+        modulo_futuro_intradia.du, "ultimo_dia_util", _data_referencia_mock
     )
 
     resultado = modulo_futuro_intradia.intradia("DOL")

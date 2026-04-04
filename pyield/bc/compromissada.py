@@ -16,7 +16,7 @@ import polars as pl
 import requests
 
 import pyield._internal.converters as cv
-from pyield import dus
+from pyield import du
 from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
@@ -81,7 +81,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
         data_retorno=pl.col("dataRetorno").str.to_date("%Y-%m-%d"),
         hora_inicio=pl.col("horaInicio").str.to_time("%H:%M"),
         prazo_dias_corridos=pl.col("prazoDiasCorridos").cast(pl.Int64),
-        prazo_dias_uteis=dus.contar_expr("dataLiquidacao", "dataRetorno"),
+        prazo_dias_uteis=du.contar_expr("dataLiquidacao", "dataRetorno"),
         numero_comunicado=pl.col("numeroComunicado").cast(pl.Int64),
         tipo_oferta=pl.col("nomeTipoOferta"),
         publico_permitido=pl.col("publicoPermitidoLeilao"),
@@ -119,7 +119,7 @@ def compromissadas(
         - hora_inicio (Time): horário de início do leilão.
         - prazo_dias_corridos (Int64): dias corridos até a data de retorno.
                 - prazo_dias_uteis (Int64): dias úteis entre liquidação e retorno
-                    (dus.contar).
+                    (du.contar).
         - numero_comunicado (Int64): número do comunicado/aviso do BC (pode ser nulo).
         - tipo_oferta (String): classif. do tipo de oferta (ex: Tomador, Compromissada 1047).
         - publico_permitido (String): escopo de participantes (SomenteDealer, TodoMercado).

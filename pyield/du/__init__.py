@@ -1,4 +1,4 @@
-from pyield.dus.core import (
+from pyield.du.core import (
     contar,
     contar_expr,
     deslocar,

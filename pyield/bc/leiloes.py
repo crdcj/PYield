@@ -15,7 +15,7 @@ import polars.selectors as cs
 import requests
 
 import pyield._internal.converters as cv
-from pyield import dus
+from pyield import du
 from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
@@ -174,7 +174,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             quantidade_liquidada_total=pl.sum_horizontal(
                 "quantidade_liquidada_1v", "quantidade_liquidada_2v"
             ),
-            dias_uteis=dus.contar_expr("data_liquidacao", "data_vencimento"),
+            dias_uteis=du.contar_expr("data_liquidacao", "data_vencimento"),
         )
         .with_columns(
             financeiro_1v=pl.when(pl.col("quantidade_aceita_1v") != 0)
@@ -231,9 +231,9 @@ def _buscar_ptax(df: pl.DataFrame) -> pl.DataFrame:
     assert isinstance(data_inicio, dt.date)
     assert isinstance(data_fim, dt.date)
 
-    ultimo_dia_util = dus.ultimo_dia_util()
+    ultimo_dia_util = du.ultimo_dia_util()
     if data_inicio >= ultimo_dia_util:
-        data_inicio = dus.deslocar(ultimo_dia_util, -1)
+        data_inicio = du.deslocar(ultimo_dia_util, -1)
 
     df_ptax = ptax_serie(inicio=data_inicio, fim=data_fim)
     if df_ptax.is_empty():

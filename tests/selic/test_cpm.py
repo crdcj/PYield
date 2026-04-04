@@ -10,7 +10,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from pyield import dus
+from pyield import du
 from pyield.selic.cpm import _empty_schema, _parse_ticker
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
@@ -134,7 +134,7 @@ def test_meeting_end_date_not_null(cpm_fixture):
 
 def test_expiry_is_one_bday_after_meeting_end(cpm_fixture):
     for row in cpm_fixture.iter_rows(named=True):
-        esperado = dus.deslocar(row["data_fim_reuniao"], 1)
+        esperado = du.deslocar(row["data_fim_reuniao"], 1)
         assert row["data_expiracao"] == esperado
 
 

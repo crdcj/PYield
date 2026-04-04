@@ -1,4 +1,4 @@
-from pyield import dus
+from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tn import utils
 
@@ -33,7 +33,7 @@ def pu(
         return float("nan")
 
     # Calcula dias úteis entre liquidação e vencimento
-    dias_uteis = dus.contar(data_liquidacao, data_vencimento)
+    dias_uteis = du.contar(data_liquidacao, data_vencimento)
 
     # Calcula anos úteis truncados conforme ANBIMA
     anos_uteis = utils.truncar(dias_uteis / 252, 14)

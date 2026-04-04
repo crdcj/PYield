@@ -21,13 +21,13 @@ uv sync
 pytest
 
 # Run only doctests in a single module
-pytest pyield/dus/core.py --doctest-modules
+pytest pyield/du/core.py --doctest-modules
 
 # Run a single test file
-pytest tests/dus/test_dus.py
+pytest tests/du/test_dus.py
 
 # Run a specific test
-pytest tests/dus/test_dus.py::test_count_new_holiday
+pytest tests/du/test_dus.py::test_count_new_holiday
 
 # Linting
 ruff check
@@ -45,7 +45,7 @@ mkdocs serve
 
 The library is organized into domain-specific namespaces, all exposed through `pyield/__init__.py`:
 
-- **`dus`** — Calendário de dias úteis (feriados brasileiros embutidos). Funções principais: `contar`, `deslocar`, `gerar`, `e_dia_util`, `ultimo_dia_util`. Variantes para expressões Polars: `contar_expr`, `deslocar_expr`, `e_dia_util_expr`.
+- **`du`** — Calendário de dias úteis (feriados brasileiros embutidos). Funções principais: `contar`, `deslocar`, `gerar`, `e_dia_util`, `ultimo_dia_util`. Variantes para expressões Polars: `contar_expr`, `deslocar_expr`, `e_dia_util_expr`.
 - **`anbima`** — ANBIMA data endpoints (treasury bond pricing, yield curves). Functions: `tpf`, `tpf_vencimentos`, `tpf_fonte`, `ettj_ultima`, `ettj_intradia`, `ima_ultimo`, `imaq`, `tpf_difusao`.
 - **`bc`** — BCB indicators. Functions: `selic_over`, `selic_over_series`, `selic_target`, `selic_target_series`, `di_over`, `di_over_series`, `ptax`, `ptax_series`, `repos`, `vna_lft`, `auctions`, `tpf_monthly_trades`, `tpf_intraday_trades`. Submodule: `copom`.
 - **`b3`** — B3 market data. Functions: `futuro`, `futuro_enriquecer`, `futuro_intradia`, `futuro_datas_disponiveis`, `di_over`, `boletim_negociacao`, `boletim_negociacao_ler`, `derivativo_intradia`. Submodule: `di1`.

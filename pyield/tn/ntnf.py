@@ -6,7 +6,7 @@ import polars as pl
 
 import pyield._internal.converters as cv
 import pyield.interpolador as ip
-from pyield import dus
+from pyield import du
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.b3 import di1
 from pyield.tn import utils
@@ -72,7 +72,7 @@ def dados(data: DateLike) -> pl.DataFrame:
 
     # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
     df = df.with_columns(
-        dias_uteis=dus.contar_expr("data_referencia", "data_vencimento"),
+        dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
     )
 
     # Adiciona duration, prazo_medio, dv01, dv01_usd e taxa_di
@@ -292,7 +292,7 @@ def fluxos_caixa(
     )
 
     if ajustar_datas_pagamento:
-        df = df.with_columns(data_pagamento=dus.deslocar_expr("data_pagamento", 0))
+        df = df.with_columns(data_pagamento=du.deslocar_expr("data_pagamento", 0))
     return df
 
 
@@ -309,7 +309,7 @@ def _calcular_pu(
         return float("nan")
 
     valores_fluxo = df_fluxos["valor_pagamento"]
-    dias_uteis = dus.contar(data_liquidacao, df_fluxos["data_pagamento"])
+    dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa) ** anos_uteis
     vp = (valores_fluxo / fatores_desconto).round(9)
@@ -429,12 +429,12 @@ def taxas_zero(  # noqa
 
     # 2. Criar interpoladores (aceitam pl.Series diretamente)
     interpolador_ltn = ip.Interpolador(
-        dias_uteis=dus.contar(liquidacao, ltn_vencimentos),
+        dias_uteis=du.contar(liquidacao, ltn_vencimentos),
         taxas=serie_ltn_taxas,
         metodo="flat_forward",
     )
     interpolador_ntnf = ip.Interpolador(
-        dias_uteis=dus.contar(liquidacao, ntnf_vencimentos),
+        dias_uteis=du.contar(liquidacao, ntnf_vencimentos),
         taxas=serie_ntnf_taxas,
         metodo="flat_forward",
     )
@@ -445,7 +445,7 @@ def taxas_zero(  # noqa
     todas_datas_cupom = datas_pagamento(liquidacao, ultimo_vencimento)
 
     # 4. Construir DataFrame inicial
-    dias_uteis_ate_venc = dus.contar(liquidacao, todas_datas_cupom)
+    dias_uteis_ate_venc = du.contar(liquidacao, todas_datas_cupom)
     taxas_tir = interpolador_ntnf(dias_uteis_ate_venc)
     df = pl.DataFrame(
         {
@@ -495,7 +495,7 @@ def taxas_zero(  # noqa
 
         # Recupera taxas spot já solucionadas para estes cupons
         taxas_spot_fluxo = [mapa_spot[d] for d in datas_fluxo]
-        periodos_fluxo = dus.contar(liquidacao, datas_fluxo) / 252
+        periodos_fluxo = du.contar(liquidacao, datas_fluxo) / 252
         fluxos = [VALOR_CUPOM] * len(datas_fluxo)
 
         valor_presente_fluxo = utils.calcular_pv(
@@ -590,12 +590,12 @@ def rentabilidade(  # noqa
         return float("nan")
 
     interpolador_ff = ip.Interpolador(
-        dus.contar(data_liquidacao, vencimentos_di),  # type: ignore[arg-type]
+        du.contar(data_liquidacao, vencimentos_di),  # type: ignore[arg-type]
         serie_taxas_di,
         "flat_forward",
     )
 
-    dias_uteis_pagamento = dus.contar(data_liquidacao, df_fluxos["data_pagamento"])
+    dias_uteis_pagamento = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
     df = df_fluxos.with_columns(
         dias_uteis=dias_uteis_pagamento,
         anos_uteis=dias_uteis_pagamento / 252,
@@ -732,7 +732,7 @@ def premio_limpo(  # noqa
         serie_taxas_di = taxas_di
 
     interpolador_ff = ip.Interpolador(
-        dus.contar(data_liquidacao, vencimentos_di),
+        du.contar(data_liquidacao, vencimentos_di),
         serie_taxas_di,
         "flat_forward",
     )
@@ -741,7 +741,7 @@ def premio_limpo(  # noqa
     if df.is_empty():
         return float("nan")
 
-    dias_uteis_pagamento = dus.contar(data_liquidacao, df["data_pagamento"])
+    dias_uteis_pagamento = du.contar(data_liquidacao, df["data_pagamento"])
     anos_uteis_pagamento = dias_uteis_pagamento / 252
 
     df = df.with_columns(
@@ -790,7 +790,7 @@ def duration(
     if df_fluxos.is_empty():
         return float("nan")
 
-    anos_uteis = dus.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
+    anos_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
     vp = df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis
     duration = float((vp * anos_uteis).sum()) / float(vp.sum())
     return duration
