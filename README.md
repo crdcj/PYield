@@ -10,12 +10,6 @@ PYield é uma biblioteca Python voltada para análise de títulos públicos bras
 
 Embora inclua dados e ferramentas de outros mercados (como DI1, DAP e PTAX), esses recursos são auxiliares para o objetivo central: análise, precificação e acompanhamento de títulos públicos.
 
-## Links Rápidos
-
-- Documentação completa: https://crdcj.github.io/PYield/
-- Notebook no Colab: https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb
-- Pacote no PyPI: https://pypi.org/project/pyield/
-
 ## Instalação
 
 ```sh
@@ -98,7 +92,7 @@ linear = Interpolador(dias_uteis, taxas, metodo="linear")
 linear(45)  # -> 0.0475
 
 # Vetorizado
-interp([15, 45, 75])  # -> pl.Series with 3 rates
+interp([15, 45, 75])  # -> pl.Series com 3 taxas
 
 # Extrapolação (desabilitada por padrão, retorna NaN)
 interp(100)  # -> nan
@@ -160,9 +154,9 @@ ntnb.dados("23-08-2024")  # -> DataFrame com títulos NTN-B
 ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
-# Spreads de DI (bps=True multiplica por 10.000)
-ntnf.di_spreads("30-05-2025", bps=True)
-# -> DataFrame: titulo, data_vencimento, spread_di
+# Prêmio sobre o DI (pontos_base=True multiplica por 10.000)
+ntnf.premio("30-05-2025", pontos_base=True)
+# -> DataFrame: titulo, data_vencimento, premio
 ```
 
 ## Dados de Futuros
@@ -231,6 +225,10 @@ pl_series = pl.Series(np_array)         # np.ndarray → pl.Series (requer numpy
 # Saída: converter DataFrame Polars para Pandas
 df_pandas = df.to_pandas(use_pyarrow_extension_array=True)
 ```
+
+## Documentação
+
+Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
 
 ## Testes
 

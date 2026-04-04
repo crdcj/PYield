@@ -98,14 +98,14 @@ _RENOMEAR_COLUNAS_PR = {
 }
 
 
-def _obter_cache_filtrado(codigo_contrato: str) -> pl.DataFrame:
+def _obter_cache_filtrado(contrato: str) -> pl.DataFrame:
     """Carrega o dataset PR cacheado e filtra por contrato."""
     return obter_dataset_cacheado("futuro").filter(
-        pl.col("TckrSymb").str.starts_with(codigo_contrato)
+        pl.col("TckrSymb").str.starts_with(contrato)
     )
 
 
-def _enriquecer_dados(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+def _enriquecer_dados(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     df = df.with_columns(
         dias_uteis=dus.contar_expr("data_referencia", "data_vencimento"),
         dias_corridos=(
@@ -113,17 +113,17 @@ def _enriquecer_dados(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
         ).dt.total_days(),
     ).filter(pl.col("dias_corridos") > 0)
 
-    eh_taxa = codigo_contrato in CONTRATOS_TAXA
+    eh_taxa = contrato in CONTRATOS_TAXA
     if eh_taxa:
         df = df.rename(_PRECO_PARA_TAXA, strict=False)
         df = df.with_columns(cs.starts_with("taxa_").truediv(100).round(6))
 
-    if codigo_contrato == "DI1":
+    if contrato == "DI1":
         df = df.with_columns(
             dv01=expr_dv01("dias_uteis", "taxa_ajuste", "preco_ajuste")
         )
 
-    if codigo_contrato in {"DI1", "DAP"}:
+    if contrato in {"DI1", "DAP"}:
         df = df.with_columns(
             taxa_forward=forwards(bdays=df["dias_uteis"], rates=df["taxa_ajuste"])
         )
@@ -131,28 +131,28 @@ def _enriquecer_dados(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
     return df
 
 
-def _selecionar_colunas_saida(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
-    if codigo_contrato in CONTRATOS_TAXA:
+def _selecionar_colunas_saida(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
+    if contrato in CONTRATOS_TAXA:
         colunas = _COLUNAS_CONTRATO_TAXA
     else:
         colunas = _COLUNAS_CONTRATO_PRECO
     return df.select(c for c in colunas if c in df.columns)
 
 
-def _buscar_do_cache(datas: list[dt.date], codigo_contrato: str) -> pl.DataFrame:
+def _buscar_do_cache(datas: list[dt.date], contrato: str) -> pl.DataFrame:
     """Carrega histórico de futuros do dataset PR para uma lista de datas."""
     if not datas:
         return pl.DataFrame()
 
-    df = _obter_cache_filtrado(codigo_contrato)
+    df = _obter_cache_filtrado(contrato)
     df = df.filter(pl.col("TradDt").is_in(datas))
     if df.is_empty():
         return pl.DataFrame()
 
-    return enriquecer(df, codigo_contrato)
+    return enriquecer(df, contrato)
 
 
-def enriquecer(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+def enriquecer(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     """Enriquece DataFrame bruto do Price Report (PR) da B3.
 
     Aceita um DataFrame com colunas no schema original da B3 (ex.:
@@ -162,7 +162,7 @@ def enriquecer(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
 
     Args:
         df: DataFrame com dados do PR da B3.
-        codigo_contrato: Código do contrato futuro (ex.: "DI1", "DOL").
+        contrato: Contrato futuro (ex.: "DI1", "DOL").
 
     Returns:
         DataFrame Polars enriquecido e ordenado.
@@ -171,22 +171,22 @@ def enriquecer(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
         return pl.DataFrame()
 
     df = df.rename(_RENOMEAR_COLUNAS_PR)
-    df = adicionar_vencimento(df, codigo_contrato, coluna_ticker="codigo_negociacao")
-    df = _enriquecer_dados(df, codigo_contrato)
-    df = _selecionar_colunas_saida(df, codigo_contrato)
+    df = adicionar_vencimento(df, contrato, coluna_ticker="codigo_negociacao")
+    df = _enriquecer_dados(df, contrato)
+    df = _selecionar_colunas_saida(df, contrato)
 
     return df.sort("data_referencia", "data_vencimento")
 
 
 def historico(
     data: dt.date,
-    codigo_contrato: str,
+    contrato: str,
 ) -> pl.DataFrame:
     """Busca histórico de futuros no dataset PR cacheado.
 
     Args:
         data: Data de negociação.
-        codigo_contrato: Código do contrato futuro na B3.
+        contrato: Contrato futuro na B3.
 
     Returns:
         DataFrame Polars com dados históricos de futuros.
@@ -244,13 +244,13 @@ def historico(
         ``taxa_ultima_oferta_compra`` = maior taxa (ask em PU),
         ``taxa_ultima_oferta_venda`` = menor taxa (bid em PU).
     """
-    return _buscar_do_cache([data], codigo_contrato)
+    return _buscar_do_cache([data], contrato)
 
 
-def listar_datas_disponiveis(codigo_contrato: str) -> pl.Series:
+def listar_datas_disponiveis(contrato: str) -> pl.Series:
     """Lista datas disponíveis no dataset PR para um contrato futuro."""
     return (
-        _obter_cache_filtrado(codigo_contrato)
+        _obter_cache_filtrado(contrato)
         .get_column("TradDt")
         .drop_nulls()
         .unique()

@@ -111,8 +111,8 @@ def test_boletim_negociacao_reusa_download_xml_por_data(monkeypatch):
     monkeypatch.setattr(pr_mod, "boletim_negociacao_extrair", _extrair_xml_falso)
     monkeypatch.setattr(pr_mod, "_processar_xml_extraido", _processar_xml_falso)
 
-    _ = pr_mod.boletim_negociacao(data_referencia="12-01-2026", prefixo_codigo="DI1")
-    _ = pr_mod.boletim_negociacao(data_referencia="12-01-2026", prefixo_codigo="DOL")
+    _ = pr_mod.boletim_negociacao(data="12-01-2026", prefixo_ticker="DI1")
+    _ = pr_mod.boletim_negociacao(data="12-01-2026", prefixo_ticker="DOL")
 
     # Monkeypatch substitui a função cacheada, então cada chamada passa direto
     assert chamadas == {"download": 2, "extrair": 2}

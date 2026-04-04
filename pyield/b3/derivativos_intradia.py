@@ -79,8 +79,8 @@ TIPOS = {orig: tipo for orig, _, tipo in COLUNAS_INTRADIA}
 
 @ttl_cache(ttl=10)
 @retry_padrao
-def _buscar_json_intradia(codigo_contrato: str) -> list[dict]:
-    url = f"{URL_BASE_INTRADIA}/{codigo_contrato}"
+def _buscar_json_intradia(contrato: str) -> list[dict]:
+    url = f"{URL_BASE_INTRADIA}/{contrato}"
     cabecalhos = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"  # noqa: E501
     }
@@ -110,7 +110,7 @@ def _processar_colunas_intradia(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def derivativo_intradia(codigo_contrato: str) -> pl.DataFrame:
+def derivativo_intradia(contrato: str) -> pl.DataFrame:
     """Busca cotações intradia brutas de derivativos da B3.
 
     Faz a chamada ao endpoint ``DerivativeQuotation`` e devolve um DataFrame
@@ -122,7 +122,7 @@ def derivativo_intradia(codigo_contrato: str) -> pl.DataFrame:
     derivados devem ser feitos no módulo consumidor.
 
     Args:
-        codigo_contrato: Código base do derivativo na B3
+        contrato: Contrato derivativo na B3
             (ex.: ``DI1``, ``DOL``, ``DAP``, ``DDI``, ``FRC``, ``FRO``, ``IND``).
 
     Returns:
@@ -155,7 +155,7 @@ def derivativo_intradia(codigo_contrato: str) -> pl.DataFrame:
           ~15 min; este valor é calculado subtraindo esse atraso do
           horário da consulta.
     """
-    dados_json = _buscar_json_intradia(codigo_contrato)
+    dados_json = _buscar_json_intradia(contrato)
     if not dados_json:
         return pl.DataFrame()
 

@@ -43,7 +43,7 @@ def expr_dv01(
 
 
 def adicionar_vencimento(
-    df: pl.DataFrame, codigo_contrato: str, coluna_ticker: str
+    df: pl.DataFrame, contrato: str, coluna_ticker: str
 ) -> pl.DataFrame:
     """
     Recebe um DataFrame Polars e ADICIONA a coluna 'data_vencimento'.
@@ -56,7 +56,7 @@ def adicionar_vencimento(
 
     Assume códigos de negociação no formato padrão de futuros da B3 (ex.: DI1F25).
     """
-    dia_vencimento = 15 if "DAP" in codigo_contrato else 1
+    dia_vencimento = 15 if "DAP" in contrato else 1
     df = df.with_columns(
         pl.date(
             # Ano: posição 4-5 (2 dígitos) -> Int -> Soma 2000

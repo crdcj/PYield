@@ -42,7 +42,7 @@ import pyield._internal.converters as cv
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.b3._contratos import normalizar_codigos_contrato
+from pyield.b3._contratos import normalizar_contratos
 from pyield.b3._validar_pregao import data_negociacao_valida
 
 # --- Constantes de Processamento XML ---
@@ -260,9 +260,9 @@ def _obter_df_boletim_negociacao(data: dt.date, boletim_completo: bool) -> pl.Da
 
 
 def boletim_negociacao(
-    data_referencia: DateLike,
-    prefixo_codigo: str | list[str] | None = None,
-    comprimento_codigo: int | None = None,
+    data: DateLike,
+    prefixo_ticker: str | list[str] | None = None,
+    comprimento_ticker: int | None = None,
     boletim_completo: bool = False,
 ) -> pl.DataFrame:
     """Busca e processa o Boletim de Negociacao da B3 no site oficial.
@@ -276,19 +276,24 @@ def boletim_negociacao(
     nem normalização semântica por classe de ativo. O enriquecimento é responsabilidade do
     módulo consumidor (ex.: ``futuro.historico``).
 
+    Como esta é uma camada bruta/intermediária, próxima do XML original da B3,
+    os parâmetros de filtro usam a terminologia da fonte (`ticker`/`TckrSymb`).
+    Nas camadas públicas enriquecidas da biblioteca, o vocabulário preferido é
+    o canônico da lib (ex.: `contrato`, `codigo_negociacao`).
+
     Nota:
         O dataset cacheado ``pr`` (arquivo ``b3_pr.parquet``) pode conter um
         subconjunto de colunas focado em futuros. Esta função, porém, opera no
         schema bruto do XML da B3 para a data/relatório consultados.
 
     Args:
-        data_referencia: Data de negociação no formato 'DD-MM-YYYY', 'DD/MM/YYYY',
+        data: Data de negociação no formato 'DD-MM-YYYY', 'DD/MM/YYYY',
             'YYYY-MM-DD' ou objeto datetime.date.
-        prefixo_codigo: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
+        prefixo_ticker: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
             'CPM') ou lista de prefixos (ex.: ['DI1', 'DAP']).
             Usado como filtro starts-with no XML. Se None (padrão),
             retorna todos os ativos sem filtro.
-        comprimento_codigo: Comprimento exato do ticker para filtrar registros.
+        comprimento_ticker: Comprimento exato do ticker para filtrar registros.
             Se None (padrão), retorna todos os tickers que casam com o
             prefixo (ex.: 6 para futuros, 13 para opções).
         boletim_completo: Se False (padrão), usa o simplified price report (SPR),
@@ -359,40 +364,43 @@ def boletim_negociacao(
         >>> df.is_empty()
         True
     """
-    if any_is_empty(data_referencia):
+    if any_is_empty(data):
         return pl.DataFrame()
 
-    data_referencia = cv.converter_datas(data_referencia)
+    data = cv.converter_datas(data)
     # Validação centralizada (evita chamadas desnecessárias às APIs B3)
-    if not data_negociacao_valida(data_referencia):
+    if not data_negociacao_valida(data):
         return pl.DataFrame()
 
-    df = _obter_df_boletim_negociacao(data_referencia, boletim_completo)
-    if df.is_empty() or prefixo_codigo is None:
+    df = _obter_df_boletim_negociacao(data, boletim_completo)
+    if df.is_empty() or prefixo_ticker is None:
         return df
 
-    prefixos = normalizar_codigos_contrato(prefixo_codigo)
+    prefixos = normalizar_contratos(prefixo_ticker)
     if not prefixos:
         return pl.DataFrame()
-    return _filtrar_df(df, prefixos, comprimento_codigo)
+    return _filtrar_df(df, prefixos, comprimento_ticker)
 
 
 def boletim_negociacao_ler(
     xml_bytes: bytes,
-    prefixo_codigo: str | list[str] | None = None,
-    comprimento_codigo: int | None = None,
+    prefixo_ticker: str | list[str] | None = None,
+    comprimento_ticker: int | None = None,
 ) -> pl.DataFrame:
     """Lê e processa o price report da B3 a partir do conteúdo XML bruto.
 
     Mesma saída de :func:`boletim_negociacao`, mas recebe o XML já
     descomprimido em vez de baixar da rede.
 
+    Por operar diretamente sobre o XML bruto, esta função preserva a
+    terminologia da fonte para filtros de `TckrSymb`.
+
     Args:
         xml_bytes: Conteúdo do XML em bytes (já descomprimido).
-        prefixo_codigo: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
+        prefixo_ticker: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
             'CPM') ou lista de prefixos (ex.: ['DI1', 'DAP']).
             Se None (padrão), retorna todos os ativos sem filtro.
-        comprimento_codigo: Comprimento exato do ticker para filtrar registros.
+        comprimento_ticker: Comprimento exato do ticker para filtrar registros.
             Se None (padrão), retorna todos os tickers que casam com o
             prefixo.
 
@@ -404,10 +412,10 @@ def boletim_negociacao_ler(
         return pl.DataFrame()
 
     df = _processar_xml_extraido(xml_bytes)
-    if df.is_empty() or prefixo_codigo is None:
+    if df.is_empty() or prefixo_ticker is None:
         return df
 
-    prefixos = normalizar_codigos_contrato(prefixo_codigo)
+    prefixos = normalizar_contratos(prefixo_ticker)
     if not prefixos:
         return pl.DataFrame()
-    return _filtrar_df(df, prefixos, comprimento_codigo)
+    return _filtrar_df(df, prefixos, comprimento_ticker)

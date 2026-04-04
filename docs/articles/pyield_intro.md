@@ -128,11 +128,11 @@ yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 yd.ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
 # Prêmio sobre DI para títulos pré-fixados (em pontos-base)
-df_spreads = yd.ltn.premio("30-05-2024", pontos_base=True)
+df_premios = yd.ltn.premio("30-05-2024", pontos_base=True)
 # Colunas: titulo, data_vencimento, premio
 
-# Spreads para NTN-F
-df_spreads_ntnf = yd.ntnf.di_spreads("30-05-2024", bps=True)
+# Prêmio para NTN-F
+df_premios_ntnf = yd.ntnf.premio("30-05-2024", pontos_base=True)
 ```
 
 ### 5. Interpolação de Taxas

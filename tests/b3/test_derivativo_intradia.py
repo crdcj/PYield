@@ -13,15 +13,15 @@ HORARIO_REFERENCIA = dt.datetime(2026, 3, 10, 12, 0)
 TAMANHO_CODIGO_NEGOCIACAO_FUTURO = 6
 
 
-def _carregar_json_scty(codigo_contrato: str) -> list[dict]:
+def _carregar_json_scty(contrato: str) -> list[dict]:
     """Carrega a lista Scty do JSON bruto de referência."""
-    caminho = DIRETORIO_DADOS / f"intraday_20260310_{codigo_contrato}.json"
+    caminho = DIRETORIO_DADOS / f"intraday_20260310_{contrato}.json"
     with open(caminho, encoding="utf-8") as f:
         return json.load(f)["Scty"]
 
 
-def _buscar_json_intradia_mock(codigo_contrato: str) -> list[dict]:
-    return _carregar_json_scty(codigo_contrato)
+def _buscar_json_intradia_mock(contrato: str) -> list[dict]:
+    return _carregar_json_scty(contrato)
 
 
 def _data_referencia_mock() -> dt.date:

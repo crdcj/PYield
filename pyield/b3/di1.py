@@ -63,7 +63,7 @@ def dados(
     else:
         datas_lista = [datas_convertidas]
 
-    df = b3.futuro(data=datas_lista, codigo_contrato="DI1")
+    df = b3.futuro(data=datas_lista, contrato="DI1")
     if df.is_empty():
         return df
 
@@ -196,7 +196,7 @@ def interpolar_taxas(
 
     # Carrega dataset de taxas DI usando datas já convertidas do df_entrada
     datas_unicas = df_entrada["data_referencia"].drop_nulls().unique().sort().to_list()
-    df_ref = b3.futuro(data=datas_unicas, codigo_contrato="DI1")
+    df_ref = b3.futuro(data=datas_unicas, contrato="DI1")
     # Retorna Series vazia se nenhuma taxa for encontrada
     if df_ref.is_empty():
         return pl.Series(dtype=pl.Float64)

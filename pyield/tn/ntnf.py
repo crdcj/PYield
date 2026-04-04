@@ -630,6 +630,53 @@ def rentabilidade(  # noqa
     return rentabilidade
 
 
+def premio(data: DateLike, pontos_base: bool = False) -> pl.DataFrame:
+    """
+    Calcula o prêmio bruto das NTN-F sobre a curva DI na data de referência.
+
+    Definição do prêmio (forma bruta):
+        premio = taxa_indicativa - taxa de ajuste do DI
+
+    Quando ``pontos_base=False`` a coluna retorna essa diferença em formato decimal
+    (ex: 0.000439 ≈ 4.39 bps). Quando ``pontos_base=True`` o valor é automaticamente
+    multiplicado por 10_000 e exibido diretamente em basis points.
+
+    Args:
+        data (DateLike): Data da consulta para buscar as taxas.
+        pontos_base (bool): Se True, retorna o prêmio já convertido em basis points.
+            Padrão False.
+
+    Returns:
+        pl.DataFrame: DataFrame com as colunas do prêmio.
+
+    Output Columns:
+        - titulo (String): Tipo do título.
+        - data_vencimento (Date): Data de vencimento.
+        - premio (Float64): prêmio em decimal ou bps conforme parâmetro,
+            isto é, o spread sobre o DI.
+
+    Raises:
+        ValueError: Se os dados de DI não possuem 'taxa_ajuste' ou estão vazios.
+
+    Examples:
+        >>> from pyield import ntnf
+        >>> ntnf.premio("30-05-2025", pontos_base=True)
+        shape: (5, 3)
+        ┌────────┬─────────────────┬────────┐
+        │ titulo ┆ data_vencimento ┆ premio │
+        │ ---    ┆ ---             ┆ ---    │
+        │ str    ┆ date            ┆ f64    │
+        ╞════════╪═════════════════╪════════╡
+        │ NTN-F  ┆ 2027-01-01      ┆ -3.31  │
+        │ NTN-F  ┆ 2029-01-01      ┆ 14.21  │
+        │ NTN-F  ┆ 2031-01-01      ┆ 21.61  │
+        │ NTN-F  ┆ 2033-01-01      ┆ 11.51  │
+        │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
+        └────────┴─────────────────┴────────┘
+    """
+    return pre_premio(data, pontos_base=pontos_base).filter(pl.col("titulo") == "NTN-F")
+
+
 def premio_limpo(  # noqa
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
@@ -669,7 +716,6 @@ def premio_limpo(  # noqa
         >>> round(spread * 10_000, 2)  # Converte para bps para exibição
         12.13
     """
-    # Validação de inputs
     if any_is_empty(
         data_liquidacao,
         data_vencimento,
@@ -679,20 +725,17 @@ def premio_limpo(  # noqa
     ):
         return float("nan")
 
-    # Garante taxas_di como Series
     if not isinstance(taxas_di, pl.Series):
         serie_taxas_di = pl.Series(taxas_di)
     else:
         serie_taxas_di = taxas_di
 
-    # Criação do interpolador
     interpolador_ff = ip.Interpolador(
         dus.contar(data_liquidacao, vencimentos_di),
         serie_taxas_di,
         "flat_forward",
     )
 
-    # Geração dos fluxos de caixa do NTN-F
     df = fluxos_caixa(data_liquidacao, data_vencimento)
     if df.is_empty():
         return float("nan")
@@ -705,19 +748,16 @@ def premio_limpo(  # noqa
         taxa_di_interpolada=interpolador_ff(dias_uteis_pagamento),
     )
 
-    # Extração dos dados para o cálculo numérico
     preco_titulo = _calcular_pu(data_liquidacao, data_vencimento, taxa_ntnf)
     fluxos_titulo = df["valor_pagamento"]
     di_interpolada = df["taxa_di_interpolada"]
 
-    # Função de diferença de preço para o solver
     def diferenca_preco(p: float) -> float:
         fluxos_descontados = (
             fluxos_titulo / (1 + di_interpolada + p) ** anos_uteis_pagamento
         )
         return float(fluxos_descontados.sum()) - preco_titulo
 
-    # 7. Resolver para o spread
     return utils.encontrar_raiz(diferenca_preco)
 
 
@@ -784,53 +824,6 @@ def dv01(
     preco_1 = _calcular_pu(data_liquidacao, data_vencimento, taxa)
     preco_2 = _calcular_pu(data_liquidacao, data_vencimento, taxa + 0.0001)
     return preco_1 - preco_2
-
-
-def premio(data: DateLike, pontos_base: bool = False) -> pl.DataFrame:
-    """
-    Calcula o prêmio bruto das NTN-F sobre a curva DI na data de referência.
-
-    Definição do prêmio (forma bruta):
-        premio = taxa_indicativa - taxa de ajuste do DI
-
-    Quando ``pontos_base=False`` a coluna retorna essa diferença em formato decimal
-    (ex: 0.000439 ≈ 4.39 bps). Quando ``pontos_base=True`` o valor é automaticamente
-    multiplicado por 10_000 e exibido diretamente em basis points.
-
-    Args:
-        data (DateLike): Data da consulta para buscar as taxas.
-        pontos_base (bool): Se True, retorna o prêmio já convertido em basis points.
-            Padrão False.
-
-    Returns:
-        pl.DataFrame: DataFrame com as colunas do prêmio.
-
-    Output Columns:
-        - titulo (String): Tipo do título.
-        - data_vencimento (Date): Data de vencimento.
-        - premio (Float64): prêmio em decimal ou bps conforme parâmetro,
-            isto é, o spread sobre o DI.
-
-    Raises:
-        ValueError: Se os dados de DI não possuem 'taxa_ajuste' ou estão vazios.
-
-    Examples:
-        >>> from pyield import ntnf
-        >>> ntnf.premio("30-05-2025", pontos_base=True)
-        shape: (5, 3)
-        ┌────────┬─────────────────┬────────┐
-        │ titulo ┆ data_vencimento ┆ premio │
-        │ ---    ┆ ---             ┆ ---    │
-        │ str    ┆ date            ┆ f64    │
-        ╞════════╪═════════════════╪════════╡
-        │ NTN-F  ┆ 2027-01-01      ┆ -3.31  │
-        │ NTN-F  ┆ 2029-01-01      ┆ 14.21  │
-        │ NTN-F  ┆ 2031-01-01      ┆ 21.61  │
-        │ NTN-F  ┆ 2033-01-01      ┆ 11.51  │
-        │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
-        └────────┴─────────────────┴────────┘
-    """
-    return pre_premio(data, pontos_base=pontos_base).filter(pl.col("titulo") == "NTN-F")
 
 
 def taxa(

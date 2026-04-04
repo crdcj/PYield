@@ -101,6 +101,12 @@ Referência: `anbima/ima.py` (com colunas derivadas) e `anbima/imaq.py` (sem col
 - **Exceção para módulos internos com classe de serviço:** Se um módulo não é exposto pela API e é usado apenas internamente por outro módulo, é comum manter **um método principal sem `_`** dentro da classe para sinalizar o ponto de entrada interno. Os demais helpers seguem com `_`. Esse método principal deve permanecer em português e o módulo **não deve** ser exportado em `__init__.py`.
 - **Exceção para módulos internos com função principal:** Se um módulo não é exposto pela API e é usado apenas internamente por outro módulo, pode manter **uma função principal sem `_`** como ponto de entrada interno. As demais funções seguem com `_`. A função principal deve ser em português e o módulo **não deve** ser exportado em `__init__.py`.
 
+### Convenção de nomes por camada na B3
+
+- **Camada pública enriquecida da lib:** Preferir nomes canônicos da biblioteca, mesmo que a fonte original use outra terminologia. Ex.: usar `contrato` para identificadores-base como `DI1`, `DAP`, `WDO`, e `codigo_negociacao` para o identificador completo retornado ao usuário.
+- **Camada bruta/intermediária próxima da fonte:** Quando a função expõe ou filtra diretamente campos do payload original da B3, pode usar a terminologia da fonte para deixar claro que opera no schema bruto. Ex.: em `boletim.py`, parâmetros como `prefixo_ticker` e `comprimento_ticker` são aceitáveis porque o filtro atua diretamente sobre `TckrSymb`.
+- **Regra prática:** Evitar misturar, na mesma camada, vocabulário da fonte e vocabulário canônico da lib para o mesmo conceito. A distinção deve refletir o nível de abstração do módulo.
+
 ## Docstring Conventions
 
 - All docstrings must be written in **Portuguese** (both public and internal functions).

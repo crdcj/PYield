@@ -10,7 +10,7 @@ from pyield.b3.futuro import historico as historico_mod
 def test_historico_usa_dataset_pr(monkeypatch):
     """historico() deve retornar dados do cache PR."""
 
-    def _historico_pr_falso(datas, codigo_contrato):
+    def _historico_pr_falso(datas, contrato):
         return pl.DataFrame({"codigo_negociacao": ["DI1N26"]})
 
     monkeypatch.setattr(
@@ -28,7 +28,7 @@ def test_historico_retorna_vazio_sem_cache(monkeypatch):
     monkeypatch.setattr(
         historico_mod,
         "_buscar_do_cache",
-        lambda datas, codigo_contrato: pl.DataFrame(),
+        lambda datas, contrato: pl.DataFrame(),
     )
 
     df = historico_mod.historico(dt.date(2026, 5, 10), "XYZ")
@@ -39,7 +39,7 @@ def test_futuro_igual_dataset_pr_di1():
     """`futuro` deve bater com o dataset PR na mesma data."""
     data = dt.date(2026, 1, 12)
 
-    df_futuro = yd.futuro(codigo_contrato="DI1", data_referencia=data)
+    df_futuro = yd.futuro(data=data, contrato="DI1")
     df_pr = historico_mod._buscar_do_cache([data], "DI1")
 
     assert_frame_equal(

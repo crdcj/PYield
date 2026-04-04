@@ -160,9 +160,9 @@ ntnb.dados("23-08-2024")  # -> DataFrame with NTN-B bonds
 ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
-# DI spreads (bps=True multiplies by 10,000)
-ntnf.di_spreads("30-05-2025", bps=True)
-# -> DataFrame: titulo, data_vencimento, spread_di
+# DI premium (pontos_base=True multiplies by 10,000)
+ntnf.premio("30-05-2025", pontos_base=True)
+# -> DataFrame: titulo, data_vencimento, premio
 ```
 
 ## Futures Data

@@ -8,7 +8,7 @@ from pyield.b3.futuro import historico, intradia
 
 def futuro_enriquecer(
     df: pl.DataFrame,
-    codigo_contrato: str,
+    contrato: str,
 ) -> pl.DataFrame:
     """Enriquece DataFrame bruto do Price Report (PR) da B3.
 
@@ -19,18 +19,18 @@ def futuro_enriquecer(
 
     Args:
         df: DataFrame com dados do PR da B3.
-        codigo_contrato: Código do contrato futuro
+        contrato: Contrato futuro
             (ex.: "DI1", "DOL").
 
     Returns:
         DataFrame Polars enriquecido e ordenado.
     """
-    return historico.enriquecer(df, codigo_contrato)
+    return historico.enriquecer(df, contrato)
 
 
 def futuro(
     data: DateLike | ArrayLike,
-    codigo_contrato: str,
+    contrato: str,
 ) -> pl.DataFrame:
     """Busca dados de um contrato futuro da B3 para a data de referência.
 
@@ -42,7 +42,7 @@ def futuro(
             Quando uma coleção é fornecida, os dados são buscados para cada
             data individualmente e concatenados. Datas inválidas (feriados,
             fins de semana, futuras) são silenciosamente ignoradas.
-        codigo_contrato: Código do contrato futuro na B3. Contratos
+        contrato: Contrato futuro na B3. Contratos
             disponíveis no cache histórico:
             - Juros: DI1, DDI, FRC, FRO, DAP
             - Moedas: DOL, WDO
@@ -78,7 +78,7 @@ def futuro(
         True
 
     """
-    if any_is_empty(data, codigo_contrato):
+    if any_is_empty(data, contrato):
         return pl.DataFrame()
 
     dados_convertidos = cv.converter_datas(data)
@@ -87,16 +87,16 @@ def futuro(
         for d in dados_convertidos:
             if d is not None and data_negociacao_valida(d):
                 datas_validas.append(d)
-        return historico._buscar_do_cache(datas_validas, codigo_contrato)
+        return historico._buscar_do_cache(datas_validas, contrato)
 
     if not data_negociacao_valida(dados_convertidos):
         return pl.DataFrame()
 
-    return historico.historico(dados_convertidos, codigo_contrato)
+    return historico.historico(dados_convertidos, contrato)
 
 
 def futuro_intradia(
-    codigo_contrato: str,
+    contrato: str,
 ) -> pl.DataFrame:
     """Busca dados intradia de contratos futuros da B3.
 
@@ -105,7 +105,7 @@ def futuro_intradia(
     use ``futuro``.
 
     Args:
-        codigo_contrato: Código do contrato futuro na B3
+        contrato: Contrato futuro na B3
             (ex.: 'DI1', 'DAP', 'DOL').
 
     Returns:
@@ -117,17 +117,17 @@ def futuro_intradia(
         por preço (ex.: DOL, IND). As com prefixo ``taxa_`` aparecem para
         contratos cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO).
     """
-    if not codigo_contrato:
+    if not contrato:
         return pl.DataFrame()
 
-    return intradia.intradia(codigo_contrato)
+    return intradia.intradia(contrato)
 
 
-def futuro_datas_disponiveis(codigo_contrato: str) -> pl.Series:
+def futuro_datas_disponiveis(contrato: str) -> pl.Series:
     """Retorna as datas de negociação disponíveis no dataset cacheado.
 
     Args:
-        codigo_contrato: Código do contrato futuro na B3 (ex.: DI1, DOL).
+        contrato: Contrato futuro na B3 (ex.: DI1, DOL).
 
     Returns:
         Series ordenada de datas (Date) para as quais há dados de ajuste.
@@ -143,7 +143,7 @@ def futuro_datas_disponiveis(codigo_contrato: str) -> pl.Series:
             2018-01-04
         ]
     """
-    return historico.listar_datas_disponiveis(codigo_contrato)
+    return historico.listar_datas_disponiveis(contrato)
 
 
 __all__ = [

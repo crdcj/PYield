@@ -5,48 +5,48 @@ import polars as pl
 from pyield._internal.types import any_is_empty
 
 
-def normalizar_codigo_contrato(contract_code: str | object) -> str:
-    """Normaliza um código de contrato único para caixa alta.
+def normalizar_contrato(contrato: str | object) -> str:
+    """Normaliza um contrato único para caixa alta.
 
     Args:
-        contract_code: Código único de contrato.
+        contrato: Contrato único.
 
     Returns:
         str: Código normalizado em caixa alta ou string vazia se vazio.
     """
-    if any_is_empty(contract_code):
+    if any_is_empty(contrato):
         return ""
 
-    codigo = str(contract_code).strip().upper()
+    codigo = str(contrato).strip().upper()
     return codigo
 
 
-def normalizar_codigos_contrato(
-    contract_code: str | Sequence[str] | pl.Series,
+def normalizar_contratos(
+    contrato: str | Sequence[str] | pl.Series,
 ) -> list[str]:
-    """Normaliza códigos de contrato para lista única em caixa alta.
+    """Normaliza contratos para lista única em caixa alta.
 
     Remove valores vazios e duplicados, preservando a ordem de entrada.
 
     Args:
-        contract_code: Código único ou coleção de códigos de contrato.
+        contrato: Contrato único ou coleção de contratos.
 
     Returns:
         list[str]: Lista normalizada de códigos em caixa alta.
     """
-    if isinstance(contract_code, str):
-        codigo = normalizar_codigo_contrato(contract_code)
+    if isinstance(contrato, str):
+        codigo = normalizar_contrato(contrato)
         return [codigo] if codigo else []
 
-    if isinstance(contract_code, pl.Series):
-        valores = contract_code.to_list()
+    if isinstance(contrato, pl.Series):
+        valores = contrato.to_list()
     else:
-        valores = list(contract_code)
+        valores = list(contrato)
 
     codigos_unicos: list[str] = []
     codigos_vistos: set[str] = set()
     for valor in valores:
-        codigo = normalizar_codigo_contrato(valor)
+        codigo = normalizar_contrato(valor)
         if not codigo:
             continue
         if codigo not in codigos_vistos:

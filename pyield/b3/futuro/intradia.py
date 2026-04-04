@@ -59,14 +59,14 @@ _ORDEM_COLUNAS = (
 )
 
 
-def intradia(codigo_contrato: str) -> pl.DataFrame:
+def intradia(contrato: str) -> pl.DataFrame:
     """Busca os dados intradia mais recentes da B3.
 
     Os dados intradia da fonte possuem atraso aproximado de 15 minutos.
     A coluna ``horario_referencia`` reflete essa defasagem.
 
     Args:
-        codigo_contrato: Código base do contrato futuro na B3.
+        contrato: Contrato futuro na B3.
 
     Returns:
         DataFrame Polars com dados intradia processados.
@@ -79,16 +79,16 @@ def intradia(codigo_contrato: str) -> pl.DataFrame:
     if not intradia_disponivel():
         return pl.DataFrame()
 
-    df = derivativo_intradia(codigo_contrato)
+    df = derivativo_intradia(contrato)
     if df.is_empty():
         return pl.DataFrame()
 
-    return _processar_intradia(df, codigo_contrato)
+    return _processar_intradia(df, contrato)
 
 
-def _processar_intradia(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
+def _processar_intradia(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     df = df.filter(pl.col("codigo_mercado") == "FUT")
-    if codigo_contrato in CONTRATOS_TAXA:
+    if contrato in CONTRATOS_TAXA:
         df = df.rename(_PRECO_PARA_TAXA_INTRADIA, strict=False)
     df = df.drop_nulls("data_vencimento").sort("data_vencimento")
 
@@ -99,16 +99,16 @@ def _processar_intradia(df: pl.DataFrame, codigo_contrato: str) -> pl.DataFrame:
         dias_uteis=dus.contar_expr(data_negociacao, "data_vencimento"),
     ).filter(pl.col("dias_corridos") > 0)
 
-    if codigo_contrato in CONTRATOS_TAXA:
+    if contrato in CONTRATOS_TAXA:
         df = df.with_columns(cs.starts_with("taxa_").truediv(100).round(6))
 
-    if codigo_contrato in {"DI1", "DAP"}:
+    if contrato in {"DI1", "DAP"}:
         taxa_fwd = forwards(bdays=df["dias_uteis"], rates=df["taxa_ultima"])
         anos_uteis = pl.col("dias_uteis") / 252
         preco_ultimo = 100_000 / ((1 + pl.col("taxa_ultima")) ** anos_uteis)
         df = df.with_columns(preco_ultimo=preco_ultimo.round(2), taxa_forward=taxa_fwd)
 
-    if codigo_contrato == "DI1":
+    if contrato == "DI1":
         df = df.with_columns(
             dv01=expr_dv01("dias_uteis", "taxa_ultima", "preco_ultimo")
         )

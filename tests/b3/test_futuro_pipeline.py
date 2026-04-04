@@ -32,7 +32,7 @@ def _preparar(
     """Executa o pipeline real completo usando dataset PR remoto do release."""
     df_expect = pl.read_parquet(_parquet_referencia(date_str, contract_code))
 
-    df_result = b3.futuro(codigo_contrato=contract_code, data_referencia=date_str)
+    df_result = b3.futuro(data=date_str, contrato=contract_code)
     return df_result, df_expect
 
 
