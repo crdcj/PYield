@@ -25,25 +25,25 @@ URL_BASE_API = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1
 
 
 def _montar_url(
-    data_inicial: DateLike | None,
-    data_final: DateLike | None,
+    inicio: DateLike | None,
+    fim: DateLike | None,
 ) -> str:
     """Monta URL de consulta conforme parâmetros opcionais de período.
 
     Regras da API:
-        - Apenas data_inicial: retorna de data_inicial até o fim da série.
-        - Apenas data_final: retorna do início da série até data_final.
+        - Apenas inicio: retorna de inicio até o fim da série.
+        - Apenas fim: retorna do início da série até fim.
         - Ambos ausentes: retorna a série completa.
     """
     url = URL_BASE_API
-    if data_inicial:
-        inicio = cv.converter_datas(data_inicial)
-        inicio_str = inicio.strftime("%Y-%m-%d")
+    if inicio:
+        inicio_dt = cv.converter_datas(inicio)
+        inicio_str = inicio_dt.strftime("%Y-%m-%d")
         url += f"@dataLancamentoInicio='{inicio_str}'"
 
-    if data_final:
-        fim = cv.converter_datas(data_final)
-        fim_str = fim.strftime("%Y-%m-%d")
+    if fim:
+        fim_dt = cv.converter_datas(fim)
+        fim_str = fim_dt.strftime("%Y-%m-%d")
         url += f"&@dataLancamentoFim='{fim_str}'"
 
     url += "&$format=text/csv"  # Adiciona o formato CSV ao final
@@ -94,19 +94,19 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def compromissadas(
-    data_inicial: DateLike | None = None,
-    data_final: DateLike | None = None,
+    inicio: DateLike | None = None,
+    fim: DateLike | None = None,
 ) -> pl.DataFrame:
     """Consulta e retorna leilões de operações compromissadas do BCB.
 
     Semântica dos parâmetros de período (API OData):
-        - data_inicial somente: dados de data_inicial até o fim da série.
-        - data_final somente: dados do início da série até data_final.
+        - inicio somente: dados de inicio até o fim da série.
+        - fim somente: dados do início da série até fim.
         - ambos omitidos: série histórica completa.
 
     Args:
-        data_inicial: Data inicial (inclusive) ou None.
-        data_final: Data final (inclusive) ou None.
+        inicio: Data inicial (inclusive) ou None.
+        fim: Data final (inclusive) ou None.
 
     Returns:
         DataFrame com colunas normalizadas em português e tipos
@@ -133,7 +133,7 @@ def compromissadas(
 
     Examples:
         >>> from pyield import bc
-        >>> bc.compromissadas(data_inicial="21-08-2025", data_final="21-08-2025")
+        >>> bc.compromissadas(inicio="21-08-2025", fim="21-08-2025")
         shape: (2, 12)
         ┌─────────────┬─────────────────┬──────────────┬─────────────┬───┬───────────────────┬───────────────┬────────────┬───────────────────┐
         │ data_leilao ┆ data_liquidacao ┆ data_retorno ┆ hora_inicio ┆ … ┆ publico_permitido ┆ volume_aceito ┆ taxa_corte ┆ percentual_aceito │
@@ -144,7 +144,7 @@ def compromissadas(
         │ 2025-08-21  ┆ 2025-08-22      ┆ 2025-11-21   ┆ 12:00:00    ┆ … ┆ TodoMercado       ┆ 5000000000    ┆ 0.9978     ┆ 35.87             │
         └─────────────┴─────────────────┴──────────────┴─────────────┴───┴───────────────────┴───────────────┴────────────┴───────────────────┘
     """
-    url = _montar_url(data_inicial=data_inicial, data_final=data_final)
+    url = _montar_url(inicio=inicio, fim=fim)
     csv_api = _buscar_csv_api(url)
     df = _ler_csv(csv_api)
     if df.is_empty():

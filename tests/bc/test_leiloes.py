@@ -26,7 +26,7 @@ def test_leiloes_com_monkeypatch(monkeypatch):
     )
     monkeypatch.setattr(modulo_leiloes, "_buscar_ptax", lambda *_: DF_PTAX_REFERENCIA)
     resultado = modulo_leiloes.leiloes(
-        data_inicial="19-08-2025",
-        data_final="19-08-2025",
+        inicio="19-08-2025",
+        fim="19-08-2025",
     )
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))

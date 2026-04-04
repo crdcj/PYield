@@ -102,18 +102,18 @@ def _buscar_requisicao(
 
 def _buscar_dados_url(
     serie: SerieBC,
-    data_inicial: DateLike,
-    data_final: DateLike | None = None,
+    inicio: DateLike,
+    fim: DateLike | None = None,
 ) -> pl.DataFrame:
     """Orquestra a busca, dividindo intervalos > 10 anos em blocos."""
-    inicio = converter_datas(data_inicial)
-    fim = converter_datas(data_final) if data_final else relogio.hoje()
+    data_inicio = converter_datas(inicio)
+    data_fim = converter_datas(fim) if fim else relogio.hoje()
 
-    if (fim - inicio).days < LIMITE_DIAS_SEGURO:
-        return _buscar_requisicao(serie, inicio, fim)
+    if (data_fim - data_inicio).days < LIMITE_DIAS_SEGURO:
+        return _buscar_requisicao(serie, data_inicio, data_fim)
 
-    inicios = pl.date_range(start=inicio, end=fim, interval="10y", eager=True)
-    fins = inicios.dt.offset_by("10y").clip(upper_bound=fim)
+    inicios = pl.date_range(start=data_inicio, end=data_fim, interval="10y", eager=True)
+    fins = inicios.dt.offset_by("10y").clip(upper_bound=data_fim)
 
     todos_dfs = [_buscar_requisicao(serie, ini, fim) for ini, fim in zip(inicios, fins)]
 
@@ -126,8 +126,8 @@ def _buscar_dados_url(
 
 
 def selic_over_serie(
-    data_inicial: DateLike,
-    data_final: DateLike | None = None,
+    inicio: DateLike,
+    fim: DateLike | None = None,
 ) -> pl.DataFrame:
     """Taxa SELIC Over (série SGS 1178).
 
@@ -135,8 +135,8 @@ def selic_over_serie(
     com títulos públicos como garantia.
 
     Args:
-        data_inicial: Data inicial.
-        data_final: Data final. Se ``None``, usa a data mais recente.
+        inicio: Data inicial.
+        fim: Data final. Se ``None``, usa a data mais recente.
 
     Returns:
         DataFrame com colunas data e taxa, ou DataFrame vazio.
@@ -171,9 +171,9 @@ def selic_over_serie(
         │ 2025-09-17 ┆ 0.149 │
         └────────────┴───────┘
     """
-    if any_is_empty(data_inicial):
+    if any_is_empty(inicio):
         return pl.DataFrame()
-    df = _buscar_dados_url(SerieBC.SELIC_OVER, data_inicial, data_final)
+    df = _buscar_dados_url(SerieBC.SELIC_OVER, inicio, fim)
     return df.with_columns(pl.col("taxa").round(CASAS_DECIMAIS_ANUALIZADA))
 
 
@@ -197,16 +197,16 @@ def selic_over(data: DateLike) -> float:
 
 
 def selic_meta_serie(
-    data_inicial: DateLike,
-    data_final: DateLike | None = None,
+    inicio: DateLike,
+    fim: DateLike | None = None,
 ) -> pl.DataFrame:
     """Taxa SELIC Meta (série SGS 432).
 
     Taxa de juros oficial definida pelo COPOM.
 
     Args:
-        data_inicial: Data inicial.
-        data_final: Data final. Se ``None``, usa a data mais recente.
+        inicio: Data inicial.
+        fim: Data final. Se ``None``, usa a data mais recente.
 
     Returns:
         DataFrame com colunas data e taxa, ou DataFrame vazio.
@@ -223,9 +223,9 @@ def selic_meta_serie(
         │ 2024-05-31 ┆ 0.105 │
         └────────────┴───────┘
     """
-    if any_is_empty(data_inicial):
+    if any_is_empty(inicio):
         return pl.DataFrame()
-    df = _buscar_dados_url(SerieBC.SELIC_META, data_inicial, data_final)
+    df = _buscar_dados_url(SerieBC.SELIC_META, inicio, fim)
     return df.with_columns(pl.col("taxa").round(CASAS_DECIMAIS_ANUALIZADA))
 
 
@@ -249,8 +249,8 @@ def selic_meta(data: DateLike) -> float:
 
 
 def di_over_serie(
-    data_inicial: DateLike,
-    data_final: DateLike | None = None,
+    inicio: DateLike,
+    fim: DateLike | None = None,
     anualizada: bool = True,
 ) -> pl.DataFrame:
     """Taxa DI Over (série SGS 11).
@@ -258,8 +258,8 @@ def di_over_serie(
     Taxa de juros média dos empréstimos interbancários.
 
     Args:
-        data_inicial: Data inicial.
-        data_final: Data final. Se ``None``, usa a data mais recente.
+        inicio: Data inicial.
+        fim: Data final. Se ``None``, usa a data mais recente.
         anualizada: Se ``True``, retorna a taxa anualizada (base
             252 d.u.). Caso contrário, retorna a taxa diária.
 
@@ -283,9 +283,9 @@ def di_over_serie(
         │ 2025-02-04 ┆ 0.1315 │
         └────────────┴────────┘
     """
-    if any_is_empty(data_inicial):
+    if any_is_empty(inicio):
         return pl.DataFrame()
-    df = _buscar_dados_url(SerieBC.DI_OVER, data_inicial, data_final)
+    df = _buscar_dados_url(SerieBC.DI_OVER, inicio, fim)
     if anualizada:
         return df.with_columns(
             taxa=(((pl.col("taxa") + 1).pow(252)) - 1).round(CASAS_DECIMAIS_ANUALIZADA)

@@ -17,7 +17,7 @@ def test_repos_com_monkeypatch(monkeypatch):
         lambda *_: CAMINHO_CSV.read_bytes(),
     )
     resultado = modulo_compromissada.compromissadas(
-        data_inicial="21-08-2025",
-        data_final="21-08-2025",
+        inicio="21-08-2025",
+        fim="21-08-2025",
     )
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))

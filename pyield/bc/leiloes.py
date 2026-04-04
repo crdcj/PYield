@@ -78,17 +78,17 @@ MAPA_TIPO_LEILAO = {"venda": "Venda", "compra": "Compra"}
 
 
 def _montar_url(
-    data_inicial: DateLike | None = None,
-    data_final: DateLike | None = None,
+    inicio: DateLike | None = None,
+    fim: DateLike | None = None,
     tipo_leilao: Literal["venda", "compra"] | None = None,
 ) -> str:
     url = URL_BASE_API
-    if data_inicial:
-        data_inicial = cv.converter_datas(data_inicial)
-        url += f"@dataMovimentoInicio='{data_inicial:%Y-%m-%d}'"
-    if data_final:
-        data_final = cv.converter_datas(data_final)
-        url += f"&@dataMovimentoFim='{data_final:%Y-%m-%d}'"
+    if inicio:
+        inicio = cv.converter_datas(inicio)
+        url += f"@dataMovimentoInicio='{inicio:%Y-%m-%d}'"
+    if fim:
+        fim = cv.converter_datas(fim)
+        url += f"&@dataMovimentoFim='{fim:%Y-%m-%d}'"
     if tipo_leilao:
         url += f"&@tipoOferta='{MAPA_TIPO_LEILAO[tipo_leilao.lower()]}'"
     url += "&$format=text/csv"
@@ -235,7 +235,7 @@ def _buscar_ptax(df: pl.DataFrame) -> pl.DataFrame:
     if data_inicio >= ultimo_dia_util:
         data_inicio = dus.deslocar(ultimo_dia_util, -1)
 
-    df_ptax = ptax_serie(data_inicial=data_inicio, data_final=data_fim)
+    df_ptax = ptax_serie(inicio=data_inicio, fim=data_fim)
     if df_ptax.is_empty():
         return pl.DataFrame()
 
@@ -265,21 +265,21 @@ def _adicionar_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def leiloes(
-    data_inicial: DateLike | None = None,
-    data_final: DateLike | None = None,
+    inicio: DateLike | None = None,
+    fim: DateLike | None = None,
     tipo_leilao: Literal["venda", "compra"] | None = None,
 ) -> pl.DataFrame:
     """Dados de leilões de títulos públicos federais do BCB.
 
     Fonte: Banco Central do Brasil. Disponível desde 12/11/2012.
 
-    Se ambos `data_inicial` e `data_final` forem omitidos, retorna a série
+    Se ambos `inicio` e `fim` forem omitidos, retorna a série
     histórica completa. Se apenas um for informado, a API do BCB
     usa o início ou fim do histórico como limite.
 
     Args:
-        data_inicial: Data de início. Padrão é ``None``.
-        data_final: Data de fim. Padrão é ``None``.
+        inicio: Data de início. Padrão é ``None``.
+        fim: Data de fim. Padrão é ``None``.
         tipo_leilao: Tipo de leilão (``"venda"`` ou ``"compra"``).
             Padrão é ``None`` (todos).
 
@@ -328,7 +328,7 @@ def leiloes(
 
     Examples:
         >>> from pyield import bc
-        >>> bc.leiloes(data_inicial="19-08-2025", data_final="19-08-2025")
+        >>> bc.leiloes(inicio="19-08-2025", fim="19-08-2025")
         shape: (5, 34)
         ┌─────────────┬─────────────────┬─────────────┬───────────────┬───┬─────────────────────────┬───────────────┬───────────────┬──────────────────┐
         │ data_leilao ┆ data_liquidacao ┆ tipo_leilao ┆ numero_edital ┆ … ┆ quantidade_aceita_total ┆ financeiro_1v ┆ financeiro_2v ┆ financeiro_total │
@@ -343,8 +343,8 @@ def leiloes(
         └─────────────┴─────────────────┴─────────────┴───────────────┴───┴─────────────────────────┴───────────────┴───────────────┴──────────────────┘
     """
     url = _montar_url(
-        data_inicial=data_inicial,
-        data_final=data_final,
+        inicio=inicio,
+        fim=fim,
         tipo_leilao=tipo_leilao,
     )
     dados = _buscar_csv(url)

@@ -287,7 +287,7 @@ def _buscar_ptax(data_leilao: dt.date) -> pl.DataFrame:
     data_min = dus.deslocar(data_leilao, -1)
     data_max = dus.deslocar(data_leilao, 1)
 
-    df = bc.ptax_serie(data_inicial=data_min, data_final=data_max)
+    df = bc.ptax_serie(inicio=data_min, fim=data_max)
     if df.is_empty():
         return pl.DataFrame()
 
