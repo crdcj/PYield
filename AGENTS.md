@@ -46,7 +46,7 @@ mkdocs serve
 The library is organized into domain-specific namespaces, all exposed through `pyield/__init__.py`:
 
 - **`bday`** — Business day calendar (Brazilian holidays built-in). Core functions: `count`, `offset`, `generate`, `is_business_day`, `last_business_day`. Polars expression variants: `count_expr`, `offset_expr`, `is_business_day_expr`.
-- **`anbima`** — ANBIMA data endpoints (treasury bond pricing, yield curves). Functions: `tpf`, `tpf_maturities`, `fetch_tpf`, `last_ettj`, `intraday_ettj`, `last_ima`, `imaq`, `tpf_difusao`.
+- **`anbima`** — ANBIMA data endpoints (treasury bond pricing, yield curves). Functions: `tpf`, `tpf_vencimentos`, `tpf_fonte`, `ettj_ultima`, `ettj_intradiaria`, `ima_ultimo`, `imaq`, `tpf_difusao`.
 - **`bc`** — BCB indicators. Functions: `selic_over`, `selic_over_series`, `selic_target`, `selic_target_series`, `di_over`, `di_over_series`, `ptax`, `ptax_series`, `repos`, `vna_lft`, `auctions`, `tpf_monthly_trades`, `tpf_intraday_trades`. Submodule: `copom`.
 - **`b3`** — B3 market data. Functions: `futures`, `futures_enrich`, `futures_intraday`, `di_over`, `price_report_fetch`, `price_report_read`, `derivatives_intraday_fetch`. Submodule: `di1`.
 - **`tn`** — Treasury bond modules: `ltn`, `ntnb`, `ntnf`, `ntnc`, `lft`, `pre`, `ntnbprinc`, `ntnb1`. Most have `data()`, `maturities()`, `price()`; `ntnb`, `ntnc`, `lft`, `ntnb1` also have `quotation()`. `pre` only has `spot_rates()` and `di_spreads()`. Also exposes: `tn.auction`, `tn.benchmarks`, `tn.di_spreads`.

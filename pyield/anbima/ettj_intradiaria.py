@@ -47,7 +47,7 @@ def _parsear_tabela_intraday(texto: str, nome_taxa: str) -> pl.DataFrame:
     )
 
 
-def intraday_ettj() -> pl.DataFrame:
+def ettj_intradiaria() -> pl.DataFrame:
     """Obtém e processa a curva de juros intradiária da ANBIMA.
 
     Busca os dados mais recentes da curva de juros intradiária publicada pela

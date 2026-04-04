@@ -7,7 +7,7 @@ from typing import overload
 import polars as pl
 
 from pyield._internal.types import DateLike
-from pyield.anbima.tpf import BOND_TYPES
+from pyield.anbima.tpf import TipoTPF
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +33,13 @@ def subtrair_meses(data: dt.date, meses: int) -> dt.date:
 
 
 def obter_tpf(
-    date: DateLike,
-    tipo_titulo: BOND_TYPES,
+    data_referencia: DateLike,
+    tipo_titulo: TipoTPF,
 ) -> pl.DataFrame:
     """Busca dados de ``anbima.tpf()`` no padrão de colunas usado por ``tn``."""
     from pyield import anbima  # noqa: PLC0415
 
-    return anbima.tpf(date, tipo_titulo).select(COLUNAS_DADOS_TPF)
+    return anbima.tpf(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
 
 
 def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:

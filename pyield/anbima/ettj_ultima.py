@@ -7,21 +7,21 @@ from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 
-URL_ULTIMA_ETTJ = "https://www.anbima.com.br/informacoes/est-termo/CZ-down.asp"
+URL_ETTJ_ULTIMA = "https://www.anbima.com.br/informacoes/est-termo/CZ-down.asp"
 
 # Dados ETTJ: taxas com 4 casas decimais em percentual (ex.: 14,2644%).
 
 
 @ttl_cache()
 @retry_padrao
-def _buscar_texto_ultima_ettj() -> str:
+def _buscar_texto_ettj_ultima() -> str:
     """Busca o texto bruto da curva de juros na ANBIMA."""
     carga_requisicao = {
         "Idioma": "PT",
         "Dt_Ref": "",
         "saida": "csv",
     }
-    resposta = requests.post(URL_ULTIMA_ETTJ, data=carga_requisicao, timeout=10)
+    resposta = requests.post(URL_ETTJ_ULTIMA, data=carga_requisicao, timeout=10)
     resposta.raise_for_status()
     resposta.encoding = "latin1"
     return resposta.text
@@ -51,7 +51,7 @@ def _processar_tabela(texto: str, data_referencia: dt.date) -> pl.DataFrame:
     )
 
 
-def last_ettj() -> pl.DataFrame:
+def ettj_ultima() -> pl.DataFrame:
     """Obtém e processa a última curva de juros (ETTJ) publicada pela ANBIMA.
 
     Busca os dados mais recentes da curva de juros de fechamento publicada pela
@@ -71,6 +71,6 @@ def last_ettj() -> pl.DataFrame:
     Notes:
         Todas as taxas são expressas em formato decimal (ex: 0.12 para 12%).
     """
-    texto = _buscar_texto_ultima_ettj()
+    texto = _buscar_texto_ettj_ultima()
     data_ref, tabela = _extrair_data_e_tabela(texto)
     return _processar_tabela(tabela, data_ref)

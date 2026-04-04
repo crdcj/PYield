@@ -20,13 +20,13 @@ TiposIMA = Literal[
 ]
 
 
-URL_ULTIMO_IMA = "https://www.anbima.com.br/informacoes/ima/arqs/ima_completo.txt"
+URL_IMA_ULTIMO = "https://www.anbima.com.br/informacoes/ima/arqs/ima_completo.txt"
 
 
 @ttl_cache()
 @retry_padrao
-def _buscar_texto_ultimo_ima() -> str:
-    resposta = requests.get(URL_ULTIMO_IMA, timeout=3)
+def _buscar_texto_ima_ultimo() -> str:
+    resposta = requests.get(URL_IMA_ULTIMO, timeout=3)
     resposta.raise_for_status()
     resposta.encoding = "latin1"
     return resposta.text
@@ -81,14 +81,14 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def last_ima(ima_type: TiposIMA | None = None) -> pl.DataFrame:
+def ima_ultimo(indice: TiposIMA | None = None) -> pl.DataFrame:
     """Obtém os últimos dados de composição de carteira IMA disponíveis na ANBIMA.
 
     Busca e processa os dados do arquivo IMA completo publicado pela ANBIMA,
     retornando um DataFrame estruturado.
 
     Args:
-        ima_type (str, optional): Tipo de índice IMA para filtrar os dados.
+        indice (str, optional): Tipo de índice IMA para filtrar os dados.
             Se None, retorna todos os índices. Padrão é None.
 
     Returns:
@@ -119,11 +119,11 @@ def last_ima(ima_type: TiposIMA | None = None) -> pl.DataFrame:
         - valor_mercado (Int64): valor de mercado em R$.
 
     Examples:
-        >>> yd.anbima.last_ima("IMA-B")  # doctest: +SKIP
+        >>> yd.anbima.ima_ultimo("IMA-B")  # doctest: +SKIP
     """
-    texto_ima = _buscar_texto_ultimo_ima()
+    texto_ima = _buscar_texto_ima_ultimo()
     df = _parsear_df(texto_ima)
     df = _processar_df(df)
-    if ima_type:
-        df = df.filter(pl.col("indice") == ima_type)
+    if indice:
+        df = df.filter(pl.col("indice") == indice)
     return df.sort("indice", "titulo", "data_vencimento")
