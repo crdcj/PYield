@@ -93,7 +93,7 @@ def dados(data: DateLike) -> pl.DataFrame:
     df = df.join(df_bei, on="data_vencimento", how="left")
 
     # Calcula taxas forward a partir das taxas zero
-    taxas_forward = fwd.forwards(bdays=df["dias_uteis"], rates=df["taxa_zero"])
+    taxas_forward = fwd.forwards(dias_uteis=df["dias_uteis"], taxas=df["taxa_zero"])
     df = df.with_columns(taxa_forward=taxas_forward)
 
     return df.select(
@@ -860,7 +860,7 @@ def forward(
     else:
         df_ref = df.rename({"taxa_indicativa": "taxa_referencia"})
     taxas_forward = fwd.forwards(
-        bdays=df_ref["dias_uteis"], rates=df_ref["taxa_referencia"]
+        dias_uteis=df_ref["dias_uteis"], taxas=df_ref["taxa_referencia"]
     )
     df_ref = df_ref.with_columns(taxa_forward=taxas_forward)
     df = df.join(

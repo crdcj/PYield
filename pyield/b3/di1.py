@@ -8,7 +8,7 @@ from pyield.b3.futuro import futuro_datas_disponiveis as _listar_datas
 
 
 def dados(
-    datas_referencia: DateLike | ArrayLike,
+    datas: DateLike | ArrayLike,
     inicio_mes: bool = False,
     filtrar_pre: bool = False,
 ) -> pl.DataFrame:
@@ -19,7 +19,7 @@ def dados(
     de títulos públicos prefixados (LTN e NTN-F).
 
     Args:
-        datas_referencia: Datas de negociação para as quais obter dados de
+        datas: Datas de negociação para as quais obter dados de
             contratos DI.
         inicio_mes: Se True, ajusta todas as datas de vencimento para o primeiro
             dia de seus respectivos meses (ex: 2025-02-03 vira 2025-02-01).
@@ -36,7 +36,7 @@ def dados(
 
     Examples:
         >>> from pyield import di1
-        >>> df = di1.dados(datas_referencia="16-10-2024", inicio_mes=True)
+        >>> df = di1.dados(datas="16-10-2024", inicio_mes=True)
         >>> df.head(3).select(
         ...     "codigo_negociacao", "data_vencimento", "dias_uteis", "taxa_ajuste"
         ... )
@@ -52,10 +52,10 @@ def dados(
         └───────────────────┴─────────────────┴────────────┴─────────────┘
 
     """
-    if any_is_empty(datas_referencia):
+    if any_is_empty(datas):
         return pl.DataFrame()
 
-    datas_convertidas = cv.converter_datas(datas_referencia)
+    datas_convertidas = cv.converter_datas(datas)
     if datas_convertidas is None:
         return pl.DataFrame()
     if isinstance(datas_convertidas, pl.Series):
@@ -101,7 +101,7 @@ def dados(
 def interpolar_taxas(
     datas_referencia: DateLike | ArrayLike,
     datas_vencimento: DateLike | ArrayLike,
-    extrapolate: bool = True,
+    extrapolar: bool = True,
 ) -> pl.Series:
     """Interpola taxas de DI para datas de negociação e vencimentos especificados.
 
@@ -119,7 +119,7 @@ def interpolar_taxas(
         datas_referencia: Data(s) de negociação para as taxas.
         datas_vencimento: Data(s) de vencimento correspondentes. Deve ser
             compatível em tamanho com ``datas_referencia`` se ambos forem arrays.
-        extrapolate: Se permite extrapolação além do intervalo de taxas DI
+        extrapolar: Se permite extrapolação além do intervalo de taxas DI
             conhecidas para uma data de negociação. Padrão: True.
 
     Returns:
@@ -160,7 +160,7 @@ def interpolar_taxas(
         >>> di1.interpolar_taxas(
         ...     datas_referencia="25-04-2025",
         ...     datas_vencimento=["01-01-2027", "01-01-2050"],
-        ...     extrapolate=True,
+        ...     extrapolar=True,
         ... )
         shape: (2,)
         Series: 'taxa_interpolada' [f64]
@@ -173,7 +173,7 @@ def interpolar_taxas(
         >>> di1.interpolar_taxas(
         ...     datas_referencia="25-04-2025",
         ...     datas_vencimento=["01-11-2027", "01-01-2050"],
-        ...     extrapolate=False,
+        ...     extrapolar=False,
         ... )
         shape: (2,)
         Series: 'taxa_interpolada' [f64]
@@ -233,7 +233,7 @@ def interpolar_taxas(
             dias_uteis=df_referencia["dias_uteis"],
             taxas=df_referencia["taxa_ajuste"],
             metodo="flat_forward",
-            extrapolar=extrapolate,
+            extrapolar=extrapolar,
         )
 
         # 4. A mágica: map_batches passa a Series inteira para o interpolador
@@ -259,7 +259,7 @@ def interpolar_taxas(
 def interpolar_taxa(
     data_referencia: DateLike,
     data_vencimento: DateLike,
-    extrapolate: bool = False,
+    extrapolar: bool = False,
 ) -> float:
     """Interpola ou obtém a taxa DI para uma única data de vencimento.
 
@@ -272,7 +272,7 @@ def interpolar_taxa(
     Args:
         data_referencia: Data de negociação para a qual obter dados de DI.
         data_vencimento: Data de vencimento alvo para a taxa.
-        extrapolate: Se True, permite extrapolação se o ``data_vencimento`` estiver
+        extrapolar: Se True, permite extrapolação se o ``data_vencimento`` estiver
             fora do intervalo de vencimentos de contratos disponíveis para a
             ``data_referencia``. Padrão: False.
 
@@ -281,7 +281,7 @@ def interpolar_taxa(
         especificados. Retorna ``float("nan")`` se:
         - ``data_referencia`` ou ``data_vencimento`` for nulo.
         - Não há dados DI para a ``data_referencia``.
-        - O ``data_vencimento`` está fora do intervalo e ``extrapolate`` é False.
+        - O ``data_vencimento`` está fora do intervalo e ``extrapolar`` é False.
         - O cálculo de interpolação falhou.
 
     Examples:
@@ -295,7 +295,7 @@ def interpolar_taxa(
         0.13576348733268917
 
         >>> # Extrapola taxa para uma data de vencimento futura
-        >>> di1.interpolar_taxa("25-04-2025", "01-01-2050", extrapolate=True)
+        >>> di1.interpolar_taxa("25-04-2025", "01-01-2050", extrapolar=True)
         0.13881
     """
     if any_is_collection(data_referencia, data_vencimento):
@@ -306,7 +306,7 @@ def interpolar_taxa(
     taxa = interpolar_taxas(
         datas_referencia=data_referencia,
         datas_vencimento=data_vencimento,
-        extrapolate=extrapolate,
+        extrapolar=extrapolar,
     )
     if taxa.is_empty():
         return float("nan")

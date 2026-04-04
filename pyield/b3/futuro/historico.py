@@ -125,7 +125,7 @@ def _enriquecer_dados(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
 
     if contrato in {"DI1", "DAP"}:
         df = df.with_columns(
-            taxa_forward=forwards(bdays=df["dias_uteis"], rates=df["taxa_ajuste"])
+            taxa_forward=forwards(dias_uteis=df["dias_uteis"], taxas=df["taxa_ajuste"])
         )
 
     return df

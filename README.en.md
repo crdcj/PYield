@@ -122,9 +122,9 @@ from pyield import forward, forwards
 forward(10, 20, 0.05, 0.06)  # -> 0.0700952...
 
 # Vectorized forward curve from spot rates
-bdays = [10, 20, 30]
-rates = [0.05, 0.06, 0.07]
-forwards(bdays, rates)  # -> Series: [0.05, 0.070095, 0.090284]
+dias_uteis = [10, 20, 30]
+taxas = [0.05, 0.06, 0.07]
+forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 ```
 
 ## Module Overview

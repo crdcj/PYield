@@ -18,43 +18,43 @@ from pyield import b3
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
-def _parquet_referencia(date_str: str, contract_code: str) -> Path:
+def _parquet_referencia(data: str, contrato: str) -> Path:
     """Retorna o caminho do parquet canônico para a data e contrato."""
-    dia, mes, ano = date_str.split("-")
-    nome = f"futures_{ano}{mes}{dia}_{contract_code}.parquet"
+    dia, mes, ano = data.split("-")
+    nome = f"futures_{ano}{mes}{dia}_{contrato}.parquet"
     return TEST_DATA_DIR / nome
 
 
 def _preparar(
-    date_str: str,
-    contract_code: str,
+    data: str,
+    contrato: str,
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
     """Executa o pipeline real completo usando dataset PR remoto do release."""
-    df_expect = pl.read_parquet(_parquet_referencia(date_str, contract_code))
+    df_esperado = pl.read_parquet(_parquet_referencia(data, contrato))
 
-    df_result = b3.futuro(data=date_str, contrato=contract_code)
-    return df_result, df_expect
+    df_resultado = b3.futuro(data=data, contrato=contrato)
+    return df_resultado, df_esperado
 
 
 def _alinhar_colunas(
-    df_result: pl.DataFrame,
-    df_expect: pl.DataFrame,
+    df_resultado: pl.DataFrame,
+    df_esperado: pl.DataFrame,
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
     """Alinha DataFrames para comparação usando o canônico como subconjunto obrigatório."""
-    colunas_esperadas = df_expect.columns
+    colunas_esperadas = df_esperado.columns
     colunas_faltantes = [
-        col for col in colunas_esperadas if col not in df_result.columns
+        col for col in colunas_esperadas if col not in df_resultado.columns
     ]
     if colunas_faltantes:
         raise AssertionError(
             f"Colunas esperadas ausentes no resultado: {colunas_faltantes}"
         )
 
-    return df_result.select(colunas_esperadas), df_expect
+    return df_resultado.select(colunas_esperadas), df_esperado
 
 
 @pytest.mark.parametrize(
-    ("date", "contract_code"),
+    ("data", "contrato"),
     [
         ("02-02-2023", "DI1"),
         ("02-02-2023", "FRC"),
@@ -82,10 +82,14 @@ def _alinhar_colunas(
         ("12-01-2026", "WIN"),
     ],
 )
-def test_pipeline_futuro(date, contract_code):
+def test_pipeline_futuro(data, contrato):
     """Compara `futuro` com parquet canônico usando dados remotos do release."""
-    result_df, expect_df = _preparar(date, contract_code)
-    result_df, expect_df = _alinhar_colunas(result_df, expect_df)
+    df_resultado, df_esperado = _preparar(data, contrato)
+    df_resultado, df_esperado = _alinhar_colunas(df_resultado, df_esperado)
     assert_frame_equal(
-        result_df, expect_df, rel_tol=1e-4, check_exact=False, check_dtypes=True
+        df_resultado,
+        df_esperado,
+        rel_tol=1e-4,
+        check_exact=False,
+        check_dtypes=True,
     )

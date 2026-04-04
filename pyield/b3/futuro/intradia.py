@@ -103,7 +103,7 @@ def _processar_intradia(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
         df = df.with_columns(cs.starts_with("taxa_").truediv(100).round(6))
 
     if contrato in {"DI1", "DAP"}:
-        taxa_fwd = forwards(bdays=df["dias_uteis"], rates=df["taxa_ultima"])
+        taxa_fwd = forwards(dias_uteis=df["dias_uteis"], taxas=df["taxa_ultima"])
         anos_uteis = pl.col("dias_uteis") / 252
         preco_ultimo = 100_000 / ((1 + pl.col("taxa_ultima")) ** anos_uteis)
         df = df.with_columns(preco_ultimo=preco_ultimo.round(2), taxa_forward=taxa_fwd)

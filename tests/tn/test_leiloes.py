@@ -33,5 +33,5 @@ def test_leilao_com_monkeypatch(monkeypatch):
         lambda *_, **__: json.loads(CAMINHO_JSON.read_bytes()),
     )
     monkeypatch.setattr(leiloes_mod, "_buscar_ptax", lambda *_, **__: DF_PTAX)
-    resultado = leiloes_mod.leilao(data_leilao="23-10-2025")
+    resultado = leiloes_mod.leilao(data="23-10-2025")
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))

@@ -363,5 +363,7 @@ def taxas_forward(data: DateLike) -> pl.DataFrame:
         "dias_uteis",
         "taxa_indicativa",
     )
-    taxas_forward = fwd.forwards(bdays=df["dias_uteis"], rates=df["taxa_indicativa"])
+    taxas_forward = fwd.forwards(
+        dias_uteis=df["dias_uteis"], taxas=df["taxa_indicativa"]
+    )
     return df.with_columns(taxa_forward=taxas_forward).sort("data_vencimento")

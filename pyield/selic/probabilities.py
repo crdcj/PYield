@@ -157,7 +157,7 @@ def _add_discount_factors(df: pl.DataFrame) -> pl.DataFrame:
         rates = di1.interpolar_taxas(
             datas_referencia=pairs["data_referencia"],
             datas_vencimento=pairs["data_expiracao"],
-            extrapolate=True,
+            extrapolar=True,
         )
     except Exception:
         logger.warning("Falha na busca DI1; usando fallback taxa=0.0.")

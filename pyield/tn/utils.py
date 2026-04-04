@@ -49,7 +49,7 @@ def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
     taxas_di = di1.interpolar_taxas(
         datas_referencia=data_ref,
         datas_vencimento=df["data_vencimento"],
-        extrapolate=True,
+        extrapolar=True,
     )
     if taxas_di.is_empty():
         return df

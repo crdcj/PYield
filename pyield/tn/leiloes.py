@@ -321,7 +321,7 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(colunas_selecionadas).sort("data_1v", "titulo", "data_vencimento")
 
 
-def leilao(data_leilao: DateLike | Sequence[DateLike]) -> pl.DataFrame:
+def leilao(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
     """Consulta e processa os resultados de um leilao de titulos do Tesouro.
 
     Busca os dados da API do Tesouro para a(s) data(s) informada(s) e retorna
@@ -329,12 +329,12 @@ def leilao(data_leilao: DateLike | Sequence[DateLike]) -> pl.DataFrame:
     duration e DV01.
 
     Args:
-        data_leilao: Data ou sequencia de datas do leilao em qualquer
+        data: Data ou sequencia de datas do leilao em qualquer
             formato aceito por DateLike (ex: "DD-MM-YYYY", datetime.date,
             ou lista desses formatos).
 
     Returns:
-        DataFrame com os dados processados do leilao. Se ``data_leilao`` for
+        DataFrame com os dados processados do leilao. Se ``data`` for
         uma sequencia, concatena os resultados das datas informadas. Em caso de
         erro na requisicao, no processamento ou se nao houver dados para a data
         especificada, retorna DataFrame vazio.
@@ -386,11 +386,11 @@ def leilao(data_leilao: DateLike | Sequence[DateLike]) -> pl.DataFrame:
         - taxa_media (Float64): taxa de juros media aceita (em formato decimal).
         - taxa_maxima (Float64): taxa de juros maxima aceita, taxa de corte (decimal).
     """
-    if any_is_empty(data_leilao):
+    if any_is_empty(data):
         return pl.DataFrame()
 
     datas: Sequence[DateLike] = (
-        data_leilao if is_collection(data_leilao) else [data_leilao]  # type: ignore[assignment]
+        data if is_collection(data) else [data]  # type: ignore[assignment]
     )
     resultados = [_processar_data_unica(data) for data in datas]
     resultados = [df for df in resultados if not df.is_empty()]
