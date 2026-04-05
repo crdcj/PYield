@@ -19,7 +19,7 @@ DF_PTAX_REFERENCIA = pl.DataFrame(
             dt.date(2025, 10, 23),
             dt.date(2025, 10, 24),
         ],
-        "ptax": [5.3895, 5.3837, 5.3794],
+        "ptax": [5.3898, 5.384, 5.3797],
     },
     schema={"data_ref": pl.Date, "ptax": pl.Float64},
 )

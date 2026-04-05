@@ -292,8 +292,8 @@ def _buscar_ptax(data_leilao: dt.date) -> pl.DataFrame:
         return pl.DataFrame()
 
     return (
-        df.select("data", "cotacao_media")
-        .rename({"data": "data_ref", "cotacao_media": "ptax"})
+        df.select("data", "cotacao")
+        .rename({"data": "data_ref", "cotacao": "ptax"})
         .sort("data_ref")
     )
 

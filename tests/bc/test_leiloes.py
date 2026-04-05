@@ -12,7 +12,7 @@ CAMINHO_PARQUET = DIRETORIO_DADOS / "leiloes_20250819.parquet"
 
 # PTAX do dia 2025-08-19 usada na geração do Parquet de referência
 DF_PTAX_REFERENCIA = pl.DataFrame(
-    {"data_ref": [dt.date(2025, 8, 19)], "ptax": [5.4713]},
+    {"data_ref": [dt.date(2025, 8, 19)], "ptax": [5.4716]},
     schema={"data_ref": pl.Date, "ptax": pl.Float64},
 )
 

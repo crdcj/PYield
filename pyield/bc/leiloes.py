@@ -19,7 +19,7 @@ from pyield import du
 from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
-from pyield.bc.ptax import ptax_serie
+from pyield.bc.sgs import ptax_serie
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
 
@@ -240,8 +240,8 @@ def _buscar_ptax(df: pl.DataFrame) -> pl.DataFrame:
         return pl.DataFrame()
 
     return (
-        df_ptax.select("data", "cotacao_media")
-        .rename({"data": "data_ref", "cotacao_media": "ptax"})
+        df_ptax.select("data", "cotacao")
+        .rename({"data": "data_ref", "cotacao": "ptax"})
         .sort("data_ref")
     )
 
