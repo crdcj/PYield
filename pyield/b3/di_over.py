@@ -14,6 +14,7 @@ Notas de implementação:
 import ftplib
 import logging
 
+from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
 from pyield._internal.types import DateLike, any_is_empty
 
@@ -23,32 +24,9 @@ registro = logging.getLogger(__name__)
 CASAS_DECIMAIS_DI_OVER = 4
 
 
-def di_over(data: DateLike) -> float:
-    """Obtém a taxa DI over via FTP da B3/CETIP.
-
-    Busca o arquivo de taxa DI (Depósito Interfinanceiro) no servidor
-    FTP da CETIP para a data informada.
-
-    Args:
-        data: data da consulta para buscar a taxa DI.
-
-    Returns:
-        Taxa DI para a data especificada (ex: 0.1315 para 13,15%).
-        Retorna ``nan`` se a data for feriado ou fim de semana.
-
-    Examples:
-        >>> di_over("28/02/2025")
-        0.1315
-        >>> di_over("01/01/2025")  # Feriado
-        nan
-    """
-    if any_is_empty(data):
-        return float("nan")
-
-    # Converte a data para o formato esperado do arquivo: YYYYMMDD.txt
-    data_ref = converter_datas(data)
-    nome_arquivo = data_ref.strftime("%Y%m%d.txt")
-
+@ttl_cache()
+def _buscar_taxa(nome_arquivo: str) -> float:
+    """Busca a taxa DI no FTP da CETIP para o arquivo informado."""
     try:
         with ftplib.FTP("ftp.cetip.com.br", timeout=10) as ftp:
             ftp.login()
@@ -75,3 +53,30 @@ def di_over(data: DateLike) -> float:
     except ftplib.all_errors as e:
         registro.error("Erro de conexão ou transferência FTP: %s", e)
         raise ConnectionError(f"Falha ao buscar taxa DI via FTP: {e}") from e
+
+
+def di_over(data: DateLike) -> float:
+    """Obtém a taxa DI over via FTP da B3/CETIP.
+
+    Busca o arquivo de taxa DI (Depósito Interfinanceiro) no servidor
+    FTP da CETIP para a data informada.
+
+    Args:
+        data: data da consulta para buscar a taxa DI.
+
+    Returns:
+        Taxa DI para a data especificada (ex: 0.1315 para 13,15%).
+        Retorna ``nan`` se a data for feriado ou fim de semana.
+
+    Examples:
+        >>> di_over("28/02/2025")
+        0.1315
+        >>> di_over("01/01/2025")  # Feriado
+        nan
+    """
+    if any_is_empty(data):
+        return float("nan")
+
+    data_ref = converter_datas(data)
+    nome_arquivo = data_ref.strftime("%Y%m%d.txt")
+    return _buscar_taxa(nome_arquivo)

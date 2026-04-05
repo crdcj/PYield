@@ -3,10 +3,10 @@
 Séries disponíveis:
     - SELIC Over (SGS 1178)
     - SELIC Meta (SGS 432)
-    - DI Over (SGS 11)
 
-Exemplo de chamada à API:
+Exemplos de chamada à API:
     https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=29/01/2025&dataFinal=31/01/2025
+    https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados/ultimos/5?formato=json
 
 Exemplo de resposta JSON da API do BCB (valores em percentual):
     [{"data":"29/01/2025","valor":"12.15"},
@@ -16,7 +16,6 @@ Exemplo de resposta JSON da API do BCB (valores em percentual):
 Notas de implementação:
     - Valores percentuais são convertidos para decimal (divididos por 100).
     - SELIC Over e Meta: arredondadas para 4 casas decimais.
-    - DI Over diária: 8 casas decimais; anualizada: 4 casas decimais.
     - Intervalos > 10 anos são divididos automaticamente em blocos.
 """
 
@@ -42,7 +41,6 @@ def _extrair_taxa(df: pl.DataFrame) -> float:
 
 URL_BASE = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
 CASAS_DECIMAIS_ANUALIZADA = 4  # 2 casas no formato percentual
-CASAS_DECIMAIS_DIARIA = 8  # 6 casas no formato percentual
 
 # Limite de segurança em dias, correspondendo a ~9.5 anos.
 # Evita a complexidade do cálculo exato de 10 anos-calendário.
@@ -54,7 +52,6 @@ class SerieBC(Enum):
 
     SELIC_OVER = 1178
     SELIC_META = 432
-    DI_OVER = 11
 
 
 @ttl_cache()
@@ -65,7 +62,7 @@ def _chamar_api(url_api: str) -> list[dict[str, str]]:
     return resposta.json()
 
 
-def _montar_url_download(
+def _montar_url_intervalo(
     serie: SerieBC, inicio: dt.date, fim: dt.date | None = None
 ) -> str:
     inicio_str = inicio.strftime("%d/%m/%Y")
@@ -75,29 +72,33 @@ def _montar_url_download(
     return url
 
 
-def _buscar_requisicao(
-    serie: SerieBC,
-    inicio: dt.date,
-    fim: dt.date | None,
-) -> pl.DataFrame:
-    """Busca dados da API para um intervalo."""
-    esquema_esperado = {"data": pl.Date, "taxa": pl.Float64}
-    url_api = _montar_url_download(serie, inicio, fim)
+def _montar_url_ultimos(serie: SerieBC, n: int) -> str:
+    return f"{URL_BASE}{serie.value}/dados/ultimos/{n}?formato=json"
+
+
+def _buscar_api(url_api: str) -> pl.DataFrame:
+    """Busca dados da API e converte em DataFrame."""
+    esquema = {"data": pl.Date, "taxa": pl.Float64}
 
     try:
         dados = _chamar_api(url_api)
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 404:  # noqa
-            return pl.DataFrame(schema=esquema_esperado)
+            return pl.DataFrame(schema=esquema)
         raise
 
     if not dados:
-        return pl.DataFrame(schema=esquema_esperado)
+        return pl.DataFrame(schema=esquema)
 
-    return pl.from_dicts(dados).select(
+    df = pl.from_dicts(dados).select(
         pl.col("data").str.to_date("%d/%m/%Y"),
-        taxa=pl.col("valor").cast(pl.Float64) / 100,
+        pl.col("valor")
+        .cast(pl.Float64)
+        .truediv(100)
+        .round(CASAS_DECIMAIS_ANUALIZADA)
+        .alias("taxa"),
     )
+    return df
 
 
 def _buscar_dados_url(
@@ -110,12 +111,15 @@ def _buscar_dados_url(
     data_fim = converter_datas(fim) if fim else relogio.hoje()
 
     if (data_fim - data_inicio).days < LIMITE_DIAS_SEGURO:
-        return _buscar_requisicao(serie, data_inicio, data_fim)
+        return _buscar_api(_montar_url_intervalo(serie, data_inicio, data_fim))
 
     inicios = pl.date_range(start=data_inicio, end=data_fim, interval="10y", eager=True)
     fins = inicios.dt.offset_by("10y").clip(upper_bound=data_fim)
 
-    todos_dfs = [_buscar_requisicao(serie, ini, fim) for ini, fim in zip(inicios, fins)]
+    todos_dfs = [
+        _buscar_api(_montar_url_intervalo(serie, ini, fim))
+        for ini, fim in zip(inicios, fins)
+    ]
 
     todos_dfs = [df for df in todos_dfs if not df.is_empty()]
 
@@ -126,8 +130,10 @@ def _buscar_dados_url(
 
 
 def selic_over_serie(
-    inicio: DateLike,
+    inicio: DateLike | None = None,
     fim: DateLike | None = None,
+    *,
+    ultimos: int | None = None,
 ) -> pl.DataFrame:
     """Taxa SELIC Over (série SGS 1178).
 
@@ -137,6 +143,8 @@ def selic_over_serie(
     Args:
         inicio: Data inicial.
         fim: Data final. Se ``None``, usa a data mais recente.
+        ultimos: Número de registros mais recentes a retornar.
+            Mutuamente exclusivo com ``inicio``/``fim``.
 
     Returns:
         DataFrame com colunas data e taxa, ou DataFrame vazio.
@@ -171,10 +179,13 @@ def selic_over_serie(
         │ 2025-09-17 ┆ 0.149 │
         └────────────┴───────┘
     """
-    if any_is_empty(inicio):
-        return pl.DataFrame()
-    df = _buscar_dados_url(SerieBC.SELIC_OVER, inicio, fim)
-    return df.with_columns(pl.col("taxa").round(CASAS_DECIMAIS_ANUALIZADA))
+    if ultimos is not None:
+        df = _buscar_api(_montar_url_ultimos(SerieBC.SELIC_OVER, ultimos))
+    elif inicio is not None:
+        df = _buscar_dados_url(SerieBC.SELIC_OVER, inicio, fim)
+    else:
+        raise ValueError("Informe 'inicio' ou 'ultimos'.")
+    return df
 
 
 def selic_over(data: DateLike) -> float:
@@ -197,8 +208,10 @@ def selic_over(data: DateLike) -> float:
 
 
 def selic_meta_serie(
-    inicio: DateLike,
+    inicio: DateLike | None = None,
     fim: DateLike | None = None,
+    *,
+    ultimos: int | None = None,
 ) -> pl.DataFrame:
     """Taxa SELIC Meta (série SGS 432).
 
@@ -207,6 +220,8 @@ def selic_meta_serie(
     Args:
         inicio: Data inicial.
         fim: Data final. Se ``None``, usa a data mais recente.
+        ultimos: Número de registros mais recentes a retornar.
+            Mutuamente exclusivo com ``inicio``/``fim``.
 
     Returns:
         DataFrame com colunas data e taxa, ou DataFrame vazio.
@@ -223,10 +238,13 @@ def selic_meta_serie(
         │ 2024-05-31 ┆ 0.105 │
         └────────────┴───────┘
     """
-    if any_is_empty(inicio):
-        return pl.DataFrame()
-    df = _buscar_dados_url(SerieBC.SELIC_META, inicio, fim)
-    return df.with_columns(pl.col("taxa").round(CASAS_DECIMAIS_ANUALIZADA))
+    if ultimos is not None:
+        df = _buscar_api(_montar_url_ultimos(SerieBC.SELIC_META, ultimos))
+    elif inicio is not None:
+        df = _buscar_dados_url(SerieBC.SELIC_META, inicio, fim)
+    else:
+        raise ValueError("Informe 'inicio' ou 'ultimos'.")
+    return df
 
 
 def selic_meta(data: DateLike) -> float:
@@ -246,72 +264,3 @@ def selic_meta(data: DateLike) -> float:
     if any_is_empty(data):
         return float("nan")
     return _extrair_taxa(selic_meta_serie(data, data))
-
-
-def di_over_serie(
-    inicio: DateLike,
-    fim: DateLike | None = None,
-    anualizada: bool = True,
-) -> pl.DataFrame:
-    """Taxa DI Over (série SGS 11).
-
-    Taxa de juros média dos empréstimos interbancários.
-
-    Args:
-        inicio: Data inicial.
-        fim: Data final. Se ``None``, usa a data mais recente.
-        anualizada: Se ``True``, retorna a taxa anualizada (base
-            252 d.u.). Caso contrário, retorna a taxa diária.
-
-    Returns:
-        DataFrame com colunas data e taxa, ou DataFrame vazio.
-
-    Examples:
-        >>> from pyield import bc
-        >>> # Retorna todos os dados desde 29-01-2025
-        >>> bc.di_over_serie("29-01-2025").head(5)  # Primeiras 5 linhas
-        shape: (5, 2)
-        ┌────────────┬────────┐
-        │ data       ┆ taxa   │
-        │ ---        ┆ ---    │
-        │ date       ┆ f64    │
-        ╞════════════╪════════╡
-        │ 2025-01-29 ┆ 0.1215 │
-        │ 2025-01-30 ┆ 0.1315 │
-        │ 2025-01-31 ┆ 0.1315 │
-        │ 2025-02-03 ┆ 0.1315 │
-        │ 2025-02-04 ┆ 0.1315 │
-        └────────────┴────────┘
-    """
-    if any_is_empty(inicio):
-        return pl.DataFrame()
-    df = _buscar_dados_url(SerieBC.DI_OVER, inicio, fim)
-    if anualizada:
-        return df.with_columns(
-            taxa=(((pl.col("taxa") + 1).pow(252)) - 1).round(CASAS_DECIMAIS_ANUALIZADA)
-        )
-    return df.with_columns(taxa=pl.col("taxa").round(CASAS_DECIMAIS_DIARIA))
-
-
-def di_over(data: DateLike, anualizada: bool = True) -> float:
-    """Taxa DI Over para uma data específica.
-
-    Args:
-        data: Data da consulta.
-        anualizada: Se ``True``, retorna a taxa anualizada (base
-            252 d.u.). Caso contrário, retorna a taxa diária.
-
-    Returns:
-        Taxa DI Over ou ``nan`` se não disponível.
-
-    Examples:
-        >>> from pyield import bc
-        >>> bc.di_over("31-05-2024")
-        0.104
-
-        >>> bc.di_over("28-01-2025", anualizada=False)
-        0.00045513
-    """
-    if any_is_empty(data):
-        return float("nan")
-    return _extrair_taxa(di_over_serie(data, data, anualizada))

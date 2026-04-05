@@ -172,9 +172,6 @@ yd.bc.selic_over("31-05-2024")  # -> 0.104  (10.4% a.a.)
 # PTAX (taxa de câmbio oficial)
 yd.bc.ptax("31-05-2024")  # -> 5.4407
 
-# DI Over (taxa anualizada do mercado interbancário)
-yd.bc.di_over("31-05-2024")  # -> 0.104  (10.4% a.a.)
-
 # Taxa SELIC meta (definida pelo COPOM)
 yd.bc.selic_meta("31-05-2024")  # -> 0.1075  (10.75% a.a.)
 
