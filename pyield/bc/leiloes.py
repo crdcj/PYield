@@ -12,13 +12,12 @@ from typing import Literal
 
 import polars as pl
 import polars.selectors as cs
-import requests
 
 import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.br_numbers import float_br, taxa_br
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
+from pyield.bc._olinda import buscar_csv, montar_url, parsear_csv
 from pyield.bc.sgs import ptax_serie
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
@@ -74,39 +73,17 @@ CHAVES_ORDENACAO = ["data_leilao", "tipo_leilao", "titulo", "data_vencimento"]
 URL_BASE_API = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
 
 
-MAPA_TIPO_LEILAO = {"venda": "Venda", "compra": "Compra"}
-
-
-def _montar_url(
+def _montar_parametros(
     inicio: DateLike | None = None,
     fim: DateLike | None = None,
-    tipo_leilao: Literal["venda", "compra"] | None = None,
-) -> str:
-    url = URL_BASE_API
+) -> dict[str, str]:
+    """Converte parâmetros opcionais de período em dicionário para a URL."""
+    params: dict[str, str] = {}
     if inicio:
-        inicio = cv.converter_datas(inicio)
-        url += f"@dataMovimentoInicio='{inicio:%Y-%m-%d}'"
+        params["dataMovimentoInicio"] = cv.converter_datas(inicio).strftime("%Y-%m-%d")
     if fim:
-        fim = cv.converter_datas(fim)
-        url += f"&@dataMovimentoFim='{fim:%Y-%m-%d}'"
-    if tipo_leilao:
-        url += f"&@tipoOferta='{MAPA_TIPO_LEILAO[tipo_leilao.lower()]}'"
-    url += "&$format=text/csv"
-    return url
-
-
-@retry_padrao
-def _buscar_csv(url: str) -> bytes:
-    resposta = requests.get(url, timeout=10)
-    resposta.raise_for_status()
-    return resposta.content
-
-
-def _parsear_df(dados: bytes) -> pl.DataFrame:
-    """Lê CSV como strings."""
-    if not dados.strip():
-        return pl.DataFrame()
-    return pl.read_csv(dados, infer_schema=False, null_values=["null"])
+        params["dataMovimentoFim"] = cv.converter_datas(fim).strftime("%Y-%m-%d")
+    return params
 
 
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
@@ -147,9 +124,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             pu_corte=float_br("cotacaoCorte"),
             taxa_media=taxa_br("taxaMedia"),
             taxa_corte=taxa_br("taxaCorte"),
-            financeiro_total=(float_br("financeiro") * 1_000_000)
-            .round(0)
-            .cast(pl.Int64),
+            financeiro_total=float_br("financeiro") * 1_000_000,
             quantidade_ofertada_1v=pl.col("quantidadeOfertada").cast(pl.Int64),
             quantidade_aceita_1v=pl.col("quantidadeAceita").cast(pl.Int64),
             quantidade_liquidada_1v=pl.col("quantidadeLiquidada").cast(pl.Int64),
@@ -182,9 +157,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
                 (pl.col("quantidade_aceita_1v") / pl.col("quantidade_aceita_total"))
                 * pl.col("financeiro_total")
             )
-            .otherwise(0)
-            .round(0)
-            .cast(pl.Int64),
+            .otherwise(0.0),
         )
         .with_columns(
             financeiro_2v=pl.col("financeiro_total") - pl.col("financeiro_1v"),
@@ -319,9 +292,9 @@ def leiloes(
         * quantidade_aceita_1v (Int64): qtd aceita 1ª volta.
         * quantidade_aceita_2v (Int64): qtd aceita 2ª volta.
         * quantidade_aceita_total (Int64): qtd total aceita.
-        * financeiro_1v (Int64): financeiro 1ª volta em R$.
-        * financeiro_2v (Int64): financeiro 2ª volta em R$.
-        * financeiro_total (Int64): financeiro total em R$.
+        * financeiro_1v (Float64): financeiro 1ª volta em R$.
+        * financeiro_2v (Float64): financeiro 2ª volta em R$.
+        * financeiro_total (Float64): financeiro total em R$.
 
     Notes:
         1v = primeira volta (rodada), 2v = segunda volta.
@@ -333,24 +306,23 @@ def leiloes(
         ┌─────────────┬─────────────────┬─────────────┬───────────────┬───┬─────────────────────────┬───────────────┬───────────────┬──────────────────┐
         │ data_leilao ┆ data_liquidacao ┆ tipo_leilao ┆ numero_edital ┆ … ┆ quantidade_aceita_total ┆ financeiro_1v ┆ financeiro_2v ┆ financeiro_total │
         │ ---         ┆ ---             ┆ ---         ┆ ---           ┆   ┆ ---                     ┆ ---           ┆ ---           ┆ ---              │
-        │ date        ┆ date            ┆ str         ┆ i64           ┆   ┆ i64                     ┆ i64           ┆ i64           ┆ i64              │
+        │ date        ┆ date            ┆ str         ┆ i64           ┆   ┆ i64                     ┆ f64           ┆ f64           ┆ f64              │
         ╞═════════════╪═════════════════╪═════════════╪═══════════════╪═══╪═════════════════════════╪═══════════════╪═══════════════╪══════════════════╡
-        │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 192           ┆ … ┆ 150000                  ┆ 2572400000    ┆ 0             ┆ 2572400000       │
-        │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 192           ┆ … ┆ 751003                  ┆ 12804476147   ┆ 17123853      ┆ 12821600000      │
-        │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 193           ┆ … ┆ 300759                  ┆ 1289936461    ┆ 3263539       ┆ 1293200000       │
-        │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 194           ┆ … ┆ 500542                  ┆ 2071654327    ┆ 2245673       ┆ 2073900000       │
-        │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 194           ┆ … ┆ 500000                  ┆ 2010700000    ┆ 0             ┆ 2010700000       │
+        │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 192           ┆ … ┆ 150000                  ┆ 2.5724e9      ┆ 0.0           ┆ 2.5724e9         │
+        │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 192           ┆ … ┆ 751003                  ┆ 1.2804e10     ┆ 1.7124e7      ┆ 1.2822e10        │
+        │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 193           ┆ … ┆ 300759                  ┆ 1.2899e9      ┆ 3.2635e6      ┆ 1.2932e9         │
+        │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 194           ┆ … ┆ 500542                  ┆ 2.0717e9      ┆ 2.2457e6      ┆ 2.0739e9         │
+        │ 2025-08-19  ┆ 2025-08-20      ┆ Venda       ┆ 194           ┆ … ┆ 500000                  ┆ 2.0107e9      ┆ 0.0           ┆ 2.0107e9         │
         └─────────────┴─────────────────┴─────────────┴───────────────┴───┴─────────────────────────┴───────────────┴───────────────┴──────────────────┘
     """
-    url = _montar_url(
-        inicio=inicio,
-        fim=fim,
-        tipo_leilao=tipo_leilao,
-    )
-    dados = _buscar_csv(url)
-    df = _parsear_df(dados)
+    url = montar_url(URL_BASE_API, _montar_parametros(inicio, fim))
+    dados = buscar_csv(url)
+    df = parsear_csv(dados)
     if df.is_empty():
         return pl.DataFrame()
     df = _processar_df(df)
     df = _adicionar_dv01_usd(df)
-    return df.select(ORDEM_COLUNAS_FINAL).sort(CHAVES_ORDENACAO)
+    df = df.select(ORDEM_COLUNAS_FINAL).sort(CHAVES_ORDENACAO)
+    if tipo_leilao:
+        df = df.filter(pl.col("tipo_leilao").str.to_lowercase() == tipo_leilao.lower())
+    return df

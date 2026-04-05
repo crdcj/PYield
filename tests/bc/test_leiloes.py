@@ -21,7 +21,7 @@ def test_leiloes_com_monkeypatch(monkeypatch):
     """leiloes com monkeypatch deve produzir o Parquet de referência."""
     monkeypatch.setattr(
         modulo_leiloes,
-        "_buscar_csv",
+        "buscar_csv",
         lambda *_: CAMINHO_CSV.read_bytes(),
     )
     monkeypatch.setattr(modulo_leiloes, "_buscar_ptax", lambda *_: DF_PTAX_REFERENCIA)

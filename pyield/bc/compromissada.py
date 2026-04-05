@@ -13,63 +13,27 @@ ac1b013d13d6fb1d9d9e251b8000121e, 2025-08-21   , 12:00     , TodoMercado        
 """
 
 import polars as pl
-import requests
 
 import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.br_numbers import float_br, taxa_br
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
+from pyield.bc._olinda import buscar_csv, montar_url, parsear_csv
 
 URL_BASE_API = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloes_compromissadas(dataLancamentoInicio=@dataLancamentoInicio,dataLancamentoFim=@dataLancamentoFim,horaInicio=@horaInicio,dataLiquidacao=@dataLiquidacao,dataRetorno=@dataRetorno,publicoPermitidoLeilao=@publicoPermitidoLeilao,nomeTipoOferta=@nomeTipoOferta)?"
 
 
-def _montar_url(
+def _montar_parametros(
     inicio: DateLike | None,
     fim: DateLike | None,
-) -> str:
-    """Monta URL de consulta conforme parâmetros opcionais de período.
-
-    Regras da API:
-        - Apenas inicio: retorna de inicio até o fim da série.
-        - Apenas fim: retorna do início da série até fim.
-        - Ambos ausentes: retorna a série completa.
-    """
-    url = URL_BASE_API
+) -> dict[str, str]:
+    """Converte parâmetros opcionais de período em dicionário para a URL."""
+    params: dict[str, str] = {}
     if inicio:
-        inicio_dt = cv.converter_datas(inicio)
-        inicio_str = inicio_dt.strftime("%Y-%m-%d")
-        url += f"@dataLancamentoInicio='{inicio_str}'"
-
+        params["dataLancamentoInicio"] = cv.converter_datas(inicio).strftime("%Y-%m-%d")
     if fim:
-        fim_dt = cv.converter_datas(fim)
-        fim_str = fim_dt.strftime("%Y-%m-%d")
-        url += f"&@dataLancamentoFim='{fim_str}'"
-
-    url += "&$format=text/csv"  # Adiciona o formato CSV ao final
-
-    return url
-
-
-@retry_padrao
-def _buscar_csv_api(url: str) -> bytes:
-    """Executa requisição HTTP e retorna o corpo CSV como string.
-
-    Decorado com ``retry_padrao`` para resiliência a falhas transitórias.
-    Levanta exceções de status HTTP para tratamento a montante.
-    """
-    r = requests.get(url, timeout=10)
-    r.raise_for_status()
-    return r.content
-
-
-def _ler_csv(csv_bytes: bytes) -> pl.DataFrame:
-    """Lê o CSV (bytes) em um DataFrame Polars sem inferência de tipos."""
-    return pl.read_csv(
-        csv_bytes,
-        infer_schema=False,
-        null_values=["null", ""],
-    )
+        params["dataLancamentoFim"] = cv.converter_datas(fim).strftime("%Y-%m-%d")
+    return params
 
 
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
@@ -85,7 +49,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
         comunicado=pl.col("numeroComunicado").cast(pl.Int64),
         tipo_oferta=pl.col("nomeTipoOferta"),
         publico=pl.col("publicoPermitidoLeilao"),
-        volume_aceito=1000 * pl.col("volumeAceito").cast(pl.Float64),
+        financeiro_aceito=1000 * pl.col("volumeAceito").cast(pl.Float64),
         taxa_corte=pl.when(vol_zero).then(None).otherwise(taxa_br("taxaCorte")),
         pct_aceito=pl.when(vol_zero)
         .then(0.0)
@@ -122,8 +86,8 @@ def compromissadas(
         - comunicado (Int64): número do comunicado/aviso do BC (pode ser nulo).
         - tipo_oferta (String): classif. do tipo de oferta (ex: Tomador, Compromissada 1047).
         - publico (String): público permitido no leilão (SomenteDealer, TodoMercado).
-        - volume_aceito (Float64): volume aceito no leilão em reais (convertido de milhares).
-        - taxa_corte (Float64): taxa de corte (ex. 0.1490 = 14,90%). Nula se volume_aceito = 0.
+        - financeiro_aceito (Float64): financeiro aceito no leilão em reais (convertido de milhares).
+        - taxa_corte (Float64): taxa de corte (ex. 0.1490 = 14,90%). Nula se financeiro_aceito = 0.
         - pct_aceito (Float64): percentual do volume ofertado efetivamente aceito (0-100).
           100 = nenhuma rejeição. 0 indica nada aceito (volume_aceito = 0).
 
@@ -137,18 +101,21 @@ def compromissadas(
         >>> from pyield import bc
         >>> bc.compromissadas(inicio="21-08-2025", fim="21-08-2025")
         shape: (2, 12)
-        ┌─────────────┬─────────────────┬──────────────┬─────────────┬──────────┬──────────┬────────────┬────────────────────┬───────────────┬───────────────┬────────────┬────────────┐
-        │ data_leilao ┆ data_liquidacao ┆ data_retorno ┆ hora_inicio ┆ prazo_dc ┆ prazo_du ┆ comunicado ┆ tipo_oferta        ┆ publico       ┆ volume_aceito ┆ taxa_corte ┆ pct_aceito │
-        │ ---         ┆ ---             ┆ ---          ┆ ---         ┆ ---      ┆ ---      ┆ ---        ┆ ---                ┆ ---           ┆ ---           ┆ ---        ┆ ---        │
-        │ date        ┆ date            ┆ date         ┆ time        ┆ i64      ┆ i64      ┆ i64        ┆ str                ┆ str           ┆ f64           ┆ f64        ┆ f64        │
-        ╞═════════════╪═════════════════╪══════════════╪═════════════╪══════════╪══════════╪════════════╪════════════════════╪═══════════════╪═══════════════╪════════════╪════════════╡
-        │ 2025-08-21  ┆ 2025-08-21      ┆ 2025-08-22   ┆ 09:00:00    ┆ 1        ┆ 1        ┆ null       ┆ Tomador            ┆ SomenteDealer ┆ 6.4771e11     ┆ 0.149      ┆ 100.0      │
-        │ 2025-08-21  ┆ 2025-08-22      ┆ 2025-11-21   ┆ 12:00:00    ┆ 91       ┆ 64       ┆ 43716      ┆ Compromissada 1047 ┆ TodoMercado   ┆ 5.0000e9      ┆ 0.9978     ┆ 35.87      │
-        └─────────────┴─────────────────┴──────────────┴─────────────┴──────────┴──────────┴────────────┴────────────────────┴───────────────┴───────────────┴────────────┴────────────┘
+        ┌─────────────┬─────────────────┬──────────────┬─────────────┬──────────┬──────────┬────────────┬────────────────────┬───────────────┬───────────────────┬────────────┬────────────┐
+        │ data_leilao ┆ data_liquidacao ┆ data_retorno ┆ hora_inicio ┆ prazo_dc ┆ prazo_du ┆ comunicado ┆ tipo_oferta        ┆ publico       ┆ financeiro_aceito ┆ taxa_corte ┆ pct_aceito │
+        │ ---         ┆ ---             ┆ ---          ┆ ---         ┆ ---      ┆ ---      ┆ ---        ┆ ---                ┆ ---           ┆ ---               ┆ ---        ┆ ---        │
+        │ date        ┆ date            ┆ date         ┆ time        ┆ i64      ┆ i64      ┆ i64        ┆ str                ┆ str           ┆ f64               ┆ f64        ┆ f64        │
+        ╞═════════════╪═════════════════╪══════════════╪═════════════╪══════════╪══════════╪════════════╪════════════════════╪═══════════════╪═══════════════════╪════════════╪════════════╡
+        │ 2025-08-21  ┆ 2025-08-21      ┆ 2025-08-22   ┆ 09:00:00    ┆ 1        ┆ 1        ┆ null       ┆ Tomador            ┆ SomenteDealer ┆ 6.4771e11         ┆ 0.149      ┆ 100.0      │
+        │ 2025-08-21  ┆ 2025-08-22      ┆ 2025-11-21   ┆ 12:00:00    ┆ 91       ┆ 64       ┆ 43716      ┆ Compromissada 1047 ┆ TodoMercado   ┆ 5.0000e9          ┆ 0.9978     ┆ 35.87      │
+        └─────────────┴─────────────────┴──────────────┴─────────────┴──────────┴──────────┴────────────┴────────────────────┴───────────────┴───────────────────┴────────────┴────────────┘
+        >>> _ = pl.Config.restore_defaults()
+        >>> _ = pl.Config.set_tbl_width_chars(150)
     """
-    url = _montar_url(inicio=inicio, fim=fim)
-    csv_api = _buscar_csv_api(url)
-    df = _ler_csv(csv_api)
+    params = _montar_parametros(inicio, fim)
+    url = montar_url(URL_BASE_API, params)
+    dados = buscar_csv(url)
+    df = parsear_csv(dados)
     if df.is_empty():
         return pl.DataFrame()
     return _processar_df(df)
