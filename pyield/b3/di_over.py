@@ -9,8 +9,10 @@ Formato do arquivo (ex.: 20250228.txt):
 Notas de implementação:
     - O valor "00001315" representa 1315 / 10^4 = 0.1315 (13,15% a.a.).
     - Arquivos ausentes (feriados/fins de semana) retornam erro FTP 550.
+    - Série disponível a partir de 20/08/2012 (primeiro arquivo no FTP).
 """
 
+import datetime as dt
 import ftplib
 import logging
 
@@ -19,6 +21,9 @@ from pyield._internal.converters import converter_datas
 from pyield._internal.types import DateLike, any_is_empty
 
 registro = logging.getLogger(__name__)
+
+# Primeiro arquivo disponível no FTP da CETIP
+DATA_INICIO = dt.date(2012, 8, 20)
 
 # 4 casas decimais na taxa = 2 casas decimais em percentual
 CASAS_DECIMAIS_DI_OVER = 4
@@ -66,7 +71,8 @@ def di_over(data: DateLike) -> float:
 
     Returns:
         Taxa DI para a data especificada (ex: 0.1315 para 13,15%).
-        Retorna ``nan`` se a data for feriado ou fim de semana.
+        Retorna ``nan`` se a data for feriado, fim de semana ou
+        anterior a 20/08/2012 (início da série no FTP).
 
     Examples:
         >>> di_over("28/02/2025")
@@ -78,5 +84,8 @@ def di_over(data: DateLike) -> float:
         return float("nan")
 
     data_ref = converter_datas(data)
+    if data_ref < DATA_INICIO:
+        return float("nan")
+
     nome_arquivo = data_ref.strftime("%Y%m%d.txt")
     return _buscar_taxa(nome_arquivo)
