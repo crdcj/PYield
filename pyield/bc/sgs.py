@@ -59,7 +59,7 @@ class SerieSGS(Enum):
 @ttl_cache()
 @retry_padrao
 def _chamar_api(url_api: str) -> list[dict[str, str]]:
-    resposta = requests.get(url_api, timeout=10)
+    resposta = requests.get(url_api, timeout=30)
     resposta.raise_for_status()
     return resposta.json()
 
