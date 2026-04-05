@@ -2,9 +2,7 @@ from pyield.bc import compromissada, copom
 from pyield.bc.compromissada import compromissadas
 from pyield.bc.leiloes import leiloes
 from pyield.bc.ptax import ptax, ptax_serie
-from pyield.bc.taxas import (
-    di_over,
-    di_over_serie,
+from pyield.bc.selic import (
     selic_meta,
     selic_meta_serie,
     selic_over,
@@ -17,8 +15,6 @@ from pyield.bc.vna import vna_lft
 __all__ = [
     "copom",
     "compromissada",
-    "di_over",
-    "di_over_serie",
     "leiloes",
     "ptax_serie",
     "compromissadas",

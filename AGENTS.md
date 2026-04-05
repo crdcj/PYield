@@ -1,83 +1,84 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents when working with code in this repository.
+Orientações para agentes de IA que trabalham neste repositório.
 
-## Project Overview
+## Visão Geral
 
-PYield is a Python library for Brazilian fixed income analysis (requires Python ≥ 3.12). It fetches and processes data from ANBIMA, BCB (Central Bank), IBGE, and B3 (Brazilian stock exchange). All public functions return Polars DataFrames/Series.
+PYield é uma biblioteca Python para análise de renda fixa brasileira (requer Python ≥ 3.12). Busca e processa dados da ANBIMA, BCB (Banco Central), IBGE e B3 (Bolsa de Valores). Todas as funções públicas retornam DataFrames/Series do Polars.
 
 ## Princípio Fundamental: Redução de Complexidade
 
 O objetivo principal ao trabalhar neste repositório é **reduzir a complexidade do código**. Toda alteração deve, por padrão, simplificar — nunca adicionar ramificações, abstrações ou lógica desnecessária. Só aumente a complexidade quando for estritamente necessário e com justificativa clara do solicitante.
 
-## Build & Development Commands
+## Comandos de Build e Desenvolvimento
 
 ```bash
-# Install dependencies (uses uv package manager)
+# Instalar dependências (usa o gerenciador de pacotes uv)
 uv sync
 
-# Run all tests (tests/ + doctests in pyield/)
-# pyproject.toml already configures testpaths and --doctest-modules
+# Rodar todos os testes (tests/ + doctests em pyield/)
+# pyproject.toml já configura testpaths e --doctest-modules
 pytest
 
-# Run only doctests in a single module
+# Rodar apenas doctests de um módulo
 pytest pyield/du/core.py --doctest-modules
 
-# Run a single test file
+# Rodar um arquivo de teste
 pytest tests/du/test_dus.py
 
-# Run a specific test
+# Rodar um teste específico
 pytest tests/du/test_dus.py::test_count_new_holiday
 
 # Linting
 ruff check
 
-# Type checking
+# Verificação de tipos
 pyright
 
-# Build documentation (MkDocs)
+# Documentação (MkDocs)
 mkdocs serve
 ```
 
-## Architecture
+## Arquitetura
 
-### Module Structure
+### Estrutura de Módulos
 
-The library is organized into domain-specific namespaces, all exposed through `pyield/__init__.py`:
+A biblioteca é organizada em namespaces de domínio, todos expostos via `pyield/__init__.py`:
 
 - **`du`** — Calendário de dias úteis (feriados brasileiros embutidos). Funções principais: `contar`, `deslocar`, `gerar`, `e_dia_util`, `ultimo_dia_util`. Variantes para expressões Polars: `contar_expr`, `deslocar_expr`, `e_dia_util_expr`.
-- **`anbima`** — ANBIMA data endpoints (treasury bond pricing, yield curves). Functions: `tpf`, `tpf_vencimentos`, `tpf_fonte`, `ettj_ultima`, `ettj_intradia`, `ima_ultimo`, `imaq`, `tpf_difusao`.
-- **`bc`** — BCB indicators. Functions: `selic_over`, `selic_over_series`, `selic_target`, `selic_target_series`, `di_over`, `di_over_series`, `ptax`, `ptax_series`, `repos`, `vna_lft`, `auctions`, `tpf_monthly_trades`, `tpf_intraday_trades`. Submodule: `copom`.
-- **`b3`** — B3 market data. Functions: `futuro`, `futuro_enriquecer`, `futuro_intradia`, `futuro_datas_disponiveis`, `di_over`, `boletim_negociacao`, `boletim_negociacao_ler`, `derivativo_intradia`. Submodule: `di1`.
-- **`tn`** — Treasury bond modules: `ltn`, `ntnb`, `ntnf`, `ntnc`, `lft`, `pre`, `ntnbprinc`, `ntnb1`. Most have `data()`, `maturities()`, `price()`; `ntnb`, `ntnc`, `lft`, `ntnb1` also have `quotation()`. `pre` only has `spot_rates()` and `di_spreads()`. Also exposes: `tn.auction`, `tn.benchmarks`, `tn.di_spreads`.
-- **`ipca`** — Inflation data. Functions: `indexes`, `last_indexes`, `rates`, `last_rates`, `projected_rate`.
-- **`selic`** — COPOM-related analytics. Submodules: `cpm` (raw B3 COPOM Digital Option data), `probabilities` (implied COPOM meeting probabilities).
+- **`anbima`** — Dados da ANBIMA (precificação de títulos públicos, curvas de juros). Funções: `tpf`, `tpf_vencimentos`, `tpf_fonte`, `ettj_ultima`, `ettj_intradia`, `ima_ultimo`, `imaq`, `tpf_difusao`.
+- **`bc`** — Indicadores do BCB. Funções: `selic_over`, `selic_over_serie`, `selic_meta`, `selic_meta_serie`, `ptax`, `ptax_serie`, `compromissadas`, `vna_lft`, `leiloes`, `tpf_mensal`, `tpf_intradia`. Submódulos: `copom`, `compromissada`.
+- **`b3`** — Dados de mercado da B3. Funções: `futuro`, `futuro_enriquecer`, `futuro_intradia`, `futuro_datas_disponiveis`, `di_over`, `boletim_negociacao`, `boletim_negociacao_extrair`, `boletim_negociacao_ler`, `derivativo_intradia`. Submódulo: `di1`.
+- **`tn`** — Módulos do Tesouro Nacional. Funções: `benchmarks`, `leilao`, `rmd`, `premio_pre`. Submódulo: `pre`. Módulos individuais (`ltn`, `ntnb`, `ntnf`, `ntnc`, `lft`, `ntnbprinc`, `ntnb1`) são exportados no topo (`pyield`).
+- **`ipca`** — Dados de inflação. Funções: `indices`, `indices_ultimos`, `taxas`, `taxas_ultimas`, `taxa_projetada`.
+- **`selic`** — Análises relacionadas ao COPOM. Submódulos: `cpm` (dados brutos de Opções Digitais COPOM da B3), `probabilities` (probabilidades implícitas de reuniões do COPOM).
 
-Top-level functions also exported from `pyield`:
-- `forwards`, `forward` — Forward rate calculations from `fwd.py`.
-- `rmd` — Treasury monthly debt report (Relatório Mensal da Dívida) from `rmd.py`.
-- `Interpolador` — Rate interpolation class from `interpolador.py`.
-- `today`, `now` — Brazil timezone date/time from `clock.py`.
-- `copom_options` — Alias for `selic.cpm.data`.
+Funções de topo também exportadas em `pyield`:
+- `forwards`, `forward` — Cálculos de taxas a termo via `fwd.py`.
+- `Interpolador` — Classe de interpolação de taxas via `interpolador.py`.
+- `hoje`, `agora` — Data/hora no fuso de Brasília via `relogio.py`.
+- `copom_options` — Alias para `selic.cpm.data`.
 
-### Key Cross-Cutting Components
+### Componentes Transversais
 
-- **`_internal/types.py`** — Type aliases `DateLike` and `ArrayLike`; `any_is_empty()` for null/empty detection; `any_is_collection()` for array-like detection.
-- **`_internal/converters.py`** — `converter_datas()` normalizes various date inputs to `datetime.date` or `pl.Series[Date]`. `converter_datas_expr()` for Polars expression pipelines.
-- **`interpolador.py`** — `Interpolador` class for rate interpolation (linear or flat_forward method, convenção de 252 dias úteis/ano).
-- **`_internal/data_cache.py`** — GitHub-hosted parquet data cache with daily TTL using `lru_cache` (date-key trick for auto-invalidation).
-- **`_internal/retry.py`** — Tenacity-based retry decorator (`retry_padrao`) for network requests (retries on 429, 5xx, timeouts).
-- **`clock.py`** — `today()` and `now()` return Brazil timezone (America/Sao_Paulo) dates/times.
+- **`_internal/types.py`** — Aliases de tipo `DateLike` e `ArrayLike`; `any_is_empty()` para detecção de nulo/vazio; `any_is_collection()` para detecção de coleções.
+- **`_internal/converters.py`** — `converter_datas()` normaliza diversas entradas de data para `datetime.date` ou `pl.Series[Date]`. `converter_datas_expr()` para pipelines de expressão Polars.
+- **`interpolador.py`** — Classe `Interpolador` para interpolação de taxas (método linear ou flat_forward, convenção de 252 dias úteis/ano).
+- **`_internal/cache.py`** — Decorator `ttl_cache` para cache com TTL diário.
+- **`_internal/data_cache.py`** — Cache de parquet hospedado no GitHub com TTL diário usando `lru_cache` (truque de date-key para auto-invalidação).
+- **`_internal/br_numbers.py`** — Expressões Polars para converter strings numéricas no padrão brasileiro (vírgula decimal, ponto de milhar): `float_br`, `taxa_br`, `inteiro_br`, `inteiro_m`.
+- **`_internal/retry.py`** — Decorator de retry baseado em Tenacity (`retry_padrao`) para requisições de rede (retry em 429, 5xx, timeouts).
+- **`relogio.py`** — `hoje()` e `agora()` retornam data/hora no fuso de Brasília (America/Sao_Paulo).
 
-### Date Handling Conventions
+### Convenções de Tratamento de Datas
 
-- Accepted string formats: `DD-MM-YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`
-- Scalar dates normalize to `datetime.date`; collections become `pl.Series` with dtype `Date`
-- String parsing is element-wise (row-wise) with fallback across the accepted formats
-- Invalid strings are converted to `null` (or `None` for scalar outputs)
-- Nullable inputs (`None`, `NaN`, empty collections) short-circuit: scalar functions return `None` or `nan`, vectorized functions return empty DataFrame/Series
+- Formatos de string aceitos: `DD-MM-YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`
+- Datas escalares normalizam para `datetime.date`; coleções viram `pl.Series` com dtype `Date`
+- Parsing de strings é feito elemento a elemento com fallback entre os formatos aceitos
+- Strings inválidas são convertidas para `null` (ou `None` para saídas escalares)
+- Entradas nulas (`None`, `NaN`, coleções vazias) fazem short-circuit: funções escalares retornam `None` ou `nan`, funções vetorizadas retornam DataFrame/Series vazio
 
-### Data Flow Pattern (ETL)
+### Padrão de Fluxo de Dados (ETL)
 
 Módulos que buscam dados externos seguem o padrão ETL de 3 funções internas + função pública:
 
@@ -88,7 +89,7 @@ Módulos que buscam dados externos seguem o padrão ETL de 3 funções internas 
 
 Referência: `anbima/ima.py` (com colunas derivadas) e `anbima/imaq.py` (sem colunas derivadas).
 
-## Naming Conventions
+## Convenções de Nomenclatura
 
 - **Fronteira da API pública:** Considere público o que está documentado e/ou exportado no namespace de topo (`pyield/__init__.py`). Módulos não exportados no topo são internos, mesmo que importáveis por caminho direto.
 - **API pública (português):** Nomes de funções públicas, parâmetros e classes exportadas devem, por padrão, estar em português.
@@ -107,13 +108,13 @@ Referência: `anbima/ima.py` (com colunas derivadas) e `anbima/imaq.py` (sem col
 - **Camada bruta/intermediária próxima da fonte:** Quando a função expõe ou filtra diretamente campos do payload original da B3, pode usar a terminologia da fonte para deixar claro que opera no schema bruto. Ex.: em `boletim.py`, parâmetros como `prefixo_ticker` e `comprimento_ticker` são aceitáveis porque o filtro atua diretamente sobre `TckrSymb`.
 - **Regra prática:** Evitar misturar, na mesma camada, vocabulário da fonte e vocabulário canônico da lib para o mesmo conceito. A distinção deve refletir o nível de abstração do módulo.
 
-## Docstring Conventions
+## Convenções de Docstrings
 
-- All docstrings must be written in **Portuguese** (both public and internal functions).
-- Docstring line width must respect the project's `line-length = 88` (configured in `pyproject.toml`). This includes the indentation — e.g., a docstring inside a function has 4 spaces of indent, leaving 84 usable characters.
-- Public functions use Google-style sections: `Args:`, `Returns:`, `Output Columns:`, `Notes:`, `Examples:`.
-- `Output Columns:` lists every column with tipo Polars e descrição (ex: `* data_liquidacao (Date): data de liquidação.`).
-- Doctests (section `Examples:`) use real data and are validated by `pytest --doctest-modules`.
+- Todas as docstrings devem ser escritas em **português** (funções públicas e internas).
+- A largura de linha das docstrings deve respeitar `line-length = 88` do projeto (configurado em `pyproject.toml`). Isso inclui a indentação — ex.: docstring dentro de função tem 4 espaços de indent, sobrando 84 caracteres.
+- Funções públicas usam seções estilo Google: `Args:`, `Returns:`, `Output Columns:`, `Notes:`, `Examples:`.
+- `Output Columns:` lista cada coluna com tipo Polars e descrição (ex: `* data_liquidacao (Date): data de liquidação.`).
+- Doctests (seção `Examples:`) usam dados reais e são validados por `pytest --doctest-modules`.
 - Renderização Markdown (MkDocs/mkdocstrings): em listas livres dentro do texto (ex.: `Onde:`), evitar linha em branco entre o título e os itens e iniciar os itens imediatamente abaixo.
   Exemplo recomendado:
   `Onde:`
@@ -121,42 +122,42 @@ Referência: `anbima/ima.py` (com colunas derivadas) e `anbima/imaq.py` (sem col
   `- item 2`
 - Após mudanças em docstrings com listas/fórmulas, validar visualmente com `mkdocs serve` e confirmar o HTML gerado (evitar renderização como bloco de código).
 
-## Polars Conventions
+## Convenções Polars
 
 - Em `with_columns`, preferir sintaxe de keyword `col=expr` em vez de `expr.alias("col")`.
 - Retornos com encadeamento Polars: usar um único `return (...)` com quebras de linha entre métodos, sem variável intermediária.
 
-## Logging Conventions
+## Convenções de Logging
 
 - Não usar `warning` para validações de entrada esperadas (ex.: `None`, vazio, combinação inválida já prevista pelo contrato).
 - Nesses casos, retornar o valor de contrato (`None`, `NaN`, `Series/DataFrame` vazio) ou lançar `ValueError` quando apropriado.
 - Reservar `warning`/`error` para anomalias operacionais reais (falha de rede, fonte indisponível, schema inesperado, erro de parsing fora do contrato, etc.).
 
-## Data Query Return Conventions
+## Convenções de Retorno de Consultas
 
 - Funções públicas que consultam dados externos retornam **DataFrame vazio** (ou `nan`/`None` para escalares) quando não há dados para os parâmetros fornecidos — independentemente do motivo (data futura, fim de semana, feriado, fonte indisponível).
 - O chamador testa com `.is_empty()` (DataFrame) ou `math.isnan()` (escalar).
 - **Não** lançar `ValueError` para datas válidas sem dados. `ValueError` é reservado para inputs malformados (tipo errado, formato inválido, violação de domínio).
 - Analogia: funciona como um `SELECT` que retorna 0 linhas — não é um erro.
 
-## Testing
+## Testes
 
-Tests are in `tests/` and doctests are embedded in docstrings. Run `pytest` to execute both (configured in `pyproject.toml` via `testpaths` and `addopts = "--doctest-modules"`).
+Testes ficam em `tests/` e doctests estão embutidos nas docstrings. Execute `pytest` para rodar ambos (configurado em `pyproject.toml` via `testpaths` e `addopts = "--doctest-modules"`).
 
-### Doctest Configuration (conftest.py)
+### Configuração de Doctests (conftest.py)
 
-The root `conftest.py` configures the doctest environment:
-- **Namespace injection:** `yd` (pyield) and `pl` (polars) are available in all doctests via `doctest_namespace` fixture.
-- **Polars display:** `pl.Config.set_tbl_width_chars(150)` ensures consistent table output across environments.
-- **Option flags:** `ELLIPSIS` and `NORMALIZE_WHITESPACE` are enabled globally.
+O `conftest.py` da raiz configura o ambiente de doctests:
+- **Injeção de namespace:** `yd` (pyield) e `pl` (polars) ficam disponíveis em todos os doctests via fixture `doctest_namespace`.
+- **Display do Polars:** `pl.Config.set_tbl_width_chars(150)` garante saída de tabela consistente entre ambientes.
+- **Flags de opção:** `ELLIPSIS` e `NORMALIZE_WHITESPACE` habilitados globalmente.
 
-### Test Pattern for Data-Fetching Modules
+### Padrão de Testes para Módulos que Buscam Dados
 
-Modules that fetch external data (e.g., `bc/repo.py`, `bc/trades_monthly.py`) use local reference data to test without network access:
+Módulos que buscam dados externos (ex.: `bc/compromissada.py`, `bc/tpf_mensal.py`) usam dados de referência locais para testar sem acesso à rede:
 
-1. **Reference data** — Um par de arquivos em `tests/<module>/data/`: o dado bruto (CSV, HTML, ZIP) **exatamente como retornado pela fonte** e o resultado esperado (Parquet). O arquivo bruto deve ser salvo byte-a-byte (`write_bytes(resp.content)`) sem normalização de encoding ou line endings.
-2. **Pipeline test** — Processes the local raw input through the internal processing functions and asserts `result.equals(expected_parquet)`.
-3. **Public function test** — Patches the network fetch function to return local raw data, calls the public function, and asserts equality with the reference Parquet.
+1. **Dados de referência** — Um par de arquivos em `tests/<module>/data/`: o dado bruto (CSV, HTML, ZIP) **exatamente como retornado pela fonte** e o resultado esperado (Parquet). O arquivo bruto deve ser salvo byte-a-byte (`write_bytes(resp.content)`) sem normalização de encoding ou line endings.
+2. **Teste de pipeline** — Processa o dado bruto local pelas funções internas de processamento e compara com `result.equals(expected_parquet)`.
+3. **Teste da função pública** — Substitui (patch) a função de fetch de rede para retornar os dados brutos locais, chama a função pública e compara com o Parquet de referência.
 
 #### Padrão recomendado para ETL mais complexos (HTML/CSV/JSON)
 
