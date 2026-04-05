@@ -80,14 +80,14 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
         data_liquidacao=pl.col("dataLiquidacao").str.to_date("%Y-%m-%d"),
         data_retorno=pl.col("dataRetorno").str.to_date("%Y-%m-%d"),
         hora_inicio=pl.col("horaInicio").str.to_time("%H:%M"),
-        prazo_dias_corridos=pl.col("prazoDiasCorridos").cast(pl.Int64),
-        prazo_dias_uteis=du.contar_expr("dataLiquidacao", "dataRetorno"),
-        numero_comunicado=pl.col("numeroComunicado").cast(pl.Int64),
+        prazo_dc=pl.col("prazoDiasCorridos").cast(pl.Int64),
+        prazo_du=du.contar_expr("dataLiquidacao", "dataRetorno"),
+        comunicado=pl.col("numeroComunicado").cast(pl.Int64),
         tipo_oferta=pl.col("nomeTipoOferta"),
-        publico_permitido=pl.col("publicoPermitidoLeilao"),
-        volume_aceito=1000 * pl.col("volumeAceito").cast(pl.Int64),
+        publico=pl.col("publicoPermitidoLeilao"),
+        volume_aceito=1000 * pl.col("volumeAceito").cast(pl.Float64),
         taxa_corte=pl.when(vol_zero).then(None).otherwise(taxa_br("taxaCorte")),
-        percentual_aceito=pl.when(vol_zero)
+        pct_aceito=pl.when(vol_zero)
         .then(0.0)
         .otherwise(100 - float_br("percentualCorte")),
     ).sort("data_leilao", "hora_inicio", "tipo_oferta")
@@ -117,32 +117,34 @@ def compromissadas(
         - data_liquidacao (Date): data de liquidação (início da operação).
         - data_retorno (Date): data de recompra / término da operação.
         - hora_inicio (Time): horário de início do leilão.
-        - prazo_dias_corridos (Int64): dias corridos até a data de retorno.
-                - prazo_dias_uteis (Int64): dias úteis entre liquidação e retorno
-                    (du.contar).
-        - numero_comunicado (Int64): número do comunicado/aviso do BC (pode ser nulo).
+        - prazo_dc (Int64): dias corridos até a data de retorno.
+        - prazo_du (Int64): dias úteis entre liquidação e retorno.
+        - comunicado (Int64): número do comunicado/aviso do BC (pode ser nulo).
         - tipo_oferta (String): classif. do tipo de oferta (ex: Tomador, Compromissada 1047).
-        - publico_permitido (String): escopo de participantes (SomenteDealer, TodoMercado).
-        - volume_aceito (Int64): volume aceito no leilão em reais (convertido de milhares).
+        - publico (String): público permitido no leilão (SomenteDealer, TodoMercado).
+        - volume_aceito (Float64): volume aceito no leilão em reais (convertido de milhares).
         - taxa_corte (Float64): taxa de corte (ex. 0.1490 = 14,90%). Nula se volume_aceito = 0.
-        - percentual_aceito (Float64): percentual do volume ofertado efetivamente aceito (0-100).
+        - pct_aceito (Float64): percentual do volume ofertado efetivamente aceito (0-100).
           100 = nenhuma rejeição. 0 indica nada aceito (volume_aceito = 0).
 
     Notes:
         - Dados ordenados por: data_leilao, hora_inicio, tipo_oferta.
 
     Examples:
+        >>> import polars as pl
+        >>> _ = pl.Config.set_tbl_width_chars(210)
+        >>> _ = pl.Config.set_tbl_cols(-1)
         >>> from pyield import bc
         >>> bc.compromissadas(inicio="21-08-2025", fim="21-08-2025")
         shape: (2, 12)
-        ┌─────────────┬─────────────────┬──────────────┬─────────────┬───┬───────────────────┬───────────────┬────────────┬───────────────────┐
-        │ data_leilao ┆ data_liquidacao ┆ data_retorno ┆ hora_inicio ┆ … ┆ publico_permitido ┆ volume_aceito ┆ taxa_corte ┆ percentual_aceito │
-        │ ---         ┆ ---             ┆ ---          ┆ ---         ┆   ┆ ---               ┆ ---           ┆ ---        ┆ ---               │
-        │ date        ┆ date            ┆ date         ┆ time        ┆   ┆ str               ┆ i64           ┆ f64        ┆ f64               │
-        ╞═════════════╪═════════════════╪══════════════╪═════════════╪═══╪═══════════════════╪═══════════════╪════════════╪═══════════════════╡
-        │ 2025-08-21  ┆ 2025-08-21      ┆ 2025-08-22   ┆ 09:00:00    ┆ … ┆ SomenteDealer     ┆ 647707406000  ┆ 0.149      ┆ 100.0             │
-        │ 2025-08-21  ┆ 2025-08-22      ┆ 2025-11-21   ┆ 12:00:00    ┆ … ┆ TodoMercado       ┆ 5000000000    ┆ 0.9978     ┆ 35.87             │
-        └─────────────┴─────────────────┴──────────────┴─────────────┴───┴───────────────────┴───────────────┴────────────┴───────────────────┘
+        ┌─────────────┬─────────────────┬──────────────┬─────────────┬──────────┬──────────┬────────────┬────────────────────┬───────────────┬───────────────┬────────────┬────────────┐
+        │ data_leilao ┆ data_liquidacao ┆ data_retorno ┆ hora_inicio ┆ prazo_dc ┆ prazo_du ┆ comunicado ┆ tipo_oferta        ┆ publico       ┆ volume_aceito ┆ taxa_corte ┆ pct_aceito │
+        │ ---         ┆ ---             ┆ ---          ┆ ---         ┆ ---      ┆ ---      ┆ ---        ┆ ---                ┆ ---           ┆ ---           ┆ ---        ┆ ---        │
+        │ date        ┆ date            ┆ date         ┆ time        ┆ i64      ┆ i64      ┆ i64        ┆ str                ┆ str           ┆ f64           ┆ f64        ┆ f64        │
+        ╞═════════════╪═════════════════╪══════════════╪═════════════╪══════════╪══════════╪════════════╪════════════════════╪═══════════════╪═══════════════╪════════════╪════════════╡
+        │ 2025-08-21  ┆ 2025-08-21      ┆ 2025-08-22   ┆ 09:00:00    ┆ 1        ┆ 1        ┆ null       ┆ Tomador            ┆ SomenteDealer ┆ 6.4771e11     ┆ 0.149      ┆ 100.0      │
+        │ 2025-08-21  ┆ 2025-08-22      ┆ 2025-11-21   ┆ 12:00:00    ┆ 91       ┆ 64       ┆ 43716      ┆ Compromissada 1047 ┆ TodoMercado   ┆ 5.0000e9      ┆ 0.9978     ┆ 35.87      │
+        └─────────────┴─────────────────┴──────────────┴─────────────┴──────────┴──────────┴────────────┴────────────────────┴───────────────┴───────────────┴────────────┴────────────┘
     """
     url = _montar_url(inicio=inicio, fim=fim)
     csv_api = _buscar_csv_api(url)
