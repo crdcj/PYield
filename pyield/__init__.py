@@ -10,7 +10,6 @@ from pyield.selic.cpm import data as copom_options
 from pyield.tn import lft, ltn, ntnb, ntnb1, ntnbprinc, ntnc, ntnf
 
 __all__ = [
-    "Interpolador",
     "__version__",
     "agora",
     "anbima",
@@ -22,6 +21,7 @@ __all__ = [
     "forward",
     "forwards",
     "hoje",
+    "Interpolador",
     "ipca",
     "lft",
     "ltn",
