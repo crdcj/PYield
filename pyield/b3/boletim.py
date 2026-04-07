@@ -215,19 +215,12 @@ def _parsear_xml_registros(xml_bytes: bytes) -> list[dict]:
 
 
 def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
-    df = pl.DataFrame(registros)
-    # Casting usa os nomes originais do XML, que são constantes
-    tipos_coluna = {k: v for k, v in SCHEMA_PRICE_REPORT.items() if k in df.columns}
-    df = df.cast(tipos_coluna, strict=False)  # type: ignore
-    # Adiciona colunas ausentes com null e garante ordem/schema constante
-    colunas_faltantes = {
-        nome: pl.lit(None).cast(tipo)
-        for nome, tipo in SCHEMA_PRICE_REPORT.items()
-        if nome not in df.columns
-    }
-    if colunas_faltantes:
-        df = df.with_columns(**colunas_faltantes)
-    return df.select(SCHEMA_PRICE_REPORT.keys())
+    # Schema explícito garante que todas as colunas existam no DataFrame,
+    # mesmo que os primeiros registros não tenham todas as chaves.
+    # (pl.DataFrame infere colunas de ~50 primeiras linhas por padrão.)
+    schema_str = {nome: pl.String for nome in SCHEMA_PRICE_REPORT}
+    df = pl.DataFrame(registros, schema=schema_str)
+    return df.cast(SCHEMA_PRICE_REPORT, strict=False)  # type: ignore
 
 
 def _processar_xml_extraido(xml_bytes: bytes) -> pl.DataFrame:

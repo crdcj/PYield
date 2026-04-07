@@ -236,11 +236,9 @@ def interpolar_taxas(
             extrapolar=extrapolar,
         )
 
-        # 4. A mágica: map_batches passa a Series inteira para o interpolador
-        # O interpolador retorna uma Series, que o Polars alinha perfeitamente
         df_parcial = df_parcial.with_columns(
             pl.col("dias_uteis")
-            .map_batches(interpolador_du)  # Passa Series -> Recebe Series
+            .map_elements(interpolador_du, return_dtype=pl.Float64)
             .alias("taxa_interpolada")
         )
 
