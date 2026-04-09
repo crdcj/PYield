@@ -102,6 +102,13 @@ COLUNAS_PRICE_REPORT: list[tuple[str, str, type[pl.DataType]]] = [
 SCHEMA_PRICE_REPORT = {nome: tipo for _, nome, tipo in COLUNAS_PRICE_REPORT}
 
 
+_SESSAO = requests.Session()
+_SESSAO.headers["User-Agent"] = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    " (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+)
+
+
 @ttl_cache()
 @retry_padrao
 def _baixar_zip_url(data: dt.date, boletim_completo: bool) -> bytes:
@@ -113,7 +120,7 @@ def _baixar_zip_url(data: dt.date, boletim_completo: bool) -> bytes:
             f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{data_str}.zip"
         )
 
-    resposta = requests.get(url, timeout=(5, 30))
+    resposta = _SESSAO.get(url, timeout=(5, 30))
     resposta.raise_for_status()
 
     if len(resposta.content) < MIN_TAMANHO_ZIP_BYTES:

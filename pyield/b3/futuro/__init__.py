@@ -13,12 +13,12 @@ def futuro_enriquecer(
     """Enriquece DataFrame bruto do Price Report (PR) da B3.
 
     Aceita um DataFrame com colunas no schema original da B3
-    (ex.: ``TradDt``, ``TckrSymb``) ou já renomeadas para o padrão
-    PYield. Adiciona data de vencimento, dias úteis/corridos e
-    colunas derivadas (dv01, taxa_forward) conforme o contrato.
+    (ex.: ``TradDt``, ``TckrSymb``). Filtra pelo contrato informado,
+    adiciona data de vencimento, dias úteis/corridos e colunas
+    derivadas (dv01, taxa_forward) conforme o contrato.
 
     Args:
-        df: DataFrame com dados do PR da B3.
+        df: DataFrame com dados brutos do PR da B3.
         contrato: Contrato futuro
             (ex.: "DI1", "DOL").
 

@@ -76,6 +76,9 @@ _COLUNAS_CONTRATO_TAXA = (
     "taxa_forward",
 )
 
+# Comprimento padrão de ticker de futuro na B3 (prefixo 3 + mês 1 + ano 2).
+_COMPRIMENTO_TICKER = 6
+
 # Normaliza o schema XML bruto da B3 para o padrão de colunas deste módulo.
 _RENOMEAR_COLUNAS_PR = {
     "TradDt": "data_referencia",
@@ -125,7 +128,11 @@ def _enriquecer_dados(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
 
     if contrato in {"DI1", "DAP"}:
         df = df.with_columns(
-            taxa_forward=forwards(dias_uteis=df["dias_uteis"], taxas=df["taxa_ajuste"])
+            taxa_forward=forwards(
+                dias_uteis=df["dias_uteis"],
+                taxas=df["taxa_ajuste"],
+                agrupar_por=df["data_referencia"],
+            )
         )
 
     return df
@@ -156,12 +163,12 @@ def enriquecer(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     """Enriquece DataFrame bruto do Price Report (PR) da B3.
 
     Aceita um DataFrame com colunas no schema original da B3 (ex.:
-    ``TradDt``, ``TckrSymb``) ou já renomeadas para o padrão PYield.
-    Adiciona data de vencimento, dias úteis/corridos e colunas derivadas
-    (dv01, taxa_forward) conforme o contrato.
+    ``TradDt``, ``TckrSymb``). Filtra pelo contrato informado,
+    adiciona data de vencimento, dias úteis/corridos e colunas
+    derivadas (dv01, taxa_forward) conforme o contrato.
 
     Args:
-        df: DataFrame com dados do PR da B3.
+        df: DataFrame com dados brutos do PR da B3.
         contrato: Contrato futuro (ex.: "DI1", "DOL").
 
     Returns:
@@ -171,6 +178,12 @@ def enriquecer(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
         return pl.DataFrame()
 
     df = df.rename(_RENOMEAR_COLUNAS_PR)
+    df = df.filter(
+        pl.col("codigo_negociacao").str.starts_with(contrato),
+        pl.col("codigo_negociacao").str.len_chars() == _COMPRIMENTO_TICKER,
+    )
+    if df.is_empty():
+        return pl.DataFrame()
     df = adicionar_vencimento(df, contrato, coluna_ticker="codigo_negociacao")
     df = _enriquecer_dados(df, contrato)
     df = _selecionar_colunas_saida(df, contrato)
