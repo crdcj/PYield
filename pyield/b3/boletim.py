@@ -120,7 +120,7 @@ def _baixar_zip_url(data: dt.date, boletim_completo: bool) -> bytes:
             f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{data_str}.zip"
         )
 
-    resposta = _SESSAO.get(url, timeout=(5, 30))
+    resposta = _SESSAO.get(url, timeout=(5, 10))
     resposta.raise_for_status()
 
     if len(resposta.content) < MIN_TAMANHO_ZIP_BYTES:
