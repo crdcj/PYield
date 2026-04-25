@@ -13,7 +13,7 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
-from pyield import b3
+from pyield import futuro
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -32,7 +32,7 @@ def _preparar(
     """Executa o pipeline real completo usando dataset PR remoto do release."""
     df_esperado = pl.read_parquet(_parquet_referencia(data, contrato))
 
-    df_resultado = b3.futuro(data=data, contrato=contrato)
+    df_resultado = futuro.historico(data=data, contrato=contrato)
     return df_resultado, df_esperado
 
 

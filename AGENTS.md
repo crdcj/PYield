@@ -1,178 +1,157 @@
 # AGENTS.md
 
-Orientações para agentes de IA que trabalham neste repositório.
+Instruções operacionais para agentes de IA neste repositório. Este arquivo não é
+documentação do usuário; ele existe para melhorar decisões de implementação,
+revisão e manutenção.
 
-## Visão Geral
+## Prioridade Máxima
 
-PYield é uma biblioteca Python para análise de renda fixa brasileira (requer Python ≥ 3.12). Busca e processa dados da ANBIMA, BCB (Banco Central), IBGE e B3 (Bolsa de Valores). Todas as funções públicas retornam DataFrames/Series do Polars.
+Reduza complexidade. Toda alteração deve ficar menor, mais coesa ou mais clara do
+que a situação anterior. Só aumente a complexidade quando isso for necessário para
+preservar contrato público, corrigir ambiguidade real ou evitar empurrar
+complexidade para o usuário.
 
-## Princípio Fundamental: Redução de Complexidade
+Antes de editar:
+- entenda o padrão local antes de criar um novo;
+- explicite incertezas quando elas afetarem API pública ou semântica de dados;
+- prefira mudanças pequenas, verificáveis e diretamente ligadas ao pedido;
+- não refatore código adjacente por gosto;
+- não reverta mudanças existentes que você não fez.
 
-O objetivo principal ao trabalhar neste repositório é **reduzir a complexidade do código**. Toda alteração deve, por padrão, simplificar — nunca adicionar ramificações, abstrações ou lógica desnecessária. Só aumente a complexidade quando for estritamente necessário e com justificativa clara do solicitante.
+## Comandos Essenciais
 
-## Comandos de Build e Desenvolvimento
+Use `uv run` para comandos de projeto:
+- `uv run pytest ...` para testes;
+- `uv run ruff check ...` para lint;
+- `uv run pyright ...` para tipos;
+- `uv run mkdocs build --strict` para documentação.
 
-```bash
-# Instalar dependências (usa o gerenciador de pacotes uv)
-uv sync
+Rode verificações focadas no que você alterou. Amplie para a suíte inteira quando
+a mudança afetar contratos transversais, API pública ou parsing compartilhado.
 
-# Rodar todos os testes (tests/ + doctests em pyield/)
-# pyproject.toml já configura testpaths e --doctest-modules
-pytest
+## Fronteira Pública
 
-# Rodar apenas doctests de um módulo
-pytest pyield/du/core.py --doctest-modules
+Considere público o que é exportado em `pyield/__init__.py`, documentado em
+MkDocs ou exposto por namespace público de objeto. Caminhos importáveis que não
+fazem parte dessa fronteira são implementação, mesmo que tecnicamente acessíveis.
 
-# Rodar um arquivo de teste
-pytest tests/du/test_dus.py
+A API pública deve ser orientada ao objeto financeiro ou conceito usado pelo
+usuário, não à fonte de dados. A fonte continua importante internamente e deve
+aparecer na docstring pública, mas não deve forçar ergonomia ruim.
 
-# Rodar um teste específico
-pytest tests/du/test_dus.py::test_count_new_holiday
+Padrão atual:
+- namespaces de objeto para famílias coesas: `yd.futuro.*`, `yd.tpf.*`,
+  `yd.di1.*`, `yd.lft.*`, `yd.ipca.*`, `yd.du.*`;
+- indicadores simples e muito diretos podem ficar na raiz: `yd.ptax`,
+  `yd.ptax_serie`, `yd.selic_over`, `yd.selic_over_serie`,
+  `yd.selic_meta`, `yd.selic_meta_serie`, `yd.di_over`;
+- namespaces de fonte (`b3`, `bc`, `anbima`, `tn`) devem concentrar APIs
+  técnicas, específicas da fonte ou infraestrutura interna. Evite duplicar neles
+  aliases públicos que já foram migrados para objeto;
+- use `intradia` como termo público padrão, não `intradiario`;
+- mantenha testes de API pública enquanto a migração estiver em andamento. Eles
+  podem proteger ausências temporárias de aliases legados, mas devem ser
+  simplificados depois da migração estabilizar.
 
-# Linting
-ruff check
+Ao migrar API pública:
+- atualize exports no namespace de objeto e na raiz quando aplicável;
+- remova aliases duplicados dos namespaces de fonte quando essa for a decisão de
+  arquitetura;
+- mova a docstring canônica para a chamada pública;
+- deixe wrappers internos ou de fonte com docstrings curtas apontando para a API
+  pública, se eles continuarem existindo;
+- atualize docs, README de migração e testes de fronteira pública.
 
-# Verificação de tipos
-pyright
+## Nomenclatura
 
-# Documentação (MkDocs)
-mkdocs serve
-```
+API pública, parâmetros públicos e colunas retornadas devem estar em português,
+em `snake_case`, salvo termos técnicos realmente consolidados no domínio.
 
-## Arquitetura
+Use nomes canônicos da biblioteca na camada pública. Nomes da fonte são aceitáveis
+na camada bruta/intermediária quando o código opera diretamente no payload da
+fonte.
 
-### Estrutura de Módulos
+Colunas retornadas por funções públicas devem ser em português e estáveis. Se a
+fonte alterna semântica entre taxa e preço, modele isso explicitamente para o
+usuário; não esconda a diferença em uma coluna genérica que transfere a
+interpretação para quem consome a biblioteca.
 
-A biblioteca é organizada em namespaces de domínio, todos expostos via `pyield/__init__.py`:
+## Docstrings
 
-- **`du`** — Calendário de dias úteis (feriados brasileiros embutidos). Funções principais: `contar`, `deslocar`, `gerar`, `e_dia_util`, `ultimo_dia_util`. Variantes para expressões Polars: `contar_expr`, `deslocar_expr`, `e_dia_util_expr`.
-- **`anbima`** — Dados da ANBIMA (precificação de títulos públicos, curvas de juros). Funções: `tpf`, `tpf_vencimentos`, `tpf_fonte`, `ettj_ultima`, `ettj_intradia`, `ima_ultimo`, `imaq`, `tpf_difusao`.
-- **`bc`** — Indicadores do BCB. Funções: `selic_over`, `selic_over_serie`, `selic_meta`, `selic_meta_serie`, `ptax`, `ptax_serie`, `compromissadas`, `vna_lft`, `leiloes`, `tpf_mensal`, `tpf_intradia`. Submódulos: `copom`, `compromissada`.
-- **`b3`** — Dados de mercado da B3. Funções: `futuro`, `futuro_enriquecer`, `futuro_intradia`, `futuro_datas_disponiveis`, `di_over`, `boletim_negociacao`, `boletim_negociacao_extrair`, `boletim_negociacao_ler`, `derivativo_intradia`. Submódulo: `di1`.
-- **`tn`** — Módulos do Tesouro Nacional. Funções: `benchmarks`, `leilao`, `rmd`, `premio_pre`. Submódulo: `pre`. Módulos individuais (`ltn`, `ntnb`, `ntnf`, `ntnc`, `lft`, `ntnbprinc`, `ntnb1`) são exportados no topo (`pyield`).
-- **`ipca`** — Dados de inflação. Funções: `indices`, `indices_ultimos`, `taxas`, `taxas_ultimas`, `taxa_projetada`.
-- **`selic`** — Análises relacionadas ao COPOM. Submódulos: `cpm` (dados brutos de Opções Digitais COPOM da B3), `probabilities` (probabilidades implícitas de reuniões do COPOM).
+Docstrings devem estar em português e respeitar `line-length = 88`.
 
-Funções de topo também exportadas em `pyield`:
-- `forwards`, `forward` — Cálculos de taxas a termo via `fwd.py`.
-- `Interpolador` — Classe de interpolação de taxas via `interpolador.py`.
-- `hoje`, `agora` — Data/hora no fuso de Brasília via `relogio.py`.
-- `copom_options` — Alias para `selic.cpm.data`.
+Funções públicas usam estilo Google com as seções relevantes:
+- `Args:`
+- `Returns:`
+- `Output Columns:`
+- `Notes:`
+- `Examples:`
 
-### Componentes Transversais
+Para funções públicas que retornam DataFrame, liste as colunas em
+`Output Columns:` com tipo Polars e descrição. Inclua a fonte dos dados na
+docstring pública quando a função buscar ou representar dado externo.
 
-- **`_internal/types.py`** — Aliases de tipo `DateLike` e `ArrayLike`; `any_is_empty()` para detecção de nulo/vazio; `any_is_collection()` para detecção de coleções.
-- **`_internal/converters.py`** — `converter_datas()` normaliza diversas entradas de data para `datetime.date` ou `pl.Series[Date]`. `converter_datas_expr()` para pipelines de expressão Polars.
-- **`interpolador.py`** — Classe `Interpolador` para interpolação de taxas (método linear ou flat_forward, convenção de 252 dias úteis/ano).
-- **`_internal/cache.py`** — Decorator `ttl_cache` para cache com TTL diário.
-- **`_internal/data_cache.py`** — Cache de parquet hospedado no GitHub com TTL diário usando `lru_cache` (truque de date-key para auto-invalidação).
-- **`_internal/br_numbers.py`** — Expressões Polars para converter strings numéricas no padrão brasileiro (vírgula decimal, ponto de milhar): `float_br`, `taxa_br`, `inteiro_br`, `inteiro_m`.
-- **`_internal/retry.py`** — Decorator de retry baseado em Tenacity (`retry_padrao`) para requisições de rede (retry em 429, 5xx, timeouts).
-- **`relogio.py`** — `hoje()` e `agora()` retornam data/hora no fuso de Brasília (America/Sao_Paulo).
+Evite docstrings públicas duplicadas em vários caminhos para o mesmo dado. A
+docstring completa deve ficar no namespace canônico; wrappers devem ser breves.
 
-### Convenções de Tratamento de Datas
+Doctests devem usar dados reais e são validados pelo `pytest` configurado no
+projeto. O namespace de doctest já fornece `yd` e `pl`.
 
-- Formatos de string aceitos: `DD-MM-YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`
-- Datas escalares normalizam para `datetime.date`; coleções viram `pl.Series` com dtype `Date`
-- Parsing de strings é feito elemento a elemento com fallback entre os formatos aceitos
-- Strings inválidas são convertidas para `null` (ou `None` para saídas escalares)
-- Entradas nulas (`None`, `NaN`, coleções vazias) fazem short-circuit: funções escalares retornam `None` ou `nan`, funções vetorizadas retornam DataFrame/Series vazio
+## Dados e ETL
 
-### Padrão de Fluxo de Dados (ETL)
+Módulos que buscam dados externos devem seguir o fluxo:
+1. `_buscar_*`: fetch bruto, cache/retry quando aplicável, sem parsing;
+2. `_parsear_*`: transforma bruto em estrutura inicial, sem conversões de domínio;
+3. `_processar_*`: renomeia, tipa, calcula colunas e define ordem final;
+4. função pública: orquestra, filtra e ordena.
 
-Módulos que buscam dados externos seguem o padrão ETL de 3 funções internas + função pública:
+Não use `try/except Exception` genérico para mascarar erro operacional. Erros
+inesperados devem aparecer.
 
-1. **`_buscar_*()`** — Fetch com `@ttl_cache` e `@retry_padrao`. Retorna dados brutos (`str`, `bytes`, `list[dict]`). Não faz parsing nem transformação.
-2. **`_parsear_df()`** — Converte dados brutos em DataFrame com `infer_schema=False` (tudo string). Sem rename nem conversão de tipos.
-3. **`_processar_df()`** — Rename, conversão de tipos (usando helpers de `br_numbers`) e cálculos derivados. Quando há colunas derivadas que dependem de outras calculadas, usar `with_columns` antes do `select`. O `select` final define a ordem das colunas.
-4. **Função pública** — Orquestra: buscar → parsear → processar → filtrar/ordenar. Erros propagam naturalmente (sem `try/except Exception` genérico).
+Datas válidas sem dados não são erro. Funções públicas de consulta devem retornar
+DataFrame vazio, `None` ou `nan`, conforme o contrato. Reserve `ValueError` para
+entrada malformada ou violação clara de domínio.
 
-Referência: `anbima/ima.py` (com colunas derivadas) e `anbima/imaq.py` (sem colunas derivadas).
+Use os conversores internos de data quando existirem. Entradas escalares devem
+normalizar para `datetime.date`; coleções devem virar `pl.Series` com dtype
+`Date`; formatos aceitos incluem `DD-MM-YYYY`, `DD/MM/YYYY` e `YYYY-MM-DD`.
 
-## Convenções de Nomenclatura
+## Polars
 
-- **Fronteira da API pública:** Considere público o que está documentado e/ou exportado no namespace de topo (`pyield/__init__.py`). Módulos não exportados no topo são internos, mesmo que importáveis por caminho direto.
-- **API pública (português):** Nomes de funções públicas, parâmetros e classes exportadas devem, por padrão, estar em português.
-- **Exceção para termos técnicos consolidados:** Só manter nomes em inglês na API pública quando houver justificativa clara e o termo técnico já estiver consolidado no domínio ou na base de código. Evitar misturar português e inglês sem necessidade.
-- **Nomes de colunas em DataFrames (português):** Colunas de DataFrames retornados por funções públicas usam `snake_case` em português (ex.: `data_referencia`, `taxa_indicativa`, `valor`). Módulos antigos ainda usam PascalCase em inglês, mas estão sendo progressivamente migrados.
-- **Parâmetros públicos:** Preferir nomes explícitos em português. Abreviações de domínio podem ser usadas quando forem realmente consagradas e melhorarem a leitura sem sacrificar clareza.
-- **Código interno (português):** Variáveis locais, constantes de módulo, mensagens de log e mensagens de exceção devem ser em português.
-- **Nomes em módulos internos:** Para módulos de uso interno compartilhado, nomes de função podem permanecer sem prefixo `_` quando isso melhora legibilidade. Use prefixo `_` para helpers locais/privados dentro do módulo.
-- **Exceção para módulos utilitários base:** Módulos transversais e fundacionais de uso interno (ex.: `_internal/types.py`, `_internal/retry.py`) podem manter identificadores técnicos em inglês (`is_collection`, `retry_state`, etc.) para preservar legibilidade, reduzir churn e evitar renomeações sem ganho funcional.
-- **Exceção para módulos internos com classe de serviço:** Se um módulo não é exposto pela API e é usado apenas internamente por outro módulo, é comum manter **um método principal sem `_`** dentro da classe para sinalizar o ponto de entrada interno. Os demais helpers seguem com `_`. Esse método principal deve permanecer em português e o módulo **não deve** ser exportado em `__init__.py`.
-- **Exceção para módulos internos com função principal:** Se um módulo não é exposto pela API e é usado apenas internamente por outro módulo, pode manter **uma função principal sem `_`** como ponto de entrada interno. As demais funções seguem com `_`. A função principal deve ser em português e o módulo **não deve** ser exportado em `__init__.py`.
+Todas as funções públicas tabulares retornam `polars.DataFrame` ou
+`polars.Series`.
 
-### Convenção de nomes por camada na B3
+Em `with_columns`, prefira sintaxe de keyword:
+`with_columns(coluna=expr)` em vez de `expr.alias("coluna")`.
 
-- **Camada pública enriquecida da lib:** Preferir nomes canônicos da biblioteca, mesmo que a fonte original use outra terminologia. Ex.: usar `contrato` para identificadores-base como `DI1`, `DAP`, `WDO`, e `codigo_negociacao` para o identificador completo retornado ao usuário.
-- **Camada bruta/intermediária próxima da fonte:** Quando a função expõe ou filtra diretamente campos do payload original da B3, pode usar a terminologia da fonte para deixar claro que opera no schema bruto. Ex.: em `boletim.py`, parâmetros como `prefixo_ticker` e `comprimento_ticker` são aceitáveis porque o filtro atua diretamente sobre `TckrSymb`.
-- **Regra prática:** Evitar misturar, na mesma camada, vocabulário da fonte e vocabulário canônico da lib para o mesmo conceito. A distinção deve refletir o nível de abstração do módulo.
+Quando o encadeamento for simples, prefira um único `return (...)` com quebras por
+método. Evite variáveis intermediárias que só repetem o pipeline.
 
-## Convenções de Docstrings
-
-- Todas as docstrings devem ser escritas em **português** (funções públicas e internas).
-- A largura de linha das docstrings deve respeitar `line-length = 88` do projeto (configurado em `pyproject.toml`). Isso inclui a indentação — ex.: docstring dentro de função tem 4 espaços de indent, sobrando 84 caracteres.
-- Funções públicas usam seções estilo Google: `Args:`, `Returns:`, `Output Columns:`, `Notes:`, `Examples:`.
-- `Output Columns:` lista cada coluna com tipo Polars e descrição (ex: `* data_liquidacao (Date): data de liquidação.`).
-- Doctests (seção `Examples:`) usam dados reais e são validados por `pytest --doctest-modules`.
-- Renderização Markdown (MkDocs/mkdocstrings): em listas livres dentro do texto (ex.: `Onde:`), evitar linha em branco entre o título e os itens e iniciar os itens imediatamente abaixo.
-  Exemplo recomendado:
-  `Onde:`
-  `- item 1`
-  `- item 2`
-- Após mudanças em docstrings com listas/fórmulas, validar visualmente com `mkdocs serve` e confirmar o HTML gerado (evitar renderização como bloco de código).
-
-## Convenções Polars
-
-- Em `with_columns`, preferir sintaxe de keyword `col=expr` em vez de `expr.alias("col")`.
-- Retornos com encadeamento Polars: usar um único `return (...)` com quebras de linha entre métodos, sem variável intermediária.
-
-## Convenções de Logging
-
-- Não usar `warning` para validações de entrada esperadas (ex.: `None`, vazio, combinação inválida já prevista pelo contrato).
-- Nesses casos, retornar o valor de contrato (`None`, `NaN`, `Series/DataFrame` vazio) ou lançar `ValueError` quando apropriado.
-- Reservar `warning`/`error` para anomalias operacionais reais (falha de rede, fonte indisponível, schema inesperado, erro de parsing fora do contrato, etc.).
-
-## Convenções de Retorno de Consultas
-
-- Funções públicas que consultam dados externos retornam **DataFrame vazio** (ou `nan`/`None` para escalares) quando não há dados para os parâmetros fornecidos — independentemente do motivo (data futura, fim de semana, feriado, fonte indisponível).
-- O chamador testa com `.is_empty()` (DataFrame) ou `math.isnan()` (escalar).
-- **Não** lançar `ValueError` para datas válidas sem dados. `ValueError` é reservado para inputs malformados (tipo errado, formato inválido, violação de domínio).
-- Analogia: funciona como um `SELECT` que retorna 0 linhas — não é um erro.
+Use parsers e expressões estruturadas do Polars em vez de manipulação manual de
+strings quando houver suporte razoável.
 
 ## Testes
 
-Testes ficam em `tests/` e doctests estão embutidos nas docstrings. Execute `pytest` para rodar ambos (configurado em `pyproject.toml` via `testpaths` e `addopts = "--doctest-modules"`).
+Teste a superfície que o usuário chama, não apenas helpers internos. Para ETL com
+rede, substitua apenas a camada de fetch com `monkeypatch`, execute o fluxo
+público e compare com Parquet de referência quando houver.
 
-### Configuração de Doctests (conftest.py)
+Dados brutos de referência devem ser salvos byte a byte como vieram da fonte.
+Não normalize encoding, quebras de linha ou separadores em fixtures brutas.
 
-O `conftest.py` da raiz configura o ambiente de doctests:
-- **Injeção de namespace:** `yd` (pyield) e `pl` (polars) ficam disponíveis em todos os doctests via fixture `doctest_namespace`.
-- **Display do Polars:** `pl.Config.set_tbl_width_chars(150)` garante saída de tabela consistente entre ambientes.
-- **Flags de opção:** `ELLIPSIS` e `NORMALIZE_WHITESPACE` habilitados globalmente.
+Doctests são suficientes para funções escalares simples e pipelines triviais.
+Crie testes dedicados para parsing complexo, múltiplos cenários, ZIP/HTML/CSV
+não triviais ou DataFrames com transformações relevantes.
 
-### Padrão de Testes para Módulos que Buscam Dados
+## Estilo de Mudança
 
-Módulos que buscam dados externos (ex.: `bc/compromissada.py`, `bc/tpf_mensal.py`) usam dados de referência locais para testar sem acesso à rede:
+Mantenha o diff cirúrgico:
+- não reformate arquivos inteiros sem necessidade;
+- não altere nomes públicos sem atualizar docs e testes;
+- não crie abstração para uso único;
+- remova apenas código morto criado pela sua alteração;
+- registre no comentário final o que foi verificado e o que não foi possível
+  verificar.
 
-1. **Dados de referência** — Um par de arquivos em `tests/<module>/data/`: o dado bruto (CSV, HTML, ZIP) **exatamente como retornado pela fonte** e o resultado esperado (Parquet). O arquivo bruto deve ser salvo byte-a-byte (`write_bytes(resp.content)`) sem normalização de encoding ou line endings.
-2. **Teste de pipeline** — Processa o dado bruto local pelas funções internas de processamento e compara com `result.equals(expected_parquet)`.
-3. **Teste da função pública** — Substitui (patch) a função de fetch de rede para retornar os dados brutos locais, chama a função pública e compara com o Parquet de referência.
-
-#### Padrão recomendado para ETL mais complexos (HTML/CSV/JSON)
-
-Para pipelines ETL com múltiplas etapas e dependência de rede:
-
-1. **Substituir apenas a camada de rede** — Use `pytest` com `monkeypatch` para sobrescrever a função interna de fetch (ex.: `_obter_csv`, `_buscar_conteudo_url`) e retornar o arquivo bruto local.
-2. **Executar o fluxo público completo** — Chame a função pública com a opção de buscar na fonte (`fetch_from_source=True`) para exercitar o mesmo pipeline real.
-3. **Comparar com Parquet de referência** — Valide o resultado final com `DataFrame.equals`, sem repetir etapas do pipeline no teste.
-
-Isso reduz complexidade do teste e mantém a cobertura do fluxo real sem rede.
-
-### Quando doctests são suficientes
-
-Módulos com pipeline trivial que retornam valores escalares simples (float, str) sem transformações complexas de DataFrame. Os doctests já validam o comportamento real e servem como documentação. Exemplos: `di_over.py`, `tn/ltn.py`, `fwd.py`, `interpolador.py`.
-
-### Quando criar test files separados
-
-Módulos com pipelines ETL multi-etapa, transformações complexas de DataFrame (5+ colunas), processamento de arquivos binários (ZIP), ou quando é necessário testar múltiplos cenários de edge case que não cabem em doctests.
+Se a árvore Git já estiver suja, trabalhe com as mudanças existentes. Elas podem
+ser do usuário ou de outro passo da migração.

@@ -161,51 +161,9 @@ def tpf(
     data: DateLike,
     titulo: TipoTPF | None = None,
 ) -> pl.DataFrame:
-    """Recupera os dados do mercado secundário de TPF da ANBIMA.
+    """Busca taxas indicativas de TPF na camada técnica da ANBIMA.
 
-    Esta função busca taxas indicativas e outros dados de títulos públicos
-    brasileiros. Primeiro consulta o cache local; se não houver dados,
-    busca diretamente na fonte (ANBIMA).
-
-    Args:
-        data (DateLike): A data da consulta para os dados
-            (ex: '2024-06-14').
-        titulo (str, optional): Filtra por tipo de título. Aceita os tipos
-            individuais ('LTN', 'NTN-F', 'NTN-B', 'NTN-C', 'LFT') ou 'PRE'
-            como atalho para prefixados ('LTN' e 'NTN-F').
-
-    Returns:
-        pl.DataFrame: Um DataFrame contendo os dados solicitados.
-            Retorna um DataFrame vazio se não houver dados para a data especificada (ex:
-            finais de semana, feriados ou datas futuras).
-
-    Examples:
-        >>> from pyield import anbima
-        >>> df = anbima.tpf(data="06-02-2026")
-
-    Output Columns:
-        * titulo (String): tipo do título público (ex: 'LTN', 'NTN-B').
-        * data_referencia (Date): data de referência dos dados.
-        * codigo_selic (Int64): código do título no SELIC.
-        * data_base (Date): data base ou de emissão do título.
-        * data_vencimento (Date): data de vencimento do título.
-        * pu (Float64): preço unitário (PU) para liquidação em D0.
-        * taxa_compra (Float64): taxa de compra em D0 (decimal).
-        * taxa_venda (Float64): taxa de venda em D0 (decimal).
-        * taxa_indicativa (Float64): taxa indicativa em D0 (decimal).
-
-    Notes:
-        A fonte dos dados segue a seguinte hierarquia:
-
-        1.  **Cache Local:** Fornece acesso rápido a dados históricos
-            desde 01/01/2020.
-        2.  **Fonte ANBIMA (fallback):** Se a data não estiver no cache,
-            busca automaticamente na fonte. Para datas recentes (até 5 dias
-            úteis), usa o site público. Para datas mais antigas, requer
-            acesso à rede RTM.
-
-        Para obter o dado completo direto da fonte (todas as colunas),
-        use :func:`tpf_fonte`.
+    Use ``pyield.tpf.taxas`` na API pública principal.
     """
     data = converter_datas(data)
 
@@ -261,34 +219,8 @@ def tpf_vencimentos(
     data: DateLike,
     titulo: TipoTPF,
 ) -> pl.Series:
-    """Recupera os vencimentos existentes para um tipo de título na data especificada.
+    """Busca vencimentos de TPF na camada técnica da ANBIMA.
 
-    Args:
-        data (DateLike): A data da consulta para os vencimentos.
-        titulo (TipoTPF): O tipo de título para filtrar (ex: 'PRE' para 'LTN'
-            e 'NTN-F', ou especifique 'LTN' ou 'NTN-F' diretamente).
-
-    Returns:
-        pl.Series: Uma Series contendo as datas de vencimento únicas para o(s)
-            tipo(s) de título especificado(s).
-
-    Examples:
-        >>> from pyield import anbima
-        >>> anbima.tpf_vencimentos(data="22-08-2025", titulo="PRE")
-        shape: (18,)
-        Series: 'data_vencimento' [date]
-        [
-            2025-10-01
-            2026-01-01
-            2026-04-01
-            2026-07-01
-            2026-10-01
-            …
-            2030-01-01
-            2031-01-01
-            2032-01-01
-            2033-01-01
-            2035-01-01
-        ]
+    Use ``pyield.tpf.vencimentos`` na API pública principal.
     """
     return tpf(data, titulo)["data_vencimento"].unique().sort()

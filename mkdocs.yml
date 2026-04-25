@@ -17,6 +17,9 @@ nav:
           - Ferramentas de Dias Úteis: du.md
           - Interpolador: interpolador.md
           - Taxas a Termo: forwards.md
+      - Objetos de Mercado:
+          - Futuro: futuro.md
+          - TPF: tpf.md
       - Fontes de Dados:
           - Anbima: anbima.md
           - Banco Central (BCB):
@@ -25,7 +28,6 @@ nav:
           - B3:
               - Visão Geral: b3/index.md
               - Futuros de DI: b3/di1.md
-              - Futuro: b3/futuro.md
           - IPCA: ipca.md
           - Selic (CPM/COPOM): selic.md
       - Títulos Públicos:

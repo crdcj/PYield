@@ -86,16 +86,14 @@ Todas as funções suportam operações vetorizadas com listas, Series ou arrays
 Obtenha dados de contratos futuros negociados na B3:
 
 ```python
-from pyield import b3
-
 # Dados de Futuro de DI em uma data específica
-df = b3.futuro("31-05-2024", "DI1")
+df = yd.futuro.historico("31-05-2024", "DI1")
 
 # DataFrame retornado contém colunas:
 # data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Outros contratos disponíveis: DDI, FRC, DAP, DOL, WDO, IND, WIN
-df_dap = b3.futuro("31-05-2024", "DAP")  # Cupom Cambial
+df_dap = yd.futuro.historico("31-05-2024", "DAP")  # Cupom Cambial
 ```
 
 ### 3. Títulos Públicos (Tesouro Nacional)
@@ -142,10 +140,8 @@ df_premios_ntnf = yd.ntnf.premio("30-05-2024", pontos_base=True)
 Interpolar taxas de juros usando convenção de mercado (252 dias úteis/ano):
 
 ```python
-from pyield import b3, Interpolador
-
 # Obter curva de DI Futuro
-df = b3.futuro("31-05-2024", "DI1")
+df = yd.futuro.historico("31-05-2024", "DI1")
 
 # Criar interpolador flat forward (padrão de mercado)
 interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
@@ -167,16 +163,16 @@ Acesse indicadores econômicos do BCB:
 
 ```python
 # SELIC Over (taxa anualizada)
-yd.bc.selic_over("31-05-2024")  # -> 0.104  (10.4% a.a.)
+yd.selic_over("31-05-2024")  # -> 0.104  (10.4% a.a.)
 
 # PTAX (taxa de câmbio oficial)
-yd.bc.ptax("31-05-2024")  # -> 5.4407
+yd.ptax("31-05-2024")  # -> 5.4407
 
 # Taxa SELIC meta (definida pelo COPOM)
-yd.bc.selic_meta("31-05-2024")  # -> 0.1075  (10.75% a.a.)
+yd.selic_meta("31-05-2024")  # -> 0.1075  (10.75% a.a.)
 
 # VNA da LFT (Valor Nominal Atualizado)
-yd.bc.vna_lft("31-05-2024")  # -> 15234.56
+yd.lft.vna("31-05-2024")  # -> 15234.56
 ```
 
 ### 7. Inflação (IPCA)

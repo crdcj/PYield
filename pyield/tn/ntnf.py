@@ -6,9 +6,8 @@ import polars as pl
 
 import pyield._internal.converters as cv
 import pyield.interpolador as ip
-from pyield import du
+from pyield import di1, du
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
-from pyield.b3 import di1
 from pyield.tn import utils
 
 """

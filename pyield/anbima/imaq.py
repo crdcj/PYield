@@ -114,33 +114,9 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
 
 
 def imaq(data: DateLike) -> pl.DataFrame:
-    """Consulta e processa dados de estoque IMA-Q da ANBIMA para uma data.
+    """Busca estoque IMA-Q na camada técnica da ANBIMA.
 
-    Args:
-        data: Data da consulta. Apenas os últimos 5 dias úteis estão
-            disponíveis; o dado do dia anterior costuma ser publicado ao longo do dia.
-
-    Returns:
-        DataFrame com dados processados ou DataFrame vazio se a data for
-        inválida ou não houver dados disponíveis.
-
-    Output Columns:
-        - data_referencia (Date): data de referência dos dados.
-        - titulo (String): tipo do título (LTN, NTN-B, NTN-F, LFT, …).
-        - data_vencimento (Date): data de vencimento do título.
-        - codigo_selic (Int64): código SELIC do título.
-        - isin (String): código ISIN.
-        - pu (Float64): PU do título em R$.
-        - quantidade_mercado (Int64): quantidade em mercado (unidades).
-        - valor_mercado (Int64): valor de mercado em R$.
-        - variacao_quantidade (Int64): variação diária da quantidade.
-        - status_titulo (String): status do título.
-
-    Notes:
-        Valores convertidos para unidades puras (ex: MarketQuantity × 1.000).
-
-    Examples:
-        >>> yd.anbima.imaq("04-02-2026")  # doctest: +SKIP
+    Use ``pyield.tpf.estoque`` na API pública principal.
     """
     data = cv.converter_datas(data)
     if not cv.data_referencia_valida(data):

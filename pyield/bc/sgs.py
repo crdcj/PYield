@@ -185,9 +185,9 @@ def selic_over_serie(
         DataFrame com colunas data e taxa, ou DataFrame vazio.
 
     Examples:
-        >>> from pyield import bc
+        >>> import pyield as yd
         >>> # Sem dados em 26-01-2025 (domingo). Selic mudou por reunião do Copom.
-        >>> bc.selic_over_serie("26-01-2025").head(5)  # Primeiras 5 linhas
+        >>> yd.selic_over_serie("26-01-2025").head(5)  # Primeiras 5 linhas
         shape: (5, 2)
         ┌────────────┬────────┐
         │ data       ┆ taxa   │
@@ -202,7 +202,7 @@ def selic_over_serie(
         └────────────┴────────┘
 
         >>> # Buscando dados para um intervalo específico
-        >>> bc.selic_over_serie("14-09-2025", "17-09-2025")
+        >>> yd.selic_over_serie("14-09-2025", "17-09-2025")
         shape: (3, 2)
         ┌────────────┬───────┐
         │ data       ┆ taxa  │
@@ -229,8 +229,8 @@ def selic_over(data: DateLike) -> float:
         Taxa SELIC Over ou ``nan`` se não disponível.
 
     Examples:
-        >>> from pyield import bc
-        >>> bc.selic_over("31-05-2024")
+        >>> import pyield as yd
+        >>> yd.selic_over("31-05-2024")
         0.104
     """
     if any_is_empty(data):
@@ -261,8 +261,8 @@ def selic_meta_serie(
         DataFrame com colunas data e taxa, ou DataFrame vazio.
 
     Examples:
-        >>> from pyield import bc
-        >>> bc.selic_meta_serie("31-05-2024", "31-05-2024")
+        >>> import pyield as yd
+        >>> yd.selic_meta_serie("31-05-2024", "31-05-2024")
         shape: (1, 2)
         ┌────────────┬───────┐
         │ data       ┆ taxa  │
@@ -287,8 +287,8 @@ def selic_meta(data: DateLike) -> float:
         Taxa SELIC Meta ou ``nan`` se não disponível.
 
     Examples:
-        >>> from pyield import bc
-        >>> bc.selic_meta("31-05-2024")
+        >>> import pyield as yd
+        >>> yd.selic_meta("31-05-2024")
         0.105
     """
     if any_is_empty(data):
@@ -337,8 +337,8 @@ def ptax_serie(
         diárias aos dealers de câmbio.
 
     Examples:
-        >>> from pyield import bc
-        >>> bc.ptax_serie("20-04-2025", "25-04-2025")
+        >>> import pyield as yd
+        >>> yd.ptax_serie("20-04-2025", "25-04-2025")
         shape: (4, 2)
         ┌────────────┬─────────┐
         │ data       ┆ cotacao │
@@ -374,11 +374,11 @@ def ptax(data: DateLike) -> float:
         cotação (feriado, fim de semana ou data futura).
 
     Examples:
-        >>> from pyield import bc
-        >>> bc.ptax("22-04-2025")
+        >>> import pyield as yd
+        >>> yd.ptax("22-04-2025")
         5.7496
 
-        >>> bc.ptax("20-04-2025")
+        >>> yd.ptax("20-04-2025")
         nan
     """
     if any_is_empty(data):

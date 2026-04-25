@@ -95,55 +95,9 @@ def _mercado_selic_aberto() -> bool:
 
 
 def tpf_intradia() -> pl.DataFrame:
-    """Obtém dados intradia de negociações secundárias da dívida pública
-    federal (TPF - títulos públicos federais) no Banco Central do Brasil (BCB).
+    """Busca secundário intradia de TPF na camada técnica do BCB.
 
-    Os dados ficam disponíveis apenas durante o horário do SELIC
-    (09:00–22:00 BRT) em dias úteis. Retorna DataFrame vazio fora desse período.
-
-    Returns:
-        pl.DataFrame: DataFrame com negociações intradiárias. Vazio se o mercado
-            estiver fechado ou ocorrer erro.
-
-    Output Columns:
-        - data_hora_consulta (Datetime): data e hora da consulta (BRT).
-        - data_liquidacao (Date): data de liquidação à vista.
-        - titulo (String): sigla do título (ex.: LFT, LTN, NTN-B).
-        - codigo_selic (Int64): código SELIC do título.
-        - data_vencimento (Date): data de vencimento do título.
-        - pu_minimo (Float64): menor preço negociado.
-        - pu_medio (Float64): preço médio negociado.
-        - pu_maximo (Float64): maior preço negociado.
-        - pu_ultimo (Float64): último preço negociado.
-        - taxa_minima (Float64): menor taxa negociada (decimal).
-        - taxa_media (Float64): taxa média negociada (decimal).
-        - taxa_maxima (Float64): maior taxa negociada (decimal).
-        - taxa_ultima (Float64): última taxa negociada (decimal).
-        - operacoes (Int64): total de operações liquidadas.
-        - quantidade (Int64): quantidade total de títulos negociados.
-        - financeiro (Float64): valor financeiro total negociado (BRL).
-        - operacoes_corretagem (Int64): operações liquidadas via corretagem.
-        - quantidade_corretagem (Int64): títulos negociados via corretagem.
-        - termo_pu_minimo (Float64): menor preço a termo negociado.
-        - termo_pu_medio (Float64): preço médio a termo negociado.
-        - termo_pu_ultimo (Float64): último preço a termo negociado.
-        - termo_pu_maximo (Float64): maior preço a termo negociado.
-        - termo_taxa_ultima (Float64): última taxa a termo negociada (decimal).
-        - termo_taxa_minima (Float64): menor taxa a termo negociada (decimal).
-        - termo_taxa_media (Float64): taxa média a termo negociada (decimal).
-        - termo_taxa_maxima (Float64): maior taxa a termo negociada (decimal).
-        - termo_operacoes (Int64): total de operações a termo contratadas.
-        - termo_quantidade (Int64): total de títulos a termo negociados.
-        - termo_financeiro (Float64): valor financeiro total a termo (BRL).
-        - termo_operacoes_corretagem (Int64): operações a termo via corretagem.
-        - termo_quantidade_corretagem (Int64): títulos a termo via corretagem.
-
-    Notes:
-        Retorna DataFrame vazio fora do horário do SELIC (09:00–22:00 BRT).
-
-    Examples:
-        >>> from pyield import bc
-        >>> df = bc.tpf_intradia()
+    Use ``pyield.tpf.secundario_intradia`` na API pública principal.
     """
     if not _mercado_selic_aberto():
         return pl.DataFrame()

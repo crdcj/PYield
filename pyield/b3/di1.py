@@ -1,10 +1,10 @@
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import b3, du, interpolador
+from pyield import du, interpolador
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
-from pyield.b3.futuro import futuro_datas_disponiveis as _listar_datas
+from pyield.b3.futuro import historico as futuro_historico
 
 
 def dados(
@@ -35,7 +35,7 @@ def dados(
         DataFrame vazio se nenhum dado for encontrado.
 
     Examples:
-        >>> from pyield.b3 import di1
+        >>> from pyield import di1
         >>> df = di1.dados(datas="16-10-2024", inicio_mes=True)
         >>> df.head(3).select(
         ...     "codigo_negociacao", "data_vencimento", "dias_uteis", "taxa_ajuste"
@@ -63,7 +63,7 @@ def dados(
     else:
         datas_lista = [datas_convertidas]
 
-    df = b3.futuro(data=datas_lista, contrato="DI1")
+    df = futuro_historico._buscar_do_cache(datas_lista, "DI1")
     if df.is_empty():
         return df
 
@@ -143,7 +143,7 @@ def interpolar_taxas(
         >>> # Não há contrato com vencimento 25-11-2027 em 09-05-2025
         >>> # A taxa é interpolada (método flat-forward)
         >>> # Não há dados para 10-05-2025 (sábado) -> NaN
-        >>> from pyield.b3 import di1
+        >>> from pyield import di1
         >>> di1.interpolar_taxas(
         ...     datas_referencia=["08-05-2025", "09-05-2025", "10-05-2025"],
         ...     datas_vencimento=["01-01-2027", "25-11-2027", "01-01-2030"],
@@ -196,7 +196,7 @@ def interpolar_taxas(
 
     # Carrega dataset de taxas DI usando datas já convertidas do df_entrada
     datas_unicas = df_entrada["data_referencia"].drop_nulls().unique().sort().to_list()
-    df_ref = b3.futuro(data=datas_unicas, contrato="DI1")
+    df_ref = futuro_historico._buscar_do_cache(datas_unicas, "DI1")
     # Retorna Series vazia se nenhuma taxa for encontrada
     if df_ref.is_empty():
         return pl.Series(dtype=pl.Float64)
@@ -283,7 +283,7 @@ def interpolar_taxa(
         - O cálculo de interpolação falhou.
 
     Examples:
-        >>> from pyield.b3 import di1
+        >>> from pyield import di1
         >>> # Obtém taxa para um vencimento de contrato existente
         >>> di1.interpolar_taxa("25-04-2025", "01-01-2027")
         0.13901
@@ -329,7 +329,7 @@ def datas_disponiveis() -> pl.Series:
         ajuste de DI estão disponíveis.
 
     Examples:
-        >>> from pyield.b3 import di1
+        >>> from pyield import di1
         >>> # Série disponível no dataset PR começa em 2018-01-02
         >>> di1.datas_disponiveis().head(5)
         shape: (5,)
@@ -342,4 +342,4 @@ def datas_disponiveis() -> pl.Series:
             2018-01-08
         ]
     """
-    return _listar_datas("DI1")
+    return futuro_historico.listar_datas_disponiveis("DI1")

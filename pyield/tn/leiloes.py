@@ -6,11 +6,12 @@ import polars as pl
 import requests
 from polars import selectors as cs
 
-from pyield import bc, du
+from pyield import du
 from pyield._internal import converters as cv
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty, is_collection
+from pyield.bc.sgs import ptax_serie
 from pyield.tn.ntnb import duration as duration_b
 from pyield.tn.ntnf import duration as duration_f
 
@@ -287,7 +288,7 @@ def _buscar_ptax(data_leilao: dt.date) -> pl.DataFrame:
     data_min = du.deslocar(data_leilao, -1)
     data_max = du.deslocar(data_leilao, 1)
 
-    df = bc.ptax_serie(inicio=data_min, fim=data_max)
+    df = ptax_serie(inicio=data_min, fim=data_max)
     if df.is_empty():
         return pl.DataFrame()
 
@@ -322,69 +323,9 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def leilao(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
-    """Consulta e processa os resultados de um leilao de titulos do Tesouro.
+    """Busca leilão de TPF na camada técnica do Tesouro Nacional.
 
-    Busca os dados da API do Tesouro para a(s) data(s) informada(s) e retorna
-    um DataFrame estruturado com quantidades, financeiros, taxas de colocacao,
-    duration e DV01.
-
-    Args:
-        data: Data ou sequencia de datas do leilao em qualquer
-            formato aceito por DateLike (ex: "DD-MM-YYYY", datetime.date,
-            ou lista desses formatos).
-
-    Returns:
-        DataFrame com os dados processados do leilao. Se ``data`` for
-        uma sequencia, concatena os resultados das datas informadas. Em caso de
-        erro na requisicao, no processamento ou se nao houver dados para a data
-        especificada, retorna DataFrame vazio.
-
-    Output Columns:
-        - data_1v (Date): data de realizacao do leilao (1a volta).
-        - data_liquidacao_1v (Date): data de liquidacao financeira da 1a volta.
-        - data_liquidacao_2v (Date): data de liquidacao financeira da 2a volta
-            (se houver).
-        - numero_edital (Int64): numero do edital que rege o leilao.
-        - tipo_leilao (String): tipo da operacao (ex: "Venda", "Compra").
-        - titulo (String): codigo do titulo publico leiloado (ex: "NTN-B", "LFT").
-        - benchmark (String): descricao de referencia do titulo (ex: "NTN-B 3 anos").
-        - data_vencimento (Date): data de vencimento do titulo.
-        - dias_uteis (Int32): dias uteis entre a liquidacao (1v) e o vencimento.
-        - dias_corridos (Int32): prazo em dias corridos entre liquidacao e vencimento.
-        - duration (Float64): Duração de Macaulay em anos, calculada entre a liquidacao
-            da 1a volta e o vencimento.
-        - prazo_medio (Float64): maturidade media em anos, conforme metodologia do
-            Tesouro Nacional.
-        - quantidade_ofertada_1v (Int64): quantidade de titulos ofertados na 1a volta.
-        - quantidade_ofertada_2v (Int64): quantidade de titulos ofertados na 2a volta.
-        - quantidade_aceita_1v (Int64): quantidade de propostas aceitas na 1a volta.
-        - quantidade_aceita_2v (Int64): quantidade de titulos aceitos na 2a volta.
-        - quantidade_aceita_total (Int64): soma das quantidades aceitas nas duas voltas.
-        - financeiro_ofertado_1v (Float64): financeiro ofertado na 1a volta (BRL).
-        - financeiro_ofertado_2v (Float64): financeiro ofertado na 2a volta (BRL).
-        - financeiro_ofertado_total (Float64): financeiro total ofertado (BRL).
-        - financeiro_aceito_1v (Float64): financeiro aceito na 1a volta (BRL).
-        - financeiro_aceito_2v (Float64): financeiro aceito na 2a volta (BRL).
-        - financeiro_aceito_total (Float64): soma do financeiro aceito nas
-            duas voltas (BRL).
-        - quantidade_bcb (Int64): quantidade de titulos adquirida pelo Banco Central.
-        - financeiro_bcb (Int64): financeiro adquirido pelo Banco Central.
-        - colocacao_1v (Float64): taxa de colocacao da 1a volta (aceita / ofertada).
-        - colocacao_2v (Float64): taxa de colocacao da 2a volta (aceita / ofertada).
-        - colocacao_total (Float64): taxa de colocacao total (aceita / ofertada).
-        - dv01_1v (Float64): DV01 da 1a volta em BRL.
-        - dv01_2v (Float64): DV01 da 2a volta em BRL.
-        - dv01_total (Float64): DV01 total do leilao em BRL.
-        - ptax (Float64): taxa PTAX (venda) utilizada na conversao do DV01 para USD.
-        - dv01_1v_usd (Float64): DV01 da 1a volta em USD (PTAX do dia).
-        - dv01_2v_usd (Float64): DV01 da 2a volta em USD (PTAX do dia).
-        - dv01_total_usd (Float64): DV01 total em USD (PTAX do dia).
-        - pu_minimo (Float64): preco unitario minimo aceito no leilao.
-        - pu_medio (Float64): preco unitario medio ponderado das propostas aceitas.
-        - tipo_pu_medio (String): indica se o PU medio e "original" (da API) ou
-            "calculado" (recalculado pela funcao).
-        - taxa_media (Float64): taxa de juros media aceita (em formato decimal).
-        - taxa_maxima (Float64): taxa de juros maxima aceita, taxa de corte (decimal).
+    Use ``pyield.tpf.leilao`` na API pública principal.
     """
     if any_is_empty(data):
         return pl.DataFrame()

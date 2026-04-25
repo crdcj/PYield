@@ -58,7 +58,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         >>> from pyield import ntnb
         >>> df_ntnb = ntnb.dados("23-08-2024")  # doctest: +SKIP
     """
-    from pyield.b3 import di1  # noqa: PLC0415
+    from pyield import di1  # noqa: PLC0415
 
     df = utils.obter_tpf(data, "NTN-B")
     if df.is_empty():
@@ -608,7 +608,7 @@ def inflacao_implicita(
         >>> df_ntnb = yd.tn.ntnb.dados("05-09-2024")
 
         Busca as taxas de ajuste do DI Futuro para a mesma data de referência:
-        >>> df_di = yd.b3.di1.dados("05-09-2024")
+        >>> df_di = yd.di1.dados("05-09-2024")
 
         Calcula a inflação implícita na data de referência:
         >>> yd.tn.ntnb.inflacao_implicita(

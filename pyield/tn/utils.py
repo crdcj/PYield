@@ -37,15 +37,15 @@ def obter_tpf(
     data_referencia: DateLike,
     tipo_titulo: TipoTPF,
 ) -> pl.DataFrame:
-    """Busca dados de ``anbima.tpf()`` no padrão de colunas usado por ``tn``."""
-    from pyield import anbima  # noqa: PLC0415
+    """Busca taxas indicativas de TPF no padrão de colunas usado por ``tn``."""
+    from pyield.anbima.tpf import tpf  # noqa: PLC0415
 
-    return anbima.tpf(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
+    return tpf(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
 
 
 def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
     """Adiciona a coluna `taxa_di` ao DataFrame pelo método flat forward."""
-    from pyield.b3 import di1  # noqa: PLC0415
+    from pyield import di1  # noqa: PLC0415
 
     taxas_di = di1.interpolar_taxas(
         datas_referencia=data_ref,

@@ -68,32 +68,9 @@ def _validar_valores(valores: list[float]) -> float:
 
 
 def vna_lft(data: DateLike) -> float:
-    """Obtém o VNA (Valor Nominal Atualizado) da LFT no site do BCB.
+    """Busca o VNA da LFT na camada técnica do BCB.
 
-    Baixa o arquivo diário do BCB (SELIC), extrai a tabela com os valores
-    VNA e retorna o valor correspondente à data informada.
-
-    Args:
-        data: Data da consulta. Aceita string, date ou datetime,
-            convertidos internamente por ``converter_datas``.
-
-    Returns:
-        float: Valor do VNA para a data especificada. Retorna ``NaN`` se a
-            data for nula ou vazia.
-
-    Raises:
-        ValueError: Se os valores VNA extraídos do site do BCB forem
-            inconsistentes (nem todos iguais), indicando possível divergência
-            nos dados da fonte. A mensagem inclui o link do BCB para
-            verificação manual.
-        requests.exceptions.HTTPError: Se a requisição HTTP ao site do BCB
-            falhar (problemas de rede, site indisponível ou dados não
-            encontrados para a data informada).
-
-    Examples:
-        >>> from pyield import bc
-        >>> bc.vna_lft("31-05-2024")
-        14903.01148
+    Use ``pyield.lft.vna`` na API pública principal.
     """
     if any_is_empty(data):
         return float("nan")

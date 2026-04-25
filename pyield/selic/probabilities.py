@@ -67,9 +67,9 @@ import logging
 
 import polars as pl
 
+from pyield import di1
 from pyield._internal.converters import converter_datas
 from pyield._internal.types import DateLike
-from pyield.b3 import di1
 from pyield.selic import cpm
 
 logger = logging.getLogger(__name__)

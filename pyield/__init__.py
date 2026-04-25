@@ -1,8 +1,16 @@
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
-from pyield import anbima, b3, bc, du, ipca, selic, tn
-from pyield.b3 import di1
+from pyield import anbima, b3, bc, di1, du, futuro, ipca, selic, tn, tpf
+from pyield.b3.di_over import di_over
+from pyield.bc.sgs import (
+    ptax,
+    ptax_serie,
+    selic_meta,
+    selic_meta_serie,
+    selic_over,
+    selic_over_serie,
+)
 from pyield.fwd import forward, forwards
 from pyield.interpolador import Interpolador
 from pyield.relogio import agora, hoje
@@ -22,9 +30,11 @@ __all__ = [
     "bc",
     "copom_options",
     "di1",
+    "di_over",
     "du",
     "forward",
     "forwards",
+    "futuro",
     "hoje",
     "Interpolador",
     "ipca",
@@ -35,8 +45,15 @@ __all__ = [
     "ntnbprinc",
     "ntnc",
     "ntnf",
+    "ptax",
+    "ptax_serie",
     "selic",
+    "selic_meta",
+    "selic_meta_serie",
+    "selic_over",
+    "selic_over_serie",
     "tn",
+    "tpf",
 ]
 
 # Configura o logger do pacote principal com um NullHandler

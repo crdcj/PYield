@@ -20,26 +20,26 @@ pip install pyield
 ## Início Rápido
 
 ```python
-from pyield import du, b3, bc, ntnb, Interpolador
+import pyield as yd
 
 # Dias úteis (base de todos os cálculos)
-du.contar("02-01-2025", "15-01-2025")  # -> 9
-du.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
+yd.du.contar("02-01-2025", "15-01-2025")  # -> 9
+yd.du.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
 
 # Curva de DI Futuro
-df = b3.futuro("31-05-2024", "DI1")
+df = yd.futuro.historico("31-05-2024", "DI1")
 # Colunas: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)
-interp = Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
+interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
 interp(45)       # -> 0.04833...
 interp([30, 60]) # -> Series do Polars com taxas interpoladas
 
 # Precificação de títulos públicos
-ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # Indicadores do BCB
-bc.selic_over("31-05-2024")  # -> 0.000414...
+yd.selic_over("31-05-2024")  # -> 0.000414...
 ```
 
 Um notebook no Colab com mais exemplos:
@@ -127,16 +127,17 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | Módulo | Finalidade |
 |--------|---------|
 | `du` | Calendário de dias úteis com feriados brasileiros |
-| `b3.futuro` | Dados históricos de futuros da B3 (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
-| `b3.di1` | Curva DI1 interpolada e datas de negociação disponíveis |
+| `futuro` | Dados de futuros (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
+| `tpf` | Taxas, vencimentos, estoque e negociações de Títulos Públicos Federais |
+| `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
 | `Interpolador` | Interpolação de taxas (flat_forward, linear) |
 | `forward` / `forwards` | Cálculo de taxas a termo |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
 | `ntnb1`, `ntnbprinc`, `pre` | Títulos e curvas adicionais (NTN-B1, NTN-B Principal, curva PRE) |
-| `tn.leiloes` / `tn.benchmarks` | Leilões e benchmarks de títulos públicos |
-| `anbima` | Dados da ANBIMA (preços de TPF, curvas de juros, índices IMA) |
-| `bc` | Indicadores do BCB (SELIC, PTAX, repos, VNA, leilões, negociações) |
-| `b3` | Dados da B3 (DI over, price reports, derivativos intradiários) |
+| `tpf.leilao` / `tn.benchmarks` | Leilões e benchmarks de títulos públicos |
+| `anbima` | Dados técnicos da ANBIMA (fonte, curvas de juros, índices IMA) |
+| `bc` | Dados técnicos do BCB (repos, VNA, leilões, negociações) |
+| `b3` | Dados técnicos da B3 (price reports, derivativos intradia) |
 | `ipca` | Dados de inflação (histórico e projeções) |
 | `selic` | Opções digitais de COPOM e probabilidades implícitas |
 | `tn.rmd` | Relatório Mensal da Dívida do Tesouro Nacional |
@@ -166,19 +167,19 @@ ntnf.premio("30-05-2025", pontos_base=True)
 import pyield as yd
 
 # DI1 (Futuro de Depósito Interfinanceiro)
-b3.futuro("31-05-2024", "DI1")
+yd.futuro.historico("31-05-2024", "DI1")
 
 # Outros contratos disponíveis no cache histórico:
 # - Juros: DI1, DDI, FRC, FRO, DAP
 # - Moedas: DOL, WDO
 # - Índices: IND, WIN
-b3.futuro("31-05-2024", "DAP")
+yd.futuro.historico("31-05-2024", "DAP")
 
 # Múltiplas datas de uma vez
-b3.futuro(["29-05-2024", "31-05-2024"], "DI1")
+yd.futuro.historico(["29-05-2024", "31-05-2024"], "DI1")
 
-# Dados intradiários (quando o mercado estiver aberto)
-b3.futuro_intradia("DI1")  # Retorna dados ao vivo durante o horário de negociação
+# Dados intradia (quando o mercado estiver aberto)
+yd.futuro.intradia("DI1")  # Retorna dados ao vivo durante o pregão
 ```
 
 ## Tratamento de Datas
@@ -207,28 +208,58 @@ Consultas sem dados disponíveis (data futura, feriado, fim de semana ou
 fonte indisponível) retornam DataFrame vazio ou `nan`, sem lançar exceção:
 
 ```python
-from pyield import b3, bc
+import pyield as yd
 
-b3.futuro("01-01-2030", "DI1").is_empty()  # -> True (data futura)
-bc.tpf_mensal("01-01-2030").is_empty()     # -> True (mês futuro)
-bc.ptax("25-12-2025")                      # -> nan (feriado)
+yd.futuro.historico("01-01-2030", "DI1").is_empty()  # -> True
+yd.tpf.secundario_mensal("01-01-2030").is_empty()    # -> True
+yd.ptax("25-12-2025")                                # -> nan
 ```
 
-## Migração para Português (v0.48.0+)
+## Migração da API por Objeto (v0.49.0)
 
-A partir da versão 0.48.0, a API pública foi migrada para o português. Os principais renomes:
+A versão 0.49.0 reorganiza a API pública principal para privilegiar o objeto de
+análise do usuário, e não a fonte original do dado. Na prática, consultas
+canônicas deixam de ficar sob `b3`, `bc` ou `anbima` quando a fonte é apenas um
+detalhe operacional. Os namespaces de fonte permanecem para dados técnicos,
+brutos ou específicos da fonte.
 
-| Antes (< 0.48) | Depois (≥ 0.48) |
+Racional:
+- O usuário normalmente procura o objeto financeiro (`futuro`, `tpf`, `ptax`,
+  `selic_over`) antes de pensar na fonte (`B3`, `BCB`, `ANBIMA`).
+- Famílias canônicas viram namespaces: `yd.futuro.*`, `yd.tpf.*`, `yd.ipca.*`,
+  `yd.du.*`.
+- Indicadores simples, cujo nome já expressa a consulta completa, ficam na raiz:
+  `yd.ptax`, `yd.di_over`, `yd.selic_meta`, `yd.selic_over`.
+- O termo padrão da API será `intradia`, por ser curto, invariável e usado no
+  mercado/BCB. Ex.: `yd.futuro.intradia`, `yd.tpf.secundario_intradia`.
+
+Mapa de migração:
+
+| Antes | Depois |
 |---|---|
-| `yd.bday` | `yd.du` |
-| `bday.count()` | `du.contar()` |
-| `bday.offset()` | `du.deslocar()` |
-| `bday.generate()` | `du.gerar()` |
-| `bday.is_business_day()` | `du.eh_dia_util()` |
-| `Interpolator(method, bdays, rates)` | `Interpolador(dias_uteis, taxas, metodo=...)` |
-| `extrapolate=True` | `extrapolar=True` |
-| `ntnb.quotation()` | `ntnb.cotacao()` |
-| `ntnb.data()` | `ntnb.dados()` |
+| `yd.b3.futuro(data, contrato)` | `yd.futuro.historico(data, contrato)` |
+| `yd.b3.futuro_intradia(contrato)` | `yd.futuro.intradia(contrato)` |
+| `yd.b3.futuro_datas_disponiveis(contrato)` | `yd.futuro.datas_disponiveis(contrato)` |
+| `yd.b3.futuro_enriquecer(df, contrato)` | `yd.futuro.enriquecer(df, contrato)` |
+| `yd.b3.di_over(data)` | `yd.di_over(data)` |
+| `yd.bc.ptax(data)` | `yd.ptax(data)` |
+| `yd.bc.ptax_serie(inicio, fim)` | `yd.ptax_serie(inicio, fim)` |
+| `yd.bc.selic_over(data)` | `yd.selic_over(data)` |
+| `yd.bc.selic_over_serie(...)` | `yd.selic_over_serie(...)` |
+| `yd.bc.selic_meta(data)` | `yd.selic_meta(data)` |
+| `yd.bc.selic_meta_serie(...)` | `yd.selic_meta_serie(...)` |
+| `yd.anbima.tpf(data, titulo)` | `yd.tpf.taxas(data, titulo)` |
+| `yd.anbima.tpf_vencimentos(data, titulo)` | `yd.tpf.vencimentos(data, titulo)` |
+| `yd.anbima.imaq(data)` | `yd.tpf.estoque(data)` |
+| `yd.tn.leilao(data)` | `yd.tpf.leilao(data)` |
+| `yd.bc.tpf_intradia()` | `yd.tpf.secundario_intradia()` |
+| `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario_mensal(data, extragrupo=...)` |
+| `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
+
+As funções antigas listadas acima serão removidas da API pública de alto nível.
+Módulos internos ou técnicos, como `pyield.b3.futuro.intradia` e
+`pyield.bc.tpf_intradia`, continuam existindo para organizar a implementação e
+testes, mas a documentação passa a ensinar a API orientada ao objeto.
 
 ## Migração para Polars (v0.40.0+)
 

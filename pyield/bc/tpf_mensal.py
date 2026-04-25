@@ -98,56 +98,9 @@ def tpf_mensal(
     data: DateLike,
     extragrupo: bool = False,
 ) -> pl.DataFrame:
-    """Consulta negociações mensais no mercado secundário de TPF
-    registradas no sistema Selic do BCB.
+    """Busca secundário mensal de TPF na camada técnica do BCB.
 
-    Baixa os dados mensais de negociação do site do BCB para o mês correspondente
-    à data fornecida. Os dados são baixados como arquivo ZIP, extraídos e carregados
-    em um DataFrame Polars. Contém todas as negociações do mês, separadas por
-    data de liquidação (data_liquidacao).
-
-    Args:
-        data: Data da consulta. Apenas ano e mês são utilizados para
-            baixar o arquivo correspondente.
-        extragrupo: Se True, busca apenas negociações extragrupo (entre grupos
-            econômicos distintos). Se False, busca todas. Default é False.
-            Negociações extragrupo são aquelas em que o conglomerado da contraparte
-            cedente difere do conglomerado da contraparte cessionária, ou quando ao
-            menos uma das contrapartes não pertence a um conglomerado. No caso de
-            fundos, considera-se o conglomerado do administrador.
-
-    Returns:
-        DataFrame com dados de negociação do mês especificado. Em caso de erro
-        retorna DataFrame vazio e registra log da exceção.
-
-    Output Columns:
-        - data_liquidacao (Date): data de liquidação da negociação.
-        - titulo (str): sigla do título (ex: LFT, LTN, NTN-B, NTN-F).
-        - codigo_selic (Int64): código único no sistema Selic.
-        - isin (str): código ISIN.
-        - data_emissao (Date): data de emissão do título.
-        - data_vencimento (Date): data de vencimento do título.
-        - operacoes (Int64): número total de operações realizadas.
-        - quantidade (Int64): quantidade total negociada.
-        - financeiro (Float64): valor financeiro (quantidade × pu_medio).
-        - pu_minimo (Float64): preço unitário mínimo.
-        - pu_medio (Float64): preço unitário médio.
-        - pu_maximo (Float64): preço unitário máximo.
-        - pu_lastro (Float64): PU lastro.
-        - valor_par (Float64): valor par do título.
-        - taxa_minima (Float64): taxa mínima.
-        - taxa_media (Float64): taxa média.
-        - taxa_maxima (Float64): taxa máxima.
-        - operacoes_corretagem (Int64): subconjunto de operações com corretagem.
-        - quantidade_corretagem (Int64): subconjunto de quantidade com corretagem.
-
-    Notes:
-        - Dados ordenados por: data_liquidacao, titulo, data_vencimento.
-
-    Examples:
-        >>> from pyield import bc
-        >>> df = bc.tpf_mensal("07-01-2025", extragrupo=True)
-
+    Use ``pyield.tpf.secundario_mensal`` na API pública principal.
     """
     if any_is_empty(data):
         return pl.DataFrame()
