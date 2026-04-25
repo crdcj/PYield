@@ -21,3 +21,4 @@ site/
 tests/data/
 
 cgen.py
+.codex

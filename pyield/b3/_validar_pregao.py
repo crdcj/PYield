@@ -18,7 +18,7 @@ def data_negociacao_valida(data_negociacao: dt.date) -> bool:
     """
     if data_negociacao > relogio.hoje():
         return False
-    if not du.e_dia_util(data_negociacao):
+    if not du.eh_dia_util(data_negociacao):
         return False
 
     # Não tem pregão na véspera de Natal e Ano Novo

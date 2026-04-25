@@ -13,7 +13,7 @@ def data_referencia_valida(date: dt.date | None) -> bool:
         return False
     from pyield import du, relogio  # noqa: PLC0415
 
-    return du.e_dia_util(date) and date <= relogio.hoje()
+    return du.eh_dia_util(date) and date <= relogio.hoje()
 
 
 def converter_datas_expr(expr: pl.Expr | str) -> pl.Expr:

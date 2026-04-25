@@ -4,6 +4,7 @@ import pyield._internal.converters as cv
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.b3.futuro import historico, intradia
+from pyield.b3.futuro.contratos import vencimento, vencimento_expr
 
 
 def futuro_enriquecer(
@@ -112,10 +113,35 @@ def futuro_intradia(
         DataFrame Polars com dados intradia. Retorna DataFrame vazio
         fora do horário de pregão.
 
+    Output Columns:
+        * data_referencia (Date): data de referência do pregão.
+        * horario_referencia (Time): horário aproximado a que os dados
+          se referem.
+        * codigo_negociacao (String): código de negociação na B3.
+        * data_vencimento (Date): data de vencimento do contrato.
+        * dias_uteis (Int64): dias úteis até o vencimento.
+        * dias_corridos (Int64): dias corridos até o vencimento.
+        * contratos_abertos (Int64): contratos em aberto.
+        * numero_negocios (Int64): número de negócios.
+        * volume_negociado (Int64): quantidade de contratos negociados.
+        * volume_financeiro (Float64): volume financeiro bruto.
+        * dv01 (Float64): variação financeira para 1 bp de taxa (DI1).
+        * taxa_forward (Float64): taxa a termo entre vencimentos (DI1/DAP).
+        * taxa_ajuste_anterior (Float64): taxa de ajuste do dia anterior.
+        * taxa_limite_minimo (Float64): limite mínimo de taxa.
+        * taxa_limite_maximo (Float64): limite máximo de taxa.
+        * taxa_abertura (Float64): taxa de abertura.
+        * taxa_minima (Float64): taxa mínima negociada.
+        * taxa_maxima (Float64): taxa máxima negociada.
+        * taxa_media (Float64): taxa média negociada.
+        * taxa_oferta_compra (Float64): melhor oferta de compra.
+        * taxa_oferta_venda (Float64): melhor oferta de venda.
+        * taxa_ultima (Float64): última taxa negociada.
+
     Notes:
-        As colunas com prefixo ``preco_`` aparecem para contratos cotados
-        por preço (ex.: DOL, IND). As com prefixo ``taxa_`` aparecem para
-        contratos cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO).
+        Para contratos cotados por preço (ex.: DOL, IND), as colunas de
+        cotação com prefixo ``taxa_`` aparecem com prefixo ``preco_``.
+        A coluna derivada ``taxa_forward`` aparece apenas em DI1/DAP.
     """
     if not contrato:
         return pl.DataFrame()
@@ -151,4 +177,6 @@ __all__ = [
     "futuro_datas_disponiveis",
     "futuro_enriquecer",
     "futuro_intradia",
+    "vencimento",
+    "vencimento_expr",
 ]

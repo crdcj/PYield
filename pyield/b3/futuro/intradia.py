@@ -4,7 +4,7 @@ import polars.selectors as cs
 from pyield import du
 from pyield.b3._validar_pregao import intradia_disponivel
 from pyield.b3.derivativos_intradia import derivativo_intradia
-from pyield.b3.futuro.contratos import CONTRATOS_TAXA, expr_dv01
+from pyield.b3.futuro.contratos import CONTRATOS_TAXA, dv01_expr
 from pyield.fwd import forwards
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
@@ -110,7 +110,7 @@ def _processar_intradia(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
 
     if contrato == "DI1":
         df = df.with_columns(
-            dv01=expr_dv01("dias_uteis", "taxa_ultima", "preco_ultimo")
+            dv01=dv01_expr("dias_uteis", "taxa_ultima", "preco_ultimo")
         )
 
     return df.select(c for c in _ORDEM_COLUNAS if c in df.columns)

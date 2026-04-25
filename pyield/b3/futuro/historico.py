@@ -3,13 +3,9 @@ import datetime as dt
 import polars as pl
 import polars.selectors as cs
 
+import pyield.b3.futuro.contratos as ct
 from pyield import du
 from pyield._internal.data_cache import obter_dataset_cacheado
-from pyield.b3.futuro.contratos import (
-    CONTRATOS_TAXA,
-    adicionar_vencimento,
-    expr_dv01,
-)
 from pyield.fwd import forwards
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
@@ -116,14 +112,14 @@ def _enriquecer_dados(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
         ).dt.total_days(),
     ).filter(pl.col("dias_corridos") > 0)
 
-    eh_taxa = contrato in CONTRATOS_TAXA
+    eh_taxa = contrato in ct.CONTRATOS_TAXA
     if eh_taxa:
         df = df.rename(_PRECO_PARA_TAXA, strict=False)
         df = df.with_columns(cs.starts_with("taxa_").truediv(100).round(6))
 
     if contrato == "DI1":
         df = df.with_columns(
-            dv01=expr_dv01("dias_uteis", "taxa_ajuste", "preco_ajuste")
+            dv01=ct.dv01_expr("dias_uteis", "taxa_ajuste", "preco_ajuste")
         )
 
     if contrato in {"DI1", "DAP"}:
@@ -139,7 +135,7 @@ def _enriquecer_dados(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
 
 
 def _selecionar_colunas_saida(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
-    if contrato in CONTRATOS_TAXA:
+    if contrato in ct.CONTRATOS_TAXA:
         colunas = _COLUNAS_CONTRATO_TAXA
     else:
         colunas = _COLUNAS_CONTRATO_PRECO
@@ -184,7 +180,9 @@ def enriquecer(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     )
     if df.is_empty():
         return pl.DataFrame()
-    df = adicionar_vencimento(df, contrato, coluna_ticker="codigo_negociacao")
+    df = df.with_columns(
+        data_vencimento=ct.vencimento_expr("codigo_negociacao", contrato)
+    )
     df = _enriquecer_dados(df, contrato)
     df = _selecionar_colunas_saida(df, contrato)
 

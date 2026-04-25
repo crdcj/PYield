@@ -88,7 +88,7 @@ def _mercado_selic_aberto() -> bool:
     agora = relogio.agora()
     hoje = agora.date()
     hora = agora.time()
-    eh_dia_util = du.e_dia_util(hoje)
+    eh_dia_util = du.eh_dia_util(hoje)
     eh_horario = HORA_INICIO_TEMPO_REAL <= hora <= HORA_FIM_TEMPO_REAL
 
     return eh_dia_util and eh_horario

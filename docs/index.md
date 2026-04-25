@@ -69,7 +69,7 @@ du.gerar("22-12-2023", "02-01-2024")
 # -> Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
 
 # Verifica se a data é dia útil
-du.e_dia_util("25-12-2023")  # -> False (Natal)
+du.eh_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
 Todas as funções suportam operações vetorizadas com listas, Series ou arrays.
@@ -224,7 +224,7 @@ A partir da versão 0.48.0, a API pública foi migrada para o português. Os pri
 | `bday.count()` | `du.contar()` |
 | `bday.offset()` | `du.deslocar()` |
 | `bday.generate()` | `du.gerar()` |
-| `bday.is_business_day()` | `du.e_dia_util()` |
+| `bday.is_business_day()` | `du.eh_dia_util()` |
 | `Interpolator(method, bdays, rates)` | `Interpolador(dias_uteis, taxas, metodo=...)` |
 | `extrapolate=True` | `extrapolar=True` |
 | `ntnb.quotation()` | `ntnb.cotacao()` |

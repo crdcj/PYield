@@ -76,7 +76,7 @@ yd.du.gerar("22-12-2023", "02-01-2024")
 # -> Polars Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
 
 # Verificar se é dia útil
-yd.du.e_dia_util("25-12-2023")  # -> False (Natal)
+yd.du.eh_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
 Todas as funções suportam operações vetorizadas com listas, Series ou arrays.

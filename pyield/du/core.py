@@ -543,7 +543,7 @@ def gerar(
     return s.filter((s.dt.weekday() < LIMITE_DIA_UTIL) & (~s.is_in(feriados)))
 
 
-def e_dia_util_expr(data: pl.Expr | str) -> pl.Expr:
+def eh_dia_util_expr(data: pl.Expr | str) -> pl.Expr:
     """Cria expressão Polars para verificar se é dia útil (True/False).
 
     Args:
@@ -560,19 +560,19 @@ def e_dia_util_expr(data: pl.Expr | str) -> pl.Expr:
         >>> df = pl.DataFrame({"data": datas})
 
         Criando uma flag booleana:
-        >>> df.with_columns(e_dia_util=du.e_dia_util_expr("data"))
+        >>> df.with_columns(eh_dia_util=du.eh_dia_util_expr("data"))
         shape: (2, 2)
-        ┌────────────┬────────────┐
-        │ data       ┆ e_dia_util │
-        │ ---        ┆ ---        │
-        │ date       ┆ bool       │
-        ╞════════════╪════════════╡
-        │ 2023-12-25 ┆ false      │
-        │ 2023-12-26 ┆ true       │
-        └────────────┴────────────┘
+        ┌────────────┬─────────────┐
+        │ data       ┆ eh_dia_util │
+        │ ---        ┆ ---         │
+        │ date       ┆ bool        │
+        ╞════════════╪═════════════╡
+        │ 2023-12-25 ┆ false       │
+        │ 2023-12-26 ┆ true        │
+        └────────────┴─────────────┘
 
         Usando para filtrar apenas dias úteis:
-        >>> df.filter(du.e_dia_util_expr("data"))
+        >>> df.filter(du.eh_dia_util_expr("data"))
         shape: (1, 1)
         ┌────────────┐
         │ data       │
@@ -588,14 +588,14 @@ def e_dia_util_expr(data: pl.Expr | str) -> pl.Expr:
 
 
 @overload
-def e_dia_util(datas: None) -> None: ...
+def eh_dia_util(datas: None) -> None: ...
 @overload
-def e_dia_util(datas: DateLike) -> bool: ...
+def eh_dia_util(datas: DateLike) -> bool: ...
 @overload
-def e_dia_util(datas: ArrayLike) -> pl.Series: ...
+def eh_dia_util(datas: ArrayLike) -> pl.Series: ...
 
 
-def e_dia_util(datas: None | DateLike | ArrayLike) -> None | bool | pl.Series:
+def eh_dia_util(datas: None | DateLike | ArrayLike) -> None | bool | pl.Series:
     """Determina se data(s) são dias úteis brasileiros.
 
     REGIME DE FERIADOS POR LINHA: Para CADA data de entrada, a lista de feriados
@@ -618,7 +618,7 @@ def e_dia_util(datas: None | DateLike | ArrayLike) -> None | bool | pl.Series:
     TIPO DE RETORNO: Se a entrada (não-nula) resolve para um único elemento, um
     ``bool`` Python é retornado. Se esse único elemento for nulo, ``None`` é
     retornado. Caso contrário, uma ``polars.Series`` de booleanos nomeada
-    ``'e_dia_util'`` é produzida.
+    ``'eh_dia_util'`` é produzida.
 
     FINS DE SEMANA: Sábados e domingos nunca são dias úteis independentemente do
     regime de feriados.
@@ -630,17 +630,17 @@ def e_dia_util(datas: None | DateLike | ArrayLike) -> None | bool | pl.Series:
     Returns:
         ``True`` se for dia útil, ``False`` caso contrário para entrada escalar;
         ``None`` para entrada escalar nula; ou uma Series Polars de booleanos
-        (nome: ``'e_dia_util'``) para entradas de array.
+        (nome: ``'eh_dia_util'``) para entradas de array.
 
     Examples:
         >>> from pyield import du
-        >>> du.e_dia_util("25-12-2023")  # Natal (calendário antigo)
+        >>> du.eh_dia_util("25-12-2023")  # Natal (calendário antigo)
         False
-        >>> du.e_dia_util("20-11-2024")  # Dia Nacional de Zumbi (novo feriado)
+        >>> du.eh_dia_util("20-11-2024")  # Dia Nacional de Zumbi (novo feriado)
         False
-        >>> du.e_dia_util(["22-12-2023", "26-12-2023"])  # Períodos mistos
+        >>> du.eh_dia_util(["22-12-2023", "26-12-2023"])  # Períodos mistos
         shape: (2,)
-        Series: 'e_dia_util' [bool]
+        Series: 'eh_dia_util' [bool]
         [
             true
             true
@@ -656,8 +656,8 @@ def e_dia_util(datas: None | DateLike | ArrayLike) -> None | bool | pl.Series:
     """
     s = (
         pl.DataFrame({"datas": datas}, nan_to_null=True)
-        .select(e_dia_util=e_dia_util_expr("datas"))
-        .get_column("e_dia_util")
+        .select(eh_dia_util=eh_dia_util_expr("datas"))
+        .get_column("eh_dia_util")
     )
 
     if not tp.any_is_collection(datas):
