@@ -6,9 +6,9 @@ import polars as pl
 
 from pyield._internal.types import DateLike
 from pyield.anbima.imaq import imaq as _estoque
-from pyield.anbima.tpf import TipoTPF
-from pyield.anbima.tpf import tpf as _taxas
-from pyield.anbima.tpf import tpf_vencimentos as _vencimentos
+from pyield.anbima.mercado_secundario import TipoTPF
+from pyield.anbima.mercado_secundario import tpf as _taxas
+from pyield.anbima.mercado_secundario import tpf_vencimentos as _vencimentos
 from pyield.bc.tpf_intradia import tpf_intradia as _secundario_intradia
 from pyield.bc.tpf_mensal import tpf_mensal as _secundario_mensal
 from pyield.tn.leiloes import leilao as _leilao

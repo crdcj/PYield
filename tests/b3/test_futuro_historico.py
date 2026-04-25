@@ -1,10 +1,12 @@
 import datetime as dt
+import importlib
 
 import polars as pl
 from polars.testing import assert_frame_equal
 
 import pyield as yd
-from pyield.b3.futuro import historico as modulo_historico
+
+modulo_historico = importlib.import_module("pyield.b3.futuro.historico")
 
 
 def test_historico_usa_dataset_pr(monkeypatch):
@@ -19,7 +21,7 @@ def test_historico_usa_dataset_pr(monkeypatch):
         _historico_pr_falso,
     )
 
-    df_resultado = modulo_historico.historico(dt.date(2026, 5, 10), "DI1")
+    df_resultado = modulo_historico.historico(dt.date(2026, 3, 10), "DI1")
     assert not df_resultado.is_empty()
 
 

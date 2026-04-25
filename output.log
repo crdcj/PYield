@@ -1,0 +1,28 @@
+..................................F..................................    [100%]
+=================================== FAILURES ===================================
+________________________ test_historico_usa_dataset_pr _________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fb150e98260>
+
+    def test_historico_usa_dataset_pr(monkeypatch):
+        """historico() deve retornar dados do cache PR."""
+    
+        def _historico_pr_falso(datas, contrato):
+            return pl.DataFrame({"codigo_negociacao": ["DI1N26"]})
+    
+        monkeypatch.setattr(
+            modulo_historico,
+            "_buscar_do_cache",
+            _historico_pr_falso,
+        )
+    
+        df_resultado = modulo_historico.historico(dt.date(2026, 5, 10), "DI1")
+>       assert not df_resultado.is_empty()
+E       assert not True
+E        +  where True = is_empty()
+E        +    where is_empty = shape: (0, 0)\n┌┐\n╞╡\n└┘.is_empty
+
+tests/b3/test_futuro_historico.py:25: AssertionError
+=========================== short test summary info ============================
+FAILED tests/b3/test_futuro_historico.py::test_historico_usa_dataset_pr - ass...
+1 failed, 68 passed in 4.46s

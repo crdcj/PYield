@@ -3,9 +3,12 @@ import datetime as dt
 import polars as pl
 import polars.selectors as cs
 
-import pyield.b3.futuro.contratos as ct
+import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.data_cache import obter_dataset_cacheado
+from pyield._internal.types import ArrayLike, DateLike, any_is_empty
+from pyield.b3._validar_pregao import data_negociacao_valida
+from pyield.b3.futuro import contratos as ct
 from pyield.fwd import forwards
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
@@ -158,14 +161,14 @@ def _buscar_do_cache(datas: list[dt.date], contrato: str) -> pl.DataFrame:
 def enriquecer(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     """Enriquece DataFrame bruto do Price Report (PR) da B3.
 
-    Aceita um DataFrame com colunas no schema original da B3 (ex.:
-    ``TradDt``, ``TckrSymb``). Filtra pelo contrato informado,
+    Aceita um DataFrame com colunas no schema original da B3
+    (ex.: ``TradDt``, ``TckrSymb``). Filtra pelo contrato informado,
     adiciona data de vencimento, dias úteis/corridos e colunas
     derivadas (dv01, taxa_forward) conforme o contrato.
 
     Args:
         df: DataFrame com dados brutos do PR da B3.
-        contrato: Contrato futuro (ex.: "DI1", "DOL").
+        contrato: Contrato futuro (ex.: ``DI1``, ``DOL``).
 
     Returns:
         DataFrame Polars enriquecido e ordenado.
@@ -189,14 +192,11 @@ def enriquecer(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     return df.sort("data_referencia", "data_vencimento")
 
 
-def historico(
-    data: dt.date,
-    contrato: str,
-) -> pl.DataFrame:
+def historico(data: DateLike | ArrayLike, contrato: str) -> pl.DataFrame:
     """Busca histórico de futuros no dataset PR cacheado.
 
     Args:
-        data: Data de negociação.
+        data: Data de negociação ou coleção de datas.
         contrato: Contrato futuro na B3.
 
     Returns:
@@ -254,12 +254,56 @@ def historico(
         taxa (DI1, DAP, etc.), bid/ask são invertidos em relação ao PU:
         ``taxa_ultima_oferta_compra`` = maior taxa (ask em PU),
         ``taxa_ultima_oferta_venda`` = menor taxa (bid em PU).
+
+
+    Examples:
+        >>> yd.futuro.historico("31-05-2024", "DI1").shape[1] > 5
+        True
+        >>> yd.futuro.historico(["29-05-2024", "31-05-2024"], "DI1")[
+        ...     "data_referencia"
+        ... ].unique().sort().to_list()
+        [datetime.date(2024, 5, 29), datetime.date(2024, 5, 31)]
+        >>> yd.futuro.historico("04-01-2025", "DI1").is_empty()  # sábado
+        True
+
     """
-    return _buscar_do_cache([data], contrato)
+    if any_is_empty(data, contrato):
+        return pl.DataFrame()
+
+    dados_convertidos = cv.converter_datas(data)
+    if isinstance(dados_convertidos, pl.Series):
+        datas_validas = [
+            data_ref
+            for data_ref in dados_convertidos
+            if data_ref is not None and data_negociacao_valida(data_ref)
+        ]
+        return _buscar_do_cache(datas_validas, contrato)
+
+    if not data_negociacao_valida(dados_convertidos):
+        return pl.DataFrame()
+
+    return _buscar_do_cache([dados_convertidos], contrato)
 
 
-def listar_datas_disponiveis(contrato: str) -> pl.Series:
-    """Lista datas disponíveis no dataset PR para um contrato futuro."""
+def datas_disponiveis(contrato: str) -> pl.Series:
+    """Retorna as datas disponíveis no dataset histórico cacheado.
+
+    Args:
+        contrato: Contrato futuro (ex.: ``DI1``, ``DOL``).
+
+    Returns:
+        Series ordenada de datas para as quais há dados históricos.
+
+    Examples:
+        >>> yd.futuro.datas_disponiveis("DI1").head(3)
+        shape: (3,)
+        Series: 'data_referencia' [date]
+        [
+            2018-01-02
+            2018-01-03
+            2018-01-04
+        ]
+    """
     return (
         _obter_cache_filtrado(contrato)
         .get_column("TradDt")

@@ -1,0 +1,25 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0 -- /var/home/crcj/dev/PYield/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /var/home/crcj/dev/PYield
+configfile: pyproject.toml
+collecting ... collected 69 items
+
+tests/test_api_publica.py::test_namespace_futuro_exposto_na_raiz PASSED  [  1%]
+tests/test_api_publica.py::test_namespace_tpf_exposto_na_raiz PASSED     [  2%]
+tests/test_api_publica.py::test_indicadores_simples_expostos_na_raiz PASSED [  4%]
+tests/test_api_publica.py::test_aliases_de_fonte_removidos_da_api_publica PASSED [  5%]
+tests/b3/test_boletim_negociacao.py::test_pipeline_bruto_boletim_negociacao[02-02-2023-DI1] PASSED [  7%]
+tests/b3/test_boletim_negociacao.py::test_pipeline_bruto_boletim_negociacao[02-02-2023-FRC] PASSED [  8%]
+tests/b3/test_boletim_negociacao.py::test_pipeline_bruto_boletim_negociacao[02-02-2023-DDI] PASSED [ 10%]
+tests/b3/test_boletim_negociacao.py::test_pipeline_bruto_boletim_negociacao[02-02-2023-DAP] PASSED [ 11%]
+tests/b3/test_boletim_negociacao.py::test_pipeline_bruto_boletim_negociacao[02-02-2023-DOL] PASSED [ 13%]
+tests/b3/test_boletim_negociacao.py::test_pipeline_bruto_boletim_negociacao[02-02-2023-WDO] PASSED [ 14%]
+tests/b3/test_boletim_negociacao.py::test_pipeline_bruto_boletim_negociacao[02-02-2023-IND] PASSED [ 15%]
+tests/b3/test_boletim_negociacao.py::test_pipeline_bruto_boletim_negociacao[02-02-2023-WIN] PASSED [ 17%]
+tests/b3/test_boletim_negociacao.py::test_pipeline_bruto_boletim_negociacao[03-02-2025-DI1] 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/var/home/crcj/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/ssl.py:1103: KeyboardInterrupt
+(to show a full traceback on KeyboardInterrupt use --full-trace)
+============================== 12 passed in 1.51s ==============================

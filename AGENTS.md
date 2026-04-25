@@ -80,6 +80,12 @@ interpretação para quem consome a biblioteca.
 
 Docstrings devem estar em português e respeitar `line-length = 88`.
 
+Docstring pública é contrato de API e documentação do usuário. Trate como dado
+valioso: nunca apague, resuma, mova ou substitua uma docstring pública sem
+preservar integralmente o conteúdo original e confirmar que o novo destino é o
+correto. Em migrações, primeiro copie a docstring canônica para o destino
+pretendido; só depois considere encurtar a origem.
+
 Funções públicas usam estilo Google com as seções relevantes:
 - `Args:`
 - `Returns:`
@@ -93,6 +99,7 @@ docstring pública quando a função buscar ou representar dado externo.
 
 Evite docstrings públicas duplicadas em vários caminhos para o mesmo dado. A
 docstring completa deve ficar no namespace canônico; wrappers devem ser breves.
+Se houver dúvida sobre qual caminho é canônico, pare e pergunte antes de editar.
 
 Doctests devem usar dados reais e são validados pelo `pytest` configurado no
 projeto. O namespace de doctest já fornece `yd` e `pl`.

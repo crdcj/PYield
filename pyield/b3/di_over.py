@@ -61,10 +61,11 @@ def _buscar_taxa(nome_arquivo: str) -> float:
 
 
 def di_over(data: DateLike) -> float:
-    """Obtém a taxa DI over via FTP da B3/CETIP.
+    """Obtém a taxa DI over na camada técnica da B3/CETIP.
 
     Busca o arquivo de taxa DI (Depósito Interfinanceiro) no servidor
-    FTP da CETIP para a data informada.
+    FTP da CETIP para a data informada. Use ``pyield.di_over`` na
+    API pública principal.
 
     Args:
         data: data da consulta para buscar a taxa DI.
@@ -75,9 +76,10 @@ def di_over(data: DateLike) -> float:
         anterior a 20/08/2012 (início da série no FTP).
 
     Examples:
-        >>> di_over("28/02/2025")
+        >>> import pyield as yd
+        >>> yd.di_over("28/02/2025")
         0.1315
-        >>> di_over("01/01/2025")  # Feriado
+        >>> yd.di_over("01/01/2025")  # Feriado
         nan
     """
     if any_is_empty(data):

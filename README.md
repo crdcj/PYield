@@ -242,6 +242,10 @@ Mapa de migração:
 | `yd.b3.futuro_datas_disponiveis(contrato)` | `yd.futuro.datas_disponiveis(contrato)` |
 | `yd.b3.futuro_enriquecer(df, contrato)` | `yd.futuro.enriquecer(df, contrato)` |
 | `yd.b3.di_over(data)` | `yd.di_over(data)` |
+| `yd.b3.di1.dados(data)` | `yd.di1.dados(data)` |
+| `yd.b3.di1.interpolar_taxa(...)` | `yd.di1.interpolar_taxa(...)` |
+| `yd.b3.di1.interpolar_taxas(...)` | `yd.di1.interpolar_taxas(...)` |
+| `yd.b3.di1.datas_disponiveis()` | `yd.di1.datas_disponiveis()` |
 | `yd.bc.ptax(data)` | `yd.ptax(data)` |
 | `yd.bc.ptax_serie(inicio, fim)` | `yd.ptax_serie(inicio, fim)` |
 | `yd.bc.selic_over(data)` | `yd.selic_over(data)` |
@@ -257,7 +261,7 @@ Mapa de migração:
 | `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
 
 As funções antigas listadas acima serão removidas da API pública de alto nível.
-Módulos internos ou técnicos, como `pyield.b3.futuro.intradia` e
+Módulos de implementação, como `pyield.b3.futuro.intradia` e
 `pyield.bc.tpf_intradia`, continuam existindo para organizar a implementação e
 testes, mas a documentação passa a ensinar a API orientada ao objeto.
 

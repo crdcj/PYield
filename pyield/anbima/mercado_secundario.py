@@ -1,4 +1,7 @@
-"""Dados do mercado secundário de Títulos Públicos Federais (TPF) da ANBIMA.
+"""Taxas de Títulos Públicos Federais (TPF) da ANBIMA.
+
+Fonte:
+    https://www.anbima.com.br/pt_br/informar/taxas-de-titulos-publicos.htm
 
 Exemplo de URL:
     https://www.anbima.com.br/informacoes/merc-sec/arqs/ms240614.txt
@@ -37,7 +40,7 @@ DATA_MUDANCA_FORMATO = dt.date(2014, 5, 13)
 
 DIAS_RETENCAO_PUBLICA = 5
 
-# Colunas selecionadas pela função pública tpf()
+# Colunas selecionadas pela função técnica tpf()
 COLUNAS_TPF = (
     "titulo",
     "data_referencia",

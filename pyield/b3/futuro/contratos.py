@@ -68,11 +68,10 @@ def vencimento(
         Data de vencimento para código escalar, ou ``pl.Series`` para coleção.
 
     Examples:
-        >>> from pyield.b3.futuro import vencimento
-        >>> vencimento("DI1F25", "DI1")
+        >>> yd.futuro.vencimento("DI1F25", "DI1")
         datetime.date(2025, 1, 2)
 
-        >>> vencimento(["DI1F25", "di1g25", "DI1E27"], "DI1")
+        >>> yd.futuro.vencimento(["DI1F25", "di1g25", "DI1E27"], "DI1")
         shape: (3,)
         Series: 'vencimento' [date]
         [
@@ -109,9 +108,12 @@ def vencimento_expr(coluna_codigo: str, contrato: str) -> pl.Expr:
         Uma ``pl.Expr`` que resulta em Date.
 
     Examples:
-        >>> from pyield.b3.futuro import vencimento_expr
         >>> df = pl.DataFrame({"codigo_negociacao": ["DI1F25", "di1g25", "DI1E27"]})
-        >>> df.select(vencimento_expr("codigo_negociacao", "DI1").alias("vencimento"))
+        >>> df.select(
+        ...     yd.futuro.vencimento_expr("codigo_negociacao", "DI1").alias(
+        ...         "vencimento"
+        ...     )
+        ... )
         shape: (3, 1)
         ┌────────────┐
         │ vencimento │
@@ -125,7 +127,11 @@ def vencimento_expr(coluna_codigo: str, contrato: str) -> pl.Expr:
 
         Contratos DAP vencem no dia 15:
         >>> df = pl.DataFrame({"codigo_negociacao": ["DAPF25"]})
-        >>> df.select(vencimento_expr("codigo_negociacao", "DAP").alias("vencimento"))
+        >>> df.select(
+        ...     yd.futuro.vencimento_expr("codigo_negociacao", "DAP").alias(
+        ...         "vencimento"
+        ...     )
+        ... )
         shape: (1, 1)
         ┌────────────┐
         │ vencimento │
@@ -137,13 +143,11 @@ def vencimento_expr(coluna_codigo: str, contrato: str) -> pl.Expr:
     """
     dia_vencimento = 15 if "DAP" in contrato.upper() else 1
     codigo = pl.col(coluna_codigo).str.to_uppercase()
-    data_vencimento = (
-        pl.date(
-            year=codigo.str.slice(4, 2).cast(pl.Int32, strict=False) + 2000,
-            month=codigo.str.slice(3, 1).replace_strict(
-                _MAPA_MESES, default=None, return_dtype=pl.Int8
-            ),
-            day=dia_vencimento,
-        )
+    data_vencimento = pl.date(
+        year=codigo.str.slice(4, 2).cast(pl.Int32, strict=False) + 2000,
+        month=codigo.str.slice(3, 1).replace_strict(
+            _MAPA_MESES, default=None, return_dtype=pl.Int8
+        ),
+        day=dia_vencimento,
     )
     return du.deslocar_expr(data_vencimento, 0)

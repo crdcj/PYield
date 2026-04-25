@@ -8,7 +8,7 @@ import polars as pl
 
 import pyield._internal.converters as cv
 from pyield._internal.types import DateLike
-from pyield.anbima.tpf import TipoTPF
+from pyield.anbima.mercado_secundario import TipoTPF
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ def obter_tpf(
     tipo_titulo: TipoTPF,
 ) -> pl.DataFrame:
     """Busca taxas indicativas de TPF no padrão de colunas usado por ``tn``."""
-    from pyield.anbima.tpf import tpf  # noqa: PLC0415
+    from pyield.anbima.mercado_secundario import tpf  # noqa: PLC0415
 
     return tpf(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
 

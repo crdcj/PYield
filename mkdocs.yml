@@ -18,6 +18,7 @@ nav:
           - Interpolador: interpolador.md
           - Taxas a Termo: forwards.md
       - Objetos de Mercado:
+          - DI1: di1.md
           - Futuro: futuro.md
           - TPF: tpf.md
       - Fontes de Dados:
@@ -27,7 +28,6 @@ nav:
               - Calendário COPOM: bc/copom.md
           - B3:
               - Visão Geral: b3/index.md
-              - Futuros de DI: b3/di1.md
           - IPCA: ipca.md
           - Selic (CPM/COPOM): selic.md
       - Títulos Públicos:

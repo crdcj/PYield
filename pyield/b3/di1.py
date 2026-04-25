@@ -1,10 +1,19 @@
+"""Curva de DI Futuro (DI1).
+
+Fonte:
+    Dados históricos de contratos futuros da B3, processados a partir do Price
+    Report e usados como curva de ajuste do DI1.
+"""
+
 import polars as pl
 
 import pyield._internal.converters as cv
-from pyield import du, interpolador
+from pyield import du
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
-from pyield.b3.futuro import historico as futuro_historico
+from pyield.b3.futuro.historico import _buscar_do_cache as _buscar_di1
+from pyield.b3.futuro.historico import datas_disponiveis as _datas_futuro
+from pyield.interpolador import Interpolador
 
 
 def dados(
@@ -63,7 +72,7 @@ def dados(
     else:
         datas_lista = [datas_convertidas]
 
-    df = futuro_historico._buscar_do_cache(datas_lista, "DI1")
+    df = _buscar_di1(datas_lista, "DI1")
     if df.is_empty():
         return df
 
@@ -196,7 +205,7 @@ def interpolar_taxas(
 
     # Carrega dataset de taxas DI usando datas já convertidas do df_entrada
     datas_unicas = df_entrada["data_referencia"].drop_nulls().unique().sort().to_list()
-    df_ref = futuro_historico._buscar_do_cache(datas_unicas, "DI1")
+    df_ref = _buscar_di1(datas_unicas, "DI1")
     # Retorna Series vazia se nenhuma taxa for encontrada
     if df_ref.is_empty():
         return pl.Series(dtype=pl.Float64)
@@ -229,7 +238,7 @@ def interpolar_taxas(
             continue
 
         # Inicializa o interpolador com taxas e dias úteis conhecidos
-        interpolador_du = interpolador.Interpolador(
+        interpolador_du = Interpolador(
             dias_uteis=df_referencia["dias_uteis"],
             taxas=df_referencia["taxa_ajuste"],
             metodo="flat_forward",
@@ -342,4 +351,12 @@ def datas_disponiveis() -> pl.Series:
             2018-01-08
         ]
     """
-    return futuro_historico.listar_datas_disponiveis("DI1")
+    return _datas_futuro("DI1")
+
+
+__all__ = [
+    "dados",
+    "datas_disponiveis",
+    "interpolar_taxa",
+    "interpolar_taxas",
+]

@@ -1,8 +1,16 @@
+# ruff: noqa: I001
+
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
-from pyield import anbima, b3, bc, di1, du, futuro, ipca, selic, tn, tpf
+from pyield import anbima, b3, du, ipca
+from pyield.b3 import futuro
+from pyield.b3 import di1
 from pyield.b3.di_over import di_over
+
+# Ordem intencional: alguns módulos importam `di1` a partir de `pyield`
+# durante a inicialização do pacote.
+from pyield import bc, selic, tn, tpf
 from pyield.bc.sgs import (
     ptax,
     ptax_serie,
