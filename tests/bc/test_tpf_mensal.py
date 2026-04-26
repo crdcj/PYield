@@ -11,11 +11,11 @@ CAMINHO_PARQUET = DIRETORIO_DADOS / "tpf_mensal_202501.parquet"
 
 
 def test_tpf_mensal_com_monkeypatch(monkeypatch):
-    """tpf_mensal com monkeypatch deve bater com o parquet bruto."""
+    """secundario_mensal_bcb com monkeypatch deve bater com o parquet bruto."""
     monkeypatch.setattr(
         modulo_tpf_mensal,
         "_baixar_zip",
         lambda *_: CAMINHO_ZIP.read_bytes(),
     )
-    resultado = modulo_tpf_mensal.tpf_mensal("07-01-2025", extragrupo=True)
+    resultado = modulo_tpf_mensal.secundario_mensal_bcb("07-01-2025", extragrupo=True)
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))

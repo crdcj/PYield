@@ -75,44 +75,52 @@ def intradia(contrato: str) -> pl.DataFrame:
         vazio fora do horário de pregão ou quando não houver dados.
 
     Output Columns:
-        * data_referencia (Date): data de negociação.
-        * horario_referencia (Datetime): horário de referência do dado.
-        * codigo_negociacao (String): código de negociação na B3.
-        * data_vencimento (Date): data de vencimento do contrato.
-        * dias_uteis (Int64): dias úteis até o vencimento.
-        * dias_corridos (Int64): dias corridos até o vencimento.
-        * contratos_abertos (Int64): contratos em aberto.
-        * numero_negocios (Int64): número de negócios.
-        * volume_negociado (Int64): quantidade de contratos negociados.
-        * volume_financeiro (Float64): volume financeiro bruto.
-        * dv01 (Float64): variação no preço para 1bp de taxa (apenas DI1).
-        * preco_ajuste_anterior (Float64): preço de ajuste anterior.
-        * preco_limite_minimo (Float64): limite mínimo de variação (preço).
-        * preco_limite_maximo (Float64): limite máximo de variação (preço).
-        * preco_abertura (Float64): preço de abertura.
-        * preco_minimo (Float64): preço mínimo negociado.
-        * preco_maximo (Float64): preço máximo negociado.
-        * preco_medio (Float64): preço médio negociado.
-        * preco_ultimo (Float64): último preço negociado.
-        * preco_oferta_compra (Float64): melhor preço de compra.
-        * preco_oferta_venda (Float64): melhor preço de venda.
-        * taxa_forward (Float64): taxa a termo (apenas DI1/DAP).
-        * taxa_ajuste_anterior (Float64): taxa de ajuste anterior.
-        * taxa_limite_minimo (Float64): limite mínimo de variação (taxa).
-        * taxa_limite_maximo (Float64): limite máximo de variação (taxa).
-        * taxa_abertura (Float64): taxa de abertura.
-        * taxa_minima (Float64): taxa mínima negociada.
-        * taxa_maxima (Float64): taxa máxima negociada.
-        * taxa_media (Float64): taxa média negociada.
-        * taxa_oferta_compra (Float64): melhor taxa de compra.
-        * taxa_oferta_venda (Float64): melhor taxa de venda.
-        * taxa_ultima (Float64): última taxa negociada.
+        Colunas base:
+            * data_referencia (Date): data de negociação.
+            * horario_referencia (Datetime): horário de referência do dado.
+            * codigo_negociacao (String): código de negociação na B3.
+            * data_vencimento (Date): data de vencimento do contrato.
+            * dias_uteis (Int64): dias úteis até o vencimento.
+            * dias_corridos (Int64): dias corridos até o vencimento.
+            * contratos_abertos (Int64): contratos em aberto.
+            * numero_negocios (Int64): número de negócios.
+            * volume_negociado (Int64): quantidade de contratos negociados.
+            * volume_financeiro (Float64): volume financeiro bruto.
+
+        Colunas de contratos cotados por preço:
+            * preco_ajuste_anterior (Float64): preço de ajuste anterior.
+            * preco_limite_minimo (Float64): limite mínimo de variação.
+            * preco_limite_maximo (Float64): limite máximo de variação.
+            * preco_abertura (Float64): preço de abertura.
+            * preco_minimo (Float64): preço mínimo negociado.
+            * preco_maximo (Float64): preço máximo negociado.
+            * preco_medio (Float64): preço médio negociado.
+            * preco_ultimo (Float64): último preço negociado.
+            * preco_oferta_compra (Float64): melhor preço de compra.
+            * preco_oferta_venda (Float64): melhor preço de venda.
+
+        Colunas de contratos cotados por taxa:
+            * taxa_ajuste_anterior (Float64): taxa de ajuste anterior.
+            * taxa_limite_minimo (Float64): limite mínimo de variação.
+            * taxa_limite_maximo (Float64): limite máximo de variação.
+            * taxa_abertura (Float64): taxa de abertura.
+            * taxa_minima (Float64): taxa mínima negociada.
+            * taxa_maxima (Float64): taxa máxima negociada.
+            * taxa_media (Float64): taxa média negociada.
+            * taxa_oferta_compra (Float64): melhor taxa de compra.
+            * taxa_oferta_venda (Float64): melhor taxa de venda.
+            * taxa_ultima (Float64): última taxa negociada.
+
+        Colunas específicas:
+            * dv01 (Float64): variação no preço para 1bp de taxa, apenas DI1.
+            * taxa_forward (Float64): taxa a termo, apenas DI1 e DAP.
 
     Notes:
-        As colunas com prefixo ``preco_`` aparecem para contratos cotados
-        por preço (ex.: DOL, IND). As com prefixo ``taxa_`` aparecem para
-        contratos cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO). Nem
-        todas as colunas estarão presentes em todos os contratos.
+        As colunas retornadas dependem do tipo do contrato. Contratos cotados
+        por preço (ex.: DOL, WDO, IND, WIN) retornam as colunas ``preco_*``.
+        Contratos cotados por taxa (ex.: DI1, DAP, DDI, FRC, FRO) retornam
+        as colunas ``taxa_*``. Algumas colunas são específicas de famílias de
+        contrato, como ``dv01`` para DI1 e ``taxa_forward`` para DI1 e DAP.
 
     Examples:
         >>> resultado = yd.futuro.intradia("DI1")

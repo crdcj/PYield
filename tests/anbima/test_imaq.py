@@ -13,11 +13,11 @@ DATA_REFERENCIA = dt.date(2026, 2, 4)
 
 
 def test_imaq_com_monkeypatch(monkeypatch):
-    """imaq() com monkeypatch deve bater com o parquet de referência."""
+    """estoque_anbima() com monkeypatch deve bater com o parquet de referência."""
     monkeypatch.setattr(
         modulo_imaq,
         "_buscar_conteudo_url",
         lambda _: CAMINHO_HTML.read_bytes(),
     )
-    resultado = modulo_imaq.imaq(data=DATA_REFERENCIA)
+    resultado = modulo_imaq.estoque_anbima(data=DATA_REFERENCIA)
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))

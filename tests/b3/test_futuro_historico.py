@@ -12,13 +12,13 @@ modulo_historico = importlib.import_module("pyield.b3.futuro.historico")
 def test_historico_usa_dataset_pr(monkeypatch):
     """historico() deve retornar dados do cache PR."""
 
-    def _historico_pr_falso(datas, contrato):
+    def historico_pr_falso(datas, contrato):
         return pl.DataFrame({"codigo_negociacao": ["DI1N26"]})
 
     monkeypatch.setattr(
         modulo_historico,
-        "_buscar_do_cache",
-        _historico_pr_falso,
+        "buscar_historico_cacheado",
+        historico_pr_falso,
     )
 
     df_resultado = modulo_historico.historico(dt.date(2026, 3, 10), "DI1")
@@ -29,7 +29,7 @@ def test_historico_retorna_vazio_sem_cache(monkeypatch):
     """historico() retorna vazio quando contrato não está no cache."""
     monkeypatch.setattr(
         modulo_historico,
-        "_buscar_do_cache",
+        "buscar_historico_cacheado",
         lambda datas, contrato: pl.DataFrame(),
     )
 
@@ -42,7 +42,7 @@ def test_futuro_igual_dataset_pr_di1():
     data = dt.date(2026, 1, 12)
 
     df_futuro = yd.futuro.historico(data=data, contrato="DI1")
-    df_referencia = modulo_historico._buscar_do_cache([data], "DI1")
+    df_referencia = modulo_historico.buscar_historico_cacheado([data], "DI1")
 
     assert_frame_equal(
         df_futuro.sort("data_vencimento"),

@@ -215,6 +215,46 @@ yd.tpf.secundario_mensal("01-01-2030").is_empty()    # -> True
 yd.ptax("25-12-2025")                                # -> nan
 ```
 
+## Migração da API por Objeto (v0.49.0)
+
+A versão 0.49.0 reorganiza a API pública principal para privilegiar o objeto de
+análise do usuário, e não a fonte original do dado. Na prática, consultas
+canônicas deixam de ficar sob `b3`, `bc` ou `anbima` quando a fonte é apenas um
+detalhe operacional. Os namespaces de fonte permanecem para dados técnicos,
+brutos ou específicos da fonte.
+
+Mapa de migração:
+
+| Antes | Depois |
+|---|---|
+| `yd.b3.futuro(data, contrato)` | `yd.futuro.historico(data, contrato)` |
+| `yd.b3.futuro_intradia(contrato)` | `yd.futuro.intradia(contrato)` |
+| `yd.b3.futuro_datas_disponiveis(contrato)` | `yd.futuro.datas_disponiveis(contrato)` |
+| `yd.b3.futuro_enriquecer(df, contrato)` | `yd.futuro.enriquecer(df, contrato)` |
+| `yd.b3.di_over(data)` | `yd.di_over(data)` |
+| `yd.b3.di1.dados(data)` | `yd.di1.dados(data)` |
+| `yd.b3.di1.interpolar_taxa(...)` | `yd.di1.interpolar_taxa(...)` |
+| `yd.b3.di1.interpolar_taxas(...)` | `yd.di1.interpolar_taxas(...)` |
+| `yd.b3.di1.datas_disponiveis()` | `yd.di1.datas_disponiveis()` |
+| `yd.bc.ptax(data)` | `yd.ptax(data)` |
+| `yd.bc.ptax_serie(inicio, fim)` | `yd.ptax_serie(inicio, fim)` |
+| `yd.bc.selic_over(data)` | `yd.selic_over(data)` |
+| `yd.bc.selic_over_serie(...)` | `yd.selic_over_serie(...)` |
+| `yd.bc.selic_meta(data)` | `yd.selic_meta(data)` |
+| `yd.bc.selic_meta_serie(...)` | `yd.selic_meta_serie(...)` |
+| `yd.anbima.tpf(data, titulo)` | `yd.tpf.taxas(data, titulo)` |
+| `yd.anbima.tpf_vencimentos(data, titulo)` | `yd.tpf.vencimentos(data, titulo)` |
+| `yd.anbima.imaq(data)` | `yd.tpf.estoque(data)` |
+| `yd.tn.leilao(data)` | `yd.tpf.leilao(data)` |
+| `yd.bc.tpf_intradia()` | `yd.tpf.secundario_intradia()` |
+| `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario_mensal(data, extragrupo=...)` |
+| `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
+
+As funções antigas listadas acima foram removidas da API pública de alto nível.
+Módulos de implementação, como `pyield.b3.futuro.intradia` e
+`pyield.bc.tpf_intradia`, continuam existindo para organizar a implementação e
+testes, mas a documentação passa a ensinar a API orientada ao objeto.
+
 ## Migração para Português (v0.48.0+)
 
 A partir da versão 0.48.0, a API pública foi migrada para o português. Os principais renomes:

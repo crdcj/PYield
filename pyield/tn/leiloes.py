@@ -322,11 +322,8 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(colunas_selecionadas).sort("data_1v", "titulo", "data_vencimento")
 
 
-def leilao(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
-    """Busca leilão de TPF na camada técnica do Tesouro Nacional.
-
-    Use ``pyield.tpf.leilao`` na API pública principal.
-    """
+def leilao_tn(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
+    """Busca leilão de TPF na camada técnica do Tesouro Nacional."""
     if any_is_empty(data):
         return pl.DataFrame()
 

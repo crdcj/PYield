@@ -5,13 +5,15 @@ from collections.abc import Sequence
 import polars as pl
 
 from pyield._internal.types import DateLike
-from pyield.anbima.imaq import imaq as _estoque
-from pyield.anbima.mercado_secundario import TipoTPF
-from pyield.anbima.mercado_secundario import tpf as _taxas
-from pyield.anbima.mercado_secundario import tpf_vencimentos as _vencimentos
-from pyield.bc.tpf_intradia import tpf_intradia as _secundario_intradia
-from pyield.bc.tpf_mensal import tpf_mensal as _secundario_mensal
-from pyield.tn.leiloes import leilao as _leilao
+from pyield.anbima.imaq import estoque_anbima
+from pyield.anbima.mercado_secundario import (
+    TipoTPF,
+    taxas_indicativas,
+    vencimentos_taxas_indicativas,
+)
+from pyield.bc.tpf_intradia import secundario_intradia_bcb
+from pyield.bc.tpf_mensal import secundario_mensal_bcb
+from pyield.tn.leiloes import leilao_tn
 
 
 def taxas(
@@ -47,7 +49,7 @@ def taxas(
         Para obter o dado completo direto da fonte, sem cache nem seleção de
         colunas, use ``pyield.anbima.tpf_fonte``.
     """
-    return _taxas(data=data, titulo=titulo)
+    return taxas_indicativas(data=data, titulo=titulo)
 
 
 def vencimentos(data: DateLike, titulo: TipoTPF) -> pl.Series:
@@ -63,7 +65,7 @@ def vencimentos(data: DateLike, titulo: TipoTPF) -> pl.Series:
     Returns:
         Series ordenada com os vencimentos disponíveis.
     """
-    return _vencimentos(data=data, titulo=titulo)
+    return vencimentos_taxas_indicativas(data=data, titulo=titulo)
 
 
 def estoque(data: DateLike) -> pl.DataFrame:
@@ -91,7 +93,7 @@ def estoque(data: DateLike) -> pl.DataFrame:
         * variacao_quantidade (Int64): variação diária da quantidade.
         * status_titulo (String): status do título.
     """
-    return _estoque(data)
+    return estoque_anbima(data)
 
 
 def secundario_intradia() -> pl.DataFrame:
@@ -137,7 +139,7 @@ def secundario_intradia() -> pl.DataFrame:
         * termo_operacoes_corretagem (Int64): operações a termo via corretagem.
         * termo_quantidade_corretagem (Int64): títulos a termo via corretagem.
     """
-    return _secundario_intradia()
+    return secundario_intradia_bcb()
 
 
 def secundario_mensal(
@@ -177,7 +179,7 @@ def secundario_mensal(
         * operacoes_corretagem (Int64): operações com corretagem.
         * quantidade_corretagem (Int64): quantidade com corretagem.
     """
-    return _secundario_mensal(data=data, extragrupo=extragrupo)
+    return secundario_mensal_bcb(data=data, extragrupo=extragrupo)
 
 
 def leilao(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
@@ -236,7 +238,7 @@ def leilao(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
         * taxa_media (Float64): taxa média aceita.
         * taxa_maxima (Float64): taxa máxima aceita.
     """
-    return _leilao(data)
+    return leilao_tn(data)
 
 
 __all__ = [

@@ -94,14 +94,11 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def tpf_mensal(
+def secundario_mensal_bcb(
     data: DateLike,
     extragrupo: bool = False,
 ) -> pl.DataFrame:
-    """Busca secundário mensal de TPF na camada técnica do BCB.
-
-    Use ``pyield.tpf.secundario_mensal`` na API pública principal.
-    """
+    """Busca secundário mensal de TPF na camada técnica do BCB."""
     if any_is_empty(data):
         return pl.DataFrame()
     data_alvo = converter_datas(data)

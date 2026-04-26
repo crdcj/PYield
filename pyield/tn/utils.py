@@ -38,9 +38,9 @@ def obter_tpf(
     tipo_titulo: TipoTPF,
 ) -> pl.DataFrame:
     """Busca taxas indicativas de TPF no padrão de colunas usado por ``tn``."""
-    from pyield.anbima.mercado_secundario import tpf  # noqa: PLC0415
+    from pyield.anbima.mercado_secundario import taxas_indicativas  # noqa: PLC0415
 
-    return tpf(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
+    return taxas_indicativas(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
 
 
 def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:

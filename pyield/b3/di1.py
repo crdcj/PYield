@@ -11,7 +11,7 @@ import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
-from pyield.b3.futuro.historico import _buscar_do_cache as _buscar_di1
+from pyield.b3.futuro.historico import buscar_historico_cacheado
 from pyield.b3.futuro.historico import datas_disponiveis as _datas_futuro
 from pyield.interpolador import Interpolador
 
@@ -72,7 +72,7 @@ def dados(
     else:
         datas_lista = [datas_convertidas]
 
-    df = _buscar_di1(datas_lista, "DI1")
+    df = buscar_historico_cacheado(datas_lista, "DI1")
     if df.is_empty():
         return df
 
@@ -205,7 +205,7 @@ def interpolar_taxas(
 
     # Carrega dataset de taxas DI usando datas já convertidas do df_entrada
     datas_unicas = df_entrada["data_referencia"].drop_nulls().unique().sort().to_list()
-    df_ref = _buscar_di1(datas_unicas, "DI1")
+    df_ref = buscar_historico_cacheado(datas_unicas, "DI1")
     # Retorna Series vazia se nenhuma taxa for encontrada
     if df_ref.is_empty():
         return pl.Series(dtype=pl.Float64)

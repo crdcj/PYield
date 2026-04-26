@@ -113,11 +113,8 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
     )
 
 
-def imaq(data: DateLike) -> pl.DataFrame:
-    """Busca estoque IMA-Q na camada técnica da ANBIMA.
-
-    Use ``pyield.tpf.estoque`` na API pública principal.
-    """
+def estoque_anbima(data: DateLike) -> pl.DataFrame:
+    """Busca estoque de TPF na camada técnica da ANBIMA."""
     data = cv.converter_datas(data)
     if not cv.data_referencia_valida(data):
         return pl.DataFrame()

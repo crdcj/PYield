@@ -40,8 +40,8 @@ DATA_MUDANCA_FORMATO = dt.date(2014, 5, 13)
 
 DIAS_RETENCAO_PUBLICA = 5
 
-# Colunas selecionadas pela função técnica tpf()
-COLUNAS_TPF = (
+# Colunas selecionadas pela função técnica de taxas indicativas.
+COLUNAS_TAXAS_INDICATIVAS = (
     "titulo",
     "data_referencia",
     "codigo_selic",
@@ -160,14 +160,11 @@ def _buscar_dados_tpf(data: dt.date) -> pl.DataFrame:
     return _processar_df(df)
 
 
-def tpf(
+def taxas_indicativas(
     data: DateLike,
     titulo: TipoTPF | None = None,
 ) -> pl.DataFrame:
-    """Busca taxas indicativas de TPF na camada técnica da ANBIMA.
-
-    Use ``pyield.tpf.taxas`` na API pública principal.
-    """
+    """Busca taxas indicativas de TPF na camada técnica da ANBIMA."""
     data = converter_datas(data)
 
     if not data_referencia_valida(data):
@@ -182,7 +179,7 @@ def tpf(
     if df.is_empty():
         return pl.DataFrame()
 
-    df = df.select(col for col in COLUNAS_TPF if col in df.columns)
+    df = df.select(col for col in COLUNAS_TAXAS_INDICATIVAS if col in df.columns)
 
     if titulo:
         tipos_titulo = _mapear_tipo_titulo(titulo)
@@ -218,12 +215,9 @@ def tpf_fonte(
     return df.sort("data_referencia", "titulo", "data_vencimento")
 
 
-def tpf_vencimentos(
+def vencimentos_taxas_indicativas(
     data: DateLike,
     titulo: TipoTPF,
 ) -> pl.Series:
-    """Busca vencimentos de TPF na camada técnica da ANBIMA.
-
-    Use ``pyield.tpf.vencimentos`` na API pública principal.
-    """
-    return tpf(data, titulo)["data_vencimento"].unique().sort()
+    """Busca vencimentos das taxas indicativas de TPF."""
+    return taxas_indicativas(data, titulo)["data_vencimento"].unique().sort()

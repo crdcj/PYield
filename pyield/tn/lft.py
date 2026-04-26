@@ -3,7 +3,7 @@ import polars as pl
 import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.bc.vna import vna_lft as _vna
+from pyield.bc.vna import vna_bcb
 from pyield.tn import utils
 
 
@@ -128,7 +128,7 @@ def vna(data: DateLike) -> float:
         >>> lft.vna("31-05-2024")
         14903.01148
     """
-    return _vna(data)
+    return vna_bcb(data)
 
 
 def cotacao(

@@ -26,7 +26,7 @@ DF_PTAX_REFERENCIA = pl.DataFrame(
 
 
 def test_leilao_com_monkeypatch(monkeypatch):
-    """leilao com monkeypatch deve produzir o Parquet de referência."""
+    """leilao_tn com monkeypatch deve produzir o Parquet de referência."""
     monkeypatch.setattr(
         modulo_leiloes,
         "_buscar_dados_leilao",
@@ -37,5 +37,5 @@ def test_leilao_com_monkeypatch(monkeypatch):
         "_buscar_ptax",
         lambda *_, **__: DF_PTAX_REFERENCIA,
     )
-    resultado = modulo_leiloes.leilao(data="23-10-2025")
+    resultado = modulo_leiloes.leilao_tn(data="23-10-2025")
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))

@@ -25,26 +25,26 @@ pip install pyield
 ## Quick Start
 
 ```python
-from pyield import du, b3, bc, ntnb, Interpolador
+import pyield as yd
 
 # Business days (foundation for all calculations)
-du.contar("02-01-2025", "15-01-2025")  # -> 9
-du.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
+yd.du.contar("02-01-2025", "15-01-2025")  # -> 9
+yd.du.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
 
 # DI future curve
-df = b3.futuro("31-05-2024", "DI1")
+df = yd.futuro.historico("31-05-2024", "DI1")
 # Columns: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
 # Rate interpolation (flat forward, 252 business days/year convention)
-interp = Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
+interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
 interp(45)       # -> 0.04833...
 interp([30, 60]) # -> pl.Series with interpolated rates
 
 # Treasury bond pricing
-ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # BCB indicators
-bc.selic_over("31-05-2024")  # -> 0.000414...
+yd.selic_over("31-05-2024")  # -> 0.000414...
 ```
 
 A Colab notebook with more examples:
@@ -74,7 +74,7 @@ du.gerar("22-12-2023", "02-01-2024")
 # -> Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
 
 # Check whether a date is a business day
-du.e_dia_util("25-12-2023")  # -> False (Christmas)
+du.eh_dia_util("25-12-2023")  # -> False (Christmas)
 ```
 
 All functions support vectorized operations with lists, Series, or arrays.
@@ -132,16 +132,17 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | Module | Purpose |
 |--------|---------|
 | `du` | Business day calendar with Brazilian holidays |
-| `b3.futuro` | B3 historical future data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
-| `b3.di1` | Interpolated DI1 curve and available trade dates |
+| `futuro` | Futures data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
+| `tpf` | Rates, maturities, outstanding stock, and trades for federal government bonds |
+| `di1` | Interpolated DI1 curve and available trade dates |
 | `Interpolador` | Rate interpolation (flat_forward, linear) |
 | `forward` / `forwards` | Forward-rate calculations |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
 | `ntnb1`, `ntnbprinc`, `pre` | NTN-B, variants and PRE curve |
-| `tn.leiloes` / `tn.benchmarks` | Treasury bond auctions and benchmarks |
-| `anbima` | ANBIMA data (government bond prices, yield curves, IMA indexes) |
-| `bc` | BCB indicators (SELIC, PTAX, repos, VNA, auctions, trades) |
-| `b3` | B3 data (DI over, price reports, intradia derivatives) |
+| `tpf.leilao` / `tn.benchmarks` | Treasury bond auctions and benchmarks |
+| `anbima` | Technical ANBIMA data (source files, yield curves, IMA indexes) |
+| `bc` | Technical BCB data (repos, auctions, trades) |
+| `b3` | Technical B3 data (price reports, intradia derivatives) |
 | `ipca` | Inflation data (historical and projections) |
 | `selic` | COPOM digital options and implied probabilities |
 | `tn.rmd` | Monthly Debt Report (RMD) from Tesouro Nacional |
@@ -168,22 +169,22 @@ ntnf.premio("30-05-2025", pontos_base=True)
 ## Futures Data
 
 ```python
-from pyield import b3
+import pyield as yd
 
 # DI1 (Interbank Deposit Futures)
-b3.futuro("31-05-2024", "DI1")
+yd.futuro.historico("31-05-2024", "DI1")
 
 # Other available contracts in the historical cache:
 # - Rates: DI1, DDI, FRC, FRO, DAP
 # - Currencies: DOL, WDO
 # - Indexes: IND, WIN
-b3.futuro("31-05-2024", "DAP")
+yd.futuro.historico("31-05-2024", "DAP")
 
 # Multiple dates at once
-b3.futuro(["29-05-2024", "31-05-2024"], "DI1")
+yd.futuro.historico(["29-05-2024", "31-05-2024"], "DI1")
 
 # Intraday data (when the market is open)
-b3.futuro_intradia("DI1")  # Returns live data during trading hours
+yd.futuro.intradia("DI1")  # Returns live data during trading hours
 ```
 
 ## Date Handling
@@ -205,6 +206,46 @@ from pyield import ntnb, du
 ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
 du.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
+
+Unavailable-data queries (future dates, holidays, weekends, or unavailable
+sources) return an empty DataFrame or `nan`, without raising exceptions:
+
+```python
+import pyield as yd
+
+yd.futuro.historico("01-01-2030", "DI1").is_empty()  # -> True
+yd.tpf.secundario_mensal("01-01-2030").is_empty()    # -> True
+yd.ptax("25-12-2025")                                # -> nan
+```
+
+## Object-Oriented API Migration (v0.49.0)
+
+Version 0.49.0 reorganizes the main public API around the user's financial
+object rather than the original data source. Canonical queries moved away from
+`b3`, `bc`, or `anbima` when the source is only an operational detail.
+
+Migration map:
+
+| Before | After |
+|---|---|
+| `yd.b3.futuro(data, contrato)` | `yd.futuro.historico(data, contrato)` |
+| `yd.b3.futuro_intradia(contrato)` | `yd.futuro.intradia(contrato)` |
+| `yd.b3.futuro_datas_disponiveis(contrato)` | `yd.futuro.datas_disponiveis(contrato)` |
+| `yd.b3.futuro_enriquecer(df, contrato)` | `yd.futuro.enriquecer(df, contrato)` |
+| `yd.b3.di_over(data)` | `yd.di_over(data)` |
+| `yd.b3.di1.dados(data)` | `yd.di1.dados(data)` |
+| `yd.bc.ptax(data)` | `yd.ptax(data)` |
+| `yd.bc.selic_over(data)` | `yd.selic_over(data)` |
+| `yd.anbima.tpf(data, titulo)` | `yd.tpf.taxas(data, titulo)` |
+| `yd.anbima.tpf_vencimentos(data, titulo)` | `yd.tpf.vencimentos(data, titulo)` |
+| `yd.anbima.imaq(data)` | `yd.tpf.estoque(data)` |
+| `yd.tn.leilao(data)` | `yd.tpf.leilao(data)` |
+| `yd.bc.tpf_intradia()` | `yd.tpf.secundario_intradia()` |
+| `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario_mensal(data, extragrupo=...)` |
+| `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
+
+The old high-level source aliases listed above were removed from the public API.
+Source modules remain available for technical, raw, or source-specific data.
 
 ## Migration to Polars (v0.40.0+)
 
