@@ -114,7 +114,10 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
 
 
 def estoque_anbima(data: DateLike) -> pl.DataFrame:
-    """Busca estoque de TPF na camada técnica da ANBIMA."""
+    """Implementação técnica de busca de estoque de TPF.
+
+    API pública e docstring canônica: ``pyield.tpf.estoque``.
+    """
     data = cv.converter_datas(data)
     if not cv.data_referencia_valida(data):
         return pl.DataFrame()

@@ -164,7 +164,10 @@ def taxas_indicativas(
     data: DateLike,
     titulo: TipoTPF | None = None,
 ) -> pl.DataFrame:
-    """Busca taxas indicativas de TPF na camada técnica da ANBIMA."""
+    """Implementação técnica de busca de taxas indicativas de TPF.
+
+    API pública e docstring canônica: ``pyield.tpf.taxas``.
+    """
     data = converter_datas(data)
 
     if not data_referencia_valida(data):
@@ -219,5 +222,8 @@ def vencimentos_taxas_indicativas(
     data: DateLike,
     titulo: TipoTPF,
 ) -> pl.Series:
-    """Busca vencimentos das taxas indicativas de TPF."""
+    """Implementação técnica de busca de vencimentos de taxas indicativas de TPF.
+
+    API pública e docstring canônica: ``pyield.tpf.vencimentos``.
+    """
     return taxas_indicativas(data, titulo)["data_vencimento"].unique().sort()

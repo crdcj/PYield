@@ -98,7 +98,10 @@ def secundario_mensal_bcb(
     data: DateLike,
     extragrupo: bool = False,
 ) -> pl.DataFrame:
-    """Busca secundário mensal de TPF na camada técnica do BCB."""
+    """Implementação técnica de busca do secundário mensal de TPF.
+
+    API pública e docstring canônica: ``pyield.tpf.secundario_mensal``.
+    """
     if any_is_empty(data):
         return pl.DataFrame()
     data_alvo = converter_datas(data)

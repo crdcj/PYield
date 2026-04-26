@@ -95,7 +95,10 @@ def _mercado_selic_aberto() -> bool:
 
 
 def secundario_intradia_bcb() -> pl.DataFrame:
-    """Busca secundário intradia de TPF na camada técnica do BCB."""
+    """Implementação técnica de busca do secundário intradia de TPF.
+
+    API pública e docstring canônica: ``pyield.tpf.secundario_intradia``.
+    """
     if not _mercado_selic_aberto():
         return pl.DataFrame()
 
