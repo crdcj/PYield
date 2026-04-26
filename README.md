@@ -126,7 +126,7 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 
 | Módulo | Finalidade |
 |--------|---------|
-| `du` | Calendário de dias úteis com feriados brasileiros |
+| `du` | Cálculos com dias úteis considerando feriados brasileiros |
 | `futuro` | Dados de futuros (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
 | `tpf` | Taxas, vencimentos, estoque, leilões, benchmarks, RMD e negociações de TPFs |
 | `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
