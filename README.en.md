@@ -138,7 +138,7 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | `Interpolador` | Rate interpolation (flat_forward, linear) |
 | `forward` / `forwards` | Forward-rate calculations |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
-| `ntnb1`, `ntnbprinc`, `pre` | NTN-B variants and PRE curve |
+| `ntnb1`, `ntnbprinc` | Additional bonds (NTN-B1, NTN-B Principal) |
 | `copom` | COPOM meeting calendar and next meeting |
 | `compromissadas` | BCB repo operations |
 | `ipca` | Inflation data (historical and projections) |
@@ -238,6 +238,7 @@ object rather than the original data source. Migration map:
 | `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario_mensal(data, extragrupo=...)` |
 | `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
 | `yd.tn.benchmarks(...)` | `yd.tpf.benchmarks(...)` |
+| `yd.pre.taxas_zero(data)` | `yd.tpf.curva_pre(data)` |
 
 The old high-level source aliases listed above were removed from the public API.
 

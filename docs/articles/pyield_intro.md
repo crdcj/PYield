@@ -23,7 +23,7 @@ PYield foi criado para resolver esses problemas. É uma biblioteca Python que ce
 
 PYield é uma biblioteca Python especializada em análise de renda fixa brasileira. Ela busca e processa dados de múltiplas fontes:
 
-- **ANBIMA**: Taxas indicativas de títulos públicos, curvas de juros (ETTJ), índices IMA
+- **ANBIMA**: Taxas indicativas de títulos públicos e dados de estoque (IMA-Q)
 - **Banco Central (BCB)**: SELIC, PTAX, taxas de repositório, VNA
 - **B3**: Futuros de DI, DDI, cupom cambial e outros contratos
 - **IBGE**: Dados de inflação (IPCA)
@@ -92,7 +92,7 @@ df = yd.futuro.historico("31-05-2024", "DI1")
 # DataFrame retornado contém colunas:
 # data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
 
-# Outros contratos disponíveis: DDI, FRC, DAP, DOL, WDO, IND, WIN
+# Outros contratos disponíveis: DDI, FRC, FRO, DAP, DOL, WDO, IND, WIN
 df_dap = yd.futuro.historico("31-05-2024", "DAP")  # Cupom Cambial
 ```
 
@@ -111,9 +111,6 @@ df_ntnb = yd.ntnb.dados("23-08-2024")
 
 # NTN-F (Notas do Tesouro Nacional série F - pré-fixado com cupom)
 df_ntnf = yd.ntnf.dados("23-08-2024")
-
-# Obs: Dados da ANBIMA estão disponíveis para os últimos 5 dias úteis
-# (membros da ANBIMA têm acesso automático ao histórico completo)
 ```
 
 ### 4. Precificação de Títulos
@@ -182,11 +179,11 @@ Obtenha dados de inflação do IBGE:
 ```python
 # Taxas mensais de IPCA
 df_ipca = yd.ipca.taxas("01-01-2024", "01-03-2024")
-# Colunas: periodo, valor
+# Colunas: periodo, taxa
 
 # Índices de IPCA
 df_indices = yd.ipca.indices("01-01-2024", "01-03-2024")
-# Colunas: periodo, valor
+# Colunas: periodo, indice
 
 # Projeções futuras (quando disponíveis)
 df_proj = yd.ipca.taxa_projetada()

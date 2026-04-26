@@ -12,6 +12,7 @@ from pyield.bc import tpf_intradia as _tpf_intradia
 from pyield.bc import tpf_mensal as _tpf_mensal
 from pyield.tn import benchmark as _benchmark
 from pyield.tn import leiloes as _leiloes
+from pyield.tn import pre as _pre
 from pyield.tn import rmd as _rmd
 from pyield.tn import utils as _utils
 
@@ -400,3 +401,33 @@ def rmd(aba: str) -> pl.DataFrame:
         >>> df = yd.tpf.rmd(aba="1.3")  # doctest: +SKIP
     """
     return _rmd.rmd(aba)
+
+
+def curva_pre(data: DateLike) -> pl.DataFrame:
+    """Constrói a curva PRE (taxas zero cupom prefixadas).
+
+    Combina taxas de LTN (já zero cupom) com taxas spot derivadas de NTN-F
+    via bootstrap. O resultado é a curva de juros prefixada brasileira expressa
+    em taxas zero cupom.
+
+    Fonte: ANBIMA (taxas indicativas de LTN e NTN-F).
+
+    Args:
+        data: Data de referência.
+
+    Returns:
+        DataFrame com a curva PRE para a data solicitada. Retorna DataFrame
+        vazio se não houver dados de LTN disponíveis.
+
+    Output Columns:
+        * data_vencimento (Date): data de vencimento do vértice.
+        * dias_uteis (Int64): dias úteis entre a data de referência e o vencimento.
+        * taxa_zero (Float64): taxa zero cupom anualizada (base 252).
+
+    Raises:
+        ValueError: Se houver NTN-F sem dados de LTN para bootstrap.
+
+    Examples:
+        >>> df = yd.tpf.curva_pre("18-06-2025")  # doctest: +SKIP
+    """
+    return _pre.taxas_zero(data)

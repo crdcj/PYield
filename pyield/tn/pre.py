@@ -6,48 +6,7 @@ from pyield.tn import ntnf, utils
 
 
 def taxas_zero(data: DateLike) -> pl.DataFrame:
-    """
-    Cria a curva PRE (taxas zero cupom) para títulos prefixados brasileiros.
-
-    Combina taxas de LTN (já zero cupom) com taxas spot derivadas de NTN-F
-    via bootstrap.
-
-    Args:
-        data: Data da consulta.
-
-    Returns:
-        pl.DataFrame: DataFrame com as colunas da curva PRE.
-
-    Output Columns:
-        - data_vencimento (Date): Data de vencimento.
-        - dias_uteis (Int64): Dias úteis entre referência e vencimento.
-        - taxa_zero (Float64): Taxa zero (zero cupom).
-
-    Raises:
-        ValueError: Se algum vencimento não puder ser processado.
-
-    Examples:
-        >>> from pyield.tn import pre
-        >>> pre.taxas_zero("18-06-2025")
-        shape: (17, 3)
-        ┌─────────────────┬────────────┬───────────┐
-        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
-        │ ---             ┆ ---        ┆ ---       │
-        │ date            ┆ i64        ┆ f64       │
-        ╞═════════════════╪════════════╪═══════════╡
-        │ 2025-07-01      ┆ 8          ┆ 0.14835   │
-        │ 2025-10-01      ┆ 74         ┆ 0.147463  │
-        │ 2026-01-01      ┆ 138        ┆ 0.147752  │
-        │ 2026-04-01      ┆ 199        ┆ 0.147947  │
-        │ 2026-07-01      ┆ 260        ┆ 0.147069  │
-        │ …               ┆ …          ┆ …         │
-        │ 2030-01-01      ┆ 1135       ┆ 0.137279  │
-        │ 2031-01-01      ┆ 1387       ┆ 0.138154  │
-        │ 2032-01-01      ┆ 1639       ┆ 0.13876   │
-        │ 2033-01-01      ┆ 1891       ┆ 0.1393    │
-        │ 2035-01-01      ┆ 2390       ┆ 0.141068  │
-        └─────────────────┴────────────┴───────────┘
-    """
+    """Implementação técnica da curva PRE. API pública e docstring canônica: ``pyield.tpf.curva_pre``."""
     # Busca dados de LTN (zero cupom)
     df_ltn = utils.obter_tpf(data, "LTN").select("data_vencimento", "taxa_indicativa")
 
