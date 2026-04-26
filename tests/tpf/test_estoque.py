@@ -12,8 +12,8 @@ CAMINHO_PARQUET = DIRETORIO_DADOS / "imaq_20260204.parquet"
 DATA_REFERENCIA = dt.date(2026, 2, 4)
 
 
-def test_imaq_com_monkeypatch(monkeypatch):
-    """estoque_anbima() com monkeypatch deve bater com o parquet de referência."""
+def test_pipeline_estoque(monkeypatch):
+    """tpf.estoque() com monkeypatch deve bater com o parquet de referência."""
     monkeypatch.setattr(
         modulo_imaq,
         "_buscar_conteudo_url",

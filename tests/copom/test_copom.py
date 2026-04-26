@@ -1,7 +1,7 @@
 """
-Tests for pyield.bc.copom — COPOM meeting calendar.
+Testes para pyield.bc.copom — calendário de reuniões do COPOM.
 
-All tests use the fixture parquet. No live BCB API calls.
+Todos os testes usam o parquet de fixture. Sem chamadas reais à API do BCB.
 """
 
 import datetime
@@ -58,7 +58,7 @@ def test_no_duplicate_end_dates(cal):
 
 
 def test_expiry_is_one_bday_after_end(cal):
-    """ExpiryDate must equal du.deslocar(EndDate, 1) for every row."""
+    """ExpiryDate deve ser igual a du.deslocar(EndDate, 1) para cada linha."""
     for row in cal.iter_rows(named=True):
         expected = du.deslocar(row["EndDate"], 1)
         assert row["ExpiryDate"] == expected, (
@@ -71,12 +71,12 @@ def test_expiry_is_one_bday_after_end(cal):
 
 
 def test_future_meetings_present(cal):
-    """At least one row must have MeetingNumber == null (future)."""
+    """Pelo menos uma linha deve ter MeetingNumber == null (futuro)."""
     assert cal["MeetingNumber"].null_count() >= 1
 
 
 def test_future_meetings_after_past(cal):
-    """All future meeting EndDates are after the last past meeting."""
+    """Todas as EndDates futuras são posteriores à última reunião passada."""
     last_past = cal.filter(pl.col("MeetingNumber").is_not_null())["EndDate"].max()
     future_dates = cal.filter(pl.col("MeetingNumber").is_null())["EndDate"]
     assert (future_dates > last_past).all()

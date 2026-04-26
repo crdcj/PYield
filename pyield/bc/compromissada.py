@@ -98,8 +98,8 @@ def compromissadas(
         >>> import polars as pl
         >>> _ = pl.Config.set_tbl_width_chars(210)
         >>> _ = pl.Config.set_tbl_cols(-1)
-        >>> from pyield import bc
-        >>> bc.compromissadas(inicio="21-08-2025", fim="21-08-2025")
+        >>> import pyield as yd
+        >>> yd.compromissadas(inicio="21-08-2025", fim="21-08-2025")
         shape: (2, 12)
         ┌─────────────┬─────────────────┬──────────────┬─────────────┬──────────┬──────────┬────────────┬────────────────────┬───────────────┬───────────────────┬────────────┬────────────┐
         │ data_leilao ┆ data_liquidacao ┆ data_retorno ┆ hora_inicio ┆ prazo_dc ┆ prazo_du ┆ comunicado ┆ tipo_oferta        ┆ publico       ┆ financeiro_aceito ┆ taxa_corte ┆ pct_aceito │

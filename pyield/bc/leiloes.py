@@ -300,8 +300,8 @@ def leiloes(
         1v = primeira volta (rodada), 2v = segunda volta.
 
     Examples:
-        >>> from pyield import bc
-        >>> bc.leiloes(inicio="19-08-2025", fim="19-08-2025")
+        >>> from pyield.bc.leiloes import leiloes
+        >>> leiloes(inicio="19-08-2025", fim="19-08-2025")
         shape: (5, 34)
         ┌─────────────┬─────────────────┬─────────────┬───────────────┬───┬─────────────────────────┬───────────────┬───────────────┬──────────────────┐
         │ data_leilao ┆ data_liquidacao ┆ tipo_leilao ┆ numero_edital ┆ … ┆ quantidade_aceita_total ┆ financeiro_1v ┆ financeiro_2v ┆ financeiro_total │

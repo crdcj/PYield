@@ -10,8 +10,8 @@ CAMINHO_ZIP = DIRETORIO_DADOS / "tpf_mensal_202501.zip"
 CAMINHO_PARQUET = DIRETORIO_DADOS / "tpf_mensal_202501.parquet"
 
 
-def test_tpf_mensal_com_monkeypatch(monkeypatch):
-    """secundario_mensal_bcb com monkeypatch deve bater com o parquet bruto."""
+def test_pipeline_secundario_mensal(monkeypatch):
+    """tpf.secundario_mensal() com monkeypatch deve bater com o parquet de referência."""
     monkeypatch.setattr(
         modulo_tpf_mensal,
         "_baixar_zip",

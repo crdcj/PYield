@@ -1,4 +1,4 @@
-"""Testes do módulo rmd.
+"""Testes do pipeline tpf.rmd().
 
 Baixa o ZIP do release de teste no GitHub e valida o pipeline completo
 contra o parquet de referência local.
@@ -30,10 +30,9 @@ def _baixar_zip_remoto() -> bytes:
 
 
 def test_pipeline_rmd(monkeypatch):
-    """Testa o pipeline completo: ZIP → Excel → DataFrame."""
+    """tpf.rmd() com monkeypatch deve bater com o parquet de referência."""
     conteudo_zip = _baixar_zip_remoto()
 
-    # Substitui as duas funções de rede: busca da URL e download do ZIP
     monkeypatch.setattr(modulo_rmd, "_buscar_url_anexo", lambda: "http://fake")
     monkeypatch.setattr(modulo_rmd, "_buscar_conteudo", lambda url: conteudo_zip)
 

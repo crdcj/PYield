@@ -12,34 +12,28 @@ nav:
   - Início: index.md
   - Artigos:
       - Introdução ao Pyield: articles/pyield_intro.md
-  - Módulos:
-      - Núcleo:
-          - Ferramentas de Dias Úteis: du.md
-          - Interpolador: interpolador.md
-          - Taxas a Termo: forwards.md
-      - Objetos de Mercado:
-          - DI1: di1.md
-          - Futuro: futuro.md
-          - TPF: tpf.md
-      - Títulos Públicos:
-          - Visão Geral: titulos/index.md
-          - RMD: titulos/rmd.md
-          - LFT: titulos/lft.md
-          - LTN: titulos/ltn.md
-          - NTN-B: titulos/ntnb.md
-          - NTN-B Principal: titulos/ntnbp.md
-          - NTN-B1: titulos/ntnb1.md
-          - NTN-C: titulos/ntnc.md
-          - NTN-F: titulos/ntnf.md
-          - PRE: titulos/pre.md
-      - Fontes de Dados:
-          - Banco Central (BCB):
-              - Visão Geral: bc/index.md
-              - Calendário COPOM: bc/copom.md
-          - B3:
-              - Visão Geral: b3/index.md
-          - IPCA: ipca.md
-          - Selic (CPM/COPOM): selic.md
+  - Ferramentas:
+      - Dias Úteis (DU): du.md
+      - Interpolador: interpolador.md
+      - Forwards (taxas a termo): forwards.md
+  - Títulos Públicos Federais:
+      - TPF: tpf.md
+      - LFT: lft.md
+      - LTN: ltn.md
+      - NTN-F: ntnf.md
+      - NTN-B: ntnb.md
+      - NTN-B Principal: ntnbp.md
+      - NTN-B1: ntnb1.md
+      - NTN-C: ntnc.md
+      - PRE: pre.md
+  - Mercado de Futuros:
+      - DI1: di1.md
+      - Futuro: futuro.md
+  - Dados Auxiliares:
+      - IPCA: ipca.md
+      - Selic / COPOM: selic.md
+      - COPOM: copom.md
+      - Compromissadas: compromissadas.md
 
 theme:
   name: 'material'

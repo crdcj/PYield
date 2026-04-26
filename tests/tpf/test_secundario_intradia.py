@@ -13,17 +13,13 @@ CAMINHO_PARQUET = DIRETORIO_DADOS / "tpf_intradia_20260206.parquet"
 COLUNAS_IGNORAR = ["data_hora_consulta", "data_liquidacao"]
 
 
-def test_tpf_intradia_com_monkeypatch(monkeypatch):
-    """secundario_intradia_bcb com monkeypatch deve bater com o parquet."""
+def test_pipeline_secundario_intradia(monkeypatch):
+    """tpf.secundario_intradia() com monkeypatch deve bater com o parquet de referência."""
 
     def ler_csv() -> bytes:
         return CAMINHO_CSV.read_bytes()
 
-    monkeypatch.setattr(
-        modulo_tpf_intradia,
-        "_buscar_csv",
-        ler_csv,
-    )
+    monkeypatch.setattr(modulo_tpf_intradia, "_buscar_csv", ler_csv)
     monkeypatch.setattr(modulo_tpf_intradia, "_mercado_selic_aberto", lambda: True)
 
     resultado = modulo_tpf_intradia.secundario_intradia().drop(COLUNAS_IGNORAR)

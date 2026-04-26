@@ -3,14 +3,16 @@
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
-from pyield import b3, du, ipca
+from pyield import du, ipca
 from pyield.b3 import futuro
 from pyield.b3 import di1
 from pyield.b3.di_over import di_over
 
 # Ordem intencional: alguns módulos importam `di1` a partir de `pyield`
 # durante a inicialização do pacote.
-from pyield import bc, selic, tn, tpf
+from pyield import selic, tn, tpf
+from pyield.bc import copom
+from pyield.bc.compromissada import compromissadas
 from pyield.bc.sgs import (
     ptax,
     ptax_serie,
@@ -33,8 +35,8 @@ except PackageNotFoundError:
 __all__ = [
     "__version__",
     "agora",
-    "b3",
-    "bc",
+    "compromissadas",
+    "copom",
     "copom_options",
     "di1",
     "di_over",
@@ -62,6 +64,7 @@ __all__ = [
     "tn",
     "tpf",
 ]
+
 
 # Configura o logger do pacote principal com um NullHandler
 logging.getLogger(__name__).addHandler(logging.NullHandler())

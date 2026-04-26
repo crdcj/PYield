@@ -353,14 +353,14 @@ def boletim_negociacao(
         etree.XMLSyntaxError: Se o XML recebido estiver malformado.
 
     Examples:
-        >>> import pyield as yd
-        >>> df = yd.b3.boletim_negociacao("26-04-2024", "DI1")
+        >>> from pyield.b3.boletim import boletim_negociacao
+        >>> df = boletim_negociacao("26-04-2024", "DI1")
 
         >>> # Múltiplos contratos de uma vez
-        >>> df = yd.b3.boletim_negociacao("26-04-2024", ["DI1", "DAP"])
+        >>> df = boletim_negociacao("26-04-2024", ["DI1", "DAP"])
 
         >>> # Feriado ou fim de semana (retorna DataFrame vazio)
-        >>> df = yd.b3.boletim_negociacao("25-12-2023", "DI1")  # Véspera de Natal
+        >>> df = boletim_negociacao("25-12-2023", "DI1")  # Véspera de Natal
         >>> df.is_empty()
         True
     """

@@ -133,19 +133,16 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 |--------|---------|
 | `du` | Business day calendar with Brazilian holidays |
 | `futuro` | Futures data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
-| `tpf` | Rates, maturities, outstanding stock, and trades for federal government bonds |
+| `tpf` | Rates, maturities, outstanding stock, auctions, benchmarks, RMD, and trades for TPFs |
 | `di1` | Interpolated DI1 curve and available trade dates |
 | `Interpolador` | Rate interpolation (flat_forward, linear) |
 | `forward` / `forwards` | Forward-rate calculations |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
-| `ntnb1`, `ntnbprinc`, `pre` | NTN-B, variants and PRE curve |
-| `tpf.leilao` / `tpf.benchmarks` | Treasury bond auctions and benchmarks |
-
-| `bc` | Technical BCB data (repos, auctions, trades) |
-| `b3` | Technical B3 data (price reports, intradia derivatives) |
+| `ntnb1`, `ntnbprinc`, `pre` | NTN-B variants and PRE curve |
+| `copom` | COPOM meeting calendar and next meeting |
+| `compromissadas` | BCB repo operations |
 | `ipca` | Inflation data (historical and projections) |
 | `selic` | COPOM digital options and implied probabilities |
-| `tn.rmd` | Monthly Debt Report (RMD) from Tesouro Nacional |
 | `hoje` / `agora` | Current date/time in Brazil (America/Sao_Paulo) |
 
 ## Treasury Bonds
@@ -221,10 +218,7 @@ yd.ptax("25-12-2025")                                # -> nan
 ## Object-Oriented API Migration (v0.49.0)
 
 Version 0.49.0 reorganizes the main public API around the user's financial
-object rather than the original data source. Canonical queries moved away from
-`b3`, `bc`, or `anbima` when the source is only an operational detail.
-
-Migration map:
+object rather than the original data source. Migration map:
 
 | Before | After |
 |---|---|
@@ -246,15 +240,6 @@ Migration map:
 | `yd.tn.benchmarks(...)` | `yd.tpf.benchmarks(...)` |
 
 The old high-level source aliases listed above were removed from the public API.
-Source modules remain available for technical, raw, or source-specific data.
-
-## Migration to Polars (v0.40.0+)
-
-All functions return **Polars DataFrames/Series**. To convert to Pandas:
-
-```python
-df_pandas = df.to_pandas(use_pyarrow_extension_array=True)
-```
 
 ## Tests
 

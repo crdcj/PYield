@@ -25,8 +25,8 @@ DF_PTAX_REFERENCIA = pl.DataFrame(
 )
 
 
-def test_leilao_com_monkeypatch(monkeypatch):
-    """leilao_tn com monkeypatch deve produzir o Parquet de referência."""
+def test_pipeline_leilao(monkeypatch):
+    """tpf.leilao() com monkeypatch deve produzir o parquet de referência."""
     monkeypatch.setattr(
         modulo_leiloes,
         "_buscar_dados_leilao",

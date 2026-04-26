@@ -128,18 +128,16 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 |--------|---------|
 | `du` | Calendário de dias úteis com feriados brasileiros |
 | `futuro` | Dados de futuros (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
-| `tpf` | Taxas, vencimentos, estoque e negociações de Títulos Públicos Federais |
+| `tpf` | Taxas, vencimentos, estoque, leilões, benchmarks, RMD e negociações de TPFs |
 | `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
 | `Interpolador` | Interpolação de taxas (flat_forward, linear) |
 | `forward` / `forwards` | Cálculo de taxas a termo |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
 | `ntnb1`, `ntnbprinc`, `pre` | Títulos e curvas adicionais (NTN-B1, NTN-B Principal, curva PRE) |
-| `tpf.leilao` / `tpf.benchmarks` | Leilões e benchmarks de títulos públicos |
-| `bc` | Dados técnicos do BCB (repos, VNA, leilões, negociações) |
-| `b3` | Dados técnicos da B3 (price reports, derivativos intradia) |
+| `copom` | Calendário de reuniões do COPOM e próxima reunião |
+| `compromissadas` | Operações compromissadas do BCB |
 | `ipca` | Dados de inflação (histórico e projeções) |
 | `selic` | Opções digitais de COPOM e probabilidades implícitas |
-| `tn.rmd` | Relatório Mensal da Dívida do Tesouro Nacional |
 | `hoje` / `agora` | Data/hora atual no Brasil (America/Sao_Paulo) |
 
 ## Títulos Públicos
@@ -216,23 +214,8 @@ yd.ptax("25-12-2025")                                # -> nan
 
 ## Migração da API por Objeto (v0.49.0)
 
-A versão 0.49.0 reorganiza a API pública principal para privilegiar o objeto de
-análise do usuário, e não a fonte original do dado. Na prática, consultas
-canônicas deixam de ficar sob `b3`, `bc` ou `anbima` quando a fonte é apenas um
-detalhe operacional. Os namespaces de fonte permanecem para dados técnicos,
-brutos ou específicos da fonte.
-
-Racional:
-- O usuário normalmente procura o objeto financeiro (`futuro`, `tpf`, `ptax`,
-  `selic_over`) antes de pensar na fonte (`B3`, `BCB`, `ANBIMA`).
-- Famílias canônicas viram namespaces: `yd.futuro.*`, `yd.tpf.*`, `yd.ipca.*`,
-  `yd.du.*`.
-- Indicadores simples, cujo nome já expressa a consulta completa, ficam na raiz:
-  `yd.ptax`, `yd.di_over`, `yd.selic_meta`, `yd.selic_over`.
-- O termo padrão da API será `intradia`, por ser curto, invariável e usado no
-  mercado/BCB. Ex.: `yd.futuro.intradia`, `yd.tpf.secundario_intradia`.
-
-Mapa de migração:
+A versão 0.49.0 reorganiza a API pública para privilegiar o objeto de análise,
+não a fonte do dado. Mapa de migração:
 
 | Antes | Depois |
 |---|---|
@@ -261,22 +244,6 @@ Mapa de migração:
 | `yd.tn.benchmarks(...)` | `yd.tpf.benchmarks(...)` |
 
 As funções antigas listadas acima foram removidas da API pública de alto nível.
-Módulos de implementação, como `pyield.b3.futuro.intradia` e
-`pyield.bc.tpf_intradia`, continuam existindo para organizar a implementação e
-testes, mas a documentação passa a ensinar a API orientada ao objeto.
-
-## Migração para Polars (v0.40.0+)
-
-A partir da versão 0.40.0, todas as saídas tabulares passaram de Pandas para **Polars**. Entradas vetoriais que antes aceitavam `pd.Series` e `np.ndarray` agora aceitam apenas listas, tuplas ou `pl.Series`. Para converter:
-
-```python
-# Entrada: converter coleções Pandas/NumPy antes de passar para o PYield
-pl_series = pl.from_pandas(pd_series)   # pd.Series → pl.Series (requer pandas)
-pl_series = pl.Series(np_array)         # np.ndarray → pl.Series (requer numpy)
-
-# Saída: converter DataFrame Polars para Pandas
-df_pandas = df.to_pandas(use_pyarrow_extension_array=True)
-```
 
 ## Documentação
 
