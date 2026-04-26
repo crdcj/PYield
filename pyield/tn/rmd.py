@@ -206,9 +206,42 @@ def _estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
 
 
 def rmd(aba: str) -> pl.DataFrame:
-    """Implementação técnica de busca do RMD do Tesouro Nacional.
+    """Retorna dados do Relatório Mensal da Dívida (RMD) do Tesouro Nacional.
 
-    API pública e docstring canônica: ``pyield.tpf.rmd``.
+    Baixa e processa a planilha do RMD, extraindo dados de emissões e resgates
+    de Títulos Públicos Federais da Dívida Pública Mobiliária Federal interna
+    (DPMFi). A publicação mais recente é descoberta automaticamente via parse
+    HTML da página oficial.
+
+    Args:
+        aba: Número da aba a processar (ex: ``"1.3"``). Abas implementadas: ``"1.3"``.
+
+    Returns:
+        DataFrame longo com dados de emissões e resgates por período, seção,
+        subgrupo e tipo de título. Registros com valor nulo ou zero são excluídos.
+        Em caso de erro, retorna DataFrame vazio e registra log da excessão.
+
+    Output Columns:
+        * periodo (Date): primeiro dia do mês de referência.
+        * grupo (String): seção principal — ``"Emissões"`` ou ``"Resgates"``.
+        * subgrupo (String): categoria dentro do grupo.
+        * titulo (String): tipo de título (``"LFT"``, ``"LTN"``, ``"NTN-B"``,
+            ``"NTN-B1"``, ``"NTN-F"``, ``"NTN-C"``, ``"NTN-D"``, ``"Demais"``,
+            ou ``null`` para subgrupos sem detalhamento por título).
+        * valor (Float64): valor em R$.
+
+    Raises:
+        ValueError: Se ``aba`` não estiver entre as abas implementadas.
+
+    Notes:
+        - A função sempre busca a publicação mais recente disponível.
+        - Totais anuais são excluídos; podem ser recalculados via group_by.
+        - Totais de referência para 2025:
+            Emissões = R$ 1.840.946.621.648,18
+            Resgates = R$ 1.395.109.062.272,45.
+
+    Examples:
+        >>> df = yd.tpf.rmd(aba="1.3")
     """
     if aba not in _ABAS_DISPONIVEIS:
         disponiveis = ", ".join(f'"{t}"' for t in sorted(_ABAS_DISPONIVEIS))

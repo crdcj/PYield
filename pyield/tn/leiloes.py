@@ -323,9 +323,60 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def leilao(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
-    """Implementação técnica de busca de leilões de TPF.
+    """Busca resultados de leilões de TPFs.
 
-    API pública e docstring canônica: ``pyield.tpf.leilao``.
+    Fonte: Tesouro Nacional. Retorna dados de quantidades, financeiros,
+    taxas de colocação, duration e DV01 dos leilões nas datas informadas.
+
+    Args:
+        data: Data ou sequência de datas do leilão.
+
+    Returns:
+        DataFrame Polars com os dados processados do leilão. Se ``data`` for
+        uma sequência, concatena os resultados das datas informadas. Retorna
+        DataFrame vazio se não houver dados para as datas.
+
+    Output Columns:
+        * data_1v (Date): data de realização do leilão.
+        * data_liquidacao_1v (Date): data de liquidação financeira da 1ª volta.
+        * data_liquidacao_2v (Date): data de liquidação financeira da 2ª volta.
+        * numero_edital (Int64): número do edital do leilão.
+        * tipo_leilao (String): tipo da operação.
+        * titulo (String): código do título público leiloado.
+        * benchmark (String): descrição de referência do título.
+        * data_vencimento (Date): data de vencimento do título.
+        * dias_uteis (Int32): dias úteis entre liquidação e vencimento.
+        * dias_corridos (Int32): dias corridos entre liquidação e vencimento.
+        * duration (Float64): duration de Macaulay em anos.
+        * prazo_medio (Float64): maturidade média em anos.
+        * quantidade_ofertada_1v (Int64): quantidade ofertada na 1ª volta.
+        * quantidade_ofertada_2v (Int64): quantidade ofertada na 2ª volta.
+        * quantidade_aceita_1v (Int64): quantidade aceita na 1ª volta.
+        * quantidade_aceita_2v (Int64): quantidade aceita na 2ª volta.
+        * quantidade_aceita_total (Int64): quantidade aceita total.
+        * financeiro_ofertado_1v (Float64): financeiro ofertado na 1ª volta.
+        * financeiro_ofertado_2v (Float64): financeiro ofertado na 2ª volta.
+        * financeiro_ofertado_total (Float64): financeiro ofertado total.
+        * financeiro_aceito_1v (Float64): financeiro aceito na 1ª volta.
+        * financeiro_aceito_2v (Float64): financeiro aceito na 2ª volta.
+        * financeiro_aceito_total (Float64): financeiro aceito total.
+        * quantidade_bcb (Int64): quantidade adquirida pelo Banco Central.
+        * financeiro_bcb (Int64): financeiro adquirido pelo Banco Central.
+        * colocacao_1v (Float64): taxa de colocação da 1ª volta.
+        * colocacao_2v (Float64): taxa de colocação da 2ª volta.
+        * colocacao_total (Float64): taxa de colocação total.
+        * dv01_1v (Float64): DV01 da 1ª volta em reais.
+        * dv01_2v (Float64): DV01 da 2ª volta em reais.
+        * dv01_total (Float64): DV01 total em reais.
+        * ptax (Float64): PTAX usada na conversão para dólar.
+        * dv01_1v_usd (Float64): DV01 da 1ª volta em dólar.
+        * dv01_2v_usd (Float64): DV01 da 2ª volta em dólar.
+        * dv01_total_usd (Float64): DV01 total em dólar.
+        * pu_minimo (Float64): preço unitário mínimo aceito.
+        * pu_medio (Float64): preço unitário médio ponderado aceito.
+        * tipo_pu_medio (String): origem do PU médio.
+        * taxa_media (Float64): taxa média aceita.
+        * taxa_maxima (Float64): taxa máxima aceita.
     """
     if any_is_empty(data):
         return pl.DataFrame()

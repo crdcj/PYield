@@ -3,8 +3,10 @@ import polars as pl
 import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.bc import vna as _vna
+from pyield.bc.vna import vna
 from pyield.tn import utils
+
+__all__ = ["cotacao", "dados", "inflacao_implicita", "taxa", "vencimentos", "vna"]
 
 
 def dados(data: DateLike) -> pl.DataFrame:
@@ -106,29 +108,6 @@ def vencimentos(data: DateLike) -> pl.Series:
         ]
     """
     return dados(data)["data_vencimento"]
-
-
-def vna(data: DateLike) -> float:
-    """Busca o Valor Nominal Atualizado (VNA) da LFT.
-
-    Fonte: Banco Central do Brasil, arquivo diário do SELIC.
-
-    Args:
-        data: Data de referência.
-
-    Returns:
-        Valor do VNA da LFT. Retorna ``nan`` se a entrada for nula ou vazia.
-
-    Raises:
-        ValueError: Se os valores VNA extraídos da fonte forem divergentes.
-        requests.exceptions.HTTPError: Se a requisição ao BCB falhar.
-
-    Examples:
-        >>> from pyield import lft
-        >>> lft.vna("31-05-2024")
-        14903.01148
-    """
-    return _vna.vna(data)
 
 
 def cotacao(

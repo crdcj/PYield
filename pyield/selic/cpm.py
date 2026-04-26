@@ -314,7 +314,7 @@ def data(date: DateLike) -> pl.DataFrame:
 
     # Join with COPOM calendar to get MeetingEndDate and the correct ExpiryDate.
     # Import is deferred to avoid a module-level circular dependency risk.
-    from pyield.bc import copom  # noqa: PLC0415
+    from pyield.selic import copom  # noqa: PLC0415
 
     cal = copom.calendar().select(
         _mes_reuniao=pl.col("EndDate").dt.month().cast(pl.Int32),

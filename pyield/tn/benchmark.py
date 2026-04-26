@@ -76,9 +76,34 @@ def benchmarks(
     titulo: str | None = None,
     incluir_historico: bool = False,
 ) -> pl.DataFrame:
-    """Implementação técnica de busca de benchmarks de TPF.
+    """Busca benchmarks de títulos públicos brasileiros.
 
-    API pública e docstring canônica: ``pyield.tpf.benchmarks``.
+    Fonte: API do Tesouro Nacional.
+
+    Args:
+        titulo: Tipo do título a filtrar (ex.: ``"LFT"``). Se ``None``,
+            retorna todos os títulos.
+        incluir_historico: Se ``True``, inclui benchmarks históricos; se
+            ``False`` (padrão), retorna apenas benchmarks vigentes
+            (on-the-run).
+
+    Returns:
+        DataFrame Polars com os benchmarks. Retorna DataFrame vazio se
+        não houver dados.
+
+    Output Columns:
+        * titulo (String): tipo do título (ex.: ``"LTN"``, ``"LFT"``).
+        * data_vencimento (Date): data de vencimento do benchmark.
+        * benchmark (String): nome/identificador do benchmark.
+        * data_inicio (Date): data de início da vigência.
+        * data_fim (Date): data de término da vigência.
+
+    Notes:
+        Documentação da API:
+        https://portal-conhecimento.tesouro.gov.br/catalogo-componentes/api-leil%C3%B5es
+
+    Examples:
+        >>> df = yd.tpf.benchmarks(incluir_historico=False)
     """
     dados = _buscar_json_api(incluir_historico)
     df = _parsear_df(dados)

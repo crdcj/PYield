@@ -165,9 +165,34 @@ def taxas(
     titulo: TipoTPF | None = None,
     completo: bool = False,
 ) -> pl.DataFrame:
-    """Implementação técnica de busca de taxas indicativas de TPF.
+    """Busca taxas e preços indicativos de TPFs.
 
-    API pública e docstring canônica: ``pyield.tpf.taxas``.
+    Fonte: ANBIMA. Primeiro consulta o cache local de dados históricos; se a
+    data não estiver no cache, busca diretamente na fonte da ANBIMA.
+
+    Args:
+        data: Data de referência.
+        titulo: Tipo do título público federal. Aceita ``LFT``, ``NTN-B``,
+            ``NTN-C``, ``LTN``, ``NTN-F`` ou ``PRE``.
+        completo: Se verdadeiro, retorna os dados da ANBIMA sem cache nem filtro de colunas.
+
+    Returns:
+        DataFrame Polars com taxas e preços indicativos. Retorna DataFrame
+        vazio se não houver dados para a data.
+
+    Output Columns:
+        * titulo (String): tipo do título público.
+        * data_referencia (Date): data de referência dos dados.
+        * codigo_selic (Int64): código do título no SELIC.
+        * data_base (Date): data base ou de emissão do título.
+        * data_vencimento (Date): data de vencimento do título.
+        * pu (Float64): preço unitário para liquidação em D0.
+        * taxa_compra (Float64): taxa de compra em D0.
+        * taxa_venda (Float64): taxa de venda em D0.
+        * taxa_indicativa (Float64): taxa indicativa em D0.
+
+    Examples:
+        >>> df = yd.tpf.taxas(data="06-02-2026")
     """
     data = converter_datas(data)
 
@@ -199,8 +224,34 @@ def vencimentos(
     data: DateLike,
     titulo: TipoTPF,
 ) -> pl.Series:
-    """Implementação técnica de busca de vencimentos negociados de TPF.
+    """Busca vencimentos de TPFs disponíveis nas taxas indicativas.
 
-    API pública e docstring canônica: ``pyield.tpf.vencimentos``.
+    Fonte: ANBIMA, mesma base usada por ``yd.tpf.taxas``.
+
+    Args:
+        data: Data de referência.
+        titulo: Tipo do título público federal. Aceita ``LFT``, ``NTN-B``,
+            ``NTN-C``, ``LTN``, ``NTN-F`` ou ``PRE``.
+
+    Returns:
+        Series ordenada com os vencimentos disponíveis.
+
+    Examples:
+        >>> yd.tpf.vencimentos(data="22-08-2025", titulo="PRE")
+        shape: (18,)
+        Series: 'data_vencimento' [date]
+        [
+            2025-10-01
+            2026-01-01
+            2026-04-01
+            2026-07-01
+            2026-10-01
+            …
+            2030-01-01
+            2031-01-01
+            2032-01-01
+            2033-01-01
+            2035-01-01
+        ]
     """
     return taxas(data, titulo)["data_vencimento"].unique().sort()

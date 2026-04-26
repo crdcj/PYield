@@ -68,9 +68,25 @@ def _validar_valores(valores: list[float]) -> float:
 
 
 def vna(data: DateLike) -> float:
-    """Implementação técnica de busca do VNA da LFT.
+    """Busca o Valor Nominal Atualizado (VNA) da LFT.
 
-    API pública e docstring canônica: ``pyield.lft.vna``."""
+    Fonte: Banco Central do Brasil, arquivo diário do SELIC.
+
+    Args:
+        data: Data de referência.
+
+    Returns:
+        Valor do VNA da LFT. Retorna ``nan`` se a entrada for nula ou vazia.
+
+    Raises:
+        ValueError: Se os valores VNA extraídos da fonte forem divergentes.
+        requests.exceptions.HTTPError: Se a requisição ao BCB falhar.
+
+    Examples:
+        >>> from pyield import lft
+        >>> lft.vna("31-05-2024")
+        14903.01148
+    """
     if any_is_empty(data):
         return float("nan")
     texto = _baixar_texto(data)

@@ -56,26 +56,31 @@ Padrão atual:
   podem proteger ausências temporárias de aliases legados, mas devem ser
   simplificados depois da migração estabilizar.
 
-Padrão de orquestração:
-- módulos de orquestração (ex: `tpf.py`) importam submódulos fonte com alias
-  `_` prefix: `from pyield.anbima import mercado_secundario as _ms`;
-- nomes de funções nos submódulos fonte devem coincidir com os nomes públicos
-  correspondentes: `_ms.taxas()` mapeia para `tpf.taxas()`. O alias já
-  identifica a fonte — sufixos como `_bcb`, `_anbima`, `_tn` são redundantes;
-- docstring canônica fica no módulo de orquestração; submódulos fonte têm
-  docstring curta apontando para a ponta pública;
-- módulos de orquestração não têm `__all__`; a proteção de export vem do `_`
-  nos aliases de import;
-- acesso por fonte emerge naturalmente: quem precisar pode fazer
-  `from pyield.anbima import mercado_secundario` e usar `mercado_secundario.taxas()`.
+Padrão de exposição pública — único:
+
+A docstring canônica fica **sempre na função de implementação**, onde está o
+código que faz o trabalho. Módulos públicos (`tpf.py`, `selic/__init__.py`,
+`__init__.py` raiz) apenas re-exportam — com `import X as Y` ou com `def` sem
+docstring. `help(yd.tpf.taxas)` e mkdocstrings seguem o objeto e exibem a
+docstring da implementação automaticamente.
+
+Regras derivadas:
+- nunca duplique docstring entre módulo público e implementação;
+- se um módulo público precisar de `def`, ele só existe para adicionar
+  comportamento (despacho condicional, transformação, validação). Sem
+  comportamento extra, use alias direto;
+- módulos públicos podem ter docstring de **módulo** descrevendo os membros
+  disponíveis (ex: `selic/__init__.py` lista `over`, `meta`, `copom`, etc.),
+  mas não docstrings de função;
+- módulos públicos que importam com `_` prefix protegem o namespace sem
+  `__all__`: `from pyield.anbima import mercado_secundario as _ms`.
 
 Ao migrar API pública:
+- mova a docstring canônica para a implementação se ela estiver no módulo
+  público (é o caso comum de legado);
 - atualize exports no namespace de objeto e na raiz quando aplicável;
-- remova aliases duplicados dos namespaces de fonte quando essa for a decisão de
-  arquitetura;
-- mova a docstring canônica para a chamada pública;
-- deixe wrappers internos ou de fonte com docstrings curtas apontando para a API
-  pública, se eles continuarem existindo;
+- remova aliases duplicados dos namespaces de fonte quando essa for a decisão
+  de arquitetura;
 - atualize docs, README de migração e testes de fronteira pública.
 
 ## Nomenclatura

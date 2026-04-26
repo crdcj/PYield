@@ -300,6 +300,8 @@ def leiloes(
         1v = primeira volta (rodada), 2v = segunda volta.
 
     Examples:
+        >>> import polars as pl
+        >>> _ = pl.Config.set_tbl_width_chars(150)
         >>> from pyield.bc.leiloes import leiloes
         >>> leiloes(inicio="19-08-2025", fim="19-08-2025")
         shape: (5, 34)

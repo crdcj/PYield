@@ -5,8 +5,51 @@ from pyield._internal.types import DateLike
 from pyield.tn import ntnf, utils
 
 
-def taxas_zero(data: DateLike) -> pl.DataFrame:
-    """Implementação técnica da curva PRE. API pública e docstring canônica: ``pyield.tpf.curva_pre``."""
+def curva_pre(data: DateLike) -> pl.DataFrame:
+    """Constrói a curva PRE (taxas zero cupom prefixadas).
+
+    Combina taxas de LTN (já zero cupom) com taxas spot derivadas de NTN-F
+    via bootstrap. O resultado é a curva de juros prefixada brasileira expressa
+    em taxas zero cupom.
+
+    Fonte: ANBIMA (taxas indicativas de LTN e NTN-F).
+
+    Args:
+        data: Data de referência.
+
+    Returns:
+        DataFrame com a curva PRE para a data solicitada. Retorna DataFrame
+        vazio se não houver dados de LTN disponíveis.
+
+    Output Columns:
+        * data_vencimento (Date): data de vencimento do vértice.
+        * dias_uteis (Int64): dias úteis entre a data de referência e o vencimento.
+        * taxa_zero (Float64): taxa zero cupom anualizada (base 252).
+
+    Raises:
+        ValueError: Se houver NTN-F sem dados de LTN para bootstrap.
+
+    Examples:
+        >>> yd.tpf.curva_pre("18-06-2025")
+        shape: (17, 3)
+        ┌─────────────────┬────────────┬───────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
+        │ ---             ┆ ---        ┆ ---       │
+        │ date            ┆ i64        ┆ f64       │
+        ╞═════════════════╪════════════╪═══════════╡
+        │ 2025-07-01      ┆ 8          ┆ 0.14835   │
+        │ 2025-10-01      ┆ 74         ┆ 0.147463  │
+        │ 2026-01-01      ┆ 138        ┆ 0.147752  │
+        │ 2026-04-01      ┆ 199        ┆ 0.147947  │
+        │ 2026-07-01      ┆ 260        ┆ 0.147069  │
+        │ …               ┆ …          ┆ …         │
+        │ 2030-01-01      ┆ 1135       ┆ 0.137279  │
+        │ 2031-01-01      ┆ 1387       ┆ 0.138154  │
+        │ 2032-01-01      ┆ 1639       ┆ 0.13876   │
+        │ 2033-01-01      ┆ 1891       ┆ 0.1393    │
+        │ 2035-01-01      ┆ 2390       ┆ 0.141068  │
+        └─────────────────┴────────────┴───────────┘
+    """
     # Busca dados de LTN (zero cupom)
     df_ltn = utils.obter_tpf(data, "LTN").select("data_vencimento", "taxa_indicativa")
 

@@ -31,7 +31,6 @@ nav:
   - Dados Auxiliares:
       - IPCA: ipca.md
       - Selic / COPOM: selic.md
-      - Compromissadas: compromissadas.md
 
 theme:
   name: 'material'

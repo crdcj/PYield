@@ -305,9 +305,54 @@ def premio_pre(
     data: DateLike,
     pontos_base: bool = False,
 ) -> pl.DataFrame:
-    """Implementação técnica do cálculo do prêmio dos prefixados sobre o DI.
+    """Calcula o prêmio dos títulos prefixados (LTN e NTN-F) sobre o DI.
 
-    API pública e docstring canônica: ``pyield.tpf.premio_pre``.
+    Em linguagem de mercado, esse valor é chamado de prêmio. Em termos
+    descritivos, trata-se do spread sobre o DI.
+
+    Definição do prêmio:
+        premio = taxa indicativa do PRE - taxa de ajuste do DI
+
+    Quando ``pontos_base=False`` a coluna retorna essa diferença em formato
+    decimal (ex: 0.000439 ≈ 4.39 bps). Quando ``pontos_base=True`` o valor
+    é automaticamente multiplicado por 10_000 e exibido diretamente em
+    basis points.
+
+    Args:
+        data: Data da consulta para buscar as taxas.
+        pontos_base: Se True, retorna o prêmio já convertido em basis
+            points. Padrão False.
+
+    Returns:
+        DataFrame com as colunas do prêmio. Retorna DataFrame vazio se
+        não houver dados.
+
+    Output Columns:
+        * titulo (String): tipo do título.
+        * data_vencimento (Date): data de vencimento.
+        * premio (Float64): prêmio em decimal ou bps conforme parâmetro
+            (spread sobre o DI).
+
+    Examples:
+        >>> yd.tpf.premio_pre("30-05-2025", pontos_base=True)
+        shape: (18, 3)
+        ┌────────┬─────────────────┬────────┐
+        │ titulo ┆ data_vencimento ┆ premio │
+        │ ---    ┆ ---             ┆ ---    │
+        │ str    ┆ date            ┆ f64    │
+        ╞════════╪═════════════════╪════════╡
+        │ LTN    ┆ 2025-07-01      ┆ 4.39   │
+        │ LTN    ┆ 2025-10-01      ┆ -9.0   │
+        │ LTN    ┆ 2026-01-01      ┆ -4.88  │
+        │ LTN    ┆ 2026-04-01      ┆ -4.45  │
+        │ LTN    ┆ 2026-07-01      ┆ 0.81   │
+        │ …      ┆ …               ┆ …      │
+        │ NTN-F  ┆ 2027-01-01      ┆ -3.31  │
+        │ NTN-F  ┆ 2029-01-01      ┆ 14.21  │
+        │ NTN-F  ┆ 2031-01-01      ┆ 21.61  │
+        │ NTN-F  ┆ 2033-01-01      ┆ 11.51  │
+        │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
+        └────────┴─────────────────┴────────┘
     """
     df = obter_tpf(data, "PRE").select("titulo", "data_vencimento", "taxa_indicativa")
     if df.is_empty():

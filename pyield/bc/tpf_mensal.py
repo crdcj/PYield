@@ -98,9 +98,41 @@ def secundario_mensal(
     data: DateLike,
     extragrupo: bool = False,
 ) -> pl.DataFrame:
-    """Implementação técnica de busca do secundário mensal de TPF.
+    """Busca dados mensais do mercado secundário de TPFs.
 
-    API pública e docstring canônica: ``pyield.tpf.secundario_mensal``.
+    Fonte: Banco Central do Brasil, sistema SELIC. Baixa o arquivo mensal de
+    negociações secundárias para o mês correspondente à data informada.
+
+    Args:
+        data: Data de referência.
+        extragrupo: Se verdadeiro, busca apenas negociações extragrupo.
+
+    Returns:
+        DataFrame Polars com dados mensais do mercado secundário.
+
+    Output Columns:
+        * data_liquidacao (Date): data de liquidação da negociação.
+        * titulo (String): sigla do título público.
+        * codigo_selic (Int64): código único no sistema SELIC.
+        * isin (String): código ISIN.
+        * data_emissao (Date): data de emissão do título.
+        * data_vencimento (Date): data de vencimento do título.
+        * operacoes (Int64): número total de operações.
+        * quantidade (Int64): quantidade total negociada.
+        * financeiro (Float64): valor financeiro negociado.
+        * pu_minimo (Float64): preço unitário mínimo.
+        * pu_medio (Float64): preço unitário médio.
+        * pu_maximo (Float64): preço unitário máximo.
+        * pu_lastro (Float64): preço unitário de lastro.
+        * valor_par (Float64): valor par do título.
+        * taxa_minima (Float64): taxa mínima.
+        * taxa_media (Float64): taxa média.
+        * taxa_maxima (Float64): taxa máxima.
+        * operacoes_corretagem (Int64): operações com corretagem.
+        * quantidade_corretagem (Int64): quantidade com corretagem.
+
+    Examples:
+        >>> df = yd.tpf.secundario_mensal("07-01-2025", extragrupo=True)
     """
     if any_is_empty(data):
         return pl.DataFrame()

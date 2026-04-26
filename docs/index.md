@@ -133,11 +133,9 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | `Interpolador` | Interpolação de taxas (flat_forward, linear) |
 | `forward` / `forwards` | Cálculo de taxas a termo |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
-| `ntnb1`, `ntnbprinc`, `pre` | Títulos e curvas adicionais (NTN-B1, NTN-B Principal, curva PRE) |
-| `bc` | Dados técnicos do BCB (repos, VNA, leilões, negociações) |
-| `b3` | Dados técnicos da B3 (price reports, derivativos intradia) |
+| `ntnb1`, `ntnbprinc` | Títulos adicionais (NTN-B1, NTN-B Principal) |
 | `ipca` | Dados de inflação (histórico e projeções) |
-| `selic` | Opções digitais de COPOM e probabilidades implícitas |
+| `selic` | Taxa Selic over e meta, COPOM, compromissadas, CPM e probabilidades implícitas |
 | `hoje` / `agora` | Data/hora atual no Brasil (America/Sao_Paulo) |
 
 ## Títulos Públicos
@@ -254,6 +252,7 @@ Mapa de migração:
 | `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario_mensal(data, extragrupo=...)` |
 | `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
 | `yd.tn.benchmarks(...)` | `yd.tpf.benchmarks(...)` |
+| `yd.pre.taxas_zero(data)` | `yd.tpf.curva_pre(data)` |
 
 As funções antigas listadas acima foram removidas da API pública de alto nível.
 Módulos de implementação, como `pyield.b3.futuro.intradia` e

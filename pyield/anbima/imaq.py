@@ -114,9 +114,36 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
 
 
 def estoque(data: DateLike) -> pl.DataFrame:
-    """Implementação técnica de busca de estoque de TPF.
+    """Busca dados de estoque de TPFs.
 
-    API pública e docstring canônica: ``pyield.tpf.estoque``.
+    Fonte: IMA-Q da ANBIMA. Contém quantidade em mercado, valor de mercado
+    e variação diária da quantidade dos títulos.
+
+    Args:
+        data: Data de referência.
+
+    Returns:
+        DataFrame Polars com dados de estoque. Retorna DataFrame vazio se a
+        data for inválida ou não houver dados.
+
+    Output Columns:
+        * data_referencia (Date): data de referência dos dados.
+        * titulo (String): tipo do título público.
+        * data_vencimento (Date): data de vencimento do título.
+        * codigo_selic (Int64): código SELIC do título.
+        * isin (String): código ISIN.
+        * pu (Float64): preço unitário do título em reais.
+        * quantidade_mercado (Int64): quantidade em mercado.
+        * valor_mercado (Int64): valor de mercado em reais.
+        * variacao_quantidade (Int64): variação diária da quantidade.
+        * status_titulo (String): status do título.
+
+    Examples:
+        >>> import datetime as dt
+        >>> data = yd.du.deslocar(dt.date.today(), -2)
+        >>> df = yd.tpf.estoque(data)
+        >>> df.shape[0] > 0
+        True
     """
     data = cv.converter_datas(data)
     if not cv.data_referencia_valida(data):

@@ -11,7 +11,7 @@ import polars as pl
 import pytest
 
 from pyield import du
-from pyield.bc import copom
+from pyield.selic import copom
 
 DATA = Path(__file__).parent / "data"
 

@@ -187,7 +187,7 @@ def selic_over_serie(
     Examples:
         >>> import pyield as yd
         >>> # Sem dados em 26-01-2025 (domingo). Selic mudou por reunião do Copom.
-        >>> yd.selic_over_serie("26-01-2025").head(5)  # Primeiras 5 linhas
+        >>> yd.selic.over_serie("26-01-2025").head(5)  # Primeiras 5 linhas
         shape: (5, 2)
         ┌────────────┬────────┐
         │ data       ┆ taxa   │
@@ -202,7 +202,7 @@ def selic_over_serie(
         └────────────┴────────┘
 
         >>> # Buscando dados para um intervalo específico
-        >>> yd.selic_over_serie("14-09-2025", "17-09-2025")
+        >>> yd.selic.over_serie("14-09-2025", "17-09-2025")
         shape: (3, 2)
         ┌────────────┬───────┐
         │ data       ┆ taxa  │
@@ -230,7 +230,7 @@ def selic_over(data: DateLike) -> float:
 
     Examples:
         >>> import pyield as yd
-        >>> yd.selic_over("31-05-2024")
+        >>> yd.selic.over("31-05-2024")
         0.104
     """
     if any_is_empty(data):
@@ -262,7 +262,7 @@ def selic_meta_serie(
 
     Examples:
         >>> import pyield as yd
-        >>> yd.selic_meta_serie("31-05-2024", "31-05-2024")
+        >>> yd.selic.meta_serie("31-05-2024", "31-05-2024")
         shape: (1, 2)
         ┌────────────┬───────┐
         │ data       ┆ taxa  │
@@ -288,7 +288,7 @@ def selic_meta(data: DateLike) -> float:
 
     Examples:
         >>> import pyield as yd
-        >>> yd.selic_meta("31-05-2024")
+        >>> yd.selic.meta("31-05-2024")
         0.105
     """
     if any_is_empty(data):
