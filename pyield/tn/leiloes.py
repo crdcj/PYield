@@ -322,7 +322,7 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(colunas_selecionadas).sort("data_1v", "titulo", "data_vencimento")
 
 
-def leilao_tn(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
+def leilao(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
     """Implementação técnica de busca de leilões de TPF.
 
     API pública e docstring canônica: ``pyield.tpf.leilao``.

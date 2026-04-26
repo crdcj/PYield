@@ -139,8 +139,8 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | `forward` / `forwards` | Forward-rate calculations |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
 | `ntnb1`, `ntnbprinc`, `pre` | NTN-B, variants and PRE curve |
-| `tpf.leilao` / `tn.benchmarks` | Treasury bond auctions and benchmarks |
-| `anbima` | Technical ANBIMA data (source files, yield curves, IMA indexes) |
+| `tpf.leilao` / `tpf.benchmarks` | Treasury bond auctions and benchmarks |
+
 | `bc` | Technical BCB data (repos, auctions, trades) |
 | `b3` | Technical B3 data (price reports, intradia derivatives) |
 | `ipca` | Inflation data (historical and projections) |
@@ -243,6 +243,7 @@ Migration map:
 | `yd.bc.tpf_intradia()` | `yd.tpf.secundario_intradia()` |
 | `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario_mensal(data, extragrupo=...)` |
 | `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
+| `yd.tn.benchmarks(...)` | `yd.tpf.benchmarks(...)` |
 
 The old high-level source aliases listed above were removed from the public API.
 Source modules remain available for technical, raw, or source-specific data.

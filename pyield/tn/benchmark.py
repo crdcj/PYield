@@ -76,48 +76,9 @@ def benchmarks(
     titulo: str | None = None,
     incluir_historico: bool = False,
 ) -> pl.DataFrame:
-    """Busca benchmarks de títulos públicos brasileiros na API do TN.
+    """Implementação técnica de busca de benchmarks de TPF.
 
-    Recupera dados atuais ou históricos de benchmarks para títulos do
-    Tesouro Nacional (ex.: LTN, LFT, NTN-B).
-
-    Args:
-        titulo: Tipo do título a filtrar (ex.: "LFT").
-        incluir_historico: Se ``True``, inclui histórico; se ``False``
-            (padrão), retorna apenas benchmarks vigentes (on-the-run).
-
-    Returns:
-        DataFrame com os benchmarks, ou DataFrame vazio.
-
-    Output Columns:
-        * titulo (String): tipo do título (ex.: "LTN", "LFT").
-        * data_vencimento (Date): data de vencimento do benchmark.
-        * benchmark (String): nome/identificador do benchmark.
-        * data_inicio (Date): data de início da vigência.
-        * data_fim (Date): data de término da vigência.
-
-    Notes:
-        Dados obtidos da API oficial do Tesouro Nacional.
-        Documentação da API:
-        https://portal-conhecimento.tesouro.gov.br/catalogo-componentes/api-leil%C3%B5es
-
-    Examples:
-        >>> from pyield import tn
-        >>> df_current = tn.benchmarks()
-        >>> # Benchmarks históricos
-        >>> tn.benchmarks(titulo="LFT", incluir_historico=True).head()
-        shape: (5, 5)
-        ┌────────┬─────────────────┬────────────┬─────────────┬────────────┐
-        │ titulo ┆ data_vencimento ┆ benchmark  ┆ data_inicio ┆ data_fim   │
-        │ ---    ┆ ---             ┆ ---        ┆ ---         ┆ ---        │
-        │ str    ┆ date            ┆ str        ┆ date        ┆ date       │
-        ╞════════╪═════════════════╪════════════╪═════════════╪════════════╡
-        │ LFT    ┆ 2020-03-01      ┆ LFT 6 anos ┆ 2014-01-01  ┆ 2014-06-30 │
-        │ LFT    ┆ 2020-09-01      ┆ LFT 6 anos ┆ 2014-07-01  ┆ 2014-12-31 │
-        │ LFT    ┆ 2021-03-01      ┆ LFT 6 anos ┆ 2015-01-01  ┆ 2015-04-30 │
-        │ LFT    ┆ 2021-09-01      ┆ LFT 6 anos ┆ 2015-05-01  ┆ 2015-12-31 │
-        │ LFT    ┆ 2022-03-01      ┆ LFT 6 anos ┆ 2016-01-01  ┆ 2016-06-30 │
-        └────────┴─────────────────┴────────────┴─────────────┴────────────┘
+    API pública e docstring canônica: ``pyield.tpf.benchmarks``.
     """
     dados = _buscar_json_api(incluir_historico)
     df = _parsear_df(dados)

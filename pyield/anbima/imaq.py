@@ -113,7 +113,7 @@ def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
     )
 
 
-def estoque_anbima(data: DateLike) -> pl.DataFrame:
+def estoque(data: DateLike) -> pl.DataFrame:
     """Implementação técnica de busca de estoque de TPF.
 
     API pública e docstring canônica: ``pyield.tpf.estoque``.

@@ -134,8 +134,7 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | `forward` / `forwards` | Cálculo de taxas a termo |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
 | `ntnb1`, `ntnbprinc`, `pre` | Títulos e curvas adicionais (NTN-B1, NTN-B Principal, curva PRE) |
-| `tpf.leilao` / `tn.benchmarks` | Leilões e benchmarks de títulos públicos |
-| `anbima` | Dados técnicos da ANBIMA (fonte, curvas de juros, índices IMA) |
+| `tpf.leilao` / `tpf.benchmarks` | Leilões e benchmarks de títulos públicos |
 | `bc` | Dados técnicos do BCB (repos, VNA, leilões, negociações) |
 | `b3` | Dados técnicos da B3 (price reports, derivativos intradia) |
 | `ipca` | Dados de inflação (histórico e projeções) |
@@ -259,6 +258,7 @@ Mapa de migração:
 | `yd.bc.tpf_intradia()` | `yd.tpf.secundario_intradia()` |
 | `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario_mensal(data, extragrupo=...)` |
 | `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
+| `yd.tn.benchmarks(...)` | `yd.tpf.benchmarks(...)` |
 
 As funções antigas listadas acima foram removidas da API pública de alto nível.
 Módulos de implementação, como `pyield.b3.futuro.intradia` e

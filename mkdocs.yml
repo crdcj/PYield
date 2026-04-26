@@ -21,8 +21,18 @@ nav:
           - DI1: di1.md
           - Futuro: futuro.md
           - TPF: tpf.md
+      - Títulos Públicos:
+          - Visão Geral: titulos/index.md
+          - RMD: titulos/rmd.md
+          - LFT: titulos/lft.md
+          - LTN: titulos/ltn.md
+          - NTN-B: titulos/ntnb.md
+          - NTN-B Principal: titulos/ntnbp.md
+          - NTN-B1: titulos/ntnb1.md
+          - NTN-C: titulos/ntnc.md
+          - NTN-F: titulos/ntnf.md
+          - PRE: titulos/pre.md
       - Fontes de Dados:
-          - Anbima: anbima.md
           - Banco Central (BCB):
               - Visão Geral: bc/index.md
               - Calendário COPOM: bc/copom.md
@@ -30,17 +40,6 @@ nav:
               - Visão Geral: b3/index.md
           - IPCA: ipca.md
           - Selic (CPM/COPOM): selic.md
-      - Títulos Públicos:
-          - Visão Geral: tn/index.md
-          - RMD: tn/rmd.md
-          - LFT: tn/lft.md
-          - LTN: tn/ltn.md
-          - NTN-B: tn/ntnb.md
-          - NTN-B Principal: tn/ntnbp.md
-          - NTN-B1: tn/ntnb1.md
-          - NTN-C: tn/ntnc.md
-          - NTN-F: tn/ntnf.md
-          - PRE: tn/pre.md
 
 theme:
   name: 'material'

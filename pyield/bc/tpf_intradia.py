@@ -94,7 +94,7 @@ def _mercado_selic_aberto() -> bool:
     return eh_dia_util and eh_horario
 
 
-def secundario_intradia_bcb() -> pl.DataFrame:
+def secundario_intradia() -> pl.DataFrame:
     """Implementação técnica de busca do secundário intradia de TPF.
 
     API pública e docstring canônica: ``pyield.tpf.secundario_intradia``.

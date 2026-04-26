@@ -17,5 +17,5 @@ def test_tpf_mensal_com_monkeypatch(monkeypatch):
         "_baixar_zip",
         lambda *_: CAMINHO_ZIP.read_bytes(),
     )
-    resultado = modulo_tpf_mensal.secundario_mensal_bcb("07-01-2025", extragrupo=True)
+    resultado = modulo_tpf_mensal.secundario_mensal("07-01-2025", extragrupo=True)
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))

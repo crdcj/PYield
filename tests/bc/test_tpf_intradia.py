@@ -15,6 +15,7 @@ COLUNAS_IGNORAR = ["data_hora_consulta", "data_liquidacao"]
 
 def test_tpf_intradia_com_monkeypatch(monkeypatch):
     """secundario_intradia_bcb com monkeypatch deve bater com o parquet."""
+
     def ler_csv() -> bytes:
         return CAMINHO_CSV.read_bytes()
 
@@ -25,6 +26,6 @@ def test_tpf_intradia_com_monkeypatch(monkeypatch):
     )
     monkeypatch.setattr(modulo_tpf_intradia, "_mercado_selic_aberto", lambda: True)
 
-    resultado = modulo_tpf_intradia.secundario_intradia_bcb().drop(COLUNAS_IGNORAR)
+    resultado = modulo_tpf_intradia.secundario_intradia().drop(COLUNAS_IGNORAR)
     esperado = pl.read_parquet(CAMINHO_PARQUET).drop(COLUNAS_IGNORAR)
     assert resultado.equals(esperado)

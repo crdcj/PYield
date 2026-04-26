@@ -3,7 +3,7 @@
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
-from pyield import anbima, b3, du, ipca
+from pyield import b3, du, ipca
 from pyield.b3 import futuro
 from pyield.b3 import di1
 from pyield.b3.di_over import di_over
@@ -33,7 +33,6 @@ except PackageNotFoundError:
 __all__ = [
     "__version__",
     "agora",
-    "anbima",
     "b3",
     "bc",
     "copom_options",

@@ -128,19 +128,16 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 |--------|---------|
 | `du` | Calendário de dias úteis com feriados brasileiros |
 | `futuro` | Dados de futuros (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
-| `tpf` | Taxas, vencimentos, estoque e negociações de Títulos Públicos Federais |
+| `tpf` | Taxas, vencimentos, estoque, leilões, benchmarks, RMD e negociações de TPFs |
 | `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
 | `Interpolador` | Interpolação de taxas (flat_forward, linear) |
 | `forward` / `forwards` | Cálculo de taxas a termo |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
 | `ntnb1`, `ntnbprinc`, `pre` | Títulos e curvas adicionais (NTN-B1, NTN-B Principal, curva PRE) |
-| `tpf.leilao` / `tn.benchmarks` | Leilões e benchmarks de títulos públicos |
-| `anbima` | Dados técnicos da ANBIMA (fonte, curvas de juros, índices IMA) |
 | `bc` | Dados técnicos do BCB (repos, VNA, leilões, negociações) |
 | `b3` | Dados técnicos da B3 (price reports, derivativos intradia) |
 | `ipca` | Dados de inflação (histórico e projeções) |
 | `selic` | Opções digitais de COPOM e probabilidades implícitas |
-| `tn.rmd` | Relatório Mensal da Dívida do Tesouro Nacional |
 | `hoje` / `agora` | Data/hora atual no Brasil (America/Sao_Paulo) |
 
 ## Títulos Públicos
@@ -249,47 +246,11 @@ Mapa de migração:
 | `yd.bc.tpf_intradia()` | `yd.tpf.secundario_intradia()` |
 | `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario_mensal(data, extragrupo=...)` |
 | `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
+| `yd.tn.benchmarks(...)` | `yd.tpf.benchmarks(...)` |
 
 As funções antigas listadas acima foram removidas da API pública de alto nível.
 Módulos de implementação, como `pyield.b3.futuro.intradia` e
 `pyield.bc.tpf_intradia`, continuam existindo para organizar a implementação e
 testes, mas a documentação passa a ensinar a API orientada ao objeto.
 
-## Migração para Português (v0.48.0+)
 
-A partir da versão 0.48.0, a API pública foi migrada para o português. Os principais renomes:
-
-| Antes (< 0.48) | Depois (≥ 0.48) |
-|---|---|
-| `yd.bday` | `yd.du` |
-| `bday.count()` | `du.contar()` |
-| `bday.offset()` | `du.deslocar()` |
-| `bday.generate()` | `du.gerar()` |
-| `bday.is_business_day()` | `du.eh_dia_util()` |
-| `Interpolator(method, bdays, rates)` | `Interpolador(dias_uteis, taxas, metodo=...)` |
-| `extrapolate=True` | `extrapolar=True` |
-| `ntnb.quotation()` | `ntnb.cotacao()` |
-| `ntnb.data()` | `ntnb.dados()` |
-
-## Migração para Polars (v0.40.0+)
-
-A partir da versão 0.40.0, todas as saídas tabulares passaram de Pandas para **Polars**. Entradas vetoriais que antes aceitavam `pd.Series` e `np.ndarray` agora aceitam apenas listas, tuplas ou `pl.Series`. Para converter:
-
-```python
-# Entrada: converter coleções Pandas/NumPy antes de passar para o PYield
-pl_series = pl.from_pandas(pd_series)   # pd.Series → pl.Series (requer pandas)
-pl_series = pl.Series(np_array)         # np.ndarray → pl.Series (requer numpy)
-
-# Saída: converter DataFrame Polars para Pandas
-df_pandas = df.to_pandas(use_pyarrow_extension_array=True)
-```
-
-## Documentação
-
-Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
-
-## Testes
-
-```sh
-pytest
-```

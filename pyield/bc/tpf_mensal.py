@@ -94,7 +94,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def secundario_mensal_bcb(
+def secundario_mensal(
     data: DateLike,
     extragrupo: bool = False,
 ) -> pl.DataFrame:

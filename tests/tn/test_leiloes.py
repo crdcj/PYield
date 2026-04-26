@@ -37,5 +37,5 @@ def test_leilao_com_monkeypatch(monkeypatch):
         "_buscar_ptax",
         lambda *_, **__: DF_PTAX_REFERENCIA,
     )
-    resultado = modulo_leiloes.leilao_tn(data="23-10-2025")
+    resultado = modulo_leiloes.leilao(data="23-10-2025")
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))

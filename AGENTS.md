@@ -53,6 +53,19 @@ Padrão atual:
   podem proteger ausências temporárias de aliases legados, mas devem ser
   simplificados depois da migração estabilizar.
 
+Padrão de orquestração:
+- módulos de orquestração (ex: `tpf.py`) importam submódulos fonte com alias
+  `_` prefix: `from pyield.anbima import mercado_secundario as _ms`;
+- nomes de funções nos submódulos fonte devem coincidir com os nomes públicos
+  correspondentes: `_ms.taxas()` mapeia para `tpf.taxas()`. O alias já
+  identifica a fonte — sufixos como `_bcb`, `_anbima`, `_tn` são redundantes;
+- docstring canônica fica no módulo de orquestração; submódulos fonte têm
+  docstring curta apontando para a ponta pública;
+- módulos de orquestração não têm `__all__`; a proteção de export vem do `_`
+  nos aliases de import;
+- acesso por fonte emerge naturalmente: quem precisar pode fazer
+  `from pyield.anbima import mercado_secundario` e usar `mercado_secundario.taxas()`.
+
 Ao migrar API pública:
 - atualize exports no namespace de objeto e na raiz quando aplicável;
 - remova aliases duplicados dos namespaces de fonte quando essa for a decisão de

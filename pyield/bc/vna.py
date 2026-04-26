@@ -67,8 +67,10 @@ def _validar_valores(valores: list[float]) -> float:
     return valor
 
 
-def vna_bcb(data: DateLike) -> float:
-    """Busca o VNA da LFT na camada técnica do BCB."""
+def vna(data: DateLike) -> float:
+    """Implementação técnica de busca do VNA da LFT.
+
+    API pública e docstring canônica: ``pyield.lft.vna``."""
     if any_is_empty(data):
         return float("nan")
     texto = _baixar_texto(data)

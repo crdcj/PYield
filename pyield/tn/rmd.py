@@ -206,77 +206,9 @@ def _estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
 
 
 def rmd(aba: str) -> pl.DataFrame:
-    """Retorna dados do Relatório Mensal da Dívida (RMD) do Tesouro Nacional.
+    """Implementação técnica de busca do RMD do Tesouro Nacional.
 
-    Baixa e processa a planilha do RMD, extraindo dados de emissões e resgates
-    de Títulos Públicos Federais da Dívida Pública Mobiliária Federal interna
-    (DPMFi). A publicação mais recente é descoberta automaticamente via parse
-    HTML da página oficial.
-
-    Args:
-        aba: Número da aba a processar (ex: "1.3"). Abas implementadas: "1.3".
-
-    Returns:
-        DataFrame longo com dados de emissões e resgates por período, seção,
-        subgrupo e tipo de título. Registros com valor nulo ou zero são excluídos.
-        Em caso de erro, retorna DataFrame vazio e registra log da exceção.
-
-    Output Columns (para aba='1.3'):
-        * periodo (Date): primeiro dia do mês de referência (ex: date(2006, 11, 1)).
-        * grupo (String): seção principal — "Emissões" ou "Resgates".
-        * subgrupo (String): categoria dentro do grupo:
-            - Emissões:
-                "Vendas"
-                "Trocas"
-                "Tesouro Direto"
-                "Transferência de Carteira"
-                "Emissão Direta com Financeiro"
-                "Emissão Direta sem Financeiro".
-            - Resgates:
-                "Vencimentos"
-                "Compras"
-                "Trocas"
-                "Tesouro Direto"
-                "Pagamento de Dividendos"
-                "Cancelamentos".
-        * titulo (String): tipo de título:
-            - "LFT"
-            - "LTN"
-            - "NTN-B"
-            - "NTN-B1"
-            - "NTN-F"
-            - "NTN-C"
-            - "NTN-D"
-            - "Demais"
-            - null para subgrupos sem detalhamento por título
-              (ex: "Transferência de Carteira").
-        * valor (Float64): valor em R$.
-
-    Raises:
-        ValueError: Se `aba` não estiver entre as abas implementadas.
-
-    Notes:
-        - A função sempre busca a publicação mais recente disponível.
-        - Totais anuais são excluídos; podem ser recalculados via group_by.
-        - Operações do Banco Central e totais agregados são excluídos; podem ser
-          recalculados por agrupamento quando necessário.
-        - Registros com valor nulo ou zero são omitidos.
-        - Totais de referência para 2025 (validados contra o Excel do Tesouro Nacional):
-            Emissões = R$ 1.840.946.621.648,18
-            Resgates = R$ 1.395.109.062.272,45.
-
-    Examples:
-        >>> import polars as pl
-        >>> from pyield import tn
-        >>> df = tn.rmd(aba="1.3")
-        >>> df_2025 = df.filter(pl.col("periodo").dt.year() == 2025)
-        >>> # Totais de 2025 — ver valores de referência do Tesouro Nacional nas Notes
-        >>> emissoes_2025 = df_2025.filter(pl.col("grupo") == "Emissões")["valor"].sum()
-        >>> round(emissoes_2025, 2)
-        1840946621648.18
-        >>> resgates_2025 = df_2025.filter(pl.col("grupo") == "Resgates")["valor"].sum()
-        >>> round(resgates_2025, 2)
-        1395109062272.45
+    API pública e docstring canônica: ``pyield.tpf.rmd``.
     """
     if aba not in _ABAS_DISPONIVEIS:
         disponiveis = ", ".join(f'"{t}"' for t in sorted(_ABAS_DISPONIVEIS))

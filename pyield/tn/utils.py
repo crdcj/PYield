@@ -38,9 +38,9 @@ def obter_tpf(
     tipo_titulo: TipoTPF,
 ) -> pl.DataFrame:
     """Busca taxas indicativas de TPF no padrão de colunas usado por ``tn``."""
-    from pyield.anbima.mercado_secundario import taxas_indicativas  # noqa: PLC0415
+    from pyield.anbima.mercado_secundario import taxas  # noqa: PLC0415
 
-    return taxas_indicativas(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
+    return taxas(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
 
 
 def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
@@ -305,54 +305,9 @@ def premio_pre(
     data: DateLike,
     pontos_base: bool = False,
 ) -> pl.DataFrame:
-    """Calcula o prêmio dos títulos prefixados (LTN e NTN-F) sobre o DI.
+    """Implementação técnica do cálculo do prêmio dos prefixados sobre o DI.
 
-    Em linguagem de mercado, esse valor é chamado de prêmio. Em termos
-    descritivos, trata-se do spread sobre o DI.
-
-    Definição do prêmio:
-        premio = taxa indicativa do PRE - taxa de ajuste do DI
-
-    Quando ``pontos_base=False`` a coluna retorna essa diferença em formato
-    decimal (ex: 0.000439 ≈ 4.39 bps). Quando ``pontos_base=True`` o valor
-    é automaticamente multiplicado por 10_000 e exibido diretamente em
-    basis points.
-
-    Args:
-        data: Data da consulta para buscar as taxas.
-        pontos_base: Se True, retorna o prêmio já convertido em basis
-            points. Padrão False.
-
-    Returns:
-        pl.DataFrame: DataFrame com as colunas do prêmio.
-
-    Output Columns:
-        - titulo (String): Tipo do título.
-        - data_vencimento (Date): Data de vencimento.
-        - premio (Float64): prêmio em decimal ou bps conforme parâmetro
-            (spread sobre o DI).
-
-    Examples:
-        >>> from pyield.tn import utils
-        >>> utils.premio_pre("30-05-2025", pontos_base=True)
-        shape: (18, 3)
-        ┌────────┬─────────────────┬────────┐
-        │ titulo ┆ data_vencimento ┆ premio │
-        │ ---    ┆ ---             ┆ ---    │
-        │ str    ┆ date            ┆ f64    │
-        ╞════════╪═════════════════╪════════╡
-        │ LTN    ┆ 2025-07-01      ┆ 4.39   │
-        │ LTN    ┆ 2025-10-01      ┆ -9.0   │
-        │ LTN    ┆ 2026-01-01      ┆ -4.88  │
-        │ LTN    ┆ 2026-04-01      ┆ -4.45  │
-        │ LTN    ┆ 2026-07-01      ┆ 0.81   │
-        │ …      ┆ …               ┆ …      │
-        │ NTN-F  ┆ 2027-01-01      ┆ -3.31  │
-        │ NTN-F  ┆ 2029-01-01      ┆ 14.21  │
-        │ NTN-F  ┆ 2031-01-01      ┆ 21.61  │
-        │ NTN-F  ┆ 2033-01-01      ┆ 11.51  │
-        │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
-        └────────┴─────────────────┴────────┘
+    API pública e docstring canônica: ``pyield.tpf.premio_pre``.
     """
     df = obter_tpf(data, "PRE").select("titulo", "data_vencimento", "taxa_indicativa")
     if df.is_empty():

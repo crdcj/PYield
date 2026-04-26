@@ -160,9 +160,10 @@ def _buscar_dados_tpf(data: dt.date) -> pl.DataFrame:
     return _processar_df(df)
 
 
-def taxas_indicativas(
+def taxas(
     data: DateLike,
     titulo: TipoTPF | None = None,
+    completo: bool = False,
 ) -> pl.DataFrame:
     """Implementação técnica de busca de taxas indicativas de TPF.
 
@@ -173,57 +174,33 @@ def taxas_indicativas(
     if not data_referencia_valida(data):
         return pl.DataFrame()
 
-    # Cache primeiro; se não tiver, busca na fonte
-    df = obter_dataset_cacheado("tpf")
-    if not df.is_empty():
-        df = df.filter(pl.col("data_referencia") == data)
-    if df.is_empty():
+    if completo:
         df = _buscar_dados_tpf(data)
+    else:
+        df = obter_dataset_cacheado("tpf")
+        if not df.is_empty():
+            df = df.filter(pl.col("data_referencia") == data)
+        if df.is_empty():
+            df = _buscar_dados_tpf(data)
+
     if df.is_empty():
         return pl.DataFrame()
 
-    df = df.select(col for col in COLUNAS_TAXAS_INDICATIVAS if col in df.columns)
-
-    if titulo:
-        tipos_titulo = _mapear_tipo_titulo(titulo)
-        df = df.filter(pl.col("titulo").is_in(tipos_titulo))
+    if not completo:
+        df = df.select(col for col in COLUNAS_TAXAS_INDICATIVAS if col in df.columns)
+        if titulo:
+            tipos_titulo = _mapear_tipo_titulo(titulo)
+            df = df.filter(pl.col("titulo").is_in(tipos_titulo))
 
     return df.sort("data_referencia", "titulo", "data_vencimento")
 
 
-def tpf_fonte(
-    data: DateLike,
-) -> pl.DataFrame:
-    """Busca os dados do mercado secundário de TPF direto da fonte ANBIMA.
-
-    Retorna todas as colunas publicadas pela ANBIMA, sem cache e sem
-    filtro de colunas. Indicado para uso em jobs e pipelines de dados.
-
-    Args:
-        data (DateLike): Data da consulta (ex: '2024-06-14').
-
-    Returns:
-        pl.DataFrame: DataFrame com todas as colunas da ANBIMA.
-            Retorna DataFrame vazio se não houver dados.
-    """
-    data = converter_datas(data)
-
-    if not data_referencia_valida(data):
-        return pl.DataFrame()
-
-    df = _buscar_dados_tpf(data)
-    if df.is_empty():
-        return pl.DataFrame()
-
-    return df.sort("data_referencia", "titulo", "data_vencimento")
-
-
-def vencimentos_taxas_indicativas(
+def vencimentos(
     data: DateLike,
     titulo: TipoTPF,
 ) -> pl.Series:
-    """Implementação técnica de busca de vencimentos de taxas indicativas de TPF.
+    """Implementação técnica de busca de vencimentos negociados de TPF.
 
     API pública e docstring canônica: ``pyield.tpf.vencimentos``.
     """
-    return taxas_indicativas(data, titulo)["data_vencimento"].unique().sort()
+    return taxas(data, titulo)["data_vencimento"].unique().sort()
