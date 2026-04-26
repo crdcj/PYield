@@ -149,14 +149,13 @@ def calendar(
     ExpiryDate is computed with ``du.deslocar_expr("EndDate", 1)``, using
     the Brazilian holiday calendar already embedded in ``pyield.du``.
 
-    Examples
-    --------
-    >>> import pyield as yd
-    >>> cal = yd.selic.copom.calendar()
-    >>> "ExpiryDate" in cal.columns
-    True
-    >>> cal["EndDate"].is_sorted()
-    True
+    Examples:
+        >>> import pyield as yd
+        >>> cal = yd.selic.copom.calendar()
+        >>> "ExpiryDate" in cal.columns
+        True
+        >>> cal["EndDate"].is_sorted()
+        True
     """
     past = _fetch_past_meetings()
     future = _build_future_meetings()
@@ -191,12 +190,11 @@ def next_meeting(reference: DateLike | None = None) -> pl.DataFrame:
     If ``reference`` is None, today's date (Brazil timezone) is used.
     Returns a one-row DataFrame with the same schema as :func:`calendar`.
 
-    Examples
-    --------
-    >>> import pyield as yd
-    >>> row = yd.selic.copom.next_meeting()
-    >>> len(row)
-    1
+    Examples:
+        >>> import pyield as yd
+        >>> row = yd.selic.copom.next_meeting()
+        >>> len(row)
+        1
     """
     ref = relogio.hoje() if reference is None else converter_datas(reference)
     cal = calendar()

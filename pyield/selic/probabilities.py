@@ -250,16 +250,15 @@ def all_meetings(
         Sorted by (MeetingRank, StrikeChangeBps).
         Returns empty DataFrame with correct schema on missing data.
 
-    Examples
-    --------
-    >>> import pyield as yd
-    >>> import polars as pl
-    >>> df = yd.selic.probabilities.all_meetings("29-01-2025")
-    >>> df.is_empty() or df["ranking_reuniao"].min() == 1
-    True
-    >>> sums = df.group_by("data_expiracao").agg(pl.col("prob").sum())
-    >>> df.is_empty() or (sums["prob"] - 1.0).abs().max() < 1e-9
-    True
+    Examples:
+        >>> import pyield as yd
+        >>> import polars as pl
+        >>> df = yd.selic.probabilities.all_meetings("29-01-2025")
+        >>> df.is_empty() or df["ranking_reuniao"].min() == 1
+        True
+        >>> sums = df.group_by("data_expiracao").agg(pl.col("prob").sum())
+        >>> df.is_empty() or (sums["prob"] - 1.0).abs().max() < 1e-9
+        True
     """
     raw = cpm.data(date)
     if raw.is_empty():
@@ -317,14 +316,13 @@ def meeting(
         MeetingRank is always 1 in this output (relative to the
         selected meeting — do not confuse with rank across all meetings).
 
-    Examples
-    --------
-    >>> import pyield as yd
-    >>> df = yd.selic.probabilities.meeting("29-01-2025")
-    >>> df.is_empty() or abs(df["prob"].sum() - 1.0) < 1e-9
-    True
-    >>> df.is_empty() or df["prob_acumulada"].tail(1).item() == 1.0
-    True
+    Examples:
+        >>> import pyield as yd
+        >>> df = yd.selic.probabilities.meeting("29-01-2025")
+        >>> df.is_empty() or abs(df["prob"].sum() - 1.0) < 1e-9
+        True
+        >>> df.is_empty() or df["prob_acumulada"].tail(1).item() == 1.0
+        True
     """
     df = all_meetings(date, option_type=option_type)
     if df.is_empty():

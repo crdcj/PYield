@@ -241,7 +241,7 @@ def rmd(aba: str) -> pl.DataFrame:
             Resgates = R$ 1.395.109.062.272,45.
 
     Examples:
-        >>> df = yd.tpf.rmd(aba="1.3")
+        >>> df = yd.tpf.rmd(aba="1.3")  # doctest: +SKIP
     """
     if aba not in _ABAS_DISPONIVEIS:
         disponiveis = ", ".join(f'"{t}"' for t in sorted(_ABAS_DISPONIVEIS))

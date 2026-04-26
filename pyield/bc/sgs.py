@@ -17,7 +17,7 @@ Exemplo de resposta JSON da API do BCB:
 Notas de implementação:
     - Intervalos > 10 anos são divididos automaticamente em blocos.
     - SELIC Over e Meta: valores percentuais convertidos para decimal
-      (divididos por 100) e arredondados para 4 casas decimais.
+      (divididos por 100) e arredondados para 10 casas decimais.
     - PTAX Venda: valor absoluto em R$ arredondado para 4 casas.
 """
 
@@ -28,6 +28,7 @@ import polars as pl
 import requests
 
 from pyield import relogio
+from pyield._internal.br_numbers import pct_para_decimal
 from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
@@ -41,7 +42,6 @@ ESQUEMA_BRUTO = {"data": pl.Date, "valor": pl.Float64}
 # Evita a complexidade do cálculo exato de 10 anos-calendário.
 LIMITE_DIAS_SEGURO = 3500  # aprox 365 * 9.5
 
-CASAS_DECIMAIS_TAXA = 4  # Selic: 2 casas no formato percentual → 4 em decimal
 CASAS_DECIMAIS_PTAX = 4
 
 
@@ -150,7 +150,7 @@ def _converter_para_taxa(df: pl.DataFrame) -> pl.DataFrame:
         return pl.DataFrame(schema=ESQUEMA_TAXA)
     return df.select(
         "data",
-        taxa=pl.col("valor").truediv(100).round(CASAS_DECIMAIS_TAXA),
+        taxa=pct_para_decimal(pl.col("valor")),
     )
 
 
@@ -182,37 +182,23 @@ def selic_over_serie(
             Mutuamente exclusivo com ``inicio``/``fim``.
 
     Returns:
-        DataFrame com colunas data e taxa, ou DataFrame vazio.
+        DataFrame com colunas data e taxa (decimal), ou DataFrame vazio.
 
     Examples:
         >>> import pyield as yd
-        >>> # Sem dados em 26-01-2025 (domingo). Selic mudou por reunião do Copom.
-        >>> yd.selic.over_serie("26-01-2025").head(5)  # Primeiras 5 linhas
-        shape: (5, 2)
+        >>> # Copom de 29-01-2025: over subiu de 12,15% para 13,15% a.a.
+        >>> yd.selic.over_serie("28-01-2025", "31-01-2025")
+        shape: (4, 2)
         ┌────────────┬────────┐
         │ data       ┆ taxa   │
         │ ---        ┆ ---    │
         │ date       ┆ f64    │
         ╞════════════╪════════╡
-        │ 2025-01-27 ┆ 0.1215 │
         │ 2025-01-28 ┆ 0.1215 │
         │ 2025-01-29 ┆ 0.1215 │
         │ 2025-01-30 ┆ 0.1315 │
         │ 2025-01-31 ┆ 0.1315 │
         └────────────┴────────┘
-
-        >>> # Buscando dados para um intervalo específico
-        >>> yd.selic.over_serie("14-09-2025", "17-09-2025")
-        shape: (3, 2)
-        ┌────────────┬───────┐
-        │ data       ┆ taxa  │
-        │ ---        ┆ ---   │
-        │ date       ┆ f64   │
-        ╞════════════╪═══════╡
-        │ 2025-09-15 ┆ 0.149 │
-        │ 2025-09-16 ┆ 0.149 │
-        │ 2025-09-17 ┆ 0.149 │
-        └────────────┴───────┘
     """
     return _converter_para_taxa(
         _buscar_serie(SerieSGS.SELIC_OVER, inicio, fim, ultimos)
@@ -226,11 +212,11 @@ def selic_over(data: DateLike) -> float:
         data: Data da consulta.
 
     Returns:
-        Taxa SELIC Over ou ``nan`` se não disponível.
+        Taxa SELIC Over em decimal ou ``nan`` se não disponível.
 
     Examples:
         >>> import pyield as yd
-        >>> yd.selic.over("31-05-2024")
+        >>> yd.selic.over("31-05-2024")  # decimal (0.104 = 10,4% a.a.)
         0.104
     """
     if any_is_empty(data):
@@ -258,19 +244,23 @@ def selic_meta_serie(
             Mutuamente exclusivo com ``inicio``/``fim``.
 
     Returns:
-        DataFrame com colunas data e taxa, ou DataFrame vazio.
+        DataFrame com colunas data e taxa (decimal), ou DataFrame vazio.
 
     Examples:
         >>> import pyield as yd
-        >>> yd.selic.meta_serie("31-05-2024", "31-05-2024")
-        shape: (1, 2)
-        ┌────────────┬───────┐
-        │ data       ┆ taxa  │
-        │ ---        ┆ ---   │
-        │ date       ┆ f64   │
-        ╞════════════╪═══════╡
-        │ 2024-05-31 ┆ 0.105 │
-        └────────────┴───────┘
+        >>> # Copom de 29-01-2025: meta subiu de 12,25% para 13,25% a.a.
+        >>> yd.selic.meta_serie("28-01-2025", "31-01-2025")
+        shape: (4, 2)
+        ┌────────────┬────────┐
+        │ data       ┆ taxa   │
+        │ ---        ┆ ---    │
+        │ date       ┆ f64    │
+        ╞════════════╪════════╡
+        │ 2025-01-28 ┆ 0.1225 │
+        │ 2025-01-29 ┆ 0.1225 │
+        │ 2025-01-30 ┆ 0.1325 │
+        │ 2025-01-31 ┆ 0.1325 │
+        └────────────┴────────┘
     """
     return _converter_para_taxa(
         _buscar_serie(SerieSGS.SELIC_META, inicio, fim, ultimos)
@@ -284,11 +274,11 @@ def selic_meta(data: DateLike) -> float:
         data: Data da consulta.
 
     Returns:
-        Taxa SELIC Meta ou ``nan`` se não disponível.
+        Taxa SELIC Meta em decimal ou ``nan`` se não disponível.
 
     Examples:
         >>> import pyield as yd
-        >>> yd.selic.meta("31-05-2024")
+        >>> yd.selic.meta("31-05-2024")  # decimal (0.105 = 10,5% a.a.)
         0.105
     """
     if any_is_empty(data):

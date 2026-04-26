@@ -8,6 +8,7 @@ from polars import selectors as cs
 
 from pyield import du
 from pyield._internal import converters as cv
+from pyield._internal.br_numbers import pct_para_decimal
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty, is_collection
@@ -207,7 +208,7 @@ def _transformar_dados_brutos(dados_brutos: list[dict]) -> pl.DataFrame:
         )
         .with_columns(
             cs.starts_with("financeiro_ofertado").round(2),
-            cs.starts_with("taxa").truediv(100).round(7),
+            pct_para_decimal(cs.starts_with("taxa")),
         )
     )
     ajustar_cols = [

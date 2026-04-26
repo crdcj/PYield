@@ -1,5 +1,19 @@
 import polars as pl
 
+# 10 casas decimais após divisão por 100: limpa ruído IEEE-754 (ex:
+# 12.15 / 100 → 0.12150000000000001) sem truncar dado real. BCB e B3
+# publicam taxas com no máximo 6–8 casas decimais; 10 é margem segura.
+_CASAS_DECIMAIS_TAXA = 10
+
+
+def pct_para_decimal(expr: pl.Expr) -> pl.Expr:
+    """Converte expressão percentual (ex: 12.15) para decimal (0.1215).
+
+    Aceita qualquer ``pl.Expr``, incluindo seletores como
+    ``cs.starts_with("taxa_")``, que também são ``Expr``.
+    """
+    return expr.truediv(100).round(_CASAS_DECIMAIS_TAXA)
+
 
 def float_br(coluna: str) -> pl.Expr:
     """Converte coluna string no formato numérico brasileiro para Float64.
@@ -15,15 +29,13 @@ def float_br(coluna: str) -> pl.Expr:
     )
 
 
-def taxa_br(coluna: str, casas_pct: int = 4) -> pl.Expr:
+def taxa_br(coluna: str) -> pl.Expr:
     """Converte taxa percentual BR (string) para decimal Float64.
 
     Args:
         coluna: Nome da coluna com taxa em formato BR (ex.: "12,3456").
-        casas_pct: Casas decimais da taxa percentual de entrada. Default 4,
-            padrão do mercado brasileiro de renda fixa.
     """
-    return (float_br(coluna) / 100).round(casas_pct + 2)
+    return pct_para_decimal(float_br(coluna))
 
 
 def inteiro_br(coluna: str) -> pl.Expr:

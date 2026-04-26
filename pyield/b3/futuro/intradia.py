@@ -2,6 +2,7 @@ import polars as pl
 import polars.selectors as cs
 
 from pyield import du
+from pyield._internal.br_numbers import pct_para_decimal
 from pyield.b3._validar_pregao import intradia_disponivel
 from pyield.b3.derivativos_intradia import derivativo_intradia
 from pyield.b3.futuro.contratos import CONTRATOS_TAXA, dv01_expr
@@ -153,7 +154,7 @@ def _processar_intradia(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     ).filter(pl.col("dias_corridos") > 0)
 
     if contrato in CONTRATOS_TAXA:
-        df = df.with_columns(cs.starts_with("taxa_").truediv(100).round(6))
+        df = df.with_columns(pct_para_decimal(cs.starts_with("taxa_")))
 
     if contrato in {"DI1", "DAP"}:
         taxa_fwd = forwards(dias_uteis=df["dias_uteis"], taxas=df["taxa_ultima"])

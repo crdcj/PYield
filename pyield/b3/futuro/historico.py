@@ -5,6 +5,7 @@ import polars.selectors as cs
 
 import pyield._internal.converters as cv
 from pyield import du
+from pyield._internal.br_numbers import pct_para_decimal
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.b3._validar_pregao import data_negociacao_valida
@@ -118,7 +119,7 @@ def _enriquecer_dados(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     eh_taxa = contrato in ct.CONTRATOS_TAXA
     if eh_taxa:
         df = df.rename(_PRECO_PARA_TAXA, strict=False)
-        df = df.with_columns(cs.starts_with("taxa_").truediv(100).round(6))
+        df = df.with_columns(pct_para_decimal(cs.starts_with("taxa_")))
 
     if contrato == "DI1":
         df = df.with_columns(

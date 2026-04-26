@@ -252,20 +252,19 @@ def data(date: DateLike) -> pl.DataFrame:
         Returns empty DataFrame with correct schema if no CPM data
         exists for the requested date (weekend, holiday, etc.).
 
-    Examples
-    --------
-    >>> import pyield as yd
-    >>> df = yd.selic.cpm.data("29-01-2025")
-    >>> df.is_empty() or set(df.schema.keys()) >= {
-    ...     "data_referencia",
-    ...     "codigo_negociacao",
-    ...     "data_fim_reuniao",
-    ...     "data_expiracao",
-    ...     "tipo_opcao",
-    ...     "variacao_strike_bps",
-    ...     "preco_ajuste",
-    ... }
-    True
+    Examples:
+        >>> import pyield as yd
+        >>> df = yd.selic.cpm.data("29-01-2025")
+        >>> df.is_empty() or set(df.schema.keys()) >= {
+        ...     "data_referencia",
+        ...     "codigo_negociacao",
+        ...     "data_fim_reuniao",
+        ...     "data_expiracao",
+        ...     "tipo_opcao",
+        ...     "variacao_strike_bps",
+        ...     "preco_ajuste",
+        ... }
+        True
     """
     trade_date = cv.converter_datas(date) if date is not None else None
     if trade_date is None:

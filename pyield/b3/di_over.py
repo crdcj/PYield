@@ -71,13 +71,12 @@ def di_over(data: DateLike) -> float:
         data: data da consulta para buscar a taxa DI.
 
     Returns:
-        Taxa DI para a data especificada (ex: 0.1315 para 13,15%).
-        Retorna ``nan`` se a data for feriado, fim de semana ou
-        anterior a 20/08/2012 (início da série no FTP).
+        Taxa DI em decimal ou ``nan`` se a data for feriado, fim de semana
+        ou anterior a 20/08/2012 (início da série no FTP).
 
     Examples:
         >>> import pyield as yd
-        >>> yd.di_over("28/02/2025")
+        >>> yd.di_over("28/02/2025")  # decimal (0.1315 = 13,15% a.a.)
         0.1315
         >>> yd.di_over("01/01/2025")  # Feriado
         nan
@@ -89,5 +88,4 @@ def di_over(data: DateLike) -> float:
     if data_ref < DATA_INICIO:
         return float("nan")
 
-    nome_arquivo = data_ref.strftime("%Y%m%d.txt")
-    return _buscar_taxa(nome_arquivo)
+    return _buscar_taxa(data_ref.strftime("%Y%m%d.txt"))
