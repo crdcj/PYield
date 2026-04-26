@@ -10,21 +10,11 @@ from pyield.b3.di_over import di_over
 
 # Ordem intencional: alguns módulos importam `di1` a partir de `pyield`
 # durante a inicialização do pacote.
-from pyield import selic, tn, tpf
-from pyield.bc import copom
-from pyield.bc.compromissada import compromissadas
-from pyield.bc.sgs import (
-    ptax,
-    ptax_serie,
-    selic_meta,
-    selic_meta_serie,
-    selic_over,
-    selic_over_serie,
-)
+from pyield import selic, tpf
+from pyield.bc.sgs import ptax, ptax_serie
 from pyield.fwd import forward, forwards
 from pyield.interpolador import Interpolador
 from pyield.relogio import agora, hoje
-from pyield.selic.cpm import data as copom_options
 from pyield.tn import lft, ltn, ntnb, ntnb1, ntnbprinc, ntnc, ntnf
 
 try:
@@ -35,9 +25,6 @@ except PackageNotFoundError:
 __all__ = [
     "__version__",
     "agora",
-    "compromissadas",
-    "copom",
-    "copom_options",
     "di1",
     "di_over",
     "du",
@@ -57,11 +44,6 @@ __all__ = [
     "ptax",
     "ptax_serie",
     "selic",
-    "selic_meta",
-    "selic_meta_serie",
-    "selic_over",
-    "selic_over_serie",
-    "tn",
     "tpf",
 ]
 

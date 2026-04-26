@@ -44,7 +44,7 @@ interp([30, 60]) # -> pl.Series with interpolated rates
 yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # BCB indicators
-yd.selic_over("31-05-2024")  # -> 0.000414...
+yd.selic.over("31-05-2024")  # -> 0.000414...
 ```
 
 A Colab notebook with more examples:
@@ -139,10 +139,8 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | `forward` / `forwards` | Forward-rate calculations |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
 | `ntnb1`, `ntnbprinc` | Additional bonds (NTN-B1, NTN-B Principal) |
-| `copom` | COPOM meeting calendar and next meeting |
-| `compromissadas` | BCB repo operations |
+| `selic` | Selic rate data, COPOM calendar, BCB repos, CPM options and implied probabilities |
 | `ipca` | Inflation data (historical and projections) |
-| `selic` | COPOM digital options and implied probabilities |
 | `hoje` / `agora` | Current date/time in Brazil (America/Sao_Paulo) |
 
 ## Treasury Bonds
@@ -229,7 +227,14 @@ object rather than the original data source. Migration map:
 | `yd.b3.di_over(data)` | `yd.di_over(data)` |
 | `yd.b3.di1.dados(data)` | `yd.di1.dados(data)` |
 | `yd.bc.ptax(data)` | `yd.ptax(data)` |
-| `yd.bc.selic_over(data)` | `yd.selic_over(data)` |
+| `yd.bc.selic_over(data)` | `yd.selic.over(data)` |
+| `yd.selic_over(data)` | `yd.selic.over(data)` |
+| `yd.selic_over_serie(...)` | `yd.selic.over_serie(...)` |
+| `yd.selic_meta(data)` | `yd.selic.meta(data)` |
+| `yd.selic_meta_serie(...)` | `yd.selic.meta_serie(...)` |
+| `yd.copom` | `yd.selic.copom` |
+| `yd.copom_options(data)` | `yd.selic.cpm.data(data)` |
+| `yd.compromissadas(...)` | `yd.selic.compromissadas(...)` |
 | `yd.anbima.tpf(data, titulo)` | `yd.tpf.taxas(data, titulo)` |
 | `yd.anbima.tpf_vencimentos(data, titulo)` | `yd.tpf.vencimentos(data, titulo)` |
 | `yd.anbima.imaq(data)` | `yd.tpf.estoque(data)` |

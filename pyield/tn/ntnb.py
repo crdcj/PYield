@@ -605,13 +605,13 @@ def inflacao_implicita(
     Examples:
         Busca as taxas de NTN-B para uma data de referência.
         Estas são TIRs e as taxas zero são calculadas a partir delas.
-        >>> df_ntnb = yd.tn.ntnb.dados("05-09-2024")
+        >>> df_ntnb = yd.ntnb.dados("05-09-2024")
 
         Busca as taxas de ajuste do DI Futuro para a mesma data de referência:
         >>> df_di = yd.di1.dados("05-09-2024")
 
         Calcula a inflação implícita na data de referência:
-        >>> yd.tn.ntnb.inflacao_implicita(
+        >>> yd.ntnb.inflacao_implicita(
         ...     data_liquidacao="05-09-2024",
         ...     ntnb_vencimentos=df_ntnb["data_vencimento"],
         ...     ntnb_taxas=df_ntnb["taxa_indicativa"],

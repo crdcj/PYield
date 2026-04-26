@@ -41,13 +41,7 @@ import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
-from pyield.b3._validar_pregao import data_negociacao_valida
-from pyield.b3.boletim import (
-    _baixar_zip_url,
-    _converter_para_df,
-    _parsear_xml_registros,
-    boletim_negociacao_extrair,
-)
+from pyield.b3.boletim import boletim_negociacao
 
 logger = logging.getLogger(__name__)
 
@@ -277,26 +271,14 @@ def data(date: DateLike) -> pl.DataFrame:
     if trade_date is None:
         return _empty_schema()
 
-    if not data_negociacao_valida(trade_date):
-        logger.warning(
-            "Data %s inválida para CPM. Retornando DataFrame vazio.", trade_date
-        )
-        return _empty_schema()
-
     try:
-        zip_data = _baixar_zip_url(trade_date, boletim_completo=False)
-        if not zip_data:
-            return _empty_schema()
-        xml_bytes = boletim_negociacao_extrair(zip_data)
-        records = _parsear_xml_registros(xml_bytes, "CPM")
+        df = boletim_negociacao(trade_date, prefixo_ticker="CPM")
     except Exception:
         logger.exception("CPM: falha ao baixar SPR para %s.", trade_date)
         return _empty_schema()
 
-    if not records:
+    if df.is_empty():
         return _empty_schema()
-
-    df = _converter_para_df(records)
     df = df.rename(_RENOMEAR_COLUNAS_CPM, strict=False)
     df = df.with_columns(data_referencia=trade_date)
 

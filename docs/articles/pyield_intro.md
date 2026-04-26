@@ -160,13 +160,13 @@ Acesse indicadores econômicos do BCB:
 
 ```python
 # SELIC Over (taxa anualizada)
-yd.selic_over("31-05-2024")  # -> 0.104  (10.4% a.a.)
+yd.selic.over("31-05-2024")  # -> 0.104  (10.4% a.a.)
 
 # PTAX (taxa de câmbio oficial)
 yd.ptax("31-05-2024")  # -> 5.4407
 
 # Taxa SELIC meta (definida pelo COPOM)
-yd.selic_meta("31-05-2024")  # -> 0.1075  (10.75% a.a.)
+yd.selic.meta("31-05-2024")  # -> 0.1075  (10.75% a.a.)
 
 # VNA da LFT (Valor Nominal Atualizado)
 yd.lft.vna("31-05-2024")  # -> 15234.56

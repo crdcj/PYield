@@ -39,7 +39,7 @@ interp([30, 60]) # -> Series do Polars com taxas interpoladas
 yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # Indicadores do BCB
-yd.selic_over("31-05-2024")  # -> 0.000414...
+yd.selic.over("31-05-2024")  # -> 0.000414...
 ```
 
 Um notebook no Colab com mais exemplos:
@@ -134,10 +134,8 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | `forward` / `forwards` | Cálculo de taxas a termo |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
 | `ntnb1`, `ntnbprinc` | Títulos adicionais (NTN-B1, NTN-B Principal) |
-| `copom` | Calendário de reuniões do COPOM e próxima reunião |
-| `compromissadas` | Operações compromissadas do BCB |
+| `selic` | Dados da taxa Selic, COPOM, compromissadas do BCB, CPM e probabilidades implícitas |
 | `ipca` | Dados de inflação (histórico e projeções) |
-| `selic` | Opções digitais de COPOM e probabilidades implícitas |
 | `hoje` / `agora` | Data/hora atual no Brasil (America/Sao_Paulo) |
 
 ## Títulos Públicos
@@ -230,10 +228,17 @@ não a fonte do dado. Mapa de migração:
 | `yd.b3.di1.datas_disponiveis()` | `yd.di1.datas_disponiveis()` |
 | `yd.bc.ptax(data)` | `yd.ptax(data)` |
 | `yd.bc.ptax_serie(inicio, fim)` | `yd.ptax_serie(inicio, fim)` |
-| `yd.bc.selic_over(data)` | `yd.selic_over(data)` |
-| `yd.bc.selic_over_serie(...)` | `yd.selic_over_serie(...)` |
-| `yd.bc.selic_meta(data)` | `yd.selic_meta(data)` |
-| `yd.bc.selic_meta_serie(...)` | `yd.selic_meta_serie(...)` |
+| `yd.bc.selic_over(data)` | `yd.selic.over(data)` |
+| `yd.bc.selic_over_serie(...)` | `yd.selic.over_serie(...)` |
+| `yd.bc.selic_meta(data)` | `yd.selic.meta(data)` |
+| `yd.bc.selic_meta_serie(...)` | `yd.selic.meta_serie(...)` |
+| `yd.selic_over(data)` | `yd.selic.over(data)` |
+| `yd.selic_over_serie(...)` | `yd.selic.over_serie(...)` |
+| `yd.selic_meta(data)` | `yd.selic.meta(data)` |
+| `yd.selic_meta_serie(...)` | `yd.selic.meta_serie(...)` |
+| `yd.copom` | `yd.selic.copom` |
+| `yd.copom_options(data)` | `yd.selic.cpm.data(data)` |
+| `yd.compromissadas(...)` | `yd.selic.compromissadas(...)` |
 | `yd.anbima.tpf(data, titulo)` | `yd.tpf.taxas(data, titulo)` |
 | `yd.anbima.tpf_vencimentos(data, titulo)` | `yd.tpf.vencimentos(data, titulo)` |
 | `yd.anbima.imaq(data)` | `yd.tpf.estoque(data)` |

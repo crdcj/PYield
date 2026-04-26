@@ -39,7 +39,7 @@ interp([30, 60]) # -> Series do Polars com taxas interpoladas
 yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # Indicadores do BCB
-yd.selic_over("31-05-2024")  # -> 0.000414...
+yd.selic.over("31-05-2024")  # -> 0.000414...
 ```
 
 Um notebook no Colab com mais exemplos:
@@ -235,10 +235,17 @@ Mapa de migração:
 | `yd.b3.di1.datas_disponiveis()` | `yd.di1.datas_disponiveis()` |
 | `yd.bc.ptax(data)` | `yd.ptax(data)` |
 | `yd.bc.ptax_serie(inicio, fim)` | `yd.ptax_serie(inicio, fim)` |
-| `yd.bc.selic_over(data)` | `yd.selic_over(data)` |
-| `yd.bc.selic_over_serie(...)` | `yd.selic_over_serie(...)` |
-| `yd.bc.selic_meta(data)` | `yd.selic_meta(data)` |
-| `yd.bc.selic_meta_serie(...)` | `yd.selic_meta_serie(...)` |
+| `yd.bc.selic_over(data)` | `yd.selic.over(data)` |
+| `yd.bc.selic_over_serie(...)` | `yd.selic.over_serie(...)` |
+| `yd.bc.selic_meta(data)` | `yd.selic.meta(data)` |
+| `yd.bc.selic_meta_serie(...)` | `yd.selic.meta_serie(...)` |
+| `yd.selic_over(data)` | `yd.selic.over(data)` |
+| `yd.selic_over_serie(...)` | `yd.selic.over_serie(...)` |
+| `yd.selic_meta(data)` | `yd.selic.meta(data)` |
+| `yd.selic_meta_serie(...)` | `yd.selic.meta_serie(...)` |
+| `yd.copom` | `yd.selic.copom` |
+| `yd.copom_options(data)` | `yd.selic.cpm.data(data)` |
+| `yd.compromissadas(...)` | `yd.selic.compromissadas(...)` |
 | `yd.anbima.tpf(data, titulo)` | `yd.tpf.taxas(data, titulo)` |
 | `yd.anbima.tpf_vencimentos(data, titulo)` | `yd.tpf.vencimentos(data, titulo)` |
 | `yd.anbima.imaq(data)` | `yd.tpf.estoque(data)` |

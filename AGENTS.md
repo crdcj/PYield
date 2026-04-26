@@ -41,10 +41,13 @@ aparecer na docstring pública, mas não deve forçar ergonomia ruim.
 
 Padrão atual:
 - namespaces de objeto para famílias coesas: `yd.futuro.*`, `yd.tpf.*`,
-  `yd.di1.*`, `yd.lft.*`, `yd.ipca.*`, `yd.du.*`;
+  `yd.di1.*`, `yd.lft.*`, `yd.ipca.*`, `yd.du.*`, `yd.selic.*`;
 - indicadores simples e muito diretos podem ficar na raiz: `yd.ptax`,
-  `yd.ptax_serie`, `yd.selic_over`, `yd.selic_over_serie`,
-  `yd.selic_meta`, `yd.selic_meta_serie`, `yd.di_over`;
+  `yd.ptax_serie`, `yd.di_over`;
+- `yd.selic` agrupa tudo relacionado à política monetária: `yd.selic.over`,
+  `yd.selic.over_serie`, `yd.selic.meta`, `yd.selic.meta_serie`,
+  `yd.selic.compromissadas`, `yd.selic.copom.*`, `yd.selic.cpm.*`,
+  `yd.selic.probabilities.*`;
 - namespaces de fonte (`b3`, `bc`, `anbima`, `tn`) devem concentrar APIs
   técnicas, específicas da fonte ou infraestrutura interna. Evite duplicar neles
   aliases públicos que já foram migrados para objeto;
