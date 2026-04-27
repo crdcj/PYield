@@ -9,7 +9,7 @@ from pyield._internal.br_numbers import pct_para_decimal
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.b3._validar_pregao import data_negociacao_valida
-from pyield.b3.futuro import contratos as ct
+from pyield.futuro import contratos as ct
 from pyield.fwd import forwards
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.

@@ -1,6 +1,6 @@
 from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tn import utils
+from pyield.tpf import utils
 
 
 def pu(

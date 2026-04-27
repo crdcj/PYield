@@ -1,1 +1,1 @@
-::: pyield.tn.ntnbprinc
+::: pyield.ntnbprinc

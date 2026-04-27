@@ -5,7 +5,7 @@ from pyield import du
 from pyield._internal.br_numbers import pct_para_decimal
 from pyield.b3._validar_pregao import intradia_disponivel
 from pyield.b3.derivativos_intradia import derivativo_intradia
-from pyield.b3.futuro.contratos import CONTRATOS_TAXA, dv01_expr
+from pyield.futuro.contratos import CONTRATOS_TAXA, dv01_expr
 from pyield.fwd import forwards
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.

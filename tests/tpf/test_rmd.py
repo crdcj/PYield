@@ -11,7 +11,7 @@ from pathlib import Path
 import polars as pl
 import requests
 
-modulo_rmd = importlib.import_module("pyield.tn.rmd")
+modulo_rmd = importlib.import_module("pyield.tpf.rmd")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_PARQUET = DIRETORIO_DADOS / "rmd_1.3.parquet"

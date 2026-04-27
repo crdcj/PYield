@@ -255,7 +255,7 @@ Mapa de migração:
 | `yd.pre.taxas_zero(data)` | `yd.tpf.curva_pre(data)` |
 
 As funções antigas listadas acima foram removidas da API pública de alto nível.
-Módulos de implementação, como `pyield.b3.futuro.intradia` e
+Módulos de implementação, como `pyield.futuro.intradia` e
 `pyield.bc.tpf_intradia`, continuam existindo para organizar a implementação e
 testes, mas a documentação passa a ensinar a API orientada ao objeto.
 

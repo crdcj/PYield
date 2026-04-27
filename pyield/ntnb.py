@@ -6,7 +6,7 @@ import polars as pl
 import pyield._internal.converters as conversores
 from pyield import du, fwd, interpolador
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
-from pyield.tn import utils
+from pyield.tpf import utils
 
 """
 Constantes calculadas conforme regras da ANBIMA e em base 100.

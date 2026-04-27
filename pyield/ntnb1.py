@@ -5,7 +5,7 @@ import polars as pl
 import pyield._internal.converters as conversores
 from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tn import utils
+from pyield.tpf import utils
 
 """
 Parâmetros globais para cálculos de NTN-B1.

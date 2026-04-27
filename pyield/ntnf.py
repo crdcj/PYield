@@ -8,7 +8,7 @@ import pyield._internal.converters as cv
 import pyield.interpolador as ip
 from pyield import di1, du
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
-from pyield.tn import utils
+from pyield.tpf import utils
 
 """
 Constantes calculadas conforme regras da ANBIMA

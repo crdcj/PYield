@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 modulo_derivativos = importlib.import_module("pyield.b3.derivativos_intradia")
-modulo_futuro_intradia = importlib.import_module("pyield.b3.futuro.intradia")
+modulo_futuro_intradia = importlib.import_module("pyield.futuro.intradia")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 DATA_REFERENCIA = dt.date(2026, 3, 10)

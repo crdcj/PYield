@@ -3,7 +3,7 @@ import polars as pl
 import pyield._internal.converters as cv
 from pyield import du, fwd
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tn import utils
+from pyield.tpf import utils
 
 VALOR_FACE = 1000
 

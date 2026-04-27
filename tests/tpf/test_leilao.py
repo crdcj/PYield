@@ -5,7 +5,7 @@ from pathlib import Path
 
 import polars as pl
 
-modulo_leiloes = importlib.import_module("pyield.tn.leiloes")
+modulo_leiloes = importlib.import_module("pyield.tpf.leiloes")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_JSON = DIRETORIO_DADOS / "leilao_20251023.json"

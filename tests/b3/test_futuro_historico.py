@@ -6,7 +6,7 @@ from polars.testing import assert_frame_equal
 
 import pyield as yd
 
-modulo_historico = importlib.import_module("pyield.b3.futuro.historico")
+modulo_historico = importlib.import_module("pyield.futuro.historico")
 
 
 def test_historico_usa_dataset_pr(monkeypatch):

@@ -11,8 +11,8 @@ import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
-from pyield.b3.futuro.historico import buscar_historico_cacheado
-from pyield.b3.futuro.historico import datas_disponiveis as _datas_futuro
+from pyield.futuro.historico import buscar_historico_cacheado
+from pyield.futuro.historico import datas_disponiveis as _datas_futuro
 from pyield.interpolador import Interpolador
 
 

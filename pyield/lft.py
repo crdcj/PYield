@@ -4,7 +4,7 @@ import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.bc.vna import vna
-from pyield.tn import utils
+from pyield.tpf import utils
 
 __all__ = ["cotacao", "dados", "inflacao_implicita", "taxa", "vencimentos", "vna"]
 
