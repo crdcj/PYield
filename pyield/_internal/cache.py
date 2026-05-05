@@ -21,14 +21,15 @@ def ttl_cache(ttl: int = _TTL_PADRAO, maxsize: int = _TAMANHO_MAXIMO):
         _cache: dict = {}
 
         @wraps(func)
-        def wrapper(*args):
+        def wrapper(*args, **kwargs):
+            chave = (args, tuple(sorted(kwargs.items())))
             agora = time.monotonic()
-            if args in _cache:
-                resultado, expira_em = _cache[args]
+            if chave in _cache:
+                resultado, expira_em = _cache[chave]
                 if agora < expira_em:
                     return resultado
-            resultado = func(*args)
-            _cache[args] = (resultado, agora + ttl)
+            resultado = func(*args, **kwargs)
+            _cache[chave] = (resultado, agora + ttl)
             # Remove entrada mais antiga quando excede o tamanho máximo
             if len(_cache) > maxsize:
                 _cache.pop(next(iter(_cache)))
