@@ -29,10 +29,10 @@ URL_BASE_RELEASE = "https://github.com/crdcj/PYield/releases/download/test-data"
 
 def test_boletim_api_publica():
     assert yd.b3.boletim is modulo_boletim
+    assert yd.b3.boletim.baixar_zip is modulo_boletim.baixar_zip
     assert yd.b3.boletim.buscar is modulo_boletim.buscar
     assert yd.b3.boletim.ler is modulo_boletim.ler
-    assert yd.b3.boletim.extrair is modulo_boletim.extrair
-    assert yd.b3.boletim.__all__ == ["buscar", "extrair", "ler"]
+    assert yd.b3.boletim.__all__ == ["baixar_zip", "buscar", "ler"]
 
 
 def _criar_zip_boletim(nome_xml: str = "PR260112.xml") -> bytes:
@@ -43,7 +43,7 @@ def _criar_zip_boletim(nome_xml: str = "PR260112.xml") -> bytes:
     zip_externo_bytes = io.BytesIO()
     with zipfile.ZipFile(zip_externo_bytes, "w") as zip_externo:
         zip_externo.writestr("PR260112.zip", zip_interno_bytes.getvalue())
-        zip_externo.writestr("padding.bin", b"x" * modulo_boletim.MIN_TAMANHO_ZIP_BYTES)
+        zip_externo.writestr("padding.bin", b"x" * 1024)
     return zip_externo_bytes.getvalue()
 
 
@@ -53,23 +53,25 @@ def test_zip_valido_reconhece_zip_aninhado_com_xml():
 
 def test_zip_valido_rejeita_conteudo_pequeno_ou_ilegivel():
     assert not modulo_boletim._zip_valido(b"")
-    assert not modulo_boletim._zip_valido(b"x" * modulo_boletim.MIN_TAMANHO_ZIP_BYTES)
+    assert not modulo_boletim._zip_valido(b"x" * 1024)
 
 
 def test_zip_valido_rejeita_zip_interno_sem_xml():
     assert not modulo_boletim._zip_valido(_criar_zip_boletim(nome_xml="dados.txt"))
 
 
-def test_baixar_zip_url_descarta_zip_invalido(monkeypatch):
+def test_baixar_zip_descarta_zip_invalido(monkeypatch):
     class Resposta:
-        content = b"x" * modulo_boletim.MIN_TAMANHO_ZIP_BYTES
+        content = b"x" * 1024
 
         def raise_for_status(self):
             pass
 
-    monkeypatch.setattr(modulo_boletim._SESSAO, "get", lambda *_args, **_kwargs: Resposta())
+    monkeypatch.setattr(
+        modulo_boletim._SESSAO, "get", lambda *_args, **_kwargs: Resposta()
+    )
 
-    resultado = modulo_boletim._baixar_zip_url(dt.date(2026, 1, 13), False)
+    resultado = modulo_boletim.baixar_zip(dt.date(2026, 1, 13), False)
 
     assert resultado == b""
 
@@ -159,8 +161,8 @@ def test_boletim_reusa_download_xml_por_data(monkeypatch):
             }
         ).cast({"TradDt": pl.Date})
 
-    monkeypatch.setattr(modulo_boletim, "_baixar_zip_url", _baixar_zip_falso)
-    monkeypatch.setattr(modulo_boletim, "extrair", _extrair_xml_falso)
+    monkeypatch.setattr(modulo_boletim, "baixar_zip", _baixar_zip_falso)
+    monkeypatch.setattr(modulo_boletim, "_extrair", _extrair_xml_falso)
     monkeypatch.setattr(modulo_boletim, "_processar_xml_extraido", _processar_xml_falso)
 
     _ = modulo_boletim.buscar(data="12-01-2026", prefixo_ticker="DI1")

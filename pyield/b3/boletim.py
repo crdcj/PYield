@@ -1,8 +1,30 @@
 """Boletim de Negociação da B3.
 
-Este módulo expõe helpers técnicos para buscar, extrair e ler o Price Report
-da B3. As funções preservam o schema bruto da fonte e servem como base para
+Este módulo expõe helpers técnicos para buscar e ler o Price Report da B3.
+As funções preservam o schema bruto da fonte e servem como base para
 camadas públicas enriquecidas, como ``futuro`` e ``selic.cpm``.
+
+Estrutura resumida de um registro do XML bruto da B3::
+
+    <PricRpt>
+        <TradDt><Dt>2026-04-01</Dt></TradDt>
+        <SctyId><TckrSymb>DI1F31</TckrSymb></SctyId>
+        <FinInstrmId>
+            <OthrId>
+                <Id>200000235664</Id>
+                <Tp><Prtry>8</Prtry></Tp>
+            </OthrId>
+            <PlcOfListg><MktIdrCd>BVMF</MktIdrCd></PlcOfListg>
+        </FinInstrmId>
+        <TradDtls><TradQty>29880</TradQty></TradDtls>
+        <FinInstrmAttrbts>
+            <MktDataStrmId>E</MktDataStrmId>
+            ...
+            <MinTradLmt Ccy="BRL">12.87</MinTradLmt>
+        </FinInstrmAttrbts>
+    </PricRpt>
+
+Ref: https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf
 """
 
 import datetime as dt
@@ -10,6 +32,7 @@ import io
 import logging
 import re
 import zipfile
+from pathlib import Path
 
 import polars as pl
 import requests
@@ -23,24 +46,14 @@ from pyield.b3._contratos import normalizar_contratos
 from pyield.b3._validar_pregao import data_negociacao_valida
 
 __all__ = [
+    "baixar_zip",
     "buscar",
-    "extrair",
     "ler",
 ]
-
-logger = logging.getLogger(__name__)
-
-# --- Constantes de Processamento XML ---
-NAMESPACE_B3 = "urn:bvmf.217.01.xsd"
-NAMESPACES = {"ns": NAMESPACE_B3}
-# ZIP válido do price report ~2KB; 1KB detecta arquivos "sem dados"
-MIN_TAMANHO_ZIP_BYTES = 1024
-XPATH_PRICE_REPORT = "//ns:PricRpt"
 
 # --- Mapeamento de Colunas ---
 # Estrutura: (id_pdf, nome_xml, tipo_polars)
 # Esta camada base preserva os nomes originais do XML da B3.
-# https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf
 COLUNAS_PRICE_REPORT: list[tuple[str, str, type[pl.DataType]]] = [
     ("1.00", "TradDt", pl.Date),
     ("2.01", "TckrSymb", pl.String),
@@ -86,7 +99,7 @@ COLUNAS_PRICE_REPORT: list[tuple[str, str, type[pl.DataType]]] = [
 # Schema completo: nome_xml → tipo_polars. Garante ordem e tipagem constante.
 SCHEMA_PRICE_REPORT = {nome: tipo for _, nome, tipo in COLUNAS_PRICE_REPORT}
 
-
+logger = logging.getLogger(__name__)
 _SESSAO = requests.Session()
 _SESSAO.headers["User-Agent"] = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -96,14 +109,30 @@ _SESSAO.headers["User-Agent"] = (
 
 @ttl_cache()
 @retry_padrao
-def _baixar_zip_url(data: dt.date, boletim_completo: bool) -> bytes:
+def baixar_zip(data: DateLike, boletim_completo: bool = False) -> bytes:
+    """Baixa o ZIP bruto do Boletim de Negociação da B3.
+
+    Faz o download do Price Report da B3, no formato completo (PR) ou no
+    simplified price report (SPR), e retorna apenas ZIPs estruturalmente
+    válidos para persistência como dado bruto.
+
+    Args:
+        data: Data de negociação no formato 'DD-MM-YYYY', 'DD/MM/YYYY',
+            'YYYY-MM-DD' ou objeto datetime.date.
+        boletim_completo: Se False (padrão), usa o simplified price report
+            (SPR). Se True, usa o price report completo (PR).
+
+    Returns:
+        Conteúdo do ZIP externo em bytes quando o ZIP contém um XML legível.
+        Retorna ``b""`` quando a resposta não contém um ZIP válido.
+    """
+    if any_is_empty(data):
+        return bytes()
+
+    data = cv.converter_datas(data)
     data_str = data.strftime("%y%m%d")
-    if boletim_completo:
-        url = f"https://www.b3.com.br/pesquisapregao/download?filelist=PR{data_str}.zip"
-    else:
-        url = (
-            f"https://www.b3.com.br/pesquisapregao/download?filelist=SPRD{data_str}.zip"
-        )
+    prefixo = "PR" if boletim_completo else "SPRD"
+    url = f"https://www.b3.com.br/pesquisapregao/download?filelist={prefixo}{data_str}.zip"
 
     resposta = _SESSAO.get(url, timeout=(5, 10))
     resposta.raise_for_status()
@@ -113,42 +142,43 @@ def _baixar_zip_url(data: dt.date, boletim_completo: bool) -> bytes:
     return resposta.content
 
 
-def _zip_valido(conteudo_zip: bytes) -> bool:
+def _zip_valido(conteudo_zip: bytes) -> bool:  # noqa: PLR0911
     """Verifica se o ZIP bruto do boletim contém um XML legível."""
-    if len(conteudo_zip) < MIN_TAMANHO_ZIP_BYTES:
+    tamanho_minimo = 1024  # ZIP válido ~2KB; 1KB detecta arquivos "sem dados"
+    if len(conteudo_zip) < tamanho_minimo:
         logger.debug("ZIP do boletim ignorado: tamanho menor que o mínimo.")
         return False
 
-    valido = False
     try:
         with zipfile.ZipFile(io.BytesIO(conteudo_zip), "r") as zip_externo:
             nomes = zip_externo.namelist()
             if not nomes:
                 logger.debug("ZIP externo do boletim está vazio.")
-            elif zip_externo.testzip() is not None:
+                return False
+            if zip_externo.testzip() is not None:
                 logger.debug("ZIP externo do boletim contém arquivo corrompido.")
-            else:
-                conteudo_interno = zip_externo.read(nomes[0])
-                with zipfile.ZipFile(io.BytesIO(conteudo_interno), "r") as zip_interno:
-                    nomes_xml = [
-                        nome for nome in zip_interno.namelist() if nome.endswith(".xml")
-                    ]
-                    if not nomes_xml:
-                        logger.debug("ZIP interno do boletim não contém XML.")
-                    elif zip_interno.testzip() is not None:
-                        logger.debug(
-                            "ZIP interno do boletim contém arquivo corrompido."
-                        )
-                    else:
-                        valido = True
+                return False
+
+            conteudo_interno = zip_externo.read(nomes[0])
+            with zipfile.ZipFile(io.BytesIO(conteudo_interno), "r") as zip_interno:
+                nomes_xml = [
+                    nome for nome in zip_interno.namelist() if nome.endswith(".xml")
+                ]
+                if not nomes_xml:
+                    logger.debug("ZIP interno do boletim não contém XML.")
+                    return False
+                if zip_interno.testzip() is not None:
+                    logger.debug("ZIP interno do boletim contém arquivo corrompido.")
+                    return False
 
     except (zipfile.BadZipFile, KeyError, OSError, RuntimeError):
-        logger.debug("ZIP do boletim inválido ou ilegível.", exc_info=True)
+        logger.debug("ZIP do boletim inválido ou ilegível.")
+        return False
 
-    return valido
+    return True
 
 
-def extrair(conteudo_zip: bytes) -> bytes:
+def _extrair(conteudo_zip: bytes) -> bytes:
     """Extrai o XML válido do ZIP aninhado do Price Report da B3.
 
     O ZIP da B3 contém um ZIP interno, que por sua vez contém um ou
@@ -221,6 +251,7 @@ def _extrair_dados_contrato(pric_rpt: etree._Element) -> dict | None:
 
 
 def _parsear_xml_registros(xml_bytes: bytes) -> list[dict]:
+    namespaces = {"ns": "urn:bvmf.217.01.xsd"}
     analisador = etree.XMLParser(
         ns_clean=True,
         remove_blank_text=True,
@@ -231,7 +262,7 @@ def _parsear_xml_registros(xml_bytes: bytes) -> list[dict]:
         load_dtd=False,
     )
     arvore = etree.parse(io.BytesIO(xml_bytes), parser=analisador)
-    resultado = arvore.xpath(XPATH_PRICE_REPORT, namespaces=NAMESPACES)
+    resultado = arvore.xpath("//ns:PricRpt", namespaces=namespaces)
     elementos: list[etree._Element] = resultado  # type: ignore[assignment]
     registros = [
         dados
@@ -272,10 +303,10 @@ def _filtrar_df(
 
 
 def _obter_df_boletim(data: dt.date, boletim_completo: bool) -> pl.DataFrame:
-    dados_zip = _baixar_zip_url(data, boletim_completo)
+    dados_zip = baixar_zip(data, boletim_completo)
     if not dados_zip:
         return pl.DataFrame()
-    xml_bytes = extrair(dados_zip)
+    xml_bytes = _extrair(dados_zip)
     return _processar_xml_extraido(xml_bytes)
 
 
@@ -404,20 +435,22 @@ def buscar(
 
 
 def ler(
-    xml_bytes: bytes,
+    fonte: bytes | Path,
     prefixo_ticker: str | list[str] | None = None,
     comprimento_ticker: int | None = None,
 ) -> pl.DataFrame:
-    """Lê e processa o price report da B3 a partir do conteúdo XML bruto.
+    """Lê e processa o price report da B3 a partir do dado bruto.
 
-    Mesma saída de :func:`buscar`, mas recebe o XML já
-    descomprimido em vez de baixar da rede.
+    Mesma saída de :func:`buscar`, mas recebe o dado bruto em vez de
+    baixar da rede. Aceita o ZIP externo como ``bytes`` ou ``Path``
+    (caminho para o arquivo ZIP), e também XML descomprimido como ``bytes``.
 
-    Por operar diretamente sobre o XML bruto, esta função preserva a
+    Por operar diretamente sobre o dado bruto, esta função preserva a
     terminologia da fonte para filtros de `TckrSymb`.
 
     Args:
-        xml_bytes: Conteúdo do XML em bytes (já descomprimido).
+        fonte: ZIP externo em bytes, caminho (``Path``) para um arquivo ZIP
+            no disco, ou XML já descomprimido em bytes.
         prefixo_ticker: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',
             'CPM') ou lista de prefixos (ex.: ['DI1', 'DAP']).
             Se None (padrão), retorna todos os ativos sem filtro.
@@ -429,8 +462,12 @@ def ler(
         pl.DataFrame: DataFrame com as mesmas colunas documentadas em
         :func:`buscar`.
     """
-    if any_is_empty(xml_bytes):
+    conteudo = fonte.read_bytes() if isinstance(fonte, Path) else fonte
+
+    if any_is_empty(conteudo):
         return pl.DataFrame()
+
+    xml_bytes = _extrair(conteudo) if conteudo[:4] == b"PK\x03\x04" else conteudo
 
     df = _processar_xml_extraido(xml_bytes)
     if df.is_empty() or prefixo_ticker is None:
