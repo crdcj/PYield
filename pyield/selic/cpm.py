@@ -41,7 +41,7 @@ import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
-from pyield.b3.boletim import boletim_negociacao
+from pyield.b3 import boletim
 
 logger = logging.getLogger(__name__)
 
@@ -271,7 +271,7 @@ def data(date: DateLike) -> pl.DataFrame:
         return _empty_schema()
 
     try:
-        df = boletim_negociacao(trade_date, prefixo_ticker="CPM")
+        df = boletim.buscar(trade_date, prefixo_ticker="CPM")
     except Exception:
         logger.exception("CPM: falha ao baixar SPR para %s.", trade_date)
         return _empty_schema()

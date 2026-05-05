@@ -1,36 +1,13 @@
-"""
-Exemplo de trecho do XML bruto da B3:
-    <PricRpt>
-        <TradDt>
-            <Dt>2026-04-01</Dt>
-        </TradDt>
-        <SctyId>
-            <TckrSymb>DI1F31</TckrSymb>
-        </SctyId>
-        <FinInstrmId>
-            <OthrId>
-                <Id>200000235664</Id>
-                <Tp>
-                    <Prtry>8</Prtry>
-                </Tp>
-            </OthrId>
-            <PlcOfListg>
-                <MktIdrCd>BVMF</MktIdrCd>
-            </PlcOfListg>
-        </FinInstrmId>
-        <TradDtls>
-            <TradQty>29880</TradQty>
-        </TradDtls>
-        <FinInstrmAttrbts>
-            <MktDataStrmId>E</MktDataStrmId>
-            ...
-            <MinTradLmt Ccy="BRL">12.87</MinTradLmt>
-        </FinInstrmAttrbts>
-    </PricRpt>
+"""Boletim de Negociação da B3.
+
+Este módulo expõe helpers técnicos para buscar, extrair e ler o Price Report
+da B3. As funções preservam o schema bruto da fonte e servem como base para
+camadas públicas enriquecidas, como ``futuro`` e ``selic.cpm``.
 """
 
 import datetime as dt
 import io
+import logging
 import re
 import zipfile
 
@@ -44,6 +21,14 @@ from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.b3._contratos import normalizar_contratos
 from pyield.b3._validar_pregao import data_negociacao_valida
+
+__all__ = [
+    "buscar",
+    "extrair",
+    "ler",
+]
+
+logger = logging.getLogger(__name__)
 
 # --- Constantes de Processamento XML ---
 NAMESPACE_B3 = "urn:bvmf.217.01.xsd"
@@ -123,12 +108,47 @@ def _baixar_zip_url(data: dt.date, boletim_completo: bool) -> bytes:
     resposta = _SESSAO.get(url, timeout=(5, 10))
     resposta.raise_for_status()
 
-    if len(resposta.content) < MIN_TAMANHO_ZIP_BYTES:
+    if not _zip_valido(resposta.content):
         return bytes()
     return resposta.content
 
 
-def boletim_negociacao_extrair(conteudo_zip: bytes) -> bytes:
+def _zip_valido(conteudo_zip: bytes) -> bool:
+    """Verifica se o ZIP bruto do boletim contém um XML legível."""
+    if len(conteudo_zip) < MIN_TAMANHO_ZIP_BYTES:
+        logger.debug("ZIP do boletim ignorado: tamanho menor que o mínimo.")
+        return False
+
+    valido = False
+    try:
+        with zipfile.ZipFile(io.BytesIO(conteudo_zip), "r") as zip_externo:
+            nomes = zip_externo.namelist()
+            if not nomes:
+                logger.debug("ZIP externo do boletim está vazio.")
+            elif zip_externo.testzip() is not None:
+                logger.debug("ZIP externo do boletim contém arquivo corrompido.")
+            else:
+                conteudo_interno = zip_externo.read(nomes[0])
+                with zipfile.ZipFile(io.BytesIO(conteudo_interno), "r") as zip_interno:
+                    nomes_xml = [
+                        nome for nome in zip_interno.namelist() if nome.endswith(".xml")
+                    ]
+                    if not nomes_xml:
+                        logger.debug("ZIP interno do boletim não contém XML.")
+                    elif zip_interno.testzip() is not None:
+                        logger.debug(
+                            "ZIP interno do boletim contém arquivo corrompido."
+                        )
+                    else:
+                        valido = True
+
+    except (zipfile.BadZipFile, KeyError, OSError, RuntimeError):
+        logger.debug("ZIP do boletim inválido ou ilegível.", exc_info=True)
+
+    return valido
+
+
+def extrair(conteudo_zip: bytes) -> bytes:
     """Extrai o XML válido do ZIP aninhado do Price Report da B3.
 
     O ZIP da B3 contém um ZIP interno, que por sua vez contém um ou
@@ -251,25 +271,26 @@ def _filtrar_df(
     return df.sort("TckrSymb")
 
 
-def _obter_df_boletim_negociacao(data: dt.date, boletim_completo: bool) -> pl.DataFrame:
+def _obter_df_boletim(data: dt.date, boletim_completo: bool) -> pl.DataFrame:
     dados_zip = _baixar_zip_url(data, boletim_completo)
     if not dados_zip:
         return pl.DataFrame()
-    xml_bytes = boletim_negociacao_extrair(dados_zip)
+    xml_bytes = extrair(dados_zip)
     return _processar_xml_extraido(xml_bytes)
 
 
-def boletim_negociacao(
+def buscar(
     data: DateLike,
     prefixo_ticker: str | list[str] | None = None,
     comprimento_ticker: int | None = None,
     boletim_completo: bool = False,
 ) -> pl.DataFrame:
-    """Busca e processa o Boletim de Negociacao da B3 no site oficial.
+    """Busca e processa o Boletim de Negociação da B3 no site oficial.
 
-    Faz o download do ZIP com XML, extrai os dados do contrato e devolve um
-    DataFrame Polars com os dados brutos do XML e colunas no padrão
-    original da B3 (nomes em inglês das tags XML).
+    Faz o download do Price Report da B3, no formato completo (PR) ou no
+    simplified price report (SPR), extrai o XML do ZIP publicado em
+    ``pesquisapregao`` e devolve um DataFrame Polars com dados brutos e
+    colunas no padrão original da B3 (nomes em inglês das tags XML).
 
     O DataFrame retornado **não** contém colunas calculadas
     (dias_uteis, dias_corridos, dv01, taxa_forward)
@@ -353,14 +374,14 @@ def boletim_negociacao(
         etree.XMLSyntaxError: Se o XML recebido estiver malformado.
 
     Examples:
-        >>> from pyield.b3.boletim import boletim_negociacao
-        >>> df = boletim_negociacao("26-04-2024", "DI1")
+        >>> import pyield as yd
+        >>> df = yd.b3.boletim.buscar("26-04-2024", "DI1")
 
         >>> # Múltiplos contratos de uma vez
-        >>> df = boletim_negociacao("26-04-2024", ["DI1", "DAP"])
+        >>> df = yd.b3.boletim.buscar("26-04-2024", ["DI1", "DAP"])
 
         >>> # Feriado ou fim de semana (retorna DataFrame vazio)
-        >>> df = boletim_negociacao("25-12-2023", "DI1")  # Véspera de Natal
+        >>> df = yd.b3.boletim.buscar("25-12-2023", "DI1")
         >>> df.is_empty()
         True
     """
@@ -372,7 +393,7 @@ def boletim_negociacao(
     if not data_negociacao_valida(data):
         return pl.DataFrame()
 
-    df = _obter_df_boletim_negociacao(data, boletim_completo)
+    df = _obter_df_boletim(data, boletim_completo)
     if df.is_empty() or prefixo_ticker is None:
         return df
 
@@ -382,14 +403,14 @@ def boletim_negociacao(
     return _filtrar_df(df, prefixos, comprimento_ticker)
 
 
-def boletim_negociacao_ler(
+def ler(
     xml_bytes: bytes,
     prefixo_ticker: str | list[str] | None = None,
     comprimento_ticker: int | None = None,
 ) -> pl.DataFrame:
     """Lê e processa o price report da B3 a partir do conteúdo XML bruto.
 
-    Mesma saída de :func:`boletim_negociacao`, mas recebe o XML já
+    Mesma saída de :func:`buscar`, mas recebe o XML já
     descomprimido em vez de baixar da rede.
 
     Por operar diretamente sobre o XML bruto, esta função preserva a
@@ -406,7 +427,7 @@ def boletim_negociacao_ler(
 
     Returns:
         pl.DataFrame: DataFrame com as mesmas colunas documentadas em
-        :func:`boletim_negociacao`.
+        :func:`buscar`.
     """
     if any_is_empty(xml_bytes):
         return pl.DataFrame()

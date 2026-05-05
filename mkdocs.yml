@@ -29,6 +29,7 @@ nav:
       - DI1: di1.md
       - Futuro: futuro.md
   - Dados Auxiliares:
+      - B3: b3.md
       - IPCA: ipca.md
       - Selic / COPOM: selic.md
 

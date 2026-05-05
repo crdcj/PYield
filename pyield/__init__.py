@@ -3,7 +3,7 @@
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
-from pyield import du, ipca
+from pyield import b3, du, ipca
 from pyield.b3.di_over import di_over
 from pyield import futuro, di1
 
@@ -24,6 +24,7 @@ except PackageNotFoundError:
 __all__ = [
     "__version__",
     "agora",
+    "b3",
     "di1",
     "di_over",
     "du",
