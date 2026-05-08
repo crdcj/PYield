@@ -13,7 +13,7 @@ Although it includes data and tools from other markets (such as DI1, DAP, and PT
 ## Quick Links
 
 - Full documentation: https://crdcj.github.io/PYield/
-- Colab notebook: https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb
+- Colab notebook: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb)
 - Package on PyPI: https://pypi.org/project/pyield/
 
 ## Installation

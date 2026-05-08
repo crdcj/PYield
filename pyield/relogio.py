@@ -1,8 +1,17 @@
 import datetime as dt
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-# Fuso horário do Brasil (São Paulo), usado para mercados e B3
-BR_TZ = ZoneInfo("America/Sao_Paulo")
+try:
+    # Fuso horário do Brasil (São Paulo), usado para mercados e B3.
+    BR_TZ = ZoneInfo("America/Sao_Paulo")
+except ZoneInfoNotFoundError as e:
+    msg = (
+        "Não foi possível carregar o fuso horário 'America/Sao_Paulo'. "
+        "O Python requer dados IANA de timezone para usar zoneinfo. "
+        "Em Windows, instale a dependência 'tzdata' ou use uma distribuição "
+        "Python que já forneça esses dados."
+    )
+    raise ZoneInfoNotFoundError(msg) from e
 
 
 def agora() -> dt.datetime:
