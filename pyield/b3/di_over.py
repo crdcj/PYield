@@ -13,9 +13,12 @@ Notas de implementação:
 """
 
 import datetime as dt
-import ftplib
 import logging
+import time
+import urllib.error
+import urllib.request
 
+from pyield import du
 from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
 from pyield._internal.types import DateLike, any_is_empty
@@ -28,36 +31,36 @@ DATA_INICIO = dt.date(2012, 8, 20)
 # 4 casas decimais na taxa = 2 casas decimais em percentual
 CASAS_DECIMAIS_DI_OVER = 4
 
+_URL_BASE = "ftp://ftp.cetip.com.br/MediaCDI/"
+_MAX_TENTATIVAS = 3
+_ESPERA = 2.0  # segundos entre tentativas (erro 421 é transitório)
+
 
 @ttl_cache()
 def _buscar_taxa(nome_arquivo: str) -> float:
     """Busca a taxa DI no FTP da CETIP para o arquivo informado."""
-    try:
-        with ftplib.FTP("ftp.cetip.com.br", timeout=10) as ftp:
-            ftp.login()
-            ftp.cwd("/MediaCDI")
-
-            linhas = []
-            try:
-                ftp.retrlines(f"RETR {nome_arquivo}", linhas.append)
-            except ftplib.error_perm as e:
-                # Código 550 = arquivo não encontrado (feriado/fim de semana)
-                if str(e).startswith("550"):
-                    return float("nan")
-                raise
-
-            if not linhas:
-                registro.error("Arquivo %s está vazio.", nome_arquivo)
-                return float("nan")
-
-            # Formato usual: "00001315" -> 13.15% -> 0.1315
-            taxa_bruta = linhas[0].strip()
-            taxa = int(taxa_bruta) / 10**CASAS_DECIMAIS_DI_OVER
+    for tentativa in range(1, _MAX_TENTATIVAS + 1):
+        try:
+            with urllib.request.urlopen(_URL_BASE + nome_arquivo, timeout=10) as r:
+                conteudo = r.read().decode().strip()
+            taxa = int(conteudo) / 10**CASAS_DECIMAIS_DI_OVER
             return round(taxa, CASAS_DECIMAIS_DI_OVER)
+        except urllib.error.URLError as e:
+            motivo = str(e.reason)
+            # Código 550 = arquivo não encontrado (feriado/fim de semana)
+            if "550" in motivo:
+                return float("nan")
+            # Código 421 = muitas conexões simultâneas; erro transitório
+            if "421" in motivo and tentativa < _MAX_TENTATIVAS:
+                registro.warning(
+                    "Erro FTP transitório (tentativa %s): %s", tentativa, e.reason
+                )
+                time.sleep(_ESPERA)
+                continue
+            raise ConnectionError(f"Falha ao buscar taxa DI via FTP: {e.reason}") from e
 
-    except ftplib.all_errors as e:
-        registro.error("Erro de conexão ou transferência FTP: %s", e)
-        raise ConnectionError(f"Falha ao buscar taxa DI via FTP: {e}") from e
+    msg = "Fluxo de retry inválido."
+    raise RuntimeError(msg)
 
 
 def di_over(data: DateLike) -> float:
@@ -85,7 +88,7 @@ def di_over(data: DateLike) -> float:
         return float("nan")
 
     data_ref = converter_datas(data)
-    if data_ref < DATA_INICIO:
+    if data_ref < DATA_INICIO or not du.eh_dia_util(data_ref):
         return float("nan")
 
     return _buscar_taxa(data_ref.strftime("%Y%m%d.txt"))
