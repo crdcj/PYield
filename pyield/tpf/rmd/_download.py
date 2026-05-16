@@ -13,6 +13,7 @@ URL_BASE = (
     "https://www.tesourotransparente.gov.br/publicacoes/relatorio-mensal-da-divida-rmd"
 )
 _TIMEOUT_SEGUNDOS = 60
+_TTL_UM_DIA = 86_400  # segundos
 
 
 @retry_padrao
@@ -44,9 +45,6 @@ def _extrair_excel(conteudo_zip: bytes) -> bytes:
         if not nomes_excel:
             raise ValueError("Nenhum arquivo Excel encontrado no ZIP do RMD.")
         return arquivo_zip.read(nomes_excel[0])
-
-
-_TTL_UM_DIA = 86_400  # segundos
 
 
 @ttl_cache(ttl=_TTL_UM_DIA)

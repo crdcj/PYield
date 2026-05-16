@@ -1,6 +1,6 @@
 """Parser da aba 2.1 do RMD."""
 
-import datetime as dt
+from datetime import date
 
 import polars as pl
 
@@ -27,7 +27,7 @@ _TRANSICOES: dict[str, tuple[str | None, str | None, str | None, bool]] = {
 
 def _obter_periodos_mensais(
     df_bruto: pl.DataFrame,
-) -> list[tuple[int, dt.date]]:
+) -> list[tuple[int, date]]:
     """Extrai os pares (índice_coluna, data) dos períodos mensais válidos."""
     periodos_raw = [str(p) for p in df_bruto.row(_LINHA_PERIODOS)[1:] if p is not None]
     return [

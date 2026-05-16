@@ -55,7 +55,8 @@ def rmd(aba: str) -> pl.DataFrame:
         ValueError: Se ``aba`` não estiver entre as abas implementadas.
 
     Notes:
-        - A função sempre busca a publicação mais recente disponível.
+        - A publicação mais recente é descoberta automaticamente via parse HTML
+          do Tesouro Transparente.
         - A aba ``"1.3"`` traz emissões e resgates da DPMFi.
         - A aba ``"2.1"`` traz a série histórica de estoque da DPF.
 

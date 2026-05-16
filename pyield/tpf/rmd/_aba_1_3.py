@@ -4,7 +4,7 @@ import datetime as dt
 
 import polars as pl
 
-from pyield.tpf.rmd._common import parsear_periodo
+from ._common import parsear_periodo
 
 _LINHA_PERIODOS = 2
 _LINHA_INICIO_DADOS = _LINHA_PERIODOS + 1
