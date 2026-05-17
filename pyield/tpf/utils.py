@@ -154,10 +154,9 @@ def calcular_pv(
         prazos: Prazos (em anos) para cada fluxo de caixa.
 
     Returns:
-        Soma dos valores presentes. Retorna ``float('nan')`` se:
-        - As listas/séries de entrada estiverem vazias.
-        - As listas/séries de entrada tiverem tamanhos diferentes.
-        - Qualquer valor de entrada ou resultado do cálculo for null, NaN ou inf.
+        Soma dos valores presentes. Retorna ``0.0`` se todas as entradas estiverem
+        vazias. Retorna ``float('nan')`` se:
+        - Qualquer valor de entrada ou resultado do cálculo for null ou NaN.
 
     Examples:
         Título com cupons anuais de 10% e principal de R$1000, descontado a 8% a.a.:
@@ -167,34 +166,32 @@ def calcular_pv(
         >>> round(calcular_pv(fluxos_caixa, taxas, prazos), 2)
         1051.54
 
-        Retorna NaN para entradas vazias:
-        >>> import math
-        >>> math.isnan(calcular_pv([], [], []))
-        True
+        Retorna zero para entradas vazias:
+        >>> calcular_pv([], [], [])
+        0.0
 
-        Retorna NaN para tamanhos incompatíveis:
-        >>> math.isnan(calcular_pv([100], [0.10, 0.10], [1.0]))
-        True
+        Tamanhos incompatíveis seguem a validação do Polars:
+        >>> calcular_pv([100], [0.10, 0.10], [1.0])
+        Traceback (most recent call last):
+        ...
+        polars.exceptions.ShapeError: could not create a new DataFrame: height of
+        column 'taxas' (2) does not match height of column 'fluxos_caixa' (1)
     """
-    try:
-        # A criação do DataFrame agora pode levantar um ShapeError
-        df = pl.DataFrame(
-            {
-                "fluxos_caixa": fluxos_caixa,
-                "taxas": taxas,
-                "prazos": prazos,
-            },
-            schema={
-                "fluxos_caixa": pl.Float64,
-                "taxas": pl.Float64,
-                "prazos": pl.Float64,
-            },
-        )
-    except pl.exceptions.ShapeError:
-        return float("nan")
+    df = pl.DataFrame(
+        {
+            "fluxos_caixa": fluxos_caixa,
+            "taxas": taxas,
+            "prazos": prazos,
+        },
+        schema={
+            "fluxos_caixa": pl.Float64,
+            "taxas": pl.Float64,
+            "prazos": pl.Float64,
+        },
+    )
 
     if df.is_empty():
-        return float("nan")
+        return 0.0
 
     valores_presentes = df["fluxos_caixa"] / (1 + df["taxas"]) ** df["prazos"]
 

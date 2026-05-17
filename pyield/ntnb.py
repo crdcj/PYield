@@ -525,6 +525,34 @@ def taxas_zero(
         │ 2060-08-15      ┆ 9017       ┆ 0.060652  │
         └─────────────────┴────────────┴───────────┘
 
+        Caso a liquidação ocorra logo após uma data de cupom, o valor presente
+        dos cupons anteriores pode ser zero:
+        >>> df = ntnb.dados("15-05-2026")
+        >>> ntnb.taxas_zero(
+        ...     data_liquidacao="18-05-2026",
+        ...     vencimentos=df["data_vencimento"],
+        ...     taxas=df["taxa_indicativa"],
+        ...     incluir_cupons=True,
+        ... )
+        shape: (137, 3)
+        ┌─────────────────┬────────────┬───────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
+        │ ---             ┆ ---        ┆ ---       │
+        │ date            ┆ i64        ┆ f64       │
+        ╞═════════════════╪════════════╪═══════════╡
+        │ 2026-08-15      ┆ 64         ┆ 0.102013  │
+        │ 2026-11-15      ┆ 126        ┆ 0.088186  │
+        │ 2027-02-15      ┆ 186        ┆ 0.083431  │
+        │ 2027-05-15      ┆ 249        ┆ 0.081096  │
+        │ 2027-08-15      ┆ 313        ┆ 0.081005  │
+        │ …               ┆ …          ┆ …         │
+        │ 2059-08-15      ┆ 8326       ┆ 0.070508  │
+        │ 2059-11-15      ┆ 8392       ┆ 0.070524  │
+        │ 2060-02-15      ┆ 8454       ┆ 0.07053   │
+        │ 2060-05-15      ┆ 8515       ┆ 0.070547  │
+        │ 2060-08-15      ┆ 8579       ┆ 0.070553  │
+        └─────────────────┴────────────┴───────────┘
+
     Notes:
         O cálculo considera:
         - Mapear todas as datas de pagamento até o último vencimento.
