@@ -395,6 +395,9 @@ def leilao(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
 def _processar_data_unica(data_leilao: DateLike) -> pl.DataFrame:
     """Busca e processa o leilao de uma unica data."""
     data = cv.converter_datas(data_leilao)
+    if not du.eh_dia_util(data):
+        return pl.DataFrame()
+
     dados_leilao = _buscar_dados_leilao(data)
     if not dados_leilao:
         return pl.DataFrame()

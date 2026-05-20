@@ -11,22 +11,23 @@ Trecho relevante da resposta (tabela VNA):
     28/06/2023  01/03/2026   01/07/2000   210100       14903,011480
 """
 
+import datetime as dt
+
 import requests
 
 from pyield._internal.cache import ttl_cache
-from pyield._internal.converters import converter_datas
+from pyield._internal.converters import converter_datas, data_referencia_valida
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 
 
 @ttl_cache()
 @retry_padrao
-def _baixar_texto(data_referencia: DateLike) -> str:
+def _baixar_texto(data_referencia: dt.date) -> str:
     """Baixa o arquivo diário do SELIC no site do BCB."""
     # Exemplo: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
     url_base = "https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/"
-    data = converter_datas(data_referencia)
-    url_file = f"{data.strftime('%Y%m%d')}APC238"
+    url_file = f"{data_referencia.strftime('%Y%m%d')}APC238"
     url = url_base + url_file
 
     response = requests.get(url, timeout=10)
@@ -76,7 +77,8 @@ def vna(data: DateLike) -> float:
         data: Data de referência.
 
     Returns:
-        Valor do VNA da LFT. Retorna ``nan`` se a entrada for nula ou vazia.
+        Valor do VNA da LFT. Retorna ``nan`` se a entrada for nula, vazia ou
+        uma data de referência inválida.
 
     Raises:
         ValueError: Se os valores VNA extraídos da fonte forem divergentes.
@@ -89,6 +91,10 @@ def vna(data: DateLike) -> float:
     """
     if any_is_empty(data):
         return float("nan")
+    data = converter_datas(data)
+    if not data_referencia_valida(data):
+        return float("nan")
+
     texto = _baixar_texto(data)
     tabela = _recortar_tabela(texto)
     linhas = _obter_linhas(tabela)

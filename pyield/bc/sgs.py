@@ -30,7 +30,7 @@ import requests
 from pyield import relogio
 from pyield._internal.br_numbers import pct_para_decimal
 from pyield._internal.cache import ttl_cache
-from pyield._internal.converters import converter_datas
+from pyield._internal.converters import converter_datas, data_referencia_valida
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 
@@ -373,4 +373,8 @@ def ptax(data: DateLike) -> float:
     """
     if any_is_empty(data):
         return float("nan")
+    data = converter_datas(data)
+    if not data_referencia_valida(data):
+        return float("nan")
+
     return _extrair_escalar(ptax_serie(data, data), "cotacao")

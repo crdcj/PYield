@@ -124,12 +124,16 @@ def baixar_zip(data: DateLike, boletim_completo: bool = False) -> bytes:
 
     Returns:
         Conteúdo do ZIP externo em bytes quando o ZIP contém um XML legível.
-        Retorna ``b""`` quando a resposta não contém um ZIP válido.
+        Retorna ``b""`` para data sem pregão ou quando a resposta não contém
+        um ZIP válido.
     """
     if any_is_empty(data):
         return bytes()
 
     data = cv.converter_datas(data)
+    if not data_negociacao_valida(data):
+        return bytes()
+
     data_str = data.strftime("%y%m%d")
     prefixo = "PR" if boletim_completo else "SPRD"
     url = f"https://www.b3.com.br/pesquisapregao/download?filelist={prefixo}{data_str}.zip"
