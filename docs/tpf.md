@@ -9,3 +9,7 @@ consulte as páginas individuais: [LFT](lft.md), [LTN](ltn.md),
 [NTN-B](ntnb.md), [NTN-F](ntnf.md), etc.
 
 ::: pyield.tpf
+
+## leiloes
+
+::: pyield.tpf.leiloes.leiloes

@@ -211,46 +211,47 @@ yd.tpf.secundario_mensal("01-01-2030").is_empty()    # -> True
 yd.ptax("25-12-2025")                                # -> nan
 ```
 
-## Migração da API por Objeto (v0.49.0)
+## Quebra de API em leilões de TPF (v0.50.0)
 
-A versão 0.49.0 reorganiza a API pública para privilegiar o objeto de análise,
-não a fonte do dado. Mapa de migração:
+`yd.tpf.leilao(data)` foi substituída por `yd.tpf.leiloes(...)`.
+A nova função usa parâmetros nomeados e permite consultar uma data específica,
+uma lista de datas ou um período:
 
-| Antes | Depois |
-|---|---|
-| `yd.b3.futuro(data, contrato)` | `yd.futuro.historico(data, contrato)` |
-| `yd.b3.futuro_intradia(contrato)` | `yd.futuro.intradia(contrato)` |
-| `yd.b3.futuro_datas_disponiveis(contrato)` | `yd.futuro.datas_disponiveis(contrato)` |
-| `yd.b3.futuro_enriquecer(df, contrato)` | `yd.futuro.enriquecer(df, contrato)` |
-| `yd.b3.di_over(data)` | `yd.di_over(data)` |
-| `yd.b3.di1.dados(data)` | `yd.di1.dados(data)` |
-| `yd.b3.di1.interpolar_taxa(...)` | `yd.di1.interpolar_taxa(...)` |
-| `yd.b3.di1.interpolar_taxas(...)` | `yd.di1.interpolar_taxas(...)` |
-| `yd.b3.di1.datas_disponiveis()` | `yd.di1.datas_disponiveis()` |
-| `yd.bc.ptax(data)` | `yd.ptax(data)` |
-| `yd.bc.ptax_serie(inicio, fim)` | `yd.ptax_serie(inicio, fim)` |
-| `yd.bc.selic_over(data)` | `yd.selic.over(data)` |
-| `yd.bc.selic_over_serie(...)` | `yd.selic.over_serie(...)` |
-| `yd.bc.selic_meta(data)` | `yd.selic.meta(data)` |
-| `yd.bc.selic_meta_serie(...)` | `yd.selic.meta_serie(...)` |
-| `yd.selic_over(data)` | `yd.selic.over(data)` |
-| `yd.selic_over_serie(...)` | `yd.selic.over_serie(...)` |
-| `yd.selic_meta(data)` | `yd.selic.meta(data)` |
-| `yd.selic_meta_serie(...)` | `yd.selic.meta_serie(...)` |
-| `yd.copom` | `yd.selic.copom` |
-| `yd.copom_options(data)` | `yd.selic.cpm.data(data)` |
-| `yd.compromissadas(...)` | `yd.selic.compromissadas(...)` |
-| `yd.anbima.tpf(data, titulo)` | `yd.tpf.taxas(data, titulo)` |
-| `yd.anbima.tpf_vencimentos(data, titulo)` | `yd.tpf.vencimentos(data, titulo)` |
-| `yd.anbima.imaq(data)` | `yd.tpf.estoque(data)` |
-| `yd.tn.leilao(data)` | `yd.tpf.leilao(data)` |
-| `yd.bc.tpf_intradia()` | `yd.tpf.secundario_intradia()` |
-| `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario_mensal(data, extragrupo=...)` |
-| `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
-| `yd.tn.benchmarks(...)` | `yd.tpf.benchmarks(...)` |
-| `yd.pre.taxas_zero(data)` | `yd.tpf.curva_pre(data)` |
+```python
+yd.tpf.leiloes(data="19-05-2026")
+yd.tpf.leiloes(data=["14-05-2026", "19-05-2026"])
+yd.tpf.leiloes(inicio="01-05-2026")
+yd.tpf.leiloes(inicio="01-05-2026", fim="19-05-2026")
+```
 
-As funções antigas listadas acima foram removidas da API pública de alto nível.
+## Mapa da API
+
+Veja o [mapa completo da API](https://crdcj.github.io/PYield/api-map/) na
+documentação.
+
+| Componente | Tipo | Finalidade |
+|---|---|---|
+| `yd.du` | módulo | Dias úteis e calendário brasileiro |
+| `yd.futuro` | módulo | Contratos futuros da B3 |
+| `yd.di1` | módulo | Curva DI1 e interpolação |
+| `yd.tpf` | módulo | Títulos públicos federais |
+| `yd.selic` | módulo | Selic, COPOM e política monetária |
+| `yd.ipca` | módulo | IPCA histórico e projetado |
+| `yd.lft` | módulo | LFT |
+| `yd.ltn` | módulo | LTN |
+| `yd.ntnb` | módulo | NTN-B |
+| `yd.ntnb1` | módulo | NTN-B1 |
+| `yd.ntnbprinc` | módulo | NTN-B Principal |
+| `yd.ntnc` | módulo | NTN-C |
+| `yd.ntnf` | módulo | NTN-F |
+| `yd.ptax(data)` | função | PTAX para uma data |
+| `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX |
+| `yd.di_over(data)` | função | Taxa DI Over |
+| `yd.forward(...)` | função | Taxa a termo entre dois vértices |
+| `yd.forwards(...)` | função | Curva de taxas a termo |
+| `yd.Interpolador` | classe | Interpolação de curvas |
+| `yd.hoje()` | função | Data atual no Brasil |
+| `yd.agora()` | função | Data e hora atual no Brasil |
 
 ## Documentação
 

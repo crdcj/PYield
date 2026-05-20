@@ -1,6 +1,5 @@
 import datetime as dt
 import logging
-from collections.abc import Sequence
 
 import polars as pl
 import requests
@@ -11,7 +10,7 @@ from pyield._internal import converters as cv
 from pyield._internal.br_numbers import pct_para_decimal
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
-from pyield._internal.types import DateLike, any_is_empty, is_collection
+from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.bc.sgs import ptax_serie
 from pyield.ntnb import duration as duration_b
 from pyield.ntnf import duration as duration_f
@@ -92,8 +91,11 @@ ORDEM_FINAL_COLUNAS = [
 
 @ttl_cache()
 @retry_padrao
-def _buscar_dados_leilao(data_leilao: dt.date) -> list[dict]:
-    """Busca os dados brutos da API do Tesouro para uma data específica.
+def _buscar_dados_leiloes(
+    data_leilao: dt.date | None = None,
+    ano_inicial: int | None = None,
+) -> list[dict]:
+    """Busca os dados brutos da API do Tesouro.
 
     Exemplo de resposta da API de leilões do Tesouro:
     https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/resultados?dataleilao=30/09/2025
@@ -132,7 +134,11 @@ def _buscar_dados_leilao(data_leilao: dt.date) -> list[dict]:
     endpoint_api = (
         "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/resultados"
     )
-    parametros = {"dataleilao": data_leilao.strftime("%d/%m/%Y")}
+    parametros = {}
+    if data_leilao is not None:
+        parametros["dataleilao"] = data_leilao.strftime("%d/%m/%Y")
+    if ano_inicial is not None:
+        parametros["anoinicial"] = str(ano_inicial)
 
     resposta = requests.get(endpoint_api, params=parametros, timeout=10)
     resposta.raise_for_status()
@@ -284,10 +290,14 @@ def _adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
     ).with_columns(cs.starts_with("dv01").round(2))
 
 
-def _buscar_ptax(data_leilao: dt.date) -> pl.DataFrame:
-    """Busca a PTAX para o dia util anterior e posterior a data de referencia."""
-    data_min = du.deslocar(data_leilao, -1)
-    data_max = du.deslocar(data_leilao, 1)
+def _buscar_ptax(df: pl.DataFrame) -> pl.DataFrame:
+    """Busca a PTAX para o intervalo de datas do DataFrame."""
+    inicio = df["data_1v"].min()
+    fim = df["data_1v"].max()
+    assert isinstance(inicio, dt.date)
+    assert isinstance(fim, dt.date)
+    data_min = du.deslocar(inicio, -1)
+    data_max = du.deslocar(fim, 1)
 
     df = ptax_serie(inicio=data_min, fim=data_max)
     if df.is_empty():
@@ -302,8 +312,7 @@ def _buscar_ptax(data_leilao: dt.date) -> pl.DataFrame:
 
 def _adicionar_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
     """Adiciona o DV01 em USD usando a PTAX mais recente por join_asof."""
-    data_leilao = df["data_1v"].item(0)
-    df_ptax = _buscar_ptax(data_leilao=data_leilao)
+    df_ptax = _buscar_ptax(df)
     if df_ptax.is_empty():
         logger.warning("Sem dados de PTAX para calcular DV01 em USD.")
         return df
@@ -323,19 +332,29 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(colunas_selecionadas).sort("data_1v", "titulo", "data_vencimento")
 
 
-def leilao(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
+def leiloes(
+    *,
+    data: DateLike | ArrayLike | None = None,
+    inicio: DateLike | None = None,
+    fim: DateLike | None = None,
+) -> pl.DataFrame:
     """Busca resultados de leilões de TPFs.
 
-    Fonte: Tesouro Nacional. Retorna dados de quantidades, financeiros,
-    taxas de colocação, duration e DV01 dos leilões nas datas informadas.
+    Fonte: Tesouro Nacional. Dados disponíveis a partir de 04/01/2018.
+    Retorna dados de quantidades, financeiros, taxas de colocação, duration e
+    DV01 dos leilões no período informado.
 
     Args:
-        data: Data ou sequência de datas do leilão.
+        data: Data ou sequência de datas do leilão. Padrão é ``None``.
+        inicio: Data inicial da consulta. Padrão é ``None``.
+        fim: Data final da consulta. Padrão é ``None``.
 
     Returns:
-        DataFrame Polars com os dados processados do leilão. Se ``data`` for
-        uma sequência, concatena os resultados das datas informadas. Retorna
-        DataFrame vazio se não houver dados para as datas.
+        DataFrame Polars com os dados processados dos leilões. Se ``data`` for
+        uma sequência, concatena os resultados das datas informadas. Se
+        ``inicio`` for informado, retorna os leilões a partir dessa data. Se
+        nenhum filtro temporal for informado, retorna o histórico completo.
+        Retorna DataFrame vazio se não houver dados para o período.
 
     Output Columns:
         * data_1v (Date): data de realização do leilão.
@@ -378,18 +397,70 @@ def leilao(data: DateLike | Sequence[DateLike]) -> pl.DataFrame:
         * tipo_pu_medio (String): origem do PU médio.
         * taxa_media (Float64): taxa média aceita.
         * taxa_maxima (Float64): taxa máxima aceita.
+
+    Notes:
+        ``data`` não pode ser combinado com ``inicio`` ou ``fim``. ``fim`` só
+        pode ser usado junto com ``inicio``.
     """
-    if any_is_empty(data):
+    if data is not None and (inicio is not None or fim is not None):
+        msg = "data não pode ser combinado com inicio ou fim."
+        raise ValueError(msg)
+    if fim is not None and inicio is None:
+        msg = "fim só pode ser usado junto com inicio."
+        raise ValueError(msg)
+
+    if data is not None:
+        if any_is_empty(data):
+            return pl.DataFrame()
+
+        datas = cv.converter_datas(data)
+        if not isinstance(datas, pl.Series):
+            return _processar_data_unica(datas)
+
+        if datas.null_count() > 0:
+            msg = "data deve conter apenas datas válidas."
+            raise ValueError(msg)
+
+        resultados = [_processar_data_unica(data) for data in datas]
+        resultados = [df for df in resultados if not df.is_empty()]
+        if not resultados:
+            return pl.DataFrame()
+        return pl.concat(resultados)
+
+    data_inicio = cv.converter_datas(inicio) if inicio is not None else None
+    data_fim = cv.converter_datas(fim) if fim is not None else None
+
+    if data_inicio is not None and data_fim is not None and data_inicio > data_fim:
+        msg = "inicio deve ser menor ou igual a fim."
+        raise ValueError(msg)
+
+    dados_leilao = _buscar_dados_leiloes(
+        ano_inicial=data_inicio.year if data_inicio is not None else None
+    )
+    return _processar_dados_leiloes(dados_leilao, inicio=data_inicio, fim=data_fim)
+
+
+def _processar_dados_leiloes(
+    dados_leilao: list[dict],
+    inicio: dt.date | None = None,
+    fim: dt.date | None = None,
+) -> pl.DataFrame:
+    if not dados_leilao:
         return pl.DataFrame()
 
-    datas: Sequence[DateLike] = (
-        data if is_collection(data) else [data]  # type: ignore[assignment]
-    )
-    resultados = [_processar_data_unica(data) for data in datas]
-    resultados = [df for df in resultados if not df.is_empty()]
-    if not resultados:
+    df = _transformar_dados_brutos(dados_leilao)
+    if inicio is not None:
+        df = df.filter(pl.col("data_1v") >= inicio)
+    if fim is not None:
+        df = df.filter(pl.col("data_1v") <= fim)
+    if df.is_empty():
         return pl.DataFrame()
-    return pl.concat(resultados)
+    df = _adicionar_duration(df)
+    df = _adicionar_dv01(df)
+    df = _adicionar_dv01_usd(df)
+    df = _adicionar_prazo_medio(df)
+    df = df.with_columns(cs.float().fill_nan(None))
+    return _selecionar_e_ordenar_colunas(df)
 
 
 def _processar_data_unica(data_leilao: DateLike) -> pl.DataFrame:
@@ -398,13 +469,5 @@ def _processar_data_unica(data_leilao: DateLike) -> pl.DataFrame:
     if not du.eh_dia_util(data):
         return pl.DataFrame()
 
-    dados_leilao = _buscar_dados_leilao(data)
-    if not dados_leilao:
-        return pl.DataFrame()
-    df = _transformar_dados_brutos(dados_leilao)
-    df = _adicionar_duration(df)
-    df = _adicionar_dv01(df)
-    df = _adicionar_dv01_usd(df)
-    df = _adicionar_prazo_medio(df)
-    df = df.with_columns(cs.float().fill_nan(None))
-    return _selecionar_e_ordenar_colunas(df)
+    dados_leilao = _buscar_dados_leiloes(data_leilao=data)
+    return _processar_dados_leiloes(dados_leilao)

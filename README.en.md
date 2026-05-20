@@ -238,7 +238,7 @@ object rather than the original data source. Migration map:
 | `yd.anbima.tpf(data, titulo)` | `yd.tpf.taxas(data, titulo)` |
 | `yd.anbima.tpf_vencimentos(data, titulo)` | `yd.tpf.vencimentos(data, titulo)` |
 | `yd.anbima.imaq(data)` | `yd.tpf.estoque(data)` |
-| `yd.tn.leilao(data)` | `yd.tpf.leilao(data)` |
+| `yd.tn.leilao(data)` | `yd.tpf.leiloes(data=...)` |
 | `yd.bc.tpf_intradia()` | `yd.tpf.secundario_intradia()` |
 | `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario_mensal(data, extragrupo=...)` |
 | `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |

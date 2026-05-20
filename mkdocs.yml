@@ -10,6 +10,7 @@ watch:
   
 nav:
   - Início: index.md
+  - Mapa da API: api-map.md
   - Artigos:
       - Introdução ao Pyield: articles/pyield_intro.md
   - Ferramentas:
@@ -77,6 +78,7 @@ plugins:
             
 
 markdown_extensions:
+  - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span

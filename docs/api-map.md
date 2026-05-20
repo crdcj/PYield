@@ -1,0 +1,208 @@
+# Mapa da API
+
+Visão geral das principais funções públicas do PYield.
+
+??? "`yd.du` (dias úteis)"
+    ```text
+    yd.du
+    ├── contar(inicio, fim)
+    ├── contar_expr(inicio, fim)
+    ├── deslocar(data, n)
+    ├── deslocar_expr(data, n)
+    ├── eh_dia_util(data)
+    ├── eh_dia_util_expr(data)
+    ├── gerar(inicio, fim)
+    └── ultimo_dia_util()
+    ```
+
+??? "`yd.futuro` (futuros B3)"
+    ```text
+    yd.futuro
+    ├── historico(data, contrato)
+    ├── intradia(contrato)
+    ├── datas_disponiveis(contrato)
+    ├── enriquecer(df, contrato)
+    ├── vencimento(codigo, contrato)
+    └── vencimento_expr(codigo, contrato)
+    ```
+
+??? "`yd.di1` (curva DI1)"
+    ```text
+    yd.di1
+    ├── dados(data)
+    ├── interpolar_taxa(...)
+    ├── interpolar_taxas(...)
+    └── datas_disponiveis()
+    ```
+
+??? "`yd.tpf` (títulos públicos federais)"
+    ```text
+    yd.tpf
+    ├── taxas(data, titulo)
+    ├── vencimentos(data, titulo)
+    ├── estoque(data)
+    ├── leiloes(data=..., inicio=..., fim=...)
+    ├── secundario_intradia()
+    ├── secundario_mensal(data, extragrupo=...)
+    ├── benchmarks(...)
+    ├── curva_pre(data)
+    ├── premio_pre(...)
+    ├── rmd
+    └── TipoTPF
+    ```
+
+??? "`yd.selic` (Selic, COPOM e política monetária)"
+    ```text
+    yd.selic
+    ├── over(data)
+    ├── over_serie(...)
+    ├── meta(data)
+    ├── meta_serie(...)
+    ├── compromissadas(...)
+    ├── compromissada
+    ├── copom
+    ├── cpm
+    └── probabilities
+    ```
+
+??? "`yd.ipca` (inflação IPCA)"
+    ```text
+    yd.ipca
+    ├── indice(data)
+    ├── indices(...)
+    ├── indices_ultimos(...)
+    ├── taxa(...)
+    ├── taxas(...)
+    ├── taxas_ultimas(...)
+    └── taxa_projetada(...)
+    ```
+
+??? "`yd.lft` (Tesouro Selic)"
+    ```text
+    yd.lft
+    ├── dados(data)
+    ├── vencimentos(data)
+    ├── cotacao(...)
+    ├── pu(...)
+    ├── taxa(...)
+    ├── inflacao_implicita(...)
+    └── vna(data)
+    ```
+
+??? "`yd.ltn` (Tesouro Prefixado)"
+    ```text
+    yd.ltn
+    ├── dados(data)
+    ├── vencimentos(data)
+    ├── pu(...)
+    ├── taxa(...)
+    ├── rentabilidade(...)
+    ├── dv01(...)
+    ├── premio(...)
+    └── taxas_forward(data)
+    ```
+
+??? "`yd.ntnb` (Tesouro IPCA+ com cupom)"
+    ```text
+    yd.ntnb
+    ├── dados(data)
+    ├── vencimentos(data)
+    ├── datas_pagamento(...)
+    ├── fluxos_caixa(...)
+    ├── cotacao(...)
+    ├── pu(...)
+    ├── taxa(...)
+    ├── duration(...)
+    ├── dv01(...)
+    ├── taxas_zero(...)
+    ├── inflacao_implicita(...)
+    └── forward(...)
+    ```
+
+??? "`yd.ntnf` (Tesouro Prefixado com cupom)"
+    ```text
+    yd.ntnf
+    ├── dados(data)
+    ├── vencimentos(data)
+    ├── datas_pagamento(...)
+    ├── fluxos_caixa(...)
+    ├── pu(...)
+    ├── taxa(...)
+    ├── duration(...)
+    ├── dv01(...)
+    ├── taxas_zero(...)
+    ├── rentabilidade(...)
+    ├── premio(data, pontos_base=...)
+    └── premio_limpo(...)
+    ```
+
+??? "`yd.ntnb1` (Tesouro Educa+)"
+    ```text
+    yd.ntnb1
+    ├── NomeComercial
+    ├── datas_pagamento(...)
+    ├── fluxos_caixa(...)
+    ├── cotacao(...)
+    ├── pu(...)
+    ├── duration(...)
+    └── dv01(...)
+    ```
+
+??? "`yd.ntnbprinc` (Tesouro IPCA+ Principal)"
+    ```text
+    yd.ntnbprinc
+    ├── pu(...)
+    └── dv01(...)
+    ```
+
+??? "`yd.ntnc` (Tesouro IGP-M+ com cupom)"
+    ```text
+    yd.ntnc
+    ├── dados(data)
+    ├── datas_pagamento(...)
+    ├── fluxos_caixa(...)
+    ├── cotacao(...)
+    ├── pu(...)
+    ├── taxa(...)
+    └── duration(...)
+    ```
+
+??? "`yd.ptax` (PTAX para uma data)"
+    ```text
+    yd.ptax(data)
+    ```
+
+??? "`yd.ptax_serie` (série histórica da PTAX)"
+    ```text
+    yd.ptax_serie(inicio, fim)
+    ```
+
+??? "`yd.di_over` (taxa DI Over)"
+    ```text
+    yd.di_over(data)
+    ```
+
+??? "`yd.forward` (taxa a termo entre dois vértices)"
+    ```text
+    yd.forward(...)
+    ```
+
+??? "`yd.forwards` (curva de taxas a termo)"
+    ```text
+    yd.forwards(...)
+    ```
+
+??? "`yd.Interpolador` (interpolação de curvas)"
+    ```text
+    yd.Interpolador
+    ```
+
+??? "`yd.hoje` (data atual no Brasil)"
+    ```text
+    yd.hoje()
+    ```
+
+??? "`yd.agora` (data e hora atual no Brasil)"
+    ```text
+    yd.agora()
+    ```

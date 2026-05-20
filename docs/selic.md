@@ -1,4 +1,4 @@
-## Taxa Selic
+## over, over_serie, meta, meta_serie
 
 ::: pyield.selic
     options:
@@ -8,18 +8,18 @@
         - meta
         - meta_serie
 
-## Calendário COPOM
+## copom
 
 ::: pyield.selic.copom
 
-## Compromissadas BCB
+## compromissada
 
 ::: pyield.selic.compromissada
 
-## Contratos CPM
+## cpm
 
 ::: pyield.selic.cpm
 
-## Probabilidades Implícitas
+## probabilities
 
 ::: pyield.selic.probabilities
