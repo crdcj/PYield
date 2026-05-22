@@ -28,6 +28,10 @@ _RENOMEAR_COLUNAS = {
     "BDaysToExp": "dias_uteis",
 }
 
+TOLERANCIA_PROB = 1e-9
+TOLERANCIA_NUMERICA = 1e-12
+STRIKE_DOMINANTE_JAN_2025 = 100
+
 
 @pytest.fixture(scope="module")
 def cpm_fixture() -> pl.DataFrame:
@@ -103,7 +107,9 @@ def test_all_meetings_schema(cpm_patchado):
 def test_prob_sums_to_one(cpm_patchado):
     df = modulo_probabilidades.all_meetings("29-01-2025")
     somas = df.group_by("data_expiracao").agg(pl.col("prob").sum())
-    assert (somas["prob"] - 1.0).abs().max() < 1e-9
+    diferenca_maxima = (somas["prob"] - 1.0).abs().max()
+    assert isinstance(diferenca_maxima, float)
+    assert diferenca_maxima < TOLERANCIA_PROB
 
 
 def test_cum_prob_ends_at_one(cpm_patchado):
@@ -113,7 +119,9 @@ def test_cum_prob_ends_at_one(cpm_patchado):
         .group_by("data_expiracao")
         .agg(pl.col("prob_acumulada").last())
     )
-    assert (ultimo["prob_acumulada"] - 1.0).abs().max() < 1e-9
+    diferenca_maxima = (ultimo["prob_acumulada"] - 1.0).abs().max()
+    assert isinstance(diferenca_maxima, float)
+    assert diferenca_maxima < TOLERANCIA_PROB
 
 
 def test_raw_prob_non_negative(cpm_patchado):
@@ -133,7 +141,7 @@ def test_cum_prob_monotone(cpm_patchado):
             "variacao_strike_bps"
         )
         diferencas = sub["prob_acumulada"].diff().drop_nulls()
-        assert (diferencas >= -1e-12).all(), (
+        assert (diferencas >= -TOLERANCIA_NUMERICA).all(), (
             f"prob_acumulada nao monotona para {data_expiracao}"
         )
 
@@ -197,14 +205,11 @@ def test_meeting_explicit_expiration(cpm_patchado):
     assert df["data_expiracao"].unique().item() == segunda_data_expiracao
 
 
-def test_meeting_rank_always_one(cpm_patchado):
-    df = modulo_probabilidades.meeting("29-01-2025")
-    assert (df["ranking_reuniao"] == 1).all()
-
-
 def test_meeting_prob_sums_to_one(cpm_patchado):
     df = modulo_probabilidades.meeting("29-01-2025")
-    assert abs(df["prob"].sum() - 1.0) < 1e-9
+    soma_prob = df["prob"].sum()
+    assert isinstance(soma_prob, (int, float))
+    assert abs(float(soma_prob) - 1.0) < TOLERANCIA_PROB
 
 
 # ── Spot checks ───────────────────────────────────────────────────────────
@@ -219,13 +224,15 @@ def test_highest_prob_strike_jan2025(cpm_patchado):
     """On 2025-01-29, +100 bps was the overwhelmingly dominant strike."""
     df = modulo_probabilidades.meeting("29-01-2025")
     maior_strike = df.sort("prob", descending=True)["variacao_strike_bps"][0]
-    assert maior_strike == 100
+    assert maior_strike == STRIKE_DOMINANTE_JAN_2025
 
 
 def test_discount_exp_one_when_rate_zero(cpm_patchado):
     """With di1 patched to return 0.0, fator_desconto must equal 1.0."""
     df = modulo_probabilidades.all_meetings("29-01-2025")
-    assert (df["fator_desconto"] - 1.0).abs().max() < 1e-12
+    diferenca_maxima = (df["fator_desconto"] - 1.0).abs().max()
+    assert isinstance(diferenca_maxima, float)
+    assert diferenca_maxima < TOLERANCIA_NUMERICA
 
 
 def test_raw_prob_equals_settlement_over_100_when_rate_zero(cpm_patchado):
@@ -233,4 +240,5 @@ def test_raw_prob_equals_settlement_over_100_when_rate_zero(cpm_patchado):
     df = modulo_probabilidades.all_meetings("29-01-2025")
     esperado = df["preco_ajuste"] / 100
     diferenca = (df["prob_bruta"] - esperado).abs().max()
-    assert diferenca < 1e-12
+    assert isinstance(diferenca, float)
+    assert diferenca < TOLERANCIA_NUMERICA

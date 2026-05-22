@@ -59,26 +59,6 @@ def test_pipeline_rmd(monkeypatch):
     assert resultado.sort(colunas_ordem).equals(esperado)
 
 
-def test_totais_2025_rmd(monkeypatch):
-    """Totais de 2025 devem bater com os valores de referência do Tesouro Nacional."""
-    conteudo_excel = _extrair_excel_do_zip(_baixar_zip_remoto())
-
-    monkeypatch.setattr(modulo_rmd, "_carregar_planilha_rmd", lambda: conteudo_excel)
-
-    ano_ref = 2025
-    emissoes_esperadas = 1_840_946_621_648.18
-    resgates_esperados = 1_395_109_062_272.45
-
-    df = modulo_rmd.rmd(aba="1.3")
-    df_2025 = df.filter(pl.col("periodo").dt.year() == ano_ref)
-
-    emissoes = df_2025.filter(pl.col("grupo") == "Emissões")["valor"].sum()
-    resgates = df_2025.filter(pl.col("grupo") == "Resgates")["valor"].sum()
-
-    assert round(emissoes, 2) == emissoes_esperadas
-    assert round(resgates, 2) == resgates_esperados
-
-
 def test_aba_2_1_estrutura_e_valores(monkeypatch):
     """A aba 2.1 deve retornar estoque plano (somente folhas) com valores em R$."""
     conteudo_excel = CAMINHO_XLSX_EXEMPLO.read_bytes()

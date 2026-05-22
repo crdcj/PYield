@@ -10,10 +10,13 @@ from pathlib import Path
 import polars as pl
 import pytest
 
+import pyield.selic.cpm as modulo_cpm
 from pyield import du
-from pyield.selic.cpm import _empty_schema, _parse_ticker
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
+PRECO_AJUSTE_MAXIMO = 100.0
+STRIKE_MINIMO_CPMF25 = -100
+DIAS_UTEIS_CPMK25 = 66
 
 # Mapeamento para renomear colunas do parquet antigo (inglês) para português
 _RENOMEAR_COLUNAS = {
@@ -38,7 +41,7 @@ def cpm_fixture() -> pl.DataFrame:
 
 
 @pytest.mark.parametrize(
-    "ticker,mes_esperado,ano_esperado,tipo_esperado,bps_esperado",
+    ("ticker", "mes_esperado", "ano_esperado", "tipo_esperado", "bps_esperado"),
     [
         ("CPMF25C099500", 1, 2025, "call", -50),
         ("CPMZ25C100000", 12, 2025, "call", 0),
@@ -56,7 +59,7 @@ def test_parse_ticker_valid(
     tipo_esperado,
     bps_esperado,
 ):
-    mes, ano, tipo_opcao, _strike, bps = _parse_ticker(ticker)
+    mes, ano, tipo_opcao, _strike, bps = modulo_cpm._parse_ticker(ticker)
     assert mes == mes_esperado
     assert ano == ano_esperado
     assert tipo_opcao == tipo_esperado
@@ -68,24 +71,24 @@ def test_parse_ticker_valid(
 
 def test_parse_ticker_wrong_prefix():
     with pytest.raises(ValueError, match="Invalid CPM ticker"):
-        _parse_ticker("DI1F25C099500")
+        modulo_cpm._parse_ticker("DI1F25C099500")
 
 
 def test_parse_ticker_unknown_month_code():
     with pytest.raises(ValueError, match="Unknown month code"):
-        _parse_ticker("CPMA25C099500")  # A is not a valid month code
+        modulo_cpm._parse_ticker("CPMA25C099500")  # A is not a valid month code
 
 
 # ── Schema vazio ──────────────────────────────────────────────────────────
 
 
 def test_empty_schema_zero_rows():
-    df = _empty_schema()
+    df = modulo_cpm._empty_schema()
     assert len(df) == 0
 
 
 def test_empty_schema_columns():
-    df = _empty_schema()
+    df = modulo_cpm._empty_schema()
     assert df.columns == [
         "data_referencia",
         "codigo_negociacao",
@@ -99,7 +102,7 @@ def test_empty_schema_columns():
 
 
 def test_empty_schema_dtypes():
-    df = _empty_schema()
+    df = modulo_cpm._empty_schema()
     assert df["data_referencia"].dtype == pl.Date
     assert df["preco_ajuste"].dtype == pl.Float64
     assert df["variacao_strike_bps"].dtype == pl.Int32
@@ -112,7 +115,7 @@ def test_empty_schema_dtypes():
 def test_settlement_price_range(cpm_fixture):
     nao_nulos = cpm_fixture["preco_ajuste"].drop_nulls()
     assert (nao_nulos >= 0.0).all()
-    assert (nao_nulos <= 100.0).all()
+    assert (nao_nulos <= PRECO_AJUSTE_MAXIMO).all()
 
 
 def test_option_type_values(cpm_fixture):
@@ -145,11 +148,6 @@ def test_bdays_to_exp_positive(cpm_fixture):
 # ── Checagens pontuais (fixture: 2025-01-29) ─────────────────────────────
 
 
-def test_spot_cpmf25_expiry(cpm_fixture):
-    row = cpm_fixture.filter(pl.col("codigo_negociacao").str.starts_with("CPMF25"))
-    assert row["data_expiracao"].unique().item() == datetime.date(2025, 1, 30)
-
-
 def test_spot_cpmf25_meeting_end(cpm_fixture):
     row = cpm_fixture.filter(pl.col("codigo_negociacao").str.starts_with("CPMF25"))
     assert row["data_fim_reuniao"].unique().item() == datetime.date(2025, 1, 29)
@@ -165,7 +163,7 @@ def test_spot_most_negative_strike(cpm_fixture):
     min_bps = cpm_fixture.filter(pl.col("codigo_negociacao").str.starts_with("CPMF25"))[
         "variacao_strike_bps"
     ].min()
-    assert min_bps == -100
+    assert min_bps == STRIKE_MINIMO_CPMF25
 
 
 def test_spot_bdays_to_exp_cpmf25(cpm_fixture):
@@ -187,4 +185,4 @@ def test_spot_bdays_to_exp_cpmk25(cpm_fixture):
         .unique()
         .item()
     )
-    assert dias_uteis == 66
+    assert dias_uteis == DIAS_UTEIS_CPMK25

@@ -145,6 +145,12 @@ def contar(
         >>> du.contar("15-12-2023", "01-01-2024")
         10
 
+        Transição do feriado de 20 de novembro a partir de 26-12-2023:
+        >>> du.contar("20-11-2020", "21-11-2020")
+        1
+        >>> du.contar("20-11-2024", "21-11-2024")
+        0
+
         Contagem negativa quando ``inicio`` é posterior a ``fim``:
         >>> du.contar("08-01-2023", "01-01-2023")
         -5
@@ -376,6 +382,12 @@ def deslocar(
 
     Examples:
         >>> from pyield import du
+
+        Transição do feriado de 20 de novembro a partir de 26-12-2023:
+        >>> du.deslocar("20-11-2020", 0)
+        datetime.date(2020, 11, 20)
+        >>> du.deslocar("20-11-2024", 0)
+        datetime.date(2024, 11, 21)
 
         Desloca sábado antes do Natal para o próximo dia útil (terça após Natal):
         >>> du.deslocar("23-12-2023", 0)

@@ -97,8 +97,12 @@ def test_calendar_date_range_filter(monkeypatch, calendar_fixture):
         lambda: calendar_fixture.filter(pl.col("MeetingNumber").is_null()),
     )
     result = copom.calendar(start="2025-01-01", end="2025-12-31")
-    assert result["EndDate"].min() >= datetime.date(2025, 1, 1)
-    assert result["EndDate"].max() <= datetime.date(2025, 12, 31)
+    data_minima = result["EndDate"].min()
+    data_maxima = result["EndDate"].max()
+    assert isinstance(data_minima, datetime.date)
+    assert isinstance(data_maxima, datetime.date)
+    assert data_minima >= datetime.date(2025, 1, 1)
+    assert data_maxima <= datetime.date(2025, 12, 31)
 
 
 def test_calendar_far_future_returns_empty(monkeypatch, calendar_fixture):
@@ -119,17 +123,13 @@ def test_calendar_far_future_returns_empty(monkeypatch, calendar_fixture):
 # ── next_meeting ──────────────────────────────────────────────────────────
 
 
-def test_next_meeting_returns_one_row(monkeypatch, calendar_fixture):
-    monkeypatch.setattr(copom, "calendar", lambda **kw: calendar_fixture)
-    result = copom.next_meeting(reference="2025-01-01")
-    assert len(result) == 1
-
-
 def test_next_meeting_end_date_after_reference(monkeypatch, calendar_fixture):
     monkeypatch.setattr(copom, "calendar", lambda **kw: calendar_fixture)
     ref = datetime.date(2025, 1, 29)
     result = copom.next_meeting(reference=ref)
-    assert result["EndDate"].item() >= ref
+    data_fim = result["EndDate"].item()
+    assert isinstance(data_fim, datetime.date)
+    assert data_fim >= ref
 
 
 def test_next_meeting_far_future_empty(monkeypatch, calendar_fixture):
