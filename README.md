@@ -229,29 +229,29 @@ yd.tpf.leiloes(inicio="01-05-2026", fim="19-05-2026")
 Veja o [mapa completo da API](https://crdcj.github.io/PYield/api-map/) na
 documentação.
 
-| Componente | Tipo | Finalidade |
-|---|---|---|
-| `yd.du` | módulo | Dias úteis e calendário brasileiro |
-| `yd.futuro` | módulo | Contratos futuros da B3 |
-| `yd.di1` | módulo | Curva DI1 e interpolação |
-| `yd.tpf` | módulo | Títulos públicos federais |
-| `yd.selic` | módulo | Selic, COPOM e política monetária |
-| `yd.ipca` | módulo | IPCA histórico e projetado |
-| `yd.lft` | módulo | LFT |
-| `yd.ltn` | módulo | LTN |
-| `yd.ntnb` | módulo | NTN-B |
-| `yd.ntnb1` | módulo | NTN-B1 |
-| `yd.ntnbprinc` | módulo | NTN-B Principal |
-| `yd.ntnc` | módulo | NTN-C |
-| `yd.ntnf` | módulo | NTN-F |
-| `yd.ptax(data)` | função | PTAX para uma data |
-| `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX |
-| `yd.di_over(data)` | função | Taxa DI Over |
-| `yd.forward(...)` | função | Taxa a termo entre dois vértices |
-| `yd.forwards(...)` | função | Curva de taxas a termo |
-| `yd.Interpolador` | classe | Interpolação de curvas |
-| `yd.hoje()` | função | Data atual no Brasil |
-| `yd.agora()` | função | Data e hora atual no Brasil |
+| Componente | Tipo | Finalidade | Funções públicas |
+|---|---|---|---|
+| `yd.du` | módulo | Dias úteis e calendário brasileiro | `contar`, `deslocar`, `eh_dia_util`, `gerar`, `ultimo_dia_util` |
+| `yd.Interpolador` | classe | Interpolação de curvas | `interpolar`, `__call__`, `linear`, `flat_forward` |
+| `yd.forward(...)` | função | Taxa a termo entre dois vértices |  |
+| `yd.forwards(...)` | função | Curva de taxas a termo |  |
+| `yd.futuro` | módulo | Contratos futuros da B3 | `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer` |
+| `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
+| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `vencimentos`, `leiloes`, `rmd`, `secundario_mensal`, `secundario_intradia` |
+| `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `taxa`, `pu`, `vna` |
+| `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `dv01`, `premio` |
+| `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `cotacao`, `pu`, `taxas_zero`, `inflacao_implicita` |
+| `yd.ntnb1` | módulo | NTN-B1 | `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `duration`, `dv01` |
+| `yd.ntnbprinc` | módulo | NTN-B Principal | `pu`, `dv01` |
+| `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa` |
+| `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `pu`, `taxas_zero`, `premio`, `dv01` |
+| `yd.selic` | módulo | Selic, COPOM e política monetária | `over`, `over_serie`, `meta`, `meta_serie`, `compromissadas` |
+| `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indices`, `taxa`, `taxas`, `taxa_projetada` |
+| `yd.ptax(data)` | função | PTAX para uma data |  |
+| `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX |  |
+| `yd.di_over(data)` | função | Taxa DI Over |  |
+| `yd.hoje()` | função | Data atual no Brasil |  |
+| `yd.agora()` | função | Data e hora atual no Brasil |  |
 
 ## Documentação
 
