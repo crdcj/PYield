@@ -8,9 +8,13 @@
 
 Português | [English](https://github.com/crdcj/PYield/blob/main/README.en.md)
 
-PYield é uma biblioteca Python voltada para análise de títulos públicos brasileiros. Ela busca e processa dados da ANBIMA, BCB, IBGE, B3 e **Tesouro Nacional**, retornando DataFrames do Polars para pipelines rápidos e com tipagem consistente.
+PYield é uma biblioteca Python voltada para análise de títulos públicos
+brasileiros. Ela busca e processa dados da ANBIMA, BCB, IBGE, B3 e **Tesouro
+Nacional** e usa Polars nas consultas tabulares e operações vetorizadas.
 
-Embora inclua dados e ferramentas de outros mercados (como DI1, DAP e PTAX), esses recursos são auxiliares para o objetivo central: análise, precificação e acompanhamento de títulos públicos.
+Embora inclua dados e ferramentas de outros mercados (como DI1, DAP e PTAX),
+esses recursos são auxiliares para o objetivo central: análise, precificação e
+acompanhamento de títulos públicos.
 
 ## Instalação
 
@@ -47,11 +51,42 @@ Um notebook no Colab com mais exemplos:
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb)
 
+## Mapa da API
+
+Veja o [mapa completo da API](https://crdcj.github.io/PYield/api-map/) na
+documentação.
+
+| Componente | Tipo | Finalidade | Funções públicas |
+|---|---|---|---|
+| `yd.du` | módulo | Dias úteis e calendário brasileiro | `contar`, `deslocar`, `eh_dia_util`, `gerar`, `ultimo_dia_util`, `contar_expr`, `deslocar_expr`, `eh_dia_util_expr` |
+| `yd.Interpolador` | classe | Interpolação de curvas | `interpolar`, `__call__`, `linear`, `flat_forward` |
+| `yd.forward(...)` | função | Taxa a termo entre dois vértices |  |
+| `yd.forwards(...)` | função | Curva de taxas a termo |  |
+| `yd.futuro` | módulo | Contratos futuros da B3 | `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `vencimento_expr` |
+| `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
+| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premio_pre`, `rmd`, `secundario_mensal`, `secundario_intradia` |
+| `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `taxa`, `vna`, `inflacao_implicita` |
+| `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `dv01`, `premio`, `rentabilidade`, `taxas_forward` |
+| `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `dv01`, `inflacao_implicita` |
+| `yd.ntnb1` | módulo | NTN-B1 | `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `duration`, `dv01` |
+| `yd.ntnbprinc` | módulo | NTN-B Principal | `pu`, `dv01` |
+| `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `duration` |
+| `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `premio`, `premio_limpo`, `rentabilidade`, `duration`, `dv01` |
+| `yd.selic` | módulo | Selic, COPOM e política monetária | `over`, `over_serie`, `meta`, `meta_serie`, `compromissadas`, `copom`, `cpm`, `probabilities` |
+| `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indices`, `indices_ultimos`, `taxa`, `taxas`, `taxas_ultimas`, `taxa_projetada` |
+| `yd.ptax(data)` | função | PTAX para uma data |  |
+| `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX |  |
+| `yd.di_over(data)` | função | Taxa DI Over |  |
+| `yd.hoje()` | função | Data atual no Brasil |  |
+| `yd.agora()` | função | Data e hora atual no Brasil |  |
+
 ## Blocos Principais
 
 ### Dias Úteis (`du`)
 
-O módulo `du` é a base do PYield. Todos os cálculos com datas (preço, duration, taxas a termo) dependem da contagem correta de dias úteis com feriados brasileiros.
+O módulo `du` é a base do PYield. Todos os cálculos com datas (preço, duration,
+taxas a termo) dependem da contagem correta de dias úteis com feriados
+brasileiros.
 
 ```python
 from pyield import du
@@ -73,7 +108,8 @@ du.gerar("22-12-2023", "02-01-2024")
 du.eh_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
-Todas as funções suportam operações vetorizadas com listas, Series ou arrays.
+As principais funções de cálculo (`contar`, `deslocar` e `eh_dia_util`)
+suportam operações vetorizadas com listas, Series ou arrays.
 
 ### Interpolação de Taxas (`Interpolador`)
 
@@ -123,22 +159,6 @@ taxas = [0.05, 0.06, 0.07]
 forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 ```
 
-## Visão Geral dos Módulos
-
-| Módulo | Finalidade |
-|--------|---------|
-| `du` | Cálculos com dias úteis considerando feriados brasileiros |
-| `futuro` | Dados de futuros (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
-| `tpf` | Taxas, vencimentos, estoque, leilões, benchmarks, RMD e negociações de TPFs |
-| `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
-| `Interpolador` | Interpolação de taxas (flat_forward, linear) |
-| `forward` / `forwards` | Cálculo de taxas a termo |
-| `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
-| `ntnb1`, `ntnbprinc` | Títulos adicionais (NTN-B1, NTN-B Principal) |
-| `selic` | Dados da taxa Selic, COPOM, compromissadas do BCB, CPM e probabilidades implícitas |
-| `ipca` | Dados de inflação (histórico e projeções) |
-| `hoje` / `agora` | Data/hora atual no Brasil (America/Sao_Paulo) |
-
 ## Títulos Públicos
 
 ```python
@@ -184,19 +204,21 @@ PYield aceita entradas de data flexíveis (`DateLike`):
 - Strings: `"31-05-2024"`, `"31/05/2024"`, `"2024-05-31"`
 - `datetime.date`, `datetime.datetime`
 
-Funções escalares retornam `datetime.date`. Funções vetorizadas retornam `polars.Series`.
+Funções escalares de data retornam `datetime.date`. Operações vetorizadas de
+data retornam `polars.Series`, enquanto consultas tabulares retornam
+`polars.DataFrame`.
 
-O parsing de strings é elemento a elemento entre os formatos aceitos. Strings
-inválidas são convertidas para valores nulos (`None` em saídas escalares e `null`
-em saídas vetorizadas).
+O parsing de strings usa expressões vetorizadas do Polars, com fallback entre os
+formatos aceitos por linha. Strings inválidas são convertidas para valores nulos
+(`None` em saídas escalares e `null` em saídas vetorizadas).
 
-Tratamento de nulos: funções escalares retornam `float('nan')` para entradas ausentes
-(propaga nos cálculos). Funções vetorizadas propagam `null` elemento a elemento.
+Valores nulos de data são preservados: entradas escalares ausentes retornam
+`None`, e operações vetorizadas propagam `null` elemento a elemento.
 
 ```python
-from pyield import ntnb, du
+from pyield import du
 
-ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
+du.deslocar(None, 1)  # -> None
 du.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 ```
 
@@ -211,6 +233,10 @@ yd.tpf.secundario_mensal("01-01-2030").is_empty()    # -> True
 yd.ptax("25-12-2025")                                # -> nan
 ```
 
+## Documentação
+
+Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
+
 ## Quebra de API em leilões de TPF (v0.50.0)
 
 `yd.tpf.leilao(data)` foi substituída por `yd.tpf.leiloes(...)`.
@@ -224,41 +250,8 @@ yd.tpf.leiloes(inicio="01-05-2026")
 yd.tpf.leiloes(inicio="01-05-2026", fim="19-05-2026")
 ```
 
-## Mapa da API
-
-Veja o [mapa completo da API](https://crdcj.github.io/PYield/api-map/) na
-documentação.
-
-| Componente | Tipo | Finalidade | Funções públicas |
-|---|---|---|---|
-| `yd.du` | módulo | Dias úteis e calendário brasileiro | `contar`, `deslocar`, `eh_dia_util`, `gerar`, `ultimo_dia_util` |
-| `yd.Interpolador` | classe | Interpolação de curvas | `interpolar`, `__call__`, `linear`, `flat_forward` |
-| `yd.forward(...)` | função | Taxa a termo entre dois vértices |  |
-| `yd.forwards(...)` | função | Curva de taxas a termo |  |
-| `yd.futuro` | módulo | Contratos futuros da B3 | `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer` |
-| `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
-| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `vencimentos`, `leiloes`, `rmd`, `secundario_mensal`, `secundario_intradia` |
-| `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `taxa`, `pu`, `vna` |
-| `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `dv01`, `premio` |
-| `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `cotacao`, `pu`, `taxas_zero`, `inflacao_implicita` |
-| `yd.ntnb1` | módulo | NTN-B1 | `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `duration`, `dv01` |
-| `yd.ntnbprinc` | módulo | NTN-B Principal | `pu`, `dv01` |
-| `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa` |
-| `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `pu`, `taxas_zero`, `premio`, `dv01` |
-| `yd.selic` | módulo | Selic, COPOM e política monetária | `over`, `over_serie`, `meta`, `meta_serie`, `compromissadas` |
-| `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indices`, `taxa`, `taxas`, `taxa_projetada` |
-| `yd.ptax(data)` | função | PTAX para uma data |  |
-| `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX |  |
-| `yd.di_over(data)` | função | Taxa DI Over |  |
-| `yd.hoje()` | função | Data atual no Brasil |  |
-| `yd.agora()` | função | Data e hora atual no Brasil |  |
-
-## Documentação
-
-Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
-
 ## Testes
 
 ```sh
-pytest
+uv run pytest
 ```
