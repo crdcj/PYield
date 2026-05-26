@@ -1,5 +1,6 @@
 [![PyPI version](https://img.shields.io/pypi/v/pyield.svg)](https://pypi.python.org/pypi/pyield)
 [![Made with Python](https://img.shields.io/badge/Python->=3.12-blue?logo=python&logoColor=white)](https://python.org "Go to Python homepage")
+[![Powered by Polars](https://img.shields.io/badge/Powered%20by-Polars-blue)](https://pola.rs/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](https://github.com/crdcj/PYield/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue?logo=readthedocs&logoColor=white)](https://crdcj.github.io/PYield/)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb)
@@ -10,7 +11,11 @@ Português | [English](https://github.com/crdcj/PYield/blob/main/README.en.md)
 
 PYield é uma biblioteca Python voltada para análise de títulos públicos
 brasileiros. Ela busca e processa dados da ANBIMA, BCB, IBGE, B3 e **Tesouro
-Nacional** e usa Polars nas consultas tabulares e operações vetorizadas.
+Nacional**.
+
+PYield usa Polars para processar dados em tabelas e coleções. Saídas escalares
+retornam tipos nativos do Python, enquanto saídas não escalares retornam
+`polars.Series` ou `polars.DataFrame`, conforme a função.
 
 Embora inclua dados e ferramentas de outros mercados (como DI1, DAP e PTAX),
 esses recursos são auxiliares para o objetivo central: análise, precificação e

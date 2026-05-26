@@ -1,7 +1,7 @@
 [project]
 name = "pyield"
 authors = [{ name = "Carlos Carvalho", email = "cr.cj@outlook.com" }]
-description = "A Python library for analysis of fixed income instruments in Brazil"
+description = "Polars-powered toolkit for Brazilian fixed income analysis"
 readme = "README.md"
 requires-python = ">=3.12"
 keywords = ["fixed-income", "brazil", "finance", "analysis", "bonds"]

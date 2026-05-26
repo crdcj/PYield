@@ -1,12 +1,18 @@
 [![PyPI version](https://img.shields.io/pypi/v/pyield.svg)](https://pypi.python.org/pypi/pyield)
 [![Made with Python](https://img.shields.io/badge/Python->=3.12-blue?logo=python&logoColor=white)](https://python.org "Go to Python homepage")
+[![Powered by Polars](https://img.shields.io/badge/Powered%20by-Polars-blue)](https://pola.rs/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](https://github.com/crdcj/PYield/blob/main/LICENSE)
 
 # PYield: Brazilian Fixed Income Toolkit
 
 [Português](README.md) | English
 
-PYield is a Python library focused on Brazilian treasury bond analysis. It fetches and processes data from ANBIMA, BCB, IBGE, B3, and **Tesouro Nacional**, returning Polars DataFrames for fast, type-consistent pipelines.
+PYield is a Polars-powered Python toolkit for Brazilian fixed income analysis,
+with a primary focus on Brazilian treasury bonds. It fetches and processes data
+from ANBIMA, BCB, IBGE, B3, and **Tesouro Nacional**.
+
+Scalar outputs return native Python types, while non-scalar outputs return
+`polars.Series` or `polars.DataFrame`, depending on the function.
 
 Although it includes data and tools from other markets (such as DI1, DAP, and PTAX), these resources support the core goal: analysis, pricing, and monitoring of Brazilian treasury bonds.
 
