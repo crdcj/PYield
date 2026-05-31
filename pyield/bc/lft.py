@@ -9,6 +9,10 @@ Trecho relevante da resposta (tabela VNA):
     30/03/2022  01/03/2025   01/07/2000   210100       14903,011480
     23/08/2019  01/09/2025   01/07/2000   210100       14903,011480
     28/06/2023  01/03/2026   01/07/2000   210100       14903,011480
+
+A resposta bruta do BCB é uma tabela diária com títulos remunerados pela Selic.
+A função pública filtra as LFTs (título 210100), valida a consistência dos
+valores e retorna o VNA único.
 """
 
 import datetime as dt
@@ -19,6 +23,8 @@ from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas, data_referencia_valida
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
+
+CODIGO_LFT = "210100"
 
 
 @ttl_cache()
@@ -49,10 +55,15 @@ def _obter_linhas(texto_tabela: str) -> list[str]:
     return linhas[1:]
 
 
-def _extrair_valores(linhas: list[str]) -> list[float]:
-    """Extrai os valores VNA numéricos das linhas de texto."""
+def _filtrar_linhas_lft(linhas: list[str]) -> list[str]:
+    """Filtra apenas as linhas de LFT."""
+    return [linha for linha in linhas if linha.split()[3] == CODIGO_LFT]
+
+
+def _extrair_valores_lft(linhas: list[str]) -> list[float]:
+    """Extrai os valores VNA numéricos das linhas de LFT."""
     valores = []
-    for linha in linhas:
+    for linha in _filtrar_linhas_lft(linhas):
         vna_str = linha.split()[-1].replace(",", ".")
         valores.append(float(vna_str))
     return valores
@@ -68,13 +79,16 @@ def _validar_valores(valores: list[float]) -> float:
     return valor
 
 
-def vna(data: DateLike) -> float:
+def vna(data: DateLike | None = None) -> float:
     """Busca o Valor Nominal Atualizado (VNA) da LFT.
 
-    Fonte: Banco Central do Brasil, arquivo diário do SELIC.
+    Fonte: Banco Central do Brasil, arquivo diário do SELIC. A resposta bruta
+    contém uma tabela de títulos remunerados pela Selic; esta função filtra as
+    LFTs (título 210100), valida que todas as linhas têm o mesmo VNA e retorna
+    esse valor único.
 
     Args:
-        data: Data de referência.
+        data: Data de referência. Se omitida ou nula, retorna ``nan``.
 
     Returns:
         Valor do VNA da LFT. Retorna ``nan`` se a entrada for nula, vazia ou
@@ -92,11 +106,11 @@ def vna(data: DateLike) -> float:
     if any_is_empty(data):
         return float("nan")
     data = converter_datas(data)
-    if not data_referencia_valida(data):
+    if data is None or not data_referencia_valida(data):
         return float("nan")
 
     texto = _baixar_texto(data)
     tabela = _recortar_tabela(texto)
     linhas = _obter_linhas(tabela)
-    valores = _extrair_valores(linhas)
+    valores = _extrair_valores_lft(linhas)
     return _validar_valores(valores)

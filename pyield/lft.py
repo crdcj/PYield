@@ -3,10 +3,10 @@ import polars as pl
 import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.bc.vna import vna
+from pyield.bc import lft as _bc_lft
 from pyield.tpf import utils
 
-__all__ = ["cotacao", "dados", "inflacao_implicita", "taxa", "vencimentos", "vna"]
+vna = _bc_lft.vna
 
 
 def dados(data: DateLike) -> pl.DataFrame:

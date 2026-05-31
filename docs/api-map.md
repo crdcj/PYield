@@ -85,7 +85,6 @@ Visão geral das principais funções públicas do PYield.
     ├── cotacao(...)
     ├── pu(...)
     ├── taxa(...)
-    ├── inflacao_implicita(...)
     └── vna(data)
     ```
 
