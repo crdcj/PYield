@@ -78,19 +78,10 @@ def adicionar_duration(
     ).with_columns(prazo_medio=pl.col("duration"))
 
 
-def adicionar_dv01(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
-    """Adiciona `dv01` e `dv01_usd` ao DataFrame. Requer coluna `duration`."""
-    from pyield.bc.sgs import ptax  # noqa: PLC0415
-
+def adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
+    """Adiciona `dv01` ao DataFrame. Requer coluna `duration`."""
     expr_duracao_mod = pl.col("duration") / (1 + pl.col("taxa_indicativa"))
-    df = df.with_columns(dv01=0.0001 * expr_duracao_mod * pl.col("pu"))
-
-    try:
-        taxa_ptax = ptax(data=data_ref)
-        df = df.with_columns(dv01_usd=pl.col("dv01") / taxa_ptax)
-    except Exception as e:
-        logger.error("Erro ao adicionar DV01 em USD: %s", e)
-    return df
+    return df.with_columns(dv01=0.0001 * expr_duracao_mod * pl.col("pu"))
 
 
 @overload

@@ -42,7 +42,6 @@ def dados(data: DateLike) -> pl.DataFrame:
         - duration (Float64): Macaulay Duration do título (anos).
         - prazo_medio (Float64): Prazo médio do título (anos).
         - dv01 (Float64): Variação no preço para 1bp de taxa.
-        - dv01_usd (Float64): DV01 convertido para USD pela PTAX do dia.
         - pu (Float64): Preço unitário (PU).
         - taxa_compra (Float64): Taxa de compra (decimal).
         - taxa_venda (Float64): Taxa de venda (decimal).
@@ -64,16 +63,14 @@ def dados(data: DateLike) -> pl.DataFrame:
     if df.is_empty():
         return df
 
-    data_ref = conversores.converter_datas(data)
-
     # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
     df = df.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
     )
 
-    # Adiciona duration, prazo_medio, dv01 e dv01_usd
+    # Adiciona duration, prazo_medio e dv01
     df = utils.adicionar_duration(df, duration)
-    df = utils.adicionar_dv01(df, data_ref)
+    df = utils.adicionar_dv01(df)
 
     # Busca curva DI bruta e calcula taxa_zero, taxa_di e inflação implícita
     df_di = di1.dados(data)
@@ -85,7 +82,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         taxas_nominais=df_di["taxa_ajuste"],
     ).select(
         pl.col("data_vencimento"),
-        pl.col("taxa_zero"),
+        pl.col("taxa_zero_real").alias("taxa_zero"),
         pl.col("taxa_nominal").alias("taxa_di"),
         pl.col("inflacao_implicita"),
     )
@@ -106,7 +103,6 @@ def dados(data: DateLike) -> pl.DataFrame:
         "duration",
         "prazo_medio",
         "dv01",
-        "dv01_usd",
         "pu",
         "taxa_compra",
         "taxa_venda",
@@ -604,19 +600,21 @@ def implicitas(
     taxas_nominais: ArrayLike,
 ) -> pl.DataFrame:
     """
-    Calcula a inflação implícita para NTN-B a partir de taxas nominais e reais.
+    Calcula a inflação implícita para NTN-B contra uma curva nominal de referência.
 
     A inflação implícita (breakeven) é a que iguala yields reais e nominais,
-    baseada nas taxas zero das NTN-B.
+    baseada nas taxas zero das NTN-B e na curva nominal informada.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação da operação.
         vencimentos_tir (ArrayLike): Vencimentos das NTN-B usadas como vértices
             da curva de TIR real.
         taxas_tir (ArrayLike): TIRs reais correspondentes.
-        vencimentos_nominais (ArrayLike): Vencimentos de referência da curva
-            nominal.
-        taxas_nominais (ArrayLike): Taxas nominais de referência.
+        vencimentos_nominais (ArrayLike): Vencimentos da curva nominal de
+            referência.
+        taxas_nominais (ArrayLike): Taxas da curva nominal de referência. Pode
+            representar DI Futuro, curva soberana prefixada ou outra curva
+            nominal escolhida pelo usuário.
 
     Returns:
         pl.DataFrame: DataFrame com as taxas calculadas.
@@ -624,14 +622,15 @@ def implicitas(
     Output Columns:
         - data_vencimento (Date): Data de vencimento.
         - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.
-        - taxa_tir (Float64): TIR real da NTN-B recebida na entrada.
-        - taxa_zero (Float64): Taxa real zero via bootstrap.
+        - taxa_tir_real (Float64): TIR real da NTN-B recebida na entrada.
+        - taxa_zero_real (Float64): Taxa real zero via bootstrap.
         - taxa_nominal (Float64): Taxa nominal interpolada.
         - inflacao_implicita (Float64): Inflação implícita (breakeven).
 
     Notes:
-        A inflação implícita indica a expectativa de mercado entre
-        liquidação e vencimento.
+        A inflação implícita é calculada contra a curva nominal informada. Se
+        essa curva for DI Futuro, o resultado representa a implícita contra DI,
+        não uma inflação soberana prefixada pura.
 
     Examples:
         Busca as taxas de NTN-B para uma data de referência.
@@ -650,18 +649,23 @@ def implicitas(
         ...     taxas_nominais=df_di["taxa_ajuste"],
         ... )
         shape: (14, 6)
-        ┌────────────────┬────────────┬──────────┬───────────┬──────────────┬────────────────┐
-        │ data_vencimen… ┆ dias_uteis ┆ taxa_tir ┆ taxa_zero ┆ taxa_nominal ┆ inflacao_impl… │
-        │ ---            ┆ ---        ┆ ---      ┆ ---       ┆ ---          ┆ ---            │
-        │ date           ┆ i64        ┆ f64      ┆ f64       ┆ f64          ┆ f64            │
-        ╞════════════════╪════════════╪══════════╪═══════════╪══════════════╪════════════════╡
-        │ 2025-05-15     ┆ 171        ┆ 0.061748 ┆ 0.061748  ┆ 0.113836     ┆ 0.049059       │
-        │ 2026-08-15     ┆ 488        ┆ 0.064984 ┆ 0.066133  ┆ 0.117126     ┆ 0.04783        │
-        │ 2027-05-15     ┆ 673        ┆ 0.064795 ┆ 0.063816  ┆ 0.117169     ┆ 0.050152       │
-        │ 2028-08-15     ┆ 988        ┆ 0.063878 ┆ 0.063635  ┆ 0.11828      ┆ 0.051376       │
-        │ 2029-05-15     ┆ 1172       ┆ 0.063484 ┆ 0.062532  ┆ 0.11838      ┆ 0.052561       │
-        │ …              ┆ …          ┆ …        ┆ …         ┆ …            ┆ …              │
-        └────────────────┴────────────┴──────────┴───────────┴──────────────┴────────────────┘
+        ┌─────────────────┬────────────┬───────────────┬────────────────┬──────────────┬────────────────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_tir_real ┆ taxa_zero_real ┆ taxa_nominal ┆ inflacao_implicita │
+        │ ---             ┆ ---        ┆ ---           ┆ ---            ┆ ---          ┆ ---                │
+        │ date            ┆ i64        ┆ f64           ┆ f64            ┆ f64          ┆ f64                │
+        ╞═════════════════╪════════════╪═══════════════╪════════════════╪══════════════╪════════════════════╡
+        │ 2025-05-15      ┆ 171        ┆ 0.061748      ┆ 0.061748       ┆ 0.113836     ┆ 0.049059           │
+        │ 2026-08-15      ┆ 488        ┆ 0.066049      ┆ 0.066133       ┆ 0.117126     ┆ 0.04783            │
+        │ 2027-05-15      ┆ 673        ┆ 0.063873      ┆ 0.063816       ┆ 0.117169     ┆ 0.050152           │
+        │ 2028-08-15      ┆ 988        ┆ 0.0637        ┆ 0.063635       ┆ 0.11828      ┆ 0.051376           │
+        │ 2029-05-15      ┆ 1172       ┆ 0.0627        ┆ 0.062532       ┆ 0.11838      ┆ 0.052561           │
+        │ …               ┆ …          ┆ …             ┆ …              ┆ …            ┆ …                  │
+        │ 2040-08-15      ┆ 3995       ┆ 0.060979      ┆ 0.060468       ┆ 0.11759      ┆ 0.053865           │
+        │ 2045-05-15      ┆ 5182       ┆ 0.06211       ┆ 0.0625         ┆ 0.11759      ┆ 0.05185            │
+        │ 2050-08-15      ┆ 6497       ┆ 0.0624        ┆ 0.063016       ┆ 0.11759      ┆ 0.051339           │
+        │ 2055-05-15      ┆ 7686       ┆ 0.062128      ┆ 0.062252       ┆ 0.11759      ┆ 0.052095           │
+        │ 2060-08-15      ┆ 9003       ┆ 0.062383      ┆ 0.063001       ┆ 0.11759      ┆ 0.051354           │
+        └─────────────────┴────────────┴───────────────┴────────────────┴──────────────┴────────────────────┘
     """
     if any_is_empty(
         data_liquidacao,
@@ -683,31 +687,119 @@ def implicitas(
         extrapolar=True,
     )
     df_tir = pl.DataFrame(
-        data={"data_vencimento": vencimentos_tir, "taxa_tir": taxas_tir},
-        schema={"data_vencimento": pl.Date, "taxa_tir": pl.Float64},
+        data={"data_vencimento": vencimentos_tir, "taxa_tir_real": taxas_tir},
+        schema={"data_vencimento": pl.Date, "taxa_tir_real": pl.Float64},
     )
     df_spot = taxas_zero(liquidacao, vencimentos_tir, taxas_tir)
-    df = (
-        df_spot.join(df_tir, on="data_vencimento", how="left").with_columns(
-            taxa_nominal=interpolador_ff(df_spot["dias_uteis"]),
-        )
-        .with_columns(
-            inflacao_implicita=(
-                (pl.col("taxa_nominal") + 1) / (pl.col("taxa_zero") + 1)
-            )
-            - 1,
-        )
-        .select(
-            "data_vencimento",
-            "dias_uteis",
-            "taxa_tir",
-            "taxa_zero",
-            "taxa_nominal",
-            "inflacao_implicita",
-        )
+    taxa_nominal = interpolador_ff(df_spot["dias_uteis"])
+    fator_implicita = (taxa_nominal + 1) / (pl.col("taxa_zero") + 1)
+    df = df_spot.join(df_tir, on="data_vencimento", how="left").select(
+        "data_vencimento",
+        "dias_uteis",
+        "taxa_tir_real",
+        taxa_zero_real=pl.col("taxa_zero"),
+        taxa_nominal=taxa_nominal,
+        inflacao_implicita=fator_implicita - 1,
     )
 
     return df
+
+
+def curva(
+    data_liquidacao: DateLike,
+    vencimentos_tir: ArrayLike,
+    taxas_tir: ArrayLike,
+    vencimentos_nominais: ArrayLike,
+    taxas_nominais: ArrayLike,
+) -> pl.DataFrame:
+    """
+    Calcula uma visão de curva da NTN-B com taxas reais, nominais e forwards.
+
+    A função usa os mesmos insumos de ``implicitas`` e adiciona taxas forward
+    reais, nominais e de inflação implícita. A curva nominal é a referência
+    informada pelo usuário.
+
+    Args:
+        data_liquidacao (DateLike): Data de liquidação da operação.
+        vencimentos_tir (ArrayLike): Vencimentos das NTN-B usadas como vértices
+            da curva de TIR real.
+        taxas_tir (ArrayLike): TIRs reais correspondentes.
+        vencimentos_nominais (ArrayLike): Vencimentos da curva nominal de
+            referência.
+        taxas_nominais (ArrayLike): Taxas da curva nominal de referência. Pode
+            representar DI Futuro, curva soberana prefixada ou outra curva
+            nominal escolhida pelo usuário.
+
+    Returns:
+        pl.DataFrame: DataFrame com a curva calculada.
+
+    Output Columns:
+        - data_vencimento (Date): Data de vencimento.
+        - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.
+        - taxa_tir_real (Float64): TIR real da NTN-B recebida na entrada.
+        - taxa_zero_real (Float64): Taxa real zero via bootstrap.
+        - taxa_forward_real (Float64): Taxa forward real via taxas zero reais.
+        - taxa_nominal (Float64): Taxa nominal de referência interpolada.
+        - taxa_forward_nominal (Float64): Taxa forward da curva nominal de
+            referência.
+        - inflacao_implicita (Float64): Inflação implícita (breakeven).
+        - inflacao_forward (Float64): Inflação implícita forward.
+
+    Notes:
+        A curva nominal de referência define a leitura econômica da inflação
+        implícita. Quando a referência for DI Futuro, as colunas nominais e de
+        inflação representam a leitura contra DI.
+
+    Examples:
+        >>> df = yd.ntnb.curva(
+        ...     data_liquidacao="02-01-2024",
+        ...     vencimentos_tir=["15-05-2025", "15-08-2026", "15-05-2027"],
+        ...     taxas_tir=[0.055, 0.057, 0.059],
+        ...     vencimentos_nominais=["02-01-2025", "02-01-2026", "02-01-2028"],
+        ...     taxas_nominais=[0.10, 0.105, 0.11],
+        ... )
+        >>> df.select("taxa_zero_real", "taxa_forward_real").head(2)
+        shape: (2, 2)
+        ┌────────────────┬───────────────────┐
+        │ taxa_zero_real ┆ taxa_forward_real │
+        │ ---            ┆ ---               │
+        │ f64            ┆ f64               │
+        ╞════════════════╪═══════════════════╡
+        │ 0.055          ┆ 0.055             │
+        │ 0.057081       ┆ 0.059337          │
+        └────────────────┴───────────────────┘
+    """
+    df = implicitas(
+        data_liquidacao=data_liquidacao,
+        vencimentos_tir=vencimentos_tir,
+        taxas_tir=taxas_tir,
+        vencimentos_nominais=vencimentos_nominais,
+        taxas_nominais=taxas_nominais,
+    )
+    if df.is_empty():
+        return df
+
+    forwards_reais = fwd.forwards(
+        dias_uteis=df["dias_uteis"],
+        taxas=df["taxa_zero_real"],
+    )
+    forwards_nominais = fwd.forwards(
+        dias_uteis=df["dias_uteis"],
+        taxas=df["taxa_nominal"],
+    )
+    inflacoes_forward = ((forwards_nominais + 1) / (forwards_reais + 1)) - 1
+
+    return df.select(
+        "data_vencimento",
+        "dias_uteis",
+        "taxa_tir_real",
+        "taxa_zero_real",
+        forwards_reais.alias("taxa_forward_real"),
+        "taxa_nominal",
+        forwards_nominais.alias("taxa_forward_nominal"),
+        "inflacao_implicita",
+        inflacoes_forward.alias("inflacao_forward"),
+    )
 
 
 def duration(
@@ -832,71 +924,3 @@ def taxa(
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
     return round(taxa_encontrada, 6)
-
-
-def forward(
-    data: DateLike,
-    usar_taxa_zero: bool = True,
-) -> pl.DataFrame:
-    """
-    Calcula as taxas forward da NTN-B para a data de referência.
-
-    Args:
-        data (DateLike): Data da consulta.
-        usar_taxa_zero (bool, optional): Se True, usa taxas zero cupom no cálculo.
-            Padrão True. Se False, usa as TIRs.
-
-    Returns:
-        pl.DataFrame: DataFrame com as taxas forward.
-
-    Output Columns:
-        - data_vencimento (Date): Data de vencimento.
-        - dias_uteis (Int64): Dias úteis entre referência e vencimento.
-        - taxa_indicativa (Float64): Taxa indicativa (spot ou TIR).
-        - taxa_forward (Float64): Taxa forward calculada.
-
-    Examples:
-        >>> from pyield import ntnb
-        >>> ntnb.forward("17-10-2025", usar_taxa_zero=True)
-        shape: (13, 4)
-        ┌─────────────────┬────────────┬─────────────────┬──────────────┐
-        │ data_vencimento ┆ dias_uteis ┆ taxa_indicativa ┆ taxa_forward │
-        │ ---             ┆ ---        ┆ ---             ┆ ---          │
-        │ date            ┆ i64        ┆ f64             ┆ f64          │
-        ╞═════════════════╪════════════╪═════════════════╪══════════════╡
-        │ 2026-08-15      ┆ 207        ┆ 0.10089         ┆ 0.10089      │
-        │ 2027-05-15      ┆ 392        ┆ 0.088776        ┆ 0.074793     │
-        │ 2028-08-15      ┆ 707        ┆ 0.083615        ┆ 0.076598     │
-        │ 2029-05-15      ┆ 891        ┆ 0.0818          ┆ 0.074148     │
-        │ 2030-08-15      ┆ 1205       ┆ 0.080902        ┆ 0.077857     │
-        │ …               ┆ …          ┆ …               ┆ …            │
-        │ 2040-08-15      ┆ 3714       ┆ 0.076067        ┆ 0.070587     │
-        │ 2045-05-15      ┆ 4901       ┆ 0.075195        ┆ 0.069811     │
-        │ 2050-08-15      ┆ 6216       ┆ 0.074087        ┆ 0.064348     │
-        │ 2055-05-15      ┆ 7405       ┆ 0.073702        ┆ 0.067551     │
-        │ 2060-08-15      ┆ 8722       ┆ 0.073795        ┆ 0.074505     │
-        └─────────────────┴────────────┴─────────────────┴──────────────┘
-    """
-    if any_is_empty(data):
-        return pl.DataFrame()
-
-    # Valida e normaliza a data
-    df = dados(data).select("data_vencimento", "dias_uteis", "taxa_indicativa")
-    if usar_taxa_zero:
-        df_ref = taxas_zero(
-            data_liquidacao=data,
-            vencimentos=df["data_vencimento"],
-            taxas=df["taxa_indicativa"],
-        ).rename({"taxa_zero": "taxa_referencia"})
-    else:
-        df_ref = df.rename({"taxa_indicativa": "taxa_referencia"})
-    taxas_forward = fwd.forwards(
-        dias_uteis=df_ref["dias_uteis"], taxas=df_ref["taxa_referencia"]
-    )
-    df_ref = df_ref.with_columns(taxa_forward=taxas_forward)
-    df = df.join(
-        df_ref.select("data_vencimento", "taxa_forward"),
-        on="data_vencimento",
-        how="inner",
-    ).sort("data_vencimento")
-    return df

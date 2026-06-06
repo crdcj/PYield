@@ -59,7 +59,6 @@ def dados(data: DateLike) -> pl.DataFrame:
         - duration (Float64): Macaulay Duration do título (anos).
         - prazo_medio (Float64): Prazo médio do título (anos).
         - dv01 (Float64): Variação no preço para 1bp de taxa.
-        - dv01_usd (Float64): DV01 convertido para USD pela PTAX do dia.
         - pu (Float64): Preço unitário (PU).
         - taxa_compra (Float64): Taxa de compra (decimal).
         - taxa_venda (Float64): Taxa de venda (decimal).
@@ -82,9 +81,9 @@ def dados(data: DateLike) -> pl.DataFrame:
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
     )
 
-    # Adiciona duration, prazo_medio, dv01, dv01_usd e taxa_di
+    # Adiciona duration, prazo_medio, dv01 e taxa_di
     df = utils.adicionar_duration(df, duration)
-    df = utils.adicionar_dv01(df, data_ref)
+    df = utils.adicionar_dv01(df)
     df = utils.adicionar_taxa_di(df, data_ref)
 
     return df.select(
@@ -97,7 +96,6 @@ def dados(data: DateLike) -> pl.DataFrame:
         "duration",
         "prazo_medio",
         "dv01",
-        "dv01_usd",
         "pu",
         "taxa_compra",
         "taxa_venda",

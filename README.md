@@ -72,7 +72,7 @@ documentação.
 | `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premio_pre`, `rmd`, `secundario_mensal`, `secundario_intradia` |
 | `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `taxa`, `vna` |
 | `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `dv01`, `premio`, `rentabilidade`, `taxas_forward` |
-| `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `dv01`, `implicitas` |
+| `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `dv01`, `implicitas`, `curva` |
 | `yd.ntnb1` | módulo | NTN-B1 | `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `duration`, `dv01` |
 | `yd.ntnbprinc` | módulo | NTN-B Principal | `pu`, `dv01` |
 | `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `duration`, `dv01` |
