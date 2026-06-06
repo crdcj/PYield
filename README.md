@@ -67,7 +67,7 @@ documentação.
 | `yd.Interpolador` | classe | Interpolação de curvas | `interpolar`, `__call__`, `linear`, `flat_forward` |
 | `yd.forward(...)` | função | Taxa a termo entre dois vértices |  |
 | `yd.forwards(...)` | função | Curva de taxas a termo |  |
-| `yd.futuro` | módulo | Contratos futuros da B3 | `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `vencimento_expr` |
+| `yd.futuro` | módulo | Contratos futuros da B3 | `di1`, `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `vencimento_expr` |
 | `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
 | `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premio_pre`, `rmd`, `secundario_mensal`, `secundario_intradia` |
 | `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `taxa`, `vna` |
@@ -165,6 +165,10 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 ```
 
 ## Títulos Públicos
+
+Os módulos `lft`, `ltn`, `ntnb`, `ntnf`, `ntnc`, `ntnb1` e `ntnbprinc`
+fazem parte da família de Títulos Públicos Federais (`tpf`). Para uso direto
+dos títulos, prefira os atalhos públicos na raiz:
 
 ```python
 from pyield import ltn, ntnb, ntnf

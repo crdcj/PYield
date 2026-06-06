@@ -1,8 +1,8 @@
 import polars as pl
 
-from pyield import du, ntnf
+from pyield import du
 from pyield._internal.types import DateLike
-from pyield.tpf import utils
+from pyield.tpf import ntnf, utils
 
 
 def curva_pre(data: DateLike) -> pl.DataFrame:

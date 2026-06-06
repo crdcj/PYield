@@ -18,6 +18,7 @@ Visão geral das principais funções públicas do PYield.
 ??? "`yd.futuro` (futuros B3)"
     ```text
     yd.futuro
+    ├── di1
     ├── historico(data, contrato)
     ├── intradia(contrato)
     ├── datas_disponiveis(contrato)

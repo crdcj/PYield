@@ -58,7 +58,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         >>> from pyield import ntnb
         >>> df_ntnb = ntnb.dados("23-08-2024")  # doctest: +SKIP
     """
-    from pyield import di1  # noqa: PLC0415
+    from pyield.futuro import di1  # noqa: PLC0415
 
     df = utils.obter_tpf(data, "NTN-B")
     if df.is_empty():

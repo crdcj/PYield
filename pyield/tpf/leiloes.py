@@ -12,8 +12,8 @@ from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.bc.sgs import ptax_serie
-from pyield.ntnb import duration as duration_b
-from pyield.ntnf import duration as duration_f
+from pyield.tpf._titulos.ntnb import duration as duration_b
+from pyield.tpf._titulos.ntnf import duration as duration_f
 
 logger = logging.getLogger(__name__)
 
