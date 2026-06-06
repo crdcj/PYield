@@ -246,18 +246,28 @@ yd.ptax("25-12-2025")                                # -> nan
 
 Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
 
-## Quebra de API em leilões de TPF (v0.50.0)
+## Quebra de API (v0.51.0)
 
-`yd.tpf.leilao(data)` foi substituída por `yd.tpf.leiloes(...)`.
-A nova função usa parâmetros nomeados e permite consultar uma data específica,
-uma lista de datas ou um período:
+### Remoção de `dv01_usd`
+
+A coluna `dv01_usd` foi removida da saída de `dados()` nos módulos `ntnb`,
+`ltn`, `ntnc` e `ntnf`. Para converter o DV01 para USD, divida pela PTAX:
 
 ```python
-yd.tpf.leiloes(data="19-05-2026")
-yd.tpf.leiloes(data=["14-05-2026", "19-05-2026"])
-yd.tpf.leiloes(inicio="01-05-2026")
-yd.tpf.leiloes(inicio="01-05-2026", fim="19-05-2026")
+df = yd.ntnb.dados("06-06-2026")
+dv01_usd = df["dv01"] / yd.ptax("06-06-2026")
 ```
+
+### `ntnb.inflacao_implicita()` → `ntnb.implicitas()`
+
+A função foi renomeada. As colunas de saída também mudaram:
+- `taxa_tir` → `taxa_tir_real`
+- `taxa_zero` → `taxa_zero_real`
+
+### Remoção de `ntnb.forward()`
+
+A função `ntnb.forward(data, usar_taxa_zero=True)` foi removida. Os dados que
+ela retornava já estão disponíveis via `ntnb.dados(data)`.
 
 ## Testes
 
