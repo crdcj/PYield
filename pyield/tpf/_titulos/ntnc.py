@@ -390,3 +390,38 @@ def duration(
     duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
     # Truncar para 14 casas decimais para repetibilidade dos resultados
     return utils.truncar(duracao, 14)
+
+
+def dv01(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    taxa: float,
+    vna: float,
+) -> float:
+    """
+    Calcula o DV01 (Dollar Value of 01) da NTN-C em R$.
+
+    Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
+
+    Args:
+        data_liquidacao: Data de liquidação.
+        data_vencimento: Data de vencimento.
+        taxa: Taxa de desconto (YTM) da NTN-C.
+        vna: Valor nominal atualizado (VNA).
+
+    Returns:
+        float: DV01, variação de preço para 1 bp.
+
+    Examples:
+        >>> from pyield import ntnc
+        >>> ntnc.dv01("21-03-2025", "01-01-2031", 0.067626, 6598.913723)
+        3.4446330000009766
+    """
+    if any_is_empty(data_liquidacao, data_vencimento, taxa, vna):
+        return float("nan")
+
+    cotacao_1 = cotacao(data_liquidacao, data_vencimento, taxa)
+    cotacao_2 = cotacao(data_liquidacao, data_vencimento, taxa + 0.0001)
+    preco_1 = pu(vna, cotacao_1)
+    preco_2 = pu(vna, cotacao_2)
+    return preco_1 - preco_2

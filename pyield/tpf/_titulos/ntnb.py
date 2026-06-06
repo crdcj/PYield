@@ -77,12 +77,12 @@ def dados(data: DateLike) -> pl.DataFrame:
 
     # Busca curva DI bruta e calcula taxa_zero, taxa_di e inflação implícita
     df_di = di1.dados(data)
-    df_bei = inflacao_implicita(
+    df_bei = implicitas(
         data_liquidacao=data,
-        ntnb_vencimentos=df["data_vencimento"],
-        ntnb_taxas=df["taxa_indicativa"],
-        nominal_vencimentos=df_di["data_vencimento"],
-        nominal_taxas=df_di["taxa_ajuste"],
+        vencimentos_tir=df["data_vencimento"],
+        taxas_tir=df["taxa_indicativa"],
+        vencimentos_nominais=df_di["data_vencimento"],
+        taxas_nominais=df_di["taxa_ajuste"],
     ).select(
         pl.col("data_vencimento"),
         pl.col("taxa_zero"),
@@ -596,12 +596,12 @@ def taxas_zero(
     return df.select(["data_vencimento", "dias_uteis", "taxa_zero"])
 
 
-def inflacao_implicita(
+def implicitas(
     data_liquidacao: DateLike,
-    ntnb_vencimentos: ArrayLike,
-    ntnb_taxas: ArrayLike,
-    nominal_vencimentos: ArrayLike,
-    nominal_taxas: ArrayLike,
+    vencimentos_tir: ArrayLike,
+    taxas_tir: ArrayLike,
+    vencimentos_nominais: ArrayLike,
+    taxas_nominais: ArrayLike,
 ) -> pl.DataFrame:
     """
     Calcula a inflação implícita para NTN-B a partir de taxas nominais e reais.
@@ -611,10 +611,12 @@ def inflacao_implicita(
 
     Args:
         data_liquidacao (DateLike): Data de liquidação da operação.
-        ntnb_vencimentos (ArrayLike): Vencimentos das NTN-B.
-        ntnb_taxas (ArrayLike): TIRs reais correspondentes.
-        nominal_vencimentos (ArrayLike): Vencimentos de referência da curva nominal.
-        nominal_taxas (ArrayLike): Taxas nominais de referência.
+        vencimentos_tir (ArrayLike): Vencimentos das NTN-B usadas como vértices
+            da curva de TIR real.
+        taxas_tir (ArrayLike): TIRs reais correspondentes.
+        vencimentos_nominais (ArrayLike): Vencimentos de referência da curva
+            nominal.
+        taxas_nominais (ArrayLike): Taxas nominais de referência.
 
     Returns:
         pl.DataFrame: DataFrame com as taxas calculadas.
@@ -622,6 +624,7 @@ def inflacao_implicita(
     Output Columns:
         - data_vencimento (Date): Data de vencimento.
         - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.
+        - taxa_tir (Float64): TIR real da NTN-B recebida na entrada.
         - taxa_zero (Float64): Taxa real zero via bootstrap.
         - taxa_nominal (Float64): Taxa nominal interpolada.
         - inflacao_implicita (Float64): Inflação implícita (breakeven).
@@ -639,54 +642,53 @@ def inflacao_implicita(
         >>> df_di = yd.di1.dados("05-09-2024")
 
         Calcula a inflação implícita na data de referência:
-        >>> yd.ntnb.inflacao_implicita(
+        >>> yd.ntnb.implicitas(
         ...     data_liquidacao="05-09-2024",
-        ...     ntnb_vencimentos=df_ntnb["data_vencimento"],
-        ...     ntnb_taxas=df_ntnb["taxa_indicativa"],
-        ...     nominal_vencimentos=df_di["data_vencimento"],
-        ...     nominal_taxas=df_di["taxa_ajuste"],
+        ...     vencimentos_tir=df_ntnb["data_vencimento"],
+        ...     taxas_tir=df_ntnb["taxa_indicativa"],
+        ...     vencimentos_nominais=df_di["data_vencimento"],
+        ...     taxas_nominais=df_di["taxa_ajuste"],
         ... )
-        shape: (14, 5)
-        ┌─────────────────┬────────────┬───────────┬──────────────┬────────────────────┐
-        │ data_vencimento ┆ dias_uteis ┆ taxa_zero ┆ taxa_nominal ┆ inflacao_implicita │
-        │ ---             ┆ ---        ┆ ---       ┆ ---          ┆ ---                │
-        │ date            ┆ i64        ┆ f64       ┆ f64          ┆ f64                │
-        ╞═════════════════╪════════════╪═══════════╪══════════════╪════════════════════╡
-        │ 2025-05-15      ┆ 171        ┆ 0.061748  ┆ 0.113836     ┆ 0.049059           │
-        │ 2026-08-15      ┆ 488        ┆ 0.066133  ┆ 0.117126     ┆ 0.04783            │
-        │ 2027-05-15      ┆ 673        ┆ 0.063816  ┆ 0.117169     ┆ 0.050152           │
-        │ 2028-08-15      ┆ 988        ┆ 0.063635  ┆ 0.11828      ┆ 0.051376           │
-        │ 2029-05-15      ┆ 1172       ┆ 0.062532  ┆ 0.11838      ┆ 0.052561           │
-        │ …               ┆ …          ┆ …         ┆ …            ┆ …                  │
-        │ 2040-08-15      ┆ 3995       ┆ 0.060468  ┆ 0.11759      ┆ 0.053865           │
-        │ 2045-05-15      ┆ 5182       ┆ 0.0625    ┆ 0.11759      ┆ 0.05185            │
-        │ 2050-08-15      ┆ 6497       ┆ 0.063016  ┆ 0.11759      ┆ 0.051339           │
-        │ 2055-05-15      ┆ 7686       ┆ 0.062252  ┆ 0.11759      ┆ 0.052095           │
-        │ 2060-08-15      ┆ 9003       ┆ 0.063001  ┆ 0.11759      ┆ 0.051354           │
-        └─────────────────┴────────────┴───────────┴──────────────┴────────────────────┘
+        shape: (14, 6)
+        ┌────────────────┬────────────┬──────────┬───────────┬──────────────┬────────────────┐
+        │ data_vencimen… ┆ dias_uteis ┆ taxa_tir ┆ taxa_zero ┆ taxa_nominal ┆ inflacao_impl… │
+        │ ---            ┆ ---        ┆ ---      ┆ ---       ┆ ---          ┆ ---            │
+        │ date           ┆ i64        ┆ f64      ┆ f64       ┆ f64          ┆ f64            │
+        ╞════════════════╪════════════╪══════════╪═══════════╪══════════════╪════════════════╡
+        │ 2025-05-15     ┆ 171        ┆ 0.061748 ┆ 0.061748  ┆ 0.113836     ┆ 0.049059       │
+        │ 2026-08-15     ┆ 488        ┆ 0.064984 ┆ 0.066133  ┆ 0.117126     ┆ 0.04783        │
+        │ 2027-05-15     ┆ 673        ┆ 0.064795 ┆ 0.063816  ┆ 0.117169     ┆ 0.050152       │
+        │ 2028-08-15     ┆ 988        ┆ 0.063878 ┆ 0.063635  ┆ 0.11828      ┆ 0.051376       │
+        │ 2029-05-15     ┆ 1172       ┆ 0.063484 ┆ 0.062532  ┆ 0.11838      ┆ 0.052561       │
+        │ …              ┆ …          ┆ …        ┆ …         ┆ …            ┆ …              │
+        └────────────────┴────────────┴──────────┴───────────┴──────────────┴────────────────┘
     """
     if any_is_empty(
         data_liquidacao,
-        ntnb_vencimentos,
-        ntnb_taxas,
-        nominal_vencimentos,
-        nominal_taxas,
+        vencimentos_tir,
+        taxas_tir,
+        vencimentos_nominais,
+        taxas_nominais,
     ):
         return pl.DataFrame()
-    # Normaliza datas de entrada
-    liquidacao = conversores.converter_datas(data_liquidacao)
-    ntnb_vencimentos = conversores.converter_datas(ntnb_vencimentos)
-    nominal_vencimentos = conversores.converter_datas(nominal_vencimentos)
+    liquidacao, vencimentos_tir, taxas_tir = _validar_entradas_taxas_zero(
+        data_liquidacao, vencimentos_tir, taxas_tir
+    )
+    vencimentos_nominais = conversores.converter_datas(vencimentos_nominais)
 
     interpolador_ff = interpolador.Interpolador(
-        dias_uteis=du.contar(liquidacao, nominal_vencimentos),
-        taxas=nominal_taxas,
+        dias_uteis=du.contar(liquidacao, vencimentos_nominais),
+        taxas=taxas_nominais,
         metodo="flat_forward",
         extrapolar=True,
     )
-    df_spot = taxas_zero(liquidacao, ntnb_vencimentos, ntnb_taxas)
+    df_tir = pl.DataFrame(
+        data={"data_vencimento": vencimentos_tir, "taxa_tir": taxas_tir},
+        schema={"data_vencimento": pl.Date, "taxa_tir": pl.Float64},
+    )
+    df_spot = taxas_zero(liquidacao, vencimentos_tir, taxas_tir)
     df = (
-        df_spot.with_columns(
+        df_spot.join(df_tir, on="data_vencimento", how="left").with_columns(
             taxa_nominal=interpolador_ff(df_spot["dias_uteis"]),
         )
         .with_columns(
@@ -698,6 +700,7 @@ def inflacao_implicita(
         .select(
             "data_vencimento",
             "dias_uteis",
+            "taxa_tir",
             "taxa_zero",
             "taxa_nominal",
             "inflacao_implicita",

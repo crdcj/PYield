@@ -115,7 +115,7 @@ Visão geral das principais funções públicas do PYield.
     ├── duration(...)
     ├── dv01(...)
     ├── taxas_zero(...)
-    ├── inflacao_implicita(...)
+    ├── implicitas(...)
     └── forward(...)
     ```
 
@@ -164,7 +164,8 @@ Visão geral das principais funções públicas do PYield.
     ├── cotacao(...)
     ├── pu(...)
     ├── taxa(...)
-    └── duration(...)
+    ├── duration(...)
+    └── dv01(...)
     ```
 
 ??? "`yd.ptax` (PTAX para uma data)"
