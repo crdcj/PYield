@@ -116,8 +116,7 @@ Visão geral das principais funções públicas do PYield.
     ├── dv01(...)
     ├── taxas_zero(...)
     ├── implicitas(...)
-    ├── curva(...)
-    └── forward(...)
+    └── curva(...)
     ```
 
 ??? "`yd.ntnf` (Tesouro Prefixado com cupom)"

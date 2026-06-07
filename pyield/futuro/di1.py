@@ -5,6 +5,8 @@ Fonte:
     Report e usados como curva de ajuste do DI1.
 """
 
+from typing import Literal
+
 import polars as pl
 
 import pyield._internal.converters as cv
@@ -14,6 +16,13 @@ from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_i
 from pyield.futuro.historico import buscar_historico_cacheado
 from pyield.futuro.historico import datas_disponiveis as _datas_futuro
 from pyield.interpolador import Interpolador
+
+TipoTaxaDI1 = Literal["ajuste", "fechamento"]
+
+_COLUNAS_TIPO_TAXA: dict[TipoTaxaDI1, str] = {
+    "ajuste": "taxa_ajuste",
+    "fechamento": "taxa_fechamento",
+}
 
 
 def dados(
@@ -111,6 +120,7 @@ def interpolar_taxas(
     datas_referencia: DateLike | ArrayLike,
     datas_vencimento: DateLike | ArrayLike,
     extrapolar: bool = True,
+    tipo_taxa: TipoTaxaDI1 = "ajuste",
 ) -> pl.Series:
     """Interpola taxas de DI para datas de negociação e vencimentos especificados.
 
@@ -130,6 +140,9 @@ def interpolar_taxas(
             compatível em tamanho com ``datas_referencia`` se ambos forem arrays.
         extrapolar: Se permite extrapolação além do intervalo de taxas DI
             conhecidas para uma data de negociação. Padrão: True.
+        tipo_taxa: Tipo de taxa usada como curva de referência. Use
+            ``"ajuste"`` para a taxa de ajuste ou ``"fechamento"`` para a
+            última taxa negociada. Padrão: ``"ajuste"``.
 
     Returns:
         Series contendo as taxas DI interpoladas (como floats). Valores serão
@@ -139,10 +152,13 @@ def interpolar_taxas(
     Raises:
         ValueError: Se ``datas_referencia`` e ``datas_vencimento`` forem ambos
             array-like mas tiverem tamanhos diferentes.
+        ValueError: Se ``tipo_taxa`` não for ``"ajuste"`` ou ``"fechamento"``.
 
     Notes:
-        - Todas as taxas de liquidação disponíveis são usadas para interpolação
-          flat-forward.
+        - Todas as taxas disponíveis do tipo escolhido são usadas para
+          interpolação flat-forward.
+        - ``tipo_taxa="fechamento"`` usa a última taxa negociada (last trade),
+          que pode ter menos vértices disponíveis que a curva de ajuste.
         - A função trata broadcasting de entradas escalares e array-like.
 
     Examples:
@@ -191,6 +207,10 @@ def interpolar_taxas(
             null
         ]
     """
+    coluna_taxa = _COLUNAS_TIPO_TAXA.get(tipo_taxa)
+    if coluna_taxa is None:
+        raise ValueError("tipo_taxa deve ser 'ajuste' ou 'fechamento'.")
+
     if any_is_empty(datas_referencia, datas_vencimento):
         return pl.Series(dtype=pl.Float64)
 
@@ -217,7 +237,7 @@ def interpolar_taxas(
     # Inicializa taxa_interpolada como None
     df_entrada = df_entrada.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
-        taxa_interpolada=None,
+        taxa_interpolada=pl.lit(None, dtype=pl.Float64),
     )
 
     # Lista para armazenar os blocos processados
@@ -237,10 +257,15 @@ def interpolar_taxas(
             blocos_processados.append(df_parcial)
             continue
 
+        df_curva = df_referencia.select("dias_uteis", coluna_taxa).drop_nulls()
+        if df_curva.is_empty():
+            blocos_processados.append(df_parcial)
+            continue
+
         # Inicializa o interpolador com taxas e dias úteis conhecidos
         interpolador_du = Interpolador(
-            dias_uteis=df_referencia["dias_uteis"],
-            taxas=df_referencia["taxa_ajuste"],
+            dias_uteis=df_curva["dias_uteis"],
+            taxas=df_curva[coluna_taxa],
             metodo="flat_forward",
             extrapolar=extrapolar,
         )
@@ -267,6 +292,7 @@ def interpolar_taxa(
     data_referencia: DateLike,
     data_vencimento: DateLike,
     extrapolar: bool = False,
+    tipo_taxa: TipoTaxaDI1 = "ajuste",
 ) -> float:
     """Interpola ou obtém a taxa DI para uma única data de vencimento.
 
@@ -282,6 +308,9 @@ def interpolar_taxa(
         extrapolar: Se True, permite extrapolação se o ``data_vencimento`` estiver
             fora do intervalo de vencimentos de contratos disponíveis para a
             ``data_referencia``. Padrão: False.
+        tipo_taxa: Tipo de taxa usada como curva de referência. Use
+            ``"ajuste"`` para a taxa de ajuste ou ``"fechamento"`` para a
+            última taxa negociada. Padrão: ``"ajuste"``.
 
     Returns:
         Taxa de liquidação DI exata ou interpolada para a data e vencimento
@@ -314,6 +343,7 @@ def interpolar_taxa(
         datas_referencia=data_referencia,
         datas_vencimento=data_vencimento,
         extrapolar=extrapolar,
+        tipo_taxa=tipo_taxa,
     )
     if taxa.is_empty():
         return float("nan")
