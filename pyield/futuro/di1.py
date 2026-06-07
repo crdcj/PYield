@@ -12,7 +12,7 @@ import polars as pl
 import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.data_cache import obter_dataset_cacheado
-from pyield._internal.types import ArrayLike, DateLike, any_is_collection, any_is_empty
+from pyield._internal.types import ArrayLike, DateLike, any_is_array_like, any_is_empty
 from pyield.futuro.historico import buscar_historico_cacheado
 from pyield.futuro.historico import datas_disponiveis as _datas_futuro
 from pyield.interpolador import Interpolador
@@ -334,7 +334,7 @@ def interpolar_taxa(
         >>> di1.interpolar_taxa("25-04-2025", "01-01-2050", extrapolar=True)
         0.13881
     """
-    if any_is_collection(data_referencia, data_vencimento):
+    if any_is_array_like(data_referencia, data_vencimento):
         raise ValueError(
             "As entradas 'data_referencia' e 'data_vencimento' devem ser datas escalares."
         )

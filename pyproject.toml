@@ -57,6 +57,9 @@ python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
 
+[tool.ty.src]
+include = ["pyield"]
+
 [tool.ruff]
 line-length = 88
 indent-width = 4

@@ -97,7 +97,7 @@ COLUNAS_PRICE_REPORT: list[tuple[str, str, type[pl.DataType]]] = [
 ]
 
 # Schema completo: nome_xml → tipo_polars. Garante ordem e tipagem constante.
-SCHEMA_PRICE_REPORT = {nome: tipo for _, nome, tipo in COLUNAS_PRICE_REPORT}
+SCHEMA_PRICE_REPORT = pl.Schema({nome: tipo for _, nome, tipo in COLUNAS_PRICE_REPORT})
 
 logger = logging.getLogger(__name__)
 _SESSAO = requests.Session()
@@ -146,7 +146,32 @@ def baixar_zip(data: DateLike, boletim_completo: bool = False) -> bytes:
     return resposta.content
 
 
-def _zip_valido(conteudo_zip: bytes) -> bool:  # noqa: PLR0911
+def _zip_tem_xml_valido(conteudo_zip: bytes) -> bool:  # noqa: PLR0911
+    with zipfile.ZipFile(io.BytesIO(conteudo_zip), "r") as zip_externo:
+        nomes = zip_externo.namelist()
+        if not nomes:
+            logger.debug("ZIP externo do boletim está vazio.")
+            return False
+        if zip_externo.testzip() is not None:
+            logger.debug("ZIP externo do boletim contém arquivo corrompido.")
+            return False
+
+        conteudo_interno = zip_externo.read(nomes[0])
+        with zipfile.ZipFile(io.BytesIO(conteudo_interno), "r") as zip_interno:
+            nomes_xml = [
+                nome for nome in zip_interno.namelist() if nome.endswith(".xml")
+            ]
+            if not nomes_xml:
+                logger.debug("ZIP interno do boletim não contém XML.")
+                return False
+            if zip_interno.testzip() is not None:
+                logger.debug("ZIP interno do boletim contém arquivo corrompido.")
+                return False
+
+    return True
+
+
+def _zip_valido(conteudo_zip: bytes) -> bool:
     """Verifica se o ZIP bruto do boletim contém um XML legível."""
     tamanho_minimo = 1024  # ZIP válido ~2KB; 1KB detecta arquivos "sem dados"
     if len(conteudo_zip) < tamanho_minimo:
@@ -154,32 +179,10 @@ def _zip_valido(conteudo_zip: bytes) -> bool:  # noqa: PLR0911
         return False
 
     try:
-        with zipfile.ZipFile(io.BytesIO(conteudo_zip), "r") as zip_externo:
-            nomes = zip_externo.namelist()
-            if not nomes:
-                logger.debug("ZIP externo do boletim está vazio.")
-                return False
-            if zip_externo.testzip() is not None:
-                logger.debug("ZIP externo do boletim contém arquivo corrompido.")
-                return False
-
-            conteudo_interno = zip_externo.read(nomes[0])
-            with zipfile.ZipFile(io.BytesIO(conteudo_interno), "r") as zip_interno:
-                nomes_xml = [
-                    nome for nome in zip_interno.namelist() if nome.endswith(".xml")
-                ]
-                if not nomes_xml:
-                    logger.debug("ZIP interno do boletim não contém XML.")
-                    return False
-                if zip_interno.testzip() is not None:
-                    logger.debug("ZIP interno do boletim contém arquivo corrompido.")
-                    return False
-
+        return _zip_tem_xml_valido(conteudo_zip)
     except (zipfile.BadZipFile, KeyError, OSError, RuntimeError):
         logger.debug("ZIP do boletim inválido ou ilegível.")
         return False
-
-    return True
 
 
 def _extrair(conteudo_zip: bytes) -> bytes:
@@ -208,6 +211,20 @@ def _extrair(conteudo_zip: bytes) -> bytes:
             if not nomes_xml:
                 raise ValueError("Nenhum XML encontrado no ZIP interno")
             return zip_interno.read(nomes_xml[-1])
+
+
+def _xpath_elementos_xml(
+    elemento: etree._ElementTree | etree._Element,
+    expressao: str,
+    *,
+    namespaces: dict[str, str] | None = None,
+) -> list[etree._Element]:
+    resultado = elemento.xpath(expressao, namespaces=namespaces)
+    if not isinstance(resultado, list) or not all(
+        isinstance(item, etree._Element) for item in resultado
+    ):
+        raise TypeError("XPath deveria retornar uma lista de elementos XML.")
+    return [item for item in resultado if isinstance(item, etree._Element)]
 
 
 def _extrair_dados_contrato(pric_rpt: etree._Element) -> dict | None:
@@ -266,8 +283,7 @@ def _parsear_xml_registros(xml_bytes: bytes) -> list[dict]:
         load_dtd=False,
     )
     arvore = etree.parse(io.BytesIO(xml_bytes), parser=analisador)
-    resultado = arvore.xpath("//ns:PricRpt", namespaces=namespaces)
-    elementos: list[etree._Element] = resultado  # type: ignore[assignment]
+    elementos = _xpath_elementos_xml(arvore, "//ns:PricRpt", namespaces=namespaces)
     registros = [
         dados
         for pric_rpt in elementos
@@ -282,7 +298,7 @@ def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
     # (pl.DataFrame infere colunas de ~50 primeiras linhas por padrão.)
     schema_str = {nome: pl.String for nome in SCHEMA_PRICE_REPORT}
     df = pl.DataFrame(registros, schema=schema_str)
-    return df.cast(SCHEMA_PRICE_REPORT, strict=False)  # type: ignore
+    return df.cast(SCHEMA_PRICE_REPORT, strict=False)
 
 
 def _processar_xml_extraido(xml_bytes: bytes) -> pl.DataFrame:

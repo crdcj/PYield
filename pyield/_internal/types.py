@@ -1,7 +1,7 @@
 import datetime as dt
 import math
-from collections.abc import Collection, Sized
-from typing import Any, TypeAlias
+from collections.abc import Sized
+from typing import Any, TypeAlias, TypeGuard
 
 import polars as pl
 
@@ -32,18 +32,18 @@ def any_is_empty(*args: Any) -> bool:
     return any(_is_empty(arg) for arg in args)
 
 
-def is_collection(arg: Any) -> bool:
-    """Verifica se o argumento é uma coleção (array-like), excluindo strings e bytes."""
-    return isinstance(arg, Collection) and not isinstance(arg, (str, bytes))
+def is_array_like(arg: Any) -> TypeGuard[ArrayLike]:
+    """Verifica se o argumento segue o contrato interno de ``ArrayLike``."""
+    return isinstance(arg, (list, tuple, pl.Series))
 
 
-def any_is_collection(*args: Any) -> bool:
-    """Verifica se algum dos argumentos fornecidos é uma coleção (array-like).
+def any_is_array_like(*args: Any) -> bool:
+    """Verifica se algum dos argumentos fornecidos é ``ArrayLike``.
 
     Args:
         *args: Uma lista variável de argumentos de qualquer tipo.
 
     Returns:
-        bool: True se algum argumento for uma coleção, caso contrário False.
+        bool: True se algum argumento for ``ArrayLike``, caso contrário False.
     """
-    return any(is_collection(arg) for arg in args)
+    return any(is_array_like(arg) for arg in args)

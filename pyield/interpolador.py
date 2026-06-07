@@ -4,7 +4,7 @@ from typing import Literal, overload
 
 import polars as pl
 
-from pyield._internal.types import ArrayLike, is_collection
+from pyield._internal.types import ArrayLike, is_array_like
 
 
 class Interpolador:
@@ -177,8 +177,12 @@ class Interpolador:
         Returns:
             Taxa(s) interpolada(s). Float para entrada escalar, pl.Series para array.
         """
-        if is_collection(du):
-            s_dus = pl.Series(name="taxa_interpolada", values=du, dtype=pl.Int64)
+        if is_array_like(du):
+            s_dus = pl.Series(
+                name="taxa_interpolada",
+                values=du,
+                dtype=pl.Int64,
+            )
             result = s_dus.map_elements(self._taxa_interpolada, return_dtype=pl.Float64)
             return result.fill_nan(None)
 

@@ -162,12 +162,12 @@ def converter_datas(
             2024-12-27
         ]
     """
-    if not types.is_collection(dates):
-        eh_escalar = True
-        serie = pl.Series(values=[dates])
-    else:
+    if types.is_array_like(dates):
         eh_escalar = False
         serie = pl.Series(values=dates)
+    else:
+        eh_escalar = True
+        serie = pl.Series(values=[dates])
 
     serie = (
         pl.DataFrame({"dates": serie}, nan_to_null=True)

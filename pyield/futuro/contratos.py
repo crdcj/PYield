@@ -4,7 +4,7 @@ from typing import overload
 import polars as pl
 
 from pyield import du
-from pyield._internal.types import ArrayLike, any_is_collection
+from pyield._internal.types import ArrayLike, any_is_array_like
 
 # Lista de contratos que negociam por taxa (juros/cupom).
 # Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.
@@ -80,14 +80,14 @@ def vencimento(
             null
         ]
     """
-    dados = codigo if any_is_collection(codigo) else [codigo]
+    dados = codigo if any_is_array_like(codigo) else [codigo]
     serie = (
         pl.DataFrame({"codigo": dados})
         .select(vencimento=vencimento_expr("codigo", contrato))
         .get_column("vencimento")
     )
 
-    if any_is_collection(codigo):
+    if any_is_array_like(codigo):
         return serie
 
     return serie.item()

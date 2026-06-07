@@ -111,7 +111,7 @@ def dados(data: DateLike) -> pl.DataFrame:
                 data_liquidacao=data,
                 data_vencimento=row["data_vencimento"],
                 taxa_ntnf=row["taxa_indicativa"],
-                vencimentos_di=df_di["data_vencimento"],  # type: ignore[union-attr]
+                vencimentos_di=df_di["data_vencimento"],
                 taxas_di=df_di["taxa_ajuste"],
             ),
             return_dtype=pl.Float64,
@@ -526,7 +526,7 @@ def rentabilidade(  # noqa
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa_ntnf: float,
-    vencimentos_di: DateLike,
+    vencimentos_di: ArrayLike,
     taxas_di: ArrayLike,
 ) -> float:
     """
@@ -541,7 +541,7 @@ def rentabilidade(  # noqa
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
         data_vencimento (DateLike): Data de vencimento da NTN-F.
         taxa_ntnf (float): TIR da NTN-F.
-        vencimentos_di (DateLike): Datas de vencimento da curva DI.
+        vencimentos_di (ArrayLike): Datas de vencimento da curva DI.
         taxas_di (ArrayLike): Taxas DI correspondentes aos vencimentos.
 
     Returns:
@@ -588,7 +588,7 @@ def rentabilidade(  # noqa
         return float("nan")
 
     interpolador_ff = ip.Interpolador(
-        du.contar(data_liquidacao, vencimentos_di),  # type: ignore[arg-type]
+        du.contar(data_liquidacao, vencimentos_di),
         serie_taxas_di,
         "flat_forward",
     )

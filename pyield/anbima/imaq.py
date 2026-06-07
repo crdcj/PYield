@@ -11,7 +11,7 @@ import datetime as dt
 import polars as pl
 import polars.selectors as ps
 import requests
-from lxml.html import HTMLParser
+from lxml.html import HtmlElement, HTMLParser
 from lxml.html import fromstring as html_fromstring
 
 import pyield._internal.converters as cv
@@ -47,6 +47,15 @@ def _normalizar_nome_coluna(texto: str) -> str:
     return " ".join(texto.strip().split())
 
 
+def _xpath_elementos(elemento: HtmlElement, expressao: str) -> list[HtmlElement]:
+    resultado = elemento.xpath(expressao)
+    if not isinstance(resultado, list) or not all(
+        isinstance(item, HtmlElement) for item in resultado
+    ):
+        raise TypeError("XPath deveria retornar uma lista de elementos HTML.")
+    return resultado
+
+
 def _parsear_tabelas_html(html_content: bytes) -> pl.DataFrame:
     """Parseia tabelas HTML com lxml e retorna DataFrame via read_csv.
 
@@ -58,19 +67,22 @@ def _parsear_tabelas_html(html_content: bytes) -> pl.DataFrame:
     parser = HTMLParser(encoding="iso-8859-1")
     tree = html_fromstring(html_content, parser=parser)
 
-    nested_tables = tree.xpath("//table[@width='100%'][parent::td]")
+    if not isinstance(tree, HtmlElement):
+        raise TypeError("HTML deveria ser parseado como elemento HTML.")
+
+    nested_tables = _xpath_elementos(tree, "//table[@width='100%'][parent::td]")
 
     linhas = []
     nomes_colunas = None
 
-    for table in nested_tables:  # type: ignore[misc]
-        headers = table.xpath(".//thead//th")
+    for table in nested_tables:
+        headers = _xpath_elementos(table, ".//thead//th")
         if not nomes_colunas:
             nomes_colunas = [_normalizar_nome_coluna(h.text_content()) for h in headers]
 
-        data_rows = table.xpath(".//tbody//tr[td]")
+        data_rows = _xpath_elementos(table, ".//tbody//tr[td]")
         for row in data_rows:
-            cells = row.xpath(".//td")
+            cells = _xpath_elementos(row, ".//td")
             if len(cells) != len(nomes_colunas):
                 continue
             linhas.append("\t".join(c.text_content().strip() for c in cells))

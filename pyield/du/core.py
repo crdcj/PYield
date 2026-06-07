@@ -214,7 +214,7 @@ def contar(
         .get_column("dias_uteis")
     )
 
-    if not tp.any_is_collection(inicio, fim):
+    if not tp.any_is_array_like(inicio, fim):
         return s.item()
 
     return s
@@ -490,7 +490,7 @@ def deslocar(
         .get_column("data_ajustada")
     )
 
-    if not tp.any_is_collection(datas, deslocamento):
+    if not tp.any_is_array_like(datas, deslocamento):
         return s.item()
 
     return s
@@ -672,7 +672,7 @@ def eh_dia_util(datas: None | DateLike | ArrayLike) -> None | bool | pl.Series:
         .get_column("eh_dia_util")
     )
 
-    if not tp.any_is_collection(datas):
+    if not tp.any_is_array_like(datas):
         return s.item()
 
     return s
