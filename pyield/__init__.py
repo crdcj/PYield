@@ -12,7 +12,7 @@ from pyield.futuro import di1
 # durante a inicialização do pacote.
 from pyield import selic, tpf
 from pyield.bc.sgs import ptax, ptax_serie
-from pyield.fwd import forward, forwards
+from pyield.fwd import forward, forwards, forwards_expr
 from pyield.interpolador import Interpolador
 from pyield.relogio import agora, hoje
 from pyield.tpf import lft, ltn, ntnb, ntnb1, ntnbprinc, ntnc, ntnf
@@ -31,6 +31,7 @@ __all__ = [
     "du",
     "forward",
     "forwards",
+    "forwards_expr",
     "futuro",
     "hoje",
     "Interpolador",

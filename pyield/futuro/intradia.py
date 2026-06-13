@@ -6,7 +6,7 @@ from pyield._internal.br_numbers import pct_para_decimal
 from pyield.b3._validar_pregao import intradia_disponivel
 from pyield.b3.derivativos_intradia import derivativo_intradia
 from pyield.futuro.contratos import CONTRATOS_TAXA, dv01_expr
-from pyield.fwd import forwards
+from pyield.fwd import forwards_expr
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
 _PRECO_PARA_TAXA_INTRADIA = {
@@ -157,10 +157,12 @@ def _processar_intradia(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
         df = df.with_columns(pct_para_decimal(cs.starts_with("taxa_")))
 
     if contrato in {"DI1", "DAP"}:
-        taxa_fwd = forwards(dias_uteis=df["dias_uteis"], taxas=df["taxa_ultima"])
         anos_uteis = pl.col("dias_uteis") / 252
         preco_ultimo = 100_000 / ((1 + pl.col("taxa_ultima")) ** anos_uteis)
-        df = df.with_columns(preco_ultimo=preco_ultimo.round(2), taxa_forward=taxa_fwd)
+        df = df.with_columns(
+            preco_ultimo=preco_ultimo.round(2),
+            taxa_forward=forwards_expr("dias_uteis", "taxa_ultima"),
+        )
 
     if contrato == "DI1":
         df = df.with_columns(

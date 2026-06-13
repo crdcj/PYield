@@ -6,6 +6,171 @@ import polars as pl
 from pyield._internal.types import ArrayLike, any_is_empty
 
 
+def forwards_expr(
+    dias_uteis: pl.Expr | str,
+    taxas: pl.Expr | str,
+    agrupar_por: pl.Expr | str | None = None,
+) -> pl.Expr:
+    r"""
+    Cria uma expressão Polars para calcular taxas a termo dentro de DataFrames.
+
+    Versão expressiva de :func:`forwards`, no mesmo estilo de ``du.contar_expr``.
+    Pensada para uso dentro de ``with_columns()`` ou ``select()``, especialmente
+    em DataFrames com múltiplas datas de referência (ex.: séries históricas de
+    DI1), onde ``agrupar_por`` define janelas independentes de cálculo sem que
+    seja necessário extrair colunas, calcular fora e juntar de volta.
+
+    A fórmula da taxa a termo entre os vértices ``j`` (anterior) e ``k``
+    (atual) é:
+
+    \[
+    fwd_k = \left( \frac{f_k^{au_k}}{f_j^{au_j}} \right)^{\frac{1}{au_k - au_j}} - 1
+    \]
+
+    Onde ``fₓ = 1 + txₓ`` e ``auₓ = duₓ/252``. A primeira linha de cada grupo
+    (menor ``dias_uteis``) é tratada como spot: ``fwd = tx``.
+
+    Ordenação cronológica:
+        A expressão usa ``shift(1).over(agrupar_por, order_by=dias_uteis)``,
+        calculando a taxa do vértice anterior em ordem de ``dias_uteis`` dentro
+        de cada grupo **sem reordenar o DataFrame** de origem.
+
+    Propagação de nulos e NaN:
+        Se ``dias_uteis`` ou ``taxas`` for nulo em uma linha, o resultado é
+        nulo nessa linha; se for NaN, o resultado é NaN (nulos e NaN não se
+        misturam). Em ambos os casos, a linha imediatamente posterior em
+        ordem de ``dias_uteis`` dentro do mesmo grupo também fica nula/NaN,
+        pois seu vértice anterior é inválido. Como nulos são ordenados ao
+        fim em ``order_by=dias_uteis``, um null em ``dias_uteis`` afeta
+        apenas a própria linha. Mesmo contrato de :func:`forwards`.
+
+    Duplicatas em ``(agrupar_por, dias_uteis)``:
+        Duplicatas tornam o vértice ambíguo. A função invalida a taxa com
+        nulo nas próprias linhas duplicadas; a partir daí o cascateamento
+        natural de nulos vale (a linha imediatamente posterior em ordem de
+        ``dias_uteis`` dentro do grupo também fica nula; a seguinte volta
+        ao normal). Mesmo contrato de :func:`forwards`.
+
+    Args:
+        dias_uteis (pl.Expr | str): Nome de coluna ou expressão Polars com
+            o prazo em dias úteis para cada taxa zero.
+        taxas (pl.Expr | str): Nome de coluna ou expressão Polars com a taxa
+            zero correspondente a cada ``dias_uteis``.
+        agrupar_por (pl.Expr | str | None, optional): Nome de coluna,
+            expressão ou ``None``. Define janelas independentes de cálculo
+            (ex.: ``"data_referencia"``, ``"ticker"``). Quando ``None``, todas
+            as linhas formam um único grupo. Padrão ``None``.
+
+    Returns:
+        pl.Expr: Expressão Float64 com a taxa a termo de cada linha. A
+        expressão não recebe alias; nomeie no momento do uso, por exemplo
+        via ``with_columns(taxa_forward=forwards_expr(...))``.
+
+    Examples:
+        >>> df = pl.DataFrame(
+        ...     {
+        ...         "data_referencia": ["2025-01-02"] * 3 + ["2025-01-03"] * 3,
+        ...         "dias_uteis": [10, 20, 30, 10, 20, 30],
+        ...         "taxa": [0.05, 0.06, 0.07, 0.06, 0.07, 0.08],
+        ...     }
+        ... )
+        >>> df.with_columns(
+        ...     taxa_forward=yd.forwards_expr(
+        ...         "dias_uteis", "taxa", agrupar_por="data_referencia"
+        ...     )
+        ... )
+        shape: (6, 4)
+        ┌─────────────────┬────────────┬──────┬──────────────┐
+        │ data_referencia ┆ dias_uteis ┆ taxa ┆ taxa_forward │
+        │ ---             ┆ ---        ┆ ---  ┆ ---          │
+        │ str             ┆ i64        ┆ f64  ┆ f64          │
+        ╞═════════════════╪════════════╪══════╪══════════════╡
+        │ 2025-01-02      ┆ 10         ┆ 0.05 ┆ 0.05         │
+        │ 2025-01-02      ┆ 20         ┆ 0.06 ┆ 0.070095     │
+        │ 2025-01-02      ┆ 30         ┆ 0.07 ┆ 0.090284     │
+        │ 2025-01-03      ┆ 10         ┆ 0.06 ┆ 0.06         │
+        │ 2025-01-03      ┆ 20         ┆ 0.07 ┆ 0.080094     │
+        │ 2025-01-03      ┆ 30         ┆ 0.08 ┆ 0.100281     │
+        └─────────────────┴────────────┴──────┴──────────────┘
+
+        Sem agrupamento, todas as linhas formam um único grupo:
+
+        >>> df = pl.DataFrame({"du": [10, 20, 30], "tx": [0.05, 0.06, 0.07]})
+        >>> df.with_columns(fwd=yd.forwards_expr("du", "tx"))
+        shape: (3, 3)
+        ┌─────┬──────┬──────────┐
+        │ du  ┆ tx   ┆ fwd      │
+        │ --- ┆ ---  ┆ ---      │
+        │ i64 ┆ f64  ┆ f64      │
+        ╞═════╪══════╪══════════╡
+        │ 10  ┆ 0.05 ┆ 0.05     │
+        │ 20  ┆ 0.06 ┆ 0.070095 │
+        │ 30  ┆ 0.07 ┆ 0.090284 │
+        └─────┴──────┴──────────┘
+
+        Duplicatas em ``(grupo, du)`` invalidam o vértice. Aqui o segundo
+        grupo (``2025-01-03``) tem duplicata em ``du=20``: ambas as linhas
+        com ``du=20`` ficam nulas e a linha ``du=30`` também (cascata local);
+        o primeiro grupo permanece intacto.
+
+        >>> df = pl.DataFrame(
+        ...     {
+        ...         "dr": ["2025-01-02"] * 3 + ["2025-01-03"] * 4,
+        ...         "du": [10, 20, 30, 10, 20, 20, 30],
+        ...         "tx": [0.05, 0.06, 0.07, 0.05, 0.06, 0.061, 0.07],
+        ...     }
+        ... )
+        >>> df.with_columns(fwd=yd.forwards_expr("du", "tx", agrupar_por="dr"))
+        shape: (7, 4)
+        ┌────────────┬─────┬───────┬──────────┐
+        │ dr         ┆ du  ┆ tx    ┆ fwd      │
+        │ ---        ┆ --- ┆ ---   ┆ ---      │
+        │ str        ┆ i64 ┆ f64   ┆ f64      │
+        ╞════════════╪═════╪═══════╪══════════╡
+        │ 2025-01-02 ┆ 10  ┆ 0.05  ┆ 0.05     │
+        │ 2025-01-02 ┆ 20  ┆ 0.06  ┆ 0.070095 │
+        │ 2025-01-02 ┆ 30  ┆ 0.07  ┆ 0.090284 │
+        │ 2025-01-03 ┆ 10  ┆ 0.05  ┆ 0.05     │
+        │ 2025-01-03 ┆ 20  ┆ 0.06  ┆ null     │
+        │ 2025-01-03 ┆ 20  ┆ 0.061 ┆ null     │
+        │ 2025-01-03 ┆ 30  ┆ 0.07  ┆ null     │
+        └────────────┴─────┴───────┴──────────┘
+
+    Notes:
+        - A ordem original do DataFrame é preservada.
+        - Para uso fora de DataFrames (arrays, Series soltas), use
+          :func:`forwards`.
+    """
+    du_k = pl.col(dias_uteis) if isinstance(dias_uteis, str) else dias_uteis
+    tx_k = pl.col(taxas) if isinstance(taxas, str) else taxas
+
+    if agrupar_por is None:
+        grupo: pl.Expr = pl.lit(0)
+    elif isinstance(agrupar_por, str):
+        grupo = pl.col(agrupar_por)
+    else:
+        grupo = agrupar_por
+
+    # Duplicatas em (grupo, du_k) tornam o vértice ambíguo. Invalidamos a
+    # taxa com null nas linhas duplicadas e deixamos o cascateamento natural
+    # de nulos cuidar do resto (mesma semântica de um tx_k null).
+    eh_duplicada = pl.len().over(grupo, du_k) > 1
+    tx_k = pl.when(eh_duplicada).then(None).otherwise(tx_k)
+
+    au_k = du_k / 252
+    tx_j = tx_k.shift(1).over(grupo, order_by=du_k)
+    au_j = au_k.shift(1).over(grupo, order_by=du_k)
+
+    # fwdₖ = (fₖ^auₖ / fⱼ^auⱼ) ^ (1/(auₖ - auⱼ)) - 1, com fₓ = 1 + txₓ
+    fk = 1 + tx_k
+    fj = 1 + tx_j
+    taxa_forward = (fk**au_k / fj**au_j) ** (1 / (au_k - au_j)) - 1
+
+    # Primeira linha de cada grupo (menor dias_uteis) é a taxa spot
+    eh_primeira = du_k == du_k.min().over(grupo)
+    return pl.when(eh_primeira).then(tx_k).otherwise(taxa_forward)
+
+
 def forwards(
     dias_uteis: ArrayLike,
     taxas: ArrayLike,
@@ -45,9 +210,14 @@ def forwards(
     - auₖ é o prazo em anos úteis no vértice atual (auₖ = duₖ/252).
     - A constante 252 representa o número de dias úteis no ano.
 
-    A função preserva a ordem original dos dados de entrada e lida com valores nulos
-    de forma apropriada. Valores nulos nas entradas resultarão em valores nulos
-    nas taxas a termo calculadas.
+    A função preserva a ordem original dos dados de entrada. Nulos em
+    ``dias_uteis`` ou ``taxas`` produzem nulo na linha correspondente; NaN
+    produz NaN (nulos e NaN não se misturam). Duplicatas em ``(agrupar_por,
+    dias_uteis)`` tornam o vértice ambíguo e produzem nulo nas linhas
+    duplicadas. Em todos esses casos a linha imediatamente posterior em ordem
+    de ``dias_uteis`` dentro do mesmo grupo também fica inválida (nula ou
+    NaN), pois seu vértice anterior é inválido; a seguinte volta ao normal.
+    Este contrato é alinhado com :func:`forwards_expr`.
 
     A primeira taxa a termo de cada grupo é definida como a
     taxa zero desse primeiro vértice (fwd₁ = tx₁), dado que não existe um vértice
@@ -121,7 +291,9 @@ def forwards(
             0.073286
         ]
 
-        >>> # Valores nulos são descartados no cálculo e retornados como nulos
+        >>> # Valores nulos em ``dias_uteis`` produzem nulo na própria linha;
+        >>> # como nulos vão para o fim em ordem de ``dias_uteis``, a linha
+        >>> # com du=914 vê 730 como vértice anterior e calcula normalmente.
         >>> du = [230, 415, 730, None, 914]
         >>> tx = [0.0943, 0.084099, 0.079052, 0.1, 0.077134]
         >>> yd.forwards(du, tx)
@@ -135,85 +307,81 @@ def forwards(
             0.069558
         ]
 
-        >>> # O algoritmo ordena os dados de entrada antes do cálculo e retorna
-        >>> # os resultados na ordem original. Valores duplicados são tratados
-        >>> # como um único ponto no cálculo da taxa a termo (último valor é mantido).
+        >>> # Já um nulo em ``taxas`` propaga em cascata: a própria linha fica
+        >>> # nula e a próxima em ordem de ``dias_uteis`` também, pois seu
+        >>> # vértice anterior é nulo. A linha seguinte volta ao normal.
+        >>> du = [230, 415, 730, 914]
+        >>> tx = [0.0943, None, 0.079052, 0.077134]
+        >>> yd.forwards(du, tx)
+        shape: (4,)
+        Series: 'taxa_forward' [f64]
+        [
+            0.0943
+            null
+            null
+            0.069558
+        ]
+
+        >>> # NaN se comporta como nulo, mas mantém o dtype NaN no resultado
+        >>> # (nulos e NaN não se misturam).
+        >>> du = [230, 415, 730, 914]
+        >>> tx = [0.0943, float("nan"), 0.079052, 0.077134]
+        >>> yd.forwards(du, tx)
+        shape: (4,)
+        Series: 'taxa_forward' [f64]
+        [
+            0.0943
+            NaN
+            NaN
+            0.069558
+        ]
+
+        >>> # Duplicatas em ``dias_uteis`` dentro de um grupo tornam o
+        >>> # vértice ambíguo: ambas as linhas duplicadas ficam nulas e a
+        >>> # linha imediatamente posterior em ordem de ``dias_uteis`` também
+        >>> # (cascata local de nulos). A linha seguinte volta ao normal.
         >>> du = [230, 730, 415, 230]
         >>> tx = [0.1, 0.079052, 0.084099, 0.0943]
         >>> yd.forwards(du, tx)
         shape: (4,)
         Series: 'taxa_forward' [f64]
         [
-            0.0943
+            null
             0.072439
-            0.071549
-            0.0943
+            null
+            null
         ]
 
     Notes:
         - A função ordena os dados de entrada primeiro por `agrupar_por`,
           se for fornecido, e depois por `dias_uteis` para garantir a ordem
           cronológica correta no cálculo das taxas a termo.
-        - Valores nulos em `dias_uteis` ou `taxas` são ignorados no cálculo,
-          resultando em valores nulos nas posições correspondentes na saída.
+        - Nulos em `dias_uteis` ou `taxas` produzem nulo na linha
+          correspondente; NaN produz NaN. Duplicatas em `(agrupar_por,
+          dias_uteis)` tornam o vértice ambíguo e produzem nulo nas linhas
+          duplicadas. Em todos esses casos, a linha imediatamente posterior
+          em ordem de `dias_uteis` dentro do mesmo grupo também fica
+          inválida; a seguinte volta ao normal. Mesmo contrato de
+          :func:`forwards_expr`.
         - Os resultados são retornados na mesma ordem dos dados de entrada.
     """
     # Validações iniciais
     if any_is_empty(dias_uteis, taxas):
         return pl.Series(dtype=pl.Float64)
 
-    # 1. Montar o DataFrame
-    df_orig = pl.DataFrame(
+    # Delega para a primitiva expressiva. A expressão preserva a ordem
+    # original do DataFrame e cuida de nulos, NaN e duplicatas em (du, grupo)
+    # via propagação local de nulos (ver Notes).
+    df = pl.DataFrame(
         {
             "du_k": dias_uteis,
             "tx_k": taxas,
             "grupo": 0 if agrupar_por is None else agrupar_por,
         }
     )
-
-    # 2. Definir a fórmula da taxa a termo
-    # Definição dos fatores de capitalização:
-    # fₖ = 1 + txₖ e fⱼ = 1 + txⱼ
-    fk = 1 + pl.col("tx_k")
-    fj = 1 + pl.col("tx_j")
-    # fwdₖ  = fwdⱼ→ₖ = (fₖ^auₖ / fⱼ^auⱼ) ^ (1/(auₖ - auⱼ)) - 1
-    fator_k = fk ** pl.col("au_k")
-    fator_j = fj ** pl.col("au_j")
-    expoente = 1 / (pl.col("au_k") - pl.col("au_j"))  # 1/(auₖ - auⱼ)
-    taxa_forward = (fator_k / fator_j) ** expoente - 1
-
-    # 3. Calcular as taxas a termo
-    df_fwd = (
-        df_orig.drop_nans()
-        .drop_nulls()
-        .unique(subset=["du_k", "grupo"], keep="last")
-        .sort("grupo", "du_k")
-        .with_columns(au_k=pl.col("du_k") / 252)  # Criar coluna de anos úteis
-        .with_columns(
-            # Calcular os valores deslocados (shift) dentro de cada grupo
-            tx_j=pl.col("tx_k").shift(1).over("grupo"),
-            au_j=pl.col("au_k").shift(1).over("grupo"),
-        )
-        .with_columns(taxa_forward=taxa_forward)
-        .with_columns(
-            # A matriz de cálculo já foi tratada: ela está deduplicada,
-            # sem nulos e ordenada por grupo e du_k. Então, basta
-            # ajustar a primeira taxa forward de cada grupo para ser igual à taxa spot!
-            taxa_forward=pl.when(pl.col("du_k") == pl.first("du_k").over("grupo"))
-            .then("tx_k")
-            .otherwise("taxa_forward")
-        )
-    )
-    # 4. Reunir os resultados na ordem original
-    df_orig = df_orig.join(
-        df_fwd.drop("tx_k"),  # tx_k já existe em df_orig
-        on=["du_k", "grupo"],
-        how="left",
-        maintain_order="left",
-    )
-
-    # Retornar a série de taxas a termo
-    return df_orig["taxa_forward"]
+    return df.with_columns(taxa_forward=forwards_expr("du_k", "tx_k", "grupo"))[
+        "taxa_forward"
+    ]
 
 
 def forward(

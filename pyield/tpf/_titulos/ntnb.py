@@ -90,8 +90,7 @@ def dados(data: DateLike) -> pl.DataFrame:
     df = df.join(df_bei, on="data_vencimento", how="left")
 
     # Calcula taxas forward a partir das taxas zero
-    taxas_forward = fwd.forwards(dias_uteis=df["dias_uteis"], taxas=df["taxa_zero"])
-    df = df.with_columns(taxa_forward=taxas_forward)
+    df = df.with_columns(taxa_forward=fwd.forwards_expr("dias_uteis", "taxa_zero"))
 
     return df.select(
         "data_referencia",
@@ -779,26 +778,22 @@ def curva(
     if df.is_empty():
         return df
 
-    forwards_reais = fwd.forwards(
-        dias_uteis=df["dias_uteis"],
-        taxas=df["taxa_zero_real"],
-    )
-    forwards_nominais = fwd.forwards(
-        dias_uteis=df["dias_uteis"],
-        taxas=df["taxa_nominal"],
-    )
-    inflacoes_forward = ((forwards_nominais + 1) / (forwards_reais + 1)) - 1
-
-    return df.select(
+    fwd_real = fwd.forwards_expr("dias_uteis", "taxa_zero_real")
+    fwd_nominal = fwd.forwards_expr("dias_uteis", "taxa_nominal")
+    return df.with_columns(
+        taxa_forward_real=fwd_real,
+        taxa_forward_nominal=fwd_nominal,
+        inflacao_forward=((fwd_nominal + 1) / (fwd_real + 1)) - 1,
+    ).select(
         "data_vencimento",
         "dias_uteis",
         "taxa_tir_real",
         "taxa_zero_real",
-        forwards_reais.alias("taxa_forward_real"),
+        "taxa_forward_real",
         "taxa_nominal",
-        forwards_nominais.alias("taxa_forward_nominal"),
+        "taxa_forward_nominal",
         "inflacao_implicita",
-        inflacoes_forward.alias("inflacao_forward"),
+        "inflacao_forward",
     )
 
 

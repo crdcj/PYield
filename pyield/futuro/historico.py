@@ -10,7 +10,7 @@ from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.futuro import contratos as ct
-from pyield.fwd import forwards
+from pyield.fwd import forwards_expr
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
 # Bid/Ask são invertidos: BestBidPric (bid em PU) = menor taxa = venda de taxa;
@@ -128,10 +128,10 @@ def _enriquecer_dados(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
 
     if contrato in {"DI1", "DAP"}:
         df = df.with_columns(
-            taxa_forward=forwards(
-                dias_uteis=df["dias_uteis"],
-                taxas=df["taxa_ajuste"],
-                agrupar_por=df["data_referencia"],
+            taxa_forward=forwards_expr(
+                dias_uteis="dias_uteis",
+                taxas="taxa_ajuste",
+                agrupar_por="data_referencia",
             )
         )
 
