@@ -70,7 +70,7 @@ documentação.
 | `yd.futuro` | módulo | Contratos futuros da B3 | `di1`, `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `vencimento_expr` |
 | `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
 | `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premio_pre`, `rmd`, `secundario_mensal`, `secundario_intradia` |
-| `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `taxa`, `vna` |
+| `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `pu`, `taxa`, `vna`, `rentabilidade`, `rentabilidade_expr` |
 | `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `duration_expr`, `dv01`, `dv01_expr`, `rentabilidade`, `rentabilidade_expr`, `taxas_forward` |
 | `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `duration_expr`, `dv01`, `dv01_expr`, `implicitas`, `curva` |
 | `yd.ntnb1` | módulo | NTN-B1 | `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `duration`, `dv01` |
@@ -278,6 +278,10 @@ Resumo das quebras desta versão:
   antes suportadas via sobrecarga vetorial, agora levantam `TypeError`.
   Substitua por `Interpolador.interpolar_expr` em pipelines Polars ou pela
   função top-level `yd.interpolar(...)` (curva única ou multi-curva).
+- `yd.interpolar(...)` passou a usar `extrapolar=False` como padrão, alinhado
+  com `Interpolador`. Antes era `True`. Chamadas que dependiam da
+  extrapolação implícita na ponta longa precisam passar `extrapolar=True`
+  explicitamente.
 - As funções `dv01(...)` dos títulos públicos agora recebem `pu` como argumento
   explícito. Chamadas antigas que passavam apenas data, vencimento e taxa, ou
   que passavam VNA no caso da NTN-B, precisam ser atualizadas.

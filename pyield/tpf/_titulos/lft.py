@@ -55,10 +55,7 @@ def dados(data: DateLike) -> pl.DataFrame:
     df = utils.adicionar_taxa_di(df, data_ref)
 
     df = df.with_columns(
-        rentabilidade=pl.struct("taxa_indicativa", "taxa_di").map_elements(
-            lambda s: rentabilidade(s["taxa_indicativa"], s["taxa_di"]),
-            return_dtype=pl.Float64,
-        )
+        rentabilidade=rentabilidade_expr("taxa_indicativa", "taxa_di"),
     )
 
     return df.select(
@@ -223,6 +220,28 @@ def rentabilidade(taxa_lft: float, taxa_di: float) -> float:
     # Taxa diária
     fator_lft = (taxa_lft + 1) ** (1 / 252)
     fator_di = (taxa_di + 1) ** (1 / 252)
+    return (fator_lft * fator_di - 1) / (fator_di - 1)
+
+
+def rentabilidade_expr(
+    taxa_lft: pl.Expr | str,
+    taxa_di: pl.Expr | str,
+) -> pl.Expr:
+    """Cria expressão Polars para a rentabilidade da LFT sobre o DI.
+
+    Args:
+        taxa_lft: Nome de coluna ou expressão Polars com a taxa anualizada da
+            LFT sobre a Selic.
+        taxa_di: Nome de coluna ou expressão Polars com a taxa DI Futuro
+            anualizada (interpolada para o mesmo vencimento da LFT).
+
+    Returns:
+        pl.Expr: Expressão sem alias com a rentabilidade da LFT sobre o DI.
+    """
+    expr_lft = taxa_lft if isinstance(taxa_lft, pl.Expr) else pl.col(taxa_lft)
+    expr_di = taxa_di if isinstance(taxa_di, pl.Expr) else pl.col(taxa_di)
+    fator_lft = (expr_lft + 1) ** (1 / 252)
+    fator_di = (expr_di + 1) ** (1 / 252)
     return (fator_lft * fator_di - 1) / (fator_di - 1)
 
 

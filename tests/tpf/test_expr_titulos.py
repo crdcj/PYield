@@ -1,7 +1,25 @@
 import polars as pl
 import pytest
 
-from pyield import du, ltn, ntnb, ntnc, ntnf
+from pyield import du, lft, ltn, ntnb, ntnc, ntnf
+
+
+def test_lft_rentabilidade_expr_bate_com_calculo_escalar():
+    taxa_lft = 0.001124
+    taxa_di = 0.13967670224373396
+
+    resultado = pl.DataFrame(
+        {
+            "taxa_lft": [taxa_lft],
+            "taxa_di": [taxa_di],
+        }
+    ).select(
+        rentabilidade=lft.rentabilidade_expr("taxa_lft", "taxa_di"),
+    )
+
+    assert resultado["rentabilidade"][0] == pytest.approx(
+        lft.rentabilidade(taxa_lft, taxa_di)
+    )
 
 
 def test_ltn_exprs_batem_com_calculos_escalares():

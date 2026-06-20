@@ -310,7 +310,7 @@ def interpolar(  # noqa: PLR0913
     *,
     datas_alvo: pl.Series | None = None,
     datas_curva: pl.Series | None = None,
-    extrapolar: bool = True,
+    extrapolar: bool = False,
 ) -> pl.Series:
     r"""Interpola taxas flat-forward para uma série de pontos alvo.
 
@@ -332,10 +332,12 @@ def interpolar(  # noqa: PLR0913
             Padrão: ``None`` (curva única).
         datas_curva: Series Date com a data de referência de cada
             vértice da curva. Padrão: ``None`` (curva única).
-        extrapolar: Se True (padrão), pontos acima do maior vértice de
-            cada grupo recebem a última taxa conhecida. Se False, recebem
-            ``null``. Pontos abaixo do menor vértice sempre recebem a
-            primeira taxa do grupo.
+        extrapolar: Controla apenas o comportamento na ponta longa (DU acima
+            do maior vértice de cada grupo). Se True, retorna a última taxa
+            conhecida; se False (padrão), retorna ``null``. A ponta curta
+            (DU abaixo do menor vértice) sempre retorna a primeira taxa do
+            grupo, independentemente desta flag. O default casa com o da
+            classe :class:`Interpolador`.
 
     Returns:
         Series Float64 ``taxa_interpolada`` na mesma ordem de
