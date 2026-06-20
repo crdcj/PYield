@@ -7,7 +7,7 @@ import polars as pl
 import pyield._internal.converters as cv
 import pyield.interpolador as ip
 from pyield import du
-from pyield._internal.types import ArrayLike, DateLike, any_is_empty
+from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.futuro import di1
 from pyield.tpf import utils
 
@@ -96,15 +96,12 @@ def dados(data: DateLike) -> pl.DataFrame:
     # Calcula prêmios e rentabilidade para cada vencimento
     df = df.with_columns(
         premio=pl.col("taxa_indicativa") - pl.col("taxa_di"),
-        premio_limpo=pl.struct("data_vencimento", "taxa_indicativa").map_elements(
-            lambda row: premio_limpo(
-                data_liquidacao=data,
-                data_vencimento=row["data_vencimento"],
-                taxa_ntnf=row["taxa_indicativa"],
-                vencimentos_di=df_di["data_vencimento"],
-                taxas_di=df_di["taxa_ajuste"],
-            ),
-            return_dtype=pl.Float64,
+        premio_limpo=premio_limpo_expr(
+            data_liquidacao=data,
+            data_vencimento="data_vencimento",
+            taxa_ntnf="taxa_indicativa",
+            vencimentos_di=df_di["data_vencimento"],
+            taxas_di=df_di["taxa_ajuste"],
         ),
         rentabilidade=rentabilidade_expr(
             data_liquidacao=data,
@@ -343,9 +340,9 @@ def pu(
 
 def taxas_zero(  # noqa
     data_liquidacao: DateLike,
-    vencimentos_ltn: ArrayLike,
+    vencimentos_ltn: DatesLike,
     taxas_ltn: ArrayLike,
-    vencimentos_ntnf: ArrayLike,
+    vencimentos_ntnf: DatesLike,
     taxas_ntnf: ArrayLike,
     incluir_cupons: bool = False,
 ) -> pl.DataFrame:
@@ -360,11 +357,11 @@ def taxas_zero(  # noqa
 
     Args:
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
-        vencimentos_ltn (ArrayLike): Datas de vencimento das LTNs usadas como
+        vencimentos_ltn (DatesLike): Datas de vencimento das LTNs usadas como
             vértices prefixados zero cupom.
         taxas_ltn (ArrayLike): Taxas das LTNs. Como a LTN é zero cupom, essas
             taxas são usadas diretamente como taxas zero no bootstrap.
-        vencimentos_ntnf (ArrayLike): Datas de vencimento das NTN-F usadas no
+        vencimentos_ntnf (DatesLike): Datas de vencimento das NTN-F usadas no
             bootstrap.
         taxas_ntnf (ArrayLike): TIRs das NTN-F correspondentes aos vencimentos
             informados.
@@ -524,7 +521,7 @@ def rentabilidade(  # noqa
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa_ntnf: float,
-    vencimentos_di: ArrayLike,
+    vencimentos_di: DatesLike,
     taxas_di: ArrayLike,
 ) -> float:
     """
@@ -539,7 +536,7 @@ def rentabilidade(  # noqa
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
         data_vencimento (DateLike): Data de vencimento da NTN-F.
         taxa_ntnf (float): TIR da NTN-F.
-        vencimentos_di (ArrayLike): Datas de vencimento da curva DI.
+        vencimentos_di (DatesLike): Datas de vencimento da curva DI.
         taxas_di (ArrayLike): Taxas DI correspondentes aos vencimentos.
 
     Returns:
@@ -629,7 +626,7 @@ def rentabilidade_expr(
     data_liquidacao: DateLike,
     data_vencimento: pl.Expr | str,
     taxa_ntnf: pl.Expr | str,
-    vencimentos_di: ArrayLike,
+    vencimentos_di: DatesLike,
     taxas_di: ArrayLike,
 ) -> pl.Expr:
     """Cria expressão Polars para a rentabilidade da NTN-F sobre a curva DI.
@@ -717,7 +714,7 @@ def premio_limpo(  # noqa
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa_ntnf: float,
-    vencimentos_di: ArrayLike,
+    vencimentos_di: DatesLike,
     taxas_di: ArrayLike,
 ) -> float:
     """
@@ -731,7 +728,7 @@ def premio_limpo(  # noqa
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
         data_vencimento (DateLike): Data de vencimento do título.
         taxa_ntnf (float): TIR do título.
-        vencimentos_di (ArrayLike): Vencimentos da curva DI.
+        vencimentos_di (DatesLike): Vencimentos da curva DI.
         taxas_di (ArrayLike): Série de taxas DI.
 
     Returns:
@@ -794,6 +791,45 @@ def premio_limpo(  # noqa
         return float(fluxos_descontados.sum()) - preco_titulo
 
     return utils.encontrar_raiz(diferenca_preco)
+
+
+def premio_limpo_expr(
+    data_liquidacao: DateLike,
+    data_vencimento: pl.Expr | str,
+    taxa_ntnf: pl.Expr | str,
+    vencimentos_di: DatesLike,
+    taxas_di: ArrayLike,
+) -> pl.Expr:
+    """Cria expressão Polars para o prêmio limpo da NTN-F sobre a curva DI.
+
+    O cálculo é aplicado linha a linha porque o prêmio limpo depende dos fluxos
+    de caixa do título, da interpolação da curva DI e da resolução de raiz.
+
+    Args:
+        data_liquidacao: Data de liquidação para o cálculo.
+        data_vencimento: Nome de coluna ou expressão Polars com a data de
+            vencimento da NTN-F.
+        taxa_ntnf: Nome de coluna ou expressão Polars com a TIR da NTN-F.
+        vencimentos_di: Datas de vencimento da curva DI.
+        taxas_di: Taxas DI correspondentes aos vencimentos.
+
+    Returns:
+        pl.Expr: Expressão sem alias com o prêmio limpo da NTN-F sobre a curva
+        DI.
+    """
+    return pl.struct(
+        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        utils.coluna_ou_expr(taxa_ntnf, "taxa_ntnf"),
+    ).map_elements(
+        lambda row: premio_limpo(
+            data_liquidacao=data_liquidacao,
+            data_vencimento=row["data_vencimento"],
+            taxa_ntnf=row["taxa_ntnf"],
+            vencimentos_di=vencimentos_di,
+            taxas_di=taxas_di,
+        ),
+        return_dtype=pl.Float64,
+    )
 
 
 def duration(

@@ -142,7 +142,8 @@ Visão geral das principais funções públicas do PYield.
     ├── rentabilidade(...)
     ├── rentabilidade_expr(...)
     ├── premio(data, pontos_base=...)
-    └── premio_limpo(...)
+    ├── premio_limpo(...)
+    └── premio_limpo_expr(...)
     ```
 
 ??? "`yd.ntnb1` (Tesouro Educa+)"

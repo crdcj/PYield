@@ -79,6 +79,17 @@ def test_ntnf_exprs_batem_com_calculos_escalares():
             ],
             taxas_di=[0.10823, 0.11594, 0.11531],
         ),
+        premio_limpo=ntnf.premio_limpo_expr(
+            data_liquidacao=data_liquidacao,
+            data_vencimento="data_vencimento",
+            taxa_ntnf="taxa",
+            vencimentos_di=[
+                "2025-01-01",
+                "2030-01-01",
+                "2035-01-01",
+            ],
+            taxas_di=[0.10823, 0.11594, 0.11531],
+        ),
         dv01=ntnf.dv01_expr("data_liquidacao", "data_vencimento", "taxa", "pu"),
     )
 
@@ -90,6 +101,15 @@ def test_ntnf_exprs_batem_com_calculos_escalares():
     )
     assert resultado["rentabilidade"][0] == pytest.approx(
         ntnf.rentabilidade(
+            data_liquidacao=data_liquidacao,
+            data_vencimento=data_vencimento,
+            taxa_ntnf=taxa,
+            vencimentos_di=["2025-01-01", "2030-01-01", "2035-01-01"],
+            taxas_di=[0.10823, 0.11594, 0.11531],
+        )
+    )
+    assert resultado["premio_limpo"][0] == pytest.approx(
+        ntnf.premio_limpo(
             data_liquidacao=data_liquidacao,
             data_vencimento=data_vencimento,
             taxa_ntnf=taxa,

@@ -76,7 +76,7 @@ documentação.
 | `yd.ntnb1` | módulo | NTN-B1 | `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `duration`, `dv01` |
 | `yd.ntnbprinc` | módulo | NTN-B Principal | `pu`, `dv01` |
 | `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
-| `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `premio`, `premio_limpo`, `rentabilidade`, `rentabilidade_expr`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
+| `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `premio`, `premio_limpo`, `premio_limpo_expr`, `rentabilidade`, `rentabilidade_expr`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
 | `yd.selic` | módulo | Selic, COPOM e política monetária | `over`, `over_serie`, `meta`, `meta_serie`, `compromissadas`, `copom`, `cpm`, `probabilities` |
 | `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indices`, `indices_ultimos`, `taxa`, `taxas`, `taxas_ultimas`, `taxa_projetada` |
 | `yd.ptax(data)` | função | PTAX para uma data |  |

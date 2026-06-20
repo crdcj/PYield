@@ -5,7 +5,7 @@ import polars as pl
 
 import pyield._internal.converters as conversores
 from pyield import du, fwd, interpolador
-from pyield._internal.types import ArrayLike, DateLike, any_is_empty
+from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.tpf import utils
 
 """
@@ -367,7 +367,7 @@ def pu(
 
 def _validar_entradas_taxas_zero(
     data_liquidacao: DateLike,
-    vencimentos: ArrayLike,
+    vencimentos: DatesLike,
     taxas: ArrayLike,
 ) -> tuple[dt.date, pl.Series, pl.Series]:
     # Processa e valida os dados de entrada
@@ -459,7 +459,7 @@ def _calcular_valor_presente_cupons(
 
 def taxas_zero(
     data_liquidacao: DateLike,
-    vencimentos: ArrayLike,
+    vencimentos: DatesLike,
     taxas: ArrayLike,
     incluir_cupons: bool = False,
 ) -> pl.DataFrame:
@@ -471,7 +471,7 @@ def taxas_zero(
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
-        vencimentos (ArrayLike): Datas de vencimento dos títulos.
+        vencimentos (DatesLike): Datas de vencimento dos títulos.
         taxas (ArrayLike): TIRs correspondentes.
         incluir_cupons (bool, optional): Se True, inclui datas intermediárias de cupom.
             Padrão False.
@@ -586,9 +586,9 @@ def taxas_zero(
 
 def implicitas(  # noqa: PLR0913
     data_liquidacao: DateLike,
-    vencimentos_tir: ArrayLike,
+    vencimentos_tir: DatesLike,
     taxas_tir: ArrayLike,
-    vencimentos_nominais: ArrayLike,
+    vencimentos_nominais: DatesLike,
     taxas_nominais: ArrayLike,
     *,
     extrapolar: bool = False,
@@ -601,12 +601,12 @@ def implicitas(  # noqa: PLR0913
 
     Args:
         data_liquidacao (DateLike): Data de liquidação da operação.
-        vencimentos_tir (ArrayLike): Vencimentos das NTN-B usadas como vértices
+        vencimentos_tir (DatesLike): Vencimentos das NTN-B usadas como vértices
             da curva de TIR real.
         taxas_tir (ArrayLike): TIRs reais observadas das NTN-B correspondentes
             aos vencimentos informados. A função calcula a curva zero real a
             partir dessas taxas.
-        vencimentos_nominais (ArrayLike): Vencimentos da curva nominal de
+        vencimentos_nominais (DatesLike): Vencimentos da curva nominal de
             referência.
         taxas_nominais (ArrayLike): Taxas da curva nominal de referência. Pode
             representar DI Futuro, curva soberana prefixada ou outra curva
@@ -709,9 +709,9 @@ def implicitas(  # noqa: PLR0913
 
 def curva(  # noqa: PLR0913
     data_liquidacao: DateLike,
-    vencimentos_tir: ArrayLike,
+    vencimentos_tir: DatesLike,
     taxas_tir: ArrayLike,
-    vencimentos_nominais: ArrayLike,
+    vencimentos_nominais: DatesLike,
     taxas_nominais: ArrayLike,
     *,
     extrapolar: bool = False,
@@ -725,12 +725,12 @@ def curva(  # noqa: PLR0913
 
     Args:
         data_liquidacao (DateLike): Data de liquidação da operação.
-        vencimentos_tir (ArrayLike): Vencimentos das NTN-B usadas como vértices
+        vencimentos_tir (DatesLike): Vencimentos das NTN-B usadas como vértices
             da curva de TIR real.
         taxas_tir (ArrayLike): TIRs reais observadas das NTN-B correspondentes
             aos vencimentos informados. A função calcula a curva zero real a
             partir dessas taxas.
-        vencimentos_nominais (ArrayLike): Vencimentos da curva nominal de
+        vencimentos_nominais (DatesLike): Vencimentos da curva nominal de
             referência.
         taxas_nominais (ArrayLike): Taxas da curva nominal de referência. Pode
             representar DI Futuro, curva soberana prefixada ou outra curva
