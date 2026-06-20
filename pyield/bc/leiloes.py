@@ -19,8 +19,7 @@ from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.types import DateLike
 from pyield.bc._olinda import buscar_csv, montar_url, parsear_csv
 from pyield.bc.sgs import ptax_serie
-from pyield.tpf._titulos.ntnb import duration as duration_b
-from pyield.tpf._titulos.ntnf import duration as duration_f
+from pyield.tpf._titulos import ltn, ntnb, ntnf
 
 registro = logging.getLogger(__name__)
 
@@ -90,22 +89,26 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     """Filtra, converte tipos e calcula colunas derivadas."""
     data_mudanca = dt.date(2024, 6, 11)
 
-    def _duracao_por_linha(linha: dict) -> float:
-        tipo = linha["titulo"]
-        if tipo == "LTN":
-            return linha["dias_uteis"] / 252
-        if tipo == "NTN-F":
-            return duration_f(
-                linha["data_liquidacao"], linha["data_vencimento"], linha["taxa_media"]
-            )
-        if tipo == "NTN-B":
-            return duration_b(
-                linha["data_liquidacao"], linha["data_vencimento"], linha["taxa_media"]
-            )
-        return 0.0
-
     expr_dv01_unitario = (
-        0.0001 * pl.col("pu_medio") * pl.col("duration") / (1 + pl.col("taxa_media"))
+        pl.when(pl.col("titulo") == "LTN")
+        .then(
+            ltn.dv01_expr(
+                "data_liquidacao", "data_vencimento", "taxa_media", "pu_medio"
+            )
+        )
+        .when(pl.col("titulo") == "NTN-F")
+        .then(
+            ntnf.dv01_expr(
+                "data_liquidacao", "data_vencimento", "taxa_media", "pu_medio"
+            )
+        )
+        .when(pl.col("titulo") == "NTN-B")
+        .then(
+            ntnb.dv01_expr(
+                "data_liquidacao", "data_vencimento", "taxa_media", "pu_medio"
+            )
+        )
+        .otherwise(0.0)
     )
 
     colunas_preco_taxa = ["taxa_media", "taxa_corte", "pu_medio", "pu_corte"]
@@ -177,13 +180,23 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             .name.keep()
         )
         .with_columns(
-            duration=pl.struct(
-                "titulo",
-                "data_liquidacao",
-                "data_vencimento",
-                "taxa_media",
-                "dias_uteis",
-            ).map_elements(_duracao_por_linha, return_dtype=pl.Float64)
+            duration=(
+                pl.when(pl.col("titulo") == "LTN")
+                .then(ltn.duration_expr("data_liquidacao", "data_vencimento"))
+                .when(pl.col("titulo") == "NTN-F")
+                .then(
+                    ntnf.duration_expr(
+                        "data_liquidacao", "data_vencimento", "taxa_media"
+                    )
+                )
+                .when(pl.col("titulo") == "NTN-B")
+                .then(
+                    ntnb.duration_expr(
+                        "data_liquidacao", "data_vencimento", "taxa_media"
+                    )
+                )
+                .otherwise(0.0)
+            )
         )
         .with_columns(
             dv01_total=expr_dv01_unitario * pl.col("quantidade_aceita_total"),

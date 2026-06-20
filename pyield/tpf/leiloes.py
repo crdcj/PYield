@@ -10,10 +10,9 @@ from pyield._internal import converters as cv
 from pyield._internal.br_numbers import pct_para_decimal
 from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
-from pyield._internal.types import ArrayLike, DateLike, any_is_empty
+from pyield._internal.types import DateLike, DatesLike, any_is_empty
 from pyield.bc.sgs import ptax_serie
-from pyield.tpf._titulos.ntnb import duration as duration_b
-from pyield.tpf._titulos.ntnf import duration as duration_f
+from pyield.tpf._titulos import ltn, ntnb, ntnf
 
 logger = logging.getLogger(__name__)
 
@@ -239,32 +238,24 @@ def _transformar_dados_brutos(dados_brutos: list[dict]) -> pl.DataFrame:
 
 def _adicionar_duration(df: pl.DataFrame) -> pl.DataFrame:
     """Calcula a duration por tipo de título."""
-
-    def calcular_duration_por_linha(row: dict) -> float:
-        titulo = row["titulo"]
-
-        if titulo == "LTN":
-            return row["dias_uteis"] / 252
-        if titulo == "NTN-F":
-            return duration_f(
-                row["data_liquidacao_1v"], row["data_vencimento"], row["taxa_media"]
-            )
-        if titulo == "NTN-B":
-            return duration_b(
-                row["data_liquidacao_1v"], row["data_vencimento"], row["taxa_media"]
-            )
-        return 0.0
-
     return df.with_columns(
-        pl.struct(
-            "titulo",
-            "data_liquidacao_1v",
-            "data_vencimento",
-            "taxa_media",
-            "dias_uteis",
+        duration=(
+            pl.when(pl.col("titulo") == "LTN")
+            .then(ltn.duration_expr("data_liquidacao_1v", "data_vencimento"))
+            .when(pl.col("titulo") == "NTN-F")
+            .then(
+                ntnf.duration_expr(
+                    "data_liquidacao_1v", "data_vencimento", "taxa_media"
+                )
+            )
+            .when(pl.col("titulo") == "NTN-B")
+            .then(
+                ntnb.duration_expr(
+                    "data_liquidacao_1v", "data_vencimento", "taxa_media"
+                )
+            )
+            .otherwise(0.0)
         )
-        .map_elements(calcular_duration_por_linha, return_dtype=pl.Float64)
-        .alias("duration")
     )
 
 
@@ -279,14 +270,32 @@ def _adicionar_prazo_medio(df: pl.DataFrame) -> pl.DataFrame:
 
 def _adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
     """Calcula o DV01 com base na duration da 1a volta e nas quantidades aceitas."""
-    dv01_unit_expr = (
-        0.0001 * pl.col("pu_medio") * pl.col("duration") / (1 + pl.col("taxa_media"))
+    dv01_unitario = (
+        pl.when(pl.col("titulo") == "LTN")
+        .then(
+            ltn.dv01_expr(
+                "data_liquidacao_1v", "data_vencimento", "taxa_media", "pu_medio"
+            )
+        )
+        .when(pl.col("titulo") == "NTN-F")
+        .then(
+            ntnf.dv01_expr(
+                "data_liquidacao_1v", "data_vencimento", "taxa_media", "pu_medio"
+            )
+        )
+        .when(pl.col("titulo") == "NTN-B")
+        .then(
+            ntnb.dv01_expr(
+                "data_liquidacao_1v", "data_vencimento", "taxa_media", "pu_medio"
+            )
+        )
+        .otherwise(0.0)
     )
 
     return df.with_columns(
-        dv01_1v=dv01_unit_expr * pl.col("quantidade_aceita_1v"),
-        dv01_2v=dv01_unit_expr * pl.col("quantidade_aceita_2v"),
-        dv01_total=dv01_unit_expr * pl.col("quantidade_aceita_total"),
+        dv01_1v=dv01_unitario * pl.col("quantidade_aceita_1v"),
+        dv01_2v=dv01_unitario * pl.col("quantidade_aceita_2v"),
+        dv01_total=dv01_unitario * pl.col("quantidade_aceita_total"),
     ).with_columns(cs.starts_with("dv01").round(2))
 
 
@@ -334,7 +343,7 @@ def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
 
 def leiloes(
     *,
-    data: DateLike | ArrayLike | None = None,
+    data: DateLike | DatesLike | None = None,
     inicio: DateLike | None = None,
     fim: DateLike | None = None,
 ) -> pl.DataFrame:

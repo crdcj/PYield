@@ -97,8 +97,10 @@ Visão geral das principais funções públicas do PYield.
     ├── pu(...)
     ├── taxa(...)
     ├── rentabilidade(...)
+    ├── rentabilidade_expr(...)
+    ├── duration_expr(...)
     ├── dv01(...)
-    ├── premio(...)
+    ├── dv01_expr(...)
     └── taxas_forward(data)
     ```
 
@@ -113,10 +115,12 @@ Visão geral das principais funções públicas do PYield.
     ├── pu(...)
     ├── taxa(...)
     ├── duration(...)
+    ├── duration_expr(...)
     ├── dv01(...)
-    ├── taxas_zero(...)
-    ├── implicitas(...)
-    └── curva(...)
+    ├── dv01_expr(...)
+    ├── taxas_zero(data_liquidacao, vencimentos, taxas, ...)    
+    ├── implicitas(data_liquidacao, vencimentos_tir, taxas_tir, ...)
+    └── curva(data_liquidacao, vencimentos_tir, taxas_tir, ...)
     ```
 
 ??? "`yd.ntnf` (Tesouro Prefixado com cupom)"
@@ -129,9 +133,12 @@ Visão geral das principais funções públicas do PYield.
     ├── pu(...)
     ├── taxa(...)
     ├── duration(...)
+    ├── duration_expr(...)
     ├── dv01(...)
-    ├── taxas_zero(...)
+    ├── dv01_expr(...)
+    ├── taxas_zero(data_liquidacao, vencimentos_ltn, taxas_ltn, ...)
     ├── rentabilidade(...)
+    ├── rentabilidade_expr(...)
     ├── premio(data, pontos_base=...)
     └── premio_limpo(...)
     ```
@@ -165,7 +172,9 @@ Visão geral das principais funções públicas do PYield.
     ├── pu(...)
     ├── taxa(...)
     ├── duration(...)
-    └── dv01(...)
+    ├── duration_expr(...)
+    ├── dv01(...)
+    └── dv01_expr(...)
     ```
 
 ??? "`yd.ptax` (PTAX para uma data)"

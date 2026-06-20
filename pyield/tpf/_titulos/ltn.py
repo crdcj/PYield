@@ -50,20 +50,16 @@ def dados(data: DateLike) -> pl.DataFrame:
 
     df = df.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
+        duration=duration_expr("data_referencia", "data_vencimento"),
+    ).with_columns(
+        prazo_medio=pl.col("duration"),
+        dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa", "pu"),
     )
-
-    df = df.with_columns(
-        duration=pl.col("dias_uteis") / 252,
-    ).with_columns(prazo_medio=pl.col("duration"))
-    df = utils.adicionar_dv01(df)
     df = utils.adicionar_taxa_di(df, data_ref)
 
     df = df.with_columns(
         premio=pl.col("taxa_indicativa") - pl.col("taxa_di"),
-        rentabilidade=pl.struct("taxa_indicativa", "taxa_di").map_elements(
-            lambda s: rentabilidade(s["taxa_indicativa"], s["taxa_di"]),
-            return_dtype=pl.Float64,
-        ),
+        rentabilidade=rentabilidade_expr("taxa_indicativa", "taxa_di"),
     )
 
     return df.select(
@@ -225,92 +221,118 @@ def rentabilidade(taxa_ltn: float, taxa_di: float) -> float:
     return taxa_diaria_ltn / taxa_diaria_di
 
 
+def rentabilidade_expr(
+    taxa_ltn: pl.Expr | str,
+    taxa_di: pl.Expr | str,
+) -> pl.Expr:
+    """Cria expressão Polars para a rentabilidade da LTN sobre o DI.
+
+    Args:
+        taxa_ltn: Nome de coluna ou expressão Polars com a taxa anualizada da
+            LTN.
+        taxa_di: Nome de coluna ou expressão Polars com a taxa anualizada do DI
+            Futuro.
+
+    Returns:
+        pl.Expr: Expressão sem alias com a rentabilidade da LTN sobre o DI.
+    """
+    expr_ltn = taxa_ltn if isinstance(taxa_ltn, pl.Expr) else pl.col(taxa_ltn)
+    expr_di = taxa_di if isinstance(taxa_di, pl.Expr) else pl.col(taxa_di)
+    taxa_diaria_ltn = (1 + expr_ltn) ** (1 / 252) - 1
+    taxa_diaria_di = (1 + expr_di) ** (1 / 252) - 1
+    return taxa_diaria_ltn / taxa_diaria_di
+
+
 def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float,
+    pu: float,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da LTN em R$.
 
-    Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
+    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
+    taxa.
 
     Args:
         data_liquidacao: Data de liquidação.
         data_vencimento: Data de vencimento.
         taxa: Taxa de desconto (YTM) do título.
+        pu: PU usado como base para o cálculo.
 
     Returns:
         float: DV01, variação de preço para 1 bp.
 
     Examples:
         >>> from pyield import ltn
-        >>> ltn.dv01("26-03-2025", "01-01-2032", 0.150970)
-        0.2269059999999854
+        >>> pu = ltn.pu("26-03-2025", "01-01-2032", 0.150970)
+        >>> ltn.dv01("26-03-2025", "01-01-2032", 0.150970, pu)
+        0.2269059999999794
     """
-    if any_is_empty(data_liquidacao, data_vencimento, taxa):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
-    preco_1 = pu(data_liquidacao, data_vencimento, taxa)
-    preco_2 = pu(data_liquidacao, data_vencimento, taxa + 0.0001)
-    return preco_1 - preco_2
+    dias_uteis = du.contar(data_liquidacao, data_vencimento)
+    anos_truncados = utils.truncar(dias_uteis / 252, 14)
+    preco_1 = utils.truncar(VALOR_FACE / (1 + taxa) ** anos_truncados, 6)
+    preco_2 = utils.truncar(VALOR_FACE / (1 + taxa + 0.0001) ** anos_truncados, 6)
+    return pu * (1 - preco_2 / preco_1)
 
 
-def premio(
-    data: DateLike,
-    pontos_base: bool = False,
-) -> pl.DataFrame:
-    """
-    Calcula o prêmio (spread) da LTN sobre o DI na data de referência.
-
-    Definição do prêmio (forma bruta):
-        premio = taxa_indicativa - taxa de ajuste do DI
-
-    Quando ``pontos_base=False`` a coluna retorna essa diferença em formato decimal
-    (ex: 0.000439 ≈ 4.39 bps). Quando ``pontos_base=True`` o valor é automaticamente
-    multiplicado por 10_000 e exibido diretamente em basis points.
+def duration_expr(
+    data_liquidacao: pl.Expr | str,
+    data_vencimento: pl.Expr | str,
+) -> pl.Expr:
+    """Cria expressão Polars para a duration da LTN em anos úteis.
 
     Args:
-        data: Data da consulta para buscar as taxas.
-        pontos_base: Se True, retorna o prêmio já convertido em basis points.
-            Padrão False.
+        data_liquidacao: Nome de coluna ou expressão Polars com a data de
+            liquidação.
+        data_vencimento: Nome de coluna ou expressão Polars com a data de
+            vencimento.
 
     Returns:
-        pl.DataFrame: DataFrame com as colunas do prêmio.
-
-    Output Columns:
-        - titulo (String): Tipo do título.
-        - data_vencimento (Date): Data de vencimento.
-        - premio (Float64): prêmio em decimal ou bps conforme parâmetro,
-            isto é, o spread sobre o DI.
-
-    Raises:
-        ValueError: Se os dados de DI não possuem 'taxa_ajuste' ou estão vazios.
-
-    Examples:
-        >>> from pyield import ltn
-        >>> ltn.premio("30-05-2025", pontos_base=True)
-        shape: (13, 3)
-        ┌────────┬─────────────────┬────────┐
-        │ titulo ┆ data_vencimento ┆ premio │
-        │ ---    ┆ ---             ┆ ---    │
-        │ str    ┆ date            ┆ f64    │
-        ╞════════╪═════════════════╪════════╡
-        │ LTN    ┆ 2025-07-01      ┆ 4.39   │
-        │ LTN    ┆ 2025-10-01      ┆ -9.0   │
-        │ LTN    ┆ 2026-01-01      ┆ -4.88  │
-        │ LTN    ┆ 2026-04-01      ┆ -4.45  │
-        │ LTN    ┆ 2026-07-01      ┆ 0.81   │
-        │ …      ┆ …               ┆ …      │
-        │ LTN    ┆ 2028-01-01      ┆ 0.55   │
-        │ LTN    ┆ 2028-07-01      ┆ 1.5    │
-        │ LTN    ┆ 2029-01-01      ┆ 10.77  │
-        │ LTN    ┆ 2030-01-01      ┆ 11.0   │
-        │ LTN    ┆ 2032-01-01      ┆ 11.24  │
-        └────────┴─────────────────┴────────┘
+        pl.Expr: Expressão sem alias com a duration em anos úteis.
     """
-    return utils.premio_pre(data, pontos_base=pontos_base).filter(
-        pl.col("titulo") == "LTN"
+    return du.contar_expr(data_liquidacao, data_vencimento) / 252
+
+
+def dv01_expr(
+    data_liquidacao: pl.Expr | str,
+    data_vencimento: pl.Expr | str,
+    taxa: pl.Expr | str,
+    pu: pl.Expr | str,
+) -> pl.Expr:
+    """Cria expressão Polars para o DV01 da LTN.
+
+    O cálculo é aplicado linha a linha e reprifica o PU informado para um
+    aumento de 1 bp na taxa.
+
+    Args:
+        data_liquidacao: Nome de coluna ou expressão Polars com a data de
+            liquidação.
+        data_vencimento: Nome de coluna ou expressão Polars com a data de
+            vencimento.
+        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+        pu: Nome de coluna ou expressão Polars com o PU usado como base.
+
+    Returns:
+        pl.Expr: Expressão sem alias com o DV01.
+    """
+    return pl.struct(
+        utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
+        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        utils.coluna_ou_expr(taxa, "taxa"),
+        utils.coluna_ou_expr(pu, "pu"),
+    ).map_elements(
+        lambda s: dv01(
+            s["data_liquidacao"],
+            s["data_vencimento"],
+            s["taxa"],
+            s["pu"],
+        ),
+        return_dtype=pl.Float64,
     )
 
 

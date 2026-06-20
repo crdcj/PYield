@@ -81,10 +81,10 @@ def curva_pre(data: DateLike) -> pl.DataFrame:
         # Usa spot_rates de NTN-F para calcular zero cupom
         df_spots = ntnf.taxas_zero(
             data_liquidacao=data,
-            ltn_vencimentos=df_ltn["data_vencimento"],
-            ltn_taxas=df_ltn["taxa_indicativa"],
-            ntnf_vencimentos=df_ntnf["data_vencimento"],
-            ntnf_taxas=df_ntnf["taxa_indicativa"],
+            vencimentos_ltn=df_ltn["data_vencimento"],
+            taxas_ltn=df_ltn["taxa_indicativa"],
+            vencimentos_ntnf=df_ntnf["data_vencimento"],
+            taxas_ntnf=df_ntnf["taxa_indicativa"],
             incluir_cupons=False,
         )
 

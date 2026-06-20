@@ -4,7 +4,7 @@ from typing import overload
 import polars as pl
 
 from pyield._internal import types
-from pyield._internal.types import ArrayLike, DateLike
+from pyield._internal.types import DateLike, DatesLike
 
 
 def data_referencia_valida(date: dt.date | None) -> bool:
@@ -68,11 +68,11 @@ def converter_datas(dates: None) -> None: ...
 @overload
 def converter_datas(dates: DateLike) -> dt.date: ...
 @overload
-def converter_datas(dates: ArrayLike) -> pl.Series: ...
+def converter_datas(dates: DatesLike) -> pl.Series: ...
 
 
 def converter_datas(
-    dates: DateLike | ArrayLike | None,
+    dates: DateLike | DatesLike | None,
 ) -> dt.date | pl.Series | None:
     """Converte diferentes tipos de entrada para ``datetime.date`` ou ``pl.Series``.
 

@@ -69,24 +69,24 @@ def dados(data: DateLike) -> pl.DataFrame:
 
     data_ref = cv.converter_datas(data)
 
-    # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
+    # Adiciona duration, prazo_medio, dv01 e taxa_di
     df = df.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
+        duration=duration_expr("data_referencia", "data_vencimento", "taxa_indicativa"),
+    ).with_columns(
+        prazo_medio=pl.col("duration"),
+        dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa", "pu"),
     )
-
-    # Adiciona duration, prazo_medio, dv01 e taxa_di
-    df = utils.adicionar_duration(df, duration)
-    df = utils.adicionar_dv01(df)
     df = utils.adicionar_taxa_di(df, data_ref)
 
     # Busca dados de LTN para bootstrap das taxas spot
     df_ltn = utils.obter_tpf(data, "LTN").select("data_vencimento", "taxa_indicativa")
     df_spots = taxas_zero(
         data_liquidacao=data,
-        ltn_vencimentos=df_ltn["data_vencimento"],
-        ltn_taxas=df_ltn["taxa_indicativa"],
-        ntnf_vencimentos=df["data_vencimento"],
-        ntnf_taxas=df["taxa_indicativa"],
+        vencimentos_ltn=df_ltn["data_vencimento"],
+        taxas_ltn=df_ltn["taxa_indicativa"],
+        vencimentos_ntnf=df["data_vencimento"],
+        taxas_ntnf=df["taxa_indicativa"],
     ).select("data_vencimento", "taxa_zero")
     df = df.join(df_spots, on="data_vencimento", how="left")
 
@@ -106,15 +106,12 @@ def dados(data: DateLike) -> pl.DataFrame:
             ),
             return_dtype=pl.Float64,
         ),
-        rentabilidade=pl.struct("data_vencimento", "taxa_indicativa").map_elements(
-            lambda row: rentabilidade(
-                data_liquidacao=data,
-                data_vencimento=row["data_vencimento"],
-                taxa_ntnf=row["taxa_indicativa"],
-                vencimentos_di=df_di["data_vencimento"],
-                taxas_di=df_di["taxa_ajuste"],
-            ),
-            return_dtype=pl.Float64,
+        rentabilidade=rentabilidade_expr(
+            data_liquidacao=data,
+            data_vencimento="data_vencimento",
+            taxa_ntnf="taxa_indicativa",
+            vencimentos_di=df_di["data_vencimento"],
+            taxas_di=df_di["taxa_ajuste"],
         ),
     )
 
@@ -346,10 +343,10 @@ def pu(
 
 def taxas_zero(  # noqa
     data_liquidacao: DateLike,
-    ltn_vencimentos: ArrayLike,
-    ltn_taxas: ArrayLike,
-    ntnf_vencimentos: ArrayLike,
-    ntnf_taxas: ArrayLike,
+    vencimentos_ltn: ArrayLike,
+    taxas_ltn: ArrayLike,
+    vencimentos_ntnf: ArrayLike,
+    taxas_ntnf: ArrayLike,
     incluir_cupons: bool = False,
 ) -> pl.DataFrame:
     """
@@ -363,10 +360,14 @@ def taxas_zero(  # noqa
 
     Args:
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
-        ltn_vencimentos (ArrayLike): Vencimentos conhecidos de LTN.
-        ltn_taxas (ArrayLike): Taxas conhecidas de LTN.
-        ntnf_vencimentos (ArrayLike): Vencimentos conhecidos de NTN-F.
-        ntnf_taxas (ArrayLike): Taxas conhecidas de NTN-F.
+        vencimentos_ltn (ArrayLike): Datas de vencimento das LTNs usadas como
+            vértices prefixados zero cupom.
+        taxas_ltn (ArrayLike): Taxas das LTNs. Como a LTN é zero cupom, essas
+            taxas são usadas diretamente como taxas zero no bootstrap.
+        vencimentos_ntnf (ArrayLike): Datas de vencimento das NTN-F usadas no
+            bootstrap.
+        taxas_ntnf (ArrayLike): TIRs das NTN-F correspondentes aos vencimentos
+            informados.
         incluir_cupons (bool): Se True, inclui as datas de cupom (julho).
             Padrão False.
 
@@ -385,10 +386,10 @@ def taxas_zero(  # noqa
         >>> df_ntnf = ntnf.dados("03-09-2024")
         >>> ntnf.taxas_zero(
         ...     data_liquidacao="03-09-2024",
-        ...     ltn_vencimentos=df_ltn["data_vencimento"],
-        ...     ltn_taxas=df_ltn["taxa_indicativa"],
-        ...     ntnf_vencimentos=df_ntnf["data_vencimento"],
-        ...     ntnf_taxas=df_ntnf["taxa_indicativa"],
+        ...     vencimentos_ltn=df_ltn["data_vencimento"],
+        ...     taxas_ltn=df_ltn["taxa_indicativa"],
+        ...     vencimentos_ntnf=df_ntnf["data_vencimento"],
+        ...     taxas_ntnf=df_ntnf["taxa_indicativa"],
         ... )
         shape: (6, 3)
         ┌─────────────────┬────────────┬───────────┐
@@ -406,58 +407,55 @@ def taxas_zero(  # noqa
     """
     if any_is_empty(
         data_liquidacao,
-        ltn_vencimentos,
-        ltn_taxas,
-        ntnf_vencimentos,
-        ntnf_taxas,
+        vencimentos_ltn,
+        taxas_ltn,
+        vencimentos_ntnf,
+        taxas_ntnf,
     ):
         return pl.DataFrame()
     # 1. Converter e normalizar inputs para Polars
     liquidacao = cv.converter_datas(data_liquidacao)
-    ltn_vencimentos = cv.converter_datas(ltn_vencimentos)
-    ntnf_vencimentos = cv.converter_datas(ntnf_vencimentos)
-    if not isinstance(ltn_taxas, pl.Series):
-        serie_ltn_taxas = pl.Series(ltn_taxas).cast(pl.Float64)
+    vencimentos_ltn = cv.converter_datas(vencimentos_ltn)
+    vencimentos_ntnf = cv.converter_datas(vencimentos_ntnf)
+    if not isinstance(taxas_ltn, pl.Series):
+        serie_ltn_taxas = pl.Series(taxas_ltn).cast(pl.Float64)
     else:
-        serie_ltn_taxas = ltn_taxas
-    if not isinstance(ntnf_taxas, pl.Series):
-        serie_ntnf_taxas = pl.Series(ntnf_taxas).cast(pl.Float64)
+        serie_ltn_taxas = taxas_ltn
+    if not isinstance(taxas_ntnf, pl.Series):
+        serie_ntnf_taxas = pl.Series(taxas_ntnf).cast(pl.Float64)
     else:
-        serie_ntnf_taxas = ntnf_taxas
+        serie_ntnf_taxas = taxas_ntnf
 
     # 2. Criar interpoladores (aceitam pl.Series diretamente)
     interpolador_ltn = ip.Interpolador(
-        dias_uteis=du.contar(liquidacao, ltn_vencimentos),
+        dias_uteis=du.contar(liquidacao, vencimentos_ltn),
         taxas=serie_ltn_taxas,
         metodo="flat_forward",
     )
     interpolador_ntnf = ip.Interpolador(
-        dias_uteis=du.contar(liquidacao, ntnf_vencimentos),
+        dias_uteis=du.contar(liquidacao, vencimentos_ntnf),
         taxas=serie_ntnf_taxas,
         metodo="flat_forward",
     )
 
     # 3. Gerar todas as datas de cupom até o último vencimento NTN-F
-    ultimo_vencimento = ntnf_vencimentos.max()
+    ultimo_vencimento = vencimentos_ntnf.max()
     assert isinstance(ultimo_vencimento, dt.date)
     todas_datas_cupom = datas_pagamento(liquidacao, ultimo_vencimento)
 
     # 4. Construir DataFrame inicial
-    dias_uteis_ate_venc = du.contar(liquidacao, todas_datas_cupom)
-    taxas_tir = interpolador_ntnf(dias_uteis_ate_venc)
-    df = pl.DataFrame(
-        {
-            "data_vencimento": todas_datas_cupom,
-            "dias_uteis": dias_uteis_ate_venc,
-            "anos_uteis": dias_uteis_ate_venc / 252,
-            "taxa_tir": taxas_tir,
-        }
-    ).with_columns(
-        cupom=pl.lit(VALOR_CUPOM),
+    df = (
+        pl.DataFrame({"data_vencimento": todas_datas_cupom})
+        .with_columns(dias_uteis=du.contar_expr(liquidacao, "data_vencimento"))
+        .with_columns(
+            anos_uteis=pl.col("dias_uteis") / 252,
+            taxa_tir=interpolador_ntnf.interpolar_expr("dias_uteis"),
+            cupom=pl.lit(VALOR_CUPOM),
+        )
     )
 
     # 5. Loop de bootstrap (iterativo por dependência sequencial)
-    ultimo_vencimento_ltn = ltn_vencimentos.max()
+    ultimo_vencimento_ltn = vencimentos_ltn.max()
     assert isinstance(ultimo_vencimento_ltn, dt.date)
 
     lista_vencimentos = df["data_vencimento"]
@@ -517,7 +515,7 @@ def taxas_zero(  # noqa
 
     # 8. Remover cupons (Julho) se não solicitado
     if not incluir_cupons:
-        df = df.filter(pl.col("data_vencimento").is_in(ntnf_vencimentos.implode()))
+        df = df.filter(pl.col("data_vencimento").is_in(vencimentos_ntnf.implode()))
 
     return df
 
@@ -593,11 +591,11 @@ def rentabilidade(  # noqa
         "flat_forward",
     )
 
-    dias_uteis_pagamento = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
     df = df_fluxos.with_columns(
-        dias_uteis=dias_uteis_pagamento,
-        anos_uteis=dias_uteis_pagamento / 252,
-        taxa_di=interpolador_ff(dias_uteis_pagamento),
+        dias_uteis=du.contar(data_liquidacao, df_fluxos["data_pagamento"]),
+    ).with_columns(
+        anos_uteis=pl.col("dias_uteis") / 252,
+        taxa_di=interpolador_ff.interpolar_expr("dias_uteis"),
     )
 
     preco_titulo = utils.calcular_pv(
@@ -625,6 +623,45 @@ def rentabilidade(  # noqa
 
     rentabilidade = (fator_ntnf - 1) / (fator_di - 1)
     return rentabilidade
+
+
+def rentabilidade_expr(
+    data_liquidacao: DateLike,
+    data_vencimento: pl.Expr | str,
+    taxa_ntnf: pl.Expr | str,
+    vencimentos_di: ArrayLike,
+    taxas_di: ArrayLike,
+) -> pl.Expr:
+    """Cria expressão Polars para a rentabilidade da NTN-F sobre a curva DI.
+
+    O cálculo é aplicado linha a linha porque a rentabilidade depende dos fluxos
+    de caixa do título, da interpolação da curva DI e da resolução de raiz.
+
+    Args:
+        data_liquidacao: Data de liquidação para o cálculo.
+        data_vencimento: Nome de coluna ou expressão Polars com a data de
+            vencimento da NTN-F.
+        taxa_ntnf: Nome de coluna ou expressão Polars com a TIR da NTN-F.
+        vencimentos_di: Datas de vencimento da curva DI.
+        taxas_di: Taxas DI correspondentes aos vencimentos.
+
+    Returns:
+        pl.Expr: Expressão sem alias com a rentabilidade da NTN-F sobre a curva
+        DI.
+    """
+    return pl.struct(
+        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        utils.coluna_ou_expr(taxa_ntnf, "taxa_ntnf"),
+    ).map_elements(
+        lambda row: rentabilidade(
+            data_liquidacao=data_liquidacao,
+            data_vencimento=row["data_vencimento"],
+            taxa_ntnf=row["taxa_ntnf"],
+            vencimentos_di=vencimentos_di,
+            taxas_di=taxas_di,
+        ),
+        return_dtype=pl.Float64,
+    )
 
 
 def premio(data: DateLike, pontos_base: bool = False) -> pl.DataFrame:
@@ -694,8 +731,8 @@ def premio_limpo(  # noqa
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
         data_vencimento (DateLike): Data de vencimento do título.
         taxa_ntnf (float): TIR do título.
-        taxas_di (ArrayLike): Série de taxas DI.
         vencimentos_di (ArrayLike): Vencimentos da curva DI.
+        taxas_di (ArrayLike): Série de taxas DI.
 
     Returns:
         float: Spread líquido em formato decimal (ex.: 0.0012 = 12 bps).
@@ -739,14 +776,13 @@ def premio_limpo(  # noqa
     if df.is_empty():
         return float("nan")
 
-    dias_uteis_pagamento = du.contar(data_liquidacao, df["data_pagamento"])
-    anos_uteis_pagamento = dias_uteis_pagamento / 252
-
     df = df.with_columns(
-        dias_uteis_pagamento=dias_uteis_pagamento,
-        taxa_di_interpolada=interpolador_ff(dias_uteis_pagamento),
+        dias_uteis_pagamento=du.contar(data_liquidacao, df["data_pagamento"]),
+    ).with_columns(
+        taxa_di_interpolada=interpolador_ff.interpolar_expr("dias_uteis_pagamento"),
     )
 
+    anos_uteis_pagamento = df["dias_uteis_pagamento"] / 252
     preco_titulo = _calcular_pu(data_liquidacao, data_vencimento, taxa_ntnf)
     fluxos_titulo = df["valor_pagamento"]
     di_interpolada = df["taxa_di_interpolada"]
@@ -794,35 +830,111 @@ def duration(
     return duration
 
 
+def duration_expr(
+    data_liquidacao: pl.Expr | str,
+    data_vencimento: pl.Expr | str,
+    taxa: pl.Expr | str,
+) -> pl.Expr:
+    """Cria expressão Polars para a duration da NTN-F.
+
+    O cálculo é aplicado linha a linha porque a duration depende dos fluxos de
+    caixa do título.
+
+    Args:
+        data_liquidacao: Nome de coluna ou expressão Polars com a data de
+            liquidação.
+        data_vencimento: Nome de coluna ou expressão Polars com a data de
+            vencimento.
+        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+
+    Returns:
+        pl.Expr: Expressão sem alias com a Macaulay duration em anos úteis.
+    """
+    return pl.struct(
+        utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
+        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        utils.coluna_ou_expr(taxa, "taxa"),
+    ).map_elements(
+        lambda s: duration(
+            s["data_liquidacao"],
+            s["data_vencimento"],
+            s["taxa"],
+        ),
+        return_dtype=pl.Float64,
+    )
+
+
 def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float,
+    pu: float,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) de uma NTN-F em R$.
 
-    Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
+    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
+    taxa.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
         taxa (float): Taxa de desconto (TIR) do título.
+        pu (float): PU usado como base para o cálculo.
 
     Returns:
         float: DV01, variação de preço para 1 bp.
 
     Examples:
         >>> from pyield import ntnf
-        >>> ntnf.dv01("26-03-2025", "01-01-2035", 0.151375)
-        0.39025200000003224
+        >>> pu = ntnf.pu("26-03-2025", "01-01-2035", 0.151375)
+        >>> ntnf.dv01("26-03-2025", "01-01-2035", 0.151375, pu)
+        0.3902520000000325
     """
-    if any_is_empty(data_liquidacao, data_vencimento, taxa):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
     preco_1 = _calcular_pu(data_liquidacao, data_vencimento, taxa)
     preco_2 = _calcular_pu(data_liquidacao, data_vencimento, taxa + 0.0001)
-    return preco_1 - preco_2
+    return pu * (1 - preco_2 / preco_1)
+
+
+def dv01_expr(
+    data_liquidacao: pl.Expr | str,
+    data_vencimento: pl.Expr | str,
+    taxa: pl.Expr | str,
+    pu: pl.Expr | str,
+) -> pl.Expr:
+    """Cria expressão Polars para o DV01 da NTN-F.
+
+    O cálculo é aplicado linha a linha e reprifica o PU informado para um
+    aumento de 1 bp na taxa.
+
+    Args:
+        data_liquidacao: Nome de coluna ou expressão Polars com a data de
+            liquidação.
+        data_vencimento: Nome de coluna ou expressão Polars com a data de
+            vencimento.
+        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+        pu: Nome de coluna ou expressão Polars com o PU usado como base.
+
+    Returns:
+        pl.Expr: Expressão sem alias com o DV01.
+    """
+    return pl.struct(
+        utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
+        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        utils.coluna_ou_expr(taxa, "taxa"),
+        utils.coluna_ou_expr(pu, "pu"),
+    ).map_elements(
+        lambda s: dv01(
+            s["data_liquidacao"],
+            s["data_vencimento"],
+            s["taxa"],
+            s["pu"],
+        ),
+        return_dtype=pl.Float64,
+    )
 
 
 def taxa(

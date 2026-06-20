@@ -42,10 +42,9 @@ df = yd.futuro.historico("31-05-2024", "DI1")
 
 # Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)
 interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
-interp(45)       # -> 0.04833...
-interp([30, 60]) # -> Series do Polars com taxas interpoladas
+interp(45)  # -> 0.04833...
 
-# Precificação de títulos públicos
+# Preçificar títulos públicos
 yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # Indicadores do BCB
@@ -64,19 +63,20 @@ documentação.
 | Componente | Tipo | Finalidade | Funções públicas |
 |---|---|---|---|
 | `yd.du` | módulo | Dias úteis e calendário brasileiro | `contar`, `deslocar`, `eh_dia_util`, `gerar`, `ultimo_dia_util`, `contar_expr`, `deslocar_expr`, `eh_dia_util_expr` |
-| `yd.Interpolador` | classe | Interpolação de curvas | `interpolar`, `__call__`, `linear`, `flat_forward` |
+| `yd.Interpolador` | classe | Interpolação escalar e em pipelines Polars | `interpolar`, `interpolar_expr`, `linear`, `flat_forward` |
+| `yd.interpolar(...)` | função | Interpolação vetorizada flat-forward, curva única ou multi-curva |  |
 | `yd.forward(...)` | função | Taxa a termo entre dois vértices |  |
 | `yd.forwards(...)` | função | Curva de taxas a termo |  |
 | `yd.futuro` | módulo | Contratos futuros da B3 | `di1`, `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `vencimento_expr` |
 | `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
 | `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premio_pre`, `rmd`, `secundario_mensal`, `secundario_intradia` |
 | `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `taxa`, `vna` |
-| `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `dv01`, `premio`, `rentabilidade`, `taxas_forward` |
-| `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `dv01`, `implicitas`, `curva` |
+| `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `duration_expr`, `dv01`, `dv01_expr`, `rentabilidade`, `rentabilidade_expr`, `taxas_forward` |
+| `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `duration_expr`, `dv01`, `dv01_expr`, `implicitas`, `curva` |
 | `yd.ntnb1` | módulo | NTN-B1 | `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `duration`, `dv01` |
 | `yd.ntnbprinc` | módulo | NTN-B Principal | `pu`, `dv01` |
-| `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `duration`, `dv01` |
-| `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `premio`, `premio_limpo`, `rentabilidade`, `duration`, `dv01` |
+| `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
+| `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `premio`, `premio_limpo`, `rentabilidade`, `rentabilidade_expr`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
 | `yd.selic` | módulo | Selic, COPOM e política monetária | `over`, `over_serie`, `meta`, `meta_serie`, `compromissadas`, `copom`, `cpm`, `probabilities` |
 | `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indices`, `indices_ultimos`, `taxa`, `taxas`, `taxas_ultimas`, `taxa_projetada` |
 | `yd.ptax(data)` | função | PTAX para uma data |  |
@@ -134,12 +134,35 @@ interp(45)  # -> 0.04833...
 linear = Interpolador(dias_uteis, taxas, metodo="linear")
 linear(45)  # -> 0.0475
 
-# Vetorizado
-interp([15, 45, 75])  # -> pl.Series com 3 taxas
-
-# Extrapolação (desabilitada por padrão, retorna NaN)
+# Extrapolação na ponta longa: desabilitada por padrão (NaN). A ponta
+# curta sempre retorna a primeira taxa conhecida.
 interp(100)  # -> nan
 Interpolador(dias_uteis, taxas, metodo="flat_forward", extrapolar=True)(100)  # -> 0.055
+```
+
+Para interpolar uma coluna inteira dentro de um pipeline Polars, use
+`interpolar_expr`:
+
+```python
+import polars as pl
+
+df = pl.DataFrame({"du": [15, 45, 75]})
+df.with_columns(taxa=interp.interpolar_expr("du"))
+```
+
+Quando os pontos alvo e a curva vêm de DataFrames diferentes (inclusive com
+múltiplas datas de referência), use a função top-level `yd.interpolar`:
+
+```python
+import pyield as yd
+
+taxas = yd.interpolar(
+    dus_alvo=df_alvo["dias_uteis"],
+    dus_curva=df_curva["dias_uteis"],
+    taxas_curva=df_curva["taxa"],
+    datas_alvo=df_alvo["data_referencia"],   # opcional (multi-curva)
+    datas_curva=df_curva["data_referencia"], # opcional (multi-curva)
+)
 ```
 
 ### Taxas a Termo (`forward`, `forwards`)
@@ -246,28 +269,62 @@ yd.ptax("25-12-2025")                                # -> nan
 
 Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
 
-## Quebra de API (v0.51.0)
+## Quebra de API (v0.52.0)
 
-### Remoção de `dv01_usd`
+Resumo das quebras desta versão:
 
-A coluna `dv01_usd` foi removida da saída de `dados()` nos módulos `ntnb`,
-`ltn`, `ntnc` e `ntnf`. Para converter o DV01 para USD, divida pela PTAX:
+- `Interpolador(...)` e `Interpolador.interpolar(...)` agora aceitam **apenas
+  inteiro escalar**. Chamadas com lista/`pl.Series` (`interp([30, 60])`),
+  antes suportadas via sobrecarga vetorial, agora levantam `TypeError`.
+  Substitua por `Interpolador.interpolar_expr` em pipelines Polars ou pela
+  função top-level `yd.interpolar(...)` (curva única ou multi-curva).
+- As funções `dv01(...)` dos títulos públicos agora recebem `pu` como argumento
+  explícito. Chamadas antigas que passavam apenas data, vencimento e taxa, ou
+  que passavam VNA no caso da NTN-B, precisam ser atualizadas.
+- `ntnf.taxas_zero(...)` mudou os nomes dos parâmetros de curva para o padrão
+  `vencimentos_*` / `taxas_*`. Chamadas por posição continuam com a mesma
+  ordem; chamadas por keyword precisam usar os novos nomes.
+
+### `Interpolador(...)` não aceita mais lista/Series
+
+O ``__call__`` e o método ``interpolar`` da classe agora são estritamente
+escalares. O caminho vetorial foi dividido em duas APIs com semântica clara:
 
 ```python
-df = yd.ntnb.dados("06-06-2026")
-dv01_usd = df["dv01"] / yd.ptax("06-06-2026")
+# Antes (v0.51.x)
+interp = yd.Interpolador(dus, taxas, metodo="flat_forward")
+interp([15, 45, 75])  # pl.Series
+
+# Agora, dentro de um pipeline Polars
+df.with_columns(taxa=interp.interpolar_expr("du"))
+
+# Agora, ad-hoc (curva única ou multi-curva)
+yd.interpolar(
+    dus_alvo=pl.Series([15, 45, 75]),
+    dus_curva=pl.Series(dus),
+    taxas_curva=pl.Series(taxas),
+)
 ```
 
-### `ntnb.inflacao_implicita()` → `ntnb.implicitas()`
+### `dv01(...)` agora recebe PU
 
-A função foi renomeada. As colunas de saída também mudaram:
-- `taxa_tir` → `taxa_tir_real`
-- `taxa_zero` → `taxa_zero_real`
+As funções `dv01(...)` dos títulos públicos recebem o PU usado como base para o
+cálculo, não mais o VNA ou apenas a taxa. Se necessário, calcule o PU antes:
 
-### Remoção de `ntnb.forward()`
+```python
+pu = yd.ntnb.pu(vna, yd.ntnb.cotacao(data, vencimento, taxa))
+dv01 = yd.ntnb.dv01(data, vencimento, taxa, pu)
+```
 
-A função `ntnb.forward(data, usar_taxa_zero=True)` foi removida. Os dados que
-ela retornava já estão disponíveis via `ntnb.dados(data)`.
+### `ntnf.taxas_zero(...)` usa nomes por conceito
+
+Os parâmetros de curva da NTN-F foram renomeados para manter o padrão
+`vencimentos_*` / `taxas_*`:
+
+- `ltn_vencimentos` → `vencimentos_ltn`
+- `ltn_taxas` → `taxas_ltn`
+- `ntnf_vencimentos` → `vencimentos_ntnf`
+- `ntnf_taxas` → `taxas_ntnf`
 
 ## Testes
 

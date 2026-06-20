@@ -299,19 +299,20 @@ def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float,
-    vna: float,
+    pu: float,
     nome_comercial: NomeComercial = NomeComercial.RENDA_MAIS,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da NTN-B1 em R$.
 
-    Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
+    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
+    taxa.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
         taxa (float): Taxa de desconto (YTM) da NTN-B1.
-        vna (float): Valor nominal atualizado (VNA).
+        pu (float): PU usado como base para o cálculo.
         nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
 
     Returns:
@@ -320,10 +321,12 @@ def dv01(
     Examples:
         >>> from pyield import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
-        >>> ntnb1.dv01("23-06-2025", "15-12-2084", 0.0686, 4299.160173, r_mais)
-        0.7738490000000127
+        >>> cot = ntnb1.cotacao("23-06-2025", "15-12-2084", 0.0686, r_mais)
+        >>> pu = ntnb1.pu(4299.160173, cot)
+        >>> ntnb1.dv01("23-06-2025", "15-12-2084", 0.0686, pu, r_mais)
+        0.7738488291718512
     """
-    if any_is_empty(data_liquidacao, data_vencimento, taxa, vna, nome_comercial):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa, pu, nome_comercial):
         return float("nan")
 
     cotacao_1 = cotacao(data_liquidacao, data_vencimento, taxa, nome_comercial)
@@ -333,6 +336,4 @@ def dv01(
         taxa + 0.0001,
         nome_comercial,
     )
-    pu_1 = pu(vna, cotacao_1)
-    pu_2 = pu(vna, cotacao_2)
-    return pu_1 - pu_2
+    return pu * (1 - cotacao_2 / cotacao_1)

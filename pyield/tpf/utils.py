@@ -25,6 +25,13 @@ COLUNAS_DADOS_TPF = (
 )
 
 
+def coluna_ou_expr(valor: pl.Expr | str, nome: str) -> pl.Expr:
+    """Normaliza nome de coluna ou expressão Polars para uso em ``pl.struct``."""
+    if isinstance(valor, str):
+        return pl.col(valor).alias(nome)
+    return valor.alias(nome)
+
+
 def subtrair_meses(data: dt.date, meses: int) -> dt.date:
     """Subtrai `meses` meses de `data`, preservando o dia."""
     mes = data.month - meses

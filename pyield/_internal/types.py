@@ -1,12 +1,13 @@
 import datetime as dt
 import math
-from collections.abc import Sized
+from collections.abc import Sequence, Sized
 from typing import Any, TypeAlias, TypeGuard
 
 import polars as pl
 
 DateLike: TypeAlias = str | dt.datetime | dt.date
 ArrayLike: TypeAlias = list[Any] | tuple[Any, ...] | pl.Series
+DatesLike: TypeAlias = Sequence[DateLike] | pl.Series
 
 
 def _is_empty(arg: Any) -> bool:

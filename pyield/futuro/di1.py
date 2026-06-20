@@ -12,10 +12,10 @@ import polars as pl
 import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.data_cache import obter_dataset_cacheado
-from pyield._internal.types import ArrayLike, DateLike, any_is_array_like, any_is_empty
+from pyield._internal.types import DateLike, DatesLike, any_is_array_like, any_is_empty
 from pyield.futuro.historico import buscar_historico_cacheado
 from pyield.futuro.historico import datas_disponiveis as _datas_futuro
-from pyield.interpolador import Interpolador
+from pyield.interpolador import interpolar
 
 TipoTaxaDI1 = Literal["ajuste", "fechamento"]
 
@@ -26,7 +26,7 @@ _COLUNAS_TIPO_TAXA: dict[TipoTaxaDI1, str] = {
 
 
 def dados(
-    datas: DateLike | ArrayLike,
+    datas: DateLike | DatesLike,
     inicio_mes: bool = False,
     filtrar_pre: bool = False,
 ) -> pl.DataFrame:
@@ -117,8 +117,8 @@ def dados(
 
 
 def interpolar_taxas(
-    datas_referencia: DateLike | ArrayLike,
-    datas_vencimento: DateLike | ArrayLike,
+    datas_referencia: DateLike | DatesLike,
+    datas_vencimento: DateLike | DatesLike,
     extrapolar: bool = True,
     tipo_taxa: TipoTaxaDI1 = "ajuste",
 ) -> pl.Series:
@@ -223,69 +223,24 @@ def interpolar_taxas(
     if df_entrada.is_empty():
         return pl.Series(dtype=pl.Float64)
 
-    # Carrega dataset de taxas DI usando datas já convertidas do df_entrada
+    # Carrega curva de DI para todas as datas únicas do alvo.
     datas_unicas = df_entrada["data_referencia"].drop_nulls().unique().sort().to_list()
     df_ref = buscar_historico_cacheado(datas_unicas, "DI1")
-    # Retorna Series vazia se nenhuma taxa for encontrada
     if df_ref.is_empty():
         return pl.Series(dtype=pl.Float64)
 
-    # 1. CRIA O ÍNDICE ORIGINAL AQUI
-    # Isso garante que saberemos a ordem exata depois
-    df_entrada = df_entrada.with_row_index("_temp_idx")
-
-    # Inicializa taxa_interpolada como None
     df_entrada = df_entrada.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
-        taxa_interpolada=pl.lit(None, dtype=pl.Float64),
     )
 
-    # Lista para armazenar os blocos processados
-    blocos_processados = []
-
-    # Itera sobre cada data de referência única
-    for data_ref in df_entrada["data_referencia"].unique():
-        # 1. Filtra apenas as linhas desta data (Particionamento)
-        df_parcial = df_entrada.filter(pl.col("data_referencia") == data_ref)
-
-        # 2. Busca as taxas de referência para esta data
-        df_referencia = df_ref.filter(pl.col("data_referencia") == data_ref)
-
-        # Se não houver dados de curva, adicionamos o bloco como está (com nulos)
-        # e continuamos.
-        if df_referencia.is_empty():
-            blocos_processados.append(df_parcial)
-            continue
-
-        df_curva = df_referencia.select("dias_uteis", coluna_taxa).drop_nulls()
-        if df_curva.is_empty():
-            blocos_processados.append(df_parcial)
-            continue
-
-        # Inicializa o interpolador com taxas e dias úteis conhecidos
-        interpolador_du = Interpolador(
-            dias_uteis=df_curva["dias_uteis"],
-            taxas=df_curva[coluna_taxa],
-            metodo="flat_forward",
-            extrapolar=extrapolar,
-        )
-
-        df_parcial = df_parcial.with_columns(
-            pl.col("dias_uteis")
-            .map_elements(interpolador_du, return_dtype=pl.Float64)
-            .alias("taxa_interpolada")
-        )
-
-        blocos_processados.append(df_parcial)
-
-    if not blocos_processados:
-        return pl.Series(dtype=pl.Float64)
-
-    # 2. CONCATENA E ORDENA DE VOLTA
-    # O sort("_temp_idx") restaura a ordem original dos inputs
-    df_saida = pl.concat(blocos_processados).sort("_temp_idx")
-
-    return df_saida["taxa_interpolada"].fill_nan(None)
+    return interpolar(
+        dus_alvo=df_entrada["dias_uteis"],
+        dus_curva=df_ref["dias_uteis"],
+        taxas_curva=df_ref[coluna_taxa],
+        datas_alvo=df_entrada["data_referencia"],
+        datas_curva=df_ref["data_referencia"],
+        extrapolar=extrapolar,
+    )
 
 
 def interpolar_taxa(

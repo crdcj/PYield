@@ -43,8 +43,7 @@ df = yd.futuro.historico("31-05-2024", "DI1")
 
 # Rate interpolation (flat forward, 252 business days/year convention)
 interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
-interp(45)       # -> 0.04833...
-interp([30, 60]) # -> pl.Series with interpolated rates
+interp(45)  # -> 0.04833...
 
 # Treasury bond pricing
 yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
@@ -103,12 +102,34 @@ interp(45)  # -> 0.04833...
 linear = Interpolador(dias_uteis, taxas, metodo="linear")
 linear(45)  # -> 0.0475
 
-# Vectorized
-interp([15, 45, 75])  # -> pl.Series with 3 rates
-
-# Extrapolation (disabled by default, returns NaN)
+# Extrapolation on the long end: disabled by default (NaN). The short end
+# always returns the first known rate.
 interp(100)  # -> nan
 Interpolador(dias_uteis, taxas, metodo="flat_forward", extrapolar=True)(100)  # -> 0.055
+```
+
+To interpolate a full column inside a Polars pipeline, use `interpolar_expr`:
+
+```python
+import polars as pl
+
+df = pl.DataFrame({"du": [15, 45, 75]})
+df.with_columns(taxa=interp.interpolar_expr("du"))
+```
+
+When target points and the curve come from different DataFrames (including
+multiple reference dates), use the top-level `yd.interpolar` function:
+
+```python
+import pyield as yd
+
+rates = yd.interpolar(
+    dus_alvo=df_alvo["dias_uteis"],
+    dus_curva=df_curva["dias_uteis"],
+    taxas_curva=df_curva["taxa"],
+    datas_alvo=df_alvo["data_referencia"],   # optional (multi-curve)
+    datas_curva=df_curva["data_referencia"], # optional (multi-curve)
+)
 ```
 
 ### Forward Rates (`forward`, `forwards`)
@@ -141,7 +162,8 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | `futuro` | Futures data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
 | `tpf` | Rates, maturities, outstanding stock, auctions, benchmarks, RMD, and trades for TPFs |
 | `di1` | Interpolated DI1 curve and available trade dates |
-| `Interpolador` | Rate interpolation (flat_forward, linear) |
+| `Interpolador` | Scalar rate interpolation and Polars-expression interpolation (flat_forward, linear) |
+| `interpolar` | Vectorized flat-forward interpolation, single curve or multi-curve |
 | `forward` / `forwards` | Forward-rate calculations |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
 | `ntnb1`, `ntnbprinc` | Additional bonds (NTN-B1, NTN-B Principal) |

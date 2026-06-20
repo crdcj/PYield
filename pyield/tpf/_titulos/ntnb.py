@@ -63,14 +63,14 @@ def dados(data: DateLike) -> pl.DataFrame:
     if df.is_empty():
         return df
 
-    # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
+    # Adiciona duration, prazo_medio e dv01
     df = df.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
+        duration=duration_expr("data_referencia", "data_vencimento", "taxa_indicativa"),
+    ).with_columns(
+        prazo_medio=pl.col("duration"),
+        dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa", "pu"),
     )
-
-    # Adiciona duration, prazo_medio e dv01
-    df = utils.adicionar_duration(df, duration)
-    df = utils.adicionar_dv01(df)
 
     # Busca curva DI bruta e calcula taxa_zero, taxa_di e inflação implícita
     df_di = di1.dados(data)
@@ -150,13 +150,13 @@ def _gerar_todas_datas_cupom(
     data_fim: dt.date,
 ) -> pl.Series:
     """
-    Gera todas as datas possíveis de cupom entre início e fim (inclusivas).
+    Gera todas as datas possíveis de cupom entre início (exclusivo) e fim (inclusivo).
 
     Os cupons são pagos em 15/02, 15/05, 15/08 e 15/11.
 
     Args:
-        data_inicio (DateLike): Data inicial.
-        data_fim (DateLike): Data final.
+        data_inicio (dt.date): Data inicial (exclusiva).
+        data_fim (dt.date): Data final (inclusiva).
 
     Returns:
         pl.Series: Série de datas de cupom no intervalo.
@@ -415,25 +415,18 @@ def _criar_df_bootstrap(
     ultimo_vencimento = vencimentos.max()
     assert isinstance(ultimo_vencimento, dt.date)
     todas_datas_cupom = _gerar_todas_datas_cupom(data_liquidacao, ultimo_vencimento)
-    dias_uteis_ate_venc = du.contar(data_liquidacao, todas_datas_cupom)
-    taxas_tir = interpolador_ff.interpolar(dias_uteis_ate_venc)
 
-    df = (
-        pl.DataFrame(
-            {
-                "data_vencimento": todas_datas_cupom,
-                "dias_uteis": dias_uteis_ate_venc,
-                "anos_uteis": dias_uteis_ate_venc / 252,
-                "taxa_tir": taxas_tir,
-            }
-        )
+    return (
+        pl.DataFrame({"data_vencimento": todas_datas_cupom})
+        .with_columns(dias_uteis=du.contar_expr(data_liquidacao, "data_vencimento"))
         .with_columns(
+            anos_uteis=pl.col("dias_uteis") / 252,
+            taxa_tir=interpolador_ff.interpolar_expr("dias_uteis"),
             cupom=pl.lit(VALOR_CUPOM),
             taxa_zero=pl.lit(None, dtype=pl.Float64),
         )
         .sort("data_vencimento")
     )
-    return df
 
 
 def _atualizar_taxa_zero(
@@ -591,12 +584,14 @@ def taxas_zero(
     return df.select(["data_vencimento", "dias_uteis", "taxa_zero"])
 
 
-def implicitas(
+def implicitas(  # noqa: PLR0913
     data_liquidacao: DateLike,
     vencimentos_tir: ArrayLike,
     taxas_tir: ArrayLike,
     vencimentos_nominais: ArrayLike,
     taxas_nominais: ArrayLike,
+    *,
+    extrapolar: bool = False,
 ) -> pl.DataFrame:
     """
     Calcula a inflação implícita para NTN-B contra uma curva nominal de referência.
@@ -608,12 +603,18 @@ def implicitas(
         data_liquidacao (DateLike): Data de liquidação da operação.
         vencimentos_tir (ArrayLike): Vencimentos das NTN-B usadas como vértices
             da curva de TIR real.
-        taxas_tir (ArrayLike): TIRs reais correspondentes.
+        taxas_tir (ArrayLike): TIRs reais observadas das NTN-B correspondentes
+            aos vencimentos informados. A função calcula a curva zero real a
+            partir dessas taxas.
         vencimentos_nominais (ArrayLike): Vencimentos da curva nominal de
             referência.
         taxas_nominais (ArrayLike): Taxas da curva nominal de referência. Pode
             representar DI Futuro, curva soberana prefixada ou outra curva
             nominal escolhida pelo usuário.
+        extrapolar (bool): Se `True`, extrapola a curva nominal fora dos
+            vencimentos informados. Se `False`, vencimentos fora do intervalo da
+            curva nominal retornam valores nulos nas colunas dependentes dessa
+            curva. O padrão é `False`.
 
     Returns:
         pl.DataFrame: DataFrame com as taxas calculadas.
@@ -634,36 +635,36 @@ def implicitas(
     Examples:
         Busca as taxas de NTN-B para uma data de referência.
         Estas são TIRs e as taxas zero são calculadas a partir delas.
-        >>> df_ntnb = yd.ntnb.dados("05-09-2024")
+        >>> df_ntnb = yd.ntnb.dados("19-06-2026")
 
         Busca as taxas de ajuste do DI Futuro para a mesma data de referência:
-        >>> df_di = yd.di1.dados("05-09-2024")
+        >>> df_di = yd.di1.dados("19-06-2026")
 
         Calcula a inflação implícita na data de referência:
         >>> yd.ntnb.implicitas(
-        ...     data_liquidacao="05-09-2024",
+        ...     data_liquidacao="19-06-2026",
         ...     vencimentos_tir=df_ntnb["data_vencimento"],
         ...     taxas_tir=df_ntnb["taxa_indicativa"],
         ...     vencimentos_nominais=df_di["data_vencimento"],
         ...     taxas_nominais=df_di["taxa_ajuste"],
         ... )
-        shape: (14, 6)
+        shape: (15, 6)
         ┌─────────────────┬────────────┬───────────────┬────────────────┬──────────────┬────────────────────┐
         │ data_vencimento ┆ dias_uteis ┆ taxa_tir_real ┆ taxa_zero_real ┆ taxa_nominal ┆ inflacao_implicita │
         │ ---             ┆ ---        ┆ ---           ┆ ---            ┆ ---          ┆ ---                │
         │ date            ┆ i64        ┆ f64           ┆ f64            ┆ f64          ┆ f64                │
         ╞═════════════════╪════════════╪═══════════════╪════════════════╪══════════════╪════════════════════╡
-        │ 2025-05-15      ┆ 171        ┆ 0.061748      ┆ 0.061748       ┆ 0.113836     ┆ 0.049059           │
-        │ 2026-08-15      ┆ 488        ┆ 0.066049      ┆ 0.066133       ┆ 0.117126     ┆ 0.04783            │
-        │ 2027-05-15      ┆ 673        ┆ 0.063873      ┆ 0.063816       ┆ 0.117169     ┆ 0.050152           │
-        │ 2028-08-15      ┆ 988        ┆ 0.0637        ┆ 0.063635       ┆ 0.11828      ┆ 0.051376           │
-        │ 2029-05-15      ┆ 1172       ┆ 0.0627        ┆ 0.062532       ┆ 0.11838      ┆ 0.052561           │
+        │ 2026-08-15      ┆ 41         ┆ 0.1115        ┆ 0.1115         ┆ 0.141339     ┆ 0.026846           │
+        │ 2027-05-15      ┆ 226        ┆ 0.085733      ┆ 0.085642       ┆ 0.145795     ┆ 0.055407           │
+        │ 2028-08-15      ┆ 541        ┆ 0.089683      ┆ 0.08971        ┆ 0.149149     ┆ 0.054545           │
+        │ 2029-05-15      ┆ 725        ┆ 0.088171      ┆ 0.088129       ┆ 0.149535     ┆ 0.056432           │
+        │ 2030-08-15      ┆ 1039       ┆ 0.088766      ┆ 0.088759       ┆ 0.149166     ┆ 0.055482           │
         │ …               ┆ …          ┆ …             ┆ …              ┆ …            ┆ …                  │
-        │ 2040-08-15      ┆ 3995       ┆ 0.060979      ┆ 0.060468       ┆ 0.11759      ┆ 0.053865           │
-        │ 2045-05-15      ┆ 5182       ┆ 0.06211       ┆ 0.0625         ┆ 0.11759      ┆ 0.05185            │
-        │ 2050-08-15      ┆ 6497       ┆ 0.0624        ┆ 0.063016       ┆ 0.11759      ┆ 0.051339           │
-        │ 2055-05-15      ┆ 7686       ┆ 0.062128      ┆ 0.062252       ┆ 0.11759      ┆ 0.052095           │
-        │ 2060-08-15      ┆ 9003       ┆ 0.062383      ┆ 0.063001       ┆ 0.11759      ┆ 0.051354           │
+        │ 2040-08-15      ┆ 3548       ┆ 0.078262      ┆ 0.076087       ┆ 0.14591      ┆ 0.064886           │
+        │ 2045-05-15      ┆ 4735       ┆ 0.076656      ┆ 0.073931       ┆ null         ┆ null               │
+        │ 2050-08-15      ┆ 6050       ┆ 0.075659      ┆ 0.072435       ┆ null         ┆ null               │
+        │ 2055-05-15      ┆ 7239       ┆ 0.074658      ┆ 0.07049        ┆ null         ┆ null               │
+        │ 2060-08-15      ┆ 8556       ┆ 0.07464       ┆ 0.070832       ┆ null         ┆ null               │
         └─────────────────┴────────────┴───────────────┴────────────────┴──────────────┴────────────────────┘
     """
     if any_is_empty(
@@ -683,33 +684,37 @@ def implicitas(
         dias_uteis=du.contar(liquidacao, vencimentos_nominais),
         taxas=taxas_nominais,
         metodo="flat_forward",
-        extrapolar=True,
+        extrapolar=extrapolar,
     )
     df_tir = pl.DataFrame(
         data={"data_vencimento": vencimentos_tir, "taxa_tir_real": taxas_tir},
         schema={"data_vencimento": pl.Date, "taxa_tir_real": pl.Float64},
     )
-    df_spot = taxas_zero(liquidacao, vencimentos_tir, taxas_tir)
-    taxa_nominal = interpolador_ff(df_spot["dias_uteis"])
-    fator_implicita = (taxa_nominal + 1) / (pl.col("taxa_zero") + 1)
-    df = df_spot.join(df_tir, on="data_vencimento", how="left").select(
-        "data_vencimento",
-        "dias_uteis",
-        "taxa_tir_real",
-        taxa_zero_real=pl.col("taxa_zero"),
-        taxa_nominal=taxa_nominal,
-        inflacao_implicita=fator_implicita - 1,
+    taxa_nominal_expr = interpolador_ff.interpolar_expr("dias_uteis")
+    df = (
+        taxas_zero(liquidacao, vencimentos_tir, taxas_tir)
+        .join(df_tir, on="data_vencimento", how="left")
+        .select(
+            "data_vencimento",
+            "dias_uteis",
+            "taxa_tir_real",
+            taxa_zero_real=pl.col("taxa_zero"),
+            taxa_nominal=taxa_nominal_expr,
+            inflacao_implicita=(taxa_nominal_expr + 1) / (pl.col("taxa_zero") + 1) - 1,
+        )
     )
 
     return df
 
 
-def curva(
+def curva(  # noqa: PLR0913
     data_liquidacao: DateLike,
     vencimentos_tir: ArrayLike,
     taxas_tir: ArrayLike,
     vencimentos_nominais: ArrayLike,
     taxas_nominais: ArrayLike,
+    *,
+    extrapolar: bool = False,
 ) -> pl.DataFrame:
     """
     Calcula uma visão de curva da NTN-B com taxas reais, nominais e forwards.
@@ -722,12 +727,18 @@ def curva(
         data_liquidacao (DateLike): Data de liquidação da operação.
         vencimentos_tir (ArrayLike): Vencimentos das NTN-B usadas como vértices
             da curva de TIR real.
-        taxas_tir (ArrayLike): TIRs reais correspondentes.
+        taxas_tir (ArrayLike): TIRs reais observadas das NTN-B correspondentes
+            aos vencimentos informados. A função calcula a curva zero real a
+            partir dessas taxas.
         vencimentos_nominais (ArrayLike): Vencimentos da curva nominal de
             referência.
         taxas_nominais (ArrayLike): Taxas da curva nominal de referência. Pode
             representar DI Futuro, curva soberana prefixada ou outra curva
             nominal escolhida pelo usuário.
+        extrapolar (bool): Se `True`, extrapola a curva nominal fora dos
+            vencimentos informados. Se `False`, vencimentos fora do intervalo da
+            curva nominal retornam valores nulos nas colunas dependentes dessa
+            curva. O padrão é `False`.
 
     Returns:
         pl.DataFrame: DataFrame com a curva calculada.
@@ -774,6 +785,7 @@ def curva(
         taxas_tir=taxas_tir,
         vencimentos_nominais=vencimentos_nominais,
         taxas_nominais=taxas_nominais,
+        extrapolar=extrapolar,
     )
     if df.is_empty():
         return df
@@ -824,10 +836,10 @@ def duration(
     Returns:
         float: Macaulay duration em anos úteis.
 
-     Examples:
-         >>> from pyield import ntnb
-         >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
-         15.08305431313046
+    Examples:
+        >>> from pyield import ntnb
+        >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
+        15.08305431313046
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
@@ -843,38 +855,112 @@ def duration(
     return utils.truncar(duration, 14)
 
 
+def duration_expr(
+    data_liquidacao: pl.Expr | str,
+    data_vencimento: pl.Expr | str,
+    taxa: pl.Expr | str,
+) -> pl.Expr:
+    """Cria expressão Polars para a duration da NTN-B.
+
+    O cálculo é aplicado linha a linha porque a duration depende dos fluxos de
+    caixa do título.
+
+    Args:
+        data_liquidacao: Nome de coluna ou expressão Polars com a data de
+            liquidação.
+        data_vencimento: Nome de coluna ou expressão Polars com a data de
+            vencimento.
+        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+
+    Returns:
+        pl.Expr: Expressão sem alias com a Macaulay duration em anos úteis.
+    """
+    return pl.struct(
+        utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
+        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        utils.coluna_ou_expr(taxa, "taxa"),
+    ).map_elements(
+        lambda s: duration(
+            s["data_liquidacao"],
+            s["data_vencimento"],
+            s["taxa"],
+        ),
+        return_dtype=pl.Float64,
+    )
+
+
 def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float,
-    vna: float,
+    pu: float,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da NTN-B em R$.
 
-    Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
+    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
+    taxa.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
         taxa (float): Taxa de desconto (TIR) da NTN-B.
+        pu (float): PU usado como base para o cálculo.
 
     Returns:
         float: DV01, variação de preço para 1 bp.
 
     Examples:
         >>> from pyield import ntnb
-        >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, 4470.979474)
-        4.640875999999935
+        >>> cot = ntnb.cotacao("26-03-2025", "15-08-2060", 0.074358)
+        >>> pu = ntnb.pu(4470.979474, cot)
+        >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, pu)
+        4.640876692898066
     """
-    if any_is_empty(data_liquidacao, data_vencimento, taxa, vna):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
     cotacao_1 = cotacao(data_liquidacao, data_vencimento, taxa)
     cotacao_2 = cotacao(data_liquidacao, data_vencimento, taxa + 0.0001)
-    preco_1 = pu(vna, cotacao_1)
-    preco_2 = pu(vna, cotacao_2)
-    return preco_1 - preco_2
+    return pu * (1 - cotacao_2 / cotacao_1)
+
+
+def dv01_expr(
+    data_liquidacao: pl.Expr | str,
+    data_vencimento: pl.Expr | str,
+    taxa: pl.Expr | str,
+    pu: pl.Expr | str,
+) -> pl.Expr:
+    """Cria expressão Polars para o DV01 da NTN-B.
+
+    O cálculo é aplicado linha a linha e reprifica o PU informado para um
+    aumento de 1 bp na taxa.
+
+    Args:
+        data_liquidacao: Nome de coluna ou expressão Polars com a data de
+            liquidação.
+        data_vencimento: Nome de coluna ou expressão Polars com a data de
+            vencimento.
+        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+        pu: Nome de coluna ou expressão Polars com o PU usado como base.
+
+    Returns:
+        pl.Expr: Expressão sem alias com o DV01.
+    """
+    return pl.struct(
+        utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
+        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        utils.coluna_ou_expr(taxa, "taxa"),
+        utils.coluna_ou_expr(pu, "pu"),
+    ).map_elements(
+        lambda s: dv01(
+            s["data_liquidacao"],
+            s["data_vencimento"],
+            s["taxa"],
+            s["pu"],
+        ),
+        return_dtype=pl.Float64,
+    )
 
 
 def taxa(

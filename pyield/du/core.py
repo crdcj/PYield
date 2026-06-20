@@ -6,7 +6,7 @@ import polars as pl
 import pyield._internal.converters as cv
 import pyield._internal.types as tp
 from pyield import relogio
-from pyield._internal.types import ArrayLike, DateLike
+from pyield._internal.types import ArrayLike, DateLike, DatesLike
 from pyield.du.feriados.feriados_br import FeriadosBrasil
 
 LIMITE_DIA_UTIL = 6
@@ -87,9 +87,9 @@ def contar_expr(
 
 
 @overload
-def contar(inicio: ArrayLike, fim: ArrayLike | DateLike | None) -> pl.Series: ...
+def contar(inicio: DatesLike, fim: DatesLike | DateLike | None) -> pl.Series: ...
 @overload
-def contar(inicio: DateLike | None, fim: ArrayLike) -> pl.Series: ...
+def contar(inicio: DateLike | None, fim: DatesLike) -> pl.Series: ...
 @overload
 def contar(inicio: DateLike, fim: DateLike) -> int: ...
 @overload
@@ -99,8 +99,8 @@ def contar(inicio: None, fim: DateLike | None) -> None: ...
 
 
 def contar(
-    inicio: None | DateLike | ArrayLike,
-    fim: None | DateLike | ArrayLike,
+    inicio: None | DateLike | DatesLike,
+    fim: None | DateLike | DatesLike,
 ) -> None | int | pl.Series:
     """Conta dias úteis entre ``inicio`` (inclusivo) e ``fim`` (exclusivo).
 
@@ -286,7 +286,7 @@ def deslocar_expr(
 
 @overload
 def deslocar(
-    datas: ArrayLike,
+    datas: DatesLike,
     deslocamento: ArrayLike | int | None,
     rolagem: Literal["forward", "backward"] = ...,
 ) -> pl.Series: ...
@@ -317,7 +317,7 @@ def deslocar(
 
 
 def deslocar(
-    datas: DateLike | ArrayLike | None,
+    datas: DateLike | DatesLike | None,
     deslocamento: int | ArrayLike | None,
     rolagem: Literal["forward", "backward"] = "forward",
 ) -> dt.date | pl.Series | None:
@@ -604,10 +604,10 @@ def eh_dia_util(datas: None) -> None: ...
 @overload
 def eh_dia_util(datas: DateLike) -> bool: ...
 @overload
-def eh_dia_util(datas: ArrayLike) -> pl.Series: ...
+def eh_dia_util(datas: DatesLike) -> pl.Series: ...
 
 
-def eh_dia_util(datas: None | DateLike | ArrayLike) -> None | bool | pl.Series:
+def eh_dia_util(datas: None | DateLike | DatesLike) -> None | bool | pl.Series:
     """Determina se data(s) são dias úteis brasileiros.
 
     REGIME DE FERIADOS POR LINHA: Para CADA data de entrada, a lista de feriados

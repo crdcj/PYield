@@ -76,14 +76,16 @@ def dados(data: DateLike) -> pl.DataFrame:
 
     data_ref = conversores.converter_datas(data)
 
-    # Adiciona dias_uteis (dado derivado, não vem da ANBIMA)
+    # Adiciona duration, prazo_medio, dv01 e taxa_di
     df = df.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
+        duration=duration_expr(
+            "data_referencia", "data_vencimento", "taxa_indicativa"
+        ),
+    ).with_columns(
+        prazo_medio=pl.col("duration"),
+        dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa", "pu"),
     )
-
-    # Adiciona duration, prazo_medio, dv01 e taxa_di
-    df = utils.adicionar_duration(df, duration)
-    df = utils.adicionar_dv01(df)
     df = utils.adicionar_taxa_di(df, data_ref)
 
     return df.select(
@@ -390,36 +392,109 @@ def duration(
     return utils.truncar(duracao, 14)
 
 
+def duration_expr(
+    data_liquidacao: pl.Expr | str,
+    data_vencimento: pl.Expr | str,
+    taxa: pl.Expr | str,
+) -> pl.Expr:
+    """Cria expressão Polars para a duration da NTN-C.
+
+    O cálculo é aplicado linha a linha porque a duration depende dos fluxos de
+    caixa do título.
+
+    Args:
+        data_liquidacao: Nome de coluna ou expressão Polars com a data de
+            liquidação.
+        data_vencimento: Nome de coluna ou expressão Polars com a data de
+            vencimento.
+        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+
+    Returns:
+        pl.Expr: Expressão sem alias com a Macaulay duration em anos úteis.
+    """
+    return pl.struct(
+        utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
+        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        utils.coluna_ou_expr(taxa, "taxa"),
+    ).map_elements(
+        lambda s: duration(
+            s["data_liquidacao"],
+            s["data_vencimento"],
+            s["taxa"],
+        ),
+        return_dtype=pl.Float64,
+    )
+
+
 def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float,
-    vna: float,
+    pu: float,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da NTN-C em R$.
 
-    Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
+    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
+    taxa.
 
     Args:
         data_liquidacao: Data de liquidação.
         data_vencimento: Data de vencimento.
         taxa: Taxa de desconto (YTM) da NTN-C.
-        vna: Valor nominal atualizado (VNA).
+        pu: PU usado como base para o cálculo.
 
     Returns:
         float: DV01, variação de preço para 1 bp.
 
     Examples:
         >>> from pyield import ntnc
-        >>> ntnc.dv01("21-03-2025", "01-01-2031", 0.067626, 6598.913723)
-        3.4446330000009766
+        >>> cot = ntnc.cotacao("21-03-2025", "01-01-2031", 0.067626)
+        >>> pu = ntnc.pu(6598.913723, cot)
+        >>> ntnc.dv01("21-03-2025", "01-01-2031", 0.067626, pu)
+        3.444632963315593
     """
-    if any_is_empty(data_liquidacao, data_vencimento, taxa, vna):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
     cotacao_1 = cotacao(data_liquidacao, data_vencimento, taxa)
     cotacao_2 = cotacao(data_liquidacao, data_vencimento, taxa + 0.0001)
-    preco_1 = pu(vna, cotacao_1)
-    preco_2 = pu(vna, cotacao_2)
-    return preco_1 - preco_2
+    return pu * (1 - cotacao_2 / cotacao_1)
+
+
+def dv01_expr(
+    data_liquidacao: pl.Expr | str,
+    data_vencimento: pl.Expr | str,
+    taxa: pl.Expr | str,
+    pu: pl.Expr | str,
+) -> pl.Expr:
+    """Cria expressão Polars para o DV01 da NTN-C.
+
+    O cálculo é aplicado linha a linha e reprifica o PU informado para um
+    aumento de 1 bp na taxa.
+
+    Args:
+        data_liquidacao: Nome de coluna ou expressão Polars com a data de
+            liquidação.
+        data_vencimento: Nome de coluna ou expressão Polars com a data de
+            vencimento.
+        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+        pu: Nome de coluna ou expressão Polars com o PU usado como base.
+
+    Returns:
+        pl.Expr: Expressão sem alias com o DV01.
+    """
+    return pl.struct(
+        utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
+        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        utils.coluna_ou_expr(taxa, "taxa"),
+        utils.coluna_ou_expr(pu, "pu"),
+    ).map_elements(
+        lambda s: dv01(
+            s["data_liquidacao"],
+            s["data_vencimento"],
+            s["taxa"],
+            s["pu"],
+        ),
+        return_dtype=pl.Float64,
+    )

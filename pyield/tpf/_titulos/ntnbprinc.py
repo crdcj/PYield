@@ -48,30 +48,34 @@ def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float,
-    vna: float,
+    pu: float,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da NTN-B Principal em R$.
 
-    Representa a variação de preço para um aumento de 1 bp (0,01%) na taxa.
+    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
+    taxa.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
         taxa (float): Taxa de desconto (YTM) do título.
-        vna (float): Valor nominal atualizado (VNA).
+        pu (float): PU usado como base para o cálculo.
 
     Returns:
         float: DV01 (Dollar Value of 01), variação de preço para 1 bp.
 
     Examples:
         >>> from pyield import ntnbprinc as bp
-        >>> bp.dv01("02-12-2025", "15-05-2029", 0.0777, 4567.033825)
-        1.1200559999997495
+        >>> pu = bp.pu("02-12-2025", "15-05-2029", 0.0777, 4567.033825)
+        >>> bp.dv01("02-12-2025", "15-05-2029", 0.0777, pu)
+        1.1200563591663193
     """
-    if any_is_empty(data_liquidacao, data_vencimento, taxa, vna):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
-    preco_1 = pu(data_liquidacao, data_vencimento, taxa, vna)
-    preco_2 = pu(data_liquidacao, data_vencimento, taxa + 0.0001, vna)
-    return preco_1 - preco_2
+    dias_uteis = du.contar(data_liquidacao, data_vencimento)
+    anos_uteis = utils.truncar(dias_uteis / 252, 14)
+    fator_preco = (1 + taxa) ** anos_uteis
+    fator_preco_1bp = (1 + taxa + 0.0001) ** anos_uteis
+    return pu * (1 - fator_preco / fator_preco_1bp)

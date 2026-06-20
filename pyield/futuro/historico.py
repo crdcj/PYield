@@ -7,7 +7,7 @@ import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.br_numbers import pct_para_decimal
 from pyield._internal.data_cache import obter_dataset_cacheado
-from pyield._internal.types import ArrayLike, DateLike, any_is_empty
+from pyield._internal.types import DateLike, DatesLike, any_is_empty
 from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.futuro import contratos as ct
 from pyield.fwd import forwards_expr
@@ -193,7 +193,7 @@ def enriquecer(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     return df.sort("data_referencia", "data_vencimento")
 
 
-def historico(data: DateLike | ArrayLike, contrato: str) -> pl.DataFrame:
+def historico(data: DateLike | DatesLike, contrato: str) -> pl.DataFrame:
     """Busca histórico de futuros no dataset PR cacheado.
 
     Args:
