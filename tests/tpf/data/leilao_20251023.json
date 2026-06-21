@@ -21,6 +21,7 @@
     "taxa_maxima": 14.135,
     "tipo_leilao": "Venda",
     "financeiro_bcb": 0,
+    "tipo_ocorrencia": "Ordinário",
     "quantidade_aceita_segunda_volta": 499989
   },
   {
@@ -45,6 +46,7 @@
     "taxa_maxima": 13.357,
     "tipo_leilao": "Venda",
     "financeiro_bcb": 0,
+    "tipo_ocorrencia": "Ordinário",
     "quantidade_aceita_segunda_volta": 1999788
   },
   {
@@ -69,6 +71,7 @@
     "taxa_maxima": 13.3695,
     "tipo_leilao": "Venda",
     "financeiro_bcb": 0,
+    "tipo_ocorrencia": "Ordinário",
     "quantidade_aceita_segunda_volta": 3749993
   },
   {
@@ -93,6 +96,7 @@
     "taxa_maxima": 13.667,
     "tipo_leilao": "Venda",
     "financeiro_bcb": 0,
+    "tipo_ocorrencia": "Ordinário",
     "quantidade_aceita_segunda_volta": 499988
   },
   {
@@ -117,6 +121,7 @@
     "taxa_maxima": 13.7399,
     "tipo_leilao": "Venda",
     "financeiro_bcb": 0,
+    "tipo_ocorrencia": "Ordinário",
     "quantidade_aceita_segunda_volta": 499989
   },
   {
@@ -141,6 +146,7 @@
     "taxa_maxima": 13.857,
     "tipo_leilao": "Venda",
     "financeiro_bcb": 0,
+    "tipo_ocorrencia": "Ordinário",
     "quantidade_aceita_segunda_volta": 346970
   }
 ]

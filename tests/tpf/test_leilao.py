@@ -10,6 +10,7 @@ modulo_leiloes = importlib.import_module("pyield.tpf.leiloes")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_JSON = DIRETORIO_DADOS / "leilao_20251023.json"
+CAMINHO_JSON_20260616 = DIRETORIO_DADOS / "leilao_20260616.json"
 CAMINHO_PARQUET = DIRETORIO_DADOS / "leilao_20251023.parquet"
 
 # PTAX dos dias 22, 23 e 24/10/2025 usada na geração do Parquet de referência
@@ -40,6 +41,38 @@ def test_pipeline_leiloes_por_data(monkeypatch):
     )
     resultado = modulo_leiloes.leiloes(data="23-10-2025")
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))
+
+
+def test_leiloes_processa_colunas_novas(monkeypatch):
+    """Colunas novas da API do Tesouro devem ser expostas no DataFrame final."""
+    monkeypatch.setattr(
+        modulo_leiloes,
+        "_buscar_dados_leiloes",
+        lambda *_, **__: json.loads(CAMINHO_JSON_20260616.read_bytes()),
+    )
+    monkeypatch.setattr(
+        modulo_leiloes,
+        "_buscar_ptax",
+        lambda *_, **__: pl.DataFrame(
+            {
+                "data_ref": [dt.date(2026, 6, 16)],
+                "ptax": [5.078],
+            },
+            schema={"data_ref": pl.Date, "ptax": pl.Float64},
+        ),
+    )
+
+    resultado = modulo_leiloes.leiloes(data="16-06-2026")
+    linha_lft = resultado.filter(
+        (pl.col("titulo") == "LFT")
+        & (pl.col("data_vencimento") == dt.date(2032, 6, 1))
+    ).row(0, named=True)
+    quantidade_liquidada_1v = 1_000_000
+    quantidade_liquidada_2v = 3_000
+
+    assert resultado["tipo_ocorrencia"].unique().to_list() == ["Ordinário"]
+    assert linha_lft["quantidade_liquidada_1v"] == quantidade_liquidada_1v
+    assert linha_lft["quantidade_liquidada_2v"] == quantidade_liquidada_2v
 
 
 def test_leiloes_inicio_filtra_localmente(monkeypatch):

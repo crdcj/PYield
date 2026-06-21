@@ -24,6 +24,7 @@ DEFINICOES_COLUNAS = [
     ("liquidacao_segunda_volta", "data_liquidacao_2v", pl.String),
     ("numero_edital", "numero_edital", pl.Int64),
     ("tipo_leilao", "tipo_leilao", pl.String),
+    ("tipo_ocorrencia", "tipo_ocorrencia", pl.String),
     ("titulo", "titulo", pl.String),
     ("benchmark", "benchmark", pl.String),
     ("vencimento", "data_vencimento", pl.String),
@@ -31,6 +32,8 @@ DEFINICOES_COLUNAS = [
     ("quantidade_aceita", "quantidade_aceita_1v", pl.Int64),
     ("oferta_segunda_volta", "quantidade_ofertada_2v", pl.Int64),
     ("quantidade_aceita_segunda_volta", "quantidade_aceita_2v", pl.Int64),
+    ("quantidade_liquidada", "quantidade_liquidada_1v", pl.Int64),
+    ("quantidade_liquidada_segunda_volta", "quantidade_liquidada_2v", pl.Int64),
     ("financeiro_aceito", "financeiro_aceito_1v", pl.Float64),
     ("financeiro_aceito_segunda_volta", "financeiro_aceito_2v", pl.Float64),
     ("quantidade_bcb", "quantidade_bcb", pl.Int64),
@@ -50,6 +53,7 @@ ORDEM_FINAL_COLUNAS = [
     "data_liquidacao_2v",
     "numero_edital",
     "tipo_leilao",
+    "tipo_ocorrencia",
     "titulo",
     "benchmark",
     "data_vencimento",
@@ -62,6 +66,8 @@ ORDEM_FINAL_COLUNAS = [
     "quantidade_aceita_1v",
     "quantidade_aceita_2v",
     "quantidade_aceita_total",
+    "quantidade_liquidada_1v",
+    "quantidade_liquidada_2v",
     "financeiro_ofertado_1v",
     "financeiro_ofertado_2v",
     "financeiro_ofertado_total",
@@ -155,7 +161,9 @@ def _transformar_dados_brutos(dados_brutos: list[dict]) -> pl.DataFrame:
         "liquidacao_segunda_volta": pl.String,
         "oferta_segunda_volta": pl.Int64,
         "financeiro_aceito_segunda_volta": pl.Float64,
+        "tipo_ocorrencia": pl.String,
         "quantidade_liquidada": pl.Int64,
+        "quantidade_liquidada_segunda_volta": pl.Int64,
         "quantidade_aceita_segunda_volta": pl.Int64,
     }
 
@@ -371,6 +379,7 @@ def leiloes(
         * data_liquidacao_2v (Date): data de liquidação financeira da 2ª volta.
         * numero_edital (Int64): número do edital do leilão.
         * tipo_leilao (String): tipo da operação.
+        * tipo_ocorrencia (String): classificação da ocorrência do leilão.
         * titulo (String): código do título público leiloado.
         * benchmark (String): descrição de referência do título.
         * data_vencimento (Date): data de vencimento do título.
@@ -383,6 +392,8 @@ def leiloes(
         * quantidade_aceita_1v (Int64): quantidade aceita na 1ª volta.
         * quantidade_aceita_2v (Int64): quantidade aceita na 2ª volta.
         * quantidade_aceita_total (Int64): quantidade aceita total.
+        * quantidade_liquidada_1v (Int64): quantidade liquidada na 1ª volta.
+        * quantidade_liquidada_2v (Int64): quantidade liquidada na 2ª volta.
         * financeiro_ofertado_1v (Float64): financeiro ofertado na 1ª volta.
         * financeiro_ofertado_2v (Float64): financeiro ofertado na 2ª volta.
         * financeiro_ofertado_total (Float64): financeiro ofertado total.
