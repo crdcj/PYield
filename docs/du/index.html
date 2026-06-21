@@ -1464,7 +1464,7 @@ retornado.</p>
                 <code>inicio</code>
             </td>
             <td>
-                  <code>None | <span title="pyield._internal.types.DateLike">DateLike</span> | <span title="pyield._internal.types.ArrayLike">ArrayLike</span></code>
+                  <code>None | <span title="pyield._internal.types.DateLike">DateLike</span> | <span title="pyield._internal.types.DatesLike">DatesLike</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1480,7 +1480,7 @@ retornado.</p>
                 <code>fim</code>
             </td>
             <td>
-                  <code>None | <span title="pyield._internal.types.DateLike">DateLike</span> | <span title="pyield._internal.types.ArrayLike">ArrayLike</span></code>
+                  <code>None | <span title="pyield._internal.types.DateLike">DateLike</span> | <span title="pyield._internal.types.DatesLike">DatesLike</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1727,8 +1727,8 @@ retornado.</p>
 <span class="normal"><a href="#__codelineno-0-218">218</a></span>
 <span class="normal"><a href="#__codelineno-0-219">219</a></span>
 <span class="normal"><a href="#__codelineno-0-220">220</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a><span class="k">def</span><span class="w"> </span><span class="nf">contar</span><span class="p">(</span>
-</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>    <span class="n">inicio</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="n">ArrayLike</span><span class="p">,</span>
-</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>    <span class="n">fim</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="n">ArrayLike</span><span class="p">,</span>
+</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>    <span class="n">inicio</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="n">DatesLike</span><span class="p">,</span>
+</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>    <span class="n">fim</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="n">DatesLike</span><span class="p">,</span>
 </span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
 </span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Conta dias úteis entre ``inicio`` (inclusivo) e ``fim`` (exclusivo).</span>
 </span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>
@@ -2151,7 +2151,7 @@ em <code>None</code>.</p>
                 <code>datas</code>
             </td>
             <td>
-                  <code><span title="pyield._internal.types.DateLike">DateLike</span> | <span title="pyield._internal.types.ArrayLike">ArrayLike</span> | None</code>
+                  <code><span title="pyield._internal.types.DateLike">DateLike</span> | <span title="pyield._internal.types.DatesLike">DatesLike</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2534,7 +2534,7 @@ rolagem="backward"):</p>
 <span class="normal"><a href="#__codelineno-0-494">494</a></span>
 <span class="normal"><a href="#__codelineno-0-495">495</a></span>
 <span class="normal"><a href="#__codelineno-0-496">496</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="k">def</span><span class="w"> </span><span class="nf">deslocar</span><span class="p">(</span>
-</span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="n">datas</span><span class="p">:</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="n">ArrayLike</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="n">datas</span><span class="p">:</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="n">DatesLike</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a>    <span class="n">deslocamento</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">ArrayLike</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a>    <span class="n">rolagem</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span> <span class="s2">&quot;backward&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;forward&quot;</span><span class="p">,</span>
 </span><span id="__span-0-323"><a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
@@ -3034,7 +3034,7 @@ regime de feriados.</p>
                 <code>datas</code>
             </td>
             <td>
-                  <code>None | <span title="pyield._internal.types.DateLike">DateLike</span> | <span title="pyield._internal.types.ArrayLike">ArrayLike</span></code>
+                  <code>None | <span title="pyield._internal.types.DateLike">DateLike</span> | <span title="pyield._internal.types.DatesLike">DatesLike</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3191,7 +3191,7 @@ Pode incluir nulos que propagam. Entrada escalar nula retorna <code>None</code>.
 <span class="normal"><a href="#__codelineno-0-675">675</a></span>
 <span class="normal"><a href="#__codelineno-0-676">676</a></span>
 <span class="normal"><a href="#__codelineno-0-677">677</a></span>
-<span class="normal"><a href="#__codelineno-0-678">678</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-610"><a id="__codelineno-0-610" name="__codelineno-0-610"></a><span class="k">def</span><span class="w"> </span><span class="nf">eh_dia_util</span><span class="p">(</span><span class="n">datas</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="n">ArrayLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-678">678</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-610"><a id="__codelineno-0-610" name="__codelineno-0-610"></a><span class="k">def</span><span class="w"> </span><span class="nf">eh_dia_util</span><span class="p">(</span><span class="n">datas</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="n">DatesLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
 </span><span id="__span-0-611"><a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Determina se data(s) são dias úteis brasileiros.</span>
 </span><span id="__span-0-612"><a id="__codelineno-0-612" name="__codelineno-0-612"></a>
 </span><span id="__span-0-613"><a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">    REGIME DE FERIADOS POR LINHA: Para CADA data de entrada, a lista de feriados</span>
