@@ -2,8 +2,7 @@
 
 from pyield.anbima.imaq import estoque
 from pyield.anbima.mercado_secundario import TipoTPF, taxas, vencimentos
-from pyield.bc.tpf_intradia import secundario_intradia
-from pyield.bc.tpf_mensal import secundario_mensal
+from pyield.tpf import secundario
 from pyield.tpf._titulos import lft, ltn, ntnb, ntnb1, ntnbprinc, ntnc, ntnf
 from pyield.tpf.benchmark import benchmarks
 from pyield.tpf.leiloes import leiloes
@@ -26,8 +25,7 @@ __all__ = [
     "ntnf",
     "premio_pre",
     "rmd",
-    "secundario_intradia",
-    "secundario_mensal",
+    "secundario",
     "taxas",
     "vencimentos",
 ]

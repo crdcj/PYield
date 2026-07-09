@@ -206,7 +206,7 @@ fonte indisponível) retornam DataFrame vazio ou `nan`, sem lançar exceção:
 import pyield as yd
 
 yd.futuro.historico("01-01-2030", "DI1").is_empty()  # -> True
-yd.tpf.secundario_mensal("01-01-2030").is_empty()    # -> True
+yd.tpf.secundario.mensal("01-01-2030").is_empty()    # -> True
 yd.ptax("25-12-2025")                                # -> nan
 ```
 
@@ -214,4 +214,3 @@ yd.ptax("25-12-2025")                                # -> nan
 
 Veja o [mapa completo da API](api-map.md) para uma visão por namespace das
 principais funções públicas do PYield.
-

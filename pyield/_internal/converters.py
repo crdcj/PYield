@@ -52,14 +52,15 @@ def converter_datas_expr(expr: pl.Expr | str) -> pl.Expr:
         expr = pl.col(expr)
 
     # Fallback por linha: o primeiro valor não-nulo vence.
-    # Se o elemento já for Date, o cast resolve no 1o termo.
+    # Datas e datetimes Python chegam ao Polars como strings ISO.
     # Se o elemento for null, ele permanece null em todos os termos.
     expr_str = expr.cast(pl.String, strict=False).str.strip_chars()
     return pl.coalesce(
-        expr.cast(pl.Date, strict=False),
         expr_str.str.to_date(format="%d-%m-%Y", strict=False),
         expr_str.str.to_date(format="%d/%m/%Y", strict=False),
         expr_str.str.to_date(format="%Y-%m-%d", strict=False),
+        expr_str.str.to_date(format="%Y-%m-%d %H:%M:%S", strict=False),
+        expr_str.str.to_date(format="%Y-%m-%d %H:%M:%S%.f", strict=False),
     )
 
 

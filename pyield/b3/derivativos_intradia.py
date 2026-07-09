@@ -103,8 +103,15 @@ def _converter_json_intradia(dados_json: list[dict]) -> pl.DataFrame:
 def _processar_colunas_intradia(df: pl.DataFrame) -> pl.DataFrame:
     colunas_disponiveis = [col for col in MAPEAMENTO if col in df.columns]
     tipos_disponiveis = pl.Schema({col: TIPOS[col] for col in colunas_disponiveis})
+    coluna_vencimento = "asset.AsstSummry.mtrtyCode"
+    exprs_data = []
+    if coluna_vencimento in colunas_disponiveis:
+        exprs_data.append(
+            pl.col(coluna_vencimento).str.to_date("%Y-%m-%d", strict=False)
+        )
     return (
         df.select(colunas_disponiveis)
+        .with_columns(exprs_data)
         .cast(tipos_disponiveis, strict=False)
         .rename(MAPEAMENTO, strict=False)
     )

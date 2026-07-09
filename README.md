@@ -69,7 +69,7 @@ documentação.
 | `yd.forwards(...)` | função | Curva de taxas a termo |  |
 | `yd.futuro` | módulo | Contratos futuros da B3 | `di1`, `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `vencimento_expr` |
 | `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
-| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premio_pre`, `rmd`, `secundario_mensal`, `secundario_intradia` |
+| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premio_pre`, `rmd`, `secundario` |
 | `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `pu`, `taxa`, `vna`, `rentabilidade`, `rentabilidade_expr` |
 | `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `duration_expr`, `dv01`, `dv01_expr`, `rentabilidade`, `rentabilidade_expr`, `taxas_forward` |
 | `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `duration_expr`, `dv01`, `dv01_expr`, `implicitas`, `curva` |
@@ -261,7 +261,7 @@ fonte indisponível) retornam DataFrame vazio ou `nan`, sem lançar exceção:
 import pyield as yd
 
 yd.futuro.historico("01-01-2030", "DI1").is_empty()  # -> True
-yd.tpf.secundario_mensal("01-01-2030").is_empty()    # -> True
+yd.tpf.secundario.mensal("01-01-2030").is_empty()    # -> True
 yd.ptax("25-12-2025")                                # -> nan
 ```
 

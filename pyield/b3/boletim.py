@@ -298,6 +298,7 @@ def _converter_para_df(registros: list[dict]) -> pl.DataFrame:
     # (pl.DataFrame infere colunas de ~50 primeiras linhas por padrão.)
     schema_str = {nome: pl.String for nome in SCHEMA_PRICE_REPORT}
     df = pl.DataFrame(registros, schema=schema_str)
+    df = df.with_columns(TradDt=pl.col("TradDt").str.to_date("%Y-%m-%d"))
     return df.cast(SCHEMA_PRICE_REPORT, strict=False)
 
 

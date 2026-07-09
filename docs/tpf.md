@@ -10,6 +10,10 @@ consulte as páginas individuais: [LFT](lft.md), [LTN](ltn.md),
 
 ::: pyield.tpf
 
+## secundario
+
+::: pyield.tpf.secundario
+
 ## leiloes
 
 ::: pyield.tpf.leiloes.leiloes
