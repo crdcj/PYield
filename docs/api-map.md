@@ -45,6 +45,7 @@ Visão geral das principais funções públicas do PYield.
     ├── leiloes(data=..., inicio=..., fim=...)
     ├── secundario.mensal(data, extragrupo=...)
     ├── secundario.intradia()
+    ├── secundario.nome_arquivo_mensal(data, extragrupo=...)
     ├── secundario.baixar_zip(data, extragrupo=...)
     ├── secundario.zip_para_silver(conteudo_zip)
     ├── secundario.ler_zip(caminho)

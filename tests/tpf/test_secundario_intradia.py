@@ -4,6 +4,7 @@ from pathlib import Path
 import polars as pl
 
 modulo_secundario = importlib.import_module("pyield.tpf.secundario")
+modulo_intradia = importlib.import_module("pyield.tpf.secundario._intradia")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_CSV = DIRETORIO_DADOS / "tpf_intradia_20260206.csv"
@@ -19,8 +20,8 @@ def test_pipeline_secundario_intradia(monkeypatch):
     def ler_csv() -> bytes:
         return CAMINHO_CSV.read_bytes()
 
-    monkeypatch.setattr(modulo_secundario, "_buscar_csv_intradia", ler_csv)
-    monkeypatch.setattr(modulo_secundario, "_mercado_selic_aberto", lambda: True)
+    monkeypatch.setattr(modulo_intradia, "_buscar_csv_intradia", ler_csv)
+    monkeypatch.setattr(modulo_intradia, "_mercado_selic_aberto", lambda: True)
 
     resultado = modulo_secundario.intradia().drop(COLUNAS_IGNORAR)
     esperado = pl.read_parquet(CAMINHO_PARQUET).drop(COLUNAS_IGNORAR)
