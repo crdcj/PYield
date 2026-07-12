@@ -20,3 +20,5 @@ dev/
 CLAUDE.md
 
 uv.lock
+
+.vscode/
