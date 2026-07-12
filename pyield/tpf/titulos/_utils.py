@@ -6,7 +6,8 @@ from typing import overload
 
 import polars as pl
 
-from pyield._internal.types import DateLike
+import pyield._internal.converters as conversores
+from pyield._internal.types import DateLike, any_is_empty
 from pyield.anbima.mercado_secundario import TipoTPF
 
 logger = logging.getLogger(__name__)
@@ -136,6 +137,33 @@ def subtrair_meses(data: dt.date, meses: int) -> dt.date:
     ano = data.year + (mes - 1) // 12
     mes = (mes - 1) % 12 + 1
     return data.replace(year=ano, month=mes)
+
+
+def gerar_datas_pagamento(
+    inicio: DateLike,
+    fim: DateLike,
+    intervalo_meses: int = 6,
+) -> pl.Series:
+    """Gera datas de pagamento entre o início exclusivo e o fim inclusivo."""
+    if intervalo_meses <= 0:
+        raise ValueError("O intervalo em meses deve ser maior que zero.")
+
+    if any_is_empty(inicio, fim):
+        return pl.Series(name="datas_pagamento", dtype=pl.Date)
+
+    data_inicio = conversores.converter_datas(inicio)
+    data_pagamento = conversores.converter_datas(fim)
+    datas_pagamento = []
+
+    while data_pagamento > data_inicio:
+        datas_pagamento.append(data_pagamento)
+        data_pagamento = subtrair_meses(data_pagamento, intervalo_meses)
+
+    return pl.Series(
+        name="datas_pagamento",
+        values=datas_pagamento,
+        dtype=pl.Date,
+    ).sort()
 
 
 def adicionar_duration(

@@ -46,11 +46,15 @@ interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forwa
 interp(45)  # -> 0.04833...
 
 # Treasury bond pricing
-yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
 
 # BCB indicators
 yd.selic.over("31-05-2024")  # -> 0.000414...
 ```
+
+Scalar dates accept `DD-MM-YYYY`, `DD/MM/YYYY`, and `YYYY-MM-DD`. Malformed
+scalar dates raise `ValueError`; in vectorized operations, malformed elements
+become `null` so the Polars pipeline can continue.
 
 A Colab notebook with more examples:
 
@@ -180,9 +184,9 @@ from pyield import ltn, ntnb, ntnf
 ltn.dados("23-08-2024")  # -> DataFrame with LTN bonds
 ntnb.dados("23-08-2024")  # -> DataFrame with NTN-B bonds
 
-# Compute bond quotation (base 100)
-ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
-ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
+# Compute bond quotation (base 1)
+ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
+ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 0.995341
 
 # DI premium (pontos_base=True multiplies by 10,000)
 ntnf.premio("30-05-2025", pontos_base=True)
@@ -215,13 +219,14 @@ yd.futuro.intradia("DI1")  # Returns live data during trading hours
 PYield accepts flexible date inputs (`DateLike`):
 - Strings: `"31-05-2024"`, `"31/05/2024"`, `"2024-05-31"`
 - `datetime.date`, `datetime.datetime`
-- `pandas.Timestamp`, `numpy.datetime64`
 
-Scalar functions return `datetime.date`. Vectorized functions return `polars.Series`.
+Scalar dates are converted to `datetime.date`. Where a function permits a
+missing date, `None` or an empty string represents an omitted value. A malformed
+scalar date raises `ValueError`.
 
-String parsing is performed element-by-element across supported formats. Invalid strings are converted to null values (`None` in scalar outputs and `null` in vectorized outputs).
-
-Null handling: scalar functions return `float('nan')` for missing inputs (which propagates in calculations). Vectorized functions propagate `null` element-by-element.
+In vectorized operations, missing or malformed elements become `null` so the
+Polars pipeline can continue. Domain functions that require a fully valid
+collection may reject those nulls after conversion.
 
 ```python
 from pyield import ntnb, du

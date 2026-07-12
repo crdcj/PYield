@@ -79,7 +79,8 @@ yd.du.gerar("22-12-2023", "02-01-2024")
 yd.du.eh_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
-Todas as funções suportam operações vetorizadas com listas, Series ou arrays.
+As principais funções de cálculo suportam operações vetorizadas com listas,
+Series ou arrays.
 
 ### 2. Futuros de DI (B3)
 
@@ -118,11 +119,11 @@ df_ntnf = yd.ntnf.dados("23-08-2024")
 Calcule cotações e preços de títulos públicos:
 
 ```python
-# Cotação de NTN-B (base 100)
-yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+# Cotação de NTN-B (base 1)
+yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
 
 # Cotação para vencimento mais longo
-yd.ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
+yd.ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 0.995341
 
 # Prêmio sobre DI para títulos pré-fixados (em pontos-base)
 df_premios = yd.ltn.dados("30-05-2024").select(
@@ -140,6 +141,8 @@ df_premios_ntnf = yd.ntnf.premio("30-05-2024", pontos_base=True)
 Interpolar taxas de juros usando convenção de mercado (252 dias úteis/ano):
 
 ```python
+import polars as pl
+
 # Obter curva de DI Futuro
 df = yd.futuro.historico("31-05-2024", "DI1")
 
@@ -149,8 +152,9 @@ interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forwa
 # Interpolar para 45 dias úteis
 interp(45)  # -> Taxa interpolada (ex: 0.1037)
 
-# Vetorizado
-interp([30, 60, 90])  # -> Polars Series com 3 taxas interpoladas
+# Em um pipeline Polars
+df_alvos = pl.DataFrame({"du": [30, 60, 90]})
+df_alvos.with_columns(taxa=interp.interpolar_expr("du"))
 
 # Interpolação linear (alternativa)
 linear_interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="linear")
@@ -196,6 +200,10 @@ df_proj = yd.ipca.taxa_projetada()
 
 Embora PYield retorne Polars DataFrames por padrão (desde a versão 0.40.0), é fácil converter para Pandas quando necessário:
 
+```sh
+pip install pandas pyarrow
+```
+
 ```python
 import pyield as yd
 
@@ -214,11 +222,13 @@ PYield aceita formatos flexíveis de data (`DateLike`):
 
 - **Strings**: `"31-05-2024"`, `"31/05/2024"`, `"2024-05-31"`
 - **Objetos Python**: `datetime.date`, `datetime.datetime`
-- **Objetos Pandas/NumPy**: `pandas.Timestamp`, `numpy.datetime64`
 
-Funções escalares retornam `datetime.date`. Funções vetorizadas retornam `polars.Series`.
+Datas escalares são convertidas para `datetime.date`. Quando a função admite
+ausência, `None` ou uma string vazia representam uma data não informada. Uma
+data escalar malformada levanta `ValueError`.
 
-Para valores nulos, funções escalares retornam `float('nan')`. Funções vetorizadas propagam `null` element-wise:
+Em operações vetorizadas, elementos ausentes ou malformados tornam-se `null`
+para preservar o pipeline Polars:
 
 ```python
 # Exemplo com null

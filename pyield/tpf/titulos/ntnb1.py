@@ -399,9 +399,9 @@ def pu(
 
     Examples:
         >>> from pyield import ntnb1
-        >>> ntnb1.pu(4299.160173, 99.3651 / 100)
+        >>> ntnb1.pu(4299.160173, 0.993651)
         4271.864805
-        >>> ntnb1.pu(4315.498383, 100.6409 / 100)
+        >>> ntnb1.pu(4315.498383, 1.006409)
         4343.156412
     """
     if any_is_empty(vna, cotacao):

@@ -118,7 +118,13 @@ def cotacao(
         taxa: Taxa anualizada do título.
 
     Returns:
-        float: Cotação do título.
+        float: Cotação do título em base 1, truncada em 6 casas decimais.
+
+    Notes:
+        A ANBIMA apresenta a cotação na escala percentual (base 100). Esta
+        função retorna o fator equivalente em base 1, usado diretamente no
+        cálculo do PU. O truncamento de 4 casas na escala ANBIMA equivale ao
+        truncamento de 6 casas nesta representação.
 
     Examples:
         Calcula a cotação de uma LFT com taxa de 0,02:
@@ -128,7 +134,7 @@ def cotacao(
         ...     data_vencimento="01-09-2030",
         ...     taxa=0.001717,  # 0.1717%
         ... )
-        98.9645
+        0.989645
 
         Entradas nulas retornam float('nan'):
         >>> lft.cotacao(
@@ -146,7 +152,7 @@ def cotacao(
 
     fator_desconto = 1 / (1 + taxa) ** anos_truncados
 
-    return utils.truncar(100 * fator_desconto, 4)
+    return utils.truncar(fator_desconto, 6)
 
 
 def taxa(
@@ -249,7 +255,7 @@ def _calcular_pu(
     """Calcula o preço unitário da LFT a partir do VNA e da cotação."""
     if any_is_empty(vna, cotacao):
         return float("nan")
-    return utils.truncar(vna * cotacao / 100, 6)
+    return utils.truncar(vna * cotacao, 6)
 
 
 def pu(
@@ -261,7 +267,7 @@ def pu(
 
     Args:
         vna (float): Valor nominal atualizado (VNA).
-        cotacao (float): Cotação da LFT em base 100.
+        cotacao (float): Cotação da LFT em base 1.
     Returns:
         float: Preço da LFT truncado em 6 casas decimais.
 
@@ -270,7 +276,7 @@ def pu(
 
     Examples:
         >>> from pyield import lft
-        >>> lft.pu(15785.324502, 99.9291)
+        >>> lft.pu(15785.324502, 0.999291)
         15774.132706
     """
     return _calcular_pu(vna, cotacao)

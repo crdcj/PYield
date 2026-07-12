@@ -83,7 +83,8 @@ def converter_datas(
     - Entradas nulas retornam ``None``
 
     O parse de strings é feito por elemento com fallback entre formatos
-    suportados. Valores inválidos viram ``null``.
+    suportados. Entradas escalares inválidas levantam ``ValueError``; em
+    coleções, valores inválidos viram ``null`` para preservar o pipeline.
 
     Args:
         dates: Data(s) a converter. Aceita:
@@ -95,6 +96,10 @@ def converter_datas(
     Returns:
         ``datetime.date`` para entrada escalar, ``pl.Series`` para coleções,
         ou ``None`` para entrada nula.
+
+    Raises:
+        ValueError: Se uma entrada escalar não puder ser convertida. Em
+            coleções, elementos inválidos são preservados como ``null``.
 
     Examples:
         Conversão de string escalar:
@@ -131,9 +136,15 @@ def converter_datas(
         >>> converter_datas("") is None
         True
 
-        Data inválida retorna None:
-        >>> converter_datas("31-02-2024") is None
+        String só com espaços retorna None:
+        >>> converter_datas("  ") is None
         True
+
+        Data escalar inválida levanta ValueError:
+        >>> converter_datas("31-02-2024")
+        Traceback (most recent call last):
+            ...
+        ValueError: Data inválida: '31-02-2024'.
 
         Lista com valores nulos propaga os nulls:
         >>> converter_datas(["01-01-2024", None])
@@ -149,6 +160,16 @@ def converter_datas(
         shape: (2,)
         Series: 'dates' [date]
         [
+            null
+            null
+        ]
+
+        Em coleções, valores inválidos e vazios viram ``null`` (parse tolerante):
+        >>> converter_datas(["01-01-2024", "31-02-2024", ""])
+        shape: (3,)
+        Series: 'dates' [date]
+        [
+            2024-01-01
             null
             null
         ]
@@ -177,6 +198,10 @@ def converter_datas(
     )
 
     if eh_escalar:
-        return serie.item()
+        resultado = serie.item()
+        entrada_vazia = dates is None or (isinstance(dates, str) and not dates.strip())
+        if resultado is None and not entrada_vazia:
+            raise ValueError(f"Data inválida: {dates!r}.")
+        return resultado
 
     return serie

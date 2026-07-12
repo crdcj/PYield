@@ -45,11 +45,15 @@ interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forwa
 interp(45)  # -> 0.04833...
 
 # Preçificar títulos públicos
-yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
 
 # Indicadores do BCB
 yd.selic.over("31-05-2024")  # -> 0.000414...
 ```
+
+Datas escalares aceitam `DD-MM-YYYY`, `DD/MM/YYYY` e `YYYY-MM-DD`. Datas
+escalares malformadas levantam `ValueError`; em operações vetorizadas, elementos
+malformados tornam-se `null` para preservar o pipeline Polars.
 
 Um notebook no Colab com mais exemplos:
 
@@ -200,9 +204,9 @@ from pyield import ltn, ntnb, ntnf
 ltn.dados("23-08-2024")  # -> DataFrame com títulos LTN
 ntnb.dados("23-08-2024")  # -> DataFrame com títulos NTN-B
 
-# Calcula cotação do título (base 100)
-ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
-ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
+# Calcula cotação do título (base 1)
+ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
+ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 0.995341
 
 # Prêmio sobre o DI (pontos_base=True multiplica por 10.000)
 ntnf.premio("30-05-2025", pontos_base=True)

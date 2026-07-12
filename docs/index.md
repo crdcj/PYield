@@ -32,11 +32,10 @@ df = yd.futuro.historico("31-05-2024", "DI1")
 
 # Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)
 interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
-interp(45)       # -> 0.04833...
-interp([30, 60]) # -> Series do Polars com taxas interpoladas
+interp(45)  # -> 0.04833...
 
 # Precificação de títulos públicos
-yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
 
 # Indicadores do BCB
 yd.selic.over("31-05-2024")  # -> 0.000414...
@@ -72,13 +71,16 @@ du.gerar("22-12-2023", "02-01-2024")
 du.eh_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
-Todas as funções suportam operações vetorizadas com listas, Series ou arrays.
+As principais funções de cálculo suportam operações vetorizadas com listas,
+Series ou arrays.
 
 ### Interpolação de Taxas (`Interpolador`)
 
 A classe `Interpolador` interpola taxas usando a convenção de 252 dias úteis/ano, padrão no mercado brasileiro.
 
 ```python
+import polars as pl
+
 from pyield import Interpolador
 
 dias_uteis = [30, 60, 90]
@@ -92,8 +94,9 @@ interp(45)  # -> 0.04833...
 linear = Interpolador(dias_uteis, taxas, metodo="linear")
 linear(45)  # -> 0.0475
 
-# Vetorizado
-interp([15, 45, 75])  # -> pl.Series com 3 taxas
+# Em um pipeline Polars
+df_alvos = pl.DataFrame({"du": [15, 45, 75]})
+df_alvos.with_columns(taxa=interp.interpolar_expr("du"))
 
 # Extrapolação (desabilitada por padrão, retorna NaN)
 interp(100)  # -> nan
@@ -147,9 +150,9 @@ from pyield import ltn, ntnb, ntnf
 ltn.dados("23-08-2024")  # -> DataFrame com títulos LTN
 ntnb.dados("23-08-2024")  # -> DataFrame com títulos NTN-B
 
-# Calcula cotação do título (base 100)
-ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
-ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
+# Calcula cotação do título (base 1)
+ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
+ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 0.995341
 
 # Prêmio sobre o DI (pontos_base=True multiplica por 10.000)
 ntnf.premio("30-05-2025", pontos_base=True)
@@ -183,14 +186,13 @@ PYield aceita entradas de data flexíveis (`DateLike`):
 - Strings: `"31-05-2024"`, `"31/05/2024"`, `"2024-05-31"`
 - `datetime.date`, `datetime.datetime`
 
-Funções escalares retornam `datetime.date`. Funções vetorizadas retornam `polars.Series`.
+Datas escalares são convertidas para `datetime.date`. Quando a função admite
+ausência, `None` ou uma string vazia representam uma data não informada. Uma
+data escalar malformada levanta `ValueError`.
 
-O parsing de strings é elemento a elemento entre os formatos aceitos. Strings
-inválidas são convertidas para valores nulos (`None` em saídas escalares e `null`
-em saídas vetorizadas).
-
-Tratamento de nulos: funções escalares retornam `float('nan')` para entradas ausentes
-(propaga nos cálculos). Funções vetorizadas propagam `null` elemento a elemento.
+Em operações vetorizadas, elementos ausentes ou malformados tornam-se `null`
+para preservar o pipeline Polars. Funções de domínio que exigem uma coleção
+integralmente válida podem rejeitar esses nulos depois da conversão.
 
 ```python
 from pyield import ntnb, du

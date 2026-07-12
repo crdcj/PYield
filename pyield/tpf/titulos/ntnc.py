@@ -8,23 +8,23 @@ from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf.titulos import _utils as utils
 
 """
-Constantes calculadas conforme regras da ANBIMA e em base 100.
+Constantes calculadas conforme regras da ANBIMA e em base 1.
 Válido para NTN-C com vencimento 01-01-2031:
-PRINCIPAL = 100
+PRINCIPAL = 1
 TAXA_CUPOM = (0.12 + 1) ** 0.5 - 1  # 12% a.a. com capitalização semestral
-VALOR_CUPOM_2031 = round(100 * TAXA_CUPOM, 6) -> 5.830052
-VALOR_FINAL_2031 = principal + último cupom = 100 + 5.830052
+VALOR_CUPOM_2031 = round(TAXA_CUPOM, 8) -> 0.05830052
+VALOR_FINAL_2031 = principal + último cupom = 1 + 0.05830052
 
 Para as demais NTN-C:
 TAXA_CUPOM = (0.06 + 1) ** 0.5 - 1  # 6% a.a. com capitalização semestral
-VALOR_CUPOM = round(100 * TAXA_CUPOM, 6) -> 2.956301
-VALOR_FINAL = principal + último cupom = 100 + 2.956301
+VALOR_CUPOM = round(TAXA_CUPOM, 8) -> 0.02956301
+VALOR_FINAL = principal + último cupom = 1 + 0.02956301
 """
-VALOR_CUPOM_2031 = 5.830052
-VALOR_FINAL_2031 = 105.830052
+VALOR_CUPOM_2031 = 0.05830052
+VALOR_FINAL_2031 = 1.05830052
 
-VALOR_CUPOM = 2.956301
-VALOR_FINAL = 102.956301
+VALOR_CUPOM = 0.02956301
+VALOR_FINAL = 1.02956301
 
 
 def _obter_valor_cupom(vencimento: dt.date) -> float:
@@ -107,16 +107,19 @@ def datas_pagamento(
     data_vencimento: DateLike,
 ) -> pl.Series:
     """
-    Gera todas as datas de cupom entre liquidação e vencimento (inclusivas).
-    A NTN-C é definida pela data de vencimento.
+    Gera todas as datas de pagamento entre liquidação e vencimento.
+
+    Os pagamentos são semestrais. No vencimento, o fluxo inclui o último cupom
+    e a amortização do principal. A NTN-C é definida pela data de vencimento.
 
     Args:
         data_liquidacao: Data de liquidação (exclusiva).
         data_vencimento: Data de vencimento.
 
     Returns:
-        pl.Series: Série de datas de cupom no intervalo. Retorna série vazia se
-            vencimento for menor que a liquidação.
+        pl.Series: Série de datas de pagamento entre a liquidação (exclusiva)
+            e o vencimento (inclusivo). Retorna série vazia se o vencimento for
+            menor ou igual à liquidação.
 
     Examples:
         >>> from pyield import ntnc
@@ -137,28 +140,7 @@ def datas_pagamento(
             2031-01-01
         ]
     """
-    s_vazia = pl.Series(name="datas_pagamento", dtype=pl.Date)
-
-    if any_is_empty(data_liquidacao, data_vencimento):
-        return s_vazia
-
-    # Valida e normaliza datas
-    liquidacao = conversores.converter_datas(data_liquidacao)
-    vencimento = conversores.converter_datas(data_vencimento)
-
-    # Retorna vazio se vencimento for anterior à liquidação
-    if vencimento < liquidacao:
-        return s_vazia
-
-    # Itera de trás para frente, do vencimento até a liquidação
-    data_cupom = vencimento
-    datas_cupons = []
-    while data_cupom > liquidacao:
-        datas_cupons.append(data_cupom)
-        # Retrocede 6 meses
-        data_cupom = utils.subtrair_meses(data_cupom, 6)
-
-    return pl.Series(name="datas_pagamento", values=datas_cupons).sort()
+    return utils.gerar_datas_pagamento(data_liquidacao, data_vencimento)
 
 
 def fluxos_caixa(
@@ -177,7 +159,7 @@ def fluxos_caixa(
 
     Output Columns:
         - data_pagamento (Date): Data de pagamento.
-        - valor_pagamento (Float64): Valor do pagamento.
+        - valor_pagamento (Float64): Valor do pagamento em base 1.
 
     Examples:
         >>> from pyield import ntnc
@@ -188,17 +170,17 @@ def fluxos_caixa(
         │ ---            ┆ ---             │
         │ date           ┆ f64             │
         ╞════════════════╪═════════════════╡
-        │ 2025-07-01     ┆ 5.830052        │
-        │ 2026-01-01     ┆ 5.830052        │
-        │ 2026-07-01     ┆ 5.830052        │
-        │ 2027-01-01     ┆ 5.830052        │
-        │ 2027-07-01     ┆ 5.830052        │
+        │ 2025-07-01     ┆ 0.058301        │
+        │ 2026-01-01     ┆ 0.058301        │
+        │ 2026-07-01     ┆ 0.058301        │
+        │ 2027-01-01     ┆ 0.058301        │
+        │ 2027-07-01     ┆ 0.058301        │
         │ …              ┆ …               │
-        │ 2029-01-01     ┆ 5.830052        │
-        │ 2029-07-01     ┆ 5.830052        │
-        │ 2030-01-01     ┆ 5.830052        │
-        │ 2030-07-01     ┆ 5.830052        │
-        │ 2031-01-01     ┆ 105.830052      │
+        │ 2029-01-01     ┆ 0.058301        │
+        │ 2029-07-01     ┆ 0.058301        │
+        │ 2030-01-01     ┆ 0.058301        │
+        │ 2030-07-01     ┆ 0.058301        │
+        │ 2031-01-01     ┆ 1.058301        │
         └────────────────┴─────────────────┘
     """
     vazio = pl.DataFrame(
@@ -212,7 +194,7 @@ def fluxos_caixa(
     liquidacao = conversores.converter_datas(data_liquidacao)
     vencimento = conversores.converter_datas(data_vencimento)
 
-    # Obtém as datas de cupom entre liquidação e vencimento
+    # Obtém as datas de pagamento entre liquidação e vencimento
     serie_datas_pagamento = datas_pagamento(liquidacao, vencimento)
 
     # Retorna DataFrame vazio se não houver pagamentos (liquidação >= vencimento)
@@ -239,7 +221,7 @@ def cotacao(
     taxa: float,
 ) -> float:
     """
-    Calcula a cotação da NTN-C em base 100 pelas regras da ANBIMA.
+    Calcula a cotação da NTN-C em base 1 pelas regras da ANBIMA.
 
     Args:
         data_liquidacao: Data de liquidação da operação.
@@ -247,17 +229,24 @@ def cotacao(
         taxa: Taxa de desconto (YTM) usada no valor presente.
 
     Returns:
-        float: Cotação da NTN-C truncada em 4 casas decimais.
+        float: Cotação da NTN-C truncada em 6 casas decimais.
+
+    Notes:
+        A ANBIMA apresenta a cotação na escala percentual (base 100). Esta
+        função retorna o fator equivalente em base 1, usado diretamente no
+        cálculo do PU. O truncamento de 4 casas na escala ANBIMA equivale ao
+        truncamento de 6 casas nesta representação.
+
+        Os cupons semestrais divulgados como percentuais também são armazenados
+        como fatores em base 1.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
-        - O cupom semestral é 2,956301, equivalente a 6% a.a. com capitalização
-          semestral e arredondamento para 6 casas, conforme ANBIMA.
 
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.cotacao("21-03-2025", "01-01-2031", 0.067626)
-        126.4958
+        1.264958
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
@@ -271,9 +260,9 @@ def cotacao(
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
-    vp = (valores_fluxo / fatores_desconto).round(10)
+    vp = (valores_fluxo / fatores_desconto).round(12)
     # Retorna a cotação (soma dos valores presentes) com truncamento ANBIMA
-    return utils.truncar(vp.sum(), 4)
+    return utils.truncar(vp.sum(), 6)
 
 
 def _calcular_pu(
@@ -283,7 +272,7 @@ def _calcular_pu(
     """Calcula o preço unitário da NTN-C a partir do VNA e da cotação."""
     if any_is_empty(vna, cotacao):
         return float("nan")
-    return utils.truncar(vna * cotacao / 100, 6)
+    return utils.truncar(vna * cotacao, 6)
 
 
 def pu(
@@ -293,11 +282,11 @@ def pu(
     """
     Calcula o preço (PU) da NTN-C pelas regras da ANBIMA.
 
-    pu = VNA * cotacao / 100
+    pu = VNA * cotacao
 
     Args:
         vna (float): Valor nominal atualizado (VNA).
-        cotacao (float): Cotação da NTN-C em base 100.
+        cotacao (float): Cotação da NTN-C em base 1.
 
     Returns:
         float: Preço da NTN-C truncado em 6 casas decimais.
@@ -307,7 +296,7 @@ def pu(
 
     Examples:
         >>> from pyield import ntnc
-        >>> ntnc.pu(6598.913723, 126.4958)
+        >>> ntnc.pu(6598.913723, 1.264958)
         8347.348705
     """
     return _calcular_pu(vna, cotacao)
@@ -450,7 +439,7 @@ def dv01(
         >>> cot = ntnc.cotacao("21-03-2025", "01-01-2031", 0.067626)
         >>> pu = ntnc.pu(6598.913723, cot)
         >>> ntnc.dv01("21-03-2025", "01-01-2031", 0.067626, pu)
-        3.444632963315593
+        3.4446329633165194
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")

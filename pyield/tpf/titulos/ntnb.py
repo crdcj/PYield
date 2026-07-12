@@ -9,15 +9,15 @@ from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.tpf.titulos import _utils as utils
 
 """
-Constantes calculadas conforme regras da ANBIMA e em base 100.
+Constantes calculadas conforme regras da ANBIMA e em base 1.
 TAXA_CUPOM = (0.06 + 1) ** 0.5 - 1  # 6% a.a. com capitalização semestral
-VALOR_CUPOM = round(100 * TAXA_CUPOM, 6) -> 2.956301
-VALOR_FINAL = principal + último cupom = 100 + 2.956301
+VALOR_CUPOM = round(TAXA_CUPOM, 8) -> 0.02956301
+VALOR_FINAL = principal + último cupom = 1 + 0.02956301
 DIA_CUPOM = 15
 MESES_CUPOM = {2, 5, 8, 11}
 """
-VALOR_CUPOM = 2.956301
-VALOR_FINAL = 102.956301
+VALOR_CUPOM = 0.02956301
+VALOR_FINAL = 1.02956301
 
 logger = logging.getLogger(__name__)
 
@@ -145,52 +145,25 @@ def vencimentos(data: DateLike) -> pl.Series:
     return dados(data)["data_vencimento"]
 
 
-def _gerar_todas_datas_cupom(
-    data_inicio: dt.date,
-    data_fim: dt.date,
-) -> pl.Series:
-    """
-    Gera todas as datas possíveis de cupom entre início (exclusivo) e fim (inclusivo).
-
-    Os cupons são pagos em 15/02, 15/05, 15/08 e 15/11.
-
-    Args:
-        data_inicio (dt.date): Data inicial (exclusiva).
-        data_fim (dt.date): Data final (inclusiva).
-
-    Returns:
-        pl.Series: Série de datas de cupom no intervalo.
-    """
-    primeira_data_cupom = dt.date(data_inicio.year, 2, 1)
-
-    # Gera datas no 1º dia do mês
-    datas_cupom: pl.Series = pl.date_range(
-        start=primeira_data_cupom, end=data_fim, interval="3mo", eager=True
-    )
-    # Ajusta para o dia 15
-    datas_cupom = datas_cupom.dt.offset_by("14d")
-
-    # Primeira data precisa ser após a data inicial
-    return datas_cupom.filter(datas_cupom > data_inicio)
-
-
 def datas_pagamento(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
 ) -> pl.Series:
     """
-    Gera todas as datas de cupom entre liquidação e vencimento (inclusivas).
+    Gera todas as datas de pagamento entre liquidação e vencimento.
 
-    Os cupons são pagos em 15/02, 15/05, 15/08 e 15/11. A NTN-B é definida
-    pela data de vencimento.
+    Os pagamentos são semestrais e seguem a série do título, com datas em
+    15/02, 15/05, 15/08 ou 15/11. No vencimento, o fluxo inclui o último cupom
+    e a amortização do principal.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação (exclusiva).
         data_vencimento (DateLike): Data de vencimento.
 
     Returns:
-        pl.Series: Série de datas de cupom no intervalo. Retorna série vazia se
-            vencimento for menor ou igual à liquidação.
+        pl.Series: Série de datas de pagamento entre a liquidação (exclusiva)
+            e o vencimento (inclusivo). Retorna série vazia se o vencimento for
+            menor ou igual à liquidação.
 
     Examples:
         >>> from pyield import ntnb
@@ -203,7 +176,7 @@ def datas_pagamento(
             2025-05-15
         ]
 
-        A data de liquidação coincidente com um cupom é exclusiva:
+        A data de liquidação coincidente com um pagamento é exclusiva:
 
         >>> ntnb.datas_pagamento("15-05-2024", "15-05-2025")
         shape: (2,)
@@ -213,23 +186,7 @@ def datas_pagamento(
             2025-05-15
         ]
     """
-    if any_is_empty(data_liquidacao, data_vencimento):
-        return pl.Series(name="datas_pagamento", dtype=pl.Date)
-
-    liquidacao = conversores.converter_datas(data_liquidacao)
-    vencimento = conversores.converter_datas(data_vencimento)
-
-    if vencimento <= liquidacao:
-        return pl.Series(name="datas_pagamento", dtype=pl.Date)
-
-    data_cupom = vencimento
-    datas_cupons = []
-
-    while data_cupom > liquidacao:
-        datas_cupons.append(data_cupom)
-        data_cupom = utils.subtrair_meses(data_cupom, 6)
-
-    return pl.Series(name="datas_pagamento", values=datas_cupons).sort()
+    return utils.gerar_datas_pagamento(data_liquidacao, data_vencimento)
 
 
 def fluxos_caixa(
@@ -248,20 +205,21 @@ def fluxos_caixa(
 
     Output Columns:
         - data_pagamento (Date): Data de pagamento.
-        - valor_pagamento (Float64): Valor do pagamento.
+        - valor_pagamento (Float64): Valor do pagamento em base 1.
 
     Examples:
         >>> from pyield import ntnb
-        >>> ntnb.fluxos_caixa("10-05-2024", "15-05-2025")
+        >>> with pl.Config(float_precision=8):
+        ...     ntnb.fluxos_caixa("10-05-2024", "15-05-2025")
         shape: (3, 2)
         ┌────────────────┬─────────────────┐
         │ data_pagamento ┆ valor_pagamento │
         │ ---            ┆ ---             │
         │ date           ┆ f64             │
         ╞════════════════╪═════════════════╡
-        │ 2024-05-15     ┆ 2.956301        │
-        │ 2024-11-15     ┆ 2.956301        │
-        │ 2025-05-15     ┆ 102.956301      │
+        │ 2024-05-15     ┆ 0.02956301      │
+        │ 2024-11-15     ┆ 0.02956301      │
+        │ 2025-05-15     ┆ 1.02956301      │
         └────────────────┴─────────────────┘
     """
     if any_is_empty(data_liquidacao, data_vencimento):
@@ -269,7 +227,7 @@ def fluxos_caixa(
             schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
         )
 
-    # Obtém as datas de cupom entre liquidação e vencimento
+    # Obtém as datas de pagamento entre liquidação e vencimento
     liquidacao = conversores.converter_datas(data_liquidacao)
     vencimento = conversores.converter_datas(data_vencimento)
     serie_datas_pagamento = datas_pagamento(liquidacao, vencimento)
@@ -298,7 +256,7 @@ def cotacao(
     taxa: float,
 ) -> float:
     """
-    Calcula a cotação da NTN-B em base 100 pelas regras da ANBIMA.
+    Calcula a cotação da NTN-B em base 1 pelas regras da ANBIMA.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação da operação.
@@ -306,23 +264,30 @@ def cotacao(
         taxa (float): Taxa de desconto (TIR) usada no valor presente.
 
     Returns:
-        float: Cotação da NTN-B truncada em 4 casas. Retorna NaN em erro.
+        float: Cotação da NTN-B truncada em 6 casas. Retorna NaN em erro.
+
+    Notes:
+        A ANBIMA apresenta a cotação na escala percentual (base 100). Esta
+        função retorna o fator equivalente em base 1, usado diretamente no
+        cálculo do PU. O truncamento de 4 casas na escala ANBIMA equivale ao
+        truncamento de 6 casas nesta representação.
+
+        O cupom semestral divulgado pela ANBIMA como 2,956301% é armazenado
+        como 0,02956301 em base 1.
 
     References:
         - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
-        - O cupom semestral é 2,956301, equivalente a 6% a.a. com capitalização
-          semestral e arredondamento para 6 casas, conforme ANBIMA.
 
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)
-        99.3651
+        0.993651
         >>> ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)
-        99.5341
+        0.995341
         >>> ntnb.cotacao("15-08-2024", "15-08-2032", 0.05929)
-        100.6409
+        1.006409
         >>> ntnb.cotacao("15-05-2024", "15-05-2025", 0.10)
-        96.4454
+        0.964454
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
@@ -336,9 +301,9 @@ def cotacao(
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
-    vp = (valores_fluxo / fatores_desconto).round(10)
+    vp = (valores_fluxo / fatores_desconto).round(12)
     # Retorna a cotação (soma dos valores presentes) com truncamento ANBIMA
-    return utils.truncar(vp.sum(), 4)
+    return utils.truncar(vp.sum(), 6)
 
 
 def _calcular_pu(
@@ -347,7 +312,7 @@ def _calcular_pu(
 ) -> float:
     if any_is_empty(vna, cotacao):
         return float("nan")
-    return utils.truncar(vna * cotacao / 100, 6)
+    return utils.truncar(vna * cotacao, 6)
 
 
 def pu(
@@ -359,7 +324,7 @@ def pu(
 
     Args:
         vna (float): Valor nominal atualizado (VNA).
-        cotacao (float): Cotação da NTN-B em base 100.
+        cotacao (float): Cotação da NTN-B em base 1.
 
     Returns:
         float: Preço da NTN-B truncado em 6 casas decimais.
@@ -369,9 +334,9 @@ def pu(
 
     Examples:
         >>> from pyield import ntnb
-        >>> ntnb.pu(4299.160173, 99.3651)
+        >>> ntnb.pu(4299.160173, 0.993651)
         4271.864805
-        >>> ntnb.pu(4315.498383, 100.6409)
+        >>> ntnb.pu(4315.498383, 1.006409)
         4343.156412
     """
     return _calcular_pu(vna, cotacao)
@@ -423,13 +388,17 @@ def _criar_df_bootstrap(
         metodo="flat_forward",
     )
 
-    # Gera datas de cupom até o último vencimento
+    # Gera datas de pagamento até o último vencimento
     ultimo_vencimento = vencimentos.max()
     assert isinstance(ultimo_vencimento, dt.date)
-    todas_datas_cupom = _gerar_todas_datas_cupom(data_liquidacao, ultimo_vencimento)
+    todas_datas_pagamento = utils.gerar_datas_pagamento(
+        data_liquidacao,
+        ultimo_vencimento,
+        intervalo_meses=3,
+    )
 
     return (
-        pl.DataFrame({"data_vencimento": todas_datas_cupom})
+        pl.DataFrame({"data_vencimento": todas_datas_pagamento})
         .with_columns(dias_uteis=du.contar_expr(data_liquidacao, "data_vencimento"))
         .with_columns(
             anos_uteis=pl.col("dias_uteis") / 252,
@@ -825,7 +794,7 @@ def dv01(
         >>> cot = ntnb.cotacao("26-03-2025", "15-08-2060", 0.074358)
         >>> pu = ntnb.pu(4470.979474, cot)
         >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, pu)
-        4.640876692898066
+        4.640876692897651
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")

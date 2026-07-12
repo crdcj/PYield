@@ -522,6 +522,7 @@ def gerar(
     Notes:
         - Strings de data aceitas: ``DD-MM-YYYY``, ``DD/MM/YYYY`` e ``YYYY-MM-DD``.
         - ``inicio`` e ``fim`` nulos usam a data atual.
+        - Datas inválidas levantam ``ValueError``.
 
     Examples:
         >>> from pyield import du

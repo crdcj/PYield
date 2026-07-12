@@ -164,19 +164,20 @@ def datas_pagamento(
     data_vencimento: DateLike,
 ) -> pl.Series:
     """
-    Gera todas as datas de cupom entre liquidação e vencimento.
+    Gera todas as datas de pagamento entre liquidação e vencimento.
 
     As datas são exclusivas para a liquidação e inclusivas para o vencimento.
-    Os cupons são pagos em 1º de janeiro e 1º de julho. O título NTN-F é
-    determinado pela data de vencimento.
+    Os pagamentos são semestrais, em 1º de janeiro e 1º de julho. No
+    vencimento, o fluxo inclui o último cupom e a amortização do principal. O
+    título NTN-F é determinado pela data de vencimento.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
 
     Returns:
-        pl.Series: Série com as datas de cupom entre a liquidação (exclusiva)
-            e o vencimento (inclusiva). Retorna série vazia se o vencimento
+        pl.Series: Série com as datas de pagamento entre a liquidação (exclusiva)
+            e o vencimento (inclusivo). Retorna série vazia se o vencimento
             for menor ou igual à liquidação.
 
     Examples:
@@ -193,7 +194,7 @@ def datas_pagamento(
             2027-01-01
         ]
 
-        A data de liquidação coincidente com um cupom é exclusiva:
+        A data de liquidação coincidente com um pagamento é exclusiva:
 
         >>> ntnf.datas_pagamento("01-07-2024", "01-01-2027")
         shape: (5,)
@@ -206,27 +207,7 @@ def datas_pagamento(
             2027-01-01
         ]
     """
-    if any_is_empty(data_liquidacao, data_vencimento):
-        return pl.Series(name="datas_pagamento", dtype=pl.Date)
-    # Normaliza datas
-    liquidacao = cv.converter_datas(data_liquidacao)
-    vencimento = cv.converter_datas(data_vencimento)
-
-    # Verifica se vencimento é posterior à liquidação
-    if vencimento <= liquidacao:
-        return pl.Series(name="datas_pagamento", dtype=pl.Date)
-
-    # Inicializa variáveis do loop
-    data_cupom = vencimento
-    datas_cupons = []
-
-    # Itera de trás para frente do vencimento até a liquidação
-    while data_cupom > liquidacao:
-        datas_cupons.append(data_cupom)
-        # Retrocede 6 meses
-        data_cupom = utils.subtrair_meses(data_cupom, 6)
-
-    return pl.Series(name="datas_pagamento", values=datas_cupons).sort()
+    return utils.gerar_datas_pagamento(data_liquidacao, data_vencimento)
 
 
 def fluxos_caixa(
@@ -448,14 +429,14 @@ def taxas_zero(  # noqa
         metodo="flat_forward",
     )
 
-    # 3. Gerar todas as datas de cupom até o último vencimento NTN-F
+    # 3. Gerar todas as datas de pagamento até o último vencimento NTN-F
     ultimo_vencimento = vencimentos_ntnf.max()
     assert isinstance(ultimo_vencimento, dt.date)
-    todas_datas_cupom = datas_pagamento(liquidacao, ultimo_vencimento)
+    todas_datas_pagamento = datas_pagamento(liquidacao, ultimo_vencimento)
 
     # 4. Construir DataFrame inicial
     df = (
-        pl.DataFrame({"data_vencimento": todas_datas_cupom})
+        pl.DataFrame({"data_vencimento": todas_datas_pagamento})
         .with_columns(dias_uteis=du.contar_expr(liquidacao, "data_vencimento"))
         .with_columns(
             anos_uteis=pl.col("dias_uteis") / 252,
