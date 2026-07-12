@@ -273,9 +273,53 @@ yd.ptax("25-12-2025")                                # -> nan
 
 Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
 
-## Quebra de API (v0.52.0)
+## Quebras de API
 
-Resumo das quebras desta versão:
+Quebras acumuladas por versão desde a v0.52.0.
+
+### v0.54.0
+
+- LFT, NTN-B, NTN-C e NTN-B1 passaram a expor **cotação e valores de fluxo em
+  base 1** (fator decimal), em vez de base 100 (escala percentual da ANBIMA).
+  A precisão numérica é preservada: o truncamento de 4 casas na escala ANBIMA
+  equivale a 6 casas em base 1.
+
+  ```python
+  # Antes
+  yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
+  yd.lft.pu(15785.324502, 99.9291)                       # -> 15774.132706
+
+  # Agora
+  yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
+  yd.lft.pu(15785.324502, 0.999291)                      # -> 15774.132706
+  ```
+
+  Também afeta `fluxos_caixa(...)` de NTN-B e NTN-C: o cupom semestral passou
+  de `2,956301` para `0,02956301` (NTN-C 6% a.a.) e o pagamento final passou
+  de `102,956301` para `1,02956301`. Chamadas a `pu(vna, cotacao)` que
+  dividiam por 100 (`cotacao / 100`) devem passar diretamente o fator em
+  base 1. O PU final permanece na mesma escala financeira.
+- `yd.ntnbprinc` (e `yd.tpf.ntnbprinc`) foi renomeado para `yd.ntnbp` (e
+  `yd.tpf.ntnbp`), alinhando o namespace público aos nomes curtos usados no
+  restante da biblioteca (`ntnb`, `ntnb1`, `ntnbp`, `ntnc`, `ntnf`).
+- `yd.tpf.premio_pre` foi renomeado para `yd.tpf.premios_pre`, coerente com o
+  retorno tabular (`DataFrame` com múltiplos prêmios).
+- Entradas escalares de data inválidas agora **levantam `ValueError`** em
+  qualquer função pública que aceite `DateLike`. Antes, chamadas como
+  `yd.du.deslocar("31-02-2024", 1)` retornavam `None` silenciosamente. Em
+  operações vetorizadas o parse continua tolerante: elementos inválidos viram
+  `null` para preservar o pipeline Polars. Strings vazias ou só com espaços
+  continuam sendo tratadas como nulas.
+
+### v0.53.0
+
+- As funções secundárias de TPF migraram do `yd.tpf` para o namespace dedicado
+  `yd.tpf.secundario`:
+
+  - `yd.tpf.secundario_intradia(...)` → `yd.tpf.secundario.intradia(...)`
+  - `yd.tpf.secundario_mensal(...)` → `yd.tpf.secundario.mensal(...)`
+
+### v0.52.0
 
 - `Interpolador(...)` e `Interpolador.interpolar(...)` agora aceitam **apenas
   inteiro escalar**. Chamadas com lista/`pl.Series` (`interp([30, 60])`),
@@ -293,7 +337,7 @@ Resumo das quebras desta versão:
   `vencimentos_*` / `taxas_*`. Chamadas por posição continuam com a mesma
   ordem; chamadas por keyword precisam usar os novos nomes.
 
-### `Interpolador(...)` não aceita mais lista/Series
+#### `Interpolador(...)` não aceita mais lista/Series
 
 O ``__call__`` e o método ``interpolar`` da classe agora são estritamente
 escalares. O caminho vetorial foi dividido em duas APIs com semântica clara:
@@ -314,7 +358,7 @@ yd.interpolar(
 )
 ```
 
-### `dv01(...)` agora recebe PU
+#### `dv01(...)` agora recebe PU
 
 As funções `dv01(...)` dos títulos públicos recebem o PU usado como base para o
 cálculo, não mais o VNA ou apenas a taxa. Se necessário, calcule o PU antes:
@@ -324,7 +368,7 @@ pu = yd.ntnb.pu(vna, yd.ntnb.cotacao(data, vencimento, taxa))
 dv01 = yd.ntnb.dv01(data, vencimento, taxa, pu)
 ```
 
-### `ntnf.taxas_zero(...)` usa nomes por conceito
+#### `ntnf.taxas_zero(...)` usa nomes por conceito
 
 Os parâmetros de curva da NTN-F foram renomeados para manter o padrão
 `vencimentos_*` / `taxas_*`:
