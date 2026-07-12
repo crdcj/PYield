@@ -12,7 +12,7 @@ from pyield._internal.cache import ttl_cache
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, DatesLike, any_is_empty
 from pyield.bc.sgs import ptax_serie
-from pyield.tpf._titulos import ltn, ntnb, ntnf
+from pyield.tpf.titulos import ltn, ntnb, ntnf
 
 logger = logging.getLogger(__name__)
 

@@ -133,7 +133,7 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | `Interpolador` | Interpolação de taxas (flat_forward, linear) |
 | `forward` / `forwards` | Cálculo de taxas a termo |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
-| `ntnb1`, `ntnbprinc` | Títulos adicionais (NTN-B1, NTN-B Principal) |
+| `ntnb1`, `ntnbp` | Títulos adicionais (NTN-B1, NTN-B Principal) |
 | `ipca` | Dados de inflação (histórico e projeções) |
 | `selic` | Taxa Selic over e meta, COPOM, compromissadas, CPM e probabilidades implícitas |
 | `hoje` / `agora` | Data/hora atual no Brasil (America/Sao_Paulo) |

@@ -4,6 +4,11 @@ Instruções operacionais para agentes de IA neste repositório. Este arquivo n�
 documentação do usuário; ele existe para melhorar decisões de implementação,
 revisão e manutenção.
 
+O diretório `dev/`, na raiz do projeto, é uma área de exploração e teste. Ele
+pode conter scripts auxiliares que não pertencem ao código principal; preserve
+esses arquivos nessa área para evitar poluir os demais diretórios do projeto.
+Não crie, mova ou remova arquivos nessa área sem solicitação explícita.
+
 ## Prioridade Máxima
 
 Reduza complexidade. Toda alteração deve ficar menor, mais coesa ou mais clara do

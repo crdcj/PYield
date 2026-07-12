@@ -22,3 +22,5 @@ tests/data/
 
 cgen.py
 .codex
+
+/.vscode/

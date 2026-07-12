@@ -51,7 +51,7 @@ Visão geral das principais funções públicas do PYield.
     ├── secundario.ler_zip(caminho)
     ├── benchmarks(...)
     ├── curva_pre(data)
-    ├── premio_pre(...)
+    ├── premios_pre(...)
     ├── rmd
     └── TipoTPF
     ```
@@ -124,7 +124,7 @@ Visão geral das principais funções públicas do PYield.
     ├── duration_expr(...)
     ├── dv01(...)
     ├── dv01_expr(...)
-    ├── taxas_zero(data_liquidacao, vencimentos, taxas, ...)    
+    ├── taxas_zero(data_liquidacao, vencimentos, taxas, ...)
     ├── implicitas(data_liquidacao, vencimentos_tir, taxas_tir, ...)
     └── curva(data_liquidacao, vencimentos_tir, taxas_tir, ...)
     ```
@@ -150,21 +150,26 @@ Visão geral das principais funções públicas do PYield.
     └── premio_limpo_expr(...)
     ```
 
-??? "`yd.ntnb1` (Tesouro Educa+)"
+??? "`yd.ntnb1` (NTN-B1: Educa+ e Renda+)"
     ```text
     yd.ntnb1
     ├── NomeComercial
     ├── datas_pagamento(...)
     ├── fluxos_caixa(...)
     ├── cotacao(...)
+    ├── cotacao_curva_zero(...)
+    ├── taxa_curva_zero(...)
     ├── pu(...)
     ├── duration(...)
     └── dv01(...)
     ```
 
-??? "`yd.ntnbprinc` (Tesouro IPCA+ Principal)"
+??? "`yd.ntnbp` (NTN-B Principal)"
     ```text
-    yd.ntnbprinc
+    yd.ntnbp
+    ├── taxas_zero(...)
+    ├── cotacao(...)
+    ├── taxa(...)
     ├── pu(...)
     └── dv01(...)
     ```

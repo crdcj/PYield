@@ -1,11 +1,13 @@
+"""Precificação de NTN-B1 pelas regras do Tesouro Direto."""
+
 from enum import Enum
 
 import polars as pl
 
 import pyield._internal.converters as conversores
-from pyield import du
+from pyield import du, interpolador
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf import utils
+from pyield.tpf.titulos import _utils as utils
 
 """
 Parâmetros globais para cálculos de NTN-B1.
@@ -42,7 +44,7 @@ def _obter_parametros_titulo(
     except KeyError:
         raise ValueError(f"Nome comercial inválido: {nome_comercial}")
 
-    pagamento_amortizacao = 1 / numero_amortizacoes
+    pagamento_amortizacao = utils.truncar(1 / numero_amortizacoes, 8)
     pagamento_amortizacao_final = 1 - (
         pagamento_amortizacao * (numero_amortizacoes - 1)
     )
@@ -111,9 +113,7 @@ def datas_pagamento(
     if len(datas_amortizacao) == 0:
         raise ValueError("Nenhuma data de amortização após a liquidação.")
 
-    datas_pagamento = pl.Series(name="datas_pagamento", values=datas_amortizacao).cast(
-        pl.Date
-    )
+    datas_pagamento = pl.Series(name="datas_pagamento", values=datas_amortizacao)
 
     return datas_pagamento.filter(datas_pagamento > liquidacao).sort()
 
@@ -158,7 +158,7 @@ def fluxos_caixa(
         │ 2060-09-15     ┆ 0.004167        │
         │ 2060-10-15     ┆ 0.004167        │
         │ 2060-11-15     ┆ 0.004167        │
-        │ 2060-12-15     ┆ 0.004167        │
+        │ 2060-12-15     ┆ 0.004168        │
         └────────────────┴─────────────────┘
 
     """
@@ -195,7 +195,7 @@ def cotacao(
     nome_comercial: NomeComercial,
 ) -> float:
     """
-    Calcula a cotação da NTN-B1 em base 100 pelas regras da ANBIMA.
+    Calcula a cotação da NTN-B1 em base 1 pelo método do Tesouro Direto.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação da operação.
@@ -204,10 +204,7 @@ def cotacao(
         nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
 
     Returns:
-        float: Cotação da NTN-B1 truncada em 6 casas decimais.
-
-    References:
-        - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
+        float: Cotação da NTN-B1 em base 1, truncada em 6 casas decimais.
 
     Examples:
         >>> from pyield import ntnb1
@@ -223,10 +220,164 @@ def cotacao(
     dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa) ** anos_uteis
-    # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
-    vp = (valores_fluxo / fatores_desconto).round(10)
-    # Retorna a cotação (soma dos valores presentes) com truncamento ANBIMA
+    # Na base 1, cada valor presente é arredondado na 12ª casa decimal.
+    vp = (valores_fluxo / fatores_desconto).round(12)
+    # Retorna a cotação em base 1, truncada na 6ª casa decimal.
     return utils.truncar(vp.sum(), 6)
+
+
+def _validar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:
+    """Valida e normaliza a curva zero usada na precificação."""
+    colunas_necessarias = {"dias_uteis", "taxa_zero"}
+    colunas_ausentes = colunas_necessarias - set(curva_zero.columns)
+    if colunas_ausentes:
+        raise ValueError(
+            "Curva zero deve conter as colunas 'dias_uteis' e 'taxa_zero'."
+        )
+
+    return (
+        curva_zero.select(
+            pl.col("dias_uteis").cast(pl.Int64),
+            pl.col("taxa_zero").cast(pl.Float64),
+        )
+        .drop_nulls()
+        .sort("dias_uteis")
+    )
+
+
+def _cotacao_por_taxas(pagamentos: pl.DataFrame) -> float:
+    """
+    Soma os valores presentes na precisão definida pelo método TD.
+
+    Args:
+        pagamentos: DataFrame com uma linha por fluxo e as colunas
+            ``valor_pagamento`` (Float64), ``dias_uteis`` (Int64) e
+            ``taxa`` (Float64) alinhadas por linha.
+    """
+    anos_uteis = utils.truncar(pagamentos["dias_uteis"] / 252, 14)
+    fatores = (1 + pagamentos["taxa"]) ** anos_uteis
+    valores_presentes = pagamentos["valor_pagamento"] / fatores
+    return float(valores_presentes.round(12).sum())
+
+
+def cotacao_curva_zero(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    curva_zero: pl.DataFrame,
+    nome_comercial: NomeComercial,
+) -> float:
+    """
+    Calcula a cotação de uma NTN-B1 descontando cada fluxo pela curva zero.
+
+    A função usa interpolação flat-forward entre os vértices da curva e mantém
+    a última taxa zero após o maior vértice, conforme a extrapolação do método
+    TD. Cada valor presente, em base 1, é arredondado na 12ª casa decimal; a
+    soma final não é truncada porque ela é o alvo da calibração da TIR
+    equivalente.
+
+    Args:
+        data_liquidacao: Data de liquidação.
+        data_vencimento: Data da última amortização da NTN-B1.
+        curva_zero: DataFrame com as colunas ``dias_uteis`` e ``taxa_zero``.
+        nome_comercial: Nome comercial, Renda+ ou Educa+.
+
+    Returns:
+        float: Cotação em base 1 calculada pela curva zero.
+    """
+    if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
+        return float("nan")
+
+    curva = _validar_curva_zero(curva_zero)
+    fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
+    dias_fluxos = du.contar(data_liquidacao, fluxos["data_pagamento"])
+    taxas_fluxos = interpolador.interpolar(
+        dias_fluxos,
+        curva["dias_uteis"],
+        curva["taxa_zero"],
+        extrapolar=True,
+    )
+    pagamentos = fluxos.with_columns(dias_uteis=dias_fluxos, taxa=taxas_fluxos)
+    return _cotacao_por_taxas(pagamentos)
+
+
+def _resolver_taxa_equivalente(
+    cotacao_alvo: float,
+    pagamentos_base: pl.DataFrame,
+    taxa_inicial: float,
+) -> float:
+    """Resolve por bisseção a taxa única que reproduz a cotação-alvo.
+
+    Args:
+        cotacao_alvo: Cotação em base 1 a ser reproduzida.
+        pagamentos_base: DataFrame com as colunas ``valor_pagamento`` e
+            ``dias_uteis`` de cada fluxo. A coluna ``taxa`` é adicionada
+            a cada iteração.
+        taxa_inicial: Estimativa inicial usada para dimensionar o limite
+            superior da busca.
+    """
+
+    def erro(taxa: float) -> float:
+        pagamentos = pagamentos_base.with_columns(taxa=pl.lit(taxa, dtype=pl.Float64))
+        return _cotacao_por_taxas(pagamentos) - cotacao_alvo
+
+    limite_inferior = -0.99
+    limite_superior = max(1.0, 2 * taxa_inicial + 0.01)
+    erro_inferior = erro(limite_inferior)
+    erro_superior = erro(limite_superior)
+
+    while erro_inferior * erro_superior > 0:
+        limite_superior = 2 * limite_superior + 1
+        erro_superior = erro(limite_superior)
+
+    return utils._metodo_bissecao(
+        erro,
+        limite_inferior,
+        limite_superior,
+    )
+
+
+def taxa_curva_zero(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    curva_zero: pl.DataFrame,
+    nome_comercial: NomeComercial,
+) -> float:
+    """
+    Calcula a TIR equivalente de uma NTN-B1 pela curva zero do método TD.
+
+    Primeiro, cada amortização mensal do Renda+ ou Educa+ é descontada pela
+    taxa zero correspondente à sua data. Em seguida, a função encontra por
+    bisseção a taxa única que produz a mesma cotação quando aplicada a todos os
+    fluxos. Essa é a taxa equivalente do título calculada pelo método TD.
+
+    Args:
+        data_liquidacao: Data de liquidação.
+        data_vencimento: Data da última amortização da NTN-B1.
+        curva_zero: DataFrame com as colunas ``dias_uteis`` e ``taxa_zero``.
+        nome_comercial: Nome comercial, Renda+ ou Educa+.
+
+    Returns:
+        float: TIR equivalente anualizada, em formato decimal.
+    """
+    if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
+        return float("nan")
+
+    curva = _validar_curva_zero(curva_zero)
+    fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
+    dias_fluxos = du.contar(data_liquidacao, fluxos["data_pagamento"])
+    taxas_zero = interpolador.interpolar(
+        dias_fluxos,
+        curva["dias_uteis"],
+        curva["taxa_zero"],
+        extrapolar=True,
+    )
+    pagamentos_base = fluxos.with_columns(dias_uteis=dias_fluxos)
+    cotacao_alvo = _cotacao_por_taxas(pagamentos_base.with_columns(taxa=taxas_zero))
+    return _resolver_taxa_equivalente(
+        cotacao_alvo,
+        pagamentos_base,
+        taxa_inicial=float(taxas_zero[-1]),
+    )
 
 
 def pu(
@@ -238,7 +389,7 @@ def pu(
 
     Args:
         vna (float): Valor nominal atualizado (VNA).
-        cotacao (float): Cotação da NTN-B1 em base 100.
+        cotacao (float): Cotação da NTN-B1 em base 1.
 
     Returns:
         float: Preço da NTN-B1 truncado em 6 casas decimais.
@@ -280,7 +431,7 @@ def duration(
         >>> from pyield import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
         >>> ntnb1.duration("23-06-2025", "15-12-2084", 0.0686, r_mais)
-        47.10493458167134
+        47.10494386899197
     """
     # Retorna NaN se houver entradas nulas
     if any_is_empty(data_liquidacao, data_vencimento, taxa, nome_comercial):

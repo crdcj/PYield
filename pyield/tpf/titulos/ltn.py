@@ -1,9 +1,8 @@
 import polars as pl
 
-import pyield._internal.converters as cv
 from pyield import du, fwd
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf import utils
+from pyield.tpf.titulos import _utils as utils
 
 VALOR_FACE = 1000
 
@@ -46,8 +45,6 @@ def dados(data: DateLike) -> pl.DataFrame:
     if df.is_empty():
         return df
 
-    data_ref = cv.converter_datas(data)
-
     df = df.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
         duration=duration_expr("data_referencia", "data_vencimento"),
@@ -55,7 +52,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         prazo_medio=pl.col("duration"),
         dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa", "pu"),
     )
-    df = utils.adicionar_taxa_di(df, data_ref)
+    df = utils.adicionar_taxa_di(df, data)
 
     df = df.with_columns(
         premio=pl.col("taxa_indicativa") - pl.col("taxa_di"),

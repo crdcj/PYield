@@ -9,7 +9,7 @@ import pyield.interpolador as ip
 from pyield import du
 from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.futuro import di1
-from pyield.tpf import utils
+from pyield.tpf.titulos import _utils as utils
 
 """
 Constantes calculadas conforme regras da ANBIMA
@@ -67,8 +67,6 @@ def dados(data: DateLike) -> pl.DataFrame:
     if df.is_empty():
         return df
 
-    data_ref = cv.converter_datas(data)
-
     # Adiciona duration, prazo_medio, dv01 e taxa_di
     df = df.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
@@ -77,7 +75,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         prazo_medio=pl.col("duration"),
         dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa", "pu"),
     )
-    df = utils.adicionar_taxa_di(df, data_ref)
+    df = utils.adicionar_taxa_di(df, data)
 
     # Busca dados de LTN para bootstrap das taxas spot
     df_ltn = utils.obter_tpf(data, "LTN").select("data_vencimento", "taxa_indicativa")
@@ -188,6 +186,19 @@ def datas_pagamento(
         Series: 'datas_pagamento' [date]
         [
             2024-07-01
+            2025-01-01
+            2025-07-01
+            2026-01-01
+            2026-07-01
+            2027-01-01
+        ]
+
+        A data de liquidação coincidente com um cupom é exclusiva:
+
+        >>> ntnf.datas_pagamento("01-07-2024", "01-01-2027")
+        shape: (5,)
+        Series: 'datas_pagamento' [date]
+        [
             2025-01-01
             2025-07-01
             2026-01-01
@@ -334,6 +345,8 @@ def pu(
         >>> from pyield import ntnf
         >>> ntnf.pu("05-07-2024", "01-01-2035", 0.11921)
         895.359254
+        >>> ntnf.pu("01-07-2024", "01-01-2027", 0.10)
+        999.931303
     """
     return _calcular_pu(data_liquidacao, data_vencimento, taxa)
 
@@ -553,7 +566,7 @@ def rentabilidade(  # noqa
         ...     vencimentos_di=exp_dates,
         ...     taxas_di=taxas_di,
         ... )
-        1.0099602679927115
+        1.0099602280683393
 
     Notes:
         A função ajusta as datas de pagamento para dias úteis e calcula o valor
@@ -705,7 +718,7 @@ def premio(data: DateLike, pontos_base: bool = False) -> pl.DataFrame:
         │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
         └────────┴─────────────────┴────────┘
     """
-    return utils.premio_pre(data, pontos_base=pontos_base).filter(
+    return utils.premios_pre(data, pontos_base=pontos_base).filter(
         pl.col("titulo") == "NTN-F"
     )
 

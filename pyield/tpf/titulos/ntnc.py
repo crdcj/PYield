@@ -5,7 +5,7 @@ import polars as pl
 import pyield._internal.converters as conversores
 from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf import utils
+from pyield.tpf.titulos import _utils as utils
 
 """
 Constantes calculadas conforme regras da ANBIMA e em base 100.
@@ -74,19 +74,15 @@ def dados(data: DateLike) -> pl.DataFrame:
     if df.is_empty():
         return df
 
-    data_ref = conversores.converter_datas(data)
-
     # Adiciona duration, prazo_medio, dv01 e taxa_di
     df = df.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
-        duration=duration_expr(
-            "data_referencia", "data_vencimento", "taxa_indicativa"
-        ),
+        duration=duration_expr("data_referencia", "data_vencimento", "taxa_indicativa"),
     ).with_columns(
         prazo_medio=pl.col("duration"),
         dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa", "pu"),
     )
-    df = utils.adicionar_taxa_di(df, data_ref)
+    df = utils.adicionar_taxa_di(df, data)
 
     return df.select(
         "data_referencia",
@@ -141,8 +137,10 @@ def datas_pagamento(
             2031-01-01
         ]
     """
+    s_vazia = pl.Series(name="datas_pagamento", dtype=pl.Date)
+
     if any_is_empty(data_liquidacao, data_vencimento):
-        return pl.Series(name="datas_pagamento", dtype=pl.Date)
+        return s_vazia
 
     # Valida e normaliza datas
     liquidacao = conversores.converter_datas(data_liquidacao)
@@ -150,7 +148,7 @@ def datas_pagamento(
 
     # Retorna vazio se vencimento for anterior à liquidação
     if vencimento < liquidacao:
-        return pl.Series(name="datas_pagamento", dtype=pl.Date)
+        return s_vazia
 
     # Itera de trás para frente, do vencimento até a liquidação
     data_cupom = vencimento
@@ -203,10 +201,12 @@ def fluxos_caixa(
         │ 2031-01-01     ┆ 105.830052      │
         └────────────────┴─────────────────┘
     """
+    vazio = pl.DataFrame(
+        schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
+    )
+
     if any_is_empty(data_liquidacao, data_vencimento):
-        return pl.DataFrame(
-            schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
-        )
+        return vazio
 
     # Valida e normaliza datas
     liquidacao = conversores.converter_datas(data_liquidacao)
@@ -217,9 +217,7 @@ def fluxos_caixa(
 
     # Retorna DataFrame vazio se não houver pagamentos (liquidação >= vencimento)
     if serie_datas_pagamento.is_empty():
-        return pl.DataFrame(
-            schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
-        )
+        return vazio
 
     # Obtém os valores corretos de cupom e final
     valor_cupom = _obter_valor_cupom(vencimento)

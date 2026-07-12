@@ -3,12 +3,12 @@
 from pyield.anbima.imaq import estoque
 from pyield.anbima.mercado_secundario import TipoTPF, taxas, vencimentos
 from pyield.tpf import secundario
-from pyield.tpf._titulos import lft, ltn, ntnb, ntnb1, ntnbprinc, ntnc, ntnf
 from pyield.tpf.benchmark import benchmarks
 from pyield.tpf.leiloes import leiloes
-from pyield.tpf.pre import curva_pre
 from pyield.tpf.rmd import rmd
-from pyield.tpf.utils import premio_pre
+from pyield.tpf.titulos import lft, ltn, ntnb, ntnb1, ntnbp, ntnc, ntnf
+from pyield.tpf.titulos._utils import premios_pre
+from pyield.tpf.titulos.pre import curva_pre
 
 __all__ = [
     "TipoTPF",
@@ -20,10 +20,10 @@ __all__ = [
     "ltn",
     "ntnb",
     "ntnb1",
-    "ntnbprinc",
+    "ntnbp",
     "ntnc",
     "ntnf",
-    "premio_pre",
+    "premios_pre",
     "rmd",
     "secundario",
     "taxas",

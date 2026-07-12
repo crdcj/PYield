@@ -15,7 +15,7 @@ from pyield.bc.sgs import ptax, ptax_serie
 from pyield.fwd import forward, forwards, forwards_expr
 from pyield.interpolador import Interpolador, interpolar
 from pyield.relogio import agora, hoje
-from pyield.tpf import lft, ltn, ntnb, ntnb1, ntnbprinc, ntnc, ntnf
+from pyield.tpf import lft, ltn, ntnb, ntnb1, ntnbp, ntnc, ntnf
 
 try:
     __version__ = version("pyield")
@@ -41,7 +41,7 @@ __all__ = [
     "ltn",
     "ntnb",
     "ntnb1",
-    "ntnbprinc",
+    "ntnbp",
     "ntnc",
     "ntnf",
     "ptax",

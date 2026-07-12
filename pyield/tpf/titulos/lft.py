@@ -1,10 +1,9 @@
 import polars as pl
 
-import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.bc import lft as _bc_lft
-from pyield.tpf import utils
+from pyield.tpf.titulos import _utils as utils
 
 vna = _bc_lft.vna
 
@@ -43,8 +42,6 @@ def dados(data: DateLike) -> pl.DataFrame:
     if df.is_empty():
         return df
 
-    data_ref = cv.converter_datas(data)
-
     df = df.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
     )
@@ -52,7 +49,7 @@ def dados(data: DateLike) -> pl.DataFrame:
     df = df.with_columns(
         prazo_medio=pl.col("dias_uteis") / 252,
     )
-    df = utils.adicionar_taxa_di(df, data_ref)
+    df = utils.adicionar_taxa_di(df, data)
 
     df = df.with_columns(
         rentabilidade=rentabilidade_expr("taxa_indicativa", "taxa_di"),

@@ -19,7 +19,7 @@ from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.types import DateLike
 from pyield.bc._olinda import buscar_csv, montar_url, parsear_csv
 from pyield.bc.sgs import ptax_serie
-from pyield.tpf._titulos import ltn, ntnb, ntnf
+from pyield.tpf.titulos import ltn, ntnb, ntnf
 
 registro = logging.getLogger(__name__)
 

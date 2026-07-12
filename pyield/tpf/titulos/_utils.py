@@ -6,7 +6,6 @@ from typing import overload
 
 import polars as pl
 
-import pyield._internal.converters as cv
 from pyield._internal.types import DateLike
 from pyield.anbima.mercado_secundario import TipoTPF
 
@@ -25,6 +24,105 @@ COLUNAS_DADOS_TPF = (
 )
 
 
+def obter_tpf(
+    data_referencia: DateLike,
+    tipo_titulo: TipoTPF,
+) -> pl.DataFrame:
+    """Busca taxas indicativas de TPF no padrão de colunas usado por ``tn``."""
+    from pyield.anbima.mercado_secundario import taxas  # noqa: PLC0415
+
+    return taxas(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
+
+
+def adicionar_taxa_di(df: pl.DataFrame, data_ref: DateLike) -> pl.DataFrame:
+    """Adiciona a coluna `taxa_di` ao DataFrame pelo método flat forward."""
+    from pyield.futuro import di1  # noqa: PLC0415
+
+    taxas_di = di1.interpolar_taxas(
+        datas_referencia=data_ref,
+        datas_vencimento=df["data_vencimento"],
+        extrapolar=True,
+    )
+    if taxas_di.is_empty():
+        return df
+    return df.with_columns(taxa_di=taxas_di)
+
+
+def premios_pre(
+    data: DateLike,
+    pontos_base: bool = False,
+) -> pl.DataFrame:
+    """Calcula o prêmio dos títulos prefixados (LTN e NTN-F) sobre o DI.
+
+    Em linguagem de mercado, esse valor é chamado de prêmio. Em termos
+    descritivos, trata-se do spread sobre o DI.
+
+    Definição do prêmio:
+        premio = taxa indicativa do PRE - taxa de ajuste do DI
+
+    Quando ``pontos_base=False`` a coluna retorna essa diferença em formato
+    decimal (ex: 0.000439 ≈ 4.39 bps). Quando ``pontos_base=True`` o valor
+    é automaticamente multiplicado por 10_000 e exibido diretamente em
+    basis points.
+
+    Args:
+        data: Data da consulta para buscar as taxas.
+        pontos_base: Se True, retorna o prêmio já convertido em basis
+            points. Padrão False.
+
+    Returns:
+        DataFrame com as colunas do prêmio. Retorna DataFrame vazio se
+        não houver dados.
+
+    Output Columns:
+        * titulo (String): tipo do título.
+        * data_vencimento (Date): data de vencimento.
+        * premio (Float64): prêmio em decimal ou bps conforme parâmetro
+            (spread sobre o DI).
+
+    Examples:
+        >>> yd.tpf.premios_pre("30-05-2025", pontos_base=True)
+        shape: (18, 3)
+        ┌────────┬─────────────────┬────────┐
+        │ titulo ┆ data_vencimento ┆ premio │
+        │ ---    ┆ ---             ┆ ---    │
+        │ str    ┆ date            ┆ f64    │
+        ╞════════╪═════════════════╪════════╡
+        │ LTN    ┆ 2025-07-01      ┆ 4.39   │
+        │ LTN    ┆ 2025-10-01      ┆ -9.0   │
+        │ LTN    ┆ 2026-01-01      ┆ -4.88  │
+        │ LTN    ┆ 2026-04-01      ┆ -4.45  │
+        │ LTN    ┆ 2026-07-01      ┆ 0.81   │
+        │ …      ┆ …               ┆ …      │
+        │ NTN-F  ┆ 2027-01-01      ┆ -3.31  │
+        │ NTN-F  ┆ 2029-01-01      ┆ 14.21  │
+        │ NTN-F  ┆ 2031-01-01      ┆ 21.61  │
+        │ NTN-F  ┆ 2033-01-01      ┆ 11.51  │
+        │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
+        └────────┴─────────────────┴────────┘
+    """
+    df = obter_tpf(data, "PRE").select(
+        "titulo", "data_vencimento", "taxa_indicativa"
+    )
+    if df.is_empty():
+        return df.select(
+            pl.lit("").alias("titulo"),
+            pl.lit(None, dtype=pl.Date).alias("data_vencimento"),
+            pl.lit(None, dtype=pl.Float64).alias("premio"),
+        ).clear()
+    df = adicionar_taxa_di(df, data)
+    df = (
+        df.with_columns(premio=pl.col("taxa_indicativa") - pl.col("taxa_di"))
+        .select("titulo", "data_vencimento", "premio")
+        .sort("titulo", "data_vencimento")
+    )
+
+    if pontos_base:
+        df = df.with_columns(pl.col("premio") * 10_000)
+
+    return df
+
+
 def coluna_ou_expr(valor: pl.Expr | str, nome: str) -> pl.Expr:
     """Normaliza nome de coluna ou expressão Polars para uso em ``pl.struct``."""
     if isinstance(valor, str):
@@ -38,30 +136,6 @@ def subtrair_meses(data: dt.date, meses: int) -> dt.date:
     ano = data.year + (mes - 1) // 12
     mes = (mes - 1) % 12 + 1
     return data.replace(year=ano, month=mes)
-
-
-def obter_tpf(
-    data_referencia: DateLike,
-    tipo_titulo: TipoTPF,
-) -> pl.DataFrame:
-    """Busca taxas indicativas de TPF no padrão de colunas usado por ``tn``."""
-    from pyield.anbima.mercado_secundario import taxas  # noqa: PLC0415
-
-    return taxas(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
-
-
-def adicionar_taxa_di(df: pl.DataFrame, data_ref: dt.date) -> pl.DataFrame:
-    """Adiciona a coluna `taxa_di` ao DataFrame pelo método flat forward."""
-    from pyield.futuro import di1  # noqa: PLC0415
-
-    taxas_di = di1.interpolar_taxas(
-        datas_referencia=data_ref,
-        datas_vencimento=df["data_vencimento"],
-        extrapolar=True,
-    )
-    if taxas_di.is_empty():
-        return df
-    return df.with_columns(taxa_di=taxas_di)
 
 
 def adicionar_duration(
@@ -126,12 +200,12 @@ def truncar(
     if decimals < 0:
         raise ValueError("decimals must be non-negative")
 
-    factor = 10.0**decimals
+    fator = 10.0**decimals
 
     if isinstance(values, pl.Series):
-        return (values * factor).cast(pl.Int64).cast(pl.Float64) / factor
+        return (values * fator).cast(pl.Int64).cast(pl.Float64) / fator
     elif isinstance(values, (float, int, Decimal)):
-        return int(float(values) * factor) / factor
+        return int(float(values) * fator) / fator
     else:
         raise TypeError("values must be a float, int, Decimal or pl.Series")
 
@@ -192,7 +266,6 @@ def calcular_pv(
         return 0.0
 
     valores_presentes = df["fluxos_caixa"] / (1 + df["taxas"]) ** df["prazos"]
-
     if valores_presentes.has_nulls():
         return float("nan")
 
@@ -209,25 +282,20 @@ def _encontrar_intervalo_raiz(
     intervalo realista. A função 'func' é a que calcula a diferença de
     preço dado uma taxa.
     """
-    # --- LIMITES DE BOM SENSO PARA A *TAXA* QUE ESTAMOS PROCURANDO ---
     taxa_inicial: float = 0.01
     passo: float = 0.01
     fator_crescimento: float = 1.6
     max_tentativas: int = 100
-
     taxa_min: float = -1.0
     taxa_max: float = 10.00
-    # -----------------------------------------------------------------
 
     f0 = func(taxa_inicial)
     if abs(f0) == 0:
         return (taxa_inicial, taxa_inicial)
 
-    # 1. Busca na direção positiva
     a, fa = taxa_inicial, f0
     b = taxa_inicial + passo
     passo_atual = passo
-
     for _ in range(max_tentativas):
         if b > taxa_max:
             break
@@ -238,11 +306,9 @@ def _encontrar_intervalo_raiz(
         passo_atual *= fator_crescimento
         b += passo_atual
 
-    # 2. Busca na direção negativa
     a, fa = taxa_inicial, f0
     b = taxa_inicial - passo
     passo_atual = passo
-
     for _ in range(max_tentativas):
         if b < taxa_min:
             break
@@ -258,8 +324,8 @@ def _encontrar_intervalo_raiz(
 
 def _metodo_bissecao(func: Callable[[float], float], a: float, b: float) -> float:
     """Método da bisseção para encontrar raiz."""
-    tolerancia = 1e-8
-    max_iter = 100
+    TOLERANCIA = 1e-12
+    MAX_ITERACOES = 100
     fa, fb = func(a), func(b)
     if fa * fb > 0:
         logger.warning(
@@ -267,10 +333,10 @@ def _metodo_bissecao(func: Callable[[float], float], a: float, b: float) -> floa
         )
         return float("nan")
 
-    for _ in range(max_iter):
+    for _ in range(MAX_ITERACOES):
         ponto_medio = (a + b) / 2
         fmeio = func(ponto_medio)
-        if abs(fmeio) < tolerancia or (b - a) / 2 < tolerancia:
+        if abs(fmeio) < TOLERANCIA or (b - a) / 2 < TOLERANCIA:
             return ponto_medio
         if fmeio * fa < 0:
             b, fb = ponto_medio, fmeio
@@ -287,84 +353,9 @@ def encontrar_raiz(func_diferenca_preco: Callable[[float], float]) -> float:
     aplica o método da bisseção.
     """
     intervalo = _encontrar_intervalo_raiz(func_diferenca_preco)
-
     if intervalo is None:
         logger.warning("Não foi possível encontrar intervalo de busca válido")
         return float("nan")
 
     a, b = intervalo
     return _metodo_bissecao(func_diferenca_preco, a, b)
-
-
-def premio_pre(
-    data: DateLike,
-    pontos_base: bool = False,
-) -> pl.DataFrame:
-    """Calcula o prêmio dos títulos prefixados (LTN e NTN-F) sobre o DI.
-
-    Em linguagem de mercado, esse valor é chamado de prêmio. Em termos
-    descritivos, trata-se do spread sobre o DI.
-
-    Definição do prêmio:
-        premio = taxa indicativa do PRE - taxa de ajuste do DI
-
-    Quando ``pontos_base=False`` a coluna retorna essa diferença em formato
-    decimal (ex: 0.000439 ≈ 4.39 bps). Quando ``pontos_base=True`` o valor
-    é automaticamente multiplicado por 10_000 e exibido diretamente em
-    basis points.
-
-    Args:
-        data: Data da consulta para buscar as taxas.
-        pontos_base: Se True, retorna o prêmio já convertido em basis
-            points. Padrão False.
-
-    Returns:
-        DataFrame com as colunas do prêmio. Retorna DataFrame vazio se
-        não houver dados.
-
-    Output Columns:
-        * titulo (String): tipo do título.
-        * data_vencimento (Date): data de vencimento.
-        * premio (Float64): prêmio em decimal ou bps conforme parâmetro
-            (spread sobre o DI).
-
-    Examples:
-        >>> yd.tpf.premio_pre("30-05-2025", pontos_base=True)
-        shape: (18, 3)
-        ┌────────┬─────────────────┬────────┐
-        │ titulo ┆ data_vencimento ┆ premio │
-        │ ---    ┆ ---             ┆ ---    │
-        │ str    ┆ date            ┆ f64    │
-        ╞════════╪═════════════════╪════════╡
-        │ LTN    ┆ 2025-07-01      ┆ 4.39   │
-        │ LTN    ┆ 2025-10-01      ┆ -9.0   │
-        │ LTN    ┆ 2026-01-01      ┆ -4.88  │
-        │ LTN    ┆ 2026-04-01      ┆ -4.45  │
-        │ LTN    ┆ 2026-07-01      ┆ 0.81   │
-        │ …      ┆ …               ┆ …      │
-        │ NTN-F  ┆ 2027-01-01      ┆ -3.31  │
-        │ NTN-F  ┆ 2029-01-01      ┆ 14.21  │
-        │ NTN-F  ┆ 2031-01-01      ┆ 21.61  │
-        │ NTN-F  ┆ 2033-01-01      ┆ 11.51  │
-        │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
-        └────────┴─────────────────┴────────┘
-    """
-    df = obter_tpf(data, "PRE").select("titulo", "data_vencimento", "taxa_indicativa")
-    if df.is_empty():
-        return df.select(
-            pl.lit("").alias("titulo"),
-            pl.lit(None, dtype=pl.Date).alias("data_vencimento"),
-            pl.lit(None, dtype=pl.Float64).alias("premio"),
-        ).clear()
-    data_ref = cv.converter_datas(data)
-    df = adicionar_taxa_di(df, data_ref)
-    df = (
-        df.with_columns(premio=pl.col("taxa_indicativa") - pl.col("taxa_di"))
-        .select("titulo", "data_vencimento", "premio")
-        .sort("titulo", "data_vencimento")
-    )
-
-    if pontos_base:
-        df = df.with_columns(pl.col("premio") * 10_000)
-
-    return df
