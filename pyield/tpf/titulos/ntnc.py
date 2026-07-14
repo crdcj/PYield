@@ -6,6 +6,7 @@ import pyield._internal.converters as conversores
 from pyield import du
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf.titulos import _utils as utils
+from pyield.tpf.vna import ntnc as _vna
 
 """
 Constantes calculadas conforme regras da ANBIMA e em base 1.
@@ -411,6 +412,11 @@ def duration_expr(
         ),
         return_dtype=pl.Float64,
     )
+
+
+vna = _vna.vna
+vna_projetado = _vna.vna_projetado
+vnas = _vna.vnas
 
 
 def dv01(

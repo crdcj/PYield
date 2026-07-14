@@ -15,8 +15,12 @@ Exemplo de dado bruto (CSV separado por @, encoding latin1):
 """  # noqa: E501
 
 import datetime as dt
+import io
 import logging
+import os
 import socket
+import zipfile as zf
+from pathlib import Path
 from typing import Literal
 
 import polars as pl
@@ -30,6 +34,7 @@ from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
 
 TipoTPF = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
+type _CaminhoArquivo = str | os.PathLike[str]
 
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
 ANBIMA_RTM_HOSTNAME = "www.anbima.associados.rtm"
@@ -96,6 +101,27 @@ def _obter_csv(data: dt.date) -> bytes:
     return resposta.content
 
 
+def baixar_arquivo(data: DateLike) -> bytes:
+    """Baixa o arquivo bruto de taxas de TPF publicado pela ANBIMA.
+
+    Args:
+        data: Data de referência do arquivo.
+
+    Returns:
+        Bytes do arquivo publicado pela ANBIMA, sem decodificação ou parsing.
+
+    Raises:
+        requests.HTTPError: Se o arquivo não estiver disponível ou a resposta
+            HTTP indicar erro.
+        ValueError: Se ``data`` não for uma data escalar válida.
+    """
+    if isinstance(data, str) and not data.strip():
+        msg = "data deve ser escalar para baixar um arquivo da ANBIMA"
+        raise ValueError(msg)
+    data_arquivo = converter_datas(data)
+    return _obter_csv(data_arquivo)
+
+
 def _parsear_df(csv_bytes: bytes) -> pl.DataFrame:
     """Converte bytes brutos do CSV da ANBIMA em DataFrame (tudo string)."""
     return pl.read_csv(
@@ -106,6 +132,26 @@ def _parsear_df(csv_bytes: bytes) -> pl.DataFrame:
         infer_schema=False,
         encoding="latin1",
     )
+
+
+def ler_arquivo(caminho: _CaminhoArquivo) -> pl.DataFrame:
+    """Lê um arquivo local de taxas de TPF da ANBIMA sem processá-lo.
+
+    Arquivos atuais ``.txt`` são lidos diretamente. Arquivos históricos
+    ``.exe`` são tratados como ZIPs e o arquivo interno é lido.
+
+    Args:
+        caminho: Caminho do arquivo bruto salvo localmente.
+
+    Returns:
+        DataFrame Polars processado com as colunas padronizadas de
+        ``taxas(completo=True)``.
+    """
+    conteudo = Path(caminho).read_bytes()
+    if zf.is_zipfile(io.BytesIO(conteudo)):
+        with zf.ZipFile(io.BytesIO(conteudo)) as arquivo_zip:
+            conteudo = arquivo_zip.read(arquivo_zip.namelist()[0])
+    return _processar_df(_parsear_df(conteudo))
 
 
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:

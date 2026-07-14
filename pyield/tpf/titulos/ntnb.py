@@ -7,6 +7,7 @@ import pyield._internal.converters as conversores
 from pyield import du, fwd, interpolador
 from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.tpf.titulos import _utils as utils
+from pyield.tpf.vna import ntnb as _vna
 
 """
 Constantes calculadas conforme regras da ANBIMA e em base 1.
@@ -884,3 +885,8 @@ def taxa(
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
     return round(taxa_encontrada, 6)
+
+
+vna = _vna.vna
+vna_projetado = _vna.vna_projetado
+vnas = _vna.vnas

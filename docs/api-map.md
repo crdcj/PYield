@@ -115,6 +115,9 @@ Visão geral das principais funções públicas do PYield.
     yd.ntnb
     ├── dados(data)
     ├── vencimentos(data)
+    ├── vnas()
+    ├── vna(data)
+    ├── vna_projetado(data, vna_base, inflacao)
     ├── datas_pagamento(...)
     ├── fluxos_caixa(...)
     ├── cotacao(...)
@@ -178,6 +181,9 @@ Visão geral das principais funções públicas do PYield.
     ```text
     yd.ntnc
     ├── dados(data)
+    ├── vnas()
+    ├── vna(data, vencimento)
+    ├── vna_projetado(data, vna_base, inflacao)
     ├── datas_pagamento(...)
     ├── fluxos_caixa(...)
     ├── cotacao(...)
