@@ -1,8 +1,8 @@
 """Títulos Públicos Federais."""
 
 from pyield.anbima.imaq import estoque
-from pyield.anbima.mercado_secundario import TipoTPF, taxas, vencimentos
 from pyield.tpf import secundario
+from pyield.tpf._taxas import TipoTPF, taxas, taxas_historicas, vencimentos
 from pyield.tpf.benchmark import benchmarks
 from pyield.tpf.leiloes import leiloes
 from pyield.tpf.rmd import rmd
@@ -27,5 +27,6 @@ __all__ = [
     "rmd",
     "secundario",
     "taxas",
+    "taxas_historicas",
     "vencimentos",
 ]

@@ -40,6 +40,7 @@ Visão geral das principais funções públicas do PYield.
     ```text
     yd.tpf
     ├── taxas(data, titulo)
+    ├── taxas_historicas(inicio, fim, titulo)
     ├── vencimentos(data, titulo)
     ├── estoque(data)
     ├── leiloes(data=..., inicio=..., fim=...)

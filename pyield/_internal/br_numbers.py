@@ -1,8 +1,9 @@
 import polars as pl
 
-# 10 casas decimais após divisão por 100: limpa ruído IEEE-754 (ex:
-# 12.15 / 100 → 0.12150000000000001) sem truncar dado real. BCB e B3
-# publicam taxas com no máximo 6–8 casas decimais; 10 é margem segura.
+# As fontes publicam taxas percentuais com no máximo 8 casas decimais. Após a
+# divisão por 100, 10 casas preservam essa precisão de origem e limitam o
+# resultado à precisão decimal do domínio; o Float64 continua sendo uma
+# aproximação IEEE-754.
 _CASAS_DECIMAIS_TAXA = 10
 
 

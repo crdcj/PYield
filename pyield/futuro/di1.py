@@ -11,7 +11,6 @@ import polars as pl
 
 import pyield._internal.converters as cv
 from pyield import du
-from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import DateLike, DatesLike, any_is_array_like, any_is_empty
 from pyield.futuro.historico import buscar_historico_cacheado
 from pyield.futuro.historico import datas_disponiveis as _datas_futuro
@@ -86,10 +85,10 @@ def dados(
         return df
 
     if filtrar_pre:
+        from pyield.tpf._taxas import _vencimentos_historicos  # noqa: PLC0415
+
         df_tpf = (
-            obter_dataset_cacheado("tpf")
-            .filter(pl.col("titulo").is_in(["LTN", "NTN-F"]))
-            .unique(subset=["data_vencimento", "data_referencia"])
+            _vencimentos_historicos("PRE")
             .select(
                 data_ref_tpf=pl.col("data_referencia"),
                 data_vencimento=du.deslocar_expr("data_vencimento", 0),

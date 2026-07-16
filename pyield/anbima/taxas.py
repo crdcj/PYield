@@ -21,7 +21,6 @@ import os
 import socket
 import zipfile as zf
 from pathlib import Path
-from typing import Literal
 
 import polars as pl
 import requests
@@ -29,11 +28,9 @@ import requests
 from pyield import du
 from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.converters import converter_datas, data_referencia_valida
-from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
 
-TipoTPF = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
 type _CaminhoArquivo = str | os.PathLike[str]
 
 ANBIMA_URL = "https://www.anbima.com.br/informacoes/merc-sec/arqs"
@@ -45,31 +42,7 @@ DATA_MUDANCA_FORMATO = dt.date(2014, 5, 13)
 
 DIAS_RETENCAO_PUBLICA = 5
 
-# Colunas selecionadas pela função técnica de taxas indicativas.
-COLUNAS_TAXAS_INDICATIVAS = (
-    "titulo",
-    "data_referencia",
-    "codigo_selic",
-    "data_base",
-    "data_vencimento",
-    "pu",
-    "taxa_compra",
-    "taxa_venda",
-    "taxa_indicativa",
-)
-
 logger = logging.getLogger(__name__)
-
-
-def _mapear_tipo_titulo(tipo_titulo: str) -> list[str]:
-    tipo_titulo = tipo_titulo.upper()
-    mapa_titulos = {
-        "PRE": ["LTN", "NTN-F"],
-        "NTNB": ["NTN-B"],
-        "NTNC": ["NTN-C"],
-        "NTNF": ["NTN-F"],
-    }
-    return mapa_titulos.get(tipo_titulo, [tipo_titulo])
 
 
 def _montar_nome_arquivo(data: dt.date) -> str:
@@ -134,20 +107,38 @@ def _parsear_df(csv_bytes: bytes) -> pl.DataFrame:
     )
 
 
-def ler_arquivo(caminho: _CaminhoArquivo) -> pl.DataFrame:
-    """Lê um arquivo local de taxas de TPF da ANBIMA sem processá-lo.
+def ler(fonte: bytes | _CaminhoArquivo) -> pl.DataFrame:
+    """Lê taxas de TPF da ANBIMA a partir de bytes ou arquivo local.
+
+    Fonte: arquivo de taxas de títulos públicos da ANBIMA.
 
     Arquivos atuais ``.txt`` são lidos diretamente. Arquivos históricos
     ``.exe`` são tratados como ZIPs e o arquivo interno é lido.
 
     Args:
-        caminho: Caminho do arquivo bruto salvo localmente.
+        fonte: Bytes do arquivo bruto ou caminho do arquivo salvo localmente.
 
     Returns:
-        DataFrame Polars processado com as colunas padronizadas de
-        ``taxas(completo=True)``.
+        DataFrame Polars com todas as colunas processadas da fonte.
+
+    Output Columns:
+        * titulo (String): tipo do título público.
+        * data_referencia (Date): data de referência dos dados.
+        * codigo_selic (Int64): código do título no SELIC.
+        * data_base (Date): data base ou de emissão do título.
+        * data_vencimento (Date): data de vencimento do título.
+        * taxa_compra (Float64): taxa de compra em D0.
+        * taxa_venda (Float64): taxa de venda em D0.
+        * taxa_indicativa (Float64): taxa indicativa em D0.
+        * pu (Float64): preço unitário para liquidação em D0.
+        * desvio_padrao (Float64): desvio padrão das taxas observadas.
+        * taxa_intervalo_inf_d0 (Float64): limite inferior indicativo em D0.
+        * taxa_intervalo_sup_d0 (Float64): limite superior indicativo em D0.
+        * taxa_intervalo_inf_d1 (Float64): limite inferior indicativo em D+1.
+        * taxa_intervalo_sup_d1 (Float64): limite superior indicativo em D+1.
+        * criterio (String): critério usado pela ANBIMA para o título.
     """
-    conteudo = Path(caminho).read_bytes()
+    conteudo = fonte if isinstance(fonte, bytes) else Path(fonte).read_bytes()
     if zf.is_zipfile(io.BytesIO(conteudo)):
         with zf.ZipFile(io.BytesIO(conteudo)) as arquivo_zip:
             conteudo = arquivo_zip.read(arquivo_zip.namelist()[0])
@@ -175,15 +166,42 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def _buscar_dados_tpf(data: dt.date) -> pl.DataFrame:
-    """Busca e processa dados do mercado secundário de TPF na fonte ANBIMA.
+def buscar(data: DateLike) -> pl.DataFrame:
+    """Busca e processa taxas de TPF diretamente na ANBIMA.
+
+    Fonte: arquivo de taxas de títulos públicos da ANBIMA.
 
     Args:
-        data: Data de referência.
+        data: Data de referência do arquivo.
 
     Returns:
-        DataFrame processado ou DataFrame vazio se indisponível.
+        DataFrame com todas as colunas processadas da fonte. Retorna DataFrame
+        vazio para datas válidas sem dados disponíveis.
+
+    Output Columns:
+        * titulo (String): tipo do título público.
+        * data_referencia (Date): data de referência dos dados.
+        * codigo_selic (Int64): código do título no SELIC.
+        * data_base (Date): data base ou de emissão do título.
+        * data_vencimento (Date): data de vencimento do título.
+        * taxa_compra (Float64): taxa de compra em D0.
+        * taxa_venda (Float64): taxa de venda em D0.
+        * taxa_indicativa (Float64): taxa indicativa em D0.
+        * pu (Float64): preço unitário para liquidação em D0.
+        * desvio_padrao (Float64): desvio padrão das taxas observadas.
+        * taxa_intervalo_inf_d0 (Float64): limite inferior indicativo em D0.
+        * taxa_intervalo_sup_d0 (Float64): limite superior indicativo em D0.
+        * taxa_intervalo_inf_d1 (Float64): limite inferior indicativo em D+1.
+        * taxa_intervalo_sup_d1 (Float64): limite superior indicativo em D+1.
+        * criterio (String): critério usado pela ANBIMA para o título.
+
+    Raises:
+        ValueError: Se ``data`` não for uma data escalar válida.
     """
+    data = converter_datas(data)
+    if not data_referencia_valida(data):
+        return pl.DataFrame()
+
     url_arquivo = _montar_url_arquivo(data)
 
     # Fail-fast: se a URL é RTM e o host não resolve, não adianta tentar
@@ -202,102 +220,4 @@ def _buscar_dados_tpf(data: dt.date) -> pl.DataFrame:
     if not csv_bytes.strip():
         return pl.DataFrame()
 
-    df = _parsear_df(csv_bytes)
-    return _processar_df(df)
-
-
-def taxas(
-    data: DateLike,
-    titulo: TipoTPF | None = None,
-    completo: bool = False,
-) -> pl.DataFrame:
-    """Busca taxas e preços indicativos de TPFs.
-
-    Fonte: ANBIMA. Primeiro consulta o cache local de dados históricos; se a
-    data não estiver no cache, busca diretamente na fonte da ANBIMA.
-
-    Args:
-        data: Data de referência.
-        titulo: Tipo do título público federal. Aceita ``LFT``, ``NTN-B``,
-            ``NTN-C``, ``LTN``, ``NTN-F`` ou ``PRE``.
-        completo: Se verdadeiro, retorna os dados da ANBIMA sem cache nem filtro de colunas.
-
-    Returns:
-        DataFrame Polars com taxas e preços indicativos. Retorna DataFrame
-        vazio se não houver dados para a data.
-
-    Output Columns:
-        * titulo (String): tipo do título público.
-        * data_referencia (Date): data de referência dos dados.
-        * codigo_selic (Int64): código do título no SELIC.
-        * data_base (Date): data base ou de emissão do título.
-        * data_vencimento (Date): data de vencimento do título.
-        * pu (Float64): preço unitário para liquidação em D0.
-        * taxa_compra (Float64): taxa de compra em D0.
-        * taxa_venda (Float64): taxa de venda em D0.
-        * taxa_indicativa (Float64): taxa indicativa em D0.
-
-    Examples:
-        >>> df = yd.tpf.taxas(data="06-02-2026")
-    """
-    data = converter_datas(data)
-
-    if not data_referencia_valida(data):
-        return pl.DataFrame()
-
-    if completo:
-        df = _buscar_dados_tpf(data)
-    else:
-        df = obter_dataset_cacheado("tpf")
-        if not df.is_empty():
-            df = df.filter(pl.col("data_referencia") == data)
-        if df.is_empty():
-            df = _buscar_dados_tpf(data)
-
-    if df.is_empty():
-        return pl.DataFrame()
-
-    if not completo:
-        df = df.select(col for col in COLUNAS_TAXAS_INDICATIVAS if col in df.columns)
-        if titulo:
-            tipos_titulo = _mapear_tipo_titulo(titulo)
-            df = df.filter(pl.col("titulo").is_in(tipos_titulo))
-
-    return df.sort("data_referencia", "titulo", "data_vencimento")
-
-
-def vencimentos(
-    data: DateLike,
-    titulo: TipoTPF,
-) -> pl.Series:
-    """Busca vencimentos de TPFs disponíveis nas taxas indicativas.
-
-    Fonte: ANBIMA, mesma base usada por ``yd.tpf.taxas``.
-
-    Args:
-        data: Data de referência.
-        titulo: Tipo do título público federal. Aceita ``LFT``, ``NTN-B``,
-            ``NTN-C``, ``LTN``, ``NTN-F`` ou ``PRE``.
-
-    Returns:
-        Series ordenada com os vencimentos disponíveis.
-
-    Examples:
-        >>> yd.tpf.vencimentos(data="22-08-2025", titulo="PRE")
-        shape: (18,)
-        Series: 'data_vencimento' [date]
-        [
-            2025-10-01
-            2026-01-01
-            2026-04-01
-            2026-07-01
-            2026-10-01
-            …
-            2030-01-01
-            2031-01-01
-            2032-01-01
-            2033-01-01
-            2035-01-01
-        ]
-    """
-    return taxas(data, titulo)["data_vencimento"].unique().sort()
+    return ler(csv_bytes)

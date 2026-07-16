@@ -238,6 +238,8 @@ def _extrair_dados_contrato(pric_rpt: etree._Element) -> dict | None:
             continue
 
         tag = elem.tag
+        if not isinstance(tag, str):
+            continue
         if tag[0] == "{":
             tag = tag[tag.find("}") + 1 :]
 
@@ -253,6 +255,8 @@ def _extrair_dados_contrato(pric_rpt: etree._Element) -> dict | None:
                 continue
 
             parent = pai.tag
+            if not isinstance(parent, str):
+                continue
             if parent[0] == "{":
                 parent = parent[parent.find("}") + 1 :]
 

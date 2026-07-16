@@ -1,10 +1,13 @@
 import datetime as dt
+import importlib
 from typing import Any, cast
 
 import polars as pl
 import pytest
 
 from pyield.futuro import di1
+
+tpf_taxas = importlib.import_module("pyield.tpf._taxas")
 
 TAXA_FECHAMENTO_CURTA = 0.11
 
@@ -49,6 +52,26 @@ def test_interpolar_taxas_usa_taxa_ajuste_por_padrao(monkeypatch: pytest.MonkeyP
     taxas = di1.interpolar_taxas("02-01-2025", ["03-01-2025", "06-01-2025"])
 
     assert taxas.to_list() == [0.10, 0.20]
+
+
+def test_dados_filtra_pre_sem_acessar_cache_tpf_diretamente(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr(di1, "buscar_historico_cacheado", _historico_di1_fake)
+    monkeypatch.setattr(
+        tpf_taxas,
+        "_vencimentos_historicos",
+        lambda _: pl.DataFrame(
+            {
+                "data_referencia": [dt.date(2024, 12, 31)],
+                "data_vencimento": [dt.date(2025, 1, 6)],
+            }
+        ),
+    )
+
+    resultado = di1.dados("02-01-2025", filtrar_pre=True)
+
+    assert resultado["data_vencimento"].to_list() == [dt.date(2025, 1, 6)]
 
 
 def test_interpolar_taxas_permite_taxa_fechamento(monkeypatch: pytest.MonkeyPatch):

@@ -73,7 +73,7 @@ documentação.
 | `yd.forwards(...)` | função | Curva de taxas a termo |  |
 | `yd.futuro` | módulo | Contratos futuros da B3 | `di1`, `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `vencimento_expr` |
 | `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
-| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premios_pre`, `rmd`, `secundario` |
+| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `taxas_historicas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premios_pre`, `rmd`, `secundario` |
 | `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `pu`, `taxa`, `vna`, `rentabilidade`, `rentabilidade_expr` |
 | `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `duration_expr`, `dv01`, `dv01_expr`, `rentabilidade`, `rentabilidade_expr`, `taxas_forward` |
 | `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `duration_expr`, `dv01`, `dv01_expr`, `implicitas`, `curva` |
@@ -198,7 +198,15 @@ fazem parte da família de Títulos Públicos Federais (`tpf`). Para uso direto
 dos títulos, prefira os atalhos públicos na raiz:
 
 ```python
+import pyield as yd
+
 from pyield import ltn, ntnb, ntnf
+
+# Taxas indicativas em uma data ou período
+yd.tpf.taxas("23-08-2024", titulo="PRE")
+yd.tpf.taxas_historicas(
+    inicio="01-08-2024", fim="31-08-2024", titulo="PRE"
+)
 
 # Busca taxas indicativas da ANBIMA
 ltn.dados("23-08-2024")  # -> DataFrame com títulos LTN
@@ -276,6 +284,14 @@ Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield
 ## Quebras de API
 
 Quebras acumuladas por versão desde a v0.52.0.
+
+### v0.54.2
+
+- `yd.tpf.taxas_historicas(...)` foi adicionado para consultas por período ou
+  de todo o histórico disponível de taxas indicativas.
+- `yd.tpf.taxas(..., completo=True)` foi removido. `yd.tpf.taxas(...)` mantém
+  a visão estável de TPF; para acessar todas as colunas processadas da fonte,
+  use `pyield.anbima.taxas.buscar(data)` ou `pyield.anbima.taxas.ler(fonte)`.
 
 ### v0.54.0
 

@@ -8,6 +8,23 @@ Para precificação e análise por tipo de título (cotação, duration, prêmio
 consulte as páginas individuais: [LFT](lft.md), [LTN](ltn.md),
 [NTN-B](ntnb.md), [NTN-F](ntnf.md), etc.
 
+## Taxas indicativas
+
+Use `yd.tpf.taxas(...)` para consultar uma data e
+`yd.tpf.taxas_historicas(...)` para consultar um período ou todo o histórico
+disponível. As duas funções retornam o mesmo conjunto estável de colunas.
+
+```python
+import pyield as yd
+
+taxas_dia = yd.tpf.taxas("23-08-2024", titulo="PRE")
+taxas_periodo = yd.tpf.taxas_historicas(
+    inicio="01-08-2024",
+    fim="31-08-2024",
+    titulo="PRE",
+)
+```
+
 ## Convenções de escala e precisão
 
 A tabela resume as regras adotadas pela PYield na precificação de títulos
@@ -52,6 +69,14 @@ As regras usadas para LTN, NTN-F, NTN-B, NTN-C e LFT estão nas
 [Metodologias ANBIMA de Precificação de Títulos Públicos](https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf).
 
 ::: pyield.tpf
+
+## Acesso técnico à fonte ANBIMA
+
+O módulo `pyield.anbima.taxas` permite baixar ou ler o arquivo da ANBIMA com
+todas as colunas processadas da fonte. Essa camada é indicada para integração
+com a fonte; para análises de TPF, prefira a visão estável de `yd.tpf`.
+
+::: pyield.anbima.taxas
 
 ## secundario
 

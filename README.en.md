@@ -164,13 +164,13 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 |--------|---------|
 | `du` | Business day calendar with Brazilian holidays |
 | `futuro` | Futures data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
-| `tpf` | Rates, maturities, outstanding stock, auctions, benchmarks, RMD, and trades for TPFs |
+| `tpf` | Current and historical rates, maturities, stock, auctions, benchmarks, RMD, and TPF trades |
 | `di1` | Interpolated DI1 curve and available trade dates |
 | `Interpolador` | Scalar rate interpolation and Polars-expression interpolation (flat_forward, linear) |
 | `interpolar` | Vectorized flat-forward interpolation, single curve or multi-curve |
 | `forward` / `forwards` | Forward-rate calculations |
 | `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
-| `ntnb1`, `ntnbprinc` | Additional bonds (NTN-B1, NTN-B Principal) |
+| `ntnb1`, `ntnbp` | Additional bonds (NTN-B1, NTN-B Principal) |
 | `selic` | Selic rate data, COPOM calendar, BCB repos, CPM options and implied probabilities |
 | `ipca` | Inflation data (historical and projections) |
 | `hoje` / `agora` | Current date/time in Brazil (America/Sao_Paulo) |
@@ -178,7 +178,15 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 ## Treasury Bonds
 
 ```python
+import pyield as yd
+
 from pyield import ltn, ntnb, ntnf
+
+# Indicative rates for one date or a period
+yd.tpf.taxas("23-08-2024", titulo="PRE")
+yd.tpf.taxas_historicas(
+    inicio="01-08-2024", fim="31-08-2024", titulo="PRE"
+)
 
 # Fetch ANBIMA indicative rates
 ltn.dados("23-08-2024")  # -> DataFrame with LTN bonds
@@ -242,9 +250,19 @@ sources) return an empty DataFrame or `nan`, without raising exceptions:
 import pyield as yd
 
 yd.futuro.historico("01-01-2030", "DI1").is_empty()  # -> True
-yd.tpf.secundario_mensal("01-01-2030").is_empty()    # -> True
+yd.tpf.secundario.mensal("01-01-2030").is_empty()    # -> True
 yd.ptax("25-12-2025")                                # -> nan
 ```
+
+## API Breaks
+
+### v0.54.2
+
+- `yd.tpf.taxas_historicas(...)` was added for period queries or the complete
+  available history of indicative rates.
+- `yd.tpf.taxas(..., completo=True)` was removed. `yd.tpf.taxas(...)` keeps the
+  stable TPF view. For every processed source column, use
+  `pyield.anbima.taxas.buscar(data)` or `pyield.anbima.taxas.ler(fonte)`.
 
 ## Object-Oriented API Migration (v0.49.0)
 
@@ -272,8 +290,8 @@ object rather than the original data source. Migration map:
 | `yd.anbima.tpf_vencimentos(data, titulo)` | `yd.tpf.vencimentos(data, titulo)` |
 | `yd.anbima.imaq(data)` | `yd.tpf.estoque(data)` |
 | `yd.tn.leilao(data)` | `yd.tpf.leiloes(data=...)` |
-| `yd.bc.tpf_intradia()` | `yd.tpf.secundario_intradia()` |
-| `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario_mensal(data, extragrupo=...)` |
+| `yd.bc.tpf_intradia()` | `yd.tpf.secundario.intradia()` |
+| `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario.mensal(data, extragrupo=...)` |
 | `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
 | `yd.tn.benchmarks(...)` | `yd.tpf.benchmarks(...)` |
 | `yd.pre.taxas_zero(data)` | `yd.tpf.curva_pre(data)` |
