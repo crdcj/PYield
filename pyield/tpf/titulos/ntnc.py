@@ -9,7 +9,7 @@ from pyield.tpf.titulos import _utils as utils
 from pyield.tpf.vna import ntnc as _vna
 
 """
-Constantes calculadas conforme regras da ANBIMA e em base 1.
+Constantes calculadas conforme regras da STN e em base 1.
 Válido para NTN-C com vencimento 01-01-2031:
 PRINCIPAL = 1
 TAXA_CUPOM = (0.12 + 1) ** 0.5 - 1  # 12% a.a. com capitalização semestral
@@ -222,35 +222,40 @@ def cotacao(
     taxa: float,
 ) -> float:
     """
-    Calcula a cotação da NTN-C em base 1 pelas regras da ANBIMA.
+    Calcula a cotação da NTN-C pela metodologia da STN para leilões primários.
 
     Args:
         data_liquidacao: Data de liquidação da operação.
         data_vencimento: Data de vencimento da NTN-C.
-        taxa: Taxa de desconto (YTM) usada no valor presente.
+        taxa: Taxa de desconto (YTM) em formato decimal.
 
     Returns:
-        float: Cotação da NTN-C truncada em 6 casas decimais.
+        float: Fator de cotação em base 1, truncado em 6 casas decimais.
 
     Notes:
-        A ANBIMA apresenta a cotação na escala percentual (base 100). Esta
+        A STN apresenta a cotação na escala percentual (base 100). Esta
         função retorna o fator equivalente em base 1, usado diretamente no
-        cálculo do PU. O truncamento de 4 casas na escala ANBIMA equivale ao
+        cálculo do PU. O truncamento de 4 casas na escala STN equivale ao
         truncamento de 6 casas nesta representação.
 
         Os cupons semestrais divulgados como percentuais também são armazenados
         como fatores em base 1.
 
     References:
-        - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
+        - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
+          Públicos Federais Ofertados nos Leilões Primários.
+          https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
 
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.cotacao("21-03-2025", "01-01-2031", 0.067626)
         1.264958
+        >>> ntnc.cotacao("21-05-2008", "01-03-2011", 0.069000009)
+        0.990981
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
+    taxa = utils.normalizar_taxa_precificacao(taxa)
 
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
     if df_fluxos.is_empty():
@@ -260,9 +265,9 @@ def cotacao(
     dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa) ** anos_uteis
-    # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
+    # Calcula o valor presente de cada fluxo com arredondamento STN
     vp = (valores_fluxo / fatores_desconto).round(12)
-    # Retorna a cotação (soma dos valores presentes) com truncamento ANBIMA
+    # Retorna a cotação (soma dos valores presentes) com truncamento STN
     return utils.truncar(vp.sum(), 6)
 
 
@@ -273,6 +278,8 @@ def _calcular_pu(
     """Calcula o preço unitário da NTN-C a partir do VNA e da cotação."""
     if any_is_empty(vna, cotacao):
         return float("nan")
+    vna = utils.truncar(vna, 6)
+    cotacao = utils.truncar(cotacao, 6)
     return utils.truncar(vna * cotacao, 6)
 
 
@@ -281,24 +288,28 @@ def pu(
     cotacao: float,
 ) -> float:
     """
-    Calcula o preço (PU) da NTN-C pelas regras da ANBIMA.
+    Calcula o PU da NTN-C pela metodologia da STN para leilões primários.
 
     pu = VNA * cotacao
 
     Args:
         vna (float): Valor nominal atualizado (VNA).
-        cotacao (float): Cotação da NTN-C em base 1.
+        cotacao (float): Fator de cotação da NTN-C em base 1.
 
     Returns:
         float: Preço da NTN-C truncado em 6 casas decimais.
 
     References:
-        - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
+        - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
+          Públicos Federais Ofertados nos Leilões Primários.
+          https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
 
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.pu(6598.913723, 1.264958)
         8347.348705
+        >>> ntnc.pu(2126.4737349, 0.9909819)
+        2107.295067
     """
     return _calcular_pu(vna, cotacao)
 
@@ -323,13 +334,16 @@ def taxa(
         pu (float): Preço unitário (PU) do título.
 
     Returns:
-        float: Taxa implícita (YTM) em formato decimal. Retorna NaN em
-            caso de erro.
+        float: Taxa implícita (YTM) em formato decimal, truncada em oito
+            casas decimais (seis casas em termos percentuais). Retorna NaN
+            em caso de erro.
 
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.taxa("21-03-2025", "01-01-2031", 6598.913723, 8347.348705)
-        0.067626
+        0.06762593
+        >>> ntnc.taxa("21-05-2008", "01-03-2011", 2126.473734, 2207.556177)
+        0.04987656
     """
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
         return float("nan")
@@ -342,7 +356,7 @@ def taxa(
         return _calcular_pu(vna, cotacao_calc) - pu
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
-    return round(taxa_encontrada, 6)
+    return utils.truncar(taxa_encontrada, 8)
 
 
 def duration(
@@ -450,8 +464,10 @@ def dv01(
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
+    taxa = utils.normalizar_taxa_precificacao(taxa)
+    taxa_mais_1bp = round(taxa + 0.0001, 8)
     cotacao_1 = cotacao(data_liquidacao, data_vencimento, taxa)
-    cotacao_2 = cotacao(data_liquidacao, data_vencimento, taxa + 0.0001)
+    cotacao_2 = cotacao(data_liquidacao, data_vencimento, taxa_mais_1bp)
     return pu * (1 - cotacao_2 / cotacao_1)
 
 

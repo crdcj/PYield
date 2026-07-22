@@ -1,12 +1,11 @@
 import datetime as dt
 import logging
 from collections.abc import Callable
-from decimal import Decimal
-from typing import overload
 
 import polars as pl
 
 import pyield._internal.converters as conversores
+from pyield._internal.numbers import truncar
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf._taxas import TipoTPF
 
@@ -193,49 +192,9 @@ def adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
     return df.with_columns(dv01=0.0001 * expr_duracao_mod * pl.col("pu"))
 
 
-@overload
-def truncar(values: float | int | Decimal, decimals: int) -> float: ...
-@overload
-def truncar(values: pl.Series, decimals: int) -> pl.Series: ...
-
-
-def truncar(
-    values: float | int | Decimal | pl.Series, decimals: int
-) -> float | pl.Series:
-    """Trunca números (scalar ou ``polars.Series``) em direção a zero.
-
-    Implementação unificada usando apenas operações de ``polars``: escalares
-    são embrulhados em uma série temporária e depois desembrulhados.
-
-    Args:
-        values: Escalar (float/int/Decimal) ou ``pl.Series``.
-        decimals: Casas decimais (>= 0).
-
-    Returns:
-        Float se entrada era escalar ou ``pl.Series`` se entrada era série.
-
-    Examples:
-        >>> truncar(3.14159, 3)
-        3.141
-        >>> truncar(pl.Series([3.14159, 2.71828]), 3)
-        shape: (2,)
-        Series: '' [f64]
-        [
-           3.141
-           2.718
-        ]
-    """
-    if decimals < 0:
-        raise ValueError("decimals must be non-negative")
-
-    fator = 10.0**decimals
-
-    if isinstance(values, pl.Series):
-        return (values * fator).cast(pl.Int64).cast(pl.Float64) / fator
-    elif isinstance(values, (float, int, Decimal)):
-        return int(float(values) * fator) / fator
-    else:
-        raise TypeError("values must be a float, int, Decimal or pl.Series")
+def normalizar_taxa_precificacao(taxa: float) -> float:
+    """Trunca a taxa decimal em seis casas percentuais, conforme a STN."""
+    return truncar(taxa, 8)
 
 
 def calcular_pv(

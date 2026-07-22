@@ -28,15 +28,17 @@ taxas_periodo = yd.tpf.taxas_historicas(
 ## Convenções de escala e precisão
 
 A tabela resume as regras adotadas pela PYield na precificação de títulos
-públicos federais. LTN, NTN-F, NTN-B, NTN-C e LFT seguem a metodologia da
-ANBIMA; a NTN-B Principal e a NTN-B1 seguem o método do Tesouro Direto.
+públicos federais. LTN, NTN-F, NTN-B, NTN-C e LFT seguem a metodologia da STN
+para títulos ofertados em leilões primários. A NTN-B Principal e a NTN-B1,
+vendidas exclusivamente pelo Tesouro Direto, seguem as regras próprias desse
+programa.
 
 | Variáveis | LTN | NTN-F | NTN-B | NTN-B Principal | NTN-B1 | NTN-C | LFT |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Taxa de retorno | T6 / I6 | T6 / I6 | T6 / I6 | A4 | I | T6 / I6 | T6 / I6 |
+| Taxa de retorno | T8 / I8 | T8 / I8 | T8 / I8 | A4 | I | T8 / I8 | T8 / I8 |
 | Juros semestrais (a.a.) | -- | A5 | A8 | -- | -- | A8 | -- |
 | Fluxo de pagamentos descontados | -- | A9 | A12 | -- | A12 | A12 | -- |
-| Cotação | -- | -- | T6 | T6 | T6 | T6 | T6 |
+| Cotação (base 1) | -- | -- | T6 | T6 | T6 | T6 | T6 |
 | Valor nominal atualizado (VNA) | -- | -- | T6 / I6 | I6 | I6 | T6 / I6 | T6 / I6 |
 | Valor nominal atualizado (VNA, projeções) | -- | -- | T6 | -- | -- | T6 | T6 |
 | Fator acumulado da taxa Selic | -- | -- | -- | -- | -- | -- | A16 |
@@ -52,12 +54,14 @@ Na NTN-B1, `T6` descreve a função `cotacao`. A função
 `cotacao_curva_zero` arredonda cada fluxo em `A12`, mas não trunca a soma final,
 pois ela é usada como alvo da calibração da taxa equivalente.
 
-Na metodologia da ANBIMA, taxas, projeções, cupons e cotações são apresentados
-na escala percentual ou em base 100. A PYield armazena esses valores como fatores
-decimais em base 1. Por isso, as regras correspondentes são deslocadas em duas
-casas: T4 torna-se T6, A6 torna-se A8 e A10 torna-se A12.
+Na metodologia da STN para os leilões primários, taxas, projeções, cupons e
+cotações são apresentados na escala percentual ou em base 100. A PYield recebe
+taxas e representa cotações como fatores decimais em base 1. Por isso, as regras
+correspondentes são deslocadas em duas casas: T6 para a taxa percentual torna-se
+T8 para a taxa decimal, T4 torna-se T6 para a cotação, A6 torna-se A8 e A10
+torna-se A12.
 
-Por exemplo, a cotação `99,3651` apresentada pela ANBIMA corresponde ao fator
+Por exemplo, a cotação `99,3651` apresentada pela STN corresponde ao fator
 `0,993651` retornado pela PYield. As duas representações preservam o mesmo valor
 e a mesma precisão normativa:
 
@@ -65,8 +69,8 @@ e a mesma precisão normativa:
 pu = vna * cotacao
 ```
 
-As regras usadas para LTN, NTN-F, NTN-B, NTN-C e LFT estão nas
-[Metodologias ANBIMA de Precificação de Títulos Públicos](https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf).
+As regras usadas para LTN, NTN-F, NTN-B, NTN-C e LFT estão na
+[metodologia da STN para os títulos ofertados em leilões primários](referencias/metodologia-calculo-tpf-stn.md).
 
 ::: pyield.tpf
 

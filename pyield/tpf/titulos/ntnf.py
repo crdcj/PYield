@@ -12,7 +12,7 @@ from pyield.futuro import di1
 from pyield.tpf.titulos import _utils as utils
 
 """
-Constantes calculadas conforme regras da ANBIMA
+Constantes calculadas conforme regras da STN
 TAXA_CUPOM = (0.10 + 1) ** 0.5 - 1  -> 10% a.a. com capitalização semestral
 VALOR_FACE = 1000
 VALOR_CUPOM = round(VALOR_FACE * TAXA_CUPOM, 5)
@@ -287,6 +287,7 @@ def _calcular_pu(
 ) -> float:
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
+    taxa = utils.normalizar_taxa_precificacao(taxa)
 
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
     if df_fluxos.is_empty():
@@ -306,21 +307,25 @@ def pu(
     taxa: float,
 ) -> float:
     """
-    Calcula o preço (PU) da NTN-F pelas regras da ANBIMA, equivalente ao valor
-    presente dos fluxos descontados pela TIR informada.
+    Calcula o PU da NTN-F pela metodologia da STN para leilões primários.
+
+    O preço equivale ao valor presente dos fluxos descontados pela TIR
+    informada.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação para cálculo do preço.
         data_vencimento (DateLike): Data de vencimento do título.
-        taxa (float): Taxa de desconto (TIR) usada para calcular o valor presente.
+        taxa (float): Taxa de desconto (TIR) em formato decimal.
 
     Returns:
-        float: Preço da NTN-F conforme ANBIMA.
+        float: Preço da NTN-F conforme a metodologia da STN.
 
     References:
-        - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
+        - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
+          Públicos Federais Ofertados nos Leilões Primários.
+          https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
         - O cupom semestral é 48,81, que representa 10% a.a. com capitalização
-          semestral e arredondamento para 5 casas, conforme ANBIMA.
+          semestral e arredondamento para 5 casas, conforme a STN.
 
     Examples:
         >>> from pyield import ntnf
@@ -328,6 +333,8 @@ def pu(
         895.359254
         >>> ntnf.pu("01-07-2024", "01-01-2027", 0.10)
         999.931303
+        >>> ntnf.pu("21-05-2008", "01-01-2014", 0.136600009)
+        903.075616
     """
     return _calcular_pu(data_liquidacao, data_vencimento, taxa)
 
@@ -924,8 +931,10 @@ def dv01(
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
+    taxa = utils.normalizar_taxa_precificacao(taxa)
+    taxa_mais_1bp = round(taxa + 0.0001, 8)
     preco_1 = _calcular_pu(data_liquidacao, data_vencimento, taxa)
-    preco_2 = _calcular_pu(data_liquidacao, data_vencimento, taxa + 0.0001)
+    preco_2 = _calcular_pu(data_liquidacao, data_vencimento, taxa_mais_1bp)
     return pu * (1 - preco_2 / preco_1)
 
 
@@ -984,13 +993,17 @@ def taxa(
         pu (float): Preço unitário (PU) do título.
 
     Returns:
-        float: TIR implícita em formato decimal. Retorna NaN em caso de erro.
+        float: TIR implícita em formato decimal, truncada em oito casas
+            decimais (seis casas em termos percentuais). Retorna NaN em
+            caso de erro.
 
     Examples:
         >>> from pyield import ntnf
         >>> pu = ntnf.pu("05-07-2024", "01-01-2035", 0.11921)
         >>> ntnf.taxa("13-03-2026", "01-01-2035", 820.995125)
         0.142743
+        >>> ntnf.taxa("21-05-2008", "01-01-2014", 903.039091)
+        0.13661101
     """
     if any_is_empty(data_liquidacao, data_vencimento, pu):
         return float("nan")
@@ -1002,4 +1015,4 @@ def taxa(
         return _calcular_pu(data_liquidacao, data_vencimento, taxa_encontrada) - pu
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
-    return round(taxa_encontrada, 6)
+    return utils.truncar(taxa_encontrada, 8)

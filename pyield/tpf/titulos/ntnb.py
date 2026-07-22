@@ -10,7 +10,7 @@ from pyield.tpf.titulos import _utils as utils
 from pyield.tpf.vna import ntnb as _vna
 
 """
-Constantes calculadas conforme regras da ANBIMA e em base 1.
+Constantes calculadas conforme regras da STN e em base 1.
 TAXA_CUPOM = (0.06 + 1) ** 0.5 - 1  # 6% a.a. com capitalização semestral
 VALOR_CUPOM = round(TAXA_CUPOM, 8) -> 0.02956301
 VALOR_FINAL = principal + último cupom = 1 + 0.02956301
@@ -56,7 +56,7 @@ def dados(data: DateLike) -> pl.DataFrame:
 
     Examples:
         >>> from pyield import ntnb
-        >>> df_ntnb = ntnb.dados("23-08-2024")  # doctest: +SKIP
+        >>> df_ntnb = ntnb.dados("23-08-2024")
     """
     from pyield.futuro import di1  # noqa: PLC0415
 
@@ -257,27 +257,30 @@ def cotacao(
     taxa: float,
 ) -> float:
     """
-    Calcula a cotação da NTN-B em base 1 pelas regras da ANBIMA.
+    Calcula a cotação da NTN-B pela metodologia da STN para leilões primários.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação da operação.
         data_vencimento (DateLike): Data de vencimento da NTN-B.
-        taxa (float): Taxa de desconto (TIR) usada no valor presente.
+        taxa (float): Taxa de desconto (TIR) em formato decimal.
 
     Returns:
-        float: Cotação da NTN-B truncada em 6 casas. Retorna NaN em erro.
+        float: Fator de cotação em base 1, truncado em 6 casas. Retorna NaN
+            em erro.
 
     Notes:
-        A ANBIMA apresenta a cotação na escala percentual (base 100). Esta
+        A STN apresenta a cotação na escala percentual (base 100). Esta
         função retorna o fator equivalente em base 1, usado diretamente no
-        cálculo do PU. O truncamento de 4 casas na escala ANBIMA equivale ao
+        cálculo do PU. O truncamento de 4 casas na escala STN equivale ao
         truncamento de 6 casas nesta representação.
 
-        O cupom semestral divulgado pela ANBIMA como 2,956301% é armazenado
+        O cupom semestral definido pela STN como 2,956301% é armazenado
         como 0,02956301 em base 1.
 
     References:
-        - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
+        - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
+          Públicos Federais Ofertados nos Leilões Primários.
+          https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
 
     Examples:
         >>> from pyield import ntnb
@@ -289,9 +292,12 @@ def cotacao(
         1.006409
         >>> ntnb.cotacao("15-05-2024", "15-05-2025", 0.10)
         0.964454
+        >>> ntnb.cotacao("21-05-2008", "15-08-2010", 0.082900009)
+        0.970813
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
+    taxa = utils.normalizar_taxa_precificacao(taxa)
 
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
     if df_fluxos.is_empty():
@@ -301,9 +307,9 @@ def cotacao(
     dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa) ** anos_uteis
-    # Calcula o valor presente de cada fluxo com arredondamento ANBIMA
+    # Calcula o valor presente de cada fluxo com arredondamento STN
     vp = (valores_fluxo / fatores_desconto).round(12)
-    # Retorna a cotação (soma dos valores presentes) com truncamento ANBIMA
+    # Retorna a cotação (soma dos valores presentes) com truncamento STN
     return utils.truncar(vp.sum(), 6)
 
 
@@ -313,6 +319,8 @@ def _calcular_pu(
 ) -> float:
     if any_is_empty(vna, cotacao):
         return float("nan")
+    vna = utils.truncar(vna, 6)
+    cotacao = utils.truncar(cotacao, 6)
     return utils.truncar(vna * cotacao, 6)
 
 
@@ -321,17 +329,19 @@ def pu(
     cotacao: float,
 ) -> float:
     """
-    Calcula o preço (PU) da NTN-B pelas regras da ANBIMA.
+    Calcula o PU da NTN-B pela metodologia da STN para leilões primários.
 
     Args:
         vna (float): Valor nominal atualizado (VNA).
-        cotacao (float): Cotação da NTN-B em base 1.
+        cotacao (float): Fator de cotação da NTN-B em base 1.
 
     Returns:
         float: Preço da NTN-B truncado em 6 casas decimais.
 
     References:
-        - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
+        - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
+          Públicos Federais Ofertados nos Leilões Primários.
+          https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
 
     Examples:
         >>> from pyield import ntnb
@@ -339,6 +349,8 @@ def pu(
         4271.864805
         >>> ntnb.pu(4315.498383, 1.006409)
         4343.156412
+        >>> ntnb.pu(1728.4611369, 0.9708139)
+        1678.01254
     """
     return _calcular_pu(vna, cotacao)
 
@@ -800,8 +812,10 @@ def dv01(
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
+    taxa = utils.normalizar_taxa_precificacao(taxa)
+    taxa_mais_1bp = round(taxa + 0.0001, 8)
     cotacao_1 = cotacao(data_liquidacao, data_vencimento, taxa)
-    cotacao_2 = cotacao(data_liquidacao, data_vencimento, taxa + 0.0001)
+    cotacao_2 = cotacao(data_liquidacao, data_vencimento, taxa_mais_1bp)
     return pu * (1 - cotacao_2 / cotacao_1)
 
 
@@ -863,15 +877,18 @@ def taxa(
         pu (float): Preço unitário (PU) do título.
 
     Returns:
-        float: TIR implícita em formato decimal. Retorna NaN em
+        float: TIR implícita em formato decimal, truncada em oito casas
+            decimais (seis casas em termos percentuais). Retorna NaN em
             caso de erro.
 
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.taxa("31-05-2024", "15-05-2035", 4299.160173, 4271.864805)
-        0.06149
+        0.06149003
         >>> ntnb.taxa("15-08-2024", "15-08-2032", 4315.498383, 4343.156412)
-        0.05929
+        0.05929003
+        >>> ntnb.taxa("21-05-2008", "15-08-2010", 1728.461136, 1781.867128)
+        0.0523457
     """
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
         return float("nan")
@@ -884,7 +901,7 @@ def taxa(
         return _calcular_pu(vna, cotacao_calculada) - pu
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
-    return round(taxa_encontrada, 6)
+    return utils.truncar(taxa_encontrada, 8)
 
 
 vna = _vna.vna

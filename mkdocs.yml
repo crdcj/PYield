@@ -13,6 +13,9 @@ nav:
   - Mapa da API: api-map.md
   - Artigos:
       - Introdução ao Pyield: articles/pyield_intro.md
+  - Referências normativas:
+      - Precificação de leilões — STN: referencias/metodologia-calculo-tpf-stn.md
+      - Caderno de fórmulas SELIC — STN: referencias/metodologia-calculo-letras-notas-stn.md
   - Ferramentas:
       - Dias Úteis (DU): du.md
       - Interpolador: interpolador.md

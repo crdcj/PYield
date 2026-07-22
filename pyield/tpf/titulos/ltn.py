@@ -117,36 +117,41 @@ def pu(
     taxa: float,
 ) -> float:
     """
-    Calcula o PU (preço unitário) da LTN pelas regras da ANBIMA.
+    Calcula o PU da LTN pela metodologia da STN para leilões primários.
 
     Args:
         data_liquidacao: Data de liquidação.
         data_vencimento: Data de vencimento.
-        taxa: Taxa de desconto (YTM) do título.
+        taxa: Taxa de desconto (YTM) do título em formato decimal.
 
     Returns:
-        float: PU da LTN conforme ANBIMA.
+        float: PU da LTN conforme a metodologia da STN.
 
     References:
-        - https://www.anbima.com.br/data/files/A0/02/CC/70/8FEFC8104606BDC8B82BA2A8/Metodologias%20ANBIMA%20de%20Precificacao%20Titulos%20Publicos.pdf
+        - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
+          Públicos Federais Ofertados nos Leilões Primários.
+          https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
 
     Examples:
         >>> from pyield import ltn
         >>> ltn.pu("05-07-2024", "01-01-2030", 0.12145)
         535.279902
+        >>> ltn.pu("21-05-2008", "01-07-2010", 0.143600009)
+        753.315323
     """
     # Valida e normaliza entradas
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
+    taxa = utils.normalizar_taxa_precificacao(taxa)
     # Calcula dias úteis entre liquidação e vencimento
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
 
-    # Calcula anos úteis truncados conforme ANBIMA
+    # Calcula anos úteis truncados conforme a STN
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
 
     fator_desconto = (1 + taxa) ** anos_truncados
 
-    # Trunca o preço em 6 casas conforme ANBIMA
+    # Trunca o preço em 6 casas conforme a STN
     return utils.truncar(VALOR_FACE / fator_desconto, 6)
 
 
@@ -167,8 +172,9 @@ def taxa(
         preco_unitario: PU do título.
 
     Returns:
-        float: Taxa implícita (YTM) em formato decimal. Retorna NaN em
-            caso de erro.
+        float: Taxa implícita (YTM) em formato decimal, truncada em oito
+            casas decimais (seis casas em termos percentuais). Retorna NaN
+            em caso de erro.
 
     Examples:
         >>> from pyield import ltn
@@ -176,6 +182,8 @@ def taxa(
         0.12145
         >>> ltn.taxa("13-03-2026", "01-01-2027", 895.563913)
         0.148307
+        >>> ltn.taxa("21-05-2008", "01-07-2010", 753.3)
+        0.14361101
     """
     if any_is_empty(data_liquidacao, data_vencimento, preco_unitario):
         return float("nan")
@@ -186,7 +194,7 @@ def taxa(
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
     taxa_calculada = (VALOR_FACE / preco_unitario) ** (1 / anos_truncados) - 1
-    return round(taxa_calculada, 6)
+    return utils.truncar(taxa_calculada, 8)
 
 
 def rentabilidade(taxa_ltn: float, taxa_di: float) -> float:
@@ -270,10 +278,14 @@ def dv01(
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
+    taxa = utils.normalizar_taxa_precificacao(taxa)
+    taxa_mais_1bp = round(taxa + 0.0001, 8)
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
     preco_1 = utils.truncar(VALOR_FACE / (1 + taxa) ** anos_truncados, 6)
-    preco_2 = utils.truncar(VALOR_FACE / (1 + taxa + 0.0001) ** anos_truncados, 6)
+    preco_2 = utils.truncar(
+        VALOR_FACE / (1 + taxa_mais_1bp) ** anos_truncados, 6
+    )
     return pu * (1 - preco_2 / preco_1)
 
 

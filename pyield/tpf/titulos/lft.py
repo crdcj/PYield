@@ -110,24 +110,24 @@ def cotacao(
     taxa: float,
 ) -> float:
     """
-    Calcula a cotação de uma LFT pelas regras da ANBIMA.
+    Calcula a cotação de uma LFT pela metodologia da STN para leilões primários.
 
     Args:
         data_liquidacao: Data de liquidação do título.
         data_vencimento: Data de vencimento do título.
-        taxa: Taxa anualizada do título.
+        taxa: Taxa anualizada do título em formato decimal.
 
     Returns:
-        float: Cotação do título em base 1, truncada em 6 casas decimais.
+        float: Fator de cotação em base 1, truncado em 6 casas decimais.
 
     Notes:
-        A ANBIMA apresenta a cotação na escala percentual (base 100). Esta
+        A STN apresenta a cotação na escala percentual (base 100). Esta
         função retorna o fator equivalente em base 1, usado diretamente no
-        cálculo do PU. O truncamento de 4 casas na escala ANBIMA equivale ao
+        cálculo do PU. O truncamento de 4 casas na escala STN equivale ao
         truncamento de 6 casas nesta representação.
 
     Examples:
-        Calcula a cotação de uma LFT com taxa de 0,02:
+        Calcula a cotação de uma LFT com taxa de 0,1717%:
         >>> from pyield import lft
         >>> lft.cotacao(
         ...     data_liquidacao="24-07-2024",
@@ -135,6 +135,8 @@ def cotacao(
         ...     taxa=0.001717,  # 0.1717%
         ... )
         0.989645
+        >>> lft.cotacao("21-05-2008", "07-03-2014", -0.000200009)
+        1.001158
 
         Entradas nulas retornam float('nan'):
         >>> lft.cotacao(
@@ -144,10 +146,11 @@ def cotacao(
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
+    taxa = utils.normalizar_taxa_precificacao(taxa)
     # Número de dias úteis entre liquidação (inclusivo) e vencimento (exclusivo)
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
 
-    # Número de períodos truncado conforme regras da ANBIMA
+    # Número de períodos truncado conforme regras da STN
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
 
     fator_desconto = 1 / (1 + taxa) ** anos_truncados
@@ -175,15 +178,18 @@ def taxa(
         pu (float): Preço unitário (PU) do título.
 
     Returns:
-        float: Taxa implícita em formato decimal. Retorna NaN em
+        float: Taxa implícita em formato decimal, truncada em oito casas
+            decimais (seis casas em termos percentuais). Retorna NaN em
             caso de erro.
 
     Examples:
         >>> from pyield import lft
         >>> lft.taxa("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
-        0.001717
+        0.00171691
         >>> lft.taxa("24-07-2024", "01-03-2025", 15785.324502, 15774.132706)
-        0.00116
+        0.00115966
+        >>> lft.taxa("21-05-2008", "07-03-2014", 3451.215345, 3426.649594)
+        0.00123443
     """
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
         return float("nan")
@@ -195,7 +201,7 @@ def taxa(
         return _calcular_pu(vna, cotacao(data_liquidacao, data_vencimento, taxa)) - pu
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
-    return round(taxa_encontrada, 6)
+    return utils.truncar(taxa_encontrada, 8)
 
 
 def rentabilidade(taxa_lft: float, taxa_di: float) -> float:
@@ -255,6 +261,8 @@ def _calcular_pu(
     """Calcula o preço unitário da LFT a partir do VNA e da cotação."""
     if any_is_empty(vna, cotacao):
         return float("nan")
+    vna = utils.truncar(vna, 6)
+    cotacao = utils.truncar(cotacao, 6)
     return utils.truncar(vna * cotacao, 6)
 
 
@@ -263,20 +271,24 @@ def pu(
     cotacao: float,
 ) -> float:
     """
-    Calcula o preço (PU) da LFT pelas regras da Anbima.
+    Calcula o PU da LFT pela metodologia da STN para leilões primários.
 
     Args:
         vna (float): Valor nominal atualizado (VNA).
-        cotacao (float): Cotação da LFT em base 1.
+        cotacao (float): Fator de cotação da LFT em base 1.
     Returns:
         float: Preço da LFT truncado em 6 casas decimais.
 
     References:
-         - SEI Proccess 17944.005214/2024-09
+        - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
+          Públicos Federais Ofertados nos Leilões Primários.
+          https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
 
     Examples:
         >>> from pyield import lft
         >>> lft.pu(15785.324502, 0.999291)
         15774.132706
+        >>> lft.pu(3451.2153459, 1.0011589)
+        3455.211852
     """
     return _calcular_pu(vna, cotacao)

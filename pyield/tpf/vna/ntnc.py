@@ -128,6 +128,13 @@ def vna_projetado(
         VNA projetado, truncado em seis casas decimais. Retorna ``nan`` se
         alguma entrada for nula ou vazia.
 
+    Notes:
+        Conforme a metodologia da STN, o VNA-base é truncado em seis casas,
+        a projeção é arredondada em duas e o pró-rata é truncado em catorze.
+
+    References:
+        - https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
+
     Raises:
         ValueError: Se o VNA-base não for positivo ou a inflação for menor ou
             igual a -100%.
@@ -138,6 +145,8 @@ def vna_projetado(
         6693.537239
         >>> ntnc.vna_projetado("16-06-2026", 6693.537239, 0.30)
         6703.570025
+        >>> ntnc.vna_projetado("21-05-2008", 2102.8055189, 1.754)
+        2126.473734
     """
     if any_is_empty(data, vna_base, inflacao):
         return float("nan")
@@ -146,4 +155,4 @@ def vna_projetado(
     data_convertida = conversores.converter_datas(data)
     inicio, fim = _obter_vigencia(data_convertida)
     expoente = (data_convertida - inicio).days / (fim - inicio).days
-    return _utils.calcular_pro_rata(vna_base, inflacao / 100, expoente)
+    return _utils.calcular_vna_projetado(vna_base, inflacao, expoente)
