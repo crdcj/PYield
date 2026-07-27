@@ -9,7 +9,7 @@
 
 PYield is a Polars-powered Python toolkit for Brazilian fixed income analysis,
 with a primary focus on Brazilian treasury bonds. It fetches and processes data
-from ANBIMA, BCB, IBGE, B3, and **Tesouro Nacional**.
+from ANBIMA, BCB, IBGE, B3, and Tesouro Nacional.
 
 Scalar outputs return native Python types, while non-scalar outputs return
 `polars.Series` or `polars.DataFrame`, depending on the function.
