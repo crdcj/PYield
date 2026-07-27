@@ -17,12 +17,9 @@ modulo_rmd = importlib.import_module("pyield.tpf.rmd")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_PARQUET = DIRETORIO_DADOS / "rmd_1.3.parquet"
-CAMINHO_XLSX_EXEMPLO = (
-    Path(__file__).parents[2] / "dev" / "rmd" / "Anexo RMD_Março_26.xlsx"
-)
 
 URL_BASE_RELEASE = "https://github.com/crdcj/PYield/releases/download/test-data"
-NOME_ZIP = "Anexo.RMD_Janeiro_26.zip"
+NOME_ZIP = "Anexo.RMD_Maio_26.zip"
 TOTAL_PUBLICO_MAR_26 = 8_633_441_170_321.0
 LFT_TN_MAR_26 = 4_116_521_969_888.0
 GLOBAL_USD_MAR_26 = 277_468_888_502.0
@@ -56,12 +53,13 @@ def test_pipeline_rmd(monkeypatch):
     resultado = modulo_rmd.rmd(aba="1.3")
     esperado = pl.read_parquet(CAMINHO_PARQUET)
     colunas_ordem = ["periodo", "grupo", "subgrupo", "titulo", "valor"]
+    resultado = resultado.filter(pl.col("periodo") <= esperado["periodo"].max())
     assert resultado.sort(colunas_ordem).equals(esperado)
 
 
 def test_aba_2_1_estrutura_e_valores(monkeypatch):
     """A aba 2.1 deve retornar estoque plano (somente folhas) com valores em R$."""
-    conteudo_excel = CAMINHO_XLSX_EXEMPLO.read_bytes()
+    conteudo_excel = _extrair_excel_do_zip(_baixar_zip_remoto())
     monkeypatch.setattr(modulo_rmd, "_carregar_planilha_rmd", lambda: conteudo_excel)
 
     df = modulo_rmd.rmd(aba="2.1")

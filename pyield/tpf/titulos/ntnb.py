@@ -731,7 +731,7 @@ def duration(
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
-        15.08305431313046
+        15.08305431313045
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")

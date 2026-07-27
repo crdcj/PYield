@@ -1,4 +1,5 @@
-from decimal import Decimal
+import math
+from decimal import ROUND_DOWN, Decimal
 from typing import overload
 
 import polars as pl
@@ -42,4 +43,8 @@ def truncar(
 
     if isinstance(values, pl.Series):
         return values.truncate(decimals)
-    return pl.Series([float(values)]).truncate(decimals).item()
+    value = float(values)
+    if not math.isfinite(value):
+        return value
+    quantizer = Decimal(f"1e-{decimals}")
+    return float(Decimal(str(value)).quantize(quantizer, rounding=ROUND_DOWN))

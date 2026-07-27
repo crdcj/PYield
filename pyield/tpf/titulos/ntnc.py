@@ -343,7 +343,7 @@ def taxa(
         >>> ntnc.taxa("21-03-2025", "01-01-2031", 6598.913723, 8347.348705)
         0.06762593
         >>> ntnc.taxa("21-05-2008", "01-03-2011", 2126.473734, 2207.556177)
-        0.04987656
+        0.04987695
     """
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
         return float("nan")
