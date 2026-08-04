@@ -15,13 +15,14 @@ Exemplo de resposta JSON da API do BCB:
      {"data":"31/01/2025","valor":"13.15"}]
 
 Notas de implementação:
-    - Intervalos > 10 anos são divididos automaticamente em blocos.
+    - Intervalos longos são divididos automaticamente em blocos seguros.
     - SELIC Over e Meta: valores percentuais convertidos para decimal
       (divididos por 100) e arredondados para 10 casas decimais.
     - PTAX Venda: valor absoluto em R$ arredondado para 4 casas.
 """
 
 import datetime as dt
+from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 
 import polars as pl
@@ -41,6 +42,9 @@ ESQUEMA_BRUTO = {"data": pl.Date, "valor": pl.Float64}
 # Limite de segurança em dias, correspondendo a ~9.5 anos.
 # Evita a complexidade do cálculo exato de 10 anos-calendário.
 LIMITE_DIAS_SEGURO = 3500  # aprox 365 * 9.5
+
+_DATA_INICIO_SELIC_META = dt.date(1999, 3, 5)
+_LIMITE_DIAS_SELIC_META = 1800
 
 CASAS_DECIMAIS_PTAX = 4
 
@@ -101,20 +105,36 @@ def _buscar_dados_url(
     inicio: DateLike,
     fim: DateLike | None = None,
 ) -> pl.DataFrame:
-    """Orquestra a busca, dividindo intervalos > 10 anos em blocos."""
+    """Orquestra a busca, dividindo intervalos longos em blocos seguros."""
     data_inicio = converter_datas(inicio)
     data_fim = converter_datas(fim) if fim else relogio.hoje()
+    limite_dias = LIMITE_DIAS_SEGURO
 
-    if (data_fim - data_inicio).days < LIMITE_DIAS_SEGURO:
+    if serie == SerieSGS.SELIC_META:
+        data_inicio = max(data_inicio, _DATA_INICIO_SELIC_META)
+        limite_dias = _LIMITE_DIAS_SELIC_META
+
+    if data_inicio > data_fim:
+        return pl.DataFrame(schema=ESQUEMA_BRUTO)
+
+    if (data_fim - data_inicio).days <= limite_dias:
         return _buscar_api(_montar_url_intervalo(serie, data_inicio, data_fim))
 
-    inicios = pl.date_range(start=data_inicio, end=data_fim, interval="10y", eager=True)
-    fins = inicios.dt.offset_by("10y").clip(upper_bound=data_fim)
+    urls = []
+    inicio_bloco = data_inicio
+    while inicio_bloco <= data_fim:
+        fim_bloco = min(
+            inicio_bloco + dt.timedelta(days=limite_dias),
+            data_fim,
+        )
+        urls.append(_montar_url_intervalo(serie, inicio_bloco, fim_bloco))
+        inicio_bloco = fim_bloco + dt.timedelta(days=1)
 
-    todos_dfs = [
-        _buscar_api(_montar_url_intervalo(serie, ini, fim))
-        for ini, fim in zip(inicios, fins)
-    ]
+    if serie == SerieSGS.SELIC_META:
+        with ThreadPoolExecutor(max_workers=min(4, len(urls))) as executor:
+            todos_dfs = list(executor.map(_buscar_api, urls))
+    else:
+        todos_dfs = [_buscar_api(url) for url in urls]
 
     todos_dfs = [df for df in todos_dfs if not df.is_empty()]
 
@@ -235,7 +255,8 @@ def selic_meta_serie(
 ) -> pl.DataFrame:
     """Taxa SELIC Meta (série SGS 432).
 
-    Taxa de juros oficial definida pelo COPOM.
+    Taxa de juros oficial definida pelo COPOM. Fonte: Banco Central do Brasil
+    (BCB), série SGS 432, disponível desde 05/03/1999.
 
     Args:
         inicio: Data inicial.
@@ -245,6 +266,15 @@ def selic_meta_serie(
 
     Returns:
         DataFrame com colunas data e taxa (decimal), ou DataFrame vazio.
+
+    Output Columns:
+        * data (Date): data de referência da taxa.
+        * taxa (Float64): taxa Selic Meta anual em formato decimal.
+
+    Notes:
+        Consultas iniciadas antes de 05/03/1999 consideram automaticamente essa
+        data como início da série. Intervalos inteiramente anteriores retornam um
+        DataFrame vazio.
 
     Examples:
         >>> import pyield as yd
@@ -274,7 +304,8 @@ def selic_meta(data: DateLike) -> float:
         data: Data da consulta.
 
     Returns:
-        Taxa SELIC Meta em decimal ou ``nan`` se não disponível.
+        Taxa SELIC Meta em decimal ou ``nan`` se não disponível, inclusive para
+        datas anteriores a 05/03/1999.
 
     Examples:
         >>> import pyield as yd

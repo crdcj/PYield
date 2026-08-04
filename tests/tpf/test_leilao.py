@@ -64,8 +64,8 @@ def test_leiloes_processa_colunas_novas(monkeypatch):
 
     resultado = modulo_leiloes.leiloes(data="16-06-2026")
     linha_lft = resultado.filter(
-        (pl.col("titulo") == "LFT")
-        & (pl.col("data_vencimento") == dt.date(2032, 6, 1))
+        pl.col("titulo") == "LFT",
+        pl.col("data_vencimento") == dt.date(2032, 6, 1),
     ).row(0, named=True)
     quantidade_liquidada_1v = 1_000_000
     quantidade_liquidada_2v = 3_000

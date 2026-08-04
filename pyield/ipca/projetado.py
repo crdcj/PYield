@@ -87,8 +87,8 @@ def taxa_projetada() -> ProjecaoIndicador:
 
     # Linha do IPCA: column_1 começa com "IPCA" e column_2 com "Projeção"
     linha_ipca = df.filter(
-        pl.col("column_1").str.starts_with("IPCA")
-        & pl.col("column_2").str.starts_with("Projeção")
+        pl.col("column_1").str.starts_with("IPCA"),
+        pl.col("column_2").str.starts_with("Projeção"),
     )
     if linha_ipca.is_empty():
         raise ValueError("Não foi possível encontrar a projeção do IPCA na planilha.")

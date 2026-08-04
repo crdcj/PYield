@@ -103,5 +103,5 @@ def estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
     return (
         _montar_registros(eventos, datas_mensais, matriz)
         .with_columns(valor=pl.col("valor").mul(1_000_000).round(2))
-        .filter(pl.col("valor").is_not_null() & (pl.col("valor") != 0))
+        .filter(pl.col("valor").is_not_null(), pl.col("valor") != 0)
     )

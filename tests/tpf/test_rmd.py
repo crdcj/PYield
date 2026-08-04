@@ -77,17 +77,17 @@ def test_aba_2_1_estrutura_e_valores(monkeypatch):
     total_publico = df_mar_26.filter(pl.col("detentor") == "Público")["valor"].sum()
 
     lft_tn = df_mar_26.filter(
-        (pl.col("detentor") == "Público")
-        & (pl.col("tipo") == "DPMFi")
-        & (pl.col("categoria") == "Tesouro Nacional")
-        & (pl.col("titulo") == "LFT")
+        pl.col("detentor") == "Público",
+        pl.col("tipo") == "DPMFi",
+        pl.col("categoria") == "Tesouro Nacional",
+        pl.col("titulo") == "LFT",
     )["valor"].item()
 
     global_usd = df_mar_26.filter(
-        (pl.col("detentor") == "Público")
-        & (pl.col("tipo") == "DPFe")
-        & (pl.col("categoria") == "Mobiliária")
-        & (pl.col("titulo") == "Global USD")
+        pl.col("detentor") == "Público",
+        pl.col("tipo") == "DPFe",
+        pl.col("categoria") == "Mobiliária",
+        pl.col("titulo") == "Global USD",
     )["valor"].item()
 
     bc_total = df_mar_26.filter(pl.col("detentor") == "Banco Central")["valor"].sum()
