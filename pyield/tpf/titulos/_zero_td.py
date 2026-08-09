@@ -11,6 +11,7 @@ from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.tpf.titulos import _utils as utils
 
 DIA_VENCIMENTO = 15
+MAX_EXPANSOES_INTERVALO = 32
 
 
 def _gerar_vertices_mensais(
@@ -62,9 +63,15 @@ def _resolver_taxa_forward(
         limite_inferior = taxa_inicial
         limite_superior = max(1.0, 2 * taxa_inicial + 0.01)
         erro_superior = erro(limite_superior)
-        while erro_superior > 0:
+        for _ in range(MAX_EXPANSOES_INTERVALO):
+            if erro_superior <= 0:
+                break
             limite_superior = 2 * limite_superior + 1
             erro_superior = erro(limite_superior)
+        if erro_superior > 0:
+            raise RuntimeError(
+                "Não foi possível encontrar um intervalo para a taxa forward."
+            )
     else:
         limite_inferior = -0.99
         limite_superior = taxa_inicial
@@ -198,7 +205,7 @@ def taxas_zero(
     Args:
         data_liquidacao: Data de liquidação.
         vencimentos: Datas de vencimento das NTN-B.
-        taxas: TIRs correspondentes.
+        taxas: TIRs correspondentes em formato decimal (ex.: 0.10 para 10%).
         incluir_vertices: Se True, inclui todos os vértices mensais da curva.
             Padrão False, retornando apenas os vencimentos informados.
 

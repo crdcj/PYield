@@ -7,7 +7,14 @@ import polars as pl
 
 DateLike: TypeAlias = str | dt.datetime | dt.date
 ArrayLike: TypeAlias = list[Any] | tuple[Any, ...] | pl.Series
-DatesLike: TypeAlias = list[DateLike] | tuple[DateLike, ...] | pl.Series
+DatesLike: TypeAlias = (
+    list[str]
+    | list[dt.date]
+    | list[dt.datetime]
+    | list[DateLike]
+    | tuple[DateLike, ...]
+    | pl.Series
+)
 
 
 def _is_empty(arg: Any) -> bool:

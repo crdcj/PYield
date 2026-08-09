@@ -466,7 +466,8 @@ def taxas_zero(
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         vencimentos (DatesLike): Datas de vencimento dos títulos.
-        taxas (ArrayLike): TIRs correspondentes.
+        taxas (ArrayLike): TIRs correspondentes em formato decimal
+            (ex.: 0.10 para 10%).
         incluir_cupons (bool, optional): Se True, inclui datas intermediárias de cupom.
             Padrão False.
 

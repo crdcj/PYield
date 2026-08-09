@@ -133,6 +133,14 @@ def test_taxas_zero_td_reproduz_planilha_curva_zero():
     )
 
 
+def test_taxas_zero_td_limita_busca_sem_intervalo():
+    taxas = TAXAS_TIR.copy()
+    taxas[2] = 10.0
+
+    with pytest.raises(RuntimeError, match="encontrar um intervalo"):
+        ntnb_td.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, taxas)
+
+
 @pytest.mark.parametrize(
     ("vencimento", "taxa_mercado", "taxa_compra", "taxa_venda"),
     [
