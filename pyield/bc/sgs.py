@@ -24,6 +24,7 @@ Notas de implementação:
 import datetime as dt
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
+from http import HTTPStatus
 
 import polars as pl
 import requests
@@ -87,7 +88,7 @@ def _buscar_api(url_api: str) -> pl.DataFrame:
     try:
         dados = _chamar_api(url_api)
     except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 404:  # noqa
+        if e.response is not None and e.response.status_code == HTTPStatus.NOT_FOUND:
             return pl.DataFrame(schema=ESQUEMA_BRUTO)
         raise
 

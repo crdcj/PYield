@@ -1,11 +1,12 @@
 [project]
 name = "pyield"
-authors = [{ name = "Carlos Carvalho", email = "cr.cj@outlook.com" }]
+authors = [{ name = "Carlos Carvalho", email = "carlos.carvalho.jr@gmail.com" }]
 description = "Polars-powered toolkit for Brazilian fixed income analysis"
 readme = "README.md"
 requires-python = ">=3.12"
 keywords = ["fixed-income", "brazil", "finance", "analysis", "bonds"]
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
@@ -15,11 +16,11 @@ classifiers = [
 dependencies = [
     "polars>=1.39.0",
     "lxml>=6.0.0",
-    "requests>=2.31.0",    
+    "requests>=2.31.0",
     "fastexcel>=0.19.0",
     "tzdata>=2024.1; platform_system == 'Windows'",
 ]
-version = "0.54.4"
+version = "0.54.5"
 
 [project.urls]
 Homepage = "https://github.com/crdcj/PYield"
@@ -36,13 +37,12 @@ dev = [
     "mkdocs",
     "mkdocs-material",
     "mkdocstrings[python]",
-    "types-requests",
     "lxml-stubs",
-    "pyrefly",
+    "ty"
 ]
 
 [build-system]
-requires = ["uv_build>=0.11.7,<0.12"]
+requires = ["uv_build>=0.12.3,<0.13"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -56,23 +56,16 @@ python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
 
-[tool.pyrefly]
-project-includes = ["pyield"]
-preset = "default"
+[tool.ty.src]
+include = ["pyield"]
 
 [tool.ruff]
 line-length = 88
-indent-width = 4
-target-version = "py312"
-extend-include = ["*.ipynb"]
 
 [tool.ruff.lint]
 preview = true
 select = ["I", "F", "E", "W", "PL", "PT"]
-ignore = ["E501", "W505"]
-
-[tool.ruff.lint.pycodestyle]
-max-doc-length = 120
+ignore = ["E501"]
 
 [tool.ruff.format]
 docstring-code-format = true
