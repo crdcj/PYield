@@ -1,8 +1,8 @@
 # Títulos Públicos Federais (TPF)
 
 Porta de entrada principal para dados de mercado de títulos públicos: taxas
-indicativas, vencimentos, estoque, negociações secundárias, leilões, benchmarks
-e Relatório Mensal da Dívida (RMD).
+indicativas, vencimentos, estoque, dealers, negociações secundárias, leilões,
+benchmarks e Relatório Mensal da Dívida (RMD).
 
 Para precificação e análise por tipo de título (cotação, duration, prêmio),
 consulte as páginas individuais: [LFT](lft.md), [LTN](ltn.md),
@@ -89,3 +89,7 @@ com a fonte; para análises de TPF, prefira a visão estável de `yd.tpf`.
 ## leiloes
 
 ::: pyield.tpf.leiloes.leiloes
+
+## dealers
+
+::: pyield.tpf.dealers.dealers

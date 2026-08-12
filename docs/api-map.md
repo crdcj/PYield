@@ -43,6 +43,7 @@ Visão geral das principais funções públicas do PYield.
     ├── taxas_historicas(inicio, fim, titulo)
     ├── vencimentos(data, titulo)
     ├── estoque(data)
+    ├── dealers(data=None)
     ├── leiloes(data=..., inicio=..., fim=...)
     ├── secundario.mensal(data, extragrupo=...)
     ├── secundario.intradia()
