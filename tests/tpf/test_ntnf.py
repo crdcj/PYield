@@ -1,6 +1,21 @@
+import datetime as dt
+import inspect
+
 import pytest
 
 from pyield import ntnf
+
+
+def test_fluxos_caixa_preservam_data_contratual() -> None:
+    resultado = ntnf.fluxos_caixa("01-08-2024", "01-01-2025")
+
+    assert resultado["data_pagamento"].to_list() == [dt.date(2025, 1, 1)]
+
+
+def test_fluxos_caixa_nao_expoem_ajuste_de_datas() -> None:
+    parametros = inspect.signature(ntnf.fluxos_caixa).parameters
+
+    assert tuple(parametros) == ("data_liquidacao", "data_vencimento")
 
 
 @pytest.mark.parametrize(

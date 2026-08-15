@@ -143,7 +143,7 @@ def gerar_datas_pagamento(
     fim: DateLike,
     intervalo_meses: int = 6,
 ) -> pl.Series:
-    """Gera datas de pagamento entre o início exclusivo e o fim inclusivo."""
+    """Gera datas contratuais entre o início exclusivo e o fim inclusivo."""
     if intervalo_meses <= 0:
         raise ValueError("O intervalo em meses deve ser maior que zero.")
 

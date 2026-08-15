@@ -155,7 +155,8 @@ def datas_pagamento(
 
     Os pagamentos são semestrais e seguem a série do título, com datas em
     15/02, 15/05, 15/08 ou 15/11. No vencimento, o fluxo inclui o último cupom
-    e a amortização do principal.
+    e a amortização do principal. As datas são contratuais e não são ajustadas
+    para dias úteis.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação (exclusiva).
@@ -165,6 +166,10 @@ def datas_pagamento(
         pl.Series: Série de datas de pagamento entre a liquidação (exclusiva)
             e o vencimento (inclusivo). Retorna série vazia se o vencimento for
             menor ou igual à liquidação.
+
+    Notes:
+        Para obter as datas efetivas de processamento, use
+        ``yd.du.deslocar(..., 0)``.
 
     Examples:
         >>> from pyield import ntnb
@@ -205,8 +210,13 @@ def fluxos_caixa(
         pl.DataFrame: DataFrame com as colunas de fluxo.
 
     Output Columns:
-        - data_pagamento (Date): Data de pagamento.
+        - data_pagamento (Date): Data contratual do pagamento, sem ajuste para
+            dia útil.
         - valor_pagamento (Float64): Valor do pagamento em base 1.
+
+    Notes:
+        Para obter as datas efetivas de processamento, use
+        ``yd.du.deslocar(..., 0)``.
 
     Examples:
         >>> from pyield import ntnb

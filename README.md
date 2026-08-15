@@ -285,6 +285,13 @@ Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield
 
 Quebras acumuladas por versão desde a v0.52.0.
 
+### v0.54.5
+
+- `yd.ntnf.fluxos_caixa(...)` não aceita mais `ajustar_datas_pagamento`. Os
+  cronogramas públicos de NTN-B, NTN-B1, NTN-C e NTN-F usam datas contratuais,
+  sem ajuste para dias úteis. Para obter datas efetivas de processamento, use
+  `yd.du.deslocar(..., 0)`.
+
 ### v0.54.2
 
 - `yd.tpf.taxas_historicas(...)` foi adicionado para consultas por período ou

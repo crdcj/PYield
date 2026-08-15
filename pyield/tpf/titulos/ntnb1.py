@@ -60,8 +60,9 @@ def datas_pagamento(
     """
     Gera todas as datas de amortização entre liquidação e vencimento.
 
-    As datas são inclusivas. Os pagamentos ocorrem de 15/01 do ano de conversão
-    até 15/12 do ano de vencimento.
+    A liquidação é exclusiva e o vencimento é inclusivo. Os pagamentos ocorrem
+    de 15/01 do ano de conversão até 15/12 do ano de vencimento. As datas são
+    contratuais e não são ajustadas para dias úteis.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação (exclusiva).
@@ -70,6 +71,10 @@ def datas_pagamento(
 
     Returns:
         pl.Series: Série de datas de amortização no intervalo.
+
+    Notes:
+        Para obter as datas efetivas de processamento, use
+        ``yd.du.deslocar(..., 0)``.
 
     Examples:
         >>> from pyield import ntnb1
@@ -135,8 +140,13 @@ def fluxos_caixa(
         pl.DataFrame: DataFrame com as colunas de fluxo.
 
     Output Columns:
-        - data_pagamento (Date): Data de pagamento.
+        - data_pagamento (Date): Data contratual do pagamento, sem ajuste para
+            dia útil.
         - valor_pagamento (Float64): Valor do pagamento.
+
+    Notes:
+        Para obter as datas efetivas de processamento, use
+        ``yd.du.deslocar(..., 0)``.
 
     Examples:
         >>> from pyield import ntnb1

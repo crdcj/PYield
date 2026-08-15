@@ -169,7 +169,8 @@ def datas_pagamento(
     As datas são exclusivas para a liquidação e inclusivas para o vencimento.
     Os pagamentos são semestrais, em 1º de janeiro e 1º de julho. No
     vencimento, o fluxo inclui o último cupom e a amortização do principal. O
-    título NTN-F é determinado pela data de vencimento.
+    título NTN-F é determinado pela data de vencimento. As datas são contratuais
+    e não são ajustadas para dias úteis.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
@@ -179,6 +180,10 @@ def datas_pagamento(
         pl.Series: Série com as datas de pagamento entre a liquidação (exclusiva)
             e o vencimento (inclusivo). Retorna série vazia se o vencimento
             for menor ou igual à liquidação.
+
+    Notes:
+        Para obter as datas efetivas de processamento, use
+        ``yd.du.deslocar(..., 0)``.
 
     Examples:
         >>> from pyield import ntnf
@@ -213,7 +218,6 @@ def datas_pagamento(
 def fluxos_caixa(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    ajustar_datas_pagamento: bool = False,
 ) -> pl.DataFrame:
     """
     Gera os fluxos de caixa da NTN-F entre liquidação (exclusiva) e vencimento
@@ -222,16 +226,19 @@ def fluxos_caixa(
     Args:
         data_liquidacao (DateLike): Data de liquidação (exclusiva).
         data_vencimento (DateLike): Data de vencimento do título.
-        ajustar_datas_pagamento (bool): Se True, ajusta as datas de pagamento para o
-            próximo dia útil.
 
     Returns:
         pl.DataFrame: DataFrame com as colunas `data_pagamento` e
             `valor_pagamento`.
 
     Output Columns:
-        - data_pagamento (Date): Data de pagamento.
+        - data_pagamento (Date): Data contratual do pagamento, sem ajuste para
+            dia útil.
         - valor_pagamento (Float64): Valor do pagamento.
+
+    Notes:
+        Para obter as datas efetivas de processamento, use
+        ``yd.du.deslocar(..., 0)``.
 
     Examples:
         >>> from pyield import ntnf
@@ -275,8 +282,6 @@ def fluxos_caixa(
         .alias("valor_pagamento")
     )
 
-    if ajustar_datas_pagamento:
-        df = df.with_columns(data_pagamento=du.deslocar_expr("data_pagamento", 0))
     return df
 
 
@@ -557,8 +562,8 @@ def rentabilidade(  # noqa
         1.0099602280683393
 
     Notes:
-        A função ajusta as datas de pagamento para dias úteis e calcula o valor
-        presente dos fluxos da NTN-F usando as taxas DI.
+        A função calcula o valor presente dos fluxos contratuais da NTN-F usando
+        as taxas DI.
 
     """
     if any_is_empty(
@@ -575,11 +580,7 @@ def rentabilidade(  # noqa
     else:
         serie_taxas_di = taxas_di
 
-    df_fluxos = fluxos_caixa(
-        data_liquidacao,
-        data_vencimento,
-        ajustar_datas_pagamento=True,
-    )
+    df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
     if df_fluxos.is_empty():
         return float("nan")
 
