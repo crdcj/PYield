@@ -80,6 +80,44 @@ As cotações de LFT, NTN-B e NTN-C são representadas pela API em base 1. O
 truncamento em seis casas nessa representação equivale ao truncamento em quatro
 casas da cotação percentual em base 100 usada no documento.
 
+## VNA realizado da NTN-B entre datas-base
+
+Em uma data entre dois VNAs mensais já publicados, `ntnb.vna()` combina duas
+fontes oficiais:
+
+- o VNA no início da vigência vem da planilha do Tesouro Nacional;
+- os números-índice do IPCA vêm do agregado 1737 do
+  [SIDRA/IBGE](https://sidra.ibge.gov.br/tabela/1737).
+
+Para uma data `d` entre as datas-base `t0` e `t1`, a sequência de precisão é:
+
+```text
+fator_ipca = T16(indice_t1 / indice_t0)
+pro_rata = T14((d - t0) / (t1 - t0))
+vna_d = T6(vna_t0 * fator_ipca ** pro_rata)
+```
+
+Os números-índice correspondem aos meses que atualizam cada data-base. Assim,
+na vigência de 15/07/2026 a 15/08/2026, são usados os índices de junho e
+julho de 2026.
+
+Não se deve obter `fator_ipca` dividindo os dois VNAs mensais. Esses VNAs já
+foram truncados em seis casas, e sua razão perde parte da precisão do fator de
+preços. O caso de 13/08/2026 evidencia a diferença:
+
+```text
+vna_t0 = 4739,424756
+indice_t0 = 7652,37
+indice_t1 = 7657,73
+fator_ipca = 1,0007004365967667
+pro_rata = 0,93548387096774
+vna_13_08_2026 = 4742,530180
+```
+
+Essa reconstrução é usada apenas quando os dois VNAs mensais e os dois
+números-índice já estão disponíveis. Ela não transforma `ntnb.vna()` em uma
+função de projeção.
+
 ## Rastreabilidade no código
 
 - A normalização da taxa de entrada está centralizada em

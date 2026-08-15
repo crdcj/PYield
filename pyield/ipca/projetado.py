@@ -5,6 +5,7 @@ import polars as pl
 import requests
 
 from pyield._internal.cache import ttl_cache
+from pyield._internal.excel import ler_sem_cabecalho
 from pyield._internal.retry import retry_padrao
 
 _URL_XLS = "https://www.anbima.com.br/informacoes/indicadores/arqs/indicadores.xls"
@@ -79,7 +80,7 @@ def taxa_projetada() -> ProjecaoIndicador:
         ProjecaoIndicador(ultima_atualizacao=..., periodo_referencia=..., valor_projetado=...)
     """
     conteudo = _baixar_planilha()
-    df = pl.read_excel(conteudo, has_header=False)
+    df = ler_sem_cabecalho(conteudo)
 
     # Linha 0: "Data e Hora da Última Atualização: DD/MM/YYYY - HH:MM h"
     texto_atualizacao = df.item(0, "column_1")

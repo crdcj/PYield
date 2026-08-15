@@ -14,7 +14,12 @@ def expressao_data() -> pl.Expr:
     return pl.col("column_1").str.to_datetime(strict=False).dt.date()
 
 
-def calcular_vna(df: pl.DataFrame, data: dt.date) -> float:
+def calcular_vna(
+    df: pl.DataFrame,
+    data: dt.date,
+    *,
+    fator_variacao: float | None = None,
+) -> float:
     """Obtém o VNA publicado ou calcula o pró-rata entre pontos publicados."""
     ponto_exato = df.filter(pl.col("data") == data)
     if ponto_exato.height == 1:
@@ -29,8 +34,13 @@ def calcular_vna(df: pl.DataFrame, data: dt.date) -> float:
     data_final = ponto_final.item(0, "data")
     vna_inicial = float(ponto_inicial.item(0, "vna"))
     vna_final = float(ponto_final.item(0, "vna"))
-    expoente = (data - data_inicial).days / (data_final - data_inicial).days
-    variacao = vna_final / vna_inicial - 1
+    expoente = truncar(
+        (data - data_inicial).days / (data_final - data_inicial).days,
+        14,
+    )
+    if fator_variacao is None:
+        fator_variacao = vna_final / vna_inicial
+    variacao = fator_variacao - 1
     return _aplicar_variacao_pro_rata(vna_inicial, variacao, expoente)
 
 

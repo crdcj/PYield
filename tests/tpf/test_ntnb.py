@@ -85,6 +85,16 @@ def test_namespace_dos_titulos_separado_do_ntnb_anbima():
     assert yd.ntnbp is ntnbp
 
 
+def test_cotacao_e_pu_reproduzem_dtbase():
+    """Reproduz a precificação da NTN-B 150826 exibida no dtbase."""
+    cotacao_esperada = 1.029056
+    pu_esperado = 4880.439369
+    cotacao = yd.ntnb.cotacao("14-08-2026", "15-08-2026", 0.132098)
+
+    assert cotacao == cotacao_esperada
+    assert yd.ntnb.pu(4742.6373, cotacao) == pu_esperado
+
+
 @pytest.mark.parametrize(
     ("data_liquidacao", "esperado"),
     [

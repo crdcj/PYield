@@ -7,6 +7,7 @@ import requests
 from lxml import html
 
 from pyield._internal.cache import ttl_cache
+from pyield._internal.excel import ler_sem_cabecalho
 from pyield._internal.retry import retry_padrao
 
 _DOMINIO_ARQUIVOS = "thot-arquivos.tesouro.gov.br"
@@ -49,4 +50,4 @@ def baixar_planilha(url_publicacao: str) -> bytes:
 
 def ler_planilha(conteudo: bytes, aba: str) -> pl.DataFrame:
     """Lê uma aba da planilha sem interpretar seu domínio."""
-    return pl.read_excel(conteudo, sheet_name=aba, has_header=False)
+    return ler_sem_cabecalho(conteudo, aba)

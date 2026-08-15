@@ -1,11 +1,11 @@
-"""Dados históricos do IPCA via API do IBGE (agregado 6691).
+"""Dados históricos do IPCA via API do IBGE (agregado 1737).
 
 Variáveis disponíveis:
     - 63: IPCA - Variação mensal (%)
     - 2266: IPCA - Número-índice (base dez/1993 = 100)
 
 Exemplo de chamada à API:
-    https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/202501/variaveis/63?localidades=N1[all]
+    https://servicodados.ibge.gov.br/api/v3/agregados/1737/periodos/202501/variaveis/63?localidades=N1[all]
 
 Exemplo de resposta JSON (simplificado):
     [{"id": "63",
@@ -26,7 +26,7 @@ from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 
-_URL_BASE = "https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/"
+_URL_BASE = "https://servicodados.ibge.gov.br/api/v3/agregados/1737/periodos/"
 _SUFIXO_URL = "?localidades=N1[all]"
 _VAR_TAXA = 63
 _VAR_INDICE = 2266
@@ -89,7 +89,7 @@ def taxas(inicio: DateLike, fim: DateLike) -> pl.DataFrame:
     """Obtém as taxas mensais do IPCA para um intervalo de datas.
 
     Realiza chamada à API do portal de dados do IBGE no formato:
-    https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/YYYYMM-YYYYMM/variaveis/63?localidades=N1[all]
+    https://servicodados.ibge.gov.br/api/v3/agregados/1737/periodos/YYYYMM-YYYYMM/variaveis/63?localidades=N1[all]
 
     Args:
         inicio: Data de início do intervalo.
@@ -146,7 +146,7 @@ def taxas_ultimas(qtd_meses: int = 1) -> pl.DataFrame:
     """Obtém as últimas taxas mensais do IPCA.
 
     Realiza chamada à API do portal de dados do IBGE no formato:
-    https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/-N/variaveis/63?localidades=N1[all]
+    https://servicodados.ibge.gov.br/api/v3/agregados/1737/periodos/-N/variaveis/63?localidades=N1[all]
 
     Args:
         qtd_meses: Número de meses a recuperar. Padrão: 1.
@@ -179,7 +179,7 @@ def indices_ultimos(qtd_meses: int = 1) -> pl.DataFrame:
     """Obtém os últimos valores do número-índice do IPCA.
 
     Realiza chamada à API do portal de dados do IBGE no formato:
-    https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/-N/variaveis/2266?localidades=N1[all]
+    https://servicodados.ibge.gov.br/api/v3/agregados/1737/periodos/-N/variaveis/2266?localidades=N1[all]
 
     Args:
         qtd_meses: Número de meses a recuperar. Padrão: 1.
@@ -208,7 +208,7 @@ def indices(inicio: DateLike, fim: DateLike) -> pl.DataFrame:
     """Obtém os valores do número-índice do IPCA para um intervalo.
 
     Realiza chamada à API do portal de dados do IBGE no formato:
-    https://servicodados.ibge.gov.br/api/v3/agregados/6691/periodos/YYYYMM-YYYYMM/variaveis/2266?localidades=N1[all]
+    https://servicodados.ibge.gov.br/api/v3/agregados/1737/periodos/YYYYMM-YYYYMM/variaveis/2266?localidades=N1[all]
 
     Args:
         inicio: Data de início do intervalo.

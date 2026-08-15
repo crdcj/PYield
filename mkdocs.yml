@@ -16,6 +16,7 @@ nav:
   - Referências normativas:
       - Precificação de leilões — STN: referencias/metodologia-calculo-tpf-stn.md
       - Caderno de fórmulas SELIC — STN: referencias/metodologia-calculo-letras-notas-stn.md
+      - Regulamento do Selic — BCB: referencias/regulamento-selic-bcb.md
   - Ferramentas:
       - Dias Úteis (DU): du.md
       - Interpolador: interpolador.md

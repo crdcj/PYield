@@ -4,6 +4,8 @@ from datetime import date
 
 import polars as pl
 
+from pyield._internal.excel import ler_sem_cabecalho
+
 from ._common import limpar_rotulo, parsear_periodo
 
 _LINHA_PERIODOS = 2
@@ -73,11 +75,7 @@ def _montar_registros(df_bruto: pl.DataFrame) -> list[tuple[object, ...]]:
 
 def estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
     """Lê a aba ``2.1`` do Excel e retorna DataFrame longo."""
-    df_bruto = pl.read_excel(
-        conteudo_excel,
-        sheet_name="2.1",
-        has_header=False,
-    )
+    df_bruto = ler_sem_cabecalho(conteudo_excel, "2.1")
 
     return (
         pl.DataFrame(

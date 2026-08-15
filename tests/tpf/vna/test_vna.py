@@ -13,6 +13,11 @@ VNA_NTNB_DEZ_2025 = 4570.078408
 VNA_NTNB_JAN_2026 = 4585.159356
 VNA_NTNB_30_DEZ_2025 = 4577.369436
 VNA_NTNB_JUN_2026 = 4731.856412
+VNA_NTNB_JUL_2026 = 4739.424756
+VNA_NTNB_AGO_2026 = 4742.744422
+VNA_NTNB_12_AGO_2026 = 4742.423062
+VNA_NTNB_13_AGO_2026 = 4742.530180
+VNA_NTNB_14_AGO_2026 = 4742.637300
 VNA_NTNC_2006_JUL_2000 = 1049.125124
 VNA_NTNC_2006_AGO_2000 = 1065.620389
 VNA_NTNC_2031_DEZ_2025 = 6450.107485
@@ -41,6 +46,28 @@ def test_extrair_url_planilha() -> None:
     assert _download._extrair_url_planilha(pagina) == (
         "https://thot-arquivos.tesouro.gov.br/publicacao/53360"
     )
+
+
+def test_ler_planilha_converte_explicitamente_para_dataframe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Planilha:
+        @staticmethod
+        def load_sheet(aba: str, *, header_row: int | None) -> pl.DataFrame:
+            assert aba == "NTNB"
+            assert header_row is None
+            return pl.DataFrame({"a": ["DATA"], "b": ["VNA"]})
+
+    monkeypatch.setattr(
+        "pyield._internal.excel.fastexcel.read_excel", lambda _: Planilha()
+    )
+
+    resultado = _download.ler_planilha(b"conteudo", "NTNB")
+
+    assert resultado.to_dict(as_series=False) == {
+        "column_1": ["DATA"],
+        "column_2": ["VNA"],
+    }
 
 
 def test_processar_ntnb() -> None:
@@ -148,11 +175,59 @@ def test_vna_ntnb_calcula_entre_valores_publicados(
             schema_overrides={"data": pl.Date},
         ),
     )
+    monkeypatch.setattr(
+        vna_ntnb._ipca,
+        "indices",
+        lambda inicio, fim: pl.DataFrame(
+            {
+                "periodo": [202511, 202512],
+                "indice": [7378.94, 7403.29],
+            }
+        ),
+    )
 
     assert vna_ntnb.vna("15-12-2025") == VNA_NTNB_DEZ_2025
     assert vna_ntnb.vna("30-12-2025") == VNA_NTNB_30_DEZ_2025
     assert math.isnan(vna_ntnb.vna("14-12-2025"))
     assert math.isnan(vna_ntnb.vna("16-01-2026"))
+
+
+@pytest.mark.parametrize(
+    ("data", "esperado"),
+    [
+        ("12-08-2026", VNA_NTNB_12_AGO_2026),
+        ("13-08-2026", VNA_NTNB_13_AGO_2026),
+        ("14-08-2026", VNA_NTNB_14_AGO_2026),
+    ],
+)
+def test_vna_ntnb_usa_numeros_indice_com_precisao_normativa(
+    monkeypatch: pytest.MonkeyPatch, data: str, esperado: float
+) -> None:
+    monkeypatch.setattr(
+        vna_ntnb,
+        "vnas",
+        lambda: pl.DataFrame(
+            {
+                "data": [dt.date(2026, 7, 15), dt.date(2026, 8, 15)],
+                "vna": [VNA_NTNB_JUL_2026, VNA_NTNB_AGO_2026],
+            },
+            schema_overrides={"data": pl.Date},
+        ),
+    )
+
+    def indices(inicio, fim) -> pl.DataFrame:
+        assert inicio == dt.date(2026, 6, 30)
+        assert fim == dt.date(2026, 7, 31)
+        return pl.DataFrame(
+            {
+                "periodo": [202606, 202607],
+                "indice": [7652.37, 7657.73],
+            }
+        )
+
+    monkeypatch.setattr(vna_ntnb._ipca, "indices", indices)
+
+    assert vna_ntnb.vna(data) == esperado
 
 
 def test_vna_ntnc_seleciona_serie_e_calcula_entre_valores_publicados(

@@ -1,14 +1,18 @@
 """Valores oficiais e projetados de VNA da NTN-B."""
 
 import datetime as dt
+import math
 
 import polars as pl
 
 import pyield._internal.converters as conversores
+from pyield._internal.numbers import truncar
 from pyield._internal.types import DateLike, any_is_empty
+from pyield.ipca import historico as _ipca
 from pyield.tpf.vna import _download, _utils
 
 _DIA_INICIO_VIGENCIA = 15
+_QTD_MARCOS_VIGENCIA = 2
 _URL_PUBLICACAO = (
     "https://www.tesourotransparente.gov.br/publicacoes/valor-nominal-de-ntn-b/"
 )
@@ -49,8 +53,8 @@ def vna(data: DateLike | None = None) -> float:
 
     Em datas de referência oficiais, retorna o valor publicado pelo Tesouro
     Nacional. Entre duas referências publicadas, calcula o VNA por pró-rata
-    exponencial em dias corridos. Não realiza projeções após a última
-    referência disponível.
+    exponencial em dias corridos com os números-índice do IPCA publicados pelo
+    IBGE. Não realiza projeções após a última referência disponível.
 
     Args:
         data: Data de referência. Os valores oficiais são mensais e referem-se
@@ -66,13 +70,32 @@ def vna(data: DateLike | None = None) -> float:
         4570.078408
         >>> ntnb.vna("30-12-2025")  # pró-rata entre pontos publicados
         4577.369436
+        >>> ntnb.vna("13-08-2026")  # precisão dos índices do IPCA
+        4742.53018
     """
     if any_is_empty(data):
         return float("nan")
     data_convertida = conversores.converter_datas(data)
     if data_convertida is None:
         return float("nan")
-    return _utils.calcular_vna(vnas(), data_convertida)
+    df = vnas()
+    ponto_exato = df.filter(pl.col("data") == data_convertida)
+    if ponto_exato.height == 1:
+        return float(ponto_exato.item(0, "vna"))
+
+    inicio, fim = _obter_vigencia(data_convertida)
+    pontos_vigencia = df.filter(pl.col("data").is_in([inicio, fim]))
+    if pontos_vigencia.height != _QTD_MARCOS_VIGENCIA:
+        return float("nan")
+
+    fator_ipca = _obter_fator_ipca(inicio, fim)
+    if math.isnan(fator_ipca):
+        return float("nan")
+    return _utils.calcular_vna(
+        df,
+        data_convertida,
+        fator_variacao=fator_ipca,
+    )
 
 
 def _obter_vigencia(data: dt.date) -> tuple[dt.date, dt.date]:
@@ -86,6 +109,21 @@ def _obter_vigencia(data: dt.date) -> tuple[dt.date, dt.date]:
             day=_DIA_INICIO_VIGENCIA
         )
     return inicio, fim
+
+
+def _obter_fator_ipca(inicio: dt.date, fim: dt.date) -> float:
+    """Obtém o fator entre os números-índice que atualizam a vigência."""
+    mes_inicial = inicio.replace(day=1) - dt.timedelta(days=1)
+    mes_final = fim.replace(day=1) - dt.timedelta(days=1)
+    df = _ipca.indices(mes_inicial, mes_final)
+    periodo_inicial = int(mes_inicial.strftime("%Y%m"))
+    periodo_final = int(mes_final.strftime("%Y%m"))
+    indice_inicial = df.filter(pl.col("periodo") == periodo_inicial)
+    indice_final = df.filter(pl.col("periodo") == periodo_final)
+    if indice_inicial.is_empty() or indice_final.is_empty():
+        return float("nan")
+    fator = indice_final.item(0, "indice") / indice_inicial.item(0, "indice")
+    return truncar(fator, 16)
 
 
 def vna_projetado(
