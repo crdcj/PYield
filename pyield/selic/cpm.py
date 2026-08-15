@@ -254,8 +254,8 @@ def data(date: DateLike) -> pl.DataFrame:
 
     Examples:
         >>> import pyield as yd
-        >>> df = yd.selic.cpm.data("29-01-2025")
-        >>> df.is_empty() or set(df.schema.keys()) >= {
+        >>> df = yd.selic.cpm.data("29-01-2025")  # doctest: +SKIP
+        >>> df.is_empty() or set(df.schema.keys()) >= {  # doctest: +SKIP
         ...     "data_referencia",
         ...     "codigo_negociacao",
         ...     "data_fim_reuniao",

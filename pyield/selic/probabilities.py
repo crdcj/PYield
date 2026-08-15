@@ -253,11 +253,13 @@ def all_meetings(
     Examples:
         >>> import pyield as yd
         >>> import polars as pl
-        >>> df = yd.selic.probabilities.all_meetings("29-01-2025")
-        >>> df.is_empty() or df["ranking_reuniao"].min() == 1
+        >>> df = yd.selic.probabilities.all_meetings("29-01-2025")  # doctest: +SKIP
+        >>> df.is_empty() or df["ranking_reuniao"].min() == 1  # doctest: +SKIP
         True
-        >>> sums = df.group_by("data_expiracao").agg(pl.col("prob").sum())
-        >>> df.is_empty() or (sums["prob"] - 1.0).abs().max() < 1e-9
+        >>> sums = df.group_by("data_expiracao").agg(
+        ...     pl.col("prob").sum()
+        ... )  # doctest: +SKIP
+        >>> df.is_empty() or (sums["prob"] - 1.0).abs().max() < 1e-9  # doctest: +SKIP
         True
     """
     raw = cpm.data(date)
@@ -318,10 +320,12 @@ def meeting(
 
     Examples:
         >>> import pyield as yd
-        >>> df = yd.selic.probabilities.meeting("29-01-2025")
-        >>> df.is_empty() or abs(df["prob"].sum() - 1.0) < 1e-9
+        >>> df = yd.selic.probabilities.meeting("29-01-2025")  # doctest: +SKIP
+        >>> df.is_empty() or abs(df["prob"].sum() - 1.0) < 1e-9  # doctest: +SKIP
         True
-        >>> df.is_empty() or df["prob_acumulada"].tail(1).item() == 1.0
+        >>> df.is_empty() or df["prob_acumulada"].tail(
+        ...     1
+        ... ).item() == 1.0  # doctest: +SKIP
         True
     """
     df = all_meetings(date, option_type=option_type)

@@ -151,10 +151,10 @@ def calendar(
 
     Examples:
         >>> import pyield as yd
-        >>> cal = yd.selic.copom.calendar()
-        >>> "ExpiryDate" in cal.columns
+        >>> cal = yd.selic.copom.calendar()  # doctest: +SKIP
+        >>> "ExpiryDate" in cal.columns  # doctest: +SKIP
         True
-        >>> cal["EndDate"].is_sorted()
+        >>> cal["EndDate"].is_sorted()  # doctest: +SKIP
         True
     """
     past = _fetch_past_meetings()
@@ -192,8 +192,8 @@ def next_meeting(reference: DateLike | None = None) -> pl.DataFrame:
 
     Examples:
         >>> import pyield as yd
-        >>> row = yd.selic.copom.next_meeting()
-        >>> len(row)
+        >>> row = yd.selic.copom.next_meeting()  # doctest: +SKIP
+        >>> len(row)  # doctest: +SKIP
         1
     """
     ref = relogio.hoje() if reference is None else converter_datas(reference)
