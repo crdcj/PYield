@@ -1,6 +1,7 @@
 import datetime as dt
 import math
 from collections.abc import Sized
+from decimal import Decimal
 from typing import Any, TypeAlias, TypeGuard
 
 import polars as pl
@@ -23,6 +24,8 @@ def _is_empty(arg: Any) -> bool:
         return True
     if isinstance(arg, float):
         return math.isnan(arg)
+    if isinstance(arg, Decimal):
+        return arg.is_nan()
     if isinstance(arg, Sized):
         return len(arg) == 0
     return False

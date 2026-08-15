@@ -1,6 +1,9 @@
+from decimal import Decimal
+
 import polars as pl
 
 from pyield import du, fwd
+from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf.titulos import _utils as utils
 
@@ -114,8 +117,8 @@ def vencimentos(data: DateLike) -> pl.Series:
 def pu(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float,
-) -> float:
+    taxa: float | Decimal,
+) -> Decimal:
     """
     Calcula o PU da LTN pela metodologia da STN para leilões primários.
 
@@ -125,7 +128,7 @@ def pu(
         taxa: Taxa de desconto (YTM) do título em formato decimal.
 
     Returns:
-        float: PU da LTN conforme a metodologia da STN.
+        Decimal: PU da LTN truncado em seis casas decimais.
 
     References:
         - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
@@ -135,13 +138,13 @@ def pu(
     Examples:
         >>> from pyield import ltn
         >>> ltn.pu("05-07-2024", "01-01-2030", 0.12145)
-        535.279902
+        Decimal('535.279902')
         >>> ltn.pu("21-05-2008", "01-07-2010", 0.143600009)
-        753.315323
+        Decimal('753.315323')
     """
     # Valida e normaliza entradas
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
-        return float("nan")
+        return Decimal("NaN")
     taxa = utils.normalizar_taxa_precificacao(taxa)
     # Calcula dias úteis entre liquidação e vencimento
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
@@ -152,13 +155,13 @@ def pu(
     fator_desconto = (1 + taxa) ** anos_truncados
 
     # Trunca o preço em 6 casas conforme a STN
-    return utils.truncar(VALOR_FACE / fator_desconto, 6)
+    return truncar_decimal(VALOR_FACE / fator_desconto, 6)
 
 
 def taxa(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    preco_unitario: float,
+    preco_unitario: float | Decimal,
 ) -> float:
     """
     Calcula a taxa implícita (YTM) de uma LTN a partir do preço (PU).
@@ -188,12 +191,13 @@ def taxa(
     if any_is_empty(data_liquidacao, data_vencimento, preco_unitario):
         return float("nan")
 
-    if preco_unitario <= 0:
+    preco_float = float(preco_unitario)
+    if preco_float <= 0:
         return float("nan")
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
-    taxa_calculada = (VALOR_FACE / preco_unitario) ** (1 / anos_truncados) - 1
+    taxa_calculada = (VALOR_FACE / preco_float) ** (1 / anos_truncados) - 1
     return utils.truncar(taxa_calculada, 8)
 
 
@@ -252,7 +256,7 @@ def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float,
-    pu: float,
+    pu: float | Decimal,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da LTN em R$.
@@ -286,7 +290,7 @@ def dv01(
     preco_2 = utils.truncar(
         VALOR_FACE / (1 + taxa_mais_1bp) ** anos_truncados, 6
     )
-    return pu * (1 - preco_2 / preco_1)
+    return float(pu) * (1 - preco_2 / preco_1)
 
 
 def duration_expr(

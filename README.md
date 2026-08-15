@@ -285,6 +285,17 @@ Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield
 
 Quebras acumuladas por versão desde a v0.52.0.
 
+### v0.55.0
+
+- `yd.lft.vna(...)`, `yd.lft.cotacao(...)`, `yd.lft.pu(...)`, `yd.ltn.pu(...)`,
+  `yd.ntnb.vna(...)`, `yd.ntnb.vna_projetado(...)`, `yd.ntnb.cotacao(...)`,
+  `yd.ntnb.pu(...)`, `yd.ntnbp.cotacao(...)`, `yd.ntnbp.pu(...)`,
+  `yd.ntnb1.cotacao(...)`, `yd.ntnb1.pu(...)`, `yd.ntnc.vna(...)`,
+  `yd.ntnc.vna_projetado(...)`, `yd.ntnc.cotacao(...)`, `yd.ntnc.pu(...)` e
+  `yd.ntnf.pu(...)` retornam `Decimal`, preservando exatamente os valores com
+  seis casas definidos pela fonte ou pela metodologia. Entradas numéricas
+  aceitam `float` ou `Decimal`.
+
 ### v0.54.5
 
 - `yd.ntnf.fluxos_caixa(...)` não aceita mais `ajustar_datas_pagamento`. Os
@@ -313,8 +324,8 @@ Quebras acumuladas por versão desde a v0.52.0.
   yd.lft.pu(15785.324502, 99.9291)                       # -> 15774.132706
 
   # Agora
-  yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
-  yd.lft.pu(15785.324502, 0.999291)                      # -> 15774.132706
+  yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> Decimal('0.993651')
+  yd.lft.pu(15785.324502, 0.999291)             # -> Decimal('15774.132706')
   ```
 
   Também afeta `fluxos_caixa(...)` de NTN-B e NTN-C: o cupom semestral passou

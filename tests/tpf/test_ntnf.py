@@ -1,5 +1,6 @@
 import datetime as dt
 import inspect
+from decimal import Decimal
 
 import pytest
 
@@ -21,15 +22,15 @@ def test_fluxos_caixa_nao_expoem_ajuste_de_datas() -> None:
 @pytest.mark.parametrize(
     ("data_vencimento", "taxa", "pu_esperado"),
     [
-        ("01-01-2031", 0.145366, 864.701572),
-        ("01-01-2033", 0.145764, 823.854014),
-        ("01-01-2037", 0.145259, 773.756861),
+        ("01-01-2031", 0.145366, Decimal("864.701572")),
+        ("01-01-2033", 0.145764, Decimal("823.854014")),
+        ("01-01-2037", 0.145259, Decimal("773.756861")),
     ],
 )
 def test_pu_e_taxa_reproduzem_referencia_do_back_office(
     data_vencimento: str,
     taxa: float,
-    pu_esperado: float,
+    pu_esperado: Decimal,
 ) -> None:
     """Reproduz preços de NTN-F validados pelo back office em 06/07/2026."""
     data_liquidacao = "06-07-2026"

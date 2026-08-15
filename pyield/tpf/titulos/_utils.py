@@ -1,6 +1,7 @@
 import datetime as dt
 import logging
 from collections.abc import Callable
+from decimal import Decimal
 
 import polars as pl
 
@@ -192,7 +193,7 @@ def adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
     return df.with_columns(dv01=0.0001 * expr_duracao_mod * pl.col("pu"))
 
 
-def normalizar_taxa_precificacao(taxa: float) -> float:
+def normalizar_taxa_precificacao(taxa: float | Decimal) -> float:
     """Trunca a taxa decimal em seis casas percentuais, conforme a STN."""
     return truncar(taxa, 8)
 

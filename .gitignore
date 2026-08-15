@@ -24,3 +24,5 @@ cgen.py
 .codex
 
 /.vscode/
+
+.DS_Store

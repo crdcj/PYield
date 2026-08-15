@@ -1,10 +1,12 @@
 """Valores oficiais e projetados de VNA da NTN-C."""
 
 import datetime as dt
+from decimal import Decimal
 
 import polars as pl
 
 import pyield._internal.converters as conversores
+from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf.vna import _download, _utils
 
@@ -61,7 +63,7 @@ def vnas() -> pl.DataFrame:
 def vna(
     data: DateLike | None = None,
     vencimento: DateLike | None = None,
-) -> float:
+) -> Decimal:
     """Obtém o VNA da NTN-C em uma data de referência.
 
     A fonte possui séries diferentes conforme o vencimento. Por isso, o
@@ -71,33 +73,34 @@ def vna(
 
     Args:
         data: Data de referência. Os valores oficiais são mensais e referem-se
-            ao primeiro dia do mês. Se omitida ou nula, retorna ``nan``.
+            ao primeiro dia do mês. Se omitida ou nula, retorna
+            ``Decimal('NaN')``.
         vencimento: Data de vencimento da NTN-C. Se omitida ou nula, retorna
-            ``nan``.
+            ``Decimal('NaN')``.
 
     Returns:
-        VNA da NTN-C, truncado em seis casas quando calculado por pró-rata.
-        Retorna ``nan`` quando a data estiver fora do intervalo publicado ou
-        não houver série para o vencimento.
+        Decimal: VNA da NTN-C com seis casas decimais. Retorna
+            ``Decimal('NaN')`` quando a data estiver fora do intervalo
+            publicado ou não houver série para o vencimento.
 
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.vna("01-12-2025", "01-01-2031")  # ponto publicado
-        6450.107485
+        Decimal('6450.107485')
         >>> ntnc.vna("16-12-2025", "01-01-2031")  # pró-rata entre pontos
-        6449.641358
+        Decimal('6449.641358')
     """
     if any_is_empty(data, vencimento):
-        return float("nan")
+        return Decimal("NaN")
     data_convertida = conversores.converter_datas(data)
     vencimento_convertido = conversores.converter_datas(vencimento)
     if data_convertida is None or vencimento_convertido is None:
-        return float("nan")
+        return Decimal("NaN")
 
     df = vnas().filter(
         pl.col("anos_vencimento").list.contains(vencimento_convertido.year)
     )
-    return _utils.calcular_vna(df, data_convertida)
+    return truncar_decimal(_utils.calcular_vna(df, data_convertida), 6)
 
 
 def _obter_vigencia(data: dt.date) -> tuple[dt.date, dt.date]:
@@ -109,9 +112,9 @@ def _obter_vigencia(data: dt.date) -> tuple[dt.date, dt.date]:
 
 def vna_projetado(
     data: DateLike,
-    vna_base: float,
-    inflacao: float,
-) -> float:
+    vna_base: float | Decimal,
+    inflacao: float | Decimal,
+) -> Decimal:
     """Calcula o VNA projetado da NTN-C por pró-rata exponencial.
 
     O VNA-base deve corresponder ao primeiro dia do mês que contém a data. A
@@ -125,8 +128,8 @@ def vna_projetado(
             ``0.30`` representa 0,30%.
 
     Returns:
-        VNA projetado, truncado em seis casas decimais. Retorna ``nan`` se
-        alguma entrada for nula ou vazia.
+        Decimal: VNA projetado, truncado em seis casas decimais. Retorna
+            ``Decimal('NaN')`` se alguma entrada for nula ou vazia.
 
     Notes:
         Conforme a metodologia da STN, o VNA-base é truncado em seis casas,
@@ -142,17 +145,20 @@ def vna_projetado(
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.vna_projetado("01-06-2026", 6693.537239, 0.30)
-        6693.537239
+        Decimal('6693.537239')
         >>> ntnc.vna_projetado("16-06-2026", 6693.537239, 0.30)
-        6703.570025
+        Decimal('6703.570025')
         >>> ntnc.vna_projetado("21-05-2008", 2102.8055189, 1.754)
-        2126.473734
+        Decimal('2126.473734')
     """
     if any_is_empty(data, vna_base, inflacao):
-        return float("nan")
+        return Decimal("NaN")
     if inflacao <= _utils.LIMITE_INFERIOR_PERCENTUAL:
         raise ValueError("A inflação deve ser maior que -100%.")
     data_convertida = conversores.converter_datas(data)
     inicio, fim = _obter_vigencia(data_convertida)
     expoente = (data_convertida - inicio).days / (fim - inicio).days
-    return _utils.calcular_vna_projetado(vna_base, inflacao, expoente)
+    return truncar_decimal(
+        _utils.calcular_vna_projetado(float(vna_base), float(inflacao), expoente),
+        6,
+    )

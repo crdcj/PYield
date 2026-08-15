@@ -1,11 +1,13 @@
 """Precificação de NTN-B1 pelas regras do Tesouro Direto."""
 
+from decimal import Decimal
 from enum import Enum
 
 import polars as pl
 
 import pyield._internal.converters as conversores
 from pyield import du, interpolador
+from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf.titulos import _utils as utils
 
@@ -201,39 +203,40 @@ def fluxos_caixa(
 def cotacao(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float,
+    taxa: float | Decimal,
     nome_comercial: NomeComercial,
-) -> float:
+) -> Decimal:
     """
     Calcula a cotação da NTN-B1 em base 1 pelo método do Tesouro Direto.
 
     Args:
-        data_liquidacao (DateLike): Data de liquidação da operação.
-        data_vencimento (DateLike): Data de vencimento da NTN-B1.
-        taxa (float): Taxa de desconto (YTM) usada no valor presente.
-        nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
+        data_liquidacao: Data de liquidação da operação.
+        data_vencimento: Data de vencimento da NTN-B1.
+        taxa: Taxa de desconto (YTM) usada no valor presente.
+        nome_comercial: Nome comercial (Renda+ ou Educa+).
 
     Returns:
-        float: Cotação da NTN-B1 em base 1, truncada em 6 casas decimais.
+        Decimal: Cotação da NTN-B1 em base 1, truncada em 6 casas decimais.
 
     Examples:
         >>> from pyield import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
         >>> ntnb1.cotacao("18-06-2025", "15-12-2084", 0.07010, r_mais)
-        0.038332
+        Decimal('0.038332')
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa, nome_comercial):
-        return float("nan")
+        return Decimal("NaN")
 
+    taxa_float = float(taxa)
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
     valores_fluxo = df_fluxos["valor_pagamento"]
     dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
-    fatores_desconto = (1 + taxa) ** anos_uteis
+    fatores_desconto = (1 + taxa_float) ** anos_uteis
     # Na base 1, cada valor presente é arredondado na 12ª casa decimal.
     vp = (valores_fluxo / fatores_desconto).round(12)
     # Retorna a cotação em base 1, truncada na 6ª casa decimal.
-    return utils.truncar(vp.sum(), 6)
+    return truncar_decimal(vp.sum(), 6)
 
 
 def _validar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:
@@ -391,18 +394,18 @@ def taxa_curva_zero(
 
 
 def pu(
-    vna: float,
-    cotacao: float,
-) -> float:
+    vna: float | Decimal,
+    cotacao: float | Decimal,
+) -> Decimal:
     """
     Calcula o preço (PU) da NTN-B1 pelas regras do Tesouro Nacional.
 
     Args:
-        vna (float): Valor nominal atualizado (VNA).
-        cotacao (float): Cotação da NTN-B1 em base 1.
+        vna: Valor nominal atualizado (VNA).
+        cotacao: Cotação da NTN-B1 em base 1.
 
     Returns:
-        float: Preço da NTN-B1 truncado em 6 casas decimais.
+        Decimal: Preço da NTN-B1 truncado em 6 casas decimais.
 
     References:
          - SEI Proccess 17944.005214/2024-09
@@ -410,13 +413,15 @@ def pu(
     Examples:
         >>> from pyield import ntnb1
         >>> ntnb1.pu(4299.160173, 0.993651)
-        4271.864805
+        Decimal('4271.864805')
         >>> ntnb1.pu(4315.498383, 1.006409)
-        4343.156412
+        Decimal('4343.156412')
     """
     if any_is_empty(vna, cotacao):
-        return float("nan")
-    return utils.truncar(vna * cotacao, 6)
+        return Decimal("NaN")
+    vna_decimal = truncar_decimal(vna, 6)
+    cotacao_decimal = truncar_decimal(cotacao, 6)
+    return truncar_decimal(vna_decimal * cotacao_decimal, 6)
 
 
 def duration(
@@ -460,7 +465,7 @@ def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float,
-    pu: float,
+    pu: float | Decimal,
     nome_comercial: NomeComercial = NomeComercial.RENDA_MAIS,
 ) -> float:
     """
@@ -473,7 +478,7 @@ def dv01(
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
         taxa (float): Taxa de desconto (YTM) da NTN-B1.
-        pu (float): PU usado como base para o cálculo.
+        pu: PU usado como base para o cálculo.
         nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
 
     Returns:
@@ -497,4 +502,5 @@ def dv01(
         taxa + 0.0001,
         nome_comercial,
     )
-    return pu * (1 - cotacao_2 / cotacao_1)
+    fator_variacao = 1 - float(cotacao_2) / float(cotacao_1)
+    return float(pu) * fator_variacao

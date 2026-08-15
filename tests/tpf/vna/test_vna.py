@@ -1,5 +1,6 @@
 import datetime as dt
 import math
+from decimal import Decimal
 
 import polars as pl
 import pytest
@@ -186,10 +187,10 @@ def test_vna_ntnb_calcula_entre_valores_publicados(
         ),
     )
 
-    assert vna_ntnb.vna("15-12-2025") == VNA_NTNB_DEZ_2025
-    assert vna_ntnb.vna("30-12-2025") == VNA_NTNB_30_DEZ_2025
-    assert math.isnan(vna_ntnb.vna("14-12-2025"))
-    assert math.isnan(vna_ntnb.vna("16-01-2026"))
+    assert vna_ntnb.vna("15-12-2025") == Decimal(str(VNA_NTNB_DEZ_2025))
+    assert vna_ntnb.vna("30-12-2025") == Decimal(str(VNA_NTNB_30_DEZ_2025))
+    assert vna_ntnb.vna("14-12-2025").is_nan()
+    assert vna_ntnb.vna("16-01-2026").is_nan()
 
 
 @pytest.mark.parametrize(
@@ -227,7 +228,7 @@ def test_vna_ntnb_usa_numeros_indice_com_precisao_normativa(
 
     monkeypatch.setattr(vna_ntnb._ipca, "indices", indices)
 
-    assert vna_ntnb.vna(data) == esperado
+    assert vna_ntnb.vna(data) == Decimal(f"{esperado:.6f}")
 
 
 def test_vna_ntnc_seleciona_serie_e_calcula_entre_valores_publicados(
@@ -261,12 +262,14 @@ def test_vna_ntnc_seleciona_serie_e_calcula_entre_valores_publicados(
         ),
     )
 
-    assert vna_ntnc.vna("01-07-2000", "01-01-2006") == VNA_NTNC_2006_JUL_2000
+    assert vna_ntnc.vna("01-07-2000", "01-01-2006") == Decimal(
+        str(VNA_NTNC_2006_JUL_2000)
+    )
     assert (
         vna_ntnc.vna("16-12-2025", "01-01-2031")
-        == VNA_NTNC_2031_16_DEZ_2025
+        == Decimal(str(VNA_NTNC_2031_16_DEZ_2025))
     )
-    assert math.isnan(vna_ntnc.vna("01-07-2000", "01-01-2041"))
+    assert vna_ntnc.vna("01-07-2000", "01-01-2041").is_nan()
 
 
 CASOS_VNA_PROJETADO = [

@@ -1,6 +1,9 @@
+from decimal import Decimal
+
 import polars as pl
 
 from pyield import du
+from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.bc import lft as _bc_lft
 from pyield.tpf.titulos import _utils as utils
@@ -107,8 +110,8 @@ def vencimentos(data: DateLike) -> pl.Series:
 def cotacao(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float,
-) -> float:
+    taxa: float | Decimal,
+) -> Decimal:
     """
     Calcula a cotação de uma LFT pela metodologia da STN para leilões primários.
 
@@ -118,7 +121,7 @@ def cotacao(
         taxa: Taxa anualizada do título em formato decimal.
 
     Returns:
-        float: Fator de cotação em base 1, truncado em 6 casas decimais.
+        Decimal: Fator de cotação em base 1, truncado em 6 casas decimais.
 
     Notes:
         A STN apresenta a cotação na escala percentual (base 100). Esta
@@ -134,18 +137,18 @@ def cotacao(
         ...     data_vencimento="01-09-2030",
         ...     taxa=0.001717,  # 0.1717%
         ... )
-        0.989645
+        Decimal('0.989645')
         >>> lft.cotacao("21-05-2008", "07-03-2014", -0.000200009)
-        1.001158
+        Decimal('1.001158')
 
-        Entradas nulas retornam float('nan'):
+        Entradas nulas retornam Decimal('NaN'):
         >>> lft.cotacao(
         ...     data_liquidacao=None, data_vencimento="01-09-2030", taxa=0.001717
         ... )
-        nan
+        Decimal('NaN')
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
-        return float("nan")
+        return Decimal("NaN")
     taxa = utils.normalizar_taxa_precificacao(taxa)
     # Número de dias úteis entre liquidação (inclusivo) e vencimento (exclusivo)
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
@@ -155,14 +158,14 @@ def cotacao(
 
     fator_desconto = 1 / (1 + taxa) ** anos_truncados
 
-    return utils.truncar(fator_desconto, 6)
+    return truncar_decimal(fator_desconto, 6)
 
 
 def taxa(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    vna: float,
-    pu: float,
+    vna: float | Decimal,
+    pu: float | Decimal,
 ) -> float:
     """
     Calcula a taxa implícita de uma LFT a partir do preço (PU).
@@ -174,8 +177,8 @@ def taxa(
     Args:
         data_liquidacao: Data de liquidação.
         data_vencimento: Data de vencimento.
-        vna (float): Valor nominal atualizado (VNA).
-        pu (float): Preço unitário (PU) do título.
+        vna: Valor nominal atualizado (VNA).
+        pu: Preço unitário (PU) do título.
 
     Returns:
         float: Taxa implícita em formato decimal, truncada em oito casas
@@ -194,11 +197,13 @@ def taxa(
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
         return float("nan")
 
-    if pu <= 0:
+    pu_float = float(pu)
+    if pu_float <= 0:
         return float("nan")
 
     def diferenca_preco(taxa: float) -> float:
-        return _calcular_pu(vna, cotacao(data_liquidacao, data_vencimento, taxa)) - pu
+        preco = _calcular_pu(vna, cotacao(data_liquidacao, data_vencimento, taxa))
+        return float(preco) - pu_float
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
     return utils.truncar(taxa_encontrada, 8)
@@ -255,29 +260,30 @@ def rentabilidade_expr(
 
 
 def _calcular_pu(
-    vna: float,
-    cotacao: float,
-) -> float:
+    vna: float | Decimal,
+    cotacao: float | Decimal,
+) -> Decimal:
     """Calcula o preço unitário da LFT a partir do VNA e da cotação."""
     if any_is_empty(vna, cotacao):
-        return float("nan")
-    vna = utils.truncar(vna, 6)
-    cotacao = utils.truncar(cotacao, 6)
-    return utils.truncar(vna * cotacao, 6)
+        return Decimal("NaN")
+    vna_decimal = truncar_decimal(vna, 6)
+    cotacao_decimal = truncar_decimal(cotacao, 6)
+    return truncar_decimal(vna_decimal * cotacao_decimal, 6)
 
 
 def pu(
-    vna: float,
-    cotacao: float,
-) -> float:
+    vna: float | Decimal,
+    cotacao: float | Decimal,
+) -> Decimal:
     """
     Calcula o PU da LFT pela metodologia da STN para leilões primários.
 
     Args:
-        vna (float): Valor nominal atualizado (VNA).
-        cotacao (float): Fator de cotação da LFT em base 1.
+        vna: Valor nominal atualizado (VNA).
+        cotacao: Fator de cotação da LFT em base 1.
+
     Returns:
-        float: Preço da LFT truncado em 6 casas decimais.
+        Decimal: Preço da LFT truncado em 6 casas decimais.
 
     References:
         - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
@@ -287,8 +293,8 @@ def pu(
     Examples:
         >>> from pyield import lft
         >>> lft.pu(15785.324502, 0.999291)
-        15774.132706
+        Decimal('15774.132706')
         >>> lft.pu(3451.2153459, 1.0011589)
-        3455.211852
+        Decimal('3455.211852')
     """
     return _calcular_pu(vna, cotacao)

@@ -1,4 +1,3 @@
-import math
 from decimal import ROUND_DOWN, Decimal
 from typing import overload
 
@@ -11,6 +10,18 @@ def truncar(values: float | int | Decimal, decimals: int) -> float: ...
 
 @overload
 def truncar(values: pl.Series, decimals: int) -> pl.Series: ...
+
+
+def truncar_decimal(value: float | int | Decimal, decimals: int) -> Decimal:
+    """Trunca um escalar e preserva o resultado como Decimal."""
+    if decimals < 0:
+        raise ValueError("decimals must be non-negative")
+
+    decimal = value if isinstance(value, Decimal) else Decimal(str(value))
+    if not decimal.is_finite():
+        return decimal
+    quantizer = Decimal(f"1e-{decimals}")
+    return decimal.quantize(quantizer, rounding=ROUND_DOWN)
 
 
 def truncar(
@@ -43,8 +54,4 @@ def truncar(
 
     if isinstance(values, pl.Series):
         return values.truncate(decimals)
-    value = float(values)
-    if not math.isfinite(value):
-        return value
-    quantizer = Decimal(f"1e-{decimals}")
-    return float(Decimal(str(value)).quantize(quantizer, rounding=ROUND_DOWN))
+    return float(truncar_decimal(values, decimals))

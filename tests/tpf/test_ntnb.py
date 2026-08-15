@@ -1,4 +1,5 @@
 import datetime as dt
+from decimal import Decimal
 
 import polars as pl
 import pytest
@@ -60,6 +61,7 @@ TAXAS_ZERO_PLANILHA = [
     0.07110155760681147,
     0.0710829915123008,
 ]
+CASAS_DECIMAIS = 6
 FORWARDS_PLANILHA = [
     0.11669999999922916,
     0.08002323895627329,
@@ -87,12 +89,83 @@ def test_namespace_dos_titulos_separado_do_ntnb_anbima():
 
 def test_cotacao_e_pu_reproduzem_dtbase():
     """Reproduz a precificação da NTN-B 150826 exibida no dtbase."""
-    cotacao_esperada = 1.029056
-    pu_esperado = 4880.439369
+    cotacao_esperada = Decimal("1.029056")
+    pu_esperado = Decimal("4880.439369")
     cotacao = yd.ntnb.cotacao("14-08-2026", "15-08-2026", 0.132098)
 
     assert cotacao == cotacao_esperada
     assert yd.ntnb.pu(4742.6373, cotacao) == pu_esperado
+
+
+def test_cotacao_e_pu_aceitam_decimal() -> None:
+    cotacao = yd.ntnb.cotacao(
+        "31-05-2024", "15-05-2035", Decimal("0.061490")
+    )
+
+    assert cotacao == Decimal("0.993651")
+    assert cotacao.as_tuple().exponent == -CASAS_DECIMAIS
+    assert yd.ntnb.pu(Decimal("4299.160173"), cotacao) == Decimal("4271.864805")
+
+
+def test_cotacao_e_pu_nulos_retornam_decimal_nan() -> None:
+    assert yd.ntnb.cotacao(None, "15-05-2035", Decimal("0.061490")).is_nan()
+    assert yd.ntnb.pu(Decimal("NaN"), Decimal("0.993651")).is_nan()
+
+
+def test_ntnbp_cotacao_e_pu_retornam_decimal() -> None:
+    cotacao = yd.ntnbp.cotacao(
+        "02-12-2025", "15-05-2029", Decimal("0.0777")
+    )
+
+    assert cotacao == Decimal("0.774630")
+    assert cotacao.as_tuple().exponent == -CASAS_DECIMAIS
+    assert yd.ntnbp.pu(Decimal("4567.033825"), cotacao) == Decimal(
+        "3537.761411"
+    )
+
+
+def test_ntnbp_cotacao_e_pu_nulos_retornam_decimal_nan() -> None:
+    assert yd.ntnbp.cotacao(None, "15-05-2029", Decimal("0.0777")).is_nan()
+    assert yd.ntnbp.pu(Decimal("NaN"), Decimal("0.774630")).is_nan()
+
+
+@pytest.mark.parametrize(
+    ("nome_comercial", "vencimento", "cotacao_esperada"),
+    [
+        (ntnb1.NomeComercial.RENDA_MAIS, "15-12-2084", Decimal("0.038332")),
+        (ntnb1.NomeComercial.EDUCA_MAIS, "15-12-2069", Decimal("0.059246")),
+    ],
+)
+def test_ntnb1_cotacao_retorna_decimal(
+    nome_comercial: ntnb1.NomeComercial,
+    vencimento: str,
+    cotacao_esperada: Decimal,
+) -> None:
+    cotacao = ntnb1.cotacao(
+        "18-06-2025",
+        vencimento,
+        Decimal("0.07010"),
+        nome_comercial,
+    )
+
+    assert cotacao == cotacao_esperada
+    assert cotacao.as_tuple().exponent == -CASAS_DECIMAIS
+
+
+def test_ntnb1_pu_retorna_decimal() -> None:
+    assert ntnb1.pu(Decimal("4299.160173"), Decimal("0.993651")) == Decimal(
+        "4271.864805"
+    )
+
+
+def test_ntnb1_cotacao_e_pu_nulos_retornam_decimal_nan() -> None:
+    assert ntnb1.cotacao(
+        None,
+        "15-12-2084",
+        Decimal("0.07010"),
+        ntnb1.NomeComercial.RENDA_MAIS,
+    ).is_nan()
+    assert ntnb1.pu(Decimal("NaN"), Decimal("0.993651")).is_nan()
 
 
 @pytest.mark.parametrize(

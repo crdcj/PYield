@@ -16,6 +16,7 @@ valores e retorna o VNA único.
 """
 
 import datetime as dt
+from decimal import Decimal
 
 import requests
 
@@ -60,16 +61,16 @@ def _filtrar_linhas_lft(linhas: list[str]) -> list[str]:
     return [linha for linha in linhas if linha.split()[3] == CODIGO_LFT]
 
 
-def _extrair_valores_lft(linhas: list[str]) -> list[float]:
+def _extrair_valores_lft(linhas: list[str]) -> list[Decimal]:
     """Extrai os valores VNA numéricos das linhas de LFT."""
     valores = []
     for linha in _filtrar_linhas_lft(linhas):
         vna_str = linha.split()[-1].replace(",", ".")
-        valores.append(float(vna_str))
+        valores.append(Decimal(vna_str))
     return valores
 
 
-def _validar_valores(valores: list[float]) -> float:
+def _validar_valores(valores: list[Decimal]) -> Decimal:
     """Valida se todos os valores VNA são iguais e retorna o valor único."""
     valor = valores[0]
     if any(valor != v for v in valores):
@@ -79,7 +80,7 @@ def _validar_valores(valores: list[float]) -> float:
     return valor
 
 
-def vna(data: DateLike | None = None) -> float:
+def vna(data: DateLike | None = None) -> Decimal:
     """Busca o Valor Nominal Atualizado (VNA) da LFT.
 
     Fonte: Banco Central do Brasil, arquivo diário do SELIC. A resposta bruta
@@ -88,11 +89,13 @@ def vna(data: DateLike | None = None) -> float:
     esse valor único.
 
     Args:
-        data: Data de referência. Se omitida ou nula, retorna ``nan``.
+        data: Data de referência. Se omitida ou nula, retorna
+            ``Decimal('NaN')``.
 
     Returns:
-        Valor do VNA da LFT. Retorna ``nan`` se a entrada for nula, vazia ou
-        uma data de referência inválida.
+        Decimal: VNA da LFT com seis casas decimais. Retorna
+            ``Decimal('NaN')`` se a entrada for nula, vazia ou uma data de
+            referência inválida.
 
     Raises:
         ValueError: Se os valores VNA extraídos da fonte forem divergentes.
@@ -101,13 +104,13 @@ def vna(data: DateLike | None = None) -> float:
     Examples:
         >>> from pyield import lft
         >>> lft.vna("31-05-2024")
-        14903.01148
+        Decimal('14903.011480')
     """
     if any_is_empty(data):
-        return float("nan")
+        return Decimal("NaN")
     data = converter_datas(data)
     if data is None or not data_referencia_valida(data):
-        return float("nan")
+        return Decimal("NaN")
 
     texto = _baixar_texto(data)
     tabela = _recortar_tabela(texto)

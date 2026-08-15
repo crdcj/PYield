@@ -1,12 +1,14 @@
 import datetime as dt
 import logging
 import math
+from decimal import Decimal
 
 import polars as pl
 
 import pyield._internal.converters as cv
 import pyield.interpolador as ip
 from pyield import du
+from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.futuro import di1
 from pyield.tpf.titulos import _utils as utils
@@ -288,7 +290,7 @@ def fluxos_caixa(
 def _calcular_pu(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float,
+    taxa: float | Decimal,
 ) -> float:
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
@@ -309,8 +311,8 @@ def _calcular_pu(
 def pu(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float,
-) -> float:
+    taxa: float | Decimal,
+) -> Decimal:
     """
     Calcula o PU da NTN-F pela metodologia da STN para leilões primários.
 
@@ -320,10 +322,10 @@ def pu(
     Args:
         data_liquidacao (DateLike): Data de liquidação para cálculo do preço.
         data_vencimento (DateLike): Data de vencimento do título.
-        taxa (float): Taxa de desconto (TIR) em formato decimal.
+        taxa: Taxa de desconto (TIR) em formato decimal.
 
     Returns:
-        float: Preço da NTN-F conforme a metodologia da STN.
+        Decimal: Preço da NTN-F truncado em seis casas decimais.
 
     References:
         - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
@@ -335,13 +337,13 @@ def pu(
     Examples:
         >>> from pyield import ntnf
         >>> ntnf.pu("05-07-2024", "01-01-2035", 0.11921)
-        895.359254
+        Decimal('895.359254')
         >>> ntnf.pu("01-07-2024", "01-01-2027", 0.10)
-        999.931303
+        Decimal('999.931303')
         >>> ntnf.pu("21-05-2008", "01-01-2014", 0.136600009)
-        903.075616
+        Decimal('903.075616')
     """
-    return _calcular_pu(data_liquidacao, data_vencimento, taxa)
+    return truncar_decimal(_calcular_pu(data_liquidacao, data_vencimento, taxa), 6)
 
 
 def taxas_zero(  # noqa
@@ -906,7 +908,7 @@ def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float,
-    pu: float,
+    pu: float | Decimal,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) de uma NTN-F em R$.
@@ -918,7 +920,7 @@ def dv01(
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
         taxa (float): Taxa de desconto (TIR) do título.
-        pu (float): PU usado como base para o cálculo.
+        pu: PU usado como base para o cálculo.
 
     Returns:
         float: DV01, variação de preço para 1 bp.
@@ -936,7 +938,7 @@ def dv01(
     taxa_mais_1bp = round(taxa + 0.0001, 8)
     preco_1 = _calcular_pu(data_liquidacao, data_vencimento, taxa)
     preco_2 = _calcular_pu(data_liquidacao, data_vencimento, taxa_mais_1bp)
-    return pu * (1 - preco_2 / preco_1)
+    return float(pu) * (1 - preco_2 / preco_1)
 
 
 def dv01_expr(
@@ -980,7 +982,7 @@ def dv01_expr(
 def taxa(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    pu: float,
+    pu: float | Decimal,
 ) -> float:
     """
     Calcula a TIR implícita de uma NTN-F a partir de um PU informado.
@@ -991,7 +993,7 @@ def taxa(
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
-        pu (float): Preço unitário (PU) do título.
+        pu: Preço unitário (PU) do título.
 
     Returns:
         float: TIR implícita em formato decimal, truncada em oito casas
@@ -1009,11 +1011,15 @@ def taxa(
     if any_is_empty(data_liquidacao, data_vencimento, pu):
         return float("nan")
 
-    if pu <= 0:
+    pu_float = float(pu)
+    if pu_float <= 0:
         return float("nan")
 
     def diferenca_preco(taxa_encontrada: float) -> float:
-        return _calcular_pu(data_liquidacao, data_vencimento, taxa_encontrada) - pu
+        return (
+            _calcular_pu(data_liquidacao, data_vencimento, taxa_encontrada)
+            - pu_float
+        )
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
     return utils.truncar(taxa_encontrada, 8)

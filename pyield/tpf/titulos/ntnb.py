@@ -1,10 +1,12 @@
 import datetime as dt
 import logging
+from decimal import Decimal
 
 import polars as pl
 
 import pyield._internal.converters as conversores
 from pyield import du, fwd, interpolador
+from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.tpf.titulos import _utils as utils
 from pyield.tpf.vna import ntnb as _vna
@@ -264,19 +266,19 @@ def fluxos_caixa(
 def cotacao(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float,
-) -> float:
+    taxa: float | Decimal,
+) -> Decimal:
     """
     Calcula a cotação da NTN-B pela metodologia da STN para leilões primários.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação da operação.
         data_vencimento (DateLike): Data de vencimento da NTN-B.
-        taxa (float): Taxa de desconto (TIR) em formato decimal.
+        taxa: Taxa de desconto (TIR) em formato decimal.
 
     Returns:
-        float: Fator de cotação em base 1, truncado em 6 casas. Retorna NaN
-            em erro.
+        Decimal: Fator de cotação em base 1, truncado em 6 casas. Retorna
+            Decimal('NaN') em erro.
 
     Notes:
         A STN apresenta a cotação na escala percentual (base 100). Esta
@@ -295,23 +297,23 @@ def cotacao(
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)
-        0.993651
+        Decimal('0.993651')
         >>> ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)
-        0.995341
+        Decimal('0.995341')
         >>> ntnb.cotacao("15-08-2024", "15-08-2032", 0.05929)
-        1.006409
+        Decimal('1.006409')
         >>> ntnb.cotacao("15-05-2024", "15-05-2025", 0.10)
-        0.964454
+        Decimal('0.964454')
         >>> ntnb.cotacao("21-05-2008", "15-08-2010", 0.082900009)
-        0.970813
+        Decimal('0.970813')
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
-        return float("nan")
+        return Decimal("NaN")
     taxa = utils.normalizar_taxa_precificacao(taxa)
 
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
     if df_fluxos.is_empty():
-        return float("nan")
+        return Decimal("NaN")
 
     valores_fluxo = df_fluxos["valor_pagamento"]
     dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
@@ -320,33 +322,33 @@ def cotacao(
     # Calcula o valor presente de cada fluxo com arredondamento STN
     vp = (valores_fluxo / fatores_desconto).round(12)
     # Retorna a cotação (soma dos valores presentes) com truncamento STN
-    return utils.truncar(vp.sum(), 6)
+    return truncar_decimal(vp.sum(), 6)
 
 
 def _calcular_pu(
-    vna: float,
-    cotacao: float,
-) -> float:
+    vna: float | Decimal,
+    cotacao: float | Decimal,
+) -> Decimal:
     if any_is_empty(vna, cotacao):
-        return float("nan")
-    vna = utils.truncar(vna, 6)
-    cotacao = utils.truncar(cotacao, 6)
-    return utils.truncar(vna * cotacao, 6)
+        return Decimal("NaN")
+    vna_decimal = truncar_decimal(vna, 6)
+    cotacao_decimal = truncar_decimal(cotacao, 6)
+    return truncar_decimal(vna_decimal * cotacao_decimal, 6)
 
 
 def pu(
-    vna: float,
-    cotacao: float,
-) -> float:
+    vna: float | Decimal,
+    cotacao: float | Decimal,
+) -> Decimal:
     """
     Calcula o PU da NTN-B pela metodologia da STN para leilões primários.
 
     Args:
-        vna (float): Valor nominal atualizado (VNA).
-        cotacao (float): Fator de cotação da NTN-B em base 1.
+        vna: Valor nominal atualizado (VNA).
+        cotacao: Fator de cotação da NTN-B em base 1.
 
     Returns:
-        float: Preço da NTN-B truncado em 6 casas decimais.
+        Decimal: Preço da NTN-B truncado em 6 casas decimais.
 
     References:
         - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
@@ -356,11 +358,11 @@ def pu(
     Examples:
         >>> from pyield import ntnb
         >>> ntnb.pu(4299.160173, 0.993651)
-        4271.864805
+        Decimal('4271.864805')
         >>> ntnb.pu(4315.498383, 1.006409)
-        4343.156412
+        Decimal('4343.156412')
         >>> ntnb.pu(1728.4611369, 0.9708139)
-        1678.01254
+        Decimal('1678.012540')
     """
     return _calcular_pu(vna, cotacao)
 
@@ -578,7 +580,9 @@ def taxas_zero(
         valor_presente_cupons = _calcular_valor_presente_cupons(
             df, data_liquidacao, vencimento
         )
-        preco_titulo = cotacao(data_liquidacao, vencimento, linha["taxa_tir"])
+        preco_titulo = float(
+            cotacao(data_liquidacao, vencimento, linha["taxa_tir"])
+        )
         fator_preco = VALOR_FINAL / (preco_titulo - valor_presente_cupons)
         taxa_zero = fator_preco ** (1 / linha["anos_uteis"]) - 1
 
@@ -796,7 +800,7 @@ def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float,
-    pu: float,
+    pu: float | Decimal,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da NTN-B em R$.
@@ -808,7 +812,7 @@ def dv01(
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
         taxa (float): Taxa de desconto (TIR) da NTN-B.
-        pu (float): PU usado como base para o cálculo.
+        pu: PU usado como base para o cálculo.
 
     Returns:
         float: DV01, variação de preço para 1 bp.
@@ -825,9 +829,9 @@ def dv01(
 
     taxa = utils.normalizar_taxa_precificacao(taxa)
     taxa_mais_1bp = round(taxa + 0.0001, 8)
-    cotacao_1 = cotacao(data_liquidacao, data_vencimento, taxa)
-    cotacao_2 = cotacao(data_liquidacao, data_vencimento, taxa_mais_1bp)
-    return pu * (1 - cotacao_2 / cotacao_1)
+    cotacao_1 = float(cotacao(data_liquidacao, data_vencimento, taxa))
+    cotacao_2 = float(cotacao(data_liquidacao, data_vencimento, taxa_mais_1bp))
+    return float(pu) * (1 - cotacao_2 / cotacao_1)
 
 
 def dv01_expr(
@@ -871,8 +875,8 @@ def dv01_expr(
 def taxa(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    vna: float,
-    pu: float,
+    vna: float | Decimal,
+    pu: float | Decimal,
 ) -> float:
     """
     Calcula a TIR implícita de uma NTN-B a partir do preço (PU).
@@ -884,8 +888,8 @@ def taxa(
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
-        vna (float): Valor nominal atualizado (VNA).
-        pu (float): Preço unitário (PU) do título.
+        vna: Valor nominal atualizado (VNA).
+        pu: Preço unitário (PU) do título.
 
     Returns:
         float: TIR implícita em formato decimal, truncada em oito casas
@@ -904,12 +908,13 @@ def taxa(
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
         return float("nan")
 
-    if pu <= 0:
+    pu_float = float(pu)
+    if pu_float <= 0:
         return float("nan")
 
     def diferenca_preco(taxa_encontrada: float) -> float:
         cotacao_calculada = cotacao(data_liquidacao, data_vencimento, taxa_encontrada)
-        return _calcular_pu(vna, cotacao_calculada) - pu
+        return float(_calcular_pu(vna, cotacao_calculada)) - pu_float
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
     return utils.truncar(taxa_encontrada, 8)
