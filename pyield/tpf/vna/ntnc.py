@@ -8,7 +8,8 @@ import polars as pl
 import pyield._internal.converters as conversores
 from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf.vna import _download, _utils
+from pyield.tpf.vna import _download
+from pyield.tpf.vna import calculo as _vna
 
 _URL_PUBLICACAO = (
     "https://www.tesourotransparente.gov.br/publicacoes/valor-nominal-de-ntn-c/"
@@ -24,7 +25,7 @@ def _processar(df_bruto: pl.DataFrame) -> pl.DataFrame:
     series = []
     for coluna, anos in _ANOS_VENCIMENTO.items():
         serie = df_bruto.select(
-            data=_utils.expressao_data(),
+            data=_vna.expressao_data(),
             anos_vencimento=pl.lit(anos, dtype=pl.List(pl.Int64)),
             vna=pl.col(coluna).cast(pl.Float64, strict=False),
         ).filter(
@@ -100,7 +101,7 @@ def vna(
     df = vnas().filter(
         pl.col("anos_vencimento").list.contains(vencimento_convertido.year)
     )
-    return truncar_decimal(_utils.calcular_vna(df, data_convertida), 6)
+    return truncar_decimal(_vna.calcular_vna(df, data_convertida), 6)
 
 
 def _obter_vigencia(data: dt.date) -> tuple[dt.date, dt.date]:
@@ -153,12 +154,12 @@ def vna_projetado(
     """
     if any_is_empty(data, vna_base, inflacao):
         return Decimal("NaN")
-    if inflacao <= _utils.LIMITE_INFERIOR_PERCENTUAL:
+    if inflacao <= _vna.LIMITE_INFERIOR_PERCENTUAL:
         raise ValueError("A inflação deve ser maior que -100%.")
     data_convertida = conversores.converter_datas(data)
     inicio, fim = _obter_vigencia(data_convertida)
     expoente = (data_convertida - inicio).days / (fim - inicio).days
     return truncar_decimal(
-        _utils.calcular_vna_projetado(float(vna_base), float(inflacao), expoente),
+        _vna.calcular_vna_projetado(float(vna_base), float(inflacao), expoente),
         6,
     )

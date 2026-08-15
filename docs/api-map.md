@@ -58,6 +58,12 @@ Visão geral das principais funções públicas do PYield.
     └── TipoTPF
     ```
 
+??? "`yd.tpf.vna` (cálculo de VNA)"
+    ```text
+    yd.tpf.vna
+    └── calcular_vna(df, data, fator_variacao=...)
+    ```
+
 ??? "`yd.selic` (Selic, COPOM e política monetária)"
     ```text
     yd.selic

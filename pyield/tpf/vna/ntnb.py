@@ -10,7 +10,8 @@ import pyield._internal.converters as conversores
 from pyield._internal.numbers import truncar, truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.ipca import historico as _ipca
-from pyield.tpf.vna import _download, _utils
+from pyield.tpf.vna import _download
+from pyield.tpf.vna import calculo as _vna
 
 _DIA_INICIO_VIGENCIA = 15
 _QTD_MARCOS_VIGENCIA = 2
@@ -23,7 +24,7 @@ def _processar(df_bruto: pl.DataFrame) -> pl.DataFrame:
     """Normaliza as duas colunas da planilha de NTN-B."""
     return (
         df_bruto.select(
-            data=_utils.expressao_data(),
+            data=_vna.expressao_data(),
             vna=pl.col("column_2").cast(pl.Float64, strict=False),
         )
         .filter(pl.col("data").is_not_null(), pl.col("vna").is_not_null())
@@ -94,7 +95,7 @@ def vna(data: DateLike | None = None) -> Decimal:
     if math.isnan(fator_ipca):
         return Decimal("NaN")
     return truncar_decimal(
-        _utils.calcular_vna(
+        _vna.calcular_vna(
             df,
             data_convertida,
             fator_variacao=fator_ipca,
@@ -174,12 +175,12 @@ def vna_projetado(
     """
     if any_is_empty(data, vna_base, inflacao):
         return Decimal("NaN")
-    if inflacao <= _utils.LIMITE_INFERIOR_PERCENTUAL:
+    if inflacao <= _vna.LIMITE_INFERIOR_PERCENTUAL:
         raise ValueError("A inflação deve ser maior que -100%.")
     data_convertida = conversores.converter_datas(data)
     inicio, fim = _obter_vigencia(data_convertida)
     expoente = (data_convertida - inicio).days / (fim - inicio).days
     return truncar_decimal(
-        _utils.calcular_vna_projetado(float(vna_base), float(inflacao), expoente),
+        _vna.calcular_vna_projetado(float(vna_base), float(inflacao), expoente),
         6,
     )

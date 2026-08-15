@@ -1,4 +1,4 @@
-"""Operações compartilhadas pelos cálculos de VNA."""
+"""Cálculos genéricos de VNA."""
 
 import datetime as dt
 
@@ -20,7 +20,29 @@ def calcular_vna(
     *,
     fator_variacao: float | None = None,
 ) -> float:
-    """Obtém o VNA publicado ou calcula o pró-rata entre pontos publicados."""
+    """Obtém o VNA publicado ou calcula o pró-rata entre pontos publicados.
+
+    Args:
+        df: DataFrame com as colunas ``data`` (Date) e ``vna`` (Float64),
+            contendo no máximo um ponto publicado por data.
+        data: Data para a qual o VNA será obtido ou interpolado.
+        fator_variacao: Fator multiplicativo entre o ponto inicial e o final.
+            Se omitido, é calculado pela razão entre os VNAs dos dois pontos.
+
+    Returns:
+        Float: VNA publicado ou calculado por pró-rata exponencial. Retorna
+        ``float('nan')`` quando não houver pontos publicados dos dois lados da
+        data ou quando ela estiver fora do intervalo disponível.
+
+    Notes:
+        Um ponto publicado exatamente na data tem prioridade e ignora
+        ``fator_variacao``. O expoente do pró-rata é truncado em catorze casas
+        e o resultado em seis casas.
+
+    Raises:
+        ValueError: Se o VNA-base não for positivo ou a variação for menor ou
+            igual a -100%.
+    """
     ponto_exato = df.filter(pl.col("data") == data)
     if ponto_exato.height == 1:
         return float(ponto_exato.item(0, "vna"))
@@ -73,3 +95,6 @@ def calcular_vna_projetado(
         projecao_percentual / 100,
         expoente,
     )
+
+
+__all__ = ["calcular_vna"]

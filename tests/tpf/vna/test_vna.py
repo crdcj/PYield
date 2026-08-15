@@ -6,7 +6,7 @@ import polars as pl
 import pytest
 
 from pyield import ntnb, ntnc
-from pyield.tpf.vna import _download  # noqa: PLC2701
+from pyield.tpf.vna import _download, calcular_vna  # noqa: PLC2701
 from pyield.tpf.vna import ntnb as vna_ntnb
 from pyield.tpf.vna import ntnc as vna_ntnc
 
@@ -25,9 +25,71 @@ VNA_NTNC_2031_DEZ_2025 = 6450.107485
 VNA_NTNC_2031_JAN_2026 = 6449.144194
 VNA_NTNC_2031_16_DEZ_2025 = 6449.641358
 VNA_NTNC_2031_JUN_2026 = 6693.537239
+VNA_TESTE_BASE = 100.0
+VNA_TESTE_FINAL = 121.0
+VNA_TESTE_INTERMEDIARIO = 110.0
+VNA_TESTE_FATOR_ALTERNATIVO = 1.44
+VNA_TESTE_INTERMEDIARIO_ALTERNATIVO = 120.0
+
+
+def test_calcular_vna_publico_retorna_ponto_exato() -> None:
+    assert calcular_vna.__module__ == "pyield.tpf.vna.calculo"
+
+    df = pl.DataFrame(
+        {
+            "data": [dt.date(2026, 1, 1), dt.date(2026, 1, 11)],
+            "vna": [VNA_TESTE_BASE, VNA_TESTE_FINAL],
+        },
+        schema_overrides={"data": pl.Date},
+    )
+
+    resultado = calcular_vna(df, dt.date(2026, 1, 1))
+
+    assert isinstance(resultado, float)
+    assert resultado == VNA_TESTE_BASE
+
+
+def test_calcular_vna_publico_calcula_prorata_e_fator_alternativo() -> None:
+    df = pl.DataFrame(
+        {
+            "data": [dt.date(2026, 1, 1), dt.date(2026, 1, 11)],
+            "vna": [VNA_TESTE_BASE, VNA_TESTE_FINAL],
+        },
+        schema_overrides={"data": pl.Date},
+    )
+
+    assert calcular_vna(df, dt.date(2026, 1, 6)) == VNA_TESTE_INTERMEDIARIO
+    assert (
+        calcular_vna(
+            df,
+            dt.date(2026, 1, 6),
+            fator_variacao=VNA_TESTE_FATOR_ALTERNATIVO,
+        )
+        == VNA_TESTE_INTERMEDIARIO_ALTERNATIVO
+    )
+
+
+@pytest.mark.parametrize("data", [dt.date(2025, 12, 31), dt.date(2026, 1, 12)])
+def test_calcular_vna_publico_fora_do_intervalo_retorna_float_nan(
+    data: dt.date,
+) -> None:
+    df = pl.DataFrame(
+        {
+            "data": [dt.date(2026, 1, 1), dt.date(2026, 1, 11)],
+            "vna": [VNA_TESTE_BASE, VNA_TESTE_FINAL],
+        },
+        schema_overrides={"data": pl.Date},
+    )
+
+    resultado = calcular_vna(df, data)
+
+    assert isinstance(resultado, float)
+    assert math.isnan(resultado)
 
 
 def test_api_publica_reexporta_implementacao_canonica() -> None:
+    assert not hasattr(ntnb, "calcular_vna")
+    assert not hasattr(ntnc, "calcular_vna")
     assert ntnb.vnas is vna_ntnb.vnas
     assert ntnb.vna is vna_ntnb.vna
     assert ntnb.vna_projetado is vna_ntnb.vna_projetado
@@ -104,9 +166,7 @@ def test_processar_ntnb_preserva_ultima_ocorrencia_da_data() -> None:
 
     resultado = vna_ntnb._processar(df_bruto)
 
-    assert resultado.to_dicts() == [
-        {"data": dt.date(2000, 7, 15), "vna": 1000.0}
-    ]
+    assert resultado.to_dicts() == [{"data": dt.date(2000, 7, 15), "vna": 1000.0}]
 
 
 def test_processar_ntnc_preserva_series_por_vencimento() -> None:
@@ -265,9 +325,8 @@ def test_vna_ntnc_seleciona_serie_e_calcula_entre_valores_publicados(
     assert vna_ntnc.vna("01-07-2000", "01-01-2006") == Decimal(
         str(VNA_NTNC_2006_JUL_2000)
     )
-    assert (
-        vna_ntnc.vna("16-12-2025", "01-01-2031")
-        == Decimal(str(VNA_NTNC_2031_16_DEZ_2025))
+    assert vna_ntnc.vna("16-12-2025", "01-01-2031") == Decimal(
+        str(VNA_NTNC_2031_16_DEZ_2025)
     )
     assert vna_ntnc.vna("01-07-2000", "01-01-2041").is_nan()
 
@@ -278,17 +337,17 @@ CASOS_VNA_PROJETADO = [
 ]
 
 
-@pytest.mark.parametrize(("funcao", "data", "vna_base", "inflacao"), CASOS_VNA_PROJETADO)
-def test_vna_projetado_entradas_vazias(
-    funcao, data, vna_base, inflacao
-) -> None:
+@pytest.mark.parametrize(
+    ("funcao", "data", "vna_base", "inflacao"), CASOS_VNA_PROJETADO
+)
+def test_vna_projetado_entradas_vazias(funcao, data, vna_base, inflacao) -> None:
     assert math.isnan(funcao(None, vna_base, inflacao))
 
 
-@pytest.mark.parametrize(("funcao", "data", "vna_base", "inflacao"), CASOS_VNA_PROJETADO)
-def test_vna_projetado_valida_dominio(
-    funcao, data, vna_base, inflacao
-) -> None:
+@pytest.mark.parametrize(
+    ("funcao", "data", "vna_base", "inflacao"), CASOS_VNA_PROJETADO
+)
+def test_vna_projetado_valida_dominio(funcao, data, vna_base, inflacao) -> None:
     with pytest.raises(ValueError, match="VNA-base"):
         funcao(data, 0, inflacao)
     with pytest.raises(ValueError, match="inflação"):
