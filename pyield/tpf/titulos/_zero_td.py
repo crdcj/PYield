@@ -210,7 +210,8 @@ def taxas_zero(
             Padrão False, retornando apenas os vencimentos informados.
 
     Returns:
-        pl.DataFrame: Curva zero calibrada pelo método TD.
+        pl.DataFrame: Curva zero calibrada pelo método TD. Retorna vazio quando
+            não restarem vencimentos posteriores à liquidação.
 
     Output Columns:
         - data_vencimento (Date): Data do vértice da curva.
@@ -228,6 +229,16 @@ def taxas_zero(
     liquidacao, vencimentos, taxas = _validar_entradas_taxas_zero(
         data_liquidacao, vencimentos, taxas
     )
+    if vencimentos.is_empty():
+        return pl.DataFrame(
+            schema={
+                "data_vencimento": pl.Date,
+                "dias_uteis": pl.Int64,
+                "taxa_zero": pl.Float64,
+                "taxa_forward": pl.Float64,
+            }
+        )
+
     titulos = pl.DataFrame({"data_vencimento": vencimentos, "taxa_tir": taxas}).sort(
         "data_vencimento"
     )

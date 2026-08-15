@@ -27,7 +27,8 @@ def cotacao(
         taxa_tir: Taxa interna de retorno anualizada do título.
 
     Returns:
-        Decimal: Cotação em base 1, truncada em 6 casas decimais.
+        Decimal: Cotação em base 1, truncada em 6 casas decimais. Retorna
+            ``Decimal("NaN")`` se a liquidação for igual ou posterior ao vencimento.
 
     Examples:
         >>> from pyield import ntnbp
@@ -38,6 +39,8 @@ def cotacao(
         return Decimal("NaN")
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
+    if dias_uteis <= 0:
+        return Decimal("NaN")
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
     fator_desconto = 1 / (1 + float(taxa_tir)) ** anos_uteis
     return truncar_decimal(fator_desconto, 6)
@@ -108,12 +111,16 @@ def taxa(
 
     Returns:
         float: TIR de mercado anualizada, arredondada em quatro casas decimais.
+            Retorna ``NaN`` se a liquidação for igual ou posterior ao vencimento.
     """
     if any_is_empty(data_liquidacao, data_vencimento):
         return float("nan")
 
-    curva = _normalizar_curva_zero(curva_zero)
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
+    if dias_uteis <= 0:
+        return float("nan")
+
+    curva = _normalizar_curva_zero(curva_zero)
     taxa_zero = interpolador.Interpolador(
         curva["dias_uteis"],
         curva["taxa_zero"],
@@ -141,7 +148,8 @@ def dv01(
         pu: PU usado como base para o cálculo.
 
     Returns:
-        float: DV01 (Dollar Value of 01), variação de preço para 1 bp.
+        float: DV01 (Dollar Value of 01), variação de preço para 1 bp. Retorna
+            ``NaN`` se a liquidação for igual ou posterior ao vencimento.
 
     Examples:
         >>> from pyield import ntnbp as bp
@@ -154,6 +162,8 @@ def dv01(
         return float("nan")
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
+    if dias_uteis <= 0:
+        return float("nan")
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
     fator_preco = (1 + taxa_tir) ** anos_uteis
     fator_preco_1bp = (1 + taxa_tir + 0.0001) ** anos_uteis

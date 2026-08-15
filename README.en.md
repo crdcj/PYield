@@ -254,49 +254,20 @@ yd.tpf.secundario.mensal("01-01-2030").is_empty()    # -> True
 yd.ptax("25-12-2025")                                # -> nan
 ```
 
-## API Breaks
+## API Compatibility
 
-### v0.54.2
+The current version is `v0.55.0`. The changes below require code updates:
 
-- `yd.tpf.taxas_historicas(...)` was added for period queries or the complete
-  available history of indicative rates.
-- `yd.tpf.taxas(..., completo=True)` was removed. `yd.tpf.taxas(...)` keeps the
-  stable TPF view. For every processed source column, use
-  `pyield.anbima.taxas.buscar(data)` or `pyield.anbima.taxas.ler(fonte)`.
-
-## Object-Oriented API Migration (v0.49.0)
-
-Version 0.49.0 reorganizes the main public API around the user's financial
-object rather than the original data source. Migration map:
-
-| Before | After |
+| Version | Main change |
 |---|---|
-| `yd.b3.futuro(data, contrato)` | `yd.futuro.historico(data, contrato)` |
-| `yd.b3.futuro_intradia(contrato)` | `yd.futuro.intradia(contrato)` |
-| `yd.b3.futuro_datas_disponiveis(contrato)` | `yd.futuro.datas_disponiveis(contrato)` |
-| `yd.b3.futuro_enriquecer(df, contrato)` | `yd.futuro.enriquecer(df, contrato)` |
-| `yd.b3.di_over(data)` | `yd.di_over(data)` |
-| `yd.b3.di1.dados(data)` | `yd.di1.dados(data)` |
-| `yd.bc.ptax(data)` | `yd.ptax(data)` |
-| `yd.bc.selic_over(data)` | `yd.selic.over(data)` |
-| `yd.selic_over(data)` | `yd.selic.over(data)` |
-| `yd.selic_over_serie(...)` | `yd.selic.over_serie(...)` |
-| `yd.selic_meta(data)` | `yd.selic.meta(data)` |
-| `yd.selic_meta_serie(...)` | `yd.selic.meta_serie(...)` |
-| `yd.copom` | `yd.selic.copom` |
-| `yd.copom_options(data)` | `yd.selic.cpm.data(data)` |
-| `yd.compromissadas(...)` | `yd.selic.compromissadas(...)` |
-| `yd.anbima.tpf(data, titulo)` | `yd.tpf.taxas(data, titulo)` |
-| `yd.anbima.tpf_vencimentos(data, titulo)` | `yd.tpf.vencimentos(data, titulo)` |
-| `yd.anbima.imaq(data)` | `yd.tpf.estoque(data)` |
-| `yd.tn.leilao(data)` | `yd.tpf.leiloes(data=...)` |
-| `yd.bc.tpf_intradia()` | `yd.tpf.secundario.intradia()` |
-| `yd.bc.tpf_mensal(data, extragrupo=...)` | `yd.tpf.secundario.mensal(data, extragrupo=...)` |
-| `yd.bc.vna_lft(data)` | `yd.lft.vna(data)` |
-| `yd.tn.benchmarks(...)` | `yd.tpf.benchmarks(...)` |
-| `yd.pre.taxas_zero(data)` | `yd.tpf.curva_pre(data)` |
+| `v0.55.0` | Bond PU, quotation, and VNA functions now return six-decimal `Decimal` values. Numeric inputs accept `float` or `Decimal`. |
+| `v0.54.5` | `fluxos_caixa` no longer accepts `ajustar_datas_pagamento`; schedules use contractual dates. |
+| `v0.54.2` | Added `taxas_historicas` and removed `tpf.taxas(completo=True)`. |
+| `v0.54.0` | LFT, NTN-B, NTN-C, and NTN-B1 quotations and cash flows changed from base 100 to base 1; `ntnbprinc` became `ntnbp`; `premio_pre` became `premios_pre`; invalid scalar dates now raise `ValueError`. |
+| `v0.53.0` | TPF secondary-market functions moved to `yd.tpf.secundario.intradia` and `yd.tpf.secundario.mensal`. |
+| `v0.52.0` | `Interpolador` became scalar; use `interpolar_expr` or `yd.interpolar` for vectors. `dv01` now requires `pu`, and `ntnf.taxas_zero` uses `vencimentos_*` / `taxas_*` parameter names. |
 
-The old high-level source aliases listed above were removed from the public API.
+See the [GitHub releases](https://github.com/crdcj/PYield/releases) for the complete history, including the older object-oriented API migration.
 
 ## Tests
 

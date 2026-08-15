@@ -484,7 +484,8 @@ def taxas_zero(
             Padrão False.
 
     Returns:
-        pl.DataFrame: DataFrame com as taxas zero.
+        pl.DataFrame: DataFrame com as taxas zero. Retorna vazio quando não
+            restarem vencimentos posteriores à liquidação.
 
     Output Columns:
         - data_vencimento (Date): Data de vencimento.
@@ -561,6 +562,14 @@ def taxas_zero(
     data_liquidacao, vencimentos, taxas = _validar_entradas_taxas_zero(
         data_liquidacao, vencimentos, taxas
     )
+    if vencimentos.is_empty():
+        return pl.DataFrame(
+            schema={
+                "data_vencimento": pl.Date,
+                "dias_uteis": pl.Int64,
+                "taxa_zero": pl.Float64,
+            }
+        )
 
     df = _criar_df_bootstrap(data_liquidacao, taxas, vencimentos)
 

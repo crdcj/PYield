@@ -128,7 +128,8 @@ def pu(
         taxa: Taxa de desconto (YTM) do título em formato decimal.
 
     Returns:
-        Decimal: PU da LTN truncado em seis casas decimais.
+        Decimal: PU da LTN truncado em seis casas decimais. Retorna
+            ``Decimal("NaN")`` quando o prazo até o vencimento não é positivo.
 
     References:
         - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
@@ -148,6 +149,8 @@ def pu(
     taxa = utils.normalizar_taxa_precificacao(taxa)
     # Calcula dias úteis entre liquidação e vencimento
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
+    if dias_uteis <= 0:
+        return Decimal("NaN")
 
     # Calcula anos úteis truncados conforme a STN
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
@@ -196,6 +199,8 @@ def taxa(
         return float("nan")
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
+    if dias_uteis <= 0:
+        return float("nan")
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
     taxa_calculada = (VALOR_FACE / preco_float) ** (1 / anos_truncados) - 1
     return utils.truncar(taxa_calculada, 8)
@@ -271,7 +276,8 @@ def dv01(
         pu: PU usado como base para o cálculo.
 
     Returns:
-        float: DV01, variação de preço para 1 bp.
+        float: DV01, variação de preço para 1 bp. Retorna ``NaN`` quando o
+            prazo até o vencimento não é positivo.
 
     Examples:
         >>> from pyield import ltn
@@ -285,6 +291,8 @@ def dv01(
     taxa = utils.normalizar_taxa_precificacao(taxa)
     taxa_mais_1bp = round(taxa + 0.0001, 8)
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
+    if dias_uteis <= 0:
+        return float("nan")
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
     preco_1 = utils.truncar(VALOR_FACE / (1 + taxa) ** anos_truncados, 6)
     preco_2 = utils.truncar(
@@ -308,7 +316,8 @@ def duration_expr(
     Returns:
         pl.Expr: Expressão sem alias com a duration em anos úteis.
     """
-    return du.contar_expr(data_liquidacao, data_vencimento) / 252
+    dias_uteis = du.contar_expr(data_liquidacao, data_vencimento)
+    return pl.when(dias_uteis > 0).then(dias_uteis / 252).otherwise(float("nan"))
 
 
 def dv01_expr(

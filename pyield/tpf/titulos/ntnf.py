@@ -346,6 +346,35 @@ def pu(
     return truncar_decimal(_calcular_pu(data_liquidacao, data_vencimento, taxa), 6)
 
 
+def _filtrar_vertices_futuros(
+    liquidacao: dt.date,
+    vencimentos: pl.Series,
+    taxas: pl.Series,
+    nome_curva: str,
+) -> tuple[pl.Series, pl.Series]:
+    """Remove vértices sem prazo preservando o alinhamento com as taxas."""
+    if len(vencimentos) != len(taxas):
+        raise ValueError(
+            f"Vencimentos e taxas de {nome_curva} devem ter o mesmo tamanho."
+        )
+
+    df = pl.DataFrame(
+        {"data_vencimento": vencimentos, "taxa": taxas},
+        schema={"data_vencimento": pl.Date, "taxa": pl.Float64},
+    ).filter(pl.col("data_vencimento") > liquidacao)
+
+    removidos = len(vencimentos) - df.height
+    if removidos > 0:
+        logger.warning(
+            "Vencimentos de %s menores ou iguais à liquidação foram ignorados: "
+            "%s removidos.",
+            nome_curva,
+            removidos,
+        )
+
+    return df["data_vencimento"], df["taxa"]
+
+
 def taxas_zero(  # noqa
     data_liquidacao: DateLike,
     vencimentos_ltn: DatesLike,
@@ -384,6 +413,10 @@ def taxas_zero(  # noqa
         - data_vencimento (Date): Data de vencimento.
         - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.
         - taxa_zero (Float64): Taxa zero (zero cupom).
+
+    Notes:
+        Vencimentos menores ou iguais à liquidação são ignorados antes da
+        construção dos interpoladores.
 
     Examples:
         >>> from pyield import ntnf, ltn
@@ -430,6 +463,27 @@ def taxas_zero(  # noqa
         serie_ntnf_taxas = pl.Series(taxas_ntnf).cast(pl.Float64)
     else:
         serie_ntnf_taxas = taxas_ntnf
+
+    vencimentos_ltn, serie_ltn_taxas = _filtrar_vertices_futuros(
+        liquidacao,
+        vencimentos_ltn,
+        serie_ltn_taxas,
+        "LTN",
+    )
+    vencimentos_ntnf, serie_ntnf_taxas = _filtrar_vertices_futuros(
+        liquidacao,
+        vencimentos_ntnf,
+        serie_ntnf_taxas,
+        "NTN-F",
+    )
+    if vencimentos_ltn.is_empty() or vencimentos_ntnf.is_empty():
+        return pl.DataFrame(
+            schema={
+                "data_vencimento": pl.Date,
+                "dias_uteis": pl.Int64,
+                "taxa_zero": pl.Float64,
+            }
+        )
 
     # 2. Criar interpoladores (aceitam pl.Series diretamente)
     interpolador_ltn = ip.Interpolador(

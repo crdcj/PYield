@@ -2,7 +2,9 @@ import datetime as dt
 import inspect
 from decimal import Decimal
 
+import polars as pl
 import pytest
+from polars.testing import assert_frame_equal
 
 from pyield import ntnf
 
@@ -37,3 +39,44 @@ def test_pu_e_taxa_reproduzem_referencia_do_back_office(
 
     assert ntnf.pu(data_liquidacao, data_vencimento, taxa) == pu_esperado
     assert ntnf.taxa(data_liquidacao, data_vencimento, pu_esperado) == taxa
+
+
+def test_taxas_zero_ignora_vertices_vencidos() -> None:
+    parametros = {
+        "data_liquidacao": "05-01-2027",
+        "vencimentos_ltn": ["01-01-2028"],
+        "taxas_ltn": [0.11],
+        "vencimentos_ntnf": ["01-01-2029"],
+        "taxas_ntnf": [0.12],
+        "incluir_cupons": True,
+    }
+    esperado = ntnf.taxas_zero(**parametros)
+
+    resultado = ntnf.taxas_zero(
+        **{
+            **parametros,
+            "vencimentos_ltn": ["01-01-2027", "01-01-2028"],
+            "taxas_ltn": [0.50, 0.11],
+            "vencimentos_ntnf": ["01-01-2027", "01-01-2029"],
+            "taxas_ntnf": [0.50, 0.12],
+        }
+    )
+
+    assert_frame_equal(resultado, esperado)
+
+
+def test_taxas_zero_retorna_vazio_sem_vertices_futuros() -> None:
+    resultado = ntnf.taxas_zero(
+        data_liquidacao="05-01-2027",
+        vencimentos_ltn=["01-01-2027"],
+        taxas_ltn=[0.11],
+        vencimentos_ntnf=["01-01-2027"],
+        taxas_ntnf=[0.12],
+    )
+
+    assert resultado.is_empty()
+    assert resultado.schema == {
+        "data_vencimento": pl.Date,
+        "dias_uteis": pl.Int64,
+        "taxa_zero": pl.Float64,
+    }

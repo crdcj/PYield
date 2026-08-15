@@ -122,6 +122,8 @@ def cotacao(
 
     Returns:
         Decimal: Fator de cotação em base 1, truncado em 6 casas decimais.
+            Retorna ``Decimal("NaN")`` quando o prazo até o vencimento não é
+            positivo.
 
     Notes:
         A STN apresenta a cotação na escala percentual (base 100). Esta
@@ -152,6 +154,8 @@ def cotacao(
     taxa = utils.normalizar_taxa_precificacao(taxa)
     # Número de dias úteis entre liquidação (inclusivo) e vencimento (exclusivo)
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
+    if dias_uteis <= 0:
+        return Decimal("NaN")
 
     # Número de períodos truncado conforme regras da STN
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
@@ -199,6 +203,10 @@ def taxa(
 
     pu_float = float(pu)
     if pu_float <= 0:
+        return float("nan")
+
+    dias_uteis = du.contar(data_liquidacao, data_vencimento)
+    if dias_uteis <= 0:
         return float("nan")
 
     def diferenca_preco(taxa: float) -> float:

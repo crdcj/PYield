@@ -1,4 +1,7 @@
+import math
 from decimal import Decimal
+
+import pytest
 
 from pyield import lft
 
@@ -42,3 +45,11 @@ def test_taxa_aceita_pu_decimal() -> None:
         lft.taxa("24-07-2024", "01-03-2025", Decimal("15785.324502"), pu)
         == taxa_esperada
     )
+
+
+@pytest.mark.parametrize("data_liquidacao", ["01-03-2026", "03-03-2026"])
+def test_calculos_rejeitam_prazo_nao_positivo(data_liquidacao: str) -> None:
+    data_vencimento = "01-03-2026"
+
+    assert lft.cotacao(data_liquidacao, data_vencimento, 0.0017).is_nan()
+    assert math.isnan(lft.taxa(data_liquidacao, data_vencimento, 1_000, 1_000))

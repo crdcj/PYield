@@ -1,4 +1,5 @@
 import datetime as dt
+import math
 from decimal import Decimal
 
 import polars as pl
@@ -98,9 +99,7 @@ def test_cotacao_e_pu_reproduzem_dtbase():
 
 
 def test_cotacao_e_pu_aceitam_decimal() -> None:
-    cotacao = yd.ntnb.cotacao(
-        "31-05-2024", "15-05-2035", Decimal("0.061490")
-    )
+    cotacao = yd.ntnb.cotacao("31-05-2024", "15-05-2035", Decimal("0.061490"))
 
     assert cotacao == Decimal("0.993651")
     assert cotacao.as_tuple().exponent == -CASAS_DECIMAIS
@@ -113,20 +112,36 @@ def test_cotacao_e_pu_nulos_retornam_decimal_nan() -> None:
 
 
 def test_ntnbp_cotacao_e_pu_retornam_decimal() -> None:
-    cotacao = yd.ntnbp.cotacao(
-        "02-12-2025", "15-05-2029", Decimal("0.0777")
-    )
+    cotacao = yd.ntnbp.cotacao("02-12-2025", "15-05-2029", Decimal("0.0777"))
 
     assert cotacao == Decimal("0.774630")
     assert cotacao.as_tuple().exponent == -CASAS_DECIMAIS
-    assert yd.ntnbp.pu(Decimal("4567.033825"), cotacao) == Decimal(
-        "3537.761411"
-    )
+    assert yd.ntnbp.pu(Decimal("4567.033825"), cotacao) == Decimal("3537.761411")
 
 
 def test_ntnbp_cotacao_e_pu_nulos_retornam_decimal_nan() -> None:
     assert yd.ntnbp.cotacao(None, "15-05-2029", Decimal("0.0777")).is_nan()
     assert yd.ntnbp.pu(Decimal("NaN"), Decimal("0.774630")).is_nan()
+
+
+@pytest.mark.parametrize("liquidacao", ["15-08-2026", "17-08-2026"])
+def test_ntnbp_rejeita_liquidacao_no_ou_apos_vencimento(liquidacao: str) -> None:
+    curva_zero = pl.DataFrame({"dias_uteis": [1, 10], "taxa_zero": [0.07, 0.071]})
+
+    cotacao = ntnbp.cotacao(liquidacao, "15-08-2026", 0.07)
+
+    assert cotacao.is_nan()
+    assert ntnbp.pu(4742.6373, cotacao).is_nan()
+    assert math.isnan(ntnbp.taxa(liquidacao, "15-08-2026", curva_zero))
+    assert math.isnan(ntnbp.dv01(liquidacao, "15-08-2026", 0.07, 1_000))
+
+
+@pytest.mark.parametrize("liquidacao", ["15-08-2026", "17-08-2026"])
+def test_ntnb_rejeita_liquidacao_no_ou_apos_vencimento(liquidacao: str) -> None:
+    cotacao = yd.ntnb.cotacao(liquidacao, "15-08-2026", 0.132098)
+
+    assert cotacao.is_nan()
+    assert yd.ntnb.pu(4742.6373, cotacao).is_nan()
 
 
 @pytest.mark.parametrize(
@@ -222,6 +237,29 @@ def test_taxas_zero_td_limita_busca_sem_intervalo():
 
     with pytest.raises(RuntimeError, match="encontrar um intervalo"):
         ntnb_td.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, taxas)
+
+
+def test_taxas_zero_retornam_vazio_sem_vencimentos_futuros() -> None:
+    liquidacao = "17-08-2026"
+    vencimentos = ["15-08-2026"]
+    taxas = [0.07]
+
+    curva_anbima = yd.ntnb.taxas_zero(liquidacao, vencimentos, taxas)
+    curva_td = ntnbp.taxas_zero(liquidacao, vencimentos, taxas)
+
+    assert curva_anbima.is_empty()
+    assert curva_anbima.schema == {
+        "data_vencimento": pl.Date,
+        "dias_uteis": pl.Int64,
+        "taxa_zero": pl.Float64,
+    }
+    assert curva_td.is_empty()
+    assert curva_td.schema == {
+        "data_vencimento": pl.Date,
+        "dias_uteis": pl.Int64,
+        "taxa_zero": pl.Float64,
+        "taxa_forward": pl.Float64,
+    }
 
 
 @pytest.mark.parametrize(
