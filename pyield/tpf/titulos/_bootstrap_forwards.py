@@ -1,4 +1,4 @@
-"""Bootstrap da curva zero de NTN-B pelo método TD."""
+"""Bootstrap de forwards para a curva zero de NTN-B."""
 
 import datetime as dt
 from collections.abc import Callable
@@ -145,12 +145,13 @@ def taxas_zero(
     incluir_vertices: bool = False,
 ) -> pl.DataFrame:
     r"""
-    Calcula a curva zero de NTN-B pelo bootstrap de forwards do método TD.
+    Calcula a curva zero de NTN-B pelo bootstrap de forwards.
 
     O método parte das TIRs observadas das NTN-B, mas não as trata como taxas
     zero. Ele encontra uma taxa forward para cada vencimento de título para que
     os fluxos descontados pela curva zero reproduzam exatamente a cotação que a
-    TIR daquele título produz.
+    TIR daquele título produz. A calibração é iterativa e tem convergência
+    condicional: depende da existência de um intervalo válido para cada raiz.
 
     Notes:
         **Racional**
@@ -193,7 +194,16 @@ def taxas_zero(
 
         Os forwards e taxas zero já calibrados nos títulos curtos permanecem
         fixos durante a calibração dos títulos longos. Por isso, cada etapa tem
-        apenas uma incógnita e pode ser resolvida de forma estável por bisseção.
+        apenas uma incógnita e é resolvida por bisseção quando há mudança de
+        sinal no intervalo pesquisado.
+
+        **Convergência condicional**
+
+        A bisseção é determinística quando encontra um intervalo que contém uma
+        raiz. A função tenta expandir o limite superior para encontrar esse
+        intervalo, mas pode não encontrá-lo para entradas incompatíveis ou
+        extremos. Nesse caso, a calibração não produz uma curva e lança
+        ``RuntimeError``.
 
         **Precisão do método**
 
@@ -210,8 +220,12 @@ def taxas_zero(
             Padrão False, retornando apenas os vencimentos informados.
 
     Returns:
-        pl.DataFrame: Curva zero calibrada pelo método TD. Retorna vazio quando
+        pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Retorna vazio quando
             não restarem vencimentos posteriores à liquidação.
+
+    Raises:
+        RuntimeError: Se não for possível encontrar um intervalo válido para
+            alguma taxa forward.
 
     Output Columns:
         - data_vencimento (Date): Data do vértice da curva.

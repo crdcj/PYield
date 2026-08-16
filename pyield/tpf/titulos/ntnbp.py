@@ -7,10 +7,10 @@ import polars as pl
 from pyield import du, interpolador
 from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
+from pyield.tpf.titulos import _bootstrap_forwards
 from pyield.tpf.titulos import _utils as utils
-from pyield.tpf.titulos import _zero_td
 
-taxas_zero = _zero_td.taxas_zero
+taxas_zero = _bootstrap_forwards.taxas_zero
 
 
 def cotacao(

@@ -470,10 +470,12 @@ def taxas_zero(
     incluir_cupons: bool = False,
 ) -> pl.DataFrame:
     """
-    Calcula as taxas zero da NTN-B usando bootstrap.
+    Calcula as taxas zero da NTN-B pelo bootstrap de cupons.
 
-    O bootstrap determina as taxas zero a partir dos yields dos títulos,
-    resolvendo iterativamente as taxas que descontam os fluxos ao preço.
+    O método monta uma grade trimestral de datas de pagamento, interpola as TIRs
+    dos títulos nos vértices intermediários e resolve sequencialmente as taxas
+    zero. Para cada vértice, a taxa é obtida diretamente do preço-alvo e do
+    valor presente dos cupons anteriores; não há busca iterativa de raiz.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
@@ -551,10 +553,13 @@ def taxas_zero(
 
     Notes:
         O cálculo considera:
-        - Mapear todas as datas de pagamento até o último vencimento.
+        - Mapear todas as datas trimestrais de pagamento até o último vencimento.
         - Interpolar as TIRs nas datas intermediárias.
         - Calcular a cotação da NTN-B para cada vencimento.
         - Calcular as taxas zero reais.
+
+        Este bootstrap usa a cotação normativa da NTN-B, que arredonda o valor
+        presente de cada fluxo e trunca a cotação final em seis casas.
     """
     if any_is_empty(data_liquidacao, vencimentos, taxas):
         return pl.DataFrame()
@@ -589,9 +594,7 @@ def taxas_zero(
         valor_presente_cupons = _calcular_valor_presente_cupons(
             df, data_liquidacao, vencimento
         )
-        preco_titulo = float(
-            cotacao(data_liquidacao, vencimento, linha["taxa_tir"])
-        )
+        preco_titulo = float(cotacao(data_liquidacao, vencimento, linha["taxa_tir"]))
         fator_preco = VALOR_FINAL / (preco_titulo - valor_presente_cupons)
         taxa_zero = fator_preco ** (1 / linha["anos_uteis"]) - 1
 
