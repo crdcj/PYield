@@ -52,7 +52,7 @@ pip install pyield
 
 ## Exemplos Práticos
 
-### 1. Dias Úteis (Business Days)
+### 1. Dias úteis
 
 O módulo `du` é a base de todos os cálculos na biblioteca. Feriados brasileiros são automaticamente considerados.
 
@@ -79,13 +79,31 @@ yd.du.gerar("22-12-2023", "02-01-2024")
 yd.du.eh_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
-Por padrão, `calendario="auto"` seleciona a lista de feriados conforme a data.
-Use `calendario="anterior"` para forçar o regime anterior a 26/12/2023 ou
-`calendario="atual"` para forçar a lista vigente na versão instalada:
+Por padrão, `calendario="auto"` seleciona a lista de feriados com base na data de
+referência de cada operação. Em entradas vetorizadas, a seleção ocorre por
+elemento; em `yd.du.gerar`, ela usa `inicio`. Use `calendario="anterior"` para
+forçar o regime anterior a 26/12/2023 ou `calendario="atual"` para forçar a
+lista vigente na versão instalada:
 
 ```python
 yd.du.contar("20-11-2024", "21-11-2024", calendario="anterior")  # -> 1
-yd.du.contar("20-11-2024", "21-11-2024", calendario="atual")   # -> 0
+yd.du.contar("20-11-2024", "21-11-2024", calendario="atual")     # -> 0
+```
+
+Os parâmetros opcionais usam termos em português. `ajuste` define como tratar uma
+data inicial não útil, enquanto `limites_inclusivos` controla quais extremos de um
+intervalo gerado são incluídos:
+
+```python
+yd.du.deslocar("23-12-2023", 0, ajuste="anterior")
+# -> datetime.date(2023, 12, 22)
+
+yd.du.gerar(
+    "08-01-2024",
+    "10-01-2024",
+    limites_inclusivos="inicio",
+).to_list()
+# -> [datetime.date(2024, 1, 8), datetime.date(2024, 1, 9)]
 ```
 
 As principais funções de cálculo suportam operações vetorizadas com listas,

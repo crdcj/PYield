@@ -1,5 +1,5 @@
-# Feriados nacionais do Brasil
-# Observação: datas até 22-12-2023 (inclusive) devem usar esta lista
+# Feriados nacionais do Brasil: antes de 26-12-2023
+# Observação: datas anteriores a 26-12-2023 devem usar esta lista.
 01/01/1990
 26/02/1990
 27/02/1990

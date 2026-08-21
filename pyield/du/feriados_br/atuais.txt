@@ -2,9 +2,9 @@
 # Fonte dos dados: https://www.anbima.com.br/feriados/feriados.asp
 # Link direto do arquivo da ANBIMA:
 # https://www.anbima.com.br/feriados/arqs/feriados_nacionais.xls
-# Em dezembro de 2023, um novo feriado foi adicionado: "Dia Nacional de Zumbi"
-# Observação: datas até 22-12-2023 (inclusive) devem usar a lista
-# "feriados_antigos_br.txt"
+# Em dezembro de 2023, foi adicionado o feriado "Dia Nacional de Zumbi".
+# Observação: datas anteriores a 26-12-2023 devem usar a lista
+# "anteriores.txt".
 01/01/1990
 26/02/1990
 27/02/1990

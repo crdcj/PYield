@@ -7,11 +7,11 @@ Visão geral das principais funções públicas do PYield.
     yd.du
     ├── contar(inicio, fim, calendario="auto")
     ├── contar_expr(inicio, fim, calendario="auto")
-    ├── deslocar(data, n, rolagem="forward", calendario="auto")
-    ├── deslocar_expr(data, n, rolagem="forward", calendario="auto")
-    ├── eh_dia_util(data, calendario="auto")
+    ├── deslocar(datas, deslocamento, ajuste="seguinte", calendario="auto")
+    ├── deslocar_expr(data, deslocamento, ajuste="seguinte", calendario="auto")
+    ├── eh_dia_util(datas, calendario="auto")
     ├── eh_dia_util_expr(data, calendario="auto")
-    ├── gerar(inicio, fim, fechamento="both", calendario="auto")
+    ├── gerar(inicio, fim, limites_inclusivos="ambos", calendario="auto")
     └── ultimo_dia_util()
     ```
 

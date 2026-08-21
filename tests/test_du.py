@@ -24,7 +24,10 @@ def test_calendario_funcoes_escalares(
     dia_util: bool,
 ) -> None:
     assert du.contar(DATA_ZUMBI, DIA_SEGUINTE, calendario) == contagem
-    assert du.deslocar(DATA_ZUMBI, 0, "forward", calendario) == data_deslocada
+    assert (
+        du.deslocar(DATA_ZUMBI, 0, ajuste="seguinte", calendario=calendario)
+        == data_deslocada
+    )
     assert du.eh_dia_util(DATA_ZUMBI, calendario) is dia_util
 
 
@@ -44,7 +47,12 @@ def test_calendario_expressoes(
 
     resultado = df.select(
         contagem=du.contar_expr("inicio", "fim", calendario),
-        data_deslocada=du.deslocar_expr("inicio", 0, "forward", calendario),
+        data_deslocada=du.deslocar_expr(
+            "inicio",
+            0,
+            ajuste="seguinte",
+            calendario=calendario,
+        ),
         dia_util=du.eh_dia_util_expr("inicio", calendario),
     )
 
@@ -64,5 +72,27 @@ def test_calendario_gerar(
     datas_esperadas: list[dt.date],
 ) -> None:
     resultado = du.gerar(DATA_ZUMBI, DATA_ZUMBI, calendario=calendario)
+
+    assert resultado.to_list() == datas_esperadas
+
+
+@pytest.mark.parametrize(
+    ("limites_inclusivos", "datas_esperadas"),
+    [
+        ("ambos", [dt.date(2024, 1, 8), dt.date(2024, 1, 9), dt.date(2024, 1, 10)]),
+        ("inicio", [dt.date(2024, 1, 8), dt.date(2024, 1, 9)]),
+        ("fim", [dt.date(2024, 1, 9), dt.date(2024, 1, 10)]),
+        ("nenhum", [dt.date(2024, 1, 9)]),
+    ],
+)
+def test_limites_inclusivos_gerar(
+    limites_inclusivos: str,
+    datas_esperadas: list[dt.date],
+) -> None:
+    resultado = du.gerar(
+        "08-01-2024",
+        "10-01-2024",
+        limites_inclusivos=limites_inclusivos,
+    )
 
     assert resultado.to_list() == datas_esperadas

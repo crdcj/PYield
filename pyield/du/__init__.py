@@ -1,3 +1,9 @@
+"""Dias úteis e calendário brasileiro.
+
+Expõe contagem, deslocamento, geração e verificação de dias úteis, além das
+respectivas expressões Polars.
+"""
+
 from pyield.du.core import (
     contar,
     contar_expr,

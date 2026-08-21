@@ -117,13 +117,27 @@ du.gerar("22-12-2023", "02-01-2024")
 du.eh_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
-Por padrão, `calendario="auto"` seleciona a lista de feriados conforme a data.
-Use `calendario="anterior"` para forçar o regime anterior a 26/12/2023 ou
-`calendario="atual"` para forçar a lista vigente na versão instalada:
+Por padrão, `calendario="auto"` seleciona a lista de feriados com base na data de
+referência de cada operação. Em entradas vetorizadas, a seleção ocorre por
+elemento; em `du.gerar`, ela usa `inicio`. Use `calendario="anterior"` para
+forçar o regime anterior a 26/12/2023 ou `calendario="atual"` para forçar a
+lista vigente na versão instalada:
 
 ```python
 du.contar("20-11-2024", "21-11-2024", calendario="anterior")  # -> 1
-du.contar("20-11-2024", "21-11-2024", calendario="atual")   # -> 0
+du.contar("20-11-2024", "21-11-2024", calendario="atual")     # -> 0
+```
+
+Os parâmetros opcionais usam termos em português. `ajuste` define como tratar uma
+data inicial não útil, enquanto `limites_inclusivos` controla quais extremos de um
+intervalo gerado são incluídos:
+
+```python
+du.deslocar("23-12-2023", 0, ajuste="anterior")
+# -> datetime.date(2023, 12, 22)
+
+du.gerar("08-01-2024", "10-01-2024", limites_inclusivos="inicio").to_list()
+# -> [datetime.date(2024, 1, 8), datetime.date(2024, 1, 9)]
 ```
 
 As principais funções de cálculo (`contar`, `deslocar` e `eh_dia_util`)
@@ -296,7 +310,7 @@ A versão atual é `v0.56.0`. As mudanças abaixo podem exigir atualização de 
 
 | Versão | Mudança principal |
 |---|---|
-| `v0.56.0` | As funções de dias úteis adotaram `calendario="auto" \| "anterior" \| "atual"`. Em `du.gerar`, substitua `opcao_feriado` por `calendario`; os valores `"inferir"`, `"antigo"` e `"novo"` correspondem agora a `"auto"`, `"anterior"` e `"atual"`. O padrão passou a ser `"auto"`. `Interpolador` agora levanta `ValueError` quando a curva não contém vértices válidos. |
+| `v0.56.0` | As funções de dias úteis adotaram `calendario="auto" \| "anterior" \| "atual"`. Em `du.gerar`, substitua `opcao_feriado` por `calendario`; `"inferir"`, `"antigo"` e `"novo"` correspondem agora a `"auto"`, `"anterior"` e `"atual"`. O parâmetro `rolagem` virou `ajuste`; `"forward"` e `"backward"` viraram `"seguinte"` e `"anterior"`. O parâmetro `fechamento` virou `limites_inclusivos`, com os valores `"ambos"`, `"inicio"`, `"fim"` e `"nenhum"`. O padrão de `calendario` passou a ser `"auto"`. `Interpolador` agora levanta `ValueError` quando a curva não contém vértices válidos. |
 | `v0.55.0` | Funções de PU, cotação e VNA dos títulos passaram a retornar `Decimal` com seis casas. Entradas numéricas aceitam `float` ou `Decimal`. |
 | `v0.54.5` | `fluxos_caixa` não aceita mais `ajustar_datas_pagamento`; os cronogramas usam datas contratuais. |
 | `v0.54.2` | `taxas_historicas` foi adicionada e `tpf.taxas(completo=True)` foi removida. |
