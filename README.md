@@ -117,6 +117,15 @@ du.gerar("22-12-2023", "02-01-2024")
 du.eh_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
+Por padrão, `calendario="auto"` seleciona a lista de feriados conforme a data.
+Use `calendario="anterior"` para forçar o regime anterior a 26/12/2023 ou
+`calendario="atual"` para forçar a lista vigente na versão instalada:
+
+```python
+du.contar("20-11-2024", "21-11-2024", calendario="anterior")  # -> 1
+du.contar("20-11-2024", "21-11-2024", calendario="atual")   # -> 0
+```
+
 As principais funções de cálculo (`contar`, `deslocar` e `eh_dia_util`)
 suportam operações vetorizadas com listas, Series ou arrays.
 
@@ -283,10 +292,11 @@ Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield
 
 ## Compatibilidade e mudanças da API
 
-A versão atual é `v0.55.0`. As mudanças abaixo exigem atualização de código:
+A versão atual é `v0.56.0`. As mudanças abaixo podem exigir atualização de código:
 
 | Versão | Mudança principal |
 |---|---|
+| `v0.56.0` | As funções de dias úteis adotaram `calendario="auto" \| "anterior" \| "atual"`. Em `du.gerar`, substitua `opcao_feriado` por `calendario`; os valores `"inferir"`, `"antigo"` e `"novo"` correspondem agora a `"auto"`, `"anterior"` e `"atual"`. O padrão passou a ser `"auto"`. `Interpolador` agora levanta `ValueError` quando a curva não contém vértices válidos. |
 | `v0.55.0` | Funções de PU, cotação e VNA dos títulos passaram a retornar `Decimal` com seis casas. Entradas numéricas aceitam `float` ou `Decimal`. |
 | `v0.54.5` | `fluxos_caixa` não aceita mais `ajustar_datas_pagamento`; os cronogramas usam datas contratuais. |
 | `v0.54.2` | `taxas_historicas` foi adicionada e `tpf.taxas(completo=True)` foi removida. |

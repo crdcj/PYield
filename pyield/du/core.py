@@ -12,21 +12,35 @@ from pyield.du.feriados.feriados_br import FeriadosBrasil
 LIMITE_DIA_UTIL = 6
 
 feriados_br = FeriadosBrasil()
-FERIADOS_ANTIGOS = feriados_br.obter_feriados(opcao_feriado="antigo")
-FERIADOS_NOVOS = feriados_br.obter_feriados(opcao_feriado="novo")
+FERIADOS_ANTERIORES = feriados_br.obter_feriados(calendario="anterior")
+FERIADOS_ATUAIS = feriados_br.obter_feriados(calendario="atual")
 DATA_TRANSICAO = FeriadosBrasil.DATA_TRANSICAO
+Calendario = Literal["auto", "anterior", "atual"]
 
 
-def _expressao_feriados(expr_data: pl.Expr) -> pl.Expr:
-    return (
-        pl.when(expr_data < DATA_TRANSICAO)
-        .then(pl.lit(FERIADOS_ANTIGOS))
-        .otherwise(pl.lit(FERIADOS_NOVOS))
-    )
+def _expressao_feriados(
+    expr_data: pl.Expr,
+    calendario: Calendario = "auto",
+) -> pl.Expr:
+    match calendario:
+        case "anterior":
+            return pl.lit(FERIADOS_ANTERIORES)
+        case "atual":
+            return pl.lit(FERIADOS_ATUAIS)
+        case "auto":
+            return (
+                pl.when(expr_data < DATA_TRANSICAO)
+                .then(pl.lit(FERIADOS_ANTERIORES))
+                .otherwise(pl.lit(FERIADOS_ATUAIS))
+            )
+        case _:
+            raise ValueError("Opção inválida para calendario.")
 
 
 def contar_expr(
-    inicio: pl.Expr | str | dt.date, fim: pl.Expr | str | dt.date
+    inicio: pl.Expr | str | dt.date,
+    fim: pl.Expr | str | dt.date,
+    calendario: Calendario = "auto",
 ) -> pl.Expr:
     """Cria uma expressão Polars para contar dias úteis (com suporte a LazyFrame).
 
@@ -36,6 +50,10 @@ def contar_expr(
     Args:
         inicio: Nome da coluna, expressão Polars ou data literal.
         fim: Nome da coluna, expressão Polars ou data literal.
+        calendario: Lista de feriados a considerar. ``"anterior"`` usa a lista
+            vigente antes de 26-12-2023, ``"atual"`` usa a lista vigente a partir
+            dessa data e ``"auto"`` seleciona a lista por linha com base em
+            ``inicio``. Padrão: ``"auto"``.
 
     Returns:
         Uma ``pl.Expr`` que resulta em Int64.
@@ -82,25 +100,46 @@ def contar_expr(
     return pl.business_day_count(
         start=data_inicio,
         end=data_fim,
-        holidays=_expressao_feriados(data_inicio),
+        holidays=_expressao_feriados(data_inicio, calendario),
     ).cast(pl.Int64)
 
 
 @overload
-def contar(inicio: DatesLike, fim: DatesLike | DateLike | None) -> pl.Series: ...
+def contar(
+    inicio: DatesLike,
+    fim: DatesLike | DateLike | None,
+    calendario: Calendario = ...,
+) -> pl.Series: ...
 @overload
-def contar(inicio: DateLike | None, fim: DatesLike) -> pl.Series: ...
+def contar(
+    inicio: DateLike | None,
+    fim: DatesLike,
+    calendario: Calendario = ...,
+) -> pl.Series: ...
 @overload
-def contar(inicio: DateLike, fim: DateLike) -> int: ...
+def contar(
+    inicio: DateLike,
+    fim: DateLike,
+    calendario: Calendario = ...,
+) -> int: ...
 @overload
-def contar(inicio: DateLike, fim: None) -> None: ...
+def contar(
+    inicio: DateLike,
+    fim: None,
+    calendario: Calendario = ...,
+) -> None: ...
 @overload
-def contar(inicio: None, fim: DateLike | None) -> None: ...
+def contar(
+    inicio: None,
+    fim: DateLike | None,
+    calendario: Calendario = ...,
+) -> None: ...
 
 
 def contar(
     inicio: None | DateLike | DatesLike,
     fim: None | DateLike | DatesLike,
+    calendario: Calendario = "auto",
 ) -> None | int | pl.Series:
     """Conta dias úteis entre ``inicio`` (inclusivo) e ``fim`` (exclusivo).
 
@@ -112,10 +151,10 @@ def contar(
     resultado corresponde ao i-ésimo par de (``inicio``, ``fim``) após expansão.
     Isso garante atribuição segura de volta ao DataFrame de origem.
 
-    Regime de feriados: Para cada valor de ``inicio``, a lista de feriados (antiga vs.
-    nova) é escolhida com base na data de transição 2023-12-26 (``DATA_TRANSICAO``).
-    Datas de início antes da transição usam a lista antiga; datas na transição ou
-    após usam a lista nova.
+    Regime de feriados: Por padrão, para cada valor de ``inicio``, a lista de
+    feriados (anterior vs. atual) é escolhida com base na data de transição 2023-12-26
+    (``DATA_TRANSICAO``). Também é possível selecionar explicitamente uma das listas
+    para toda a contagem.
 
     Propagação de nulos: Se qualquer argumento escalar for nulo, retorna ``None``.
     Nulos dentro de arrays de entrada produzem nulos nas posições correspondentes
@@ -129,6 +168,10 @@ def contar(
     Args:
         inicio: Data única ou coleção (limite inclusivo).
         fim: Data única ou coleção (limite exclusivo).
+        calendario: Lista de feriados a considerar. ``"anterior"`` usa a lista
+            vigente antes de 26-12-2023, ``"atual"`` usa a lista vigente a partir
+            dessa data e ``"auto"`` seleciona a lista por elemento com base em
+            ``inicio``. Padrão: ``"auto"``.
 
     Returns:
         Inteiro ou ``None`` se ``inicio`` e ``fim`` forem datas únicas, ou Series
@@ -136,7 +179,8 @@ def contar(
 
     Notes:
         - Esta função é um encapsulamento de ``polars.business_day_count``.
-        - A lista de feriados é determinada por linha com base na data ``inicio``.
+        - Com ``calendario="auto"``, a lista é determinada por linha com base na
+          data ``inicio``.
         - Strings de data aceitas: ``DD-MM-YYYY``, ``DD/MM/YYYY`` e ``YYYY-MM-DD``.
         - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.
 
@@ -150,6 +194,10 @@ def contar(
         1
         >>> du.contar("20-11-2024", "21-11-2024")
         0
+
+        Seleção explícita da lista anterior, que não inclui 20 de novembro:
+        >>> du.contar("20-11-2024", "21-11-2024", calendario="anterior")
+        1
 
         Contagem negativa quando ``inicio`` é posterior a ``fim``:
         >>> du.contar("08-01-2023", "01-01-2023")
@@ -210,7 +258,7 @@ def contar(
             data={"inicio": inicio, "fim": fim},
             nan_to_null=True,
         )
-        .select(dias_uteis=contar_expr("inicio", "fim"))
+        .select(dias_uteis=contar_expr("inicio", "fim", calendario))
         .get_column("dias_uteis")
     )
 
@@ -224,6 +272,7 @@ def deslocar_expr(
     data: pl.Expr | str,
     deslocamento: int | pl.Expr | str,
     rolagem: Literal["forward", "backward"] = "forward",
+    calendario: Calendario = "auto",
 ) -> pl.Expr:
     """Cria uma expressão Polars para somar dias úteis.
 
@@ -234,6 +283,10 @@ def deslocar_expr(
         deslocamento: Número de dias úteis a somar. Pode ser um inteiro fixo ou
             outra coluna.
         rolagem: Como tratar a data inicial se ela cair em fim de semana/feriado.
+        calendario: Lista de feriados a considerar. ``"anterior"`` usa a lista
+            vigente antes de 26-12-2023, ``"atual"`` usa a lista vigente a partir
+            dessa data e ``"auto"`` seleciona a lista por linha com base em
+            ``data``. Padrão: ``"auto"``.
 
     Returns:
         Uma ``pl.Expr`` que resulta em Date.
@@ -280,7 +333,7 @@ def deslocar_expr(
     return data_expr.dt.add_business_days(
         n=deslocamento,
         roll=rolagem,
-        holidays=_expressao_feriados(data_expr),
+        holidays=_expressao_feriados(data_expr, calendario),
     )
 
 
@@ -289,30 +342,35 @@ def deslocar(
     datas: DatesLike,
     deslocamento: ArrayLike | int | None,
     rolagem: Literal["forward", "backward"] = ...,
+    calendario: Calendario = ...,
 ) -> pl.Series: ...
 @overload
 def deslocar(
     datas: DateLike | None,
     deslocamento: ArrayLike,
     rolagem: Literal["forward", "backward"] = ...,
+    calendario: Calendario = ...,
 ) -> pl.Series: ...
 @overload
 def deslocar(
     datas: DateLike,
     deslocamento: int,
     rolagem: Literal["forward", "backward"] = ...,
+    calendario: Calendario = ...,
 ) -> dt.date: ...
 @overload
 def deslocar(
     datas: None,
     deslocamento: int,
     rolagem: Literal["forward", "backward"] = ...,
+    calendario: Calendario = ...,
 ) -> None: ...
 @overload
 def deslocar(
     datas: DateLike,
     deslocamento: None,
     rolagem: Literal["forward", "backward"] = ...,
+    calendario: Calendario = ...,
 ) -> None: ...
 
 
@@ -320,6 +378,7 @@ def deslocar(
     datas: DateLike | DatesLike | None,
     deslocamento: int | ArrayLike | None,
     rolagem: Literal["forward", "backward"] = "forward",
+    calendario: Calendario = "auto",
 ) -> dt.date | pl.Series | None:
     """Desloca data(s) por um número de dias úteis com regime de feriados brasileiro.
 
@@ -335,10 +394,10 @@ def deslocar(
     corresponde ao i-ésimo par (data, deslocamento), permitindo atribuição segura
     de volta ao DataFrame de origem.
 
-    Regime de feriados: Para CADA data, a lista de feriados apropriada (antiga vs.
-    nova) é escolhida com base na data de transição 2023-12-26 (``DATA_TRANSICAO``).
-    Datas antes da transição usam a lista *antiga*; datas na transição ou após
-    usam a lista *nova*.
+    Regime de feriados: Por padrão, para cada data, a lista de feriados apropriada
+    (anterior vs. atual) é escolhida com base na data de transição 2023-12-26
+    (``DATA_TRANSICAO``). Também é possível selecionar explicitamente uma das listas
+    para todo o deslocamento.
 
     Semântica da rolagem: ``rolagem`` só atua quando a data original não é um dia útil
     sob seu regime. Após o roll, a adição de dias úteis subsequente é aplicada a
@@ -365,6 +424,10 @@ def deslocar(
             move para frente, negativo para trás, zero mantém a âncora após roll.
         rolagem: Direção para ajustar uma data inicial não-útil ("forward" ou
             "backward"). Padrão é "forward".
+        calendario: Lista de feriados a considerar. ``"anterior"`` usa a lista
+            vigente antes de 26-12-2023, ``"atual"`` usa a lista vigente a partir
+            dessa data e ``"auto"`` seleciona a lista por elemento com base em
+            ``datas``. Padrão: ``"auto"``.
 
     Returns:
         Um ``date`` Python para entradas escalares, uma Series Polars de datas para
@@ -374,8 +437,8 @@ def deslocar(
     Notes:
         - Encapsulamento de ``polars.Expr.dt.add_business_days`` aplicado
           condicionalmente.
-        - O regime de feriados é decidido por elemento comparando com
-          ``DATA_TRANSICAO``.
+        - Com ``calendario="auto"``, o regime é decidido por elemento comparando
+          com ``DATA_TRANSICAO``.
         - Fins de semana são sempre tratados como não-úteis.
         - Strings de data aceitas: ``DD-MM-YYYY``, ``DD/MM/YYYY`` e ``YYYY-MM-DD``.
         - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.
@@ -388,6 +451,10 @@ def deslocar(
         datetime.date(2020, 11, 20)
         >>> du.deslocar("20-11-2024", 0)
         datetime.date(2024, 11, 21)
+
+        Seleção explícita da lista anterior, que não inclui 20 de novembro:
+        >>> du.deslocar("20-11-2024", 0, calendario="anterior")
+        datetime.date(2024, 11, 20)
 
         Desloca sábado antes do Natal para o próximo dia útil (terça após Natal):
         >>> du.deslocar("23-12-2023", 0)
@@ -484,7 +551,10 @@ def deslocar(
         )
         .select(
             data_ajustada=deslocar_expr(
-                "datas", deslocamento="deslocamento", rolagem=rolagem
+                "datas",
+                deslocamento="deslocamento",
+                rolagem=rolagem,
+                calendario=calendario,
             )
         )
         .get_column("data_ajustada")
@@ -500,7 +570,7 @@ def gerar(
     inicio: DateLike | None = None,
     fim: DateLike | None = None,
     fechamento: Literal["both", "left", "right", "none"] = "both",
-    opcao_feriado: Literal["antigo", "novo", "inferir"] = "novo",
+    calendario: Calendario = "auto",
 ) -> pl.Series:
     """Gera uma Series de dias úteis entre ``inicio`` e ``fim``.
 
@@ -511,10 +581,10 @@ def gerar(
         fim: Data final. Se None, usa a data atual.
         fechamento: Define quais lados do intervalo são fechados (inclusivos).
             Opções válidas: 'both', 'left', 'right', 'none'. Padrão: 'both'.
-        opcao_feriado: Especifica a lista de feriados a considerar. Padrão: "novo".
-            - 'antigo': Usa a lista de feriados vigente antes de 2023-12-26.
-            - 'novo': Usa a lista de feriados vigente a partir de 2023-12-26.
-            - 'inferir': Seleciona com base na data ``inicio`` relativa à transição.
+        calendario: Especifica a lista de feriados a considerar. Padrão: "auto".
+            - 'anterior': Usa a lista de feriados vigente antes de 2023-12-26.
+            - 'atual': Usa a lista de feriados vigente a partir de 2023-12-26.
+            - 'auto': Seleciona com base na data ``inicio`` relativa à transição.
 
     Returns:
         Series de dias úteis (nome: 'data').
@@ -537,6 +607,10 @@ def gerar(
             2023-12-29
             2024-01-02
         ]
+
+        Seleção automática do calendário conforme a data inicial:
+        >>> len(du.gerar("20-11-2020", "20-11-2020", calendario="auto"))
+        1
     """
     hoje = relogio.hoje()
     data_inicio = cv.converter_datas(inicio) or hoje
@@ -549,18 +623,25 @@ def gerar(
 
     # Pega feriados aplicáveis
     feriados = feriados_br.obter_feriados(
-        datas=data_inicio, opcao_feriado=opcao_feriado
+        datas=data_inicio, calendario=calendario
     )
 
     # Filtra: só dias úteis (seg-sex e não feriado)
     return s.filter((s.dt.weekday() < LIMITE_DIA_UTIL) & (~s.is_in(feriados)))
 
 
-def eh_dia_util_expr(data: pl.Expr | str) -> pl.Expr:
+def eh_dia_util_expr(
+    data: pl.Expr | str,
+    calendario: Calendario = "auto",
+) -> pl.Expr:
     """Cria expressão Polars para verificar se é dia útil (True/False).
 
     Args:
         data: Coluna de datas ou expressão Polars.
+        calendario: Lista de feriados a considerar. ``"anterior"`` usa a lista
+            vigente antes de 26-12-2023, ``"atual"`` usa a lista vigente a partir
+            dessa data e ``"auto"`` seleciona a lista por linha com base em
+            ``data``. Padrão: ``"auto"``.
 
     Returns:
         Uma ``pl.Expr`` booleana.
@@ -597,26 +678,31 @@ def eh_dia_util_expr(data: pl.Expr | str) -> pl.Expr:
     """
     data_expr = cv.converter_datas_expr(data)
 
-    return data_expr.dt.is_business_day(holidays=_expressao_feriados(data_expr))
+    return data_expr.dt.is_business_day(
+        holidays=_expressao_feriados(data_expr, calendario)
+    )
 
 
 @overload
-def eh_dia_util(datas: None) -> None: ...
+def eh_dia_util(datas: None, calendario: Calendario = ...) -> None: ...
 @overload
-def eh_dia_util(datas: DateLike) -> bool: ...
+def eh_dia_util(datas: DateLike, calendario: Calendario = ...) -> bool: ...
 @overload
-def eh_dia_util(datas: DatesLike) -> pl.Series: ...
+def eh_dia_util(
+    datas: DatesLike, calendario: Calendario = ...
+) -> pl.Series: ...
 
 
-def eh_dia_util(datas: None | DateLike | DatesLike) -> None | bool | pl.Series:
+def eh_dia_util(
+    datas: None | DateLike | DatesLike,
+    calendario: Calendario = "auto",
+) -> None | bool | pl.Series:
     """Determina se data(s) são dias úteis brasileiros.
 
-    REGIME DE FERIADOS POR LINHA: Para CADA data de entrada, a lista de feriados
-    apropriada ("antiga" vs. "nova") é selecionada comparando com a data de
-    transição 2023-12-26 (``DATA_TRANSICAO``). Datas estritamente antes da
-    transição usam a lista antiga; datas na transição ou após usam a lista nova.
-    Isso espelha o comportamento de ``contar`` e ``deslocar`` que aplicam a lógica
-    de regime elemento a elemento.
+    REGIME DE FERIADOS: Por padrão, para cada data, a lista de feriados apropriada
+    (anterior vs. atual) é escolhida com base na data de transição 2023-12-26
+    (``DATA_TRANSICAO``). Também é possível selecionar explicitamente uma das listas
+    para toda a avaliação.
 
     PRESERVAÇÃO DE ORDEM E FORMA: A saída preserva a ordem original dos elementos.
     Nenhuma ordenação, deduplicação, remodelação ou alinhamento é realizado; o
@@ -639,6 +725,10 @@ def eh_dia_util(datas: None | DateLike | DatesLike) -> None | bool | pl.Series:
     Args:
         datas: Data única ou coleção (list/tuple/Polars Series).
             Pode incluir nulos que propagam. Entrada escalar nula retorna ``None``.
+        calendario: Lista de feriados a considerar. ``"anterior"`` usa a lista
+            vigente antes de 26-12-2023, ``"atual"`` usa a lista vigente a partir
+            dessa data e ``"auto"`` seleciona a lista por elemento com base em
+            ``datas``. Padrão: ``"auto"``.
 
     Returns:
         ``True`` se for dia útil, ``False`` caso contrário para entrada escalar;
@@ -647,10 +737,12 @@ def eh_dia_util(datas: None | DateLike | DatesLike) -> None | bool | pl.Series:
 
     Examples:
         >>> from pyield import du
-        >>> du.eh_dia_util("25-12-2023")  # Natal (calendário antigo)
+        >>> du.eh_dia_util("25-12-2023")  # Natal (calendário anterior)
         False
-        >>> du.eh_dia_util("20-11-2024")  # Dia Nacional de Zumbi (novo feriado)
+        >>> du.eh_dia_util("20-11-2024")  # Dia Nacional de Zumbi
         False
+        >>> du.eh_dia_util("20-11-2024", calendario="anterior")
+        True
         >>> du.eh_dia_util(["22-12-2023", "26-12-2023"])  # Períodos mistos
         shape: (2,)
         Series: 'eh_dia_util' [bool]
@@ -661,7 +753,8 @@ def eh_dia_util(datas: None | DateLike | DatesLike) -> None | bool | pl.Series:
 
     Notes:
         - Data de transição definida em ``DATA_TRANSICAO``.
-        - Espelha a lógica por linha usada em ``contar`` e ``deslocar``.
+        - Com ``calendario="auto"``, espelha a lógica por linha usada em
+          ``contar`` e ``deslocar``.
         - Fins de semana sempre avaliam como ``False``.
         - Elementos nulos propagam.
         - Strings de data aceitas: ``DD-MM-YYYY``, ``DD/MM/YYYY`` e ``YYYY-MM-DD``.
@@ -669,7 +762,11 @@ def eh_dia_util(datas: None | DateLike | DatesLike) -> None | bool | pl.Series:
     """
     s = (
         pl.DataFrame({"datas": datas}, nan_to_null=True)
-        .select(eh_dia_util=eh_dia_util_expr("datas"))
+        .select(
+            eh_dia_util=eh_dia_util_expr(
+                "datas", calendario=calendario
+            )
+        )
         .get_column("eh_dia_util")
     )
 

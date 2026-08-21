@@ -8,19 +8,21 @@ import polars as pl
 
 
 class FeriadosBrasil:
-    """Calendário de feriados nacionais (lista antiga e nova).
+    """Calendário de feriados nacionais (lista anterior e atual).
 
     Uso interno do módulo `dus`.
-    DATA_TRANSICAO (inclusive): 2023-12-26. Antes desta data usa lista antiga.
-    A partir desta data usa lista nova.
+    DATA_TRANSICAO (inclusive): 2023-12-26. Antes desta data usa lista anterior.
+    A partir desta data usa a lista atual.
     """
 
     DATA_TRANSICAO = dt.date(2023, 12, 26)
 
     def __init__(self) -> None:
         base = Path(__file__).parent
-        self.feriados_novos = self._carregar_feriados(base / "feriados_novos_br.txt")
-        self.feriados_antigos = self._carregar_feriados(
+        self.feriados_atuais = self._carregar_feriados(
+            base / "feriados_novos_br.txt"
+        )
+        self.feriados_anteriores = self._carregar_feriados(
             base / "feriados_antigos_br.txt"
         )
 
@@ -37,23 +39,22 @@ class FeriadosBrasil:
     def obter_feriados(
         self,
         datas: dt.date | pl.Series | None = None,
-        opcao_feriado: Literal["antigo", "novo", "inferir"] = "inferir",
+        calendario: Literal["auto", "anterior", "atual"] = "auto",
     ) -> list[dt.date]:
-        """Retorna a lista de feriados conforme opção ou inferência.
+        """Retorna a lista de feriados conforme a opção selecionada.
 
-        datas: data única ou série de datas para inferir (quando
-            opcao_feriado='inferir').
-        opcao_feriado: 'antigo', 'novo' ou 'inferir'.
+        datas: Data única ou série de datas para seleção automática.
+        calendario: ``"auto"``, ``"anterior"`` ou ``"atual"``.
         """
-        match opcao_feriado:
-            case "antigo":
-                return self.feriados_antigos
-            case "novo":
-                return self.feriados_novos
-            case "inferir":
+        match calendario:
+            case "anterior":
+                return self.feriados_anteriores
+            case "atual":
+                return self.feriados_atuais
+            case "auto":
                 if datas is None:
                     raise ValueError(
-                        "'datas' é obrigatório quando opcao_feriado='inferir'."
+                        "'datas' é obrigatório quando calendario='auto'."
                     )
                 if isinstance(datas, dt.date):
                     data_minima = datas
@@ -61,12 +62,12 @@ class FeriadosBrasil:
                     data_minima = datas.drop_nulls().min()
 
                 if not isinstance(data_minima, dt.date):
-                    raise ValueError("Não foi possível inferir a data mínima.")
+                    raise ValueError("Não foi possível selecionar o calendário.")
 
                 if data_minima < self.DATA_TRANSICAO:
-                    return self.feriados_antigos
+                    return self.feriados_anteriores
                 else:
-                    return self.feriados_novos
+                    return self.feriados_atuais
 
             case _:
-                raise ValueError("Opção inválida para opcao_feriado.")
+                raise ValueError("Opção inválida para calendario.")

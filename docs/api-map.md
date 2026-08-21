@@ -5,13 +5,13 @@ Visão geral das principais funções públicas do PYield.
 ??? "`yd.du` (dias úteis)"
     ```text
     yd.du
-    ├── contar(inicio, fim)
-    ├── contar_expr(inicio, fim)
-    ├── deslocar(data, n)
-    ├── deslocar_expr(data, n)
-    ├── eh_dia_util(data)
-    ├── eh_dia_util_expr(data)
-    ├── gerar(inicio, fim)
+    ├── contar(inicio, fim, calendario="auto")
+    ├── contar_expr(inicio, fim, calendario="auto")
+    ├── deslocar(data, n, rolagem="forward", calendario="auto")
+    ├── deslocar_expr(data, n, rolagem="forward", calendario="auto")
+    ├── eh_dia_util(data, calendario="auto")
+    ├── eh_dia_util_expr(data, calendario="auto")
+    ├── gerar(inicio, fim, fechamento="both", calendario="auto")
     └── ultimo_dia_util()
     ```
 

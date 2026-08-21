@@ -20,6 +20,9 @@ class Interpolador:
             abaixo do menor vértice) sempre retorna a primeira taxa conhecida,
             independentemente desta flag.
 
+    Raises:
+        ValueError: Se não houver ao menos um vértice válido na curva.
+
     Notes:
         - Esta classe usa convenção de 252 dias úteis por ano.
         - Instâncias desta classe são **imutáveis**. Para modificar as
@@ -68,6 +71,8 @@ class Interpolador:
             .unique(subset="dus", keep="last")
             .sort("dus")
         )
+        if df.is_empty():
+            raise ValueError("A curva deve conter ao menos um vértice válido.")
         self._df = df
         self._method = str(metodo)
         self._dus = tuple(df.get_column("dus"))

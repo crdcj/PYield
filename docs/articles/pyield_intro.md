@@ -79,6 +79,15 @@ yd.du.gerar("22-12-2023", "02-01-2024")
 yd.du.eh_dia_util("25-12-2023")  # -> False (Natal)
 ```
 
+Por padrão, `calendario="auto"` seleciona a lista de feriados conforme a data.
+Use `calendario="anterior"` para forçar o regime anterior a 26/12/2023 ou
+`calendario="atual"` para forçar a lista vigente na versão instalada:
+
+```python
+yd.du.contar("20-11-2024", "21-11-2024", calendario="anterior")  # -> 1
+yd.du.contar("20-11-2024", "21-11-2024", calendario="atual")   # -> 0
+```
+
 As principais funções de cálculo suportam operações vetorizadas com listas,
 Series ou arrays.
 
