@@ -53,19 +53,20 @@ def dados(
 
     Examples:
         >>> from pyield import di1
+        >>> import polars.selectors as cs
         >>> df = di1.dados(datas="16-10-2024", inicio_mes=True)
         >>> df.head(3).select(
         ...     "codigo_negociacao", "data_vencimento", "dias_uteis", "taxa_ajuste"
-        ... )
+        ... ).with_columns(cs.starts_with("taxa_") * 100)
         shape: (3, 4)
         ┌───────────────────┬─────────────────┬────────────┬─────────────┐
         │ codigo_negociacao ┆ data_vencimento ┆ dias_uteis ┆ taxa_ajuste │
         │ ---               ┆ ---             ┆ ---        ┆ ---         │
         │ str               ┆ date            ┆ i64        ┆ f64         │
         ╞═══════════════════╪═════════════════╪════════════╪═════════════╡
-        │ DI1X24            ┆ 2024-11-01      ┆ 12         ┆ 0.10653     │
-        │ DI1Z24            ┆ 2024-12-01      ┆ 31         ┆ 0.1091      │
-        │ DI1F25            ┆ 2025-01-01      ┆ 52         ┆ 0.11164     │
+        │ DI1X24            ┆ 2024-11-01      ┆ 12         ┆ 10.653      │
+        │ DI1Z24            ┆ 2024-12-01      ┆ 31         ┆ 10.91       │
+        │ DI1F25            ┆ 2025-01-01      ┆ 52         ┆ 11.164      │
         └───────────────────┴─────────────────┴────────────┴─────────────┘
 
     """
@@ -146,7 +147,8 @@ def interpolar_taxas(
     Returns:
         Series contendo as taxas DI interpoladas (como floats). Valores serão
         NaN onde interpolação não for possível (ex: sem dados DI para a data
-        de negociação).
+        de negociação). As taxas são retornadas em formato decimal; os exemplos
+        abaixo as multiplicam por 100 apenas para facilitar a leitura.
 
     Raises:
         ValueError: Se ``datas_referencia`` e ``datas_vencimento`` forem ambos
@@ -171,12 +173,12 @@ def interpolar_taxas(
         >>> di1.interpolar_taxas(
         ...     datas_referencia=["08-05-2025", "09-05-2025", "10-05-2025"],
         ...     datas_vencimento=["01-01-2027", "25-11-2027", "01-01-2030"],
-        ... )
+        ... ) * 100
         shape: (3,)
         Series: 'taxa_interpolada' [f64]
         [
-            0.13972
-            0.134613
+            13.972
+            13.4613
             null
         ]
 
@@ -185,12 +187,12 @@ def interpolar_taxas(
         ...     datas_referencia="25-04-2025",
         ...     datas_vencimento=["01-01-2027", "01-01-2050"],
         ...     extrapolar=True,
-        ... )
+        ... ) * 100
         shape: (2,)
         Series: 'taxa_interpolada' [f64]
         [
-            0.13901
-            0.13881
+            13.901
+            13.881
         ]
 
         >>> # Com extrapolação desabilitada, vencimentos fora do intervalo retornam null
@@ -198,11 +200,11 @@ def interpolar_taxas(
         ...     datas_referencia="25-04-2025",
         ...     datas_vencimento=["01-11-2027", "01-01-2050"],
         ...     extrapolar=False,
-        ... )
+        ... ) * 100
         shape: (2,)
         Series: 'taxa_interpolada' [f64]
         [
-            0.135763
+            13.5763
             null
         ]
     """

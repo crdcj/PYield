@@ -24,30 +24,33 @@ def curva_pre(data: DateLike) -> pl.DataFrame:
     Output Columns:
         * data_vencimento (Date): data de vencimento do vértice.
         * dias_uteis (Int64): dias úteis entre a data de referência e o vencimento.
-        * taxa_zero (Float64): taxa zero cupom anualizada (base 252).
+        * taxa_zero (Float64): taxa zero cupom anualizada (base 252), em formato
+          decimal.
 
     Raises:
         ValueError: Se houver NTN-F sem dados de LTN para bootstrap.
 
     Examples:
-        >>> yd.tpf.curva_pre("18-06-2025")
+        >>> import polars.selectors as cs
+        >>> curva = yd.tpf.curva_pre("18-06-2025")
+        >>> curva.with_columns(cs.starts_with("taxa_") * 100)
         shape: (17, 3)
         ┌─────────────────┬────────────┬───────────┐
         │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
         │ ---             ┆ ---        ┆ ---       │
         │ date            ┆ i64        ┆ f64       │
         ╞═════════════════╪════════════╪═══════════╡
-        │ 2025-07-01      ┆ 8          ┆ 0.14835   │
-        │ 2025-10-01      ┆ 74         ┆ 0.147463  │
-        │ 2026-01-01      ┆ 138        ┆ 0.147752  │
-        │ 2026-04-01      ┆ 199        ┆ 0.147947  │
-        │ 2026-07-01      ┆ 260        ┆ 0.147069  │
+        │ 2025-07-01      ┆ 8          ┆ 14.835    │
+        │ 2025-10-01      ┆ 74         ┆ 14.7463   │
+        │ 2026-01-01      ┆ 138        ┆ 14.7752   │
+        │ 2026-04-01      ┆ 199        ┆ 14.7947   │
+        │ 2026-07-01      ┆ 260        ┆ 14.7069   │
         │ …               ┆ …          ┆ …         │
-        │ 2030-01-01      ┆ 1135       ┆ 0.137279  │
-        │ 2031-01-01      ┆ 1387       ┆ 0.138154  │
-        │ 2032-01-01      ┆ 1639       ┆ 0.13876   │
-        │ 2033-01-01      ┆ 1891       ┆ 0.1393    │
-        │ 2035-01-01      ┆ 2390       ┆ 0.141068  │
+        │ 2030-01-01      ┆ 1135       ┆ 13.7279   │
+        │ 2031-01-01      ┆ 1387       ┆ 13.8154   │
+        │ 2032-01-01      ┆ 1639       ┆ 13.876    │
+        │ 2033-01-01      ┆ 1891       ┆ 13.93     │
+        │ 2035-01-01      ┆ 2390       ┆ 14.1068   │
         └─────────────────┴────────────┴───────────┘
     """
     from pyield.tpf.titulos import ntnf  # noqa: PLC0415

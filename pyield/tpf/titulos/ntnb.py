@@ -441,10 +441,13 @@ def implicitas(  # noqa: PLR0913
     Output Columns:
         - data_vencimento (Date): Data de vencimento.
         - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.
-        - taxa_tir_real (Float64): TIR real da NTN-B recebida na entrada.
-        - taxa_zero_real (Float64): Taxa real zero via bootstrap.
-        - taxa_nominal (Float64): Taxa nominal interpolada.
-        - inflacao_implicita (Float64): Inflação implícita (breakeven).
+        - taxa_tir_real (Float64): TIR real da NTN-B recebida na entrada, em
+            formato decimal.
+        - taxa_zero_real (Float64): Taxa real zero via bootstrap, em formato
+            decimal.
+        - taxa_nominal (Float64): Taxa nominal interpolada, em formato decimal.
+        - inflacao_implicita (Float64): Inflação implícita (breakeven), em
+            formato decimal.
 
     Notes:
         A inflação implícita é calculada contra a curva nominal informada. Se
@@ -460,31 +463,40 @@ def implicitas(  # noqa: PLR0913
         >>> df_di = yd.di1.dados("19-06-2026")
 
         Calcula a inflação implícita na data de referência:
-        >>> yd.ntnb.implicitas(
+        >>> curva = yd.ntnb.implicitas(
         ...     data_liquidacao="19-06-2026",
         ...     vencimentos_tir=df_ntnb["data_vencimento"],
         ...     taxas_tir=df_ntnb["taxa_indicativa"],
         ...     vencimentos_nominais=df_di["data_vencimento"],
         ...     taxas_nominais=df_di["taxa_ajuste"],
         ... )
-        shape: (15, 6)
-        ┌─────────────────┬────────────┬───────────────┬────────────────┬──────────────┬────────────────────┐
-        │ data_vencimento ┆ dias_uteis ┆ taxa_tir_real ┆ taxa_zero_real ┆ taxa_nominal ┆ inflacao_implicita │
-        │ ---             ┆ ---        ┆ ---           ┆ ---            ┆ ---          ┆ ---                │
-        │ date            ┆ i64        ┆ f64           ┆ f64            ┆ f64          ┆ f64                │
-        ╞═════════════════╪════════════╪═══════════════╪════════════════╪══════════════╪════════════════════╡
-        │ 2026-08-15      ┆ 41         ┆ 0.1115        ┆ 0.1115         ┆ 0.141339     ┆ 0.026846           │
-        │ 2027-05-15      ┆ 226        ┆ 0.085733      ┆ 0.085642       ┆ 0.145795     ┆ 0.055407           │
-        │ 2028-08-15      ┆ 541        ┆ 0.089683      ┆ 0.089707       ┆ 0.149149     ┆ 0.054548           │
-        │ 2029-05-15      ┆ 725        ┆ 0.088171      ┆ 0.088132       ┆ 0.149535     ┆ 0.05643            │
-        │ 2030-08-15      ┆ 1039       ┆ 0.088766      ┆ 0.088756       ┆ 0.149166     ┆ 0.055486           │
-        │ …               ┆ …          ┆ …             ┆ …              ┆ …            ┆ …                  │
-        │ 2040-08-15      ┆ 3548       ┆ 0.078262      ┆ 0.07608        ┆ 0.14591      ┆ 0.064893           │
-        │ 2045-05-15      ┆ 4735       ┆ 0.076656      ┆ 0.073943       ┆ null         ┆ null               │
-        │ 2050-08-15      ┆ 6050       ┆ 0.075659      ┆ 0.072433       ┆ null         ┆ null               │
-        │ 2055-05-15      ┆ 7239       ┆ 0.074658      ┆ 0.070513       ┆ null         ┆ null               │
-        │ 2060-08-15      ┆ 8556       ┆ 0.07464       ┆ 0.070825       ┆ null         ┆ null               │
-        └─────────────────┴────────────┴───────────────┴────────────────┴──────────────┴────────────────────┘
+        >>> import polars.selectors as cs
+        >>> curva.with_columns(
+        ...     cs.matches("^(taxa_|inflacao_implicita$)") * 100
+        ... ).select(
+        ...     "data_vencimento",
+        ...     "taxa_zero_real",
+        ...     "taxa_nominal",
+        ...     "inflacao_implicita",
+        ... )
+        shape: (15, 4)
+        ┌─────────────────┬────────────────┬──────────────┬────────────────────┐
+        │ data_vencimento ┆ taxa_zero_real ┆ taxa_nominal ┆ inflacao_implicita │
+        │ ---             ┆ ---            ┆ ---          ┆ ---                │
+        │ date            ┆ f64            ┆ f64          ┆ f64                │
+        ╞═════════════════╪════════════════╪══════════════╪════════════════════╡
+        │ 2026-08-15      ┆ 11.15          ┆ 14.1339      ┆ 2.6846             │
+        │ 2027-05-15      ┆ 8.5642         ┆ 14.5795      ┆ 5.5407             │
+        │ 2028-08-15      ┆ 8.9707         ┆ 14.9149      ┆ 5.4548             │
+        │ 2029-05-15      ┆ 8.8132         ┆ 14.9535      ┆ 5.643              │
+        │ 2030-08-15      ┆ 8.8756         ┆ 14.9166      ┆ 5.5486             │
+        │ …               ┆ …              ┆ …            ┆ …                  │
+        │ 2040-08-15      ┆ 7.608          ┆ 14.591       ┆ 6.4893             │
+        │ 2045-05-15      ┆ 7.3943         ┆ null         ┆ null               │
+        │ 2050-08-15      ┆ 7.2433         ┆ null         ┆ null               │
+        │ 2055-05-15      ┆ 7.0513         ┆ null         ┆ null               │
+        │ 2060-08-15      ┆ 7.0825         ┆ null         ┆ null               │
+        └─────────────────┴────────────────┴──────────────┴────────────────────┘
     """
     if any_is_empty(
         data_liquidacao,

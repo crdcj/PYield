@@ -217,25 +217,6 @@ def test_taxas_zero_reproduz_planilha_curva_zero():
     )
 
 
-def test_taxas_zero_podem_retornar_percentual():
-    resultado = yd.ntnb.taxas_zero(
-        DATA_LIQUIDACAO,
-        VENCIMENTOS,
-        TAXAS_TIR,
-        percentual=True,
-    )
-
-    assert resultado["taxa_zero"].to_list() == pytest.approx(
-        [taxa * 100 for taxa in TAXAS_ZERO_PLANILHA], abs=1e-6
-    )
-    assert resultado["taxa_tir"].to_list() == pytest.approx(
-        [taxa * 100 for taxa in TAXAS_TIR]
-    )
-    assert resultado["taxa_forward"].to_list() == pytest.approx(
-        [taxa * 100 for taxa in FORWARDS_PLANILHA], abs=1e-6
-    )
-
-
 def test_taxas_zero_limita_busca_sem_intervalo():
     taxas = TAXAS_TIR.copy()
     taxas[2] = 10.0

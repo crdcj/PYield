@@ -193,7 +193,7 @@ def _add_probabilities(df: pl.DataFrame) -> pl.DataFrame:
     df = _add_discount_factors(df)
 
     return (
-        df.sort(["data_expiracao", "variacao_strike_bps"])
+        df.sort("data_expiracao", "variacao_strike_bps")
         .with_columns(
             prob_bruta=(pl.col("preco_ajuste") * pl.col("fator_desconto") / 100),
         )
@@ -286,7 +286,7 @@ def all_meetings(
             "prob",
             "prob_acumulada",
         )
-        .sort(["ranking_reuniao", "variacao_strike_bps"])
+        .sort("ranking_reuniao", "variacao_strike_bps")
     )
 
     return df if not df.is_empty() else _empty_schema()

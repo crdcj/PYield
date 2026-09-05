@@ -142,8 +142,6 @@ def taxas_zero(
     data_liquidacao: DateLike,
     vencimentos: DatesLike,
     taxas: ArrayLike,
-    *,
-    percentual: bool = False,
 ) -> pl.DataFrame:
     r"""
     Calcula a curva zero de NTN-B pelo bootstrap de forwards.
@@ -223,10 +221,6 @@ def taxas_zero(
         data_liquidacao: Data de liquidação.
         vencimentos: Datas de vencimento das NTN-B.
         taxas: TIRs correspondentes em formato decimal (ex.: 0.10 para 10%).
-        percentual: Se True, retorna as colunas de taxa em percentual
-            (10.0 para 10%). Se False, retorna em decimal (0.10 para 10%).
-            As TIRs recebidas em ``taxas`` devem ser sempre decimais.
-            O padrão é False.
 
     Returns:
         pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Retorna vazio quando
@@ -239,21 +233,22 @@ def taxas_zero(
     Output Columns:
         - data_vencimento (Date): Data do vértice da curva.
         - dias_uteis (Int64): Dias úteis entre liquidação e vértice.
-        - taxa_tir (Float64): TIR recebida na entrada, na escala escolhida.
+        - taxa_tir (Float64): TIR recebida na entrada, em formato decimal.
         - taxa_forward (Float64): Parâmetro calibrado por bisseção para o trecho
-            que termina no vencimento, na escala escolhida.
-        - taxa_zero (Float64): Taxa zero real anualizada na escala escolhida.
+            que termina no vencimento, em formato decimal.
+        - taxa_zero (Float64): Taxa zero real anualizada, em formato decimal.
 
     Examples:
         >>> from pyield import ntnb
+        >>> import polars.selectors as cs
         >>> # Taxas indicativas da ANBIMA na data de referência.
         >>> df = ntnb.dados("16-08-2024")
-        >>> curva_percentual = ntnb.taxas_zero(
+        >>> curva = ntnb.taxas_zero(
         ...     data_liquidacao="16-08-2024",
         ...     vencimentos=df["data_vencimento"],
         ...     taxas=df["taxa_indicativa"],
-        ...     percentual=True,
         ... )
+        >>> curva_percentual = curva.with_columns(cs.starts_with("taxa_") * 100)
         >>> curva_percentual
         shape: (14, 5)
         ┌─────────────────┬────────────┬──────────┬──────────────┬───────────┐
@@ -276,12 +271,12 @@ def taxas_zero(
 
         O bootstrap considera apenas os fluxos posteriores à liquidação:
         >>> df = ntnb.dados("15-05-2026")
-        >>> curva_percentual = ntnb.taxas_zero(
+        >>> curva = ntnb.taxas_zero(
         ...     data_liquidacao="18-05-2026",
         ...     vencimentos=df["data_vencimento"],
         ...     taxas=df["taxa_indicativa"],
-        ...     percentual=True,
         ... )
+        >>> curva_percentual = curva.with_columns(cs.starts_with("taxa_") * 100)
         >>> curva_percentual
         shape: (15, 5)
         ┌─────────────────┬────────────┬──────────┬──────────────┬───────────┐
@@ -393,11 +388,4 @@ def taxas_zero(
             "taxa_zero",
         )
     )
-    if percentual:
-        df = df.with_columns(
-            taxa_tir=pl.col("taxa_tir") * 100,
-            taxa_zero=pl.col("taxa_zero") * 100,
-            taxa_forward=pl.col("taxa_forward") * 100,
-        )
-
     return df

@@ -374,29 +374,31 @@ def taxas_forward(data: DateLike) -> pl.DataFrame:
     Output Columns:
         - data_vencimento (Date): Data de vencimento.
         - dias_uteis (Int64): Dias úteis entre referência e vencimento.
-        - taxa_indicativa (Float64): Taxa spot (zero cupom).
-        - taxa_forward (Float64): Taxa forward.
+        - taxa_indicativa (Float64): Taxa spot (zero cupom), em formato decimal.
+        - taxa_forward (Float64): Taxa forward, em formato decimal.
 
     Examples:
         >>> from pyield import ltn
-        >>> ltn.taxas_forward("17-10-2025")
+        >>> import polars.selectors as cs
+        >>> curva = ltn.taxas_forward("17-10-2025")
+        >>> curva.with_columns(cs.starts_with("taxa_") * 100)
         shape: (13, 4)
         ┌─────────────────┬────────────┬─────────────────┬──────────────┐
         │ data_vencimento ┆ dias_uteis ┆ taxa_indicativa ┆ taxa_forward │
         │ ---             ┆ ---        ┆ ---             ┆ ---          │
         │ date            ┆ i64        ┆ f64             ┆ f64          │
         ╞═════════════════╪════════════╪═════════════════╪══════════════╡
-        │ 2026-01-01      ┆ 52         ┆ 0.148307        ┆ 0.148307     │
-        │ 2026-04-01      ┆ 113        ┆ 0.147173        ┆ 0.146207     │
-        │ 2026-07-01      ┆ 174        ┆ 0.145206        ┆ 0.141571     │
-        │ 2026-10-01      ┆ 239        ┆ 0.142424        ┆ 0.13501      │
-        │ 2027-04-01      ┆ 361        ┆ 0.138155        ┆ 0.129838     │
+        │ 2026-01-01      ┆ 52         ┆ 14.8307         ┆ 14.8307      │
+        │ 2026-04-01      ┆ 113        ┆ 14.7173         ┆ 14.6207      │
+        │ 2026-07-01      ┆ 174        ┆ 14.5206         ┆ 14.1571      │
+        │ 2026-10-01      ┆ 239        ┆ 14.2424         ┆ 13.501       │
+        │ 2027-04-01      ┆ 361        ┆ 13.8155         ┆ 12.9838      │
         │ …               ┆ …          ┆ …               ┆ …            │
-        │ 2028-07-01      ┆ 676        ┆ 0.133411        ┆ 0.131654     │
-        │ 2029-01-01      ┆ 800        ┆ 0.134254        ┆ 0.138861     │
-        │ 2029-07-01      ┆ 924        ┆ 0.135264        ┆ 0.141802     │
-        │ 2030-01-01      ┆ 1049       ┆ 0.135967        ┆ 0.141177     │
-        │ 2032-01-01      ┆ 1553       ┆ 0.13883         ┆ 0.144812     │
+        │ 2028-07-01      ┆ 676        ┆ 13.3411         ┆ 13.1654      │
+        │ 2029-01-01      ┆ 800        ┆ 13.4254         ┆ 13.8861      │
+        │ 2029-07-01      ┆ 924        ┆ 13.5264         ┆ 14.1802      │
+        │ 2030-01-01      ┆ 1049       ┆ 13.5967         ┆ 14.1177      │
+        │ 2032-01-01      ┆ 1553       ┆ 13.883          ┆ 14.4812      │
         └─────────────────┴────────────┴─────────────────┴──────────────┘
     """
     if any_is_empty(data):

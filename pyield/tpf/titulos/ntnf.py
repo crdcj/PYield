@@ -412,7 +412,7 @@ def taxas_zero(  # noqa
     Output Columns:
         - data_vencimento (Date): Data de vencimento.
         - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.
-        - taxa_zero (Float64): Taxa zero (zero cupom).
+        - taxa_zero (Float64): Taxa zero (zero cupom), em formato decimal.
 
     Notes:
         Vencimentos menores ou iguais à liquidação são ignorados antes da
@@ -420,27 +420,29 @@ def taxas_zero(  # noqa
 
     Examples:
         >>> from pyield import ntnf, ltn
+        >>> import polars.selectors as cs
         >>> df_ltn = ltn.dados("03-09-2024")
         >>> df_ntnf = ntnf.dados("03-09-2024")
-        >>> ntnf.taxas_zero(
+        >>> curva = ntnf.taxas_zero(
         ...     data_liquidacao="03-09-2024",
         ...     vencimentos_ltn=df_ltn["data_vencimento"],
         ...     taxas_ltn=df_ltn["taxa_indicativa"],
         ...     vencimentos_ntnf=df_ntnf["data_vencimento"],
         ...     taxas_ntnf=df_ntnf["taxa_indicativa"],
         ... )
+        >>> curva.with_columns(cs.starts_with("taxa_") * 100)
         shape: (6, 3)
         ┌─────────────────┬────────────┬───────────┐
         │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
         │ ---             ┆ ---        ┆ ---       │
         │ date            ┆ i64        ┆ f64       │
         ╞═════════════════╪════════════╪═══════════╡
-        │ 2025-01-01      ┆ 83         ┆ 0.108837  │
-        │ 2027-01-01      ┆ 584        ┆ 0.119981  │
-        │ 2029-01-01      ┆ 1083       ┆ 0.122113  │
-        │ 2031-01-01      ┆ 1584       ┆ 0.122231  │
-        │ 2033-01-01      ┆ 2088       ┆ 0.121355  │
-        │ 2035-01-01      ┆ 2587       ┆ 0.121398  │
+        │ 2025-01-01      ┆ 83         ┆ 10.8837   │
+        │ 2027-01-01      ┆ 584        ┆ 11.9981   │
+        │ 2029-01-01      ┆ 1083       ┆ 12.2113   │
+        │ 2031-01-01      ┆ 1584       ┆ 12.2231   │
+        │ 2033-01-01      ┆ 2088       ┆ 12.1355   │
+        │ 2035-01-01      ┆ 2587       ┆ 12.1398   │
         └─────────────────┴────────────┴───────────┘
     """
     if any_is_empty(
@@ -570,7 +572,7 @@ def taxas_zero(  # noqa
     df = df.with_columns(taxa_zero=pl.Series(taxas_spot_resolvidas, dtype=pl.Float64))
 
     # 7. Selecionar colunas finais
-    df = df.select(["data_vencimento", "dias_uteis", "taxa_zero"])
+    df = df.select("data_vencimento", "dias_uteis", "taxa_zero")
 
     # 8. Remover cupons (Julho) se não solicitado
     if not incluir_cupons:
@@ -1071,8 +1073,7 @@ def taxa(
 
     def diferenca_preco(taxa_encontrada: float) -> float:
         return (
-            _calcular_pu(data_liquidacao, data_vencimento, taxa_encontrada)
-            - pu_float
+            _calcular_pu(data_liquidacao, data_vencimento, taxa_encontrada) - pu_float
         )
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)

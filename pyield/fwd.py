@@ -241,8 +241,9 @@ def forwards(
             Padrão None.
 
     Returns:
-        pl.Series: Série contendo as taxas a termo calculadas (tipo Float64).
-            A primeira taxa de cada grupo corresponde à taxa zero inicial.
+        pl.Series: Série contendo as taxas a termo calculadas (tipo Float64),
+            em formato decimal. A primeira taxa de cada grupo corresponde à
+            taxa zero inicial.
 
     Raises:
         polars.exceptions.ShapeError: Se os comprimentos de `dias_uteis`,
@@ -274,21 +275,21 @@ def forwards(
         >>> # Exemplo com taxas indicativas de NTN-B em 16-09-2025
         >>> from pyield import ntnb
         >>> df = ntnb.dados("16-09-2025")
-        >>> yd.forwards(df["dias_uteis"], df["taxa_indicativa"])
+        >>> yd.forwards(df["dias_uteis"], df["taxa_indicativa"]) * 100
         shape: (13,)
         Series: 'taxa_forward' [f64]
         [
-            0.0943
-            0.071549
-            0.072439
-            0.069558
-            0.076614
+            9.43
+            7.1549
+            7.2439
+            6.9558
+            7.6614
             …
-            0.068105
-            0.071278
-            0.069117
-            0.070373
-            0.073286
+            6.8105
+            7.1278
+            6.9117
+            7.0373
+            7.3286
         ]
 
         >>> # Valores nulos em ``dias_uteis`` produzem nulo na própria linha;

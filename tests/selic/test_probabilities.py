@@ -115,7 +115,7 @@ def test_prob_sums_to_one(cpm_patchado):
 def test_cum_prob_ends_at_one(cpm_patchado):
     df = modulo_probabilidades.all_meetings("29-01-2025")
     ultimo = (
-        df.sort(["data_expiracao", "variacao_strike_bps"])
+        df.sort("data_expiracao", "variacao_strike_bps")
         .group_by("data_expiracao")
         .agg(pl.col("prob_acumulada").last())
     )
