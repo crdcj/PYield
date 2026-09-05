@@ -190,13 +190,18 @@ def taxa(
             caso de erro.
 
     Examples:
+        Exibe as taxas em percentual com seis casas decimais:
+
         >>> from pyield import lft
-        >>> lft.taxa("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
-        0.00171691
-        >>> lft.taxa("24-07-2024", "01-03-2025", 15785.324502, 15774.132706)
-        0.00115966
-        >>> lft.taxa("21-05-2008", "07-03-2014", 3451.215345, 3426.649594)
-        0.00123443
+        >>> taxa = lft.taxa("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
+        >>> f"{taxa:.6%}"
+        '0.171691%'
+        >>> taxa = lft.taxa("24-07-2024", "01-03-2025", 15785.324502, 15774.132706)
+        >>> f"{taxa:.6%}"
+        '0.115966%'
+        >>> taxa = lft.taxa("21-05-2008", "07-03-2014", 3451.215345, 3426.649594)
+        >>> f"{taxa:.6%}"
+        '0.123443%'
     """
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
         return float("nan")

@@ -35,8 +35,9 @@ class Interpolador:
 
         Interpolação linear:
         >>> linear = Interpolador(dus, txs, "linear")
-        >>> linear(45)
-        0.0475
+        >>> taxa = linear(45)
+        >>> f"{taxa:.2%}"
+        '4.75%'
 
         Interpolação flat forward:
         >>> fforward = Interpolador(dus, txs, "flat_forward")
@@ -51,8 +52,9 @@ class Interpolador:
 
         Se extrapolação estiver habilitada, a última taxa conhecida é usada:
         >>> fforward_extrap = Interpolador(dus, txs, "flat_forward", extrapolar=True)
-        >>> print(fforward_extrap(100))
-        0.055
+        >>> taxa = fforward_extrap(100)
+        >>> f"{taxa:.1%}"
+        '5.5%'
     """
 
     def __init__(

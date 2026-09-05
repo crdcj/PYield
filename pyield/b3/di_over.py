@@ -79,8 +79,9 @@ def di_over(data: DateLike) -> float:
 
     Examples:
         >>> import pyield as yd
-        >>> yd.di_over("28/02/2025")  # decimal (0.1315 = 13,15% a.a.)
-        0.1315
+        >>> taxa = yd.di_over("28/02/2025")  # decimal (0.1315 = 13,15% a.a.)
+        >>> f"{taxa:.2%}"
+        '13.15%'
         >>> yd.di_over("01/01/2025")  # Feriado
         nan
     """

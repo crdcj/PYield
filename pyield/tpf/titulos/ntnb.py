@@ -710,13 +710,18 @@ def taxa(
             caso de erro.
 
     Examples:
+        Exibe as taxas em percentual com seis casas decimais:
+
         >>> from pyield import ntnb
-        >>> ntnb.taxa("31-05-2024", "15-05-2035", 4299.160173, 4271.864805)
-        0.06149003
-        >>> ntnb.taxa("15-08-2024", "15-08-2032", 4315.498383, 4343.156412)
-        0.05929003
-        >>> ntnb.taxa("21-05-2008", "15-08-2010", 1728.461136, 1781.867128)
-        0.0523457
+        >>> taxa = ntnb.taxa("31-05-2024", "15-05-2035", 4299.160173, 4271.864805)
+        >>> f"{taxa:.6%}"
+        '6.149003%'
+        >>> taxa = ntnb.taxa("15-08-2024", "15-08-2032", 4315.498383, 4343.156412)
+        >>> f"{taxa:.6%}"
+        '5.929003%'
+        >>> taxa = ntnb.taxa("21-05-2008", "15-08-2010", 1728.461136, 1781.867128)
+        >>> f"{taxa:.6%}"
+        '5.234570%'
     """
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
         return float("nan")

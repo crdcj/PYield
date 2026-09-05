@@ -12,6 +12,9 @@ from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.futuro import di1
 from pyield.tpf.titulos import _utils as utils
+from pyield.tpf.titulos._ntnf_bootstrap import (
+    taxas_zero_forwards as taxas_zero_forwards,  # noqa: PLC0414
+)
 
 """
 Constantes calculadas conforme regras da STN
@@ -1055,12 +1058,16 @@ def taxa(
             caso de erro.
 
     Examples:
+        Exibe as taxas em percentual com seis casas decimais:
+
         >>> from pyield import ntnf
         >>> pu = ntnf.pu("05-07-2024", "01-01-2035", 0.11921)
-        >>> ntnf.taxa("13-03-2026", "01-01-2035", 820.995125)
-        0.142743
-        >>> ntnf.taxa("21-05-2008", "01-01-2014", 903.039091)
-        0.13661101
+        >>> taxa = ntnf.taxa("13-03-2026", "01-01-2035", 820.995125)
+        >>> f"{taxa:.6%}"
+        '14.274300%'
+        >>> taxa = ntnf.taxa("21-05-2008", "01-01-2014", 903.039091)
+        >>> f"{taxa:.6%}"
+        '13.661101%'
     """
     if any_is_empty(data_liquidacao, data_vencimento, pu):
         return float("nan")

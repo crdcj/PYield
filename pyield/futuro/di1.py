@@ -279,16 +279,18 @@ def interpolar_taxa(
     Examples:
         >>> from pyield import di1
         >>> # Obtém taxa para um vencimento de contrato existente
-        >>> di1.interpolar_taxa("25-04-2025", "01-01-2027")
-        0.13901
+        >>> taxa = di1.interpolar_taxa("25-04-2025", "01-01-2027")
+        >>> f"{taxa:.3%}"
+        '13.901%'
 
         >>> # Obtém taxa para um vencimento não existente
         >>> di1.interpolar_taxa("25-04-2025", "01-11-2027")
         0.13576348733268917
 
         >>> # Extrapola taxa para uma data de vencimento futura
-        >>> di1.interpolar_taxa("25-04-2025", "01-01-2050", extrapolar=True)
-        0.13881
+        >>> taxa = di1.interpolar_taxa("25-04-2025", "01-01-2050", extrapolar=True)
+        >>> f"{taxa:.3%}"
+        '13.881%'
     """
     if any_is_array_like(data_referencia, data_vencimento):
         raise ValueError(

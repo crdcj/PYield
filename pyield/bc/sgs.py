@@ -237,8 +237,9 @@ def selic_over(data: DateLike) -> float:
 
     Examples:
         >>> import pyield as yd
-        >>> yd.selic.over("31-05-2024")  # decimal (0.104 = 10,4% a.a.)
-        0.104
+        >>> taxa = yd.selic.over("31-05-2024")  # decimal (0.104 = 10,4% a.a.)
+        >>> f"{taxa:.1%}"
+        '10.4%'
     """
     if any_is_empty(data):
         return float("nan")
@@ -310,8 +311,9 @@ def selic_meta(data: DateLike) -> float:
 
     Examples:
         >>> import pyield as yd
-        >>> yd.selic.meta("31-05-2024")  # decimal (0.105 = 10,5% a.a.)
-        0.105
+        >>> taxa = yd.selic.meta("31-05-2024")  # decimal (0.105 = 10,5% a.a.)
+        >>> f"{taxa:.1%}"
+        '10.5%'
     """
     if any_is_empty(data):
         return float("nan")

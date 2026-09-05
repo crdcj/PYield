@@ -134,8 +134,9 @@ def taxa(data: DateLike) -> float:
 
     Examples:
         >>> from pyield import ipca
-        >>> ipca.taxa("01-01-2025")  # decimal (0.0016 = 0,16%)
-        0.0016
+        >>> taxa = ipca.taxa("01-01-2025")  # decimal (0.0016 = 0,16%)
+        >>> f"{taxa:.2%}"
+        '0.16%'
     """
     if any_is_empty(data):
         return float("nan")
