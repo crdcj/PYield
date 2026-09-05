@@ -304,6 +304,42 @@ yd.ptax("25-12-2025")                                # -> nan
 
 Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
 
+A documentação é gerada com Zensical, usando a configuração em `mkdocs.yml`.
+Execute os comandos abaixo na raiz do repositório.
+
+Para visualizar localmente, com atualização automática:
+
+```sh
+uv run zensical serve
+```
+
+Para gerar os arquivos de publicação em `site/`, limpando o cache e tratando
+avisos como erros:
+
+```sh
+uv run zensical build --clean --strict
+```
+
+Após o build terminar com sucesso, publique no GitHub Pages:
+
+```sh
+uv tool run ghp-import -n -p site
+```
+
+Esse comando substitui o conteúdo da branch `gh-pages` pelos arquivos de `site/`
+e faz o push para `origin`. A opção `-n` inclui `.nojekyll` para servir os arquivos
+gerados diretamente.
+
+No GitHub, configure uma vez em **Settings → Pages → Build and deployment**:
+
+- **Source:** `Deploy from a branch`.
+- **Branch:** `gh-pages`.
+- **Pasta:** `/ (root)`.
+
+Clique em **Save**. A pasta deve ser `/ (root)`, não `/docs`, pois os arquivos
+gerados ficam na raiz da branch `gh-pages`. Acompanhe a publicação na aba
+**Actions** do repositório.
+
 ## Compatibilidade e mudanças da API
 
 A versão atual é `v0.56.0`. As mudanças abaixo podem exigir atualização de código:
