@@ -146,6 +146,8 @@ df_ntnf = yd.ntnf.dados("23-08-2024")
 Calcule cotações e preços de títulos públicos:
 
 ```python
+import polars as pl
+
 # Cotação de NTN-B (base 1)
 yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
 
@@ -153,14 +155,14 @@ yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
 yd.ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 0.995341
 
 # Prêmio sobre DI para títulos pré-fixados (em pontos-base)
-df_premios = yd.ltn.dados("30-05-2024").select(
-    "titulo",
-    "data_vencimento",
+df_premios = yd.ltn.dados("30-05-2024").with_columns(
     premio=pl.col("premio") * 10_000,
 )
 
 # Prêmio para NTN-F
-df_premios_ntnf = yd.ntnf.premio("30-05-2024", pontos_base=True)
+df_premios_ntnf = yd.ntnf.premio("30-05-2024").with_columns(
+    premio=pl.col("premio") * 10_000,
+)
 ```
 
 ### 5. Interpolação de Taxas

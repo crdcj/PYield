@@ -470,33 +470,32 @@ def implicitas(  # noqa: PLR0913
         ...     vencimentos_nominais=df_di["data_vencimento"],
         ...     taxas_nominais=df_di["taxa_ajuste"],
         ... )
-        >>> import polars.selectors as cs
-        >>> curva.with_columns(
-        ...     cs.matches("^(taxa_|inflacao_implicita$)") * 100
-        ... ).select(
-        ...     "data_vencimento",
+        >>> colunas_percentual = [
+        ...     "taxa_tir_real",
         ...     "taxa_zero_real",
         ...     "taxa_nominal",
         ...     "inflacao_implicita",
-        ... )
-        shape: (15, 4)
-        ┌─────────────────┬────────────────┬──────────────┬────────────────────┐
-        │ data_vencimento ┆ taxa_zero_real ┆ taxa_nominal ┆ inflacao_implicita │
-        │ ---             ┆ ---            ┆ ---          ┆ ---                │
-        │ date            ┆ f64            ┆ f64          ┆ f64                │
-        ╞═════════════════╪════════════════╪══════════════╪════════════════════╡
-        │ 2026-08-15      ┆ 11.15          ┆ 14.1339      ┆ 2.6846             │
-        │ 2027-05-15      ┆ 8.5642         ┆ 14.5795      ┆ 5.5407             │
-        │ 2028-08-15      ┆ 8.9707         ┆ 14.9149      ┆ 5.4548             │
-        │ 2029-05-15      ┆ 8.8132         ┆ 14.9535      ┆ 5.643              │
-        │ 2030-08-15      ┆ 8.8756         ┆ 14.9166      ┆ 5.5486             │
-        │ …               ┆ …              ┆ …            ┆ …                  │
-        │ 2040-08-15      ┆ 7.608          ┆ 14.591       ┆ 6.4893             │
-        │ 2045-05-15      ┆ 7.3943         ┆ null         ┆ null               │
-        │ 2050-08-15      ┆ 7.2433         ┆ null         ┆ null               │
-        │ 2055-05-15      ┆ 7.0513         ┆ null         ┆ null               │
-        │ 2060-08-15      ┆ 7.0825         ┆ null         ┆ null               │
-        └─────────────────┴────────────────┴──────────────┴────────────────────┘
+        ... ]
+        >>> _ = pl.Config.set_tbl_width_chars(150)
+        >>> curva.with_columns(pl.col(colunas_percentual) * 100)
+        shape: (15, 6)
+        ┌─────────────────┬────────────┬───────────────┬────────────────┬──────────────┬────────────────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_tir_real ┆ taxa_zero_real ┆ taxa_nominal ┆ inflacao_implicita │
+        │ ---             ┆ ---        ┆ ---           ┆ ---            ┆ ---          ┆ ---                │
+        │ date            ┆ i64        ┆ f64           ┆ f64            ┆ f64          ┆ f64                │
+        ╞═════════════════╪════════════╪═══════════════╪════════════════╪══════════════╪════════════════════╡
+        │ 2026-08-15      ┆ 41         ┆ 11.15         ┆ 11.15          ┆ 14.133881    ┆ 2.684553           │
+        │ 2027-05-15      ┆ 226        ┆ 8.5733        ┆ 8.564222       ┆ 14.579493    ┆ 5.540749           │
+        │ 2028-08-15      ┆ 541        ┆ 8.9683        ┆ 8.970714       ┆ 14.914875    ┆ 5.454824           │
+        │ 2029-05-15      ┆ 725        ┆ 8.8171        ┆ 8.813162       ┆ 14.953463    ┆ 5.642977           │
+        │ 2030-08-15      ┆ 1039       ┆ 8.8766        ┆ 8.875555       ┆ 14.916618    ┆ 5.548594           │
+        │ …               ┆ …          ┆ …             ┆ …              ┆ …            ┆ …                  │
+        │ 2040-08-15      ┆ 3548       ┆ 7.8262        ┆ 7.608037       ┆ 14.591       ┆ 6.489258           │
+        │ 2045-05-15      ┆ 4735       ┆ 7.6656        ┆ 7.394303       ┆ null         ┆ null               │
+        │ 2050-08-15      ┆ 6050       ┆ 7.5659        ┆ 7.243255       ┆ null         ┆ null               │
+        │ 2055-05-15      ┆ 7239       ┆ 7.4658        ┆ 7.05134        ┆ null         ┆ null               │
+        │ 2060-08-15      ┆ 8556       ┆ 7.464         ┆ 7.082527       ┆ null         ┆ null               │
+        └─────────────────┴────────────┴───────────────┴────────────────┴──────────────┴────────────────────┘
     """
     if any_is_empty(
         data_liquidacao,
@@ -518,16 +517,13 @@ def implicitas(  # noqa: PLR0913
         extrapolar=extrapolar,
     )
     taxa_nominal_expr = interpolador_ff.interpolar_expr("dias_uteis")
-    df = (
-        taxas_zero(liquidacao, vencimentos_tir, taxas_tir)
-        .select(
-            "data_vencimento",
-            "dias_uteis",
-            taxa_tir_real=pl.col("taxa_tir"),
-            taxa_zero_real=pl.col("taxa_zero"),
-            taxa_nominal=taxa_nominal_expr,
-            inflacao_implicita=(taxa_nominal_expr + 1) / (pl.col("taxa_zero") + 1) - 1,
-        )
+    df = taxas_zero(liquidacao, vencimentos_tir, taxas_tir).select(
+        "data_vencimento",
+        "dias_uteis",
+        taxa_tir_real=pl.col("taxa_tir"),
+        taxa_zero_real=pl.col("taxa_zero"),
+        taxa_nominal=taxa_nominal_expr,
+        inflacao_implicita=(taxa_nominal_expr + 1) / (pl.col("taxa_zero") + 1) - 1,
     )
 
     return df

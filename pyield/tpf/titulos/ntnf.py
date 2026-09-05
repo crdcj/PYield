@@ -438,11 +438,11 @@ def taxas_zero(  # noqa
         │ date            ┆ i64        ┆ f64       │
         ╞═════════════════╪════════════╪═══════════╡
         │ 2025-01-01      ┆ 83         ┆ 10.8837   │
-        │ 2027-01-01      ┆ 584        ┆ 11.9981   │
-        │ 2029-01-01      ┆ 1083       ┆ 12.2113   │
-        │ 2031-01-01      ┆ 1584       ┆ 12.2231   │
-        │ 2033-01-01      ┆ 2088       ┆ 12.1355   │
-        │ 2035-01-01      ┆ 2587       ┆ 12.1398   │
+        │ 2027-01-01      ┆ 584        ┆ 11.998105 │
+        │ 2029-01-01      ┆ 1083       ┆ 12.211302 │
+        │ 2031-01-01      ┆ 1584       ┆ 12.223069 │
+        │ 2033-01-01      ┆ 2088       ┆ 12.135544 │
+        │ 2035-01-01      ┆ 2587       ┆ 12.139797 │
         └─────────────────┴────────────┴───────────┘
     """
     if any_is_empty(
@@ -721,21 +721,20 @@ def rentabilidade_expr(
     )
 
 
-def premio(data: DateLike, pontos_base: bool = False) -> pl.DataFrame:
+def premio(data: DateLike) -> pl.DataFrame:
     """
     Calcula o prêmio bruto das NTN-F sobre a curva DI na data de referência.
 
     Definição do prêmio (forma bruta):
         premio = taxa_indicativa - taxa de ajuste do DI
 
-    Quando ``pontos_base=False`` a coluna retorna essa diferença em formato decimal
-    (ex: 0.000439 ≈ 4.39 bps). Quando ``pontos_base=True`` o valor é automaticamente
-    multiplicado por 10_000 e exibido diretamente em basis points.
+    A coluna retorna essa diferença em formato decimal (ex: 0.000439 ≈
+    4.39 bps). Para exibir o prêmio em pontos-base, multiplique a coluna
+    ``premio`` por 10_000 no DataFrame retornado. No exemplo abaixo, essa
+    coluna é sobrescrita apenas para facilitar a leitura em pontos-base.
 
     Args:
         data (DateLike): Data da consulta para buscar as taxas.
-        pontos_base (bool): Se True, retorna o prêmio já convertido em basis points.
-            Padrão False.
 
     Returns:
         pl.DataFrame: DataFrame com as colunas do prêmio.
@@ -743,15 +742,16 @@ def premio(data: DateLike, pontos_base: bool = False) -> pl.DataFrame:
     Output Columns:
         - titulo (String): Tipo do título.
         - data_vencimento (Date): Data de vencimento.
-        - premio (Float64): prêmio em decimal ou bps conforme parâmetro,
-            isto é, o spread sobre o DI.
+        - premio (Float64): prêmio em formato decimal, isto é, o spread sobre
+            o DI.
 
     Raises:
         ValueError: Se os dados de DI não possuem 'taxa_ajuste' ou estão vazios.
 
     Examples:
         >>> from pyield import ntnf
-        >>> ntnf.premio("30-05-2025", pontos_base=True)
+        >>> # Exemplo em pontos-base para facilitar a leitura
+        >>> ntnf.premio("30-05-2025").with_columns(pl.col("premio") * 10_000)
         shape: (5, 3)
         ┌────────┬─────────────────┬────────┐
         │ titulo ┆ data_vencimento ┆ premio │
@@ -765,9 +765,7 @@ def premio(data: DateLike, pontos_base: bool = False) -> pl.DataFrame:
         │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
         └────────┴─────────────────┴────────┘
     """
-    return utils.premios_pre(data, pontos_base=pontos_base).filter(
-        pl.col("titulo") == "NTN-F"
-    )
+    return utils.premios_pre(data).filter(pl.col("titulo") == "NTN-F")
 
 
 def premio_limpo(  # noqa

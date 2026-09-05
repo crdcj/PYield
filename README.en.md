@@ -178,6 +178,8 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 ## Treasury Bonds
 
 ```python
+import polars as pl
+
 import pyield as yd
 
 from pyield import ltn, ntnb, ntnf
@@ -196,9 +198,11 @@ ntnb.dados("23-08-2024")  # -> DataFrame with NTN-B bonds
 ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
 ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 0.995341
 
-# DI premium (pontos_base=True multiplies by 10,000)
-ntnf.premio("30-05-2025", pontos_base=True)
-# -> DataFrame: titulo, data_vencimento, premio
+# DI premium (convert to basis points for display)
+ntnf.premio("30-05-2025").with_columns(
+    premio=pl.col("premio") * 10_000,
+)
+# -> DataFrame: titulo, data_vencimento, premio (in basis points)
 ```
 
 ## Futures Data

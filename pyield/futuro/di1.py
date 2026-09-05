@@ -178,7 +178,7 @@ def interpolar_taxas(
         Series: 'taxa_interpolada' [f64]
         [
             13.972
-            13.4613
+            13.461282
             null
         ]
 
@@ -204,7 +204,7 @@ def interpolar_taxas(
         shape: (2,)
         Series: 'taxa_interpolada' [f64]
         [
-            13.5763
+            13.576349
             null
         ]
     """

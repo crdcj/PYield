@@ -6,7 +6,7 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
-from pyield import ntnf
+from pyield import ntnf, tpf
 
 
 def test_fluxos_caixa_preservam_data_contratual() -> None:
@@ -19,6 +19,23 @@ def test_fluxos_caixa_nao_expoem_ajuste_de_datas() -> None:
     parametros = inspect.signature(ntnf.fluxos_caixa).parameters
 
     assert tuple(parametros) == ("data_liquidacao", "data_vencimento")
+
+
+def test_premio_retorna_decimal_e_nao_expoe_conversao_de_unidade(monkeypatch):
+    dados = pl.DataFrame(
+        {
+            "titulo": ["LTN", "NTN-F"],
+            "data_vencimento": [dt.date(2027, 1, 1), dt.date(2029, 1, 1)],
+            "premio": [0.000439, 0.001421],
+        }
+    )
+    monkeypatch.setattr(ntnf.utils, "premios_pre", lambda data: dados)
+
+    resultado = ntnf.premio("30-05-2025")
+
+    assert tuple(inspect.signature(ntnf.premio).parameters) == ("data",)
+    assert tuple(inspect.signature(tpf.premios_pre).parameters) == ("data",)
+    assert resultado["premio"].to_list() == [0.001421]
 
 
 @pytest.mark.parametrize(

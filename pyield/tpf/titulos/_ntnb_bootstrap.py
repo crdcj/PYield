@@ -248,8 +248,8 @@ def taxas_zero(
         ...     vencimentos=df["data_vencimento"],
         ...     taxas=df["taxa_indicativa"],
         ... )
-        >>> curva_percentual = curva.with_columns(cs.starts_with("taxa_") * 100)
-        >>> curva_percentual
+        >>> # Taxas em percentual.
+        >>> curva.with_columns(cs.starts_with("taxa_") * 100)
         shape: (14, 5)
         ┌─────────────────┬────────────┬──────────┬──────────────┬───────────┐
         │ data_vencimento ┆ dias_uteis ┆ taxa_tir ┆ taxa_forward ┆ taxa_zero │

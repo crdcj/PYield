@@ -221,6 +221,8 @@ fazem parte da família de Títulos Públicos Federais (`tpf`). Para uso direto
 dos títulos, prefira os atalhos públicos na raiz:
 
 ```python
+import polars as pl
+
 import pyield as yd
 
 from pyield import ltn, ntnb, ntnf
@@ -239,9 +241,11 @@ ntnb.dados("23-08-2024")  # -> DataFrame com títulos NTN-B
 ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
 ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 0.995341
 
-# Prêmio sobre o DI (pontos_base=True multiplica por 10.000)
-ntnf.premio("30-05-2025", pontos_base=True)
-# -> DataFrame: titulo, data_vencimento, premio
+# Prêmio sobre o DI (conversão para pontos-base para exibição)
+ntnf.premio("30-05-2025").with_columns(
+    premio=pl.col("premio") * 10_000,
+)
+# -> DataFrame: titulo, data_vencimento, premio (em pontos-base)
 ```
 
 ## Dados de Futuros

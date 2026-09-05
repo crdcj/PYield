@@ -49,10 +49,7 @@ def adicionar_taxa_di(df: pl.DataFrame, data_ref: DateLike) -> pl.DataFrame:
     return df.with_columns(taxa_di=taxas_di)
 
 
-def premios_pre(
-    data: DateLike,
-    pontos_base: bool = False,
-) -> pl.DataFrame:
+def premios_pre(data: DateLike) -> pl.DataFrame:
     """Calcula o prêmio dos títulos prefixados (LTN e NTN-F) sobre o DI.
 
     Em linguagem de mercado, esse valor é chamado de prêmio. Em termos
@@ -61,15 +58,13 @@ def premios_pre(
     Definição do prêmio:
         premio = taxa indicativa do PRE - taxa de ajuste do DI
 
-    Quando ``pontos_base=False`` a coluna retorna essa diferença em formato
-    decimal (ex: 0.000439 ≈ 4.39 bps). Quando ``pontos_base=True`` o valor
-    é automaticamente multiplicado por 10_000 e exibido diretamente em
-    basis points.
+    A coluna retorna essa diferença em formato decimal (ex: 0.000439 ≈
+    4.39 bps). Para exibir o prêmio em pontos-base, multiplique a coluna
+    ``premio`` por 10_000 no DataFrame retornado. No exemplo abaixo, essa
+    coluna é sobrescrita apenas para facilitar a leitura em pontos-base.
 
     Args:
         data: Data da consulta para buscar as taxas.
-        pontos_base: Se True, retorna o prêmio já convertido em basis
-            points. Padrão False.
 
     Returns:
         DataFrame com as colunas do prêmio. Retorna DataFrame vazio se
@@ -78,11 +73,13 @@ def premios_pre(
     Output Columns:
         * titulo (String): tipo do título.
         * data_vencimento (Date): data de vencimento.
-        * premio (Float64): prêmio em decimal ou bps conforme parâmetro
-            (spread sobre o DI).
+        * premio (Float64): prêmio em formato decimal (spread sobre o DI).
 
     Examples:
-        >>> yd.tpf.premios_pre("30-05-2025", pontos_base=True)
+        >>> # Exemplo em pontos-base para facilitar a leitura
+        >>> yd.tpf.premios_pre("30-05-2025").with_columns(
+        ...     premio=pl.col("premio") * 10_000
+        ... )
         shape: (18, 3)
         ┌────────┬─────────────────┬────────┐
         │ titulo ┆ data_vencimento ┆ premio │
@@ -102,9 +99,7 @@ def premios_pre(
         │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
         └────────┴─────────────────┴────────┘
     """
-    df = obter_tpf(data, "PRE").select(
-        "titulo", "data_vencimento", "taxa_indicativa"
-    )
+    df = obter_tpf(data, "PRE").select("titulo", "data_vencimento", "taxa_indicativa")
     if df.is_empty():
         return df.select(
             pl.lit("").alias("titulo"),
@@ -117,9 +112,6 @@ def premios_pre(
         .select("titulo", "data_vencimento", "premio")
         .sort("titulo", "data_vencimento")
     )
-
-    if pontos_base:
-        df = df.with_columns(pl.col("premio") * 10_000)
 
     return df
 
