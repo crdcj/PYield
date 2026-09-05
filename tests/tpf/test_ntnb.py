@@ -187,7 +187,13 @@ def test_taxas_zero_retornam_apenas_vencimentos(data_liquidacao):
     resultado = yd.ntnb.taxas_zero(data_liquidacao, ["15-08-2026"], [0.1])
     assert resultado["data_vencimento"].to_list() == [dt.date(2026, 8, 15)]
     assert resultado["taxa_zero"][0] == pytest.approx(0.1)
-    assert resultado.columns == ["data_vencimento", "dias_uteis", "taxa_zero"]
+    assert resultado.columns == [
+        "data_vencimento",
+        "dias_uteis",
+        "taxa_tir",
+        "taxa_forward",
+        "taxa_zero",
+    ]
 
 
 def test_taxas_zero_reproduz_planilha_curva_zero():
@@ -202,32 +208,32 @@ def test_taxas_zero_reproduz_planilha_curva_zero():
     )
 
     assert resultado["data_vencimento"].to_list() == VENCIMENTOS
+    assert resultado["taxa_tir"].to_list() == TAXAS_TIR
     assert resultado["taxa_zero"].to_list() == pytest.approx(
         esperado["taxa_zero"].to_list(), abs=1e-8
     )
+    assert resultado["taxa_forward"].to_list() == pytest.approx(
+        FORWARDS_PLANILHA, abs=1e-8
+    )
 
 
-def test_taxas_zero_podem_retornar_escala_percentual():
+def test_taxas_zero_podem_retornar_percentual():
     resultado = yd.ntnb.taxas_zero(
         DATA_LIQUIDACAO,
         VENCIMENTOS,
         TAXAS_TIR,
-        escala="percentual",
+        percentual=True,
     )
 
     assert resultado["taxa_zero"].to_list() == pytest.approx(
         [taxa * 100 for taxa in TAXAS_ZERO_PLANILHA], abs=1e-6
     )
-
-
-def test_taxas_zero_rejeitam_escala_invalida():
-    with pytest.raises(ValueError, match="escala deve ser"):
-        yd.ntnb.taxas_zero(
-            DATA_LIQUIDACAO,
-            VENCIMENTOS,
-            TAXAS_TIR,
-            escala="pontos_base",  # type: ignore[arg-type]
-        )
+    assert resultado["taxa_tir"].to_list() == pytest.approx(
+        [taxa * 100 for taxa in TAXAS_TIR]
+    )
+    assert resultado["taxa_forward"].to_list() == pytest.approx(
+        [taxa * 100 for taxa in FORWARDS_PLANILHA], abs=1e-6
+    )
 
 
 def test_taxas_zero_limita_busca_sem_intervalo():
@@ -248,6 +254,8 @@ def test_taxas_zero_retornam_vazio_sem_vencimentos_futuros() -> None:
     assert curva.schema == {
         "data_vencimento": pl.Date,
         "dias_uteis": pl.Int64,
+        "taxa_tir": pl.Float64,
+        "taxa_forward": pl.Float64,
         "taxa_zero": pl.Float64,
     }
 
@@ -354,4 +362,7 @@ def test_curva_zero_interpolada_reproduz_cotacoes_dos_titulos():
 def test_forwards_derivados_das_zeros_reproduzem_planilha():
     curva = yd.ntnb.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, TAXAS_TIR)
     forwards = curva.select(yd.forwards_expr("dias_uteis", "taxa_zero")).to_series()
+    assert curva["taxa_forward"].to_list() == pytest.approx(
+        forwards.to_list(), abs=1e-12
+    )
     assert forwards.to_list() == pytest.approx(FORWARDS_PLANILHA, abs=1e-8)

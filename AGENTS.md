@@ -29,7 +29,7 @@ Use `uv run` para comandos de projeto:
 - `uv run pytest ...` para testes;
 - `uv run ruff check ...` para lint;
 - `uv run ty check` para tipos;
-- `uv run mkdocs build --strict` para documentação.
+- `uv run zensical build --strict` para documentação.
 
 Rode verificações focadas no que você alterou. Amplie para a suíte inteira quando
 a mudança afetar contratos transversais, API pública ou parsing compartilhado.

@@ -40,32 +40,9 @@ nav:
       - Selic / COPOM: selic.md
 
 theme:
-  name: 'material'
-  language: 'pt-BR'
-  palette:
-    - scheme: slate
-      toggle:
-        icon: material/lightbulb-outline
-        name: Alternar para modo claro
-    - scheme: default
-      toggle:
-        icon: material/lightbulb
-        name: Alternar para modo escuro
-
+  language: pt-BR
   features:
     - navigation.instant
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.footer
-    - navigation.top
-    - navigation.tracking
-    - toc.follow
-    - toc.integrate
-    - content.code.copy
-    - content.code.select    
-    - search.suggest
-    - search.highlight
-    - search.share    
  
 plugins:
   - search
@@ -102,4 +79,5 @@ extra:
       link: https://github.com/crdcj/PYield
 
 extra_javascript:
+  - javascripts/mathjax.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

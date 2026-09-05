@@ -3,7 +3,6 @@
 import datetime as dt
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Literal
 
 import polars as pl
 
@@ -144,7 +143,7 @@ def taxas_zero(
     vencimentos: DatesLike,
     taxas: ArrayLike,
     *,
-    escala: Literal["decimal", "percentual"] = "decimal",
+    percentual: bool = False,
 ) -> pl.DataFrame:
     r"""
     Calcula a curva zero de NTN-B pelo bootstrap de forwards.
@@ -201,7 +200,9 @@ def taxas_zero(
         Os forwards e taxas zero já calibrados nos títulos curtos permanecem
         fixos durante a calibração dos títulos longos. Por isso, cada etapa tem
         apenas uma incógnita e é resolvida por bisseção quando há mudança de
-        sinal no intervalo pesquisado.
+        sinal no intervalo pesquisado. A coluna ``taxa_forward`` retorna essa
+        incógnita calibrada: em cada linha, ela é constante no trecho que termina
+        no respectivo vencimento. O primeiro trecho começa na liquidação.
 
         **Convergência condicional**
 
@@ -222,22 +223,25 @@ def taxas_zero(
         data_liquidacao: Data de liquidação.
         vencimentos: Datas de vencimento das NTN-B.
         taxas: TIRs correspondentes em formato decimal (ex.: 0.10 para 10%).
-        escala: Escala da coluna ``taxa_zero`` retornada. Use ``"decimal"``
-            para obter 0.10 ou ``"percentual"`` para obter 10.0. A escala não
-            altera as TIRs recebidas em ``taxas``. O padrão é ``"decimal"``.
+        percentual: Se True, retorna as colunas de taxa em percentual
+            (10.0 para 10%). Se False, retorna em decimal (0.10 para 10%).
+            As TIRs recebidas em ``taxas`` devem ser sempre decimais.
+            O padrão é False.
 
     Returns:
         pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Retorna vazio quando
             não restarem vencimentos posteriores à liquidação.
 
     Raises:
-        ValueError: Se ``escala`` não for ``"decimal"`` nem ``"percentual"``.
         RuntimeError: Se não for possível encontrar um intervalo válido para
             alguma taxa forward.
 
     Output Columns:
         - data_vencimento (Date): Data do vértice da curva.
         - dias_uteis (Int64): Dias úteis entre liquidação e vértice.
+        - taxa_tir (Float64): TIR recebida na entrada, na escala escolhida.
+        - taxa_forward (Float64): Parâmetro calibrado por bisseção para o trecho
+            que termina no vencimento, na escala escolhida.
         - taxa_zero (Float64): Taxa zero real anualizada na escala escolhida.
 
     Examples:
@@ -248,59 +252,60 @@ def taxas_zero(
         ...     data_liquidacao="16-08-2024",
         ...     vencimentos=df["data_vencimento"],
         ...     taxas=df["taxa_indicativa"],
-        ...     escala="percentual",
+        ...     percentual=True,
         ... )
         >>> curva_percentual
-        shape: (14, 3)
-        ┌─────────────────┬────────────┬───────────┐
-        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
-        │ ---             ┆ ---        ┆ ---       │
-        │ date            ┆ i64        ┆ f64       │
-        ╞═════════════════╪════════════╪═══════════╡
-        │ 2025-05-15      ┆ 185        ┆ 6.3893    │
-        │ 2026-08-15      ┆ 502        ┆ 6.6141    │
-        │ 2027-05-15      ┆ 687        ┆ 6.4088    │
-        │ 2028-08-15      ┆ 1002       ┆ 6.3056    │
-        │ 2029-05-15      ┆ 1186       ┆ 6.1458    │
-        │ …               ┆ …          ┆ …         │
-        │ 2040-08-15      ┆ 4009       ┆ 5.8326    │
-        │ 2045-05-15      ┆ 5196       ┆ 6.0369    │
-        │ 2050-08-15      ┆ 6511       ┆ 6.0768    │
-        │ 2055-05-15      ┆ 7700       ┆ 5.9909    │
-        │ 2060-08-15      ┆ 9017       ┆ 6.0648    │
-        └─────────────────┴────────────┴───────────┘
+        shape: (14, 5)
+        ┌─────────────────┬────────────┬──────────┬──────────────┬───────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_tir ┆ taxa_forward ┆ taxa_zero │
+        │ ---             ┆ ---        ┆ ---      ┆ ---          ┆ ---       │
+        │ date            ┆ i64        ┆ f64      ┆ f64          ┆ f64       │
+        ╞═════════════════╪════════════╪══════════╪══════════════╪═══════════╡
+        │ 2025-05-15      ┆ 185        ┆ 6.3893   ┆ 6.3893       ┆ 6.3893    │
+        │ 2026-08-15      ┆ 502        ┆ 6.6095   ┆ 6.745466     ┆ 6.614071  │
+        │ 2027-05-15      ┆ 687        ┆ 6.4164   ┆ 5.853671     ┆ 6.40877   │
+        │ 2028-08-15      ┆ 1002       ┆ 6.3199   ┆ 6.080954     ┆ 6.305605  │
+        │ 2029-05-15      ┆ 1186       ┆ 6.1753   ┆ 5.279866     ┆ 6.145816  │
+        │ …               ┆ …          ┆ …        ┆ …            ┆ …         │
+        │ 2040-08-15      ┆ 4009       ┆ 5.8873   ┆ 5.6644       ┆ 5.832614  │
+        │ 2045-05-15      ┆ 5196       ┆ 6.0013   ┆ 6.729968     ┆ 6.036943  │
+        │ 2050-08-15      ┆ 6511       ┆ 6.0247   ┆ 6.234593     ┆ 6.076832  │
+        │ 2055-05-15      ┆ 7700       ┆ 5.9926   ┆ 5.521283     ┆ 5.990856  │
+        │ 2060-08-15      ┆ 9017       ┆ 6.0179   ┆ 6.498313     ┆ 6.064823  │
+        └─────────────────┴────────────┴──────────┴──────────────┴───────────┘
 
-        A liquidação também pode ocorrer logo após uma data de cupom:
+        O bootstrap considera apenas os fluxos posteriores à liquidação:
         >>> df = ntnb.dados("15-05-2026")
         >>> curva_percentual = ntnb.taxas_zero(
         ...     data_liquidacao="18-05-2026",
         ...     vencimentos=df["data_vencimento"],
         ...     taxas=df["taxa_indicativa"],
-        ...     escala="percentual",
+        ...     percentual=True,
         ... )
         >>> curva_percentual
-        shape: (15, 3)
-        ┌─────────────────┬────────────┬───────────┐
-        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
-        │ ---             ┆ ---        ┆ ---       │
-        │ date            ┆ i64        ┆ f64       │
-        ╞═════════════════╪════════════╪═══════════╡
-        │ 2026-08-15      ┆ 64         ┆ 10.2013   │
-        │ 2027-05-15      ┆ 249        ┆ 8.1096    │
-        │ 2028-08-15      ┆ 564        ┆ 8.103     │
-        │ 2029-05-15      ┆ 748        ┆ 8.0306    │
-        │ 2030-08-15      ┆ 1062       ┆ 8.0589    │
-        │ …               ┆ …          ┆ …         │
-        │ 2040-08-15      ┆ 3571       ┆ 7.3412    │
-        │ 2045-05-15      ┆ 4758       ┆ 7.2024    │
-        │ 2050-08-15      ┆ 6073       ┆ 7.081     │
-        │ 2055-05-15      ┆ 7262       ┆ 7.0297    │
-        │ 2060-08-15      ┆ 8579       ┆ 7.0544    │
-        └─────────────────┴────────────┴───────────┘
+        shape: (15, 5)
+        ┌─────────────────┬────────────┬──────────┬──────────────┬───────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_tir ┆ taxa_forward ┆ taxa_zero │
+        │ ---             ┆ ---        ┆ ---      ┆ ---          ┆ ---       │
+        │ date            ┆ i64        ┆ f64      ┆ f64          ┆ f64       │
+        ╞═════════════════╪════════════╪══════════╪══════════════╪═══════════╡
+        │ 2026-08-15      ┆ 64         ┆ 10.2013  ┆ 10.2013      ┆ 10.2013   │
+        │ 2027-05-15      ┆ 249        ┆ 8.12     ┆ 7.395284     ┆ 8.109613  │
+        │ 2028-08-15      ┆ 564        ┆ 8.1131   ┆ 8.097792     ┆ 8.103011  │
+        │ 2029-05-15      ┆ 748        ┆ 8.0391   ┆ 7.808764     ┆ 8.030555  │
+        │ 2030-08-15      ┆ 1062       ┆ 8.066    ┆ 8.126503     ┆ 8.058915  │
+        │ …               ┆ …          ┆ …        ┆ …            ┆ …         │
+        │ 2040-08-15      ┆ 3571       ┆ 7.4812   ┆ 6.670623     ┆ 7.341193  │
+        │ 2045-05-15      ┆ 4758       ┆ 7.3767   ┆ 6.785801     ┆ 7.202367  │
+        │ 2050-08-15      ┆ 6073       ┆ 7.3      ┆ 6.642902     ┆ 7.080976  │
+        │ 2055-05-15      ┆ 7262       ┆ 7.2662   ┆ 6.768381     ┆ 7.029733  │
+        │ 2060-08-15      ┆ 8579       ┆ 7.2674   ┆ 7.190818     ┆ 7.054446  │
+        └─────────────────┴────────────┴──────────┴──────────────┴───────────┘
 
-        Para obter uma zero intermediária, use os vencimentos retornados com o
-        interpolador da biblioteca em escala decimal; não é necessário gerar
-        uma grade de cupons:
+        A curva retornada contém apenas os vencimentos informados. Para estimar
+        uma taxa zero em um prazo intermediário, use o método de interpolação
+        desejado. Neste exemplo, ``flat_forward`` preserva a hipótese de
+        forwards constantes por trecho usada no bootstrap:
         >>> curva_decimal = ntnb.taxas_zero(
         ...     data_liquidacao="18-05-2026",
         ...     vencimentos=df["data_vencimento"],
@@ -311,17 +316,15 @@ def taxas_zero(
         ...     curva_decimal["taxa_zero"],
         ...     metodo="flat_forward",
         ... )
-        >>> round(interpolar(curva_decimal["dias_uteis"][0]), 6) == round(
-        ...     curva_decimal["taxa_zero"][0], 6
-        ... )
+        >>> du_intermediario = (
+        ...     curva_decimal["dias_uteis"][0] + curva_decimal["dias_uteis"][1]
+        ... ) // 2
+        >>> 0 < interpolar(du_intermediario) < 1
         True
     """
     from pyield.tpf.titulos.ntnb import (  # noqa: PLC0415
         _validar_entradas_taxas_zero,
     )
-
-    if escala not in {"decimal", "percentual"}:
-        raise ValueError("escala deve ser 'decimal' ou 'percentual'.")
 
     if any_is_empty(data_liquidacao, vencimentos, taxas):
         return pl.DataFrame()
@@ -334,6 +337,8 @@ def taxas_zero(
             schema={
                 "data_vencimento": pl.Date,
                 "dias_uteis": pl.Int64,
+                "taxa_tir": pl.Float64,
+                "taxa_forward": pl.Float64,
                 "taxa_zero": pl.Float64,
             }
         )
@@ -366,6 +371,9 @@ def taxas_zero(
         vertices, vencimentos_ordenados, contexto.taxas_forward
     )
     curva_zero = _taxas_zero_por_forwards(dias_uteis, forwards_vertices)
+    titulos = titulos.with_columns(
+        taxa_forward=pl.Series(contexto.taxas_forward, dtype=pl.Float64)
+    )
     df = pl.DataFrame(
         {
             "data_vencimento": vertices,
@@ -374,8 +382,22 @@ def taxas_zero(
         }
     )
 
-    df = df.filter(pl.col("data_vencimento").is_in(vencimentos_ordenados))
-    if escala == "percentual":
-        df = df.with_columns(taxa_zero=pl.col("taxa_zero") * 100)
+    df = (
+        df.filter(pl.col("data_vencimento").is_in(vencimentos_ordenados))
+        .join(titulos, on="data_vencimento", how="left")
+        .select(
+            "data_vencimento",
+            "dias_uteis",
+            "taxa_tir",
+            "taxa_forward",
+            "taxa_zero",
+        )
+    )
+    if percentual:
+        df = df.with_columns(
+            taxa_tir=pl.col("taxa_tir") * 100,
+            taxa_zero=pl.col("taxa_zero") * 100,
+            taxa_forward=pl.col("taxa_forward") * 100,
+        )
 
     return df

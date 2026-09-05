@@ -135,7 +135,7 @@ Visão geral das principais funções públicas do PYield.
     ├── duration_expr(...)
     ├── dv01(...)
     ├── dv01_expr(...)
-    ├── taxas_zero(data_liquidacao, vencimentos, taxas, *, escala="decimal")
+    ├── taxas_zero(data_liquidacao, vencimentos, taxas, *, percentual=False)
     ├── implicitas(data_liquidacao, vencimentos_tir, taxas_tir, ...)
     └── curva(data_liquidacao, vencimentos_tir, taxas_tir, ...)
     ```

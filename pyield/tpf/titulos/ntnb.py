@@ -505,18 +505,13 @@ def implicitas(  # noqa: PLR0913
         metodo="flat_forward",
         extrapolar=extrapolar,
     )
-    df_tir = pl.DataFrame(
-        data={"data_vencimento": vencimentos_tir, "taxa_tir_real": taxas_tir},
-        schema={"data_vencimento": pl.Date, "taxa_tir_real": pl.Float64},
-    )
     taxa_nominal_expr = interpolador_ff.interpolar_expr("dias_uteis")
     df = (
         taxas_zero(liquidacao, vencimentos_tir, taxas_tir)
-        .join(df_tir, on="data_vencimento", how="left")
         .select(
             "data_vencimento",
             "dias_uteis",
-            "taxa_tir_real",
+            taxa_tir_real=pl.col("taxa_tir"),
             taxa_zero_real=pl.col("taxa_zero"),
             taxa_nominal=taxa_nominal_expr,
             inflacao_implicita=(taxa_nominal_expr + 1) / (pl.col("taxa_zero") + 1) - 1,
