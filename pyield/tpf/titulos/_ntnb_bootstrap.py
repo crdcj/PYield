@@ -3,6 +3,7 @@
 import datetime as dt
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Literal
 
 import polars as pl
 
@@ -142,6 +143,8 @@ def taxas_zero(
     data_liquidacao: DateLike,
     vencimentos: DatesLike,
     taxas: ArrayLike,
+    *,
+    escala: Literal["decimal", "percentual"] = "decimal",
 ) -> pl.DataFrame:
     r"""
     Calcula a curva zero de NTN-B pelo bootstrap de forwards.
@@ -219,89 +222,106 @@ def taxas_zero(
         data_liquidacao: Data de liquidação.
         vencimentos: Datas de vencimento das NTN-B.
         taxas: TIRs correspondentes em formato decimal (ex.: 0.10 para 10%).
+        escala: Escala da coluna ``taxa_zero`` retornada. Use ``"decimal"``
+            para obter 0.10 ou ``"percentual"`` para obter 10.0. A escala não
+            altera as TIRs recebidas em ``taxas``. O padrão é ``"decimal"``.
 
     Returns:
         pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Retorna vazio quando
             não restarem vencimentos posteriores à liquidação.
 
     Raises:
+        ValueError: Se ``escala`` não for ``"decimal"`` nem ``"percentual"``.
         RuntimeError: Se não for possível encontrar um intervalo válido para
             alguma taxa forward.
 
     Output Columns:
         - data_vencimento (Date): Data do vértice da curva.
         - dias_uteis (Int64): Dias úteis entre liquidação e vértice.
-        - taxa_zero (Float64): Taxa zero real anualizada.
+        - taxa_zero (Float64): Taxa zero real anualizada na escala escolhida.
 
     Examples:
         >>> from pyield import ntnb
         >>> # Taxas indicativas da ANBIMA na data de referência.
         >>> df = ntnb.dados("16-08-2024")
-        >>> curva = ntnb.taxas_zero(
+        >>> curva_percentual = ntnb.taxas_zero(
         ...     data_liquidacao="16-08-2024",
         ...     vencimentos=df["data_vencimento"],
         ...     taxas=df["taxa_indicativa"],
+        ...     escala="percentual",
         ... )
-        >>> curva
+        >>> curva_percentual
         shape: (14, 3)
         ┌─────────────────┬────────────┬───────────┐
         │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
         │ ---             ┆ ---        ┆ ---       │
         │ date            ┆ i64        ┆ f64       │
         ╞═════════════════╪════════════╪═══════════╡
-        │ 2025-05-15      ┆ 185        ┆ 0.063893  │
-        │ 2026-08-15      ┆ 502        ┆ 0.066141  │
-        │ 2027-05-15      ┆ 687        ┆ 0.064088  │
-        │ 2028-08-15      ┆ 1002       ┆ 0.063056  │
-        │ 2029-05-15      ┆ 1186       ┆ 0.061458  │
+        │ 2025-05-15      ┆ 185        ┆ 6.3893    │
+        │ 2026-08-15      ┆ 502        ┆ 6.6141    │
+        │ 2027-05-15      ┆ 687        ┆ 6.4088    │
+        │ 2028-08-15      ┆ 1002       ┆ 6.3056    │
+        │ 2029-05-15      ┆ 1186       ┆ 6.1458    │
         │ …               ┆ …          ┆ …         │
-        │ 2040-08-15      ┆ 4009       ┆ 0.058326  │
-        │ 2045-05-15      ┆ 5196       ┆ 0.060369  │
-        │ 2050-08-15      ┆ 6511       ┆ 0.060768  │
-        │ 2055-05-15      ┆ 7700       ┆ 0.059909  │
-        │ 2060-08-15      ┆ 9017       ┆ 0.060648  │
+        │ 2040-08-15      ┆ 4009       ┆ 5.8326    │
+        │ 2045-05-15      ┆ 5196       ┆ 6.0369    │
+        │ 2050-08-15      ┆ 6511       ┆ 6.0768    │
+        │ 2055-05-15      ┆ 7700       ┆ 5.9909    │
+        │ 2060-08-15      ┆ 9017       ┆ 6.0648    │
         └─────────────────┴────────────┴───────────┘
 
         A liquidação também pode ocorrer logo após uma data de cupom:
         >>> df = ntnb.dados("15-05-2026")
-        >>> curva = ntnb.taxas_zero(
+        >>> curva_percentual = ntnb.taxas_zero(
         ...     data_liquidacao="18-05-2026",
         ...     vencimentos=df["data_vencimento"],
         ...     taxas=df["taxa_indicativa"],
+        ...     escala="percentual",
         ... )
-        >>> curva
+        >>> curva_percentual
         shape: (15, 3)
         ┌─────────────────┬────────────┬───────────┐
         │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
         │ ---             ┆ ---        ┆ ---       │
         │ date            ┆ i64        ┆ f64       │
         ╞═════════════════╪════════════╪═══════════╡
-        │ 2026-08-15      ┆ 64         ┆ 0.102013  │
-        │ 2027-05-15      ┆ 249        ┆ 0.081096  │
-        │ 2028-08-15      ┆ 564        ┆ 0.08103   │
-        │ 2029-05-15      ┆ 748        ┆ 0.080306  │
-        │ 2030-08-15      ┆ 1062       ┆ 0.080589  │
+        │ 2026-08-15      ┆ 64         ┆ 10.2013   │
+        │ 2027-05-15      ┆ 249        ┆ 8.1096    │
+        │ 2028-08-15      ┆ 564        ┆ 8.103     │
+        │ 2029-05-15      ┆ 748        ┆ 8.0306    │
+        │ 2030-08-15      ┆ 1062       ┆ 8.0589    │
         │ …               ┆ …          ┆ …         │
-        │ 2040-08-15      ┆ 3571       ┆ 0.073412  │
-        │ 2045-05-15      ┆ 4758       ┆ 0.072024  │
-        │ 2050-08-15      ┆ 6073       ┆ 0.07081   │
-        │ 2055-05-15      ┆ 7262       ┆ 0.070297  │
-        │ 2060-08-15      ┆ 8579       ┆ 0.070544  │
+        │ 2040-08-15      ┆ 3571       ┆ 7.3412    │
+        │ 2045-05-15      ┆ 4758       ┆ 7.2024    │
+        │ 2050-08-15      ┆ 6073       ┆ 7.081     │
+        │ 2055-05-15      ┆ 7262       ┆ 7.0297    │
+        │ 2060-08-15      ┆ 8579       ┆ 7.0544    │
         └─────────────────┴────────────┴───────────┘
 
         Para obter uma zero intermediária, use os vencimentos retornados com o
-        interpolador da biblioteca; não é necessário gerar uma grade de cupons:
-        >>> interpolar = yd.Interpolador(
-        ...     curva["dias_uteis"], curva["taxa_zero"], metodo="flat_forward"
+        interpolador da biblioteca em escala decimal; não é necessário gerar
+        uma grade de cupons:
+        >>> curva_decimal = ntnb.taxas_zero(
+        ...     data_liquidacao="18-05-2026",
+        ...     vencimentos=df["data_vencimento"],
+        ...     taxas=df["taxa_indicativa"],
         ... )
-        >>> round(interpolar(curva["dias_uteis"][0]), 6) == round(
-        ...     curva["taxa_zero"][0], 6
+        >>> interpolar = yd.Interpolador(
+        ...     curva_decimal["dias_uteis"],
+        ...     curva_decimal["taxa_zero"],
+        ...     metodo="flat_forward",
+        ... )
+        >>> round(interpolar(curva_decimal["dias_uteis"][0]), 6) == round(
+        ...     curva_decimal["taxa_zero"][0], 6
         ... )
         True
     """
     from pyield.tpf.titulos.ntnb import (  # noqa: PLC0415
         _validar_entradas_taxas_zero,
     )
+
+    if escala not in {"decimal", "percentual"}:
+        raise ValueError("escala deve ser 'decimal' ou 'percentual'.")
 
     if any_is_empty(data_liquidacao, vencimentos, taxas):
         return pl.DataFrame()
@@ -354,4 +374,8 @@ def taxas_zero(
         }
     )
 
-    return df.filter(pl.col("data_vencimento").is_in(vencimentos_ordenados))
+    df = df.filter(pl.col("data_vencimento").is_in(vencimentos_ordenados))
+    if escala == "percentual":
+        df = df.with_columns(taxa_zero=pl.col("taxa_zero") * 100)
+
+    return df

@@ -207,6 +207,29 @@ def test_taxas_zero_reproduz_planilha_curva_zero():
     )
 
 
+def test_taxas_zero_podem_retornar_escala_percentual():
+    resultado = yd.ntnb.taxas_zero(
+        DATA_LIQUIDACAO,
+        VENCIMENTOS,
+        TAXAS_TIR,
+        escala="percentual",
+    )
+
+    assert resultado["taxa_zero"].to_list() == pytest.approx(
+        [taxa * 100 for taxa in TAXAS_ZERO_PLANILHA], abs=1e-6
+    )
+
+
+def test_taxas_zero_rejeitam_escala_invalida():
+    with pytest.raises(ValueError, match="escala deve ser"):
+        yd.ntnb.taxas_zero(
+            DATA_LIQUIDACAO,
+            VENCIMENTOS,
+            TAXAS_TIR,
+            escala="pontos_base",  # type: ignore[arg-type]
+        )
+
+
 def test_taxas_zero_limita_busca_sem_intervalo():
     taxas = TAXAS_TIR.copy()
     taxas[2] = 10.0
