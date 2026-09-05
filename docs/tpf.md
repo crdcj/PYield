@@ -72,6 +72,26 @@ pu = vna * cotacao
 As regras usadas para LTN, NTN-F, NTN-B, NTN-C e LFT estão na
 [metodologia da STN para os títulos ofertados em leilões primários](referencias/metodologia-calculo-tpf-stn.md).
 
+### Exibição de taxas em percentual
+
+As funções recebem e retornam taxas em formato decimal. Nos exemplos, a
+formatação percentual facilita a leitura sem alterar o valor usado nos cálculos:
+
+```python
+import pyield as yd
+
+taxa = yd.lft.taxa("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
+f"{taxa:.6%}"  # -> '0.171691%'
+```
+
+As seis casas percentuais preservam as oito casas decimais do retorno de
+`taxa` para LFT, LTN, NTN-B, NTN-C e NTN-F. A formatação produz uma string;
+continue usando a variável `taxa` nos cálculos.
+
+Nas tabelas dos exemplos, a multiplicação das colunas de taxas por `100`
+também serve apenas para exibição. Prêmios apresentados em pontos-base usam
+o multiplicador `10_000`.
+
 ::: pyield.tpf
 
 ## Acesso técnico à fonte ANBIMA

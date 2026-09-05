@@ -1,4 +1,4 @@
-Faça ## Comparação experimental de curvas zero
+## Comparação experimental de curvas zero
 
 `yd.ntnf.taxas_zero_forwards` constrói uma curva conjunta de LTN e NTN-F,
 com forwards constantes entre vértices. A LTN tem prioridade somente quando

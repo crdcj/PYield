@@ -38,7 +38,8 @@ interp(45)  # -> 0.04833...
 yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
 
 # Indicadores do BCB
-yd.selic.over("31-05-2024")  # -> 0.000414...
+taxa = yd.selic.over("31-05-2024")
+f"{taxa:.1%}"  # -> '10.4%' a.a.
 ```
 
 Um notebook no Colab com mais exemplos:
