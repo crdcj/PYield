@@ -179,11 +179,10 @@ def _gerar_casos() -> list:
 @pytest.fixture(scope="module")
 def curva_zero_td():
     vencimentos, taxas = zip(*REFERENCIAS_NTNB, strict=True)
-    return ntnbp.taxas_zero(
+    return ntnb.taxas_zero(
         DATA_LIQUIDACAO,
         vencimentos,
         taxas,
-        incluir_vertices=True,
     )
 
 

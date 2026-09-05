@@ -30,7 +30,6 @@ Source = "https://github.com/crdcj/PYield"
 
 [dependency-groups]
 dev = [
-    "python-dotenv[cli]",
     "ipykernel",
     "pytest",
     "ruff",

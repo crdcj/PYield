@@ -135,7 +135,7 @@ Visão geral das principais funções públicas do PYield.
     ├── duration_expr(...)
     ├── dv01(...)
     ├── dv01_expr(...)
-    ├── taxas_zero(data_liquidacao, vencimentos, taxas, ...)
+    ├── taxas_zero(data_liquidacao, vencimentos, taxas)
     ├── implicitas(data_liquidacao, vencimentos_tir, taxas_tir, ...)
     └── curva(data_liquidacao, vencimentos_tir, taxas_tir, ...)
     ```
@@ -178,7 +178,6 @@ Visão geral das principais funções públicas do PYield.
 ??? "`yd.ntnbp` (NTN-B Principal)"
     ```text
     yd.ntnbp
-    ├── taxas_zero(...)
     ├── cotacao(...)
     ├── taxa(...)
     ├── pu(...)

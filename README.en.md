@@ -260,6 +260,7 @@ The current version is `v0.55.0`. The changes below require code updates:
 
 | Version | Main change |
 |---|---|
+| Next release | `ntnb.taxas_zero` now uses forward bootstrapping and returns only the supplied maturities, with `dias_uteis` and `taxa_zero`. Removed `incluir_cupons` and `ntnbp.taxas_zero`; replace the latter with `ntnb.taxas_zero`, without `incluir_vertices`. Results may differ slightly from the previous method. |
 | `v0.55.0` | Bond PU, quotation, and VNA functions now return six-decimal `Decimal` values. Numeric inputs accept `float` or `Decimal`. |
 | `v0.54.5` | `fluxos_caixa` no longer accepts `ajustar_datas_pagamento`; schedules use contractual dates. |
 | `v0.54.2` | Added `taxas_historicas` and removed `tpf.taxas(completo=True)`. |
@@ -272,5 +273,5 @@ See the [GitHub releases](https://github.com/crdcj/PYield/releases) for the comp
 ## Tests
 
 ```sh
-pytest
+uv run pytest
 ```

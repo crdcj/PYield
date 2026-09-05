@@ -1,4 +1,4 @@
-"""Precificação de NTN-B Principal pelas regras do Tesouro Direto."""
+"""Precificação de NTN-B Principal."""
 
 from decimal import Decimal
 
@@ -7,10 +7,7 @@ import polars as pl
 from pyield import du, interpolador
 from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf.titulos import _bootstrap_forwards
 from pyield.tpf.titulos import _utils as utils
-
-taxas_zero = _bootstrap_forwards.taxas_zero
 
 
 def cotacao(
@@ -19,7 +16,7 @@ def cotacao(
     taxa_tir: float | Decimal,
 ) -> Decimal:
     """
-    Calcula a cotação da NTN-B Principal em base 1 pelo método do Tesouro Direto.
+    Calcula a cotação da NTN-B Principal em base 1 descontando o principal pela TIR.
 
     Args:
         data_liquidacao: Data de liquidação.
@@ -94,13 +91,13 @@ def taxa(
     curva_zero: pl.DataFrame,
 ) -> float:
     """
-    Obtém a TIR de mercado da NTN-B Principal pelo método do Tesouro Direto.
+    Obtém a TIR da NTN-B Principal a partir da curva zero informada.
 
     A taxa zero correspondente ao vencimento é interpolada por flat-forward e
     arredondada em quatro casas decimais. Como a NTN-B Principal possui um único
     fluxo no vencimento, essa taxa zero também é a TIR do título.
 
-    A curva pode ser produzida por :func:`pyield.ntnbp.taxas_zero`. Para
+    A curva pode ser produzida por :func:`pyield.ntnb.taxas_zero`. Para
     cálculos em lote, ela deve ser construída uma única vez e reutilizada entre
     os títulos.
 
@@ -110,7 +107,7 @@ def taxa(
         curva_zero: DataFrame com as colunas ``dias_uteis`` e ``taxa_zero``.
 
     Returns:
-        float: TIR de mercado anualizada, arredondada em quatro casas decimais.
+        float: TIR anualizada, arredondada em quatro casas decimais.
             Retorna ``NaN`` se a liquidação for igual ou posterior ao vencimento.
     """
     if any_is_empty(data_liquidacao, data_vencimento):

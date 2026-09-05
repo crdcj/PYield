@@ -142,16 +142,19 @@ def taxas_zero(
     data_liquidacao: DateLike,
     vencimentos: DatesLike,
     taxas: ArrayLike,
-    incluir_vertices: bool = False,
 ) -> pl.DataFrame:
     r"""
     Calcula a curva zero de NTN-B pelo bootstrap de forwards.
 
-    O método parte das TIRs observadas das NTN-B, mas não as trata como taxas
-    zero. Ele encontra uma taxa forward para cada vencimento de título para que
-    os fluxos descontados pela curva zero reproduzam exatamente a cotação que a
-    TIR daquele título produz. A calibração é iterativa e tem convergência
-    condicional: depende da existência de um intervalo válido para cada raiz.
+    Retorna apenas os vencimentos informados, com taxas em base 252 dias úteis.
+    As entradas podem ser as taxas indicativas da ANBIMA obtidas por
+    ``yd.ntnb.dados`` ou TIRs fornecidas pelo usuário.
+
+    O método calcula as taxas zero a partir das TIRs observadas das NTN-B,
+    calibrando uma taxa forward por trecho para que os fluxos descontados pela
+    curva zero reproduzam a cotação obtida pela TIR de cada título.
+    A calibração é iterativa e tem convergência condicional: depende da existência
+    de um intervalo válido para cada raiz.
 
     Notes:
         **Racional**
@@ -216,8 +219,6 @@ def taxas_zero(
         data_liquidacao: Data de liquidação.
         vencimentos: Datas de vencimento das NTN-B.
         taxas: TIRs correspondentes em formato decimal (ex.: 0.10 para 10%).
-        incluir_vertices: Se True, inclui todos os vértices mensais da curva.
-            Padrão False, retornando apenas os vencimentos informados.
 
     Returns:
         pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Retorna vazio quando
@@ -231,7 +232,72 @@ def taxas_zero(
         - data_vencimento (Date): Data do vértice da curva.
         - dias_uteis (Int64): Dias úteis entre liquidação e vértice.
         - taxa_zero (Float64): Taxa zero real anualizada.
-        - taxa_forward (Float64): Taxa forward anualizada do trecho.
+
+    Examples:
+        >>> from pyield import ntnb
+        >>> # Taxas indicativas da ANBIMA na data de referência.
+        >>> df = ntnb.dados("16-08-2024")
+        >>> curva = ntnb.taxas_zero(
+        ...     data_liquidacao="16-08-2024",
+        ...     vencimentos=df["data_vencimento"],
+        ...     taxas=df["taxa_indicativa"],
+        ... )
+        >>> curva
+        shape: (14, 3)
+        ┌─────────────────┬────────────┬───────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
+        │ ---             ┆ ---        ┆ ---       │
+        │ date            ┆ i64        ┆ f64       │
+        ╞═════════════════╪════════════╪═══════════╡
+        │ 2025-05-15      ┆ 185        ┆ 0.063893  │
+        │ 2026-08-15      ┆ 502        ┆ 0.066141  │
+        │ 2027-05-15      ┆ 687        ┆ 0.064088  │
+        │ 2028-08-15      ┆ 1002       ┆ 0.063056  │
+        │ 2029-05-15      ┆ 1186       ┆ 0.061458  │
+        │ …               ┆ …          ┆ …         │
+        │ 2040-08-15      ┆ 4009       ┆ 0.058326  │
+        │ 2045-05-15      ┆ 5196       ┆ 0.060369  │
+        │ 2050-08-15      ┆ 6511       ┆ 0.060768  │
+        │ 2055-05-15      ┆ 7700       ┆ 0.059909  │
+        │ 2060-08-15      ┆ 9017       ┆ 0.060648  │
+        └─────────────────┴────────────┴───────────┘
+
+        A liquidação também pode ocorrer logo após uma data de cupom:
+        >>> df = ntnb.dados("15-05-2026")
+        >>> curva = ntnb.taxas_zero(
+        ...     data_liquidacao="18-05-2026",
+        ...     vencimentos=df["data_vencimento"],
+        ...     taxas=df["taxa_indicativa"],
+        ... )
+        >>> curva
+        shape: (15, 3)
+        ┌─────────────────┬────────────┬───────────┐
+        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
+        │ ---             ┆ ---        ┆ ---       │
+        │ date            ┆ i64        ┆ f64       │
+        ╞═════════════════╪════════════╪═══════════╡
+        │ 2026-08-15      ┆ 64         ┆ 0.102013  │
+        │ 2027-05-15      ┆ 249        ┆ 0.081096  │
+        │ 2028-08-15      ┆ 564        ┆ 0.08103   │
+        │ 2029-05-15      ┆ 748        ┆ 0.080306  │
+        │ 2030-08-15      ┆ 1062       ┆ 0.080589  │
+        │ …               ┆ …          ┆ …         │
+        │ 2040-08-15      ┆ 3571       ┆ 0.073412  │
+        │ 2045-05-15      ┆ 4758       ┆ 0.072024  │
+        │ 2050-08-15      ┆ 6073       ┆ 0.07081   │
+        │ 2055-05-15      ┆ 7262       ┆ 0.070297  │
+        │ 2060-08-15      ┆ 8579       ┆ 0.070544  │
+        └─────────────────┴────────────┴───────────┘
+
+        Para obter uma zero intermediária, use os vencimentos retornados com o
+        interpolador da biblioteca; não é necessário gerar uma grade de cupons:
+        >>> interpolar = yd.Interpolador(
+        ...     curva["dias_uteis"], curva["taxa_zero"], metodo="flat_forward"
+        ... )
+        >>> round(interpolar(curva["dias_uteis"][0]), 6) == round(
+        ...     curva["taxa_zero"][0], 6
+        ... )
+        True
     """
     from pyield.tpf.titulos.ntnb import (  # noqa: PLC0415
         _validar_entradas_taxas_zero,
@@ -249,7 +315,6 @@ def taxas_zero(
                 "data_vencimento": pl.Date,
                 "dias_uteis": pl.Int64,
                 "taxa_zero": pl.Float64,
-                "taxa_forward": pl.Float64,
             }
         )
 
@@ -286,10 +351,7 @@ def taxas_zero(
             "data_vencimento": vertices,
             "dias_uteis": dias_uteis,
             "taxa_zero": curva_zero,
-            "taxa_forward": forwards_vertices,
         }
     )
 
-    if not incluir_vertices:
-        df = df.filter(pl.col("data_vencimento").is_in(vencimentos_ordenados))
-    return df
+    return df.filter(pl.col("data_vencimento").is_in(vencimentos_ordenados))

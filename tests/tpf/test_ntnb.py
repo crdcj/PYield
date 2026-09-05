@@ -8,8 +8,6 @@ import pytest
 import pyield as yd
 from pyield import ntnb1, ntnbp
 
-ntnb_td = ntnbp
-
 DATA_LIQUIDACAO = dt.date(2026, 7, 13)
 VENCIMENTOS = [
     dt.date(2026, 8, 15),
@@ -84,6 +82,7 @@ FORWARDS_PLANILHA = [
 
 def test_namespace_dos_titulos_separado_do_ntnb_anbima():
     assert not hasattr(yd.ntnb, "taxas_zero_td")
+    assert not hasattr(yd.ntnbp, "taxas_zero")
     assert yd.ntnb1 is ntnb1
     assert yd.ntnbp is ntnbp
 
@@ -183,42 +182,22 @@ def test_ntnb1_cotacao_e_pu_nulos_retornam_decimal_nan() -> None:
     assert ntnb1.pu(Decimal("NaN"), Decimal("0.993651")).is_nan()
 
 
-@pytest.mark.parametrize(
-    ("data_liquidacao", "esperado"),
-    [
-        (
-            dt.date(2026, 7, 13),
-            [dt.date(2026, 7, 15), dt.date(2026, 8, 15), dt.date(2026, 9, 15)],
-        ),
-        (
-            dt.date(2026, 7, 15),
-            [dt.date(2026, 7, 15), dt.date(2026, 8, 15), dt.date(2026, 9, 15)],
-        ),
-        (
-            dt.date(2026, 7, 16),
-            [dt.date(2026, 8, 15), dt.date(2026, 9, 15)],
-        ),
-    ],
-)
-def test_gerar_vertices_mensais(data_liquidacao, esperado):
-    resultado = ntnb_td.taxas_zero(
-        data_liquidacao,
-        [dt.date(2026, 9, 15)],
-        [0.1],
-        incluir_vertices=True,
-    )
-    assert resultado["data_vencimento"].to_list() == esperado
+@pytest.mark.parametrize("data_liquidacao", ["13-07-2026", "15-07-2026", "16-07-2026"])
+def test_taxas_zero_retornam_apenas_vencimentos(data_liquidacao):
+    resultado = yd.ntnb.taxas_zero(data_liquidacao, ["15-08-2026"], [0.1])
+    assert resultado["data_vencimento"].to_list() == [dt.date(2026, 8, 15)]
+    assert resultado["taxa_zero"][0] == pytest.approx(0.1)
+    assert resultado.columns == ["data_vencimento", "dias_uteis", "taxa_zero"]
 
 
-def test_taxas_zero_td_reproduz_planilha_curva_zero():
+def test_taxas_zero_reproduz_planilha_curva_zero():
     """A calibração deve reproduzir os vértices da aba Curva Zero."""
-    resultado = ntnb_td.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, TAXAS_TIR)
+    resultado = yd.ntnb.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, TAXAS_TIR)
 
     esperado = pl.DataFrame(
         {
             "data_vencimento": VENCIMENTOS,
             "taxa_zero": TAXAS_ZERO_PLANILHA,
-            "taxa_forward": FORWARDS_PLANILHA,
         }
     )
 
@@ -226,17 +205,14 @@ def test_taxas_zero_td_reproduz_planilha_curva_zero():
     assert resultado["taxa_zero"].to_list() == pytest.approx(
         esperado["taxa_zero"].to_list(), abs=1e-8
     )
-    assert resultado["taxa_forward"].to_list() == pytest.approx(
-        esperado["taxa_forward"].to_list(), abs=1e-8
-    )
 
 
-def test_taxas_zero_td_limita_busca_sem_intervalo():
+def test_taxas_zero_limita_busca_sem_intervalo():
     taxas = TAXAS_TIR.copy()
     taxas[2] = 10.0
 
     with pytest.raises(RuntimeError, match="encontrar um intervalo"):
-        ntnb_td.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, taxas)
+        yd.ntnb.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, taxas)
 
 
 def test_taxas_zero_retornam_vazio_sem_vencimentos_futuros() -> None:
@@ -244,21 +220,12 @@ def test_taxas_zero_retornam_vazio_sem_vencimentos_futuros() -> None:
     vencimentos = ["15-08-2026"]
     taxas = [0.07]
 
-    curva_anbima = yd.ntnb.taxas_zero(liquidacao, vencimentos, taxas)
-    curva_td = ntnbp.taxas_zero(liquidacao, vencimentos, taxas)
-
-    assert curva_anbima.is_empty()
-    assert curva_anbima.schema == {
+    curva = yd.ntnb.taxas_zero(liquidacao, vencimentos, taxas)
+    assert curva.is_empty()
+    assert curva.schema == {
         "data_vencimento": pl.Date,
         "dias_uteis": pl.Int64,
         "taxa_zero": pl.Float64,
-    }
-    assert curva_td.is_empty()
-    assert curva_td.schema == {
-        "data_vencimento": pl.Date,
-        "dias_uteis": pl.Int64,
-        "taxa_zero": pl.Float64,
-        "taxa_forward": pl.Float64,
     }
 
 
@@ -274,17 +241,16 @@ def test_taxas_zero_retornam_vazio_sem_vencimentos_futuros() -> None:
         (dt.date(2050, 8, 15), 0.0725, 0.0721, 0.0733),
     ],
 )
-def test_taxas_zero_td_reproduz_taxas_ntnb_principal(
+def test_taxas_zero_reproduz_taxas_ntnb_principal(
     vencimento,
     taxa_mercado,
     taxa_compra,
     taxa_venda,
 ):
-    curva = ntnb_td.taxas_zero(
+    curva = yd.ntnb.taxas_zero(
         DATA_LIQUIDACAO,
         VENCIMENTOS,
         TAXAS_TIR,
-        incluir_vertices=True,
     )
     taxa_zero = ntnbp.taxa(DATA_LIQUIDACAO, vencimento, curva)
 
@@ -294,11 +260,10 @@ def test_taxas_zero_td_reproduz_taxas_ntnb_principal(
 
 
 def test_ntnb1_cotacao_curva_zero_reproduz_planilha_td():
-    curva_zero = ntnb_td.taxas_zero(
+    curva_zero = yd.ntnb.taxas_zero(
         DATA_LIQUIDACAO,
         VENCIMENTOS,
         TAXAS_TIR,
-        incluir_vertices=True,
     )
     casos = [
         (
@@ -342,3 +307,28 @@ def test_ntnb1_cotacao_curva_zero_reproduz_planilha_td():
         )
         assert cotacao == pytest.approx(cotacao_esperada, abs=2e-9)
         assert taxa == pytest.approx(taxa_esperada, abs=1e-12)
+
+
+def test_curva_zero_interpolada_reproduz_cotacoes_dos_titulos():
+    curva = yd.ntnb.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, TAXAS_TIR)
+    interpolar = yd.Interpolador(
+        curva["dias_uteis"], curva["taxa_zero"], metodo="flat_forward"
+    )
+    for vencimento, tir in zip(VENCIMENTOS, TAXAS_TIR, strict=True):
+        fluxos = yd.ntnb.fluxos_caixa(DATA_LIQUIDACAO, vencimento)
+        prazos = yd.du.contar(DATA_LIQUIDACAO, fluxos["data_pagamento"])
+        cotacao_tir = sum(
+            float(valor) / (1 + tir) ** (prazo / 252)
+            for valor, prazo in zip(fluxos["valor_pagamento"], prazos, strict=True)
+        )
+        cotacao_curva = sum(
+            float(valor) / (1 + interpolar(prazo)) ** (prazo / 252)
+            for valor, prazo in zip(fluxos["valor_pagamento"], prazos, strict=True)
+        )
+        assert cotacao_curva == pytest.approx(cotacao_tir, abs=2e-12, rel=0)
+
+
+def test_forwards_derivados_das_zeros_reproduzem_planilha():
+    curva = yd.ntnb.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, TAXAS_TIR)
+    forwards = curva.select(yd.forwards_expr("dias_uteis", "taxa_zero")).to_series()
+    assert forwards.to_list() == pytest.approx(FORWARDS_PLANILHA, abs=1e-8)

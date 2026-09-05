@@ -9,6 +9,9 @@ from pyield import du, fwd, interpolador
 from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.tpf.titulos import _utils as utils
+from pyield.tpf.titulos._ntnb_bootstrap import (
+    taxas_zero as taxas_zero,  # noqa: PLC0414
+)
 from pyield.tpf.vna import ntnb as _vna
 
 """
@@ -400,211 +403,6 @@ def _validar_entradas_taxas_zero(
     return liquidacao, df_limpo["vencimentos"], df_limpo["taxas"]
 
 
-def _criar_df_bootstrap(
-    data_liquidacao: dt.date,
-    taxas: pl.Series,
-    vencimentos: pl.Series,
-) -> pl.DataFrame:
-    """Cria o DataFrame base para o bootstrap."""
-    # Cria interpolador para TIRs em datas intermediárias
-    interpolador_ff = interpolador.Interpolador(
-        dias_uteis=du.contar(data_liquidacao, vencimentos),
-        taxas=taxas,
-        metodo="flat_forward",
-    )
-
-    # Gera datas de pagamento até o último vencimento
-    ultimo_vencimento = vencimentos.max()
-    assert isinstance(ultimo_vencimento, dt.date)
-    todas_datas_pagamento = utils.gerar_datas_pagamento(
-        data_liquidacao,
-        ultimo_vencimento,
-        intervalo_meses=3,
-    )
-
-    return (
-        pl.DataFrame({"data_vencimento": todas_datas_pagamento})
-        .with_columns(dias_uteis=du.contar_expr(data_liquidacao, "data_vencimento"))
-        .with_columns(
-            anos_uteis=pl.col("dias_uteis") / 252,
-            taxa_tir=interpolador_ff.interpolar_expr("dias_uteis"),
-            cupom=pl.lit(VALOR_CUPOM),
-            taxa_zero=pl.lit(None, dtype=pl.Float64),
-        )
-        .sort("data_vencimento")
-    )
-
-
-def _atualizar_taxa_zero(
-    df: pl.DataFrame, vencimento: dt.date, taxa_zero: float
-) -> pl.DataFrame:
-    """Atualiza a taxa zero dentro do loop de bootstrap."""
-    return df.with_columns(
-        pl.when(pl.col("data_vencimento") == vencimento)
-        .then(taxa_zero)
-        .otherwise("taxa_zero")
-        .alias("taxa_zero")
-    )
-
-
-def _calcular_valor_presente_cupons(
-    df: pl.DataFrame,
-    data_liquidacao: dt.date,
-    vencimento: dt.date,
-) -> float:
-    """Calcula o valor presente dos cupons anteriores à maturidade."""
-    datas_fluxo_anteriores = datas_pagamento(data_liquidacao, vencimento).to_list()[:-1]
-    df_temp = df.filter(pl.col("data_vencimento").is_in(datas_fluxo_anteriores))
-
-    return utils.calcular_pv(
-        fluxos_caixa=df_temp["cupom"],
-        taxas=df_temp["taxa_zero"],
-        prazos=df_temp["anos_uteis"],
-    )
-
-
-def taxas_zero(
-    data_liquidacao: DateLike,
-    vencimentos: DatesLike,
-    taxas: ArrayLike,
-    incluir_cupons: bool = False,
-) -> pl.DataFrame:
-    """
-    Calcula as taxas zero da NTN-B pelo bootstrap de cupons.
-
-    O método monta uma grade trimestral de datas de pagamento, interpola as TIRs
-    dos títulos nos vértices intermediários e resolve sequencialmente as taxas
-    zero. Para cada vértice, a taxa é obtida diretamente do preço-alvo e do
-    valor presente dos cupons anteriores; não há busca iterativa de raiz.
-
-    Args:
-        data_liquidacao (DateLike): Data de liquidação.
-        vencimentos (DatesLike): Datas de vencimento dos títulos.
-        taxas (ArrayLike): TIRs correspondentes em formato decimal
-            (ex.: 0.10 para 10%).
-        incluir_cupons (bool, optional): Se True, inclui datas intermediárias de cupom.
-            Padrão False.
-
-    Returns:
-        pl.DataFrame: DataFrame com as taxas zero. Retorna vazio quando não
-            restarem vencimentos posteriores à liquidação.
-
-    Output Columns:
-        - data_vencimento (Date): Data de vencimento.
-        - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.
-        - taxa_zero (Float64): Taxa zero (real).
-
-    Examples:
-        >>> from pyield import ntnb
-        >>> # Busca as taxas de NTN-B para uma data de referência
-        >>> df = ntnb.dados("16-08-2024")
-        >>> # Calcula as taxas zero considerando a liquidação na data de referência
-        >>> ntnb.taxas_zero(
-        ...     data_liquidacao="16-08-2024",
-        ...     vencimentos=df["data_vencimento"],
-        ...     taxas=df["taxa_indicativa"],
-        ... )
-        shape: (14, 3)
-        ┌─────────────────┬────────────┬───────────┐
-        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
-        │ ---             ┆ ---        ┆ ---       │
-        │ date            ┆ i64        ┆ f64       │
-        ╞═════════════════╪════════════╪═══════════╡
-        │ 2025-05-15      ┆ 185        ┆ 0.063893  │
-        │ 2026-08-15      ┆ 502        ┆ 0.066141  │
-        │ 2027-05-15      ┆ 687        ┆ 0.064087  │
-        │ 2028-08-15      ┆ 1002       ┆ 0.063057  │
-        │ 2029-05-15      ┆ 1186       ┆ 0.061458  │
-        │ …               ┆ …          ┆ …         │
-        │ 2040-08-15      ┆ 4009       ┆ 0.058326  │
-        │ 2045-05-15      ┆ 5196       ┆ 0.060371  │
-        │ 2050-08-15      ┆ 6511       ┆ 0.060772  │
-        │ 2055-05-15      ┆ 7700       ┆ 0.059909  │
-        │ 2060-08-15      ┆ 9017       ┆ 0.060652  │
-        └─────────────────┴────────────┴───────────┘
-
-        Caso a liquidação ocorra logo após uma data de cupom, o valor presente
-        dos cupons anteriores pode ser zero:
-        >>> df = ntnb.dados("15-05-2026")
-        >>> ntnb.taxas_zero(
-        ...     data_liquidacao="18-05-2026",
-        ...     vencimentos=df["data_vencimento"],
-        ...     taxas=df["taxa_indicativa"],
-        ...     incluir_cupons=True,
-        ... )
-        shape: (137, 3)
-        ┌─────────────────┬────────────┬───────────┐
-        │ data_vencimento ┆ dias_uteis ┆ taxa_zero │
-        │ ---             ┆ ---        ┆ ---       │
-        │ date            ┆ i64        ┆ f64       │
-        ╞═════════════════╪════════════╪═══════════╡
-        │ 2026-08-15      ┆ 64         ┆ 0.102013  │
-        │ 2026-11-15      ┆ 126        ┆ 0.088186  │
-        │ 2027-02-15      ┆ 186        ┆ 0.083431  │
-        │ 2027-05-15      ┆ 249        ┆ 0.081096  │
-        │ 2027-08-15      ┆ 313        ┆ 0.081005  │
-        │ …               ┆ …          ┆ …         │
-        │ 2059-08-15      ┆ 8326       ┆ 0.070508  │
-        │ 2059-11-15      ┆ 8392       ┆ 0.070524  │
-        │ 2060-02-15      ┆ 8454       ┆ 0.07053   │
-        │ 2060-05-15      ┆ 8515       ┆ 0.070547  │
-        │ 2060-08-15      ┆ 8579       ┆ 0.070553  │
-        └─────────────────┴────────────┴───────────┘
-
-    Notes:
-        O cálculo considera:
-        - Mapear todas as datas trimestrais de pagamento até o último vencimento.
-        - Interpolar as TIRs nas datas intermediárias.
-        - Calcular a cotação da NTN-B para cada vencimento.
-        - Calcular as taxas zero reais.
-
-        Este bootstrap usa a cotação normativa da NTN-B, que arredonda o valor
-        presente de cada fluxo e trunca a cotação final em seis casas.
-    """
-    if any_is_empty(data_liquidacao, vencimentos, taxas):
-        return pl.DataFrame()
-
-    data_liquidacao, vencimentos, taxas = _validar_entradas_taxas_zero(
-        data_liquidacao, vencimentos, taxas
-    )
-    if vencimentos.is_empty():
-        return pl.DataFrame(
-            schema={
-                "data_vencimento": pl.Date,
-                "dias_uteis": pl.Int64,
-                "taxa_zero": pl.Float64,
-            }
-        )
-
-    df = _criar_df_bootstrap(data_liquidacao, taxas, vencimentos)
-
-    # Bootstrap para calcular taxas zero
-    linhas = df.to_dicts()
-    primeiro_vencimento = vencimentos.min()
-    for linha in linhas:
-        vencimento = linha["data_vencimento"]
-
-        # Taxas zero <= primeiro vencimento são TIR por definição
-        if vencimento <= primeiro_vencimento:
-            taxa_zero = linha["taxa_tir"]
-            df = _atualizar_taxa_zero(df, vencimento, taxa_zero)
-            continue
-
-        # Calcula taxa zero para o vencimento corrente
-        valor_presente_cupons = _calcular_valor_presente_cupons(
-            df, data_liquidacao, vencimento
-        )
-        preco_titulo = float(cotacao(data_liquidacao, vencimento, linha["taxa_tir"]))
-        fator_preco = VALOR_FINAL / (preco_titulo - valor_presente_cupons)
-        taxa_zero = fator_preco ** (1 / linha["anos_uteis"]) - 1
-
-        df = _atualizar_taxa_zero(df, vencimento, taxa_zero)
-
-    if not incluir_cupons:
-        df = df.filter(pl.col("data_vencimento").is_in(vencimentos.to_list()))
-    return df.select(["data_vencimento", "dias_uteis", "taxa_zero"])
-
-
 def implicitas(  # noqa: PLR0913
     data_liquidacao: DateLike,
     vencimentos_tir: DatesLike,
@@ -677,15 +475,15 @@ def implicitas(  # noqa: PLR0913
         ╞═════════════════╪════════════╪═══════════════╪════════════════╪══════════════╪════════════════════╡
         │ 2026-08-15      ┆ 41         ┆ 0.1115        ┆ 0.1115         ┆ 0.141339     ┆ 0.026846           │
         │ 2027-05-15      ┆ 226        ┆ 0.085733      ┆ 0.085642       ┆ 0.145795     ┆ 0.055407           │
-        │ 2028-08-15      ┆ 541        ┆ 0.089683      ┆ 0.08971        ┆ 0.149149     ┆ 0.054545           │
-        │ 2029-05-15      ┆ 725        ┆ 0.088171      ┆ 0.088129       ┆ 0.149535     ┆ 0.056432           │
-        │ 2030-08-15      ┆ 1039       ┆ 0.088766      ┆ 0.088759       ┆ 0.149166     ┆ 0.055482           │
+        │ 2028-08-15      ┆ 541        ┆ 0.089683      ┆ 0.089707       ┆ 0.149149     ┆ 0.054548           │
+        │ 2029-05-15      ┆ 725        ┆ 0.088171      ┆ 0.088132       ┆ 0.149535     ┆ 0.05643            │
+        │ 2030-08-15      ┆ 1039       ┆ 0.088766      ┆ 0.088756       ┆ 0.149166     ┆ 0.055486           │
         │ …               ┆ …          ┆ …             ┆ …              ┆ …            ┆ …                  │
-        │ 2040-08-15      ┆ 3548       ┆ 0.078262      ┆ 0.076087       ┆ 0.14591      ┆ 0.064886           │
-        │ 2045-05-15      ┆ 4735       ┆ 0.076656      ┆ 0.073931       ┆ null         ┆ null               │
-        │ 2050-08-15      ┆ 6050       ┆ 0.075659      ┆ 0.072435       ┆ null         ┆ null               │
-        │ 2055-05-15      ┆ 7239       ┆ 0.074658      ┆ 0.07049        ┆ null         ┆ null               │
-        │ 2060-08-15      ┆ 8556       ┆ 0.07464       ┆ 0.070832       ┆ null         ┆ null               │
+        │ 2040-08-15      ┆ 3548       ┆ 0.078262      ┆ 0.07608        ┆ 0.14591      ┆ 0.064893           │
+        │ 2045-05-15      ┆ 4735       ┆ 0.076656      ┆ 0.073943       ┆ null         ┆ null               │
+        │ 2050-08-15      ┆ 6050       ┆ 0.075659      ┆ 0.072433       ┆ null         ┆ null               │
+        │ 2055-05-15      ┆ 7239       ┆ 0.074658      ┆ 0.070513       ┆ null         ┆ null               │
+        │ 2060-08-15      ┆ 8556       ┆ 0.07464       ┆ 0.070825       ┆ null         ┆ null               │
         └─────────────────┴────────────┴───────────────┴────────────────┴──────────────┴────────────────────┘
     """
     if any_is_empty(

@@ -78,7 +78,7 @@ documentação.
 | `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `duration_expr`, `dv01`, `dv01_expr`, `rentabilidade`, `rentabilidade_expr`, `taxas_forward` |
 | `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `duration_expr`, `dv01`, `dv01_expr`, `implicitas`, `curva` |
 | `yd.ntnb1` | módulo | NTN-B1 (Educa+ e Renda+) | `NomeComercial`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `cotacao_curva_zero`, `taxa_curva_zero`, `pu`, `duration`, `dv01` |
-| `yd.ntnbp` | módulo | NTN-B Principal | `taxas_zero`, `cotacao`, `taxa`, `pu`, `dv01` |
+| `yd.ntnbp` | módulo | NTN-B Principal | `cotacao`, `taxa`, `pu`, `dv01` |
 | `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
 | `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `premio`, `premio_limpo`, `premio_limpo_expr`, `rentabilidade`, `rentabilidade_expr`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
 | `yd.selic` | módulo | Selic, COPOM e política monetária | `over`, `over_serie`, `meta`, `meta_serie`, `compromissadas`, `copom`, `cpm`, `probabilities` |
@@ -310,6 +310,7 @@ A versão atual é `v0.56.0`. As mudanças abaixo podem exigir atualização de 
 
 | Versão | Mudança principal |
 |---|---|
+| Próxima versão | `ntnb.taxas_zero` passa a usar bootstrap de forwards e retorna apenas os vencimentos informados, com `dias_uteis` e `taxa_zero`. Removidos `incluir_cupons` e `ntnbp.taxas_zero`; migre este último para `ntnb.taxas_zero`, sem `incluir_vertices`. Os valores podem diferir ligeiramente do método anterior. |
 | `v0.56.0` | As funções de dias úteis adotaram `calendario="auto" \| "anterior" \| "atual"`. Em `du.gerar`, substitua `opcao_feriado` por `calendario`; `"inferir"`, `"antigo"` e `"novo"` correspondem agora a `"auto"`, `"anterior"` e `"atual"`. O parâmetro `rolagem` virou `ajuste`; `"forward"` e `"backward"` viraram `"seguinte"` e `"anterior"`. O parâmetro `fechamento` virou `limites_inclusivos`, com os valores `"ambos"`, `"inicio"`, `"fim"` e `"nenhum"`. O padrão de `calendario` passou a ser `"auto"`. `Interpolador` agora levanta `ValueError` quando a curva não contém vértices válidos. |
 | `v0.55.0` | Funções de PU, cotação e VNA dos títulos passaram a retornar `Decimal` com seis casas. Entradas numéricas aceitam `float` ou `Decimal`. |
 | `v0.54.5` | `fluxos_caixa` não aceita mais `ajustar_datas_pagamento`; os cronogramas usam datas contratuais. |
