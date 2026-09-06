@@ -10,7 +10,7 @@ from pyield.futuro import di1
 
 # Ordem intencional: alguns módulos importam `di1` a partir de `pyield`
 # durante a inicialização do pacote.
-from pyield import selic, tpf
+from pyield import selic, tpf, vna
 from pyield.bc.sgs import ptax, ptax_serie
 from pyield.fwd import forward, forwards, forwards_expr
 from pyield.interpolador import Interpolador, interpolar
@@ -48,6 +48,7 @@ __all__ = [
     "ptax_serie",
     "selic",
     "tpf",
+    "vna",
 ]
 
 

@@ -2,7 +2,8 @@ from decimal import Decimal
 
 import pytest
 
-from pyield.bc import lft
+from pyield import vna
+from pyield.vna import _lft as lft  # noqa: PLC2701
 
 CASAS_DECIMAIS = 6
 
@@ -19,11 +20,11 @@ def test_vna_retorna_decimal_com_escala_da_fonte(
 ) -> None:
     monkeypatch.setattr(lft, "_baixar_texto", lambda _: TEXTO_BCB)
 
-    resultado = lft.vna("31-05-2024")
+    resultado = vna.valor("LFT", "31-05-2024")
 
     assert resultado == Decimal("14903.011480")
     assert resultado.as_tuple().exponent == -CASAS_DECIMAIS
 
 
 def test_vna_nulo_retorna_decimal_nan() -> None:
-    assert lft.vna(None).is_nan()
+    assert vna.valor("LFT", None).is_nan()

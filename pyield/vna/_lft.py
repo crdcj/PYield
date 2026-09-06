@@ -102,8 +102,8 @@ def vna(data: DateLike | None = None) -> Decimal:
         requests.exceptions.HTTPError: Se a requisição ao BCB falhar.
 
     Examples:
-        >>> from pyield import lft
-        >>> lft.vna("31-05-2024")
+        >>> import pyield as yd
+        >>> yd.vna.valor("LFT", "31-05-2024")
         Decimal('14903.011480')
     """
     if any_is_empty(data):

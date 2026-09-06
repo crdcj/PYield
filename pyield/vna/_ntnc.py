@@ -8,8 +8,8 @@ import polars as pl
 import pyield._internal.converters as conversores
 from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf.vna import _download
-from pyield.tpf.vna import calculo as _vna
+from pyield.vna import _calculo as _vna
+from pyield.vna import _download
 
 _URL_PUBLICACAO = (
     "https://www.tesourotransparente.gov.br/publicacoes/valor-nominal-de-ntn-c/"
@@ -85,10 +85,10 @@ def vna(
             publicado ou não houver série para o vencimento.
 
     Examples:
-        >>> from pyield import ntnc
-        >>> ntnc.vna("01-12-2025", "01-01-2031")  # ponto publicado
+        >>> import pyield as yd
+        >>> yd.vna.valor("NTN-C", "01-12-2025", "01-01-2031")  # ponto publicado
         Decimal('6450.107485')
-        >>> ntnc.vna("16-12-2025", "01-01-2031")  # pró-rata entre pontos
+        >>> yd.vna.valor("NTN-C", "16-12-2025", "01-01-2031")  # pró-rata entre pontos
         Decimal('6449.641358')
     """
     if any_is_empty(data, vencimento):
@@ -104,8 +104,30 @@ def vna(
     return truncar_decimal(_vna.calcular_vna(df, data_convertida), 6)
 
 
-def _obter_vigencia(data: dt.date) -> tuple[dt.date, dt.date]:
-    """Obtém a vigência mensal entre primeiros dias que contém a data."""
+def vigencia(data: DateLike) -> tuple[dt.date, dt.date]:
+    """Obtém a vigência mensal do VNA do primeiro dia ao primeiro dia do mês seguinte.
+
+    Args:
+        data: Data contida na vigência; aceita os formatos de data da biblioteca.
+
+    Returns:
+        tuple[date, date]: Início inclusivo e fim exclusivo, em dias corridos,
+            sem ajuste para dias úteis.
+
+    Notes:
+        Usa o calendário de atualização do VNA da NTN-C,
+        conforme a metodologia do Tesouro Nacional. Não consulta dados externos.
+
+    Raises:
+        ValueError: Se a data for nula ou vazia.
+
+    Examples:
+        >>> yd.vna.vigencia("NTN-C", "31-07-2026")
+        (datetime.date(2026, 7, 1), datetime.date(2026, 8, 1))
+    """
+    if any_is_empty(data):
+        raise ValueError("A data da vigência deve ser informada.")
+    data = conversores.converter_datas(data)
     inicio = data.replace(day=1)
     fim = (inicio + dt.timedelta(days=32)).replace(day=1)
     return inicio, fim
@@ -144,12 +166,12 @@ def vna_projetado(
             igual a -100%.
 
     Examples:
-        >>> from pyield import ntnc
-        >>> ntnc.vna_projetado("01-06-2026", 6693.537239, 0.30)
+        >>> import pyield as yd
+        >>> yd.vna.projetado("NTN-C", "01-06-2026", 6693.537239, 0.30)
         Decimal('6693.537239')
-        >>> ntnc.vna_projetado("16-06-2026", 6693.537239, 0.30)
+        >>> yd.vna.projetado("NTN-C", "16-06-2026", 6693.537239, 0.30)
         Decimal('6703.570025')
-        >>> ntnc.vna_projetado("21-05-2008", 2102.8055189, 1.754)
+        >>> yd.vna.projetado("NTN-C", "21-05-2008", 2102.8055189, 1.754)
         Decimal('2126.473734')
     """
     if any_is_empty(data, vna_base, inflacao):
@@ -157,7 +179,7 @@ def vna_projetado(
     if inflacao <= _vna.LIMITE_INFERIOR_PERCENTUAL:
         raise ValueError("A inflação deve ser maior que -100%.")
     data_convertida = conversores.converter_datas(data)
-    inicio, fim = _obter_vigencia(data_convertida)
+    inicio, fim = vigencia(data_convertida)
     expoente = (data_convertida - inicio).days / (fim - inicio).days
     return truncar_decimal(
         _vna.calcular_vna_projetado(float(vna_base), float(inflacao), expoente),

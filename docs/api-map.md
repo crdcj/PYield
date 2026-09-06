@@ -99,8 +99,7 @@ Visão geral das principais funções públicas do PYield.
     ├── pu(...)
     ├── taxa(...)
     ├── rentabilidade(...)
-    ├── rentabilidade_expr(...)
-    └── vna(data)
+    └── rentabilidade_expr(...)
     ```
 
 ??? "`yd.ltn` (Tesouro Prefixado)"
@@ -123,9 +122,6 @@ Visão geral das principais funções públicas do PYield.
     yd.ntnb
     ├── dados(data)
     ├── vencimentos(data)
-    ├── vnas()
-    ├── vna(data)
-    ├── vna_projetado(data, vna_base, inflacao)
     ├── datas_pagamento(...)
     ├── fluxos_caixa(...)
     ├── cotacao(...)
@@ -188,9 +184,6 @@ Visão geral das principais funções públicas do PYield.
     ```text
     yd.ntnc
     ├── dados(data)
-    ├── vnas()
-    ├── vna(data, vencimento)
-    ├── vna_projetado(data, vna_base, inflacao)
     ├── datas_pagamento(...)
     ├── fluxos_caixa(...)
     ├── cotacao(...)
@@ -240,4 +233,14 @@ Visão geral das principais funções públicas do PYield.
 ??? "`yd.agora` (data e hora atual no Brasil)"
     ```text
     yd.agora()
+    ```
+
+??? "`yd.vna` (valor nominal atualizado)"
+    ```text
+    yd.vna
+    ├── valor(titulo, data, vencimento=None)
+    ├── historico(titulo, vencimento=None)
+    ├── ultimo(titulo, vencimento=None)
+    ├── vigencia(titulo, data)
+    └── projetado(titulo, data, vna_base, inflacao)
     ```

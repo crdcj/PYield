@@ -10,8 +10,8 @@ import pyield._internal.converters as conversores
 from pyield._internal.numbers import truncar, truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.ipca import historico as _ipca
-from pyield.tpf.vna import _download
-from pyield.tpf.vna import calculo as _vna
+from pyield.vna import _calculo as _vna
+from pyield.vna import _download
 
 _DIA_INICIO_VIGENCIA = 15
 _QTD_MARCOS_VIGENCIA = 2
@@ -68,12 +68,12 @@ def vna(data: DateLike | None = None) -> Decimal:
             publicado.
 
     Examples:
-        >>> from pyield import ntnb
-        >>> ntnb.vna("15-12-2025")  # ponto publicado
+        >>> import pyield as yd
+        >>> yd.vna.valor("NTN-B", "15-12-2025")  # ponto publicado
         Decimal('4570.078408')
-        >>> ntnb.vna("30-12-2025")  # pró-rata entre pontos publicados
+        >>> yd.vna.valor("NTN-B", "30-12-2025")  # pró-rata entre pontos publicados
         Decimal('4577.369436')
-        >>> ntnb.vna("13-08-2026")  # precisão dos índices do IPCA
+        >>> yd.vna.valor("NTN-B", "13-08-2026")  # precisão dos índices do IPCA
         Decimal('4742.530180')
     """
     if any_is_empty(data):
@@ -86,7 +86,7 @@ def vna(data: DateLike | None = None) -> Decimal:
     if ponto_exato.height == 1:
         return truncar_decimal(ponto_exato.item(0, "vna"), 6)
 
-    inicio, fim = _obter_vigencia(data_convertida)
+    inicio, fim = vigencia(data_convertida)
     pontos_vigencia = df.filter(pl.col("data").is_in([inicio, fim]))
     if pontos_vigencia.height != _QTD_MARCOS_VIGENCIA:
         return Decimal("NaN")
@@ -104,8 +104,30 @@ def vna(data: DateLike | None = None) -> Decimal:
     )
 
 
-def _obter_vigencia(data: dt.date) -> tuple[dt.date, dt.date]:
-    """Obtém a vigência mensal 15--15 que contém a data."""
+def vigencia(data: DateLike) -> tuple[dt.date, dt.date]:
+    """Obtém a vigência mensal do VNA do dia 15 ao dia 15 seguinte.
+
+    Args:
+        data: Data contida na vigência; aceita os formatos de data da biblioteca.
+
+    Returns:
+        tuple[date, date]: Início inclusivo e fim exclusivo, em dias corridos,
+            sem ajuste para dias úteis.
+
+    Notes:
+        Usa o calendário de atualização do VNA da NTN-B,
+        conforme a metodologia do Tesouro Nacional. Não consulta dados externos.
+
+    Raises:
+        ValueError: Se a data for nula ou vazia.
+
+    Examples:
+        >>> yd.vna.vigencia("NTN-B", "15-07-2026")
+        (datetime.date(2026, 7, 15), datetime.date(2026, 8, 15))
+    """
+    if any_is_empty(data):
+        raise ValueError("A data da vigência deve ser informada.")
+    data = conversores.converter_datas(data)
     if data.day >= _DIA_INICIO_VIGENCIA:
         inicio = data.replace(day=_DIA_INICIO_VIGENCIA)
         fim = (inicio + dt.timedelta(days=32)).replace(day=_DIA_INICIO_VIGENCIA)
@@ -165,12 +187,12 @@ def vna_projetado(
             igual a -100%.
 
     Examples:
-        >>> from pyield import ntnb
-        >>> ntnb.vna_projetado("15-06-2026", 4731.856412, 0.45)
+        >>> import pyield as yd
+        >>> yd.vna.projetado("NTN-B", "15-06-2026", 4731.856412, 0.45)
         Decimal('4731.856412')
-        >>> ntnb.vna_projetado("30-06-2026", 4731.856412, 0.45)
+        >>> yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, 0.45)
         Decimal('4742.491138')
-        >>> ntnb.vna_projetado("21-05-2008", 1726.9264599, 0.464)
+        >>> yd.vna.projetado("NTN-B", "21-05-2008", 1726.9264599, 0.464)
         Decimal('1728.461136')
     """
     if any_is_empty(data, vna_base, inflacao):
@@ -178,7 +200,7 @@ def vna_projetado(
     if inflacao <= _vna.LIMITE_INFERIOR_PERCENTUAL:
         raise ValueError("A inflação deve ser maior que -100%.")
     data_convertida = conversores.converter_datas(data)
-    inicio, fim = _obter_vigencia(data_convertida)
+    inicio, fim = vigencia(data_convertida)
     expoente = (data_convertida - inicio).days / (fim - inicio).days
     return truncar_decimal(
         _vna.calcular_vna_projetado(float(vna_base), float(inflacao), expoente),

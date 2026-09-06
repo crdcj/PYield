@@ -54,7 +54,7 @@ O PYield trata a LFT comum, código SELIC `210100`, com data-base `01/07/2000`.
 Ela corresponde à seção 4 deste caderno, e não às séries `LFT-A` ou `LFT-B`,
 descritas separadamente nas seções 4.1 e 4.2.
 
-`lft.vna()` não calcula o fator acumulado nem reconstrói o VNA. A função baixa
+`yd.vna.valor("LFT", data)` não calcula o fator acumulado nem reconstrói o VNA. A função baixa
 do Banco Central o VNA oficial do código `210100` e valida que o valor é único
 entre os vencimentos. Esse dado oficial é a entrada usada pelo módulo de LFT.
 

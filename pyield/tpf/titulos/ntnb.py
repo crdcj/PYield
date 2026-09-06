@@ -12,7 +12,6 @@ from pyield.tpf.titulos import _utils as utils
 from pyield.tpf.titulos._ntnb_bootstrap import (
     taxas_zero as taxas_zero,  # noqa: PLC0414
 )
-from pyield.tpf.vna import ntnb as _vna
 
 """
 Constantes calculadas conforme regras da STN e em base 1.
@@ -736,8 +735,3 @@ def taxa(
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
     return utils.truncar(taxa_encontrada, 8)
-
-
-vna = _vna.vna
-vna_projetado = _vna.vna_projetado
-vnas = _vna.vnas

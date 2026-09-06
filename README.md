@@ -346,6 +346,19 @@ gerados ficam na raiz da branch `gh-pages`. Acompanhe a publicação na aba
 
 ## Compatibilidade e mudanças da API
 
+A implementação de VNA foi consolidada em `pyield/vna/`. Substitua imports de
+`pyield.tpf.vna.calcular_vna` por `yd.vna.calcular_vna`.
+
+O módulo `yd.vna` concentra consultas por título: `valor`, `historico`, `ultimo`,
+`vigencia` e `projetado`. Por exemplo, `yd.ntnb.vna(data)` deve ser substituído por
+`yd.vna.valor("NTN-B", data)`. Os aliases de VNA nos módulos dos títulos foram removidos; esta é uma
+quebra de compatibilidade. Substitua também `vnas()` por `yd.vna.historico(titulo)`,
+`vna_projetado(...)` por `yd.vna.projetado(titulo, ...)` e `vigencia(data)` por
+`yd.vna.vigencia(titulo, data)`.
+`ultimo` retorna data e valor publicados em um DataFrame; NTN-C admite filtro
+por vencimento. Consulte [VNA](https://crdcj.github.io/PYield/vna/) para os
+contratos e as operações disponíveis por título.
+
 A versão atual é `v0.56.0`. As mudanças abaixo podem exigir atualização de código:
 
 | Versão | Mudança principal |

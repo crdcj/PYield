@@ -82,7 +82,7 @@ casas da cotação percentual em base 100 usada no documento.
 
 ## VNA realizado da NTN-B entre datas-base
 
-Em uma data entre dois VNAs mensais já publicados, `ntnb.vna()` combina duas
+Em uma data entre dois VNAs mensais já publicados, `yd.vna.valor("NTN-B", data)` combina duas
 fontes oficiais:
 
 - o VNA no início da vigência vem da planilha do Tesouro Nacional;
@@ -115,7 +115,7 @@ vna_13_08_2026 = 4742,530180
 ```
 
 Essa reconstrução é usada apenas quando os dois VNAs mensais e os dois
-números-índice já estão disponíveis. Ela não transforma `ntnb.vna()` em uma
+números-índice já estão disponíveis. Ela não transforma `yd.vna.valor("NTN-B", data)` em uma
 função de projeção.
 
 ## Rastreabilidade no código
@@ -123,7 +123,7 @@ função de projeção.
 - A normalização da taxa de entrada está centralizada em
   `pyield/tpf/titulos/_utils.py`.
 - As fórmulas de preço e cotação ficam em `pyield/tpf/titulos/`.
-- O VNA projetado de NTN-B e NTN-C fica em `pyield/tpf/vna/`.
+- O VNA projetado de NTN-B e NTN-C fica em `pyield/vna/`.
 - Os exemplos numéricos das páginas 3 a 12 são executados como doctests nas
   funções públicas correspondentes.
 

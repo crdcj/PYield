@@ -5,10 +5,7 @@ import polars as pl
 from pyield import du
 from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.bc import lft as _bc_lft
 from pyield.tpf.titulos import _utils as utils
-
-vna = _bc_lft.vna
 
 
 def dados(data: DateLike) -> pl.DataFrame:

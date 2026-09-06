@@ -5,10 +5,10 @@ from decimal import Decimal
 import polars as pl
 import pytest
 
-from pyield import ntnb, ntnc
-from pyield.tpf.vna import _download, calcular_vna  # noqa: PLC2701
-from pyield.tpf.vna import ntnb as vna_ntnb
-from pyield.tpf.vna import ntnc as vna_ntnc
+from pyield import vna
+from pyield.vna import _download, calcular_vna  # noqa: PLC2701
+from pyield.vna import _ntnb as vna_ntnb  # noqa: PLC2701
+from pyield.vna import _ntnc as vna_ntnc  # noqa: PLC2701
 
 VNA_NTNB_DEZ_2025 = 4570.078408
 VNA_NTNB_JAN_2026 = 4585.159356
@@ -33,7 +33,7 @@ VNA_TESTE_INTERMEDIARIO_ALTERNATIVO = 120.0
 
 
 def test_calcular_vna_publico_retorna_ponto_exato() -> None:
-    assert calcular_vna.__module__ == "pyield.tpf.vna.calculo"
+    assert calcular_vna.__module__ == "pyield.vna._calculo"
 
     df = pl.DataFrame(
         {
@@ -87,15 +87,30 @@ def test_calcular_vna_publico_fora_do_intervalo_retorna_float_nan(
     assert math.isnan(resultado)
 
 
-def test_api_publica_reexporta_implementacao_canonica() -> None:
-    assert not hasattr(ntnb, "calcular_vna")
-    assert not hasattr(ntnc, "calcular_vna")
-    assert ntnb.vnas is vna_ntnb.vnas
-    assert ntnb.vna is vna_ntnb.vna
-    assert ntnb.vna_projetado is vna_ntnb.vna_projetado
-    assert ntnc.vnas is vna_ntnc.vnas
-    assert ntnc.vna is vna_ntnc.vna
-    assert ntnc.vna_projetado is vna_ntnc.vna_projetado
+@pytest.mark.parametrize(
+    ("titulo", "data", "inicio", "fim"),
+    [
+        ("NTN-B", "14-07-2026", dt.date(2026, 6, 15), dt.date(2026, 7, 15)),
+        ("NTN-B", "15/07/2026", dt.date(2026, 7, 15), dt.date(2026, 8, 15)),
+        ("NTN-B", "2026-12-31", dt.date(2026, 12, 15), dt.date(2027, 1, 15)),
+        ("NTN-B", dt.date(2027, 1, 1), dt.date(2026, 12, 15), dt.date(2027, 1, 15)),
+        ("NTN-B", "29-02-2024", dt.date(2024, 2, 15), dt.date(2024, 3, 15)),
+        ("NTN-C", "01-07-2026", dt.date(2026, 7, 1), dt.date(2026, 8, 1)),
+        ("NTN-C", "31/07/2026", dt.date(2026, 7, 1), dt.date(2026, 8, 1)),
+        ("NTN-C", "2026-12-31", dt.date(2026, 12, 1), dt.date(2027, 1, 1)),
+        ("NTN-C", "29-02-2024", dt.date(2024, 2, 1), dt.date(2024, 3, 1)),
+        ("NTN-C", "28-02-2025", dt.date(2025, 2, 1), dt.date(2025, 3, 1)),
+    ],
+)
+def test_vigencia_publica(titulo, data, inicio, fim):
+    assert vna.vigencia(titulo, data) == (inicio, fim)
+
+
+@pytest.mark.parametrize("titulo", ["NTN-B", "NTN-C"])
+@pytest.mark.parametrize("data", [None, "", "31-02-2026"])
+def test_vigencia_rejeita_data_invalida(titulo, data):
+    with pytest.raises(ValueError, match="data|Data"):
+        vna.vigencia(titulo, data)
 
 
 def test_extrair_url_planilha() -> None:
@@ -247,10 +262,10 @@ def test_vna_ntnb_calcula_entre_valores_publicados(
         ),
     )
 
-    assert vna_ntnb.vna("15-12-2025") == Decimal(str(VNA_NTNB_DEZ_2025))
-    assert vna_ntnb.vna("30-12-2025") == Decimal(str(VNA_NTNB_30_DEZ_2025))
-    assert vna_ntnb.vna("14-12-2025").is_nan()
-    assert vna_ntnb.vna("16-01-2026").is_nan()
+    assert vna.valor("NTN-B", "15-12-2025") == Decimal(str(VNA_NTNB_DEZ_2025))
+    assert vna.valor("NTN-B", "30-12-2025") == Decimal(str(VNA_NTNB_30_DEZ_2025))
+    assert vna.valor("NTN-B", "14-12-2025").is_nan()
+    assert vna.valor("NTN-B", "16-01-2026").is_nan()
 
 
 @pytest.mark.parametrize(
@@ -288,7 +303,7 @@ def test_vna_ntnb_usa_numeros_indice_com_precisao_normativa(
 
     monkeypatch.setattr(vna_ntnb._ipca, "indices", indices)
 
-    assert vna_ntnb.vna(data) == Decimal(f"{esperado:.6f}")
+    assert vna.valor("NTN-B", data) == Decimal(f"{esperado:.6f}")
 
 
 def test_vna_ntnc_seleciona_serie_e_calcula_entre_valores_publicados(
@@ -322,33 +337,33 @@ def test_vna_ntnc_seleciona_serie_e_calcula_entre_valores_publicados(
         ),
     )
 
-    assert vna_ntnc.vna("01-07-2000", "01-01-2006") == Decimal(
+    assert vna.valor("NTN-C", "01-07-2000", "01-01-2006") == Decimal(
         str(VNA_NTNC_2006_JUL_2000)
     )
-    assert vna_ntnc.vna("16-12-2025", "01-01-2031") == Decimal(
+    assert vna.valor("NTN-C", "16-12-2025", "01-01-2031") == Decimal(
         str(VNA_NTNC_2031_16_DEZ_2025)
     )
-    assert vna_ntnc.vna("01-07-2000", "01-01-2041").is_nan()
+    assert vna.valor("NTN-C", "01-07-2000", "01-01-2041").is_nan()
 
 
 CASOS_VNA_PROJETADO = [
-    (ntnb.vna_projetado, "15-06-2026", VNA_NTNB_JUN_2026, 0.45),
-    (ntnc.vna_projetado, "01-06-2026", VNA_NTNC_2031_JUN_2026, 0.30),
+    ("NTN-B", "15-06-2026", VNA_NTNB_JUN_2026, 0.45),
+    ("NTN-C", "01-06-2026", VNA_NTNC_2031_JUN_2026, 0.30),
 ]
 
 
 @pytest.mark.parametrize(
-    ("funcao", "data", "vna_base", "inflacao"), CASOS_VNA_PROJETADO
+    ("titulo", "data", "vna_base", "inflacao"), CASOS_VNA_PROJETADO
 )
-def test_vna_projetado_entradas_vazias(funcao, data, vna_base, inflacao) -> None:
-    assert math.isnan(funcao(None, vna_base, inflacao))
+def test_vna_projetado_entradas_vazias(titulo, data, vna_base, inflacao) -> None:
+    assert math.isnan(vna.projetado(titulo, None, vna_base, inflacao))
 
 
 @pytest.mark.parametrize(
-    ("funcao", "data", "vna_base", "inflacao"), CASOS_VNA_PROJETADO
+    ("titulo", "data", "vna_base", "inflacao"), CASOS_VNA_PROJETADO
 )
-def test_vna_projetado_valida_dominio(funcao, data, vna_base, inflacao) -> None:
+def test_vna_projetado_valida_dominio(titulo, data, vna_base, inflacao) -> None:
     with pytest.raises(ValueError, match="VNA-base"):
-        funcao(data, 0, inflacao)
+        vna.projetado(titulo, data, 0, inflacao)
     with pytest.raises(ValueError, match="inflação"):
-        funcao(data, vna_base, -100)
+        vna.projetado(titulo, data, vna_base, -100)
