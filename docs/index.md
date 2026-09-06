@@ -1,248 +1,47 @@
+---
+title: "PYield"
+description: "Documentação do PYield, toolkit Python para análise de renda fixa brasileira"
+---
+
 [![PyPI version](https://img.shields.io/pypi/v/pyield.svg)](https://pypi.python.org/pypi/pyield)
-[![Made with Python](https://img.shields.io/badge/Python->=3.12-blue?logo=python&logoColor=white)](https://python.org "Go to Python homepage")
+[![Made with Python](https://img.shields.io/badge/Python->=3.12-blue?logo=python&logoColor=white)](https://python.org)
+[![Powered by Polars](https://img.shields.io/badge/Powered%20by-Polars-blue)](https://pola.rs/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](https://github.com/crdcj/PYield/blob/main/LICENSE)
-[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue?logo=readthedocs&logoColor=white)](https://crdcj.github.io/PYield/)
 
 # PYield: Toolkit de Renda Fixa Brasileira
 
-Português | [English](https://github.com/crdcj/PYield/blob/main/README.en.md)
-
-PYield é uma biblioteca Python voltada para análise de títulos públicos brasileiros. Ela busca e processa dados da ANBIMA, BCB, IBGE, B3 e **Tesouro Nacional**, retornando DataFrames do Polars para pipelines rápidos e com tipagem consistente.
-
-Embora inclua dados e ferramentas de outros mercados (como DI1, DAP e PTAX), esses recursos são auxiliares para o objetivo central: análise, precificação e acompanhamento de títulos públicos.
-
-## Instalação
-
-```sh
-pip install pyield
-```
-
-## Início Rápido
-
-```python
-import pyield as yd
-
-# Dias úteis (base de todos os cálculos)
-yd.du.contar("02-01-2025", "15-01-2025")  # -> 9
-yd.du.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
-
-# Curva de DI Futuro
-df = yd.futuro.historico("31-05-2024", "DI1")
-# Colunas: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
-
-# Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)
-interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
-interp(45)  # -> 0.04833...
-
-# Precificação de títulos públicos
-yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
-
-# Indicadores do BCB
-taxa = yd.selic.over("31-05-2024")
-f"{taxa:.1%}"  # -> '10.4%' a.a.
-```
-
-Um notebook no Colab com mais exemplos:
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb)
-
-## Blocos Principais
-
-### Dias Úteis (`du`)
-
-O módulo `du` é a base do PYield. Todos os cálculos com datas (preço, duration, taxas a termo) dependem da contagem correta de dias úteis com feriados brasileiros.
-
-```python
-from pyield import du
-
-# Conta dias úteis (início inclusivo, fim exclusivo)
-du.contar("29-12-2023", "02-01-2024")  # -> 1
-
-# Avança N dias úteis
-du.deslocar("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
-
-# Ajusta dia não útil para o próximo dia útil
-du.deslocar("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
-
-# Gera intervalo de dias úteis
-du.gerar("22-12-2023", "02-01-2024")
-# -> Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
-
-# Verifica se a data é dia útil
-du.eh_dia_util("25-12-2023")  # -> False (Natal)
-```
-
-Por padrão, `calendario="auto"` seleciona a lista de feriados com base na data de
-referência de cada operação. Em entradas vetorizadas, a seleção ocorre por
-elemento; em `du.gerar`, ela usa `inicio`. Use `calendario="anterior"` para
-forçar o regime anterior a 26/12/2023 ou `calendario="atual"` para forçar a
-lista vigente na versão instalada:
-
-```python
-du.contar("20-11-2024", "21-11-2024", calendario="anterior")  # -> 1
-du.contar("20-11-2024", "21-11-2024", calendario="atual")     # -> 0
-```
-
-Os parâmetros opcionais usam termos em português. `ajuste` define como tratar uma
-data inicial não útil, enquanto `limites_inclusivos` controla quais extremos de um
-intervalo gerado são incluídos:
-
-```python
-du.deslocar("23-12-2023", 0, ajuste="anterior")
-# -> datetime.date(2023, 12, 22)
-
-du.gerar("08-01-2024", "10-01-2024", limites_inclusivos="inicio").to_list()
-# -> [datetime.date(2024, 1, 8), datetime.date(2024, 1, 9)]
-```
-
-As principais funções de cálculo suportam operações vetorizadas com listas,
-Series ou arrays.
-
-### Interpolação de Taxas (`Interpolador`)
-
-A classe `Interpolador` interpola taxas usando a convenção de 252 dias úteis/ano, padrão no mercado brasileiro.
-
-```python
-import polars as pl
-
-from pyield import Interpolador
-
-dias_uteis = [30, 60, 90]
-taxas = [0.045, 0.05, 0.055]
-
-# Interpolação flat forward (padrão de mercado)
-interp = Interpolador(dias_uteis, taxas, metodo="flat_forward")
-interp(45)  # -> 0.04833...
-
-# Interpolação linear
-linear = Interpolador(dias_uteis, taxas, metodo="linear")
-linear(45)  # -> 0.0475
-
-# Em um pipeline Polars
-df_alvos = pl.DataFrame({"du": [15, 45, 75]})
-df_alvos.with_columns(taxa=interp.interpolar_expr("du"))
-
-# Extrapolação (desabilitada por padrão, retorna NaN)
-interp(100)  # -> nan
-Interpolador(dias_uteis, taxas, metodo="flat_forward", extrapolar=True)(100)  # -> 0.055
-```
-
-### Taxas a Termo (`forward`, `forwards`)
-
-Calcula taxas a termo a partir de curvas spot:
-
-Convenção utilizada:
-
-- `fwd_k = fwd_{j->k}` (forward do vértice `j` para `k`)
-- `f_k = 1 + tx_k` (fator de capitalização no vértice `k`)
-- `fwd_k = (f_k^au_k / f_j^au_j)^(1 / (au_k - au_j)) - 1`, com `au = du / 252`
-
-```python
-from pyield import forward, forwards
-
-# Taxa a termo única entre dois pontos
-forward(10, 20, 0.05, 0.06)  # -> 0.0700952...
-
-# Curva a termo vetorizada a partir de taxas spot
-dias_uteis = [10, 20, 30]
-taxas = [0.05, 0.06, 0.07]
-forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
-```
-
-## Visão Geral dos Módulos
-
-| Módulo | Finalidade |
-|--------|---------|
-| `du` | Calendário de dias úteis com feriados brasileiros |
-| `futuro` | Dados de futuros (DI1, DDI, DAP, DOL, WDO, IND, WIN e outros) |
-| `tpf` | Taxas, vencimentos, estoque, leilões, benchmarks, RMD e negociações de TPFs |
-| `di1` | Curva DI1 interpolada e datas de negociação disponíveis |
-| `Interpolador` | Interpolação de taxas (flat_forward, linear) |
-| `forward` / `forwards` | Cálculo de taxas a termo |
-| `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Precificação e análise dos títulos públicos principais |
-| `ntnb1`, `ntnbp` | Títulos adicionais (NTN-B1, NTN-B Principal) |
-| `ipca` | Dados de inflação (histórico e projeções) |
-| `compromissadas` | Leilões de operações compromissadas do BCB |
-| `selic` | Taxa Selic over e meta |
-| `cpm` | Opções digitais do COPOM e probabilidades implícitas |
-| `hoje` / `agora` | Data/hora atual no Brasil (America/Sao_Paulo) |
-
-## Títulos Públicos
-
-```python
-import polars as pl
-
-from pyield import ltn, ntnb, ntnf
-
-# Busca taxas indicativas da ANBIMA
-ltn.dados("23-08-2024")  # -> DataFrame com títulos LTN
-ntnb.dados("23-08-2024")  # -> DataFrame com títulos NTN-B
-
-# Calcula cotação do título (base 1)
-ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
-ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 0.995341
-
-# Prêmio sobre o DI (conversão para pontos-base para exibição)
-ntnf.premio("30-05-2025").with_columns(
-    premio=pl.col("premio") * 10_000,
-)
-# -> DataFrame: titulo, data_vencimento, premio (em pontos-base)
-```
-
-## Dados de Futuros
-
-```python
-import pyield as yd
-
-# DI1 (Futuro de Depósito Interfinanceiro)
-yd.futuro.historico("31-05-2024", "DI1")
-
-# Outros contratos disponíveis no cache histórico:
-# - Juros: DI1, DDI, FRC, FRO, DAP
-# - Moedas: DOL, WDO
-# - Índices: IND, WIN
-yd.futuro.historico("31-05-2024", "DAP")
-
-# Múltiplas datas de uma vez
-yd.futuro.historico(["29-05-2024", "31-05-2024"], "DI1")
-
-# Dados intradia (quando o mercado estiver aberto)
-yd.futuro.intradia("DI1")  # Retorna dados ao vivo durante o pregão
-```
-
-## Tratamento de Datas
-
-PYield aceita entradas de data flexíveis (`DateLike`):
-- Strings: `"31-05-2024"`, `"31/05/2024"`, `"2024-05-31"`
-- `datetime.date`, `datetime.datetime`
-
-Datas escalares são convertidas para `datetime.date`. Quando a função admite
-ausência, `None` ou uma string vazia representam uma data não informada. Uma
-data escalar malformada levanta `ValueError`.
-
-Em operações vetorizadas, elementos ausentes ou malformados tornam-se `null`
-para preservar o pipeline Polars. Funções de domínio que exigem uma coleção
-integralmente válida podem rejeitar esses nulos depois da conversão.
-
-```python
-from pyield import ntnb, du
-
-ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
-du.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
-```
-
-Consultas sem dados disponíveis (data futura, feriado, fim de semana ou
-fonte indisponível) retornam DataFrame vazio ou `nan`, sem lançar exceção:
-
-```python
-import pyield as yd
-
-yd.futuro.historico("01-01-2030", "DI1").is_empty()  # -> True
-yd.tpf.secundario.mensal("01-01-2030").is_empty()    # -> True
-yd.ptax("25-12-2025")                                # -> nan
-```
-
-## Mapa da API
-
-Veja o [mapa completo da API](api-map.md) para uma visão por namespace das
-principais funções públicas do PYield.
+PYield é uma biblioteca Python para análise, precificação e acompanhamento de
+títulos públicos brasileiros. Ela busca e processa dados da ANBIMA, BCB, IBGE,
+B3 e Tesouro Nacional, com saídas escalares, `polars.Series` e
+`polars.DataFrame`.
+
+## Por onde começar?
+
+- [Quickstart](quickstart.md): instalação e primeiros fluxos de trabalho.
+- [Mapa da API](api-map.md): visão por namespace e funções públicas.
+- [Desenvolvimento e publicação](desenvolvimento.md): comandos com `uv`, build,
+  documentação e publicação no PyPI.
+- [Introdução ao PYield](articles/pyield_intro.md): contexto, fontes de dados e
+  conceitos da biblioteca.
+
+## Organização da documentação
+
+A documentação está organizada por conceito financeiro e por fonte de dados:
+
+- **Ferramentas:** [dias úteis](du.md), [interpolador](interpolador.md) e
+  [taxas a termo](forwards.md).
+- **Títulos públicos:** [TPF](tpf.md), [VNA](vna.md), [LFT](lft.md),
+  [LTN](ltn.md), [NTN-B](ntnb.md), [NTN-F](ntnf.md) e demais títulos.
+- **Mercado de futuros:** [DI1](di1.md) e [futuros](futuro.md).
+- **Dados auxiliares:** [IPCA](ipca.md), [Selic](selic.md), [Copom](copom.md),
+  [compromissadas](compromissada.md), [CPM](cpm.md) e [B3](b3.md).
+
+As funções públicas retornam dados em português e seguem convenções consistentes
+de datas, tipos e colunas. Consulte a página de cada módulo para parâmetros,
+fórmulas, fontes e exemplos específicos.
+
+## Links
+
+- [Código-fonte no GitHub](https://github.com/crdcj/PYield)
+- [Pacote no PyPI](https://pypi.org/project/pyield/)
+- [Notebook de Quickstart no Colab](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb)

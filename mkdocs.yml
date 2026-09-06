@@ -10,7 +10,9 @@ watch:
   
 nav:
   - Início: index.md
+  - Quickstart: quickstart.md
   - Mapa da API: api-map.md
+  - Desenvolvimento e publicação: desenvolvimento.md
   - Artigos:
       - Introdução ao Pyield: articles/pyield_intro.md
   - Referências normativas:

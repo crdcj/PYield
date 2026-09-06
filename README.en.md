@@ -2,280 +2,84 @@
 [![Made with Python](https://img.shields.io/badge/Python->=3.12-blue?logo=python&logoColor=white)](https://python.org "Go to Python homepage")
 [![Powered by Polars](https://img.shields.io/badge/Powered%20by-Polars-blue)](https://pola.rs/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](https://github.com/crdcj/PYield/blob/main/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue?logo=readthedocs&logoColor=white)](https://crdcj.github.io/PYield/)
 
 # PYield: Brazilian Fixed Income Toolkit
 
 [Português](README.md) | English
 
-PYield is a Polars-powered Python toolkit for Brazilian fixed income analysis,
-with a primary focus on Brazilian treasury bonds. It fetches and processes data
-from ANBIMA, BCB, IBGE, B3, and Tesouro Nacional.
+PYield is a Python library for Brazilian fixed-income analysis. It fetches and
+processes data from ANBIMA, BCB, IBGE, B3, and Tesouro Nacional, returning
+native Python types, `polars.Series`, or `polars.DataFrame` depending on the
+operation.
 
-Scalar outputs return native Python types, while non-scalar outputs return
-`polars.Series` or `polars.DataFrame`, depending on the function.
-
-Although it includes data and tools from other markets (such as DI1, DAP, and PTAX), these resources support the core goal: analysis, pricing, and monitoring of Brazilian treasury bonds.
-
-## Quick Links
-
-- Full documentation: https://crdcj.github.io/PYield/
-- Colab notebook: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb)
-- Package on PyPI: https://pypi.org/project/pyield/
+Although it includes data and tools from other markets, such as DI1, DAP, and
+PTAX, these resources support the library's central purpose: analyzing, pricing,
+and monitoring Brazilian treasury bonds.
 
 ## Installation
+
+With `pip`:
 
 ```sh
 pip install pyield
 ```
 
-## Quick Start
-
-```python
-import pyield as yd
-
-# Business days (foundation for all calculations)
-yd.du.contar("02-01-2025", "15-01-2025")  # -> 9
-yd.du.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
-
-# DI future curve
-df = yd.futuro.historico("31-05-2024", "DI1")
-# Columns: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
-
-# Rate interpolation (flat forward, 252 business days/year convention)
-interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
-interp(45)  # -> 0.04833...
-
-# Treasury bond pricing
-yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
-
-# BCB indicators
-yd.selic.over("31-05-2024")  # -> 0.000414...
-```
-
-Scalar dates accept `DD-MM-YYYY`, `DD/MM/YYYY`, and `YYYY-MM-DD`. Malformed
-scalar dates raise `ValueError`; in vectorized operations, malformed elements
-become `null` so the Polars pipeline can continue.
-
-A Colab notebook with more examples:
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb)
-
-## Core Building Blocks
-
-### Business Days (`du`)
-
-The `du` module is the foundation of PYield. All date-based calculations (price, duration, forward rates) depend on correct business-day counting with Brazilian holidays.
-
-```python
-from pyield import du
-
-# Count business days (start inclusive, end exclusive)
-du.contar("29-12-2023", "02-01-2024")  # -> 1
-
-# Move by N business days
-du.deslocar("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
-
-# Adjust non-business day to next business day
-du.deslocar("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
-
-# Generate business day range
-du.gerar("22-12-2023", "02-01-2024")
-# -> Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
-
-# Check whether a date is a business day
-du.eh_dia_util("25-12-2023")  # -> False (Christmas)
-```
-
-All functions support vectorized operations with lists, Series, or arrays.
-
-### Rate Interpolation (`Interpolador`)
-
-The `Interpolador` class interpolates rates using the 252 business days/year convention, standard in the Brazilian market.
-
-```python
-from pyield import Interpolador
-
-dias_uteis = [30, 60, 90]
-taxas = [0.045, 0.05, 0.055]
-
-# Flat-forward interpolation (market standard)
-interp = Interpolador(dias_uteis, taxas, metodo="flat_forward")
-interp(45)  # -> 0.04833...
-
-# Linear interpolation
-linear = Interpolador(dias_uteis, taxas, metodo="linear")
-linear(45)  # -> 0.0475
-
-# Extrapolation on the long end: disabled by default (NaN). The short end
-# always returns the first known rate.
-interp(100)  # -> nan
-Interpolador(dias_uteis, taxas, metodo="flat_forward", extrapolar=True)(100)  # -> 0.055
-```
-
-To interpolate a full column inside a Polars pipeline, use `interpolar_expr`:
-
-```python
-import polars as pl
-
-df = pl.DataFrame({"du": [15, 45, 75]})
-df.with_columns(taxa=interp.interpolar_expr("du"))
-```
-
-When target points and the curve come from different DataFrames (including
-multiple reference dates), use the top-level `yd.interpolar` function:
-
-```python
-import pyield as yd
-
-rates = yd.interpolar(
-    dus_alvo=df_alvo["dias_uteis"],
-    dus_curva=df_curva["dias_uteis"],
-    taxas_curva=df_curva["taxa"],
-    datas_alvo=df_alvo["data_referencia"],   # optional (multi-curve)
-    datas_curva=df_curva["data_referencia"], # optional (multi-curve)
-)
-```
-
-### Forward Rates (`forward`, `forwards`)
-
-Compute forward rates from spot curves:
-
-Convention used:
-
-- `fwd_k = fwd_{j->k}` (forward from vertex `j` to `k`)
-- `f_k = 1 + tx_k` (capitalization factor at `k`)
-- `fwd_k = (f_k^au_k / f_j^au_j)^(1 / (au_k - au_j)) - 1`, with `au = du / 252`
-
-```python
-from pyield import forward, forwards
-
-# Single forward rate between two points
-forward(10, 20, 0.05, 0.06)  # -> 0.0700952...
-
-# Vectorized forward curve from spot rates
-dias_uteis = [10, 20, 30]
-taxas = [0.05, 0.06, 0.07]
-forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
-```
-
-## Module Overview
-
-| Module | Purpose |
-|--------|---------|
-| `du` | Business day calendar with Brazilian holidays |
-| `futuro` | Futures data (DI1, DDI, DAP, DOL, WDO, IND, WIN and others) |
-| `tpf` | Current and historical rates, maturities, stock, auctions, benchmarks, RMD, and TPF trades |
-| `di1` | Interpolated DI1 curve and available trade dates |
-| `Interpolador` | Scalar rate interpolation and Polars-expression interpolation (flat_forward, linear) |
-| `interpolar` | Vectorized flat-forward interpolation, single curve or multi-curve |
-| `forward` / `forwards` | Forward-rate calculations |
-| `ltn`, `ntnb`, `ntnf`, `lft`, `ntnc` | Pricing and analysis of main treasury bonds |
-| `ntnb1`, `ntnbp` | Additional bonds (NTN-B1, NTN-B Principal) |
-| `selic` | Selic rate data, COPOM calendar, BCB repos, CPM options and implied probabilities |
-| `ipca` | Inflation data (historical and projections) |
-| `hoje` / `agora` | Current date/time in Brazil (America/Sao_Paulo) |
-
-## Treasury Bonds
-
-```python
-import polars as pl
-
-import pyield as yd
-
-from pyield import ltn, ntnb, ntnf
-
-# Indicative rates for one date or a period
-yd.tpf.taxas("23-08-2024", titulo="PRE")
-yd.tpf.taxas_historicas(
-    inicio="01-08-2024", fim="31-08-2024", titulo="PRE"
-)
-
-# Fetch ANBIMA indicative rates
-ltn.dados("23-08-2024")  # -> DataFrame with LTN bonds
-ntnb.dados("23-08-2024")  # -> DataFrame with NTN-B bonds
-
-# Compute bond quotation (base 1)
-ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
-ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 0.995341
-
-# DI premium (convert to basis points for display)
-ntnf.premio("30-05-2025").with_columns(
-    premio=pl.col("premio") * 10_000,
-)
-# -> DataFrame: titulo, data_vencimento, premio (in basis points)
-```
-
-## Futures Data
-
-```python
-import pyield as yd
-
-# DI1 (Interbank Deposit Futures)
-yd.futuro.historico("31-05-2024", "DI1")
-
-# Other available contracts in the historical cache:
-# - Rates: DI1, DDI, FRC, FRO, DAP
-# - Currencies: DOL, WDO
-# - Indexes: IND, WIN
-yd.futuro.historico("31-05-2024", "DAP")
-
-# Multiple dates at once
-yd.futuro.historico(["29-05-2024", "31-05-2024"], "DI1")
-
-# Intraday data (when the market is open)
-yd.futuro.intradia("DI1")  # Returns live data during trading hours
-```
-
-## Date Handling
-
-PYield accepts flexible date inputs (`DateLike`):
-- Strings: `"31-05-2024"`, `"31/05/2024"`, `"2024-05-31"`
-- `datetime.date`, `datetime.datetime`
-
-Scalar dates are converted to `datetime.date`. Where a function permits a
-missing date, `None` or an empty string represents an omitted value. A malformed
-scalar date raises `ValueError`.
-
-In vectorized operations, missing or malformed elements become `null` so the
-Polars pipeline can continue. Domain functions that require a fully valid
-collection may reject those nulls after conversion.
-
-```python
-from pyield import ntnb, du
-
-ntnb.cotacao(None, "15-05-2035", 0.06149)  # -> nan
-du.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
-```
-
-Unavailable-data queries (future dates, holidays, weekends, or unavailable
-sources) return an empty DataFrame or `nan`, without raising exceptions:
-
-```python
-import pyield as yd
-
-yd.futuro.historico("01-01-2030", "DI1").is_empty()  # -> True
-yd.tpf.secundario.mensal("01-01-2030").is_empty()    # -> True
-yd.ptax("25-12-2025")                                # -> nan
-```
-
-## API Compatibility
-
-The current version is `v0.55.0`. The changes below require code updates:
-
-| Version | Main change |
-|---|---|
-| Next release | `ntnb.taxas_zero` now uses forward bootstrapping and returns only the supplied maturities, with `dias_uteis` and `taxa_zero`. Removed `incluir_cupons` and `ntnbp.taxas_zero`; replace the latter with `ntnb.taxas_zero`, without `incluir_vertices`. Results may differ slightly from the previous method. |
-| `v0.55.0` | Bond PU, quotation, and VNA functions now return six-decimal `Decimal` values. Numeric inputs accept `float` or `Decimal`. |
-| `v0.54.5` | `fluxos_caixa` no longer accepts `ajustar_datas_pagamento`; schedules use contractual dates. |
-| `v0.54.2` | Added `taxas_historicas` and removed `tpf.taxas(completo=True)`. |
-| `v0.54.0` | LFT, NTN-B, NTN-C, and NTN-B1 quotations and cash flows changed from base 100 to base 1; `ntnbprinc` became `ntnbp`; `premio_pre` became `premios_pre`; invalid scalar dates now raise `ValueError`. |
-| `v0.53.0` | TPF secondary-market functions moved to `yd.tpf.secundario.intradia` and `yd.tpf.secundario.mensal`. |
-| `v0.52.0` | `Interpolador` became scalar; use `interpolar_expr` or `yd.interpolar` for vectors. `dv01` now requires `pu`, and `ntnf.taxas_zero` uses `vencimentos_*` / `taxas_*` parameter names. |
-
-See the [GitHub releases](https://github.com/crdcj/PYield/releases) for the complete history, including the older object-oriented API migration.
-
-## Tests
+In a project managed with `uv`:
 
 ```sh
-uv run pytest
+uv add pyield
 ```
+
+## Next steps
+
+- [Quickstart](https://crdcj.github.io/PYield/quickstart/): first steps with the library.
+- [Full documentation](https://crdcj.github.io/PYield/): concepts and module reference.
+- [API map](https://crdcj.github.io/PYield/api-map/): public namespaces and functions.
+- [Development and publishing](https://crdcj.github.io/PYield/desenvolvimento/): environment, checks, builds, and PyPI.
+- [Colab notebook](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb): interactive exploration.
+- [Package on PyPI](https://pypi.org/project/pyield/).
+
+## API overview
+
+| Component | Type | Purpose |
+|---|---|---|
+| `yd.du` | module | Business days and Brazilian calendar |
+| `yd.Interpolador` | class | Scalar and Polars-pipeline rate interpolation |
+| `yd.interpolar`, `yd.forward`, `yd.forwards` | functions | Curve interpolation and forward rates |
+| `yd.futuro` | module | B3 futures contracts and historical/intraday data |
+| `yd.di1` | module | DI1 curve and interpolation |
+| `yd.tpf` | module | Treasury rates, maturities, auctions, benchmarks, and trades |
+| `yd.lft`, `yd.ltn`, `yd.ntnb`, `yd.ntnb1`, `yd.ntnbp`, `yd.ntnc`, `yd.ntnf` | modules | Treasury-bond pricing and analytics |
+| `yd.vna` | module | Updated nominal values for treasury bonds |
+| `yd.copom`, `yd.selic`, `yd.cpm` | modules | COPOM calendar, Selic, and digital options |
+| `yd.compromissadas` | function | BCB repo-operation auctions |
+| `yd.ipca` | module | Historical and projected inflation data |
+| `yd.ptax`, `yd.ptax_serie`, `yd.di_over` | functions | Exchange-rate and DI indicators |
+| `yd.hoje`, `yd.agora` | functions | Current date and time in Brazil |
+
+See the [complete API map](https://crdcj.github.io/PYield/api-map/) for detailed
+documentation and public signatures.
+
+## API compatibility
+
+See the [GitHub releases](https://github.com/crdcj/PYield/releases) for the
+complete version history and migration notes. The current public organization
+places treasury-bond modules at the package root, while implementations remain
+organized internally under `pyield/tpf/titulos/`.
+
+| Before | Now |
+|---|---|
+| `yd.tpf.ntnb` | `yd.ntnb` or `from pyield import ntnb` |
+| `yd.tpf.rmd(aba)` | `yd.rmd(aba)` or `from pyield import rmd` |
+| `pyield.tpf.vna.calcular_vna(...)` | `yd.vna.calcular_vna(...)` |
+| `yd.ntnb.vna(data)` | `yd.vna.valor("NTN-B", data)` |
+| `yd.ntnb.vnas()` | `yd.vna.historico("NTN-B")` |
+| `vna_projetado(...)` in bond modules | `yd.vna.projetado(titulo, data, vna_base, inflacao)` |
+| `vigencia(data)` in bond modules | `yd.vna.vigencia(titulo, data)` |
+
+## Project
+
+- [Source code](https://github.com/crdcj/PYield)
+- [Issues](https://github.com/crdcj/PYield/issues)
+- [MIT License](LICENSE)

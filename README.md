@@ -3,380 +3,89 @@
 [![Powered by Polars](https://img.shields.io/badge/Powered%20by-Polars-blue)](https://pola.rs/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](https://github.com/crdcj/PYield/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue?logo=readthedocs&logoColor=white)](https://crdcj.github.io/PYield/)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb)
 
 # PYield: Toolkit de Renda Fixa Brasileira
 
 Português | [English](https://github.com/crdcj/PYield/blob/main/README.en.md)
 
 PYield é uma biblioteca Python voltada para análise de títulos públicos
-brasileiros. Ela busca e processa dados da ANBIMA, BCB, IBGE, B3 e **Tesouro
-Nacional**.
+brasileiros. Ela busca e processa dados da ANBIMA, BCB, IBGE, B3 e Tesouro
+Nacional, retornando tipos nativos do Python, `polars.Series` ou
+`polars.DataFrame`, conforme a operação.
 
-PYield usa Polars para processar dados em tabelas e coleções. Saídas escalares
-retornam tipos nativos do Python, enquanto saídas não escalares retornam
-`polars.Series` ou `polars.DataFrame`, conforme a função.
-
-Embora inclua dados e ferramentas de outros mercados (como DI1, DAP e PTAX),
-esses recursos são auxiliares para o objetivo central: análise, precificação e
-acompanhamento de títulos públicos.
+Embora inclua dados e ferramentas de outros mercados, como DI1, DAP e PTAX,
+esses recursos apoiam o objetivo central da biblioteca: análise, precificação e
+acompanhamento de títulos públicos brasileiros.
 
 ## Instalação
+
+Com `pip`:
 
 ```sh
 pip install pyield
 ```
 
-## Início Rápido
+Em um projeto gerenciado pelo `uv`:
 
-```python
-import pyield as yd
-
-# Dias úteis (base de todos os cálculos)
-yd.du.contar("02-01-2025", "15-01-2025")  # -> 9
-yd.du.deslocar("29-12-2023", 1)           # -> datetime.date(2024, 1, 2)
-
-# Curva de DI Futuro
-df = yd.futuro.historico("31-05-2024", "DI1")
-# Colunas: data_referencia, codigo_negociacao, data_vencimento, dias_uteis, taxa_ajuste, ...
-
-# Interpolação de taxas (flat forward, convenção 252 dias úteis/ano)
-interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
-interp(45)  # -> 0.04833...
-
-# Preçificar títulos públicos
-yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
-
-# Indicadores do BCB
-yd.selic.over("31-05-2024")  # -> 0.000414...
+```sh
+uv add pyield
 ```
 
-Datas escalares aceitam `DD-MM-YYYY`, `DD/MM/YYYY` e `YYYY-MM-DD`. Datas
-escalares malformadas levantam `ValueError`; em operações vetorizadas, elementos
-malformados tornam-se `null` para preservar o pipeline Polars.
+## Próximos passos
 
-Um notebook no Colab com mais exemplos:
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb)
+- [Quickstart](https://crdcj.github.io/PYield/quickstart/): primeiros usos da biblioteca.
+- [Documentação completa](https://crdcj.github.io/PYield/): conceitos e referência por módulo.
+- [Mapa da API](https://crdcj.github.io/PYield/api-map/): namespaces e funções públicas.
+- [Desenvolvimento e publicação](https://crdcj.github.io/PYield/desenvolvimento/): ambiente, verificações, build e PyPI.
+- [Notebook no Colab](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb): exploração interativa.
+- [Pacote no PyPI](https://pypi.org/project/pyield/).
 
 ## Mapa da API
-
-Veja o [mapa completo da API](https://crdcj.github.io/PYield/api-map/) na
-documentação.
 
 | Componente | Tipo | Finalidade | Funções públicas |
 |---|---|---|---|
 | `yd.du` | módulo | Dias úteis e calendário brasileiro | `contar`, `deslocar`, `eh_dia_util`, `gerar`, `ultimo_dia_util`, `contar_expr`, `deslocar_expr`, `eh_dia_util_expr` |
 | `yd.Interpolador` | classe | Interpolação escalar e em pipelines Polars | `interpolar`, `interpolar_expr`, `linear`, `flat_forward` |
-| `yd.interpolar(...)` | função | Interpolação vetorizada flat-forward, curva única ou multi-curva |  |
-| `yd.forward(...)` | função | Taxa a termo entre dois vértices |  |
-| `yd.forwards(...)` | função | Curva de taxas a termo |  |
+| `yd.interpolar(...)` | função | Interpolação vetorizada flat-forward, curva única ou multi-curva | |
+| `yd.forward(...)` | função | Taxa a termo entre dois vértices | |
+| `yd.forwards(...)` | função | Curva de taxas a termo | |
 | `yd.futuro` | módulo | Contratos futuros da B3 | `di1`, `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `vencimento_expr` |
 | `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
 | `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `taxas_historicas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premios_pre`, `secundario` |
 | `yd.rmd(aba)` | função | Relatório Mensal da Dívida do Tesouro Nacional | |
 | `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `pu`, `taxa`, `vna`, `rentabilidade`, `rentabilidade_expr` |
 | `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `duration_expr`, `dv01`, `dv01_expr`, `rentabilidade`, `rentabilidade_expr`, `taxas_forward` |
-| `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `duration_expr`, `dv01`, `dv01_expr`, `implicitas`, `curva` |
+| `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `dv01`, `dv01_expr`, `implicitas`, `curva` |
 | `yd.ntnb1` | módulo | NTN-B1 (Educa+ e Renda+) | `NomeComercial`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `cotacao_curva_zero`, `taxa_curva_zero`, `pu`, `duration`, `dv01` |
 | `yd.ntnbp` | módulo | NTN-B Principal | `cotacao`, `taxa`, `pu`, `dv01` |
 | `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
 | `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `premio`, `premio_limpo`, `premio_limpo_expr`, `rentabilidade`, `rentabilidade_expr`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
-| `yd.copom` | módulo | Calendário automático do Copom (atas e ICS do BCB) | `calendario`, `proxima_reuniao` |
+| `yd.vna` | módulo | Valores nominais atualizados dos títulos públicos | `valor`, `historico`, `projetado`, `vigencia` |
+| `yd.copom` | módulo | Calendário automático do Copom | `calendario`, `proxima_reuniao` |
 | `yd.compromissadas(...)` | função | Leilões de operações compromissadas do BCB | `inicio`, `fim` |
 | `yd.selic` | módulo | Selic e política monetária | `over`, `over_serie`, `meta`, `meta_serie` |
 | `yd.cpm` | módulo | Opções digitais do COPOM e análises derivadas | `data`, `probabilidades` |
 | `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indices`, `indices_ultimos`, `taxa`, `taxas`, `taxas_ultimas`, `taxa_projetada` |
-| `yd.ptax(data)` | função | PTAX para uma data |  |
-| `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX |  |
-| `yd.di_over(data)` | função | Taxa DI Over |  |
-| `yd.hoje()` | função | Data atual no Brasil |  |
-| `yd.agora()` | função | Data e hora atual no Brasil |  |
+| `yd.ptax(data)` | função | PTAX para uma data | |
+| `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX | |
+| `yd.di_over(data)` | função | Taxa DI Over | |
+| `yd.hoje()` | função | Data atual no Brasil | |
+| `yd.agora()` | função | Data e hora atual no Brasil | |
 
-## Blocos Principais
+O [mapa completo da API](https://crdcj.github.io/PYield/api-map/) inclui a
+documentação detalhada e as assinaturas públicas.
 
-### Dias Úteis (`du`)
+## Compatibilidade da API
 
-O módulo `du` é a base do PYield. Todos os cálculos com datas (preço, duration,
-taxas a termo) dependem da contagem correta de dias úteis com feriados
-brasileiros.
-
-```python
-from pyield import du
-
-# Conta dias úteis (início inclusivo, fim exclusivo)
-du.contar("29-12-2023", "02-01-2024")  # -> 1
-
-# Avança N dias úteis
-du.deslocar("29-12-2023", 1)  # -> datetime.date(2024, 1, 2)
-
-# Ajusta dia não útil para o próximo dia útil
-du.deslocar("30-12-2023", 0)  # -> datetime.date(2024, 1, 2)
-
-# Gera intervalo de dias úteis
-du.gerar("22-12-2023", "02-01-2024")
-# -> Series: [2023-12-22, 2023-12-26, 2023-12-27, 2023-12-28, 2023-12-29, 2024-01-02]
-
-# Verifica se a data é dia útil
-du.eh_dia_util("25-12-2023")  # -> False (Natal)
-```
-
-Por padrão, `calendario="auto"` seleciona a lista de feriados com base na data de
-referência de cada operação. Em entradas vetorizadas, a seleção ocorre por
-elemento; em `du.gerar`, ela usa `inicio`. Use `calendario="anterior"` para
-forçar o regime anterior a 26/12/2023 ou `calendario="atual"` para forçar a
-lista vigente na versão instalada:
-
-```python
-du.contar("20-11-2024", "21-11-2024", calendario="anterior")  # -> 1
-du.contar("20-11-2024", "21-11-2024", calendario="atual")     # -> 0
-```
-
-Os parâmetros opcionais usam termos em português. `ajuste` define como tratar uma
-data inicial não útil, enquanto `limites_inclusivos` controla quais extremos de um
-intervalo gerado são incluídos:
-
-```python
-du.deslocar("23-12-2023", 0, ajuste="anterior")
-# -> datetime.date(2023, 12, 22)
-
-du.gerar("08-01-2024", "10-01-2024", limites_inclusivos="inicio").to_list()
-# -> [datetime.date(2024, 1, 8), datetime.date(2024, 1, 9)]
-```
-
-As principais funções de cálculo (`contar`, `deslocar` e `eh_dia_util`)
-suportam operações vetorizadas com listas, Series ou arrays.
-
-### Interpolação de Taxas (`Interpolador`)
-
-A classe `Interpolador` interpola taxas usando a convenção de 252 dias úteis/ano, padrão no mercado brasileiro.
-
-```python
-from pyield import Interpolador
-
-dias_uteis = [30, 60, 90]
-taxas = [0.045, 0.05, 0.055]
-
-# Interpolação flat forward (padrão de mercado)
-interp = Interpolador(dias_uteis, taxas, metodo="flat_forward")
-interp(45)  # -> 0.04833...
-
-# Interpolação linear
-linear = Interpolador(dias_uteis, taxas, metodo="linear")
-linear(45)  # -> 0.0475
-
-# Extrapolação na ponta longa: desabilitada por padrão (NaN). A ponta
-# curta sempre retorna a primeira taxa conhecida.
-interp(100)  # -> nan
-Interpolador(dias_uteis, taxas, metodo="flat_forward", extrapolar=True)(100)  # -> 0.055
-```
-
-Para interpolar uma coluna inteira dentro de um pipeline Polars, use
-`interpolar_expr`:
-
-```python
-import polars as pl
-
-df = pl.DataFrame({"du": [15, 45, 75]})
-df.with_columns(taxa=interp.interpolar_expr("du"))
-```
-
-Quando os pontos alvo e a curva vêm de DataFrames diferentes (inclusive com
-múltiplas datas de referência), use a função top-level `yd.interpolar`:
-
-```python
-import pyield as yd
-
-taxas = yd.interpolar(
-    dus_alvo=df_alvo["dias_uteis"],
-    dus_curva=df_curva["dias_uteis"],
-    taxas_curva=df_curva["taxa"],
-    datas_alvo=df_alvo["data_referencia"],   # opcional (multi-curva)
-    datas_curva=df_curva["data_referencia"], # opcional (multi-curva)
-)
-```
-
-### Taxas a Termo (`forward`, `forwards`)
-
-Calcula taxas a termo a partir de curvas spot:
-
-Convenção utilizada:
-
-- `fwd_k = fwd_{j->k}` (forward do vértice `j` para `k`)
-- `f_k = 1 + tx_k` (fator de capitalização no vértice `k`)
-- `fwd_k = (f_k^au_k / f_j^au_j)^(1 / (au_k - au_j)) - 1`, com `au = du / 252`
-
-```python
-from pyield import forward, forwards
-
-# Taxa a termo única entre dois pontos
-forward(10, 20, 0.05, 0.06)  # -> 0.0700952...
-
-# Curva a termo vetorizada a partir de taxas spot
-dias_uteis = [10, 20, 30]
-taxas = [0.05, 0.06, 0.07]
-forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
-```
-
-## Títulos Públicos
-
-Os módulos `lft`, `ltn`, `ntnb`, `ntnb1`, `ntnbp`, `ntnf` e `ntnc`
-fazem parte da família de Títulos Públicos Federais (`tpf`). Para uso direto
-dos títulos, importe os módulos públicos pela raiz:
-
-```python
-import polars as pl
-
-import pyield as yd
-
-from pyield import ltn, ntnb, ntnf
-
-# Taxas indicativas em uma data ou período
-yd.tpf.taxas("23-08-2024", titulo="PRE")
-yd.tpf.taxas_historicas(
-    inicio="01-08-2024", fim="31-08-2024", titulo="PRE"
-)
-
-# Busca taxas indicativas da ANBIMA
-ltn.dados("23-08-2024")  # -> DataFrame com títulos LTN
-ntnb.dados("23-08-2024")  # -> DataFrame com títulos NTN-B
-
-# Calcula cotação do título (base 1)
-ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
-ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 0.995341
-
-# Prêmio sobre o DI (conversão para pontos-base para exibição)
-ntnf.premio("30-05-2025").with_columns(
-    premio=pl.col("premio") * 10_000,
-)
-# -> DataFrame: titulo, data_vencimento, premio (em pontos-base)
-```
-
-## Dados de Futuros
-
-```python
-import pyield as yd
-
-# DI1 (Futuro de Depósito Interfinanceiro)
-yd.futuro.historico("31-05-2024", "DI1")
-
-# Outros contratos disponíveis no cache histórico:
-# - Juros: DI1, DDI, FRC, FRO, DAP
-# - Moedas: DOL, WDO
-# - Índices: IND, WIN
-yd.futuro.historico("31-05-2024", "DAP")
-
-# Múltiplas datas de uma vez
-yd.futuro.historico(["29-05-2024", "31-05-2024"], "DI1")
-
-# Dados intradia (quando o mercado estiver aberto)
-yd.futuro.intradia("DI1")  # Retorna dados ao vivo durante o pregão
-```
-
-## Tratamento de Datas
-
-PYield aceita entradas de data flexíveis (`DateLike`):
-- Strings: `"31-05-2024"`, `"31/05/2024"`, `"2024-05-31"`
-- `datetime.date`, `datetime.datetime`
-
-Funções escalares de data retornam `datetime.date`. Operações vetorizadas de
-data retornam `polars.Series`, enquanto consultas tabulares retornam
-`polars.DataFrame`.
-
-O parsing de strings usa expressões vetorizadas do Polars, com fallback entre os
-formatos aceitos por linha. Strings inválidas são convertidas para valores nulos
-(`None` em saídas escalares e `null` em saídas vetorizadas).
-
-Valores nulos de data são preservados: entradas escalares ausentes retornam
-`None`, e operações vetorizadas propagam `null` elemento a elemento.
-
-```python
-from pyield import du
-
-du.deslocar(None, 1)  # -> None
-du.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
-```
-
-Consultas sem dados disponíveis (data futura, feriado, fim de semana ou
-fonte indisponível) retornam DataFrame vazio ou `nan`, sem lançar exceção:
-
-```python
-import pyield as yd
-
-yd.futuro.historico("01-01-2030", "DI1").is_empty()  # -> True
-yd.tpf.secundario.mensal("01-01-2030").is_empty()    # -> True
-yd.ptax("25-12-2025")                                # -> nan
-```
-
-## Documentação
-
-Documentação completa: [crdcj.github.io/PYield](https://crdcj.github.io/PYield/)
-
-A documentação é gerada com Zensical, usando a configuração em `mkdocs.yml`.
-Execute os comandos abaixo na raiz do repositório.
-
-Para visualizar localmente, com atualização automática:
-
-```sh
-uv run zensical serve
-```
-
-Para gerar os arquivos de publicação em `site/`, limpando o cache e tratando
-avisos como erros:
-
-```sh
-uv run zensical build --clean --strict
-```
-
-Após o build terminar com sucesso, publique no GitHub Pages:
-
-```sh
-uv tool run ghp-import -n -p site
-```
-
-Esse comando substitui o conteúdo da branch `gh-pages` pelos arquivos de `site/`
-e faz o push para `origin`. A opção `-n` inclui `.nojekyll` para servir os arquivos
-gerados diretamente.
-
-No GitHub, configure uma vez em **Settings → Pages → Build and deployment**:
-
-- **Source:** `Deploy from a branch`.
-- **Branch:** `gh-pages`.
-- **Pasta:** `/ (root)`.
-
-Clique em **Save**. A pasta deve ser `/ (root)`, não `/docs`, pois os arquivos
-gerados ficam na raiz da branch `gh-pages`. Acompanhe a publicação na aba
-**Actions** do repositório.
-
-## Migração da 0.56 para a 0.57
-
-Este guia parte da API da `0.56.0`. Mudanças que já faziam parte dessa versão
+Este resumo parte da API da `0.56.0`. Mudanças que já faziam parte dessa versão
 ou de versões anteriores estão no histórico das
 [releases do GitHub](https://github.com/crdcj/PYield/releases).
-
-### Curva zero de NTN-B
 
 | Antes | Agora |
 |---|---|
 | `ntnbp.taxas_zero(...)` | `ntnb.taxas_zero(...)`, sem `incluir_vertices` |
 | `ntnb.taxas_zero(..., incluir_cupons=...)` | `ntnb.taxas_zero(...)`, sem `incluir_cupons` |
-| `ntnb.taxas_zero(..., percentual=...)` (0.56.2) | `ntnb.taxas_zero(...)`, com taxas em formato decimal |
-
-`ntnb.taxas_zero` usa bootstrap de forwards e retorna apenas os vencimentos
-informados, com `dias_uteis` e `taxa_zero`. Os valores podem diferir ligeiramente
-do método anterior; revise os resultados ao migrar de `ntnbp.taxas_zero`.
-Parte dessas mudanças já estava presente nas revisões `0.56.x`.
-
-### Alterações posteriores à atualização para 0.57.1
-
-As mudanças abaixo estão no código atual e foram feitas após o commit que
-atualizou a versão para `0.57.1`. Essa separação segue o histórico do repositório;
-não identifica em qual release cada alteração foi publicada.
-
-Nos exemplos, `yd` corresponde a `import pyield as yd`.
-
-| Antes | Agora |
-|---|---|
+| `ntnb.taxas_zero(..., percentual=...)` | `ntnb.taxas_zero(...)`, com taxas em formato decimal |
 | `yd.tpf.ntnb` | `yd.ntnb` ou `from pyield import ntnb` |
 | `yd.tpf.rmd(aba)` | `yd.rmd(aba)` ou `from pyield import rmd` |
 | `pyield.tpf.vna.calcular_vna(...)` | `yd.vna.calcular_vna(...)` |
@@ -385,29 +94,13 @@ Nos exemplos, `yd` corresponde a `import pyield as yd`.
 | `vna_projetado(...)` nos módulos de títulos | `yd.vna.projetado(titulo, data, vna_base, inflacao)` |
 | `vigencia(data)` nos módulos de títulos | `yd.vna.vigencia(titulo, data)` |
 
-A mudança de `yd.tpf.ntnb` para a raiz também se aplica a `lft`, `ltn`,
-`ntnb1`, `ntnbp`, `ntnc` e `ntnf`. Os aliases públicos em `tpf` foram removidos;
-os arquivos permanecem em `pyield/tpf/titulos/`.
+Os módulos públicos de títulos ficam disponíveis na raiz, enquanto as
+implementações continuam organizadas internamente em `pyield/tpf/titulos/`.
+Consulte as [releases](https://github.com/crdcj/PYield/releases) para o
+histórico completo.
 
-As consultas de VNA foram consolidadas em `yd.vna`, com remoção dos aliases nos
-módulos de títulos. Consulte [VNA](https://crdcj.github.io/PYield/vna/) para as
-operações disponíveis por título e os parâmetros de cada chamada.
+## Projeto
 
-`yd.vna.ultimo` retorna data e valor publicados em um DataFrame.
-As consultas de NTN-C admitem filtro por vencimento.
-
-## Testes
-
-```sh
-uv run pytest
-```
-
-O calendário migrou de `yd.selic.copom` para `yd.copom`, com nomes e colunas
-em português. Consulte a [migração do calendário](docs/copom.md#migração).
-
-O produto CPM migrou de `yd.selic.cpm` para `yd.cpm`. As probabilidades
-derivadas também acompanham o produto, em `yd.cpm.probabilidades`, no lugar de
-`yd.selic.probabilities`.
-
-As operações compromissadas estão disponíveis em `yd.compromissadas`. Consulte
-a [documentação de compromissadas](docs/compromissada.md).
+- [Código-fonte](https://github.com/crdcj/PYield)
+- [Issues](https://github.com/crdcj/PYield/issues)
+- [Licença MIT](LICENSE)
