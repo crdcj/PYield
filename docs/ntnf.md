@@ -34,4 +34,4 @@ as datas de NTN-F pode mudar os descontos intermediários. O preço-alvo da
 calibração não aplica arredondamentos ou truncamentos, como no bootstrap da NTN-B;
 por isso, pode diferir ligeiramente do PU oficial.
 
-::: pyield.tpf.ntnf
+::: pyield.ntnf

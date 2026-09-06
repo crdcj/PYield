@@ -45,7 +45,6 @@ def test_curva_conjunta_preserva_ltn_e_reprecifica_ntnf():
             _preco(data, vencimento, tir), abs=1e-8, rel=0
         )
     assert curva.height == 6  # noqa: PLR2004
-    assert yd.tpf.ntnf.taxas_zero_forwards is yd.ntnf.taxas_zero_forwards
 
 
 @pytest.mark.parametrize("taxa", [-0.02, 0.0, 0.12])

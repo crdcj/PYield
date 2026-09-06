@@ -218,7 +218,7 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 
 Os módulos `lft`, `ltn`, `ntnb`, `ntnb1`, `ntnbp`, `ntnf` e `ntnc`
 fazem parte da família de Títulos Públicos Federais (`tpf`). Para uso direto
-dos títulos, prefira os atalhos públicos na raiz:
+dos títulos, importe os módulos públicos pela raiz:
 
 ```python
 import polars as pl
@@ -379,3 +379,7 @@ O histórico completo está disponível nas [releases do GitHub](https://github.
 ```sh
 uv run pytest
 ```
+
+Os módulos de títulos são expostos apenas na raiz: use `from pyield import ntnb`
+ou `yd.ntnb`, em vez de `yd.tpf.ntnb`. Isso também se aplica a `lft`, `ltn`,
+`ntnb1`, `ntnbp`, `ntnc` e `ntnf`. Os arquivos permanecem em `pyield/tpf/titulos/`.

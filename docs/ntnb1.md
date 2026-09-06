@@ -1,1 +1,1 @@
-::: pyield.tpf.titulos.ntnb1
+::: pyield.ntnb1

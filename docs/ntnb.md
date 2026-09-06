@@ -1,7 +1,7 @@
-::: pyield.tpf.ntnb
+::: pyield.ntnb
 
 ## Curva zero
 
-::: pyield.tpf.ntnb.taxas_zero
+::: pyield.ntnb.taxas_zero
     options:
       show_root_heading: true
