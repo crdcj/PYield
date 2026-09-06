@@ -345,12 +345,30 @@ Clique em **Save**. A pasta deve ser `/ (root)`, não `/docs`, pois os arquivos
 gerados ficam na raiz da branch `gh-pages`. Acompanhe a publicação na aba
 **Actions** do repositório.
 
-## Compatibilidade e mudanças da API
+## Migração da 0.56 para a 0.57
 
-A versão declarada no projeto é `0.57.1`. O guia abaixo reúne migrações para a
-API presente neste repositório, incluindo alterações ainda não publicadas.
+Este guia parte da API da `0.56.0`. Mudanças que já faziam parte dessa versão
+ou de versões anteriores estão no histórico das
+[releases do GitHub](https://github.com/crdcj/PYield/releases).
 
-### De–para de nomes e caminhos
+### Curva zero de NTN-B
+
+| Antes | Agora |
+|---|---|
+| `ntnbp.taxas_zero(...)` | `ntnb.taxas_zero(...)`, sem `incluir_vertices` |
+| `ntnb.taxas_zero(..., incluir_cupons=...)` | `ntnb.taxas_zero(...)`, sem `incluir_cupons` |
+| `ntnb.taxas_zero(..., percentual=...)` (0.56.2) | `ntnb.taxas_zero(...)`, com taxas em formato decimal |
+
+`ntnb.taxas_zero` usa bootstrap de forwards e retorna apenas os vencimentos
+informados, com `dias_uteis` e `taxa_zero`. Os valores podem diferir ligeiramente
+do método anterior; revise os resultados ao migrar de `ntnbp.taxas_zero`.
+Parte dessas mudanças já estava presente nas revisões `0.56.x`.
+
+### Alterações posteriores à atualização para 0.57.1
+
+As mudanças abaixo estão no código atual e foram feitas após o commit que
+atualizou a versão para `0.57.1`. Essa separação segue o histórico do repositório;
+não identifica em qual release cada alteração foi publicada.
 
 Nos exemplos, `yd` corresponde a `import pyield as yd`.
 
@@ -363,13 +381,6 @@ Nos exemplos, `yd` corresponde a `import pyield as yd`.
 | `yd.ntnb.vnas()` | `yd.vna.historico("NTN-B")` |
 | `vna_projetado(...)` nos módulos de títulos | `yd.vna.projetado(titulo, data, vna_base, inflacao)` |
 | `vigencia(data)` nos módulos de títulos | `yd.vna.vigencia(titulo, data)` |
-| `ntnbp.taxas_zero(...)` | `ntnb.taxas_zero(...)`, sem `incluir_vertices` |
-| `ntnbprinc` | `ntnbp` |
-| `premio_pre` | `premios_pre` |
-| `du.gerar(..., opcao_feriado=...)` | `du.gerar(..., calendario=...)` |
-| Calendários `"inferir"`, `"antigo"`, `"novo"` | `"auto"`, `"anterior"`, `"atual"`, respectivamente |
-| Parâmetro `rolagem` | `ajuste`; valores `"forward"` e `"backward"` viraram `"seguinte"` e `"anterior"` |
-| Parâmetro `fechamento` | `limites_inclusivos`: `"ambos"`, `"inicio"`, `"fim"` ou `"nenhum"` |
 
 A mudança de `yd.tpf.ntnb` para a raiz também se aplica a `lft`, `ltn`,
 `ntnb1`, `ntnbp`, `ntnc` e `ntnf`. Os aliases públicos em `tpf` foram removidos;
@@ -379,33 +390,8 @@ As consultas de VNA foram consolidadas em `yd.vna`, com remoção dos aliases no
 módulos de títulos. Consulte [VNA](https://crdcj.github.io/PYield/vna/) para as
 operações disponíveis por título e os parâmetros de cada chamada.
 
-### Mudanças de comportamento
-
-- **Curva zero de NTN-B:** `ntnb.taxas_zero` usa bootstrap de forwards e retorna
-  apenas os vencimentos informados, com `dias_uteis` e `taxa_zero`. O parâmetro
-  `incluir_cupons` foi removido. Os valores podem diferir ligeiramente do método
-  anterior; a migração de `ntnbp.taxas_zero` também exige essa revisão.
-- **VNA:** `yd.vna.ultimo` retorna data e valor publicados em um DataFrame.
-  As consultas de NTN-C admitem filtro por vencimento.
-- **Dias úteis:** o calendário padrão passou a ser `"auto"`. Revise chamadas
-  que dependiam do padrão anterior, além dos nomes e valores na tabela acima.
-- **Precisão e escala:** funções de PU, cotação e VNA dos títulos passaram a
-  retornar `Decimal` com seis casas e aceitam entradas `float` ou `Decimal`.
-  Cotações e fluxos de LFT, NTN-B, NTN-C e NTN-B1 passaram de base 100 para base 1.
-- **Fluxos de caixa:** `fluxos_caixa` não aceita mais `ajustar_datas_pagamento`;
-  os cronogramas usam datas contratuais.
-- **Taxas de TPF:** `tpf.taxas(completo=True)` foi removida. Para consultas por
-  período, use `tpf.taxas_historicas`.
-- **Mercado secundário:** as consultas ficam em `yd.tpf.secundario.intradia`
-  e `yd.tpf.secundario.mensal`.
-- **Interpolação:** `Interpolador` é escalar; use `interpolar_expr` ou
-  `yd.interpolar` para vetores. Curvas sem vértices válidos levantam `ValueError`.
-- **Risco e curvas:** `dv01` passou a exigir `pu`; `ntnf.taxas_zero` adotou
-  parâmetros com nomes `vencimentos_*` e `taxas_*`.
-- **Datas:** entradas escalares inválidas passaram a levantar `ValueError`.
-
-O histórico por versão está disponível nas
-[releases do GitHub](https://github.com/crdcj/PYield/releases).
+`yd.vna.ultimo` retorna data e valor publicados em um DataFrame.
+As consultas de NTN-C admitem filtro por vencimento.
 
 ## Testes
 
