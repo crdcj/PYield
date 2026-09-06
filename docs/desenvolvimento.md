@@ -93,25 +93,28 @@ ls dist
 ## Publicar no PyPI
 
 Depois de atualizar a versão, executar as verificações e gerar os artefatos,
-publique o conteúdo de `dist/`:
+publique o conteúdo de `dist/`. Para publicação local, mantenha o token no
+arquivo `.env` (esse arquivo já é ignorado pelo Git):
 
-```sh
-uv publish
+```dotenv
+UV_PUBLISH_TOKEN=pypi-...
 ```
 
-O `uv` pode usar um token do PyPI fornecido pela variável
-`UV_PUBLISH_TOKEN`:
+Carregue o arquivo explicitamente ao publicar:
 
 ```sh
-uv publish --token "$UV_PUBLISH_TOKEN"
+uv run --env-file .env uv publish
 ```
 
-Não inclua tokens no repositório nem em comandos registrados no histórico do
-shell. Para validar o fluxo sem enviar os arquivos, use:
+Para validar o fluxo sem enviar os arquivos, use:
 
 ```sh
-uv publish --dry-run
+uv run --env-file .env uv publish --dry-run
 ```
+
+Em ambientes de CI, configure `UV_PUBLISH_TOKEN` como secret e execute
+diretamente `uv publish`. Não inclua tokens no repositório nem em comandos
+registrados no histórico do shell.
 
 O nome e a versão do pacote publicados precisam ser novos no índice. Depois do
 upload, confira a página do [PYield no PyPI](https://pypi.org/project/pyield/).
