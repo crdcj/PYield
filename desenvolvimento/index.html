@@ -6,37 +6,37 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Biblioteca financeira para o mercado brasileiro.">
+        <meta name="description" content="Como desenvolver, verificar, gerar a documentação e publicar o PYield">
       
       
         <meta name="author" content="Carlos Carvalho">
       
       
-        <link rel="canonical" href="https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/">
+        <link rel="canonical" href="https://crdcj.github.io/PYield/desenvolvimento/">
       
       
-        <link rel="prev" href="../../articles/pyield_intro/">
+        <link rel="prev" href="../api-map/">
       
       
-        <link rel="next" href="../metodologia-calculo-letras-notas-stn/">
+        <link rel="next" href="../articles/pyield_intro/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="zensical-0.0.59">
     
     
       
-        <title>Precificação de leilões — STN - PYield Docs</title>
+        <title>Desenvolvimento e publicação - PYield Docs</title>
       
     
     
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.5da3a30f.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.5da3a30f.min.css">
       
       
 
@@ -55,7 +55,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -73,7 +73,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#metodologia-de-calculo-dos-tpf-stn" class="md-skip">
+        <a href="#desenvolvimento-e-publicacao" class="md-skip">
           Pular para conteúdo
         </a>
       
@@ -89,7 +89,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
-    <a href="../.." title="PYield Docs" class="md-header__button md-logo" aria-label="PYield Docs" data-md-component="logo">
+    <a href="./.." title="PYield Docs" class="md-header__button md-logo" aria-label="PYield Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
@@ -109,7 +109,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Precificação de leilões — STN
+              Desenvolvimento e publicação
             
           </span>
         </div>
@@ -172,7 +172,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navegação" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="PYield Docs" class="md-nav__button md-logo" aria-label="PYield Docs" data-md-component="logo">
+    <a href="./.." title="PYield Docs" class="md-nav__button md-logo" aria-label="PYield Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
@@ -202,7 +202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="./.." class="md-nav__link">
         
   
   
@@ -228,7 +228,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../quickstart/" class="md-nav__link">
+      <a href="../quickstart/" class="md-nav__link">
         
   
   
@@ -254,7 +254,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-map/" class="md-nav__link">
+      <a href="../api-map/" class="md-nav__link">
         
   
   
@@ -277,10 +277,36 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../desenvolvimento/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Desenvolvimento e publicação
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
         
   
   
@@ -295,6 +321,93 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#preparar-o-ambiente" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Preparar o ambiente
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verificacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Verificações
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Documentação
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#atualizar-a-versao" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Atualizar a versão
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gerar-os-artefatos" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gerar os artefatos
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#publicar-no-pypi" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Publicar no PyPI
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -351,7 +464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../articles/pyield_intro/" class="md-nav__link">
+      <a href="../articles/pyield_intro/" class="md-nav__link">
         
   
   
@@ -382,20 +495,18 @@
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
           <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
@@ -415,7 +526,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -429,36 +540,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Precificação de leilões — STN
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="././" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../referencias/metodologia-calculo-tpf-stn/" class="md-nav__link">
         
   
   
@@ -473,104 +558,6 @@
   
 
       </a>
-      
-        
-
-
-<nav class="md-nav md-nav--secondary" aria-label="Índice">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Índice
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#documento" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Documento
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#documento-complementar" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Documento complementar
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#escopo" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Escopo
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#regras-de-precisao" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Regras de precisão
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#vna-realizado-da-ntn-b-entre-datas-base" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        VNA realizado da NTN-B entre datas-base
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rastreabilidade-no-codigo" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Rastreabilidade no código
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#atualizacao-da-referencia" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Atualização da referência
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -583,7 +570,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../metodologia-calculo-letras-notas-stn/" class="md-nav__link">
+      <a href="../referencias/metodologia-calculo-letras-notas-stn/" class="md-nav__link">
         
   
   
@@ -610,7 +597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../regulamento-selic-bcb/" class="md-nav__link">
+      <a href="../referencias/regulamento-selic-bcb/" class="md-nav__link">
         
   
   
@@ -689,7 +676,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../du/" class="md-nav__link">
+      <a href="../du/" class="md-nav__link">
         
   
   
@@ -716,7 +703,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../interpolador/" class="md-nav__link">
+      <a href="../interpolador/" class="md-nav__link">
         
   
   
@@ -743,7 +730,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../forwards/" class="md-nav__link">
+      <a href="../forwards/" class="md-nav__link">
         
   
   
@@ -822,7 +809,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tpf/" class="md-nav__link">
+      <a href="../tpf/" class="md-nav__link">
         
   
   
@@ -849,7 +836,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../vna/" class="md-nav__link">
+      <a href="../vna/" class="md-nav__link">
         
   
   
@@ -876,7 +863,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lft/" class="md-nav__link">
+      <a href="../lft/" class="md-nav__link">
         
   
   
@@ -903,7 +890,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ltn/" class="md-nav__link">
+      <a href="../ltn/" class="md-nav__link">
         
   
   
@@ -930,7 +917,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ntnf/" class="md-nav__link">
+      <a href="../ntnf/" class="md-nav__link">
         
   
   
@@ -957,7 +944,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ntnb/" class="md-nav__link">
+      <a href="../ntnb/" class="md-nav__link">
         
   
   
@@ -984,7 +971,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ntnbp/" class="md-nav__link">
+      <a href="../ntnbp/" class="md-nav__link">
         
   
   
@@ -1011,7 +998,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ntnb1/" class="md-nav__link">
+      <a href="../ntnb1/" class="md-nav__link">
         
   
   
@@ -1038,7 +1025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ntnc/" class="md-nav__link">
+      <a href="../ntnc/" class="md-nav__link">
         
   
   
@@ -1117,7 +1104,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../di1/" class="md-nav__link">
+      <a href="../di1/" class="md-nav__link">
         
   
   
@@ -1144,7 +1131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../futuro/" class="md-nav__link">
+      <a href="../futuro/" class="md-nav__link">
         
   
   
@@ -1223,7 +1210,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../b3/" class="md-nav__link">
+      <a href="../b3/" class="md-nav__link">
         
   
   
@@ -1250,7 +1237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ipca/" class="md-nav__link">
+      <a href="../ipca/" class="md-nav__link">
         
   
   
@@ -1277,7 +1264,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../copom/" class="md-nav__link">
+      <a href="../copom/" class="md-nav__link">
         
   
   
@@ -1304,7 +1291,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../compromissada/" class="md-nav__link">
+      <a href="../compromissada/" class="md-nav__link">
         
   
   
@@ -1331,7 +1318,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../selic/" class="md-nav__link">
+      <a href="../selic/" class="md-nav__link">
         
   
   
@@ -1358,7 +1345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cpm/" class="md-nav__link">
+      <a href="../cpm/" class="md-nav__link">
         
   
   
@@ -1426,10 +1413,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#documento" class="md-nav__link">
+  <a href="#preparar-o-ambiente" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Documento
+        Preparar o ambiente
       </span>
     </span>
   </a>
@@ -1437,10 +1424,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documento-complementar" class="md-nav__link">
+  <a href="#verificacoes" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Documento complementar
+        Verificações
       </span>
     </span>
   </a>
@@ -1448,10 +1435,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#escopo" class="md-nav__link">
+  <a href="#documentacao" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Escopo
+        Documentação
       </span>
     </span>
   </a>
@@ -1459,10 +1446,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#regras-de-precisao" class="md-nav__link">
+  <a href="#atualizar-a-versao" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Regras de precisão
+        Atualizar a versão
       </span>
     </span>
   </a>
@@ -1470,10 +1457,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#vna-realizado-da-ntn-b-entre-datas-base" class="md-nav__link">
+  <a href="#gerar-os-artefatos" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        VNA realizado da NTN-B entre datas-base
+        Gerar os artefatos
       </span>
     </span>
   </a>
@@ -1481,21 +1468,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rastreabilidade-no-codigo" class="md-nav__link">
+  <a href="#publicar-no-pypi" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Rastreabilidade no código
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#atualizacao-da-referencia" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Atualização da referência
+        Publicar no PyPI
       </span>
     </span>
   </a>
@@ -1520,215 +1496,72 @@
   
 
 
-<h1 id="metodologia-de-calculo-dos-tpf-stn">Metodologia de cálculo dos TPF — STN</h1>
-<p>Esta é a referência normativa adotada pelo PYield para a precificação dos
-títulos públicos federais ofertados nos leilões primários.</p>
-<h2 id="documento">Documento</h2>
-<ul>
-<li>Órgão: Secretaria do Tesouro Nacional (STN).</li>
-<li>Título: <em>Metodologia de Cálculo dos Títulos Públicos Federais Ofertados nos
-  Leilões Primários</em>.</li>
-<li><a href="https://www.tesourotransparente.gov.br/publicacoes/metodologia-de-calculo-dos-titulos-da-divida-interna/2008/26">Publicação oficial no Tesouro Transparente</a>.</li>
-<li>Data catalogada pelo Tesouro Transparente: 01/01/2008.</li>
-<li>Data editorial: não indicada no conteúdo do documento.</li>
-<li>Metadados do PDF: criado em 07/09/2008 e modificado em 24/04/2024.</li>
-<li>Nome do arquivo recebido: <code>Metodologia de Calculo - 290424.pdf</code>.</li>
-<li><a href="../metodologia-calculo-tpf-stn.pdf">Baixar o PDF</a>.</li>
-<li>SHA-256:
-  <code>1dca58d55be1fadcfdd039faf83cbab429026c87c6f7bd31847f2ce8d3ae536d</code>.</li>
-</ul>
-<p>O PDF é mantido no repositório sem alteração do conteúdo original. O hash
-permite verificar que o arquivo usado na implementação e nos testes continua
-sendo exatamente a mesma versão.</p>
-<p>A cópia atualmente publicada pelo Tesouro possui o mesmo SHA-256 da cópia
-preservada neste repositório.</p>
-<h2 id="documento-complementar">Documento complementar</h2>
-<p>O <a href="../metodologia-calculo-letras-notas-stn/">Caderno de Fórmulas do SELIC</a>
-complementa esta referência na formação de valores nominais, juros pró-rata,
-amortizações e eventos dos mesmos títulos custodiados no SELIC.</p>
-<p>O PYield implementa a LFT comum de código SELIC <code>210100</code>, não as séries <code>LFT-A</code>
-ou <code>LFT-B</code>. Seu VNA é obtido diretamente do arquivo diário oficial do Banco
-Central; o fator acumulado não é recalculado localmente. Portanto, diferenças
-entre os documentos sobre a precisão desse fator não alteram o resultado atual
-da biblioteca.</p>
-<h2 id="escopo">Escopo</h2>
-<p>A metodologia se aplica aos títulos descritos no documento:</p>
-<ul>
-<li>LTN;</li>
-<li>LFT;</li>
-<li>NTN-B;</li>
-<li>NTN-C;</li>
-<li>NTN-F.</li>
-</ul>
-<p><code>ntnb1</code> e <code>ntnbp</code> são títulos vendidos exclusivamente pelo Tesouro Direto e não
-estão no escopo desta referência. Suas regras devem ser verificadas em fontes
-próprias antes de qualquer alteração de precificação.</p>
-<p>A ANBIMA pode ser a fonte dos dados de mercado utilizados pela biblioteca, mas
-não é a referência normativa adotada aqui para as fórmulas e precisões de
-precificação dos títulos de leilão.</p>
-<h2 id="regras-de-precisao">Regras de precisão</h2>
-<p><code>A</code> significa arredondar e <code>T</code> significa truncar.</p>
-<table>
-<thead>
-<tr>
-<th>Variável</th>
-<th style="text-align: right;">LTN</th>
-<th style="text-align: right;">LFT</th>
-<th style="text-align: right;">NTN-B</th>
-<th style="text-align: right;">NTN-C</th>
-<th style="text-align: right;">NTN-F</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Juros semestrais</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">A-6</td>
-<td style="text-align: right;">A-6</td>
-<td style="text-align: right;">A-5</td>
-</tr>
-<tr>
-<td>Projeções</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">A-2</td>
-<td style="text-align: right;">A-2</td>
-<td style="text-align: right;">—</td>
-</tr>
-<tr>
-<td>Fator acumulado da Selic</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">A-16</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">—</td>
-</tr>
-<tr>
-<td>Fluxos descontados</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">A-10</td>
-<td style="text-align: right;">A-10</td>
-<td style="text-align: right;">A-9</td>
-</tr>
-<tr>
-<td>Fator pró-rata das projeções</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">T-14</td>
-<td style="text-align: right;">T-14</td>
-<td style="text-align: right;">—</td>
-</tr>
-<tr>
-<td>Fator acumulado do índice de preços</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">T-16</td>
-<td style="text-align: right;">T-16</td>
-<td style="text-align: right;">—</td>
-</tr>
-<tr>
-<td>Taxa de retorno em percentual</td>
-<td style="text-align: right;">T-6</td>
-<td style="text-align: right;">T-6</td>
-<td style="text-align: right;">T-6</td>
-<td style="text-align: right;">T-6</td>
-<td style="text-align: right;">T-6</td>
-</tr>
-<tr>
-<td>VNA ou VNA projetado</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">T-6</td>
-<td style="text-align: right;">T-6</td>
-<td style="text-align: right;">T-6</td>
-<td style="text-align: right;">—</td>
-</tr>
-<tr>
-<td>PU</td>
-<td style="text-align: right;">T-6</td>
-<td style="text-align: right;">T-6</td>
-<td style="text-align: right;">T-6</td>
-<td style="text-align: right;">T-6</td>
-<td style="text-align: right;">T-6</td>
-</tr>
-<tr>
-<td>Exponencial de dias</td>
-<td style="text-align: right;">T-14</td>
-<td style="text-align: right;">T-14</td>
-<td style="text-align: right;">T-14</td>
-<td style="text-align: right;">T-14</td>
-<td style="text-align: right;">T-14</td>
-</tr>
-<tr>
-<td>Cotação percentual</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">T-4</td>
-<td style="text-align: right;">T-4</td>
-<td style="text-align: right;">T-4</td>
-<td style="text-align: right;">—</td>
-</tr>
-<tr>
-<td>Valor financeiro</td>
-<td style="text-align: right;">T-2</td>
-<td style="text-align: right;">T-2</td>
-<td style="text-align: right;">T-2</td>
-<td style="text-align: right;">T-2</td>
-<td style="text-align: right;">T-2</td>
-</tr>
-</tbody>
-</table>
-<p>As taxas da API são representadas em formato decimal. Por isso, truncar uma
-taxa percentual em seis casas equivale a truncar a taxa decimal em oito casas.</p>
-<p>As cotações de LFT, NTN-B e NTN-C são representadas pela API em base 1. O
-truncamento em seis casas nessa representação equivale ao truncamento em quatro
-casas da cotação percentual em base 100 usada no documento.</p>
-<h2 id="vna-realizado-da-ntn-b-entre-datas-base">VNA realizado da NTN-B entre datas-base</h2>
-<p>Em uma data entre dois VNAs mensais já publicados, <code>yd.vna.valor("NTN-B", data)</code> combina duas
-fontes oficiais:</p>
-<ul>
-<li>o VNA no início da vigência vem da planilha do Tesouro Nacional;</li>
-<li>os números-índice do IPCA vêm do agregado 1737 do
-  <a href="https://sidra.ibge.gov.br/tabela/1737">SIDRA/IBGE</a>.</li>
-</ul>
-<p>Para uma data <code>d</code> entre as datas-base <code>t0</code> e <code>t1</code>, a sequência de precisão é:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>fator_ipca = T16(indice_t1 / indice_t0)
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pro_rata = T14((d - t0) / (t1 - t0))
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>vna_d = T6(vna_t0 * fator_ipca ** pro_rata)
+<h1 id="desenvolvimento-e-publicacao">Desenvolvimento e publicação</h1>
+<p>Este guia reúne os comandos usados para trabalhar no repositório, gerar a
+documentação e publicar uma nova versão do pacote.</p>
+<p>Execute os comandos a partir da raiz do projeto. O ambiente e as dependências
+de desenvolvimento são definidos em <code>pyproject.toml</code> e gerenciados pelo <code>uv</code>.</p>
+<h2 id="preparar-o-ambiente">Preparar o ambiente</h2>
+<p>Sincronize o ambiente virtual com as dependências do projeto:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>sync
 </span></code></pre></div>
-<p>Os números-índice correspondem aos meses que atualizam cada data-base. Assim,
-na vigência de 15/07/2026 a 15/08/2026, são usados os índices de junho e
-julho de 2026.</p>
-<p>Não se deve obter <code>fator_ipca</code> dividindo os dois VNAs mensais. Esses VNAs já
-foram truncados em seis casas, e sua razão perde parte da precisão do fator de
-preços. O caso de 13/08/2026 evidencia a diferença:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>vna_t0 = 4739,424756
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>indice_t0 = 7652,37
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>indice_t1 = 7657,73
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>fator_ipca = 1,0007004365967667
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>pro_rata = 0,93548387096774
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>vna_13_08_2026 = 4742,530180
+<h2 id="verificacoes">Verificações</h2>
+<p>Execute os testes, o lint e a checagem de tipos antes de abrir uma alteração:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>check<span class="w"> </span>.
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>uv<span class="w"> </span>run<span class="w"> </span>ty<span class="w"> </span>check
 </span></code></pre></div>
-<p>Essa reconstrução é usada apenas quando os dois VNAs mensais e os dois
-números-índice já estão disponíveis. Ela não transforma <code>yd.vna.valor("NTN-B", data)</code> em uma
-função de projeção.</p>
-<h2 id="rastreabilidade-no-codigo">Rastreabilidade no código</h2>
-<ul>
-<li>A normalização da taxa de entrada está centralizada em
-  <code>pyield/tpf/titulos/_utils.py</code>.</li>
-<li>As fórmulas de preço e cotação ficam em <code>pyield/tpf/titulos/</code>.</li>
-<li>O VNA projetado de NTN-B e NTN-C fica em <code>pyield/vna/</code>.</li>
-<li>Os exemplos numéricos das páginas 3 a 12 são executados como doctests nas
-  funções públicas correspondentes.</li>
-</ul>
-<p>Os fatores acumulados recebidos de fontes oficiais não são reconstruídos pela
-precificação quando o VNA já é fornecido. O cálculo de valor financeiro também
-não faz parte atualmente das funções escalares de PU.</p>
-<h2 id="atualizacao-da-referencia">Atualização da referência</h2>
-<p>Uma nova edição identificada da metodologia deve ser adicionada como outro
-arquivo, sem sobrescrever silenciosamente esta referência. Mudanças de regra
-devem atualizar esta página, a implementação afetada e os testes de referência
-no mesmo conjunto de alterações.</p>
+<p>Os testes incluem os doctests configurados no projeto. Para uma alteração
+localizada, é possível passar um caminho ou uma expressão ao <code>pytest</code>.</p>
+<h2 id="documentacao">Documentação</h2>
+<p>Para visualizar a documentação localmente com atualização automática:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>run<span class="w"> </span>zensical<span class="w"> </span>serve
+</span></code></pre></div>
+<p>Para gerar e validar os arquivos em <code>site/</code>, tratando avisos como erros:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>zensical<span class="w"> </span>build<span class="w"> </span>--clean<span class="w"> </span>--strict
+</span></code></pre></div>
+<p>O procedimento atual de publicação no GitHub Pages usa <code>ghp-import</code>:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>run<span class="w"> </span>ghp-import<span class="w"> </span>-n<span class="w"> </span>-p<span class="w"> </span>site
+</span></code></pre></div>
+<p>Esse comando publica o conteúdo de <code>site/</code> na branch <code>gh-pages</code> do remoto
+<code>origin</code>. No GitHub, configure <strong>Settings → Pages → Build and deployment</strong> com
+<strong>Source: Deploy from a branch</strong>, branch <code>gh-pages</code> e pasta <code>/ (root)</code>.</p>
+<h2 id="atualizar-a-versao">Atualizar a versão</h2>
+<p>Confira a versão atual sem alterar arquivos:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>version
+</span></code></pre></div>
+<p>Para atualizar a versão seguindo o próximo incremento semântico, use, por
+exemplo:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>uv<span class="w"> </span>version<span class="w"> </span>--bump<span class="w"> </span>patch
+</span></code></pre></div>
+<p>Também estão disponíveis <code>major</code>, <code>minor</code>, <code>alpha</code>, <code>beta</code>, <code>rc</code>, <code>post</code> e
+<code>dev</code>. Revise o diff e os arquivos gerados pelo lockfile antes de continuar.</p>
+<h2 id="gerar-os-artefatos">Gerar os artefatos</h2>
+<p>O projeto usa <code>uv_build</code> como backend PEP 517. Gere a distribuição a partir da
+raiz:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>build
+</span></code></pre></div>
+<p>O comando cria a distribuição fonte e a wheel no diretório <code>dist/</code>. Antes de
+publicar, confirme o conteúdo dos artefatos e a versão:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>ls<span class="w"> </span>dist
+</span></code></pre></div>
+<h2 id="publicar-no-pypi">Publicar no PyPI</h2>
+<p>Depois de atualizar a versão, executar as verificações e gerar os artefatos,
+publique o conteúdo de <code>dist/</code>. Para publicação local, mantenha o token no
+arquivo <code>.env</code> (esse arquivo já é ignorado pelo Git):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>UV_PUBLISH_TOKEN=pypi-...
+</span></code></pre></div>
+<p>Carregue o arquivo explicitamente ao publicar:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--env-file<span class="w"> </span>.env<span class="w"> </span>uv<span class="w"> </span>publish
+</span></code></pre></div>
+<p>Para validar o fluxo sem enviar os arquivos, use:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--env-file<span class="w"> </span>.env<span class="w"> </span>uv<span class="w"> </span>publish<span class="w"> </span>--dry-run
+</span></code></pre></div>
+<p>Em ambientes de CI, configure <code>UV_PUBLISH_TOKEN</code> como secret e execute
+diretamente <code>uv publish</code>. Não inclua tokens no repositório nem em comandos
+registrados no histórico do shell.</p>
+<p>O nome e a versão do pacote publicados precisam ser novos no índice. Depois do
+upload, confira a página do <a href="https://pypi.org/project/pyield/">PYield no PyPI</a>.</p>
 
 
 
@@ -1737,6 +1570,9 @@ no mesmo conjunto de alterações.</p>
 
 
 
+
+  
+  
 
 
 
@@ -1800,12 +1636,12 @@ no mesmo conjunto de alterações.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.instant"],"search":"../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copiado para área de transferência","clipboard.copy":"Copiar para área de transferência","search.result.more.one":"mais 1 nesta página","search.result.more.other":"# mais nesta página","search.result.none":"Nenhum documento encontrado","search.result.one":"1 documento encontrado","search.result.other":"# documentos encontrados","search.result.placeholder":"Digite para iniciar a busca","search.result.term.missing":"Ausente","select.version":"Selecione a versão"},"version":null}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["navigation.instant"],"search":"../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copiado para área de transferência","clipboard.copy":"Copiar para área de transferência","search.result.more.one":"mais 1 nesta página","search.result.more.other":"# mais nesta página","search.result.none":"Nenhum documento encontrado","search.result.one":"1 documento encontrado","search.result.other":"# documentos encontrados","search.result.placeholder":"Digite para iniciar a busca","search.result.term.missing":"Ausente","select.version":"Selecione a versão"},"version":null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.6970bfe9.min.js"></script>
+      <script src="../assets/javascripts/bundle.6970bfe9.min.js"></script>
       
-        <script src="../../javascripts/mathjax.js"></script>
+        <script src="../javascripts/mathjax.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       
