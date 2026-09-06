@@ -40,6 +40,7 @@ nav:
       - Copom: copom.md
       - Compromissadas: compromissada.md
       - Selic: selic.md
+      - CPM: cpm.md
 
 theme:
   language: pt-BR

@@ -163,7 +163,8 @@ forwards(dias_uteis, taxas)  # -> Series: [0.05, 0.070095, 0.090284]
 | `ntnb1`, `ntnbp` | Títulos adicionais (NTN-B1, NTN-B Principal) |
 | `ipca` | Dados de inflação (histórico e projeções) |
 | `compromissadas` | Leilões de operações compromissadas do BCB |
-| `selic` | Taxa Selic over e meta, CPM e probabilidades implícitas |
+| `selic` | Taxa Selic over e meta |
+| `cpm` | Opções digitais do COPOM e probabilidades implícitas |
 | `hoje` / `agora` | Data/hora atual no Brasil (America/Sao_Paulo) |
 
 ## Títulos Públicos

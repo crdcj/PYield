@@ -1,5 +1,6 @@
 """
-probabilities — Implied COPOM meeting probabilities from CPM option prices.
+probabilidades — Probabilidades implícitas das reuniões do COPOM a partir dos
+preços das opções CPM.
 
 The CPM contract is a cash-or-nothing European option.  Under risk-neutral
 pricing, the B3 settlement price in points (0–100) encodes the market-implied
@@ -67,10 +68,10 @@ import logging
 
 import polars as pl
 
+from pyield import cpm
 from pyield._internal.converters import converter_datas
 from pyield._internal.types import DateLike
 from pyield.futuro import di1
-from pyield.selic import cpm
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +254,7 @@ def all_meetings(
     Examples:
         >>> import pyield as yd
         >>> import polars as pl
-        >>> df = yd.selic.probabilities.all_meetings("29-01-2025")  # doctest: +SKIP
+        >>> df = yd.cpm.probabilidades.all_meetings("29-01-2025")  # doctest: +SKIP
         >>> df.is_empty() or df["ranking_reuniao"].min() == 1  # doctest: +SKIP
         True
         >>> sums = df.group_by("data_expiracao").agg(
@@ -320,7 +321,7 @@ def meeting(
 
     Examples:
         >>> import pyield as yd
-        >>> df = yd.selic.probabilities.meeting("29-01-2025")  # doctest: +SKIP
+        >>> df = yd.cpm.probabilidades.meeting("29-01-2025")  # doctest: +SKIP
         >>> df.is_empty() or abs(df["prob"].sum() - 1.0) < 1e-9  # doctest: +SKIP
         True
         >>> df.is_empty() or df["prob_acumulada"].tail(

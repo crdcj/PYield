@@ -137,7 +137,7 @@ def test_fronteira_publica():
 
 
 def test_cpm_consume_calendario_publico(monkeypatch):
-    from pyield.selic import cpm  # noqa: PLC0415
+    from pyield import cpm  # noqa: PLC0415
 
     monkeypatch.setattr(
         cpm.boletim,
@@ -145,7 +145,7 @@ def test_cpm_consume_calendario_publico(monkeypatch):
         lambda *args, **kwargs: pl.DataFrame({"codigo_negociacao": ["CPMU26C100000"]}),
     )
     monkeypatch.setattr(cpm, "_fetch_settlement_prices", lambda data: pl.DataFrame())
-    resultado = yd.selic.cpm.data("2026-09-01")
+    resultado = yd.cpm.data("2026-09-01")
     assert resultado["data_fim_reuniao"].item() == dt.date(2026, 9, 16)
     assert resultado["data_expiracao"].item() == dt.date(2026, 9, 17)
 

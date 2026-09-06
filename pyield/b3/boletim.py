@@ -2,7 +2,7 @@
 
 Este módulo expõe helpers técnicos para buscar e ler o Price Report da B3.
 As funções preservam o schema bruto da fonte e servem como base para
-camadas públicas enriquecidas, como ``futuro`` e ``selic.cpm``.
+camadas públicas enriquecidas, como ``futuro`` e ``cpm``.
 
 Estrutura resumida de um registro do XML bruto da B3::
 

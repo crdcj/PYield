@@ -84,7 +84,8 @@ documentação.
 | `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `premio`, `premio_limpo`, `premio_limpo_expr`, `rentabilidade`, `rentabilidade_expr`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
 | `yd.copom` | módulo | Calendário automático do Copom (atas e ICS do BCB) | `calendario`, `proxima_reuniao` |
 | `yd.compromissadas(...)` | função | Leilões de operações compromissadas do BCB | `inicio`, `fim` |
-| `yd.selic` | módulo | Selic e política monetária | `over`, `over_serie`, `meta`, `meta_serie`, `cpm`, `probabilities` |
+| `yd.selic` | módulo | Selic e política monetária | `over`, `over_serie`, `meta`, `meta_serie` |
+| `yd.cpm` | módulo | Opções digitais do COPOM e análises derivadas | `data`, `probabilidades` |
 | `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indices`, `indices_ultimos`, `taxa`, `taxas`, `taxas_ultimas`, `taxa_projetada` |
 | `yd.ptax(data)` | função | PTAX para uma data |  |
 | `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX |  |
@@ -403,6 +404,10 @@ uv run pytest
 
 O calendário migrou de `yd.selic.copom` para `yd.copom`, com nomes e colunas
 em português. Consulte a [migração do calendário](docs/copom.md#migração).
+
+O produto CPM migrou de `yd.selic.cpm` para `yd.cpm`. As probabilidades
+derivadas também acompanham o produto, em `yd.cpm.probabilidades`, no lugar de
+`yd.selic.probabilities`.
 
 As operações compromissadas estão disponíveis em `yd.compromissadas`. Consulte
 a [documentação de compromissadas](docs/compromissada.md).

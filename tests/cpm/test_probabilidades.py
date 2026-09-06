@@ -1,4 +1,4 @@
-"""Testes de pyield.selic.probabilities.
+"""Testes de pyield.cpm.probabilidades.
 
 Todos os testes fazem monkeypatch de cpm.data() e di1.interpolar_taxas()
 via a fixture local cpm_patchado. Sem chamadas reais de rede.
@@ -10,8 +10,8 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-import pyield.selic.cpm as modulo_cpm
-import pyield.selic.probabilities as modulo_probabilidades
+import pyield.cpm as modulo_cpm
+import pyield.cpm.probabilidades as modulo_probabilidades
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 

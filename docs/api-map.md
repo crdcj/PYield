@@ -76,8 +76,13 @@ Visão geral das principais funções públicas do PYield.
     ├── over_serie(...)
     ├── meta(data)
     ├── meta_serie(...)
-    ├── cpm
-    └── probabilities
+    ```
+
+??? "`yd.cpm` (opções digitais do COPOM)"
+    ```text
+    yd.cpm
+    ├── data(data)
+    └── probabilidades
     ```
 
 ??? "`yd.ipca` (inflação IPCA)"

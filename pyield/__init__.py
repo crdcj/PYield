@@ -10,7 +10,8 @@ from pyield.futuro import di1
 
 # Ordem intencional: alguns módulos importam `di1` a partir de `pyield`
 # durante a inicialização do pacote.
-from pyield import copom, selic, tpf, vna
+from pyield import cpm, copom, selic, tpf, vna
+from pyield.cpm import probabilidades as _cpm_probabilidades  # noqa: F401
 from pyield.bc.sgs import ptax, ptax_serie
 from pyield.compromissada import compromissadas
 from pyield.fwd import forward, forwards, forwards_expr
@@ -29,6 +30,7 @@ __all__ = [
     "agora",
     "b3",
     "compromissadas",
+    "cpm",
     "copom",
     "di1",
     "di_over",

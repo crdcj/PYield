@@ -1,4 +1,4 @@
-"""Testes de pyield.selic.cpm.
+"""Testes de pyield.cpm.
 
 Os testes de parsing de ticker sao unitarios puros, sem I/O.
 Os testes de corretude dos dados usam o parquet de referencia.
@@ -10,7 +10,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-import pyield.selic.cpm as modulo_cpm
+import pyield.cpm as modulo_cpm
 from pyield import du
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
