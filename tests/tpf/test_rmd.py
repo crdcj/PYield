@@ -1,4 +1,4 @@
-"""Testes do pipeline tpf.rmd().
+"""Testes do pipeline yd.rmd().
 
 Baixa o ZIP do release de teste no GitHub e valida o pipeline completo
 contra o parquet de referência local.
@@ -12,6 +12,8 @@ from pathlib import Path
 
 import polars as pl
 import requests
+
+import pyield as yd
 
 modulo_rmd = importlib.import_module("pyield.tpf.rmd")
 
@@ -45,12 +47,12 @@ def _extrair_excel_do_zip(conteudo_zip: bytes) -> bytes:
 
 
 def test_pipeline_rmd(monkeypatch):
-    """tpf.rmd() com monkeypatch deve bater com o parquet de referência."""
+    """yd.rmd() com monkeypatch deve bater com o parquet de referência."""
     conteudo_excel = _extrair_excel_do_zip(_baixar_zip_remoto())
 
     monkeypatch.setattr(modulo_rmd, "_carregar_planilha_rmd", lambda: conteudo_excel)
 
-    resultado = modulo_rmd.rmd(aba="1.3")
+    resultado = yd.rmd(aba="1.3")
     esperado = pl.read_parquet(CAMINHO_PARQUET)
     colunas_ordem = ["periodo", "grupo", "subgrupo", "titulo", "valor"]
     resultado = resultado.filter(pl.col("periodo") <= esperado["periodo"].max())
@@ -62,7 +64,7 @@ def test_aba_2_1_estrutura_e_valores(monkeypatch):
     conteudo_excel = _extrair_excel_do_zip(_baixar_zip_remoto())
     monkeypatch.setattr(modulo_rmd, "_carregar_planilha_rmd", lambda: conteudo_excel)
 
-    df = modulo_rmd.rmd(aba="2.1")
+    df = yd.rmd(aba="2.1")
     assert df.columns == [
         "periodo",
         "detentor",

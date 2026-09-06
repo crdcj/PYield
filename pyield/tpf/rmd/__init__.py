@@ -61,8 +61,8 @@ def rmd(aba: str) -> pl.DataFrame:
         - A aba ``"2.1"`` traz a série histórica de estoque da DPF.
 
     Examples:
-        >>> df = yd.tpf.rmd(aba="1.3")  # doctest: +SKIP
-        >>> df = yd.tpf.rmd(aba="2.1")  # doctest: +SKIP
+        >>> df = yd.rmd(aba="1.3")  # doctest: +SKIP
+        >>> df = yd.rmd(aba="2.1")  # doctest: +SKIP
     """
     if aba not in _IMPLEMENTACOES:
         disponiveis = ", ".join(f'"{t}"' for t in sorted(_IMPLEMENTACOES))

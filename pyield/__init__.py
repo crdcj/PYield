@@ -15,6 +15,7 @@ from pyield.bc.sgs import ptax, ptax_serie
 from pyield.fwd import forward, forwards, forwards_expr
 from pyield.interpolador import Interpolador, interpolar
 from pyield.relogio import agora, hoje
+from pyield.tpf.rmd import rmd
 from pyield.tpf.titulos import lft, ltn, ntnb, ntnb1, ntnbp, ntnc, ntnf
 
 try:
@@ -46,6 +47,7 @@ __all__ = [
     "ntnf",
     "ptax",
     "ptax_serie",
+    "rmd",
     "selic",
     "tpf",
     "vna",

@@ -54,7 +54,6 @@ Visão geral das principais funções públicas do PYield.
     ├── benchmarks(...)
     ├── curva_pre(data)
     ├── premios_pre(...)
-    ├── rmd
     └── TipoTPF
     ```
 
@@ -227,6 +226,11 @@ Visão geral das principais funções públicas do PYield.
 ??? "`yd.agora` (data e hora atual no Brasil)"
     ```text
     yd.agora()
+    ```
+
+??? "`yd.rmd` (Relatório Mensal da Dívida)"
+    ```text
+    yd.rmd(aba)
     ```
 
 ??? "`yd.vna` (valor nominal atualizado)"

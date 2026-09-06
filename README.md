@@ -73,7 +73,8 @@ documentação.
 | `yd.forwards(...)` | função | Curva de taxas a termo |  |
 | `yd.futuro` | módulo | Contratos futuros da B3 | `di1`, `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `vencimento_expr` |
 | `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
-| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `taxas_historicas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premios_pre`, `rmd`, `secundario` |
+| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `taxas_historicas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premios_pre`, `secundario` |
+| `yd.rmd(aba)` | função | Relatório Mensal da Dívida do Tesouro Nacional | |
 | `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `pu`, `taxa`, `vna`, `rentabilidade`, `rentabilidade_expr` |
 | `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `duration_expr`, `dv01`, `dv01_expr`, `rentabilidade`, `rentabilidade_expr`, `taxas_forward` |
 | `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `duration_expr`, `dv01`, `dv01_expr`, `implicitas`, `curva` |
@@ -346,40 +347,68 @@ gerados ficam na raiz da branch `gh-pages`. Acompanhe a publicação na aba
 
 ## Compatibilidade e mudanças da API
 
-A implementação de VNA foi consolidada em `pyield/vna/`. Substitua imports de
-`pyield.tpf.vna.calcular_vna` por `yd.vna.calcular_vna`.
+A versão declarada no projeto é `0.57.1`. O guia abaixo reúne migrações para a
+API presente neste repositório, incluindo alterações ainda não publicadas.
 
-O módulo `yd.vna` concentra consultas por título: `valor`, `historico`, `ultimo`,
-`vigencia` e `projetado`. Por exemplo, `yd.ntnb.vna(data)` deve ser substituído por
-`yd.vna.valor("NTN-B", data)`. Os aliases de VNA nos módulos dos títulos foram removidos; esta é uma
-quebra de compatibilidade. Substitua também `vnas()` por `yd.vna.historico(titulo)`,
-`vna_projetado(...)` por `yd.vna.projetado(titulo, ...)` e `vigencia(data)` por
-`yd.vna.vigencia(titulo, data)`.
-`ultimo` retorna data e valor publicados em um DataFrame; NTN-C admite filtro
-por vencimento. Consulte [VNA](https://crdcj.github.io/PYield/vna/) para os
-contratos e as operações disponíveis por título.
+### De–para de nomes e caminhos
 
-A versão atual é `v0.56.0`. As mudanças abaixo podem exigir atualização de código:
+Nos exemplos, `yd` corresponde a `import pyield as yd`.
 
-| Versão | Mudança principal |
+| Antes | Agora |
 |---|---|
-| Próxima versão | `ntnb.taxas_zero` passa a usar bootstrap de forwards e retorna apenas os vencimentos informados, com `dias_uteis` e `taxa_zero`. Removidos `incluir_cupons` e `ntnbp.taxas_zero`; migre este último para `ntnb.taxas_zero`, sem `incluir_vertices`. Os valores podem diferir ligeiramente do método anterior. |
-| `v0.56.0` | As funções de dias úteis adotaram `calendario="auto" \| "anterior" \| "atual"`. Em `du.gerar`, substitua `opcao_feriado` por `calendario`; `"inferir"`, `"antigo"` e `"novo"` correspondem agora a `"auto"`, `"anterior"` e `"atual"`. O parâmetro `rolagem` virou `ajuste`; `"forward"` e `"backward"` viraram `"seguinte"` e `"anterior"`. O parâmetro `fechamento` virou `limites_inclusivos`, com os valores `"ambos"`, `"inicio"`, `"fim"` e `"nenhum"`. O padrão de `calendario` passou a ser `"auto"`. `Interpolador` agora levanta `ValueError` quando a curva não contém vértices válidos. |
-| `v0.55.0` | Funções de PU, cotação e VNA dos títulos passaram a retornar `Decimal` com seis casas. Entradas numéricas aceitam `float` ou `Decimal`. |
-| `v0.54.5` | `fluxos_caixa` não aceita mais `ajustar_datas_pagamento`; os cronogramas usam datas contratuais. |
-| `v0.54.2` | `taxas_historicas` foi adicionada e `tpf.taxas(completo=True)` foi removida. |
-| `v0.54.0` | Cotações e fluxos de LFT, NTN-B, NTN-C e NTN-B1 passaram de base 100 para base 1; `ntnbprinc` virou `ntnbp`; `premio_pre` virou `premios_pre`; datas escalares inválidas passaram a levantar `ValueError`. |
-| `v0.53.0` | O mercado secundário de TPF passou para `yd.tpf.secundario.intradia` e `yd.tpf.secundario.mensal`. |
-| `v0.52.0` | `Interpolador` passou a ser escalar; use `interpolar_expr` ou `yd.interpolar` para vetores. `dv01` passou a exigir `pu` e `ntnf.taxas_zero` adotou nomes `vencimentos_*` / `taxas_*`. |
+| `yd.tpf.ntnb` | `yd.ntnb` ou `from pyield import ntnb` |
+| `yd.tpf.rmd(aba)` | `yd.rmd(aba)` ou `from pyield import rmd` |
+| `pyield.tpf.vna.calcular_vna(...)` | `yd.vna.calcular_vna(...)` |
+| `yd.ntnb.vna(data)` | `yd.vna.valor("NTN-B", data)` |
+| `yd.ntnb.vnas()` | `yd.vna.historico("NTN-B")` |
+| `vna_projetado(...)` nos módulos de títulos | `yd.vna.projetado(titulo, data, vna_base, inflacao)` |
+| `vigencia(data)` nos módulos de títulos | `yd.vna.vigencia(titulo, data)` |
+| `ntnbp.taxas_zero(...)` | `ntnb.taxas_zero(...)`, sem `incluir_vertices` |
+| `ntnbprinc` | `ntnbp` |
+| `premio_pre` | `premios_pre` |
+| `du.gerar(..., opcao_feriado=...)` | `du.gerar(..., calendario=...)` |
+| Calendários `"inferir"`, `"antigo"`, `"novo"` | `"auto"`, `"anterior"`, `"atual"`, respectivamente |
+| Parâmetro `rolagem` | `ajuste`; valores `"forward"` e `"backward"` viraram `"seguinte"` e `"anterior"` |
+| Parâmetro `fechamento` | `limites_inclusivos`: `"ambos"`, `"inicio"`, `"fim"` ou `"nenhum"` |
 
-O histórico completo está disponível nas [releases do GitHub](https://github.com/crdcj/PYield/releases).
+A mudança de `yd.tpf.ntnb` para a raiz também se aplica a `lft`, `ltn`,
+`ntnb1`, `ntnbp`, `ntnc` e `ntnf`. Os aliases públicos em `tpf` foram removidos;
+os arquivos permanecem em `pyield/tpf/titulos/`.
+
+As consultas de VNA foram consolidadas em `yd.vna`, com remoção dos aliases nos
+módulos de títulos. Consulte [VNA](https://crdcj.github.io/PYield/vna/) para as
+operações disponíveis por título e os parâmetros de cada chamada.
+
+### Mudanças de comportamento
+
+- **Curva zero de NTN-B:** `ntnb.taxas_zero` usa bootstrap de forwards e retorna
+  apenas os vencimentos informados, com `dias_uteis` e `taxa_zero`. O parâmetro
+  `incluir_cupons` foi removido. Os valores podem diferir ligeiramente do método
+  anterior; a migração de `ntnbp.taxas_zero` também exige essa revisão.
+- **VNA:** `yd.vna.ultimo` retorna data e valor publicados em um DataFrame.
+  As consultas de NTN-C admitem filtro por vencimento.
+- **Dias úteis:** o calendário padrão passou a ser `"auto"`. Revise chamadas
+  que dependiam do padrão anterior, além dos nomes e valores na tabela acima.
+- **Precisão e escala:** funções de PU, cotação e VNA dos títulos passaram a
+  retornar `Decimal` com seis casas e aceitam entradas `float` ou `Decimal`.
+  Cotações e fluxos de LFT, NTN-B, NTN-C e NTN-B1 passaram de base 100 para base 1.
+- **Fluxos de caixa:** `fluxos_caixa` não aceita mais `ajustar_datas_pagamento`;
+  os cronogramas usam datas contratuais.
+- **Taxas de TPF:** `tpf.taxas(completo=True)` foi removida. Para consultas por
+  período, use `tpf.taxas_historicas`.
+- **Mercado secundário:** as consultas ficam em `yd.tpf.secundario.intradia`
+  e `yd.tpf.secundario.mensal`.
+- **Interpolação:** `Interpolador` é escalar; use `interpolar_expr` ou
+  `yd.interpolar` para vetores. Curvas sem vértices válidos levantam `ValueError`.
+- **Risco e curvas:** `dv01` passou a exigir `pu`; `ntnf.taxas_zero` adotou
+  parâmetros com nomes `vencimentos_*` e `taxas_*`.
+- **Datas:** entradas escalares inválidas passaram a levantar `ValueError`.
+
+O histórico por versão está disponível nas
+[releases do GitHub](https://github.com/crdcj/PYield/releases).
 
 ## Testes
 
 ```sh
 uv run pytest
 ```
-
-Os módulos de títulos são expostos apenas na raiz: use `from pyield import ntnb`
-ou `yd.ntnb`, em vez de `yd.tpf.ntnb`. Isso também se aplica a `lft`, `ltn`,
-`ntnb1`, `ntnbp`, `ntnc` e `ntnf`. Os arquivos permanecem em `pyield/tpf/titulos/`.

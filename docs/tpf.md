@@ -2,7 +2,8 @@
 
 Porta de entrada principal para dados de mercado de títulos públicos: taxas
 indicativas, vencimentos, estoque, dealers, negociações secundárias, leilões,
-benchmarks e Relatório Mensal da Dívida (RMD).
+e benchmarks. O Relatório Mensal da Dívida (RMD) é consultado pela função
+`yd.rmd(aba)`, exposta na raiz.
 
 Para precificação e análise por tipo de título (cotação, duration, prêmio),
 consulte as páginas individuais: [LFT](lft.md), [LTN](ltn.md),
@@ -113,3 +114,7 @@ com a fonte; para análises de TPF, prefira a visão estável de `yd.tpf`.
 ## dealers
 
 ::: pyield.tpf.dealers.dealers
+
+## Relatório Mensal da Dívida (RMD)
+
+::: pyield.rmd

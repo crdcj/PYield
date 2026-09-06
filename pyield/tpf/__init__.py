@@ -6,7 +6,6 @@ from pyield.tpf._taxas import TipoTPF, taxas, taxas_historicas, vencimentos
 from pyield.tpf.benchmark import benchmarks
 from pyield.tpf.dealers import dealers
 from pyield.tpf.leiloes import leiloes
-from pyield.tpf.rmd import rmd
 from pyield.tpf.titulos._utils import premios_pre
 from pyield.tpf.titulos.pre import curva_pre
 
@@ -18,7 +17,6 @@ __all__ = [
     "estoque",
     "leiloes",
     "premios_pre",
-    "rmd",
     "secundario",
     "taxas",
     "taxas_historicas",
