@@ -82,7 +82,9 @@ documentação.
 | `yd.ntnbp` | módulo | NTN-B Principal | `cotacao`, `taxa`, `pu`, `dv01` |
 | `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
 | `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `premio`, `premio_limpo`, `premio_limpo_expr`, `rentabilidade`, `rentabilidade_expr`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
-| `yd.selic` | módulo | Selic, COPOM e política monetária | `over`, `over_serie`, `meta`, `meta_serie`, `compromissadas`, `copom`, `cpm`, `probabilities` |
+| `yd.copom` | módulo | Calendário automático do Copom (atas e ICS do BCB) | `calendario`, `proxima_reuniao` |
+| `yd.compromissadas(...)` | função | Leilões de operações compromissadas do BCB | `inicio`, `fim` |
+| `yd.selic` | módulo | Selic e política monetária | `over`, `over_serie`, `meta`, `meta_serie`, `cpm`, `probabilities` |
 | `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indices`, `indices_ultimos`, `taxa`, `taxas`, `taxas_ultimas`, `taxa_projetada` |
 | `yd.ptax(data)` | função | PTAX para uma data |  |
 | `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX |  |
@@ -398,3 +400,9 @@ As consultas de NTN-C admitem filtro por vencimento.
 ```sh
 uv run pytest
 ```
+
+O calendário migrou de `yd.selic.copom` para `yd.copom`, com nomes e colunas
+em português. Consulte a [migração do calendário](docs/copom.md#migração).
+
+As operações compromissadas estão disponíveis em `yd.compromissadas`. Consulte
+a [documentação de compromissadas](docs/compromissada.md).

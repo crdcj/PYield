@@ -99,7 +99,7 @@ def compromissadas(
         >>> _ = pl.Config.set_tbl_width_chars(210)
         >>> _ = pl.Config.set_tbl_cols(-1)
         >>> import pyield as yd
-        >>> yd.selic.compromissadas(inicio="21-08-2025", fim="21-08-2025")
+        >>> yd.compromissadas(inicio="21-08-2025", fim="21-08-2025")
         shape: (2, 12)
         ┌─────────────┬─────────────────┬──────────────┬─────────────┬──────────┬──────────┬────────────┬────────────────────┬───────────────┬───────────────────┬────────────┬────────────┐
         │ data_leilao ┆ data_liquidacao ┆ data_retorno ┆ hora_inicio ┆ prazo_dc ┆ prazo_du ┆ comunicado ┆ tipo_oferta        ┆ publico       ┆ financeiro_aceito ┆ taxa_corte ┆ pct_aceito │

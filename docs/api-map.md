@@ -57,16 +57,25 @@ Visão geral das principais funções públicas do PYield.
     └── TipoTPF
     ```
 
-??? "`yd.selic` (Selic, COPOM e política monetária)"
+??? "`yd.copom` (calendário do Copom)"
+    ```text
+    yd.copom
+    ├── calendario(inicio=None, fim=None)
+    └── proxima_reuniao(referencia=None)
+    ```
+
+??? "`yd.compromissadas` (leilões de operações compromissadas)"
+    ```text
+    yd.compromissadas(inicio=None, fim=None)
+    ```
+
+??? "`yd.selic` (Selic e política monetária)"
     ```text
     yd.selic
     ├── over(data)
     ├── over_serie(...)
     ├── meta(data)
     ├── meta_serie(...)
-    ├── compromissadas(...)
-    ├── compromissada
-    ├── copom
     ├── cpm
     └── probabilities
     ```

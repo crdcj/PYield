@@ -26,7 +26,7 @@ ticker filter and a DaysToExp > 0 filter, both incorrect for CPM) and
 calls the lower-level price-report helpers directly.
 
 ExpiryDate and MeetingEndDate are resolved by joining against the COPOM
-calendar (bc.copom.calendar()) on meeting month + year extracted from
+calendar (copom.calendario()) on meeting month + year extracted from
 the ticker.  The join is a left join so CPM rows are never dropped even
 if the calendar has gaps for very recently announced future meetings.
 """
@@ -313,13 +313,13 @@ def data(date: DateLike) -> pl.DataFrame:
 
     # Join with COPOM calendar to get MeetingEndDate and the correct ExpiryDate.
     # Import is deferred to avoid a module-level circular dependency risk.
-    from pyield.selic import copom  # noqa: PLC0415
+    from pyield import copom  # noqa: PLC0415
 
-    cal = copom.calendar().select(
-        _mes_reuniao=pl.col("EndDate").dt.month().cast(pl.Int32),
-        _ano_reuniao=pl.col("EndDate").dt.year().cast(pl.Int32),
-        data_fim_reuniao=pl.col("EndDate"),
-        data_expiracao=pl.col("ExpiryDate"),
+    cal = copom.calendario().select(
+        _mes_reuniao=pl.col("data_decisao").dt.month().cast(pl.Int32),
+        _ano_reuniao=pl.col("data_decisao").dt.year().cast(pl.Int32),
+        data_fim_reuniao=pl.col("data_decisao"),
+        data_expiracao=pl.col("data_efetividade"),
     )
 
     df = df.join(cal, on=["_mes_reuniao", "_ano_reuniao"], how="left").drop(

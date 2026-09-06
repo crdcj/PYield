@@ -8,14 +8,6 @@
         - meta
         - meta_serie
 
-## copom
-
-::: pyield.selic.copom
-
-## compromissada
-
-::: pyield.selic.compromissada
-
 ## cpm
 
 ::: pyield.selic.cpm

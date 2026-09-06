@@ -10,8 +10,9 @@ from pyield.futuro import di1
 
 # Ordem intencional: alguns módulos importam `di1` a partir de `pyield`
 # durante a inicialização do pacote.
-from pyield import selic, tpf, vna
+from pyield import copom, selic, tpf, vna
 from pyield.bc.sgs import ptax, ptax_serie
+from pyield.compromissada import compromissadas
 from pyield.fwd import forward, forwards, forwards_expr
 from pyield.interpolador import Interpolador, interpolar
 from pyield.relogio import agora, hoje
@@ -27,6 +28,8 @@ __all__ = [
     "__version__",
     "agora",
     "b3",
+    "compromissadas",
+    "copom",
     "di1",
     "di_over",
     "du",
