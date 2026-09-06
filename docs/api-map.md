@@ -78,7 +78,7 @@ Visão geral das principais funções públicas do PYield.
     ├── meta_serie(...)
     ```
 
-??? "`yd.cpm` (opções digitais do COPOM)"
+??? "`yd.cpm` (opções digitais do COPOM e probabilidades implícitas)"
     ```text
     yd.cpm
     ├── data(data)
