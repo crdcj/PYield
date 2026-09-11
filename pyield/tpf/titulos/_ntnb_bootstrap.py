@@ -10,17 +10,15 @@ from pyield import du
 from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.tpf.titulos import _utils as utils
 
-DIA_VENCIMENTO = 15
 MAX_EXPANSOES_INTERVALO = 32
 
 
-def _gerar_vertices_mensais(
-    data_liquidacao: dt.date, ultimo_vencimento: dt.date
+def _gerar_vertices_pagamentos(
+    fluxos_titulos: list[pl.DataFrame],
 ) -> list[dt.date]:
-    """Gera vértices mensais no dia 15."""
-    ancora = utils.subtrair_meses(data_liquidacao.replace(day=DIA_VENCIMENTO), 1)
-    datas = pl.date_range(ancora, ultimo_vencimento, interval="1mo", eager=True)
-    return datas.filter(datas.is_between(data_liquidacao, ultimo_vencimento)).to_list()
+    """Gera vértices nas datas de pagamento dos títulos."""
+    datas = {data for fluxos in fluxos_titulos for data in fluxos["data_pagamento"]}
+    return sorted(datas)
 
 
 def _taxas_zero_por_forwards(
@@ -102,6 +100,7 @@ class _ContextoBootstrapForwards:
     vertices: list[dt.date]
     dias_vertices: list[int]
     indice_por_data: dict[dt.date, int]
+    fluxos_titulos: list[pl.DataFrame]
     vencimentos: list[dt.date]
     taxas_tir: list[float]
     taxas_forward: list[float]
@@ -112,10 +111,7 @@ def _calibrar_taxa_forward(
     indice_titulo: int,
 ) -> float:
     """Calibra um forward para reproduzir a cotação de uma NTN-B."""
-    from pyield.tpf.titulos.ntnb import fluxos_caixa  # noqa: PLC0415
-
-    vencimento = contexto.vencimentos[indice_titulo]
-    fluxos = fluxos_caixa(contexto.data_liquidacao, vencimento)
+    fluxos = contexto.fluxos_titulos[indice_titulo]
     dias_fluxos = du.contar(contexto.data_liquidacao, fluxos["data_pagamento"])
     indices_fluxos = [
         contexto.indice_por_data[data] for data in fluxos["data_pagamento"]
@@ -166,9 +162,10 @@ def taxas_zero(
 
         **Curva de forwards e taxa zero**
 
-        A curva usa vértices mensais no dia 15. Para cada NTN-B, a taxa forward
-        calibrada é mantida constante desde o vencimento anterior até o seu
-        vencimento. A primeira taxa forward começa na TIR do título mais curto.
+        A curva usa como vértices as datas de pagamento dos títulos informados.
+        Para cada NTN-B, a taxa forward calibrada é mantida constante desde o
+        vencimento anterior até o seu vencimento. A primeira taxa forward começa
+        na TIR do título mais curto.
 
         Se \(DU_i\) é o número de dias úteis do vértice \(i\), \(f_i\) é a
         taxa forward do trecho e \(z_i\) é a taxa zero anualizada, então:
@@ -319,6 +316,7 @@ def taxas_zero(
     """
     from pyield.tpf.titulos.ntnb import (  # noqa: PLC0415
         _validar_entradas_taxas_zero,
+        fluxos_caixa,
     )
 
     if any_is_empty(data_liquidacao, vencimentos, taxas):
@@ -343,8 +341,10 @@ def taxas_zero(
     )
     vencimentos_ordenados = titulos["data_vencimento"].to_list()
     taxas_tir = titulos["taxa_tir"].to_list()
-    ultimo_vencimento = vencimentos_ordenados[-1]
-    vertices = _gerar_vertices_mensais(liquidacao, ultimo_vencimento)
+    fluxos_titulos = [
+        fluxos_caixa(liquidacao, vencimento) for vencimento in vencimentos_ordenados
+    ]
+    vertices = _gerar_vertices_pagamentos(fluxos_titulos)
     dias_uteis = du.contar(liquidacao, pl.Series(vertices)).to_list()
     indice_por_data = {data: indice for indice, data in enumerate(vertices)}
     contexto = _ContextoBootstrapForwards(
@@ -352,6 +352,7 @@ def taxas_zero(
         vertices,
         dias_uteis,
         indice_por_data,
+        fluxos_titulos,
         vencimentos_ordenados,
         taxas_tir,
         taxas_tir.copy(),
