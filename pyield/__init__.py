@@ -17,7 +17,7 @@ from pyield.compromissada import compromissadas
 from pyield.fwd import forward, forwards, forwards_expr
 from pyield.interpolador import Interpolador, interpolar
 from pyield.relogio import agora, hoje
-from pyield.tpf.rmd import rmd
+from pyield.rmd import rmd
 from pyield.tpf.titulos import lft, ltn, ntnb, ntnb1, ntnbp, ntnc, ntnf
 
 try:

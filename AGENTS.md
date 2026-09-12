@@ -48,6 +48,16 @@ A API pública deve ser orientada ao objeto financeiro ou conceito usado pelo
 usuário, não à fonte de dados. A fonte continua importante internamente e deve
 aparecer na docstring pública, mas não deve forçar ergonomia ruim.
 
+O namespace público deve refletir a autonomia semântica do conceito e a
+ergonomia necessária para usá-lo, não apenas a fonte dos dados ou sua relação
+temática com outro domínio. Conceitos com identidade, linguagem e fluxo de uso
+próprios podem ser expostos na raiz quando o usuário consegue entendê-los sem
+conhecer outro namespace. É o caso de `yd.ltn`, `yd.ntnb`, `yd.vna` e `yd.rmd`,
+mesmo que estejam relacionados a TPF ou usem implementações agrupadas em
+`pyield/tpf/`. Use um namespace de família quando o contexto da família for
+necessário para interpretar a operação ou quando as funções formarem uma API
+coesa desse domínio.
+
 Padrão atual:
 - namespaces de objeto para famílias coesas: `yd.futuro.*`, `yd.tpf.*`,
   `yd.di1.*`, `yd.lft.*`, `yd.ipca.*`, `yd.du.*`, `yd.selic.*`,

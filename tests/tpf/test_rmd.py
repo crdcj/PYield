@@ -15,7 +15,7 @@ import requests
 
 import pyield as yd
 
-modulo_rmd = importlib.import_module("pyield.tpf.rmd")
+modulo_rmd = importlib.import_module("pyield.rmd")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_PARQUET = DIRETORIO_DADOS / "rmd_1.3.parquet"

@@ -59,7 +59,11 @@ uv add pyield
 | `yd.hoje`, `yd.agora` | functions | Current date and time in Brazil |
 
 See the [complete API map](https://crdcj.github.io/PYield/api-map/) for detailed
-documentation and public signatures.
+documentation and public signatures. Public namespaces follow the semantic
+autonomy of the concept users need to understand, rather than only its data
+source or thematic relationship to another domain. Concepts such as `yd.ltn`,
+`yd.ntnb`, `yd.vna`, and `yd.rmd` therefore live at the root, while
+implementations may remain grouped internally by domain.
 
 ## API compatibility
 

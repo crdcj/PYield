@@ -94,8 +94,11 @@ ou de versões anteriores estão no histórico das
 | `vna_projetado(...)` nos módulos de títulos | `yd.vna.projetado(titulo, data, vna_base, inflacao)` |
 | `vigencia(data)` nos módulos de títulos | `yd.vna.vigencia(titulo, data)` |
 
-Os módulos públicos de títulos ficam disponíveis na raiz, enquanto as
-implementações continuam organizadas internamente em `pyield/tpf/titulos/`.
+O namespace público segue a autonomia semântica do conceito que o usuário
+precisa conhecer, e não apenas a fonte dos dados ou sua relação temática com
+outro domínio. Por isso, conceitos como `yd.ltn`, `yd.ntnb`, `yd.vna` e `yd.rmd`
+ficam na raiz, enquanto as implementações podem continuar agrupadas
+internamente por domínio para manter o código coeso.
 Consulte as [releases](https://github.com/crdcj/PYield/releases) para o
 histórico completo.
 

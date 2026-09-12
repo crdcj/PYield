@@ -1,9 +1,12 @@
 # Títulos Públicos Federais (TPF)
 
 Porta de entrada principal para dados de mercado de títulos públicos: taxas
-indicativas, vencimentos, estoque, dealers, negociações secundárias, leilões,
-e benchmarks. O Relatório Mensal da Dívida (RMD) é consultado pela função
-`yd.rmd(aba)`, exposta na raiz.
+indicativas, vencimentos, estoque, dealers, negociações secundárias, leilões
+e benchmarks.
+
+O Relatório Mensal da Dívida (RMD) usa dados do Tesouro Nacional, mas representa
+a dívida pública de forma mais ampla do que os títulos públicos federais. Por
+isso, sua entrada é `yd.rmd(aba)`, exposta na raiz, e não `yd.tpf.rmd(aba)`.
 
 Para precificação e análise por tipo de título (cotação, duration, prêmio),
 consulte as páginas individuais: [LFT](lft.md), [LTN](ltn.md),
