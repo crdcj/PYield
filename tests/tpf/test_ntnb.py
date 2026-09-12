@@ -1,83 +1,25 @@
 import datetime as dt
 import math
 from decimal import Decimal
+from pathlib import Path
 
 import polars as pl
 import pytest
+from polars.testing import assert_series_equal
 
 import pyield as yd
 from pyield import ntnb1, ntnbp
 
 DATA_LIQUIDACAO = dt.date(2026, 7, 13)
-VENCIMENTOS = [
-    dt.date(2026, 8, 15),
-    dt.date(2027, 5, 15),
-    dt.date(2028, 8, 15),
-    dt.date(2029, 5, 15),
-    dt.date(2030, 8, 15),
-    dt.date(2031, 5, 15),
-    dt.date(2032, 8, 15),
-    dt.date(2033, 5, 15),
-    dt.date(2035, 5, 15),
-    dt.date(2037, 5, 15),
-    dt.date(2040, 8, 15),
-    dt.date(2045, 5, 15),
-    dt.date(2050, 8, 15),
-    dt.date(2055, 5, 15),
-    dt.date(2060, 8, 15),
-]
-TAXAS_TIR = [
-    0.1167,
-    0.0844,
-    0.0853,
-    0.0832,
-    0.0832,
-    0.0822,
-    0.0816,
-    0.0809,
-    0.0799,
-    0.0787,
-    0.0771,
-    0.0753,
-    0.0748,
-    0.0741,
-    0.0740,
-]
-TAXAS_ZERO_PLANILHA = [
-    0.11669999999923197,
-    0.08432556565343718,
-    0.0852576487182215,
-    0.08306374259814908,
-    0.0830739926717361,
-    0.08198625118890712,
-    0.08130205887845499,
-    0.08050949086848868,
-    0.07934027697049251,
-    0.07782879514830321,
-    0.07568300268997708,
-    0.07307847693229963,
-    0.07245435891438645,
-    0.07110155760681147,
-    0.0710829915123008,
-]
+DIRETORIO_DADOS = Path(__file__).parent / "data"
+CURVA_PLANILHA = pl.read_csv(
+    DIRETORIO_DADOS / "ntnb_curva_zero_20260713.csv", try_parse_dates=True
+)
+VENCIMENTOS = CURVA_PLANILHA["data_vencimento"]
+TAXAS_TIR = CURVA_PLANILHA["taxa_tir"]
+TAXAS_ZERO_PLANILHA = CURVA_PLANILHA["taxa_zero"]
+FORWARDS_PLANILHA = CURVA_PLANILHA["taxa_forward"]
 CASAS_DECIMAIS = 6
-FORWARDS_PLANILHA = [
-    0.11669999999922916,
-    0.08002323895627329,
-    0.08587948250549778,
-    0.07682830620923183,
-    0.08309713730298153,
-    0.0760231708121404,
-    0.07870478409822645,
-    0.07405926064065749,
-    0.075333807599243515,
-    0.071177613235201516,
-    0.06859414142571751,
-    0.06536577256663077,
-    0.07021764042199136,
-    0.064262548851535373,
-    0.070981172708711196,
-]
 
 
 def test_namespace_dos_titulos_separado_do_ntnb_anbima():
@@ -200,25 +142,18 @@ def test_taxas_zero_reproduz_planilha_curva_zero():
     """A calibração deve reproduzir os vértices da aba Curva Zero."""
     resultado = yd.ntnb.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, TAXAS_TIR)
 
-    esperado = pl.DataFrame(
-        {
-            "data_vencimento": VENCIMENTOS,
-            "taxa_zero": TAXAS_ZERO_PLANILHA,
-        }
+    assert_series_equal(resultado["data_vencimento"], VENCIMENTOS)
+    assert_series_equal(resultado["taxa_tir"], TAXAS_TIR, check_exact=True)
+    assert_series_equal(
+        resultado["taxa_zero"], TAXAS_ZERO_PLANILHA, abs_tol=1e-8, rel_tol=0
     )
-
-    assert resultado["data_vencimento"].to_list() == VENCIMENTOS
-    assert resultado["taxa_tir"].to_list() == TAXAS_TIR
-    assert resultado["taxa_zero"].to_list() == pytest.approx(
-        esperado["taxa_zero"].to_list(), abs=1e-8
-    )
-    assert resultado["taxa_forward"].to_list() == pytest.approx(
-        FORWARDS_PLANILHA, abs=1e-8
+    assert_series_equal(
+        resultado["taxa_forward"], FORWARDS_PLANILHA, abs_tol=1e-8, rel_tol=0
     )
 
 
 def test_taxas_zero_limita_busca_sem_intervalo():
-    taxas = TAXAS_TIR.copy()
+    taxas = TAXAS_TIR.clone()
     taxas[2] = 10.0
 
     with pytest.raises(RuntimeError, match="encontrar um intervalo"):
@@ -354,8 +289,8 @@ def test_curva_zero_interpolada_reproduz_cotacoes_dos_titulos(
 
 def test_forwards_derivados_das_zeros_reproduzem_planilha():
     curva = yd.ntnb.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, TAXAS_TIR)
-    forwards = curva.select(yd.forwards_expr("dias_uteis", "taxa_zero")).to_series()
-    assert curva["taxa_forward"].to_list() == pytest.approx(
-        forwards.to_list(), abs=1e-12
-    )
-    assert forwards.to_list() == pytest.approx(FORWARDS_PLANILHA, abs=1e-8)
+    forwards = curva.select(
+        taxa_forward=yd.forwards_expr("dias_uteis", "taxa_zero")
+    ).to_series()
+    assert_series_equal(curva["taxa_forward"], forwards, abs_tol=1e-12, rel_tol=0)
+    assert_series_equal(forwards, FORWARDS_PLANILHA, abs_tol=1e-8, rel_tol=0)
