@@ -2,7 +2,6 @@
 
 import datetime as dt
 from collections.abc import Callable
-from dataclasses import dataclass
 
 import polars as pl
 
@@ -19,34 +18,6 @@ def _gerar_vertices_pagamentos(
     """Gera vértices nas datas de pagamento dos títulos."""
     datas = {data for fluxos in fluxos_titulos for data in fluxos["data_pagamento"]}
     return sorted(datas)
-
-
-def _taxas_zero_por_forwards(
-    dias_uteis: list[int], taxas_forward: list[float]
-) -> list[float]:
-    """Acumula taxas zero a partir de forwards constantes por trecho."""
-    taxas_zero = [taxas_forward[0]]
-
-    for du_anterior, du_atual, taxa_forward in zip(
-        dias_uteis[:-1], dias_uteis[1:], taxas_forward[1:], strict=True
-    ):
-        taxa_zero_anterior = taxas_zero[-1]
-        fator_acumulado = (1 + taxa_zero_anterior) ** (du_anterior / 252)
-        fator_forward = (1 + taxa_forward) ** ((du_atual - du_anterior) / 252)
-        taxas_zero.append((fator_acumulado * fator_forward) ** (252 / du_atual) - 1)
-
-    return taxas_zero
-
-
-def _calcular_cotacao(
-    fluxos: pl.DataFrame, dias_uteis: pl.Series, taxas: list[float]
-) -> float:
-    """Calcula a cotação dos fluxos pela taxa de cada prazo."""
-    return utils.calcular_pv(
-        fluxos_caixa=fluxos["valor_pagamento"],
-        taxas=taxas,
-        prazos=dias_uteis / 252,
-    )
 
 
 def _resolver_taxa_forward(
@@ -77,61 +48,84 @@ def _resolver_taxa_forward(
     return utils._metodo_bissecao(erro, limite_inferior, limite_superior)
 
 
-def _taxas_forward_vertices(
-    vertices: list[dt.date],
-    vencimentos: list[dt.date],
-    taxas_forward: list[float],
-) -> list[float]:
-    """Seleciona a taxa do próximo vencimento quando necessário."""
-    indice_titulo = 0
-    resultado = []
-    for vertice in vertices:
-        while vertice > vencimentos[indice_titulo]:
-            indice_titulo += 1
-        resultado.append(taxas_forward[indice_titulo])
-    return resultado
-
-
-@dataclass
-class _ContextoBootstrapForwards:
-    """Dados compartilhados pela calibração sequencial de forwards."""
-
-    data_liquidacao: dt.date
-    vertices: list[dt.date]
-    dias_vertices: list[int]
-    indice_por_data: dict[dt.date, int]
-    fluxos_titulos: list[pl.DataFrame]
-    vencimentos: list[dt.date]
-    taxas_tir: list[float]
-    taxas_forward: list[float]
-
-
 def _calibrar_taxa_forward(
-    contexto: _ContextoBootstrapForwards,
-    indice_titulo: int,
+    fluxos: list[tuple[int, float]],
+    taxa_tir: float,
+    descontos: dict[int, float],
+    dias_anterior: int,
+    desconto_anterior: float,
 ) -> float:
-    """Calibra um forward para reproduzir a cotação de uma NTN-B."""
-    fluxos = contexto.fluxos_titulos[indice_titulo]
-    dias_fluxos = du.contar(contexto.data_liquidacao, fluxos["data_pagamento"])
-    indices_fluxos = [
-        contexto.indice_por_data[data] for data in fluxos["data_pagamento"]
-    ]
-    cotacao_alvo = _calcular_cotacao(
-        fluxos, dias_fluxos, [contexto.taxas_tir[indice_titulo]] * fluxos.height
+    """Calibra apenas os fluxos posteriores ao vencimento anterior."""
+    cotacao_alvo = sum(valor / (1 + taxa_tir) ** (dias / 252) for dias, valor in fluxos)
+    pv_fixo = sum(
+        valor * descontos[dias] for dias, valor in fluxos if dias <= dias_anterior
     )
+    trecho = [
+        ((dias - dias_anterior) / 252, valor * desconto_anterior)
+        for dias, valor in fluxos
+        if dias > dias_anterior
+    ]
 
     def erro(taxa_forward: float) -> float:
-        contexto.taxas_forward[indice_titulo] = taxa_forward
-        curva_zero = _taxas_zero_por_forwards(
-            contexto.dias_vertices,
-            _taxas_forward_vertices(
-                contexto.vertices, contexto.vencimentos, contexto.taxas_forward
-            ),
+        return (
+            pv_fixo
+            + sum(valor / (1 + taxa_forward) ** prazo for prazo, valor in trecho)
+            - cotacao_alvo
         )
-        taxas_fluxos = [curva_zero[indice] for indice in indices_fluxos]
-        return _calcular_cotacao(fluxos, dias_fluxos, taxas_fluxos) - cotacao_alvo
 
-    return _resolver_taxa_forward(erro, contexto.taxas_tir[indice_titulo])
+    return _resolver_taxa_forward(erro, taxa_tir)
+
+
+def _bootstrap(
+    liquidacao: dt.date, titulos: pl.DataFrame, fluxos_titulos: list[pl.DataFrame]
+) -> pl.DataFrame:
+    """Acumula os descontos dos trechos calibrados e retorna a curva nos vencimentos."""
+    vertices = _gerar_vertices_pagamentos(fluxos_titulos)
+    dias_por_data = dict(
+        zip(vertices, du.contar(liquidacao, pl.Series(vertices)), strict=True)
+    )
+    descontos = {0: 1.0}
+    dias_anterior = 0
+    desconto_anterior = 1.0
+    taxas_forward = []
+    taxas_zero = []
+    indice_vertice = 0
+
+    for vencimento, taxa_tir, fluxos in zip(
+        titulos["data_vencimento"], titulos["taxa_tir"], fluxos_titulos, strict=True
+    ):
+        taxa_forward = _calibrar_taxa_forward(
+            [(dias_por_data[data], valor) for data, valor in fluxos.iter_rows()],
+            taxa_tir,
+            descontos,
+            dias_anterior,
+            desconto_anterior,
+        )
+        # Guarda cada desconto uma única vez, após calibrar seu trecho.
+        while indice_vertice < len(vertices) and vertices[indice_vertice] <= vencimento:
+            dias = dias_por_data[vertices[indice_vertice]]
+            descontos[dias] = desconto_anterior / (1 + taxa_forward) ** (
+                (dias - dias_anterior) / 252
+            )
+            indice_vertice += 1
+
+        dias_vencimento = dias_por_data[vencimento]
+        desconto_anterior = descontos[dias_vencimento]
+        taxas_forward.append(taxa_forward)
+        taxas_zero.append(
+            desconto_anterior ** (-252 / dias_vencimento) - 1
+            if dias_vencimento
+            else taxa_forward
+        )
+        dias_anterior = dias_vencimento
+
+    return titulos.with_columns(
+        dias_uteis=pl.Series(
+            [dias_por_data[data] for data in titulos["data_vencimento"]], dtype=pl.Int64
+        ),
+        taxa_forward=pl.Series(taxas_forward, dtype=pl.Float64),
+        taxa_zero=pl.Series(taxas_zero, dtype=pl.Float64),
+    ).select("data_vencimento", "dias_uteis", "taxa_tir", "taxa_forward", "taxa_zero")
 
 
 def taxas_zero(
@@ -340,53 +334,7 @@ def taxas_zero(
         "data_vencimento"
     )
     vencimentos_ordenados = titulos["data_vencimento"].to_list()
-    taxas_tir = titulos["taxa_tir"].to_list()
     fluxos_titulos = [
         fluxos_caixa(liquidacao, vencimento) for vencimento in vencimentos_ordenados
     ]
-    vertices = _gerar_vertices_pagamentos(fluxos_titulos)
-    dias_uteis = du.contar(liquidacao, pl.Series(vertices)).to_list()
-    indice_por_data = {data: indice for indice, data in enumerate(vertices)}
-    contexto = _ContextoBootstrapForwards(
-        liquidacao,
-        vertices,
-        dias_uteis,
-        indice_por_data,
-        fluxos_titulos,
-        vencimentos_ordenados,
-        taxas_tir,
-        taxas_tir.copy(),
-    )
-
-    for indice_titulo in range(len(vencimentos_ordenados)):
-        contexto.taxas_forward[indice_titulo] = _calibrar_taxa_forward(
-            contexto, indice_titulo
-        )
-
-    forwards_vertices = _taxas_forward_vertices(
-        vertices, vencimentos_ordenados, contexto.taxas_forward
-    )
-    curva_zero = _taxas_zero_por_forwards(dias_uteis, forwards_vertices)
-    titulos = titulos.with_columns(
-        taxa_forward=pl.Series(contexto.taxas_forward, dtype=pl.Float64)
-    )
-    df = pl.DataFrame(
-        {
-            "data_vencimento": vertices,
-            "dias_uteis": dias_uteis,
-            "taxa_zero": curva_zero,
-        }
-    )
-
-    df = (
-        df.filter(pl.col("data_vencimento").is_in(vencimentos_ordenados))
-        .join(titulos, on="data_vencimento", how="left")
-        .select(
-            "data_vencimento",
-            "dias_uteis",
-            "taxa_tir",
-            "taxa_forward",
-            "taxa_zero",
-        )
-    )
-    return df
+    return _bootstrap(liquidacao, titulos, fluxos_titulos)

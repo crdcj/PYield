@@ -321,12 +321,24 @@ def test_ntnb1_cotacao_curva_zero_reproduz_planilha_td():
         assert taxa == pytest.approx(taxa_esperada, abs=1e-12)
 
 
-def test_curva_zero_interpolada_reproduz_cotacoes_dos_titulos():
-    curva = yd.ntnb.taxas_zero(DATA_LIQUIDACAO, VENCIMENTOS, TAXAS_TIR)
+@pytest.mark.parametrize(
+    ("vencimentos", "taxas", "tolerancia"),
+    [
+        (VENCIMENTOS, TAXAS_TIR, 2e-12),
+        # Trechos longos amplificam no preço a tolerância de 1e-12 do forward.
+        ([VENCIMENTOS[1], VENCIMENTOS[-1]], [0.06, 0.07], 1e-10),
+        ([VENCIMENTOS[1], VENCIMENTOS[-1]], [0.0, 0.0], 1e-10),
+        ([VENCIMENTOS[1], VENCIMENTOS[-1]], [-0.01, -0.005], 1e-10),
+    ],
+)
+def test_curva_zero_interpolada_reproduz_cotacoes_dos_titulos(
+    vencimentos, taxas, tolerancia
+):
+    curva = yd.ntnb.taxas_zero(DATA_LIQUIDACAO, vencimentos, taxas)
     interpolar = yd.Interpolador(
         curva["dias_uteis"], curva["taxa_zero"], metodo="flat_forward"
     )
-    for vencimento, tir in zip(VENCIMENTOS, TAXAS_TIR, strict=True):
+    for vencimento, tir in zip(vencimentos, taxas, strict=True):
         fluxos = yd.ntnb.fluxos_caixa(DATA_LIQUIDACAO, vencimento)
         prazos = yd.du.contar(DATA_LIQUIDACAO, fluxos["data_pagamento"])
         cotacao_tir = sum(
@@ -337,7 +349,7 @@ def test_curva_zero_interpolada_reproduz_cotacoes_dos_titulos():
             float(valor) / (1 + interpolar(prazo)) ** (prazo / 252)
             for valor, prazo in zip(fluxos["valor_pagamento"], prazos, strict=True)
         )
-        assert cotacao_curva == pytest.approx(cotacao_tir, abs=2e-12, rel=0)
+        assert cotacao_curva == pytest.approx(cotacao_tir, abs=tolerancia, rel=0)
 
 
 def test_forwards_derivados_das_zeros_reproduzem_planilha():
