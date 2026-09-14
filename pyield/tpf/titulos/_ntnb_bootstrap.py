@@ -161,11 +161,11 @@ def taxas_zero(
         vencimento anterior até o seu vencimento. A primeira taxa forward começa
         na TIR do título mais curto.
 
-        Definindo \(\tau_i\) como a fração de ano útil correspondente ao vértice
+        Definindo \(t_i\) como o tempo em anos úteis correspondente ao vértice
         \(i\):
 
         \[
-        {\tau_i} = \frac{DU_i}{252},
+        t_i = \frac{DU_i}{252},
         \]
 
         em que \(DU_i\) é o número de dias úteis, \(f_i\) é a taxa forward do
@@ -176,21 +176,21 @@ def taxas_zero(
         \]
 
         \[
-        (1 + z_i)^{\tau_i} =
-        (1 + z_{i-1})^{\tau_{i-1}}
-        (1 + f_i)^{\tau_i - \tau_{i-1}}
+        (1 + z_i)^{t_i} =
+        (1 + z_{i-1})^{t_{i-1}}
+        (1 + f_i)^{t_i - t_{i-1}}
         \]
 
         **Calibração sequencial**
 
         Para cada título, do menor para o maior vencimento, a função calcula a
         cotação-alvo \(P_i^{\mathrm{TIR}}\) descontando seus fluxos pela TIR
-        observada. Em seguida, define \(\tau_{i,k} = DU_{i,k} / 252\) para
+        observada. Em seguida, define \(t_{i,k} = DU_{i,k} / 252\) para
         cada fluxo e busca por bisseção o forward \(f_i\) que zera:
 
         \[
         E_i(f_i) =
-        \sum_k \frac{CF_{i,k}}{(1 + z(\tau_{i,k}; f_i))^{\tau_{i,k}}}
+        \sum_k \frac{CF_{i,k}}{(1 + z(t_{i,k}; f_i))^{t_{i,k}}}
         - P_i^{\mathrm{TIR}}
         \]
 

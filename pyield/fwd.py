@@ -24,10 +24,10 @@ def forwards_expr(
     (atual) é:
 
     \[
-    fwd_k = \left( \frac{f_k^{au_k}}{f_j^{au_j}} \right)^{\frac{1}{au_k - au_j}} - 1
+    fwd_k = \left( \frac{f_k^{t_k}}{f_j^{t_j}} \right)^{\frac{1}{t_k - t_j}} - 1
     \]
 
-    Onde ``fₓ = 1 + txₓ`` e ``auₓ = duₓ/252``. A primeira linha de cada grupo
+    Onde ``fₓ = 1 + txₓ`` e \(tₓ = duₓ/252\). A primeira linha de cada grupo
     (menor ``dias_uteis``) é tratada como spot: ``fwd = tx``.
 
     Ordenação cronológica:
@@ -191,14 +191,15 @@ def forwards(
 
         fwdₖ = (fₖ^(duₖ/252) / fⱼ^(duⱼ/252))^(252/(duₖ - duⱼ)) - 1
 
-    Como au = du/252 (tempo em anos úteis), a fórmula pode ser simplificada para:
+    Como \(t = du/252\) (tempo em anos úteis), a fórmula pode ser simplificada
+    para:
 
-        fwdₖ = (fₖ^auₖ / fⱼ^auⱼ)^(1/(auₖ - auⱼ)) - 1
+        fwdₖ = (fₖ^tₖ / fⱼ^tⱼ)^(1/(tₖ - tⱼ)) - 1
 
     Em LaTeX, a fórmula é representada como:
 
     \[
-    fwd_k = \left( \frac{f_k^{au_k}}{f_j^{au_j}} \right)^{\frac{1}{au_k - au_j}} - 1
+    fwd_k = \left( \frac{f_k^{t_k}}{f_j^{t_j}} \right)^{\frac{1}{t_k - t_j}} - 1
     \]
 
     Onde:
@@ -206,8 +207,8 @@ def forwards(
     - fₖ é o fator de capitalização no vértice atual (fₖ = 1 + txₖ).
     - txⱼ é a taxa zero para o vértice anterior.
     - txₖ é a taxa zero para o vértice atual.
-    - auⱼ é o prazo em anos úteis no vértice anterior (auⱼ = duⱼ/252).
-    - auₖ é o prazo em anos úteis no vértice atual (auₖ = duₖ/252).
+    - \(tⱼ\) é o prazo em anos úteis no vértice anterior (\(tⱼ = duⱼ/252\)).
+    - \(tₖ\) é o prazo em anos úteis no vértice atual (\(tₖ = duₖ/252\)).
     - A constante 252 representa o número de dias úteis no ano.
 
     A função preserva a ordem original dos dados de entrada. Nulos em
@@ -407,14 +408,15 @@ def forward(
         - du₂ é o número de dias úteis até a segunda data.
         - A constante 252 representa o número de dias úteis no ano.
 
-    Como au = du/252 (tempo em anos úteis), a fórmula pode ser simplificada para:
+    Como \(t = du/252\) (tempo em anos úteis), a fórmula pode ser simplificada
+    para:
 
-        f₁→₂ = (f₂^au₂ / f₁^au₁)^(1/(au₂ - au₁)) - 1
+        f₁→₂ = (f₂^t₂ / f₁^t₁)^(1/(t₂ - t₁)) - 1
 
     Que em latex fica:
 
     \[
-    f_{1 \rightarrow 2} = \left( \frac{f_2^{au_2}}{f_1^{au_1}} \right)^{\frac{1}{au_2 - au_1}} - 1
+    f_{1 \rightarrow 2} = \left( \frac{f_2^{t_2}}{f_1^{t_1}} \right)^{\frac{1}{t_2 - t_1}} - 1
     \]
 
     Args:

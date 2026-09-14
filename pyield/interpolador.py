@@ -122,22 +122,22 @@ class Interpolador:
         A taxa interpolada é dada pela fórmula:
 
         \[
-        \left(F_j*\left(\frac{F_k}{F_j}\right)^{f_t}\right)^{\frac{1}{au}}-1
+        \left(F_j*\left(\frac{F_k}{F_j}\right)^{f_t}\right)^{\frac{1}{t}}-1
         \]
 
         Onde os fatores usados na fórmula são definidos como:
-        - ``Fⱼ = fⱼ^auⱼ`` é o fator acumulado no ponto ``j``.
-        - ``Fₖ = fₖ^auₖ`` é o fator acumulado no ponto ``k``.
-        - ``fₜ = (au - auⱼ)/(auₖ - auⱼ)`` é o fator de tempo.
+        - ``Fⱼ = fⱼ^tⱼ`` é o fator acumulado no ponto ``j``.
+        - ``Fₖ = fₖ^tₖ`` é o fator acumulado no ponto ``k``.
+        - ``fₜ = (t - tⱼ)/(tₖ - tⱼ)`` é o fator de tempo.
 
         E as variáveis são definidas como:
-        - ``au = du/252`` é o tempo em anos para o ponto interpolado. ``du``
+                - ``t = du/252`` é o tempo em anos úteis para o ponto interpolado. ``du``
           é o número de dias úteis para o ponto interpolado (entrada deste método).
         - ``k`` é o índice do ponto conhecido atual.
-        - ``auₖ = duₖ/252`` é o tempo em anos do ponto ``k``.
+                - ``tₖ = duₖ/252`` é o tempo em anos úteis do ponto ``k``.
         - ``txₖ`` é a taxa de juros (decimal) no ponto ``k``.
         - ``j`` é o índice do ponto conhecido anterior (``k - 1``).
-        - ``auⱼ = duⱼ/252`` é o tempo em anos do ponto ``j``.
+                - ``tⱼ = duⱼ/252`` é o tempo em anos úteis do ponto ``j``.
         - ``txⱼ`` é a taxa de juros (decimal) no ponto ``j``.
 
         Args:
