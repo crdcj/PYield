@@ -1026,6 +1026,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#pyield.rmd.rmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        rmd
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1888,6 +1899,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#pyield.rmd.rmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        rmd
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1908,9 +1930,11 @@
 
 <h1 id="titulos-publicos-federais-tpf">Títulos Públicos Federais (TPF)</h1>
 <p>Porta de entrada principal para dados de mercado de títulos públicos: taxas
-indicativas, vencimentos, estoque, dealers, negociações secundárias, leilões,
-e benchmarks. O Relatório Mensal da Dívida (RMD) é consultado pela função
-<code>yd.rmd(aba)</code>, exposta na raiz.</p>
+indicativas, vencimentos, estoque, dealers, negociações secundárias, leilões
+e benchmarks.</p>
+<p>O Relatório Mensal da Dívida (RMD) usa dados do Tesouro Nacional, mas representa
+a dívida pública de forma mais ampla do que os títulos públicos federais. Por
+isso, sua entrada é <code>yd.rmd(aba)</code>, exposta na raiz, e não <code>yd.tpf.rmd(aba)</code>.</p>
 <p>Para precificação e análise por tipo de título (cotação, duration, prêmio),
 consulte as páginas individuais: <a href="../lft/">LFT</a>, <a href="../ltn/">LTN</a>,
 <a href="../ntnb/">NTN-B</a>, <a href="../ntnf/">NTN-F</a>, etc.</p>
@@ -6252,12 +6276,45 @@ objetos de negociação escolhidos pelo dealer.</p>
 </div><h2 id="relatorio-mensal-da-divida-rmd">Relatório Mensal da Dívida (RMD)</h2>
 
 
-<div class="doc doc-object doc-function">
+<div class="doc doc-object doc-module">
 
 
 
 
     <div class="doc doc-contents first">
+
+        <p>Relatório Mensal da Dívida (RMD) do Tesouro Nacional.</p>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="pyield.rmd.rmd" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">rmd</span><span class="p">(</span><span class="n">aba</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
 
         <p>Retorna dados do Relatório Mensal da Dívida (RMD) do Tesouro Nacional.</p>
 <p>Baixa e processa a planilha do RMD, extraindo dados da aba solicitada. A
@@ -6393,7 +6450,7 @@ Aba <code>"2.1"</code>:
 
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>pyield/tpf/rmd/__init__.py</code></summary>
+              <summary>Source code in <code>pyield/rmd/__init__.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-18">18</a></span>
 <span class="normal"><a href="#__codelineno-0-19">19</a></span>
 <span class="normal"><a href="#__codelineno-0-20">20</a></span>
@@ -6523,6 +6580,14 @@ Aba <code>"2.1"</code>:
 </span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a>    <span class="k">return</span> <span class="n">df</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
     </div>
 
 </div>
