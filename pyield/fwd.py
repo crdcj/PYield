@@ -20,15 +20,9 @@ def forwards_expr(
     DI1), onde ``agrupar_por`` define janelas independentes de cálculo sem que
     seja necessário extrair colunas, calcular fora e juntar de volta.
 
-    A fórmula da taxa a termo entre os vértices ``j`` (anterior) e ``k``
-    (atual) é:
-
-    \[
-    fwd_k = \left( \frac{f_k^{t_k}}{f_j^{t_j}} \right)^{\frac{1}{t_k - t_j}} - 1
-    \]
-
-    Onde ``fₓ = 1 + txₓ`` e \(tₓ = duₓ/252\). A primeira linha de cada grupo
-    (menor ``dias_uteis``) é tratada como spot: ``fwd = tx``.
+    A taxa a termo entre os vértices ``j`` (anterior) e ``k`` (atual) segue a
+    fórmula documentada em :func:`forward`. A primeira linha de cada grupo
+    (menor ``dias_uteis``) é tratada como spot: ``f = tx``.
 
     Ordenação cronológica:
         A expressão usa ``shift(1).over(agrupar_por, order_by=dias_uteis)``,
@@ -161,14 +155,13 @@ def forwards_expr(
     tx_j = tx_k.shift(1).over(grupo, order_by=du_k)
     au_j = au_k.shift(1).over(grupo, order_by=du_k)
 
-    # fwdₖ = (fₖ^auₖ / fⱼ^auⱼ) ^ (1/(auₖ - auⱼ)) - 1, com fₓ = 1 + txₓ
-    fk = 1 + tx_k
-    fj = 1 + tx_j
-    taxa_forward = (fk**au_k / fj**au_j) ** (1 / (au_k - au_j)) - 1
+    ft_k = 1 + tx_k
+    ft_j = 1 + tx_j
+    f_k = (ft_k**au_k / ft_j**au_j) ** (1 / (au_k - au_j)) - 1
 
     # Primeira linha de cada grupo (menor dias_uteis) é a taxa spot
     eh_primeira = du_k == du_k.min().over(grupo)
-    return pl.when(eh_primeira).then(tx_k).otherwise(taxa_forward)
+    return pl.when(eh_primeira).then(tx_k).otherwise(f_k)
 
 
 def forwards(
@@ -179,37 +172,10 @@ def forwards(
     r"""
     Calcula taxas a termo a partir de taxas zero.
 
-    A taxa a termo no vértice 'n' é definida como:
-
-        fwdₖ = fwdⱼ→ₖ (a taxa a termo de j para k)
-
-    Definindo o fator de capitalização no vértice k como:
-
-        fₖ = 1 + txₖ
-
-    A fórmula utilizada é:
-
-        fwdₖ = (fₖ^(duₖ/252) / fⱼ^(duⱼ/252))^(252/(duₖ - duⱼ)) - 1
-
-    Como \(t = du/252\) (tempo em anos úteis), a fórmula pode ser simplificada
-    para:
-
-        fwdₖ = (fₖ^tₖ / fⱼ^tⱼ)^(1/(tₖ - tⱼ)) - 1
-
-    Em LaTeX, a fórmula é representada como:
-
-    \[
-    fwd_k = \left( \frac{f_k^{t_k}}{f_j^{t_j}} \right)^{\frac{1}{t_k - t_j}} - 1
-    \]
-
-    Onde:
-    - fⱼ é o fator de capitalização no vértice anterior (fⱼ = 1 + txⱼ).
-    - fₖ é o fator de capitalização no vértice atual (fₖ = 1 + txₖ).
-    - txⱼ é a taxa zero para o vértice anterior.
-    - txₖ é a taxa zero para o vértice atual.
-    - \(tⱼ\) é o prazo em anos úteis no vértice anterior (\(tⱼ = duⱼ/252\)).
-    - \(tₖ\) é o prazo em anos úteis no vértice atual (\(tₖ = duₖ/252\)).
-    - A constante 252 representa o número de dias úteis no ano.
+    A taxa a termo em cada vértice é calculada aplicando sucessivamente a
+    fórmula documentada em :func:`forward` aos vértices consecutivos. A
+    primeira taxa de cada grupo é a taxa zero do primeiro vértice, pois não há
+    um vértice anterior para calcular a taxa a termo.
 
     A função preserva a ordem original dos dados de entrada. Nulos em
     ``dias_uteis`` ou ``taxas`` produzem nulo na linha correspondente; NaN
@@ -395,29 +361,15 @@ def forward(
     r"""
     Calcula a taxa a termo entre dois prazos (dias úteis).
 
-    Utiliza a fórmula:
-
-        f₁→₂ = (f₂^(du₂/252) / f₁^(du₁/252))^(252/(du₂ - du₁)) - 1
-
-    Onde:
-        - f₁ é o fator de capitalização do primeiro prazo (f₁ = 1 + tx₁).
-        - f₂ é o fator de capitalização do segundo prazo (f₂ = 1 + tx₂).
-        - tx₁ é a taxa zero para o primeiro prazo (du₁).
-        - tx₂ é a taxa zero para o segundo prazo (du₂).
-        - du₁ é o número de dias úteis até a primeira data.
-        - du₂ é o número de dias úteis até a segunda data.
-        - A constante 252 representa o número de dias úteis no ano.
-
-    Como \(t = du/252\) (tempo em anos úteis), a fórmula pode ser simplificada
-    para:
-
-        f₁→₂ = (f₂^t₂ / f₁^t₁)^(1/(t₂ - t₁)) - 1
-
-    Que em latex fica:
+    Definindo \(F_i = 1 + tx_i\) e \(t_i = du_i/252\), onde 252 é o
+    número de dias úteis no ano, a fórmula é:
 
     \[
-    f_{1 \rightarrow 2} = \left( \frac{f_2^{t_2}}{f_1^{t_1}} \right)^{\frac{1}{t_2 - t_1}} - 1
+    f_{1 \rightarrow 2} = \left( \frac{F_2^{t_2}}{F_1^{t_1}} \right)^{\frac{1}{t_2 - t_1}} - 1
     \]
+
+    Aqui, ``F₁`` e ``F₂`` são os fatores de capitalização dos prazos ``du1``
+    e ``du2``, e ``tx1`` e ``tx2`` são as respectivas taxas zero.
 
     Args:
         du1 (int): Número de dias úteis do primeiro ponto (prazo menor).
@@ -455,9 +407,7 @@ def forward(
     au2 = du2 / 252
 
     # Definição dos fatores de capitalização:
-    # f₁ = 1 + tx₁ e f₂ = 1 + tx₂
-    f1 = 1 + taxa1
-    f2 = 1 + taxa2
+    ft1 = 1 + taxa1
+    ft2 = 1 + taxa2
 
-    # f₁→₂ = (f₂^au₂ / f₁^au₁)^(1/(au₂ - au₁)) - 1
-    return (f2**au2 / f1**au1) ** (1 / (au2 - au1)) - 1
+    return (ft2**au2 / ft1**au1) ** (1 / (au2 - au1)) - 1

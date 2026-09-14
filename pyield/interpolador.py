@@ -8,7 +8,7 @@ from pyield._internal.types import ArrayLike
 
 
 class Interpolador:
-    """Classe interpoladora para interpolação de taxas de juros.
+    r"""Classe interpoladora para interpolação de taxas de juros.
 
     Args:
         dias_uteis: Sequência de dias úteis (DU) conhecidos.
@@ -28,6 +28,28 @@ class Interpolador:
         - Instâncias desta classe são **imutáveis**. Para modificar as
           configurações de interpolação, crie uma nova instância.
 
+        Para um prazo alvo ``du``, a classe encontra automaticamente os dois
+        vértices conhecidos que o cercam: ``j`` é o anterior e ``k`` é o
+        seguinte. O usuário informa apenas ``du``; os índices ``j`` e ``k``
+        são detalhes internos.
+
+        No método ``"linear"``, a taxa é calculada por:
+
+        \[
+        tx_{du} = tx_j + \frac{(du - du_j)(tx_k - tx_j)}{du_k - du_j}
+        \]
+
+        No método ``"flat_forward"``, definindo
+        \(t = du/252\), \(t_x = du_x/252\), \(F_x = 1 + tx_x\),
+        \(C_x = F_x^{t_x}\) e \(w = (t - t_j)/(t_k - t_j)\), a taxa é:
+
+        \[
+        tx_{du} = \left(C_j\left(\frac{C_k}{C_j}\right)^w\right)^{1/t} - 1
+        \]
+
+        A interpolação flat-forward interpola o fator acumulado entre os dois
+        vértices e converte o resultado de volta para uma taxa no prazo alvo.
+
     Examples:
         >>> from pyield import Interpolador
         >>> dus = [30, 60, 90]
@@ -40,19 +62,21 @@ class Interpolador:
         '4.75%'
 
         Interpolação flat forward:
-        >>> fforward = Interpolador(dus, txs, "flat_forward")
-        >>> fforward(45)
+        >>> flat_fwd = Interpolador(dus, txs, "flat_forward")
+        >>> flat_fwd(45)
         0.04833068080970859
 
-        >>> print(fforward(100))  # Extrapolação desabilitada por padrão
+        >>> print(flat_fwd(100))  # Extrapolação desabilitada por padrão
         nan
 
-        >>> print(fforward(-10))  # Entrada inválida retorna NaN
+        >>> print(flat_fwd(-10))  # Entrada inválida retorna NaN
         nan
 
         Se extrapolação estiver habilitada, a última taxa conhecida é usada:
-        >>> fforward_extrap = Interpolador(dus, txs, "flat_forward", extrapolar=True)
-        >>> taxa = fforward_extrap(100)
+        >>> flat_fwd_extrap = Interpolador(
+        ...     dus, txs, "flat_forward", extrapolar=True
+        ... )
+        >>> taxa = flat_fwd_extrap(100)
         >>> f"{taxa:.1%}"
         '5.5%'
     """
@@ -81,86 +105,29 @@ class Interpolador:
         self._txs = tuple(df.get_column("txs"))
         self._extrapolate = bool(extrapolar)
 
-    def linear(self, du: int, k: int) -> float:
-        """Realiza interpolação de taxa de juros usando o método linear.
-
-        A taxa interpolada é dada pela fórmula:
-        y = y1 + (x - x1) * (y2 - y1) / (x2 - x1)
-
-        Onde:
-        - (x, y) é o ponto a ser interpolado (du, tx_interpolada).
-        - (x1, y1) é o ponto conhecido anterior (du_j, tx_j).
-        - (x2, y2) é o próximo ponto conhecido (du_k, tx_k).
-
-        Args:
-            du: Número de dias úteis (DU) para os quais a taxa será interpolada.
-            k: O índice tal que dus[k-1] < du < dus[k].
-
-        Returns:
-            Taxa de juros interpolada em forma decimal.
-        """
+    def _linear(self, du: int, k: int) -> float:
+        """Calcula internamente a interpolação linear entre dois vértices."""
         # Obtém os pontos imediatamente anterior e posterior ao DU desejado.
         du_j, tx_j = self._dus[k - 1], self._txs[k - 1]
         du_k, tx_k = self._dus[k], self._txs[k]
 
         return tx_j + (du - du_j) * (tx_k - tx_j) / (du_k - du_j)
 
-    def flat_forward(self, du: int, k: int) -> float:
-        r"""Realiza interpolação de taxa de juros usando o método flat forward.
-
-        Este método calcula a taxa de juros interpolada para um dado número de
-        dias úteis (``du``) usando a metodologia flat forward, baseada em dois
-        pontos conhecidos: o ponto atual (``k``) e o ponto anterior (``j``).
-
-        Assumindo taxas de juros em forma decimal, a taxa interpolada é calculada.
-        O tempo é medido em anos baseado em 252 dias úteis por ano.
-
-        Definindo os fatores simples:
-        - ``fⱼ = 1 + txⱼ``
-        - ``fₖ = 1 + txₖ``
-
-        A taxa interpolada é dada pela fórmula:
-
-        \[
-        \left(F_j*\left(\frac{F_k}{F_j}\right)^{f_t}\right)^{\frac{1}{t}}-1
-        \]
-
-        Onde os fatores usados na fórmula são definidos como:
-        - ``Fⱼ = fⱼ^tⱼ`` é o fator acumulado no ponto ``j``.
-        - ``Fₖ = fₖ^tₖ`` é o fator acumulado no ponto ``k``.
-        - ``fₜ = (t - tⱼ)/(tₖ - tⱼ)`` é o fator de tempo.
-
-        E as variáveis são definidas como:
-                - ``t = du/252`` é o tempo em anos úteis para o ponto interpolado. ``du``
-          é o número de dias úteis para o ponto interpolado (entrada deste método).
-        - ``k`` é o índice do ponto conhecido atual.
-                - ``tₖ = duₖ/252`` é o tempo em anos úteis do ponto ``k``.
-        - ``txₖ`` é a taxa de juros (decimal) no ponto ``k``.
-        - ``j`` é o índice do ponto conhecido anterior (``k - 1``).
-                - ``tⱼ = duⱼ/252`` é o tempo em anos úteis do ponto ``j``.
-        - ``txⱼ`` é a taxa de juros (decimal) no ponto ``j``.
-
-        Args:
-            du: Número de dias úteis (DU) para os quais a taxa será interpolada.
-            k: Índice tal que ``dus[k-1] < du < dus[k]``. Esse ``k``
-                corresponde ao próximo vértice conhecido após ``du``.
-
-        Returns:
-            Taxa de juros interpolada em forma decimal.
-        """
+    def _flat_forward(self, du: int, k: int) -> float:
+        """Calcula internamente a interpolação flat-forward entre dois vértices."""
         tx_j = self._txs[k - 1]
         au_j = self._dus[k - 1] / 252
         tx_k = self._txs[k]
         au_k = self._dus[k] / 252
         au = du / 252
 
-        # Siglas: fs = fator simples; fa = fator acumulado; ft = fator de tempo.
+        # Fator simples, fator acumulado e peso temporal da interpolacao.
         fs_j = 1 + tx_j
         fs_k = 1 + tx_k
         fa_j = fs_j**au_j
         fa_k = fs_k**au_k
-        ft = (au - au_j) / (au_k - au_j)
-        return (fa_j * (fa_k / fa_j) ** ft) ** (1 / au) - 1
+        peso = (au - au_j) / (au_k - au_j)
+        return (fa_j * (fa_k / fa_j) ** peso) ** (1 / au) - 1
 
     def interpolar(self, du: int) -> float:
         """Interpola a taxa para um único dia útil.
@@ -280,9 +247,9 @@ class Interpolador:
             return txs[k]
 
         if method == "linear":
-            return self.linear(du, k)
+            return self._linear(du, k)
         elif method == "flat_forward":
-            return self.flat_forward(du, k)
+            return self._flat_forward(du, k)
 
         raise ValueError(f"Método de interpolação '{method}' não reconhecido.")
 
@@ -355,6 +322,11 @@ def interpolar(  # noqa: PLR0913
     Raises:
         ValueError: Se apenas uma de ``datas_alvo`` ou ``datas_curva``
             for fornecida.
+
+    Notes:
+        Usa as mesmas fórmulas de interpolação linear e flat-forward descritas
+        na documentação de :class:`Interpolador`. Os vértices que cercam cada
+        prazo alvo são encontrados automaticamente.
 
     Examples:
         Caso típico: adicionar uma coluna de taxas interpoladas a um
@@ -476,14 +448,15 @@ def interpolar(  # noqa: PLR0913
         .join(df_extremos, on="grupo", how="left")
     )
 
-    # Flat-forward: tx = (fⱼ^auⱼ * (fₖ^auₖ / fⱼ^auⱼ)^ft)^(1/au) - 1
+    # Flat-forward: tx = (Cⱼ * (Cₖ / Cⱼ)^w)^(1/au) - 1,
+    # com Fₓ = 1 + txₓ, Cₓ = Fₓ^auₓ e w = (au - auⱼ) / (auₖ - auⱼ).
     au = pl.col("du_alvo") / 252
     au_j = pl.col("du_j") / 252
     au_k = pl.col("du_k") / 252
     fa_j = (1 + pl.col("tx_j")).pow(au_j)
     fa_k = (1 + pl.col("tx_k")).pow(au_k)
-    ft = (au - au_j) / (au_k - au_j)
-    expr_meio = (fa_j * (fa_k / fa_j).pow(ft)).pow(1 / au) - 1
+    peso = (au - au_j) / (au_k - au_j)
+    expr_meio = (fa_j * (fa_k / fa_j).pow(peso)).pow(1 / au) - 1
 
     taxa = (
         pl.when(pl.col("du_alvo").is_null() | pl.col("du_min").is_null())
