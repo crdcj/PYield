@@ -326,13 +326,22 @@ def _metodo_bissecao(func: Callable[[float], float], a: float, b: float) -> floa
     return (a + b) / 2
 
 
-def encontrar_raiz(func_diferenca_preco: Callable[[float], float]) -> float:
+def encontrar_raiz(
+    func_diferenca_preco: Callable[[float], float],
+    intervalo: tuple[float, float] | None = None,
+) -> float:
     """Encontra a raiz de uma função de diferença de preço.
 
-    Versão robusta que encontra automaticamente um intervalo válido e
-    aplica o método da bisseção.
+    Aplica o método da bisseção no intervalo informado. Quando omitido,
+    procura automaticamente um intervalo válido para a taxa de juros.
+
+    Args:
+        func_diferenca_preco: Função cuja raiz será encontrada.
+        intervalo: Limites inferior e superior da busca. Se ``None``, usa
+            a busca automática de intervalo.
     """
-    intervalo = _encontrar_intervalo_raiz(func_diferenca_preco)
+    if intervalo is None:
+        intervalo = _encontrar_intervalo_raiz(func_diferenca_preco)
     if intervalo is None:
         logger.warning("Não foi possível encontrar intervalo de busca válido")
         return float("nan")

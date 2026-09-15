@@ -45,7 +45,7 @@ def _resolver_taxa_forward(
         limite_inferior = -0.99
         limite_superior = taxa_inicial
 
-    return utils._metodo_bissecao(erro, limite_inferior, limite_superior)
+    return utils.encontrar_raiz(erro, intervalo=(limite_inferior, limite_superior))
 
 
 def _calibrar_taxa_forward(

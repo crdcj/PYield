@@ -342,11 +342,7 @@ def _resolver_taxa_equivalente(
         limite_superior = 2 * limite_superior + 1
         erro_superior = erro(limite_superior)
 
-    return utils._metodo_bissecao(
-        erro,
-        limite_inferior,
-        limite_superior,
-    )
+    return utils.encontrar_raiz(erro, intervalo=(limite_inferior, limite_superior))
 
 
 def taxa_curva_zero(
