@@ -7,7 +7,7 @@ import pyield as yd
 from pyield.tpf.titulos import _utils as utils  # noqa: PLC2701
 
 
-@pytest.mark.parametrize("raiz", [0.0, 0.01, 0.02, -0.05, 0.15])
+@pytest.mark.parametrize("raiz", [0.0, 0.01, 0.02, -0.05, 0.15, -0.9, -0.99, 8.0, 10.0])
 def test_busca_automatica(raiz):
     assert utils.encontrar_raiz(lambda x: x - raiz) == pytest.approx(raiz)
 
@@ -17,6 +17,24 @@ def test_intervalo_explicito_e_extremidades(raiz):
     assert utils.encontrar_raiz(
         lambda x: x - raiz, intervalo=(0.0, 1.0)
     ) == pytest.approx(raiz)
+
+
+@pytest.mark.parametrize("escala", [1e-14, 1.0, 1e14])
+@pytest.mark.parametrize("intervalo", [None, (0.0, 1.0)])
+def test_precisao_independente_da_escala(escala, intervalo):
+    assert utils.encontrar_raiz(
+        lambda x: escala * (x - 0.3), intervalo=intervalo
+    ) == pytest.approx(0.3, abs=1e-12, rel=0)
+
+
+def test_busca_automatica_respeita_dominio_da_taxa():
+    limite_superior = 10.0
+
+    def erro(taxa):
+        assert -1 < taxa <= limite_superior
+        return 1.0
+
+    assert math.isnan(utils.encontrar_raiz(erro))
 
 
 def test_intervalo_pontual_com_raiz():

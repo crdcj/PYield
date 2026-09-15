@@ -1,7 +1,7 @@
 import datetime as dt
 import math
 from collections.abc import Callable
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 import polars as pl
 
@@ -257,15 +257,12 @@ def _encontrar_intervalo_raiz(  # noqa: PLR0911
     Encontra um intervalo [a, b] para a TAXA DE JUROS que zera a função.
 
     Otimizado para o contexto financeiro, buscando a taxa apenas em um
-    intervalo realista. A função 'func' é a que calcula a diferença de
-    preço dado uma taxa.
+    intervalo entre o próximo float acima de -1 e 10, inclusive. A função
+    'func' calcula a diferença de preço dada uma taxa.
     """
-    taxa_inicial: float = 0.01
-    passo: float = 0.01
-    fator_crescimento: float = 1.6
-    max_tentativas: int = 100
-    taxa_min: float = -1.0
-    taxa_max: float = 10.00
+    taxa_inicial = 0.01
+    taxa_min = math.nextafter(-1.0, 0.0)
+    taxa_max = 10.0
 
     f0 = func(taxa_inicial)
     if not math.isfinite(f0):
@@ -273,39 +270,24 @@ def _encontrar_intervalo_raiz(  # noqa: PLR0911
     if f0 == 0:
         return (taxa_inicial, taxa_inicial)
 
-    a, fa = taxa_inicial, f0
-    b = taxa_inicial + passo
-    passo_atual = passo
-    for _ in range(max_tentativas):
-        if b > taxa_max:
-            break
-        fb = func(b)
-        if not math.isfinite(fb):
-            return None
-        if fb == 0:
-            return (b, b)
-        if (fa < 0) != (fb < 0):
-            return (a, b)
-        a, fa = b, fb
-        passo_atual *= fator_crescimento
-        b += passo_atual
-
-    a, fa = taxa_inicial, f0
-    b = taxa_inicial - passo
-    passo_atual = passo
-    for _ in range(max_tentativas):
-        if b < taxa_min:
-            break
-        fb = func(b)
-        if not math.isfinite(fb):
-            return None
-        if fb == 0:
-            return (b, b)
-        if (fa < 0) != (fb < 0):
-            return (b, a)
-        a, fa = b, fb
-        passo_atual *= fator_crescimento
-        b -= passo_atual
+    for limite in (taxa_max, taxa_min):
+        a, fa = taxa_inicial, f0
+        passo = math.copysign(0.01, limite - taxa_inicial)
+        while a != limite:
+            b = min(max(a + passo, taxa_min), taxa_max)
+            try:
+                fb = func(b)
+            except (OverflowError, InvalidOperation):
+                # Taxas próximas de -1 podem exceder a precisão da precificação.
+                return None
+            if not math.isfinite(fb):
+                return None
+            if fb == 0:
+                return (b, b)
+            if (fa < 0) != (fb < 0):
+                return (min(a, b), max(a, b))
+            a, fa = b, fb
+            passo *= 1.6
 
     return None
 
@@ -331,10 +313,10 @@ def _metodo_bissecao(  # noqa: PLR0911
         fmeio = func(ponto_medio)
         if not math.isfinite(fmeio):
             return float("nan")
-        if abs(fmeio) < TOLERANCIA or b / 2 - a / 2 < TOLERANCIA:
+        if fmeio == 0 or b / 2 - a / 2 < TOLERANCIA:
             return ponto_medio
         if (fmeio < 0) != (fa < 0):
-            b, fb = ponto_medio, fmeio
+            b = ponto_medio
         else:
             a, fa = ponto_medio, fmeio
 
@@ -353,12 +335,16 @@ def encontrar_raiz(
     Args:
         func_diferenca_preco: Função cuja raiz será encontrada.
         intervalo: Limites inferior e superior da busca. Se ``None``, usa
-            a busca automática de intervalo.
+            a busca automática de intervalo entre o próximo float acima de -1
+            e 10, inclusive.
 
     Returns:
-        Raiz aproximada, com tolerância absoluta de 1e-12 no erro ou na
-        metade da largura do intervalo. Retorna NaN se não encontrar mudança
-        de sinal, houver avaliação não finita ou não convergir em 100 iterações.
+        Raiz aproximada, com parada por zero exato da função ou tolerância
+        absoluta de 1e-12 na metade da largura do intervalo. Retorna NaN se não
+        encontrar mudança de sinal, houver avaliação não finita ou não convergir
+        em 100 iterações.
+        A busca automática também retorna NaN se a expansão exceder a capacidade
+        numérica da precificação (OverflowError ou InvalidOperation).
 
     Raises:
         ValueError: Limites não finitos ou em ordem decrescente.
