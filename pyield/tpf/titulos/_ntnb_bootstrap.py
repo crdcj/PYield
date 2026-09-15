@@ -1,6 +1,7 @@
 """Bootstrap de forwards para a curva zero de NTN-B."""
 
 import datetime as dt
+import math
 from collections.abc import Callable
 
 import polars as pl
@@ -44,6 +45,10 @@ def _resolver_taxa_forward(
     else:
         limite_inferior = -0.99
         limite_superior = taxa_inicial
+        if limite_superior < limite_inferior:
+            raise RuntimeError(
+                "Não foi possível encontrar um intervalo para a taxa forward."
+            )
 
     return utils.encontrar_raiz(erro, intervalo=(limite_inferior, limite_superior))
 
@@ -101,6 +106,8 @@ def _bootstrap(
             dias_anterior,
             desconto_anterior,
         )
+        if not math.isfinite(taxa_forward):
+            raise RuntimeError(f"Não foi possível calibrar a NTN-B {vencimento}.")
         # Guarda cada desconto uma única vez, após calibrar seu trecho.
         while indice_vertice < len(vertices) and vertices[indice_vertice] <= vencimento:
             dias = dias_por_data[vertices[indice_vertice]]
@@ -207,7 +214,8 @@ def taxas_zero(
         raiz. A função tenta expandir o limite superior para encontrar esse
         intervalo, mas pode não encontrá-lo para entradas incompatíveis ou
         extremos. Nesse caso, a calibração não produz uma curva e lança
-        ``RuntimeError``.
+        ``RuntimeError``. A mesma exceção é lançada se a avaliação numérica
+        produzir valor não finito ou a bisseção não convergir em 100 iterações.
 
         **Precisão do método**
 
@@ -227,7 +235,8 @@ def taxas_zero(
 
     Raises:
         RuntimeError: Se não for possível encontrar um intervalo válido para
-            alguma taxa forward.
+            alguma taxa forward, ocorrer valor não finito na avaliação ou
+            a bisseção não convergir.
 
     Output Columns:
         - data_vencimento (Date): Data do vértice da curva.

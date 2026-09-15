@@ -1,5 +1,5 @@
 import datetime as dt
-import logging
+import math
 from collections.abc import Callable
 from decimal import Decimal
 
@@ -9,8 +9,6 @@ import pyield._internal.converters as conversores
 from pyield._internal.numbers import truncar
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf._taxas import TipoTPF
-
-logger = logging.getLogger(__name__)
 
 COLUNAS_DADOS_TPF = (
     "data_referencia",
@@ -252,7 +250,7 @@ def calcular_pv(
     return float(valores_presentes.sum())
 
 
-def _encontrar_intervalo_raiz(
+def _encontrar_intervalo_raiz(  # noqa: PLR0911
     func: Callable[[float], float],
 ) -> tuple[float, float] | None:
     """
@@ -270,7 +268,9 @@ def _encontrar_intervalo_raiz(
     taxa_max: float = 10.00
 
     f0 = func(taxa_inicial)
-    if abs(f0) == 0:
+    if not math.isfinite(f0):
+        return None
+    if f0 == 0:
         return (taxa_inicial, taxa_inicial)
 
     a, fa = taxa_inicial, f0
@@ -280,7 +280,11 @@ def _encontrar_intervalo_raiz(
         if b > taxa_max:
             break
         fb = func(b)
-        if fa * fb < 0:
+        if not math.isfinite(fb):
+            return None
+        if fb == 0:
+            return (b, b)
+        if (fa < 0) != (fb < 0):
             return (a, b)
         a, fa = b, fb
         passo_atual *= fator_crescimento
@@ -293,7 +297,11 @@ def _encontrar_intervalo_raiz(
         if b < taxa_min:
             break
         fb = func(b)
-        if fa * fb < 0:
+        if not math.isfinite(fb):
+            return None
+        if fb == 0:
+            return (b, b)
+        if (fa < 0) != (fb < 0):
             return (b, a)
         a, fa = b, fb
         passo_atual *= fator_crescimento
@@ -302,28 +310,35 @@ def _encontrar_intervalo_raiz(
     return None
 
 
-def _metodo_bissecao(func: Callable[[float], float], a: float, b: float) -> float:
+def _metodo_bissecao(  # noqa: PLR0911
+    func: Callable[[float], float], a: float, b: float
+) -> float:
     """Método da bisseção para encontrar raiz."""
     TOLERANCIA = 1e-12
     MAX_ITERACOES = 100
     fa, fb = func(a), func(b)
-    if fa * fb > 0:
-        logger.warning(
-            "Falha no método da bisseção: a função não muda de sinal no intervalo."
-        )
+    if not math.isfinite(fa) or not math.isfinite(fb):
+        return float("nan")
+    if fa == 0:
+        return a
+    if fb == 0:
+        return b
+    if (fa < 0) == (fb < 0):
         return float("nan")
 
     for _ in range(MAX_ITERACOES):
-        ponto_medio = (a + b) / 2
+        ponto_medio = a / 2 + b / 2
         fmeio = func(ponto_medio)
-        if abs(fmeio) < TOLERANCIA or (b - a) / 2 < TOLERANCIA:
+        if not math.isfinite(fmeio):
+            return float("nan")
+        if abs(fmeio) < TOLERANCIA or b / 2 - a / 2 < TOLERANCIA:
             return ponto_medio
-        if fmeio * fa < 0:
+        if (fmeio < 0) != (fa < 0):
             b, fb = ponto_medio, fmeio
         else:
             a, fa = ponto_medio, fmeio
 
-    return (a + b) / 2
+    return float("nan")
 
 
 def encontrar_raiz(
@@ -339,12 +354,21 @@ def encontrar_raiz(
         func_diferenca_preco: Função cuja raiz será encontrada.
         intervalo: Limites inferior e superior da busca. Se ``None``, usa
             a busca automática de intervalo.
+
+    Returns:
+        Raiz aproximada, com tolerância absoluta de 1e-12 no erro ou na
+        metade da largura do intervalo. Retorna NaN se não encontrar mudança
+        de sinal, houver avaliação não finita ou não convergir em 100 iterações.
+
+    Raises:
+        ValueError: Limites não finitos ou em ordem decrescente.
     """
     if intervalo is None:
         intervalo = _encontrar_intervalo_raiz(func_diferenca_preco)
-    if intervalo is None:
-        logger.warning("Não foi possível encontrar intervalo de busca válido")
-        return float("nan")
+        if intervalo is None:
+            return float("nan")
 
     a, b = intervalo
+    if not math.isfinite(a) or not math.isfinite(b) or a > b:
+        raise ValueError("Os limites do intervalo devem ser finitos e ordenados.")
     return _metodo_bissecao(func_diferenca_preco, a, b)

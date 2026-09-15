@@ -1,7 +1,60 @@
+import math
+
 import polars as pl
 import pytest
 
 from pyield import du, lft, ltn, ntnb, ntnc, ntnf
+
+
+@pytest.mark.parametrize("nome", ["rentabilidade", "premio_limpo"])
+def test_ntnf_expr_preserva_linhas_apos_falha_do_solver(monkeypatch, nome):
+    escalar = getattr(ntnf, nome)
+    expressao = getattr(ntnf, f"{nome}_expr")
+    parametros = {
+        "data_liquidacao": "26-03-2025",
+        "vencimentos_di": ["01-01-2030", "01-01-2035"],
+        "taxas_di": [0.11594, 0.11531],
+    }
+    esperado = escalar(
+        **parametros, data_vencimento="01-01-2035", taxa_ntnf=0.151375
+    )
+    resolver = ntnf.utils.encontrar_raiz
+    chamadas = 0
+
+    def resolver_com_falha(func, intervalo=None):
+        nonlocal chamadas
+        chamadas += 1
+        if chamadas == 2:  # noqa: PLR2004
+            return float("nan")
+        return resolver(func, intervalo=intervalo)
+
+    monkeypatch.setattr(ntnf.utils, "encontrar_raiz", resolver_com_falha)
+    resultado = pl.DataFrame(
+        {"vencimento": ["01-01-2035"] * 3, "taxa": [0.151375] * 3}
+    ).select(
+        resultado=expressao(
+            **parametros, data_vencimento="vencimento", taxa_ntnf="taxa"
+        )
+    )["resultado"]
+
+    assert resultado.dtype == pl.Float64
+    assert resultado[0] == pytest.approx(esperado)
+    assert math.isnan(resultado[1])
+    assert resultado[2] == pytest.approx(esperado)
+
+
+@pytest.mark.parametrize("nome", ["rentabilidade_expr", "premio_limpo_expr"])
+def test_ntnf_expr_propaga_erro_de_entrada(nome):
+    with pytest.raises(ValueError, match="Data inválida"):
+        pl.DataFrame({"vencimento": ["data inválida"], "taxa": [0.15]}).select(
+            getattr(ntnf, nome)(
+                data_liquidacao="26-03-2025",
+                data_vencimento="vencimento",
+                taxa_ntnf="taxa",
+                vencimentos_di=["01-01-2030", "01-01-2035"],
+                taxas_di=[0.11594, 0.11531],
+            )
+        )
 
 
 def test_lft_rentabilidade_expr_bate_com_calculo_escalar():

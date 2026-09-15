@@ -338,7 +338,11 @@ def _resolver_taxa_equivalente(
     erro_inferior = erro(limite_inferior)
     erro_superior = erro(limite_superior)
 
-    while erro_inferior * erro_superior > 0:
+    for _ in range(32):
+        if (erro_inferior < 0) != (erro_superior < 0):
+            break
+        if erro_inferior == 0 or erro_superior == 0:
+            break
         limite_superior = 2 * limite_superior + 1
         erro_superior = erro(limite_superior)
 
@@ -366,7 +370,9 @@ def taxa_curva_zero(
         nome_comercial: Nome comercial, Renda+ ou Educa+.
 
     Returns:
-        float: TIR equivalente anualizada, em formato decimal.
+        float: TIR equivalente anualizada, em formato decimal. Retorna NaN
+            para entradas ausentes.
+            Também retorna NaN se a resolução numérica falhar.
     """
     if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
         return float("nan")

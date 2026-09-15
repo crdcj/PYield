@@ -607,7 +607,9 @@ def rentabilidade(  # noqa
         taxas_di (ArrayLike): Taxas DI correspondentes aos vencimentos.
 
     Returns:
-        float: Rentabilidade da NTN-F sobre a curva DI. Retorna NaN em erro.
+        float: Rentabilidade da NTN-F sobre a curva DI. Retorna NaN para
+            entradas ausentes, fluxos vazios ou preço calculado NaN.
+            Também retorna NaN se a resolução numérica falhar.
 
     Examples:
         >>> # Obs: apenas algumas taxas DI serão usadas no exemplo.
@@ -673,9 +675,6 @@ def rentabilidade(  # noqa
 
     di_tir = utils.encontrar_raiz(diferenca_preco)
 
-    if math.isnan(di_tir):
-        return float("nan")
-
     fator_ntnf = (1 + taxa_ntnf) ** (1 / 252)
     fator_di = (1 + di_tir) ** (1 / 252)
     if fator_di == 1:
@@ -696,6 +695,8 @@ def rentabilidade_expr(
 
     O cálculo é aplicado linha a linha porque a rentabilidade depende dos fluxos
     de caixa do título, da interpolação da curva DI e da resolução de raiz.
+    Falhas de resolução retornam NaN apenas na linha afetada. Outros erros
+    são propagados.
 
     Args:
         data_liquidacao: Data de liquidação para o cálculo.
@@ -794,7 +795,8 @@ def premio_limpo(  # noqa
 
     Returns:
         float: Spread líquido em formato decimal (ex.: 0.0012 = 12 bps).
-            Retorna NaN em caso de erro.
+            Retorna NaN para entradas ausentes ou fluxos vazios.
+            Também retorna NaN se a resolução numérica falhar.
 
     Examples:
         # Obs: apenas algumas taxas DI serão usadas no exemplo.
@@ -865,6 +867,8 @@ def premio_limpo_expr(
 
     O cálculo é aplicado linha a linha porque o prêmio limpo depende dos fluxos
     de caixa do título, da interpolação da curva DI e da resolução de raiz.
+    Falhas de resolução retornam NaN apenas na linha afetada. Outros erros
+    são propagados.
 
     Args:
         data_liquidacao: Data de liquidação para o cálculo.
@@ -1054,8 +1058,9 @@ def taxa(
 
     Returns:
         float: TIR implícita em formato decimal, truncada em oito casas
-            decimais (seis casas em termos percentuais). Retorna NaN em
-            caso de erro.
+            decimais (seis casas em termos percentuais). Retorna NaN para
+            entradas ausentes ou PU não positivo.
+            Também retorna NaN se a resolução numérica falhar.
 
     Examples:
         Exibe as taxas em percentual com seis casas decimais:

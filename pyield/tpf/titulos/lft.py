@@ -183,8 +183,10 @@ def taxa(
 
     Returns:
         float: Taxa implícita em formato decimal, truncada em oito casas
-            decimais (seis casas em termos percentuais). Retorna NaN em
-            caso de erro.
+            decimais (seis casas em termos percentuais). Retorna NaN para
+            entradas ausentes ou PU não positivo. Também retorna NaN
+            quando o prazo útil não é positivo.
+            Também retorna NaN se a resolução numérica falhar.
 
     Examples:
         Exibe as taxas em percentual com seis casas decimais:
