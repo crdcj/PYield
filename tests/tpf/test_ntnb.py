@@ -1,6 +1,6 @@
 import datetime as dt
 import math
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 from pathlib import Path
 
 import polars as pl
@@ -106,6 +106,55 @@ def test_ntnb1_cotacao_retorna_decimal(
 
     assert cotacao == cotacao_esperada
     assert cotacao.as_tuple().exponent == -CASAS_DECIMAIS
+
+
+@pytest.mark.parametrize(
+    "caso",
+    [
+        (
+            ntnb1.NomeComercial.EDUCA_MAIS,
+            "22-06-2023",
+            "15-12-2034",
+            0.0536,
+            Decimal("4128.272299"),
+            Decimal("0.626809"),
+            Decimal("2587.638231"),
+            Decimal("2587.63"),
+        ),
+        (
+            ntnb1.NomeComercial.RENDA_MAIS,
+            "22-09-2022",
+            "15-12-2049",
+            0.0577,
+            Decimal("3955.779249"),
+            Decimal("0.400894"),
+            Decimal("1585.848166"),
+            Decimal("1585.84"),
+        ),
+    ],
+)
+def test_ntnb1_reproduz_exemplos_dos_documentos_oficiais(caso) -> None:
+    (
+        nome_comercial,
+        data_liquidacao,
+        data_vencimento,
+        taxa,
+        vni_projetado,
+        cotacao_esperada,
+        pu_esperado,
+        preco_exibido,
+    ) = caso
+    cotacao = ntnb1.cotacao(
+        data_liquidacao,
+        data_vencimento,
+        taxa,
+        nome_comercial,
+    )
+    pu = ntnb1.pu(vni_projetado, cotacao)
+
+    assert cotacao == cotacao_esperada
+    assert pu == pu_esperado
+    assert pu.quantize(Decimal("0.01"), rounding=ROUND_DOWN) == preco_exibido
 
 
 def test_ntnb1_pu_retorna_decimal() -> None:

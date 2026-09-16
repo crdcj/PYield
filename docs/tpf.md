@@ -75,6 +75,7 @@ pu = vna * cotacao
 
 As regras usadas para LTN, NTN-F, NTN-B, NTN-C e LFT estão na
 [metodologia da STN para os títulos ofertados em leilões primários](referencias/metodologia-calculo-tpf-stn.md).
+Para a NTN-B1, consulte a [metodologia específica do Tesouro Direto](referencias/metodologia-calculo-ntnb1.md).
 
 ### Exibição de taxas em percentual
 

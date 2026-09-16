@@ -1,4 +1,4 @@
-"""Precificação de NTN-B1 pelas regras do Tesouro Direto."""
+"""Precificação de NTN-B1."""
 
 from decimal import Decimal
 from enum import Enum
@@ -78,6 +78,12 @@ def datas_pagamento(
         Para obter as datas efetivas de processamento, use
         ``yd.du.deslocar(..., 0)``.
 
+    References:
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro Educa+ (NTN-B1)*.
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro RendA+ (NTN-B1)*.
+
     Examples:
         >>> from pyield import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
@@ -150,6 +156,12 @@ def fluxos_caixa(
         Para obter as datas efetivas de processamento, use
         ``yd.du.deslocar(..., 0)``.
 
+    References:
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro Educa+ (NTN-B1)*.
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro RendA+ (NTN-B1)*.
+
     Examples:
         >>> from pyield import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
@@ -207,7 +219,7 @@ def cotacao(
     nome_comercial: NomeComercial,
 ) -> Decimal:
     """
-    Calcula a cotação da NTN-B1 em base 1 pelo método do Tesouro Direto.
+    Calcula a cotação da NTN-B1 em base 1.
 
     Args:
         data_liquidacao: Data de liquidação da operação.
@@ -217,6 +229,12 @@ def cotacao(
 
     Returns:
         Decimal: Cotação da NTN-B1 em base 1, truncada em 6 casas decimais.
+
+    References:
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro Educa+ (NTN-B1)*.
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro RendA+ (NTN-B1)*.
 
     Examples:
         >>> from pyield import ntnb1
@@ -233,7 +251,7 @@ def cotacao(
     dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
     anos_uteis = utils.truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa_float) ** anos_uteis
-    # Na base 1, cada valor presente é arredondado na 12ª casa decimal.
+    # Mantém precisão intermediária antes do truncamento final da cotação.
     vp = (valores_fluxo / fatores_desconto).round(12)
     # Retorna a cotação em base 1, truncada na 6ª casa decimal.
     return truncar_decimal(vp.sum(), 6)
@@ -260,7 +278,7 @@ def _validar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:
 
 def _cotacao_por_taxas(pagamentos: pl.DataFrame) -> float:
     """
-    Soma os valores presentes na precisão definida pelo método TD.
+    Soma os valores presentes dos fluxos, arredondados na 12ª casa decimal.
 
     Args:
         pagamentos: DataFrame com uma linha por fluxo e as colunas
@@ -283,10 +301,9 @@ def cotacao_curva_zero(
     Calcula a cotação de uma NTN-B1 descontando cada fluxo pela curva zero.
 
     A função usa interpolação flat-forward entre os vértices da curva e mantém
-    a última taxa zero após o maior vértice, conforme a extrapolação do método
-    TD. Cada valor presente, em base 1, é arredondado na 12ª casa decimal; a
-    soma final não é truncada porque ela é o alvo da calibração da TIR
-    equivalente.
+    a última taxa zero após o maior vértice. Cada valor presente, em base 1, é
+    arredondado na 12ª casa decimal; a soma final não é truncada porque ela é
+    o alvo da calibração da TIR equivalente.
 
     Args:
         data_liquidacao: Data de liquidação.
@@ -296,6 +313,17 @@ def cotacao_curva_zero(
 
     Returns:
         float: Cotação em base 1 calculada pela curva zero.
+
+    Notes:
+        Os documentos oficiais descrevem o desconto dos fluxos por uma taxa
+        única pactuada. Eles não definem a interpolação ou a extrapolação da
+        curva zero usada nesta função.
+
+    References:
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro Educa+ (NTN-B1)*.
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro RendA+ (NTN-B1)*.
     """
     if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
         return float("nan")
@@ -356,12 +384,12 @@ def taxa_curva_zero(
     nome_comercial: NomeComercial,
 ) -> float:
     """
-    Calcula a TIR equivalente de uma NTN-B1 pela curva zero do método TD.
+    Calcula a TIR equivalente de uma NTN-B1 pela curva zero.
 
     Primeiro, cada amortização mensal do Renda+ ou Educa+ é descontada pela
     taxa zero correspondente à sua data. Em seguida, a função encontra por
     bisseção a taxa única que produz a mesma cotação quando aplicada a todos os
-    fluxos. Essa é a taxa equivalente do título calculada pelo método TD.
+    fluxos. Essa é a taxa equivalente do título.
 
     Args:
         data_liquidacao: Data de liquidação.
@@ -373,6 +401,17 @@ def taxa_curva_zero(
         float: TIR equivalente anualizada, em formato decimal. Retorna NaN
             para entradas ausentes.
             Também retorna NaN se a resolução numérica falhar.
+
+    Notes:
+        Os documentos oficiais descrevem o desconto dos fluxos por uma taxa
+        única pactuada. Eles não definem a interpolação ou a extrapolação da
+        curva zero usada nesta função.
+
+    References:
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro Educa+ (NTN-B1)*.
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro RendA+ (NTN-B1)*.
     """
     if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
         return float("nan")
@@ -410,7 +449,13 @@ def pu(
         Decimal: Preço da NTN-B1 truncado em 6 casas decimais.
 
     References:
-         - SEI Proccess 17944.005214/2024-09
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro Educa+ (NTN-B1)*.
+        - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
+          Ofertados no Tesouro Direto — Tesouro RendA+ (NTN-B1)*.
+                - Secretaria do Tesouro Nacional, [consulta pública sobre a composição
+                    dos pagamentos mensais da NTN-B1](https://www.gov.br/participamaisbrasil/consulta-portaria-composicao-ntn-b11),
+                    processo SEI `17944.005214/2024-09`.
 
     Examples:
         >>> from pyield import ntnb1

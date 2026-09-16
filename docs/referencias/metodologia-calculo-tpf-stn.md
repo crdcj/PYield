@@ -30,6 +30,11 @@ O [Caderno de Fórmulas do SELIC](metodologia-calculo-letras-notas-stn.md)
 complementa esta referência na formação de valores nominais, juros pró-rata,
 amortizações e eventos dos mesmos títulos custodiados no SELIC.
 
+Esta metodologia não é a referência de precificação da NTN-B1 (Tesouro Educa+
+e Tesouro RendA+), que é vendida exclusivamente pelo Tesouro Direto e possui
+documentação específica. Consulte a [metodologia de cálculo da NTN-B1 do
+Tesouro Direto](metodologia-calculo-ntnb1.md).
+
 O PYield implementa a LFT comum de código SELIC `210100`, não as séries `LFT-A`
 ou `LFT-B`. Seu VNA é obtido diretamente do arquivo diário oficial do Banco
 Central; o fator acumulado não é recalculado localmente. Portanto, diferenças
