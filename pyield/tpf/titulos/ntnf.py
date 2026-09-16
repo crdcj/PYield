@@ -1044,7 +1044,7 @@ def taxa(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     pu: float | Decimal,
-) -> float:
+) -> Decimal:
     """
     Calcula a TIR implícita de uma NTN-F a partir de um PU informado.
 
@@ -1057,29 +1057,27 @@ def taxa(
         pu: Preço unitário (PU) do título.
 
     Returns:
-        float: TIR implícita em formato decimal, truncada em oito casas
-            decimais (seis casas em termos percentuais). Retorna NaN para
-            entradas ausentes ou PU não positivo.
-            Também retorna NaN se a resolução numérica falhar.
+        Decimal: TIR implícita em formato decimal, truncada em oito casas
+            decimais (seis casas em termos percentuais). Retorna
+            ``Decimal("NaN")`` para entradas ausentes, PU não positivo ou
+            falha na resolução numérica.
 
     Examples:
-        Exibe as taxas em percentual com seis casas decimais:
+        Exibe as taxas em formato decimal:
 
         >>> from pyield import ntnf
         >>> pu = ntnf.pu("05-07-2024", "01-01-2035", 0.11921)
-        >>> taxa = ntnf.taxa("13-03-2026", "01-01-2035", 820.995125)
-        >>> f"{taxa:.6%}"
-        '14.274300%'
-        >>> taxa = ntnf.taxa("21-05-2008", "01-01-2014", 903.039091)
-        >>> f"{taxa:.6%}"
-        '13.661101%'
+        >>> ntnf.taxa("13-03-2026", "01-01-2035", 820.995125)
+        Decimal('0.14274300')
+        >>> ntnf.taxa("21-05-2008", "01-01-2014", 903.039091) * 100
+        Decimal('13.66110100')
     """
     if any_is_empty(data_liquidacao, data_vencimento, pu):
-        return float("nan")
+        return Decimal("NaN")
 
     pu_float = float(pu)
     if pu_float <= 0:
-        return float("nan")
+        return Decimal("NaN")
 
     def diferenca_preco(taxa_encontrada: float) -> float:
         return (
@@ -1087,4 +1085,4 @@ def taxa(
         )
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
-    return utils.truncar(taxa_encontrada, 8)
+    return truncar_decimal(taxa_encontrada, 8)

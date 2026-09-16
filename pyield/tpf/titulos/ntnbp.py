@@ -31,6 +31,8 @@ def cotacao(
         >>> from pyield import ntnbp
         >>> ntnbp.cotacao("02-12-2025", "15-05-2029", 0.0777)
         Decimal('0.774630')
+        >>> ntnbp.cotacao("02-12-2025", "15-05-2029", 0.0777) * 100
+        Decimal('77.463000')
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa_tir):
         return Decimal("NaN")

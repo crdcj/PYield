@@ -165,7 +165,7 @@ def taxa(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     preco_unitario: float | Decimal,
-) -> float:
+) -> Decimal:
     """
     Calcula a taxa implícita (YTM) de uma LTN a partir do preço (PU).
 
@@ -178,37 +178,34 @@ def taxa(
         preco_unitario: PU do título.
 
     Returns:
-        float: Taxa implícita (YTM) em formato decimal, truncada em oito
-            casas decimais (seis casas em termos percentuais). Retorna NaN
-            em caso de erro.
+        Decimal: Taxa implícita (YTM) em formato decimal, truncada em oito
+            casas decimais (seis casas em termos percentuais). Retorna
+            ``Decimal("NaN")`` em caso de erro.
 
     Examples:
-        Exibe as taxas em percentual com seis casas decimais:
+        Exibe as taxas em formato decimal:
 
         >>> from pyield import ltn
-        >>> taxa = ltn.taxa("05-07-2024", "01-01-2030", 535.279902)
-        >>> f"{taxa:.6%}"
-        '12.145000%'
-        >>> taxa = ltn.taxa("13-03-2026", "01-01-2027", 895.563913)
-        >>> f"{taxa:.6%}"
-        '14.830700%'
-        >>> taxa = ltn.taxa("21-05-2008", "01-07-2010", 753.3)
-        >>> f"{taxa:.6%}"
-        '14.361101%'
+        >>> ltn.taxa("05-07-2024", "01-01-2030", 535.279902)
+        Decimal('0.12145000')
+        >>> ltn.taxa("13-03-2026", "01-01-2027", 895.563913) * 100
+        Decimal('14.83070000')
+        >>> ltn.taxa("21-05-2008", "01-07-2010", 753.3) * 100
+        Decimal('14.36110100')
     """
     if any_is_empty(data_liquidacao, data_vencimento, preco_unitario):
-        return float("nan")
+        return Decimal("NaN")
 
     preco_float = float(preco_unitario)
     if preco_float <= 0:
-        return float("nan")
+        return Decimal("NaN")
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
-        return float("nan")
+        return Decimal("NaN")
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
     taxa_calculada = (VALOR_FACE / preco_float) ** (1 / anos_truncados) - 1
-    return utils.truncar(taxa_calculada, 8)
+    return truncar_decimal(taxa_calculada, 8)
 
 
 def rentabilidade(taxa_ltn: float, taxa_di: float) -> float:
@@ -300,9 +297,7 @@ def dv01(
         return float("nan")
     anos_truncados = utils.truncar(dias_uteis / 252, 14)
     preco_1 = utils.truncar(VALOR_FACE / (1 + taxa) ** anos_truncados, 6)
-    preco_2 = utils.truncar(
-        VALOR_FACE / (1 + taxa_mais_1bp) ** anos_truncados, 6
-    )
+    preco_2 = utils.truncar(VALOR_FACE / (1 + taxa_mais_1bp) ** anos_truncados, 6)
     return float(pu) * (1 - preco_2 / preco_1)
 
 

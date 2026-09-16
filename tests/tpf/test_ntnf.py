@@ -8,6 +8,8 @@ from polars.testing import assert_frame_equal
 
 from pyield import ntnf, tpf
 
+CASAS_TAXA = 8
+
 
 def test_fluxos_caixa_preservam_data_contratual() -> None:
     resultado = ntnf.fluxos_caixa("01-08-2024", "01-01-2025")
@@ -53,9 +55,11 @@ def test_pu_e_taxa_reproduzem_referencia_do_back_office(
 ) -> None:
     """Reproduz preços de NTN-F validados pelo back office em 06/07/2026."""
     data_liquidacao = "06-07-2026"
+    taxa_resultado = ntnf.taxa(data_liquidacao, data_vencimento, pu_esperado)
 
     assert ntnf.pu(data_liquidacao, data_vencimento, taxa) == pu_esperado
-    assert ntnf.taxa(data_liquidacao, data_vencimento, pu_esperado) == taxa
+    assert taxa_resultado == Decimal(str(taxa))
+    assert taxa_resultado.as_tuple().exponent == -CASAS_TAXA
 
 
 def test_taxas_zero_ignora_vertices_vencidos() -> None:

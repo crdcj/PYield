@@ -241,9 +241,13 @@ def cotacao(
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
         >>> ntnb1.cotacao("18-06-2025", "15-12-2084", 0.07010, r_mais)
         Decimal('0.038332')
+        >>> ntnb1.cotacao("18-06-2025", "15-12-2084", 0.07010, r_mais) * 100
+        Decimal('3.833200')
         >>> educa_mais = ntnb1.NomeComercial.EDUCA_MAIS
         >>> ntnb1.cotacao("22-06-2023", "15-12-2034", 0.0536, educa_mais)
         Decimal('0.626809')
+        >>> ntnb1.cotacao("22-06-2023", "15-12-2034", 0.0536, educa_mais) * 100
+        Decimal('62.680900')
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa, nome_comercial):
         return Decimal("NaN")

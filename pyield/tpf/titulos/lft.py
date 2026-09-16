@@ -137,8 +137,10 @@ def cotacao(
         ...     taxa=0.001717,  # 0.1717%
         ... )
         Decimal('0.989645')
-        >>> lft.cotacao("21-05-2008", "07-03-2014", -0.000200009)
-        Decimal('1.001158')
+        >>> lft.cotacao("24-07-2024", "01-09-2030", 0.001717) * 100
+        Decimal('98.964500')
+        >>> lft.cotacao("21-05-2008", "07-03-2014", -0.000200009) * 100
+        Decimal('100.115800')
 
         Entradas nulas retornam Decimal('NaN'):
         >>> lft.cotacao(
@@ -167,7 +169,7 @@ def taxa(
     data_vencimento: DateLike,
     vna: float | Decimal,
     pu: float | Decimal,
-) -> float:
+) -> Decimal:
     """
     Calcula a taxa implícita de uma LFT a partir do preço (PU).
 
@@ -182,43 +184,39 @@ def taxa(
         pu: Preço unitário (PU) do título.
 
     Returns:
-        float: Taxa implícita em formato decimal, truncada em oito casas
-            decimais (seis casas em termos percentuais). Retorna NaN para
-            entradas ausentes ou PU não positivo. Também retorna NaN
-            quando o prazo útil não é positivo.
-            Também retorna NaN se a resolução numérica falhar.
+        Decimal: Taxa implícita em formato decimal, truncada em oito casas
+            decimais (seis casas em termos percentuais). Retorna
+            ``Decimal("NaN")`` para entradas ausentes, PU não positivo, prazo
+            útil não positivo ou falha na resolução numérica.
 
     Examples:
-        Exibe as taxas em percentual com seis casas decimais:
+        Exibe as taxas em formato decimal:
 
         >>> from pyield import lft
-        >>> taxa = lft.taxa("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
-        >>> f"{taxa:.6%}"
-        '0.171691%'
-        >>> taxa = lft.taxa("24-07-2024", "01-03-2025", 15785.324502, 15774.132706)
-        >>> f"{taxa:.6%}"
-        '0.115966%'
-        >>> taxa = lft.taxa("21-05-2008", "07-03-2014", 3451.215345, 3426.649594)
-        >>> f"{taxa:.6%}"
-        '0.123443%'
+        >>> lft.taxa("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
+        Decimal('0.00171691')
+        >>> lft.taxa("24-07-2024", "01-03-2025", 15785.324502, 15774.132706) * 100
+        Decimal('0.11596600')
+        >>> lft.taxa("21-05-2008", "07-03-2014", 3451.215345, 3426.649594) * 100
+        Decimal('0.12344300')
     """
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
-        return float("nan")
+        return Decimal("NaN")
 
     pu_float = float(pu)
     if pu_float <= 0:
-        return float("nan")
+        return Decimal("NaN")
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
-        return float("nan")
+        return Decimal("NaN")
 
     def diferenca_preco(taxa: float) -> float:
         preco = _calcular_pu(vna, cotacao(data_liquidacao, data_vencimento, taxa))
         return float(preco) - pu_float
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
-    return utils.truncar(taxa_encontrada, 8)
+    return truncar_decimal(taxa_encontrada, 8)
 
 
 def rentabilidade(taxa_lft: float, taxa_di: float) -> float:

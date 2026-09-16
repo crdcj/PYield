@@ -261,8 +261,10 @@ def cotacao(
         >>> from pyield import ntnc
         >>> ntnc.cotacao("21-03-2025", "01-01-2031", 0.067626)
         Decimal('1.264958')
-        >>> ntnc.cotacao("21-05-2008", "01-03-2011", 0.069000009)
-        Decimal('0.990981')
+        >>> ntnc.cotacao("21-03-2025", "01-01-2031", 0.067626) * 100
+        Decimal('126.495800')
+        >>> ntnc.cotacao("21-05-2008", "01-03-2011", 0.069000009) * 100
+        Decimal('99.098100')
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return Decimal("NaN")
@@ -330,7 +332,7 @@ def taxa(
     data_vencimento: DateLike,
     vna: float | Decimal,
     pu: float | Decimal,
-) -> float:
+) -> Decimal:
     """
     Calcula a taxa implícita (YTM) de uma NTN-C a partir do preço (PU).
 
@@ -345,35 +347,33 @@ def taxa(
         pu: Preço unitário (PU) do título.
 
     Returns:
-        float: Taxa implícita (YTM) em formato decimal, truncada em oito
-            casas decimais (seis casas em termos percentuais). Retorna NaN
-            para entradas ausentes ou PU não positivo.
-            Também retorna NaN se a resolução numérica falhar.
+        Decimal: Taxa implícita (YTM) em formato decimal, truncada em oito
+            casas decimais (seis casas em termos percentuais). Retorna
+            ``Decimal("NaN")`` para entradas ausentes, PU não positivo ou
+            falha na resolução numérica.
 
     Examples:
-        Exibe as taxas em percentual com seis casas decimais:
+        Exibe as taxas em formato decimal:
 
         >>> from pyield import ntnc
-        >>> taxa = ntnc.taxa("21-03-2025", "01-01-2031", 6598.913723, 8347.348705)
-        >>> f"{taxa:.6%}"
-        '6.762593%'
-        >>> taxa = ntnc.taxa("21-05-2008", "01-03-2011", 2126.473734, 2207.556177)
-        >>> f"{taxa:.6%}"
-        '4.987695%'
+        >>> ntnc.taxa("21-03-2025", "01-01-2031", 6598.913723, 8347.348705)
+        Decimal('0.06762593')
+        >>> ntnc.taxa("21-05-2008", "01-03-2011", 2126.473734, 2207.556177) * 100
+        Decimal('4.98769500')
     """
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
-        return float("nan")
+        return Decimal("NaN")
 
     pu_float = float(pu)
     if pu_float <= 0:
-        return float("nan")
+        return Decimal("NaN")
 
     def diferenca_preco(taxa: float) -> float:
         cotacao_calc = cotacao(data_liquidacao, data_vencimento, taxa)
         return float(_calcular_pu(vna, cotacao_calc)) - pu_float
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
-    return utils.truncar(taxa_encontrada, 8)
+    return truncar_decimal(taxa_encontrada, 8)
 
 
 def duration(

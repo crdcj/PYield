@@ -302,19 +302,19 @@ def cotacao(
 
     Examples:
         >>> from pyield import ntnb
-        >>> ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)
-        Decimal('0.993651')
         >>> cotacao = ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)
-        >>> f"{cotacao * 100:.4f}%"
-        '99.3651%'
-        >>> ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)
-        Decimal('0.995341')
-        >>> ntnb.cotacao("15-08-2024", "15-08-2032", 0.05929)
-        Decimal('1.006409')
-        >>> ntnb.cotacao("15-05-2024", "15-05-2025", 0.10)
-        Decimal('0.964454')
-        >>> ntnb.cotacao("21-05-2008", "15-08-2010", 0.082900009)
-        Decimal('0.970813')
+        >>> cotacao
+        Decimal('0.993651')
+        >>> cotacao * 100
+        Decimal('99.365100')
+        >>> ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878) * 100
+        Decimal('99.534100')
+        >>> ntnb.cotacao("15-08-2024", "15-08-2032", 0.05929) * 100
+        Decimal('100.640900')
+        >>> ntnb.cotacao("15-05-2024", "15-05-2025", 0.10) * 100
+        Decimal('96.445400')
+        >>> ntnb.cotacao("21-05-2008", "15-08-2010", 0.082900009) * 100
+        Decimal('97.081300')
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return Decimal("NaN")
@@ -696,7 +696,7 @@ def taxa(
     data_vencimento: DateLike,
     vna: float | Decimal,
     pu: float | Decimal,
-) -> float:
+) -> Decimal:
     """
     Calcula a TIR implícita de uma NTN-B a partir do preço (PU).
 
@@ -711,35 +711,32 @@ def taxa(
         pu: Preço unitário (PU) do título.
 
     Returns:
-        float: TIR implícita em formato decimal, truncada em oito casas
-            decimais (seis casas em termos percentuais). Retorna NaN para
-            entradas ausentes ou PU não positivo.
-            Também retorna NaN se a resolução numérica falhar.
+        Decimal: TIR implícita em formato decimal, truncada em oito casas
+            decimais (seis casas em termos percentuais). Retorna
+            ``Decimal("NaN")`` para entradas ausentes, PU não positivo ou
+            falha na resolução numérica.
 
     Examples:
-        Exibe as taxas em percentual com seis casas decimais:
+        Exibe as taxas em formato decimal:
 
         >>> from pyield import ntnb
-        >>> taxa = ntnb.taxa("31-05-2024", "15-05-2035", 4299.160173, 4271.864805)
-        >>> f"{taxa:.6%}"
-        '6.149003%'
-        >>> taxa = ntnb.taxa("15-08-2024", "15-08-2032", 4315.498383, 4343.156412)
-        >>> f"{taxa:.6%}"
-        '5.929003%'
-        >>> taxa = ntnb.taxa("21-05-2008", "15-08-2010", 1728.461136, 1781.867128)
-        >>> f"{taxa:.6%}"
-        '5.234570%'
+        >>> ntnb.taxa("31-05-2024", "15-05-2035", 4299.160173, 4271.864805)
+        Decimal('0.06149003')
+        >>> ntnb.taxa("15-08-2024", "15-08-2032", 4315.498383, 4343.156412) * 100
+        Decimal('5.92900300')
+        >>> ntnb.taxa("21-05-2008", "15-08-2010", 1728.461136, 1781.867128) * 100
+        Decimal('5.23457000')
     """
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
-        return float("nan")
+        return Decimal("NaN")
 
     pu_float = float(pu)
     if pu_float <= 0:
-        return float("nan")
+        return Decimal("NaN")
 
     def diferenca_preco(taxa_encontrada: float) -> float:
         cotacao_calculada = cotacao(data_liquidacao, data_vencimento, taxa_encontrada)
         return float(_calcular_pu(vna, cotacao_calculada)) - pu_float
 
     taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
-    return utils.truncar(taxa_encontrada, 8)
+    return truncar_decimal(taxa_encontrada, 8)
