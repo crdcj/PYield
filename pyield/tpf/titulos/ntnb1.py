@@ -241,6 +241,9 @@ def cotacao(
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
         >>> ntnb1.cotacao("18-06-2025", "15-12-2084", 0.07010, r_mais)
         Decimal('0.038332')
+        >>> educa_mais = ntnb1.NomeComercial.EDUCA_MAIS
+        >>> ntnb1.cotacao("22-06-2023", "15-12-2034", 0.0536, educa_mais)
+        Decimal('0.626809')
     """
     if any_is_empty(data_liquidacao, data_vencimento, taxa, nome_comercial):
         return Decimal("NaN")
@@ -463,6 +466,8 @@ def pu(
         Decimal('4271.864805')
         >>> ntnb1.pu(4315.498383, 1.006409)
         Decimal('4343.156412')
+        >>> ntnb1.pu(4128.272299, 0.626809)
+        Decimal('2587.638231')
     """
     if any_is_empty(vna, cotacao):
         return Decimal("NaN")

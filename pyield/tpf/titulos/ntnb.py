@@ -288,6 +288,10 @@ def cotacao(
         cálculo do PU. O truncamento de 4 casas na escala STN equivale ao
         truncamento de 6 casas nesta representação.
 
+        Para exibição, multiplique o fator retornado por 100. Por exemplo,
+        ``0.993651`` pode ser apresentado como ``99.3651%``; a STN costuma
+        registrar esse mesmo valor como ``99.3651`` na escala base 100.
+
         O cupom semestral definido pela STN como 2,956301% é armazenado
         como 0,02956301 em base 1.
 
@@ -300,6 +304,9 @@ def cotacao(
         >>> from pyield import ntnb
         >>> ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)
         Decimal('0.993651')
+        >>> cotacao = ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)
+        >>> f"{cotacao * 100:.4f}%"
+        '99.3651%'
         >>> ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)
         Decimal('0.995341')
         >>> ntnb.cotacao("15-08-2024", "15-08-2032", 0.05929)
