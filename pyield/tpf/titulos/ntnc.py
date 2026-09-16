@@ -10,18 +10,19 @@ from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf.titulos import _utils as utils
 
 """
-Constantes calculadas conforme regras da STN e em base 1.
+Constantes calculadas conforme regras da STN, exibidas em base 100.
 Válido para NTN-C com vencimento 01-01-2031:
-PRINCIPAL = 1
-TAXA_CUPOM = (0.12 + 1) ** 0.5 - 1  # 12% a.a. com capitalização semestral
-VALOR_CUPOM_2031 = round(TAXA_CUPOM, 8) -> 0.05830052
-VALOR_FINAL_2031 = principal + último cupom = 1 + 0.05830052
+PRINCIPAL = 100
+TAXA_CUPOM = ((0.12 + 1) ** 0.5 - 1) * 100  # 12% a.a. com capitalização semestral
+VALOR_CUPOM_2031 = round(TAXA_CUPOM, 6) -> 5.830052
+VALOR_FINAL_2031 = principal + último cupom = 100 + 5.830052
 
 Para as demais NTN-C:
-TAXA_CUPOM = (0.06 + 1) ** 0.5 - 1  # 6% a.a. com capitalização semestral
-VALOR_CUPOM = round(TAXA_CUPOM, 8) -> 0.02956301
-VALOR_FINAL = principal + último cupom = 1 + 0.02956301
+TAXA_CUPOM = ((0.06 + 1) ** 0.5 - 1) * 100  # 6% a.a. com capitalização semestral
+VALOR_CUPOM = round(TAXA_CUPOM, 6) -> 2.956301
+VALOR_FINAL = principal + último cupom = 100 + 2.956301
 """
+# Valores usados nos cálculos, em base 1, com 8 casas decimais
 VALOR_CUPOM_2031 = 0.05830052
 VALOR_FINAL_2031 = 1.05830052
 

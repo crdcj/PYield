@@ -14,13 +14,14 @@ from pyield.tpf.titulos._ntnb_bootstrap import (
 )
 
 """
-Constantes calculadas conforme regras da STN e em base 1.
-TAXA_CUPOM = (0.06 + 1) ** 0.5 - 1  # 6% a.a. com capitalização semestral
-VALOR_CUPOM = round(TAXA_CUPOM, 8) -> 0.02956301
-VALOR_FINAL = principal + último cupom = 1 + 0.02956301
+Constantes calculadas conforme regras da STN, exibidas em base 100.
+TAXA_CUPOM = ((0.06 + 1) ** 0.5 - 1) * 100  # 6% a.a. com capitalização semestral
+VALOR_CUPOM = round(TAXA_CUPOM, 6) -> 2.956301
+VALOR_FINAL = principal + último cupom = 100 + 2.956301
 DIA_CUPOM = 15
 MESES_CUPOM = {2, 5, 8, 11}
 """
+# Valores usados nos cálculos, em base 1, com 8 casas decimais
 VALOR_CUPOM = 0.02956301
 VALOR_FINAL = 1.02956301
 
