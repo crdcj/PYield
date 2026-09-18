@@ -14,12 +14,14 @@ from pyield.vna import _ntnc as ntnc  # noqa: PLC2701
 def series(monkeypatch):
     datas = [dt.date(2026, 2, 1), dt.date(2026, 1, 1)]
     monkeypatch.setattr(
-        ntnb, "vnas", lambda: pl.DataFrame({"data": datas, "vna": [110.0, 100.0]})
+        ntnb,
+        "vnas",
+        lambda *, atualizar=False: pl.DataFrame({"data": datas, "vna": [110.0, 100.0]}),
     )
     monkeypatch.setattr(
         ntnc,
         "vnas",
-        lambda: pl.DataFrame(
+        lambda *, atualizar=False: pl.DataFrame(
             {
                 "data": [*datas, datas[1]],
                 "vna": [220.0, 200.0, 300.0],

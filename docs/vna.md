@@ -45,3 +45,24 @@ Use apenas `yd.vna` para operações de VNA. Os aliases `vna`, `vnas`,
 As implementações internas e suas metodologias foram preservadas.
 
 ::: pyield.vna
+
+## Atualização manual
+
+As consultas `valor`, `historico` e `ultimo` aceitam `atualizar=True`:
+
+```python
+historico = yd.vna.historico("NTN-C", vencimento="01-01-2031", atualizar=True)
+ultimo = yd.vna.ultimo("NTN-B", atualizar=True)
+valor = yd.vna.valor("LFT", "31-05-2024", atualizar=True)
+```
+
+A opção ignora e renova o cache interno de 60 segundos do arquivo de VNA.
+Chamadas seguintes reutilizam o download renovado. Para NTN-B e NTN-C, o cache
+é por planilha do título, compartilhado entre datas e séries de vencimentos;
+para LFT, é por data de referência. Erros de download são propagados; a entrada
+anterior permanece disponível somente até sua expiração original.
+
+O padrão continua sendo `atualizar=False`. A opção não invalida caches da
+aplicação nem o cache dos índices do IPCA usados no pró-rata da NTN-B.
+A coluna `data` representa a referência do VNA, não o horário do download ou
+uma nova publicação. Um novo download pode retornar os mesmos dados.

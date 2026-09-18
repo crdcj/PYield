@@ -41,7 +41,7 @@ def _processar(df_bruto: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def vnas() -> pl.DataFrame:
+def vnas(*, atualizar: bool = False) -> pl.DataFrame:
     """Busca os VNAs oficiais publicados para a NTN-C.
 
     Fonte: Tesouro Nacional, publicação "Valor Nominal de NTN-C" no portal
@@ -57,13 +57,15 @@ def vnas() -> pl.DataFrame:
             aplica.
         - vna (Float64): Valor nominal atualizado da NTN-C.
     """
-    conteudo = _download.baixar_planilha(_URL_PUBLICACAO)
+    conteudo = _download.baixar_planilha(_URL_PUBLICACAO, _atualizar=atualizar)
     return _processar(_download.ler_planilha(conteudo, "NTN-C"))
 
 
 def vna(
     data: DateLike | None = None,
     vencimento: DateLike | None = None,
+    *,
+    atualizar: bool = False,
 ) -> Decimal:
     """Obtém o VNA da NTN-C em uma data de referência.
 
@@ -98,7 +100,7 @@ def vna(
     if data_convertida is None or vencimento_convertido is None:
         return Decimal("NaN")
 
-    df = vnas().filter(
+    df = vnas(atualizar=atualizar).filter(
         pl.col("anos_vencimento").list.contains(vencimento_convertido.year)
     )
     return truncar_decimal(_vna.calcular_vna(df, data_convertida), 6)

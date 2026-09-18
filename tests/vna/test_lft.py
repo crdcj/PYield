@@ -18,7 +18,7 @@ EMISSAO VENCIMENTO DATA BASE TITULO INDICE
 def test_vna_retorna_decimal_com_escala_da_fonte(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(lft, "_baixar_texto", lambda _: TEXTO_BCB)
+    monkeypatch.setattr(lft, "_baixar_texto", lambda _, **kwargs: TEXTO_BCB)
 
     resultado = vna.valor("LFT", "31-05-2024")
 

@@ -15,6 +15,11 @@ def ttl_cache(ttl: int = _TTL_PADRAO, maxsize: int = _TAMANHO_MAXIMO):
     Args:
         ttl: Tempo de vida de cada entrada em segundos.
         maxsize: Número máximo de entradas no cache.
+
+    Notes:
+        O wrapper consome _atualizar=True para ignorar e renovar apenas a
+        entrada consultada. Erros são propagados, preservando a entrada
+        anterior até sua expiração.
     """
 
     def decorador(func):
@@ -22,9 +27,10 @@ def ttl_cache(ttl: int = _TTL_PADRAO, maxsize: int = _TAMANHO_MAXIMO):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
+            atualizar = kwargs.pop("_atualizar", False)
             chave = (args, tuple(sorted(kwargs.items())))
             agora = time.monotonic()
-            if chave in _cache:
+            if not atualizar and chave in _cache:
                 resultado, expira_em = _cache[chave]
                 if agora < expira_em:
                     return resultado

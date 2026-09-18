@@ -80,7 +80,7 @@ def _validar_valores(valores: list[Decimal]) -> Decimal:
     return valor
 
 
-def vna(data: DateLike | None = None) -> Decimal:
+def vna(data: DateLike | None = None, *, atualizar: bool = False) -> Decimal:
     """Busca o Valor Nominal Atualizado (VNA) da LFT.
 
     Fonte: Banco Central do Brasil, arquivo diário do SELIC. A resposta bruta
@@ -112,7 +112,7 @@ def vna(data: DateLike | None = None) -> Decimal:
     if data is None or not data_referencia_valida(data):
         return Decimal("NaN")
 
-    texto = _baixar_texto(data)
+    texto = _baixar_texto(data, _atualizar=atualizar)
     tabela = _recortar_tabela(texto)
     linhas = _obter_linhas(tabela)
     valores = _extrair_valores_lft(linhas)

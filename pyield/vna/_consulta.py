@@ -25,6 +25,8 @@ def valor(
     titulo: TipoTitulo,
     data: DateLike | None = None,
     vencimento: DateLike | None = None,
+    *,
+    atualizar: bool = False,
 ) -> Decimal:
     """Consulta o VNA do título na data informada.
 
@@ -33,6 +35,8 @@ def valor(
         data: Data de referência. Se nula, retorna ``Decimal('NaN')``.
         vencimento: Necessário para selecionar a série da NTN-C. Não se
             aplica aos demais títulos.
+        atualizar: Se True, baixa novamente o arquivo de VNA e renova seu
+            cache de 60 segundos. Não atualiza o cache dos índices do IPCA.
 
     Returns:
         Decimal: VNA com seis casas ou ``Decimal('NaN')`` na ausência de dados,
@@ -51,17 +55,19 @@ def valor(
     if titulo not in {"LFT", "NTN-B", "NTN-C"}:
         raise ValueError("Título deve ser LFT, NTN-B ou NTN-C.")
     if titulo == "NTN-C":
-        return _ntnc.vna(data, vencimento)
+        return _ntnc.vna(data, vencimento, atualizar=atualizar)
     if vencimento is not None:
         raise ValueError("Vencimento aplica-se apenas à NTN-C.")
     if titulo == "LFT":
-        return _lft.vna(data)
-    return _ntnb.vna(data)
+        return _lft.vna(data, atualizar=atualizar)
+    return _ntnb.vna(data, atualizar=atualizar)
 
 
 def historico(
     titulo: TipoTitulo,
     vencimento: DateLike | None = None,
+    *,
+    atualizar: bool = False,
 ) -> pl.DataFrame:
     """Busca os VNAs mensais publicados pelo Tesouro Nacional.
 
@@ -69,6 +75,8 @@ def historico(
         titulo: NTN-B ou NTN-C. Histórico de LFT não está disponível.
         vencimento: Filtro opcional de série para NTN-C. Se omitido, retorna
             todas as séries. Não se aplica à NTN-B.
+        atualizar: Se True, baixa novamente o arquivo de VNA e renova seu
+            cache de 60 segundos. Não atualiza o cache dos índices do IPCA.
 
     Returns:
         DataFrame Polars ordenado por data. Sem série correspondente ao
@@ -93,7 +101,7 @@ def historico(
     ano = None
     if vencimento is not None and not any_is_empty(vencimento):
         ano = converter_datas(vencimento).year
-    df = modulo.vnas()
+    df = modulo.vnas(atualizar=atualizar)
     if ano is not None:
         df = df.filter(pl.col("anos_vencimento").list.contains(ano))
     return df.sort("data")
@@ -102,6 +110,8 @@ def historico(
 def ultimo(
     titulo: TipoTitulo,
     vencimento: DateLike | None = None,
+    *,
+    atualizar: bool = False,
 ) -> pl.DataFrame:
     """Busca a última referência publicada de cada série de VNA.
 
@@ -109,6 +119,8 @@ def ultimo(
         titulo: NTN-B ou NTN-C. Última publicação de LFT não está disponível.
         vencimento: Filtro opcional da NTN-C. Sem filtro, retorna a última
             referência de cada série. Não se aplica à NTN-B.
+        atualizar: Se True, baixa novamente o arquivo de VNA e renova seu
+            cache de 60 segundos. Não atualiza o cache dos índices do IPCA.
 
     Returns:
         DataFrame Polars com data e valor da última publicação de cada série.
@@ -124,7 +136,7 @@ def ultimo(
         O resultado é publicado, sem projeção até a data atual. Preserva
         as colunas e os tipos do histórico.
     """
-    df = historico(titulo, vencimento)
+    df = historico(titulo, vencimento, atualizar=atualizar)
     if titulo == "NTN-C":
         return df.unique(subset="anos_vencimento", keep="last", maintain_order=True)
     return df.tail(1)

@@ -33,7 +33,7 @@ def _processar(df_bruto: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def vnas() -> pl.DataFrame:
+def vnas(*, atualizar: bool = False) -> pl.DataFrame:
     """Busca os VNAs oficiais publicados para a NTN-B.
 
     Fonte: Tesouro Nacional, publicação "Valor Nominal de NTN-B" no portal
@@ -46,11 +46,11 @@ def vnas() -> pl.DataFrame:
         - data (Date): Data de referência do VNA.
         - vna (Float64): Valor nominal atualizado da NTN-B.
     """
-    conteudo = _download.baixar_planilha(_URL_PUBLICACAO)
+    conteudo = _download.baixar_planilha(_URL_PUBLICACAO, _atualizar=atualizar)
     return _processar(_download.ler_planilha(conteudo, "NTNB"))
 
 
-def vna(data: DateLike | None = None) -> Decimal:
+def vna(data: DateLike | None = None, *, atualizar: bool = False) -> Decimal:
     """Obtém o VNA da NTN-B em uma data de referência.
 
     Em datas de referência oficiais, retorna o valor publicado pelo Tesouro
@@ -81,7 +81,7 @@ def vna(data: DateLike | None = None) -> Decimal:
     data_convertida = conversores.converter_datas(data)
     if data_convertida is None:
         return Decimal("NaN")
-    df = vnas()
+    df = vnas(atualizar=atualizar)
     ponto_exato = df.filter(pl.col("data") == data_convertida)
     if ponto_exato.height == 1:
         return truncar_decimal(ponto_exato.item(0, "vna"), 6)
