@@ -122,35 +122,35 @@ def _add_meeting_rank(df: pl.DataFrame) -> pl.DataFrame:
 
 def _add_discount_factors(df: pl.DataFrame) -> pl.DataFrame:
     """
-    Add columns:
-        DI1Rate      : Float64  DI1 rate interpolated to ExpiryDate
-        DiscountExp  : Float64  exp(+n * r_n), the B3 pricing discount factor
-                                where n = BDaysToExp/252, r_n = ln(1+DI1Rate)
+    Adiciona as colunas de taxa DI1 e fator de desconto.
 
-    Uses the vectorized di1.interpolar_taxas() to fetch all DI1 rates in a
-    single call (one data fetch + one interpolador per unique TradeDate),
-    then computes discount factors with Polars expressions.
+    A função usa ``di1.interpolar_taxas()`` de forma vetorizada para buscar
+    todas as taxas DI1 em uma única chamada, com uma busca e um interpolador por
+    data_referencia única. Em seguida, calcula os fatores de desconto com
+    expressões Polars.
 
-    Interpolation method
-    --------------------
-    di1.interpolar_taxas() implements B3 Manual §1.4.2 — Flat Forward 252,
-    which log-linearly interpolates accumulated DI1 price factors (PU values):
+    Método de interpolação
+    ----------------------
+    ``di1.interpolar_taxas()`` implementa o Manual da B3 §1.4.2 — Flat Forward
+    252, que interpola de forma log-linear os fatores acumulados do DI1 (valores
+    de PU):
 
-        fa_j = (1 + r_j)^(du_j/252)          # accumulated factor at node j
-        fa_k = (1 + r_k)^(du_k/252)          # accumulated factor at node k
-        ft   = (du - du_j) / (du_k - du_j)   # time fraction
+        fa_j = (1 + r_j)^(du_j/252)          # fator acumulado no vértice j
+        fa_k = (1 + r_k)^(du_k/252)          # fator acumulado no vértice k
+        ft   = (du - du_j) / (du_k - du_j)   # fração do intervalo
         r    = (fa_j * (fa_k / fa_j)^ft)^(252/du) - 1
 
-    This is equivalent to log-linear interpolation of DI1 settlement prices
-    (PU = 100_000 / (1+r)^(du/252)) — hence "interpolação exponencial dos
-    preços de ajuste do DI1" in the CPM Pricing Manual §3.5.
+    Isso equivale à interpolação log-linear dos preços de ajuste do DI1
+    (PU = 100_000 / (1+r)^(du/252)), daí a expressão "interpolação exponencial
+    dos preços de ajuste do DI1" no Manual de Apreçamento do CPM §3.5.
 
-    It is NOT §1.4.1 (Exponencial 252), which interpolates rates directly:
+    Não é o método §1.4.1 (Exponencial 252), que interpola diretamente as taxas:
         r = (1 + r_j) * ((1 + r_k)/(1 + r_j))^ft - 1
-    The two methods diverge by several basis points at intermediate maturities
-    (e.g. ~4.6 bps difference at du=17 for typical Selic-range rates in 2026).
+    Os dois métodos divergem alguns pontos-base em vencimentos intermediários
+    (por exemplo, aproximadamente 4,6 pontos-base em du=17 para taxas na faixa
+    da Selic em 2026).
 
-    Falls back to DI1Rate=0.0 / DiscountExp=1.0 when DI1 data is unavailable.
+    Na ausência de dados do DI1, usa taxa_di1=0,0 e fator_desconto=1,0.
     """
     pairs = (
         df.select("data_referencia", "data_expiracao", "dias_uteis")
@@ -186,15 +186,17 @@ def _add_discount_factors(df: pl.DataFrame) -> pl.DataFrame:
 
 def _add_probabilities(df: pl.DataFrame) -> pl.DataFrame:
     """
-    Add RawProb, Prob, and CumProb columns per B3 Manual §3.5.
+    Adiciona as colunas prob_bruta, prob e prob_acumulada conforme o Manual da
+    B3 §3.5.
 
-    Assumes df has already been filtered to one option_type and to rows
-    with non-null SettlementPrice, and that _add_discount_factors has
-    been called so DI1Rate and DiscountExp are present.
+    Assume que o DataFrame já foi filtrado para um tipo de opção e para linhas
+    com preco_ajuste não nulo, e que ``_add_discount_factors`` já foi chamada
+    para adicionar taxa_di1 e fator_desconto.
 
-    RawProb  = SettlementPrice * DiscountExp / 100
-    Prob     = RawProb / sum(RawProb) within ExpiryDate group
-    CumProb  = cumulative sum of Prob, sorted by StrikeChangeBps ascending
+    prob_bruta = preco_ajuste * fator_desconto / 100
+    prob = prob_bruta / soma(prob_bruta) no grupo de data_expiracao
+    prob_acumulada = soma acumulada de prob, ordenada por
+        variacao_strike_bps em ordem crescente.
     """
     df = _add_discount_factors(df)
 
@@ -213,7 +215,7 @@ def _add_probabilities(df: pl.DataFrame) -> pl.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Public API
+# API pública
 # ---------------------------------------------------------------------------
 
 
