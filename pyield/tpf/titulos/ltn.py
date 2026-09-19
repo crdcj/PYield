@@ -156,8 +156,7 @@ def pu(
         Decimal('753.315323')
     """
     # Valida e normaliza entradas
-    if isinstance(taxa, str):
-        taxa = _utils.converter_taxa(taxa)
+    taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return Decimal("NaN")
     taxa = _utils.normalizar_taxa_precificacao(taxa)
@@ -306,8 +305,7 @@ def dv01(
         >>> ltn.dv01("26-03-2025", "01-01-2032", "15.097%")
         0.2269059999999854
     """
-    if isinstance(taxa, str):
-        taxa = _utils.converter_taxa(taxa)
+    taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
 

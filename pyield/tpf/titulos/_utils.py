@@ -127,9 +127,9 @@ def converter_taxa(taxa: float | Decimal | str) -> float | Decimal:
     return Decimal(texto[:-1].strip().replace(",", ".")) / 100
 
 
-def normalizar_taxa_precificacao(taxa: float | Decimal | str) -> float:
+def normalizar_taxa_precificacao(taxa: float | Decimal) -> float:
     """Trunca a taxa decimal em seis casas percentuais, conforme a STN."""
-    return truncar(converter_taxa(taxa), 8)
+    return truncar(taxa, 8)
 
 
 def calcular_pv(

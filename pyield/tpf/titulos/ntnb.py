@@ -324,8 +324,7 @@ def cotacao(
         >>> ntnb.cotacao("21-05-2008", "15-08-2010", "8.29%")
         Decimal('97.0813')
     """
-    if isinstance(taxa, str):
-        taxa = _utils.converter_taxa(taxa)
+    taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return Decimal("NaN")
     taxa = _utils.normalizar_taxa_precificacao(taxa)
@@ -659,8 +658,7 @@ def dv01(
         >>> ntnb.dv01("26-03-2025", "15-08-2060", "7.4358%", pu)
         4.640876692898066
     """
-    if isinstance(taxa, str):
-        taxa = _utils.converter_taxa(taxa)
+    taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 

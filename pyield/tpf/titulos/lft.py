@@ -158,8 +158,7 @@ def cotacao(
         ... )
         Decimal('NaN')
     """
-    if isinstance(taxa, str):
-        taxa = _utils.converter_taxa(taxa)
+    taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return Decimal("NaN")
     taxa = _utils.normalizar_taxa_precificacao(taxa)

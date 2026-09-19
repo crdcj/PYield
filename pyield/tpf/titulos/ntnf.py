@@ -307,8 +307,7 @@ def _calcular_pu(
     data_vencimento: DateLike,
     taxa: float | Decimal | str,
 ) -> float:
-    if isinstance(taxa, str):
-        taxa = _utils.converter_taxa(taxa)
+    taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
     taxa = _utils.normalizar_taxa_precificacao(taxa)
@@ -1015,8 +1014,7 @@ def dv01(
         >>> ntnf.dv01("26-03-2025", "01-01-2035", "15.1375%")
         0.39025200000003224
     """
-    if isinstance(taxa, str):
-        taxa = _utils.converter_taxa(taxa)
+    taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
 
