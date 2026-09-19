@@ -528,7 +528,6 @@ def taxas_zero(  # noqa
         .with_columns(
             anos_uteis=pl.col("dias_uteis") / 252,
             taxa_tir=interpolador_ntnf.interpolar_expr("dias_uteis"),
-            cupom=pl.lit(VALOR_CUPOM),
         )
     )
 
@@ -536,51 +535,32 @@ def taxas_zero(  # noqa
     ultimo_vencimento_ltn = vencimentos_ltn.max()
     assert isinstance(ultimo_vencimento_ltn, dt.date)
 
-    lista_vencimentos = df["data_vencimento"]
-    lista_dias_uteis = df["dias_uteis"]
-    lista_anos_uteis = df["anos_uteis"]
-    lista_tir = df["taxa_tir"]
-
     taxas_spot_resolvidas: list[float | None] = []
     mapa_spot: dict[dt.date, float | None] = {}
 
-    for i in range(len(df)):
-        data_venc = lista_vencimentos[i]
-        assert isinstance(data_venc, dt.date)
-        dias_uteis_val = int(lista_dias_uteis[i])
-        anos_uteis_val = float(lista_anos_uteis[i])
-        tir_val = float(lista_tir[i])
-
+    for data_venc, dias_uteis_val, anos_uteis_val, tir_val in df.iter_rows():
         # Caso esteja antes (ou igual) ao último vencimento LTN: usar interpolador LTN
         if data_venc <= ultimo_vencimento_ltn:
             taxa_zero = interpolador_ltn(dias_uteis_val)
-            taxas_spot_resolvidas.append(taxa_zero)
-            mapa_spot[data_venc] = taxa_zero
-            continue
-
-        # Datas de cupom (exclui último pagamento) para este vencimento
-        datas_fluxo = datas_pagamento(liquidacao, data_venc)[:-1]
-        if len(datas_fluxo) == 0:
-            # Caso improvável, mas protege contra divisão por zero mais adiante
+        else:
+            # Datas de cupom (exclui último pagamento) para este vencimento
+            datas_fluxo = datas_pagamento(liquidacao, data_venc)[:-1]
             taxa_zero = None
-            taxas_spot_resolvidas.append(taxa_zero)
-            mapa_spot[data_venc] = taxa_zero
-            continue
+            if not datas_fluxo.is_empty():
+                # Recupera taxas spot já solucionadas para estes cupons
+                taxas_spot_fluxo = [mapa_spot[d] for d in datas_fluxo]
+                periodos_fluxo = du.contar(liquidacao, datas_fluxo) / 252
+                fluxos = [VALOR_CUPOM] * len(datas_fluxo)
 
-        # Recupera taxas spot já solucionadas para estes cupons
-        taxas_spot_fluxo = [mapa_spot[d] for d in datas_fluxo]
-        periodos_fluxo = du.contar(liquidacao, datas_fluxo) / 252
-        fluxos = [VALOR_CUPOM] * len(datas_fluxo)
+                valor_presente_fluxo = _utils.calcular_pv(
+                    fluxos_caixa=pl.Series(fluxos),
+                    taxas=pl.Series(taxas_spot_fluxo),
+                    prazos=periodos_fluxo,
+                )
 
-        valor_presente_fluxo = _utils.calcular_pv(
-            fluxos_caixa=pl.Series(fluxos),
-            taxas=pl.Series(taxas_spot_fluxo),
-            prazos=periodos_fluxo,
-        )
-
-        preco_titulo = _calcular_pu(liquidacao, data_venc, tir_val)
-        fator_preco = VALOR_FINAL / (preco_titulo - valor_presente_fluxo)
-        taxa_zero = fator_preco ** (1 / anos_uteis_val) - 1
+                preco_titulo = _calcular_pu(liquidacao, data_venc, tir_val)
+                fator_preco = VALOR_FINAL / (preco_titulo - valor_presente_fluxo)
+                taxa_zero = fator_preco ** (1 / anos_uteis_val) - 1
 
         taxas_spot_resolvidas.append(taxa_zero)
         mapa_spot[data_venc] = taxa_zero

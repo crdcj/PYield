@@ -350,3 +350,7 @@ def data(date: DateLike) -> pl.DataFrame:
         pl.col("preco_ajuste"),
         pl.col("dias_uteis"),
     ).sort("data_expiracao", "variacao_strike_bps")
+
+
+# Importado após as definições porque probabilidades utiliza este módulo.
+from pyield.cpm import probabilidades as probabilidades  # noqa: E402, PLC0414
