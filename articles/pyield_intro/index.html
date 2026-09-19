@@ -754,6 +754,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../referencias/metodologia-calculo-ntnb1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Precificação da NTN-B1 — Tesouro Direto
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../referencias/regulamento-selic-bcb/" class="md-nav__link">
         
   
@@ -1917,11 +1944,11 @@ Series ou arrays.</p>
 <p>Calcule cotações e preços de títulos públicos:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># Cotação de NTN-B (base 1)</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">,</span> <span class="s2">"15-05-2035"</span><span class="p">,</span> <span class="mf">0.061490</span><span class="p">)</span>  <span class="c1"># -&gt; 0.993651</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># Cotação de NTN-B (base 100)</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">,</span> <span class="s2">"15-05-2035"</span><span class="p">,</span> <span class="mf">0.061490</span><span class="p">)</span>  <span class="c1"># -&gt; 99.3651</span>
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Cotação para vencimento mais longo</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">,</span> <span class="s2">"15-08-2060"</span><span class="p">,</span> <span class="mf">0.061878</span><span class="p">)</span>  <span class="c1"># -&gt; 0.995341</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">yd</span><span class="o">.</span><span class="n">ntnb</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">,</span> <span class="s2">"15-08-2060"</span><span class="p">,</span> <span class="mf">0.061878</span><span class="p">)</span>  <span class="c1"># -&gt; 99.5341</span>
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># Prêmio sobre DI para títulos pré-fixados (em pontos-base)</span>
 </span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">df_premios</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ltn</span><span class="o">.</span><span class="n">dados</span><span class="p">(</span><span class="s2">"30-05-2024"</span><span class="p">)</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>

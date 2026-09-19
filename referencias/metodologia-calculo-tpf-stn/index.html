@@ -610,6 +610,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../metodologia-calculo-ntnb1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Precificação da NTN-B1 — Tesouro Direto
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../regulamento-selic-bcb/" class="md-nav__link">
         
   
@@ -1546,6 +1573,10 @@ preservada neste repositório.</p>
 <p>O <a href="../metodologia-calculo-letras-notas-stn/">Caderno de Fórmulas do SELIC</a>
 complementa esta referência na formação de valores nominais, juros pró-rata,
 amortizações e eventos dos mesmos títulos custodiados no SELIC.</p>
+<p>Esta metodologia não é a referência de precificação da NTN-B1 (Tesouro Educa+
+e Tesouro RendA+), que é vendida exclusivamente pelo Tesouro Direto e possui
+documentação específica. Consulte a <a href="../metodologia-calculo-ntnb1/">metodologia de cálculo da NTN-B1 do
+Tesouro Direto</a>.</p>
 <p>O PYield implementa a LFT comum de código SELIC <code>210100</code>, não as séries <code>LFT-A</code>
 ou <code>LFT-B</code>. Seu VNA é obtido diretamente do arquivo diário oficial do Banco
 Central; o fator acumulado não é recalculado localmente. Portanto, diferenças
@@ -1680,9 +1711,10 @@ precificação dos títulos de leilão.</p>
 </table>
 <p>As taxas da API são representadas em formato decimal. Por isso, truncar uma
 taxa percentual em seis casas equivale a truncar a taxa decimal em oito casas.</p>
-<p>As cotações de LFT, NTN-B e NTN-C são representadas pela API em base 1. O
-truncamento em seis casas nessa representação equivale ao truncamento em quatro
-casas da cotação percentual em base 100 usada no documento.</p>
+<p>As cotações de LFT, NTN-B e NTN-C são calculadas e retornadas em base 100,
+truncadas em quatro casas, como no documento. Os cupons de NTN-B e NTN-C usam
+seis casas e cada fluxo descontado é arredondado em dez casas antes da soma.
+O PU é calculado como <code>VNA * cotacao / 100</code>, truncado em seis casas.</p>
 <h2 id="vna-realizado-da-ntn-b-entre-datas-base">VNA realizado da NTN-B entre datas-base</h2>
 <p>Em uma data entre dois VNAs mensais já publicados, <code>yd.vna.valor("NTN-B", data)</code> combina duas
 fontes oficiais:</p>
