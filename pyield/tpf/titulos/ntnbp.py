@@ -31,7 +31,7 @@ def cotacao(
 
     Examples:
         >>> from pyield import ntnbp
-        >>> ntnbp.cotacao("02-12-2025", "15-05-2029", 0.0777)
+        >>> ntnbp.cotacao("02-12-2025", "15-05-2029", "7.77%")
         Decimal('77.4630')
     """
     if isinstance(taxa_tir, str):
@@ -60,7 +60,7 @@ def pu(vna: float | Decimal, cotacao: float | Decimal) -> Decimal:
 
     Examples:
         >>> from pyield import ntnbp
-        >>> cot = ntnbp.cotacao("02-12-2025", "15-05-2029", 0.0777)
+        >>> cot = ntnbp.cotacao("02-12-2025", "15-05-2029", "7.77%")
         >>> ntnbp.pu(4567.033825, cot)
         Decimal('3537.761411')
     """
@@ -155,9 +155,9 @@ def dv01(
 
     Examples:
         >>> from pyield import ntnbp as bp
-        >>> cot = bp.cotacao("02-12-2025", "15-05-2029", 0.0777)
+        >>> cot = bp.cotacao("02-12-2025", "15-05-2029", "7.77%")
         >>> pu = bp.pu(4567.033825, cot)
-        >>> bp.dv01("02-12-2025", "15-05-2029", 0.0777, pu)
+        >>> bp.dv01("02-12-2025", "15-05-2029", "7.77%", pu)
         1.120055806382451
     """
     if isinstance(taxa_tir, str):

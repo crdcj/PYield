@@ -261,9 +261,9 @@ def cotacao(
 
     Examples:
         >>> from pyield import ntnc
-        >>> ntnc.cotacao("21-03-2025", "01-01-2031", 0.067626)
+        >>> ntnc.cotacao("21-03-2025", "01-01-2031", "6.7626%")
         Decimal('126.4958')
-        >>> ntnc.cotacao("21-05-2008", "01-03-2011", 0.069000009)
+        >>> ntnc.cotacao("21-05-2008", "01-03-2011", "6.9000009%")
         Decimal('99.0981')
     """
     if isinstance(taxa, str):
@@ -399,7 +399,7 @@ def duration(
 
     Examples:
         >>> from pyield import ntnc
-        >>> ntnc.duration("21-03-2025", "01-01-2031", 0.067626)
+        >>> ntnc.duration("21-03-2025", "01-01-2031", "6.7626%")
         4.405363320448
     """
     if isinstance(taxa, str):
@@ -476,9 +476,9 @@ def dv01(
 
     Examples:
         >>> from pyield import ntnc
-        >>> cot = ntnc.cotacao("21-03-2025", "01-01-2031", 0.067626)
+        >>> cot = ntnc.cotacao("21-03-2025", "01-01-2031", "6.7626%")
         >>> pu = ntnc.pu(6598.913723, cot)
-        >>> ntnc.dv01("21-03-2025", "01-01-2031", 0.067626, pu)
+        >>> ntnc.dv01("21-03-2025", "01-01-2031", "6.7626%", pu)
         3.444632963315593
     """
     if isinstance(taxa, str):

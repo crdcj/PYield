@@ -64,7 +64,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         duration=duration_expr("data_referencia", "data_vencimento"),
     ).with_columns(
         prazo_medio=pl.col("duration"),
-        dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa", "pu"),
+        dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa"),
     )
     df = _utils.adicionar_taxa_di(df, data)
 
@@ -150,9 +150,9 @@ def pu(
 
     Examples:
         >>> from pyield import ltn
-        >>> ltn.pu("05-07-2024", "01-01-2030", 0.12145)
+        >>> ltn.pu("05-07-2024", "01-01-2030", "12.145%")
         Decimal('535.279902')
-        >>> ltn.pu("21-05-2008", "01-07-2010", 0.143600009)
+        >>> ltn.pu("21-05-2008", "01-07-2010", "14.36%")
         Decimal('753.315323')
     """
     # Valida e normaliza entradas
@@ -240,7 +240,7 @@ def rentabilidade(taxa_ltn: float | str, taxa_di: float | str) -> float:
         LTN rate for 01-01-2030: 0.118746
         DI (JAN30) Settlement rate: 0.11725
         >>> from pyield import ltn
-        >>> ltn.rentabilidade(0.118746, 0.11725)
+        >>> ltn.rentabilidade("11.8746%", "11.725%")
         1.0120718007994287
     """
     if isinstance(taxa_ltn, str):
@@ -283,20 +283,19 @@ def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float | Decimal | str,
-    pu: float | Decimal,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da LTN em R$.
 
-    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
-    taxa.
+    Representa a redução do PU teórico para um aumento de 1 bp (0,01 ponto
+    percentual) na taxa, calculada pela diferença entre os preços antes e depois
+    do aumento.
 
     Args:
         data_liquidacao: Data de liquidação.
         data_vencimento: Data de vencimento.
         taxa: Taxa de desconto (YTM) do título.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
-        pu: PU usado como base para o cálculo.
 
     Returns:
         float: DV01, variação de preço para 1 bp. Retorna ``NaN`` quando o
@@ -304,13 +303,12 @@ def dv01(
 
     Examples:
         >>> from pyield import ltn
-        >>> pu = ltn.pu("26-03-2025", "01-01-2032", 0.150970)
-        >>> ltn.dv01("26-03-2025", "01-01-2032", 0.150970, pu)
-        0.2269059999999794
+        >>> ltn.dv01("26-03-2025", "01-01-2032", "15.097%")
+        0.2269059999999854
     """
     if isinstance(taxa, str):
         taxa = _utils.converter_taxa(taxa)
-    if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
 
     taxa = _utils.normalizar_taxa_precificacao(taxa)
@@ -321,7 +319,7 @@ def dv01(
     anos_truncados = _utils.truncar(dias_uteis / 252, 14)
     preco_1 = _utils.truncar(VALOR_FACE / (1 + taxa) ** anos_truncados, 6)
     preco_2 = _utils.truncar(VALOR_FACE / (1 + taxa_mais_1bp) ** anos_truncados, 6)
-    return float(pu) * (1 - preco_2 / preco_1)
+    return preco_1 - preco_2
 
 
 def duration_expr(
@@ -347,11 +345,10 @@ def dv01_expr(
     data_liquidacao: pl.Expr | str,
     data_vencimento: pl.Expr | str,
     taxa: pl.Expr | str,
-    pu: pl.Expr | str,
 ) -> pl.Expr:
     """Cria expressão Polars para o DV01 da LTN.
 
-    O cálculo é aplicado linha a linha e reprifica o PU informado para um
+    O cálculo é aplicado linha a linha e reprifica o PU teórico para um
     aumento de 1 bp na taxa.
 
     Args:
@@ -360,7 +357,6 @@ def dv01_expr(
         data_vencimento: Nome de coluna ou expressão Polars com a data de
             vencimento.
         taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
-        pu: Nome de coluna ou expressão Polars com o PU usado como base.
 
     Returns:
         pl.Expr: Expressão sem alias com o DV01.
@@ -369,13 +365,11 @@ def dv01_expr(
         _utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
         _utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
         _utils.coluna_ou_expr(taxa, "taxa"),
-        _utils.coluna_ou_expr(pu, "pu"),
     ).map_elements(
         lambda s: dv01(
             s["data_liquidacao"],
             s["data_vencimento"],
             s["taxa"],
-            s["pu"],
         ),
         return_dtype=pl.Float64,
     )

@@ -62,9 +62,11 @@ def test_duration_aceita_percentual_sem_truncar_taxa(titulo):
     "titulo", [yd.ltn, yd.ntnb, yd.ntnc, yd.ntnf, yd.ntnbp, yd.ntnb1]
 )
 def test_dv01_aceita_percentual(titulo):
-    extras = (RENDA,) if titulo is yd.ntnb1 else ()
-    assert titulo.dv01(LIQUIDACAO, VENCIMENTO, "5,75%", 1000, *extras) == (
-        titulo.dv01(LIQUIDACAO, VENCIMENTO, 0.0575, 1000, *extras)
+    extras = () if titulo in {yd.ltn, yd.ntnf} else (1000,)
+    if titulo is yd.ntnb1:
+        extras += (RENDA,)
+    assert titulo.dv01(LIQUIDACAO, VENCIMENTO, "5,75%", *extras) == (
+        titulo.dv01(LIQUIDACAO, VENCIMENTO, 0.0575, *extras)
     )
 
 

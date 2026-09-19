@@ -89,6 +89,10 @@ To migrate, multiply stored quotes and cash flows from older versions by 100,
 remove display-only multiplications by 100, and divide manual PU calculations
 by 100. VNA and PU remain in Brazilian reais.
 
+The `yd.ltn.dv01` and `yd.ntnf.dv01` functions no longer accept a reference PU;
+they calculate the reduction in theoretical PU for a 1-basis-point rate
+increase.
+
 | Before | Now |
 |---|---|
 | `yd.tpf.ntnb` | `yd.ntnb` or `from pyield import ntnb` |

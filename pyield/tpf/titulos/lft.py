@@ -146,15 +146,15 @@ def cotacao(
         >>> lft.cotacao(
         ...     data_liquidacao="24-07-2024",
         ...     data_vencimento="01-09-2030",
-        ...     taxa=0.001717,  # 0.1717%
+        ...     taxa="0.1717%",
         ... )
         Decimal('98.9645')
-        >>> lft.cotacao("21-05-2008", "07-03-2014", -0.000200009)
+        >>> lft.cotacao("21-05-2008", "07-03-2014", "-0.0200009%")
         Decimal('100.1158')
 
         Entradas nulas retornam Decimal('NaN'):
         >>> lft.cotacao(
-        ...     data_liquidacao=None, data_vencimento="01-09-2030", taxa=0.001717
+        ...     data_liquidacao=None, data_vencimento="01-09-2030", taxa="0.1717%"
         ... )
         Decimal('NaN')
     """
@@ -248,8 +248,8 @@ def rentabilidade(taxa_lft: float | str, taxa_di: float | str) -> float:
     Examples:
         Calcula a rentabilidade de uma LFT em 28/04/2025:
         >>> from pyield import lft
-        >>> taxa_lft = 0.001124  # 0.1124%
-        >>> taxa_di = 0.13967670224373396  # 13.967670224373396%
+        >>> taxa_lft = "0.1124%"
+        >>> taxa_di = "13.967670224373396%"
         >>> lft.rentabilidade(taxa_lft, taxa_di)
         1.008594331960501
     """

@@ -241,10 +241,10 @@ def cotacao(
     Examples:
         >>> from pyield import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
-        >>> ntnb1.cotacao("18-06-2025", "15-12-2084", 0.07010, r_mais)
+        >>> ntnb1.cotacao("18-06-2025", "15-12-2084", "7.01%", r_mais)
         Decimal('3.8332')
         >>> educa_mais = ntnb1.NomeComercial.EDUCA_MAIS
-        >>> ntnb1.cotacao("22-06-2023", "15-12-2034", 0.0536, educa_mais)
+        >>> ntnb1.cotacao("22-06-2023", "15-12-2034", "5.36%", educa_mais)
         Decimal('62.6809')
     """
     if isinstance(taxa, str):
@@ -504,7 +504,7 @@ def duration(
     Examples:
         >>> from pyield import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
-        >>> ntnb1.duration("23-06-2025", "15-12-2084", 0.0686, r_mais)
+        >>> ntnb1.duration("23-06-2025", "15-12-2084", "6.86%", r_mais)
         47.10494386899199
     """
     # Retorna NaN se houver entradas nulas
@@ -549,9 +549,9 @@ def dv01(
     Examples:
         >>> from pyield import ntnb1
         >>> r_mais = ntnb1.NomeComercial.RENDA_MAIS
-        >>> cot = ntnb1.cotacao("23-06-2025", "15-12-2084", 0.0686, r_mais)
+        >>> cot = ntnb1.cotacao("23-06-2025", "15-12-2084", "6.86%", r_mais)
         >>> pu = ntnb1.pu(4299.160173, cot)
-        >>> ntnb1.dv01("23-06-2025", "15-12-2084", 0.0686, pu, r_mais)
+        >>> ntnb1.dv01("23-06-2025", "15-12-2084", "6.86%", pu, r_mais)
         0.7738488291718512
     """
     if isinstance(taxa, str):

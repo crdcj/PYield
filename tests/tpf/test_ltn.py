@@ -26,7 +26,7 @@ def test_calculos_rejeitam_prazo_nao_positivo(data_liquidacao: str) -> None:
 
     assert ltn.pu(data_liquidacao, data_vencimento, 0.10).is_nan()
     assert ltn.taxa(data_liquidacao, data_vencimento, 900).is_nan()
-    assert math.isnan(ltn.dv01(data_liquidacao, data_vencimento, 0.10, 1_000))
+    assert math.isnan(ltn.dv01(data_liquidacao, data_vencimento, 0.10))
 
 
 @pytest.mark.parametrize("data_liquidacao", ["01-01-2027", "05-01-2027"])
@@ -36,7 +36,6 @@ def test_expressoes_rejeitam_prazo_nao_positivo(data_liquidacao: str) -> None:
             "data_liquidacao": [data_liquidacao],
             "data_vencimento": ["01-01-2027"],
             "taxa": [0.10],
-            "pu": [1_000.0],
         }
     ).select(
         duration=ltn.duration_expr("data_liquidacao", "data_vencimento"),
@@ -44,7 +43,6 @@ def test_expressoes_rejeitam_prazo_nao_positivo(data_liquidacao: str) -> None:
             "data_liquidacao",
             "data_vencimento",
             "taxa",
-            "pu",
         ),
     )
 

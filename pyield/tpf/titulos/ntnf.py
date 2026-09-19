@@ -90,7 +90,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         duration=duration_expr("data_referencia", "data_vencimento", "taxa_indicativa"),
     ).with_columns(
         prazo_medio=pl.col("duration"),
-        dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa", "pu"),
+        dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa"),
     )
     df = _utils.adicionar_taxa_di(df, data)
 
@@ -354,11 +354,11 @@ def pu(
 
     Examples:
         >>> from pyield import ntnf
-        >>> ntnf.pu("05-07-2024", "01-01-2035", 0.11921)
+        >>> ntnf.pu("05-07-2024", "01-01-2035", "11.921%")
         Decimal('895.359254')
-        >>> ntnf.pu("01-07-2024", "01-01-2027", 0.10)
+        >>> ntnf.pu("01-07-2024", "01-01-2027", "10%")
         Decimal('999.931303')
-        >>> ntnf.pu("21-05-2008", "01-01-2014", 0.136600009)
+        >>> ntnf.pu("21-05-2008", "01-01-2014", "13.6600009%")
         Decimal('903.075616')
     """
     return truncar_decimal(_calcular_pu(data_liquidacao, data_vencimento, taxa), 6)
@@ -634,7 +634,7 @@ def rentabilidade(  # noqa
         >>> rentabilidade(
         ...     data_liquidacao="23-08-2024",
         ...     data_vencimento="01-01-2035",
-        ...     taxa_ntnf=0.116586,
+        ...     taxa_ntnf="11.6586%",
         ...     vencimentos_di=exp_dates,
         ...     taxas_di=taxas_di,
         ... )
@@ -937,7 +937,7 @@ def duration(
 
     Examples:
         >>> from pyield import ntnf
-        >>> ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
+        >>> ntnf.duration("02-09-2024", "01-01-2035", "12.1785%")
         6.32854218039796
     """
     if isinstance(taxa, str):
@@ -993,51 +993,48 @@ def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     taxa: float | Decimal | str,
-    pu: float | Decimal,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) de uma NTN-F em R$.
 
-    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
-    taxa.
+    Representa a redução do PU teórico para um aumento de 1 bp (0,01 ponto
+    percentual) na taxa, calculada pela diferença entre os preços antes e depois
+    do aumento.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
         taxa (float): Taxa de desconto (TIR) do título.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
-        pu: PU usado como base para o cálculo.
 
     Returns:
         float: DV01, variação de preço para 1 bp.
 
     Examples:
         >>> from pyield import ntnf
-        >>> pu = ntnf.pu("26-03-2025", "01-01-2035", 0.151375)
-        >>> ntnf.dv01("26-03-2025", "01-01-2035", 0.151375, pu)
-        0.3902520000000325
+        >>> ntnf.dv01("26-03-2025", "01-01-2035", "15.1375%")
+        0.39025200000003224
     """
     if isinstance(taxa, str):
         taxa = _utils.converter_taxa(taxa)
-    if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
+    if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
 
     taxa = _utils.normalizar_taxa_precificacao(taxa)
     taxa_mais_1bp = round(taxa + 0.0001, 8)
     preco_1 = _calcular_pu(data_liquidacao, data_vencimento, taxa)
     preco_2 = _calcular_pu(data_liquidacao, data_vencimento, taxa_mais_1bp)
-    return float(pu) * (1 - preco_2 / preco_1)
+    return preco_1 - preco_2
 
 
 def dv01_expr(
     data_liquidacao: pl.Expr | str,
     data_vencimento: pl.Expr | str,
     taxa: pl.Expr | str,
-    pu: pl.Expr | str,
 ) -> pl.Expr:
     """Cria expressão Polars para o DV01 da NTN-F.
 
-    O cálculo é aplicado linha a linha e reprifica o PU informado para um
+    O cálculo é aplicado linha a linha e reprifica o PU teórico para um
     aumento de 1 bp na taxa.
 
     Args:
@@ -1046,7 +1043,6 @@ def dv01_expr(
         data_vencimento: Nome de coluna ou expressão Polars com a data de
             vencimento.
         taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
-        pu: Nome de coluna ou expressão Polars com o PU usado como base.
 
     Returns:
         pl.Expr: Expressão sem alias com o DV01.
@@ -1055,13 +1051,11 @@ def dv01_expr(
         _utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
         _utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
         _utils.coluna_ou_expr(taxa, "taxa"),
-        _utils.coluna_ou_expr(pu, "pu"),
     ).map_elements(
         lambda s: dv01(
             s["data_liquidacao"],
             s["data_vencimento"],
             s["taxa"],
-            s["pu"],
         ),
         return_dtype=pl.Float64,
     )
@@ -1093,7 +1087,7 @@ def taxa(
         Exibe as taxas em formato decimal:
 
         >>> from pyield import ntnf
-        >>> pu = ntnf.pu("05-07-2024", "01-01-2035", 0.11921)
+        >>> pu = ntnf.pu("05-07-2024", "01-01-2035", "11.921%")
         >>> ntnf.taxa("13-03-2026", "01-01-2035", 820.995125)
         Decimal('0.14274300')
         >>> ntnf.taxa("21-05-2008", "01-01-2014", 903.039091) * 100

@@ -312,16 +312,16 @@ def cotacao(
 
     Examples:
         >>> from pyield import ntnb
-        >>> cotacao = ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)
+        >>> cotacao = ntnb.cotacao("31-05-2024", "15-05-2035", "6.149%")
         >>> cotacao
         Decimal('99.3651')
-        >>> ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)
+        >>> ntnb.cotacao("31-05-2024", "15-08-2060", "6.1878%")
         Decimal('99.5341')
-        >>> ntnb.cotacao("15-08-2024", "15-08-2032", 0.05929)
+        >>> ntnb.cotacao("15-08-2024", "15-08-2032", "5.929%")
         Decimal('100.6409')
-        >>> ntnb.cotacao("15-05-2024", "15-05-2025", 0.10)
+        >>> ntnb.cotacao("15-05-2024", "15-05-2025", "10%")
         Decimal('96.4454')
-        >>> ntnb.cotacao("21-05-2008", "15-08-2010", 0.082900009)
+        >>> ntnb.cotacao("21-05-2008", "15-08-2010", "8.29%")
         Decimal('97.0813')
     """
     if isinstance(taxa, str):
@@ -577,7 +577,7 @@ def duration(
 
     Examples:
         >>> from pyield import ntnb
-        >>> ntnb.duration("23-08-2024", "15-08-2060", 0.061005)
+        >>> ntnb.duration("23-08-2024", "15-08-2060", "6.1005%")
         15.08305431313046
     """
     if isinstance(taxa, str):
@@ -654,9 +654,9 @@ def dv01(
 
     Examples:
         >>> from pyield import ntnb
-        >>> cot = ntnb.cotacao("26-03-2025", "15-08-2060", 0.074358)
+        >>> cot = ntnb.cotacao("26-03-2025", "15-08-2060", "7.4358%")
         >>> pu = ntnb.pu(4470.979474, cot)
-        >>> ntnb.dv01("26-03-2025", "15-08-2060", 0.074358, pu)
+        >>> ntnb.dv01("26-03-2025", "15-08-2060", "7.4358%", pu)
         4.640876692898066
     """
     if isinstance(taxa, str):

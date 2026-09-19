@@ -59,7 +59,7 @@ uv add pyield
 | `yd.ntnb1` | módulo | NTN-B1 (Educa+ e Renda+) | `NomeComercial`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `cotacao_curva_zero`, `taxa_curva_zero`, `pu`, `duration`, `dv01` |
 | `yd.ntnbp` | módulo | NTN-B Principal | `cotacao`, `taxa`, `pu`, `dv01` |
 | `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
-| `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `premio`, `premio_limpo`, `premio_limpo_expr`, `rentabilidade`, `rentabilidade_expr`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
+| `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `taxas_zero_forwards`, `premio`, `premio_limpo`, `premio_limpo_expr`, `rentabilidade`, `rentabilidade_expr`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
 | `yd.vna` | módulo | Valores nominais atualizados dos títulos públicos | `valor`, `historico`, `projetado`, `vigencia` |
 | `yd.copom` | módulo | Calendário automático do Copom | `calendario`, `proxima_reuniao` |
 | `yd.compromissadas(...)` | função | Leilões de operações compromissadas do BCB | `inicio`, `fim` |
@@ -97,6 +97,9 @@ multiplicações por 100 usadas apenas para exibir cotações e ajuste cálculos
 manuais de PU para dividir por 100. A composição `pu(vna, cotacao(...))`
 preserva a unidade e as regras de precisão do preço. Taxas continuam em formato
 decimal, e VNA e PU continuam em reais.
+
+As funções `yd.ltn.dv01` e `yd.ntnf.dv01` não recebem mais um PU de referência:
+calculam a redução do PU teórico para um aumento de 1 ponto-base na taxa.
 
 ### Demais alterações
 

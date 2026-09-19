@@ -282,13 +282,13 @@ def _adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
         pl.when(pl.col("titulo") == "LTN")
         .then(
             ltn.dv01_expr(
-                "data_liquidacao_1v", "data_vencimento", "taxa_media", "pu_medio"
+                "data_liquidacao_1v", "data_vencimento", "taxa_media"
             )
         )
         .when(pl.col("titulo") == "NTN-F")
         .then(
             ntnf.dv01_expr(
-                "data_liquidacao_1v", "data_vencimento", "taxa_media", "pu_medio"
+                "data_liquidacao_1v", "data_vencimento", "taxa_media"
             )
         )
         .when(pl.col("titulo") == "NTN-B")

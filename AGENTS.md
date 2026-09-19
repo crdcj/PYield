@@ -180,6 +180,17 @@ strings quando houver suporte razoável.
 
 ## Testes
 
+Valores de teste só podem ser alterados com autorização explícita do usuário.
+Isso inclui entradas e resultados esperados de testes e doctests, fixtures e
+arquivos de referência (como Parquet). Autorizar uma mudança na implementação
+não autoriza automaticamente atualizar esses valores. Quando houver divergência,
+apresente o valor anterior, o novo valor e a causa antes de pedir autorização.
+Não regenere referências apenas para fazer os testes passarem.
+
+Doctests devem verificar os valores brutos retornados. Não acrescente `round`,
+formatação, tolerâncias ou normalizações para esconder diferenças ou reduzir a
+precisão de uma verificação existente sem autorização explícita do usuário.
+
 Teste a superfície que o usuário chama, não apenas helpers internos. Para ETL com
 rede, substitua apenas a camada de fetch com `monkeypatch`, execute o fluxo
 público e compare com Parquet de referência quando houver.
