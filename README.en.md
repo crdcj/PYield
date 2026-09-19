@@ -100,7 +100,7 @@ increase.
 | `pyield.tpf.vna.calcular_vna(...)` | `yd.vna.calcular_vna(...)` |
 | `yd.ntnb.vna(data)` | `yd.vna.valor("NTN-B", data)` |
 | `yd.ntnb.vnas()` | `yd.vna.historico("NTN-B")` |
-| `vna_projetado(...)` in bond modules | `yd.vna.projetado(titulo, data, vna_base, inflacao)` |
+| `vna_projetado(...)` in bond modules | `yd.vna.projetado(titulo, data, vna_base, inflacao)`; for LFT, use `selic=` |
 | `vigencia(data)` in bond modules | `yd.vna.vigencia(titulo, data)` |
 
 ## Project

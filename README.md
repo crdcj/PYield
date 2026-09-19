@@ -53,7 +53,7 @@ uv add pyield
 | `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
 | `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `taxas_historicas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `curva_pre`, `premios_pre`, `secundario` |
 | `yd.rmd(aba)` | função | Relatório Mensal da Dívida do Tesouro Nacional | |
-| `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `pu`, `taxa`, `vna`, `rentabilidade`, `rentabilidade_expr` |
+| `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `pu`, `taxa`, `rentabilidade`, `rentabilidade_expr` |
 | `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `duration_expr`, `dv01`, `dv01_expr`, `rentabilidade`, `rentabilidade_expr`, `taxas_forward` |
 | `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `dv01`, `dv01_expr`, `implicitas`, `curva` |
 | `yd.ntnb1` | módulo | NTN-B1 (Educa+ e Renda+) | `NomeComercial`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `cotacao_curva_zero`, `taxa_curva_zero`, `pu`, `duration`, `dv01` |
@@ -117,7 +117,7 @@ ou de versões anteriores estão no histórico das
 | `pyield.tpf.vna.calcular_vna(...)` | `yd.vna.calcular_vna(...)` |
 | `yd.ntnb.vna(data)` | `yd.vna.valor("NTN-B", data)` |
 | `yd.ntnb.vnas()` | `yd.vna.historico("NTN-B")` |
-| `vna_projetado(...)` nos módulos de títulos | `yd.vna.projetado(titulo, data, vna_base, inflacao)` |
+| `vna_projetado(...)` nos módulos de títulos | `yd.vna.projetado(titulo, data, vna_base, inflacao)`; para LFT, use `selic=` |
 | `vigencia(data)` nos módulos de títulos | `yd.vna.vigencia(titulo, data)` |
 
 O namespace público segue a autonomia semântica do conceito que o usuário
