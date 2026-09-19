@@ -1701,7 +1701,9 @@
             <td>
               <div class="doc-md-description">
                 <p>Taxa de desconto (YTM) em formato decimal.
-Aceita também percentual explícito: "5.75%" ou "5,75%".</p>
+Aceita também percentual explícito: "5.75%" ou "5,75%".
+Antes do cálculo, é truncada em oito casas decimais (seis na
+forma percentual), descartando as casas excedentes sem arredondar.</p>
               </div>
             </td>
             <td>
@@ -1757,8 +1759,6 @@ decimais. Cada fluxo descontado é arredondado em 10 casas antes da soma.</p>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">ntnc</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">ntnc</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="s2">"21-03-2025"</span><span class="p">,</span> <span class="s2">"01-01-2031"</span><span class="p">,</span> <span class="s2">"6.7626%"</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">Decimal('126.4958')</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">ntnc</span><span class="o">.</span><span class="n">cotacao</span><span class="p">(</span><span class="s2">"21-05-2008"</span><span class="p">,</span> <span class="s2">"01-03-2011"</span><span class="p">,</span> <span class="s2">"6.9000009%"</span><span class="p">)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="go">Decimal('99.0981')</span>
 </span></code></pre></div>
 
 
@@ -1832,29 +1832,29 @@ decimais. Cada fluxo descontado é arredondado em 10 casas antes da soma.</p>
 </span><span id="__span-0-242"><a id="__codelineno-0-242" name="__codelineno-0-242"></a><span class="sd">        data_vencimento: Data de vencimento da NTN-C.</span>
 </span><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="sd">        taxa: Taxa de desconto (YTM) em formato decimal.</span>
 </span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="sd">            Aceita também percentual explícito: "5.75%" ou "5,75%".</span>
-</span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a>
-</span><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-247"><a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">        Decimal: Cotação em base 100, truncada em 4 casas decimais.</span>
-</span><span id="__span-0-248"><a id="__codelineno-0-248" name="__codelineno-0-248"></a>
-</span><span id="__span-0-249"><a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="sd">    Notes:</span>
-</span><span id="__span-0-250"><a id="__codelineno-0-250" name="__codelineno-0-250"></a><span class="sd">        A cotação é calculada e retornada na escala percentual (base 100),</span>
-</span><span id="__span-0-251"><a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">        truncada em 4 casas conforme a STN. Por exemplo, ``99.3651`` representa</span>
-</span><span id="__span-0-252"><a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">        99,3651% do VNA; o PU é calculado como ``VNA * cotacao / 100``.</span>
-</span><span id="__span-0-253"><a id="__codelineno-0-253" name="__codelineno-0-253"></a>
-</span><span id="__span-0-254"><a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">        Os cupons semestrais são armazenados em base 100, com 6 casas</span>
-</span><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">        decimais. Cada fluxo descontado é arredondado em 10 casas antes da soma.</span>
-</span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a>
-</span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">    References:</span>
-</span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">        - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos</span>
-</span><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">          Públicos Federais Ofertados nos Leilões Primários.</span>
-</span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="sd">          https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/</span>
-</span><span id="__span-0-261"><a id="__codelineno-0-261" name="__codelineno-0-261"></a>
-</span><span id="__span-0-262"><a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-263"><a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnc</span>
-</span><span id="__span-0-264"><a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="sd">        &gt;&gt;&gt; ntnc.cotacao("21-03-2025", "01-01-2031", "6.7626%")</span>
-</span><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="sd">        Decimal('126.4958')</span>
-</span><span id="__span-0-266"><a id="__codelineno-0-266" name="__codelineno-0-266"></a><span class="sd">        &gt;&gt;&gt; ntnc.cotacao("21-05-2008", "01-03-2011", "6.9000009%")</span>
-</span><span id="__span-0-267"><a id="__codelineno-0-267" name="__codelineno-0-267"></a><span class="sd">        Decimal('99.0981')</span>
+</span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">            Antes do cálculo, é truncada em oito casas decimais (seis na</span>
+</span><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">            forma percentual), descartando as casas excedentes sem arredondar.</span>
+</span><span id="__span-0-247"><a id="__codelineno-0-247" name="__codelineno-0-247"></a>
+</span><span id="__span-0-248"><a id="__codelineno-0-248" name="__codelineno-0-248"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-249"><a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="sd">        Decimal: Cotação em base 100, truncada em 4 casas decimais.</span>
+</span><span id="__span-0-250"><a id="__codelineno-0-250" name="__codelineno-0-250"></a>
+</span><span id="__span-0-251"><a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">    Notes:</span>
+</span><span id="__span-0-252"><a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">        A cotação é calculada e retornada na escala percentual (base 100),</span>
+</span><span id="__span-0-253"><a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">        truncada em 4 casas conforme a STN. Por exemplo, ``99.3651`` representa</span>
+</span><span id="__span-0-254"><a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">        99,3651% do VNA; o PU é calculado como ``VNA * cotacao / 100``.</span>
+</span><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a>
+</span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">        Os cupons semestrais são armazenados em base 100, com 6 casas</span>
+</span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        decimais. Cada fluxo descontado é arredondado em 10 casas antes da soma.</span>
+</span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a>
+</span><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    References:</span>
+</span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="sd">        - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos</span>
+</span><span id="__span-0-261"><a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">          Públicos Federais Ofertados nos Leilões Primários.</span>
+</span><span id="__span-0-262"><a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">          https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/</span>
+</span><span id="__span-0-263"><a id="__codelineno-0-263" name="__codelineno-0-263"></a>
+</span><span id="__span-0-264"><a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="sd">    Examples:</span>
+</span><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnc</span>
+</span><span id="__span-0-266"><a id="__codelineno-0-266" name="__codelineno-0-266"></a><span class="sd">        &gt;&gt;&gt; ntnc.cotacao("21-03-2025", "01-01-2031", "6.7626%")</span>
+</span><span id="__span-0-267"><a id="__codelineno-0-267" name="__codelineno-0-267"></a><span class="sd">        Decimal('126.4958')</span>
 </span><span id="__span-0-268"><a id="__codelineno-0-268" name="__codelineno-0-268"></a><span class="sd">    """</span>
 </span><span id="__span-0-269"><a id="__codelineno-0-269" name="__codelineno-0-269"></a>    <span class="n">taxa</span> <span class="o">=</span> <span class="n">_utils</span><span class="o">.</span><span class="n">converter_taxa</span><span class="p">(</span><span class="n">taxa</span><span class="p">)</span>
 </span><span id="__span-0-270"><a id="__codelineno-0-270" name="__codelineno-0-270"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">data_vencimento</span><span class="p">,</span> <span class="n">taxa</span><span class="p">):</span>
@@ -3405,7 +3405,8 @@ vencimento.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Valor nominal atualizado (VNA).</p>
+                <p>Valor nominal atualizado (VNA), truncado em seis casas decimais
+antes do cálculo, sem arredondar.</p>
               </div>
             </td>
             <td>
@@ -3421,7 +3422,8 @@ vencimento.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Cotação da NTN-C em base 100.</p>
+                <p>Cotação da NTN-C em base 100.
+Truncada em quatro casas decimais antes do cálculo, sem arredondar.</p>
               </div>
             </td>
             <td>
@@ -3468,8 +3470,6 @@ vencimento.</p>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">ntnc</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">ntnc</span><span class="o">.</span><span class="n">pu</span><span class="p">(</span><span class="mf">6598.913723</span><span class="p">,</span> <span class="mf">126.4958</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">Decimal('8347.348705')</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">ntnc</span><span class="o">.</span><span class="n">pu</span><span class="p">(</span><span class="mf">2126.4737349</span><span class="p">,</span> <span class="mf">99.09819</span><span class="p">)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="go">Decimal('2107.295067')</span>
 </span></code></pre></div>
 
 
@@ -3513,23 +3513,23 @@ vencimento.</p>
 </span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a><span class="sd">    pu = VNA * cotacao / 100</span>
 </span><span id="__span-0-310"><a id="__codelineno-0-310" name="__codelineno-0-310"></a>
 </span><span id="__span-0-311"><a id="__codelineno-0-311" name="__codelineno-0-311"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-312"><a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">        vna: Valor nominal atualizado (VNA).</span>
-</span><span id="__span-0-313"><a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="sd">        cotacao: Cotação da NTN-C em base 100.</span>
-</span><span id="__span-0-314"><a id="__codelineno-0-314" name="__codelineno-0-314"></a>
-</span><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">        Decimal: Preço da NTN-C truncado em 6 casas decimais.</span>
-</span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a>
-</span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">    References:</span>
-</span><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">        - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos</span>
-</span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="sd">          Públicos Federais Ofertados nos Leilões Primários.</span>
-</span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="sd">          https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/</span>
-</span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a>
-</span><span id="__span-0-323"><a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-324"><a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnc</span>
-</span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">        &gt;&gt;&gt; ntnc.pu(6598.913723, 126.4958)</span>
-</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="sd">        Decimal('8347.348705')</span>
-</span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">        &gt;&gt;&gt; ntnc.pu(2126.4737349, 99.09819)</span>
-</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">        Decimal('2107.295067')</span>
+</span><span id="__span-0-312"><a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">        vna: Valor nominal atualizado (VNA), truncado em seis casas decimais</span>
+</span><span id="__span-0-313"><a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="sd">            antes do cálculo, sem arredondar.</span>
+</span><span id="__span-0-314"><a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="sd">        cotacao: Cotação da NTN-C em base 100.</span>
+</span><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">            Truncada em quatro casas decimais antes do cálculo, sem arredondar.</span>
+</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a>
+</span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">        Decimal: Preço da NTN-C truncado em 6 casas decimais.</span>
+</span><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a>
+</span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="sd">    References:</span>
+</span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="sd">        - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos</span>
+</span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="sd">          Públicos Federais Ofertados nos Leilões Primários.</span>
+</span><span id="__span-0-323"><a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="sd">          https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/</span>
+</span><span id="__span-0-324"><a id="__codelineno-0-324" name="__codelineno-0-324"></a>
+</span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">    Examples:</span>
+</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnc</span>
+</span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">        &gt;&gt;&gt; ntnc.pu(6598.913723, 126.4958)</span>
+</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">        Decimal('8347.348705')</span>
 </span><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="sd">    """</span>
 </span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a>    <span class="k">return</span> <span class="n">_calcular_pu</span><span class="p">(</span><span class="n">vna</span><span class="p">,</span> <span class="n">cotacao</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>

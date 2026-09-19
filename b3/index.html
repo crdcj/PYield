@@ -2033,11 +2033,6 @@ price report completo (PR, ~2 MB) com todos os dados de negociação.</p>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Múltiplos contratos de uma vez</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">b3</span><span class="o">.</span><span class="n">boletim</span><span class="o">.</span><span class="n">buscar</span><span class="p">(</span><span class="s2">"26-04-2024"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"DI1"</span><span class="p">,</span> <span class="s2">"DAP"</span><span class="p">])</span>
 </span></code></pre></div>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Feriado ou fim de semana (retorna DataFrame vazio)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">b3</span><span class="o">.</span><span class="n">boletim</span><span class="o">.</span><span class="n">buscar</span><span class="p">(</span><span class="s2">"25-12-2023"</span><span class="p">,</span> <span class="s2">"DI1"</span><span class="p">)</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">()</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">True</span>
-</span></code></pre></div>
 
 
             <details class="mkdocstrings-source">
@@ -2159,11 +2154,7 @@ price report completo (PR, ~2 MB) com todos os dados de negociação.</p>
 <span class="normal"><a href="#__codelineno-0-452">452</a></span>
 <span class="normal"><a href="#__codelineno-0-453">453</a></span>
 <span class="normal"><a href="#__codelineno-0-454">454</a></span>
-<span class="normal"><a href="#__codelineno-0-455">455</a></span>
-<span class="normal"><a href="#__codelineno-0-456">456</a></span>
-<span class="normal"><a href="#__codelineno-0-457">457</a></span>
-<span class="normal"><a href="#__codelineno-0-458">458</a></span>
-<span class="normal"><a href="#__codelineno-0-459">459</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a><span class="k">def</span><span class="w"> </span><span class="nf">buscar</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-455">455</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a><span class="k">def</span><span class="w"> </span><span class="nf">buscar</span><span class="p">(</span>
 </span><span id="__span-0-339"><a id="__codelineno-0-339" name="__codelineno-0-339"></a>    <span class="n">data</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
 </span><span id="__span-0-340"><a id="__codelineno-0-340" name="__codelineno-0-340"></a>    <span class="n">prefixo_ticker</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a>    <span class="n">comprimento_ticker</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2264,27 +2255,23 @@ price report completo (PR, ~2 MB) com todos os dados de negociação.</p>
 </span><span id="__span-0-436"><a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">        &gt;&gt;&gt; # Múltiplos contratos de uma vez</span>
 </span><span id="__span-0-437"><a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">        &gt;&gt;&gt; df = yd.b3.boletim.buscar("26-04-2024", ["DI1", "DAP"])</span>
 </span><span id="__span-0-438"><a id="__codelineno-0-438" name="__codelineno-0-438"></a>
-</span><span id="__span-0-439"><a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">        &gt;&gt;&gt; # Feriado ou fim de semana (retorna DataFrame vazio)</span>
-</span><span id="__span-0-440"><a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">        &gt;&gt;&gt; df = yd.b3.boletim.buscar("25-12-2023", "DI1")</span>
-</span><span id="__span-0-441"><a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">        &gt;&gt;&gt; df.is_empty()</span>
-</span><span id="__span-0-442"><a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">        True</span>
-</span><span id="__span-0-443"><a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">    """</span>
-</span><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-</span><span id="__span-0-445"><a id="__codelineno-0-445" name="__codelineno-0-445"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-</span><span id="__span-0-446"><a id="__codelineno-0-446" name="__codelineno-0-446"></a>
-</span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">converter_datas</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-</span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a>    <span class="c1"># Validação centralizada (evita chamadas desnecessárias às APIs B3)</span>
-</span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">data_negociacao_valida</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+</span><span id="__span-0-439"><a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">    """</span>
+</span><span id="__span-0-440"><a id="__codelineno-0-440" name="__codelineno-0-440"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+</span><span id="__span-0-441"><a id="__codelineno-0-441" name="__codelineno-0-441"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+</span><span id="__span-0-442"><a id="__codelineno-0-442" name="__codelineno-0-442"></a>
+</span><span id="__span-0-443"><a id="__codelineno-0-443" name="__codelineno-0-443"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">converter_datas</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a>    <span class="c1"># Validação centralizada (evita chamadas desnecessárias às APIs B3)</span>
+</span><span id="__span-0-445"><a id="__codelineno-0-445" name="__codelineno-0-445"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">data_negociacao_valida</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+</span><span id="__span-0-446"><a id="__codelineno-0-446" name="__codelineno-0-446"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+</span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a>
+</span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">_obter_df_boletim</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">boletim_completo</span><span class="p">)</span>
+</span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a>    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">()</span> <span class="ow">or</span> <span class="n">prefixo_ticker</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a>        <span class="k">return</span> <span class="n">df</span>
 </span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a>
-</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">_obter_df_boletim</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">boletim_completo</span><span class="p">)</span>
-</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a>    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">()</span> <span class="ow">or</span> <span class="n">prefixo_ticker</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a>        <span class="k">return</span> <span class="n">df</span>
-</span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a>
-</span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a>    <span class="n">prefixos</span> <span class="o">=</span> <span class="n">normalizar_contratos</span><span class="p">(</span><span class="n">prefixo_ticker</span><span class="p">)</span>
-</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">prefixos</span><span class="p">:</span>
-</span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a>    <span class="k">return</span> <span class="n">_filtrar_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">prefixos</span><span class="p">,</span> <span class="n">comprimento_ticker</span><span class="p">)</span>
+</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a>    <span class="n">prefixos</span> <span class="o">=</span> <span class="n">normalizar_contratos</span><span class="p">(</span><span class="n">prefixo_ticker</span><span class="p">)</span>
+</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">prefixos</span><span class="p">:</span>
+</span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+</span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a>    <span class="k">return</span> <span class="n">_filtrar_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">prefixos</span><span class="p">,</span> <span class="n">comprimento_ticker</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2413,7 +2400,11 @@ prefixo.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyield/b3/boletim.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-462">462</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-458">458</a></span>
+<span class="normal"><a href="#__codelineno-0-459">459</a></span>
+<span class="normal"><a href="#__codelineno-0-460">460</a></span>
+<span class="normal"><a href="#__codelineno-0-461">461</a></span>
+<span class="normal"><a href="#__codelineno-0-462">462</a></span>
 <span class="normal"><a href="#__codelineno-0-463">463</a></span>
 <span class="normal"><a href="#__codelineno-0-464">464</a></span>
 <span class="normal"><a href="#__codelineno-0-465">465</a></span>
@@ -2451,53 +2442,49 @@ prefixo.</p>
 <span class="normal"><a href="#__codelineno-0-497">497</a></span>
 <span class="normal"><a href="#__codelineno-0-498">498</a></span>
 <span class="normal"><a href="#__codelineno-0-499">499</a></span>
-<span class="normal"><a href="#__codelineno-0-500">500</a></span>
-<span class="normal"><a href="#__codelineno-0-501">501</a></span>
-<span class="normal"><a href="#__codelineno-0-502">502</a></span>
-<span class="normal"><a href="#__codelineno-0-503">503</a></span>
-<span class="normal"><a href="#__codelineno-0-504">504</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="k">def</span><span class="w"> </span><span class="nf">ler</span><span class="p">(</span>
-</span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a>    <span class="n">fonte</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
-</span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a>    <span class="n">prefixo_ticker</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a>    <span class="n">comprimento_ticker</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a><span class="w">    </span><span class="sd">"""Lê e processa o price report da B3 a partir do dado bruto.</span>
+<span class="normal"><a href="#__codelineno-0-500">500</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="k">def</span><span class="w"> </span><span class="nf">ler</span><span class="p">(</span>
+</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a>    <span class="n">fonte</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+</span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a>    <span class="n">prefixo_ticker</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-461"><a id="__codelineno-0-461" name="__codelineno-0-461"></a>    <span class="n">comprimento_ticker</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+</span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a><span class="w">    </span><span class="sd">"""Lê e processa o price report da B3 a partir do dado bruto.</span>
+</span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a>
+</span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a><span class="sd">    Mesma saída de :func:`buscar`, mas recebe o dado bruto em vez de</span>
+</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a><span class="sd">    baixar da rede. Aceita o ZIP externo como ``bytes`` ou ``Path``</span>
+</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a><span class="sd">    (caminho para o arquivo ZIP), e também XML descomprimido como ``bytes``.</span>
 </span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a>
-</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a><span class="sd">    Mesma saída de :func:`buscar`, mas recebe o dado bruto em vez de</span>
-</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a><span class="sd">    baixar da rede. Aceita o ZIP externo como ``bytes`` ou ``Path``</span>
-</span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a><span class="sd">    (caminho para o arquivo ZIP), e também XML descomprimido como ``bytes``.</span>
-</span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a>
-</span><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a><span class="sd">    Por operar diretamente sobre o dado bruto, esta função preserva a</span>
-</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a><span class="sd">    terminologia da fonte para filtros de `TckrSymb`.</span>
-</span><span id="__span-0-475"><a id="__codelineno-0-475" name="__codelineno-0-475"></a>
-</span><span id="__span-0-476"><a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-477"><a id="__codelineno-0-477" name="__codelineno-0-477"></a><span class="sd">        fonte: ZIP externo em bytes, caminho (``Path``) para um arquivo ZIP</span>
-</span><span id="__span-0-478"><a id="__codelineno-0-478" name="__codelineno-0-478"></a><span class="sd">            no disco, ou XML já descomprimido em bytes.</span>
-</span><span id="__span-0-479"><a id="__codelineno-0-479" name="__codelineno-0-479"></a><span class="sd">        prefixo_ticker: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',</span>
-</span><span id="__span-0-480"><a id="__codelineno-0-480" name="__codelineno-0-480"></a><span class="sd">            'CPM') ou lista de prefixos (ex.: ['DI1', 'DAP']).</span>
-</span><span id="__span-0-481"><a id="__codelineno-0-481" name="__codelineno-0-481"></a><span class="sd">            Se None (padrão), retorna todos os ativos sem filtro.</span>
-</span><span id="__span-0-482"><a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="sd">        comprimento_ticker: Comprimento exato do ticker para filtrar registros.</span>
-</span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a><span class="sd">            Se None (padrão), retorna todos os tickers que casam com o</span>
-</span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="sd">            prefixo.</span>
-</span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a>
-</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a><span class="sd">        pl.DataFrame: DataFrame com as mesmas colunas documentadas em</span>
-</span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="sd">        :func:`buscar`.</span>
-</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a><span class="sd">    """</span>
-</span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a>    <span class="n">conteudo</span> <span class="o">=</span> <span class="n">fonte</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fonte</span><span class="p">,</span> <span class="n">Path</span><span class="p">)</span> <span class="k">else</span> <span class="n">fonte</span>
-</span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a>
-</span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">conteudo</span><span class="p">):</span>
-</span><span id="__span-0-493"><a id="__codelineno-0-493" name="__codelineno-0-493"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-</span><span id="__span-0-494"><a id="__codelineno-0-494" name="__codelineno-0-494"></a>
-</span><span id="__span-0-495"><a id="__codelineno-0-495" name="__codelineno-0-495"></a>    <span class="n">xml_bytes</span> <span class="o">=</span> <span class="n">_extrair</span><span class="p">(</span><span class="n">conteudo</span><span class="p">)</span> <span class="k">if</span> <span class="n">conteudo</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">"PK</span><span class="se">\x03\x04</span><span class="s2">"</span> <span class="k">else</span> <span class="n">conteudo</span>
+</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a><span class="sd">    Por operar diretamente sobre o dado bruto, esta função preserva a</span>
+</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a><span class="sd">    terminologia da fonte para filtros de `TckrSymb`.</span>
+</span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a>
+</span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a><span class="sd">        fonte: ZIP externo em bytes, caminho (``Path``) para um arquivo ZIP</span>
+</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a><span class="sd">            no disco, ou XML já descomprimido em bytes.</span>
+</span><span id="__span-0-475"><a id="__codelineno-0-475" name="__codelineno-0-475"></a><span class="sd">        prefixo_ticker: Prefixo do ticker B3 (ex.: 'DI1', 'DOL',</span>
+</span><span id="__span-0-476"><a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="sd">            'CPM') ou lista de prefixos (ex.: ['DI1', 'DAP']).</span>
+</span><span id="__span-0-477"><a id="__codelineno-0-477" name="__codelineno-0-477"></a><span class="sd">            Se None (padrão), retorna todos os ativos sem filtro.</span>
+</span><span id="__span-0-478"><a id="__codelineno-0-478" name="__codelineno-0-478"></a><span class="sd">        comprimento_ticker: Comprimento exato do ticker para filtrar registros.</span>
+</span><span id="__span-0-479"><a id="__codelineno-0-479" name="__codelineno-0-479"></a><span class="sd">            Se None (padrão), retorna todos os tickers que casam com o</span>
+</span><span id="__span-0-480"><a id="__codelineno-0-480" name="__codelineno-0-480"></a><span class="sd">            prefixo.</span>
+</span><span id="__span-0-481"><a id="__codelineno-0-481" name="__codelineno-0-481"></a>
+</span><span id="__span-0-482"><a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a><span class="sd">        pl.DataFrame: DataFrame com as mesmas colunas documentadas em</span>
+</span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="sd">        :func:`buscar`.</span>
+</span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a><span class="sd">    """</span>
+</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a>    <span class="n">conteudo</span> <span class="o">=</span> <span class="n">fonte</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fonte</span><span class="p">,</span> <span class="n">Path</span><span class="p">)</span> <span class="k">else</span> <span class="n">fonte</span>
+</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a>
+</span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">conteudo</span><span class="p">):</span>
+</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+</span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a>
+</span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a>    <span class="n">xml_bytes</span> <span class="o">=</span> <span class="n">_extrair</span><span class="p">(</span><span class="n">conteudo</span><span class="p">)</span> <span class="k">if</span> <span class="n">conteudo</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">"PK</span><span class="se">\x03\x04</span><span class="s2">"</span> <span class="k">else</span> <span class="n">conteudo</span>
+</span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a>
+</span><span id="__span-0-493"><a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">_processar_xml_extraido</span><span class="p">(</span><span class="n">xml_bytes</span><span class="p">)</span>
+</span><span id="__span-0-494"><a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">()</span> <span class="ow">or</span> <span class="n">prefixo_ticker</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-495"><a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="k">return</span> <span class="n">df</span>
 </span><span id="__span-0-496"><a id="__codelineno-0-496" name="__codelineno-0-496"></a>
-</span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">_processar_xml_extraido</span><span class="p">(</span><span class="n">xml_bytes</span><span class="p">)</span>
-</span><span id="__span-0-498"><a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">()</span> <span class="ow">or</span> <span class="n">prefixo_ticker</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-499"><a id="__codelineno-0-499" name="__codelineno-0-499"></a>        <span class="k">return</span> <span class="n">df</span>
-</span><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a>
-</span><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a>    <span class="n">prefixos</span> <span class="o">=</span> <span class="n">normalizar_contratos</span><span class="p">(</span><span class="n">prefixo_ticker</span><span class="p">)</span>
-</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">prefixos</span><span class="p">:</span>
-</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a>    <span class="k">return</span> <span class="n">_filtrar_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">prefixos</span><span class="p">,</span> <span class="n">comprimento_ticker</span><span class="p">)</span>
+</span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a>    <span class="n">prefixos</span> <span class="o">=</span> <span class="n">normalizar_contratos</span><span class="p">(</span><span class="n">prefixo_ticker</span><span class="p">)</span>
+</span><span id="__span-0-498"><a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">prefixos</span><span class="p">:</span>
+</span><span id="__span-0-499"><a id="__codelineno-0-499" name="__codelineno-0-499"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+</span><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a>    <span class="k">return</span> <span class="n">_filtrar_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">prefixos</span><span class="p">,</span> <span class="n">comprimento_ticker</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
