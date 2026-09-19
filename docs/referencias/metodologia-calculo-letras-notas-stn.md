@@ -58,6 +58,13 @@ descritas separadamente nas seções 4.1 e 4.2.
 do Banco Central o VNA oficial do código `210100` e valida que o valor é único
 entre os vencimentos. Esse dado oficial é a entrada usada pelo módulo de LFT.
 
+Para reconstruir o acruamento diário, a referência direta é a série SGS 11,
+que publica a taxa Selic diária em percentual. Em 18/09/2026, por exemplo, a
+série retornou `0,050788%`, equivalente ao fator `1,00050788`. Aplicado ao VNA
+de 17/09/2026, o resultado truncado em seis casas é exatamente o VNA publicado
+para 18/09/2026. A série SGS 1178, embora seja chamada Selic Over, publica a
+taxa anualizada e arredondada; ela não deve ser usada como fator diário exato.
+
 O caderno define o fator acumulado `C` com oito casas, enquanto o guia de
 leilões apresenta o índice Selic acumulado com dezesseis. Essa diferença é uma
 observação sobre a formação externa do dado e não representa uma divergência

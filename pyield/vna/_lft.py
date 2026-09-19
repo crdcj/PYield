@@ -44,7 +44,7 @@ def projetado_lft(
         data: Data do próximo dia útil de acruamento após a data-base.
         vna_base: VNA-base em reais, positivo e finito.
         taxa_anual: Taxa anual decimal, finita e maior que -1. Aceita também
-            percentual explícito, como ``"13.75%"`` ou ``"13,75%"``.
+            percentual explícito, como ``"13.65%"`` ou ``"13,65%"``.
 
     Returns:
         Decimal: VNA projetado, truncado em seis casas decimais. Retorna
@@ -61,9 +61,15 @@ def projetado_lft(
         são convertidos para decimal sem truncamento. Não há truncamentos
         intermediários nem arredondamento comercial da taxa.
 
-        Não consulta fontes externas nem escolhe Selic Meta como hipótese.
-        O resultado é uma projeção sob a taxa informada, não um VNA oficial
-        realizado. A taxa pode ser negativa, desde que maior que -100%.
+        Não consulta fontes externas nem escolhe automaticamente uma taxa. Para
+        reproduzir o acruamento oficial da LFT, use a taxa Selic diária
+        publicada pela série SGS 11. Como ela é publicada em percentual,
+        ``0,050788%`` corresponde à taxa decimal ``0,00050788`` e ao fator
+        derivado ``1,00050788``. Converta essa taxa diária para uma taxa anual
+        equivalente antes de informar ``taxa_anual``. A Selic Over da série
+        SGS 1178 é anualizada e serve apenas como aproximação. O resultado é
+        uma projeção sob a taxa informada, não um VNA oficial realizado. A
+        taxa pode ser negativa, desde que maior que -100%.
 
     Raises:
         ValueError: Data final anterior à base ou distante mais de um dia útil,
@@ -73,12 +79,12 @@ def projetado_lft(
     Examples:
         >>> from decimal import Decimal
         >>> projetado_lft(
+        ...     "17-09-2026",
         ...     "18-09-2026",
-        ...     "21-09-2026",
         ...     Decimal("19905.773236"),
-        ...     "13.75%",
+        ...     "13.65%",
         ... )
-        Decimal('19915.952496')
+        Decimal('19915.882987')
     """
     if any_is_empty(data_base, data, vna_base, taxa_anual):
         return Decimal("NaN")

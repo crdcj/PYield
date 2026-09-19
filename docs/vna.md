@@ -28,18 +28,29 @@ historico = yd.vna.historico("NTN-C", vencimento="01-01-2031")
 valor = yd.vna.valor("NTN-B", "15-12-2025")
 projecao_ntnb = yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, 0.45)
 projecao_lft = yd.vna.projetado(
-    "LFT", "21-09-2026", 19905.773236,
-    selic="13.75%",
+    "LFT", "18-09-2026", 19905.773236,
+    selic="13.65%",
 )
 ```
 
 `projetado` é a operação comum de projeção para todos os títulos. Para NTN-B e
 NTN-C, `inflacao` representa a variação mensal em percentual e aceita `float` ou
-`Decimal`. Para LFT, `selic` representa a hipótese anual em formato decimal ou
-percentual explícito; a data-base é o último dia útil anterior à data solicitada
-e a projeção avança exatamente um dia útil. A função retorna `Decimal`.
+`Decimal`. Para LFT, `selic` representa a taxa anual informada em formato
+decimal ou percentual explícito. Para reproduzir o acruamento oficial, derive
+a taxa Selic diária publicada pelo SGS 11. Como ela é publicada em percentual,
+`0,050788%` equivale à taxa decimal `0,00050788` e ao fator derivado
+`1,00050788`; converta essa taxa diária para uma taxa anual equivalente. A
+série 1178 é a Selic Over anualizada e serve apenas como aproximação. A
+data-base é o último dia útil anterior à data solicitada e a projeção avança
+exatamente um dia útil. A função retorna `Decimal`.
 `historico` e `ultimo` retornam DataFrames com coluna `vna` do tipo `Float64`.
 O cálculo genérico `calcular_vna` mantém seu retorno `float` existente.
+
+Por exemplo, o SGS 11 publicou `0,050788%` para 18/09/2026. Isso corresponde
+ao fator diário `1,00050788`; aplicado ao VNA de 17/09/2026 (`19905,773236`),
+produz `19915,882980111...`, truncado para `19915,882980`, exatamente o valor
+publicado pelo BCB. A série 1178 publicou `13,65%` anualizado na mesma data;
+usá-la diretamente produz uma pequena diferença por causa do arredondamento.
 
 `ultimo` retorna a última referência de cada série; para NTN-C sem filtro de
 vencimento, pode retornar mais de uma linha. Datas e valores permanecem juntos.

@@ -2,6 +2,7 @@
 
 Séries disponíveis:
     - PTAX Venda (SGS 1)
+    - SELIC Diária (SGS 11)
     - SELIC Meta (SGS 432)
     - SELIC Over (SGS 1178)
 
@@ -16,7 +17,7 @@ Exemplo de resposta JSON da API do BCB:
 
 Notas de implementação:
     - Intervalos longos são divididos automaticamente em blocos seguros.
-    - SELIC Over e Meta: valores percentuais convertidos para decimal
+        - SELIC Diária, Over e Meta: valores percentuais convertidos para decimal
       (divididos por 100) e arredondados para 10 casas decimais.
     - PTAX Venda: valor absoluto em R$ arredondado para 4 casas.
 """
@@ -54,6 +55,7 @@ class SerieSGS(Enum):
     """Enum para as séries disponíveis no SGS do Banco Central."""
 
     PTAX_VENDA = 1
+    SELIC_DIARIA = 11
     SELIC_META = 432
     SELIC_OVER = 1178
 

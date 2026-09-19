@@ -187,8 +187,13 @@ def projetado(
             representa 0,45%. Para LFT, taxa anual decimal, finita e maior
             que -1; informe-a em ``selic``.
         selic: Obrigatória apenas para LFT. Aceita taxa decimal ou
-            percentual explícito, como ``"13.75%"``. Para NTN-B e NTN-C,
-            deve ser omitida.
+            percentual explícito, como ``"13.65%"``. Para reproduzir o
+            acruamento oficial da LFT, use a taxa Selic diária publicada pelo
+            SGS 11. Como ela é publicada em percentual, ``0,050788%`` equivale
+            à taxa decimal ``0,00050788`` e ao fator derivado ``1,00050788``.
+            Converta essa taxa diária para uma taxa anual equivalente. A Selic
+            Over do SGS 1178 é anualizada e serve apenas como aproximação. Para
+            NTN-B e NTN-C, deve ser omitida.
 
     Returns:
         Decimal: VNA projetado com seis casas; NaN para entradas nulas.
@@ -197,7 +202,10 @@ def projetado(
         NTN-B e NTN-C seguem a metodologia STN: base truncada em seis casas,
         inflação arredondada em duas e expoente em dias corridos truncado em
         catorze. LFT usa dias úteis, base 252 e capitalização pela taxa anual
-        informada. Não busca projeções externas.
+        informada. A taxa Selic diária publicada pelo SGS 11 é a referência
+        exata para o acruamento; o fator usado no cálculo é ``1 + taxa`` em
+        formato decimal. A função não busca a taxa automaticamente nem faz
+        projeções externas.
 
     Raises:
         ValueError: Se o título for inválido, a taxa for informada para o
@@ -210,17 +218,19 @@ def projetado(
         Decimal('4742.491138')
         >>> yd.vna.projetado(
         ...     "LFT",
-        ...     "21-09-2026",
+        ...     "18-09-2026",
         ...     19905.773236,
-        ...     selic="13.75%",
+        ...     selic="13.65%",
         ... )
-        Decimal('19915.952496')
+        Decimal('19915.882987')
     """
     if titulo not in {"LFT", "NTN-B", "NTN-C"}:
         raise ValueError("Título deve ser LFT, NTN-B ou NTN-C.")
     if titulo == "LFT":
         if inflacao is not None:
             raise ValueError("Use selic para a projeção da LFT.")
+        if selic is None:
+            return Decimal("NaN")
         if any_is_empty(selic):
             return Decimal("NaN")
         data_convertida = converter_datas(data)

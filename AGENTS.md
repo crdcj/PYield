@@ -38,6 +38,12 @@ configuração do GitHub Pages.
 Rode verificações focadas no que você alterou. Amplie para a suíte inteira quando
 a mudança afetar contratos transversais, API pública ou parsing compartilhado.
 
+Ao encaminhar valores opcionais para funções que exigem um valor não nulo, faça
+o narrowing explícito com `is None` antes de helpers como `any_is_empty`. Esses
+helpers validam valores vazios, mas não necessariamente são reconhecidos pelo
+`ty` como type guards. Rode `uv run ty check` após refatorações que alterem
+assinaturas ou fluxos condicionais.
+
 ## Fronteira Pública
 
 Considere público o que é exportado em `pyield/__init__.py`, documentado em
