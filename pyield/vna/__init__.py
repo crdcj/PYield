@@ -10,4 +10,12 @@ from pyield.vna._consulta import (
     vigencia,
 )
 
-__all__ = ["calcular_vna", "TipoTitulo", "historico", "projetado", "ultimo", "valor", "vigencia"]
+__all__ = [
+    "calcular_vna",
+    "TipoTitulo",
+    "historico",
+    "projetado",
+    "ultimo",
+    "valor",
+    "vigencia",
+]

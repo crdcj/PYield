@@ -6,6 +6,7 @@ from typing import Literal
 
 import polars as pl
 
+from pyield import du
 from pyield._internal.converters import converter_datas
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.vna import _lft, _ntnb, _ntnc
@@ -171,26 +172,66 @@ def projetado(
     titulo: TipoTitulo,
     data: DateLike,
     vna_base: float | Decimal,
-    inflacao: float | Decimal,
+    inflacao: float | Decimal | None = None,
+    *,
+    selic: float | Decimal | str | None = None,
 ) -> Decimal:
-    """Projeta o VNA mensal com base e inflação fornecidas pelo consumidor.
+    """Projeta o VNA do título conforme sua metodologia.
 
     Args:
-        titulo: NTN-B ou NTN-C. Projeção de LFT não está disponível.
+        titulo: LFT, NTN-B ou NTN-C.
         data: Data para a qual projetar o VNA.
-        vna_base: VNA no início da vigência que contém a data.
-        inflacao: Variação mensal percentual; 0.45 representa 0,45%.
+        vna_base: VNA-base correspondente ao início da vigência ou ao último
+            dia útil anterior à data, conforme o título.
+        inflacao: Para NTN-B e NTN-C, variação mensal percentual; ``0.45``
+            representa 0,45%. Para LFT, taxa anual decimal, finita e maior
+            que -1; informe-a em ``selic``.
+        selic: Obrigatória apenas para LFT. Aceita taxa decimal ou
+            percentual explícito, como ``"13.75%"``. Para NTN-B e NTN-C,
+            deve ser omitida.
 
     Returns:
         Decimal: VNA projetado com seis casas; NaN para entradas nulas.
 
     Notes:
-        Segue a metodologia STN das funções de projeção de NTN-B e NTN-C:
-        base truncada em seis casas, inflação arredondada em duas e expoente
-        em dias corridos truncado em catorze. Não busca projeções externas.
+        NTN-B e NTN-C seguem a metodologia STN: base truncada em seis casas,
+        inflação arredondada em duas e expoente em dias corridos truncado em
+        catorze. LFT usa dias úteis, base 252 e capitalização pela taxa anual
+        informada. Não busca projeções externas.
 
     Raises:
-        ValueError: Se o título não for NTN-B ou NTN-C, a base não for positiva
-            ou a inflação for menor ou igual a -100%.
+        ValueError: Se o título for inválido, a taxa for informada para o
+            título errado, ou houver violação dos limites da metodologia
+            específica.
+
+    Examples:
+        >>> import pyield as yd
+        >>> yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, 0.45)
+        Decimal('4742.491138')
+        >>> yd.vna.projetado(
+        ...     "LFT",
+        ...     "21-09-2026",
+        ...     19905.773236,
+        ...     selic="13.75%",
+        ... )
+        Decimal('19915.952496')
     """
+    if titulo not in {"LFT", "NTN-B", "NTN-C"}:
+        raise ValueError("Título deve ser LFT, NTN-B ou NTN-C.")
+    if titulo == "LFT":
+        if inflacao is not None:
+            raise ValueError("Use selic para a projeção da LFT.")
+        if any_is_empty(selic):
+            return Decimal("NaN")
+        data_convertida = converter_datas(data)
+        if du.eh_dia_util(data_convertida):
+            data_base = du.deslocar(data_convertida, -1, ajuste="anterior")
+        else:
+            data_base = du.deslocar(data_convertida, 0, ajuste="anterior")
+        dias_uteis = du.contar(data_base, data)
+        if dias_uteis != 1:
+            raise ValueError("A projeção da LFT deve avançar um dia útil.")
+        return _lft.projetado_lft(data_base, data, vna_base, selic)
+    if selic is not None:
+        raise ValueError("selic aplica-se apenas à projeção da LFT.")
     return _modulo_mensal(titulo).vna_projetado(data, vna_base, inflacao)

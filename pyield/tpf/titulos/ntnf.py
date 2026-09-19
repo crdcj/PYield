@@ -7,7 +7,7 @@ Convenções de precificação (STN, tabela 3):
       equivalente a 6 casas em termos percentuais.
     - Cada fluxo descontado: arredondado a 9 casas.
 
-Constantes calculadas conforme regras da STN
+Valores de referência derivados conforme as regras da STN:
 TAXA_CUPOM = (0.10 + 1) ** 0.5 - 1  -> 10% a.a. com capitalização semestral
 VALOR_FACE = 1000
 VALOR_CUPOM = round(VALOR_FACE * TAXA_CUPOM, 5)
@@ -40,7 +40,7 @@ from .pre import premios_pre as _premios_pre
 
 VALOR_FACE = 1000
 VALOR_CUPOM = 48.80885
-VALOR_FINAL = VALOR_FACE + VALOR_CUPOM
+VALOR_FINAL = 1048.80885
 
 logger = logging.getLogger(__name__)
 

@@ -195,6 +195,8 @@ Visão geral das principais funções públicas do PYield.
     ├── datas_pagamento(...)
     ├── fluxos_caixa(...)
     ├── cotacao(...)
+    ├── cotacao_curva_zero(...)
+    ├── taxa_curva_zero(...)
     ├── pu(...)
     ├── taxa(...)
     ├── duration(...)
@@ -255,6 +257,6 @@ Visão geral das principais funções públicas do PYield.
     ├── historico(titulo, vencimento=None)
     ├── ultimo(titulo, vencimento=None)
     ├── vigencia(titulo, data)
-    ├── projetado(titulo, data, vna_base, inflacao)
+    ├── projetado(titulo, data, vna_base, inflacao=None, selic=None)
     └── calcular_vna(df, data, fator_variacao=...)
     ```

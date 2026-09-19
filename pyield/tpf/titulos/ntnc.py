@@ -1,28 +1,40 @@
+"""Cálculos e dados de NTN-C.
+
+Convenções de precificação (STN, tabela 3):
+    - Cotação em base 100, truncada a 4 casas.
+    - VNA recebido no cálculo do PU: truncado a 6 casas.
+    - Prazo de desconto: dias úteis / 252, truncado a 14 casas.
+    - PU: truncado a 6 casas.
+    - Taxa implícita retornada: decimal, truncada a 8 casas,
+      equivalente a 6 casas em termos percentuais.
+    - Cada fluxo descontado: arredondado a 10 casas.
+
+Valores de referência derivados conforme as regras da STN, exibidos em base 100.
+Para NTN-C com vencimento em 01-01-2031:
+    PRINCIPAL = 100
+    TAXA_CUPOM = ((0.12 + 1) ** 0.5 - 1) * 100  # 12% a.a. com capitalização semestral
+    VALOR_CUPOM_2031 = round(TAXA_CUPOM, 6) -> 5.830052
+    VALOR_FINAL_2031 = 105.830052
+
+Para as demais NTN-C:
+    TAXA_CUPOM = ((0.06 + 1) ** 0.5 - 1) * 100  # 6% a.a. com capitalização semestral
+    VALOR_CUPOM = round(TAXA_CUPOM, 6) -> 2.956301
+    VALOR_FINAL = 102.956301
+"""
+
 import datetime as dt
+import math
 from decimal import Decimal
 
 import polars as pl
 
 import pyield._internal.converters as conversores
-from pyield import du
+from pyield import du, interpolador
 from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 
 from . import _utils
 
-"""
-Constantes calculadas conforme regras da STN, exibidas em base 100.
-Válido para NTN-C com vencimento 01-01-2031:
-PRINCIPAL = 100
-TAXA_CUPOM = ((0.12 + 1) ** 0.5 - 1) * 100  # 12% a.a. com capitalização semestral
-VALOR_CUPOM_2031 = round(TAXA_CUPOM, 6) -> 5.830052
-VALOR_FINAL_2031 = principal + último cupom = 100 + 5.830052
-
-Para as demais NTN-C:
-TAXA_CUPOM = ((0.06 + 1) ** 0.5 - 1) * 100  # 6% a.a. com capitalização semestral
-VALOR_CUPOM = round(TAXA_CUPOM, 6) -> 2.956301
-VALOR_FINAL = principal + último cupom = 100 + 2.956301
-"""
 # Valores usados nos cálculos, em base 100, com 6 casas decimais
 VALOR_CUPOM_2031 = 5.830052
 VALOR_FINAL_2031 = 105.830052
@@ -285,6 +297,137 @@ def cotacao(
     # Soma decimal preserva os fluxos arredondados no limite do truncamento.
     cotacao_total = sum(Decimal(str(valor)) for valor in vp)
     return truncar_decimal(cotacao_total, 4)
+
+
+def _pagamentos_curva_zero(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    curva_zero: pl.DataFrame,
+) -> pl.DataFrame:
+    """Prepara fluxos e taxas da curva fornecida, sem escolher seu indexador."""
+    if not {"dias_uteis", "taxa_zero"}.issubset(curva_zero.columns):
+        raise ValueError(
+            "Curva zero deve conter as colunas 'dias_uteis' e 'taxa_zero'."
+        )
+    curva = curva_zero.select(
+        pl.col("dias_uteis").cast(pl.Float64),
+        pl.col("taxa_zero").cast(pl.Float64),
+    )
+    if (
+        curva.is_empty()
+        or curva.select(
+            (
+                pl.col("dias_uteis").is_null()
+                | ~pl.col("dias_uteis").is_finite()
+                | (pl.col("dias_uteis") <= 0)
+                | (pl.col("dias_uteis") != pl.col("dias_uteis").floor())
+                | pl.col("taxa_zero").is_null()
+                | ~pl.col("taxa_zero").is_finite()
+                | (pl.col("taxa_zero") <= -1)
+            ).any()
+        ).item()
+    ):
+        raise ValueError(
+            "Curva deve ter prazos inteiros positivos e taxas finitas > -1."
+        )
+    if curva["dias_uteis"].n_unique() != curva.height:
+        raise ValueError("Curva zero não pode conter prazos duplicados.")
+
+    fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
+    dias = du.contar(data_liquidacao, fluxos["data_pagamento"])
+    taxas = interpolador.interpolar(
+        dias, curva["dias_uteis"].cast(pl.Int64), curva["taxa_zero"], extrapolar=True
+    )
+    return fluxos.with_columns(dias_uteis=dias, taxa=taxas)
+
+
+def cotacao_curva_zero(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    curva_zero: pl.DataFrame,
+) -> float:
+    """Calcula a cotação da NTN-C descontando seus fluxos pela curva informada.
+
+    Args:
+        data_liquidacao: Data de liquidação, exclusiva para seleção dos fluxos.
+        data_vencimento: Data de vencimento da NTN-C.
+        curva_zero: DataFrame com ``dias_uteis`` (prazos inteiros positivos,
+            únicos) e ``taxa_zero`` (taxas anuais decimais finitas maiores que -1).
+            A curva deve conter ao menos um vértice; a ordem é indiferente.
+
+    Returns:
+        float: Cotação em base 100, sem truncamento final. Retorna NaN para
+            datas ausentes, ausência de fluxos ou resultado não finito.
+
+    Raises:
+        ValueError: Curva vazia, colunas ausentes ou vértices inválidos.
+
+    Notes:
+        Usa os fluxos contratuais de ``fluxos_caixa``, sem deslocar suas datas.
+        O prazo em dias úteis / 252 é truncado em 14 casas. A interpolação é
+        flat-forward, com taxa constante nas duas pontas da curva. Cada valor
+        presente é arredondado em 10 casas, como em ``cotacao``; a soma não é
+        truncada, pois serve de alvo para a TIR equivalente.
+
+        A curva é uma hipótese do consumidor. A biblioteca não escolhe uma
+        curva de IPCA como aproximação para IGP-M nem aplica piso ANBIMA.
+        Esta operação não representa uma cotação consultada em fonte externa.
+    """
+    if any_is_empty(data_liquidacao, data_vencimento):
+        return float("nan")
+    pagamentos = _pagamentos_curva_zero(data_liquidacao, data_vencimento, curva_zero)
+    if pagamentos.is_empty():
+        return float("nan")
+    cotacao = _utils.cotacao_por_taxas(pagamentos)
+    return cotacao if math.isfinite(cotacao) else float("nan")
+
+
+def taxa_curva_zero(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    curva_zero: pl.DataFrame,
+) -> float:
+    """Calcula a TIR equivalente à cotação da NTN-C pela curva zero informada.
+
+    Args:
+        data_liquidacao: Data de liquidação.
+        data_vencimento: Data de vencimento da NTN-C.
+        curva_zero: DataFrame com ``dias_uteis`` e ``taxa_zero``, com os mesmos
+            requisitos de ``cotacao_curva_zero``.
+
+    Returns:
+        float: TIR anualizada decimal, sem arredondamento comercial. Retorna
+            NaN para datas ausentes, ausência de fluxos com prazo positivo,
+            resultado não finito ou falha de convergência.
+
+    Raises:
+        ValueError: Curva vazia, colunas ausentes ou vértices inválidos.
+
+    Notes:
+        Usa datas, interpolação e precisão de ``cotacao_curva_zero``. Resolve
+        por bisseção a taxa única que reproduz sua cotação, sem truncar a taxa
+        durante a busca. Não inverte um PU nem a cotação truncada de ``cotacao``.
+        O intervalo é delimitado pelas menores e maiores taxas interpoladas
+        dos fluxos. A busca para por erro de cotação zero ou meia largura do
+        intervalo inferior a 1e-12, com limite de 100 iterações.
+        A escolha da curva e eventuais spreads ou pisos ficam com o consumidor.
+    """
+    if any_is_empty(data_liquidacao, data_vencimento):
+        return float("nan")
+    pagamentos = _pagamentos_curva_zero(data_liquidacao, data_vencimento, curva_zero)
+    if pagamentos.is_empty() or not (pagamentos["dias_uteis"] > 0).any():
+        return float("nan")
+    alvo = _utils.cotacao_por_taxas(pagamentos)
+    if not math.isfinite(alvo):
+        return float("nan")
+
+    def erro(taxa: float) -> float:
+        return (
+            _utils.cotacao_por_taxas(pagamentos.with_columns(taxa=pl.lit(taxa))) - alvo
+        )
+
+    taxas = pagamentos["taxa"].sort()
+    return _utils.encontrar_raiz(erro, intervalo=(float(taxas[0]), float(taxas[-1])))
 
 
 def _calcular_pu(

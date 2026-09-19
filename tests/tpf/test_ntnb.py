@@ -255,6 +255,37 @@ def test_taxas_zero_reproduz_taxas_ntnb_principal(
     assert round(taxa_mercado + 0.0008, 4) == taxa_venda
 
 
+def test_ntnbp_taxa_reproduz_vertice_da_curva_zero_da_planilha():
+    """Usa a curva de referência de 13/07/2026, sem recalcular o bootstrap."""
+    taxa_esperada = 0.08306374259814908
+    curva = CURVA_PLANILHA.select(
+        dias_uteis=yd.du.contar(DATA_LIQUIDACAO, VENCIMENTOS),
+        taxa_zero=pl.col("taxa_zero"),
+    )
+
+    resultado = yd.ntnbp.taxa(DATA_LIQUIDACAO, "15-05-2029", curva)
+
+    assert isinstance(resultado, float)
+    assert resultado == taxa_esperada
+
+
+def test_ntnbp_taxa_preserva_vertice_sem_arredondamento():
+    vencimento = VENCIMENTOS[1]
+    taxa_zero = TAXAS_ZERO_PLANILHA[1]
+    curva = pl.DataFrame(
+        {
+            "dias_uteis": [yd.du.contar(DATA_LIQUIDACAO, vencimento)],
+            "taxa_zero": [taxa_zero],
+        }
+    )
+
+    resultado = yd.ntnbp.taxa(DATA_LIQUIDACAO, vencimento, curva)
+
+    assert isinstance(resultado, float)
+    assert resultado == taxa_zero
+    assert resultado != round(resultado, 4)
+
+
 def test_ntnb1_cotacao_curva_zero_reproduz_planilha_td():
     curva_zero = yd.ntnb.taxas_zero(
         DATA_LIQUIDACAO,

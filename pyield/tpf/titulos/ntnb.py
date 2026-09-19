@@ -9,10 +9,10 @@ Convenções de precificação (STN, tabela 3):
       equivalente a 6 casas em termos percentuais.
     - Cada fluxo descontado: arredondado a 10 casas.
 
-Constantes calculadas conforme regras da STN, exibidas em base 100.
+Valores de referência derivados conforme as regras da STN, exibidos em base 100:
 TAXA_CUPOM = ((0.06 + 1) ** 0.5 - 1) * 100  # 6% a.a. com capitalização semestral
 VALOR_CUPOM = round(TAXA_CUPOM, 6) -> 2.956301
-VALOR_FINAL = principal + último cupom = 100 + 2.956301
+VALOR_FINAL = 102.956301
 DIA_CUPOM = 15
 MESES_CUPOM = {2, 5, 8, 11}
 """
@@ -35,7 +35,7 @@ from . import _utils
 
 BASE_COTACAO = 100
 VALOR_CUPOM = 2.956301
-VALOR_FINAL = BASE_COTACAO + VALOR_CUPOM
+VALOR_FINAL = 102.956301
 
 logger = logging.getLogger(__name__)
 

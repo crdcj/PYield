@@ -28,3 +28,8 @@ def test_vna_retorna_decimal_com_escala_da_fonte(
 
 def test_vna_nulo_retorna_decimal_nan() -> None:
     assert vna.valor("LFT", None).is_nan()
+
+
+def test_projetado_lft_rejeita_mais_de_um_dia_util() -> None:
+    with pytest.raises(ValueError, match="um dia útil"):
+        lft.projetado_lft("18-09-2026", "22-09-2026", Decimal("19905.773236"), "13.75%")

@@ -286,21 +286,6 @@ def _validar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def _cotacao_por_taxas(pagamentos: pl.DataFrame) -> float:
-    """
-    Soma os valores presentes dos fluxos, arredondados na 10ª casa decimal.
-
-    Args:
-        pagamentos: DataFrame com uma linha por fluxo e as colunas
-            ``valor_pagamento`` (Float64), ``dias_uteis`` (Int64) e
-            ``taxa`` (Float64) alinhadas por linha.
-    """
-    anos_uteis = _utils.truncar(pagamentos["dias_uteis"] / 252, 14)
-    fatores = (1 + pagamentos["taxa"]) ** anos_uteis
-    valores_presentes = pagamentos["valor_pagamento"] / fatores
-    return float(valores_presentes.round(10).sum())
-
-
 def cotacao_curva_zero(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
@@ -348,7 +333,7 @@ def cotacao_curva_zero(
         extrapolar=True,
     )
     pagamentos = fluxos.with_columns(dias_uteis=dias_fluxos, taxa=taxas_fluxos)
-    return _cotacao_por_taxas(pagamentos)
+    return _utils.cotacao_por_taxas(pagamentos)
 
 
 def _resolver_taxa_equivalente(
@@ -369,7 +354,7 @@ def _resolver_taxa_equivalente(
 
     def erro(taxa: float) -> float:
         pagamentos = pagamentos_base.with_columns(taxa=pl.lit(taxa, dtype=pl.Float64))
-        return _cotacao_por_taxas(pagamentos) - cotacao_alvo
+        return _utils.cotacao_por_taxas(pagamentos) - cotacao_alvo
 
     limite_inferior = -0.99
     limite_superior = max(1.0, 2 * taxa_inicial + 0.01)
@@ -436,7 +421,7 @@ def taxa_curva_zero(
         extrapolar=True,
     )
     pagamentos_base = fluxos.with_columns(dias_uteis=dias_fluxos)
-    cotacao_alvo = _cotacao_por_taxas(pagamentos_base.with_columns(taxa=taxas_zero))
+    cotacao_alvo = _utils.cotacao_por_taxas(pagamentos_base.with_columns(taxa=taxas_zero))
     return _resolver_taxa_equivalente(
         cotacao_alvo,
         pagamentos_base,

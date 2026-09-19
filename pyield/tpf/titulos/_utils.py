@@ -302,3 +302,18 @@ def encontrar_raiz(
     if not math.isfinite(a) or not math.isfinite(b) or a > b:
         raise ValueError("Os limites do intervalo devem ser finitos e ordenados.")
     return _metodo_bissecao(func_diferenca_preco, a, b)
+
+
+def cotacao_por_taxas(pagamentos: pl.DataFrame) -> float:
+    """
+    Soma os valores presentes dos fluxos, arredondados na 10ª casa decimal.
+
+    Args:
+        pagamentos: DataFrame com uma linha por fluxo e as colunas
+            ``valor_pagamento`` (Float64), ``dias_uteis`` (Int64) e
+            ``taxa`` (Float64) alinhadas por linha.
+    """
+    anos_uteis = truncar(pagamentos["dias_uteis"] / 252, 14)
+    fatores = (1 + pagamentos["taxa"]) ** anos_uteis
+    valores_presentes = pagamentos["valor_pagamento"] / fatores
+    return float(valores_presentes.round(10).sum())

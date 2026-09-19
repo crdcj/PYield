@@ -1,4 +1,22 @@
-"""Precificação de NTN-B Principal."""
+"""Precificação de NTN-B Principal (Tesouro IPCA+ sem cupons).
+
+Convenções de cálculo:
+    - Fluxo único no vencimento, atualizado pelo IPCA via VNA.
+    - Prazo de desconto: dias úteis / 252, truncado a 14 casas.
+    - Cotação: base 100, truncada a 4 casas.
+    - VNA de entrada e PU retornado: truncados a 6 casas.
+    - Taxa da curva: float interpolado por flat-forward, sem arredondamento.
+
+O exemplo de precificação do Tesouro Direto (páginas 2 a 4) usa cotação com
+4 casas, embora o texto da página 4 mencione 2. O PU da biblioteca mantém
+6 casas; o preço em centavos do documento exige truncamento adicional.
+O documento parte de uma taxa pactuada e não especifica a regra de
+arredondamento da taxa obtida por curva zero.
+
+References:
+    - Tesouro Direto — Cálculo da Rentabilidade: Tesouro IPCA+.
+      <https://www.tesourodireto.com.br/documents/d/guest/tesouro_ipca_juros_semestrais>
+"""
 
 from decimal import Decimal
 
@@ -34,6 +52,16 @@ def cotacao(
         >>> from pyield import ntnbp
         >>> ntnbp.cotacao("02-12-2025", "15-05-2029", "7.77%")
         Decimal('77.4630')
+
+        Exemplo do Tesouro Direto, páginas 2 a 4: liquidação em 03/01/2012,
+        vencimento em 15/05/2015, prazo de 846 dias úteis e taxa de 5,17% a.a.
+
+        >>> ntnbp.cotacao("03-01-2012", "15-05-2015", "5.17%")
+        Decimal('84.4317')
+
+    References:
+        - Tesouro Direto — Tesouro IPCA+, páginas 2 a 4.
+          <https://www.tesourodireto.com.br/documents/d/guest/tesouro_ipca_juros_semestrais>
     """
     if isinstance(taxa_tir, str):
         taxa_tir = float(_utils.converter_taxa(taxa_tir))
@@ -66,6 +94,18 @@ def pu(vna: float | Decimal, cotacao: float | Decimal) -> Decimal:
         >>> cot = ntnbp.cotacao("02-12-2025", "15-05-2029", "7.77%")
         >>> ntnbp.pu(4567.033825, cot)
         Decimal('3537.761411')
+
+        Exemplo do Tesouro Direto, página 4, com o VNA projetado publicado.
+        O retorno preserva seis casas; truncado em centavos, corresponde
+        ao preço de R$ 1.776,77 apresentado no documento.
+
+        >>> cot = ntnbp.cotacao("03-01-2012", "15-05-2015", "5.17%")
+        >>> ntnbp.pu(Decimal("2104.390122"), cot)
+        Decimal('1776.772354')
+
+    References:
+        - Tesouro Direto — Tesouro IPCA+, página 4.
+          <https://www.tesourodireto.com.br/documents/d/guest/tesouro_ipca_juros_semestrais>
     """
     if any_is_empty(vna, cotacao):
         return Decimal("NaN")
@@ -100,9 +140,12 @@ def taxa(
     """
     Obtém a TIR da NTN-B Principal a partir da curva zero informada.
 
-    A taxa zero correspondente ao vencimento é interpolada por flat-forward e
-    arredondada em quatro casas decimais. Como a NTN-B Principal possui um único
+    A taxa zero correspondente ao vencimento é interpolada por flat-forward,
+    sem arredondamento. Como a NTN-B Principal possui um único
     fluxo no vencimento, essa taxa zero também é a TIR do título.
+
+    Arredondamentos comerciais e spreads de compra ou venda ficam a cargo
+    do consumidor.
 
     A curva pode ser produzida por :func:`pyield.ntnb.taxas_zero`. Para
     cálculos em lote, ela deve ser construída uma única vez e reutilizada entre
@@ -114,7 +157,7 @@ def taxa(
         curva_zero: DataFrame com as colunas ``dias_uteis`` e ``taxa_zero``.
 
     Returns:
-        float: TIR anualizada, arredondada em quatro casas decimais.
+        float: TIR anualizada em formato decimal, sem arredondamento.
             Retorna ``NaN`` se a liquidação for igual ou posterior ao vencimento.
     """
     if any_is_empty(data_liquidacao, data_vencimento):
@@ -125,12 +168,11 @@ def taxa(
         return float("nan")
 
     curva = _normalizar_curva_zero(curva_zero)
-    taxa_zero = interpolador.Interpolador(
+    return interpolador.Interpolador(
         curva["dias_uteis"],
         curva["taxa_zero"],
         metodo="flat_forward",
     ).interpolar(dias_uteis)
-    return round(taxa_zero, 4)
 
 
 def dv01(

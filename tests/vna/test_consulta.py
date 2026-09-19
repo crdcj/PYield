@@ -75,13 +75,29 @@ def test_projecao_tambem_aceita_decimal():
     assert resultado == Decimal("6703.570025")
 
 
-@pytest.mark.parametrize("titulo", ["LFT", "LTN", "invalido"])
-def test_operacoes_mensais_rejeitam_titulo(titulo):
+def test_projecao_lft_usa_a_mesma_operacao_publica():
+    resultado = yd.vna.projetado(
+        "LFT",
+        "21-09-2026",
+        Decimal("19905.773236"),
+        selic="13.75%",
+    )
+
+    assert resultado == Decimal("19915.952496")
+
+
+def test_projecao_lft_informa_selic_com_nome_explicito():
+    with pytest.raises(ValueError, match="selic"):
+        yd.vna.projetado("LFT", "21-09-2026", 19905.773236, 0.1375)
+
+
+@pytest.mark.parametrize("titulo", ["LTN", "invalido"])
+def test_operacoes_mensais_rejeitam_titulo_invalido(titulo):
     with pytest.raises(ValueError, match="NTN-B e NTN-C"):
         yd.vna.ultimo(titulo)
     with pytest.raises(ValueError, match="NTN-B e NTN-C"):
         yd.vna.vigencia(titulo, "01-01-2026")
-    with pytest.raises(ValueError, match="NTN-B e NTN-C"):
+    with pytest.raises(ValueError, match="LFT, NTN-B ou NTN-C"):
         yd.vna.projetado(titulo, "01-01-2026", 1000, 0.45)
 
 
@@ -95,8 +111,15 @@ def test_argumentos_incompativeis():
 
 
 def test_namespace_reexporta_implementacoes():
-    for nome in ("valor", "historico", "ultimo", "vigencia", "projetado"):
+    for nome in (
+        "valor",
+        "historico",
+        "ultimo",
+        "vigencia",
+        "projetado",
+    ):
         assert getattr(yd.vna, nome) is getattr(consulta, nome)
+    assert not hasattr(yd.vna, "projetado_lft")
     for modulo in (yd.ntnb, yd.ntnc, yd.lft):
         for nome in ("vna", "vnas", "vna_projetado", "vigencia"):
             assert not hasattr(modulo, nome)

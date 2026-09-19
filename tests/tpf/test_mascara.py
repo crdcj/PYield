@@ -2,6 +2,7 @@
 
 import datetime as dt
 import math
+from decimal import ROUND_HALF_UP, Decimal
 
 import pytest
 
@@ -194,10 +195,10 @@ def test_pu_reproduz_mascara_td(caso, curva_zero_td):
     familia, lado, data, vencimento, taxa, vna, pu_esperado = caso
     if familia == "NTN-B Princ":
         ajuste_taxa = -0.0004 if lado == "compra_d1" else 0.0008
-        taxa_mercado = ntnbp.taxa(
-            DATA_LIQUIDACAO,
-            vencimento,
-            curva_zero_td,
+        taxa_mercado = float(
+            Decimal(
+                str(ntnbp.taxa(DATA_LIQUIDACAO, vencimento, curva_zero_td))
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
         )
         cotacao = ntnbp.cotacao(data, vencimento, taxa_mercado + ajuste_taxa)
         pu_calculado = ntnbp.pu(vna, cotacao)

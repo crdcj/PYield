@@ -26,19 +26,27 @@ import pyield as yd
 ultimo = yd.vna.ultimo("NTN-B")  # DataFrame com data e VNA publicados
 historico = yd.vna.historico("NTN-C", vencimento="01-01-2031")
 valor = yd.vna.valor("NTN-B", "15-12-2025")
-projecao = yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, 0.45)
+projecao_ntnb = yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, 0.45)
+projecao_lft = yd.vna.projetado(
+    "LFT", "21-09-2026", 19905.773236,
+    selic="13.75%",
+)
 ```
 
-As entradas numéricas de `projetado` aceitam `float` ou `Decimal`; não é
-necessário converter os números antes da chamada. `valor` e `projetado`
-retornam `Decimal`. `historico` e `ultimo` retornam DataFrames com coluna
-`vna` do tipo `Float64`. O cálculo genérico `calcular_vna` mantém seu retorno
-`float` existente.
+`projetado` é a operação comum de projeção para todos os títulos. Para NTN-B e
+NTN-C, `inflacao` representa a variação mensal em percentual e aceita `float` ou
+`Decimal`. Para LFT, `selic` representa a hipótese anual em formato decimal ou
+percentual explícito; a data-base é o último dia útil anterior à data solicitada
+e a projeção avança exatamente um dia útil. A função retorna `Decimal`.
+`historico` e `ultimo` retornam DataFrames com coluna `vna` do tipo `Float64`.
+O cálculo genérico `calcular_vna` mantém seu retorno `float` existente.
 
 `ultimo` retorna a última referência de cada série; para NTN-C sem filtro de
 vencimento, pode retornar mais de uma linha. Datas e valores permanecem juntos.
-Não há projeção automática. A LFT aceita apenas `valor(titulo, data)`:
-não há histórico completo, última publicação ou projeção disponíveis nessa API.
+Não há projeção automática. A LFT não possui histórico mensal nem operação de
+última referência nessa API; sua projeção segue dias úteis, base 252 e taxa
+anual constante dentro da mesma operação `projetado`. Em uma segunda-feira, por
+exemplo, a base é a sexta-feira útil anterior.
 
 Use apenas `yd.vna` para operações de VNA. Os aliases `vna`, `vnas`,
 `vna_projetado` e `vigencia` foram removidos dos módulos dos títulos.
