@@ -77,6 +77,29 @@ documentação detalhada e as assinaturas públicas.
 
 ## Compatibilidade da API
 
+### Cotações em base 100 — 0.58.0
+
+As funções escalares de cálculo dos títulos também aceitam taxas percentuais
+explícitas, como `"5.75%"` ou `"5,75%"`, equivalentes a `0.0575`.
+Números continuam em formato decimal; strings sem `%` são rejeitadas.
+
+As funções `cotacao` de `yd.lft`, `yd.ntnb`, `yd.ntnc`, `yd.ntnbp` e
+`yd.ntnb1` passam a retornar base 100 com quatro casas decimais:
+`0.993651` passa a ser `99.3651`. As funções `pu` desses títulos recebem a
+cotação nessa mesma base e aplicam `VNA * cotacao / 100`.
+
+A coluna `valor_pagamento` de `fluxos_caixa` de NTN-B, NTN-C e NTN-B1 e o
+retorno de `ntnb1.cotacao_curva_zero` também passam para base 100. Esta última
+mantém a soma sem truncamento para calibrar a TIR equivalente.
+
+Para migrar, multiplique cotações e fluxos antigos armazenados por 100, remova
+multiplicações por 100 usadas apenas para exibir cotações e ajuste cálculos
+manuais de PU para dividir por 100. A composição `pu(vna, cotacao(...))`
+preserva a unidade e as regras de precisão do preço. Taxas continuam em formato
+decimal, e VNA e PU continuam em reais.
+
+### Demais alterações
+
 Este resumo parte da API da `0.56.0`. Mudanças que já faziam parte dessa versão
 ou de versões anteriores estão no histórico das
 [releases do GitHub](https://github.com/crdcj/PYield/releases).

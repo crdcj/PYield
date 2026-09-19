@@ -15,10 +15,8 @@ def test_ntnf_expr_preserva_linhas_apos_falha_do_solver(monkeypatch, nome):
         "vencimentos_di": ["01-01-2030", "01-01-2035"],
         "taxas_di": [0.11594, 0.11531],
     }
-    esperado = escalar(
-        **parametros, data_vencimento="01-01-2035", taxa_ntnf=0.151375
-    )
-    resolver = ntnf.utils.encontrar_raiz
+    esperado = escalar(**parametros, data_vencimento="01-01-2035", taxa_ntnf=0.151375)
+    resolver = ntnf._utils.encontrar_raiz
     chamadas = 0
 
     def resolver_com_falha(func, intervalo=None):
@@ -28,7 +26,7 @@ def test_ntnf_expr_preserva_linhas_apos_falha_do_solver(monkeypatch, nome):
             return float("nan")
         return resolver(func, intervalo=intervalo)
 
-    monkeypatch.setattr(ntnf.utils, "encontrar_raiz", resolver_com_falha)
+    monkeypatch.setattr(ntnf._utils, "encontrar_raiz", resolver_com_falha)
     resultado = pl.DataFrame(
         {"vencimento": ["01-01-2035"] * 3, "taxa": [0.151375] * 3}
     ).select(

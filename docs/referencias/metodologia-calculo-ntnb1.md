@@ -59,15 +59,16 @@ Os documentos oficiais sustentam as seguintes partes da implementação em
   da última parcela para que a soma seja 100;
 - `cotacao`: cotação como valor presente dos fluxos, descontados por
   `(1 + taxa) ** (DU / 252)`;
-- `pu`: preço como VNI projetado multiplicado pela cotação.
-- `pu`: a consulta pública da STN também registra a composição do pagamento a
+- `pu`: preço como VNI projetado multiplicado pela cotação e dividido por 100.
+- composição do pagamento: a consulta pública da STN também registra o cálculo a
   partir do preço de aquisição e da taxa de amortização.
 
 Os documentos informam que a razão `DU / 252` é calculada com 14 casas sem
 arredondamento e que a cotação é truncada na quarta casa percentual. Na
-implementação, cada valor presente é arredondado em 12 casas antes da soma. O
-PYield representa a cotação em base 1, por isso a função `cotacao` retorna o
-fator correspondente truncado em 6 casas decimais.
+implementação, cada valor presente em base 100 é arredondado em 10 casas antes
+da soma. A função `cotacao` retorna a cotação nessa mesma base, truncada em
+4 casas decimais. As amortizações são calculadas em base 100 com truncamento
+em 6 casas e ajuste da última parcela.
 
 O cálculo intermediário do PU pode conservar 6 casas decimais, como nos
 exemplos reproduzidos pelos testes. O preço efetivamente exibido ou negociado

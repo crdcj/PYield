@@ -7,42 +7,44 @@ import polars as pl
 from pyield import du, interpolador
 from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf.titulos import _utils as utils
+
+from . import _utils
 
 
 def cotacao(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa_tir: float | Decimal,
+    taxa_tir: float | Decimal | str,
 ) -> Decimal:
     """
-    Calcula a cotação da NTN-B Principal em base 1 descontando o principal pela TIR.
+    Calcula a cotação da NTN-B Principal em base 100 descontando o principal pela TIR.
 
     Args:
         data_liquidacao: Data de liquidação.
         data_vencimento: Data de vencimento.
         taxa_tir: Taxa interna de retorno anualizada do título.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
-        Decimal: Cotação em base 1, truncada em 6 casas decimais. Retorna
+        Decimal: Cotação em base 100, truncada em 4 casas decimais. Retorna
             ``Decimal("NaN")`` se a liquidação for igual ou posterior ao vencimento.
 
     Examples:
         >>> from pyield import ntnbp
         >>> ntnbp.cotacao("02-12-2025", "15-05-2029", 0.0777)
-        Decimal('0.774630')
-        >>> ntnbp.cotacao("02-12-2025", "15-05-2029", 0.0777) * 100
-        Decimal('77.463000')
+        Decimal('77.4630')
     """
+    if isinstance(taxa_tir, str):
+        taxa_tir = float(_utils.converter_taxa(taxa_tir))
     if any_is_empty(data_liquidacao, data_vencimento, taxa_tir):
         return Decimal("NaN")
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
         return Decimal("NaN")
-    anos_uteis = utils.truncar(dias_uteis / 252, 14)
-    fator_desconto = 1 / (1 + float(taxa_tir)) ** anos_uteis
-    return truncar_decimal(fator_desconto, 6)
+    anos_uteis = _utils.truncar(dias_uteis / 252, 14)
+    cotacao_percentual = 100 / (1 + float(taxa_tir)) ** anos_uteis
+    return truncar_decimal(cotacao_percentual, 4)
 
 
 def pu(vna: float | Decimal, cotacao: float | Decimal) -> Decimal:
@@ -51,7 +53,7 @@ def pu(vna: float | Decimal, cotacao: float | Decimal) -> Decimal:
 
     Args:
         vna: Valor nominal atualizado (VNA).
-        cotacao: Cotação da NTN-B Principal em base 1.
+        cotacao: Cotação da NTN-B Principal em base 100.
 
     Returns:
         Decimal: Preço da NTN-B Principal truncado em 6 casas decimais.
@@ -65,8 +67,8 @@ def pu(vna: float | Decimal, cotacao: float | Decimal) -> Decimal:
     if any_is_empty(vna, cotacao):
         return Decimal("NaN")
     vna_decimal = truncar_decimal(vna, 6)
-    cotacao_decimal = truncar_decimal(cotacao, 6)
-    return truncar_decimal(vna_decimal * cotacao_decimal, 6)
+    cotacao_decimal = truncar_decimal(cotacao, 4)
+    return truncar_decimal(vna_decimal * cotacao_decimal / 100, 6)
 
 
 def _normalizar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:
@@ -131,7 +133,7 @@ def taxa(
 def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa_tir: float,
+    taxa_tir: float | str,
     pu: float | Decimal,
 ) -> float:
     """
@@ -144,6 +146,7 @@ def dv01(
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
         taxa_tir (float): Taxa interna de retorno anualizada do título.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
         pu: PU usado como base para o cálculo.
 
     Returns:
@@ -157,13 +160,15 @@ def dv01(
         >>> bp.dv01("02-12-2025", "15-05-2029", 0.0777, pu)
         1.120055806382451
     """
+    if isinstance(taxa_tir, str):
+        taxa_tir = float(_utils.converter_taxa(taxa_tir))
     if any_is_empty(data_liquidacao, data_vencimento, taxa_tir, pu):
         return float("nan")
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
         return float("nan")
-    anos_uteis = utils.truncar(dias_uteis / 252, 14)
+    anos_uteis = _utils.truncar(dias_uteis / 252, 14)
     fator_preco = (1 + taxa_tir) ** anos_uteis
     fator_preco_1bp = (1 + taxa_tir + 0.0001) ** anos_uteis
     return float(pu) * (1 - fator_preco / fator_preco_1bp)

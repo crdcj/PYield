@@ -1,5 +1,6 @@
 import datetime as dt
 import math
+import re
 from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
 
@@ -45,73 +46,6 @@ def adicionar_taxa_di(df: pl.DataFrame, data_ref: DateLike) -> pl.DataFrame:
     if taxas_di.is_empty():
         return df
     return df.with_columns(taxa_di=taxas_di)
-
-
-def premios_pre(data: DateLike) -> pl.DataFrame:
-    """Calcula o prêmio dos títulos prefixados (LTN e NTN-F) sobre o DI.
-
-    Em linguagem de mercado, esse valor é chamado de prêmio. Em termos
-    descritivos, trata-se do spread sobre o DI.
-
-    Definição do prêmio:
-        premio = taxa indicativa do PRE - taxa de ajuste do DI
-
-    A coluna retorna essa diferença em formato decimal (ex: 0.000439 ≈
-    4.39 bps). Para exibir o prêmio em pontos-base, multiplique a coluna
-    ``premio`` por 10_000 no DataFrame retornado. No exemplo abaixo, essa
-    coluna é sobrescrita apenas para facilitar a leitura em pontos-base.
-
-    Args:
-        data: Data da consulta para buscar as taxas.
-
-    Returns:
-        DataFrame com as colunas do prêmio. Retorna DataFrame vazio se
-        não houver dados.
-
-    Output Columns:
-        * titulo (String): tipo do título.
-        * data_vencimento (Date): data de vencimento.
-        * premio (Float64): prêmio em formato decimal (spread sobre o DI).
-
-    Examples:
-        >>> # Exemplo em pontos-base para facilitar a leitura
-        >>> yd.tpf.premios_pre("30-05-2025").with_columns(
-        ...     premio=pl.col("premio") * 10_000
-        ... )
-        shape: (18, 3)
-        ┌────────┬─────────────────┬────────┐
-        │ titulo ┆ data_vencimento ┆ premio │
-        │ ---    ┆ ---             ┆ ---    │
-        │ str    ┆ date            ┆ f64    │
-        ╞════════╪═════════════════╪════════╡
-        │ LTN    ┆ 2025-07-01      ┆ 4.39   │
-        │ LTN    ┆ 2025-10-01      ┆ -9.0   │
-        │ LTN    ┆ 2026-01-01      ┆ -4.88  │
-        │ LTN    ┆ 2026-04-01      ┆ -4.45  │
-        │ LTN    ┆ 2026-07-01      ┆ 0.81   │
-        │ …      ┆ …               ┆ …      │
-        │ NTN-F  ┆ 2027-01-01      ┆ -3.31  │
-        │ NTN-F  ┆ 2029-01-01      ┆ 14.21  │
-        │ NTN-F  ┆ 2031-01-01      ┆ 21.61  │
-        │ NTN-F  ┆ 2033-01-01      ┆ 11.51  │
-        │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
-        └────────┴─────────────────┴────────┘
-    """
-    df = obter_tpf(data, "PRE").select("titulo", "data_vencimento", "taxa_indicativa")
-    if df.is_empty():
-        return df.select(
-            pl.lit("").alias("titulo"),
-            pl.lit(None, dtype=pl.Date).alias("data_vencimento"),
-            pl.lit(None, dtype=pl.Float64).alias("premio"),
-        ).clear()
-    df = adicionar_taxa_di(df, data)
-    df = (
-        df.with_columns(premio=pl.col("taxa_indicativa") - pl.col("taxa_di"))
-        .select("titulo", "data_vencimento", "premio")
-        .sort("titulo", "data_vencimento")
-    )
-
-    return df
 
 
 def coluna_ou_expr(valor: pl.Expr | str, nome: str) -> pl.Expr:
@@ -183,9 +117,19 @@ def adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
     return df.with_columns(dv01=0.0001 * expr_duracao_mod * pl.col("pu"))
 
 
-def normalizar_taxa_precificacao(taxa: float | Decimal) -> float:
+def converter_taxa(taxa: float | Decimal | str) -> float | Decimal:
+    """Converte percentual explícito para decimal, sem arredondar ou truncar."""
+    if not isinstance(taxa, str):
+        return taxa
+    texto = taxa.strip()
+    if not re.fullmatch(r"[+-]?[0-9]+(?:[.,][0-9]+)?\s*%", texto):
+        raise ValueError('Taxa textual deve ter formato percentual, como "5.75%".')
+    return Decimal(texto[:-1].strip().replace(",", ".")) / 100
+
+
+def normalizar_taxa_precificacao(taxa: float | Decimal | str) -> float:
     """Trunca a taxa decimal em seis casas percentuais, conforme a STN."""
-    return truncar(taxa, 8)
+    return truncar(converter_taxa(taxa), 8)
 
 
 def calcular_pv(

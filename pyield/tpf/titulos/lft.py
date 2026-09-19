@@ -1,3 +1,14 @@
+"""Cálculos e dados de LFT.
+
+Convenções de precificação (STN, tabela 3):
+    - Cotação em base 100, truncada a 4 casas.
+    - VNA recebido no cálculo do PU: truncado a 6 casas.
+    - Prazo de desconto: dias úteis / 252, truncado a 14 casas.
+    - PU: truncado a 6 casas.
+    - Taxa implícita retornada: decimal, truncada a 8 casas,
+      equivalente a 6 casas em termos percentuais.
+"""
+
 from decimal import Decimal
 
 import polars as pl
@@ -5,7 +16,10 @@ import polars as pl
 from pyield import du
 from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf.titulos import _utils as utils
+
+from . import _utils
+
+BASE_COTACAO = 100
 
 
 def dados(data: DateLike) -> pl.DataFrame:
@@ -38,18 +52,16 @@ def dados(data: DateLike) -> pl.DataFrame:
         >>> from pyield import lft
         >>> df_lft = lft.dados("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.obter_tpf(data, "LFT")
+    df = _utils.obter_tpf(data, "LFT")
     if df.is_empty():
         return df
 
     df = df.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
-    )
-
-    df = df.with_columns(
+    ).with_columns(
         prazo_medio=pl.col("dias_uteis") / 252,
     )
-    df = utils.adicionar_taxa_di(df, data)
+    df = _utils.adicionar_taxa_di(df, data)
 
     df = df.with_columns(
         rentabilidade=rentabilidade_expr("taxa_indicativa", "taxa_di"),
@@ -107,7 +119,7 @@ def vencimentos(data: DateLike) -> pl.Series:
 def cotacao(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float | Decimal,
+    taxa: float | Decimal | str,
 ) -> Decimal:
     """
     Calcula a cotação de uma LFT pela metodologia da STN para leilões primários.
@@ -116,17 +128,17 @@ def cotacao(
         data_liquidacao: Data de liquidação do título.
         data_vencimento: Data de vencimento do título.
         taxa: Taxa anualizada do título em formato decimal.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
-        Decimal: Fator de cotação em base 1, truncado em 6 casas decimais.
+        Decimal: Cotação em base 100, truncada em 4 casas decimais.
             Retorna ``Decimal("NaN")`` quando o prazo até o vencimento não é
             positivo.
 
     Notes:
-        A STN apresenta a cotação na escala percentual (base 100). Esta
-        função retorna o fator equivalente em base 1, usado diretamente no
-        cálculo do PU. O truncamento de 4 casas na escala STN equivale ao
-        truncamento de 6 casas nesta representação.
+        A cotação é calculada e retornada na escala percentual (base 100),
+        truncada em 4 casas conforme a STN. Por exemplo, ``99.3651`` representa
+        99,3651% do VNA; o PU é calculado como ``VNA * cotacao / 100``.
 
     Examples:
         Calcula a cotação de uma LFT com taxa de 0,1717%:
@@ -136,11 +148,9 @@ def cotacao(
         ...     data_vencimento="01-09-2030",
         ...     taxa=0.001717,  # 0.1717%
         ... )
-        Decimal('0.989645')
-        >>> lft.cotacao("24-07-2024", "01-09-2030", 0.001717) * 100
-        Decimal('98.964500')
-        >>> lft.cotacao("21-05-2008", "07-03-2014", -0.000200009) * 100
-        Decimal('100.115800')
+        Decimal('98.9645')
+        >>> lft.cotacao("21-05-2008", "07-03-2014", -0.000200009)
+        Decimal('100.1158')
 
         Entradas nulas retornam Decimal('NaN'):
         >>> lft.cotacao(
@@ -148,20 +158,22 @@ def cotacao(
         ... )
         Decimal('NaN')
     """
+    if isinstance(taxa, str):
+        taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return Decimal("NaN")
-    taxa = utils.normalizar_taxa_precificacao(taxa)
+    taxa = _utils.normalizar_taxa_precificacao(taxa)
     # Número de dias úteis entre liquidação (inclusivo) e vencimento (exclusivo)
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
         return Decimal("NaN")
 
     # Número de períodos truncado conforme regras da STN
-    anos_truncados = utils.truncar(dias_uteis / 252, 14)
+    anos_truncados = _utils.truncar(dias_uteis / 252, 14)
 
-    fator_desconto = 1 / (1 + taxa) ** anos_truncados
+    cotacao_percentual = BASE_COTACAO / (1 + taxa) ** anos_truncados
 
-    return truncar_decimal(fator_desconto, 6)
+    return truncar_decimal(cotacao_percentual, 4)
 
 
 def taxa(
@@ -215,18 +227,20 @@ def taxa(
         preco = _calcular_pu(vna, cotacao(data_liquidacao, data_vencimento, taxa))
         return float(preco) - pu_float
 
-    taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
+    taxa_encontrada = _utils.encontrar_raiz(diferenca_preco)
     return truncar_decimal(taxa_encontrada, 8)
 
 
-def rentabilidade(taxa_lft: float, taxa_di: float) -> float:
+def rentabilidade(taxa_lft: float | str, taxa_di: float | str) -> float:
     """
     Calcula a rentabilidade da LFT sobre a taxa de DI Futuro.
 
     Args:
         taxa_lft: Taxa anualizada da LFT sobre a Selic.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
         taxa_di: Taxa DI Futuro anualizada (interpolada para o mesmo
             vencimento da LFT).
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
         float: Rentabilidade da LFT sobre o DI.
@@ -239,6 +253,10 @@ def rentabilidade(taxa_lft: float, taxa_di: float) -> float:
         >>> lft.rentabilidade(taxa_lft, taxa_di)
         1.008594331960501
     """
+    if isinstance(taxa_lft, str):
+        taxa_lft = float(_utils.converter_taxa(taxa_lft))
+    if isinstance(taxa_di, str):
+        taxa_di = float(_utils.converter_taxa(taxa_di))
     if any_is_empty(taxa_lft, taxa_di):
         return float("nan")
     # Taxa diária
@@ -277,8 +295,8 @@ def _calcular_pu(
     if any_is_empty(vna, cotacao):
         return Decimal("NaN")
     vna_decimal = truncar_decimal(vna, 6)
-    cotacao_decimal = truncar_decimal(cotacao, 6)
-    return truncar_decimal(vna_decimal * cotacao_decimal, 6)
+    cotacao_decimal = truncar_decimal(cotacao, 4)
+    return truncar_decimal(vna_decimal * cotacao_decimal / BASE_COTACAO, 6)
 
 
 def pu(
@@ -290,7 +308,7 @@ def pu(
 
     Args:
         vna: Valor nominal atualizado (VNA).
-        cotacao: Fator de cotação da LFT em base 1.
+        cotacao: Cotação da LFT em base 100.
 
     Returns:
         Decimal: Preço da LFT truncado em 6 casas decimais.
@@ -302,9 +320,9 @@ def pu(
 
     Examples:
         >>> from pyield import lft
-        >>> lft.pu(15785.324502, 0.999291)
+        >>> lft.pu(15785.324502, 99.9291)
         Decimal('15774.132706')
-        >>> lft.pu(3451.2153459, 1.0011589)
+        >>> lft.pu(3451.2153459, 100.11589)
         Decimal('3455.211852')
     """
     return _calcular_pu(vna, cotacao)

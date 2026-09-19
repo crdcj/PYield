@@ -81,9 +81,10 @@ precificação dos títulos de leilão.
 As taxas da API são representadas em formato decimal. Por isso, truncar uma
 taxa percentual em seis casas equivale a truncar a taxa decimal em oito casas.
 
-As cotações de LFT, NTN-B e NTN-C são representadas pela API em base 1. O
-truncamento em seis casas nessa representação equivale ao truncamento em quatro
-casas da cotação percentual em base 100 usada no documento.
+As cotações de LFT, NTN-B e NTN-C são calculadas e retornadas em base 100,
+truncadas em quatro casas, como no documento. Os cupons de NTN-B e NTN-C usam
+seis casas e cada fluxo descontado é arredondado em dez casas antes da soma.
+O PU é calculado como `VNA * cotacao / 100`, truncado em seis casas.
 
 ## VNA realizado da NTN-B entre datas-base
 

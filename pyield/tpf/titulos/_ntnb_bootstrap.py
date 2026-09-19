@@ -8,7 +8,8 @@ import polars as pl
 
 from pyield import du
 from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
-from pyield.tpf.titulos import _utils as utils
+
+from . import _utils
 
 MAX_EXPANSOES_INTERVALO = 32
 
@@ -50,7 +51,7 @@ def _resolver_taxa_forward(
                 "Não foi possível encontrar um intervalo para a taxa forward."
             )
 
-    return utils.encontrar_raiz(erro, intervalo=(limite_inferior, limite_superior))
+    return _utils.encontrar_raiz(erro, intervalo=(limite_inferior, limite_superior))
 
 
 def _calibrar_taxa_forward(

@@ -1,3 +1,23 @@
+"""Cálculos e dados de NTN-F.
+
+Convenções de precificação (STN, tabela 3):
+    - Prazo de desconto: dias úteis / 252, truncado a 14 casas.
+    - PU: truncado a 6 casas.
+    - Taxa implícita retornada: decimal, truncada a 8 casas,
+      equivalente a 6 casas em termos percentuais.
+    - Cada fluxo descontado: arredondado a 9 casas.
+
+Constantes calculadas conforme regras da STN
+TAXA_CUPOM = (0.10 + 1) ** 0.5 - 1  -> 10% a.a. com capitalização semestral
+VALOR_FACE = 1000
+VALOR_CUPOM = round(VALOR_FACE * TAXA_CUPOM, 5)
+VALOR_FINAL = VALOR_FACE + VALOR_CUPOM
+
+A NTN-F paga dois cupons por ano (semestrais). As datas de cupom são derivadas
+do vencimento (retrocedendo 6 em 6 meses), sem depender de meses fixos.
+    Ex.: vencimento 01-01-2027 gera cupons em 01-07-2026, 01-01-2026, ...
+"""
+
 import datetime as dt
 import logging
 import math
@@ -11,24 +31,16 @@ from pyield import du
 from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 from pyield.futuro import di1
-from pyield.tpf.titulos import _utils as utils
 from pyield.tpf.titulos._ntnf_bootstrap import (
     taxas_zero_forwards as taxas_zero_forwards,  # noqa: PLC0414
 )
 
-"""
-Constantes calculadas conforme regras da STN
-TAXA_CUPOM = (0.10 + 1) ** 0.5 - 1  -> 10% a.a. com capitalização semestral
-VALOR_FACE = 1000
-VALOR_CUPOM = round(VALOR_FACE * TAXA_CUPOM, 5)
-VALOR_FINAL = VALOR_FACE + VALOR_CUPOM
+from . import _utils
+from .pre import premios_pre as _premios_pre
 
-A NTN-F paga dois cupons por ano (semestrais). As datas de cupom são derivadas
-do vencimento (retrocedendo 6 em 6 meses), sem depender de meses fixos.
-    Ex.: vencimento 01-01-2027 gera cupons em 01-07-2026, 01-01-2026, ...
-"""
+VALOR_FACE = 1000
 VALOR_CUPOM = 48.80885
-VALOR_FINAL = 1048.80885  # 1000 + 48.80885
+VALOR_FINAL = VALOR_FACE + VALOR_CUPOM
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +80,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         >>> from pyield import ntnf
         >>> df_ntnf = ntnf.dados("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.obter_tpf(data, "NTN-F")
+    df = _utils.obter_tpf(data, "NTN-F")
     if df.is_empty():
         return df
 
@@ -80,10 +92,10 @@ def dados(data: DateLike) -> pl.DataFrame:
         prazo_medio=pl.col("duration"),
         dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa", "pu"),
     )
-    df = utils.adicionar_taxa_di(df, data)
+    df = _utils.adicionar_taxa_di(df, data)
 
     # Busca dados de LTN para bootstrap das taxas spot
-    df_ltn = utils.obter_tpf(data, "LTN").select("data_vencimento", "taxa_indicativa")
+    df_ltn = _utils.obter_tpf(data, "LTN").select("data_vencimento", "taxa_indicativa")
     df_spots = taxas_zero(
         data_liquidacao=data,
         vencimentos_ltn=df_ltn["data_vencimento"],
@@ -217,7 +229,7 @@ def datas_pagamento(
             2027-01-01
         ]
     """
-    return utils.gerar_datas_pagamento(data_liquidacao, data_vencimento)
+    return _utils.gerar_datas_pagamento(data_liquidacao, data_vencimento)
 
 
 def fluxos_caixa(
@@ -293,11 +305,13 @@ def fluxos_caixa(
 def _calcular_pu(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float | Decimal,
+    taxa: float | Decimal | str,
 ) -> float:
+    if isinstance(taxa, str):
+        taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
-    taxa = utils.normalizar_taxa_precificacao(taxa)
+    taxa = _utils.normalizar_taxa_precificacao(taxa)
 
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
     if df_fluxos.is_empty():
@@ -305,16 +319,16 @@ def _calcular_pu(
 
     valores_fluxo = df_fluxos["valor_pagamento"]
     dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
-    anos_uteis = utils.truncar(dias_uteis / 252, 14)
+    anos_uteis = _utils.truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa) ** anos_uteis
     vp = (valores_fluxo / fatores_desconto).round(9)
-    return utils.truncar(vp.sum(), 6)
+    return _utils.truncar(vp.sum(), 6)
 
 
 def pu(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float | Decimal,
+    taxa: float | Decimal | str,
 ) -> Decimal:
     """
     Calcula o PU da NTN-F pela metodologia da STN para leilões primários.
@@ -326,6 +340,7 @@ def pu(
         data_liquidacao (DateLike): Data de liquidação para cálculo do preço.
         data_vencimento (DateLike): Data de vencimento do título.
         taxa: Taxa de desconto (TIR) em formato decimal.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
         Decimal: Preço da NTN-F truncado em seis casas decimais.
@@ -558,7 +573,7 @@ def taxas_zero(  # noqa
         periodos_fluxo = du.contar(liquidacao, datas_fluxo) / 252
         fluxos = [VALOR_CUPOM] * len(datas_fluxo)
 
-        valor_presente_fluxo = utils.calcular_pv(
+        valor_presente_fluxo = _utils.calcular_pv(
             fluxos_caixa=pl.Series(fluxos),
             taxas=pl.Series(taxas_spot_fluxo),
             prazos=periodos_fluxo,
@@ -587,7 +602,7 @@ def taxas_zero(  # noqa
 def rentabilidade(  # noqa
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa_ntnf: float,
+    taxa_ntnf: float | str,
     vencimentos_di: DatesLike,
     taxas_di: ArrayLike,
 ) -> float:
@@ -603,6 +618,7 @@ def rentabilidade(  # noqa
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
         data_vencimento (DateLike): Data de vencimento da NTN-F.
         taxa_ntnf (float): TIR da NTN-F.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
         vencimentos_di (DatesLike): Datas de vencimento da curva DI.
         taxas_di (ArrayLike): Taxas DI correspondentes aos vencimentos.
 
@@ -629,6 +645,8 @@ def rentabilidade(  # noqa
         as taxas DI.
 
     """
+    if isinstance(taxa_ntnf, str):
+        taxa_ntnf = float(_utils.converter_taxa(taxa_ntnf))
     if any_is_empty(
         data_liquidacao,
         data_vencimento,
@@ -660,7 +678,7 @@ def rentabilidade(  # noqa
         taxa_di=interpolador_ff.interpolar_expr("dias_uteis"),
     )
 
-    preco_titulo = utils.calcular_pv(
+    preco_titulo = _utils.calcular_pv(
         fluxos_caixa=df["valor_pagamento"],
         taxas=df["taxa_di"],
         prazos=df["anos_uteis"],
@@ -673,7 +691,7 @@ def rentabilidade(  # noqa
         fluxos_descontados = df["valor_pagamento"] / (1 + taxa) ** df["anos_uteis"]
         return float(fluxos_descontados.sum()) - preco_titulo
 
-    di_tir = utils.encontrar_raiz(diferenca_preco)
+    di_tir = _utils.encontrar_raiz(diferenca_preco)
 
     fator_ntnf = (1 + taxa_ntnf) ** (1 / 252)
     fator_di = (1 + di_tir) ** (1 / 252)
@@ -711,8 +729,8 @@ def rentabilidade_expr(
         DI.
     """
     return pl.struct(
-        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
-        utils.coluna_ou_expr(taxa_ntnf, "taxa_ntnf"),
+        _utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        _utils.coluna_ou_expr(taxa_ntnf, "taxa_ntnf"),
     ).map_elements(
         lambda row: rentabilidade(
             data_liquidacao=data_liquidacao,
@@ -769,13 +787,13 @@ def premio(data: DateLike) -> pl.DataFrame:
         │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
         └────────┴─────────────────┴────────┘
     """
-    return utils.premios_pre(data).filter(pl.col("titulo") == "NTN-F")
+    return _premios_pre(data).filter(pl.col("titulo") == "NTN-F")
 
 
 def premio_limpo(  # noqa
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa_ntnf: float,
+    taxa_ntnf: float | str,
     vencimentos_di: DatesLike,
     taxas_di: ArrayLike,
 ) -> float:
@@ -790,6 +808,7 @@ def premio_limpo(  # noqa
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
         data_vencimento (DateLike): Data de vencimento do título.
         taxa_ntnf (float): TIR do título.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
         vencimentos_di (DatesLike): Vencimentos da curva DI.
         taxas_di (ArrayLike): Série de taxas DI.
 
@@ -812,6 +831,8 @@ def premio_limpo(  # noqa
         >>> round(spread * 10_000, 2)  # Converte para bps para exibição
         12.13
     """
+    if isinstance(taxa_ntnf, str):
+        taxa_ntnf = float(_utils.converter_taxa(taxa_ntnf))
     if any_is_empty(
         data_liquidacao,
         data_vencimento,
@@ -853,7 +874,7 @@ def premio_limpo(  # noqa
         )
         return float(fluxos_descontados.sum()) - preco_titulo
 
-    return utils.encontrar_raiz(diferenca_preco)
+    return _utils.encontrar_raiz(diferenca_preco)
 
 
 def premio_limpo_expr(
@@ -883,8 +904,8 @@ def premio_limpo_expr(
         DI.
     """
     return pl.struct(
-        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
-        utils.coluna_ou_expr(taxa_ntnf, "taxa_ntnf"),
+        _utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        _utils.coluna_ou_expr(taxa_ntnf, "taxa_ntnf"),
     ).map_elements(
         lambda row: premio_limpo(
             data_liquidacao=data_liquidacao,
@@ -900,7 +921,7 @@ def premio_limpo_expr(
 def duration(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float,
+    taxa: float | str,
 ) -> float:
     """
     Calcula a Macaulay duration de uma NTN-F em anos úteis.
@@ -909,6 +930,7 @@ def duration(
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
         data_vencimento (DateLike): Data de vencimento do título.
         taxa (float): TIR usada para descontar os fluxos.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
         float: Macaulay duration em anos úteis. Retorna NaN se inválido.
@@ -918,6 +940,8 @@ def duration(
         >>> ntnf.duration("02-09-2024", "01-01-2035", 0.121785)
         6.32854218039796
     """
+    if isinstance(taxa, str):
+        taxa = float(_utils.converter_taxa(taxa))
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
 
@@ -952,9 +976,9 @@ def duration_expr(
         pl.Expr: Expressão sem alias com a Macaulay duration em anos úteis.
     """
     return pl.struct(
-        utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
-        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
-        utils.coluna_ou_expr(taxa, "taxa"),
+        _utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
+        _utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        _utils.coluna_ou_expr(taxa, "taxa"),
     ).map_elements(
         lambda s: duration(
             s["data_liquidacao"],
@@ -968,7 +992,7 @@ def duration_expr(
 def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float,
+    taxa: float | Decimal | str,
     pu: float | Decimal,
 ) -> float:
     """
@@ -981,6 +1005,7 @@ def dv01(
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
         taxa (float): Taxa de desconto (TIR) do título.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
         pu: PU usado como base para o cálculo.
 
     Returns:
@@ -992,10 +1017,12 @@ def dv01(
         >>> ntnf.dv01("26-03-2025", "01-01-2035", 0.151375, pu)
         0.3902520000000325
     """
+    if isinstance(taxa, str):
+        taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
-    taxa = utils.normalizar_taxa_precificacao(taxa)
+    taxa = _utils.normalizar_taxa_precificacao(taxa)
     taxa_mais_1bp = round(taxa + 0.0001, 8)
     preco_1 = _calcular_pu(data_liquidacao, data_vencimento, taxa)
     preco_2 = _calcular_pu(data_liquidacao, data_vencimento, taxa_mais_1bp)
@@ -1025,10 +1052,10 @@ def dv01_expr(
         pl.Expr: Expressão sem alias com o DV01.
     """
     return pl.struct(
-        utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
-        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
-        utils.coluna_ou_expr(taxa, "taxa"),
-        utils.coluna_ou_expr(pu, "pu"),
+        _utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
+        _utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        _utils.coluna_ou_expr(taxa, "taxa"),
+        _utils.coluna_ou_expr(pu, "pu"),
     ).map_elements(
         lambda s: dv01(
             s["data_liquidacao"],
@@ -1084,5 +1111,5 @@ def taxa(
             _calcular_pu(data_liquidacao, data_vencimento, taxa_encontrada) - pu_float
         )
 
-    taxa_encontrada = utils.encontrar_raiz(diferenca_preco)
+    taxa_encontrada = _utils.encontrar_raiz(diferenca_preco)
     return truncar_decimal(taxa_encontrada, 8)

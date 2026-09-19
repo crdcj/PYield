@@ -1,3 +1,13 @@
+"""Cálculos e dados de LTN.
+
+Convenções de precificação (STN, tabela 3):
+    - Valor de face: 1000 reais.
+    - Prazo de desconto: dias úteis / 252, truncado a 14 casas.
+    - PU: truncado a 6 casas.
+    - Taxa implícita retornada: decimal, truncada a 8 casas,
+      equivalente a 6 casas em termos percentuais.
+"""
+
 from decimal import Decimal
 
 import polars as pl
@@ -5,7 +15,8 @@ import polars as pl
 from pyield import du, fwd
 from pyield._internal.numbers import truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf.titulos import _utils as utils
+
+from . import _utils
 
 VALOR_FACE = 1000
 
@@ -44,7 +55,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         >>> from pyield import ltn
         >>> df_ltn = ltn.dados("23-08-2024")  # doctest: +SKIP
     """
-    df = utils.obter_tpf(data, "LTN")
+    df = _utils.obter_tpf(data, "LTN")
     if df.is_empty():
         return df
 
@@ -55,7 +66,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         prazo_medio=pl.col("duration"),
         dv01=dv01_expr("data_referencia", "data_vencimento", "taxa_indicativa", "pu"),
     )
-    df = utils.adicionar_taxa_di(df, data)
+    df = _utils.adicionar_taxa_di(df, data)
 
     df = df.with_columns(
         premio=pl.col("taxa_indicativa") - pl.col("taxa_di"),
@@ -117,7 +128,7 @@ def vencimentos(data: DateLike) -> pl.Series:
 def pu(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float | Decimal,
+    taxa: float | Decimal | str,
 ) -> Decimal:
     """
     Calcula o PU da LTN pela metodologia da STN para leilões primários.
@@ -126,6 +137,7 @@ def pu(
         data_liquidacao: Data de liquidação.
         data_vencimento: Data de vencimento.
         taxa: Taxa de desconto (YTM) do título em formato decimal.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
         Decimal: PU da LTN truncado em seis casas decimais. Retorna
@@ -144,16 +156,18 @@ def pu(
         Decimal('753.315323')
     """
     # Valida e normaliza entradas
+    if isinstance(taxa, str):
+        taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return Decimal("NaN")
-    taxa = utils.normalizar_taxa_precificacao(taxa)
+    taxa = _utils.normalizar_taxa_precificacao(taxa)
     # Calcula dias úteis entre liquidação e vencimento
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
         return Decimal("NaN")
 
     # Calcula anos úteis truncados conforme a STN
-    anos_truncados = utils.truncar(dias_uteis / 252, 14)
+    anos_truncados = _utils.truncar(dias_uteis / 252, 14)
 
     fator_desconto = (1 + taxa) ** anos_truncados
 
@@ -203,18 +217,20 @@ def taxa(
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
         return Decimal("NaN")
-    anos_truncados = utils.truncar(dias_uteis / 252, 14)
+    anos_truncados = _utils.truncar(dias_uteis / 252, 14)
     taxa_calculada = (VALOR_FACE / preco_float) ** (1 / anos_truncados) - 1
     return truncar_decimal(taxa_calculada, 8)
 
 
-def rentabilidade(taxa_ltn: float, taxa_di: float) -> float:
+def rentabilidade(taxa_ltn: float | str, taxa_di: float | str) -> float:
     """
     Calcula a rentabilidade da LTN sobre a taxa de DI Futuro.
 
     Args:
         taxa_ltn: Taxa anualizada da LTN.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
         taxa_di: Taxa anualizada do DI Futuro.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
         float: Rentabilidade da LTN sobre o DI.
@@ -227,6 +243,10 @@ def rentabilidade(taxa_ltn: float, taxa_di: float) -> float:
         >>> ltn.rentabilidade(0.118746, 0.11725)
         1.0120718007994287
     """
+    if isinstance(taxa_ltn, str):
+        taxa_ltn = float(_utils.converter_taxa(taxa_ltn))
+    if isinstance(taxa_di, str):
+        taxa_di = float(_utils.converter_taxa(taxa_di))
     if any_is_empty(taxa_ltn, taxa_di):
         return float("nan")
     # Cálculo das taxas diárias
@@ -262,7 +282,7 @@ def rentabilidade_expr(
 def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float,
+    taxa: float | Decimal | str,
     pu: float | Decimal,
 ) -> float:
     """
@@ -275,6 +295,7 @@ def dv01(
         data_liquidacao: Data de liquidação.
         data_vencimento: Data de vencimento.
         taxa: Taxa de desconto (YTM) do título.
+            Aceita também percentual explícito: "5.75%" ou "5,75%".
         pu: PU usado como base para o cálculo.
 
     Returns:
@@ -287,17 +308,19 @@ def dv01(
         >>> ltn.dv01("26-03-2025", "01-01-2032", 0.150970, pu)
         0.2269059999999794
     """
+    if isinstance(taxa, str):
+        taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
-    taxa = utils.normalizar_taxa_precificacao(taxa)
+    taxa = _utils.normalizar_taxa_precificacao(taxa)
     taxa_mais_1bp = round(taxa + 0.0001, 8)
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
         return float("nan")
-    anos_truncados = utils.truncar(dias_uteis / 252, 14)
-    preco_1 = utils.truncar(VALOR_FACE / (1 + taxa) ** anos_truncados, 6)
-    preco_2 = utils.truncar(VALOR_FACE / (1 + taxa_mais_1bp) ** anos_truncados, 6)
+    anos_truncados = _utils.truncar(dias_uteis / 252, 14)
+    preco_1 = _utils.truncar(VALOR_FACE / (1 + taxa) ** anos_truncados, 6)
+    preco_2 = _utils.truncar(VALOR_FACE / (1 + taxa_mais_1bp) ** anos_truncados, 6)
     return float(pu) * (1 - preco_2 / preco_1)
 
 
@@ -343,10 +366,10 @@ def dv01_expr(
         pl.Expr: Expressão sem alias com o DV01.
     """
     return pl.struct(
-        utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
-        utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
-        utils.coluna_ou_expr(taxa, "taxa"),
-        utils.coluna_ou_expr(pu, "pu"),
+        _utils.coluna_ou_expr(data_liquidacao, "data_liquidacao"),
+        _utils.coluna_ou_expr(data_vencimento, "data_vencimento"),
+        _utils.coluna_ou_expr(taxa, "taxa"),
+        _utils.coluna_ou_expr(pu, "pu"),
     ).map_elements(
         lambda s: dv01(
             s["data_liquidacao"],

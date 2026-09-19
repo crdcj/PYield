@@ -9,7 +9,8 @@ from pyield import du
 from pyield._internal import converters as cv
 from pyield._internal.types import ArrayLike, DateLike, DatesLike
 from pyield.interpolador import Interpolador
-from pyield.tpf.titulos import _utils as utils
+
+from . import _utils
 
 TOLERANCIA_PRECO = 1e-12
 
@@ -84,7 +85,7 @@ def _calibrar_zero(  # noqa: PLR0913, PLR0917
     elif abs(erro(superior)) < TOLERANCIA_PRECO:
         q = superior
     else:
-        q = utils.encontrar_raiz(erro, intervalo=(inferior, superior))
+        q = _utils.encontrar_raiz(erro, intervalo=(inferior, superior))
     if not math.isfinite(q):
         raise RuntimeError(f"Não foi possível calibrar a NTN-F {vencimento}.")
     return math.expm1((q - math.log(desconto)) * 252 / prazo)

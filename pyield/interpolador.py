@@ -58,7 +58,7 @@ class Interpolador:
         Interpolação linear:
         >>> linear = Interpolador(dus, txs, "linear")
         >>> linear(45)
-        >>> 0.0475
+        0.0475
 
         Interpolação flat forward:
         >>> flat_fwd = Interpolador(dus, txs, "flat_forward")
@@ -73,7 +73,6 @@ class Interpolador:
 
         Se extrapolação estiver habilitada, a última taxa conhecida é usada:
         >>> flat_fwd_extrap = Interpolador(dus, txs, "flat_forward", extrapolar=True)
-        >>> flat_fwd_extrap(100)
         >>> flat_fwd_extrap(100)
         0.055
     """

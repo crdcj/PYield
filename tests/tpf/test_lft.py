@@ -5,18 +5,19 @@ import pytest
 from pyield import lft
 
 CASAS_DECIMAIS = 6
+CASAS_COTACAO = 4
 CASAS_TAXA = 8
 
 
 def test_cotacao_retorna_decimal_truncado() -> None:
     resultado = lft.cotacao("24-07-2024", "01-09-2030", Decimal("0.001717"))
 
-    assert resultado == Decimal("0.989645")
-    assert resultado.as_tuple().exponent == -CASAS_DECIMAIS
+    assert resultado == Decimal("98.9645")
+    assert resultado.as_tuple().exponent == -CASAS_COTACAO
 
 
 def test_pu_retorna_decimal_truncado() -> None:
-    resultado = lft.pu(Decimal("15785.324502"), Decimal("0.999291"))
+    resultado = lft.pu(Decimal("15785.324502"), Decimal("99.9291"))
 
     assert resultado == Decimal("15774.132706")
     assert resultado.as_tuple().exponent == -CASAS_DECIMAIS
@@ -25,7 +26,7 @@ def test_pu_retorna_decimal_truncado() -> None:
 def test_cotacao_e_pu_aceitam_float_sem_alterar_resultado() -> None:
     cotacao = lft.cotacao("24-07-2024", "01-09-2030", 0.001717)
 
-    assert cotacao == Decimal("0.989645")
+    assert cotacao == Decimal("98.9645")
     assert lft.pu(15785.324502, cotacao) == Decimal("15621.867466")
 
 

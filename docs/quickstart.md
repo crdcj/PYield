@@ -128,7 +128,7 @@ cotacao = ntnb.cotacao(
     "15-05-2035",
     0.061490,
 )
-# 0.993651
+# 99.3651
 ```
 
 Consulte as páginas de [LFT](lft.md), [LTN](ltn.md), [NTN-B](ntnb.md) e dos

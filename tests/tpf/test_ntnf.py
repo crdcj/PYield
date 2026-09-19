@@ -31,7 +31,7 @@ def test_premio_retorna_decimal_e_nao_expoe_conversao_de_unidade(monkeypatch):
             "premio": [0.000439, 0.001421],
         }
     )
-    monkeypatch.setattr(ntnf.utils, "premios_pre", lambda data: dados)
+    monkeypatch.setattr(ntnf, "_premios_pre", lambda data: dados)
 
     resultado = ntnf.premio("30-05-2025")
 

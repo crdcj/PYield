@@ -72,6 +72,23 @@ complete version history and migration notes. The current public organization
 places treasury-bond modules at the package root, while implementations remain
 organized internally under `pyield/tpf/titulos/`.
 
+### Pricing scale changes in 0.58.0
+
+Scalar bond-pricing functions accept explicit percentage strings such as
+`"5.75%"` or `"5,75%"`. Numeric rates remain decimal values; strings without
+`%` are rejected.
+
+The `cotacao` functions of `yd.lft`, `yd.ntnb`, `yd.ntnc`, `yd.ntnbp`, and
+`yd.ntnb1` now return base-100 values with four decimal places. For example,
+`0.993651` becomes `99.3651`. The corresponding `pu` functions receive the
+quote in the same scale and calculate `VNA * cotacao / 100`. The cash-flow
+amounts returned by `fluxos_caixa` for NTN-B, NTN-C, and NTN-B1, as well as
+`ntnb1.cotacao_curva_zero`, also use base 100.
+
+To migrate, multiply stored quotes and cash flows from older versions by 100,
+remove display-only multiplications by 100, and divide manual PU calculations
+by 100. VNA and PU remain in Brazilian reais.
+
 | Before | Now |
 |---|---|
 | `yd.tpf.ntnb` | `yd.ntnb` or `from pyield import ntnb` |

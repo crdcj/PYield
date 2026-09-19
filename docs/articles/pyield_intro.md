@@ -148,11 +148,11 @@ Calcule cotações e preços de títulos públicos:
 ```python
 import polars as pl
 
-# Cotação de NTN-B (base 1)
-yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 0.993651
+# Cotação de NTN-B (base 100)
+yd.ntnb.cotacao("31-05-2024", "15-05-2035", 0.061490)  # -> 99.3651
 
 # Cotação para vencimento mais longo
-yd.ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 0.995341
+yd.ntnb.cotacao("31-05-2024", "15-08-2060", 0.061878)  # -> 99.5341
 
 # Prêmio sobre DI para títulos pré-fixados (em pontos-base)
 df_premios = yd.ltn.dados("30-05-2024").with_columns(
