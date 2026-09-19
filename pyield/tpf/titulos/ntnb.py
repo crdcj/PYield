@@ -291,6 +291,8 @@ def cotacao(
         data_vencimento (DateLike): Data de vencimento da NTN-B.
         taxa: Taxa de desconto (TIR) em formato decimal.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
+            Antes do cálculo, é truncada em oito casas decimais (seis na
+            forma percentual), descartando as casas excedentes sem arredondar.
 
     Returns:
         Decimal: Cotação em base 100, truncada em 4 casas. Retorna
@@ -364,8 +366,10 @@ def pu(
     Calcula o PU da NTN-B pela metodologia da STN para leilões primários.
 
     Args:
-        vna: Valor nominal atualizado (VNA).
+        vna: Valor nominal atualizado (VNA), truncado em seis casas decimais
+            antes do cálculo, sem arredondar.
         cotacao: Cotação da NTN-B em base 100.
+            Truncada em quatro casas decimais antes do cálculo, sem arredondar.
 
     Returns:
         Decimal: Preço da NTN-B truncado em 6 casas decimais.
@@ -381,8 +385,6 @@ def pu(
         Decimal('4271.864805')
         >>> ntnb.pu(4315.498383, 100.6409)
         Decimal('4343.156412')
-        >>> ntnb.pu(1728.4611369, 97.08139)
-        Decimal('1678.012540')
     """
     return _calcular_pu(vna, cotacao)
 

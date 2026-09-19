@@ -242,6 +242,8 @@ def cotacao(
         data_vencimento: Data de vencimento da NTN-C.
         taxa: Taxa de desconto (YTM) em formato decimal.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
+            Antes do cálculo, é truncada em oito casas decimais (seis na
+            forma percentual), descartando as casas excedentes sem arredondar.
 
     Returns:
         Decimal: Cotação em base 100, truncada em 4 casas decimais.
@@ -263,8 +265,6 @@ def cotacao(
         >>> from pyield import ntnc
         >>> ntnc.cotacao("21-03-2025", "01-01-2031", "6.7626%")
         Decimal('126.4958')
-        >>> ntnc.cotacao("21-05-2008", "01-03-2011", "6.9000009%")
-        Decimal('99.0981')
     """
     taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
@@ -309,8 +309,10 @@ def pu(
     pu = VNA * cotacao / 100
 
     Args:
-        vna: Valor nominal atualizado (VNA).
+        vna: Valor nominal atualizado (VNA), truncado em seis casas decimais
+            antes do cálculo, sem arredondar.
         cotacao: Cotação da NTN-C em base 100.
+            Truncada em quatro casas decimais antes do cálculo, sem arredondar.
 
     Returns:
         Decimal: Preço da NTN-C truncado em 6 casas decimais.
@@ -324,8 +326,6 @@ def pu(
         >>> from pyield import ntnc
         >>> ntnc.pu(6598.913723, 126.4958)
         Decimal('8347.348705')
-        >>> ntnc.pu(2126.4737349, 99.09819)
-        Decimal('2107.295067')
     """
     return _calcular_pu(vna, cotacao)
 

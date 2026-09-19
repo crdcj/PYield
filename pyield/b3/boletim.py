@@ -436,10 +436,6 @@ def buscar(
         >>> # Múltiplos contratos de uma vez
         >>> df = yd.b3.boletim.buscar("26-04-2024", ["DI1", "DAP"])
 
-        >>> # Feriado ou fim de semana (retorna DataFrame vazio)
-        >>> df = yd.b3.boletim.buscar("25-12-2023", "DI1")
-        >>> df.is_empty()
-        True
     """
     if any_is_empty(data):
         return pl.DataFrame()

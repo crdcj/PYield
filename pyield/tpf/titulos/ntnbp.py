@@ -24,6 +24,7 @@ def cotacao(
         data_vencimento: Data de vencimento.
         taxa_tir: Taxa interna de retorno anualizada do título.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
+            A taxa de entrada não é truncada antes do cálculo.
 
     Returns:
         Decimal: Cotação em base 100, truncada em 4 casas decimais. Retorna
@@ -52,8 +53,10 @@ def pu(vna: float | Decimal, cotacao: float | Decimal) -> Decimal:
     Calcula o preço (PU) da NTN-B Principal.
 
     Args:
-        vna: Valor nominal atualizado (VNA).
+        vna: Valor nominal atualizado (VNA), truncado em seis casas decimais
+            antes do cálculo, sem arredondar.
         cotacao: Cotação da NTN-B Principal em base 100.
+            Truncada em quatro casas decimais antes do cálculo, sem arredondar.
 
     Returns:
         Decimal: Preço da NTN-B Principal truncado em 6 casas decimais.

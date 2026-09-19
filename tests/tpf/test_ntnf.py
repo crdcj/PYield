@@ -101,3 +101,7 @@ def test_taxas_zero_retorna_vazio_sem_vertices_futuros() -> None:
         "dias_uteis": pl.Int64,
         "taxa_zero": pl.Float64,
     }
+
+
+def test_pu_trunca_taxa_percentual_excedente() -> None:
+    assert ntnf.pu("21-05-2008", "01-01-2014", "13.6600009%") == Decimal("903.075616")

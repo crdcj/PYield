@@ -16,6 +16,12 @@ def test_cotacao_retorna_decimal_truncado() -> None:
     assert resultado.as_tuple().exponent == -CASAS_COTACAO
 
 
+def test_cotacao_trunca_taxa_percentual_excedente() -> None:
+    assert lft.cotacao("21-05-2008", "07-03-2014", "-0.0200009%") == Decimal(
+        "100.1158"
+    )
+
+
 def test_pu_retorna_decimal_truncado() -> None:
     resultado = lft.pu(Decimal("15785.324502"), Decimal("99.9291"))
 
@@ -32,6 +38,11 @@ def test_cotacao_e_pu_aceitam_float_sem_alterar_resultado() -> None:
 
 def test_entradas_nulas_retornam_decimal_nan() -> None:
     assert lft.cotacao(None, "01-09-2030", 0.001717).is_nan()
+    resultado = lft.cotacao(
+        data_liquidacao=None, data_vencimento="01-09-2030", taxa="0.1717%"
+    )
+    assert isinstance(resultado, Decimal)
+    assert resultado.is_nan()
     assert lft.pu(Decimal("NaN"), Decimal("1")).is_nan()
 
 
@@ -53,3 +64,7 @@ def test_calculos_rejeitam_prazo_nao_positivo(data_liquidacao: str) -> None:
 
     assert lft.cotacao(data_liquidacao, data_vencimento, 0.0017).is_nan()
     assert lft.taxa(data_liquidacao, data_vencimento, 1_000, 1_000).is_nan()
+
+
+def test_pu_trunca_vna_e_cotacao_excedentes() -> None:
+    assert lft.pu(3451.2153459, 100.11589) == Decimal("3455.211852")

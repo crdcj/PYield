@@ -343,3 +343,7 @@ def test_forwards_derivados_das_zeros_reproduzem_planilha():
     ).to_series()
     assert_series_equal(curva["taxa_forward"], forwards, abs_tol=1e-12, rel_tol=0)
     assert_series_equal(forwards, FORWARDS_PLANILHA, abs_tol=1e-8, rel_tol=0)
+
+
+def test_pu_trunca_vna_e_cotacao_excedentes() -> None:
+    assert yd.ntnb.pu(1728.4611369, 97.08139) == Decimal("1678.012540")

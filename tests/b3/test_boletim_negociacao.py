@@ -27,6 +27,11 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 URL_BASE_RELEASE = "https://github.com/crdcj/PYield/releases/download/test-data"
 
 
+def test_boletim_em_feriado_retorna_vazio():
+    df = yd.b3.boletim.buscar("25-12-2023", "DI1")
+    assert df.is_empty()
+
+
 def test_boletim_api_publica():
     assert yd.b3.boletim is modulo_boletim
     assert yd.b3.boletim.baixar_zip is modulo_boletim.baixar_zip
@@ -138,4 +143,3 @@ def test_pipeline_bruto_boletim(data: str, contrato: str):
     df_esperado = pl.read_parquet(_parquet_referencia(data, contrato))
 
     assert_frame_equal(df_resultado, df_esperado, check_exact=True, check_dtypes=True)
-

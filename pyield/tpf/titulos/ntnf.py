@@ -340,6 +340,8 @@ def pu(
         data_vencimento (DateLike): Data de vencimento do título.
         taxa: Taxa de desconto (TIR) em formato decimal.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
+            Antes do cálculo, é truncada em oito casas decimais (seis na
+            forma percentual), descartando as casas excedentes sem arredondar.
 
     Returns:
         Decimal: Preço da NTN-F truncado em seis casas decimais.
@@ -357,8 +359,6 @@ def pu(
         Decimal('895.359254')
         >>> ntnf.pu("01-07-2024", "01-01-2027", "10%")
         Decimal('999.931303')
-        >>> ntnf.pu("21-05-2008", "01-01-2014", "13.6600009%")
-        Decimal('903.075616')
     """
     return truncar_decimal(_calcular_pu(data_liquidacao, data_vencimento, taxa), 6)
 

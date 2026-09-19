@@ -227,6 +227,7 @@ def cotacao(
         data_vencimento: Data de vencimento da NTN-B1.
         taxa: Taxa de desconto (YTM) usada no valor presente.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
+            A taxa de entrada não é truncada antes do cálculo.
         nome_comercial: Nome comercial (Renda+ ou Educa+).
 
     Returns:
@@ -451,8 +452,10 @@ def pu(
     Calcula o preço (PU) da NTN-B1 pelas regras do Tesouro Nacional.
 
     Args:
-        vna: Valor nominal atualizado (VNA).
+        vna: Valor nominal atualizado (VNA), truncado em seis casas decimais
+            antes do cálculo, sem arredondar.
         cotacao: Cotação da NTN-B1 em base 100.
+            Truncada em quatro casas decimais antes do cálculo, sem arredondar.
 
     Returns:
         Decimal: Preço da NTN-B1 truncado em 6 casas decimais.

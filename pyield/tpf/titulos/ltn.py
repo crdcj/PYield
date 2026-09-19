@@ -138,6 +138,8 @@ def pu(
         data_vencimento: Data de vencimento.
         taxa: Taxa de desconto (YTM) do título em formato decimal.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
+            Antes do cálculo, é truncada em oito casas decimais (seis na
+            forma percentual), descartando as casas excedentes sem arredondar.
 
     Returns:
         Decimal: PU da LTN truncado em seis casas decimais. Retorna

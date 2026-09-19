@@ -129,11 +129,13 @@ def cotacao(
         data_vencimento: Data de vencimento do título.
         taxa: Taxa anualizada do título em formato decimal.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
+            Antes do cálculo, é truncada em oito casas decimais (seis na
+            forma percentual), descartando as casas excedentes sem arredondar.
 
     Returns:
         Decimal: Cotação em base 100, truncada em 4 casas decimais.
-            Retorna ``Decimal("NaN")`` quando o prazo até o vencimento não é
-            positivo.
+            Retorna ``Decimal("NaN")`` para entradas nulas ou quando o prazo
+            até o vencimento não é positivo.
 
     Notes:
         A cotação é calculada e retornada na escala percentual (base 100),
@@ -149,14 +151,7 @@ def cotacao(
         ...     taxa="0.1717%",
         ... )
         Decimal('98.9645')
-        >>> lft.cotacao("21-05-2008", "07-03-2014", "-0.0200009%")
-        Decimal('100.1158')
 
-        Entradas nulas retornam Decimal('NaN'):
-        >>> lft.cotacao(
-        ...     data_liquidacao=None, data_vencimento="01-09-2030", taxa="0.1717%"
-        ... )
-        Decimal('NaN')
     """
     taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
@@ -306,8 +301,10 @@ def pu(
     Calcula o PU da LFT pela metodologia da STN para leilões primários.
 
     Args:
-        vna: Valor nominal atualizado (VNA).
+        vna: Valor nominal atualizado (VNA), truncado em seis casas decimais
+            antes do cálculo, sem arredondar.
         cotacao: Cotação da LFT em base 100.
+            Truncada em quatro casas decimais antes do cálculo, sem arredondar.
 
     Returns:
         Decimal: Preço da LFT truncado em 6 casas decimais.
@@ -321,7 +318,5 @@ def pu(
         >>> from pyield import lft
         >>> lft.pu(15785.324502, 99.9291)
         Decimal('15774.132706')
-        >>> lft.pu(3451.2153459, 100.11589)
-        Decimal('3455.211852')
     """
     return _calcular_pu(vna, cotacao)
