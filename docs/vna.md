@@ -55,8 +55,10 @@ usá-la diretamente produz uma pequena diferença por causa do arredondamento.
 `ultimo` retorna a última referência de cada série; para NTN-C sem filtro de
 vencimento, pode retornar mais de uma linha. Datas e valores permanecem juntos.
 Não há projeção automática. A LFT não possui histórico mensal nem operação de
-última referência nessa API; sua projeção segue dias úteis, base 252 e taxa
-anual constante dentro da mesma operação `projetado`. Em uma segunda-feira, por
+última referência nessa API; sua projeção usa a quantidade de dias úteis do
+intervalo, base 252 e taxa anual constante dentro da mesma operação `projetado`.
+Quando o intervalo não corresponde a exatamente um dia útil, o cálculo é feito
+normalmente e a ocorrência é registrada no log. Em uma segunda-feira, por
 exemplo, a base é a sexta-feira útil anterior.
 
 Use apenas `yd.vna` para operações de VNA. Os aliases `vna`, `vnas`,
