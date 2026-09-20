@@ -41,8 +41,9 @@ a taxa Selic diária publicada pelo SGS 11. Como ela é publicada em percentual,
 `0,050788%` equivale à taxa decimal `0,00050788` e ao fator derivado
 `1,00050788`; converta essa taxa diária para uma taxa anual equivalente. A
 série 1178 é a Selic Over anualizada e serve apenas como aproximação. A
-data-base é o último dia útil anterior à data solicitada e a projeção avança
-exatamente um dia útil. A função retorna `Decimal`.
+data-base é o último dia útil anterior à data solicitada. A projeção usa a
+quantidade de dias úteis até a data solicitada e retorna `Decimal`. Intervalos
+diferentes de um dia útil são calculados normalmente e registrados no log.
 `historico` e `ultimo` retornam DataFrames com coluna `vna` do tipo `Float64`.
 O cálculo genérico `calcular_vna` mantém seu retorno `float` existente.
 
