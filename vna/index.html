@@ -1616,8 +1616,10 @@ usá-la diretamente produz uma pequena diferença por causa do arredondamento.</
 <p><code>ultimo</code> retorna a última referência de cada série; para NTN-C sem filtro de
 vencimento, pode retornar mais de uma linha. Datas e valores permanecem juntos.
 Não há projeção automática. A LFT não possui histórico mensal nem operação de
-última referência nessa API; sua projeção segue dias úteis, base 252 e taxa
-anual constante dentro da mesma operação <code>projetado</code>. Em uma segunda-feira, por
+última referência nessa API; sua projeção usa a quantidade de dias úteis do
+intervalo, base 252 e taxa anual constante dentro da mesma operação <code>projetado</code>.
+Quando o intervalo não corresponde a exatamente um dia útil, o cálculo é feito
+normalmente e a ocorrência é registrada no log. Em uma segunda-feira, por
 exemplo, a base é a sexta-feira útil anterior.</p>
 <p>Use apenas <code>yd.vna</code> para operações de VNA. Os aliases <code>vna</code>, <code>vnas</code>,
 <code>vna_projetado</code> e <code>vigencia</code> foram removidos dos módulos dos títulos.
@@ -2413,10 +2415,7 @@ específica.</p>
 <span class="normal"><a href="#__codelineno-0-241">241</a></span>
 <span class="normal"><a href="#__codelineno-0-242">242</a></span>
 <span class="normal"><a href="#__codelineno-0-243">243</a></span>
-<span class="normal"><a href="#__codelineno-0-244">244</a></span>
-<span class="normal"><a href="#__codelineno-0-245">245</a></span>
-<span class="normal"><a href="#__codelineno-0-246">246</a></span>
-<span class="normal"><a href="#__codelineno-0-247">247</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="k">def</span><span class="w"> </span><span class="nf">projetado</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-244">244</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="k">def</span><span class="w"> </span><span class="nf">projetado</span><span class="p">(</span>
 </span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a>    <span class="n">titulo</span><span class="p">:</span> <span class="n">TipoTitulo</span><span class="p">,</span>
 </span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a>    <span class="n">data</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
 </span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a>    <span class="n">vna_base</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Decimal</span><span class="p">,</span>
@@ -2486,13 +2485,10 @@ específica.</p>
 </span><span id="__span-0-238"><a id="__codelineno-0-238" name="__codelineno-0-238"></a>            <span class="n">data_base</span> <span class="o">=</span> <span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="n">data_convertida</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">ajuste</span><span class="o">=</span><span class="s2">"anterior"</span><span class="p">)</span>
 </span><span id="__span-0-239"><a id="__codelineno-0-239" name="__codelineno-0-239"></a>        <span class="k">else</span><span class="p">:</span>
 </span><span id="__span-0-240"><a id="__codelineno-0-240" name="__codelineno-0-240"></a>            <span class="n">data_base</span> <span class="o">=</span> <span class="n">du</span><span class="o">.</span><span class="n">deslocar</span><span class="p">(</span><span class="n">data_convertida</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ajuste</span><span class="o">=</span><span class="s2">"anterior"</span><span class="p">)</span>
-</span><span id="__span-0-241"><a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="n">dias_uteis</span> <span class="o">=</span> <span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">data_base</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
-</span><span id="__span-0-242"><a id="__codelineno-0-242" name="__codelineno-0-242"></a>        <span class="k">if</span> <span class="n">dias_uteis</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-</span><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"A projeção da LFT deve avançar um dia útil."</span><span class="p">)</span>
-</span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a>        <span class="k">return</span> <span class="n">_lft</span><span class="o">.</span><span class="n">projetado_lft</span><span class="p">(</span><span class="n">data_base</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">vna_base</span><span class="p">,</span> <span class="n">selic</span><span class="p">)</span>
-</span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="k">if</span> <span class="n">selic</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"selic aplica-se apenas à projeção da LFT."</span><span class="p">)</span>
-</span><span id="__span-0-247"><a id="__codelineno-0-247" name="__codelineno-0-247"></a>    <span class="k">return</span> <span class="n">_modulo_mensal</span><span class="p">(</span><span class="n">titulo</span><span class="p">)</span><span class="o">.</span><span class="n">vna_projetado</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">vna_base</span><span class="p">,</span> <span class="n">inflacao</span><span class="p">)</span>
+</span><span id="__span-0-241"><a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="k">return</span> <span class="n">_lft</span><span class="o">.</span><span class="n">projetado_lft</span><span class="p">(</span><span class="n">data_base</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">vna_base</span><span class="p">,</span> <span class="n">selic</span><span class="p">)</span>
+</span><span id="__span-0-242"><a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="k">if</span> <span class="n">selic</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"selic aplica-se apenas à projeção da LFT."</span><span class="p">)</span>
+</span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a>    <span class="k">return</span> <span class="n">_modulo_mensal</span><span class="p">(</span><span class="n">titulo</span><span class="p">)</span><span class="o">.</span><span class="n">vna_projetado</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">vna_base</span><span class="p">,</span> <span class="n">inflacao</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
