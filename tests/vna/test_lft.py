@@ -30,6 +30,13 @@ def test_vna_nulo_retorna_decimal_nan() -> None:
     assert vna.valor("LFT", None).is_nan()
 
 
-def test_projetado_lft_rejeita_mais_de_um_dia_util() -> None:
-    with pytest.raises(ValueError, match="um dia útil"):
-        lft.projetado_lft("18-09-2026", "22-09-2026", Decimal("19905.773236"), "13.75%")
+def test_projetado_lft_registra_mais_de_um_dia_util(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level("WARNING", logger=lft.__name__):
+        resultado = lft.projetado_lft(
+            "18-09-2026", "22-09-2026", Decimal("19905.773236"), "13.75%"
+        )
+
+    assert "um dia útil" in caplog.text
+    assert resultado == Decimal("19926.136961")

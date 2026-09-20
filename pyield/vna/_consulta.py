@@ -238,9 +238,6 @@ def projetado(
             data_base = du.deslocar(data_convertida, -1, ajuste="anterior")
         else:
             data_base = du.deslocar(data_convertida, 0, ajuste="anterior")
-        dias_uteis = du.contar(data_base, data)
-        if dias_uteis != 1:
-            raise ValueError("A projeção da LFT deve avançar um dia útil.")
         return _lft.projetado_lft(data_base, data, vna_base, selic)
     if selic is not None:
         raise ValueError("selic aplica-se apenas à projeção da LFT.")

@@ -16,6 +16,7 @@ valores e retorna o VNA único.
 """
 
 import datetime as dt
+import logging
 from decimal import Decimal, localcontext
 
 import requests
@@ -29,6 +30,7 @@ from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf.titulos._utils import converter_taxa
 
 CODIGO_LFT = "210100"
+_LOGGER = logging.getLogger(__name__)
 
 
 def projetado_lft(
@@ -72,9 +74,8 @@ def projetado_lft(
         taxa pode ser negativa, desde que maior que -100%.
 
     Raises:
-        ValueError: Data final anterior à base ou distante mais de um dia útil,
-            VNA não positivo ou não finito, taxa não finita ou menor ou igual a
-            -100%, ou data malformada.
+        ValueError: Data final anterior à base, VNA não positivo ou não finito,
+            taxa não finita ou menor ou igual a -100%, ou data malformada.
 
     Examples:
         >>> from decimal import Decimal
@@ -94,7 +95,9 @@ def projetado_lft(
         raise ValueError("A data de projeção não pode ser anterior à data-base.")
     dias_uteis = du.contar(inicio, fim)
     if dias_uteis != 1:
-        raise ValueError("A projeção da LFT deve avançar um dia útil.")
+        _LOGGER.warning(
+            "A projeção da LFT avançou uma quantidade diferente de um dia útil.",
+        )
     base = vna_base if isinstance(vna_base, Decimal) else Decimal(str(vna_base))
     taxa_anual = converter_taxa(taxa_anual)
     taxa = taxa_anual if isinstance(taxa_anual, Decimal) else Decimal(str(taxa_anual))
