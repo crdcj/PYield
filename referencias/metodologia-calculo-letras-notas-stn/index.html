@@ -1594,6 +1594,12 @@ descritas separadamente nas seções 4.1 e 4.2.</p>
 <p><code>yd.vna.valor("LFT", data)</code> não calcula o fator acumulado nem reconstrói o VNA. A função baixa
 do Banco Central o VNA oficial do código <code>210100</code> e valida que o valor é único
 entre os vencimentos. Esse dado oficial é a entrada usada pelo módulo de LFT.</p>
+<p>Para reconstruir o acruamento diário, a referência direta é a série SGS 11,
+que publica a taxa Selic diária em percentual. Em 18/09/2026, por exemplo, a
+série retornou <code>0,050788%</code>, equivalente ao fator <code>1,00050788</code>. Aplicado ao VNA
+de 17/09/2026, o resultado truncado em seis casas é exatamente o VNA publicado
+para 18/09/2026. A série SGS 1178, embora seja chamada Selic Over, publica a
+taxa anualizada e arredondada; ela não deve ser usada como fator diário exato.</p>
 <p>O caderno define o fator acumulado <code>C</code> com oito casas, enquanto o guia de
 leilões apresenta o índice Selic acumulado com dezesseis. Essa diferença é uma
 observação sobre a formação externa do dado e não representa uma divergência
