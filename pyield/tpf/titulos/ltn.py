@@ -4,8 +4,6 @@ Convenções de precificação (STN, tabela 3):
     - Valor de face: 1000 reais.
     - Prazo de desconto: dias úteis / 252, truncado a 14 casas.
     - PU: truncado a 6 casas.
-    - Taxa implícita retornada: decimal, truncada a 8 casas,
-      equivalente a 6 casas em termos percentuais.
 """
 
 from decimal import Decimal
@@ -180,11 +178,11 @@ def taxa(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     preco_unitario: float | Decimal,
-) -> Decimal:
+) -> float:
     """
     Calcula a taxa implícita (YTM) de uma LTN a partir do preço (PU).
 
-    Inverte algebricamente a fórmula de ``pu()``:
+    Inverte algebricamente o valor presente, sem truncamentos da STN:
     ``taxa = (1000 / pu) ^ (252 / du) - 1``
 
     Args:
@@ -193,34 +191,32 @@ def taxa(
         preco_unitario: PU do título.
 
     Returns:
-        Decimal: Taxa implícita (YTM) em formato decimal, truncada em oito
-            casas decimais (seis casas em termos percentuais). Retorna
-            ``Decimal("NaN")`` em caso de erro.
+        float: Taxa implícita (YTM) em formato decimal, sem arredondamento.
+            Retorna NaN para entradas ausentes, PU não positivo ou prazo útil
+            não positivo.
 
     Examples:
         Exibe as taxas em formato decimal:
 
         >>> from pyield import ltn
         >>> ltn.taxa("05-07-2024", "01-01-2030", 535.279902)
-        Decimal('0.12145000')
+        0.12145000037780962
         >>> ltn.taxa("13-03-2026", "01-01-2027", 895.563913) * 100
-        Decimal('14.83070000')
+        14.830700071776182
         >>> ltn.taxa("21-05-2008", "01-07-2010", 753.3) * 100
-        Decimal('14.36110100')
+        14.361101890993865
     """
     if any_is_empty(data_liquidacao, data_vencimento, preco_unitario):
-        return Decimal("NaN")
+        return float("nan")
 
     preco_float = float(preco_unitario)
     if preco_float <= 0:
-        return Decimal("NaN")
+        return float("nan")
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
-        return Decimal("NaN")
-    anos_truncados = _utils.truncar(dias_uteis / 252, 14)
-    taxa_calculada = (VALOR_FACE / preco_float) ** (1 / anos_truncados) - 1
-    return truncar_decimal(taxa_calculada, 8)
+        return float("nan")
+    return (VALOR_FACE / preco_float) ** (252 / dias_uteis) - 1
 
 
 def rentabilidade(taxa_ltn: float | str, taxa_di: float | str) -> float:
@@ -305,21 +301,19 @@ def dv01(
     Examples:
         >>> from pyield import ltn
         >>> ltn.dv01("26-03-2025", "01-01-2032", "15.097%")
-        0.2269059999999854
+        0.2269055067940826
     """
     taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
 
-    taxa = _utils.normalizar_taxa_precificacao(taxa)
-    taxa_mais_1bp = round(taxa + 0.0001, 8)
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
         return float("nan")
-    anos_truncados = _utils.truncar(dias_uteis / 252, 14)
-    preco_1 = _utils.truncar(VALOR_FACE / (1 + taxa) ** anos_truncados, 6)
-    preco_2 = _utils.truncar(VALOR_FACE / (1 + taxa_mais_1bp) ** anos_truncados, 6)
-    return preco_1 - preco_2
+    anos_uteis = dias_uteis / 252
+    pu1 = VALOR_FACE / (1 + float(taxa)) ** anos_uteis
+    pu2 = VALOR_FACE / (1 + float(taxa) + 0.0001) ** anos_uteis
+    return pu1 - pu2
 
 
 def duration_expr(

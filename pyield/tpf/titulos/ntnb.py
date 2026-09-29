@@ -5,8 +5,6 @@ Convenções de precificação (STN, tabela 3):
     - VNA recebido no cálculo do PU: truncado a 6 casas.
     - Prazo de desconto: dias úteis / 252, truncado a 14 casas.
     - PU: truncado a 6 casas.
-    - Taxa implícita retornada: decimal, truncada a 8 casas,
-      equivalente a 6 casas em termos percentuais.
     - Cada fluxo descontado: arredondado a 10 casas.
 
 Valores de referência derivados conforme as regras da STN, exibidos em base 100:
@@ -347,6 +345,19 @@ def cotacao(
     return truncar_decimal(cotacao_total, 4)
 
 
+def _cotacao_analitica(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    taxa: float,
+) -> float:
+    df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
+    if df_fluxos.is_empty():
+        return float("nan")
+
+    anos_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
+    return float((df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis).sum())
+
+
 def _calcular_pu(
     vna: float | Decimal,
     cotacao: float | Decimal,
@@ -658,17 +669,15 @@ def dv01(
         >>> cot = ntnb.cotacao("26-03-2025", "15-08-2060", "7.4358%")
         >>> pu = ntnb.pu(4470.979474, cot)
         >>> ntnb.dv01("26-03-2025", "15-08-2060", "7.4358%", pu)
-        4.640876692898066
+        4.638861271718656
     """
     taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
-    taxa = _utils.normalizar_taxa_precificacao(taxa)
-    taxa_mais_1bp = round(taxa + 0.0001, 8)
-    cotacao_1 = float(cotacao(data_liquidacao, data_vencimento, taxa))
-    cotacao_2 = float(cotacao(data_liquidacao, data_vencimento, taxa_mais_1bp))
-    return float(pu) * (1 - cotacao_2 / cotacao_1)
+    cot1 = _cotacao_analitica(data_liquidacao, data_vencimento, float(taxa))
+    cot2 = _cotacao_analitica(data_liquidacao, data_vencimento, float(taxa) + 0.0001)
+    return float(pu) * (1 - cot2 / cot1)
 
 
 def dv01_expr(
@@ -714,13 +723,15 @@ def taxa(
     data_vencimento: DateLike,
     vna: float | Decimal,
     pu: float | Decimal,
-) -> Decimal:
+) -> float:
     """
     Calcula a TIR implícita de uma NTN-B a partir do preço (PU).
 
-    A função inverte numericamente a cadeia ``pu(vna, cotacao(...))``,
-    encontrando a taxa que zera a diferença entre o preço calculado e o
-    informado.
+    A função resolve numericamente a taxa que aproxima o PU informado por
+    ``VNA * cotação / 100``, com a cotação calculada pelo valor presente bruto
+    dos fluxos. Como não há arredondamento nem truncamento intermediário, o
+    resultado não pretende reproduzir exatamente a taxa usada para gerar um PU
+    canônico por ``pu(vna, cotacao(...))``.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
@@ -729,32 +740,31 @@ def taxa(
         pu: Preço unitário (PU) do título.
 
     Returns:
-        Decimal: TIR implícita em formato decimal, truncada em oito casas
-            decimais (seis casas em termos percentuais). Retorna
-            ``Decimal("NaN")`` para entradas ausentes, PU não positivo ou
-            falha na resolução numérica.
+        float: TIR implícita em formato decimal, sem arredondamento. Retorna
+            NaN para entradas ausentes, PU não positivo ou falha na resolução
+            numérica.
 
     Examples:
         Exibe as taxas em formato decimal:
 
         >>> from pyield import ntnb
         >>> ntnb.taxa("31-05-2024", "15-05-2035", 4299.160173, 4271.864805)
-        Decimal('0.06149003')
+        0.06149006550833583
         >>> ntnb.taxa("15-08-2024", "15-08-2032", 4315.498383, 4343.156412) * 100
-        Decimal('5.92900300')
+        5.929006687775254
         >>> ntnb.taxa("21-05-2008", "15-08-2010", 1728.461136, 1781.867128) * 100
-        Decimal('5.23457000')
+        5.234584951922298
     """
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
-        return Decimal("NaN")
+        return float("nan")
 
     pu_float = float(pu)
     if pu_float <= 0:
-        return Decimal("NaN")
+        return float("nan")
+    vna_float = float(vna)
 
     def diferenca_preco(taxa_encontrada: float) -> float:
-        cotacao_calculada = cotacao(data_liquidacao, data_vencimento, taxa_encontrada)
-        return float(_calcular_pu(vna, cotacao_calculada)) - pu_float
+        cot = _cotacao_analitica(data_liquidacao, data_vencimento, taxa_encontrada)
+        return vna_float * cot / 100 - pu_float
 
-    taxa_encontrada = _utils.encontrar_raiz(diferenca_preco)
-    return truncar_decimal(taxa_encontrada, 8)
+    return _utils.encontrar_raiz(diferenca_preco)

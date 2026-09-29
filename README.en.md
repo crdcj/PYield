@@ -72,6 +72,18 @@ complete version history and migration notes. The current public organization
 places treasury-bond modules at the package root, while implementations remain
 organized internally under `pyield/tpf/titulos/`.
 
+### Analytical rates and DV01 in 0.59.0
+
+The `taxa` functions of `yd.ltn`, `yd.ntnf`, `yd.ntnb`, `yd.ntnc` and `yd.lft`
+now return an untruncated `float` instead of a `Decimal` truncated to eight
+places. Invalid inputs return `float("nan")`; use `math.isnan` instead of
+`.is_nan()`.
+
+`taxa` and `dv01` for all bonds discount cash flows by `business days / 252`,
+without the intermediate STN truncations. Values change slightly from the
+previous version, and `taxa(pu(...))` recovers the original rate only
+approximately. `pu` and `cotacao` still follow the official methodology.
+
 ### Pricing scale changes in 0.58.0
 
 Scalar bond-pricing functions accept explicit percentage strings such as

@@ -3,8 +3,6 @@
 Convenções de precificação (STN, tabela 3):
     - Prazo de desconto: dias úteis / 252, truncado a 14 casas.
     - PU: truncado a 6 casas.
-    - Taxa implícita retornada: decimal, truncada a 8 casas,
-      equivalente a 6 casas em termos percentuais.
     - Cada fluxo descontado: arredondado a 9 casas.
 
 Valores de referência derivados conforme as regras da STN:
@@ -324,6 +322,23 @@ def _calcular_pu(
     return _utils.truncar(vp.sum(), 6)
 
 
+def _valor_presente(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    taxa: float | Decimal | str,
+) -> float:
+    taxa = _utils.converter_taxa(taxa)
+    if any_is_empty(data_liquidacao, data_vencimento, taxa):
+        return float("nan")
+
+    df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
+    if df_fluxos.is_empty():
+        return float("nan")
+
+    anos_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
+    return float((df_fluxos["valor_pagamento"] / (1 + float(taxa)) ** anos_uteis).sum())
+
+
 def pu(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
@@ -459,7 +474,7 @@ def taxas_zero(  # noqa
         │ 2029-01-01      ┆ 1083       ┆ 12.211302 │
         │ 2031-01-01      ┆ 1584       ┆ 12.223069 │
         │ 2033-01-01      ┆ 2088       ┆ 12.135544 │
-        │ 2035-01-01      ┆ 2587       ┆ 12.139797 │
+        │ 2035-01-01      ┆ 2587       ┆ 12.139796 │
         └─────────────────┴────────────┴───────────┘
     """
     if any_is_empty(
@@ -558,7 +573,7 @@ def taxas_zero(  # noqa
                     prazos=periodos_fluxo,
                 )
 
-                preco_titulo = _calcular_pu(liquidacao, data_venc, tir_val)
+                preco_titulo = _valor_presente(liquidacao, data_venc, tir_val)
                 fator_preco = VALOR_FINAL / (preco_titulo - valor_presente_fluxo)
                 taxa_zero = fator_preco ** (1 / anos_uteis_val) - 1
 
@@ -843,7 +858,7 @@ def premio_limpo(  # noqa
     )
 
     anos_uteis_pagamento = df["dias_uteis_pagamento"] / 252
-    preco_titulo = _calcular_pu(data_liquidacao, data_vencimento, taxa_ntnf)
+    preco_titulo = _valor_presente(data_liquidacao, data_vencimento, taxa_ntnf)
     fluxos_titulo = df["valor_pagamento"]
     di_interpolada = df["taxa_di_interpolada"]
 
@@ -992,17 +1007,15 @@ def dv01(
     Examples:
         >>> from pyield import ntnf
         >>> ntnf.dv01("26-03-2025", "01-01-2035", "15.1375%")
-        0.39025200000003224
+        0.39025157587195736
     """
     taxa = _utils.converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
 
-    taxa = _utils.normalizar_taxa_precificacao(taxa)
-    taxa_mais_1bp = round(taxa + 0.0001, 8)
-    preco_1 = _calcular_pu(data_liquidacao, data_vencimento, taxa)
-    preco_2 = _calcular_pu(data_liquidacao, data_vencimento, taxa_mais_1bp)
-    return preco_1 - preco_2
+    pu1 = _valor_presente(data_liquidacao, data_vencimento, taxa)
+    pu2 = _valor_presente(data_liquidacao, data_vencimento, float(taxa) + 0.0001)
+    return pu1 - pu2
 
 
 def dv01_expr(
@@ -1043,12 +1056,14 @@ def taxa(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
     pu: float | Decimal,
-) -> Decimal:
+) -> float:
     """
     Calcula a TIR implícita de uma NTN-F a partir de um PU informado.
 
-    A função inverte numericamente o cálculo de ``pu()``, encontrando a taxa
-    que zera a diferença entre o preço calculado e o preço desejado.
+    A função resolve numericamente a taxa que aproxima o PU informado pelo
+    valor presente bruto dos fluxos. Como o valor presente não é arredondado
+    nem truncado, o resultado não pretende reproduzir exatamente a taxa usada
+    para gerar um PU canônico por ``pu()``.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
@@ -1056,32 +1071,30 @@ def taxa(
         pu: Preço unitário (PU) do título.
 
     Returns:
-        Decimal: TIR implícita em formato decimal, truncada em oito casas
-            decimais (seis casas em termos percentuais). Retorna
-            ``Decimal("NaN")`` para entradas ausentes, PU não positivo ou
-            falha na resolução numérica.
+        float: TIR implícita em formato decimal, sem arredondamento. Retorna
+            NaN para entradas ausentes, PU não positivo ou falha na resolução
+            numérica.
 
     Examples:
         Exibe as taxas em formato decimal:
 
         >>> from pyield import ntnf
-        >>> pu = ntnf.pu("05-07-2024", "01-01-2035", "11.921%")
         >>> ntnf.taxa("13-03-2026", "01-01-2035", 820.995125)
-        Decimal('0.14274300')
+        0.1427430001649857
         >>> ntnf.taxa("21-05-2008", "01-01-2014", 903.039091) * 100
-        Decimal('13.66110100')
+        13.661101023197176
     """
     if any_is_empty(data_liquidacao, data_vencimento, pu):
-        return Decimal("NaN")
+        return float("nan")
 
     pu_float = float(pu)
     if pu_float <= 0:
-        return Decimal("NaN")
+        return float("nan")
 
     def diferenca_preco(taxa_encontrada: float) -> float:
         return (
-            _calcular_pu(data_liquidacao, data_vencimento, taxa_encontrada) - pu_float
+            _valor_presente(data_liquidacao, data_vencimento, taxa_encontrada)
+            - pu_float
         )
 
-    taxa_encontrada = _utils.encontrar_raiz(diferenca_preco)
-    return truncar_decimal(taxa_encontrada, 8)
+    return _utils.encontrar_raiz(diferenca_preco)

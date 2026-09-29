@@ -78,7 +78,7 @@ def test_taxa_publica_propaga_falha_e_preserva_ausencia(titulo):
     if titulo is not yd.ntnf:
         args += (5000.0,)
     assert math.isnan(titulo.taxa(*args, None))
-    assert math.isnan(titulo.taxa(*args, 1e100))
+    assert math.isnan(titulo.taxa(*args, 1e300))
 
 
 def test_ntnb_forward_fora_do_intervalo():

@@ -77,6 +77,18 @@ documentação detalhada e as assinaturas públicas.
 
 ## Compatibilidade da API
 
+### Taxas e DV01 analíticos — 0.59.0
+
+As funções `taxa` de `yd.ltn`, `yd.ntnf`, `yd.ntnb`, `yd.ntnc` e `yd.lft`
+passam a retornar `float` sem truncamento, em vez de `Decimal` truncado em oito
+casas. Entradas inválidas retornam `float("nan")`; use `math.isnan` no lugar de
+`.is_nan()`.
+
+`taxa` e `dv01` de todos os títulos descontam os fluxos com `dias úteis / 252`,
+sem os truncamentos intermediários da STN. Os valores mudam levemente em
+relação à versão anterior, e `taxa(pu(...))` recupera a taxa original apenas
+aproximadamente. `pu` e `cotacao` seguem a metodologia oficial e não mudaram.
+
 ### Cotações em base 100 — 0.58.0
 
 As funções escalares de cálculo dos títulos também aceitam taxas percentuais

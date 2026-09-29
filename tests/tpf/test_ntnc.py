@@ -21,10 +21,11 @@ def test_cotacao_e_pu_nulos_retornam_decimal_nan() -> None:
 
 
 def test_taxa_aceita_pu_decimal() -> None:
-    taxa_esperada = Decimal("0.06762593")
+    taxa_esperada = 0.067626
     pu = ntnc.pu(6598.913723, ntnc.cotacao("21-03-2025", "01-01-2031", 0.067626))
 
-    assert ntnc.taxa("21-03-2025", "01-01-2031", 6598.913723, pu) == taxa_esperada
+    resultado = ntnc.taxa("21-03-2025", "01-01-2031", 6598.913723, pu)
+    assert resultado == pytest.approx(taxa_esperada, abs=1e-6)
 
 
 def test_cotacao_trunca_taxa_percentual_excedente() -> None:

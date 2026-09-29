@@ -213,7 +213,7 @@ def dv01(
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
         return float("nan")
-    anos_uteis = _utils.truncar(dias_uteis / 252, 14)
+    anos_uteis = dias_uteis / 252
     fator_preco = (1 + taxa_tir) ** anos_uteis
     fator_preco_1bp = (1 + taxa_tir + 0.0001) ** anos_uteis
     return float(pu) * (1 - fator_preco / fator_preco_1bp)

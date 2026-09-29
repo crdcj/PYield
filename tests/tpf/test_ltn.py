@@ -6,8 +6,6 @@ import pytest
 
 from pyield import ltn
 
-CASAS_TAXA = 8
-
 
 def test_pu_retorna_decimal_e_preserva_escala() -> None:
     taxa = Decimal("0.12145")
@@ -16,8 +14,7 @@ def test_pu_retorna_decimal_e_preserva_escala() -> None:
     taxa_resultado = ltn.taxa("05-07-2024", "01-01-2030", resultado)
 
     assert resultado.as_tuple() == esperado.as_tuple()
-    assert taxa_resultado == Decimal("0.12145000")
-    assert taxa_resultado.as_tuple().exponent == -CASAS_TAXA
+    assert taxa_resultado == pytest.approx(0.12145, abs=1e-8)
 
 
 @pytest.mark.parametrize("data_liquidacao", ["01-01-2027", "05-01-2027"])
@@ -25,7 +22,7 @@ def test_calculos_rejeitam_prazo_nao_positivo(data_liquidacao: str) -> None:
     data_vencimento = "01-01-2027"
 
     assert ltn.pu(data_liquidacao, data_vencimento, 0.10).is_nan()
-    assert ltn.taxa(data_liquidacao, data_vencimento, 900).is_nan()
+    assert math.isnan(ltn.taxa(data_liquidacao, data_vencimento, 900))
     assert math.isnan(ltn.dv01(data_liquidacao, data_vencimento, 0.10))
 
 

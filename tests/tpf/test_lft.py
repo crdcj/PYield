@@ -1,3 +1,4 @@
+import math
 from decimal import Decimal
 
 import pytest
@@ -6,7 +7,6 @@ from pyield import lft
 
 CASAS_DECIMAIS = 6
 CASAS_COTACAO = 4
-CASAS_TAXA = 8
 
 
 def test_cotacao_retorna_decimal_truncado() -> None:
@@ -17,9 +17,7 @@ def test_cotacao_retorna_decimal_truncado() -> None:
 
 
 def test_cotacao_trunca_taxa_percentual_excedente() -> None:
-    assert lft.cotacao("21-05-2008", "07-03-2014", "-0.0200009%") == Decimal(
-        "100.1158"
-    )
+    assert lft.cotacao("21-05-2008", "07-03-2014", "-0.0200009%") == Decimal("100.1158")
 
 
 def test_pu_retorna_decimal_truncado() -> None:
@@ -47,15 +45,15 @@ def test_entradas_nulas_retornam_decimal_nan() -> None:
 
 
 def test_taxa_aceita_pu_decimal() -> None:
-    taxa_esperada = Decimal("0.00115966")
+    taxa_esperada = 0.00115966
     pu = lft.pu(
         Decimal("15785.324502"),
         lft.cotacao("24-07-2024", "01-03-2025", Decimal("0.00115966")),
     )
     resultado = lft.taxa("24-07-2024", "01-03-2025", Decimal("15785.324502"), pu)
 
-    assert resultado == taxa_esperada
-    assert resultado.as_tuple().exponent == -CASAS_TAXA
+    # A cotação truncada em 4 casas limita a precisão da taxa recuperada.
+    assert resultado == pytest.approx(taxa_esperada, abs=1e-5)
 
 
 @pytest.mark.parametrize("data_liquidacao", ["01-03-2026", "03-03-2026"])
@@ -63,7 +61,7 @@ def test_calculos_rejeitam_prazo_nao_positivo(data_liquidacao: str) -> None:
     data_vencimento = "01-03-2026"
 
     assert lft.cotacao(data_liquidacao, data_vencimento, 0.0017).is_nan()
-    assert lft.taxa(data_liquidacao, data_vencimento, 1_000, 1_000).is_nan()
+    assert math.isnan(lft.taxa(data_liquidacao, data_vencimento, 1_000, 1_000))
 
 
 def test_pu_trunca_vna_e_cotacao_excedentes() -> None:

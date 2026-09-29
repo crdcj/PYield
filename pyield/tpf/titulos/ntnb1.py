@@ -267,6 +267,17 @@ def cotacao(
     return truncar_decimal(cotacao_total, 4)
 
 
+def _cotacao_analitica(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    taxa: float,
+    nome_comercial: NomeComercial,
+) -> float:
+    df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
+    anos_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
+    return float((df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis).sum())
+
+
 def _validar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:
     """Valida e normaliza a curva zero usada na precificação."""
     colunas_necessarias = {"dias_uteis", "taxa_zero"}
@@ -421,7 +432,9 @@ def taxa_curva_zero(
         extrapolar=True,
     )
     pagamentos_base = fluxos.with_columns(dias_uteis=dias_fluxos)
-    cotacao_alvo = _utils.cotacao_por_taxas(pagamentos_base.with_columns(taxa=taxas_zero))
+    cotacao_alvo = _utils.cotacao_por_taxas(
+        pagamentos_base.with_columns(taxa=taxas_zero)
+    )
     return _resolver_taxa_equivalente(
         cotacao_alvo,
         pagamentos_base,
@@ -540,19 +553,15 @@ def dv01(
         >>> cot = ntnb1.cotacao("23-06-2025", "15-12-2084", "6.86%", r_mais)
         >>> pu = ntnb1.pu(4299.160173, cot)
         >>> ntnb1.dv01("23-06-2025", "15-12-2084", "6.86%", pu, r_mais)
-        0.7738488291718512
+        0.7746782352496799
     """
     if isinstance(taxa, str):
         taxa = float(_utils.converter_taxa(taxa))
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu, nome_comercial):
         return float("nan")
 
-    cotacao_1 = cotacao(data_liquidacao, data_vencimento, taxa, nome_comercial)
-    cotacao_2 = cotacao(
-        data_liquidacao,
-        data_vencimento,
-        taxa + 0.0001,
-        nome_comercial,
+    cot1 = _cotacao_analitica(data_liquidacao, data_vencimento, taxa, nome_comercial)
+    cot2 = _cotacao_analitica(
+        data_liquidacao, data_vencimento, taxa + 0.0001, nome_comercial
     )
-    fator_variacao = 1 - float(cotacao_2) / float(cotacao_1)
-    return float(pu) * fator_variacao
+    return float(pu) * (1 - cot2 / cot1)

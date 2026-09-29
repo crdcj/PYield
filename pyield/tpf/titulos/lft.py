@@ -5,8 +5,6 @@ Convenções de precificação (STN, tabela 3):
     - VNA recebido no cálculo do PU: truncado a 6 casas.
     - Prazo de desconto: dias úteis / 252, truncado a 14 casas.
     - PU: truncado a 6 casas.
-    - Taxa implícita retornada: decimal, truncada a 8 casas,
-      equivalente a 6 casas em termos percentuais.
 """
 
 from decimal import Decimal
@@ -175,13 +173,14 @@ def taxa(
     data_vencimento: DateLike,
     vna: float | Decimal,
     pu: float | Decimal,
-) -> Decimal:
+) -> float:
     """
     Calcula a taxa implícita de uma LFT a partir do preço (PU).
 
-    A função inverte numericamente a cadeia ``pu(vna, cotacao(...))``,
-    encontrando a taxa que zera a diferença entre o preço calculado e o
-    informado.
+    A função resolve numericamente a taxa que aproxima o PU informado por
+    ``VNA / (1 + taxa) ^ (du / 252)``, sem arredondamento nem truncamento
+    intermediário. O resultado não pretende reproduzir exatamente a taxa usada
+    para gerar um PU canônico por ``pu(vna, cotacao(...))``.
 
     Args:
         data_liquidacao: Data de liquidação.
@@ -190,39 +189,37 @@ def taxa(
         pu: Preço unitário (PU) do título.
 
     Returns:
-        Decimal: Taxa implícita em formato decimal, truncada em oito casas
-            decimais (seis casas em termos percentuais). Retorna
-            ``Decimal("NaN")`` para entradas ausentes, PU não positivo, prazo
-            útil não positivo ou falha na resolução numérica.
+        float: Taxa implícita em formato decimal, sem arredondamento. Retorna
+            NaN para entradas ausentes, PU não positivo, prazo útil não
+            positivo ou falha na resolução numérica.
 
     Examples:
         Exibe as taxas em formato decimal:
 
         >>> from pyield import lft
         >>> lft.taxa("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
-        Decimal('0.00171691')
+        0.0017170148895820606
         >>> lft.taxa("24-07-2024", "01-03-2025", 15785.324502, 15774.132706) * 100
-        Decimal('0.11596600')
+        0.11612671421607959
         >>> lft.taxa("21-05-2008", "07-03-2014", 3451.215345, 3426.649594) * 100
-        Decimal('0.12344300')
+        0.12345862697111447
     """
     if any_is_empty(data_liquidacao, data_vencimento, vna, pu):
-        return Decimal("NaN")
+        return float("nan")
 
     pu_float = float(pu)
     if pu_float <= 0:
-        return Decimal("NaN")
+        return float("nan")
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
-        return Decimal("NaN")
+        return float("nan")
+    vna_float = float(vna)
 
     def diferenca_preco(taxa: float) -> float:
-        preco = _calcular_pu(vna, cotacao(data_liquidacao, data_vencimento, taxa))
-        return float(preco) - pu_float
+        return vna_float / (1 + taxa) ** (dias_uteis / 252) - pu_float
 
-    taxa_encontrada = _utils.encontrar_raiz(diferenca_preco)
-    return truncar_decimal(taxa_encontrada, 8)
+    return _utils.encontrar_raiz(diferenca_preco)
 
 
 def rentabilidade(taxa_lft: float | str, taxa_di: float | str) -> float:
