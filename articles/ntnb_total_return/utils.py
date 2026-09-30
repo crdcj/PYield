@@ -1,41 +1,68 @@
-# ruff: noqa: I001
+from dataclasses import dataclass
 
-import pandas as pd
-import streamlit_functions.config as cfg  # pyright: ignore[reportMissingImports]
+import polars as pl
 
-from pyield.du import deslocar
 from pyield import ntnb
+from pyield.du import deslocar
 
 TAXA_REINVESTIMENTO_CUPOM = (1.06) ** (1 / 2) - 1
 TOLERANCIA_CHECAGEM = 0.0001
 
 
-def _obter_vna_pagamento(data_pagamento):
-    try:
-        return cfg.df_vna_base.query("reference_date == @data_pagamento")["vna"].values[
-            0
-        ]
-    except IndexError:
-        data_anterior = cfg.df_vna_base[
-            cfg.df_vna_base["reference_date"] <= data_pagamento
-        ]["reference_date"].max()
-        print(f"Usando VNA de {data_anterior} para pagamento em {data_pagamento}")
-        return cfg.df_vna.query("reference_date == @data_anterior")["vna_du"].values[0]
+@dataclass(frozen=True)
+class DadosNTNB:
+    df_vna_base: pl.DataFrame
+    df_vna: pl.DataFrame
+    df_ntnb: pl.DataFrame
+
+
+def _data(coluna: str) -> pl.Expr:
+    return pl.col(coluna).cast(pl.Date)
+
+
+def _obter_vna_pagamento(
+    data_pagamento,
+    dados: DadosNTNB,
+):
+    df_vna_base = dados.df_vna_base
+    data_referencia = _data("reference_date")
+    vna_exato = df_vna_base.filter(data_referencia == data_pagamento)
+    if not vna_exato.is_empty():
+        return vna_exato["vna"].item()
+
+    data_anterior = (
+        df_vna_base.filter(data_referencia <= data_pagamento)
+        .select(data_referencia.max())
+        .item()
+    )
+    print(f"Usando VNA de {data_anterior} para pagamento em {data_pagamento}")
+    return dados.df_vna.filter(_data("reference_date") == data_anterior)[
+        "vna_du"
+    ].item()
 
 
 def _ajustar_data(data):
     return deslocar(data, 0).date()
 
 
+def _obter_taxa(
+    data_referencia,
+    data_vencimento,
+    dados: DadosNTNB,
+):
+    df_ntnb = dados.df_ntnb
+    filtro = (_data("ReferenceDate") == data_referencia) & (
+        _data("MaturityDate") == data_vencimento
+    )
+    return df_ntnb.filter(filtro)["IndicativeRate"].item()
+
+
 def _gerar_datas_calculo(data_inicial, data_final, df_pagamentos):
-    if df_pagamentos.empty:
+    if df_pagamentos.is_empty():
         datas_calculo = [data_inicial, data_final]
     else:
-        df_pagamentos["data_pagamento"] = pd.to_datetime(
-            df_pagamentos["data_pagamento"]
-        ).dt.date
         datas_calculo = [data_inicial]
-        datas_calculo.extend(df_pagamentos["data_pagamento"].tolist())
+        datas_calculo.extend(df_pagamentos["data_pagamento"].to_list())
         datas_calculo.append(data_final)
 
     datas_calculo.sort(reverse=True)
@@ -47,29 +74,23 @@ def _calcular_componentes_periodo(
     data_fim_cupons,
     data_vencimento,
     cupons_a_adicionar,
+    dados: DadosNTNB,
 ):
-    vna_inicio = cfg.df_vna.query("reference_date == @data_inicio_cupons")[
+    df_vna = dados.df_vna
+    vna_inicio = df_vna.filter(_data("reference_date") == data_inicio_cupons)[
         "vna_du"
-    ].values[0]
-    vna_fim = cfg.df_vna.query("reference_date == @data_fim_cupons")["vna_du"].values[0]
+    ].item()
+    vna_fim = df_vna.filter(_data("reference_date") == data_fim_cupons)["vna_du"].item()
 
-    taxa_inicio = cfg.df_ntnb.query(
-        "ReferenceDate == @data_inicio_cupons and MaturityDate == @data_vencimento"
-    )["IndicativeRate"].values[0]
-    taxa_fim = cfg.df_ntnb.query(
-        "ReferenceDate == @data_fim_cupons and MaturityDate == @data_vencimento"
-    )["IndicativeRate"].values[0]
+    taxa_inicio = _obter_taxa(data_inicio_cupons, data_vencimento, dados)
+    taxa_fim = _obter_taxa(data_fim_cupons, data_vencimento, dados)
 
-    cotacao_inicio = (
-        ntnb.cotacao(data_inicio_cupons, data_vencimento, taxa_inicio) / 100
-    )
+    cotacao_inicio = ntnb.cotacao(data_inicio_cupons, data_vencimento, taxa_inicio)
     cotacao_fim = (
-        ntnb.cotacao(data_fim_cupons, data_vencimento, taxa_fim) / 100
-        + cupons_a_adicionar
+        ntnb.cotacao(data_fim_cupons, data_vencimento, taxa_fim) + cupons_a_adicionar
     )
     cotacao_hibrida = (
-        ntnb.cotacao(data_fim_cupons, data_vencimento, taxa_inicio) / 100
-        + cupons_a_adicionar
+        ntnb.cotacao(data_fim_cupons, data_vencimento, taxa_inicio) + cupons_a_adicionar
     )
 
     retorno_total = ((cotacao_fim * vna_fim) / (cotacao_inicio * vna_inicio)) - 1
@@ -87,60 +108,76 @@ def _calcular_componentes_periodo(
     )
 
 
-def obter_pagamentos_cupons(data_inicial, data_final, data_vencimento):
+def obter_pagamentos_cupons(
+    data_inicial,
+    data_final,
+    data_vencimento,
+    *,
+    dados: DadosNTNB,
+):
     """Obtém os pagamentos de cupons recebidos entre duas datas.
 
     Args:
         data_inicial: Data inicial do cálculo de retorno.
         data_final: Data final do cálculo de retorno.
         data_vencimento: Data de vencimento da NTN-B.
+        dados: Tabelas Polars necessárias ao cálculo, agrupadas em
+            ``DadosNTNB``.
 
     Returns:
-        DataFrame pandas com os pagamentos de cupom ocorridos no período.
+        DataFrame Polars com os pagamentos de cupom ocorridos no período.
     """
-    df_fluxos = (
-        ntnb.fluxos_caixa(data_inicial, data_vencimento)
-        .to_pandas()
-        .rename(columns={"valor_pagamento": "fluxo_caixa"})
+    df_fluxos = ntnb.fluxos_caixa(data_inicial, data_vencimento).rename(
+        {"valor_pagamento": "fluxo_caixa"}
     )
-    df_fluxos["data_pagamento"] = pd.to_datetime(df_fluxos["data_pagamento"]).dt.date
+    df_pagamentos = df_fluxos.filter(
+        (pl.col("data_pagamento") > data_inicial)
+        & (pl.col("data_pagamento") <= data_final)
+    )
 
-    df_pagamentos = df_fluxos[
-        (df_fluxos["data_pagamento"] > data_inicial)
-        & (df_fluxos["data_pagamento"] <= data_final)
-    ].copy()
-
-    if df_pagamentos.empty:
-        return pd.DataFrame(
-            {
-                "data_pagamento": [],
-                "fluxo_caixa": [],
-                "valor_pagamento": [],
-            }
+    if df_pagamentos.is_empty():
+        return df_pagamentos.with_columns(
+            valor_pagamento=pl.Series([], dtype=pl.Float64)
         )
 
-    valores_pagamento = []
-    for _, linha in df_pagamentos.iterrows():
-        vna = _obter_vna_pagamento(linha["data_pagamento"])
-        valores_pagamento.append(vna * (linha["fluxo_caixa"] / 100))
+    return (
+        df_pagamentos.with_columns(
+            vna=pl.col("data_pagamento").map_elements(
+                lambda data: _obter_vna_pagamento(data, dados),
+                return_dtype=pl.Float64,
+            )
+        )
+        .with_columns(valor_pagamento=pl.col("vna") * pl.col("fluxo_caixa"))
+        .drop("vna")
+    )
 
-    df_pagamentos["valor_pagamento"] = valores_pagamento
-    return df_pagamentos
 
-
-def decompor_retorno_ntnb(data_inicial, data_final, data_vencimento):
+def decompor_retorno_ntnb(
+    data_inicial,
+    data_final,
+    data_vencimento,
+    *,
+    dados: DadosNTNB,
+):
     """Decompõe o retorno de uma NTN-B entre duas datas, incluindo cupons.
 
     Args:
         data_inicial: Data inicial do cálculo de retorno.
         data_final: Data final do cálculo de retorno.
         data_vencimento: Data de vencimento da NTN-B.
+        dados: Tabelas Polars necessárias ao cálculo, agrupadas em
+            ``DadosNTNB``.
 
     Returns:
         Tupla com os componentes acumulados de inflação, marcação a mercado e
         retorno real, ou ``None`` em caso de falha de checagem.
     """
-    df_pagamentos = obter_pagamentos_cupons(data_inicial, data_final, data_vencimento)
+    df_pagamentos = obter_pagamentos_cupons(
+        data_inicial,
+        data_final,
+        data_vencimento,
+        dados=dados,
+    )
     datas_calculo = _gerar_datas_calculo(data_inicial, data_final, df_pagamentos)
 
     retornos_inflacao = []
@@ -163,6 +200,7 @@ def decompor_retorno_ntnb(data_inicial, data_final, data_vencimento):
             data_fim_cupons,
             data_vencimento,
             cupons_a_adicionar,
+            dados,
         )
 
         if checagem - retorno_total > TOLERANCIA_CHECAGEM:
