@@ -127,3 +127,26 @@ def test_taxas_historicas_aplica_filtros_publicos(monkeypatch):
 def test_taxas_historicas_rejeita_intervalo_invertido():
     with pytest.raises(ValueError, match="inicio deve ser menor ou igual a fim"):
         yd.tpf.taxas_historicas(inicio="07-02-2026", fim="06-02-2026")
+
+
+@pytest.mark.parametrize(
+    "funcao",
+    [
+        yd.tpf.taxas,
+        yd.tpf.premios_pre,
+        yd.tpf.curva_pre,
+        yd.ltn.dados,
+        yd.ltn.taxas_forward,
+        yd.lft.dados,
+        yd.ntnb.dados,
+        yd.ntnc.dados,
+        yd.ntnf.dados,
+    ],
+)
+def test_feriado_retorna_dataframe_vazio(funcao):
+    """30/05/2024 foi feriado (Corpus Christi): sem dados, sem erro."""
+    assert funcao("30-05-2024").is_empty()
+
+
+def test_taxas_vazio_mantem_colunas():
+    assert yd.tpf.taxas("30-05-2024").columns == COLUNAS_PUBLICAS

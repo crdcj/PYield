@@ -160,8 +160,10 @@ df_premios = yd.ltn.dados("30-05-2024").with_columns(
 )
 
 # Prêmio para NTN-F
-df_premios_ntnf = yd.ntnf.premio("30-05-2024").with_columns(
-    premio=pl.col("premio") * 10_000,
+df_premios_ntnf = (
+    yd.tpf.premios_pre("30-05-2024")
+    .filter(pl.col("titulo") == "NTN-F")
+    .with_columns(premio=pl.col("premio") * 10_000)
 )
 ```
 

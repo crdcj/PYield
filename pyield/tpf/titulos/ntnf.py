@@ -34,7 +34,6 @@ from pyield.tpf.titulos._ntnf_bootstrap import (
 )
 
 from . import _utils
-from .pre import premios_pre as _premios_pre
 
 VALOR_FACE = 1000
 VALOR_CUPOM = 48.80885
@@ -737,53 +736,6 @@ def rentabilidade_expr(
     )
 
 
-def premio(data: DateLike) -> pl.DataFrame:
-    """
-    Calcula o prêmio bruto das NTN-F sobre a curva DI na data de referência.
-
-    Definição do prêmio (forma bruta):
-        premio = taxa_indicativa - taxa de ajuste do DI
-
-    A coluna retorna essa diferença em formato decimal (ex: 0.000439 ≈
-    4.39 bps). Para exibir o prêmio em pontos-base, multiplique a coluna
-    ``premio`` por 10_000 no DataFrame retornado. No exemplo abaixo, essa
-    coluna é sobrescrita apenas para facilitar a leitura em pontos-base.
-
-    Args:
-        data (DateLike): Data da consulta para buscar as taxas.
-
-    Returns:
-        pl.DataFrame: DataFrame com as colunas do prêmio.
-
-    Output Columns:
-        - titulo (String): Tipo do título.
-        - data_vencimento (Date): Data de vencimento.
-        - premio (Float64): prêmio em formato decimal, isto é, o spread sobre
-            o DI.
-
-    Raises:
-        ValueError: Se os dados de DI não possuem 'taxa_ajuste' ou estão vazios.
-
-    Examples:
-        >>> from pyield import ntnf
-        >>> # Exemplo em pontos-base para facilitar a leitura
-        >>> ntnf.premio("30-05-2025").with_columns(pl.col("premio") * 10_000)
-        shape: (5, 3)
-        ┌────────┬─────────────────┬────────┐
-        │ titulo ┆ data_vencimento ┆ premio │
-        │ ---    ┆ ---             ┆ ---    │
-        │ str    ┆ date            ┆ f64    │
-        ╞════════╪═════════════════╪════════╡
-        │ NTN-F  ┆ 2027-01-01      ┆ -3.31  │
-        │ NTN-F  ┆ 2029-01-01      ┆ 14.21  │
-        │ NTN-F  ┆ 2031-01-01      ┆ 21.61  │
-        │ NTN-F  ┆ 2033-01-01      ┆ 11.51  │
-        │ NTN-F  ┆ 2035-01-01      ┆ 22.0   │
-        └────────┴─────────────────┴────────┘
-    """
-    return _premios_pre(data).filter(pl.col("titulo") == "NTN-F")
-
-
 def premio_limpo(  # noqa
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
@@ -1108,7 +1060,6 @@ __all__ = [
     "dv01",
     "dv01_expr",
     "fluxos_caixa",
-    "premio",
     "premio_limpo",
     "premio_limpo_expr",
     "pu",

@@ -159,7 +159,6 @@ Visão geral das principais funções públicas do PYield.
     ├── taxas_zero_forwards(data_liquidacao, vencimentos_ltn, taxas_ltn, ...)
     ├── rentabilidade(...)
     ├── rentabilidade_expr(...)
-    ├── premio(data)
     ├── premio_limpo(...)
     └── premio_limpo_expr(...)
     ```

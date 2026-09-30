@@ -22,6 +22,18 @@ _COLUNAS_SAIDA = (
     "taxa_indicativa",
 )
 
+_SCHEMA_SAIDA = {
+    "titulo": pl.String,
+    "data_referencia": pl.Date,
+    "codigo_selic": pl.Int64,
+    "data_base": pl.Date,
+    "data_vencimento": pl.Date,
+    "pu": pl.Float64,
+    "taxa_compra": pl.Float64,
+    "taxa_venda": pl.Float64,
+    "taxa_indicativa": pl.Float64,
+}
+
 
 def _mapear_tipo_titulo(tipo_titulo: str) -> list[str]:
     tipo_titulo = tipo_titulo.upper()
@@ -132,7 +144,7 @@ def taxas(
 
     Returns:
         DataFrame Polars com taxas e preços indicativos. Retorna DataFrame
-        vazio se não houver dados para a data.
+        vazio, com as colunas abaixo, se não houver dados para a data.
 
     Output Columns:
         * titulo (String): tipo do título público.
@@ -151,7 +163,7 @@ def taxas(
     data = converter_datas(data)
 
     if not data_referencia_valida(data):
-        return pl.DataFrame()
+        return pl.DataFrame(schema=_SCHEMA_SAIDA)
 
     try:
         df = _obter_historico()
@@ -163,7 +175,7 @@ def taxas(
         df = _anbima_taxas.buscar(data)
 
     if df.is_empty():
-        return pl.DataFrame()
+        return pl.DataFrame(schema=_SCHEMA_SAIDA)
 
     df = df.select(col for col in _COLUNAS_SAIDA if col in df.columns)
     if titulo:

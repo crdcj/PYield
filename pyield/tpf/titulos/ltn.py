@@ -415,8 +415,12 @@ def taxas_forward(data: DateLike) -> pl.DataFrame:
     if any_is_empty(data):
         return pl.DataFrame()
     return (
-        dados(data)
-        .select("data_vencimento", "dias_uteis", "taxa_indicativa")
+        _utils.obter_tpf(data, "LTN")
+        .select(
+            "data_vencimento",
+            dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
+            taxa_indicativa="taxa_indicativa",
+        )
         .with_columns(taxa_forward=fwd.forwards_expr("dias_uteis", "taxa_indicativa"))
         .sort("data_vencimento")
     )
