@@ -137,15 +137,20 @@ def test_fronteira_publica():
 
 
 def test_cpm_consume_calendario_publico(monkeypatch):
-    from pyield import cpm  # noqa: PLC0415
+    from pyield.cpm import _contratos  # noqa: PLC0415, PLC2701
 
     monkeypatch.setattr(
-        cpm.boletim,
+        _contratos.boletim,
         "buscar",
         lambda *args, **kwargs: pl.DataFrame({"codigo_negociacao": ["CPMU26C100000"]}),
     )
-    monkeypatch.setattr(cpm, "_fetch_settlement_prices", lambda data: pl.DataFrame())
-    resultado = yd.cpm.data("2026-09-01")
+    # CSV sem preâmbulo, como a B3 devolve para datas sem Preço de Referência.
+    monkeypatch.setattr(
+        _contratos,
+        "_buscar_csv",
+        lambda data: "\ufeffInstrumento financeiro;Preço de referência\n".encode(),
+    )
+    resultado = yd.cpm.contratos("2026-09-01")
     assert resultado["data_fim_reuniao"].item() == dt.date(2026, 9, 16)
     assert resultado["data_expiracao"].item() == dt.date(2026, 9, 17)
 

@@ -64,7 +64,7 @@ uv add pyield
 | `yd.copom` | módulo | Calendário automático do Copom | `calendario`, `proxima_reuniao` |
 | `yd.compromissadas(...)` | função | Leilões de operações compromissadas do BCB | `inicio`, `fim` |
 | `yd.selic` | módulo | Selic e política monetária | `over`, `over_serie`, `meta`, `meta_serie` |
-| `yd.cpm` | módulo | Opções digitais do COPOM e análises derivadas | `data`, `probabilidades` |
+| `yd.cpm` | módulo | Opções digitais do COPOM e análises derivadas | `contratos`, `probabilidades` |
 | `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indices`, `indices_ultimos`, `taxa`, `taxas`, `taxas_ultimas`, `taxa_projetada` |
 | `yd.ptax(data)` | função | PTAX para uma data | |
 | `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX | |

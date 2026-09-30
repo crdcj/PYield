@@ -1,6 +1,5 @@
-"""Testes de pyield.cpm.
+"""Testes de yd.cpm.contratos.
 
-Os testes de parsing de ticker sao unitarios puros, sem I/O.
 Os testes de corretude dos dados usam o parquet de referencia.
 """
 
@@ -10,7 +9,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-import pyield.cpm as modulo_cpm
+import pyield.cpm._contratos as modulo_contratos  # noqa: PLC2701
 from pyield import du
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
@@ -37,7 +36,7 @@ def cpm_fixture() -> pl.DataFrame:
     return df.rename(_RENOMEAR_COLUNAS, strict=False)
 
 
-# ── Parsing de ticker: entradas válidas ──────────────────────────────────
+# ── Parsing do código de negociação ──────────────────────────────────────
 
 
 @pytest.mark.parametrize(
@@ -52,43 +51,41 @@ def cpm_fixture() -> pl.DataFrame:
         ("CPMF25P099500", 1, 2025, "put", -50),
     ],
 )
-def test_parse_ticker_valid(
+def test_parse_ticker_valid(  # noqa: PLR0913, PLR0917
+    monkeypatch,
     ticker,
     mes_esperado,
     ano_esperado,
     tipo_esperado,
     bps_esperado,
 ):
-    mes, ano, tipo_opcao, _strike, bps = modulo_cpm._parse_ticker(ticker)
-    assert mes == mes_esperado
-    assert ano == ano_esperado
-    assert tipo_opcao == tipo_esperado
-    assert bps == bps_esperado
-
-
-# ── Parsing de ticker: entradas inválidas ────────────────────────────────
-
-
-def test_parse_ticker_wrong_prefix():
-    with pytest.raises(ValueError, match="Invalid CPM ticker"):
-        modulo_cpm._parse_ticker("DI1F25C099500")
-
-
-def test_parse_ticker_unknown_month_code():
-    with pytest.raises(ValueError, match="Unknown month code"):
-        modulo_cpm._parse_ticker("CPMA25C099500")  # A is not a valid month code
+    monkeypatch.setattr(
+        modulo_contratos.boletim,
+        "buscar",
+        lambda *args, **kwargs: pl.DataFrame({"codigo_negociacao": [ticker]}),
+    )
+    monkeypatch.setattr(
+        modulo_contratos,
+        "_buscar_csv",
+        lambda data: "\ufeffInstrumento financeiro;Preço de referência\n".encode(),
+    )
+    linha = modulo_contratos.contratos("02-01-2025").row(0, named=True)
+    assert linha["data_fim_reuniao"].month == mes_esperado
+    assert linha["data_fim_reuniao"].year == ano_esperado
+    assert linha["tipo_opcao"] == tipo_esperado
+    assert linha["variacao_strike_bps"] == bps_esperado
 
 
 # ── Schema vazio ──────────────────────────────────────────────────────────
 
 
 def test_empty_schema_zero_rows():
-    df = modulo_cpm._empty_schema()
+    df = modulo_contratos._df_vazio()
     assert len(df) == 0
 
 
 def test_empty_schema_columns():
-    df = modulo_cpm._empty_schema()
+    df = modulo_contratos._df_vazio()
     assert df.columns == [
         "data_referencia",
         "codigo_negociacao",
@@ -102,7 +99,7 @@ def test_empty_schema_columns():
 
 
 def test_empty_schema_dtypes():
-    df = modulo_cpm._empty_schema()
+    df = modulo_contratos._df_vazio()
     assert df["data_referencia"].dtype == pl.Date
     assert df["preco_ajuste"].dtype == pl.Float64
     assert df["variacao_strike_bps"].dtype == pl.Int32

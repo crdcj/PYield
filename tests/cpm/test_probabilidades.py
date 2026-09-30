@@ -1,6 +1,6 @@
-"""Testes de pyield.cpm.probabilidades.
+"""Testes de yd.cpm.probabilidades.
 
-Todos os testes fazem monkeypatch de cpm.data() e di1.interpolar_taxas()
+Todos os testes fazem monkeypatch de contratos() e di1.interpolar_taxas()
 via a fixture local cpm_patchado. Sem chamadas reais de rede.
 """
 
@@ -10,8 +10,8 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-import pyield.cpm as modulo_cpm
-import pyield.cpm.probabilidades as modulo_probabilidades
+import pyield.cpm._contratos as modulo_contratos  # noqa: PLC2701
+import pyield.cpm._probabilidades as modulo_probabilidades  # noqa: PLC2701
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 
@@ -33,6 +33,10 @@ TOLERANCIA_NUMERICA = 1e-12
 STRIKE_DOMINANTE_JAN_2025 = 100
 
 
+def _taxas_di1_zeradas(*, datas_referencia, **_kwargs) -> pl.Series:
+    return pl.Series("taxa_interpolada", [0.0] * len(datas_referencia))
+
+
 @pytest.fixture(scope="module")
 def cpm_fixture() -> pl.DataFrame:
     df = pl.read_parquet(DIRETORIO_DADOS / "cpm_29012025.parquet")
@@ -41,20 +45,25 @@ def cpm_fixture() -> pl.DataFrame:
 
 @pytest.fixture
 def cpm_patchado(monkeypatch, cpm_fixture):
-    monkeypatch.setattr(modulo_cpm, "data", lambda _date: cpm_fixture)
+    monkeypatch.setattr(modulo_probabilidades, "contratos", lambda _data: cpm_fixture)
     monkeypatch.setattr(
         modulo_probabilidades.di1,
         "interpolar_taxas",
-        lambda *a, **kw: pl.Series("taxa_interpolada", [0.0] * len(a[0])),
+        _taxas_di1_zeradas,
     )
     return cpm_fixture
+
+
+def _reuniao_mais_proxima() -> pl.DataFrame:
+    df = modulo_probabilidades.probabilidades("29-01-2025")
+    return df.filter(pl.col("ranking_reuniao") == 1)
 
 
 # ── Empty schema ──────────────────────────────────────────────────────────
 
 
 def test_empty_schema_zero_rows():
-    df = modulo_probabilidades._empty_schema()
+    df = modulo_probabilidades._df_vazio()
     assert len(df) == 0
 
 
@@ -73,39 +82,34 @@ def test_empty_schema_columns():
         "prob",
         "prob_acumulada",
     ]
-    assert modulo_probabilidades._empty_schema().columns == esperado
+    assert modulo_probabilidades._df_vazio().columns == esperado
 
 
 # ── Empty input propagation ───────────────────────────────────────────────
 
 
-def test_all_meetings_empty_input(monkeypatch):
-    monkeypatch.setattr(modulo_cpm, "data", lambda _: modulo_cpm._empty_schema())
-    resultado = modulo_probabilidades.all_meetings("01-01-2025")
+def test_probabilidades_empty_input(monkeypatch):
+    monkeypatch.setattr(
+        modulo_probabilidades, "contratos", lambda _: modulo_contratos._df_vazio()
+    )
+    resultado = modulo_probabilidades.probabilidades("01-01-2025")
     assert resultado.is_empty()
-    assert resultado.columns == modulo_probabilidades._empty_schema().columns
-
-
-def test_meeting_empty_input(monkeypatch):
-    monkeypatch.setattr(modulo_cpm, "data", lambda _: modulo_cpm._empty_schema())
-    resultado = modulo_probabilidades.meeting("01-01-2025")
-    assert resultado.is_empty()
-    assert resultado.columns == modulo_probabilidades._empty_schema().columns
+    assert resultado.columns == modulo_probabilidades._df_vazio().columns
 
 
 # ── Schema of non-empty output ────────────────────────────────────────────
 
 
-def test_all_meetings_schema(cpm_patchado):
-    df = modulo_probabilidades.all_meetings("29-01-2025")
-    assert df.columns == modulo_probabilidades._empty_schema().columns
+def test_probabilidades_schema(cpm_patchado):
+    df = modulo_probabilidades.probabilidades("29-01-2025")
+    assert df.columns == modulo_probabilidades._df_vazio().columns
 
 
 # ── Probability invariants ────────────────────────────────────────────────
 
 
 def test_prob_sums_to_one(cpm_patchado):
-    df = modulo_probabilidades.all_meetings("29-01-2025")
+    df = modulo_probabilidades.probabilidades("29-01-2025")
     somas = df.group_by("data_expiracao").agg(pl.col("prob").sum())
     diferenca_maxima = (somas["prob"] - 1.0).abs().max()
     assert isinstance(diferenca_maxima, float)
@@ -113,7 +117,7 @@ def test_prob_sums_to_one(cpm_patchado):
 
 
 def test_cum_prob_ends_at_one(cpm_patchado):
-    df = modulo_probabilidades.all_meetings("29-01-2025")
+    df = modulo_probabilidades.probabilidades("29-01-2025")
     ultimo = (
         df.sort("data_expiracao", "variacao_strike_bps")
         .group_by("data_expiracao")
@@ -125,17 +129,17 @@ def test_cum_prob_ends_at_one(cpm_patchado):
 
 
 def test_raw_prob_non_negative(cpm_patchado):
-    df = modulo_probabilidades.all_meetings("29-01-2025")
+    df = modulo_probabilidades.probabilidades("29-01-2025")
     assert (df["prob_bruta"] >= 0.0).all()
 
 
 def test_prob_non_negative(cpm_patchado):
-    df = modulo_probabilidades.all_meetings("29-01-2025")
+    df = modulo_probabilidades.probabilidades("29-01-2025")
     assert (df["prob"] >= 0.0).all()
 
 
 def test_cum_prob_monotone(cpm_patchado):
-    df = modulo_probabilidades.all_meetings("29-01-2025")
+    df = modulo_probabilidades.probabilidades("29-01-2025")
     for data_expiracao in df["data_expiracao"].unique().to_list():
         sub = df.filter(pl.col("data_expiracao") == data_expiracao).sort(
             "variacao_strike_bps"
@@ -150,12 +154,12 @@ def test_cum_prob_monotone(cpm_patchado):
 
 
 def test_meeting_rank_starts_at_one(cpm_patchado):
-    df = modulo_probabilidades.all_meetings("29-01-2025")
+    df = modulo_probabilidades.probabilidades("29-01-2025")
     assert df["ranking_reuniao"].min() == 1
 
 
 def test_meeting_rank_consecutive(cpm_patchado):
-    df = modulo_probabilidades.all_meetings("29-01-2025")
+    df = modulo_probabilidades.probabilidades("29-01-2025")
     rankings = df["ranking_reuniao"].unique().sort().to_list()
     assert rankings == list(range(1, len(rankings) + 1))
 
@@ -171,42 +175,27 @@ def test_null_price_meeting_excluded(monkeypatch, cpm_fixture):
         .otherwise(pl.col("preco_ajuste"))
         .alias("preco_ajuste")
     )
-    monkeypatch.setattr(modulo_cpm, "data", lambda _: reuniao_nula)
+    monkeypatch.setattr(modulo_probabilidades, "contratos", lambda _: reuniao_nula)
     monkeypatch.setattr(
         modulo_probabilidades.di1,
         "interpolar_taxas",
-        lambda *a, **kw: pl.Series("taxa_interpolada", [0.0] * len(a[0])),
+        _taxas_di1_zeradas,
     )
-    df = modulo_probabilidades.all_meetings("29-01-2025")
+    df = modulo_probabilidades.probabilidades("29-01-2025")
     assert datetime.date(2025, 5, 8) not in df["data_expiracao"].to_list()
     assert df["ranking_reuniao"].min() == 1
 
 
-# ── meeting() selection ───────────────────────────────────────────────────
-
-
-def test_meeting_nearest_is_rank_one(cpm_patchado):
-    df = modulo_probabilidades.meeting("29-01-2025")
-    assert df["ranking_reuniao"].unique().to_list() == [1]
+# ── Reunião mais próxima ──────────────────────────────────────────────────
 
 
 def test_meeting_nearest_single_expiry(cpm_patchado):
-    df = modulo_probabilidades.meeting("29-01-2025")
+    df = _reuniao_mais_proxima()
     assert df["data_expiracao"].n_unique() == 1
 
 
-def test_meeting_explicit_expiration(cpm_patchado):
-    df_todas = modulo_probabilidades.all_meetings("29-01-2025")
-    maior_ranking = df_todas["ranking_reuniao"].max()
-    segunda_data_expiracao = df_todas.filter(
-        pl.col("ranking_reuniao") == maior_ranking
-    )["data_expiracao"][0]
-    df = modulo_probabilidades.meeting("29-01-2025", expiration=segunda_data_expiracao)
-    assert df["data_expiracao"].unique().item() == segunda_data_expiracao
-
-
 def test_meeting_prob_sums_to_one(cpm_patchado):
-    df = modulo_probabilidades.meeting("29-01-2025")
+    df = _reuniao_mais_proxima()
     soma_prob = df["prob"].sum()
     assert isinstance(soma_prob, (int, float))
     assert abs(float(soma_prob) - 1.0) < TOLERANCIA_PROB
@@ -216,20 +205,20 @@ def test_meeting_prob_sums_to_one(cpm_patchado):
 
 
 def test_nearest_meeting_expiry_date(cpm_patchado):
-    df = modulo_probabilidades.meeting("29-01-2025")
+    df = _reuniao_mais_proxima()
     assert df["data_expiracao"].unique().item() == datetime.date(2025, 1, 30)
 
 
 def test_highest_prob_strike_jan2025(cpm_patchado):
     """On 2025-01-29, +100 bps was the overwhelmingly dominant strike."""
-    df = modulo_probabilidades.meeting("29-01-2025")
+    df = _reuniao_mais_proxima()
     maior_strike = df.sort("prob", descending=True)["variacao_strike_bps"][0]
     assert maior_strike == STRIKE_DOMINANTE_JAN_2025
 
 
 def test_discount_exp_one_when_rate_zero(cpm_patchado):
     """With di1 patched to return 0.0, fator_desconto must equal 1.0."""
-    df = modulo_probabilidades.all_meetings("29-01-2025")
+    df = modulo_probabilidades.probabilidades("29-01-2025")
     diferenca_maxima = (df["fator_desconto"] - 1.0).abs().max()
     assert isinstance(diferenca_maxima, float)
     assert diferenca_maxima < TOLERANCIA_NUMERICA
@@ -237,7 +226,7 @@ def test_discount_exp_one_when_rate_zero(cpm_patchado):
 
 def test_raw_prob_equals_settlement_over_100_when_rate_zero(cpm_patchado):
     """With fator_desconto=1.0, prob_bruta = preco_ajuste / 100."""
-    df = modulo_probabilidades.all_meetings("29-01-2025")
+    df = modulo_probabilidades.probabilidades("29-01-2025")
     esperado = df["preco_ajuste"] / 100
     diferenca = (df["prob_bruta"] - esperado).abs().max()
     assert isinstance(diferenca, float)

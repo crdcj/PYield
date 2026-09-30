@@ -1,11 +1,13 @@
 import pyield as yd
 import pyield.cpm as modulo_cpm
-import pyield.cpm.probabilidades as modulo_probabilidades
+from pyield.cpm import _contratos, _probabilidades  # noqa: PLC2701
 
 
 def test_cpm_e_um_namespace_de_topo() -> None:
     assert yd.cpm is modulo_cpm
-    assert yd.cpm.probabilidades is modulo_probabilidades
+    assert yd.cpm.contratos is _contratos.contratos
+    assert yd.cpm.probabilidades is _probabilidades.probabilidades
+    assert not hasattr(yd.cpm, "data")
     assert not hasattr(yd.cpm, "probabilities")
 
 

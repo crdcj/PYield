@@ -81,8 +81,8 @@ Visão geral das principais funções públicas do PYield.
 ??? "`yd.cpm` (opções digitais do COPOM e probabilidades implícitas)"
     ```text
     yd.cpm
-    ├── data(data)
-    └── probabilidades
+    ├── contratos(data)
+    └── probabilidades(data, tipo_opcao="call")
     ```
 
 ??? "`yd.ipca` (inflação IPCA)"
