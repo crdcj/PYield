@@ -45,24 +45,24 @@ uv add pyield
 | Componente | Tipo | Finalidade | Funções públicas |
 |---|---|---|---|
 | `yd.du` | módulo | Dias úteis e calendário brasileiro | `contar`, `deslocar`, `eh_dia_util`, `gerar`, `ultimo_dia_util`, `contar_expr`, `deslocar_expr`, `eh_dia_util_expr` |
-| `yd.Interpolador` | classe | Interpolação escalar e em pipelines Polars | `interpolar`, `interpolar_expr`, `linear`, `flat_forward` |
+| `yd.Interpolador` | classe | Interpolação escalar e em pipelines Polars, com métodos `linear` e `flat_forward` | `interpolar`, `interpolar_expr` |
 | `yd.interpolar(...)` | função | Interpolação vetorizada flat-forward, curva única ou multi-curva | |
 | `yd.forward(...)` | função | Taxa a termo entre dois vértices | |
 | `yd.forwards(...)` | função | Curva de taxas a termo | |
 | `yd.futuro` | módulo | Contratos futuros da B3 | `di1`, `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `vencimento_expr` |
 | `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
-| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `taxas_historicas`, `vencimentos`, `estoque`, `leiloes`, `leiloes_bcb`, `benchmarks`, `curva_pre`, `premios_pre`, `secundario` |
+| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `taxas_historicas`, `vencimentos`, `estoque`, `leiloes`, `leiloes_bcb`, `benchmarks`, `dealers`, `curva_pre`, `premios_pre`, `secundario` |
 | `yd.rmd(aba)` | função | Relatório Mensal da Dívida do Tesouro Nacional | |
 | `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `pu`, `taxa`, `rentabilidade`, `rentabilidade_expr` |
 | `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `duration_expr`, `dv01`, `dv01_expr`, `rentabilidade`, `rentabilidade_expr`, `taxas_forward` |
-| `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `dv01`, `dv01_expr`, `implicitas`, `curva` |
+| `yd.ntnb` | módulo | NTN-B | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `taxas_zero`, `duration`, `duration_expr`, `dv01`, `dv01_expr`, `implicitas` |
 | `yd.ntnb1` | módulo | NTN-B1 (Educa+ e Renda+) | `NomeComercial`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `cotacao_curva_zero`, `taxa_curva_zero`, `pu`, `duration`, `dv01` |
 | `yd.ntnbp` | módulo | NTN-B Principal | `cotacao`, `taxa`, `pu`, `dv01` |
-| `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `pu`, `taxa`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
-| `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `taxas_zero_forwards`, `premio`, `premio_limpo`, `premio_limpo_expr`, `rentabilidade`, `rentabilidade_expr`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
-| `yd.vna` | módulo | Valores nominais atualizados dos títulos públicos | `valor`, `historico`, `projetado`, `vigencia` |
+| `yd.ntnc` | módulo | NTN-C | `dados`, `datas_pagamento`, `fluxos_caixa`, `cotacao`, `cotacao_curva_zero`, `taxa_curva_zero`, `pu`, `taxa`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
+| `yd.ntnf` | módulo | NTN-F | `dados`, `vencimentos`, `datas_pagamento`, `fluxos_caixa`, `pu`, `taxa`, `taxas_zero`, `taxas_zero_forwards`, `premio_limpo`, `premio_limpo_expr`, `rentabilidade`, `rentabilidade_expr`, `duration`, `duration_expr`, `dv01`, `dv01_expr` |
+| `yd.vna` | módulo | Valores nominais atualizados dos títulos públicos | `valor`, `historico`, `ultimo`, `projetado`, `vigencia`, `calcular_vna` |
 | `yd.copom` | módulo | Calendário automático do Copom | `calendario`, `proxima_reuniao` |
-| `yd.compromissadas(...)` | função | Leilões de operações compromissadas do BCB | `inicio`, `fim` |
+| `yd.compromissadas(inicio, fim)` | função | Leilões de operações compromissadas do BCB | |
 | `yd.selic` | módulo | Selic e política monetária | `over`, `over_serie`, `meta`, `meta_serie` |
 | `yd.cpm` | módulo | Opções digitais do COPOM e análises derivadas | `contratos`, `probabilidades` |
 | `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indice_serie`, `taxa`, `taxa_serie`, `taxa_projetada` |

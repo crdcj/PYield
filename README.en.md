@@ -50,6 +50,7 @@ uv add pyield
 | `yd.futuro` | module | B3 futures contracts and historical/intraday data |
 | `yd.di1` | module | DI1 curve and interpolation |
 | `yd.tpf` | module | Treasury rates, maturities, auctions, benchmarks, and trades |
+| `yd.rmd(aba)` | function | Tesouro Nacional monthly debt report |
 | `yd.lft`, `yd.ltn`, `yd.ntnb`, `yd.ntnb1`, `yd.ntnbp`, `yd.ntnc`, `yd.ntnf` | modules | Treasury-bond pricing and analytics |
 | `yd.vna` | module | Updated nominal values for treasury bonds |
 | `yd.copom`, `yd.selic`, `yd.cpm` | modules | COPOM calendar, Selic, and digital options |
@@ -72,6 +73,23 @@ See the [GitHub releases](https://github.com/crdcj/PYield/releases) for the
 complete version history and migration notes. The current public organization
 places treasury-bond modules at the package root, while implementations remain
 organized internally under `pyield/tpf/titulos/`.
+
+### IPCA series
+
+Historical IPCA queries follow the same pattern as Selic and PTAX series:
+`taxa(data)` and `indice(data)` return a scalar; `taxa_serie` and `indice_serie`
+return series over a date range or for the most recent months.
+
+To migrate, replace `ipca.taxas(inicio, fim)` with
+`ipca.taxa_serie(inicio, fim)` and `ipca.indices(inicio, fim)` with
+`ipca.indice_serie(inicio, fim)`. Replace `ipca.taxas_ultimas(n)` with
+`ipca.taxa_serie(ultimos=n)` and `ipca.indices_ultimos(n)` with
+`ipca.indice_serie(ultimos=n)`. The old names have been removed; returned
+columns, units, and values remain unchanged.
+
+For series, `fim=None` uses the current date in Brazil. Provide `inicio` or
+`ultimos`; when supplied, `ultimos` takes precedence over dates.
+`taxa_projetada` remains unchanged.
 
 ### Analytical rates and DV01 in 0.59.0
 
@@ -106,8 +124,17 @@ The `yd.ltn.dv01` and `yd.ntnf.dv01` functions no longer accept a reference PU;
 they calculate the reduction in theoretical PU for a 1-basis-point rate
 increase.
 
+### Other changes
+
+This summary starts from the `0.56.0` API. Changes already included in that
+version or earlier versions are recorded in the
+[GitHub releases](https://github.com/crdcj/PYield/releases).
+
 | Before | Now |
 |---|---|
+| `ntnbp.taxas_zero(...)` | `ntnb.taxas_zero(...)`, without `incluir_vertices` |
+| `ntnb.taxas_zero(..., incluir_cupons=...)` | `ntnb.taxas_zero(...)`, without `incluir_cupons` |
+| `ntnb.taxas_zero(..., percentual=...)` | `ntnb.taxas_zero(...)`, with decimal rates |
 | `yd.tpf.ntnb` | `yd.ntnb` or `from pyield import ntnb` |
 | `yd.tpf.rmd(aba)` | `yd.rmd(aba)` or `from pyield import rmd` |
 | `pyield.tpf.vna.calcular_vna(...)` | `yd.vna.calcular_vna(...)` |
