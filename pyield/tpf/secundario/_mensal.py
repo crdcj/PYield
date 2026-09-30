@@ -36,22 +36,8 @@ def _data_mensal(data: DateLike) -> dt.date:
     return data_alvo
 
 
-def nome_arquivo_mensal(data: DateLike, extragrupo: bool = False) -> str:
-    """Retorna o nome do arquivo ZIP mensal do secundário no BCB/SELIC.
-
-    Args:
-        data: Data de referência. Apenas ano e mês definem o arquivo.
-        extragrupo: Se verdadeiro, retorna o nome do arquivo extragrupo.
-
-    Returns:
-        Nome do arquivo ZIP mensal publicado pelo BCB.
-
-    Examples:
-        >>> yd.tpf.secundario.nome_arquivo_mensal("07-06-2026")
-        'NegT202606.ZIP'
-        >>> yd.tpf.secundario.nome_arquivo_mensal("07-01-2025", extragrupo=True)
-        'NegE202501.ZIP'
-    """
+def _nome_arquivo_mensal(data: DateLike, extragrupo: bool = False) -> str:
+    """Retorna o nome do ZIP mensal no BCB (ex.: ``NegT202606.ZIP``)."""
     data_alvo = _data_mensal(data)
     return f"Neg{_tipo_arquivo(extragrupo)}{data_alvo:%Y%m}.ZIP"
 
@@ -71,8 +57,8 @@ def baixar_zip(data: DateLike, extragrupo: bool = False) -> bytes:
     por mês; por isso, apenas o ano e o mês de ``data`` são usados.
 
     A função valida a estrutura mínima do ZIP antes de retornar os bytes, para
-    evitar que pipelines de ingestão salvem bronze vazio, corrompido ou sem CSV
-    plausível.
+    evitar que pipelines de ingestão salvem arquivo vazio, corrompido ou sem
+    CSV plausível. Use :func:`ler` para processar os bytes ou o arquivo salvo.
 
     Args:
         data: Data de referência. Apenas ano e mês definem o arquivo.
@@ -89,7 +75,7 @@ def baixar_zip(data: DateLike, extragrupo: bool = False) -> bytes:
     Examples:
         >>> conteudo = yd.tpf.secundario.baixar_zip("07-01-2025")  # doctest: +SKIP
     """
-    arquivo = nome_arquivo_mensal(data, extragrupo)
+    arquivo = _nome_arquivo_mensal(data, extragrupo)
     conteudo_zip = _baixar_url_zip(f"{URL_BASE_MENSAL}/{arquivo}")
     _validar_zip(conteudo_zip, arquivo)
     return conteudo_zip
@@ -186,80 +172,42 @@ def _processar_df_mensal(df: pl.DataFrame) -> pl.DataFrame:
             quantidade_corretagem=quantidade_corretagem,
         )
         .sort(CHAVES_ORDENACAO)
+        .with_columns(
+            financeiro=(pl.col("quantidade") * pl.col("pu_medio")).round(2),
+        )
     )
 
 
-def zip_para_silver(conteudo_zip: bytes) -> pl.DataFrame:
-    """Converte o ZIP mensal bruto do secundário de TPFs em silver.
+def ler(fonte: bytes | CaminhoArquivo) -> pl.DataFrame:
+    """Lê o ZIP mensal bruto do secundário de TPFs.
 
-    Fonte: Banco Central do Brasil, sistema SELIC. Esta função representa a
-    etapa bronze -> silver: extrai o CSV interno, limpa os campos, converte
-    tipos e retorna o schema Polars canônico usado pela PYield. Ela não faz
-    enriquecimento para camada ouro.
+    Fonte: Banco Central do Brasil, sistema SELIC. Mesma saída de
+    :func:`mensal`, mas recebe o ZIP bruto em vez de baixá-lo. Útil para
+    processar arquivos salvos com :func:`baixar_zip`.
 
     Args:
-        conteudo_zip: Bytes do arquivo ZIP bruto mensal.
+        fonte: ZIP bruto em bytes ou caminho para o arquivo ZIP no disco.
 
     Returns:
-        DataFrame Polars com dados mensais do mercado secundário.
+        DataFrame Polars com as colunas documentadas em :func:`mensal`.
 
-    Output Columns:
-        * data_liquidacao (Date): data de liquidação da negociação.
-        * titulo (String): sigla do título público.
-        * codigo_selic (Int64): código único no sistema SELIC.
-        * isin (String): código ISIN.
-        * data_emissao (Date): data de emissão do título.
-        * data_vencimento (Date): data de vencimento do título.
-        * operacoes (Int64): número total de operações.
-        * quantidade (Int64): quantidade total negociada.
-        * pu_minimo (Float64): preço unitário mínimo.
-        * pu_medio (Float64): preço unitário médio.
-        * pu_maximo (Float64): preço unitário máximo.
-        * pu_lastro (Float64): preço unitário de lastro.
-        * valor_par (Float64): valor par do título.
-        * taxa_minima (Float64): taxa mínima.
-        * taxa_media (Float64): taxa média.
-        * taxa_maxima (Float64): taxa máxima.
-        * operacoes_corretagem (Int64): operações com corretagem.
-        * quantidade_corretagem (Int64): quantidade com corretagem.
-
-    Notes:
-        O schema silver é estável para concatenação entre meses. Em layouts
-        antigos da fonte que não trazem corretagem, ``operacoes_corretagem`` e
-        ``quantidade_corretagem`` são retornadas como nulas.
+    Raises:
+        ValueError: Se o conteúdo não for um ZIP válido.
 
     Examples:
         >>> conteudo = yd.tpf.secundario.baixar_zip("07-01-2025")  # doctest: +SKIP
-        >>> df = yd.tpf.secundario.zip_para_silver(conteudo)  # doctest: +SKIP
+        >>> df = yd.tpf.secundario.ler(conteudo)  # doctest: +SKIP
+        >>> df = yd.tpf.secundario.ler("NegT202501.ZIP")  # doctest: +SKIP
     """
-    conteudo_csv = _extrair_csv_zip(conteudo_zip)
-    return _processar_df_mensal(_parsear_csv_mensal(conteudo_csv))
-
-
-def ler_zip(caminho: CaminhoArquivo) -> pl.DataFrame:
-    """Lê um ZIP mensal local do secundário de TPFs e converte para silver.
-
-    Fonte: Banco Central do Brasil, sistema SELIC. Esta função é um atalho para
-    pipelines que salvam o bronze bruto e depois processam o arquivo local com o
-    mesmo schema de ``zip_para_silver``.
-
-    Args:
-        caminho: Caminho do arquivo ZIP bruto.
-
-    Returns:
-        DataFrame Polars com dados mensais do mercado secundário.
-
-    Examples:
-        >>> df = yd.tpf.secundario.ler_zip("NegT202501.ZIP")  # doctest: +SKIP
-    """
-    return zip_para_silver(Path(caminho).read_bytes())
+    conteudo_zip = fonte if isinstance(fonte, bytes) else Path(fonte).read_bytes()
+    return _processar_df_mensal(_parsear_csv_mensal(_extrair_csv_zip(conteudo_zip)))
 
 
 def mensal(data: DateLike, extragrupo: bool = False) -> pl.DataFrame:
     """Busca dados mensais do mercado secundário de TPFs.
 
-    Fonte: Banco Central do Brasil, sistema SELIC. Baixa o ZIP mensal de
-    negociações secundárias, valida o bronze bruto e retorna o DataFrame ouro.
+    Fonte: Banco Central do Brasil, sistema SELIC. Baixa e valida o ZIP mensal
+    de negociações secundárias e retorna os dados processados.
     Apenas o ano e o mês de ``data`` são usados para identificar o arquivo.
 
     Args:
@@ -288,11 +236,13 @@ def mensal(data: DateLike, extragrupo: bool = False) -> pl.DataFrame:
         * taxa_maxima (Float64): taxa máxima.
         * operacoes_corretagem (Int64): operações com corretagem.
         * quantidade_corretagem (Int64): quantidade com corretagem.
-        * financeiro (Float64): valor financeiro negociado.
+        * financeiro (Float64): valor financeiro negociado
+            (``quantidade * pu_medio``).
 
     Notes:
-        Esta é a camada ouro mensal: retorna o schema de ``zip_para_silver``
-        acrescido de ``financeiro = quantidade * pu_medio``.
+        O schema é estável para concatenação entre meses. Em layouts antigos
+        da fonte que não trazem corretagem, ``operacoes_corretagem`` e
+        ``quantidade_corretagem`` são retornadas como nulas.
 
     Examples:
         >>> df = yd.tpf.secundario.mensal("07-01-2025", extragrupo=True)
@@ -305,6 +255,4 @@ def mensal(data: DateLike, extragrupo: bool = False) -> pl.DataFrame:
     if (data_alvo.year, data_alvo.month) > (hoje.year, hoje.month):
         return pl.DataFrame()
 
-    return zip_para_silver(baixar_zip(data_alvo, extragrupo)).with_columns(
-        financeiro=(pl.col("quantidade") * pl.col("pu_medio")).round(2),
-    )
+    return ler(baixar_zip(data_alvo, extragrupo))

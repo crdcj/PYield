@@ -105,6 +105,34 @@ def test_leiloes_inicio_filtra_localmente(monkeypatch):
     assert resultado["data_1v"].unique().to_list() == [dt.date(2025, 10, 28)]
 
 
+def test_leiloes_pu_zerado_na_fonte(monkeypatch):
+    """PU médio 0 é recalculado antes do financeiro ofertado; PU mínimo 0 é nulo."""
+    registros = json.loads(CAMINHO_JSON.read_bytes())
+    registro = next(r for r in registros if r["quantidade_aceita"] > 0)
+    registro = {
+        **registro,
+        "pu_medio": 0,
+        "pu_minimo": 0,
+        "oferta": registro["quantidade_aceita"] * 2,
+    }
+    monkeypatch.setattr(
+        modulo_leiloes, "_buscar_dados_leiloes", lambda *_, **__: [registro]
+    )
+    monkeypatch.setattr(
+        modulo_leiloes, "_buscar_ptax", lambda *_, **__: DF_PTAX_REFERENCIA
+    )
+
+    linha = modulo_leiloes.leiloes(data="23-10-2025").row(0, named=True)
+    pu_calculado = registro["financeiro_aceito"] / registro["quantidade_aceita"]
+
+    assert linha["pu_minimo"] is None
+    assert linha["tipo_pu_medio"] == "calculado"
+    assert linha["pu_medio"] == pytest.approx(pu_calculado, abs=1e-6)
+    assert linha["financeiro_ofertado_1v"] == round(
+        registro["oferta"] * linha["pu_medio"], 2
+    )
+
+
 def test_leiloes_rejeita_modos_temporais_ambiguos():
     with pytest.raises(ValueError, match="data não pode ser combinado"):
         modulo_leiloes.leiloes(data="23-10-2025", inicio="01-10-2025")

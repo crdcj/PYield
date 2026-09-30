@@ -768,3 +768,24 @@ def taxa(
         return vna_float * cot / 100 - pu_float
 
     return _utils.encontrar_raiz(diferenca_preco)
+
+
+__all__ = [
+    "cotacao",
+    "dados",
+    "datas_pagamento",
+    "duration",
+    "duration_expr",
+    "dv01",
+    "dv01_expr",
+    "fluxos_caixa",
+    "implicitas",
+    "pu",
+    "taxa",
+    "taxas_zero",
+    "vencimentos",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__

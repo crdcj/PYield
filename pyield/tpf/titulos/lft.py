@@ -317,3 +317,18 @@ def pu(
         Decimal('15774.132706')
     """
     return _calcular_pu(vna, cotacao)
+
+
+__all__ = [
+    "cotacao",
+    "dados",
+    "pu",
+    "rentabilidade",
+    "rentabilidade_expr",
+    "taxa",
+    "vencimentos",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__

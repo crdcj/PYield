@@ -17,9 +17,9 @@ NOMES_FIXTURES_MENSAIS = [nome for _, _, nome in FIXTURES_MENSAIS]
 
 
 def test_nome_arquivo_mensal():
-    assert modulo_secundario.nome_arquivo_mensal("07-06-2026") == "NegT202606.ZIP"
+    assert modulo_mensal._nome_arquivo_mensal("07-06-2026") == "NegT202606.ZIP"
     assert (
-        modulo_secundario.nome_arquivo_mensal("07-01-2025", extragrupo=True)
+        modulo_mensal._nome_arquivo_mensal("07-01-2025", extragrupo=True)
         == "NegE202501.ZIP"
     )
 
@@ -40,14 +40,12 @@ def test_pipeline_secundario_mensal(monkeypatch, data, extragrupo, nome):
 
 
 @pytest.mark.parametrize("nome", NOMES_FIXTURES_MENSAIS)
-def test_zip_para_silver_secundario_mensal(nome):
-    """tpf.secundario.zip_para_silver() deve bater com o parquet de referência."""
+def test_ler_secundario_mensal(nome):
+    """tpf.secundario.ler() deve bater com o parquet, a partir de bytes ou Path."""
     caminho_zip = DIRETORIO_DADOS / f"{nome}.zip"
-    caminho_parquet = DIRETORIO_DADOS / f"{nome}.parquet"
-    resultado = modulo_secundario.zip_para_silver(caminho_zip.read_bytes())
-    esperado = pl.read_parquet(caminho_parquet).drop("financeiro")
-    assert "financeiro" not in resultado.columns
-    assert resultado.equals(esperado)
+    esperado = pl.read_parquet(DIRETORIO_DADOS / f"{nome}.parquet")
+    assert modulo_secundario.ler(caminho_zip.read_bytes()).equals(esperado)
+    assert modulo_secundario.ler(caminho_zip).equals(esperado)
 
 
 def test_baixar_zip_valida_conteudo(monkeypatch):

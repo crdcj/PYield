@@ -1098,3 +1098,28 @@ def taxa(
         )
 
     return _utils.encontrar_raiz(diferenca_preco)
+
+
+__all__ = [
+    "dados",
+    "datas_pagamento",
+    "duration",
+    "duration_expr",
+    "dv01",
+    "dv01_expr",
+    "fluxos_caixa",
+    "premio",
+    "premio_limpo",
+    "premio_limpo_expr",
+    "pu",
+    "rentabilidade",
+    "rentabilidade_expr",
+    "taxa",
+    "taxas_zero",
+    "taxas_zero_forwards",
+    "vencimentos",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__

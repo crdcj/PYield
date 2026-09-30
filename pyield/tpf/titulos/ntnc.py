@@ -680,3 +680,23 @@ def dv01_expr(
         ),
         return_dtype=pl.Float64,
     )
+
+
+__all__ = [
+    "cotacao",
+    "cotacao_curva_zero",
+    "dados",
+    "datas_pagamento",
+    "duration",
+    "duration_expr",
+    "dv01",
+    "dv01_expr",
+    "fluxos_caixa",
+    "pu",
+    "taxa",
+    "taxa_curva_zero",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__

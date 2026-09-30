@@ -420,3 +420,21 @@ def taxas_forward(data: DateLike) -> pl.DataFrame:
         .with_columns(taxa_forward=fwd.forwards_expr("dias_uteis", "taxa_indicativa"))
         .sort("data_vencimento")
     )
+
+
+__all__ = [
+    "dados",
+    "duration_expr",
+    "dv01",
+    "dv01_expr",
+    "pu",
+    "rentabilidade",
+    "rentabilidade_expr",
+    "taxa",
+    "taxas_forward",
+    "vencimentos",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__

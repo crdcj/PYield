@@ -565,3 +565,20 @@ def dv01(
         data_liquidacao, data_vencimento, taxa + 0.0001, nome_comercial
     )
     return float(pu) * (1 - cot2 / cot1)
+
+
+__all__ = [
+    "NomeComercial",
+    "cotacao",
+    "cotacao_curva_zero",
+    "datas_pagamento",
+    "duration",
+    "dv01",
+    "fluxos_caixa",
+    "pu",
+    "taxa_curva_zero",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__

@@ -2,6 +2,7 @@
 
 from pyield.anbima.imaq import estoque
 from pyield.tpf import secundario
+from pyield.tpf._leiloes_bcb import leiloes_bcb
 from pyield.tpf._taxas import TipoTPF, taxas, taxas_historicas, vencimentos
 from pyield.tpf.benchmark import benchmarks
 from pyield.tpf.dealers import dealers
@@ -15,6 +16,7 @@ __all__ = [
     "dealers",
     "estoque",
     "leiloes",
+    "leiloes_bcb",
     "premios_pre",
     "secundario",
     "taxas",

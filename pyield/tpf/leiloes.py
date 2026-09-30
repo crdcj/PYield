@@ -184,6 +184,19 @@ def _transformar_dados_brutos(dados_brutos: list[dict]) -> pl.DataFrame:
             financeiro_aceito_total=(
                 pl.sum_horizontal("financeiro_aceito_1v", "financeiro_aceito_2v")
             ),
+            tipo_pu_medio=pl.when(pl.col("pu_medio") == 0)
+            .then(pl.lit("calculado"))
+            .otherwise(pl.lit("original")),
+            pu_medio=pl.when(pl.col("pu_medio") == 0)
+            .then((pl.col("financeiro_aceito_1v") / pl.col("quantidade_aceita_1v")))
+            .otherwise("pu_medio")
+            .round(6),
+            # A API publica 0 quando não informa o PU mínimo.
+            pu_minimo=pl.when(pl.col("pu_minimo") == 0)
+            .then(None)
+            .otherwise("pu_minimo"),
+        )
+        .with_columns(
             financeiro_ofertado_1v=pl.when(
                 pl.col("quantidade_ofertada_1v") == pl.col("quantidade_aceita_1v")
             )
@@ -200,24 +213,17 @@ def _transformar_dados_brutos(dados_brutos: list[dict]) -> pl.DataFrame:
             colocacao_2v=(
                 pl.col("quantidade_aceita_2v") / pl.col("quantidade_ofertada_2v")
             ),
-            tipo_pu_medio=pl.when(pl.col("pu_medio") == 0)
-            .then(pl.lit("calculado"))
-            .otherwise(pl.lit("original")),
-        )
-        .with_columns(
-            financeiro_ofertado_total=(
-                pl.sum_horizontal("financeiro_ofertado_1v", "financeiro_ofertado_2v")
-            ),
             colocacao_total=(
                 pl.col("quantidade_aceita_total") / pl.col("quantidade_ofertada_total")
             ),
             dias_corridos=(
                 pl.col("data_vencimento") - pl.col("data_liquidacao_1v")
             ).dt.total_days(),
-            pu_medio=pl.when(pl.col("pu_medio") == 0)
-            .then((pl.col("financeiro_aceito_1v") / pl.col("quantidade_aceita_1v")))
-            .otherwise("pu_medio")
-            .round(6),
+        )
+        .with_columns(
+            financeiro_ofertado_total=(
+                pl.sum_horizontal("financeiro_ofertado_1v", "financeiro_ofertado_2v")
+            ),
         )
         .with_columns(
             cs.starts_with("financeiro_ofertado").round(2),
@@ -280,17 +286,9 @@ def _adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
     """Calcula o DV01 com base na duration da 1a volta e nas quantidades aceitas."""
     dv01_unitario = (
         pl.when(pl.col("titulo") == "LTN")
-        .then(
-            ltn.dv01_expr(
-                "data_liquidacao_1v", "data_vencimento", "taxa_media"
-            )
-        )
+        .then(ltn.dv01_expr("data_liquidacao_1v", "data_vencimento", "taxa_media"))
         .when(pl.col("titulo") == "NTN-F")
-        .then(
-            ntnf.dv01_expr(
-                "data_liquidacao_1v", "data_vencimento", "taxa_media"
-            )
-        )
+        .then(ntnf.dv01_expr("data_liquidacao_1v", "data_vencimento", "taxa_media"))
         .when(pl.col("titulo") == "NTN-B")
         .then(
             ntnb.dv01_expr(
@@ -383,8 +381,8 @@ def leiloes(
         * titulo (String): código do título público leiloado.
         * benchmark (String): descrição de referência do título.
         * data_vencimento (Date): data de vencimento do título.
-        * dias_uteis (Int32): dias úteis entre liquidação e vencimento.
-        * dias_corridos (Int32): dias corridos entre liquidação e vencimento.
+        * dias_uteis (Int64): dias úteis entre liquidação e vencimento.
+        * dias_corridos (Int64): dias corridos entre liquidação e vencimento.
         * duration (Float64): duration de Macaulay em anos.
         * prazo_medio (Float64): maturidade média em anos.
         * quantidade_ofertada_1v (Int64): quantidade ofertada na 1ª volta.
@@ -420,14 +418,11 @@ def leiloes(
 
     Notes:
         ``data`` não pode ser combinado com ``inicio`` ou ``fim``. ``fim`` só
-        pode ser usado junto com ``inicio``.
+        pode ser usado junto com ``inicio``. Quando o Tesouro estiver
+        indisponível ou incompleto (por exemplo, sem a 2ª volta), use
+        ``yd.tpf.leiloes_bcb``, que usa os mesmos nomes de colunas.
     """
-    if data is not None and (inicio is not None or fim is not None):
-        msg = "data não pode ser combinado com inicio ou fim."
-        raise ValueError(msg)
-    if fim is not None and inicio is None:
-        msg = "fim só pode ser usado junto com inicio."
-        raise ValueError(msg)
+    _validar_periodo(data, inicio, fim)
 
     if data is not None:
         if any_is_empty(data):
@@ -475,12 +470,29 @@ def _processar_dados_leiloes(
         df = df.filter(pl.col("data_1v") <= fim)
     if df.is_empty():
         return pl.DataFrame()
+    return _selecionar_e_ordenar_colunas(_enriquecer(df))
+
+
+def _validar_periodo(
+    data: DateLike | DatesLike | None,
+    inicio: DateLike | None,
+    fim: DateLike | None,
+) -> None:
+    if data is not None and (inicio is not None or fim is not None):
+        msg = "data não pode ser combinado com inicio ou fim."
+        raise ValueError(msg)
+    if fim is not None and inicio is None:
+        msg = "fim só pode ser usado junto com inicio."
+        raise ValueError(msg)
+
+
+def _enriquecer(df: pl.DataFrame) -> pl.DataFrame:
+    """Adiciona duration, DV01 e prazo médio, comuns às fontes TN e BCB."""
     df = _adicionar_duration(df)
     df = _adicionar_dv01(df)
     df = _adicionar_dv01_usd(df)
     df = _adicionar_prazo_medio(df)
-    df = df.with_columns(cs.float().fill_nan(None))
-    return _selecionar_e_ordenar_colunas(df)
+    return df.with_columns(cs.float().fill_nan(None))
 
 
 def _processar_data_unica(data_leilao: DateLike) -> pl.DataFrame:

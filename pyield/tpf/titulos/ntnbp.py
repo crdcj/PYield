@@ -217,3 +217,15 @@ def dv01(
     fator_preco = (1 + taxa_tir) ** anos_uteis
     fator_preco_1bp = (1 + taxa_tir + 0.0001) ** anos_uteis
     return float(pu) * (1 - fator_preco / fator_preco_1bp)
+
+
+__all__ = [
+    "cotacao",
+    "dv01",
+    "pu",
+    "taxa",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__
