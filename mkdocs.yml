@@ -40,6 +40,7 @@ nav:
   - Dados Auxiliares:
       - B3: b3.md
       - IPCA: ipca.md
+      - IGP-M: igpm.md
       - Copom: copom.md
       - Compromissadas: compromissada.md
       - Selic: selic.md

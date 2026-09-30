@@ -65,7 +65,8 @@ uv add pyield
 | `yd.compromissadas(...)` | função | Leilões de operações compromissadas do BCB | `inicio`, `fim` |
 | `yd.selic` | módulo | Selic e política monetária | `over`, `over_serie`, `meta`, `meta_serie` |
 | `yd.cpm` | módulo | Opções digitais do COPOM e análises derivadas | `contratos`, `probabilidades` |
-| `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indices`, `indices_ultimos`, `taxa`, `taxas`, `taxas_ultimas`, `taxa_projetada` |
+| `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indice_serie`, `taxa`, `taxa_serie`, `taxa_projetada` |
+| `yd.igpm` | módulo | Taxas mensais do IGP-M via SGS/BCB | `taxa`, `taxa_serie` |
 | `yd.ptax(data)` | função | PTAX para uma data | |
 | `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX | |
 | `yd.di_over(data)` | função | Taxa DI Over | |
@@ -76,6 +77,23 @@ O [mapa completo da API](https://crdcj.github.io/PYield/api-map/) inclui a
 documentação detalhada e as assinaturas públicas.
 
 ## Compatibilidade da API
+
+### Séries do IPCA
+
+As consultas históricas do IPCA seguem o padrão das séries de Selic e PTAX:
+`taxa(data)` e `indice(data)` retornam um valor; `taxa_serie` e `indice_serie`
+retornam séries por intervalo ou pelos últimos meses.
+
+Para migrar, substitua `ipca.taxas(inicio, fim)` por
+`ipca.taxa_serie(inicio, fim)` e `ipca.indices(inicio, fim)` por
+`ipca.indice_serie(inicio, fim)`. Substitua `ipca.taxas_ultimas(n)` por
+`ipca.taxa_serie(ultimos=n)` e `ipca.indices_ultimos(n)` por
+`ipca.indice_serie(ultimos=n)`. Os nomes antigos foram removidos; colunas,
+unidades e valores retornados permanecem iguais.
+
+Nas séries, `fim=None` usa a data atual no Brasil. Informe `inicio` ou
+`ultimos`; quando informado, `ultimos` tem prioridade sobre as datas.
+`taxa_projetada` permanece inalterada.
 
 ### Taxas e DV01 analíticos — 0.59.0
 

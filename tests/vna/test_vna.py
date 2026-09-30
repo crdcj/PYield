@@ -253,7 +253,7 @@ def test_vna_ntnb_calcula_entre_valores_publicados(
     )
     monkeypatch.setattr(
         vna_ntnb._ipca,
-        "indices",
+        "indice_serie",
         lambda inicio, fim: pl.DataFrame(
             {
                 "periodo": [202511, 202512],
@@ -301,7 +301,7 @@ def test_vna_ntnb_usa_numeros_indice_com_precisao_normativa(
             }
         )
 
-    monkeypatch.setattr(vna_ntnb._ipca, "indices", indices)
+    monkeypatch.setattr(vna_ntnb._ipca, "indice_serie", indices)
 
     assert vna.valor("NTN-B", data) == Decimal(f"{esperado:.6f}")
 

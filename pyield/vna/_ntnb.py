@@ -143,7 +143,7 @@ def _obter_fator_ipca(inicio: dt.date, fim: dt.date) -> float:
     """Obtém o fator entre os números-índice que atualizam a vigência."""
     mes_inicial = inicio.replace(day=1) - dt.timedelta(days=1)
     mes_final = fim.replace(day=1) - dt.timedelta(days=1)
-    df = _ipca.indices(mes_inicial, mes_final)
+    df = _ipca.indice_serie(mes_inicial, mes_final)
     periodo_inicial = int(mes_inicial.strftime("%Y%m"))
     periodo_final = int(mes_final.strftime("%Y%m"))
     indice_inicial = df.filter(pl.col("periodo") == periodo_inicial)

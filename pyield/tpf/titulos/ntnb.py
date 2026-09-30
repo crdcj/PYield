@@ -35,6 +35,26 @@ BASE_COTACAO = 100
 VALOR_CUPOM = 2.956301
 VALOR_FINAL = 102.956301
 
+_SCHEMA_DADOS = {
+    "data_referencia": pl.Date,
+    "titulo": pl.String,
+    "codigo_selic": pl.Int64,
+    "data_base": pl.Date,
+    "data_vencimento": pl.Date,
+    "dias_uteis": pl.Int64,
+    "duration": pl.Float64,
+    "prazo_medio": pl.Float64,
+    "dv01": pl.Float64,
+    "pu": pl.Float64,
+    "taxa_compra": pl.Float64,
+    "taxa_venda": pl.Float64,
+    "taxa_indicativa": pl.Float64,
+    "taxa_di": pl.Float64,
+    "taxa_zero": pl.Float64,
+    "taxa_forward": pl.Float64,
+    "inflacao_implicita": pl.Float64,
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -46,7 +66,8 @@ def dados(data: DateLike) -> pl.DataFrame:
         data (DateLike): Data da consulta.
 
     Returns:
-        pl.DataFrame: DataFrame Polars com os dados de NTN-B.
+        pl.DataFrame: DataFrame Polars com os dados de NTN-B. Na ausência de
+            dados, retorna vazio com as mesmas colunas e tipos.
 
     Output Columns:
         - data_referencia (Date): Data de referência dos dados.
@@ -77,7 +98,7 @@ def dados(data: DateLike) -> pl.DataFrame:
 
     df = _utils.obter_tpf(data, "NTN-B")
     if df.is_empty():
-        return df
+        return pl.DataFrame(schema=_SCHEMA_DADOS)
 
     # Adiciona duration, prazo_medio e dv01
     df = df.with_columns(
@@ -108,25 +129,7 @@ def dados(data: DateLike) -> pl.DataFrame:
     # Calcula taxas forward a partir das taxas zero
     df = df.with_columns(taxa_forward=fwd.forwards_expr("dias_uteis", "taxa_zero"))
 
-    return df.select(
-        "data_referencia",
-        "titulo",
-        "codigo_selic",
-        "data_base",
-        "data_vencimento",
-        "dias_uteis",
-        "duration",
-        "prazo_medio",
-        "dv01",
-        "pu",
-        "taxa_compra",
-        "taxa_venda",
-        "taxa_indicativa",
-        "taxa_di",
-        "taxa_zero",
-        "taxa_forward",
-        "inflacao_implicita",
-    )
+    return df.select(*_SCHEMA_DADOS)
 
 
 def vencimentos(data: DateLike) -> pl.Series:

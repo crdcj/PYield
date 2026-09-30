@@ -26,8 +26,7 @@ def rmd(aba: str) -> pl.DataFrame:
         aba: Número da aba a processar. Abas implementadas: ``"1.3"`` e ``"2.1"``.
 
     Returns:
-        DataFrame Polars no schema específico da aba solicitada. Em caso de erro,
-        retorna DataFrame vazio e registra o erro em log.
+        DataFrame Polars no schema específico da aba solicitada.
 
     Output Columns:
         Aba ``"1.3"``:
@@ -60,6 +59,9 @@ def rmd(aba: str) -> pl.DataFrame:
         - A aba ``"1.3"`` traz emissões e resgates da DPMFi.
         - A aba ``"2.1"`` traz a série histórica de estoque da DPF.
 
+        Erros de download e processamento são propagados ao chamador; não
+        são convertidos em DataFrame vazio.
+
     Examples:
         >>> df = yd.rmd(aba="1.3")  # doctest: +SKIP
         >>> df = yd.rmd(aba="2.1")  # doctest: +SKIP
@@ -70,12 +72,8 @@ def rmd(aba: str) -> pl.DataFrame:
             f"Aba '{aba}' não disponível. Abas implementadas: {disponiveis}."
         )
 
-    try:
-        conteudo_excel = _carregar_planilha_rmd()
-        df = _IMPLEMENTACOES[aba](conteudo_excel)
-    except Exception as e:
-        registro.exception(f"Erro ao coletar dados do RMD (aba {aba!r}): {e}")
-        return pl.DataFrame()
+    conteudo_excel = _carregar_planilha_rmd()
+    df = _IMPLEMENTACOES[aba](conteudo_excel)
 
     registro.info(f"Dados do RMD (aba {aba!r}) processados. Shape: {df.shape}.")
     return df

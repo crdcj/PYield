@@ -174,7 +174,7 @@ Indicadores do BCB, da PTAX e do IPCA ficam disponíveis em namespaces próprios
 yd.selic.over("31-05-2024")
 yd.selic.meta("31-05-2024")
 yd.ptax("31-05-2024")
-yd.ipca.taxas("01-01-2024", "01-03-2024")
+yd.ipca.taxa_serie("01-01-2024", "01-03-2024")
 ```
 
 ## Datas e ausência de dados

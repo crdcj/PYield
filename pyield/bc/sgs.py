@@ -1,6 +1,7 @@
 """Séries do Sistema Gerenciador de Séries (SGS) do Banco Central.
 
 Séries disponíveis:
+    - IGP-M mensal (SGS 189)
     - PTAX Venda (SGS 1)
     - SELIC Diária (SGS 11)
     - SELIC Meta (SGS 432)
@@ -56,6 +57,7 @@ class SerieSGS(Enum):
 
     PTAX_VENDA = 1
     SELIC_DIARIA = 11
+    IGPM = 189
     SELIC_META = 432
     SELIC_OVER = 1178
 
@@ -182,6 +184,74 @@ def _extrair_escalar(df: pl.DataFrame, coluna: str) -> float:
     if df.is_empty():
         return float("nan")
     return df[coluna].item(0)
+
+
+def igpm_taxa_serie(
+    inicio: DateLike | None = None,
+    fim: DateLike | None = None,
+    *,
+    ultimos: int | None = None,
+) -> pl.DataFrame:
+    """Obtém as taxas mensais do IGP-M via SGS do Banco Central (série 189).
+
+    O índice é produzido pela FGV. A série representa a variação mensal,
+    não o número-índice nem a variação acumulada em 12 meses.
+
+    Args:
+        inicio: Qualquer data no primeiro mês do intervalo.
+        fim: Qualquer data no último mês do intervalo. Se ``None``, usa a
+            data atual no Brasil.
+        ultimos: Número de meses mais recentes a recuperar. Se informado,
+            tem prioridade sobre ``inicio`` e ``fim``.
+
+    Returns:
+        DataFrame com as taxas mensais em decimal, ou vazio se não houver dados.
+
+    Output Columns:
+        * periodo (Int64): competência mensal no formato YYYYMM.
+        * taxa (Float64): variação mensal em decimal (0.005 = 0,50%).
+
+    Raises:
+        ValueError: Se não informar ``inicio`` nem ``ultimos``, ou se
+            ``ultimos`` for menor ou igual a 0.
+
+    Examples:
+        >>> df = yd.igpm.taxa_serie("01-01-2025", "31-03-2025")
+        >>> df = yd.igpm.taxa_serie(ultimos=12)
+    """
+    if ultimos is not None:
+        if ultimos <= 0:
+            raise ValueError("O número de meses deve ser maior que 0.")
+    else:
+        if inicio is None:
+            raise ValueError("Informe 'inicio' ou 'ultimos'.")
+        inicio = converter_datas(inicio).replace(day=1)
+        fim = converter_datas(fim).replace(day=1) if fim is not None else None
+    return (
+        _buscar_serie(SerieSGS.IGPM, inicio, fim, ultimos)
+        .select(
+            periodo=pl.col("data").dt.strftime("%Y%m").cast(pl.Int64),
+            taxa=pct_para_decimal(pl.col("valor")),
+        )
+        .sort("periodo")
+    )
+
+
+def igpm_taxa(data: DateLike) -> float:
+    """Taxa mensal do IGP-M via SGS do Banco Central (série 189, fonte FGV).
+
+    Args:
+        data: Qualquer data dentro do mês desejado.
+
+    Returns:
+        Variação mensal em decimal ou ``nan`` se não disponível.
+
+    Examples:
+        >>> taxa = yd.igpm.taxa("15-01-2025")
+    """
+    if any_is_empty(data):
+        return float("nan")
+    return _extrair_escalar(igpm_taxa_serie(data, data), "taxa")
 
 
 # ── SELIC Over ───────────────────────────────────────────────────────

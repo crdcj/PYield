@@ -55,6 +55,7 @@ uv add pyield
 | `yd.copom`, `yd.selic`, `yd.cpm` | modules | COPOM calendar, Selic, and digital options |
 | `yd.compromissadas` | function | BCB repo-operation auctions |
 | `yd.ipca` | module | Historical and projected inflation data |
+| `yd.igpm` | module | Monthly IGP-M rates via SGS/BCB |
 | `yd.ptax`, `yd.ptax_serie`, `yd.di_over` | functions | Exchange-rate and DI indicators |
 | `yd.hoje`, `yd.agora` | functions | Current date and time in Brazil |
 

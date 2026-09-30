@@ -40,6 +40,23 @@ VALOR_FINAL_2031 = 105.830052
 VALOR_CUPOM = 2.956301
 VALOR_FINAL = 102.956301
 
+_SCHEMA_DADOS = {
+    "data_referencia": pl.Date,
+    "titulo": pl.String,
+    "codigo_selic": pl.Int64,
+    "data_base": pl.Date,
+    "data_vencimento": pl.Date,
+    "dias_uteis": pl.Int64,
+    "duration": pl.Float64,
+    "prazo_medio": pl.Float64,
+    "dv01": pl.Float64,
+    "pu": pl.Float64,
+    "taxa_compra": pl.Float64,
+    "taxa_venda": pl.Float64,
+    "taxa_indicativa": pl.Float64,
+    "taxa_di": pl.Float64,
+}
+
 
 def _obter_valor_cupom(vencimento: dt.date) -> float:
     if vencimento.year == 2031:  # noqa
@@ -61,7 +78,8 @@ def dados(data: DateLike) -> pl.DataFrame:
         data: Data da consulta.
 
     Returns:
-        pl.DataFrame: DataFrame Polars com os dados de NTN-C.
+        pl.DataFrame: DataFrame Polars com os dados de NTN-C. Na ausência de
+            dados, retorna vazio com as mesmas colunas e tipos.
 
     Output Columns:
         - data_referencia (Date): Data de referência dos dados.
@@ -86,7 +104,7 @@ def dados(data: DateLike) -> pl.DataFrame:
     """
     df = _utils.obter_tpf(data, "NTN-C")
     if df.is_empty():
-        return df
+        return pl.DataFrame(schema=_SCHEMA_DADOS)
 
     # Adiciona duration, prazo_medio, dv01 e taxa_di
     df = df.with_columns(
@@ -98,22 +116,7 @@ def dados(data: DateLike) -> pl.DataFrame:
     )
     df = _utils.adicionar_taxa_di(df, data)
 
-    return df.select(
-        "data_referencia",
-        "titulo",
-        "codigo_selic",
-        "data_base",
-        "data_vencimento",
-        "dias_uteis",
-        "duration",
-        "prazo_medio",
-        "dv01",
-        "pu",
-        "taxa_compra",
-        "taxa_venda",
-        "taxa_indicativa",
-        "taxa_di",
-    )
+    return df.select(*_SCHEMA_DADOS)
 
 
 def datas_pagamento(

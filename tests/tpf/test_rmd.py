@@ -11,7 +11,9 @@ from functools import lru_cache
 from pathlib import Path
 
 import polars as pl
+import pytest
 import requests
+from fastexcel import CalamineError
 
 import pyield as yd
 
@@ -98,3 +100,29 @@ def test_aba_2_1_estrutura_e_valores(monkeypatch):
     assert lft_tn == LFT_TN_MAR_26
     assert global_usd == GLOBAL_USD_MAR_26
     assert round(bc_total, 2) == BC_TOTAL_MAR_26
+
+
+@pytest.mark.parametrize("aba", ["1.3", "2.1"])
+@pytest.mark.parametrize("tipo_erro", [requests.ConnectionError, requests.Timeout])
+def test_rmd_propaga_erro_download(monkeypatch, aba, tipo_erro):
+    erro = tipo_erro("Falha no download do RMD.")
+
+    def falhar_download():
+        raise erro
+
+    monkeypatch.setattr(modulo_rmd, "_carregar_planilha_rmd", falhar_download)
+
+    with pytest.raises(tipo_erro, match="Falha no download do RMD") as capturado:
+        yd.rmd(aba=aba)
+
+    assert capturado.value is erro
+
+
+@pytest.mark.parametrize("aba", ["1.3", "2.1"])
+def test_rmd_propaga_erro_processamento(monkeypatch, aba):
+    monkeypatch.setattr(
+        modulo_rmd, "_carregar_planilha_rmd", lambda: b"planilha invalida"
+    )
+
+    with pytest.raises(CalamineError, match="Cannot detect file format"):
+        yd.rmd(aba=aba)

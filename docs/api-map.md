@@ -11,7 +11,7 @@ Visão geral das principais funções públicas do PYield.
     ├── deslocar_expr(data, deslocamento, ajuste="seguinte", calendario="auto")
     ├── eh_dia_util(datas, calendario="auto")
     ├── eh_dia_util_expr(data, calendario="auto")
-    ├── gerar(inicio, fim, limites_inclusivos="ambos", calendario="auto")
+    ├── gerar(inicio=None, fim=None, limites_inclusivos="ambos", calendario="auto")
     └── ultimo_dia_util()
     ```
 
@@ -24,13 +24,13 @@ Visão geral das principais funções públicas do PYield.
     ├── datas_disponiveis(contrato)
     ├── enriquecer(df, contrato)
     ├── vencimento(codigo, contrato)
-    └── vencimento_expr(codigo, contrato)
+    └── vencimento_expr(coluna_codigo, contrato)
     ```
 
 ??? "`yd.di1` (curva DI1)"
     ```text
     yd.di1
-    ├── dados(data)
+    ├── dados(datas, inicio_mes=False, filtrar_pre=False)
     ├── interpolar_taxa(...)
     ├── interpolar_taxas(...)
     └── datas_disponiveis()
@@ -39,8 +39,8 @@ Visão geral das principais funções públicas do PYield.
 ??? "`yd.tpf` (títulos públicos federais)"
     ```text
     yd.tpf
-    ├── taxas(data, titulo)
-    ├── taxas_historicas(inicio, fim, titulo)
+    ├── taxas(data, titulo=None)
+    ├── taxas_historicas(inicio=None, fim=None, titulo=None)
     ├── vencimentos(data, titulo)
     ├── estoque(data)
     ├── dealers(data=None)
@@ -74,7 +74,7 @@ Visão geral das principais funções públicas do PYield.
     ├── over(data)
     ├── over_serie(...)
     ├── meta(data)
-    ├── meta_serie(...)
+    └── meta_serie(...)
     ```
 
 ??? "`yd.cpm` (opções digitais do COPOM e probabilidades implícitas)"
@@ -88,12 +88,17 @@ Visão geral das principais funções públicas do PYield.
     ```text
     yd.ipca
     ├── indice(data)
-    ├── indices(...)
-    ├── indices_ultimos(...)
-    ├── taxa(...)
-    ├── taxas(...)
-    ├── taxas_ultimas(...)
+    ├── indice_serie(inicio=None, fim=None, *, ultimos=None)
+    ├── taxa(data)
+    ├── taxa_serie(inicio=None, fim=None, *, ultimos=None)
     └── taxa_projetada(...)
+    ```
+
+??? "`yd.igpm` (inflação IGP-M)"
+    ```text
+    yd.igpm
+    ├── taxa(data)
+    └── taxa_serie(inicio=None, fim=None, *, ultimos=None)
     ```
 
 ??? "`yd.lft` (Tesouro Selic)"
@@ -138,8 +143,7 @@ Visão geral das principais funções públicas do PYield.
     ├── dv01(...)
     ├── dv01_expr(...)
     ├── taxas_zero(data_liquidacao, vencimentos, taxas)
-    ├── implicitas(data_liquidacao, vencimentos_tir, taxas_tir, ...)
-    └── curva(data_liquidacao, vencimentos_tir, taxas_tir, ...)
+    └── implicitas(data_liquidacao, vencimentos_tir, taxas_tir, ...)
     ```
 
 ??? "`yd.ntnf` (Tesouro Prefixado com cupom)"
@@ -228,9 +232,19 @@ Visão geral das principais funções públicas do PYield.
     yd.forwards(...)
     ```
 
+??? "`yd.forwards_expr` (taxas a termo em expressão Polars)"
+    ```text
+    yd.forwards_expr(...)
+    ```
+
 ??? "`yd.Interpolador` (interpolação de curvas)"
     ```text
     yd.Interpolador
+    ```
+
+??? "`yd.interpolar` (interpolação direta de curvas)"
+    ```text
+    yd.interpolar(...)
     ```
 
 ??? "`yd.hoje` (data atual no Brasil)"
@@ -256,5 +270,14 @@ Visão geral das principais funções públicas do PYield.
     ├── ultimo(titulo, vencimento=None)
     ├── vigencia(titulo, data)
     ├── projetado(titulo, data, vna_base, inflacao=None, selic=None)
-    └── calcular_vna(df, data, fator_variacao=...)
+    ├── calcular_vna(df, data, fator_variacao=...)
+    └── TipoTitulo
+    ```
+
+??? "`yd.b3` (APIs técnicas da B3)"
+    ```text
+    yd.b3
+    ├── boletim.baixar_zip(...)
+    ├── boletim.buscar(...)
+    └── boletim.ler(...)
     ```

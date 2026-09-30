@@ -19,6 +19,22 @@ from . import _utils
 
 BASE_COTACAO = 100
 
+_SCHEMA_DADOS = {
+    "data_referencia": pl.Date,
+    "titulo": pl.String,
+    "codigo_selic": pl.Int64,
+    "data_base": pl.Date,
+    "data_vencimento": pl.Date,
+    "dias_uteis": pl.Int64,
+    "prazo_medio": pl.Float64,
+    "pu": pl.Float64,
+    "taxa_compra": pl.Float64,
+    "taxa_venda": pl.Float64,
+    "taxa_indicativa": pl.Float64,
+    "taxa_di": pl.Float64,
+    "rentabilidade": pl.Float64,
+}
+
 
 def dados(data: DateLike) -> pl.DataFrame:
     """
@@ -28,7 +44,8 @@ def dados(data: DateLike) -> pl.DataFrame:
         data: Data da consulta.
 
     Returns:
-        pl.DataFrame: DataFrame Polars com os dados de LFT.
+        pl.DataFrame: DataFrame Polars com os dados de LFT. Na ausência de dados,
+            retorna vazio com as mesmas colunas e tipos.
 
     Output Columns:
         - data_referencia (Date): Data de referência dos dados.
@@ -52,7 +69,7 @@ def dados(data: DateLike) -> pl.DataFrame:
     """
     df = _utils.obter_tpf(data, "LFT")
     if df.is_empty():
-        return df
+        return pl.DataFrame(schema=_SCHEMA_DADOS)
 
     df = df.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),
@@ -65,21 +82,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         rentabilidade=rentabilidade_expr("taxa_indicativa", "taxa_di"),
     )
 
-    return df.select(
-        "data_referencia",
-        "titulo",
-        "codigo_selic",
-        "data_base",
-        "data_vencimento",
-        "dias_uteis",
-        "prazo_medio",
-        "pu",
-        "taxa_compra",
-        "taxa_venda",
-        "taxa_indicativa",
-        "taxa_di",
-        "rentabilidade",
-    )
+    return df.select(*_SCHEMA_DADOS)
 
 
 def vencimentos(data: DateLike) -> pl.Series:

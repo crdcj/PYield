@@ -10,18 +10,6 @@ from pyield.anbima import taxas as _anbima_taxas
 
 TipoTPF = Literal["LFT", "NTN-B", "NTN-C", "LTN", "NTN-F", "PRE"]
 
-_COLUNAS_SAIDA = (
-    "titulo",
-    "data_referencia",
-    "codigo_selic",
-    "data_base",
-    "data_vencimento",
-    "pu",
-    "taxa_compra",
-    "taxa_venda",
-    "taxa_indicativa",
-)
-
 _SCHEMA_SAIDA = {
     "titulo": pl.String,
     "data_referencia": pl.Date,
@@ -33,6 +21,7 @@ _SCHEMA_SAIDA = {
     "taxa_venda": pl.Float64,
     "taxa_indicativa": pl.Float64,
 }
+_COLUNAS_SAIDA = tuple(_SCHEMA_SAIDA)
 
 
 def _mapear_tipo_titulo(tipo_titulo: str) -> list[str]:

@@ -3,7 +3,7 @@
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
-from pyield import b3, du, ipca
+from pyield import b3, du, igpm, ipca
 from pyield.b3.di_over import di_over
 from pyield import futuro
 from pyield.futuro import di1
@@ -39,6 +39,7 @@ __all__ = [
     "forwards_expr",
     "futuro",
     "hoje",
+    "igpm",
     "Interpolador",
     "interpolar",
     "ipca",

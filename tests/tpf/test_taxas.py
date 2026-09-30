@@ -150,3 +150,53 @@ def test_feriado_retorna_dataframe_vazio(funcao):
 
 def test_taxas_vazio_mantem_colunas():
     assert yd.tpf.taxas("30-05-2024").columns == COLUNAS_PUBLICAS
+
+
+@pytest.mark.parametrize(
+    ("modulo", "colunas_calculadas", "colunas_finais"),
+    [
+        (yd.lft, ["prazo_medio"], ["taxa_di", "rentabilidade"]),
+        (
+            yd.ltn,
+            ["duration", "prazo_medio", "dv01"],
+            ["taxa_di", "premio", "rentabilidade"],
+        ),
+        (
+            yd.ntnb,
+            ["duration", "prazo_medio", "dv01"],
+            ["taxa_di", "taxa_zero", "taxa_forward", "inflacao_implicita"],
+        ),
+        (yd.ntnc, ["duration", "prazo_medio", "dv01"], ["taxa_di"]),
+        (
+            yd.ntnf,
+            ["prazo_medio", "duration", "dv01"],
+            ["taxa_di", "taxa_zero", "premio", "premio_limpo", "rentabilidade"],
+        ),
+    ],
+)
+def test_dados_vazio_mantem_schema(
+    monkeypatch, modulo, colunas_calculadas, colunas_finais
+):
+    def falhar_fetch():
+        raise AssertionError("Uma consulta em feriado não deve buscar dados.")
+
+    monkeypatch.setattr(modulo_tpf_taxas, "_obter_historico", falhar_fetch)
+
+    resultado = modulo.dados("30-05-2024")
+    esperado = {
+        "data_referencia": pl.Date,
+        "titulo": pl.String,
+        "codigo_selic": pl.Int64,
+        "data_base": pl.Date,
+        "data_vencimento": pl.Date,
+        "dias_uteis": pl.Int64,
+        **dict.fromkeys(colunas_calculadas, pl.Float64),
+        "pu": pl.Float64,
+        "taxa_compra": pl.Float64,
+        "taxa_venda": pl.Float64,
+        "taxa_indicativa": pl.Float64,
+        **dict.fromkeys(colunas_finais, pl.Float64),
+    }
+
+    assert resultado.is_empty()
+    assert list(resultado.schema.items()) == list(esperado.items())
