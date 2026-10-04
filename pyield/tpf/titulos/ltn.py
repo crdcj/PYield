@@ -67,7 +67,8 @@ def dados(data: DateLike) -> pl.DataFrame:
             método flat forward.
         - premio (Float64): prêmio sobre o DI, isto é, o spread sobre a
             taxa DI.
-        - rentabilidade (Float64): Rentabilidade diária da LTN sobre o DI.
+        - rentabilidade (Float64): Razão entre as taxas diárias equivalentes
+            da LTN e do DI.
 
     Examples:
         >>> from pyield import ltn
@@ -131,13 +132,13 @@ def pu(
     data_vencimento: DateLike,
     taxa: float | Decimal | str,
 ) -> Decimal:
-    """
+    r"""
     Calcula o PU da LTN pela metodologia da STN para leilões primários.
 
     Args:
         data_liquidacao: Data de liquidação.
         data_vencimento: Data de vencimento.
-        taxa: Taxa de desconto (YTM) do título em formato decimal.
+        taxa: Taxa anual efetiva, em decimal, na base de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
             Antes do cálculo, é truncada em oito casas decimais (seis na
             forma percentual), descartando as casas excedentes sem arredondar.
@@ -145,6 +146,29 @@ def pu(
     Returns:
         Decimal: PU da LTN truncado em seis casas decimais. Retorna
             ``Decimal("NaN")`` quando o prazo até o vencimento não é positivo.
+
+    Notes:
+        O PU teórico é:
+
+        \[
+        \mathrm{PU} = \frac{\mathrm{FC}}{(1+y)^t}
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}\): pagamento único no vencimento, de R$ 1.000.
+        - \(\mathrm{DU}\): dias úteis entre liquidação e vencimento.
+        - \(t = \mathrm{DU}/252\): prazo até o vencimento, em anos de
+          252 dias úteis.
+        - \(y\): taxa anual efetiva informada em `taxa`, em decimal, na
+          base de 252 dias úteis.
+
+        Como a LTN possui um único pagamento, sua taxa anual efetiva coincide
+        com a taxa zero e com a TIR para o prazo do título. O fluxo e o prazo
+        são determinados pelo título e pela liquidação. No cálculo oficial,
+        além do truncamento da taxa
+        descrito em `Args`, o prazo é truncado em 14 casas decimais e o PU
+        é truncado em seis.
 
     References:
         - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
@@ -182,11 +206,10 @@ def taxa(
     data_vencimento: DateLike,
     preco_unitario: float | Decimal,
 ) -> float:
-    """
-    Calcula a taxa implícita (YTM) de uma LTN a partir do preço (PU).
+    r"""
+    Calcula a taxa implícita da LTN a partir do preço unitário (PU).
 
     Inverte algebricamente o valor presente, sem truncamentos da STN:
-    ``taxa = (1000 / pu) ^ (252 / du) - 1``
 
     Args:
         data_liquidacao: Data de liquidação.
@@ -194,9 +217,31 @@ def taxa(
         preco_unitario: PU do título.
 
     Returns:
-        float: Taxa implícita (YTM) em formato decimal, sem arredondamento.
+        float: Taxa implícita em formato decimal, sem arredondamento.
             Retorna NaN para entradas ausentes, PU não positivo ou prazo útil
             não positivo.
+
+    Notes:
+        A taxa implícita \(y\), anual efetiva, em decimal e na base de
+        252 dias úteis, é:
+
+        \[
+        y = \left(\frac{\mathrm{FC}}{\mathrm{PU}}\right)^{1/t}-1
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}\): pagamento único no vencimento, de R$ 1.000.
+        - \(\mathrm{PU}\): preço recebido em `preco_unitario`.
+        - \(\mathrm{DU}\): dias úteis entre liquidação e vencimento.
+        - \(t = \mathrm{DU}/252\): prazo até o vencimento, em anos de
+          252 dias úteis.
+
+        Como há apenas um pagamento, a taxa anual efetiva coincide com a taxa
+        zero e com a TIR para o prazo do título. A inversão usa o preço e o
+        prazo sem os truncamentos do PU oficial; por isso, pode não recuperar
+        exatamente a taxa usada
+        para gerar um PU por `pu`.
 
     Examples:
         Exibe as taxas em formato decimal:
@@ -223,22 +268,43 @@ def taxa(
 
 
 def rentabilidade(taxa_ltn: float | str, taxa_di: float | str) -> float:
-    """
+    r"""
     Calcula a rentabilidade da LTN sobre a taxa de DI Futuro.
 
     Args:
-        taxa_ltn: Taxa anualizada da LTN.
+        taxa_ltn: Taxa anual efetiva da LTN, em decimal, na base de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
-        taxa_di: Taxa anualizada do DI Futuro.
+        taxa_di: Taxa DI anual efetiva, em decimal, na base de 252 dias úteis,
+            para o mesmo prazo da LTN.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
-        float: Rentabilidade da LTN sobre o DI.
+        float: Razão entre as taxas diárias equivalentes da LTN e do DI.
+            Por exemplo, 1.01 representa 101% da taxa diária equivalente DI.
+
+    Notes:
+        A rentabilidade relativa \(q\) é a razão entre as taxas diárias
+        equivalentes:
+
+        \[
+        q = \frac{(1+y_{\mathrm{LTN}})^{1/252}-1}
+        {(1+\mathrm{DI})^{1/252}-1}
+        \]
+
+        onde:
+
+        - \(y_{\mathrm{LTN}}\): taxa informada em `taxa_ltn`.
+        - \(\mathrm{DI}\): taxa DI informada em `taxa_di`, para o mesmo
+          prazo da LTN.
+
+        Como a LTN possui um único pagamento, a TIR equivalente da referência
+        coincide com a taxa DI para o prazo do título. O indicador compara
+        taxas implícitas; não representa o retorno realizado entre compra e venda.
 
     Examples:
-        Reference date: 22-08-2024
-        LTN rate for 01-01-2030: 0.118746
-        DI (JAN30) Settlement rate: 0.11725
+        Data de referência: 22-08-2024.
+        Taxa da LTN com vencimento em 01-01-2030: 0.118746.
+        Taxa de ajuste do DI (JAN30): 0.11725.
         >>> from pyield import ltn
         >>> ltn.rentabilidade("11.8746%", "11.725%")
         1.0120718007994287
@@ -264,10 +330,10 @@ def rentabilidade_expr(
     """Cria expressão Polars para a rentabilidade da LTN sobre o DI.
 
     Args:
-        taxa_ltn: Nome de coluna ou expressão Polars com a taxa anualizada da
-            LTN.
-        taxa_di: Nome de coluna ou expressão Polars com a taxa anualizada do DI
-            Futuro.
+        taxa_ltn: Nome de coluna ou expressão Polars com a taxa anual efetiva
+            da LTN, em decimal, na base de 252 dias úteis.
+        taxa_di: Nome de coluna ou expressão Polars com a taxa DI anual efetiva,
+            em decimal, na base de 252 dias úteis, para o mesmo prazo da LTN.
 
     Returns:
         pl.Expr: Expressão sem alias com a rentabilidade da LTN sobre o DI.
@@ -284,7 +350,7 @@ def dv01(
     data_vencimento: DateLike,
     taxa: float | Decimal | str,
 ) -> float:
-    """
+    r"""
     Calcula o DV01 (Dollar Value of 01) da LTN em R$.
 
     Representa a redução do PU teórico para um aumento de 1 bp (0,01 ponto
@@ -294,12 +360,39 @@ def dv01(
     Args:
         data_liquidacao: Data de liquidação.
         data_vencimento: Data de vencimento.
-        taxa: Taxa de desconto (YTM) do título.
+        taxa: Taxa anual efetiva, em decimal, na base de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
         float: DV01, variação de preço para 1 bp. Retorna ``NaN`` quando o
             prazo até o vencimento não é positivo.
+
+    Notes:
+        Mantendo liquidação e vencimento fixos, o pagamento e seu prazo
+        também ficam fixos. Nesse contexto, o preço teórico em função da taxa é:
+
+        \[
+        \mathrm{PU}(y) = \frac{\mathrm{FC}}{(1+y)^t}
+        \]
+
+        O \(\mathrm{DV01}\) é a redução do preço, em R$, para um aumento
+        de 1 bp na taxa:
+
+        \[
+        \mathrm{DV01} = \mathrm{PU}(y)-\mathrm{PU}(y+0.0001)
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}\): pagamento único no vencimento, de R$ 1.000.
+        - \(\mathrm{DU}\): dias úteis entre liquidação e vencimento.
+        - \(t = \mathrm{DU}/252\): prazo até o vencimento, em anos de
+          252 dias úteis.
+        - \(y\): taxa anual efetiva informada em `taxa`, em decimal, na
+          base de 252 dias úteis.
+        - \(0.0001\): aumento de 1 bp na taxa em decimal.
+
+        Os preços não aplicam os truncamentos do PU oficial.
 
     Examples:
         >>> from pyield import ltn
@@ -323,7 +416,7 @@ def duration_expr(
     data_liquidacao: pl.Expr | str,
     data_vencimento: pl.Expr | str,
 ) -> pl.Expr:
-    """Cria expressão Polars para a duration da LTN em anos úteis.
+    r"""Cria expressão Polars para a duration da LTN em anos úteis.
 
     Args:
         data_liquidacao: Nome de coluna ou expressão Polars com a data de
@@ -333,6 +426,17 @@ def duration_expr(
 
     Returns:
         pl.Expr: Expressão sem alias com a duration em anos úteis.
+
+    Notes:
+        Como a LTN possui um único pagamento, a Macaulay duration \(D\)
+        coincide com o prazo até o vencimento:
+
+        \[
+        D = t = \frac{\mathrm{DU}}{252}
+        \]
+
+        onde \(\mathrm{DU}\) é o número de dias úteis entre liquidação e
+        vencimento. O resultado é expresso em anos de 252 dias úteis.
     """
     dias_uteis = du.contar_expr(data_liquidacao, data_vencimento)
     return pl.when(dias_uteis > 0).then(dias_uteis / 252).otherwise(float("nan"))
@@ -353,7 +457,8 @@ def dv01_expr(
             liquidação.
         data_vencimento: Nome de coluna ou expressão Polars com a data de
             vencimento.
-        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+        taxa: Nome de coluna ou expressão Polars com a taxa anual efetiva,
+            em decimal, na base de 252 dias úteis.
 
     Returns:
         pl.Expr: Expressão sem alias com o DV01.
@@ -373,9 +478,9 @@ def dv01_expr(
 
 
 def taxas_forward(data: DateLike) -> pl.DataFrame:
-    """Calcula as taxas forward da LTN para uma data de referência.
+    r"""Calcula as taxas forward da LTN para uma data de referência.
 
-    As taxas indicativas da LTN já são spot (zero-coupon) por construção, pois o
+    As taxas indicativas da LTN já são taxas zero por construção, pois o
     título não paga cupons. Portanto o cálculo de forward é direto usando a
     estrutura de vencimentos e suas taxas.
 
@@ -390,6 +495,28 @@ def taxas_forward(data: DateLike) -> pl.DataFrame:
         - dias_uteis (Int64): Dias úteis entre referência e vencimento.
         - taxa_indicativa (Float64): Taxa spot (zero cupom), em formato decimal.
         - taxa_forward (Float64): Taxa forward, em formato decimal.
+
+    Notes:
+        A taxa forward \(f(t_1,t_2)\), anual efetiva, em decimal e na base
+        de 252 dias úteis, entre dois vencimentos consecutivos é:
+
+        \[
+        f(t_1,t_2) = \left(
+        \frac{(1+r_2)^{t_2}}{(1+r_1)^{t_1}}
+        \right)^{1/(t_2-t_1)}-1
+        \]
+
+        onde:
+
+        - \(\mathrm{DU}_1\), \(\mathrm{DU}_2\): dias úteis entre a data
+          de referência e cada vencimento, com \(\mathrm{DU}_1<\mathrm{DU}_2\).
+        - \(t_1 = \mathrm{DU}_1/252\), \(t_2 = \mathrm{DU}_2/252\):
+          prazos em anos de 252 dias úteis.
+        - \(r_1\), \(r_2\): taxas zero anuais efetivas, em decimal,
+          correspondentes aos prazos. São as taxas indicativas das LTNs.
+
+        No primeiro vencimento, a coluna `taxa_forward` recebe a própria
+        taxa zero, pois não há um vértice anterior.
 
     Examples:
         >>> from pyield import ltn
