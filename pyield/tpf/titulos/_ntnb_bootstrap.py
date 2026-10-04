@@ -169,38 +169,64 @@ def taxas_zero(
         vencimento anterior até o seu vencimento. A primeira taxa forward começa
         na TIR do título mais curto.
 
-        Definindo \(t_i\) como o tempo em anos úteis correspondente ao vértice
-        \(i\):
+        A taxa zero é obtida acumulando os fatores dos trechos calibrados:
 
         \[
-        t_i = \frac{DU_i}{252},
-        \]
-
-        em que \(DU_i\) é o número de dias úteis, \(f_i\) é a taxa forward do
-        trecho e \(z_i\) é a taxa zero anualizada, temos:
-
-        \[
-        z_0 = f_0
+        r_0 = f_0
         \]
 
         \[
-        (1 + z_i)^{t_i} =
-        (1 + z_{i-1})^{t_{i-1}}
+        (1 + r_i)^{t_i} =
+        (1 + r_{i-1})^{t_{i-1}}
         (1 + f_i)^{t_i - t_{i-1}}
         \]
 
+        onde:
+
+        - \(i\): índice dos títulos em ordem de vencimento, começando em zero.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e vencimento do
+          título \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o vencimento do título
+          \(i\), em anos de 252 dias úteis.
+        - \(f_i\): taxa forward real do trecho que termina no vencimento
+          do título \(i\). O primeiro trecho começa na liquidação.
+        - \(r_i\): taxa zero real para o prazo \(t_i\).
+
+        As taxas são expressas ao ano, em decimal, na base de 252 dias úteis.
+
         **Calibração sequencial**
 
-        Para cada título, do menor para o maior vencimento, a função calcula a
-        cotação-alvo \(P_i^{\mathrm{TIR}}\) descontando seus fluxos pela TIR
-        observada. Em seguida, define \(t_{i,k} = DU_{i,k} / 252\) para
-        cada fluxo e busca por bisseção o forward \(f_i\) que zera:
+        Para cada título, do menor para o maior vencimento, a função calcula
+        a cotação-alvo pela TIR observada:
+
+        \[
+        \mathrm{COT}_i^{\mathrm{TIR}} = \sum_{k=1}^{n_i}
+        \frac{\mathrm{FC}_{i,k}}{(1+y_i)^{t_{i,k}}}
+        \]
+
+        Em seguida, busca por bisseção o forward \(f_i\) que zera o erro
+        de cotação \(E_i(f_i)\):
 
         \[
         E_i(f_i) =
-        \sum_k \frac{CF_{i,k}}{(1 + z(t_{i,k}; f_i))^{t_{i,k}}}
-        - P_i^{\mathrm{TIR}}
+        \sum_{k=1}^{n_i}
+        \frac{\mathrm{FC}_{i,k}}{(1 + r(t_{i,k}; f_i))^{t_{i,k}}}
+        - \mathrm{COT}_i^{\mathrm{TIR}}
         \]
+
+        onde:
+
+        - \(n_i\): número de pagamentos restantes do título \(i\).
+        - \(\mathrm{FC}_{i,k}\): valor do pagamento \(k\) do título
+          \(i\), em base 100, incluindo cupom e amortização quando aplicável.
+        - \(\mathrm{DU}_{i,k}\): dias úteis entre liquidação e pagamento
+          \(k\) do título \(i\).
+        - \(t_{i,k} = \mathrm{DU}_{i,k}/252\): prazo até esse pagamento,
+          em anos de 252 dias úteis.
+        - \(y_i\): TIR real observada do título \(i\).
+        - \(r(t_{i,k}; f_i)\): taxa zero real para o prazo do pagamento,
+          obtida pela curva que mantém os trechos anteriores fixos e usa
+          \(f_i\) no trecho em calibração.
 
         Os forwards e taxas zero já calibrados nos títulos curtos permanecem
         fixos durante a calibração dos títulos longos. Por isso, cada etapa tem
@@ -220,15 +246,16 @@ def taxas_zero(
 
         **Precisão do método**
 
-        A calibração usa \(DU / 252\) sem truncamento e soma os valores
+        A calibração usa \(\mathrm{DU} / 252\) sem truncamento e soma os valores
         presentes sem arredondamento. Isso difere de :func:`cotacao`, que
-        aplica as regras ANBIMA de arredondamento dos fluxos e truncamento da
+        aplica as regras da STN de arredondamento dos fluxos e truncamento da
         cotação.
 
     Args:
         data_liquidacao: Data de liquidação.
         vencimentos: Datas de vencimento das NTN-B.
-        taxas: TIRs correspondentes em formato decimal (ex.: 0.10 para 10%).
+        taxas: TIRs reais ao ano, em decimal, na base de 252 dias
+            úteis (ex.: 0.10 para 10%).
 
     Returns:
         pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Retorna vazio quando

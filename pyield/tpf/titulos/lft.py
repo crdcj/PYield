@@ -61,7 +61,8 @@ def dados(data: DateLike) -> pl.DataFrame:
         - taxa_indicativa (Float64): Taxa indicativa (decimal).
         - taxa_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo
             método flat forward.
-        - rentabilidade (Float64): Rentabilidade da LFT sobre o DI.
+        - rentabilidade (Float64): Razão entre a taxa diária equivalente da
+            LFT, usando o DI como referência para a Selic, e a taxa diária DI.
 
     Examples:
         >>> from pyield import lft
@@ -122,13 +123,14 @@ def cotacao(
     data_vencimento: DateLike,
     taxa: float | Decimal | str,
 ) -> Decimal:
-    """
+    r"""
     Calcula a cotação de uma LFT pela metodologia da STN para leilões primários.
 
     Args:
         data_liquidacao: Data de liquidação do título.
         data_vencimento: Data de vencimento do título.
-        taxa: Taxa anualizada do título em formato decimal.
+        taxa: Taxa de ágio/deságio da LFT sobre a Selic, anual efetiva, em
+            decimal, na base de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
             Antes do cálculo, é truncada em oito casas decimais (seis na
             forma percentual), descartando as casas excedentes sem arredondar.
@@ -139,6 +141,24 @@ def cotacao(
             até o vencimento não é positivo.
 
     Notes:
+        A cotação teórica em base 100 é:
+
+        \[
+        \mathrm{COT} = \frac{100}{(1+s)^t}
+        \]
+
+        onde:
+
+        - \(\mathrm{DU}\): dias úteis entre liquidação e vencimento.
+        - \(t = \mathrm{DU}/252\): prazo até o vencimento, em anos de
+          252 dias úteis.
+        - \(s\): taxa de ágio/deságio informada em `taxa`, anual efetiva,
+          em decimal, na base de 252 dias úteis. Taxa positiva corresponde
+          a deságio; negativa, a ágio; zero, a cotação ao par.
+
+        No cálculo oficial, além do truncamento da taxa descrito em `Args`,
+        o prazo é truncado em 14 casas decimais.
+
         A cotação é calculada e retornada na escala percentual (base 100),
         truncada em 4 casas conforme a STN. Por exemplo, ``99.3651`` representa
         99,3651% do VNA; o PU é calculado como ``VNA * cotacao / 100``.
@@ -177,11 +197,11 @@ def taxa(
     vna: float | Decimal,
     pu: float | Decimal,
 ) -> float:
-    """
+    r"""
     Calcula a taxa implícita de uma LFT a partir do preço (PU).
 
     A função resolve numericamente a taxa que aproxima o PU informado por
-    ``VNA / (1 + taxa) ^ (du / 252)``, sem arredondamento nem truncamento
+    seu valor teórico, sem arredondamento nem truncamento
     intermediário. O resultado não pretende reproduzir exatamente a taxa usada
     para gerar um PU canônico por ``pu(vna, cotacao(...))``.
 
@@ -195,6 +215,26 @@ def taxa(
         float: Taxa implícita em formato decimal, sem arredondamento. Retorna
             NaN para entradas ausentes, PU não positivo, prazo útil não
             positivo ou falha na resolução numérica.
+
+    Notes:
+        A taxa de ágio/deságio \(s\), anual efetiva, em decimal e na base
+        de 252 dias úteis, é encontrada resolvendo:
+
+        \[
+        \frac{\mathrm{VNA}}{(1+s)^t} = \mathrm{PU}
+        \]
+
+        onde:
+
+        - \(\mathrm{VNA}\): valor nominal atualizado recebido em `vna`.
+        - \(\mathrm{PU}\): preço recebido em `pu`.
+        - \(\mathrm{DU}\): dias úteis entre liquidação e vencimento.
+        - \(t = \mathrm{DU}/252\): prazo até o vencimento, em anos de
+          252 dias úteis.
+
+        Essa taxa é aplicada sobre a atualização pela Selic, representada
+        pelo VNA; não é a taxa de retorno total do título. Taxa positiva
+        corresponde a deságio, negativa a ágio e zero a preço igual ao VNA.
 
     Examples:
         Exibe as taxas em formato decimal:
@@ -226,18 +266,51 @@ def taxa(
 
 
 def rentabilidade(taxa_lft: float | str, taxa_di: float | str) -> float:
-    """
+    r"""
     Calcula a rentabilidade da LFT sobre a taxa de DI Futuro.
 
+    Segue a metodologia do Anexo 2, item 3, de *Dívida Pública: a experiência
+    brasileira*, do Tesouro Nacional, que denomina esse indicador prêmio da LFT.
+
     Args:
-        taxa_lft: Taxa anualizada da LFT sobre a Selic.
+        taxa_lft: Taxa de ágio/deságio da LFT sobre a Selic, anual efetiva,
+            em decimal, na base de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
-        taxa_di: Taxa DI Futuro anualizada (interpolada para o mesmo
-            vencimento da LFT).
+        taxa_di: Taxa DI anual efetiva, em decimal, na base de 252 dias úteis,
+            para o mesmo vencimento da LFT (interpolada quando necessário).
             Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
-        float: Rentabilidade da LFT sobre o DI.
+        float: Razão entre a taxa diária equivalente da LFT, usando o DI como
+            referência para a Selic, e a taxa diária DI. Por exemplo, 1.01
+            representa 101% da taxa diária equivalente DI.
+
+    Notes:
+        A rentabilidade relativa \(q\) combina o fator diário da taxa da
+        LFT com o fator diário DI e compara a taxa resultante com a taxa DI:
+
+        \[
+        q = \frac{(1+s)^{1/252}(1+\mathrm{DI})^{1/252}-1}
+        {(1+\mathrm{DI})^{1/252}-1}
+        \]
+
+        onde:
+
+        - \(s\): taxa de ágio/deságio informada em `taxa_lft`.
+        - \(\mathrm{DI}\): taxa DI informada em `taxa_di`, para o mesmo
+          vencimento da LFT.
+
+        O cálculo usa o DI como referência para a atualização pela Selic.
+        A composição é multiplicativa entre fatores; não soma a taxa da LFT
+        à taxa DI. O indicador não representa o retorno realizado entre
+        compra e venda.
+
+        A função retorna a razão \(q\). O livro apresenta o indicador em
+        percentual, correspondente a \(100q\).
+
+        Referência: Tesouro Nacional, *Dívida Pública: a experiência brasileira*,
+        Parte 3, capítulo 2, Anexo 2, item 3, páginas 330–331:
+        [Prêmio das LFTs](https://thot-arquivos.tesouro.gov.br/publicacao-anexo/4710).
 
     Examples:
         Calcula a rentabilidade de uma LFT em 28/04/2025:
@@ -266,10 +339,12 @@ def rentabilidade_expr(
     """Cria expressão Polars para a rentabilidade da LFT sobre o DI.
 
     Args:
-        taxa_lft: Nome de coluna ou expressão Polars com a taxa anualizada da
-            LFT sobre a Selic.
-        taxa_di: Nome de coluna ou expressão Polars com a taxa DI Futuro
-            anualizada (interpolada para o mesmo vencimento da LFT).
+        taxa_lft: Nome de coluna ou expressão Polars com a taxa de ágio/deságio
+            da LFT sobre a Selic, anual efetiva, em decimal, na base de
+            252 dias úteis.
+        taxa_di: Nome de coluna ou expressão Polars com a taxa DI anual efetiva,
+            em decimal, na base de 252 dias úteis, para o mesmo vencimento da
+            LFT (interpolada quando necessário).
 
     Returns:
         pl.Expr: Expressão sem alias com a rentabilidade da LFT sobre o DI.
@@ -297,7 +372,7 @@ def pu(
     vna: float | Decimal,
     cotacao: float | Decimal,
 ) -> Decimal:
-    """
+    r"""
     Calcula o PU da LFT pela metodologia da STN para leilões primários.
 
     Args:
@@ -308,6 +383,22 @@ def pu(
 
     Returns:
         Decimal: Preço da LFT truncado em 6 casas decimais.
+
+    Notes:
+        O preço unitário é:
+
+        \[
+        \mathrm{PU} = \mathrm{VNA}\,\frac{\mathrm{COT}}{100}
+        \]
+
+        onde:
+
+        - \(\mathrm{VNA}\): valor nominal atualizado recebido em `vna`.
+        - \(\mathrm{COT}\): cotação recebida em `cotacao`, em base 100.
+
+        A cotação representa o percentual do VNA usado no preço. O cálculo
+        aplica os truncamentos de VNA e cotação descritos em `Args` e trunca
+        o PU em seis casas decimais.
 
     References:
         - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos

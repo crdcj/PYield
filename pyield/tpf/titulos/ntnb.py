@@ -284,13 +284,13 @@ def cotacao(
     data_vencimento: DateLike,
     taxa: float | Decimal | str,
 ) -> Decimal:
-    """
+    r"""
     Calcula a cotação da NTN-B pela metodologia da STN para leilões primários.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação da operação.
         data_vencimento (DateLike): Data de vencimento da NTN-B.
-        taxa: Taxa de desconto (TIR) em formato decimal.
+        taxa: TIR real ao ano, em decimal, na base de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
             Antes do cálculo, é truncada em oito casas decimais (seis na
             forma percentual), descartando as casas excedentes sem arredondar.
@@ -300,6 +300,29 @@ def cotacao(
             Decimal('NaN') em erro.
 
     Notes:
+        A cotação teórica em base 100 é:
+
+        \[
+        \mathrm{COT} = \sum_{i=1}^{n}
+        \frac{\mathrm{FC}_i}{(1+y)^{t_i}}
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}_i\): valor do pagamento \(i\) em base 100,
+          incluindo cupom e amortização quando aplicável.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e pagamento \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o pagamento \(i\), em anos
+          de 252 dias úteis.
+        - \(n\): número de pagamentos restantes.
+        - \(y\): TIR real informada em `taxa`, em decimal, expressa ao ano na
+          base de 252 dias úteis, relativa aos fluxos em base 100.
+
+        Os fluxos em base 100 representam percentuais do VNA, e não valores
+        monetários futuros. O VNA incorpora a atualização pelo IPCA.
+        No cálculo oficial, além do truncamento da TIR descrito em `Args`,
+        cada prazo é truncado em 14 casas decimais.
+
         A cotação é calculada e retornada na escala percentual (base 100),
         truncada em 4 casas conforme a STN. Por exemplo, ``99.3651`` representa
         99,3651% do VNA; o PU é calculado como ``VNA * cotacao / 100``.
@@ -376,7 +399,7 @@ def pu(
     vna: float | Decimal,
     cotacao: float | Decimal,
 ) -> Decimal:
-    """
+    r"""
     Calcula o PU da NTN-B pela metodologia da STN para leilões primários.
 
     Args:
@@ -387,6 +410,22 @@ def pu(
 
     Returns:
         Decimal: Preço da NTN-B truncado em 6 casas decimais.
+
+    Notes:
+        O preço unitário é:
+
+        \[
+        \mathrm{PU} = \mathrm{VNA}\,\frac{\mathrm{COT}}{100}
+        \]
+
+        onde:
+
+        - \(\mathrm{VNA}\): valor nominal atualizado pelo IPCA, recebido
+          em `vna`.
+        - \(\mathrm{COT}\): cotação recebida em `cotacao`, em base 100.
+
+        O cálculo aplica os truncamentos de VNA e cotação descritos em `Args`
+        e trunca o PU em seis casas decimais.
 
     References:
         - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
@@ -445,10 +484,10 @@ def implicitas(  # noqa: PLR0913
     *,
     extrapolar: bool = False,
 ) -> pl.DataFrame:
-    """
+    r"""
     Calcula a inflação implícita para NTN-B contra uma curva nominal de referência.
 
-    A inflação implícita (breakeven) é a que iguala yields reais e nominais,
+    A inflação implícita (breakeven) relaciona taxas zero reais e nominais,
     baseada nas taxas zero das NTN-B e na curva nominal informada.
 
     Args:
@@ -457,10 +496,12 @@ def implicitas(  # noqa: PLR0913
             da curva de TIR real.
         taxas_tir (ArrayLike): TIRs reais observadas das NTN-B correspondentes
             aos vencimentos informados. A função calcula a curva zero real a
-            partir dessas taxas.
+            partir dessas taxas. São expressas ao ano, em decimal, na base
+            de 252 dias úteis.
         vencimentos_nominais (DatesLike): Vencimentos da curva nominal de
             referência.
-        taxas_nominais (ArrayLike): Taxas da curva nominal de referência. Pode
+        taxas_nominais (ArrayLike): Taxas zero nominais ao ano, em
+            decimal, na base de 252 dias úteis. A curva de referência pode
             representar DI Futuro, curva soberana prefixada ou outra curva
             nominal escolhida pelo usuário.
         extrapolar (bool): Se `True`, extrapola a curva nominal fora dos
@@ -483,6 +524,26 @@ def implicitas(  # noqa: PLR0913
             formato decimal.
 
     Notes:
+        A inflação implícita \(\pi(t)\), expressa ao ano e em decimal, é:
+
+        \[
+        \pi(t) = \frac{1+r_{\mathrm{nominal}}(t)}
+        {1+r_{\mathrm{real}}(t)}-1
+        \]
+
+        onde:
+
+        - \(\mathrm{DU}\): dias úteis entre liquidação e vencimento.
+        - \(t = \mathrm{DU}/252\): prazo até o vencimento, em anos de
+          252 dias úteis.
+        - \(r_{\mathrm{nominal}}(t)\): taxa zero nominal da curva fornecida,
+          interpolada por `flat_forward` para o prazo \(t\).
+        - \(r_{\mathrm{real}}(t)\): taxa zero real obtida pelo bootstrap das
+          TIRs das NTN-B, para o mesmo prazo \(t\).
+
+        As taxas são expressas ao ano, em decimal, na base de 252 dias úteis.
+        A comparação usa a taxa zero real, e não diretamente a TIR do título.
+
         A inflação implícita é calculada contra a curva nominal informada. Se
         essa curva for DI Futuro, o resultado representa a implícita contra DI,
         não uma inflação soberana prefixada pura.
@@ -567,28 +628,41 @@ def duration(
     data_vencimento: DateLike,
     taxa: float | str,
 ) -> float:
-    """
+    r"""
     Calcula a Macaulay duration da NTN-B em anos úteis.
-
-    Fórmula:
-                   Sum( t * CFₜ / (1 + y)ᵗ )
-         MacD = ---------------------------------
-                         Current Bond Price
-
-    Onde:
-        t    = tempo (anos) até o pagamento
-        CFₜ = fluxo no tempo t
-        y    = TIR (periódica)
-        Price = Soma( CFₜ / (1 + y)ᵗ )
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
-        taxa (float): Taxa de desconto usada no cálculo.
+        taxa (float | str): TIR real ao ano, em decimal, na base de
+            252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
         float: Macaulay duration em anos úteis.
+
+    Notes:
+        A Macaulay duration \(D\), em anos de 252 dias úteis, é:
+
+        \[
+        D = \frac{\sum_{i=1}^{n}t_i\,\mathrm{FC}_i/(1+y)^{t_i}}
+        {\sum_{i=1}^{n}\mathrm{FC}_i/(1+y)^{t_i}}
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}_i\): valor do pagamento \(i\) em base 100,
+          incluindo cupom e amortização quando aplicável.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e pagamento \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o pagamento \(i\), em anos
+          de 252 dias úteis.
+        - \(n\): número de pagamentos restantes.
+        - \(y\): TIR real informada em `taxa`, em decimal, expressa ao ano na
+          base de 252 dias úteis, relativa aos fluxos em base 100.
+
+        O desconto dos fluxos não aplica os arredondamentos e truncamentos
+        da cotação oficial. O resultado é truncado em 14 casas decimais.
+        O VNA, comum a todos os fluxos, cancela na razão.
 
     Examples:
         >>> from pyield import ntnb
@@ -626,7 +700,8 @@ def duration_expr(
             liquidação.
         data_vencimento: Nome de coluna ou expressão Polars com a data de
             vencimento.
-        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+        taxa: Nome de coluna ou expressão Polars com a TIR real ao ano,
+            em decimal, na base de 252 dias úteis.
 
     Returns:
         pl.Expr: Expressão sem alias com a Macaulay duration em anos úteis.
@@ -651,21 +726,56 @@ def dv01(
     taxa: float | Decimal | str,
     pu: float | Decimal,
 ) -> float:
-    """
+    r"""
     Calcula o DV01 (Dollar Value of 01) da NTN-B em R$.
 
-    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
-    taxa.
+    Representa a variação do PU informado para um aumento de 1 bp (0,01 ponto
+    percentual) na taxa.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
-        taxa (float): Taxa de desconto (TIR) da NTN-B.
+        taxa (float | Decimal | str): TIR real ao ano, em decimal,
+            na base de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
         pu: PU usado como base para o cálculo.
 
     Returns:
         float: DV01, variação de preço para 1 bp.
+
+    Notes:
+        Mantendo liquidação e vencimento fixos, os fluxos e seus prazos
+        também ficam fixos. Nesse contexto, a cotação teórica em função da
+        TIR é:
+
+        \[
+        \mathrm{COT}(y) = \sum_{i=1}^{n}
+        \frac{\mathrm{FC}_i}{(1+y)^{t_i}}
+        \]
+
+        O \(\mathrm{DV01}\) é a redução do preço, em R$, para um aumento
+        de 1 bp na TIR, usando o PU informado como base:
+
+        \[
+        \mathrm{DV01} = \mathrm{PU}_{\mathrm{informado}}
+        \left(1-\frac{\mathrm{COT}(y+0.0001)}{\mathrm{COT}(y)}\right)
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}_i\): valor do pagamento \(i\) em base 100,
+          incluindo cupom e amortização quando aplicável.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e pagamento \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o pagamento \(i\), em anos
+          de 252 dias úteis.
+        - \(n\): número de pagamentos restantes.
+        - \(y\): TIR real informada em `taxa`, em decimal, expressa ao ano na
+          base de 252 dias úteis, relativa aos fluxos em base 100.
+        - \(\mathrm{PU}_{\mathrm{informado}}\): preço recebido em `pu`.
+        - \(0.0001\): aumento de 1 bp na TIR em decimal.
+
+        As cotações teóricas não aplicam os arredondamentos e truncamentos
+        da cotação oficial. A razão entre elas é aplicada ao PU informado.
 
     Examples:
         >>> from pyield import ntnb
@@ -699,7 +809,8 @@ def dv01_expr(
             liquidação.
         data_vencimento: Nome de coluna ou expressão Polars com a data de
             vencimento.
-        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+        taxa: Nome de coluna ou expressão Polars com a TIR real ao ano,
+            em decimal, na base de 252 dias úteis.
         pu: Nome de coluna ou expressão Polars com o PU usado como base.
 
     Returns:
@@ -727,7 +838,7 @@ def taxa(
     vna: float | Decimal,
     pu: float | Decimal,
 ) -> float:
-    """
+    r"""
     Calcula a TIR implícita de uma NTN-B a partir do preço (PU).
 
     A função resolve numericamente a taxa que aproxima o PU informado por
@@ -746,6 +857,32 @@ def taxa(
         float: TIR implícita em formato decimal, sem arredondamento. Retorna
             NaN para entradas ausentes, PU não positivo ou falha na resolução
             numérica.
+
+    Notes:
+        A TIR real implícita \(y\), expressa ao ano, em decimal e na base de
+        252 dias úteis, é encontrada resolvendo:
+
+        \[
+        \frac{\mathrm{VNA}}{100}
+        \sum_{i=1}^{n}\frac{\mathrm{FC}_i}{(1+y)^{t_i}}
+        = \mathrm{PU}_{\mathrm{informado}}
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}_i\): valor do pagamento \(i\) em base 100,
+          incluindo cupom e amortização quando aplicável.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e pagamento \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o pagamento \(i\), em anos
+          de 252 dias úteis.
+        - \(n\): número de pagamentos restantes.
+        - \(\mathrm{VNA}\): valor nominal atualizado pelo IPCA, recebido
+          em `vna`.
+        - \(\mathrm{PU}_{\mathrm{informado}}\): preço recebido em `pu`.
+
+        O lado esquerdo representa o preço teórico, sem os arredondamentos
+        e truncamentos do PU oficial. A TIR se refere aos fluxos em base 100;
+        a atualização pelo IPCA é representada pelo VNA.
 
     Examples:
         Exibe as taxas em formato decimal:

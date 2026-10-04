@@ -271,6 +271,9 @@ def rentabilidade(taxa_ltn: float | str, taxa_di: float | str) -> float:
     r"""
     Calcula a rentabilidade da LTN sobre a taxa de DI Futuro.
 
+    Segue a metodologia do Anexo 2, item 1, de *Dívida Pública: a experiência
+    brasileira*, do Tesouro Nacional, que denomina esse indicador prêmio da LTN.
+
     Args:
         taxa_ltn: Taxa anual efetiva da LTN, em decimal, na base de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
@@ -300,6 +303,13 @@ def rentabilidade(taxa_ltn: float | str, taxa_di: float | str) -> float:
         Como a LTN possui um único pagamento, a TIR equivalente da referência
         coincide com a taxa DI para o prazo do título. O indicador compara
         taxas implícitas; não representa o retorno realizado entre compra e venda.
+
+        A função retorna a razão \(q\). O livro apresenta o indicador em
+        percentual, correspondente a \(100q\).
+
+        Referência: Tesouro Nacional, *Dívida Pública: a experiência brasileira*,
+        Parte 3, capítulo 2, Anexo 2, item 1, páginas 328–329:
+        [Prêmio das LTNs](https://thot-arquivos.tesouro.gov.br/publicacao-anexo/4710).
 
     Examples:
         Data de referência: 22-08-2024.
