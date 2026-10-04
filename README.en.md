@@ -37,6 +37,7 @@ uv add pyield
 - [Full documentation](https://crdcj.github.io/PYield/): concepts and module reference.
 - [API map](https://crdcj.github.io/PYield/api-map/): public namespaces and functions.
 - [Development and publishing](https://crdcj.github.io/PYield/desenvolvimento/): environment, checks, builds, and PyPI.
+- [Build and publish the documentation](docs/desenvolvimento.md#documentação): generation, local preview, and GitHub Pages.
 - [Colab notebook](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb): interactive exploration.
 - [Package on PyPI](https://pypi.org/project/pyield/).
 
@@ -67,12 +68,22 @@ source or thematic relationship to another domain. Concepts such as `yd.ltn`,
 `yd.ntnb`, `yd.vna`, and `yd.rmd` therefore live at the root, while
 implementations may remain grouped internally by domain.
 
-## API compatibility
+## What's new in version 0.59.0
 
-See the [GitHub releases](https://github.com/crdcj/PYield/releases) for the
-complete version history and migration notes. The current public organization
-places treasury-bond modules at the package root, while implementations remain
-organized internally under `pyield/tpf/titulos/`.
+Summary of the main changes since the `0.58` series, whose latest version was
+`0.58.2`.
+
+### Analytical rates and DV01
+
+The `taxa` functions of `yd.ltn`, `yd.ntnf`, `yd.ntnb`, `yd.ntnc` and `yd.lft`
+now return an untruncated `float` instead of a `Decimal` truncated to eight
+places. Invalid inputs return `float("nan")`; use `math.isnan` instead of
+`.is_nan()`.
+
+`taxa` and `dv01` for all bonds discount cash flows by `business days / 252`,
+without the intermediate STN truncations. Values change slightly from the
+previous version, and `taxa(pu(...))` recovers the original rate only
+approximately. `pu` and `cotacao` still follow the official methodology.
 
 ### IPCA series
 
@@ -91,57 +102,28 @@ For series, `fim=None` uses the current date in Brazil. Provide `inicio` or
 `ultimos`; when supplied, `ultimos` takes precedence over dates.
 `taxa_projetada` remains unchanged.
 
-### Analytical rates and DV01 in 0.59.0
-
-The `taxa` functions of `yd.ltn`, `yd.ntnf`, `yd.ntnb`, `yd.ntnc` and `yd.lft`
-now return an untruncated `float` instead of a `Decimal` truncated to eight
-places. Invalid inputs return `float("nan")`; use `math.isnan` instead of
-`.is_nan()`.
-
-`taxa` and `dv01` for all bonds discount cash flows by `business days / 252`,
-without the intermediate STN truncations. Values change slightly from the
-previous version, and `taxa(pu(...))` recovers the original rate only
-approximately. `pu` and `cotacao` still follow the official methodology.
-
-### Pricing scale changes in 0.58.0
-
-Scalar bond-pricing functions accept explicit percentage strings such as
-`"5.75%"` or `"5,75%"`. Numeric rates remain decimal values; strings without
-`%` are rejected.
-
-The `cotacao` functions of `yd.lft`, `yd.ntnb`, `yd.ntnc`, `yd.ntnbp`, and
-`yd.ntnb1` now return base-100 values with four decimal places. For example,
-`0.993651` becomes `99.3651`. The corresponding `pu` functions receive the
-quote in the same scale and calculate `VNA * cotacao / 100`. The cash-flow
-amounts returned by `fluxos_caixa` for NTN-B, NTN-C, and NTN-B1, as well as
-`ntnb1.cotacao_curva_zero`, also use base 100.
-
-To migrate, multiply stored quotes and cash flows from older versions by 100,
-remove display-only multiplications by 100, and divide manual PU calculations
-by 100. VNA and PU remain in Brazilian reais.
-
-The `yd.ltn.dv01` and `yd.ntnf.dv01` functions no longer accept a reference PU;
-they calculate the reduction in theoretical PU for a 1-basis-point rate
-increase.
-
 ### Other changes
 
-This summary starts from the `0.56.0` API. Changes already included in that
-version or earlier versions are recorded in the
-[GitHub releases](https://github.com/crdcj/PYield/releases).
+- New `yd.igpm` module with `taxa` and `taxa_serie` for monthly IGP-M rates
+  from SGS/BCB, expressed as decimal values.
+- CPM now exposes `yd.cpm.contratos(data)` and
+  `yd.cpm.probabilidades(data, tipo_opcao="call")`. The latter returns all
+  available meetings; filter the DataFrame to select a meeting.
+- BCB auctions move from `yd.bc.leiloes` to `yd.tpf.leiloes_bcb`, with column
+  names aligned with `yd.tpf.leiloes`.
+- For secondary-market data, `yd.tpf.secundario.ler(fonte)` replaces `ler_zip`
+  and `zip_para_silver`: it accepts a ZIP path or bytes and includes
+  `financeiro` in the output. `nome_arquivo_mensal` is no longer public.
+- `yd.ntnf.premio` has been removed. Use `yd.tpf.premios_pre(data)` and filter
+  `titulo == "NTN-F"` for the gross spread.
+- `yd.tpf.taxas` preserves columns and types when no data is available. In
+  Tesouro auctions, a minimum PU reported as zero becomes null, and the
+  offered financial amount uses the calculated average PU when needed.
+- `yd.rmd` now propagates download and processing errors instead of returning
+  an empty DataFrame in those cases.
 
-| Before | Now |
-|---|---|
-| `ntnbp.taxas_zero(...)` | `ntnb.taxas_zero(...)`, without `incluir_vertices` |
-| `ntnb.taxas_zero(..., incluir_cupons=...)` | `ntnb.taxas_zero(...)`, without `incluir_cupons` |
-| `ntnb.taxas_zero(..., percentual=...)` | `ntnb.taxas_zero(...)`, with decimal rates |
-| `yd.tpf.ntnb` | `yd.ntnb` or `from pyield import ntnb` |
-| `yd.tpf.rmd(aba)` | `yd.rmd(aba)` or `from pyield import rmd` |
-| `pyield.tpf.vna.calcular_vna(...)` | `yd.vna.calcular_vna(...)` |
-| `yd.ntnb.vna(data)` | `yd.vna.valor("NTN-B", data)` |
-| `yd.ntnb.vnas()` | `yd.vna.historico("NTN-B")` |
-| `vna_projetado(...)` in bond modules | `yd.vna.projetado(titulo, data, vna_base, inflacao)`; for LFT, use `selic=` |
-| `vigencia(data)` in bond modules | `yd.vna.vigencia(titulo, data)` |
+See the [GitHub releases](https://github.com/crdcj/PYield/releases) for the
+complete history and migration notes for earlier versions.
 
 ## Project
 

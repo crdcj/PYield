@@ -32,7 +32,7 @@ Use `uv run` para comandos de projeto:
 - `uv run zensical build --clean --strict` para gerar e validar a documentação.
 
 Para visualizar e publicar a documentação, siga a seção
-[Documentação do README](README.md#documentação), que mantém o procedimento e a
+[Documentação](docs/desenvolvimento.md#documentação), que mantém o procedimento e a
 configuração do GitHub Pages.
 
 Rode verificações focadas no que você alterou. Amplie para a suíte inteira quando

@@ -346,7 +346,7 @@ def pu(
     data_vencimento: DateLike,
     taxa: float | Decimal | str,
 ) -> Decimal:
-    """
+    r"""
     Calcula o PU da NTN-F pela metodologia da STN para leilões primários.
 
     O preço equivale ao valor presente dos fluxos descontados pela TIR
@@ -355,13 +355,37 @@ def pu(
     Args:
         data_liquidacao (DateLike): Data de liquidação para cálculo do preço.
         data_vencimento (DateLike): Data de vencimento do título.
-        taxa: Taxa de desconto (TIR) em formato decimal.
+        taxa: TIR anual efetiva, em decimal, na base de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
             Antes do cálculo, é truncada em oito casas decimais (seis na
             forma percentual), descartando as casas excedentes sem arredondar.
 
     Returns:
         Decimal: Preço da NTN-F truncado em seis casas decimais.
+
+    Notes:
+        O PU teórico é:
+
+        \[
+        \mathrm{PU} = \sum_{i=1}^{n}
+        \frac{\mathrm{FC}_i}{(1+y)^{t_i}}
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}_i\): valor do pagamento \(i\), incluindo cupom e
+          amortização quando aplicável.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e pagamento \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o pagamento \(i\), em anos
+          de 252 dias úteis.
+        - \(n\): número de pagamentos restantes.
+        - \(y\): TIR anual efetiva informada em `taxa`, em decimal, na
+          base de 252 dias úteis.
+
+        Os fluxos e os prazos são determinados pela liquidação e pelo vencimento.
+        No cálculo oficial, além do truncamento da TIR descrito em `Args`,
+        cada prazo \(t_i\) é truncado em 14 casas decimais, cada fluxo
+        descontado é arredondado em nove casas e a soma é truncada em seis.
 
     References:
         - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
@@ -417,10 +441,10 @@ def taxas_zero(  # noqa
     taxas_ntnf: ArrayLike,
     incluir_cupons: bool = False,
 ) -> pl.DataFrame:
-    """
+    r"""
     Calcula as taxas spot (zero cupom) para NTN-F usando bootstrap.
 
-    O bootstrap determina as taxas spot a partir dos yields dos títulos.
+    O bootstrap determina as taxas spot a partir das TIRs dos títulos.
     O método resolve iterativamente as taxas que descontam os fluxos ao preço.
     Usa as LTNs (zero cupom) até o último vencimento LTN disponível. Após
     isso, calcula as taxas spot a partir das NTN-F.
@@ -449,6 +473,42 @@ def taxas_zero(  # noqa
         - taxa_zero (Float64): Taxa zero (zero cupom), em formato decimal.
 
     Notes:
+        Para cada NTN-F considerada no bootstrap, o preço teórico é:
+
+        \[
+        \mathrm{PU} = \sum_{i=1}^{n}
+        \frac{\mathrm{FC}_i}{(1+y)^{t_i}}
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}_i\): valor do pagamento \(i\), incluindo cupom e
+          amortização quando aplicável.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e pagamento \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o pagamento \(i\), em anos
+          de 252 dias úteis.
+        - \(n\): número de pagamentos restantes.
+        - \(y\): TIR obtida por interpolação `flat_forward` das TIRs
+          informadas para NTN-F.
+
+        Após o último vencimento LTN, o bootstrap encontra a taxa zero do
+        pagamento final usando as taxas já determinadas para os pagamentos
+        anteriores:
+
+        \[
+        r_n = \left(
+        \frac{\mathrm{FC}_n}
+        {\mathrm{PU}-\sum_{i=1}^{n-1}\mathrm{FC}_i/(1+r_i)^{t_i}}
+        \right)^{1/t_n}-1
+        \]
+
+        onde \(r_i := r(t_i)\) é a taxa zero para o prazo do pagamento \(i\).
+
+        As taxas de entrada e de saída são anuais efetivas, em decimal, na
+        base de 252 dias úteis. Para a LTN, a TIR coincide com a taxa zero,
+        pois há apenas um pagamento. O preço teórico não aplica os
+        arredondamentos e truncamentos do PU oficial.
+
         Vencimentos menores ou iguais à liquidação são ignorados antes da
         construção dos interpoladores.
 
@@ -602,26 +662,29 @@ def rentabilidade(  # noqa
     vencimentos_di: DatesLike,
     taxas_di: ArrayLike,
 ) -> float:
-    """
+    r"""
     Calcula a rentabilidade de uma NTN-F sobre a curva DI.
 
-    A função compara o fator de desconto implícito da NTN-F com o da curva DI,
-    determinando quanto a NTN-F rende em relação ao DI. Interpola as taxas DI nas datas
-    de pagamento e calcula o valor presente dos fluxos da NTN-F usando essas taxas.
-    Encontra a TIR da curva DI que iguala o preço da NTN-F.
+    Compara as taxas diárias equivalentes da TIR da NTN-F e da TIR de referência
+    obtida pela curva DI, conforme o Anexo 2 de *Dívida Pública: a experiência
+    brasileira*, do Tesouro Nacional. Interpola as taxas DI nas datas de pagamento,
+    calcula o valor presente dos fluxos contratuais usando essas taxas e encontra
+    a TIR única que reproduz esse preço de referência.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
         data_vencimento (DateLike): Data de vencimento da NTN-F.
-        taxa_ntnf (float): TIR da NTN-F.
+        taxa_ntnf (float | str): TIR anual efetiva da NTN-F, em formato decimal.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
         vencimentos_di (DatesLike): Datas de vencimento da curva DI.
-        taxas_di (ArrayLike): Taxas DI correspondentes aos vencimentos.
+        taxas_di (ArrayLike): Taxas DI anuais efetivas, em formato decimal,
+            correspondentes aos vencimentos.
 
     Returns:
-        float: Rentabilidade da NTN-F sobre a curva DI. Retorna NaN para
-            entradas ausentes, fluxos vazios ou preço calculado NaN.
-            Também retorna NaN se a resolução numérica falhar.
+        float: Razão entre as taxas diárias equivalentes. Por exemplo, 1.01
+            representa 101% da taxa diária equivalente de referência DI.
+            Retorna NaN para entradas ausentes, fluxos vazios ou preço calculado
+            NaN. Também retorna NaN se a resolução numérica falhar.
 
     Examples:
         >>> # Obs: apenas algumas taxas DI serão usadas no exemplo.
@@ -637,9 +700,75 @@ def rentabilidade(  # noqa
         1.0099602280683393
 
     Notes:
-        A função calcula o valor presente dos fluxos contratuais da NTN-F usando
-        as taxas DI.
+        **Preço de referência pela curva DI**
 
+        O preço de referência é:
+
+        \[
+        P_{\mathrm{DI}} = \sum_{i=1}^{n}
+        \frac{\mathrm{FC}_i}{(1+\mathrm{DI}_i)^{t_i}}
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}_i\): valor do pagamento \(i\), incluindo cupom e
+          amortização quando aplicável.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e pagamento \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o pagamento \(i\), em anos
+          de 252 dias úteis.
+        - \(n\): número de pagamentos restantes.
+        - \(\mathrm{DI}(t)\): taxa DI para o prazo \(t\), anual efetiva e
+          em decimal, na base de 252 dias úteis.
+        - \(\mathrm{DI}_i := \mathrm{DI}(t_i)\): taxa DI para o prazo do
+          pagamento \(i\), obtida por interpolação `flat_forward`.
+
+        **TIR equivalente da referência**
+
+        A função resolve numericamente a TIR anual efetiva
+        \(y_{\mathrm{DI}}\), em decimal, que desconta os mesmos fluxos ao
+        preço de referência:
+
+        \[
+        \sum_{i=1}^{n}
+        \frac{\mathrm{FC}_i}{(1+y_{\mathrm{DI}})^{t_i}}
+        = P_{\mathrm{DI}}
+        \]
+
+        Essa TIR é uma taxa única para todos os pagamentos, enquanto cada
+        \(\mathrm{DI}_i\) corresponde
+        ao prazo do pagamento \(i\).
+
+        **Rentabilidade relativa**
+
+        A rentabilidade relativa \(q\) é a razão entre as taxas diárias
+        equivalentes:
+
+        \[
+        q = \frac{(1+y_{\mathrm{NTNF}})^{1/252}-1}
+        {(1+y_{\mathrm{DI}})^{1/252}-1}
+        \]
+
+        onde \(y_{\mathrm{NTNF}}\) é a TIR informada em `taxa_ntnf`.
+
+        O indicador compara taxas implícitas; não representa o retorno realizado
+        entre compra e venda. Também não calibra um spread ou um multiplicador
+        uniforme sobre os vértices da curva DI.
+
+        Os fluxos mantêm as datas contratuais, excluem pagamentos na liquidação
+        e incluem o vencimento. O preço de referência não aplica os arredondamentos
+        e truncamentos do PU oficial. Não há extrapolação na ponta longa da curva;
+        pagamentos além do último vértice DI resultam em NaN.
+
+        ??? note "Comparação com a LTN"
+
+            A LTN possui um único pagamento. Nesse caso, a TIR equivalente da
+            referência coincide com a taxa zero DI do vencimento, e a fórmula
+            se reduz à utilizada por `yd.ltn.rentabilidade`. Na NTN-F, a TIR
+            equivalente considera também os cupons intermediários.
+
+        Referência: Tesouro Nacional, *Dívida Pública: a experiência brasileira*,
+        Parte 3, capítulo 2, Anexo 2, item 2, páginas 329–330:
+        [Prêmio das NTN-Fs](https://thot-arquivos.tesouro.gov.br/publicacao-anexo/4710).
     """
     if isinstance(taxa_ntnf, str):
         taxa_ntnf = float(_utils.converter_taxa(taxa_ntnf))
@@ -674,23 +803,23 @@ def rentabilidade(  # noqa
         taxa_di=interpolador_ff.interpolar_expr("dias_uteis"),
     )
 
-    preco_titulo = _utils.calcular_pv(
+    preco_referencia = _utils.calcular_pv(
         fluxos_caixa=df["valor_pagamento"],
         taxas=df["taxa_di"],
         prazos=df["anos_uteis"],
     )
 
-    if math.isnan(preco_titulo):
+    if math.isnan(preco_referencia):
         return float("nan")
 
     def diferenca_preco(taxa: float) -> float:
         fluxos_descontados = df["valor_pagamento"] / (1 + taxa) ** df["anos_uteis"]
-        return float(fluxos_descontados.sum()) - preco_titulo
+        return float(fluxos_descontados.sum()) - preco_referencia
 
-    di_tir = _utils.encontrar_raiz(diferenca_preco)
+    tir_di = _utils.encontrar_raiz(diferenca_preco)
 
     fator_ntnf = (1 + taxa_ntnf) ** (1 / 252)
-    fator_di = (1 + di_tir) ** (1 / 252)
+    fator_di = (1 + tir_di) ** (1 / 252)
     if fator_di == 1:
         return float("inf") if fator_ntnf > 1 else 0.0
 
@@ -716,9 +845,11 @@ def rentabilidade_expr(
         data_liquidacao: Data de liquidação para o cálculo.
         data_vencimento: Nome de coluna ou expressão Polars com a data de
             vencimento da NTN-F.
-        taxa_ntnf: Nome de coluna ou expressão Polars com a TIR da NTN-F.
+        taxa_ntnf: Nome de coluna ou expressão Polars com a TIR anual efetiva
+            da NTN-F, em decimal, na base de 252 dias úteis.
         vencimentos_di: Datas de vencimento da curva DI.
-        taxas_di: Taxas DI correspondentes aos vencimentos.
+        taxas_di: Taxas DI anuais efetivas, em decimal, na base de 252 dias
+            úteis, correspondentes aos vencimentos.
 
     Returns:
         pl.Expr: Expressão sem alias com a rentabilidade da NTN-F sobre a curva
@@ -746,25 +877,55 @@ def premio_limpo(  # noqa
     vencimentos_di: DatesLike,
     taxas_di: ArrayLike,
 ) -> float:
-    """
+    r"""
     Calcula o spread líquido (prêmio limpo no jargão de mercado) da NTN-F sobre a curva DI.
 
     A função determina o spread que iguala o valor presente dos fluxos ao preço
     do título. Interpola as taxas DI nas datas de pagamento e encontra o spread
-    (em bps) que zera a diferença de preços.
+    que zera a diferença de preços, retornado em decimal e conversível para bps.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
         data_vencimento (DateLike): Data de vencimento do título.
-        taxa_ntnf (float): TIR do título.
+        taxa_ntnf (float | str): TIR anual efetiva, em decimal, na base de
+            252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
         vencimentos_di (DatesLike): Vencimentos da curva DI.
-        taxas_di (ArrayLike): Série de taxas DI.
+        taxas_di (ArrayLike): Taxas DI anuais efetivas, em decimal, na base
+            de 252 dias úteis, correspondentes aos vencimentos.
 
     Returns:
         float: Spread líquido em formato decimal (ex.: 0.0012 = 12 bps).
             Retorna NaN para entradas ausentes ou fluxos vazios.
             Também retorna NaN se a resolução numérica falhar.
+
+    Notes:
+        O spread \(s\), adicionado a cada taxa DI anual em decimal,
+        é a solução de:
+
+        \[
+        \sum_{i=1}^{n}
+        \frac{\mathrm{FC}_i}{(1+\mathrm{DI}_i+s)^{t_i}}
+        = \mathrm{PU} = \sum_{i=1}^{n}
+        \frac{\mathrm{FC}_i}{(1+y)^{t_i}}
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}_i\): valor do pagamento \(i\), incluindo cupom e
+          amortização quando aplicável.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e pagamento \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o pagamento \(i\), em anos
+          de 252 dias úteis.
+        - \(n\): número de pagamentos restantes.
+        - \(y\): TIR anual efetiva informada em `taxa_ntnf`, em decimal,
+          na base de 252 dias úteis.
+        - \(\mathrm{DI}_i := \mathrm{DI}(t_i)\): taxa DI anual efetiva,
+          em decimal, para o prazo do pagamento \(i\), obtida por
+          interpolação `flat_forward`, na base de 252 dias úteis.
+
+        Para expressar o spread em pontos-base, multiplique por 10.000. Os preços
+        são teóricos, sem os arredondamentos e truncamentos do PU oficial.
 
     Examples:
         # Obs: apenas algumas taxas DI serão usadas no exemplo.
@@ -817,9 +978,9 @@ def premio_limpo(  # noqa
     fluxos_titulo = df["valor_pagamento"]
     di_interpolada = df["taxa_di_interpolada"]
 
-    def diferenca_preco(p: float) -> float:
+    def diferenca_preco(spread: float) -> float:
         fluxos_descontados = (
-            fluxos_titulo / (1 + di_interpolada + p) ** anos_uteis_pagamento
+            fluxos_titulo / (1 + di_interpolada + spread) ** anos_uteis_pagamento
         )
         return float(fluxos_descontados.sum()) - preco_titulo
 
@@ -844,9 +1005,11 @@ def premio_limpo_expr(
         data_liquidacao: Data de liquidação para o cálculo.
         data_vencimento: Nome de coluna ou expressão Polars com a data de
             vencimento da NTN-F.
-        taxa_ntnf: Nome de coluna ou expressão Polars com a TIR da NTN-F.
+        taxa_ntnf: Nome de coluna ou expressão Polars com a TIR anual efetiva
+            da NTN-F, em decimal, na base de 252 dias úteis.
         vencimentos_di: Datas de vencimento da curva DI.
-        taxas_di: Taxas DI correspondentes aos vencimentos.
+        taxas_di: Taxas DI anuais efetivas, em decimal, na base de 252 dias
+            úteis, correspondentes aos vencimentos.
 
     Returns:
         pl.Expr: Expressão sem alias com o prêmio limpo da NTN-F sobre a curva
@@ -872,17 +1035,42 @@ def duration(
     data_vencimento: DateLike,
     taxa: float | str,
 ) -> float:
-    """
+    r"""
     Calcula a Macaulay duration de uma NTN-F em anos úteis.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação para o cálculo.
         data_vencimento (DateLike): Data de vencimento do título.
-        taxa (float): TIR usada para descontar os fluxos.
+        taxa (float | str): TIR anual efetiva, em decimal, na base de 252 dias
+            úteis, usada para descontar os fluxos.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
         float: Macaulay duration em anos úteis. Retorna NaN se inválido.
+
+    Notes:
+        A Macaulay duration \(D\), em anos de 252 dias úteis, é:
+
+        \[
+        D = \frac{
+        \sum_{i=1}^{n}t_i\,\mathrm{FC}_i/(1+y)^{t_i}}
+        {\mathrm{PU}}
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}_i\): valor do pagamento \(i\), incluindo cupom e
+          amortização quando aplicável.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e pagamento \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o pagamento \(i\), em anos
+          de 252 dias úteis.
+        - \(n\): número de pagamentos restantes.
+        - \(y\): TIR anual efetiva informada em `taxa`, em decimal, na
+          base de 252 dias úteis.
+        - \(\mathrm{PU}\): soma dos fluxos descontados pela TIR \(y\).
+
+        Os fluxos descontados não aplicam os arredondamentos e truncamentos
+        do PU oficial.
 
     Examples:
         >>> from pyield import ntnf
@@ -919,7 +1107,8 @@ def duration_expr(
             liquidação.
         data_vencimento: Nome de coluna ou expressão Polars com a data de
             vencimento.
-        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+        taxa: Nome de coluna ou expressão Polars com a TIR anual efetiva,
+            em decimal, na base de 252 dias úteis.
 
     Returns:
         pl.Expr: Expressão sem alias com a Macaulay duration em anos úteis.
@@ -943,7 +1132,7 @@ def dv01(
     data_vencimento: DateLike,
     taxa: float | Decimal | str,
 ) -> float:
-    """
+    r"""
     Calcula o DV01 (Dollar Value of 01) de uma NTN-F em R$.
 
     Representa a redução do PU teórico para um aumento de 1 bp (0,01 ponto
@@ -953,11 +1142,41 @@ def dv01(
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
-        taxa (float): Taxa de desconto (TIR) do título.
+        taxa (float | Decimal | str): TIR anual efetiva, em decimal, na base
+            de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
 
     Returns:
         float: DV01, variação de preço para 1 bp.
+
+    Notes:
+        Mantendo liquidação e vencimento fixos, os fluxos e seus prazos
+        também ficam fixos. Nesse contexto, o preço teórico em função da TIR é:
+
+        \[
+        \mathrm{PU}(y) = \sum_{i=1}^{n}\frac{\mathrm{FC}_i}{(1+y)^{t_i}}
+        \]
+
+        O \(\mathrm{DV01}\) é a redução do preço, em R$, para um aumento
+        de 1 bp na TIR:
+
+        \[
+        \mathrm{DV01} = \mathrm{PU}(y) - \mathrm{PU}(y+0.0001)
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}_i\): valor do pagamento \(i\), incluindo cupom e
+          amortização quando aplicável.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e pagamento \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o pagamento \(i\), em anos
+          de 252 dias úteis.
+        - \(n\): número de pagamentos restantes.
+        - \(y\): TIR anual efetiva informada em `taxa`, em decimal, na
+          base de 252 dias úteis.
+        - \(0.0001\): aumento de 1 bp na TIR em decimal.
+
+        Os preços não aplicam os arredondamentos e truncamentos do PU oficial.
 
     Examples:
         >>> from pyield import ntnf
@@ -988,7 +1207,8 @@ def dv01_expr(
             liquidação.
         data_vencimento: Nome de coluna ou expressão Polars com a data de
             vencimento.
-        taxa: Nome de coluna ou expressão Polars com a taxa em formato decimal.
+        taxa: Nome de coluna ou expressão Polars com a TIR anual efetiva,
+            em decimal, na base de 252 dias úteis.
 
     Returns:
         pl.Expr: Expressão sem alias com o DV01.
@@ -1012,7 +1232,7 @@ def taxa(
     data_vencimento: DateLike,
     pu: float | Decimal,
 ) -> float:
-    """
+    r"""
     Calcula a TIR implícita de uma NTN-F a partir de um PU informado.
 
     A função resolve numericamente a taxa que aproxima o PU informado pelo
@@ -1029,6 +1249,29 @@ def taxa(
         float: TIR implícita em formato decimal, sem arredondamento. Retorna
             NaN para entradas ausentes, PU não positivo ou falha na resolução
             numérica.
+
+    Notes:
+        A TIR implícita \(y\), anual efetiva, em decimal e na base de
+        252 dias úteis, é a solução de:
+
+        \[
+        \sum_{i=1}^{n}
+        \frac{\mathrm{FC}_i}{(1+y)^{t_i}}
+        = \mathrm{PU}_{\mathrm{informado}}
+        \]
+
+        onde:
+
+        - \(\mathrm{FC}_i\): valor do pagamento \(i\), incluindo cupom e
+          amortização quando aplicável.
+        - \(\mathrm{DU}_i\): dias úteis entre liquidação e pagamento \(i\).
+        - \(t_i = \mathrm{DU}_i/252\): prazo até o pagamento \(i\), em anos
+          de 252 dias úteis.
+        - \(n\): número de pagamentos restantes.
+        - \(\mathrm{PU}_{\mathrm{informado}}\): preço recebido em `pu`.
+
+        A soma representa o preço teórico, sem os arredondamentos e truncamentos
+        do PU oficial.
 
     Examples:
         Exibe as taxas em formato decimal:

@@ -37,6 +37,7 @@ uv add pyield
 - [Documentação completa](https://crdcj.github.io/PYield/): conceitos e referência por módulo.
 - [Mapa da API](https://crdcj.github.io/PYield/api-map/): namespaces e funções públicas.
 - [Desenvolvimento e publicação](https://crdcj.github.io/PYield/desenvolvimento/): ambiente, verificações, build e PyPI.
+- [Gerar e publicar a documentação](docs/desenvolvimento.md#documentação): geração, visualização local e GitHub Pages.
 - [Notebook no Colab](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb): exploração interativa.
 - [Pacote no PyPI](https://pypi.org/project/pyield/).
 
@@ -76,7 +77,22 @@ uv add pyield
 O [mapa completo da API](https://crdcj.github.io/PYield/api-map/) inclui a
 documentação detalhada e as assinaturas públicas.
 
-## Compatibilidade da API
+## Novidades na versão 0.59.0
+
+Resumo das principais mudanças em relação à série `0.58`, cuja última versão
+foi a `0.58.2`.
+
+### Taxas e DV01 analíticos
+
+As funções `taxa` de `yd.ltn`, `yd.ntnf`, `yd.ntnb`, `yd.ntnc` e `yd.lft`
+passam a retornar `float` sem truncamento, em vez de `Decimal` truncado em oito
+casas. Entradas inválidas retornam `float("nan")`; use `math.isnan` no lugar de
+`.is_nan()`.
+
+`taxa` e `dv01` de todos os títulos descontam os fluxos com `dias úteis / 252`,
+sem os truncamentos intermediários da STN. Os valores mudam levemente em
+relação à versão anterior, e `taxa(pu(...))` recupera a taxa original apenas
+aproximadamente. `pu` e `cotacao` seguem a metodologia oficial e não mudaram.
 
 ### Séries do IPCA
 
@@ -95,68 +111,28 @@ Nas séries, `fim=None` usa a data atual no Brasil. Informe `inicio` ou
 `ultimos`; quando informado, `ultimos` tem prioridade sobre as datas.
 `taxa_projetada` permanece inalterada.
 
-### Taxas e DV01 analíticos — 0.59.0
+### Outras mudanças
 
-As funções `taxa` de `yd.ltn`, `yd.ntnf`, `yd.ntnb`, `yd.ntnc` e `yd.lft`
-passam a retornar `float` sem truncamento, em vez de `Decimal` truncado em oito
-casas. Entradas inválidas retornam `float("nan")`; use `math.isnan` no lugar de
-`.is_nan()`.
+- Novo módulo `yd.igpm`, com `taxa` e `taxa_serie` para consultar taxas mensais
+  do IGP-M via SGS/BCB, em formato decimal.
+- CPM passa a expor `yd.cpm.contratos(data)` e
+  `yd.cpm.probabilidades(data, tipo_opcao="call")`. Esta última retorna todas
+  as reuniões disponíveis; filtre o DataFrame para selecionar uma reunião.
+- Leilões do BCB passam de `yd.bc.leiloes` para `yd.tpf.leiloes_bcb`, com nomes
+  de colunas alinhados aos de `yd.tpf.leiloes`.
+- No mercado secundário, `yd.tpf.secundario.ler(fonte)` substitui `ler_zip` e
+  `zip_para_silver`: aceita caminho ou bytes de ZIP e inclui `financeiro` na
+  saída. `nome_arquivo_mensal` deixa de ser público.
+- `yd.ntnf.premio` foi removida. Use `yd.tpf.premios_pre(data)` e filtre
+  `titulo == "NTN-F"` para obter o prêmio bruto.
+- `yd.tpf.taxas` preserva colunas e tipos quando não há dados. Nos leilões do
+  Tesouro, PU mínimo informado como zero passa a ser nulo, e o financeiro
+  ofertado usa o PU médio calculado quando necessário.
+- `yd.rmd` passa a propagar erros de download e processamento, em vez de
+  retornar um DataFrame vazio nessas situações.
 
-`taxa` e `dv01` de todos os títulos descontam os fluxos com `dias úteis / 252`,
-sem os truncamentos intermediários da STN. Os valores mudam levemente em
-relação à versão anterior, e `taxa(pu(...))` recupera a taxa original apenas
-aproximadamente. `pu` e `cotacao` seguem a metodologia oficial e não mudaram.
-
-### Cotações em base 100 — 0.58.0
-
-As funções escalares de cálculo dos títulos também aceitam taxas percentuais
-explícitas, como `"5.75%"` ou `"5,75%"`, equivalentes a `0.0575`.
-Números continuam em formato decimal; strings sem `%` são rejeitadas.
-
-As funções `cotacao` de `yd.lft`, `yd.ntnb`, `yd.ntnc`, `yd.ntnbp` e
-`yd.ntnb1` passam a retornar base 100 com quatro casas decimais:
-`0.993651` passa a ser `99.3651`. As funções `pu` desses títulos recebem a
-cotação nessa mesma base e aplicam `VNA * cotacao / 100`.
-
-A coluna `valor_pagamento` de `fluxos_caixa` de NTN-B, NTN-C e NTN-B1 e o
-retorno de `ntnb1.cotacao_curva_zero` também passam para base 100. Esta última
-mantém a soma sem truncamento para calibrar a TIR equivalente.
-
-Para migrar, multiplique cotações e fluxos antigos armazenados por 100, remova
-multiplicações por 100 usadas apenas para exibir cotações e ajuste cálculos
-manuais de PU para dividir por 100. A composição `pu(vna, cotacao(...))`
-preserva a unidade e as regras de precisão do preço. Taxas continuam em formato
-decimal, e VNA e PU continuam em reais.
-
-As funções `yd.ltn.dv01` e `yd.ntnf.dv01` não recebem mais um PU de referência:
-calculam a redução do PU teórico para um aumento de 1 ponto-base na taxa.
-
-### Demais alterações
-
-Este resumo parte da API da `0.56.0`. Mudanças que já faziam parte dessa versão
-ou de versões anteriores estão no histórico das
-[releases do GitHub](https://github.com/crdcj/PYield/releases).
-
-| Antes | Agora |
-|---|---|
-| `ntnbp.taxas_zero(...)` | `ntnb.taxas_zero(...)`, sem `incluir_vertices` |
-| `ntnb.taxas_zero(..., incluir_cupons=...)` | `ntnb.taxas_zero(...)`, sem `incluir_cupons` |
-| `ntnb.taxas_zero(..., percentual=...)` | `ntnb.taxas_zero(...)`, com taxas em formato decimal |
-| `yd.tpf.ntnb` | `yd.ntnb` ou `from pyield import ntnb` |
-| `yd.tpf.rmd(aba)` | `yd.rmd(aba)` ou `from pyield import rmd` |
-| `pyield.tpf.vna.calcular_vna(...)` | `yd.vna.calcular_vna(...)` |
-| `yd.ntnb.vna(data)` | `yd.vna.valor("NTN-B", data)` |
-| `yd.ntnb.vnas()` | `yd.vna.historico("NTN-B")` |
-| `vna_projetado(...)` nos módulos de títulos | `yd.vna.projetado(titulo, data, vna_base, inflacao)`; para LFT, use `selic=` |
-| `vigencia(data)` nos módulos de títulos | `yd.vna.vigencia(titulo, data)` |
-
-O namespace público segue a autonomia semântica do conceito que o usuário
-precisa conhecer, e não apenas a fonte dos dados ou sua relação temática com
-outro domínio. Por isso, conceitos como `yd.ltn`, `yd.ntnb`, `yd.vna` e `yd.rmd`
-ficam na raiz, enquanto as implementações podem continuar agrupadas
-internamente por domínio para manter o código coeso.
-Consulte as [releases](https://github.com/crdcj/PYield/releases) para o
-histórico completo.
+Consulte as [releases do GitHub](https://github.com/crdcj/PYield/releases)
+para o histórico completo e as notas de migração de versões anteriores.
 
 ## Projeto
 
