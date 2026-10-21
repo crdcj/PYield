@@ -14,10 +14,29 @@ from pyield.vna import _download
 _URL_PUBLICACAO = (
     "https://www.tesourotransparente.gov.br/publicacoes/valor-nominal-de-ntn-c/"
 )
+_URL_ARQUIVO = "https://thot-arquivos.tesouro.gov.br/publicacao/45833"
+_TIPO_VNA = pl.Decimal(precision=18, scale=6)
 _ANOS_VENCIMENTO = {
     "column_2": [2005, 2008, 2011, 2017, 2021, 2031],
     "column_3": [2002, 2006],
 }
+
+
+def _expressao_vna(df_bruto: pl.DataFrame, coluna: str) -> pl.Expr:
+    """Converte o VNA numérico, inclusive textos no formato brasileiro."""
+    valor = pl.col(coluna)
+    if df_bruto.schema[coluna] == pl.String:
+        texto = valor.str.strip_chars()
+        valor = (
+            pl.when(texto.str.contains(",", literal=True))
+            .then(
+                texto.str.replace_all(".", "", literal=True).str.replace(
+                    ",", ".", literal=True
+                )
+            )
+            .otherwise(texto)
+        )
+    return valor.cast(_TIPO_VNA, strict=False)
 
 
 def _processar(df_bruto: pl.DataFrame) -> pl.DataFrame:
@@ -27,7 +46,7 @@ def _processar(df_bruto: pl.DataFrame) -> pl.DataFrame:
         serie = df_bruto.select(
             data=_vna.expressao_data(),
             anos_vencimento=pl.lit(anos, dtype=pl.List(pl.Int64)),
-            vna=pl.col(coluna).cast(pl.Float64, strict=False),
+            vna=_expressao_vna(df_bruto, coluna),
         ).filter(
             pl.col("data").is_not_null(),
             pl.col("vna").is_not_null(),
@@ -55,9 +74,13 @@ def vnas(*, atualizar: bool = False) -> pl.DataFrame:
         - data (Date): Data de referência do VNA.
         - anos_vencimento (List[Int64]): Anos de vencimento aos quais o VNA se
             aplica.
-        - vna (Float64): Valor nominal atualizado da NTN-C.
+        - vna (Decimal(18, 6)): Valor nominal atualizado da NTN-C.
     """
-    conteudo = _download.baixar_planilha(_URL_PUBLICACAO, _atualizar=atualizar)
+    conteudo = _download.baixar_planilha(
+        _URL_PUBLICACAO,
+        _URL_ARQUIVO,
+        _atualizar=atualizar,
+    )
     return _processar(_download.ler_planilha(conteudo, "NTN-C"))
 
 

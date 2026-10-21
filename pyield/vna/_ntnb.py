@@ -15,9 +15,11 @@ from pyield.vna import _download
 
 _DIA_INICIO_VIGENCIA = 15
 _QTD_MARCOS_VIGENCIA = 2
+_TIPO_VNA = pl.Decimal(precision=18, scale=6)
 _URL_PUBLICACAO = (
     "https://www.tesourotransparente.gov.br/publicacoes/valor-nominal-de-ntn-b/"
 )
+_URL_ARQUIVO = "https://thot-arquivos.tesouro.gov.br/publicacao/53360"
 
 
 def _processar(df_bruto: pl.DataFrame) -> pl.DataFrame:
@@ -25,7 +27,7 @@ def _processar(df_bruto: pl.DataFrame) -> pl.DataFrame:
     return (
         df_bruto.select(
             data=_vna.expressao_data(),
-            vna=pl.col("column_2").cast(pl.Float64, strict=False),
+            vna=pl.col("column_2").cast(_TIPO_VNA, strict=False),
         )
         .filter(pl.col("data").is_not_null(), pl.col("vna").is_not_null())
         .unique(subset="data", keep="last")
@@ -44,9 +46,13 @@ def vnas(*, atualizar: bool = False) -> pl.DataFrame:
 
     Output Columns:
         - data (Date): Data de referência do VNA.
-        - vna (Float64): Valor nominal atualizado da NTN-B.
+        - vna (Decimal(18, 6)): Valor nominal atualizado da NTN-B.
     """
-    conteudo = _download.baixar_planilha(_URL_PUBLICACAO, _atualizar=atualizar)
+    conteudo = _download.baixar_planilha(
+        _URL_PUBLICACAO,
+        _URL_ARQUIVO,
+        _atualizar=atualizar,
+    )
     return _processar(_download.ler_planilha(conteudo, "NTNB"))
 
 

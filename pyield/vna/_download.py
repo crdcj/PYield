@@ -1,5 +1,6 @@
 """Download e leitura das planilhas de VNA do Tesouro Nacional."""
 
+import logging
 from urllib.parse import urlparse
 
 import polars as pl
@@ -10,6 +11,7 @@ from pyield._internal.cache import ttl_cache
 from pyield._internal.excel import ler_sem_cabecalho
 from pyield._internal.retry import retry_padrao
 
+registro = logging.getLogger(__name__)
 _DOMINIO_ARQUIVOS = "thot-arquivos.tesouro.gov.br"
 _TIMEOUT_SEGUNDOS = 60
 
@@ -41,8 +43,17 @@ def _extrair_url_planilha(conteudo: bytes) -> str:
 
 
 @ttl_cache()
-def baixar_planilha(url_publicacao: str) -> bytes:
-    """Baixa a planilha mais recente de uma publicação de VNA."""
+def baixar_planilha(url_publicacao: str, url_arquivo: str | None = None) -> bytes:
+    """Baixa a planilha por permalink ou descobre o link na publicação."""
+    if url_arquivo is not None:
+        try:
+            return _buscar_conteudo(url_arquivo)
+        except requests.RequestException:
+            registro.warning(
+                "Falha ao baixar o permalink da planilha de VNA; "
+                "tentando descobrir o arquivo pela página de publicação."
+            )
+
     pagina = _buscar_conteudo(url_publicacao)
     url_planilha = _extrair_url_planilha(pagina)
     return _buscar_conteudo(url_planilha)

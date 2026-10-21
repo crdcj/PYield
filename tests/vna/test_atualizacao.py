@@ -12,6 +12,7 @@ from pyield.vna import _download, _lft, _ntnb, _ntnc  # noqa: PLC2701
 from tests.vna.test_lft import TEXTO_BCB
 
 TOTAL_REQUISICOES = 4
+TOTAL_DOWNLOADS_VNA = 2
 
 
 def _planilha(aba: str, valor: int) -> bytes:
@@ -64,11 +65,11 @@ def test_atualizacao_mensal_renova_cache(monkeypatch, titulo, modulo, operacao):
 
     def buscar(url):
         downloads.append(url)
-        if url == modulo._URL_PUBLICACAO:
-            return (
-                b'<a href="https://thot-arquivos.tesouro.gov.br/publicacao/1">VNA</a>'
-            )
-        return _planilha("NTNB" if titulo == "NTN-B" else "NTN-C", len(downloads))
+        assert url == modulo._URL_ARQUIVO
+        return _planilha(
+            "NTNB" if titulo == "NTN-B" else "NTN-C",
+            len(downloads) * 2,
+        )
 
     # Isola o cache; somente o transporte é substituído no fluxo de consulta.
     monkeypatch.setattr(
@@ -87,7 +88,8 @@ def test_atualizacao_mensal_renova_cache(monkeypatch, titulo, modulo, operacao):
     assert consultar() == Decimal(2)
     assert consultar(atualizar=True) == Decimal(4)
     assert consultar() == Decimal(4)
-    assert len(downloads) == TOTAL_REQUISICOES  # página e planilha em cada download
+    assert len(downloads) == TOTAL_DOWNLOADS_VNA
+    assert set(downloads) == {modulo._URL_ARQUIVO}
 
 
 def test_lft_atualiza_apenas_data_consultada_e_propaga_erro(monkeypatch):

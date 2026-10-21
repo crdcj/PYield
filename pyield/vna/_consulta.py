@@ -85,7 +85,7 @@ def historico(
 
     Output Columns:
         - data (Date): Data de referência publicada.
-        - vna (Float64): Valor nominal atualizado publicado.
+        - vna (Decimal(18, 6)): Valor nominal atualizado publicado.
         - anos_vencimento (List[Int64]): Apenas NTN-C; anos da série.
 
     Notes:
@@ -129,7 +129,7 @@ def ultimo(
 
     Output Columns:
         - data (Date): Data de referência da última publicação da série.
-        - vna (Float64): VNA publicado nessa referência.
+        - vna (Decimal(18, 6)): VNA publicado nessa referência.
         - anos_vencimento (List[Int64]): Apenas NTN-C; anos da série.
 
     Notes:

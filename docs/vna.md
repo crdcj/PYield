@@ -44,7 +44,8 @@ série 1178 é a Selic Over anualizada e serve apenas como aproximação. A
 data-base é o último dia útil anterior à data solicitada. A projeção usa a
 quantidade de dias úteis até a data solicitada e retorna `Decimal`. Intervalos
 diferentes de um dia útil são calculados normalmente e registrados no log.
-`historico` e `ultimo` retornam DataFrames com coluna `vna` do tipo `Float64`.
+`historico` e `ultimo` retornam DataFrames com coluna `vna` do tipo
+`Decimal(18, 6)`.
 O cálculo genérico `calcular_vna` mantém seu retorno `float` existente.
 
 Por exemplo, o SGS 11 publicou `0,050788%` para 18/09/2026. Isso corresponde

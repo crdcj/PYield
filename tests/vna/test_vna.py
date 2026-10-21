@@ -4,6 +4,7 @@ from decimal import Decimal
 
 import polars as pl
 import pytest
+import requests
 
 from pyield import vna
 from pyield.vna import _download, calcular_vna  # noqa: PLC2701
@@ -47,6 +48,24 @@ def test_calcular_vna_publico_retorna_ponto_exato() -> None:
 
     assert isinstance(resultado, float)
     assert resultado == VNA_TESTE_BASE
+
+
+def test_calcular_vna_aceita_vna_decimal() -> None:
+    df = pl.DataFrame(
+        {
+            "data": [dt.date(2026, 1, 1), dt.date(2026, 1, 11)],
+            "vna": [Decimal("100.000000"), Decimal("121.000000")],
+        },
+        schema_overrides={
+            "data": pl.Date,
+            "vna": pl.Decimal(precision=18, scale=6),
+        },
+    )
+
+    resultado = calcular_vna(df, dt.date(2026, 1, 6))
+
+    assert isinstance(resultado, float)
+    assert resultado == VNA_TESTE_INTERMEDIARIO
 
 
 def test_calcular_vna_publico_calcula_prorata_e_fator_alternativo() -> None:
@@ -126,6 +145,30 @@ def test_extrair_url_planilha() -> None:
     )
 
 
+def test_baixar_planilha_recurre_a_publicacao_quando_permalink_falha(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    urls = []
+    url_publicacao = "https://example.com/publicacao"
+    url_arquivo = "https://thot-arquivos.tesouro.gov.br/publicacao/teste"
+    url_descoberta = "https://thot-arquivos.tesouro.gov.br/publicacao/arquivo"
+
+    def buscar(url: str) -> bytes:
+        urls.append(url)
+        if url == url_arquivo:
+            raise requests.HTTPError("permalink indisponível")
+        if url == url_publicacao:
+            return f'<a href="{url_descoberta}">VNA</a>'.encode()
+        return b"planilha"
+
+    monkeypatch.setattr(_download, "_buscar_conteudo", buscar)
+
+    resultado = _download.baixar_planilha.__wrapped__(url_publicacao, url_arquivo)
+
+    assert resultado == b"planilha"
+    assert urls == [url_arquivo, url_publicacao, url_descoberta]
+
+
 def test_ler_planilha_converte_explicitamente_para_dataframe(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -161,9 +204,12 @@ def test_processar_ntnb() -> None:
     esperado = pl.DataFrame(
         {
             "data": [dt.date(2000, 7, 15), dt.date(2000, 8, 15)],
-            "vna": [1000.0, 1016.10286],
+            "vna": [Decimal("1000.000000"), Decimal("1016.102860")],
         },
-        schema_overrides={"data": pl.Date},
+        schema_overrides={
+            "data": pl.Date,
+            "vna": pl.Decimal(precision=18, scale=6),
+        },
     )
     assert resultado.equals(esperado)
 
@@ -181,7 +227,9 @@ def test_processar_ntnb_preserva_ultima_ocorrencia_da_data() -> None:
 
     resultado = vna_ntnb._processar(df_bruto)
 
-    assert resultado.to_dicts() == [{"data": dt.date(2000, 7, 15), "vna": 1000.0}]
+    assert resultado.to_dicts() == [
+        {"data": dt.date(2000, 7, 15), "vna": Decimal("1000.000000")}
+    ]
 
 
 def test_processar_ntnc_preserva_series_por_vencimento() -> None:
@@ -199,12 +247,12 @@ def test_processar_ntnc_preserva_series_por_vencimento() -> None:
         {
             "data": dt.date(2000, 7, 1),
             "anos_vencimento": [2002, 2006],
-            "vna": VNA_NTNC_2006_JUL_2000,
+            "vna": Decimal("1049.125124"),
         },
         {
             "data": dt.date(2000, 7, 1),
             "anos_vencimento": [2005, 2008, 2011, 2017, 2021, 2031],
-            "vna": 1000.0,
+            "vna": Decimal("1000.000000"),
         },
     ]
 
@@ -227,12 +275,37 @@ def test_processar_ntnc_preserva_ultima_ocorrencia_da_serie_e_data() -> None:
         {
             "data": dt.date(2000, 7, 1),
             "anos_vencimento": [2002, 2006],
-            "vna": VNA_NTNC_2006_JUL_2000,
+            "vna": Decimal("1049.125124"),
         },
         {
             "data": dt.date(2000, 7, 1),
             "anos_vencimento": [2005, 2008, 2011, 2017, 2021, 2031],
-            "vna": 1000.0,
+            "vna": Decimal("1000.000000"),
+        },
+    ]
+
+
+def test_processar_ntnc_preserva_vna_em_texto_brasileiro() -> None:
+    df_bruto = pl.DataFrame(
+        {
+            "column_1": ["2018-01-01 00:00:00"],
+            "column_2": ["3.580,282456"],
+            "column_3": ["3.580,282456"],
+        }
+    )
+
+    resultado = vna_ntnc._processar(df_bruto)
+
+    assert resultado.to_dicts() == [
+        {
+            "data": dt.date(2018, 1, 1),
+            "anos_vencimento": [2002, 2006],
+            "vna": Decimal("3580.282456"),
+        },
+        {
+            "data": dt.date(2018, 1, 1),
+            "anos_vencimento": [2005, 2008, 2011, 2017, 2021, 2031],
+            "vna": Decimal("3580.282456"),
         },
     ]
 
@@ -246,9 +319,15 @@ def test_vna_ntnb_calcula_entre_valores_publicados(
         lambda *, atualizar=False: pl.DataFrame(
             {
                 "data": [dt.date(2025, 12, 15), dt.date(2026, 1, 15)],
-                "vna": [VNA_NTNB_DEZ_2025, VNA_NTNB_JAN_2026],
+                "vna": [
+                    Decimal(str(VNA_NTNB_DEZ_2025)),
+                    Decimal(str(VNA_NTNB_JAN_2026)),
+                ],
             },
-            schema_overrides={"data": pl.Date},
+            schema_overrides={
+                "data": pl.Date,
+                "vna": pl.Decimal(precision=18, scale=6),
+            },
         ),
     )
     monkeypatch.setattr(
@@ -285,9 +364,15 @@ def test_vna_ntnb_usa_numeros_indice_com_precisao_normativa(
         lambda *, atualizar=False: pl.DataFrame(
             {
                 "data": [dt.date(2026, 7, 15), dt.date(2026, 8, 15)],
-                "vna": [VNA_NTNB_JUL_2026, VNA_NTNB_AGO_2026],
+                "vna": [
+                    Decimal(str(VNA_NTNB_JUL_2026)),
+                    Decimal(str(VNA_NTNB_AGO_2026)),
+                ],
             },
-            schema_overrides={"data": pl.Date},
+            schema_overrides={
+                "data": pl.Date,
+                "vna": pl.Decimal(precision=18, scale=6),
+            },
         ),
     )
 
@@ -327,13 +412,16 @@ def test_vna_ntnc_seleciona_serie_e_calcula_entre_valores_publicados(
                     [2005, 2008, 2031],
                 ],
                 "vna": [
-                    VNA_NTNC_2006_JUL_2000,
-                    VNA_NTNC_2006_AGO_2000,
-                    VNA_NTNC_2031_DEZ_2025,
-                    VNA_NTNC_2031_JAN_2026,
+                    Decimal(str(VNA_NTNC_2006_JUL_2000)),
+                    Decimal(str(VNA_NTNC_2006_AGO_2000)),
+                    Decimal(str(VNA_NTNC_2031_DEZ_2025)),
+                    Decimal(str(VNA_NTNC_2031_JAN_2026)),
                 ],
             },
-            schema_overrides={"data": pl.Date},
+            schema_overrides={
+                "data": pl.Date,
+                "vna": pl.Decimal(precision=18, scale=6),
+            },
         ),
     )
 

@@ -23,8 +23,8 @@ def calcular_vna(
     """Obtém o VNA publicado ou calcula o pró-rata entre pontos publicados.
 
     Args:
-        df: DataFrame com as colunas ``data`` (Date) e ``vna`` (Float64),
-            contendo no máximo um ponto publicado por data.
+        df: DataFrame com as colunas ``data`` (Date) e ``vna`` (Float64 ou
+            Decimal), contendo no máximo um ponto publicado por data.
         data: Data para a qual o VNA será obtido ou interpolado.
         fator_variacao: Fator multiplicativo entre o ponto inicial e o final.
             Se omitido, é calculado pela razão entre os VNAs dos dois pontos.

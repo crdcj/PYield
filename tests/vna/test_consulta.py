@@ -16,7 +16,16 @@ def series(monkeypatch):
     monkeypatch.setattr(
         ntnb,
         "vnas",
-        lambda *, atualizar=False: pl.DataFrame({"data": datas, "vna": [110.0, 100.0]}),
+        lambda *, atualizar=False: pl.DataFrame(
+            {
+                "data": datas,
+                "vna": pl.Series(
+                    "vna",
+                    [Decimal("110.000000"), Decimal("100.000000")],
+                    dtype=pl.Decimal(precision=18, scale=6),
+                ),
+            }
+        ),
     )
     monkeypatch.setattr(
         ntnc,
@@ -24,7 +33,15 @@ def series(monkeypatch):
         lambda *, atualizar=False: pl.DataFrame(
             {
                 "data": [*datas, datas[1]],
-                "vna": [220.0, 200.0, 300.0],
+                "vna": pl.Series(
+                    "vna",
+                    [
+                        Decimal("220.000000"),
+                        Decimal("200.000000"),
+                        Decimal("300.000000"),
+                    ],
+                    dtype=pl.Decimal(precision=18, scale=6),
+                ),
                 "anos_vencimento": [[2031], [2031], [2006]],
             }
         ),
@@ -33,9 +50,21 @@ def series(monkeypatch):
 
 @pytest.mark.usefixtures("series")
 def test_historico_e_ultimo_por_serie():
-    assert yd.vna.historico("NTN-B")["vna"].to_list() == [100.0, 110.0]
-    assert yd.vna.ultimo("NTN-B").row(0) == (dt.date(2026, 2, 1), 110.0)
-    assert yd.vna.ultimo("NTN-C")["vna"].to_list() == [300.0, 220.0]
+    assert yd.vna.historico("NTN-B")["vna"].to_list() == [
+        Decimal("100.000000"),
+        Decimal("110.000000"),
+    ]
+    assert yd.vna.historico("NTN-B")["vna"].dtype == pl.Decimal(
+        precision=18, scale=6
+    )
+    assert yd.vna.ultimo("NTN-B").row(0) == (
+        dt.date(2026, 2, 1),
+        Decimal("110.000000"),
+    )
+    assert yd.vna.ultimo("NTN-C")["vna"].to_list() == [
+        Decimal("300.000000"),
+        Decimal("220.000000"),
+    ]
     filtrado = yd.vna.ultimo("NTN-C", "01-01-2031")
     assert filtrado["vna"].to_list() == [220.0]
     vazio = yd.vna.ultimo("NTN-C", "01-01-2040")
