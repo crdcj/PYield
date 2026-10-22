@@ -1770,65 +1770,65 @@ Erros de rede e payload inválido são propagados.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyield/_internal/calendario_igpm.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-63">63</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-64">64</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-65">65</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-66">66</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-67">67</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-68">68</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-69">69</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-70">70</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-71">71</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-72">72</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-73">73</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-74">74</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-75">75</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-76">76</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-77">77</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-78">78</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-79">79</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-80">80</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-81">81</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-82">82</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-83">83</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-84">84</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-85">85</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-86">86</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-87">87</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-88">88</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-89">89</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-90">90</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-91">91</a></span>
-<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-92">92</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.igpm.calendario--source--__span-0-63"><a id="pyield.igpm.calendario--source--__codelineno-0-63" name="pyield.igpm.calendario--source--__codelineno-0-63"></a><span class="k">def</span><span class="w"> </span><span class="nf">calendario</span><span class="p">(</span><span class="n">ano</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">atualizar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-64"><a id="pyield.igpm.calendario--source--__codelineno-0-64" name="pyield.igpm.calendario--source--__codelineno-0-64"></a><span class="w">    </span><span class="sd">"""Consulta o calendário de divulgação mensal do IGP-M na FGV IBRE.</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-65"><a id="pyield.igpm.calendario--source--__codelineno-0-65" name="pyield.igpm.calendario--source--__codelineno-0-65"></a>
-</span><span id="pyield.igpm.calendario--source--__span-0-66"><a id="pyield.igpm.calendario--source--__codelineno-0-66" name="pyield.igpm.calendario--source--__codelineno-0-66"></a><span class="sd">    Args:</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-67"><a id="pyield.igpm.calendario--source--__codelineno-0-67" name="pyield.igpm.calendario--source--__codelineno-0-67"></a><span class="sd">        ano: Ano das divulgações e competências.</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-68"><a id="pyield.igpm.calendario--source--__codelineno-0-68" name="pyield.igpm.calendario--source--__codelineno-0-68"></a><span class="sd">        atualizar: Ignora e renova o cache de 60 segundos desse ano.</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-69"><a id="pyield.igpm.calendario--source--__codelineno-0-69" name="pyield.igpm.calendario--source--__codelineno-0-69"></a>
-</span><span id="pyield.igpm.calendario--source--__span-0-70"><a id="pyield.igpm.calendario--source--__codelineno-0-70" name="pyield.igpm.calendario--source--__codelineno-0-70"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-71"><a id="pyield.igpm.calendario--source--__codelineno-0-71" name="pyield.igpm.calendario--source--__codelineno-0-71"></a><span class="sd">        DataFrame ordenado por competência. Sem registros, retorna vazio com</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-72"><a id="pyield.igpm.calendario--source--__codelineno-0-72" name="pyield.igpm.calendario--source--__codelineno-0-72"></a><span class="sd">        o mesmo esquema.</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-73"><a id="pyield.igpm.calendario--source--__codelineno-0-73" name="pyield.igpm.calendario--source--__codelineno-0-73"></a>
-</span><span id="pyield.igpm.calendario--source--__span-0-74"><a id="pyield.igpm.calendario--source--__codelineno-0-74" name="pyield.igpm.calendario--source--__codelineno-0-74"></a><span class="sd">    Output Columns:</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-75"><a id="pyield.igpm.calendario--source--__codelineno-0-75" name="pyield.igpm.calendario--source--__codelineno-0-75"></a><span class="sd">        competencia (Date): Primeiro dia do mês da divulgação mensal do IGP-M.</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-76"><a id="pyield.igpm.calendario--source--__codelineno-0-76" name="pyield.igpm.calendario--source--__codelineno-0-76"></a><span class="sd">        data_divulgacao (Date): Data prevista pela FGV IBRE.</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-77"><a id="pyield.igpm.calendario--source--__codelineno-0-77" name="pyield.igpm.calendario--source--__codelineno-0-77"></a>
-</span><span id="pyield.igpm.calendario--source--__span-0-78"><a id="pyield.igpm.calendario--source--__codelineno-0-78" name="pyield.igpm.calendario--source--__codelineno-0-78"></a><span class="sd">    Notes:</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-79"><a id="pyield.igpm.calendario--source--__codelineno-0-79" name="pyield.igpm.calendario--source--__codelineno-0-79"></a><span class="sd">        Fonte: calendário de divulgação da FGV IBRE. Seleciona o IGP-M mensal</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-80"><a id="pyield.igpm.calendario--source--__codelineno-0-80" name="pyield.igpm.calendario--source--__codelineno-0-80"></a><span class="sd">        com seus componentes, excluindo prévias decendiais e outros índices.</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-81"><a id="pyield.igpm.calendario--source--__codelineno-0-81" name="pyield.igpm.calendario--source--__codelineno-0-81"></a><span class="sd">        A competência corresponde ao mês da divulgação mensal. A data prevista</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-82"><a id="pyield.igpm.calendario--source--__codelineno-0-82" name="pyield.igpm.calendario--source--__codelineno-0-82"></a><span class="sd">        não comprova publicação. Não cria janelas estimadas quando faltam dados.</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-83"><a id="pyield.igpm.calendario--source--__codelineno-0-83" name="pyield.igpm.calendario--source--__codelineno-0-83"></a><span class="sd">        Erros de rede e payload inválido são propagados.</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-84"><a id="pyield.igpm.calendario--source--__codelineno-0-84" name="pyield.igpm.calendario--source--__codelineno-0-84"></a>
-</span><span id="pyield.igpm.calendario--source--__span-0-85"><a id="pyield.igpm.calendario--source--__codelineno-0-85" name="pyield.igpm.calendario--source--__codelineno-0-85"></a><span class="sd">    Raises:</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-86"><a id="pyield.igpm.calendario--source--__codelineno-0-86" name="pyield.igpm.calendario--source--__codelineno-0-86"></a><span class="sd">        ValueError: Ano inválido, data inválida ou datas conflitantes.</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-87"><a id="pyield.igpm.calendario--source--__codelineno-0-87" name="pyield.igpm.calendario--source--__codelineno-0-87"></a><span class="sd">    """</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-88"><a id="pyield.igpm.calendario--source--__codelineno-0-88" name="pyield.igpm.calendario--source--__codelineno-0-88"></a>    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">ano</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">int</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">dt</span><span class="o">.</span><span class="n">MINYEAR</span> <span class="o">&lt;=</span> <span class="n">ano</span> <span class="o">&lt;=</span> <span class="n">dt</span><span class="o">.</span><span class="n">MAXYEAR</span><span class="p">:</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-89"><a id="pyield.igpm.calendario--source--__codelineno-0-89" name="pyield.igpm.calendario--source--__codelineno-0-89"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"ano deve ser um inteiro entre 1 e 9999."</span><span class="p">)</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-90"><a id="pyield.igpm.calendario--source--__codelineno-0-90" name="pyield.igpm.calendario--source--__codelineno-0-90"></a>    <span class="k">return</span> <span class="n">_processar_calendario</span><span class="p">(</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-91"><a id="pyield.igpm.calendario--source--__codelineno-0-91" name="pyield.igpm.calendario--source--__codelineno-0-91"></a>        <span class="n">_parsear_calendario</span><span class="p">(</span><span class="n">_buscar_calendario</span><span class="p">(</span><span class="n">ano</span><span class="p">,</span> <span class="n">_atualizar</span><span class="o">=</span><span class="n">atualizar</span><span class="p">))</span>
-</span><span id="pyield.igpm.calendario--source--__span-0-92"><a id="pyield.igpm.calendario--source--__codelineno-0-92" name="pyield.igpm.calendario--source--__codelineno-0-92"></a>    <span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"competencia"</span><span class="p">)</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">year</span><span class="p">()</span> <span class="o">==</span> <span class="n">ano</span><span class="p">)</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-77"> 77</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-78"> 78</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-79"> 79</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-80"> 80</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-81"> 81</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-82"> 82</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-83"> 83</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-84"> 84</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-85"> 85</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-86"> 86</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-87"> 87</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-88"> 88</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-89"> 89</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-90"> 90</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-91"> 91</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-92"> 92</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-93"> 93</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-94"> 94</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-95"> 95</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-96"> 96</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-97"> 97</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-98"> 98</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-99"> 99</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-100">100</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-101">101</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-102">102</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-103">103</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-104">104</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-105">105</a></span>
+<span class="normal"><a href="#pyield.igpm.calendario--source--__codelineno-0-106">106</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.igpm.calendario--source--__span-0-77"><a id="pyield.igpm.calendario--source--__codelineno-0-77" name="pyield.igpm.calendario--source--__codelineno-0-77"></a><span class="k">def</span><span class="w"> </span><span class="nf">calendario</span><span class="p">(</span><span class="n">ano</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">atualizar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-78"><a id="pyield.igpm.calendario--source--__codelineno-0-78" name="pyield.igpm.calendario--source--__codelineno-0-78"></a><span class="w">    </span><span class="sd">"""Consulta o calendário de divulgação mensal do IGP-M na FGV IBRE.</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-79"><a id="pyield.igpm.calendario--source--__codelineno-0-79" name="pyield.igpm.calendario--source--__codelineno-0-79"></a>
+</span><span id="pyield.igpm.calendario--source--__span-0-80"><a id="pyield.igpm.calendario--source--__codelineno-0-80" name="pyield.igpm.calendario--source--__codelineno-0-80"></a><span class="sd">    Args:</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-81"><a id="pyield.igpm.calendario--source--__codelineno-0-81" name="pyield.igpm.calendario--source--__codelineno-0-81"></a><span class="sd">        ano: Ano das divulgações e competências.</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-82"><a id="pyield.igpm.calendario--source--__codelineno-0-82" name="pyield.igpm.calendario--source--__codelineno-0-82"></a><span class="sd">        atualizar: Ignora e renova o cache de 60 segundos desse ano.</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-83"><a id="pyield.igpm.calendario--source--__codelineno-0-83" name="pyield.igpm.calendario--source--__codelineno-0-83"></a>
+</span><span id="pyield.igpm.calendario--source--__span-0-84"><a id="pyield.igpm.calendario--source--__codelineno-0-84" name="pyield.igpm.calendario--source--__codelineno-0-84"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-85"><a id="pyield.igpm.calendario--source--__codelineno-0-85" name="pyield.igpm.calendario--source--__codelineno-0-85"></a><span class="sd">        DataFrame ordenado por competência. Sem registros, retorna vazio com</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-86"><a id="pyield.igpm.calendario--source--__codelineno-0-86" name="pyield.igpm.calendario--source--__codelineno-0-86"></a><span class="sd">        o mesmo esquema.</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-87"><a id="pyield.igpm.calendario--source--__codelineno-0-87" name="pyield.igpm.calendario--source--__codelineno-0-87"></a>
+</span><span id="pyield.igpm.calendario--source--__span-0-88"><a id="pyield.igpm.calendario--source--__codelineno-0-88" name="pyield.igpm.calendario--source--__codelineno-0-88"></a><span class="sd">    Output Columns:</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-89"><a id="pyield.igpm.calendario--source--__codelineno-0-89" name="pyield.igpm.calendario--source--__codelineno-0-89"></a><span class="sd">        competencia (Date): Primeiro dia do mês da divulgação mensal do IGP-M.</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-90"><a id="pyield.igpm.calendario--source--__codelineno-0-90" name="pyield.igpm.calendario--source--__codelineno-0-90"></a><span class="sd">        data_divulgacao (Date): Data prevista pela FGV IBRE.</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-91"><a id="pyield.igpm.calendario--source--__codelineno-0-91" name="pyield.igpm.calendario--source--__codelineno-0-91"></a>
+</span><span id="pyield.igpm.calendario--source--__span-0-92"><a id="pyield.igpm.calendario--source--__codelineno-0-92" name="pyield.igpm.calendario--source--__codelineno-0-92"></a><span class="sd">    Notes:</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-93"><a id="pyield.igpm.calendario--source--__codelineno-0-93" name="pyield.igpm.calendario--source--__codelineno-0-93"></a><span class="sd">        Fonte: calendário de divulgação da FGV IBRE. Seleciona o IGP-M mensal</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-94"><a id="pyield.igpm.calendario--source--__codelineno-0-94" name="pyield.igpm.calendario--source--__codelineno-0-94"></a><span class="sd">        com seus componentes, excluindo prévias decendiais e outros índices.</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-95"><a id="pyield.igpm.calendario--source--__codelineno-0-95" name="pyield.igpm.calendario--source--__codelineno-0-95"></a><span class="sd">        A competência corresponde ao mês da divulgação mensal. A data prevista</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-96"><a id="pyield.igpm.calendario--source--__codelineno-0-96" name="pyield.igpm.calendario--source--__codelineno-0-96"></a><span class="sd">        não comprova publicação. Não cria janelas estimadas quando faltam dados.</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-97"><a id="pyield.igpm.calendario--source--__codelineno-0-97" name="pyield.igpm.calendario--source--__codelineno-0-97"></a><span class="sd">        Erros de rede e payload inválido são propagados.</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-98"><a id="pyield.igpm.calendario--source--__codelineno-0-98" name="pyield.igpm.calendario--source--__codelineno-0-98"></a>
+</span><span id="pyield.igpm.calendario--source--__span-0-99"><a id="pyield.igpm.calendario--source--__codelineno-0-99" name="pyield.igpm.calendario--source--__codelineno-0-99"></a><span class="sd">    Raises:</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-100"><a id="pyield.igpm.calendario--source--__codelineno-0-100" name="pyield.igpm.calendario--source--__codelineno-0-100"></a><span class="sd">        ValueError: Ano inválido, data inválida ou datas conflitantes.</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-101"><a id="pyield.igpm.calendario--source--__codelineno-0-101" name="pyield.igpm.calendario--source--__codelineno-0-101"></a><span class="sd">    """</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-102"><a id="pyield.igpm.calendario--source--__codelineno-0-102" name="pyield.igpm.calendario--source--__codelineno-0-102"></a>    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">ano</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">int</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">dt</span><span class="o">.</span><span class="n">MINYEAR</span> <span class="o">&lt;=</span> <span class="n">ano</span> <span class="o">&lt;=</span> <span class="n">dt</span><span class="o">.</span><span class="n">MAXYEAR</span><span class="p">:</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-103"><a id="pyield.igpm.calendario--source--__codelineno-0-103" name="pyield.igpm.calendario--source--__codelineno-0-103"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"ano deve ser um inteiro entre 1 e 9999."</span><span class="p">)</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-104"><a id="pyield.igpm.calendario--source--__codelineno-0-104" name="pyield.igpm.calendario--source--__codelineno-0-104"></a>    <span class="k">return</span> <span class="n">_processar_calendario</span><span class="p">(</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-105"><a id="pyield.igpm.calendario--source--__codelineno-0-105" name="pyield.igpm.calendario--source--__codelineno-0-105"></a>        <span class="n">_parsear_calendario</span><span class="p">(</span><span class="n">_buscar_calendario</span><span class="p">(</span><span class="n">ano</span><span class="p">,</span> <span class="n">_atualizar</span><span class="o">=</span><span class="n">atualizar</span><span class="p">))</span>
+</span><span id="pyield.igpm.calendario--source--__span-0-106"><a id="pyield.igpm.calendario--source--__codelineno-0-106" name="pyield.igpm.calendario--source--__codelineno-0-106"></a>    <span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"competencia"</span><span class="p">)</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">year</span><span class="p">()</span> <span class="o">==</span> <span class="n">ano</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

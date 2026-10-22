@@ -1726,8 +1726,9 @@ criadas a partir de texto:</p>
 </span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    <span class="n">fator</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"1"</span><span class="p">)</span> <span class="o">+</span> <span class="n">taxa</span>
 </span></code></pre></div>
 <p>Os <a href="../vna/">VNAs</a> também usam <code>Decimal</code>. As taxas históricas e projetadas do
-IPCA e IGP-M são expressas em unidade decimal, enquanto <code>vna.projetado</code>
-recebe a inflação mensal em percentual. Consulte as
+IPCA e IGP-M são expressas em unidade decimal. As entradas de inflação em
+<code>vna.contexto</code> e <code>vna.projetado</code> aceitam números decimais (<code>0.0045</code>) ou
+percentuais explícitos (<code>"0.45%"</code> ou <code>"0,45%"</code>), convertidos para <code>Decimal</code>. Consulte as
 <a href="../release-0.60.0/">notas da 0.60.0</a> para os tipos e a migração da API.</p>
 <h2 id="datas-e-ausencia-de-dados">Datas e ausência de dados</h2>
 <p>Datas escalares aceitam <code>DD-MM-YYYY</code>, <code>DD/MM/YYYY</code>, <code>YYYY-MM-DD</code>,

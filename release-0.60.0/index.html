@@ -1610,8 +1610,11 @@ a <code>Decimal("0.0045")</code>.</p>
 <li><code>yd.vna.contexto(...)</code> reúne os parâmetros da vigência de NTN-B ou NTN-C:
   VNAs publicados, competência, inflação e pendências. Exige <code>vencimento</code> para
   NTN-C e aceita uma projeção explícita quando a inflação realizada não existe.
-  A inflação de <code>contexto</code> é decimal; multiplique por 100 para passá-la ao
-  parâmetro percentual <code>inflacao</code> de <code>vna.projetado</code>.</li>
+  As entradas de inflação em <code>contexto</code> e <code>projetado</code> aceitam números decimais
+  (<code>0.0045</code>) ou percentuais explícitos (<code>"0.45%"</code> ou <code>"0,45%"</code>). O retorno de
+  <code>contexto</code> é decimal e pode ser passado diretamente a <code>projetado</code>.
+  Migração: substitua o antigo <code>inflacao=0.45</code> por <code>inflacao="0.45%"</code> ou
+  <code>inflacao=0.0045</code>; números puros agora representam taxas decimais.</li>
 <li><code>yd.ipca.calendario(ano, atualizar=False)</code> consulta as datas previstas de
   divulgação no IBGE pelo ano da competência, incluindo dezembro divulgado no
   ano seguinte.</li>

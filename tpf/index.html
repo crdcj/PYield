@@ -2205,9 +2205,11 @@ também retornam cotação em base 100. A NTN-F mantém os fluxos em base 1000.<
 <p>Taxas de precificação e consultas de inflação usam unidade decimal: T6 na
 taxa percentual equivale a T8 na taxa decimal, e A2 na projeção percentual
 equivale a A4 na projeção decimal. Em <code>yd.vna.projetado</code>, o parâmetro
-<code>inflacao</code> de NTN-B e NTN-C recebe percentual: <code>0.45</code> representa 0,45%,
-enquanto <code>yd.ipca.taxa_projetada().valor_projetado</code> retorna <code>Decimal("0.0045")</code>.
-Multiplique esse retorno por 100 antes de usá-lo em <code>vna.projetado</code>.
+<code>inflacao</code> de NTN-B e NTN-C aceita taxa decimal (<code>0.0045</code>) ou percentual
+explícito (<code>"0.45%"</code> ou <code>"0,45%"</code>), assim como <code>inflacao_projetada</code> de
+<code>yd.vna.contexto</code>. O retorno <code>Decimal("0.0045")</code> de
+<code>yd.ipca.taxa_projetada().valor_projetado</code> pode ser usado diretamente em
+<code>vna.projetado</code>.
 A normalização da taxa de precificação dos títulos de leilão trunca a taxa
 decimal em oito casas antes do desconto.</p>
 <p>Por exemplo, a cotação <code>99,3651</code> da STN é retornada como <code>Decimal("99.3651")</code>.
