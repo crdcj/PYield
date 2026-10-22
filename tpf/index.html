@@ -2222,9 +2222,10 @@ aplicar também os truncamentos de VNA, cotação e PU.</p>
 <a href="../referencias/metodologia-calculo-tpf-stn/">metodologia da STN para os títulos ofertados em leilões primários</a>.
 Para a NTN-B1, consulte a <a href="../referencias/metodologia-calculo-ntnb1/">metodologia específica do Tesouro Direto</a>.</p>
 <h3 id="funcoes-canonicas-e-analiticas">Funções canônicas e analíticas</h3>
-<p>As regras de truncamento e arredondamento acima valem apenas para as funções
-que reproduzem a metodologia oficial: <code>pu</code> e <code>cotacao</code>. Elas retornam
-<code>Decimal</code>, com as casas definidas pelo Tesouro.</p>
+<p>Na precificação dos títulos, <code>pu</code> e <code>cotacao</code> reproduzem as regras oficiais
+de truncamento e arredondamento e retornam <code>Decimal</code>, com as casas definidas
+pelo Tesouro. As regras de atualização do VNA são descritas na página de
+<a href="../vna/">VNA</a>.</p>
 <p>As demais funções de títulos (<code>taxa</code>, <code>dv01</code>, <code>duration</code>, prêmios, taxas zero
 e rentabilidade) são medidas analíticas: descontam os fluxos com o prazo
 <code>dias úteis / 252</code> sem truncamentos intermediários e retornam <code>float</code>. Por

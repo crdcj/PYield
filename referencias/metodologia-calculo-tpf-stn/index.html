@@ -561,6 +561,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#vna-base-mensal-da-ntn-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        VNA-base mensal da NTN-B
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="VNA-base mensal da NTN-B">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#registro-da-validacao-historica" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Registro da validação histórica
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verificacao-do-vna-base-da-ntn-c" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Verificação do VNA-base da NTN-C
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#vna-realizado-da-ntn-b-entre-datas-base" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1550,6 +1589,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#vna-base-mensal-da-ntn-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        VNA-base mensal da NTN-B
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="VNA-base mensal da NTN-B">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#registro-da-validacao-historica" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Registro da validação histórica
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verificacao-do-vna-base-da-ntn-c" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Verificação do VNA-base da NTN-C
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#vna-realizado-da-ntn-b-entre-datas-base" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1768,6 +1846,128 @@ taxa percentual em seis casas equivale a truncar a taxa decimal em oito casas.</
 truncadas em quatro casas, como no documento. Os cupons de NTN-B e NTN-C usam
 seis casas e cada fluxo descontado é arredondado em dez casas antes da soma.
 O PU é calculado como <code>VNA * cotacao / 100</code>, truncado em seis casas.</p>
+<h2 id="vna-base-mensal-da-ntn-b">VNA-base mensal da NTN-B</h2>
+<p>A fórmula por razão de números-índice é explicitada na seção 7, item 1
+(páginas impressas 20–21), do
+<a href="../metodologia-calculo-letras-notas-stn/">Caderno de Fórmulas do Selic</a>.
+Esse documento também determina seis casas sem arredondamento no VNA.
+O truncamento T-16 do fator acumulado vem da tabela de precisões do manual
+de leilões, reproduzida acima; são referências complementares.</p>
+<p><code>yd.vna.calcular_base("NTN-B", indice_atual)</code> aplica a atualização acumulada
+desde a base original, selecionada internamente. Para a série da NTN-B,
+a referência original é R$ 1.000 em
+15/07/2000, associada ao número-índice do IPCA de junho de 2000, <code>1614,62</code>.
+A referência mensal do dia 15 usa o índice do mês anterior:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>fator_acumulado = T16(indice_atual / indice_base)
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>vna_base_atual = T6(vna_base * fator_acumulado)
+</span></code></pre></div>
+<p>São dois truncamentos, nesta ordem: dezesseis casas no fator acumulado e seis
+no VNA resultante. Os números-índice não são substituídos pela taxa mensal
+arredondada. Não há pró-rata de dias nem arredondamento da inflação projetada.
+A implementação usa <code>Decimal</code> com precisão local de 28 dígitos.</p>
+<p>Calcular pela razão desde a origem não pressupõe uma recalibração ocasional.
+Sem truncamentos intermediários, o produto das razões mensais equivale à
+razão entre os índices final e inicial. A equivalência deixa de ser exata
+quando cada VNA mensal é truncado antes de alimentar o mês seguinte.</p>
+<p>O VNA do mês anterior já sofreu truncamento. Usá-lo como nova base não preserva
+toda a precisão do fator acumulado desde a origem. Por exemplo, em 15/10/2000,
+partir da base original produz <code>1031,778375</code>, igual ao publicado; partir do
+VNA de setembro produz <code>1031,778374</code>. Encadear todos os meses de julho de 2000
+a outubro de 2026 termina em <code>4766,334768</code>, enquanto a referência publicada é
+<code>4766,335112</code>.</p>
+<h3 id="registro-da-validacao-historica">Registro da validação histórica</h3>
+<p>Os testes em <code>tests/vna/test_calcular_base.py</code> usam as 316 referências da NTN-B
+preservadas no Parquet do Tesouro, de 15/07/2000 a 15/10/2026, e a resposta
+bruta do agregado 1737, variável 2266, do IBGE, capturada em 22/10/2026 para
+junho de 2000 a setembro de 2026. O JSON está preservado byte a byte em
+<code>tests/vna/data/ipca_indices_200006_202609.json</code>.</p>
+<p>A fórmula desde a base original reproduz exatamente 315 das 316 referências,
+incluindo a inicial. Há uma divergência registrada separadamente, sem tolerância
+nem alteração da referência:</p>
+<table>
+<thead>
+<tr>
+<th>Referência</th>
+<th style="text-align: right;">VNA publicado pelo Tesouro</th>
+<th style="text-align: right;">VNA calculado com o índice do IBGE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>15/02/2014</td>
+<td style="text-align: right;">2376,026557</td>
+<td style="text-align: right;">2376,020363</td>
+</tr>
+</tbody>
+</table>
+<p>O índice de janeiro de 2014 retornado atualmente pelo IBGE é <code>3836,37</code>.
+Entretanto, o <a href="https://biblioteca.ibge.gov.br/visualizacao/periodicos/236/inpc_ipca_2014_jan.pdf">fascículo de janeiro de 2014 do próprio IBGE</a>,
+na tabela "Série histórica do IPCA", página impressa 16 (página 17 do PDF),
+registra <code>3836,38</code>. Com esse valor, a mesma fórmula retorna <code>2376,026557</code>,
+exatamente o VNA publicado pelo Tesouro.</p>
+<p>Já o <a href="https://biblioteca.ibge.gov.br/visualizacao/periodicos/236/inpc_ipca_2014_fev.pdf">fascículo de fevereiro de 2014</a>,
+na mesma tabela, registra janeiro com <code>3836,37</code>. A diferença entre as duas
+publicações explica numericamente a divergência encontrada. Não foi localizado
+um comunicado formal que estabeleça o motivo e a data da alteração; não se
+presume revisão metodológica nem acesso à implementação interna do Tesouro.
+Os testes preservam a comparação com a série atual, sem modificar os índices
+nem os VNAs de referência para eliminar a divergência.</p>
+<p>A aderência histórica é evidência de compatibilidade com a fórmula, não acesso
+à implementação interna do Tesouro. Tampouco identifica isoladamente a precisão
+intermediária do fator; o T-16 é adotado da referência documental.</p>
+<h2 id="verificacao-do-vna-base-da-ntn-c">Verificação do VNA-base da NTN-C</h2>
+<p>O teste em <code>tests/vna/test_calcular_base_ntnc.py</code> exercita a função pública
+<code>yd.vna.calcular_base</code> com os números-índice do IGP-M da FGV disponibilizados
+pelo Ipeadata. Usa o JSON já preservado em
+<code>tests/igpm/data/igpm_ipeadata_202609.json</code> e o Parquet oficial de NTN-C,
+sem alterar os valores de referência. Complementa o teste de reconstrução
+que já existia em <code>tests/igpm/test_indices.py</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Série por anos de vencimento</th>
+<th style="text-align: right;">Referências verificadas</th>
+<th>Origem do cálculo</th>
+<th>Resultado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2005, 2008, 2011, 2017, 2021 e 2031</td>
+<td style="text-align: right;">316, de 01/07/2000 a 01/10/2026</td>
+<td>R$ 1.000 em 01/07/2000; índice de junho de 2000</td>
+<td>Todas iguais ao publicado</td>
+</tr>
+<tr>
+<td>2002 e 2006</td>
+<td style="text-align: right;">78, de 01/07/2000 a 01/12/2006</td>
+<td>Emissão de 03/12/1999, com ajuste inicial proporcional</td>
+<td>Todas iguais ao publicado</td>
+</tr>
+</tbody>
+</table>
+<p>Na primeira série, o cálculo é diretamente
+<code>T6(1000 * T16(indice_atual / indice_junho_2000))</code>. O índice de destino
+corresponde ao mês anterior à referência do VNA, que ocorre no primeiro dia
+do mês.</p>
+<p>Na série de 2002/2006, o teste histórico existente considera 29 dias de
+atualização em dezembro de 1999. A biblioteca prepara internamente a base sem
+truncamento intermediário, usando os índices históricos constantes de novembro
+(<code>174,939</code>) e dezembro (<code>178,099</code>) de 1999:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>expoente_inicial = T14(29 / 31)
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>base_ajustada = 1000 * (indice_dezembro_1999 / indice_novembro_1999) ** expoente_inicial
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>vna_mensal = T6(base_ajustada * T16(indice_atual / indice_dezembro_1999))
+</span></code></pre></div>
+<p>A base ajustada é mantida como <code>Decimal</code> com 28 dígitos de precisão.
+Substituí-la pelo primeiro VNA mensal publicado, já truncado, perde precisão:
+em 01/09/2000, usar o VNA de 01/07/2000 como base retorna <code>1091,045593</code>,
+enquanto o publicado é <code>1091,045594</code>.</p>
+<p>As 394 referências confirmam a aplicação do cálculo por razão de índices
+à NTN-C, com a origem própria de cada série. O teste chama
+<code>yd.vna.calcular_base("NTN-C", indice_atual, vencimento=...)</code>: a seleção do
+vencimento e a preparação da origem pertencem à implementação. A reconstrução
+independente no teste verifica o resultado contra o Parquet e a fórmula
+anteriormente validada. Os valores de referência permanecem inalterados.</p>
 <h2 id="vna-realizado-da-ntn-b-entre-datas-base">VNA realizado da NTN-B entre datas-base</h2>
 <p>Em uma data entre dois VNAs mensais já publicados, <code>yd.vna.valor("NTN-B", data)</code> combina duas
 fontes oficiais:</p>
@@ -1777,9 +1977,9 @@ fontes oficiais:</p>
   <a href="https://sidra.ibge.gov.br/tabela/1737">SIDRA/IBGE</a>.</li>
 </ul>
 <p>Para uma data <code>d</code> entre as datas-base <code>t0</code> e <code>t1</code>, a sequência de precisão é:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>fator_ipca = T16(indice_t1 / indice_t0)
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pro_rata = T14((d - t0) / (t1 - t0))
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>vna_d = T6(vna_t0 * fator_ipca ** pro_rata)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>fator_ipca = T16(indice_t1 / indice_t0)
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pro_rata = T14((d - t0) / (t1 - t0))
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>vna_d = T6(vna_t0 * fator_ipca ** pro_rata)
 </span></code></pre></div>
 <p>Os números-índice correspondem aos meses que atualizam cada data-base. Assim,
 na vigência de 15/07/2026 a 15/08/2026, são usados os índices de junho e
@@ -1787,12 +1987,12 @@ julho de 2026.</p>
 <p>Não se deve obter <code>fator_ipca</code> dividindo os dois VNAs mensais. Esses VNAs já
 foram truncados em seis casas, e sua razão perde parte da precisão do fator de
 preços. O caso de 13/08/2026 evidencia a diferença:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>vna_t0 = 4739,424756
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>indice_t0 = 7652,37
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>indice_t1 = 7657,73
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>fator_ipca = 1,0007004365967667
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>pro_rata = 0,93548387096774
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>vna_13_08_2026 = 4742,530180
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>vna_t0 = 4739,424756
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>indice_t0 = 7652,37
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>indice_t1 = 7657,73
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>fator_ipca = 1,0007004365967667
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>pro_rata = 0,93548387096774
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>vna_13_08_2026 = 4742,530180
 </span></code></pre></div>
 <p>Essa reconstrução é usada apenas quando os dois VNAs mensais e os dois
 números-índice já estão disponíveis. Ela não transforma <code>yd.vna.valor("NTN-B", data)</code> em uma

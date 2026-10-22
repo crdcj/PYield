@@ -1663,14 +1663,15 @@
 <details>
 <summary><code>yd.vna</code> (valor nominal atualizado)</summary>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>yd.vna
-</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>├── valor(titulo, data, vencimento=None, *, atualizar=False)
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>├── valor(titulo, data=None, vencimento=None, *, atualizar=False)
 </span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>├── historico(titulo, vencimento=None, *, atualizar=False)
 </span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>├── ultimo(titulo, vencimento=None, *, atualizar=False)
 </span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>├── vigencia(titulo, data)
 </span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>├── projetado(titulo, data, vna_base, inflacao=None, *, selic=None)
 </span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>├── contexto(titulo, data, vencimento=None, *, inflacao_projetada=None, atualizar=False)
-</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>├── calcular_vna(df, data, fator_variacao=...)
-</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>└── TipoTitulo
+</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>├── calcular_vna(df, data, *, fator_variacao=None)
+</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>├── calcular_base(titulo, indice_atual, vencimento=None)
+</span><span id="__span-28-10"><a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>└── TipoTitulo
 </span></code></pre></div>
 </details>
 <details>

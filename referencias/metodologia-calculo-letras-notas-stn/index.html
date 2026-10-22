@@ -585,6 +585,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="LFT implementada no PYield">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#conferencia-da-reconstrucao-desde-a-origem" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Conferência da reconstrução desde a origem
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-do-arquivo-e-data-de-vigencia" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Data do arquivo e data de vigência
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#consequencia-para-o-calculo-publico" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Consequência para o cálculo público
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1536,6 +1575,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="LFT implementada no PYield">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#conferencia-da-reconstrucao-desde-a-origem" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Conferência da reconstrução desde a origem
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-do-arquivo-e-data-de-vigencia" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Data do arquivo e data de vigência
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#consequencia-para-o-calculo-publico" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Consequência para o cálculo público
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1656,8 +1734,54 @@ taxa anualizada e arredondada; ela não deve ser usada como fator diário exato.
 <p>O caderno define o fator acumulado <code>C</code> com oito casas, enquanto o guia de
 leilões apresenta o índice Selic acumulado com dezesseis. Essa diferença é uma
 observação sobre a formação externa do dado e não representa uma divergência
-da implementação atual. Ela só precisará ser analisada se o PYield passar a
-recalcular localmente o VNA da LFT.</p>
+da consulta atual. A conferência experimental abaixo registra o efeito dessa
+precisão na reconstrução local, sem alterar o contrato da consulta.</p>
+<h3 id="conferencia-da-reconstrucao-desde-a-origem">Conferência da reconstrução desde a origem</h3>
+<p><code>tests/vna/test_reconstrucao_lft.py</code> preserva o experimento com 6.607 taxas
+diárias da série SGS 11, de 03/07/2000 a 21/10/2026. A taxa é divulgada em
+percentual ao dia; o fator diário é <code>1 + taxa / 100</code>. A
+<a href="https://www3.bcb.gov.br/novoselic/partials/observacao-taxa-selic.html">documentação do BCB</a>
+descreve o fator diário com oito casas decimais.</p>
+<p>O produtório é acumulado com <code>Decimal</code> e precisão de 28 dígitos, sem truncar
+o VNA a cada dia. Adotando o A-16 do manual de leilões e o T-6 do resultado:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>fator_acumulado = A16(produto(1 + taxa_sgs11 / 100))
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>vna = T6(1000 * fator_acumulado)
+</span></code></pre></div>
+<p>A reconstrução reproduz exatamente as seis casas de 39 arquivos oficiais
+APC238: um de janeiro de 2020, um por mês de janeiro de 2024 a outubro de
+2026 e quatro datas adicionais de maio de 2024, setembro e outubro de 2026.
+As taxas e os relatórios foram capturados em 22/10/2026 e preservados byte a
+byte nas 43 entradas de <code>tests/vna/data/lft_selic.zip</code>.
+A comparação chama <code>yd.vna.valor</code> com
+somente o fetch substituído pelos arquivos locais.</p>
+<p>Em 21/10/2026, o relatório publica <code>20139,601018</code>. Arredondar o fator acumulado
+em oito casas retorna <code>20139,601020</code>; truncar o VNA diariamente desde a origem
+retorna <code>20139,583411</code>. Os testes registram ambas as diferenças sem tolerância
+nem alteração das referências. A precisão documental A-16 é compatível com
+a amostra, que não permite identificar sozinha todos os detalhes internos
+da acumulação no BCB.</p>
+<h3 id="data-do-arquivo-e-data-de-vigencia">Data do arquivo e data de vigência</h3>
+<p>O arquivo APC238 é gerado no dia da apuração da Selic e informa, no cabeçalho,
+os índices <strong>para o próximo dia útil</strong>. O arquivo de 31/05/2024, por exemplo,
+contém <code>14903,011480</code> para 03/06/2024; o de 18/09/2026 contém <code>19915,882980</code>
+para 21/09/2026. Para reproduzir o conteúdo do arquivo, o teste inclui a taxa
+SGS 11 da data de geração. Para calcular o VNA de uma data de vigência,
+a data final da acumulação é exclusiva.</p>
+<p>Essa última convenção também reproduz o exemplo do manual de leilões:
+o VNA de 20/05/2008 é <code>3449,694215</code>, acumulando a Selic até 19/05/2008.
+A consulta atual <code>yd.vna.valor("LFT", data)</code> usa <code>data</code> no nome do arquivo
+APC238; esta conferência não muda essa seleção nem desloca datas automaticamente.</p>
+<h3 id="consequencia-para-o-calculo-publico">Consequência para o cálculo público</h3>
+<p>A operação <code>yd.vna.calcular_base("LFT", fator_acumulado)</code> recebe o fator Selic
+acumulado desde 01/07/2000 e aplica <code>T6(1000 * A16(fator_acumulado))</code>.
+Esse insumo não é uma taxa anual, uma taxa diária nem somente o fator de um
+dia. Sua formação exige a série diária desde a origem, enquanto os números-índice
+de IPCA e IGP-M já incorporam o acúmulo em cada observação mensal.</p>
+<p>Os testes das 39 referências agora chamam o cálculo público e comparam o
+resultado com os relatórios oficiais e o modelo de precisão independente.
+A base de R$ 1.000 é constante interna; o fator deve ser positivo e finito.
+A função não recebe vencimento para LFT, não acumula a série automaticamente
+e mantém o cálculo explícito, separado das consultas e das projeções.</p>
 <h2 id="limite-para-produtos-do-tesouro-direto">Limite para produtos do Tesouro Direto</h2>
 <p>A presença de NTN-B no caderno não estende automaticamente suas regras a
 <code>ntnb1</code> ou <code>ntnbp</code>. Esses títulos, vendidos exclusivamente pelo Tesouro Direto,

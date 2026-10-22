@@ -1549,7 +1549,7 @@ apenas quando a aplicação aceitar perder essa precisão.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>vna.valor</code>, <code>vna.projetado</code>, <code>vna.calcular_vna</code></td>
+<td><code>vna.valor</code>, <code>vna.projetado</code>, <code>vna.calcular_vna</code>, <code>vna.calcular_base</code></td>
 <td><code>Decimal</code></td>
 </tr>
 <tr>
@@ -1611,8 +1611,9 @@ a <code>Decimal("0.0045")</code>.</p>
   VNAs publicados, competência, inflação e pendências. Exige <code>vencimento</code> para
   NTN-C e aceita uma projeção explícita quando a inflação realizada não existe.
   As entradas de inflação em <code>contexto</code> e <code>projetado</code> aceitam números decimais
-  (<code>0.0045</code>) ou percentuais explícitos (<code>"0.45%"</code> ou <code>"0,45%"</code>). O retorno de
-  <code>contexto</code> é decimal e pode ser passado diretamente a <code>projetado</code>.
+  (<code>0.0045</code>) ou percentuais explícitos (<code>"0.45%"</code> ou <code>"0,45%"</code>). A coluna
+  <code>inflacao</code> de <code>contexto</code> usa Decimal e pode ser passada diretamente a
+  <code>projetado</code>.
   Migração: substitua o antigo <code>inflacao=0.45</code> por <code>inflacao="0.45%"</code> ou
   <code>inflacao=0.0045</code>; números puros agora representam taxas decimais.</li>
 <li><code>yd.ipca.calendario(ano, atualizar=False)</code> consulta as datas previstas de
@@ -1624,6 +1625,14 @@ a <code>Decimal("0.0045")</code>.</p>
 </ul>
 <h2 id="outras-mudancas">Outras mudanças</h2>
 <ul>
+<li><code>yd.vna.calcular_base(titulo, indice_atual, vencimento=None)</code> calcula a base
+  mensal da NTN-B ou NTN-C com o número-índice realizado do IPCA ou IGP-M,
+  ou o VNA da LFT com o fator Selic acumulado desde 01/07/2000, sem acesso
+  à rede. As origens e os índices iniciais são constantes internas;
+  NTN-C exige vencimento para selecionar a série e seu ajuste de emissão.
+  Para LFT, arredonda o fator em dezesseis casas; para NTN-B e NTN-C, trunca
+  o fator nessa precisão. Trunca o VNA em seis casas, preservando a
+  precisão da origem e evitando encadear VNAs mensais já truncados.</li>
 <li>Novo módulo <code>yd.igpm</code>, com <code>taxa</code> e <code>taxa_serie</code> para consultar taxas mensais
   do IGP-M via SGS/BCB. <code>taxa</code> retorna <code>Decimal</code> (ou <code>Decimal("NaN")</code> quando
   indisponível), e a coluna <code>taxa</code> de <code>taxa_serie</code> usa <code>Decimal(18, 4)</code>.
@@ -1632,9 +1641,10 @@ a <code>Decimal("0.0045")</code>.</p>
   (série <code>IGP12_IGPM12</code>), como <code>Decimal</code> e coluna <code>Decimal(18, 10)</code>.
   As dez casas preservam o histórico anterior a 1994. As séries aceitam
   intervalo ou <code>ultimos</code>, com competência <code>periodo</code> no formato <code>YYYYMM</code>.</li>
-<li>CPM passa a expor <code>yd.cpm.contratos(data)</code> e
-  <code>yd.cpm.probabilidades(data, tipo_opcao="call")</code>. Esta última retorna todas
-  as reuniões disponíveis; filtre o DataFrame para selecionar uma reunião.</li>
+<li>No CPM, substitua <code>yd.cpm.data(data)</code> por <code>yd.cpm.contratos(data)</code> e use
+  <code>yd.cpm.probabilidades(data, tipo_opcao="call")</code> para as probabilidades.
+  Esta última retorna todas as reuniões disponíveis; filtre o DataFrame para
+  selecionar uma reunião.</li>
 <li>Leilões do BCB passam de <code>yd.bc.leiloes</code> para <code>yd.tpf.leiloes_bcb</code>, com nomes
   de colunas alinhados aos de <code>yd.tpf.leiloes</code>.</li>
 <li>No mercado secundário, <code>yd.tpf.secundario.ler(fonte)</code> substitui <code>ler_zip</code> e
@@ -1642,9 +1652,10 @@ a <code>Decimal("0.0045")</code>.</p>
   saída. <code>nome_arquivo_mensal</code> deixa de ser público.</li>
 <li><code>yd.ntnf.premio</code> foi removida. Use <code>yd.tpf.premios_pre(data)</code> e filtre
   <code>titulo == "NTN-F"</code> para obter o prêmio bruto.</li>
-<li><code>yd.tpf.taxas</code> preserva colunas e tipos quando não há dados. Nos leilões do
-  Tesouro, PU mínimo informado como zero passa a ser nulo, e o financeiro
-  ofertado usa o PU médio calculado quando necessário.</li>
+<li><code>yd.tpf.taxas</code> e as consultas <code>dados</code> de LFT, LTN, NTN-B, NTN-C e NTN-F
+  preservam colunas e tipos quando não há dados. Nos leilões do Tesouro, PU
+  mínimo informado como zero passa a ser nulo, e o financeiro ofertado usa o
+  PU médio calculado quando necessário.</li>
 <li><code>yd.rmd</code> passa a propagar erros de download e processamento, em vez de
   retornar um DataFrame vazio nessas situações.</li>
 </ul>

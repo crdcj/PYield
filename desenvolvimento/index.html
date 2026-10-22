@@ -1619,10 +1619,14 @@ exemplo:</p>
 <h2 id="gerar-os-artefatos">Gerar os artefatos</h2>
 <p>O projeto usa <code>uv_build</code> como backend PEP 517. Gere a distribuição a partir da
 raiz:</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>build
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>build<span class="w"> </span>--no-sources<span class="w"> </span>--clear
 </span></code></pre></div>
-<p>O comando cria a distribuição fonte e a wheel no diretório <code>dist/</code>. Antes de
-publicar, confirme o conteúdo dos artefatos e a versão:</p>
+<p>O comando cria a distribuição fonte e a wheel no diretório <code>dist/</code>.
+<code>--no-sources</code> ignora fontes alternativas de dependências configuradas em
+<code>tool.uv.sources</code>, validando o build com os metadados usados na publicação.
+<code>--clear</code> limpa o diretório de saída antes do build para evitar a publicação de
+artefatos de versões anteriores. Antes de publicar, confirme o conteúdo dos
+artefatos e a versão:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>ls<span class="w"> </span>dist
 </span></code></pre></div>
 <h2 id="publicar-no-pypi">Publicar no PyPI</h2>
