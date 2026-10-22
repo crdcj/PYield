@@ -57,7 +57,7 @@ uv add pyield
 | `yd.copom`, `yd.selic`, `yd.cpm` | modules | COPOM calendar, Selic, and digital options |
 | `yd.compromissadas` | function | BCB repo-operation auctions |
 | `yd.ipca` | module | Historical and projected inflation data |
-| `yd.igpm` | module | Monthly IGP-M rates via SGS/BCB |
+| `yd.igpm` | module | Monthly IGP-M rates and index numbers |
 | `yd.ptax`, `yd.ptax_serie`, `yd.di_over` | functions | Exchange-rate and DI indicators |
 | `yd.hoje`, `yd.agora` | functions | Current date and time in Brazil |
 
@@ -68,22 +68,36 @@ source or thematic relationship to another domain. Concepts such as `yd.ltn`,
 `yd.ntnb`, `yd.vna`, and `yd.rmd` therefore live at the root, while
 implementations may remain grouped internally by domain.
 
-## What's new in version 0.59.0
+## What's new in version 0.60.0
 
-Summary of the main changes since the `0.58` series, whose latest version was
-`0.58.2`.
+Summary of the main changes since `0.59.0`. See also the
+[migration notes (Portuguese)](https://crdcj.github.io/PYield/release-0.60.0/).
 
-### Analytical rates and DV01
+### Decimal contracts
 
-The `taxa` functions of `yd.ltn`, `yd.ntnf`, `yd.ntnb`, `yd.ntnc` and `yd.lft`
-now return an untruncated `float` instead of a `Decimal` truncated to eight
-places. Invalid inputs return `float("nan")`; use `math.isnan` instead of
-`.is_nan()`.
+VNA histories and calculations and inflation indicators now preserve decimal
+precision. Review operations that mix these results with `float`: use
+`Decimal("0.0045")` for exact constants and `.is_nan()` to check a scalar
+`Decimal("NaN")` result. Convert explicitly to `float` only when the application
+can accept the loss of precision.
 
-`taxa` and `dv01` for all bonds discount cash flows by `business days / 252`,
-without the intermediate STN truncations. Values change slightly from the
-previous version, and `taxa(pu(...))` recovers the original rate only
-approximately. `pu` and `cotacao` still follow the official methodology.
+| Operation | Return type in 0.60.0 |
+|---|---|
+| `vna.valor`, `vna.projetado`, `vna.calcular_vna` | `Decimal` |
+| `vna` column in `vna.historico` and `vna.ultimo` | `Decimal(18, 6)` |
+| `ipca.indice` / `indice` column in `ipca.indice_serie` | `Decimal` / `Decimal(18, 2)` |
+| `ipca.taxa` / `taxa` column in `ipca.taxa_serie` | `Decimal` / `Decimal(18, 4)` |
+| `ipca.taxa_projetada().valor_projetado` | `Decimal` with four decimal places |
+| `igpm.taxa` / `taxa` column in `igpm.taxa_serie` | `Decimal` / `Decimal(18, 4)` |
+| `igpm.indice` / `indice` column in `igpm.indice_serie` | `Decimal` / `Decimal(18, 10)` |
+
+`vna.calcular_vna` also returns `Decimal("NaN")` instead of `float("nan")`
+when data is unavailable. VNA calculations use 28 digits of precision and apply
+the methodology's truncation and rounding rules; intermediate results may
+differ from those previously obtained with `float`.
+
+Bond analytical rates and DV01 still return `float`, as introduced in `0.59.0`;
+`pu` and `cotacao` continue to use `Decimal`.
 
 ### IPCA series
 
@@ -95,17 +109,47 @@ To migrate, replace `ipca.taxas(inicio, fim)` with
 `ipca.taxa_serie(inicio, fim)` and `ipca.indices(inicio, fim)` with
 `ipca.indice_serie(inicio, fim)`. Replace `ipca.taxas_ultimas(n)` with
 `ipca.taxa_serie(ultimos=n)` and `ipca.indices_ultimos(n)` with
-`ipca.indice_serie(ultimos=n)`. The old names have been removed; returned
-columns, units, and values remain unchanged.
+`ipca.indice_serie(ultimos=n)`. The old names have been removed. Columns and units are preserved;
+numeric types change as described above.
+
+The index number now uses `Decimal`: `ipca.indice(data)` returns `Decimal`
+(or `Decimal("NaN")` when unavailable), and the `indice` column returned by
+`ipca.indice_serie(...)` uses `Decimal(18, 2)`. Values are converted directly
+from IBGE text without passing through `float`.
+
+Rates also use `Decimal`: `ipca.taxa(data)` returns `Decimal` (or
+`Decimal("NaN")`), and the `taxa` column returned by `ipca.taxa_serie(...)`
+uses `Decimal(18, 4)`. The `valor_projetado` field returned by
+`ipca.taxa_projetada()` now uses `Decimal` with four decimal places. The unit
+remains decimal: 0.45% corresponds to `Decimal("0.0045")`.
 
 For series, `fim=None` uses the current date in Brazil. Provide `inicio` or
 `ultimos`; when supplied, `ultimos` takes precedence over dates.
-`taxa_projetada` remains unchanged.
+
+### VNA context and inflation calendars
+
+- `yd.vna.contexto(...)` gathers the parameters for an NTN-B or NTN-C validity
+  period: published VNAs, reference month, inflation, and missing inputs. It
+  requires `vencimento` for NTN-C and accepts an explicit projection when
+  realized inflation is unavailable. Inflation in `contexto` uses decimal
+  units; multiply it by 100 before passing it to the percentage parameter
+  `inflacao` in `vna.projetado`.
+- `yd.ipca.calendario(ano, atualizar=False)` queries IBGE's scheduled release
+  dates by reference year, including December released in the following year.
+- `yd.igpm.calendario(ano, atualizar=False)` queries FGV IBRE for monthly
+  releases, excluding preliminary ten-day releases. Calendars do not confirm
+  that an index has already been published.
 
 ### Other changes
 
 - New `yd.igpm` module with `taxa` and `taxa_serie` for monthly IGP-M rates
-  from SGS/BCB, expressed as decimal values.
+  from SGS/BCB. `taxa` returns `Decimal` (or `Decimal("NaN")` when unavailable),
+  and the `taxa` column returned by `taxa_serie` uses `Decimal(18, 4)`.
+  The unit is decimal: 0.27% corresponds to `Decimal("0.0027")`.
+  `indice` and `indice_serie` provide FGV index numbers via Ipeadata
+  (series `IGP12_IGPM12`), as `Decimal` and a `Decimal(18, 10)` column.
+  Ten decimal places preserve the history before 1994. Series queries accept
+  a date range or `ultimos`, with a `periodo` column in `YYYYMM` format.
 - CPM now exposes `yd.cpm.contratos(data)` and
   `yd.cpm.probabilidades(data, tipo_opcao="call")`. The latter returns all
   available meetings; filter the DataFrame to select a meeting.

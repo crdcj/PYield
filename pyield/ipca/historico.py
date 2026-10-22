@@ -17,11 +17,12 @@ O dado utilizado é extraído de resultados[0].series[0].serie, que é um
 dicionário {período: valor} (ex.: {"202501": "0.16", "202502": "1.31"}).
 """
 
+from decimal import Decimal
+
 import polars as pl
 import requests
 
 from pyield import relogio
-from pyield._internal.br_numbers import pct_para_decimal
 from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import retry_padrao
@@ -48,10 +49,11 @@ def _buscar_dados_api(url: str) -> dict[str, str]:
 def _processar_ipca(dados: dict[str, str]) -> pl.DataFrame:
     """Processa o dicionário de dados do IPCA em DataFrame."""
     return pl.DataFrame(
-        {"periodo": dados.keys(), "valor": dados.values()}
+        {"periodo": dados.keys(), "valor": dados.values()},
+        schema={"periodo": pl.String, "valor": pl.String},
     ).with_columns(
-        pl.col("periodo").cast(pl.Int64),
-        pl.col("valor").cast(pl.Float64),
+        periodo=pl.col("periodo").cast(pl.Int64),
+        valor=pl.col("valor").cast(pl.Decimal(precision=18, scale=2)),
     )
 
 
@@ -80,9 +82,9 @@ def _buscar_ultimos(
     return _processar_ipca(_buscar_dados_api(url))
 
 
-def _extrair_escalar(df: pl.DataFrame, coluna: str) -> float:
+def _extrair_escalar(df: pl.DataFrame, coluna: str) -> Decimal:
     if df.is_empty():
-        return float("nan")
+        return Decimal("NaN")
     return df[coluna].item(0)
 
 
@@ -125,7 +127,11 @@ def taxa_serie(
 
     Output Columns:
         * periodo (Int64): período no formato YYYYMM.
-        * taxa (Float64): taxa mensal em decimal (ex: 0.0016 = 0,16%).
+        * taxa (Decimal(18, 4)): taxa mensal em decimal (ex: 0.0016 = 0,16%).
+
+    Notes:
+        Os valores percentuais são convertidos diretamente do texto do IBGE
+        para Decimal e divididos por 100, sem passagem por float.
 
     Raises:
         ValueError: Se não informar ``inicio`` nem ``ultimos``, ou se
@@ -135,15 +141,15 @@ def taxa_serie(
         >>> from pyield import ipca
         >>> ipca.taxa_serie("01-01-2025", "01-03-2025")  # decimal (0.0016 = 0,16%)
         shape: (3, 2)
-        ┌─────────┬────────┐
-        │ periodo ┆ taxa   │
-        │ ---     ┆ ---    │
-        │ i64     ┆ f64    │
-        ╞═════════╪════════╡
-        │ 202501  ┆ 0.0016 │
-        │ 202502  ┆ 0.0131 │
-        │ 202503  ┆ 0.0056 │
-        └─────────┴────────┘
+        ┌─────────┬───────────────┐
+        │ periodo ┆ taxa          │
+        │ ---     ┆ ---           │
+        │ i64     ┆ decimal[18,4] │
+        ╞═════════╪═══════════════╡
+        │ 202501  ┆ 0.0016        │
+        │ 202502  ┆ 0.0131        │
+        │ 202503  ┆ 0.0056        │
+        └─────────┴───────────────┘
         >>> # Obter a taxa do IPCA do último mês
         >>> df = ipca.taxa_serie(ultimos=1)
         >>> # Obter as taxas do IPCA dos últimos 3 meses
@@ -151,28 +157,36 @@ def taxa_serie(
     """
     return (
         _buscar_serie(inicio, fim, ultimos, _VAR_TAXA)
-        .with_columns(taxa=pct_para_decimal(pl.col("valor")))
+        .with_columns(
+            # A divisão decimal do Polars preserva a escala do numerador.
+            taxa=(pl.col("valor").cast(pl.Decimal(precision=18, scale=4)) / 100).cast(
+                pl.Decimal(precision=18, scale=4)
+            )
+        )
         .select("periodo", "taxa")
     )
 
 
-def taxa(data: DateLike) -> float:
-    """Taxa mensal do IPCA para um mês específico.
+def taxa(data: DateLike) -> Decimal:
+    """Taxa mensal do IPCA do IBGE para um mês específico.
 
     Args:
         data: Qualquer data dentro do mês desejado.
 
     Returns:
-        Taxa mensal do IPCA em decimal ou ``nan`` se não disponível.
+        Decimal: Taxa mensal do IPCA em decimal, com quatro casas decimais,
+        ou ``Decimal('NaN')`` se não disponível.
 
     Examples:
         >>> from pyield import ipca
         >>> taxa = ipca.taxa("01-01-2025")  # decimal (0.0016 = 0,16%)
+        >>> taxa
+        Decimal('0.0016')
         >>> f"{taxa:.2%}"
         '0.16%'
     """
     if any_is_empty(data):
-        return float("nan")
+        return Decimal("NaN")
     return _extrair_escalar(taxa_serie(data, data), "taxa")
 
 
@@ -200,7 +214,11 @@ def indice_serie(
 
     Output Columns:
         * periodo (Int64): período no formato YYYYMM.
-        * indice (Float64): número-índice do IPCA.
+        * indice (Decimal(18, 2)): número-índice do IPCA.
+
+    Notes:
+        Os valores são convertidos diretamente do texto do IBGE para Decimal,
+        preservando as duas casas decimais publicadas, sem passagem por float.
 
     Raises:
         ValueError: Se não informar ``inicio`` nem ``ultimos``, ou se
@@ -211,15 +229,15 @@ def indice_serie(
         >>> # Obter os números-índice do IPCA para o primeiro trimestre
         >>> ipca.indice_serie(inicio="01-01-2025", fim="01-03-2025")
         shape: (3, 2)
-        ┌─────────┬─────────┐
-        │ periodo ┆ indice  │
-        │ ---     ┆ ---     │
-        │ i64     ┆ f64     │
-        ╞═════════╪═════════╡
-        │ 202501  ┆ 7111.86 │
-        │ 202502  ┆ 7205.03 │
-        │ 202503  ┆ 7245.38 │
-        └─────────┴─────────┘
+        ┌─────────┬───────────────┐
+        │ periodo ┆ indice        │
+        │ ---     ┆ ---           │
+        │ i64     ┆ decimal[18,2] │
+        ╞═════════╪═══════════════╡
+        │ 202501  ┆ 7111.86       │
+        │ 202502  ┆ 7205.03       │
+        │ 202503  ┆ 7245.38       │
+        └─────────┴───────────────┘
         >>> # Obter o número-índice do IPCA do último mês
         >>> df = ipca.indice_serie(ultimos=1)
         >>> # Obter os números-índice do IPCA dos últimos 3 meses
@@ -228,20 +246,21 @@ def indice_serie(
     return _buscar_serie(inicio, fim, ultimos, _VAR_INDICE).rename({"valor": "indice"})
 
 
-def indice(data: DateLike) -> float:
-    """Número-índice do IPCA para um mês específico.
+def indice(data: DateLike) -> Decimal:
+    """Número-índice do IPCA do IBGE para um mês específico.
 
     Args:
         data: Qualquer data dentro do mês desejado.
 
     Returns:
-        Número-índice do IPCA ou ``nan`` se não disponível.
+        Decimal: Número-índice do IPCA com duas casas decimais ou
+        ``Decimal('NaN')`` se não disponível.
 
     Examples:
         >>> from pyield import ipca
         >>> ipca.indice("01-01-2025")
-        7111.86
+        Decimal('7111.86')
     """
     if any_is_empty(data):
-        return float("nan")
+        return Decimal("NaN")
     return _extrair_escalar(indice_serie(data, data), "indice")

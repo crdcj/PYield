@@ -78,10 +78,14 @@ Os cupons, os fluxos e as cotações de NTN-B e NTN-C são calculados em base
 100, com as casas decimais da tabela da STN. LFT, NTN-B Principal e NTN-B1
 também retornam cotação em base 100. A NTN-F mantém os fluxos em base 1000.
 
-Taxas e projeções de inflação continuam em formato decimal na API: T6 na taxa
-percentual equivale a T8 na taxa decimal, e A2 na projeção percentual equivale
-a A4 na projeção decimal. A normalização da taxa de precificação dos títulos
-de leilão trunca a taxa decimal em oito casas antes do desconto.
+Taxas de precificação e consultas de inflação usam unidade decimal: T6 na
+taxa percentual equivale a T8 na taxa decimal, e A2 na projeção percentual
+equivale a A4 na projeção decimal. Em `yd.vna.projetado`, o parâmetro
+`inflacao` de NTN-B e NTN-C recebe percentual: `0.45` representa 0,45%,
+enquanto `yd.ipca.taxa_projetada().valor_projetado` retorna `Decimal("0.0045")`.
+Multiplique esse retorno por 100 antes de usá-lo em `vna.projetado`.
+A normalização da taxa de precificação dos títulos de leilão trunca a taxa
+decimal em oito casas antes do desconto.
 
 Por exemplo, a cotação `99,3651` da STN é retornada como `Decimal("99.3651")`.
 A relação entre cotação e preço é:

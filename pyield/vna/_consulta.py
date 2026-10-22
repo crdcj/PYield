@@ -85,8 +85,8 @@ def historico(
 
     Output Columns:
         - data (Date): Data de referência publicada.
-        - vna (Decimal(18, 6)): Valor nominal atualizado publicado.
         - anos_vencimento (List[Int64]): Apenas NTN-C; anos da série.
+        - vna (Decimal(18, 6)): Valor nominal atualizado publicado.
 
     Notes:
         Fonte: planilhas de Valor Nominal de NTN-B e NTN-C do Tesouro
@@ -105,7 +105,7 @@ def historico(
     df = modulo.vnas(atualizar=atualizar)
     if ano is not None:
         df = df.filter(pl.col("anos_vencimento").list.contains(ano))
-    return df.sort("data")
+    return df.sort("data", maintain_order=True)
 
 
 def ultimo(
@@ -129,8 +129,8 @@ def ultimo(
 
     Output Columns:
         - data (Date): Data de referência da última publicação da série.
-        - vna (Decimal(18, 6)): VNA publicado nessa referência.
         - anos_vencimento (List[Int64]): Apenas NTN-C; anos da série.
+        - vna (Decimal(18, 6)): VNA publicado nessa referência.
 
     Notes:
         Fonte: históricos do Tesouro Nacional obtidos por ``historico``.

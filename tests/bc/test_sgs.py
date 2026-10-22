@@ -1,10 +1,12 @@
 import datetime as dt
 import importlib
 import math
+from decimal import Decimal
 from urllib.parse import parse_qs, urlparse
 
 import polars as pl
 import pytest
+import requests
 
 import pyield as yd
 
@@ -36,7 +38,7 @@ def test_selic_meta_serie_ajusta_inicio_anterior(monkeypatch):
         urls.append(url)
         return pl.DataFrame(
             {"data": [dt.date(1999, 3, 5)], "valor": [45.0]},
-            schema=sgs.ESQUEMA_BRUTO,
+            schema={"data": pl.Date, "valor": pl.Float64},
         )
 
     monkeypatch.setattr(sgs, "_buscar_api", buscar_api)
@@ -56,7 +58,7 @@ def test_selic_meta_serie_divide_intervalo_em_blocos_seguros(monkeypatch):
         data = _parametro_data(url, "dataInicial")
         return pl.DataFrame(
             {"data": [data], "valor": [10.0]},
-            schema=sgs.ESQUEMA_BRUTO,
+            schema={"data": pl.Date, "valor": pl.Float64},
         )
 
     monkeypatch.setattr(sgs, "_buscar_api", buscar_api)
@@ -106,10 +108,13 @@ def test_igpm_serie_consulta_competencias_e_converte_percentuais(monkeypatch):
 
     resultado = yd.igpm.taxa_serie("15-01-2025", "20-02-2025")
 
-    assert resultado.schema == {"periodo": pl.Int64, "taxa": pl.Float64}
+    assert resultado.schema == {
+        "periodo": pl.Int64,
+        "taxa": pl.Decimal(precision=18, scale=4),
+    }
     assert resultado.to_dicts() == [
-        {"periodo": 202501, "taxa": 0.0027},
-        {"periodo": 202502, "taxa": -0.005},
+        {"periodo": 202501, "taxa": Decimal("0.0027")},
+        {"periodo": 202502, "taxa": Decimal("-0.0050")},
     ]
     assert len(urls) == 1
     assert urlparse(urls[0]).path == "/dados/serie/bcdata.sgs.189/dados"
@@ -125,8 +130,10 @@ def test_igpm_taxa_qualquer_dia_do_mes(monkeypatch):
 
     monkeypatch.setattr(sgs, "_chamar_api", chamar_api)
 
-    taxa_esperada = 0.0027
-    assert yd.igpm.taxa(dt.date(2025, 1, 31)) == taxa_esperada
+    taxa_esperada = Decimal("0.0027")
+    resultado = yd.igpm.taxa(dt.date(2025, 1, 31))
+    assert isinstance(resultado, Decimal)
+    assert resultado.as_tuple() == taxa_esperada.as_tuple()
 
 
 def test_igpm_ultimos_tem_prioridade(monkeypatch):
@@ -137,7 +144,7 @@ def test_igpm_ultimos_tem_prioridade(monkeypatch):
     monkeypatch.setattr(sgs, "_chamar_api", chamar_api)
 
     assert yd.igpm.taxa_serie("invalida", "invalida", ultimos=1).to_dicts() == [
-        {"periodo": 202501, "taxa": 0.0027}
+        {"periodo": 202501, "taxa": Decimal("0.0027")}
     ]
 
 
@@ -147,9 +154,12 @@ def test_igpm_sem_dados(monkeypatch):
     resultado = yd.igpm.taxa_serie("01-01-2025", "31-01-2025")
 
     assert resultado.is_empty()
-    assert resultado.schema == {"periodo": pl.Int64, "taxa": pl.Float64}
-    assert math.isnan(yd.igpm.taxa("15-01-2025"))
-    assert math.isnan(yd.igpm.taxa(None))
+    assert resultado.schema == {
+        "periodo": pl.Int64,
+        "taxa": pl.Decimal(precision=18, scale=4),
+    }
+    assert yd.igpm.taxa("15-01-2025").is_nan()
+    assert yd.igpm.taxa(None).is_nan()
 
 
 @pytest.mark.parametrize("ultimos", [0, -1])
@@ -165,7 +175,7 @@ def test_igpm_exige_inicio_ou_ultimos():
 
 def test_igpm_namespace_publico():
     assert "igpm" in yd.__all__
-    assert yd.igpm.__all__ == ["taxa", "taxa_serie"]
+    assert yd.igpm.__all__ == ["taxa", "taxa_serie", "indice", "indice_serie", "calendario"]
     assert yd.igpm.taxa is sgs.igpm_taxa
     assert yd.igpm.taxa_serie is sgs.igpm_taxa_serie
 
@@ -181,7 +191,7 @@ def test_igpm_fim_padrao_usa_hoje(monkeypatch):
     monkeypatch.setattr(sgs, "_chamar_api", chamar_api)
 
     assert yd.igpm.taxa_serie("15-02-2025").to_dicts() == [
-        {"periodo": 202502, "taxa": 0.0027}
+        {"periodo": 202502, "taxa": Decimal("0.0027")}
     ]
 
 
@@ -194,4 +204,96 @@ def test_igpm_intervalo_invertido_nao_chama_api(monkeypatch):
     resultado = yd.igpm.taxa_serie("01-02-2025", "31-01-2025")
 
     assert resultado.is_empty()
-    assert resultado.schema == {"periodo": pl.Int64, "taxa": pl.Float64}
+    assert resultado.schema == {
+        "periodo": pl.Int64,
+        "taxa": pl.Decimal(precision=18, scale=4),
+    }
+
+
+@pytest.mark.parametrize(
+    ("publicado", "esperado"),
+    [
+        ("0.27", Decimal("0.0027")),
+        ("-0.50", Decimal("-0.0050")),
+        ("0.00", Decimal("0.0000")),
+    ],
+)
+def test_igpm_taxa_preserva_casas_decimais(monkeypatch, publicado, esperado):
+    monkeypatch.setattr(
+        sgs,
+        "_chamar_api",
+        lambda url: [{"data": "01/01/2025", "valor": publicado}],
+    )
+
+    resultado = yd.igpm.taxa("15-01-2025")
+
+    assert isinstance(resultado, Decimal)
+    assert resultado.as_tuple() == esperado.as_tuple()
+
+
+def test_igpm_http_404_retorna_serie_vazia_decimal(monkeypatch):
+    def chamar_api(url):
+        resposta = requests.Response()
+        resposta.status_code = 404
+        raise requests.exceptions.HTTPError(response=resposta)
+
+    monkeypatch.setattr(sgs, "_chamar_api", chamar_api)
+
+    resultado = yd.igpm.taxa_serie(ultimos=1)
+
+    assert resultado.is_empty()
+    assert resultado.schema == {
+        "periodo": pl.Int64,
+        "taxa": pl.Decimal(precision=18, scale=4),
+    }
+
+
+@pytest.mark.parametrize("todos_vazios", [False, True])
+def test_igpm_intervalo_em_blocos_com_dados_vazios(monkeypatch, todos_vazios):
+    urls = []
+    monkeypatch.setattr(sgs, "LIMITE_DIAS_SEGURO", 31)
+
+    def chamar_api(url):
+        urls.append(url)
+        if todos_vazios or _parametro_data(url, "dataInicial") == dt.date(2025, 1, 1):
+            return []
+        return [{"data": "01/03/2025", "valor": "0.27"}]
+
+    monkeypatch.setattr(sgs, "_chamar_api", chamar_api)
+
+    resultado = yd.igpm.taxa_serie("01-01-2025", "01-03-2025")
+
+    assert [_parametro_data(url, "dataInicial") for url in urls] == [
+        dt.date(2025, 1, 1),
+        dt.date(2025, 2, 2),
+    ]
+    assert resultado.schema == {
+        "periodo": pl.Int64,
+        "taxa": pl.Decimal(precision=18, scale=4),
+    }
+    assert resultado.to_dicts() == (
+        [] if todos_vazios else [{"periodo": 202503, "taxa": Decimal("0.0027")}]
+    )
+
+
+@pytest.mark.parametrize(
+    ("funcao", "publicado", "coluna", "esperado"),
+    [
+        (yd.selic.over_serie, "12.15", "taxa", 0.1215),
+        (yd.selic.meta_serie, "12.25", "taxa", 0.1225),
+        (yd.ptax_serie, "5.7496", "cotacao", 5.7496),
+    ],
+)
+def test_sgs_preserva_float_em_selic_e_ptax(
+    monkeypatch, funcao, publicado, coluna, esperado
+):
+    monkeypatch.setattr(
+        sgs,
+        "_chamar_api",
+        lambda url: [{"data": "22/04/2025", "valor": publicado}],
+    )
+
+    resultado = funcao(ultimos=1)
+
+    assert resultado.schema == {"data": pl.Date, coluna: pl.Float64}
+    assert resultado.to_dicts() == [{"data": dt.date(2025, 4, 22), coluna: esperado}]

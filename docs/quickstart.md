@@ -177,6 +177,23 @@ yd.ptax("31-05-2024")
 yd.ipca.taxa_serie("01-01-2024", "01-03-2024")
 ```
 
+Os indicadores de inflação retornam `Decimal` nas consultas escalares e
+colunas Polars `Decimal` nas séries. Para cálculos exatos, use constantes
+criadas a partir de texto:
+
+```python
+from decimal import Decimal
+
+taxa = yd.ipca.taxa("01-01-2024")
+if not taxa.is_nan():
+    fator = Decimal("1") + taxa
+```
+
+Os [VNAs](vna.md) também usam `Decimal`. As taxas históricas e projetadas do
+IPCA e IGP-M são expressas em unidade decimal, enquanto `vna.projetado`
+recebe a inflação mensal em percentual. Consulte as
+[notas da 0.60.0](release-0.60.0.md) para os tipos e a migração da API.
+
 ## Datas e ausência de dados
 
 Datas escalares aceitam `DD-MM-YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`,

@@ -12,12 +12,17 @@ def truncar(values: float | int | Decimal, decimals: int) -> float: ...
 def truncar(values: pl.Series, decimals: int) -> pl.Series: ...
 
 
+def para_decimal(value: float | int | Decimal) -> Decimal:
+    """Converte um escalar para Decimal pela representação textual curta."""
+    return value if isinstance(value, Decimal) else Decimal(str(value))
+
+
 def truncar_decimal(value: float | int | Decimal, decimals: int) -> Decimal:
     """Trunca um escalar e preserva o resultado como Decimal."""
     if decimals < 0:
         raise ValueError("decimals must be non-negative")
 
-    decimal = value if isinstance(value, Decimal) else Decimal(str(value))
+    decimal = para_decimal(value)
     if not decimal.is_finite():
         return decimal
     quantizer = Decimal(f"1e-{decimals}")

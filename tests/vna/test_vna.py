@@ -4,7 +4,6 @@ from decimal import Decimal
 
 import polars as pl
 import pytest
-import requests
 
 from pyield import vna
 from pyield.vna import _download, calcular_vna  # noqa: PLC2701
@@ -26,56 +25,44 @@ VNA_NTNC_2031_DEZ_2025 = 6450.107485
 VNA_NTNC_2031_JAN_2026 = 6449.144194
 VNA_NTNC_2031_16_DEZ_2025 = 6449.641358
 VNA_NTNC_2031_JUN_2026 = 6693.537239
-VNA_TESTE_BASE = 100.0
-VNA_TESTE_FINAL = 121.0
-VNA_TESTE_INTERMEDIARIO = 110.0
-VNA_TESTE_FATOR_ALTERNATIVO = 1.44
-VNA_TESTE_INTERMEDIARIO_ALTERNATIVO = 120.0
+VNA_TESTE_BASE = Decimal("100.000000")
+VNA_TESTE_FINAL = Decimal("121.000000")
+VNA_TESTE_INTERMEDIARIO = Decimal("110.000000")
+VNA_TESTE_FATOR_ALTERNATIVO = Decimal("1.44")
+VNA_TESTE_INTERMEDIARIO_ALTERNATIVO = Decimal("120.000000")
+TIPO_VNA = pl.Decimal(precision=18, scale=6)
+
+
+def _df_teste() -> pl.DataFrame:
+    return pl.DataFrame(
+        {
+            "data": [dt.date(2026, 1, 1), dt.date(2026, 1, 11)],
+            "vna": [VNA_TESTE_BASE, VNA_TESTE_FINAL],
+        },
+        schema_overrides={"data": pl.Date, "vna": TIPO_VNA},
+    )
 
 
 def test_calcular_vna_publico_retorna_ponto_exato() -> None:
     assert calcular_vna.__module__ == "pyield.vna._calculo"
 
-    df = pl.DataFrame(
-        {
-            "data": [dt.date(2026, 1, 1), dt.date(2026, 1, 11)],
-            "vna": [VNA_TESTE_BASE, VNA_TESTE_FINAL],
-        },
-        schema_overrides={"data": pl.Date},
-    )
+    resultado = calcular_vna(_df_teste(), dt.date(2026, 1, 1))
 
-    resultado = calcular_vna(df, dt.date(2026, 1, 1))
-
-    assert isinstance(resultado, float)
+    assert isinstance(resultado, Decimal)
     assert resultado == VNA_TESTE_BASE
 
 
-def test_calcular_vna_aceita_vna_decimal() -> None:
-    df = pl.DataFrame(
-        {
-            "data": [dt.date(2026, 1, 1), dt.date(2026, 1, 11)],
-            "vna": [Decimal("100.000000"), Decimal("121.000000")],
-        },
-        schema_overrides={
-            "data": pl.Date,
-            "vna": pl.Decimal(precision=18, scale=6),
-        },
-    )
+def test_calcular_vna_aceita_vna_float() -> None:
+    df = _df_teste().with_columns(vna=pl.col("vna").cast(pl.Float64))
 
     resultado = calcular_vna(df, dt.date(2026, 1, 6))
 
-    assert isinstance(resultado, float)
+    assert isinstance(resultado, Decimal)
     assert resultado == VNA_TESTE_INTERMEDIARIO
 
 
 def test_calcular_vna_publico_calcula_prorata_e_fator_alternativo() -> None:
-    df = pl.DataFrame(
-        {
-            "data": [dt.date(2026, 1, 1), dt.date(2026, 1, 11)],
-            "vna": [VNA_TESTE_BASE, VNA_TESTE_FINAL],
-        },
-        schema_overrides={"data": pl.Date},
-    )
+    df = _df_teste()
 
     assert calcular_vna(df, dt.date(2026, 1, 6)) == VNA_TESTE_INTERMEDIARIO
     assert (
@@ -89,21 +76,13 @@ def test_calcular_vna_publico_calcula_prorata_e_fator_alternativo() -> None:
 
 
 @pytest.mark.parametrize("data", [dt.date(2025, 12, 31), dt.date(2026, 1, 12)])
-def test_calcular_vna_publico_fora_do_intervalo_retorna_float_nan(
+def test_calcular_vna_publico_fora_do_intervalo_retorna_decimal_nan(
     data: dt.date,
 ) -> None:
-    df = pl.DataFrame(
-        {
-            "data": [dt.date(2026, 1, 1), dt.date(2026, 1, 11)],
-            "vna": [VNA_TESTE_BASE, VNA_TESTE_FINAL],
-        },
-        schema_overrides={"data": pl.Date},
-    )
+    resultado = calcular_vna(_df_teste(), data)
 
-    resultado = calcular_vna(df, data)
-
-    assert isinstance(resultado, float)
-    assert math.isnan(resultado)
+    assert isinstance(resultado, Decimal)
+    assert resultado.is_nan()
 
 
 @pytest.mark.parametrize(
@@ -130,43 +109,6 @@ def test_vigencia_publica(titulo, data, inicio, fim):
 def test_vigencia_rejeita_data_invalida(titulo, data):
     with pytest.raises(ValueError, match="data|Data"):
         vna.vigencia(titulo, data)
-
-
-def test_extrair_url_planilha() -> None:
-    pagina = b"""
-        <html><a href="https://example.com/?url=thot-arquivos.tesouro.gov.br/publicacao/1">
-        Link incorreto</a>
-        <html><a href="https://thot-arquivos.tesouro.gov.br/publicacao/53360">
-        Download</a></html>
-    """
-
-    assert _download._extrair_url_planilha(pagina) == (
-        "https://thot-arquivos.tesouro.gov.br/publicacao/53360"
-    )
-
-
-def test_baixar_planilha_recurre_a_publicacao_quando_permalink_falha(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    urls = []
-    url_publicacao = "https://example.com/publicacao"
-    url_arquivo = "https://thot-arquivos.tesouro.gov.br/publicacao/teste"
-    url_descoberta = "https://thot-arquivos.tesouro.gov.br/publicacao/arquivo"
-
-    def buscar(url: str) -> bytes:
-        urls.append(url)
-        if url == url_arquivo:
-            raise requests.HTTPError("permalink indisponível")
-        if url == url_publicacao:
-            return f'<a href="{url_descoberta}">VNA</a>'.encode()
-        return b"planilha"
-
-    monkeypatch.setattr(_download, "_buscar_conteudo", buscar)
-
-    resultado = _download.baixar_planilha.__wrapped__(url_publicacao, url_arquivo)
-
-    assert resultado == b"planilha"
-    assert urls == [url_arquivo, url_publicacao, url_descoberta]
 
 
 def test_ler_planilha_converte_explicitamente_para_dataframe(
@@ -308,6 +250,32 @@ def test_processar_ntnc_preserva_vna_em_texto_brasileiro() -> None:
             "vna": Decimal("3580.282456"),
         },
     ]
+
+
+def test_processar_ntnb_preserva_vna_em_texto_brasileiro() -> None:
+    df_bruto = pl.DataFrame(
+        {"column_1": ["2018-01-15 00:00:00"], "column_2": ["\xa03.059,128527"]}
+    )
+
+    resultado = vna_ntnb._processar(df_bruto)
+
+    assert resultado.to_dicts() == [
+        {"data": dt.date(2018, 1, 15), "vna": Decimal("3059.128527")}
+    ]
+
+
+@pytest.mark.parametrize("modulo", [vna_ntnb, vna_ntnc])
+def test_processar_rejeita_vna_ilegivel_em_data_valida(modulo) -> None:
+    df_bruto = pl.DataFrame(
+        {
+            "column_1": ["DATA", "2018-01-01 00:00:00"],
+            "column_2": ["VALORES NOMINAIS", "3580#282456"],
+            "column_3": ["VALORES NOMINAIS", "0"],
+        }
+    )
+
+    with pytest.raises(pl.exceptions.InvalidOperationError):
+        modulo._processar(df_bruto)
 
 
 def test_vna_ntnb_calcula_entre_valores_publicados(

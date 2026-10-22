@@ -24,10 +24,11 @@ import requests
 from pyield import du
 from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas, data_referencia_valida
-from pyield._internal.numbers import truncar_decimal
+from pyield._internal.numbers import para_decimal, truncar_decimal
 from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf.titulos._utils import converter_taxa
+from pyield.vna._calculo import PRECISAO_CALCULO
 
 CODIGO_LFT = "210100"
 _LOGGER = logging.getLogger(__name__)
@@ -98,15 +99,13 @@ def projetado_lft(
         _LOGGER.warning(
             "A projeção da LFT avançou uma quantidade diferente de um dia útil.",
         )
-    base = vna_base if isinstance(vna_base, Decimal) else Decimal(str(vna_base))
-    taxa_anual = converter_taxa(taxa_anual)
-    taxa = taxa_anual if isinstance(taxa_anual, Decimal) else Decimal(str(taxa_anual))
+    base = para_decimal(vna_base)
+    taxa = para_decimal(converter_taxa(taxa_anual))
     if not base.is_finite() or base <= 0:
         raise ValueError("O VNA-base deve ser positivo e finito.")
     if not taxa.is_finite() or taxa <= -1:
         raise ValueError("A taxa anual deve ser finita e maior que -100%.")
-    with localcontext() as contexto:
-        contexto.prec = 28
+    with localcontext(prec=PRECISAO_CALCULO):
         expoente = Decimal(dias_uteis) / 252
         return truncar_decimal(base * (1 + taxa) ** expoente, 6)
 

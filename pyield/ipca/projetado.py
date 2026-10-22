@@ -1,5 +1,6 @@
 import datetime as dt
 from dataclasses import dataclass
+from decimal import ROUND_HALF_EVEN, Decimal
 
 import polars as pl
 import requests
@@ -15,7 +16,7 @@ _URL_XLS = "https://www.anbima.com.br/informacoes/indicadores/arqs/indicadores.x
 class ProjecaoIndicador:
     ultima_atualizacao: dt.datetime  # Data e hora da última atualização
     periodo_referencia: str  # Mês de referência no formato "MMM/YY"
-    valor_projetado: float  # Valor projetado
+    valor_projetado: Decimal  # Valor projetado em unidade decimal
 
 
 @ttl_cache()
@@ -63,7 +64,8 @@ def taxa_projetada() -> ProjecaoIndicador:
               atualização.
             - periodo_referencia (str): Período de referência no formato
               "MMM/YY" (ex.: "mar/26").
-            - valor_projetado (float): Valor projetado do IPCA (decimal).
+            - valor_projetado (Decimal): Valor projetado do IPCA em unidade
+              decimal, com quatro casas decimais (0.0045 representa 0,45%).
 
     Raises:
         ConnectionError: Se houver erro de conexão com o site da ANBIMA.
@@ -72,6 +74,8 @@ def taxa_projetada() -> ProjecaoIndicador:
 
     Notes:
         Requer conexão com a internet para acessar o site da ANBIMA.
+        O valor é convertido da célula da planilha para Decimal, dividido por
+        100 e arredondado em quatro casas decimais, com empate para o par.
 
     Examples:
         >>> from pyield import ipca
@@ -95,7 +99,9 @@ def taxa_projetada() -> ProjecaoIndicador:
         raise ValueError("Não foi possível encontrar a projeção do IPCA na planilha.")
 
     periodo_referencia = _extrair_periodo(linha_ipca.item(0, "column_2"))
-    valor_projetado = round(float(linha_ipca.item(0, "column_3")) / 100, 4)
+    valor_projetado = (Decimal(str(linha_ipca.item(0, "column_3"))) / 100).quantize(
+        Decimal("0.0001"), rounding=ROUND_HALF_EVEN
+    )
 
     return ProjecaoIndicador(
         ultima_atualizacao=ultima_atualizacao,

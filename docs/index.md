@@ -18,6 +18,8 @@ B3 e Tesouro Nacional, com saídas escalares, `polars.Series` e
 ## Por onde começar?
 
 - [Quickstart](quickstart.md): instalação e primeiros fluxos de trabalho.
+- [Novidades e migração para a 0.60.0](release-0.60.0.md): contratos com
+  `Decimal` e alterações da API.
 - [Mapa da API](api-map.md): visão por namespace e funções públicas.
 - [Desenvolvimento e publicação](desenvolvimento.md): comandos com `uv`, build,
   documentação e publicação no PyPI.
@@ -33,7 +35,7 @@ A documentação está organizada por conceito financeiro e por fonte de dados:
 - **Títulos públicos:** [TPF](tpf.md), [VNA](vna.md), [LFT](lft.md),
   [LTN](ltn.md), [NTN-B](ntnb.md), [NTN-F](ntnf.md) e demais títulos.
 - **Mercado de futuros:** [DI1](di1.md) e [futuros](futuro.md).
-- **Dados auxiliares:** [IPCA](ipca.md), [Selic](selic.md), [Copom](copom.md),
+- **Dados auxiliares:** [IPCA](ipca.md), [IGP-M](igpm.md), [Selic](selic.md), [Copom](copom.md),
   [compromissadas](compromissada.md), [CPM](cpm.md) e [B3](b3.md).
 
 As funções públicas retornam dados em português e seguem convenções consistentes

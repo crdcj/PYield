@@ -9,8 +9,10 @@ from pyield.vna._consulta import (
     valor,
     vigencia,
 )
+from pyield.vna._contexto import contexto
 
 __all__ = [
+    "contexto",
     "calcular_vna",
     "TipoTitulo",
     "historico",

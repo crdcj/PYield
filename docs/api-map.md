@@ -91,14 +91,18 @@ Visão geral das principais funções públicas do PYield.
     ├── indice_serie(inicio=None, fim=None, *, ultimos=None)
     ├── taxa(data)
     ├── taxa_serie(inicio=None, fim=None, *, ultimos=None)
-    └── taxa_projetada(...)
+    ├── taxa_projetada()
+    └── calendario(ano, *, atualizar=False)
     ```
 
 ??? "`yd.igpm` (inflação IGP-M)"
     ```text
     yd.igpm
+    ├── indice(data)
+    ├── indice_serie(inicio=None, fim=None, *, ultimos=None)
     ├── taxa(data)
-    └── taxa_serie(inicio=None, fim=None, *, ultimos=None)
+    ├── taxa_serie(inicio=None, fim=None, *, ultimos=None)
+    └── calendario(ano, *, atualizar=False)
     ```
 
 ??? "`yd.lft` (Tesouro Selic)"
@@ -265,11 +269,12 @@ Visão geral das principais funções públicas do PYield.
 ??? "`yd.vna` (valor nominal atualizado)"
     ```text
     yd.vna
-    ├── valor(titulo, data, vencimento=None)
-    ├── historico(titulo, vencimento=None)
-    ├── ultimo(titulo, vencimento=None)
+    ├── valor(titulo, data, vencimento=None, *, atualizar=False)
+    ├── historico(titulo, vencimento=None, *, atualizar=False)
+    ├── ultimo(titulo, vencimento=None, *, atualizar=False)
     ├── vigencia(titulo, data)
-    ├── projetado(titulo, data, vna_base, inflacao=None, selic=None)
+    ├── projetado(titulo, data, vna_base, inflacao=None, *, selic=None)
+    ├── contexto(titulo, data, vencimento=None, *, inflacao_projetada=None, atualizar=False)
     ├── calcular_vna(df, data, fator_variacao=...)
     └── TipoTitulo
     ```

@@ -25,6 +25,7 @@ Notas de implementação:
 
 import datetime as dt
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 from enum import Enum
 from http import HTTPStatus
 
@@ -40,7 +41,7 @@ from pyield._internal.types import DateLike, any_is_empty
 
 URL_BASE = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
 
-ESQUEMA_BRUTO = {"data": pl.Date, "valor": pl.Float64}
+ESQUEMA_BRUTO = {"data": pl.Date, "valor": pl.String}
 
 # Limite de segurança em dias, correspondendo a ~9.5 anos.
 # Evita a complexidade do cálculo exato de 10 anos-calendário.
@@ -101,7 +102,7 @@ def _buscar_api(url_api: str) -> pl.DataFrame:
 
     return pl.from_dicts(dados).select(
         pl.col("data").str.to_date("%d/%m/%Y"),
-        pl.col("valor").cast(pl.Float64),
+        "valor",
     )
 
 
@@ -175,7 +176,7 @@ def _converter_para_taxa(df: pl.DataFrame) -> pl.DataFrame:
         return pl.DataFrame(schema=ESQUEMA_TAXA)
     return df.select(
         "data",
-        taxa=pct_para_decimal(pl.col("valor")),
+        taxa=pct_para_decimal(pl.col("valor").cast(pl.Float64)),
     )
 
 
@@ -209,7 +210,11 @@ def igpm_taxa_serie(
 
     Output Columns:
         * periodo (Int64): competência mensal no formato YYYYMM.
-        * taxa (Float64): variação mensal em decimal (0.005 = 0,50%).
+        * taxa (Decimal(18, 4)): variação mensal em decimal (0.005 = 0,50%).
+
+    Notes:
+        Os valores percentuais são convertidos diretamente do texto do SGS
+        para Decimal e divididos por 100, sem passagem por float.
 
     Raises:
         ValueError: Se não informar ``inicio`` nem ``ultimos``, ou se
@@ -231,27 +236,34 @@ def igpm_taxa_serie(
         _buscar_serie(SerieSGS.IGPM, inicio, fim, ultimos)
         .select(
             periodo=pl.col("data").dt.strftime("%Y%m").cast(pl.Int64),
-            taxa=pct_para_decimal(pl.col("valor")),
+            # A divisão decimal do Polars preserva a escala do numerador.
+            taxa=(pl.col("valor").cast(pl.Decimal(precision=18, scale=4)) / 100).cast(
+                pl.Decimal(precision=18, scale=4)
+            ),
         )
         .sort("periodo")
     )
 
 
-def igpm_taxa(data: DateLike) -> float:
+def igpm_taxa(data: DateLike) -> Decimal:
     """Taxa mensal do IGP-M via SGS do Banco Central (série 189, fonte FGV).
 
     Args:
         data: Qualquer data dentro do mês desejado.
 
     Returns:
-        Variação mensal em decimal ou ``nan`` se não disponível.
+        Decimal: Variação mensal em decimal com quatro casas decimais, ou
+        ``Decimal('NaN')`` se não disponível.
 
     Examples:
         >>> taxa = yd.igpm.taxa("15-01-2025")
     """
     if any_is_empty(data):
-        return float("nan")
-    return _extrair_escalar(igpm_taxa_serie(data, data), "taxa")
+        return Decimal("NaN")
+    df = igpm_taxa_serie(data, data)
+    if df.is_empty():
+        return Decimal("NaN")
+    return df.item(0, "taxa")
 
 
 # ── SELIC Over ───────────────────────────────────────────────────────
@@ -452,7 +464,7 @@ def ptax_serie(
         return pl.DataFrame(schema=ESQUEMA_PTAX)
     return df.select(
         "data",
-        cotacao=pl.col("valor").round(CASAS_DECIMAIS_PTAX),
+        cotacao=pl.col("valor").cast(pl.Float64).round(CASAS_DECIMAIS_PTAX),
     )
 
 

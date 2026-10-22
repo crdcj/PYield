@@ -1,5 +1,5 @@
 import datetime as dt
-from decimal import Decimal
+from decimal import Decimal, localcontext
 
 import polars as pl
 import pytest
@@ -54,9 +54,7 @@ def test_historico_e_ultimo_por_serie():
         Decimal("100.000000"),
         Decimal("110.000000"),
     ]
-    assert yd.vna.historico("NTN-B")["vna"].dtype == pl.Decimal(
-        precision=18, scale=6
-    )
+    assert yd.vna.historico("NTN-B")["vna"].dtype == pl.Decimal(precision=18, scale=6)
     assert yd.vna.ultimo("NTN-B").row(0) == (
         dt.date(2026, 2, 1),
         Decimal("110.000000"),
@@ -81,6 +79,18 @@ def test_valor_preserva_consultas_existentes():
     )
     assert yd.vna.valor("NTN-C", "01-02-2026").is_nan()
     assert yd.vna.valor("LFT").is_nan()
+
+
+@pytest.mark.parametrize(
+    ("titulo", "data", "base", "inflacao", "esperado"),
+    [
+        ("NTN-B", "30-06-2026", 4731.856412, 0.45, Decimal("4742.491138")),
+        ("NTN-C", "16-06-2026", 6693.537239, 0.30, Decimal("6703.570025")),
+    ],
+)
+def test_projecao_independe_da_precisao_externa(titulo, data, base, inflacao, esperado):
+    with localcontext(prec=9):
+        assert yd.vna.projetado(titulo, data, base, inflacao) == esperado
 
 
 def test_projecao_ntnb_aceita_float_e_retorna_decimal():

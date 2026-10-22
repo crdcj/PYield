@@ -1,13 +1,12 @@
 """Valores oficiais e projetados de VNA da NTN-B."""
 
 import datetime as dt
-import math
-from decimal import Decimal
+from decimal import Decimal, localcontext
 
 import polars as pl
 
 import pyield._internal.converters as conversores
-from pyield._internal.numbers import truncar, truncar_decimal
+from pyield._internal.numbers import para_decimal, truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.ipca import historico as _ipca
 from pyield.vna import _calculo as _vna
@@ -15,21 +14,16 @@ from pyield.vna import _download
 
 _DIA_INICIO_VIGENCIA = 15
 _QTD_MARCOS_VIGENCIA = 2
-_TIPO_VNA = pl.Decimal(precision=18, scale=6)
-_URL_PUBLICACAO = (
-    "https://www.tesourotransparente.gov.br/publicacoes/valor-nominal-de-ntn-b/"
-)
+# Link permanente da publicação; o Tesouro substitui o arquivo a cada atualização.
 _URL_ARQUIVO = "https://thot-arquivos.tesouro.gov.br/publicacao/53360"
 
 
 def _processar(df_bruto: pl.DataFrame) -> pl.DataFrame:
     """Normaliza as duas colunas da planilha de NTN-B."""
     return (
-        df_bruto.select(
-            data=_vna.expressao_data(),
-            vna=pl.col("column_2").cast(_TIPO_VNA, strict=False),
-        )
-        .filter(pl.col("data").is_not_null(), pl.col("vna").is_not_null())
+        df_bruto.filter(_vna.expressao_data().is_not_null())
+        .select(data=_vna.expressao_data(), vna=_vna.expressao_vna("column_2"))
+        .filter(pl.col("vna").is_not_null())
         .unique(subset="data", keep="last")
         .sort("data")
     )
@@ -48,11 +42,7 @@ def vnas(*, atualizar: bool = False) -> pl.DataFrame:
         - data (Date): Data de referência do VNA.
         - vna (Decimal(18, 6)): Valor nominal atualizado da NTN-B.
     """
-    conteudo = _download.baixar_planilha(
-        _URL_PUBLICACAO,
-        _URL_ARQUIVO,
-        _atualizar=atualizar,
-    )
+    conteudo = _download.baixar_planilha(_URL_ARQUIVO, _atualizar=atualizar)
     return _processar(_download.ler_planilha(conteudo, "NTNB"))
 
 
@@ -90,7 +80,7 @@ def vna(data: DateLike | None = None, *, atualizar: bool = False) -> Decimal:
     df = vnas(atualizar=atualizar)
     ponto_exato = df.filter(pl.col("data") == data_convertida)
     if ponto_exato.height == 1:
-        return truncar_decimal(ponto_exato.item(0, "vna"), 6)
+        return ponto_exato.item(0, "vna")
 
     inicio, fim = vigencia(data_convertida)
     pontos_vigencia = df.filter(pl.col("data").is_in([inicio, fim]))
@@ -98,16 +88,9 @@ def vna(data: DateLike | None = None, *, atualizar: bool = False) -> Decimal:
         return Decimal("NaN")
 
     fator_ipca = _obter_fator_ipca(inicio, fim)
-    if math.isnan(fator_ipca):
+    if fator_ipca.is_nan():
         return Decimal("NaN")
-    return truncar_decimal(
-        _vna.calcular_vna(
-            df,
-            data_convertida,
-            fator_variacao=fator_ipca,
-        ),
-        6,
-    )
+    return _vna.calcular_vna(df, data_convertida, fator_variacao=fator_ipca)
 
 
 def vigencia(data: DateLike) -> tuple[dt.date, dt.date]:
@@ -145,8 +128,8 @@ def vigencia(data: DateLike) -> tuple[dt.date, dt.date]:
     return inicio, fim
 
 
-def _obter_fator_ipca(inicio: dt.date, fim: dt.date) -> float:
-    """Obtém o fator entre os números-índice que atualizam a vigência."""
+def _obter_fator_ipca(inicio: dt.date, fim: dt.date) -> Decimal:
+    """Obtém o fator T-16 entre os números-índice que atualizam a vigência."""
     mes_inicial = inicio.replace(day=1) - dt.timedelta(days=1)
     mes_final = fim.replace(day=1) - dt.timedelta(days=1)
     df = _ipca.indice_serie(mes_inicial, mes_final)
@@ -155,9 +138,12 @@ def _obter_fator_ipca(inicio: dt.date, fim: dt.date) -> float:
     indice_inicial = df.filter(pl.col("periodo") == periodo_inicial)
     indice_final = df.filter(pl.col("periodo") == periodo_final)
     if indice_inicial.is_empty() or indice_final.is_empty():
-        return float("nan")
-    fator = indice_final.item(0, "indice") / indice_inicial.item(0, "indice")
-    return truncar(fator, 16)
+        return Decimal("NaN")
+    with localcontext(prec=_vna.PRECISAO_CALCULO):
+        fator = para_decimal(indice_final.item(0, "indice")) / para_decimal(
+            indice_inicial.item(0, "indice")
+        )
+        return truncar_decimal(fator, 16)
 
 
 def vna_projetado(
@@ -207,8 +193,9 @@ def vna_projetado(
         raise ValueError("A inflação deve ser maior que -100%.")
     data_convertida = conversores.converter_datas(data)
     inicio, fim = vigencia(data_convertida)
-    expoente = (data_convertida - inicio).days / (fim - inicio).days
-    return truncar_decimal(
-        _vna.calcular_vna_projetado(float(vna_base), float(inflacao), expoente),
-        6,
+    return _vna.calcular_vna_projetado(
+        vna_base,
+        inflacao,
+        (data_convertida - inicio).days,
+        (fim - inicio).days,
     )
