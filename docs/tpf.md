@@ -105,9 +105,10 @@ Para a NTN-B1, consulte a [metodologia específica do Tesouro Direto](referencia
 
 ### Funções canônicas e analíticas
 
-As regras de truncamento e arredondamento acima valem apenas para as funções
-que reproduzem a metodologia oficial: `pu` e `cotacao`. Elas retornam
-`Decimal`, com as casas definidas pelo Tesouro.
+Na precificação dos títulos, `pu` e `cotacao` reproduzem as regras oficiais
+de truncamento e arredondamento e retornam `Decimal`, com as casas definidas
+pelo Tesouro. As regras de atualização do VNA são descritas na página de
+[VNA](vna.md).
 
 As demais funções de títulos (`taxa`, `dv01`, `duration`, prêmios, taxas zero
 e rentabilidade) são medidas analíticas: descontam os fluxos com o prazo

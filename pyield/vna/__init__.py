@@ -3,6 +3,7 @@
 from pyield.vna._calculo import calcular_vna
 from pyield.vna._consulta import (
     TipoTitulo,
+    calcular_base,
     historico,
     projetado,
     ultimo,
@@ -13,6 +14,7 @@ from pyield.vna._contexto import contexto
 
 __all__ = [
     "contexto",
+    "calcular_base",
     "calcular_vna",
     "TipoTitulo",
     "historico",

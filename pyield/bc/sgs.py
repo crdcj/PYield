@@ -222,6 +222,14 @@ def igpm_taxa_serie(
 
     Examples:
         >>> df = yd.igpm.taxa_serie("01-01-2025", "31-03-2025")
+        >>> df.to_dicts()
+        [{'periodo': 202501, 'taxa': Decimal('0.0027')},
+         {'periodo': 202502, 'taxa': Decimal('0.0106')},
+         {'periodo': 202503, 'taxa': Decimal('-0.0034')}]
+
+        A taxa é mensal e decimal: março registra deflação de 0,34%.
+        Para acompanhar as últimas competências, sem fixar os valores:
+
         >>> df = yd.igpm.taxa_serie(ultimos=12)
     """
     if ultimos is not None:
@@ -257,6 +265,14 @@ def igpm_taxa(data: DateLike) -> Decimal:
 
     Examples:
         >>> taxa = yd.igpm.taxa("15-01-2025")
+        >>> taxa
+        Decimal('0.0027')
+
+        Qualquer dia seleciona a competência mensal. Uma taxa negativa
+        representa deflação, como os -0,34% de março de 2025:
+
+        >>> yd.igpm.taxa("31-03-2025")
+        Decimal('-0.0034')
     """
     if any_is_empty(data):
         return Decimal("NaN")

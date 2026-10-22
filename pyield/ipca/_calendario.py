@@ -89,6 +89,14 @@ def calendario(ano: int, *, atualizar: bool = False) -> pl.DataFrame:
 
     Raises:
         ValueError: Ano inválido, paginação inválida ou datas conflitantes.
+
+    Examples:
+        Seleciona a divulgação do IPCA de dezembro do ano atual, prevista
+        para o ano seguinte. As datas e a disponibilidade dependem do
+        calendário publicado pelo IBGE:
+
+        >>> agenda = yd.ipca.calendario(yd.hoje().year)
+        >>> dezembro = agenda.filter(pl.col("competencia").dt.month() == 12)
     """
     if type(ano) is not int or not dt.MINYEAR <= ano <= dt.MAXYEAR:
         raise ValueError("ano deve ser um inteiro entre 1 e 9999.")

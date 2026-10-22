@@ -83,7 +83,7 @@ can accept the loss of precision.
 
 | Operation | Return type in 0.60.0 |
 |---|---|
-| `vna.valor`, `vna.projetado`, `vna.calcular_vna` | `Decimal` |
+| `vna.valor`, `vna.projetado`, `vna.calcular_vna`, `vna.calcular_base` | `Decimal` |
 | `vna` column in `vna.historico` and `vna.ultimo` | `Decimal(18, 6)` |
 | `ipca.indice` / `indice` column in `ipca.indice_serie` | `Decimal` / `Decimal(18, 2)` |
 | `ipca.taxa` / `taxa` column in `ipca.taxa_serie` | `Decimal` / `Decimal(18, 4)` |
@@ -130,8 +130,8 @@ For series, `fim=None` uses the current date in Brazil. Provide `inicio` or
   requires `vencimento` for NTN-C and accepts an explicit projection when
   realized inflation is unavailable. Inflation inputs in `contexto` and
   `projetado` accept decimal numbers (`0.0045`) or explicit percentages
-  (`"0.45%"` or `"0,45%"`). The decimal inflation returned by `contexto` can be
-  passed directly to `projetado`.
+  (`"0.45%"` or `"0,45%"`). The `inflacao` column returned by `contexto` uses
+  Decimal and can be passed directly to `projetado`.
   Migration: replace the former `inflacao=0.45` with `inflacao="0.45%"` or
   `inflacao=0.0045`; plain numbers now represent decimal rates.
 - `yd.ipca.calendario(ano, atualizar=False)` queries IBGE's scheduled release
@@ -142,6 +142,15 @@ For series, `fim=None` uses the current date in Brazil. Provide `inicio` or
 
 ### Other changes
 
+- `yd.vna.calcular_base(titulo, indice_atual, vencimento=None)` calculates
+  the monthly NTN-B or NTN-C base from the realized IPCA or IGP-M index number,
+  or the LFT VNA from the accumulated Selic factor since 01/07/2000, without
+  network access. Original bases and initial indices are internal constants;
+  NTN-C requires a maturity to select its series and issuance adjustment.
+  For LFT, the factor is rounded to sixteen decimal places; for NTN-B and
+  NTN-C, it is truncated to that precision. The VNA is truncated to six
+  decimal places, preserving the original base precision instead of chaining
+  previously truncated monthly VNAs.
 - New `yd.igpm` module with `taxa` and `taxa_serie` for monthly IGP-M rates
   from SGS/BCB. `taxa` returns `Decimal` (or `Decimal("NaN")` when unavailable),
   and the `taxa` column returned by `taxa_serie` uses `Decimal(18, 4)`.

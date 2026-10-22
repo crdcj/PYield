@@ -269,13 +269,14 @@ Visão geral das principais funções públicas do PYield.
 ??? "`yd.vna` (valor nominal atualizado)"
     ```text
     yd.vna
-    ├── valor(titulo, data, vencimento=None, *, atualizar=False)
+    ├── valor(titulo, data=None, vencimento=None, *, atualizar=False)
     ├── historico(titulo, vencimento=None, *, atualizar=False)
     ├── ultimo(titulo, vencimento=None, *, atualizar=False)
     ├── vigencia(titulo, data)
     ├── projetado(titulo, data, vna_base, inflacao=None, *, selic=None)
     ├── contexto(titulo, data, vencimento=None, *, inflacao_projetada=None, atualizar=False)
-    ├── calcular_vna(df, data, fator_variacao=...)
+    ├── calcular_vna(df, data, *, fator_variacao=None)
+    ├── calcular_base(titulo, indice_atual, vencimento=None)
     └── TipoTitulo
     ```
 

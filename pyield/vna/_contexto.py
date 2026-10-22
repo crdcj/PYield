@@ -84,6 +84,28 @@ def contexto(
     Raises:
         ValueError: Título ou data inválidos, vencimento incompatível/ausente,
             projeção não finita ou menor ou igual a -1, ou percentual textual inválido.
+
+    Examples:
+        Consulta uma vigência histórica da NTN-B e verifica a competência
+        da inflação, a base publicada e a disponibilidade dos parâmetros:
+
+        >>> parametros = yd.vna.contexto("NTN-B", "30-06-2026")
+        >>> parametros.select(
+        ...     "competencia", "vna_base", "inflacao", "situacao_inflacao", "pendencias"
+        ... ).row(0)
+        (datetime.date(2026, 6, 1), Decimal('4731.856412'),
+         Decimal('0.001600000000000000'), 'realizado', [])
+
+        Para a vigência atual da NTN-C, informa o vencimento e uma projeção
+        de 0,45%, usada somente se a inflação realizada não estiver disponível.
+        A situação e as pendências dependem dos dados publicados na consulta:
+
+        >>> parametros = yd.vna.contexto(
+        ...     "NTN-C", yd.hoje(), vencimento="01-01-2031",
+        ...     inflacao_projetada="0,45%",
+        ... )
+        >>> situacao = parametros.item(0, "situacao_inflacao")
+        >>> pendencias = parametros.item(0, "pendencias")
     """
     inicio, fim = vigencia(titulo, data)
     if titulo == "NTN-C" and (vencimento is None or any_is_empty(vencimento)):

@@ -75,6 +75,136 @@ Use apenas `yd.vna` para operações de VNA. Os aliases `vna`, `vnas`,
 `vna_projetado` e `vigencia` foram removidos dos módulos dos títulos.
 As implementações internas e suas metodologias foram preservadas.
 
+## Cálculo do VNA a partir da origem
+
+`yd.vna.calcular_base(titulo, indice_atual, vencimento=None)` calcula uma nova
+base mensal da NTN-B ou NTN-C com o número-índice realizado do IPCA ou IGP-M,
+respectivamente, ou o VNA diário da LFT com o fator Selic acumulado desde
+01/07/2000. As bases originais e os índices iniciais são constantes internas.
+O usuário fornece apenas o título e o índice ou fator novo; para NTN-C,
+informa também o vencimento para selecionar a série.
+
+A função não consulta a rede: pode ser usada assim que o IBGE ou a FGV divulgar
+o índice, mesmo que o Tesouro ainda não tenha publicado o novo VNA. Aceita
+`float` ou `Decimal` e retorna `Decimal` com seis casas. Para LFT, o fator
+acumulado deve ser fornecido pronto; a função não busca nem acumula as taxas
+diárias. Não há preenchimento automático nas consultas de VNA publicado.
+
+O índice corresponde ao mês anterior à nova data-base. Para NTN-B, a referência
+ocorre no dia 15; para NTN-C, no primeiro dia do mês. Os exemplos abaixo
+conferem o cálculo com valores conhecidos publicados pelas fontes oficiais.
+
+### NTN-B: base de 15/08/2026
+
+```python
+indice_atual = 7657.73  # Pode ser obtido com yd.ipca.indice("01-07-2026")
+nova_base = yd.vna.calcular_base("NTN-B", indice_atual)  # 15/08/2026
+# Decimal('4742.744422')
+assert nova_base == yd.vna.valor("NTN-B", "15-08-2026")
+```
+
+### NTN-C: base de 01/10/2026, série de 2031
+
+```python
+indice_atual = 1225.846  # Pode ser obtido com yd.igpm.indice("01-09-2026")
+nova_base = yd.vna.calcular_base(
+    "NTN-C", indice_atual, vencimento="01-01-2031",  # 01/10/2026
+)
+# Decimal('6671.452284')
+assert nova_base == yd.vna.valor("NTN-C", "01-10-2026", "01-01-2031")
+```
+
+Para NTN-C, o vencimento é obrigatório e a seleção usa seu ano. Os vencimentos
+2005, 2008, 2011, 2017, 2021 e 2031 usam R$ 1.000 em 01/07/2000. Os de 2002 e
+2006 incluem internamente o ajuste inicial da emissão de 03/12/1999, sem perda
+de precisão intermediária. Um vencimento sem série conhecida retorna
+`Decimal('NaN')`. Para NTN-B e LFT, omita o vencimento.
+
+### LFT: VNA válido em 03/06/2024
+
+O fator abaixo foi conferido com o produtório da Selic diária SGS 11 desde
+01/07/2000 até 31/05/2024, inclusive. Ele já incorpora toda a acumulação;
+uma taxa diária ou anual isolada não é essa entrada.
+
+```python
+fator_acumulado = 14.903011480282196
+nova_base = yd.vna.calcular_base("LFT", fator_acumulado)
+# Decimal('14903.011480')
+assert nova_base == yd.vna.valor("LFT", "31-05-2024")
+```
+
+O arquivo APC238 gerado em 31/05/2024 informa o VNA válido para 03/06/2024,
+próximo dia útil. A consulta `valor` recebe a data do arquivo; o fator acumulado
+para uma data de vigência inclui as taxas até o dia útil anterior. A função
+de cálculo não seleciona datas nem consulta relatórios automaticamente.
+
+### Precisão e referências
+
+Para NTN-B e NTN-C, a sequência é `T6(vna_base * T16(indice_atual / indice_base))`: trunca o
+fator acumulado em dezesseis casas e o VNA em seis, com precisão interna de
+28 dígitos. Não arredonda o fator nem usa a taxa mensal percentual arredondada.
+O cálculo da base não tem pró-rata de dias nem arredondamento de projeção.
+Para LFT, a sequência é `T6(1000 * A16(fator_acumulado))`: arredonda o fator
+em dezesseis casas (meio para cima) e trunca o VNA em seis. A base original
+de R$ 1.000 também fica embutida na biblioteca.
+
+Usar o VNA do mês anterior já truncado pode perder uma unidade na sexta casa;
+encadear essas bases acumula a perda. Por isso, a referência de partida para
+reconstrução exata deve ser a original, selecionada pela biblioteca. Consulte
+o registro da fórmula, da
+validação histórica e da divergência identificada em fevereiro de 2014 na
+[metodologia da STN](referencias/metodologia-calculo-tpf-stn.md#vna-base-mensal-da-ntn-b).
+O valor calculado não substitui a consulta ao VNA publicado por `yd.vna.valor`.
+O registro da reconstrução e das datas da LFT está na
+[metodologia complementar](referencias/metodologia-calculo-letras-notas-stn.md#conferencia-da-reconstrucao-desde-a-origem).
+
+## Interpolação e projeção
+
+`calcular_vna` recebe um DataFrame porque trabalha sobre uma série de referências:
+retorna o ponto publicado na data ou seleciona as duas referências que a cercam
+e calcula o pró-rata. Não exige ordenação prévia nem usa necessariamente o último
+VNA da série. Para NTN-C, filtre o vencimento para não misturar séries.
+
+```python
+referencias = yd.vna.historico("NTN-C", vencimento="01-01-2031")
+valor = yd.vna.calcular_vna(referencias, "16-12-2025")
+# Decimal('6449.641358')
+```
+
+O VNA de entrada pode ser `float`; não é necessário construir objetos `Decimal`.
+A data da consulta aceita os formatos brasileiros `DD-MM-YYYY` e `DD/MM/YYYY`,
+além de `YYYY-MM-DD` e objetos de data. No DataFrame, a coluna `data` deve ser
+do tipo Polars `Date`, como já vem de `historico`. O retorno permanece `Decimal`.
+
+O parâmetro opcional `fator_variacao` substitui a razão entre os dois VNAs,
+mas ainda exige as duas referências para determinar o intervalo. É um fator
+multiplicativo: `1.0045` representa alta de 0,45%. A função retorna
+`Decimal('NaN')` fora do intervalo publicado, mesmo com esse fator informado.
+Para NTN-B, prefira `yd.vna.valor` para reproduzir o valor oficial: ela usa os
+números-índice do IPCA e os truncamentos próprios desse cálculo, em vez de
+inferir o fator pela razão entre VNAs publicados.
+
+Para projetar, use `projetado`, que já recebe um VNA-base escalar. Se a base vem
+do histórico, selecione a referência do **início da vigência da data-alvo**.
+Ela só coincide com o último VNA publicado quando essa última referência é
+o início da vigência desejada. Por exemplo, em um cenário de inflação de 0,45%:
+
+```python
+data = "30-06-2026"
+inicio, fim = yd.vna.vigencia("NTN-B", data)
+referencias = yd.vna.historico("NTN-B")
+base = referencias.filter(pl.col("data") == inicio).item(0, "vna")
+valor = yd.vna.projetado("NTN-B", data, base, "0.45%")
+# Decimal('4742.491138')
+```
+
+O exemplo pressupõe que a referência inicial está disponível no histórico.
+Se o VNA da próxima referência já tiver sido publicado, os dias anteriores a
+ela continuam pertencendo à vigência anterior. Para calcular esses dias com
+a inflação realizada, use `yd.vna.valor`; na NTN-B, ela consulta os índices
+do IPCA. `projetado` aplica as regras de arredondamento da inflação projetada
+e não substitui esse cálculo realizado a partir dos números-índice.
+
 ## Migração das entradas de inflação
 
 O parâmetro `inflacao` de NTN-B e NTN-C em `yd.vna.projetado` recebia

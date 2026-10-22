@@ -98,6 +98,15 @@ def calendario(ano: int, *, atualizar: bool = False) -> pl.DataFrame:
 
     Raises:
         ValueError: Ano inválido, data inválida ou datas conflitantes.
+
+    Examples:
+        Seleciona as divulgações previstas a partir de hoje, sem incluir
+        prévias decendiais. O resultado depende do calendário da FGV IBRE
+        e não comprova que os índices já tenham sido publicados:
+
+        >>> hoje = yd.hoje()
+        >>> agenda = yd.igpm.calendario(hoje.year)
+        >>> proximas = agenda.filter(pl.col("data_divulgacao") >= hoje)
     """
     if type(ano) is not int or not dt.MINYEAR <= ano <= dt.MAXYEAR:
         raise ValueError("ano deve ser um inteiro entre 1 e 9999.")

@@ -12,7 +12,7 @@ apenas quando a aplicação aceitar perder essa precisão.
 
 | Operação | Retorno na 0.60.0 |
 |---|---|
-| `vna.valor`, `vna.projetado`, `vna.calcular_vna` | `Decimal` |
+| `vna.valor`, `vna.projetado`, `vna.calcular_vna`, `vna.calcular_base` | `Decimal` |
 | Coluna `vna` de `vna.historico` e `vna.ultimo` | `Decimal(18, 6)` |
 | `ipca.indice` / coluna `indice` de `ipca.indice_serie` | `Decimal` / `Decimal(18, 2)` |
 | `ipca.taxa` / coluna `taxa` de `ipca.taxa_serie` | `Decimal` / `Decimal(18, 4)` |
@@ -61,8 +61,9 @@ Nas séries, `fim=None` usa a data atual no Brasil. Informe `inicio` ou
   VNAs publicados, competência, inflação e pendências. Exige `vencimento` para
   NTN-C e aceita uma projeção explícita quando a inflação realizada não existe.
   As entradas de inflação em `contexto` e `projetado` aceitam números decimais
-  (`0.0045`) ou percentuais explícitos (`"0.45%"` ou `"0,45%"`). O retorno de
-  `contexto` é decimal e pode ser passado diretamente a `projetado`.
+  (`0.0045`) ou percentuais explícitos (`"0.45%"` ou `"0,45%"`). A coluna
+  `inflacao` de `contexto` usa Decimal e pode ser passada diretamente a
+  `projetado`.
   Migração: substitua o antigo `inflacao=0.45` por `inflacao="0.45%"` ou
   `inflacao=0.0045`; números puros agora representam taxas decimais.
 - `yd.ipca.calendario(ano, atualizar=False)` consulta as datas previstas de
@@ -74,6 +75,14 @@ Nas séries, `fim=None` usa a data atual no Brasil. Informe `inicio` ou
 
 ## Outras mudanças
 
+- `yd.vna.calcular_base(titulo, indice_atual, vencimento=None)` calcula a base
+  mensal da NTN-B ou NTN-C com o número-índice realizado do IPCA ou IGP-M,
+  ou o VNA da LFT com o fator Selic acumulado desde 01/07/2000, sem acesso
+  à rede. As origens e os índices iniciais são constantes internas;
+  NTN-C exige vencimento para selecionar a série e seu ajuste de emissão.
+  Para LFT, arredonda o fator em dezesseis casas; para NTN-B e NTN-C, trunca
+  o fator nessa precisão. Trunca o VNA em seis casas, preservando a
+  precisão da origem e evitando encadear VNAs mensais já truncados.
 - Novo módulo `yd.igpm`, com `taxa` e `taxa_serie` para consultar taxas mensais
   do IGP-M via SGS/BCB. `taxa` retorna `Decimal` (ou `Decimal("NaN")` quando
   indisponível), e a coluna `taxa` de `taxa_serie` usa `Decimal(18, 4)`.
@@ -82,9 +91,10 @@ Nas séries, `fim=None` usa a data atual no Brasil. Informe `inicio` ou
   (série `IGP12_IGPM12`), como `Decimal` e coluna `Decimal(18, 10)`.
   As dez casas preservam o histórico anterior a 1994. As séries aceitam
   intervalo ou `ultimos`, com competência `periodo` no formato `YYYYMM`.
-- CPM passa a expor `yd.cpm.contratos(data)` e
-  `yd.cpm.probabilidades(data, tipo_opcao="call")`. Esta última retorna todas
-  as reuniões disponíveis; filtre o DataFrame para selecionar uma reunião.
+- No CPM, substitua `yd.cpm.data(data)` por `yd.cpm.contratos(data)` e use
+  `yd.cpm.probabilidades(data, tipo_opcao="call")` para as probabilidades.
+  Esta última retorna todas as reuniões disponíveis; filtre o DataFrame para
+  selecionar uma reunião.
 - Leilões do BCB passam de `yd.bc.leiloes` para `yd.tpf.leiloes_bcb`, com nomes
   de colunas alinhados aos de `yd.tpf.leiloes`.
 - No mercado secundário, `yd.tpf.secundario.ler(fonte)` substitui `ler_zip` e
@@ -92,9 +102,10 @@ Nas séries, `fim=None` usa a data atual no Brasil. Informe `inicio` ou
   saída. `nome_arquivo_mensal` deixa de ser público.
 - `yd.ntnf.premio` foi removida. Use `yd.tpf.premios_pre(data)` e filtre
   `titulo == "NTN-F"` para obter o prêmio bruto.
-- `yd.tpf.taxas` preserva colunas e tipos quando não há dados. Nos leilões do
-  Tesouro, PU mínimo informado como zero passa a ser nulo, e o financeiro
-  ofertado usa o PU médio calculado quando necessário.
+- `yd.tpf.taxas` e as consultas `dados` de LFT, LTN, NTN-B, NTN-C e NTN-F
+  preservam colunas e tipos quando não há dados. Nos leilões do Tesouro, PU
+  mínimo informado como zero passa a ser nulo, e o financeiro ofertado usa o
+  PU médio calculado quando necessário.
 - `yd.rmd` passa a propagar erros de download e processamento, em vez de
   retornar um DataFrame vazio nessas situações.
 

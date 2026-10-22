@@ -80,11 +80,15 @@ O projeto usa `uv_build` como backend PEP 517. Gere a distribuição a partir da
 raiz:
 
 ```sh
-uv build
+uv build --no-sources --clear
 ```
 
-O comando cria a distribuição fonte e a wheel no diretório `dist/`. Antes de
-publicar, confirme o conteúdo dos artefatos e a versão:
+O comando cria a distribuição fonte e a wheel no diretório `dist/`.
+`--no-sources` ignora fontes alternativas de dependências configuradas em
+`tool.uv.sources`, validando o build com os metadados usados na publicação.
+`--clear` limpa o diretório de saída antes do build para evitar a publicação de
+artefatos de versões anteriores. Antes de publicar, confirme o conteúdo dos
+artefatos e a versão:
 
 ```sh
 ls dist
