@@ -403,8 +403,8 @@ def test_vna_ntnc_seleciona_serie_e_calcula_entre_valores_publicados(
 
 
 CASOS_VNA_PROJETADO = [
-    ("NTN-B", "15-06-2026", VNA_NTNB_JUN_2026, 0.45),
-    ("NTN-C", "01-06-2026", VNA_NTNC_2031_JUN_2026, 0.30),
+    ("NTN-B", "15-06-2026", VNA_NTNB_JUN_2026, "0.45%"),
+    ("NTN-C", "01-06-2026", VNA_NTNC_2031_JUN_2026, "0.30%"),
 ]
 
 

@@ -172,7 +172,7 @@ def projetado(
     titulo: TipoTitulo,
     data: DateLike,
     vna_base: float | Decimal,
-    inflacao: float | Decimal | None = None,
+    inflacao: float | Decimal | str | None = None,
     *,
     selic: float | Decimal | str | None = None,
 ) -> Decimal:
@@ -183,9 +183,10 @@ def projetado(
         data: Data para a qual projetar o VNA.
         vna_base: VNA-base correspondente ao início da vigência ou ao último
             dia útil anterior à data, conforme o título.
-        inflacao: Para NTN-B e NTN-C, variação mensal percentual; ``0.45``
-            representa 0,45%. Para LFT, taxa anual decimal, finita e maior
-            que -1; informe-a em ``selic``.
+        inflacao: Para NTN-B e NTN-C, variação mensal decimal; ``0.0045``
+            representa 0,45%. Aceita também percentual explícito, como
+            ``"0.45%"`` ou ``"0,45%"``. Para LFT, informe a taxa anual
+            em ``selic``.
         selic: Obrigatória apenas para LFT. Aceita taxa decimal ou
             percentual explícito, como ``"13.65%"``. Para reproduzir o
             acruamento oficial da LFT, use a taxa Selic diária publicada pelo
@@ -199,8 +200,12 @@ def projetado(
         Decimal: VNA projetado com seis casas; NaN para entradas nulas.
 
     Notes:
+        Entradas numéricas são convertidas para Decimal pela representação
+        textual; percentuais explícitos são convertidos para a unidade decimal
+        sem arredondamento antes da aplicação das regras do cálculo.
         NTN-B e NTN-C seguem a metodologia STN: base truncada em seis casas,
-        inflação arredondada em duas e expoente em dias corridos truncado em
+        inflação percentual arredondada em duas casas (quatro na unidade
+        decimal) e expoente em dias corridos truncado em
         catorze. LFT usa dias úteis, base 252 e capitalização pela taxa anual
         informada. A taxa Selic diária publicada pelo SGS 11 é a referência
         exata para o acruamento; o fator usado no cálculo é ``1 + taxa`` em
@@ -210,11 +215,11 @@ def projetado(
     Raises:
         ValueError: Se o título for inválido, a taxa for informada para o
             título errado, ou houver violação dos limites da metodologia
-            específica.
+            específica, ou percentual textual inválido.
 
     Examples:
         >>> import pyield as yd
-        >>> yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, 0.45)
+        >>> yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, "0.45%")
         Decimal('4742.491138')
         >>> yd.vna.projetado(
         ...     "LFT",

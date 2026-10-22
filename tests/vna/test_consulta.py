@@ -84,8 +84,8 @@ def test_valor_preserva_consultas_existentes():
 @pytest.mark.parametrize(
     ("titulo", "data", "base", "inflacao", "esperado"),
     [
-        ("NTN-B", "30-06-2026", 4731.856412, 0.45, Decimal("4742.491138")),
-        ("NTN-C", "16-06-2026", 6693.537239, 0.30, Decimal("6703.570025")),
+        ("NTN-B", "30-06-2026", 4731.856412, "0.45%", Decimal("4742.491138")),
+        ("NTN-C", "16-06-2026", 6693.537239, "0.30%", Decimal("6703.570025")),
     ],
 )
 def test_projecao_independe_da_precisao_externa(titulo, data, base, inflacao, esperado):
@@ -94,21 +94,21 @@ def test_projecao_independe_da_precisao_externa(titulo, data, base, inflacao, es
 
 
 def test_projecao_ntnb_aceita_float_e_retorna_decimal():
-    resultado = yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, 0.45)
+    resultado = yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, 0.0045)
 
     assert isinstance(resultado, Decimal)
     assert resultado == Decimal("4742.491138")
 
 
 def test_projecao_ntnc_com_numeros_comuns():
-    resultado = yd.vna.projetado("NTN-C", "16-06-2026", 6693.537239, 0.30)
+    resultado = yd.vna.projetado("NTN-C", "16-06-2026", 6693.537239, 0.0030)
 
     assert resultado == Decimal("6703.570025")
 
 
 def test_projecao_tambem_aceita_decimal():
     resultado = yd.vna.projetado(
-        "NTN-C", "16-06-2026", Decimal("6693.537239"), Decimal("0.30")
+        "NTN-C", "16-06-2026", Decimal("6693.537239"), Decimal("0.0030")
     )
 
     assert resultado == Decimal("6703.570025")
@@ -137,7 +137,7 @@ def test_operacoes_mensais_rejeitam_titulo_invalido(titulo):
     with pytest.raises(ValueError, match="NTN-B e NTN-C"):
         yd.vna.vigencia(titulo, "01-01-2026")
     with pytest.raises(ValueError, match="LFT, NTN-B ou NTN-C"):
-        yd.vna.projetado(titulo, "01-01-2026", 1000, 0.45)
+        yd.vna.projetado(titulo, "01-01-2026", 1000, "0.45%")
 
 
 def test_argumentos_incompativeis():
@@ -162,3 +162,31 @@ def test_namespace_reexporta_implementacoes():
     for modulo in (yd.ntnb, yd.ntnc, yd.lft):
         for nome in ("vna", "vnas", "vna_projetado", "vigencia"):
             assert not hasattr(modulo, nome)
+
+
+@pytest.mark.parametrize("titulo", ["NTN-B", "NTN-C"])
+@pytest.mark.parametrize("inflacao", [0.0045, Decimal("0.0045"), "0.45%", "0,45%"])
+def test_projecao_formatos_equivalentes(titulo, inflacao):
+    assert yd.vna.projetado(titulo, "30-06-2026", 4731.856412, inflacao) == (
+        yd.vna.projetado(titulo, "30-06-2026", 4731.856412, Decimal("0.0045"))
+    )
+
+
+@pytest.mark.parametrize("titulo", ["NTN-B", "NTN-C"])
+@pytest.mark.parametrize("inflacao", ["0.45", "0,45", "NaN%", "inf%", "abc", "-100%"])
+def test_projecao_rejeita_percentual_invalido(titulo, inflacao):
+    with pytest.raises(ValueError, match="Taxa textual|inflação"):
+        yd.vna.projetado(titulo, "30-06-2026", 4731.856412, inflacao)
+
+
+@pytest.mark.parametrize("titulo", ["NTN-B", "NTN-C"])
+@pytest.mark.parametrize(
+    ("inflacao", "taxa_arredondada"),
+    [("0.465%", "0.46%"), ("-0.465%", "-0.46%")],
+)
+def test_projecao_preserva_arredondamento_meio_para_par(
+    titulo, inflacao, taxa_arredondada
+):
+    data = "30-06-2026" if titulo == "NTN-B" else "16-06-2026"
+    resultado = yd.vna.projetado(titulo, data, 1000, inflacao)
+    assert resultado == yd.vna.projetado(titulo, data, 1000, taxa_arredondada)

@@ -9,6 +9,7 @@ import pyield._internal.converters as conversores
 from pyield._internal.numbers import para_decimal, truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.ipca import historico as _ipca
+from pyield.tpf.titulos._utils import converter_taxa
 from pyield.vna import _calculo as _vna
 from pyield.vna import _download
 
@@ -149,7 +150,7 @@ def _obter_fator_ipca(inicio: dt.date, fim: dt.date) -> Decimal:
 def vna_projetado(
     data: DateLike,
     vna_base: float | Decimal,
-    inflacao: float | Decimal,
+    inflacao: float | Decimal | str,
 ) -> Decimal:
     """Calcula o VNA projetado da NTN-B por pró-rata exponencial.
 
@@ -160,8 +161,8 @@ def vna_projetado(
     Args:
         data: Data para a qual o VNA será projetado.
         vna_base: VNA oficial no início da vigência.
-        inflacao: Inflação mensal projetada em percentual. Por exemplo,
-            ``0.45`` representa 0,45%.
+        inflacao: Inflação mensal decimal; ``0.0045`` representa 0,45%.
+            Aceita também percentual explícito: ``"0.45%"`` ou ``"0,45%"``.
 
     Returns:
         Decimal: VNA projetado, truncado em seis casas decimais. Retorna
@@ -169,33 +170,38 @@ def vna_projetado(
 
     Notes:
         Conforme a metodologia da STN, o VNA-base é truncado em seis casas,
-        a projeção é arredondada em duas e o pró-rata é truncado em catorze.
+        a projeção percentual é arredondada em duas casas (quatro na unidade
+        decimal) e o pró-rata é truncado em catorze. Entradas são convertidas
+        para Decimal sem arredondamento antes da aplicação dessas regras.
 
     References:
         - https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
 
     Raises:
-        ValueError: Se o VNA-base não for positivo ou a inflação for menor ou
-            igual a -100%.
+        ValueError: Se o VNA-base não for positivo ou finito, a inflação não
+            for finita ou for menor ou igual a -100%, ou o percentual textual
+            tiver formato inválido.
 
     Examples:
         >>> import pyield as yd
-        >>> yd.vna.projetado("NTN-B", "15-06-2026", 4731.856412, 0.45)
+        >>> yd.vna.projetado("NTN-B", "15-06-2026", 4731.856412, "0.45%")
         Decimal('4731.856412')
-        >>> yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, 0.45)
+        >>> yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, "0.45%")
         Decimal('4742.491138')
-        >>> yd.vna.projetado("NTN-B", "21-05-2008", 1726.9264599, 0.464)
+        >>> yd.vna.projetado("NTN-B", "21-05-2008", 1726.9264599, "0.464%")
         Decimal('1728.461136')
     """
     if any_is_empty(data, vna_base, inflacao):
         return Decimal("NaN")
-    if inflacao <= _vna.LIMITE_INFERIOR_PERCENTUAL:
-        raise ValueError("A inflação deve ser maior que -100%.")
+    base = para_decimal(vna_base)
+    taxa = para_decimal(converter_taxa(inflacao))
+    if not taxa.is_finite() or taxa <= -1:
+        raise ValueError("A inflação deve ser finita e maior que -100%.")
     data_convertida = conversores.converter_datas(data)
     inicio, fim = vigencia(data_convertida)
     return _vna.calcular_vna_projetado(
-        vna_base,
-        inflacao,
+        base,
+        taxa,
         (data_convertida - inicio).days,
         (fim - inicio).days,
     )

@@ -190,8 +190,9 @@ if not taxa.is_nan():
 ```
 
 Os [VNAs](vna.md) também usam `Decimal`. As taxas históricas e projetadas do
-IPCA e IGP-M são expressas em unidade decimal, enquanto `vna.projetado`
-recebe a inflação mensal em percentual. Consulte as
+IPCA e IGP-M são expressas em unidade decimal. As entradas de inflação em
+`vna.contexto` e `vna.projetado` aceitam números decimais (`0.0045`) ou
+percentuais explícitos (`"0.45%"` ou `"0,45%"`), convertidos para `Decimal`. Consulte as
 [notas da 0.60.0](release-0.60.0.md) para os tipos e a migração da API.
 
 ## Datas e ausência de dados

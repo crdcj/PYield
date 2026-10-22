@@ -79,7 +79,7 @@ documentação detalhada e as assinaturas públicas.
 
 ## Novidades na versão 0.60.0
 
-Resumo das principais mudanças em relação à `0.59.0`. Consulte também as
+Esta seção cobre apenas as mudanças da `0.59.0` para a `0.60.0`. Consulte também as
 [notas de migração](https://crdcj.github.io/PYield/release-0.60.0/).
 
 ### Contratos com Decimal
@@ -104,9 +104,6 @@ apenas quando a aplicação aceitar perder essa precisão.
 na ausência de dados. Os cálculos de VNA usam 28 dígitos de precisão e aplicam
 os truncamentos e arredondamentos da metodologia; resultados intermediários
 podem diferir dos obtidos anteriormente com `float`.
-
-As taxas analíticas e o DV01 dos títulos continuam retornando `float`, conforme
-a mudança da `0.59.0`; `pu` e `cotacao` continuam usando `Decimal`.
 
 ### Séries do IPCA
 
@@ -140,8 +137,11 @@ Nas séries, `fim=None` usa a data atual no Brasil. Informe `inicio` ou
 - `yd.vna.contexto(...)` reúne os parâmetros da vigência de NTN-B ou NTN-C:
   VNAs publicados, competência, inflação e pendências. Exige `vencimento` para
   NTN-C e aceita uma projeção explícita quando a inflação realizada não existe.
-  A inflação de `contexto` é decimal; multiplique por 100 para passá-la ao
-  parâmetro percentual `inflacao` de `vna.projetado`.
+  As entradas de inflação em `contexto` e `projetado` aceitam números decimais
+  (`0.0045`) ou percentuais explícitos (`"0.45%"` ou `"0,45%"`). O retorno de
+  `contexto` é decimal e pode ser passado diretamente a `projetado`.
+  Migração: substitua o antigo `inflacao=0.45` por `inflacao="0.45%"` ou
+  `inflacao=0.0045`; números puros agora representam taxas decimais.
 - `yd.ipca.calendario(ano, atualizar=False)` consulta as datas previstas de
   divulgação no IBGE pelo ano da competência, incluindo dezembro divulgado no
   ano seguinte.
@@ -159,9 +159,10 @@ Nas séries, `fim=None` usa a data atual no Brasil. Informe `inicio` ou
   (série `IGP12_IGPM12`), como `Decimal` e coluna `Decimal(18, 10)`.
   As dez casas preservam o histórico anterior a 1994. As séries aceitam
   intervalo ou `ultimos`, com competência `periodo` no formato `YYYYMM`.
-- CPM passa a expor `yd.cpm.contratos(data)` e
-  `yd.cpm.probabilidades(data, tipo_opcao="call")`. Esta última retorna todas
-  as reuniões disponíveis; filtre o DataFrame para selecionar uma reunião.
+- No CPM, substitua `yd.cpm.data(data)` por `yd.cpm.contratos(data)` e use
+  `yd.cpm.probabilidades(data, tipo_opcao="call")` para as probabilidades.
+  Esta última retorna todas as reuniões disponíveis; filtre o DataFrame para
+  selecionar uma reunião.
 - Leilões do BCB passam de `yd.bc.leiloes` para `yd.tpf.leiloes_bcb`, com nomes
   de colunas alinhados aos de `yd.tpf.leiloes`.
 - No mercado secundário, `yd.tpf.secundario.ler(fonte)` substitui `ler_zip` e
@@ -169,9 +170,10 @@ Nas séries, `fim=None` usa a data atual no Brasil. Informe `inicio` ou
   saída. `nome_arquivo_mensal` deixa de ser público.
 - `yd.ntnf.premio` foi removida. Use `yd.tpf.premios_pre(data)` e filtre
   `titulo == "NTN-F"` para obter o prêmio bruto.
-- `yd.tpf.taxas` preserva colunas e tipos quando não há dados. Nos leilões do
-  Tesouro, PU mínimo informado como zero passa a ser nulo, e o financeiro
-  ofertado usa o PU médio calculado quando necessário.
+- `yd.tpf.taxas` e as consultas `dados` de LFT, LTN, NTN-B, NTN-C e NTN-F
+  preservam colunas e tipos quando não há dados. Nos leilões do Tesouro, PU
+  mínimo informado como zero passa a ser nulo, e o financeiro ofertado usa o
+  PU médio calculado quando necessário.
 - `yd.rmd` passa a propagar erros de download e processamento, em vez de
   retornar um DataFrame vazio nessas situações.
 

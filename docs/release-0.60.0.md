@@ -60,8 +60,11 @@ Nas séries, `fim=None` usa a data atual no Brasil. Informe `inicio` ou
 - `yd.vna.contexto(...)` reúne os parâmetros da vigência de NTN-B ou NTN-C:
   VNAs publicados, competência, inflação e pendências. Exige `vencimento` para
   NTN-C e aceita uma projeção explícita quando a inflação realizada não existe.
-  A inflação de `contexto` é decimal; multiplique por 100 para passá-la ao
-  parâmetro percentual `inflacao` de `vna.projetado`.
+  As entradas de inflação em `contexto` e `projetado` aceitam números decimais
+  (`0.0045`) ou percentuais explícitos (`"0.45%"` ou `"0,45%"`). O retorno de
+  `contexto` é decimal e pode ser passado diretamente a `projetado`.
+  Migração: substitua o antigo `inflacao=0.45` por `inflacao="0.45%"` ou
+  `inflacao=0.0045`; números puros agora representam taxas decimais.
 - `yd.ipca.calendario(ano, atualizar=False)` consulta as datas previstas de
   divulgação no IBGE pelo ano da competência, incluindo dezembro divulgado no
   ano seguinte.

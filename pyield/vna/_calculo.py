@@ -7,7 +7,6 @@ import polars as pl
 
 from pyield._internal.numbers import para_decimal, truncar_decimal
 
-LIMITE_INFERIOR_PERCENTUAL = -100
 TIPO_VNA = pl.Decimal(precision=18, scale=6)
 PRECISAO_CALCULO = 28
 
@@ -108,22 +107,20 @@ def aplicar_pro_rata(
 
 
 def calcular_vna_projetado(
-    vna_base: float | Decimal,
-    projecao_percentual: float | Decimal,
+    vna_base: Decimal,
+    inflacao: Decimal,
     dias: int,
     dias_periodo: int,
 ) -> Decimal:
     """Aplica ao VNA projetado as precisões intermediárias definidas pela STN.
 
-    VNA-base T-6, projeção A-2 (meio para o par, como ``round``), expoente
+    VNA-base T-6, projeção decimal A-4 (A-2 percentual, meio para o par), expoente
     T-14 e resultado T-6.
     """
     with localcontext(prec=PRECISAO_CALCULO):
         base = truncar_decimal(vna_base, 6)
-        projecao = para_decimal(projecao_percentual).quantize(
-            Decimal("0.01"), rounding=ROUND_HALF_EVEN
-        )
-        return aplicar_pro_rata(base, 1 + projecao / 100, dias, dias_periodo)
+        projecao = inflacao.quantize(Decimal("0.0001"), rounding=ROUND_HALF_EVEN)
+        return aplicar_pro_rata(base, 1 + projecao, dias, dias_periodo)
 
 
 __all__ = ["calcular_vna"]

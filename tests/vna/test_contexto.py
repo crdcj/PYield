@@ -145,3 +145,23 @@ def test_erro_de_fonte_nao_vira_parametro_indisponivel(monkeypatch):
 def test_export_canonico():
     assert yd.vna.contexto is _contexto.contexto
     assert "contexto" in yd.vna.__all__
+
+
+@pytest.mark.parametrize(
+    "projecao", [0.004567, Decimal("0.004567"), "0.4567%", "0,4567%"]
+)
+def test_contexto_normaliza_sem_arredondar_e_alimenta_projecao(projecao):
+    linha = yd.vna.contexto("NTN-B", "22-10-2026", inflacao_projetada=projecao).row(
+        0, named=True
+    )
+    assert linha["inflacao"] == Decimal("0.004567")
+    assert linha["situacao_inflacao"] == "projetado"
+    assert yd.vna.projetado(
+        linha["titulo"], linha["data"], linha["vna_base"], linha["inflacao"]
+    ) == yd.vna.projetado("NTN-B", "22-10-2026", linha["vna_base"], "0.4567%")
+
+
+@pytest.mark.parametrize("projecao", ["0.45", "0,45", "NaN%", "inf%", "abc", "-100%"])
+def test_contexto_rejeita_percentual_invalido(projecao):
+    with pytest.raises(ValueError, match="Taxa textual|projeção"):
+        yd.vna.contexto("NTN-B", "22-10-2026", inflacao_projetada=projecao)

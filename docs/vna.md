@@ -26,7 +26,7 @@ import pyield as yd
 ultimo = yd.vna.ultimo("NTN-B")  # DataFrame com data e VNA publicados
 historico = yd.vna.historico("NTN-C", vencimento="01-01-2031")
 valor = yd.vna.valor("NTN-B", "15-12-2025")
-projecao_ntnb = yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, 0.45)
+projecao_ntnb = yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, "0.45%")
 projecao_lft = yd.vna.projetado(
     "LFT", "18-09-2026", 19905.773236,
     selic="13.65%",
@@ -34,8 +34,9 @@ projecao_lft = yd.vna.projetado(
 ```
 
 `projetado` é a operação comum de projeção para todos os títulos. Para NTN-B e
-NTN-C, `inflacao` representa a variação mensal em percentual e aceita `float` ou
-`Decimal`. Para LFT, `selic` representa a taxa anual informada em formato
+NTN-C, `inflacao` representa a variação mensal e aceita `float` ou `Decimal`
+em unidade decimal (`0.0045`) ou string percentual (`"0.45%"` ou `"0,45%"`). Para LFT, `selic` representa
+a taxa anual informada em formato
 decimal ou percentual explícito. Para reproduzir o acruamento oficial, derive
 a taxa Selic diária publicada pelo SGS 11. Como ela é publicada em percentual,
 `0,050788%` equivale à taxa decimal `0,00050788` e ao fator derivado
@@ -47,7 +48,8 @@ diferentes de um dia útil são calculados normalmente e registrados no log.
 Todos os cálculos de VNA, inclusive o genérico `calcular_vna`, usam `Decimal`
 com 28 dígitos de precisão e retornam `Decimal`, para aplicar exatamente os
 truncamentos e arredondamentos da metodologia (fator do IPCA T-16, pró-rata
-T-14, projeção A-2 e VNA T-6). Entradas `float` são convertidas pela sua
+T-14, projeção A-2 percentual, equivalente a A-4 decimal, e VNA T-6).
+Entradas `float` são convertidas pela sua
 representação textual, de modo que `4731.856412` vira `Decimal('4731.856412')`.
 
 Por exemplo, o SGS 11 publicou `0,050788%` para 18/09/2026. Isso corresponde
@@ -73,6 +75,15 @@ Use apenas `yd.vna` para operações de VNA. Os aliases `vna`, `vnas`,
 `vna_projetado` e `vigencia` foram removidos dos módulos dos títulos.
 As implementações internas e suas metodologias foram preservadas.
 
+## Migração das entradas de inflação
+
+O parâmetro `inflacao` de NTN-B e NTN-C em `yd.vna.projetado` recebia
+números em percentual. Substitua `inflacao=0.45` por `inflacao="0.45%"`
+ou `inflacao=0.0045` para manter a inflação mensal de 0,45%. Pelo contrato
+atual, o número puro `0.45` representa 45%. Strings sem `%`, como `"0.45"`,
+são rejeitadas. Os resultados e as regras de arredondamento do cálculo
+permanecem iguais quando se informa a mesma inflação econômica.
+
 ## Contexto da vigência
 
 `yd.vna.contexto` reúne os parâmetros disponíveis para uma vigência de NTN-B
@@ -89,10 +100,11 @@ contexto_ntnc = yd.vna.contexto(
 ```
 
 A projeção opcional `inflacao_projetada` só é usada quando a taxa realizada
-estiver indisponível. Tanto esse parâmetro quanto a coluna `inflacao` usam
-unidade decimal: `0.0045` representa 0,45%. Para usar a coluna como entrada
-`inflacao` de `yd.vna.projetado`, multiplique por 100, pois essa função recebe
-percentual. O contexto não calcula o VNA nem busca projeções automaticamente.
+estiver indisponível. Esse parâmetro aceita as mesmas entradas de
+`yd.vna.projetado`: `0.0045`, `Decimal("0.0045")`, `"0.45%"` ou `"0,45%"`
+representam 0,45%. As entradas são convertidas para `Decimal` sem
+arredondamento; a coluna `inflacao` permanece em unidade decimal e pode ser
+passada diretamente a `yd.vna.projetado`. O contexto não calcula o VNA nem busca projeções automaticamente.
 Ele reflete os dados disponíveis no momento da consulta, sem reconstruir o
 que era conhecido na data solicitada. Para comparar operação e liquidação,
 consulte cada data e compare `inicio_vigencia`.
@@ -115,7 +127,7 @@ que o índice já foi publicado. Por exemplo, para NTN-C:
 data_operacao = yd.hoje()
 contexto = yd.vna.contexto(
     "NTN-C", data_operacao, vencimento="01-01-2031",
-    inflacao_projetada=0.0045,
+    inflacao_projetada="0,45%",
 )
 agenda = yd.igpm.calendario(contexto.item(0, "competencia").year)
 diagnostico = contexto.join(agenda, on="competencia", how="left").with_columns(

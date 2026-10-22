@@ -70,7 +70,7 @@ implementations may remain grouped internally by domain.
 
 ## What's new in version 0.60.0
 
-Summary of the main changes since `0.59.0`. See also the
+This section covers only changes from `0.59.0` to `0.60.0`. See also the
 [migration notes (Portuguese)](https://crdcj.github.io/PYield/release-0.60.0/).
 
 ### Decimal contracts
@@ -95,9 +95,6 @@ can accept the loss of precision.
 when data is unavailable. VNA calculations use 28 digits of precision and apply
 the methodology's truncation and rounding rules; intermediate results may
 differ from those previously obtained with `float`.
-
-Bond analytical rates and DV01 still return `float`, as introduced in `0.59.0`;
-`pu` and `cotacao` continue to use `Decimal`.
 
 ### IPCA series
 
@@ -131,9 +128,12 @@ For series, `fim=None` uses the current date in Brazil. Provide `inicio` or
 - `yd.vna.contexto(...)` gathers the parameters for an NTN-B or NTN-C validity
   period: published VNAs, reference month, inflation, and missing inputs. It
   requires `vencimento` for NTN-C and accepts an explicit projection when
-  realized inflation is unavailable. Inflation in `contexto` uses decimal
-  units; multiply it by 100 before passing it to the percentage parameter
-  `inflacao` in `vna.projetado`.
+  realized inflation is unavailable. Inflation inputs in `contexto` and
+  `projetado` accept decimal numbers (`0.0045`) or explicit percentages
+  (`"0.45%"` or `"0,45%"`). The decimal inflation returned by `contexto` can be
+  passed directly to `projetado`.
+  Migration: replace the former `inflacao=0.45` with `inflacao="0.45%"` or
+  `inflacao=0.0045`; plain numbers now represent decimal rates.
 - `yd.ipca.calendario(ano, atualizar=False)` queries IBGE's scheduled release
   dates by reference year, including December released in the following year.
 - `yd.igpm.calendario(ano, atualizar=False)` queries FGV IBRE for monthly
@@ -150,9 +150,10 @@ For series, `fim=None` uses the current date in Brazil. Provide `inicio` or
   (series `IGP12_IGPM12`), as `Decimal` and a `Decimal(18, 10)` column.
   Ten decimal places preserve the history before 1994. Series queries accept
   a date range or `ultimos`, with a `periodo` column in `YYYYMM` format.
-- CPM now exposes `yd.cpm.contratos(data)` and
-  `yd.cpm.probabilidades(data, tipo_opcao="call")`. The latter returns all
-  available meetings; filter the DataFrame to select a meeting.
+- For CPM, replace `yd.cpm.data(data)` with `yd.cpm.contratos(data)` and use
+  `yd.cpm.probabilidades(data, tipo_opcao="call")` for probabilities.
+  The latter returns all available meetings; filter the DataFrame to select
+  a meeting.
 - BCB auctions move from `yd.bc.leiloes` to `yd.tpf.leiloes_bcb`, with column
   names aligned with `yd.tpf.leiloes`.
 - For secondary-market data, `yd.tpf.secundario.ler(fonte)` replaces `ler_zip`
@@ -160,9 +161,10 @@ For series, `fim=None` uses the current date in Brazil. Provide `inicio` or
   `financeiro` in the output. `nome_arquivo_mensal` is no longer public.
 - `yd.ntnf.premio` has been removed. Use `yd.tpf.premios_pre(data)` and filter
   `titulo == "NTN-F"` for the gross spread.
-- `yd.tpf.taxas` preserves columns and types when no data is available. In
-  Tesouro auctions, a minimum PU reported as zero becomes null, and the
-  offered financial amount uses the calculated average PU when needed.
+- `yd.tpf.taxas` and the `dados` queries for LFT, LTN, NTN-B, NTN-C, and NTN-F
+  preserve columns and types when no data is available. In Tesouro auctions,
+  a minimum PU reported as zero becomes null, and the offered financial
+  amount uses the calculated average PU when needed.
 - `yd.rmd` now propagates download and processing errors instead of returning
   an empty DataFrame in those cases.
 

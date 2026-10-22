@@ -9,6 +9,7 @@ from pyield import igpm, ipca
 from pyield._internal.converters import converter_datas
 from pyield._internal.numbers import para_decimal
 from pyield._internal.types import DateLike, any_is_empty
+from pyield.tpf.titulos._utils import converter_taxa
 from pyield.vna._consulta import historico, vigencia
 
 _ESQUEMA = {
@@ -31,7 +32,7 @@ def contexto(
     data: DateLike,
     vencimento: DateLike | None = None,
     *,
-    inflacao_projetada: float | Decimal | None = None,
+    inflacao_projetada: float | Decimal | str | None = None,
     atualizar: bool = False,
 ) -> pl.DataFrame:
     """Consulta os parâmetros disponíveis para a vigência mensal do VNA.
@@ -42,8 +43,10 @@ def contexto(
         vencimento: Obrigatório para selecionar a série da NTN-C; não se
             aplica à NTN-B.
         inflacao_projetada: Projeção mensal opcional em unidade decimal:
-            0.0045 representa 0,45%. Usada somente se a taxa realizada estiver
-            indisponível. Não busca projeções automaticamente.
+            0.0045 representa 0,45%. Aceita também percentual explícito, como
+            ``"0.45%"`` ou ``"0,45%"``. Convertida para Decimal sem arredondar;
+            usada somente se a taxa realizada estiver indisponível.
+            Não busca projeções automaticamente.
         atualizar: Renova apenas o cache do histórico de VNA, como em historico.
             Não renova os caches de inflação.
 
@@ -60,7 +63,7 @@ def contexto(
         vna_base (Decimal(18, 6)): VNA publicado no início; nulo se ausente.
         vna_fim (Decimal(18, 6)): VNA publicado no fim; nulo se ausente.
         inflacao (Decimal(38, 18)): Variação mensal decimal, realizada ou
-            explicitamente projetada. Multiplique por 100 para usar projetado.
+            explicitamente projetada. Pode ser passada diretamente a projetado.
         situacao_inflacao (String): "realizado", "projetado" ou "indisponivel".
         origem_inflacao (String): "IBGE", "SGS/BCB" ou "informada"; nula sem taxa.
         pendencias (List[String]): "vna_base_indisponivel" e/ou
@@ -80,7 +83,7 @@ def contexto(
 
     Raises:
         ValueError: Título ou data inválidos, vencimento incompatível/ausente,
-            ou projeção não finita ou menor ou igual a -1.
+            projeção não finita ou menor ou igual a -1, ou percentual textual inválido.
     """
     inicio, fim = vigencia(titulo, data)
     if titulo == "NTN-C" and (vencimento is None or any_is_empty(vencimento)):
@@ -89,7 +92,7 @@ def contexto(
         raise ValueError("Vencimento aplica-se apenas à NTN-C.")
     projecao = None
     if inflacao_projetada is not None:
-        projecao = para_decimal(inflacao_projetada)
+        projecao = para_decimal(converter_taxa(inflacao_projetada))
         if not projecao.is_finite() or projecao <= -1:
             raise ValueError("A projeção deve ser finita e maior que -1.")
 
