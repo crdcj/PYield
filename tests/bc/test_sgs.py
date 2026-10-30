@@ -50,6 +50,29 @@ def test_selic_meta_serie_ajusta_inicio_anterior(monkeypatch):
     assert resultado.to_dicts() == [{"data": dt.date(1999, 3, 5), "taxa": 0.45}]
 
 
+def test_selic_meta_consulta_um_dia_com_intervalo_valido(monkeypatch):
+    urls = []
+
+    def buscar_api(url: str) -> pl.DataFrame:
+        urls.append(url)
+        return pl.DataFrame(
+            {
+                "data": [dt.date(2026, 10, 29), dt.date(2026, 10, 30)],
+                "valor": [13.75, 14.0],
+            },
+            schema={"data": pl.Date, "valor": pl.Float64},
+        )
+
+    monkeypatch.setattr(sgs, "_buscar_api", buscar_api)
+
+    resultado = yd.selic.meta_serie("30-10-2026", "30-10-2026")
+
+    assert len(urls) == 1
+    assert _parametro_data(urls[0], "dataInicial") == dt.date(2026, 10, 29)
+    assert _parametro_data(urls[0], "dataFinal") == dt.date(2026, 10, 30)
+    assert resultado.to_dicts() == [{"data": dt.date(2026, 10, 30), "taxa": 0.14}]
+
+
 def test_selic_meta_serie_divide_intervalo_em_blocos_seguros(monkeypatch):
     urls = []
 
@@ -124,9 +147,12 @@ def test_igpm_serie_consulta_competencias_e_converte_percentuais(monkeypatch):
 
 def test_igpm_taxa_qualquer_dia_do_mes(monkeypatch):
     def chamar_api(url):
-        assert _parametro_data(url, "dataInicial") == dt.date(2025, 1, 1)
+        assert _parametro_data(url, "dataInicial") == dt.date(2024, 12, 31)
         assert _parametro_data(url, "dataFinal") == dt.date(2025, 1, 1)
-        return [{"data": "01/01/2025", "valor": "0.27"}]
+        return [
+            {"data": "01/12/2024", "valor": "0.94"},
+            {"data": "01/01/2025", "valor": "0.27"},
+        ]
 
     monkeypatch.setattr(sgs, "_chamar_api", chamar_api)
 
@@ -175,7 +201,13 @@ def test_igpm_exige_inicio_ou_ultimos():
 
 def test_igpm_namespace_publico():
     assert "igpm" in yd.__all__
-    assert yd.igpm.__all__ == ["taxa", "taxa_serie", "indice", "indice_serie", "calendario"]
+    assert yd.igpm.__all__ == [
+        "taxa",
+        "taxa_serie",
+        "indice",
+        "indice_serie",
+        "calendario",
+    ]
     assert yd.igpm.taxa is sgs.igpm_taxa
     assert yd.igpm.taxa_serie is sgs.igpm_taxa_serie
 

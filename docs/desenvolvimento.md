@@ -34,6 +34,16 @@ localizada, é possível passar um caminho ou uma expressão ao `pytest`.
 
 ## Documentação
 
+O Zensical fica sem restrição de versão nas dependências de desenvolvimento.
+Para atualizar a versão resolvida no lockfile e sincronizar o ambiente:
+
+```sh
+uv sync --upgrade-package zensical
+```
+
+Após atualizar, execute o build estrito abaixo para verificar a compatibilidade
+da configuração e das páginas.
+
 Para visualizar a documentação localmente com atualização automática:
 
 ```sh
@@ -45,6 +55,12 @@ Para gerar e validar os arquivos em `site/`, tratando avisos como erros:
 ```sh
 uv run zensical build --clean --strict
 ```
+
+O build também gera `site/llms.txt`, com o índice da documentação, versões
+Markdown das páginas e `site/llms-full.txt`, com o conteúdo reunido em um único
+arquivo. As páginas oferecem o botão **Copy as Markdown**, inclusive na
+referência da API gerada a partir das docstrings. Esses recursos usam o suporte
+nativo do Zensical, sem plugins adicionais instalados.
 
 O procedimento atual de publicação no GitHub Pages usa `ghp-import`:
 

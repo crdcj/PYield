@@ -123,9 +123,8 @@ def _buscar_dados_url(
     if data_inicio > data_fim:
         return pl.DataFrame(schema=ESQUEMA_BRUTO)
 
-    if (data_fim - data_inicio).days <= limite_dias:
-        return _buscar_api(_montar_url_intervalo(serie, data_inicio, data_fim))
-
+    # O SGS rejeita dataInicial == dataFinal (HTTP 400). Um bloco de um dia
+    # consulta também o dia anterior, descartado no filtro final.
     urls = []
     inicio_bloco = data_inicio
     while inicio_bloco <= data_fim:
@@ -133,7 +132,8 @@ def _buscar_dados_url(
             inicio_bloco + dt.timedelta(days=limite_dias),
             data_fim,
         )
-        urls.append(_montar_url_intervalo(serie, inicio_bloco, fim_bloco))
+        inicio_consulta = min(inicio_bloco, fim_bloco - dt.timedelta(days=1))
+        urls.append(_montar_url_intervalo(serie, inicio_consulta, fim_bloco))
         inicio_bloco = fim_bloco + dt.timedelta(days=1)
 
     if serie == SerieSGS.SELIC_META:
@@ -147,7 +147,12 @@ def _buscar_dados_url(
     if not todos_dfs:
         return pl.DataFrame(schema=ESQUEMA_BRUTO)
 
-    return pl.concat(todos_dfs).unique(subset=["data"], keep="first").sort("data")
+    return (
+        pl.concat(todos_dfs)
+        .filter(pl.col("data") >= data_inicio)
+        .unique(subset=["data"], keep="first")
+        .sort("data")
+    )
 
 
 def _buscar_serie(

@@ -51,9 +51,15 @@ theme:
   language: pt-BR
   features:
     - navigation.instant
+    - content.action.copy
  
 plugins:
   - search
+  - llmstxt:
+      full_output: llms-full.txt
+      sections:
+        Documentação:
+          - "*.md"
   - mkdocstrings:
       handlers:
         python:
