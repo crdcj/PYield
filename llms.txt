@@ -1,0 +1,37 @@
+# PYield Docs
+
+> Biblioteca financeira para o mercado brasileiro.
+
+## Documentação
+
+- [Mapa da API](<https://crdcj.github.io/PYield/api-map/index.md>)
+- [Introdução ao Pyield](<https://crdcj.github.io/PYield/articles/pyield_intro/index.md>)
+- [B3](<https://crdcj.github.io/PYield/b3/index.md>)
+- [Compromissadas](<https://crdcj.github.io/PYield/compromissada/index.md>)
+- [Copom](<https://crdcj.github.io/PYield/copom/index.md>)
+- [CPM](<https://crdcj.github.io/PYield/cpm/index.md>)
+- [Desenvolvimento e publicação](<https://crdcj.github.io/PYield/desenvolvimento/index.md>)
+- [DI1](<https://crdcj.github.io/PYield/di1/index.md>)
+- [Dias Úteis (DU)](<https://crdcj.github.io/PYield/du/index.md>)
+- [Forwards (taxas a termo)](<https://crdcj.github.io/PYield/forwards/index.md>)
+- [Futuro](<https://crdcj.github.io/PYield/futuro/index.md>)
+- [IGP-M](<https://crdcj.github.io/PYield/igpm/index.md>)
+- [Início](<https://crdcj.github.io/PYield/index.md>)
+- [Interpolador](<https://crdcj.github.io/PYield/interpolador/index.md>)
+- [IPCA](<https://crdcj.github.io/PYield/ipca/index.md>)
+- [LFT](<https://crdcj.github.io/PYield/lft/index.md>)
+- [LTN](<https://crdcj.github.io/PYield/ltn/index.md>)
+- [NTN-B](<https://crdcj.github.io/PYield/ntnb/index.md>)
+- [NTN-B1](<https://crdcj.github.io/PYield/ntnb1/index.md>)
+- [NTN-B Principal](<https://crdcj.github.io/PYield/ntnbp/index.md>)
+- [NTN-C](<https://crdcj.github.io/PYield/ntnc/index.md>)
+- [NTN-F](<https://crdcj.github.io/PYield/ntnf/index.md>)
+- [Quickstart](<https://crdcj.github.io/PYield/quickstart/index.md>)
+- [Caderno de fórmulas SELIC — STN](<https://crdcj.github.io/PYield/referencias/metodologia-calculo-letras-notas-stn/index.md>)
+- [Precificação da NTN-B1 — Tesouro Direto](<https://crdcj.github.io/PYield/referencias/metodologia-calculo-ntnb1/index.md>)
+- [Precificação de leilões — STN](<https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/index.md>)
+- [Regulamento do Selic — BCB](<https://crdcj.github.io/PYield/referencias/regulamento-selic-bcb/index.md>)
+- [Novidades na 0.60.0](<https://crdcj.github.io/PYield/release-0.60.0/index.md>)
+- [Selic](<https://crdcj.github.io/PYield/selic/index.md>)
+- [TPF](<https://crdcj.github.io/PYield/tpf/index.md>)
+- [VNA](<https://crdcj.github.io/PYield/vna/index.md>)

@@ -1,0 +1,511 @@
+As funções `yd.ntnc.cotacao_curva_zero` e `yd.ntnc.taxa_curva_zero` recebem uma curva fornecida pelo consumidor, com colunas `dias_uteis` e `taxa_zero`. A primeira retorna a cotação em base 100 sem truncamento final; a segunda, a TIR equivalente como `float`, sem arredondamento comercial. A biblioteca não escolhe a curva de referência nem aplica piso de taxa ANBIMA.
+
+Cálculos e dados de NTN-C.
+
+Convenções de precificação (STN, tabela 3): - Cotação em base 100, truncada a 4 casas. - VNA recebido no cálculo do PU: truncado a 6 casas. - Prazo de desconto: dias úteis / 252, truncado a 14 casas. - PU: truncado a 6 casas. - Cada fluxo descontado: arredondado a 10 casas.
+
+Valores de referência derivados conforme as regras da STN, exibidos em base 100. Para NTN-C com vencimento em 01-01-2031: PRINCIPAL = 100 TAXA\_CUPOM = ((0.12 + 1) \*\* 0.5 - 1) \* 100 \# 12% a.a. com capitalização semestral VALOR\_CUPOM\_2031 = round(TAXA\_CUPOM, 6) -\> 5.830052 VALOR\_FINAL\_2031 = 105.830052
+
+**Para as demais NTN-C**
+
+TAXA\_CUPOM = ((0.06 + 1) \*\* 0.5 - 1) \* 100 \# 6% a.a. com capitalização semestral VALOR\_CUPOM = round(TAXA\_CUPOM, 6) -\> 2.956301 VALOR\_FINAL = 102.956301
+
+## `cotacao(data_liquidacao, data_vencimento, taxa)`
+
+Calcula a cotação da NTN-C pela metodologia da STN para leilões primários.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data_liquidacao` | `DateLike` | Data de liquidação da operação. | *required* |
+| `data_vencimento` | `DateLike` | Data de vencimento da NTN-C. | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". Antes do cálculo, é truncada em oito casas decimais (seis na forma percentual), descartando as casas excedentes sem arredondar. | *required* |
+
+Returns:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `Decimal` | `Decimal` | Cotação em base 100, truncada em 4 casas decimais. |
+
+**Notes**
+
+A cotação teórica em base 100 é:
+
+\\\[ \\mathrm{COT} = \\sum\_{i=1}^{n} \\frac{\\mathrm{FC}\_i}{(1+y)^{t\_i}} \\\]
+
+onde:
+
+- \\(\\mathrm{FC}\_i\\): valor do pagamento \\(i\\) em base 100, incluindo cupom e amortização quando aplicável.
+- \\(\\mathrm{DU}\_i\\): dias úteis entre liquidação e pagamento \\(i\\).
+- \\(t\_i = \\mathrm{DU}\_i/252\\): prazo até o pagamento \\(i\\), em anos de 252 dias úteis.
+- \\(n\\): número de pagamentos restantes.
+- \\(y\\): TIR anual efetiva informada em `taxa`, em decimal, na base de 252 dias úteis, relativa aos fluxos em base 100.
+
+Os fluxos em base 100 representam percentuais do VNA, e não valores monetários futuros. O VNA incorpora a atualização pelo IGP-M. No cálculo oficial, além do truncamento da TIR descrito em `Args`, cada prazo é truncado em 14 casas decimais.
+
+A cotação é calculada e retornada na escala percentual (base 100), truncada em 4 casas conforme a STN. Por exemplo, `99.3651` representa 99,3651% do VNA; o PU é calculado como `VNA * cotacao / 100`.
+
+Os cupons semestrais são armazenados em base 100, com 6 casas decimais. Cada fluxo descontado é arredondado em 10 casas antes da soma.
+
+**References**
+
+- Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos Públicos Federais Ofertados nos Leilões Primários. https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
+
+Examples:
+
+```pycon
+>>> from pyield import ntnc
+>>> ntnc.cotacao("21-03-2025", "01-01-2031", "6.7626%")
+Decimal('126.4958')
+```
+
+## `cotacao_curva_zero(data_liquidacao, data_vencimento, curva_zero)`
+
+Calcula a cotação da NTN-C descontando seus fluxos pela curva informada.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data_liquidacao` | `DateLike` | Data de liquidação, exclusiva para seleção dos fluxos. | *required* |
+| `data_vencimento` | `DateLike` | Data de vencimento da NTN-C. | *required* |
+| `curva_zero` | `DataFrame` | DataFrame com `dias_uteis` (prazos inteiros positivos, únicos) e `taxa_zero` (taxas anuais efetivas, em decimal, na base de 252 dias úteis, finitas e maiores que -1). A curva deve conter ao menos um vértice; a ordem é indiferente. | *required* |
+
+Returns:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `float` | `float` | Cotação em base 100, sem truncamento final. Retorna NaN para datas ausentes, ausência de fluxos ou resultado não finito. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Curva vazia, colunas ausentes ou vértices inválidos. |
+
+**Notes**
+
+A cotação pela curva zero é:
+
+\\\[ \\mathrm{COT}\_{\\mathrm{curva}} = \\sum\_{i=1}^{n} \\frac{\\mathrm{FC}\_i}{(1+r\_i)^{t\_i}} \\\]
+
+onde:
+
+- \\(\\mathrm{FC}\_i\\): valor do pagamento \\(i\\) em base 100, incluindo cupom e amortização quando aplicável.
+- \\(\\mathrm{DU}\_i\\): dias úteis entre liquidação e pagamento \\(i\\).
+- \\(t\_i = \\mathrm{DU}\_i/252\\): prazo até o pagamento \\(i\\), em anos de 252 dias úteis.
+- \\(n\\): número de pagamentos restantes.
+- \\(r\_i\\): taxa zero anual efetiva da curva fornecida, em decimal, na base de 252 dias úteis, interpolada para o prazo do pagamento \\(i\\).
+
+A fórmula expressa o desconto dos fluxos; o cálculo aplica as regras de precisão descritas a seguir.
+
+Usa os fluxos contratuais de `fluxos_caixa`, sem deslocar suas datas. O prazo em dias úteis / 252 é truncado em 14 casas. A interpolação é flat-forward, com taxa constante nas duas pontas da curva. Cada valor presente é arredondado em 10 casas, como em `cotacao`; a soma não é truncada, pois serve de alvo para a TIR equivalente.
+
+A curva é uma hipótese do consumidor. A biblioteca não escolhe uma curva de IPCA como aproximação para IGP-M nem aplica piso ANBIMA. Esta operação não representa uma cotação consultada em fonte externa.
+
+## `dados(data)`
+
+Busca as taxas indicativas de NTN-C para a data de referência.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data` | `DateLike` | Data da consulta. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `DataFrame` | pl.DataFrame: DataFrame Polars com os dados de NTN-C. Na ausência de dados, retorna vazio com as mesmas colunas e tipos. |
+
+**Output Columns**
+
+- data\_referencia (Date): Data de referência dos dados.
+- titulo (String): Tipo do título (ex.: "NTN-C").
+- codigo\_selic (Int64): Código do título no SELIC.
+- data\_base (Date): Data base de emissão do título.
+- data\_vencimento (Date): Data de vencimento do título.
+- dias\_uteis (Int64): Dias úteis entre referência e vencimento.
+- duration (Float64): Macaulay Duration do título (anos).
+- prazo\_medio (Float64): Prazo médio do título (anos).
+- dv01 (Float64): Variação no preço para 1bp de taxa.
+- pu (Float64): Preço unitário (PU).
+- taxa\_compra (Float64): Taxa de compra (decimal).
+- taxa\_venda (Float64): Taxa de venda (decimal).
+- taxa\_indicativa (Float64): Taxa indicativa (decimal).
+- taxa\_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo método flat forward.
+
+Examples:
+
+```pycon
+>>> from pyield import ntnc
+>>> ntnc.dados("23-08-2024")
+```
+
+## `datas_pagamento(data_liquidacao, data_vencimento)`
+
+Gera todas as datas de pagamento entre liquidação e vencimento.
+
+Os pagamentos são semestrais. No vencimento, o fluxo inclui o último cupom e a amortização do principal. A NTN-C é definida pela data de vencimento. As datas são contratuais e não são ajustadas para dias úteis.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data_liquidacao` | `DateLike` | Data de liquidação (exclusiva). | *required* |
+| `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `Series` | pl.Series: Série de datas de pagamento entre a liquidação (exclusiva) e o vencimento (inclusivo). Retorna série vazia se o vencimento for menor ou igual à liquidação. |
+
+**Notes**
+
+Para obter as datas efetivas de processamento, use `yd.du.deslocar(..., 0)`.
+
+Examples:
+
+```pycon
+>>> from pyield import ntnc
+>>> ntnc.datas_pagamento("21-03-2025", "01-01-2031")
+shape: (12,)
+Series: 'datas_pagamento' [date]
+[
+    2025-07-01
+    2026-01-01
+    2026-07-01
+    2027-01-01
+    2027-07-01
+    …
+    2029-01-01
+    2029-07-01
+    2030-01-01
+    2030-07-01
+    2031-01-01
+]
+```
+
+## `duration(data_liquidacao, data_vencimento, taxa)`
+
+Calcula a Macaulay duration da NTN-C em anos úteis.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data_liquidacao` | `DateLike` | Data de liquidação da operação. | *required* |
+| `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
+| `taxa` | `float \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+
+Returns:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `float` | `float` | Macaulay duration em anos úteis. |
+
+**Notes**
+
+A Macaulay duration \\(D\\), em anos de 252 dias úteis, é:
+
+\\\[ D = \\frac{\\sum\_{i=1}^{n}t\_i\\,\\mathrm{FC}\_i/(1+y)^{t\_i}} {\\sum\_{i=1}^{n}\\mathrm{FC}\_i/(1+y)^{t\_i}} \\\]
+
+onde:
+
+- \\(\\mathrm{FC}\_i\\): valor do pagamento \\(i\\) em base 100, incluindo cupom e amortização quando aplicável.
+- \\(\\mathrm{DU}\_i\\): dias úteis entre liquidação e pagamento \\(i\\).
+- \\(t\_i = \\mathrm{DU}\_i/252\\): prazo até o pagamento \\(i\\), em anos de 252 dias úteis.
+- \\(n\\): número de pagamentos restantes.
+- \\(y\\): TIR anual efetiva informada em `taxa`, em decimal, na base de 252 dias úteis, relativa aos fluxos em base 100.
+
+O desconto dos fluxos não aplica os arredondamentos e truncamentos da cotação oficial. O resultado é truncado em 14 casas decimais. O VNA, comum a todos os fluxos, cancela na razão.
+
+Examples:
+
+```pycon
+>>> from pyield import ntnc
+>>> ntnc.duration("21-03-2025", "01-01-2031", "6.7626%")
+4.405363320448
+```
+
+## `duration_expr(data_liquidacao, data_vencimento, taxa)`
+
+Cria expressão Polars para a duration da NTN-C.
+
+O cálculo é aplicado linha a linha porque a duration depende dos fluxos de caixa do título.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data_liquidacao` | `Expr \| str` | Nome de coluna ou expressão Polars com a data de liquidação. | *required* |
+| `data_vencimento` | `Expr \| str` | Nome de coluna ou expressão Polars com a data de vencimento. | *required* |
+| `taxa` | `Expr \| str` | Nome de coluna ou expressão Polars com a TIR anual efetiva, em decimal, na base de 252 dias úteis. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `Expr` | pl.Expr: Expressão sem alias com a Macaulay duration em anos úteis. |
+
+## `dv01(data_liquidacao, data_vencimento, taxa, pu)`
+
+Calcula o DV01 (Dollar Value of 01) da NTN-C em R$.
+
+Representa a variação do PU informado para um aumento de 1 bp (0,01 ponto percentual) na taxa.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data_liquidacao` | `DateLike` | Data de liquidação. | *required* |
+| `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `pu` | `float \| Decimal` | PU usado como base para o cálculo. | *required* |
+
+Returns:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `float` | `float` | DV01, variação de preço para 1 bp. |
+
+**Notes**
+
+Mantendo liquidação e vencimento fixos, os fluxos e seus prazos também ficam fixos. Nesse contexto, a cotação teórica em função da TIR é:
+
+\\\[ \\mathrm{COT}(y) = \\sum\_{i=1}^{n} \\frac{\\mathrm{FC}\_i}{(1+y)^{t\_i}} \\\]
+
+O \\(\\mathrm{DV01}\\) é a redução do preço, em R$, para um aumento de 1 bp na TIR, usando o PU informado como base:
+
+\\\[ \\mathrm{DV01} = \\mathrm{PU}\_{\\mathrm{informado}} \\left(1-\\frac{\\mathrm{COT}(y+0.0001)}{\\mathrm{COT}(y)}\\right) \\\]
+
+onde:
+
+- \\(\\mathrm{FC}\_i\\): valor do pagamento \\(i\\) em base 100, incluindo cupom e amortização quando aplicável.
+- \\(\\mathrm{DU}\_i\\): dias úteis entre liquidação e pagamento \\(i\\).
+- \\(t\_i = \\mathrm{DU}\_i/252\\): prazo até o pagamento \\(i\\), em anos de 252 dias úteis.
+- \\(n\\): número de pagamentos restantes.
+- \\(y\\): TIR anual efetiva informada em `taxa`, em decimal, na base de 252 dias úteis, relativa aos fluxos em base 100.
+- \\(\\mathrm{PU}\_{\\mathrm{informado}}\\): preço recebido em `pu`.
+- \\(0.0001\\): aumento de 1 bp na TIR em decimal.
+
+As cotações teóricas não aplicam os arredondamentos e truncamentos da cotação oficial. A razão entre elas é aplicada ao PU informado.
+
+Examples:
+
+```pycon
+>>> from pyield import ntnc
+>>> cot = ntnc.cotacao("21-03-2025", "01-01-2031", "6.7626%")
+>>> pu = ntnc.pu(6598.913723, cot)
+>>> ntnc.dv01("21-03-2025", "01-01-2031", "6.7626%", pu)
+3.4433825712157833
+```
+
+## `dv01_expr(data_liquidacao, data_vencimento, taxa, pu)`
+
+Cria expressão Polars para o DV01 da NTN-C.
+
+O cálculo é aplicado linha a linha e reprifica o PU informado para um aumento de 1 bp na taxa.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data_liquidacao` | `Expr \| str` | Nome de coluna ou expressão Polars com a data de liquidação. | *required* |
+| `data_vencimento` | `Expr \| str` | Nome de coluna ou expressão Polars com a data de vencimento. | *required* |
+| `taxa` | `Expr \| str` | Nome de coluna ou expressão Polars com a TIR anual efetiva, em decimal, na base de 252 dias úteis. | *required* |
+| `pu` | `Expr \| str` | Nome de coluna ou expressão Polars com o PU usado como base. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `Expr` | pl.Expr: Expressão sem alias com o DV01. |
+
+## `fluxos_caixa(data_liquidacao, data_vencimento)`
+
+Gera os fluxos de caixa da NTN-C entre liquidação e vencimento.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data_liquidacao` | `DateLike` | Data de liquidação (exclusiva). | *required* |
+| `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `DataFrame` | pl.DataFrame: DataFrame com as colunas de fluxo. |
+
+**Output Columns**
+
+- data\_pagamento (Date): Data contratual do pagamento, sem ajuste para dia útil.
+- valor\_pagamento (Float64): Valor do pagamento em base 100.
+
+**Notes**
+
+Para obter as datas efetivas de processamento, use `yd.du.deslocar(..., 0)`.
+
+Examples:
+
+```pycon
+>>> from pyield import ntnc
+>>> ntnc.fluxos_caixa("21-03-2025", "01-01-2031")
+shape: (12, 2)
+┌────────────────┬─────────────────┐
+│ data_pagamento ┆ valor_pagamento │
+│ ---            ┆ ---             │
+│ date           ┆ f64             │
+╞════════════════╪═════════════════╡
+│ 2025-07-01     ┆ 5.830052        │
+│ 2026-01-01     ┆ 5.830052        │
+│ 2026-07-01     ┆ 5.830052        │
+│ 2027-01-01     ┆ 5.830052        │
+│ 2027-07-01     ┆ 5.830052        │
+│ …              ┆ …               │
+│ 2029-01-01     ┆ 5.830052        │
+│ 2029-07-01     ┆ 5.830052        │
+│ 2030-01-01     ┆ 5.830052        │
+│ 2030-07-01     ┆ 5.830052        │
+│ 2031-01-01     ┆ 105.830052      │
+└────────────────┴─────────────────┘
+```
+
+## `pu(vna, cotacao)`
+
+Calcula o PU da NTN-C pela metodologia da STN para leilões primários.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `vna` | `float \| Decimal` | Valor nominal atualizado (VNA), truncado em seis casas decimais antes do cálculo, sem arredondar. | *required* |
+| `cotacao` | `float \| Decimal` | Cotação da NTN-C em base 100. Truncada em quatro casas decimais antes do cálculo, sem arredondar. | *required* |
+
+Returns:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `Decimal` | `Decimal` | Preço da NTN-C truncado em 6 casas decimais. |
+
+**Notes**
+
+O preço unitário é:
+
+\\\[ \\mathrm{PU} = \\mathrm{VNA}\\,\\frac{\\mathrm{COT}}{100} \\\]
+
+onde:
+
+- \\(\\mathrm{VNA}\\): valor nominal atualizado pelo IGP-M, recebido em `vna`.
+- \\(\\mathrm{COT}\\): cotação recebida em `cotacao`, em base 100.
+
+O cálculo aplica os truncamentos de VNA e cotação descritos em `Args` e trunca o PU em seis casas decimais.
+
+**References**
+
+- Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos Públicos Federais Ofertados nos Leilões Primários. https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
+
+Examples:
+
+```pycon
+>>> from pyield import ntnc
+>>> ntnc.pu(6598.913723, 126.4958)
+Decimal('8347.348705')
+```
+
+## `taxa(data_liquidacao, data_vencimento, vna, pu)`
+
+Calcula a TIR implícita de uma NTN-C a partir do preço (PU).
+
+A função resolve numericamente a taxa que aproxima o PU informado por `VNA * cotação / 100`, com a cotação calculada pelo valor presente bruto dos fluxos. Como não há arredondamento nem truncamento intermediário, o resultado não pretende reproduzir exatamente a taxa usada para gerar um PU canônico por `pu(vna, cotacao(...))`.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data_liquidacao` | `DateLike` | Data de liquidação. | *required* |
+| `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
+| `vna` | `float \| Decimal` | Valor nominal atualizado (VNA). | *required* |
+| `pu` | `float \| Decimal` | Preço unitário (PU) do título. | *required* |
+
+Returns:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `float` | `float` | TIR implícita em formato decimal, sem arredondamento. Retorna NaN para entradas ausentes, PU não positivo ou falha na resolução numérica. |
+
+**Notes**
+
+A TIR implícita \\(y\\), anual efetiva, em decimal e na base de 252 dias úteis, é encontrada resolvendo:
+
+\\\[ \\frac{\\mathrm{VNA}}{100} \\sum\_{i=1}^{n}\\frac{\\mathrm{FC}\_i}{(1+y)^{t\_i}} = \\mathrm{PU}\_{\\mathrm{informado}} \\\]
+
+onde:
+
+- \\(\\mathrm{FC}\_i\\): valor do pagamento \\(i\\) em base 100, incluindo cupom e amortização quando aplicável.
+- \\(\\mathrm{DU}\_i\\): dias úteis entre liquidação e pagamento \\(i\\).
+- \\(t\_i = \\mathrm{DU}\_i/252\\): prazo até o pagamento \\(i\\), em anos de 252 dias úteis.
+- \\(n\\): número de pagamentos restantes.
+- \\(\\mathrm{VNA}\\): valor nominal atualizado pelo IGP-M, recebido em `vna`.
+- \\(\\mathrm{PU}\_{\\mathrm{informado}}\\): preço recebido em `pu`.
+
+O lado esquerdo representa o preço teórico, sem os arredondamentos e truncamentos do PU oficial. A TIR se refere aos fluxos em base 100; a atualização pelo IGP-M é representada pelo VNA.
+
+Examples:
+
+Exibe as taxas em formato decimal:
+
+```pycon
+>>> from pyield import ntnc
+>>> ntnc.taxa("21-03-2025", "01-01-2031", 6598.913723, 8347.348705)
+0.06762607819736002
+>>> ntnc.taxa("21-05-2008", "01-03-2011", 2126.473734, 2207.556177) * 100
+4.987715615704656
+```
+
+## `taxa_curva_zero(data_liquidacao, data_vencimento, curva_zero)`
+
+Calcula a TIR equivalente à cotação da NTN-C pela curva zero informada.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data_liquidacao` | `DateLike` | Data de liquidação. | *required* |
+| `data_vencimento` | `DateLike` | Data de vencimento da NTN-C. | *required* |
+| `curva_zero` | `DataFrame` | DataFrame com `dias_uteis` e `taxa_zero`, com os mesmos requisitos de `cotacao_curva_zero`. | *required* |
+
+Returns:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `float` | `float` | TIR anual efetiva, em decimal, na base de 252 dias úteis, sem arredondamento comercial. Retorna NaN para datas ausentes, ausência de fluxos com prazo positivo, resultado não finito ou falha de convergência. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Curva vazia, colunas ausentes ou vértices inválidos. |
+
+**Notes**
+
+A TIR equivalente \\(y\\), anual efetiva, em decimal e na base de 252 dias úteis, é encontrada resolvendo:
+
+\\\[ \\sum\_{i=1}^{n}\\frac{\\mathrm{FC}\_i}{(1+y)^{t\_i}} = \\mathrm{COT}\_{\\mathrm{curva}} \\\]
+
+onde:
+
+- \\(\\mathrm{FC}\_i\\): valor do pagamento \\(i\\) em base 100, incluindo cupom e amortização quando aplicável.
+- \\(\\mathrm{DU}\_i\\): dias úteis entre liquidação e pagamento \\(i\\).
+- \\(t\_i = \\mathrm{DU}\_i/252\\): prazo até o pagamento \\(i\\), em anos de 252 dias úteis.
+- \\(n\\): número de pagamentos restantes.
+- \\(\\mathrm{COT}\_{\\mathrm{curva}}\\): cotação em base 100 obtida por `cotacao_curva_zero` com a curva fornecida.
+
+A TIR é uma taxa única para todos os pagamentos, enquanto a curva fornece uma taxa zero para cada prazo. A resolução aplica as regras de precisão descritas a seguir aos dois lados da equação.
+
+Usa datas, interpolação e precisão de `cotacao_curva_zero`. Resolve por bisseção a taxa única que reproduz sua cotação, sem truncar a taxa durante a busca. Não inverte um PU nem a cotação truncada de `cotacao`. O intervalo é delimitado pelas menores e maiores taxas interpoladas dos fluxos. A busca para por erro de cotação zero ou meia largura do intervalo inferior a 1e-12, com limite de 100 iterações. A escolha da curva e eventuais spreads ou pisos ficam com o consumidor.
