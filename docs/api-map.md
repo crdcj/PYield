@@ -23,6 +23,7 @@ Visão geral das principais funções públicas do PYield.
     ├── intradia(contrato)
     ├── datas_disponiveis(contrato)
     ├── enriquecer(df, contrato)
+    ├── dv01_expr(coluna_dias_uteis, coluna_taxa, coluna_preco)
     ├── vencimento(codigo, contrato)
     └── vencimento_expr(coluna_codigo, contrato)
     ```
@@ -285,5 +286,9 @@ Visão geral das principais funções públicas do PYield.
     yd.b3
     ├── boletim.baixar_zip(...)
     ├── boletim.buscar(...)
-    └── boletim.ler(...)
+    ├── boletim.ler(...)
+    ├── eh_pregao(data)
+    ├── pregao_anterior(data)
+    ├── proximo_pregao(data)
+    └── ultimo_pregao(data=None)
     ```

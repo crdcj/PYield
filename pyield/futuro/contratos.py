@@ -40,6 +40,26 @@ def dv01_expr(
     - Duration = dias_uteis / 252
     - taxa deve estar em formato decimal (ex.: 0.145)
     - preço é o PU do contrato.
+
+    Args:
+        coluna_dias_uteis: Coluna com os dias úteis até o vencimento.
+        coluna_taxa: Coluna com a taxa em formato decimal.
+        coluna_preco: Coluna com o PU do contrato.
+
+    Returns:
+        Uma ``pl.Expr`` com o DV01 na unidade de ``coluna_preco``.
+
+    Examples:
+        >>> df = pl.DataFrame({"du": [252], "taxa": [0.10], "pu": [90_909.09]})
+        >>> df.select(dv01=yd.futuro.dv01_expr("du", "taxa", "pu"))
+        shape: (1, 1)
+        ┌──────────┐
+        │ dv01     │
+        │ ---      │
+        │ f64      │
+        ╞══════════╡
+        │ 8.264463 │
+        └──────────┘
     """
     duracao = pl.col(coluna_dias_uteis) / 252
     duracao_modificada = duracao / (1 + pl.col(coluna_taxa))
