@@ -148,13 +148,3 @@ direta não mantém cache.
 
 A migração não altera fórmulas, unidades ou schemas de retorno. As notas da
 [0.60.0](https://crdcj.github.io/PYield/release-0.60.0/) continuam disponíveis para migrações anteriores.
-
-
-## Processo de publicação
-
-A publicação passa a contar com um workflow acionado por tags `vX.Y.Z`. Após
-validar a versão, as notas, os testes e os builds, o fluxo publica os pacotes no
-PyPI, a documentação no Pages e a Release no GitHub com estas mesmas notas.
-A escolha da versão e a redação das notas permanecem manuais. A ativação exige
-a configuração inicial de Trusted Publishing e GitHub Pages descrita no
-[guia de desenvolvimento e publicação](https://crdcj.github.io/PYield/desenvolvimento/).
