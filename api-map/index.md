@@ -25,6 +25,7 @@ yd.futuro
 ├── intradia(contrato)
 ├── datas_disponiveis(contrato)
 ├── enriquecer(df, contrato)
+├── dv01_expr(coluna_dias_uteis, coluna_taxa, coluna_preco)
 ├── vencimento(codigo, contrato)
 └── vencimento_expr(coluna_codigo, contrato)
 ```
@@ -78,11 +79,13 @@ yd.compromissadas(inicio=None, fim=None)
 
 ```text
 yd.selic
-├── over(data)
-├── over_serie(...)
+├── over(data, *, anualizada=True)
+├── over_serie(..., anualizada=True)
 ├── meta(data)
 └── meta_serie(...)
 ```
+
+`over` e `over_serie` retornam taxas do tipo `Decimal`: ao ano em base 252 por padrão, ou ao dia útil com `anualizada=False`. A frequência das observações é diária nos dois casos. `meta` mantém seu contrato anual.
 
 **`yd.cpm` (opções digitais do COPOM e probabilidades implícitas)**
 
@@ -101,7 +104,7 @@ yd.ipca
 ├── taxa(data)
 ├── taxa_serie(inicio=None, fim=None, *, ultimos=None)
 ├── taxa_projetada()
-└── calendario(ano, *, atualizar=False)
+└── calendario(ano)
 ```
 
 **`yd.igpm` (inflação IGP-M)**
@@ -112,7 +115,7 @@ yd.igpm
 ├── indice_serie(inicio=None, fim=None, *, ultimos=None)
 ├── taxa(data)
 ├── taxa_serie(inicio=None, fim=None, *, ultimos=None)
-└── calendario(ano, *, atualizar=False)
+└── calendario(ano)
 ```
 
 **`yd.lft` (Tesouro Selic)**
@@ -234,17 +237,23 @@ yd.ntnc
 yd.ptax(data)
 ```
 
+Cotação em `Decimal`, com quatro casas; sem dados retorna `Decimal("NaN")`.
+
 **`yd.ptax_serie` (série histórica da PTAX)**
 
 ```text
 yd.ptax_serie(inicio, fim)
 ```
 
+Coluna `cotacao` do tipo Polars `Decimal(18, 4)`.
+
 **`yd.di_over` (taxa DI Over)**
 
 ```text
-yd.di_over(data)
+yd.di_over(data, *, anualizada=True)
 ```
+
+Taxa do tipo `Decimal`, anualizada em base 252 por padrão ou ao dia útil com `anualizada=False`. A frequência das observações é diária nas duas modalidades; datas sem dados retornam `Decimal("NaN")`. Os dados vêm do SGS do Banco Central: série 4389 para a anualizada e 12 para a diária.
 
 **`yd.forward` (taxa a termo entre dois vértices)**
 
@@ -298,12 +307,12 @@ yd.rmd(aba)
 
 ```text
 yd.vna
-├── valor(titulo, data=None, vencimento=None, *, atualizar=False)
-├── historico(titulo, vencimento=None, *, atualizar=False)
-├── ultimo(titulo, vencimento=None, *, atualizar=False)
+├── valor(titulo, data=None, vencimento=None)
+├── historico(titulo, vencimento=None)
+├── ultimo(titulo, vencimento=None)
 ├── vigencia(titulo, data)
 ├── projetado(titulo, data, vna_base, inflacao=None, *, selic=None)
-├── contexto(titulo, data, vencimento=None, *, inflacao_projetada=None, atualizar=False)
+├── contexto(titulo, data, vencimento=None, *, inflacao_projetada=None)
 ├── calcular_vna(df, data, *, fator_variacao=None)
 ├── calcular_base(titulo, indice_atual, vencimento=None)
 └── TipoTitulo
@@ -315,5 +324,9 @@ yd.vna
 yd.b3
 ├── boletim.baixar_zip(...)
 ├── boletim.buscar(...)
-└── boletim.ler(...)
+├── boletim.ler(...)
+├── eh_pregao(data)
+├── pregao_anterior(data)
+├── proximo_pregao(data)
+└── ultimo_pregao(data=None)
 ```

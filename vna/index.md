@@ -289,7 +289,7 @@ Pró-rata entre referências da NTN-C com vencimento em 01/01/2031, consultadas 
 Decimal('6449.641358')
 ```
 
-## `contexto(titulo, data, vencimento=None, *, inflacao_projetada=None, atualizar=False)`
+## `contexto(titulo, data, vencimento=None, *, inflacao_projetada=None)`
 
 Consulta os parâmetros disponíveis para a vigência mensal do VNA.
 
@@ -301,7 +301,6 @@ Parameters:
 | `data` | `DateLike` | Data contida na vigência, nos formatos aceitos pela biblioteca. | *required* |
 | `vencimento` | `DateLike \| None` | Obrigatório para selecionar a série da NTN-C; não se aplica à NTN-B. | `None` |
 | `inflacao_projetada` | `float \| Decimal \| str \| None` | Projeção mensal opcional em unidade decimal: 0.0045 representa 0,45%. Aceita também percentual explícito, como `"0.45%"` ou `"0,45%"`. Convertida para Decimal sem arredondar; usada somente se a taxa realizada estiver indisponível. Não busca projeções automaticamente. | `None` |
-| `atualizar` | `bool` | Renova apenas o cache do histórico de VNA, como em historico. Não renova os caches de inflação. | `False` |
 
 Returns:
 
@@ -348,7 +347,7 @@ Para a vigência atual da NTN-C, informa o vencimento e uma projeção de 0,45%,
 >>> pendencias = parametros.item(0, "pendencias")
 ```
 
-## `historico(titulo, vencimento=None, *, atualizar=False)`
+## `historico(titulo, vencimento=None)`
 
 Busca os VNAs mensais publicados pelo Tesouro Nacional.
 
@@ -358,7 +357,6 @@ Parameters:
 | --- | --- | --- | --- |
 | `titulo` | `TipoTitulo` | NTN-B ou NTN-C. Histórico de LFT não está disponível. | *required* |
 | `vencimento` | `DateLike \| None` | Filtro opcional de série para NTN-C. Se omitido, retorna todas as séries. Não se aplica à NTN-B. | `None` |
-| `atualizar` | `bool` | Se True, baixa novamente o arquivo de VNA e renova seu cache de 60 segundos. Não atualiza o cache dos índices do IPCA. | `False` |
 
 Returns:
 
@@ -455,7 +453,7 @@ Projeta a NTN-C a partir da base de 01/12/2025 da série de 2031, em um cenário
 Decimal('6464.135801')
 ```
 
-## `ultimo(titulo, vencimento=None, *, atualizar=False)`
+## `ultimo(titulo, vencimento=None)`
 
 Busca a última referência publicada de cada série de VNA.
 
@@ -465,7 +463,6 @@ Parameters:
 | --- | --- | --- | --- |
 | `titulo` | `TipoTitulo` | NTN-B ou NTN-C. Última publicação de LFT não está disponível. | *required* |
 | `vencimento` | `DateLike \| None` | Filtro opcional da NTN-C. Sem filtro, retorna a última referência de cada série. Não se aplica à NTN-B. | `None` |
-| `atualizar` | `bool` | Se True, baixa novamente o arquivo de VNA e renova seu cache de 60 segundos. Não atualiza o cache dos índices do IPCA. | `False` |
 
 Returns:
 
@@ -499,7 +496,7 @@ Para NTN-C, seleciona uma série pelo vencimento. Sem esse filtro, o resultado p
 >>> referencia = yd.vna.ultimo("NTN-C", vencimento="01-01-2031")
 ```
 
-## `valor(titulo, data=None, vencimento=None, *, atualizar=False)`
+## `valor(titulo, data=None, vencimento=None)`
 
 Consulta o VNA do título na data informada.
 
@@ -510,7 +507,6 @@ Parameters:
 | `titulo` | `TipoTitulo` | LFT, NTN-B ou NTN-C. | *required* |
 | `data` | `DateLike \| None` | Data de referência. Se nula, retorna `Decimal('NaN')`. | `None` |
 | `vencimento` | `DateLike \| None` | Necessário para selecionar a série da NTN-C. Não se aplica aos demais títulos. | `None` |
-| `atualizar` | `bool` | Se True, baixa novamente o arquivo de VNA e renova seu cache de 60 segundos. Não atualiza o cache dos índices do IPCA. | `False` |
 
 Returns:
 
@@ -596,16 +592,10 @@ A NTN-C muda no primeiro dia do mês:
 (datetime.date(2026, 7, 1), datetime.date(2026, 8, 1))
 ```
 
-## Atualização manual
+## Atualização dos dados
 
-As consultas `valor`, `historico` e `ultimo` aceitam `atualizar=True`:
+As consultas às fontes externas não mantêm cache entre chamadas. Cada consulta que precisa de dados externos realiza um novo download; a aplicação decide se quer armazenar e reutilizar os resultados.
 
-```python
-historico = yd.vna.historico("NTN-C", vencimento="01-01-2031", atualizar=True)
-ultimo = yd.vna.ultimo("NTN-B", atualizar=True)
-valor = yd.vna.valor("LFT", "31-05-2024", atualizar=True)
-```
+O parâmetro `atualizar` foi removido de `valor`, `historico`, `ultimo` e `contexto`. Remova esse argumento das chamadas existentes.
 
-A opção ignora e renova o cache interno de 60 segundos do arquivo de VNA. Chamadas seguintes reutilizam o download renovado. Para NTN-B e NTN-C, o cache é por planilha do título, compartilhado entre datas e séries de vencimentos; para LFT, é por data de referência. Erros de download são propagados; a entrada anterior permanece disponível somente até sua expiração original.
-
-O padrão continua sendo `atualizar=False`. A opção não invalida caches da aplicação nem o cache dos índices do IPCA usados no pró-rata da NTN-B. A coluna `data` representa a referência do VNA, não o horário do download ou uma nova publicação. Um novo download pode retornar os mesmos dados.
+A coluna `data` representa a referência do VNA, não o horário do download ou uma nova publicação. Um novo download pode retornar os mesmos dados.

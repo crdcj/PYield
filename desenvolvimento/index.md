@@ -6,6 +6,8 @@ Execute os comandos a partir da raiz do projeto. O ambiente e as dependências d
 
 ## Preparar o ambiente
 
+O ambiente padrão de desenvolvimento usa Python 3.15, definido em `.python-version`, que deve ser versionado. O pacote mantém Python 3.12 como versão mínima para instalação, declarada em `requires-python` no `pyproject.toml`.
+
 Sincronize o ambiente virtual com as dependências do projeto:
 
 ```sh
@@ -23,6 +25,18 @@ uv run ty check
 ```
 
 Os testes incluem os doctests configurados no projeto. Para uma alteração localizada, é possível passar um caminho ou uma expressão ao `pytest`.
+
+Os testes de integração que precisam acessar a rede usam o marcador `rede`. Alguns doctests também consultam fontes externas; falhas dessas fontes podem causar falhas na execução completa. Para executar os testes locais sem esses downloads nem os doctests da biblioteca:
+
+```sh
+uv run pytest tests -m "not rede"
+```
+
+Para executar apenas as integrações externas:
+
+```sh
+uv run pytest tests -m rede
+```
 
 ## Documentação
 
@@ -48,13 +62,19 @@ uv run zensical build --clean --strict
 
 O build também gera `site/llms.txt`, com o índice da documentação, versões Markdown das páginas e `site/llms-full.txt`, com o conteúdo reunido em um único arquivo. As páginas oferecem o botão **Copy as Markdown**, inclusive na referência da API gerada a partir das docstrings. Esses recursos usam o suporte nativo do Zensical, sem plugins adicionais instalados.
 
-O procedimento atual de publicação no GitHub Pages usa `ghp-import`:
+Para publicar a documentação no GitHub Pages, após o build estrito, use:
 
 ```sh
 uv tool run ghp-import -n -p site
 ```
 
 Esse comando publica o conteúdo de `site/` na branch `gh-pages` do remoto `origin`. No GitHub, configure **Settings → Pages → Build and deployment** com **Source: Deploy from a branch**, branch `gh-pages` e pasta `/ (root)`.
+
+## Notas de versão
+
+Registre as mudanças de cada versão em `docs/release-X.Y.Z.md`, incluindo o comportamento resultante, o racional das decisões e os exemplos de migração quando houver incompatibilidades. Atualize o índice `docs/releases.md` e a navegação em `mkdocs.yml`. O README mantém apenas o link permanente para as notas, sem acumular resumos de versões.
+
+Ao criar uma Release no GitHub, copie o conteúdo dessa página para as notas. A página da documentação é a fonte canônica. Use URLs absolutas para links nas notas, pois o mesmo texto será exibido no GitHub. Notas de correções pequenas podem ter apenas um parágrafo; mudanças incompatíveis devem explicar o impacto e mostrar a migração.
 
 ## Atualizar a versão
 
@@ -106,6 +126,6 @@ Para validar o fluxo sem enviar os arquivos, use:
 uv run --env-file .env uv publish --dry-run
 ```
 
-Em ambientes de CI, configure `UV_PUBLISH_TOKEN` como secret e execute diretamente `uv publish`. Não inclua tokens no repositório nem em comandos registrados no histórico do shell.
+Não inclua tokens no repositório nem em comandos registrados no histórico do shell.
 
 O nome e a versão do pacote publicados precisam ser novos no índice. Depois do upload, confira a página do [PYield no PyPI](<https://pypi.org/project/pyield/>).

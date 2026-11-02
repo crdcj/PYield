@@ -31,6 +31,7 @@ yd.futuro
 ├── intradia(contrato)
 ├── datas_disponiveis(contrato)
 ├── enriquecer(df, contrato)
+├── dv01_expr(coluna_dias_uteis, coluna_taxa, coluna_preco)
 ├── vencimento(codigo, contrato)
 └── vencimento_expr(coluna_codigo, contrato)
 ```
@@ -84,11 +85,13 @@ yd.compromissadas(inicio=None, fim=None)
 
 ```text
 yd.selic
-├── over(data)
-├── over_serie(...)
+├── over(data, *, anualizada=True)
+├── over_serie(..., anualizada=True)
 ├── meta(data)
 └── meta_serie(...)
 ```
+
+`over` e `over_serie` retornam taxas do tipo `Decimal`: ao ano em base 252 por padrão, ou ao dia útil com `anualizada=False`. A frequência das observações é diária nos dois casos. `meta` mantém seu contrato anual.
 
 **`yd.cpm` (opções digitais do COPOM e probabilidades implícitas)**
 
@@ -107,7 +110,7 @@ yd.ipca
 ├── taxa(data)
 ├── taxa_serie(inicio=None, fim=None, *, ultimos=None)
 ├── taxa_projetada()
-└── calendario(ano, *, atualizar=False)
+└── calendario(ano)
 ```
 
 **`yd.igpm` (inflação IGP-M)**
@@ -118,7 +121,7 @@ yd.igpm
 ├── indice_serie(inicio=None, fim=None, *, ultimos=None)
 ├── taxa(data)
 ├── taxa_serie(inicio=None, fim=None, *, ultimos=None)
-└── calendario(ano, *, atualizar=False)
+└── calendario(ano)
 ```
 
 **`yd.lft` (Tesouro Selic)**
@@ -240,17 +243,23 @@ yd.ntnc
 yd.ptax(data)
 ```
 
+Cotação em `Decimal`, com quatro casas; sem dados retorna `Decimal("NaN")`.
+
 **`yd.ptax_serie` (série histórica da PTAX)**
 
 ```text
 yd.ptax_serie(inicio, fim)
 ```
 
+Coluna `cotacao` do tipo Polars `Decimal(18, 4)`.
+
 **`yd.di_over` (taxa DI Over)**
 
 ```text
-yd.di_over(data)
+yd.di_over(data, *, anualizada=True)
 ```
+
+Taxa do tipo `Decimal`, anualizada em base 252 por padrão ou ao dia útil com `anualizada=False`. A frequência das observações é diária nas duas modalidades; datas sem dados retornam `Decimal("NaN")`. Os dados vêm do SGS do Banco Central: série 4389 para a anualizada e 12 para a diária.
 
 **`yd.forward` (taxa a termo entre dois vértices)**
 
@@ -304,12 +313,12 @@ yd.rmd(aba)
 
 ```text
 yd.vna
-├── valor(titulo, data=None, vencimento=None, *, atualizar=False)
-├── historico(titulo, vencimento=None, *, atualizar=False)
-├── ultimo(titulo, vencimento=None, *, atualizar=False)
+├── valor(titulo, data=None, vencimento=None)
+├── historico(titulo, vencimento=None)
+├── ultimo(titulo, vencimento=None)
 ├── vigencia(titulo, data)
 ├── projetado(titulo, data, vna_base, inflacao=None, *, selic=None)
-├── contexto(titulo, data, vencimento=None, *, inflacao_projetada=None, atualizar=False)
+├── contexto(titulo, data, vencimento=None, *, inflacao_projetada=None)
 ├── calcular_vna(df, data, *, fator_variacao=None)
 ├── calcular_base(titulo, indice_atual, vencimento=None)
 └── TipoTitulo
@@ -321,7 +330,11 @@ yd.vna
 yd.b3
 ├── boletim.baixar_zip(...)
 ├── boletim.buscar(...)
-└── boletim.ler(...)
+├── boletim.ler(...)
+├── eh_pregao(data)
+├── pregao_anterior(data)
+├── proximo_pregao(data)
+└── ultimo_pregao(data=None)
 ```
 
 # PYield: Análise de Renda Fixa Brasileira em Python
@@ -506,17 +519,20 @@ Acesse indicadores econômicos do BCB:
 
 ```python
 # SELIC Over (taxa anualizada)
-yd.selic.over("31-05-2024")  # -> 0.104  (10.4% a.a.)
+yd.selic.over("31-05-2024")  # Decimal: taxa ao ano em base 252
+yd.selic.over("31-05-2024", anualizada=False)  # Decimal: taxa ao dia útil
 
 # PTAX (taxa de câmbio oficial)
-yd.ptax("31-05-2024")  # -> 5.4407
+yd.ptax("31-05-2024")  # Decimal: cotação de venda em R$/US$, com quatro casas
 
 # Taxa SELIC meta (definida pelo COPOM)
-yd.selic.meta("31-05-2024")  # -> 0.1075  (10.75% a.a.)
+yd.selic.meta("31-05-2024")  # Decimal: meta anual
 
 # VNA da LFT (Valor Nominal Atualizado)
 yd.vna.valor("LFT", "31-05-2024")  # -> 14903.011480
 ```
+
+Selic Over, Selic Meta, DI Over e PTAX preservam os valores publicados pelo Banco Central usando `Decimal`, sem passagem por `float`. As séries retornam colunas Polars `Decimal`; escalares sem dados retornam `Decimal("NaN")`. Para análises com ponto flutuante, a conversão é explícita com `float(valor)` ou `pl.col("taxa").cast(pl.Float64)`. Consulte as [notas da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>).
 
 ### 7\. Inflação (IPCA)
 
@@ -578,6 +594,8 @@ yd.du.contar(["01-01-2024", None], "01-02-2024")  # -> Series: [22, null]
 
 Um notebook interativo com exemplos práticos está disponível no Google Colab:
 
+[![Open In Colab](<https://colab.research.google.com/assets/colab-badge.svg>)](<https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb>)
+
 ### Documentação Completa
 
 A documentação completa com referência da API está disponível em: [https://crdcj.github.io/PYield/](<https://crdcj.github.io/PYield/>)
@@ -598,7 +616,118 @@ Contribuições são bem-vindas! Entre em contato: cr.cj@outlook.com
 
 APIs técnicas para dados brutos ou intermediários da B3.
 
-APIs técnicas da B3.
+APIs técnicas da B3: boletins e calendário de pregões.
+
+## `eh_pregao(data)`
+
+Verifica se há pregão na B3 na data informada.
+
+Há pregão em todo dia útil brasileiro, exceto nas vésperas de Natal (24/12) e de Ano Novo (31/12), quando a B3 não abre.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data` | `DateLike` | Data a verificar. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `bool` | `True` se houver pregão na data. |
+
+**Notes**
+
+- Usa os feriados nacionais de `yd.du` com `calendario="auto"`.
+- Fechamentos excepcionais ou históricos não recorrentes, como feriados municipais de São Paulo em anos anteriores, não são modelados.
+- Strings de data aceitas: `DD-MM-YYYY`, `DD/MM/YYYY` e `YYYY-MM-DD`.
+
+Examples:
+
+```pycon
+>>> yd.b3.eh_pregao("23-12-2025")
+True
+```
+
+Dia útil sem pregão:
+
+```pycon
+>>> yd.b3.eh_pregao("24-12-2025")
+False
+```
+
+## `pregao_anterior(data)`
+
+Retorna o último pregão da B3 estritamente anterior à data.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data` | `DateLike` | Data de referência, com ou sem pregão. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `date` | Data do pregão anterior. |
+
+Examples:
+
+```pycon
+>>> yd.b3.pregao_anterior("02-01-2026")
+datetime.date(2025, 12, 30)
+```
+
+## `proximo_pregao(data)`
+
+Retorna o primeiro pregão da B3 estritamente posterior à data.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data` | `DateLike` | Data de referência, com ou sem pregão. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `date` | Data do próximo pregão. |
+
+Examples:
+
+Sábado seguido do feriado de Finados:
+
+```pycon
+>>> yd.b3.proximo_pregao("31-10-2026")
+datetime.date(2026, 11, 3)
+```
+
+## `ultimo_pregao(data=None)`
+
+Retorna o último pregão da B3 na data ou antes dela.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data` | `DateLike \| None` | Data de referência. Se None, usa a data atual no Brasil. | `None` |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `date` | A própria data, se houver pregão; caso contrário, o pregão anterior. |
+
+Examples:
+
+```pycon
+>>> yd.b3.ultimo_pregao("30-12-2025")
+datetime.date(2025, 12, 30)
+>>> yd.b3.ultimo_pregao("31-12-2025")
+datetime.date(2025, 12, 30)
+```
 
 ## boletim
 
@@ -650,6 +779,10 @@ Returns:
 | `bytes` | Conteúdo do ZIP externo em bytes quando o ZIP contém um XML legível. |
 | `bytes` | Retorna `b""` para data sem pregão ou quando a resposta não contém |
 | `bytes` | um ZIP válido. |
+
+**Notes**
+
+Falhas de conexão, timeout, transferência interrompida e HTTP 502, 503 ou 504 permitem uma retentativa, após espera de 0,5 a 1 segundo. Retry-After inválido ou superior a um segundo impede a retentativa. Os timeouts de conexão e leitura são de 5 e 10 segundos por tentativa. Erros de certificado e demais erros HTTP são propagados sem repetição. Após a última falha, a exceção é propagada. A validação do ZIP não provoca novo download. Não mantém cache entre chamadas.
 
 ## `buscar(data, prefixo_ticker=None, comprimento_ticker=None, boletim_completo=False)`
 
@@ -724,6 +857,10 @@ Returns:
 - AdjstdValCtrct (Float64): valor do contrato ajustado.
 - MaxTradLmt (Float64): limite máximo de variação.
 - MinTradLmt (Float64): limite mínimo de variação.
+
+**Notes**
+
+O download segue a política de retentativas de `baixar_zip`.
 
 Raises:
 
@@ -878,7 +1015,7 @@ nro\_reuniao (Int64): Número sequencial informado na ata; nulo sem ata. data\_i
 
 **Notes**
 
-O horizonte depende das datas publicadas pelo BCB. A consulta às atas solicita até 500 registros. O conteúdo bruto fica em cache por oito horas; o status é recalculado a cada chamada. Erros de rede e payload inválido são propagados. O ICS publica um evento por dia: dias únicos consecutivos devem formar pares; grupos incompletos geram ValueError. O início histórico não é inferido subtraindo um dia da decisão.
+O horizonte depende das datas publicadas pelo BCB. A consulta às atas solicita até 500 registros. O status é recalculado a cada chamada. Erros de rede e payload inválido são propagados. O ICS publica um evento por dia: dias únicos consecutivos devem formar pares; grupos incompletos geram ValueError. O início histórico não é inferido subtraindo um dia da decisão.
 
 Examples:
 
@@ -1044,6 +1181,8 @@ Execute os comandos a partir da raiz do projeto. O ambiente e as dependências d
 
 ## Preparar o ambiente
 
+O ambiente padrão de desenvolvimento usa Python 3.15, definido em `.python-version`, que deve ser versionado. O pacote mantém Python 3.12 como versão mínima para instalação, declarada em `requires-python` no `pyproject.toml`.
+
 Sincronize o ambiente virtual com as dependências do projeto:
 
 ```sh
@@ -1061,6 +1200,18 @@ uv run ty check
 ```
 
 Os testes incluem os doctests configurados no projeto. Para uma alteração localizada, é possível passar um caminho ou uma expressão ao `pytest`.
+
+Os testes de integração que precisam acessar a rede usam o marcador `rede`. Alguns doctests também consultam fontes externas; falhas dessas fontes podem causar falhas na execução completa. Para executar os testes locais sem esses downloads nem os doctests da biblioteca:
+
+```sh
+uv run pytest tests -m "not rede"
+```
+
+Para executar apenas as integrações externas:
+
+```sh
+uv run pytest tests -m rede
+```
 
 ## Documentação
 
@@ -1086,13 +1237,19 @@ uv run zensical build --clean --strict
 
 O build também gera `site/llms.txt`, com o índice da documentação, versões Markdown das páginas e `site/llms-full.txt`, com o conteúdo reunido em um único arquivo. As páginas oferecem o botão **Copy as Markdown**, inclusive na referência da API gerada a partir das docstrings. Esses recursos usam o suporte nativo do Zensical, sem plugins adicionais instalados.
 
-O procedimento atual de publicação no GitHub Pages usa `ghp-import`:
+Para publicar a documentação no GitHub Pages, após o build estrito, use:
 
 ```sh
 uv tool run ghp-import -n -p site
 ```
 
 Esse comando publica o conteúdo de `site/` na branch `gh-pages` do remoto `origin`. No GitHub, configure **Settings → Pages → Build and deployment** com **Source: Deploy from a branch**, branch `gh-pages` e pasta `/ (root)`.
+
+## Notas de versão
+
+Registre as mudanças de cada versão em `docs/release-X.Y.Z.md`, incluindo o comportamento resultante, o racional das decisões e os exemplos de migração quando houver incompatibilidades. Atualize o índice `docs/releases.md` e a navegação em `mkdocs.yml`. O README mantém apenas o link permanente para as notas, sem acumular resumos de versões.
+
+Ao criar uma Release no GitHub, copie o conteúdo dessa página para as notas. A página da documentação é a fonte canônica. Use URLs absolutas para links nas notas, pois o mesmo texto será exibido no GitHub. Notas de correções pequenas podem ter apenas um parágrafo; mudanças incompatíveis devem explicar o impacto e mostrar a migração.
 
 ## Atualizar a versão
 
@@ -1144,9 +1301,59 @@ Para validar o fluxo sem enviar os arquivos, use:
 uv run --env-file .env uv publish --dry-run
 ```
 
-Em ambientes de CI, configure `UV_PUBLISH_TOKEN` como secret e execute diretamente `uv publish`. Não inclua tokens no repositório nem em comandos registrados no histórico do shell.
+Não inclua tokens no repositório nem em comandos registrados no histórico do shell.
 
 O nome e a versão do pacote publicados precisam ser novos no índice. Depois do upload, confira a página do [PYield no PyPI](<https://pypi.org/project/pyield/>).
+
+# DI Over
+
+`yd.di_over` consulta a taxa DI Over da B3/CETIP republicada pelo Banco Central. A consulta usa a API HTTPS do SGS, substituindo o FTP da CETIP.
+
+O retorno é `Decimal` com dez casas decimais, em unidade decimal. Por padrão, a taxa é anualizada em base 252 dias úteis; com `anualizada=False`, retorna a taxa ao dia útil publicada pela fonte. As duas modalidades têm observações de frequência diária e usam diretamente os valores das respectivas séries, sem recalcular uma modalidade a partir da outra.
+
+```python
+import pyield as yd
+
+taxa_anual = yd.di_over("28-02-2025")
+taxa_diaria = yd.di_over("28-02-2025", anualizada=False)
+```
+
+Datas sem dados retornam `Decimal("NaN")`. O histórico começa em 06/03/1986, ampliando a cobertura anterior do FTP, limitada a 20/08/2012. A docstring abaixo identifica as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
+
+Obtém a taxa DI over anualizada ou diária via SGS do Banco Central.
+
+Consulta a taxa DI (Depósito Interfinanceiro) da B3/CETIP, republicada pelo Banco Central na série SGS 4389 (anualizada em base 252) ou SGS 12 (diária), para a data informada. Use `pyield.di_over` na API pública principal.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data` | `DateLike` | data da consulta para buscar a taxa DI. | *required* |
+| `anualizada` | `bool` | Se `True`, retorna a taxa ao ano, em base 252 dias úteis. Se `False`, retorna a taxa ao dia útil publicada pela fonte. | `True` |
+
+Returns:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `Decimal` | `Decimal` | Taxa DI em formato decimal com dez casas decimais, ao ano se |
+|  | `Decimal` | `anualizada=True` (0.1315 = 13,15% a.a.) ou ao dia útil se |
+|  | `Decimal` | `anualizada=False`. Retorna `Decimal('NaN')` se não houver dado |
+|  | `Decimal` | para a data, incluindo feriados e fins de semana. |
+
+**Notes**
+
+As duas séries têm frequência diária. Por padrão, os valores são taxas anuais em base 252 dias úteis. O percentual informado pela série escolhida é convertido diretamente do texto para Decimal e dividido por 100, sem passagem por float, com dez casas decimais. Essa escala preserva até oito casas decimais do percentual publicado, sem recalcular uma modalidade a partir da outra. O histórico começa em 06/03/1986; a consulta anterior via FTP estava limitada a datas a partir de 20/08/2012.
+
+Examples:
+
+```pycon
+>>> import pyield as yd
+>>> taxa = yd.di_over("28/02/2025")  # decimal (0.1315 = 13,15% a.a.)
+>>> f"{taxa:.2%}"
+'13.15%'
+>>> yd.di_over("01/01/2025")  # Feriado
+Decimal('NaN')
+```
 
 Curva de DI Futuro (DI1).
 
@@ -2326,6 +2533,43 @@ Series: 'data_referencia' [date]
 ]
 ```
 
+## `dv01_expr(coluna_dias_uteis, coluna_taxa, coluna_preco)`
+
+Retorna a expressão Polars para cálculo de DV01.
+
+Fórmula: DV01 = (Duration / (1 + taxa)) \* preço \* 0,0001
+
+Onde: - Duration = dias\_uteis / 252 - taxa deve estar em formato decimal (ex.: 0.145) - preço é o PU do contrato.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `coluna_dias_uteis` | `str` | Coluna com os dias úteis até o vencimento. | *required* |
+| `coluna_taxa` | `str` | Coluna com a taxa em formato decimal. | *required* |
+| `coluna_preco` | `str` | Coluna com o PU do contrato. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `Expr` | Uma `pl.Expr` com o DV01 na unidade de `coluna_preco`. |
+
+Examples:
+
+```pycon
+>>> df = pl.DataFrame({"du": [252], "taxa": [0.10], "pu": [90_909.09]})
+>>> df.select(dv01=yd.futuro.dv01_expr("du", "taxa", "pu"))
+shape: (1, 1)
+┌──────────┐
+│ dv01     │
+│ ---      │
+│ f64      │
+╞══════════╡
+│ 8.264463 │
+└──────────┘
+```
+
 ## `enriquecer(df, contrato)`
 
 Enriquece DataFrame bruto do Price Report (PR) da B3.
@@ -2451,7 +2695,7 @@ Nas séries de índices, qualquer dia identifica o mês inteiro; os dois meses e
 
 ## Calendário de divulgação
 
-`yd.igpm.calendario(ano, atualizar=False)` consulta as divulgações mensais na FGV IBRE, excluindo as prévias decendiais e os demais índices. Retorna `competencia` e `data_divulgacao`, ambas `Date`. A competência corresponde ao mês da divulgação mensal. Datas ausentes não são estimadas, e o calendário não comprova publicação. `atualizar=True` renova o cache de 60 segundos do ano.
+`yd.igpm.calendario(ano)` consulta as divulgações mensais na FGV IBRE, excluindo as prévias decendiais e os demais índices. Retorna `competencia` e `data_divulgacao`, ambas `Date`. A competência corresponde ao mês da divulgação mensal. Datas ausentes não são estimadas, e o calendário não comprova publicação.
 
 ```python
 calendario = yd.igpm.calendario(2026)
@@ -2459,7 +2703,7 @@ calendario = yd.igpm.calendario(2026)
 
 Taxas e números-índice do IGP-M por competência ou série histórica.
 
-## `calendario(ano, *, atualizar=False)`
+## `calendario(ano)`
 
 Consulta o calendário de divulgação mensal do IGP-M na FGV IBRE.
 
@@ -2468,7 +2712,6 @@ Parameters:
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
 | `ano` | `int` | Ano das divulgações e competências. | *required* |
-| `atualizar` | `bool` | Ignora e renova o cache de 60 segundos desse ano. | `False` |
 
 Returns:
 
@@ -2656,6 +2899,8 @@ A taxa é mensal e decimal: março registra deflação de 0,34%. Para acompanhar
 >>> df = yd.igpm.taxa_serie(ultimos=12)
 ```
 
+[![PyPI version](<https://img.shields.io/pypi/v/pyield.svg>)](<https://pypi.python.org/pypi/pyield>) [![Made with Python](<https://img.shields.io/badge/Python-%3E=3.12-blue?logo=python&amp;logoColor=white>)](<https://python.org>) [![Powered by Polars](<https://img.shields.io/badge/Powered by-Polars-blue>)](<https://pola.rs/>) [![License](<https://img.shields.io/badge/License-MIT-blue>)](<https://github.com/crdcj/PYield/blob/main/LICENSE>)
+
 # PYield: Toolkit de Renda Fixa Brasileira
 
 PYield é uma biblioteca Python para análise, precificação e acompanhamento de títulos públicos brasileiros. Ela busca e processa dados da ANBIMA, BCB, IBGE, B3 e Tesouro Nacional, com saídas escalares, `polars.Series` e `polars.DataFrame`.
@@ -2663,7 +2908,7 @@ PYield é uma biblioteca Python para análise, precificação e acompanhamento d
 ## Por onde começar?
 
 - [Quickstart](<https://crdcj.github.io/PYield/quickstart/index.md>): instalação e primeiros fluxos de trabalho.
-- [Novidades e migração para a 0.60.0](<https://crdcj.github.io/PYield/release-0.60.0/index.md>): contratos com `Decimal` e alterações da API.
+- [Notas de versão](<https://crdcj.github.io/PYield/releases/index.md>): mudanças, decisões de arquitetura e orientações de migração por versão.
 - [Mapa da API](<https://crdcj.github.io/PYield/api-map/index.md>): visão por namespace e funções públicas.
 - [Desenvolvimento e publicação](<https://crdcj.github.io/PYield/desenvolvimento/index.md>): comandos com `uv`, build, documentação e publicação no PyPI.
 - [Introdução ao PYield](<https://crdcj.github.io/PYield/articles/pyield_intro/index.md>): contexto, fontes de dados e conceitos da biblioteca.
@@ -2675,7 +2920,7 @@ A documentação está organizada por conceito financeiro e por fonte de dados:
 - **Ferramentas:** [dias úteis](<https://crdcj.github.io/PYield/du/index.md>), [interpolador](<https://crdcj.github.io/PYield/interpolador/index.md>) e [taxas a termo](<https://crdcj.github.io/PYield/forwards/index.md>).
 - **Títulos públicos:** [TPF](<https://crdcj.github.io/PYield/tpf/index.md>), [VNA](<https://crdcj.github.io/PYield/vna/index.md>), [LFT](<https://crdcj.github.io/PYield/lft/index.md>), [LTN](<https://crdcj.github.io/PYield/ltn/index.md>), [NTN-B](<https://crdcj.github.io/PYield/ntnb/index.md>), [NTN-F](<https://crdcj.github.io/PYield/ntnf/index.md>) e demais títulos.
 - **Mercado de futuros:** [DI1](<https://crdcj.github.io/PYield/di1/index.md>) e [futuros](<https://crdcj.github.io/PYield/futuro/index.md>).
-- **Dados auxiliares:** [IPCA](<https://crdcj.github.io/PYield/ipca/index.md>), [IGP-M](<https://crdcj.github.io/PYield/igpm/index.md>), [Selic](<https://crdcj.github.io/PYield/selic/index.md>), [Copom](<https://crdcj.github.io/PYield/copom/index.md>), [compromissadas](<https://crdcj.github.io/PYield/compromissada/index.md>), [CPM](<https://crdcj.github.io/PYield/cpm/index.md>) e [B3](<https://crdcj.github.io/PYield/b3/index.md>).
+- **Dados auxiliares:** [IPCA](<https://crdcj.github.io/PYield/ipca/index.md>), [IGP-M](<https://crdcj.github.io/PYield/igpm/index.md>), [Selic](<https://crdcj.github.io/PYield/selic/index.md>), [Copom](<https://crdcj.github.io/PYield/copom/index.md>), [DI Over](<https://crdcj.github.io/PYield/di-over/index.md>), [PTAX](<https://crdcj.github.io/PYield/ptax/index.md>), [compromissadas](<https://crdcj.github.io/PYield/compromissada/index.md>), [CPM](<https://crdcj.github.io/PYield/cpm/index.md>) e [B3](<https://crdcj.github.io/PYield/b3/index.md>).
 
 As funções públicas retornam dados em português e seguem convenções consistentes de datas, tipos e colunas. Consulte a página de cada módulo para parâmetros, fórmulas, fontes e exemplos específicos.
 
@@ -2833,13 +3078,13 @@ As taxas históricas são retornadas como `Decimal` em `yd.ipca.taxa()` e como `
 
 ## Calendário de divulgação
 
-`yd.ipca.calendario(ano, atualizar=False)` consulta o calendário oficial do IBGE e retorna as colunas `competencia` e `data_divulgacao`, ambas `Date`. O ano seleciona a competência: dezembro pode ter divulgação no ano seguinte. A data prevista não comprova publicação do índice e datas ausentes não são estimadas. `atualizar=True` renova o cache de 60 segundos da consulta.
+`yd.ipca.calendario(ano)` consulta o calendário oficial do IBGE e retorna as colunas `competencia` e `data_divulgacao`, ambas `Date`. O ano seleciona a competência: dezembro pode ter divulgação no ano seguinte. A data prevista não comprova publicação do índice e datas ausentes não são estimadas.
 
 ```python
 calendario = yd.ipca.calendario(2026)
 ```
 
-## `calendario(ano, *, atualizar=False)`
+## `calendario(ano)`
 
 Consulta o calendário oficial de divulgação do IPCA no IBGE.
 
@@ -2848,7 +3093,6 @@ Parameters:
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
 | `ano` | `int` | Ano da competência, inclusive dezembro divulgado no ano seguinte. | *required* |
-| `atualizar` | `bool` | Ignora e renova o cache de 60 segundos da consulta completa. | `False` |
 
 Returns:
 
@@ -6238,6 +6482,100 @@ Series: 'data_vencimento' [date]
 ]
 ```
 
+# PTAX
+
+`yd.ptax` e `yd.ptax_serie` consultam a cotação de venda do dólar no Banco Central, em R\\(/US\\). Os valores são convertidos diretamente do texto da fonte para `Decimal`, com quatro casas decimais.
+
+A consulta escalar retorna `Decimal("NaN")` se não houver cotação. A série retorna um DataFrame com `data` (`pl.Date`) e `cotacao` (`pl.Decimal(18, 4)`), preservando o esquema quando vazio.
+
+```python
+import pyield as yd
+
+cotacao = yd.ptax("22-04-2025")
+historico = yd.ptax_serie("22-04-2025", "25-04-2025")
+```
+
+Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
+
+Cotação PTAX de venda para uma data específica.
+
+Retorna a PTAX de venda, taxa de câmbio oficial do dólar no Brasil, via SGS do Banco Central (série 1).
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data` | `DateLike` | Data desejada. | *required* |
+
+Returns:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `Decimal` | `Decimal` | Cotação PTAX de venda em R\\(/US\\) com quatro casas decimais, ou |
+|  | `Decimal` | `Decimal('NaN')` se não houver cotação (feriado, fim de semana ou |
+|  | `Decimal` | data futura). |
+
+Examples:
+
+```pycon
+>>> import pyield as yd
+>>> yd.ptax("22-04-2025")
+Decimal('5.7496')
+```
+
+```pycon
+>>> yd.ptax("20-04-2025")
+Decimal('NaN')
+```
+
+Cotação PTAX de venda do dólar (série SGS 1).
+
+Fonte: Banco Central do Brasil (BCB). Frequência diária.
+
+A cotação retornada é a PTAX de **venda**, a taxa de câmbio oficial do dólar no Brasil, usada como referência para liquidação de contratos, marcação a mercado de derivativos, conversão de DV01 e índices de fundos cambiais.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `inicio` | `DateLike \| None` | Data inicial. | `None` |
+| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data mais recente. | `None` |
+| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Mutuamente exclusivo com `inicio`/`fim`. | `None` |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `DataFrame` | DataFrame com colunas data e cotacao, ou DataFrame vazio |
+| `DataFrame` | se não houver dados. |
+
+**Output Columns**
+
+- data (Date): data da cotação.
+- cotacao (pl.Decimal(18, 4)): cotação PTAX de venda em R\\(/US\\).
+
+**Notes**
+
+Disponível desde 28.11.1984. Refere-se às taxas administradas até março de 1990 e às taxas livres a partir de então (Resolução 1690, de 18.3.1990). A partir de março de 1992, essa taxa recebeu a denominação PTAX. Desde 1 de julho de 2011 (Circular 3506), a PTAX corresponde à média aritmética das taxas obtidas em quatro consultas diárias aos dealers de câmbio. Os valores são convertidos diretamente do texto para Decimal, sem passagem por float, com quatro casas decimais.
+
+Examples:
+
+```pycon
+>>> import pyield as yd
+>>> yd.ptax_serie("20-04-2025", "25-04-2025")
+shape: (4, 2)
+┌────────────┬───────────────┐
+│ data       ┆ cotacao       │
+│ ---        ┆ ---           │
+│ date       ┆ decimal[18,4] │
+╞════════════╪═══════════════╡
+│ 2025-04-22 ┆ 5.7496        │
+│ 2025-04-23 ┆ 5.6880        │
+│ 2025-04-24 ┆ 5.6738        │
+│ 2025-04-25 ┆ 5.6846        │
+└────────────┴───────────────┘
+```
+
 # Quickstart
 
 Este guia apresenta o fluxo básico para consultar dados, trabalhar com `polars.DataFrame` e calcular indicadores de renda fixa com o PYield.
@@ -6262,7 +6600,9 @@ Depois, importe a biblioteca com o alias recomendado:
 import pyield as yd
 ```
 
-As consultas de mercado buscam dados nas fontes correspondentes. Portanto, uma conexão com a internet pode ser necessária na primeira consulta ou quando os dados não estiverem disponíveis no cache local.
+As consultas de mercado precisam de conexão com a internet e buscam novamente os dados nas fontes a cada chamada. A exceção são os históricos em Parquet de TPF e futuros, que mantêm cache em memória por processo, renovado diariamente.
+
+Falhas transitórias de comunicação permitem uma única retentativa por download, com espera entre 0,5 e 1 segundo. Se a falha persistir, a exceção é propagada. As consultas HTTP usam 5 segundos para conexão e 10, 30 ou 60 segundos para leitura, conforme o endpoint. Esses limites valem por tentativa; não há garantia de um prazo total rígido. Consulte a [política de retentativas](<https://crdcj.github.io/PYield/release-0.62.0/#falhas-de-rede-e-retentativas>) para os erros elegíveis e o tratamento de `Retry-After`.
 
 ## Dias úteis
 
@@ -6396,7 +6736,7 @@ yd.ptax("31-05-2024")
 yd.ipca.taxa_serie("01-01-2024", "01-03-2024")
 ```
 
-Os indicadores de inflação retornam `Decimal` nas consultas escalares e colunas Polars `Decimal` nas séries. Para cálculos exatos, use constantes criadas a partir de texto:
+Os indicadores de inflação, Selic, DI Over e PTAX retornam `Decimal` nas consultas escalares e colunas Polars `Decimal` nas séries. Para cálculos exatos, use constantes criadas a partir de texto:
 
 ```python
 from decimal import Decimal
@@ -6408,18 +6748,29 @@ if not taxa.is_nan():
 
 Os [VNAs](<https://crdcj.github.io/PYield/vna/index.md>) também usam `Decimal`. As taxas históricas e projetadas do IPCA e IGP-M são expressas em unidade decimal. As entradas de inflação em `vna.contexto` e `vna.projetado` aceitam números decimais (`0.0045`) ou percentuais explícitos (`"0.45%"` ou `"0,45%"`), convertidos para `Decimal`. Consulte as [notas da 0.60.0](<https://crdcj.github.io/PYield/release-0.60.0/index.md>) para os tipos e a migração da API.
 
+Para análises que precisam de ponto flutuante, converta explicitamente:
+
+```python
+taxa_float = float(yd.selic.over("31-05-2024"))
+serie_float = yd.ptax_serie(ultimos=5).with_columns(
+    cotacao=pl.col("cotacao").cast(pl.Float64)
+)
+```
+
+A conversão pode introduzir aproximação binária. Veja as [notas da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) para a migração dos indicadores SGS.
+
 ## Datas e ausência de dados
 
 Datas escalares aceitam `DD-MM-YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`, `datetime.date` e `datetime.datetime`. Datas escalares malformadas levantam `ValueError`; em operações vetorizadas, elementos ausentes ou malformados tornam-se `null` para preservar o pipeline Polars.
 
-Consultas válidas sem dados — por exemplo, para uma data futura, feriado ou fim de semana — retornam um DataFrame vazio ou `nan`, conforme o contrato da função:
+Consultas válidas sem dados — por exemplo, para uma data futura, feriado ou fim de semana — retornam um DataFrame vazio, `nan` ou `Decimal("NaN")`, conforme o contrato da função:
 
 ```python
 yd.futuro.historico("01-01-2030", "DI1").is_empty()
 # True
 
 yd.ptax("25-12-2025")
-# nan
+# Decimal('NaN')
 ```
 
 Para detalhes de parâmetros, colunas e convenções financeiras, continue pelo [mapa da API](<https://crdcj.github.io/PYield/api-map/index.md>) ou pela página do módulo desejado.
@@ -6766,6 +7117,91 @@ Zero representaria uma cotação válida sem valor econômico. `NaN` representa 
 
 Esta referência resolve a titularidade e a inclusão dos fluxos. Ela não basta, isoladamente, para definir se o prazo de desconto deve terminar na data contratual ou na data efetiva de um pagamento postergado. Qualquer alteração desse prazo deve ser confirmada na metodologia específica do título e protegida por teste de referência próprio.
 
+# Novidades na versão 0.58.0
+
+Nota reconstituída a partir do histórico Git, usando o [commit de incremento da versão](<https://github.com/crdcj/PYield/commit/dbcec48a>) e o [diff desde o incremento anterior](<https://github.com/crdcj/PYield/compare/d9b5bcea...dbcec48a>). O recorte é definido pelos commits de versão, não por tags de publicação.
+
+As orientações abaixo descrevem a API histórica. Para chegar à API atual, consulte também as notas das versões seguintes no [histórico de versões](<https://crdcj.github.io/PYield/releases/>).
+
+## Cotações em base 100 e taxas percentuais
+
+As funções escalares de cálculo dos títulos também aceitam taxas percentuais explícitas, como `"5.75%"` ou `"5,75%"`, equivalentes a `0.0575`. Números continuam em formato decimal; strings sem `%` são rejeitadas.
+
+As funções `cotacao` de `yd.lft`, `yd.ntnb`, `yd.ntnc`, `yd.ntnbp` e `yd.ntnb1` passam a retornar base 100 com quatro casas decimais: `0.993651` passa a ser `99.3651`. As funções `pu` desses títulos recebem a cotação nessa mesma base e aplicam `VNA * cotacao / 100`.
+
+A coluna `valor_pagamento` de `fluxos_caixa` de NTN-B, NTN-C e NTN-B1 e o retorno de `ntnb1.cotacao_curva_zero` também passam para base 100. Esta última mantém a soma sem truncamento para calibrar a TIR equivalente.
+
+Para migrar, multiplique cotações e fluxos antigos armazenados por 100, remova multiplicações por 100 usadas apenas para exibir cotações e ajuste cálculos manuais de PU para dividir por 100. A composição `pu(vna, cotacao(...))` preserva a unidade e as regras de precisão do preço. Taxas continuam em formato decimal, e VNA e PU continuam em reais.
+
+## Migração acumulada desde a 0.56.0
+
+O README dessa versão também preservava o quadro abaixo. Ele reúne alterações do intervalo desde a `0.56.0`; não significa que todas foram introduzidas na `0.58.0`.
+
+Este resumo parte da API da `0.56.0`. Mudanças que já faziam parte dessa versão ou de versões anteriores estão no histórico das [releases do GitHub](<https://github.com/crdcj/PYield/releases>).
+
+| Antes | Agora |
+| --- | --- |
+| `ntnbp.taxas_zero(...)` | `ntnb.taxas_zero(...)`, sem `incluir_vertices` |
+| `ntnb.taxas_zero(..., incluir_cupons=...)` | `ntnb.taxas_zero(...)`, sem `incluir_cupons` |
+| `ntnb.taxas_zero(..., percentual=...)` | `ntnb.taxas_zero(...)`, com taxas em formato decimal |
+| `yd.tpf.ntnb` | `yd.ntnb` ou `from pyield import ntnb` |
+| `yd.tpf.rmd(aba)` | `yd.rmd(aba)` ou `from pyield import rmd` |
+| `pyield.tpf.vna.calcular_vna(...)` | `yd.vna.calcular_vna(...)` |
+| `yd.ntnb.vna(data)` | `yd.vna.valor("NTN-B", data)` |
+| `yd.ntnb.vnas()` | `yd.vna.historico("NTN-B")` |
+| `vna_projetado(...)` nos módulos de títulos | `yd.vna.projetado(titulo, data, vna_base, inflacao)` |
+| `vigencia(data)` nos módulos de títulos | `yd.vna.vigencia(titulo, data)` |
+
+O namespace público segue a autonomia semântica do conceito que o usuário precisa conhecer, e não apenas a fonte dos dados ou sua relação temática com outro domínio. Por isso, conceitos como `yd.ltn`, `yd.ntnb`, `yd.vna` e `yd.rmd` ficam na raiz, enquanto as implementações podem continuar agrupadas internamente por domínio para manter o código coeso. Consulte as [releases](<https://github.com/crdcj/PYield/releases>) para o histórico completo.
+
+# Novidades na versão 0.58.1
+
+Nota reconstituída a partir do histórico Git, usando o [commit de incremento da versão](<https://github.com/crdcj/PYield/commit/d6d61658>) e o [diff desde o incremento anterior](<https://github.com/crdcj/PYield/compare/dbcec48a...d6d61658>). O recorte é definido pelos commits de versão, não por tags de publicação.
+
+## DV01 de LTN e NTN-F
+
+`yd.ltn.dv01`, `yd.ntnf.dv01` e suas versões `dv01_expr` deixam de receber o argumento `pu`. O cálculo passa a usar a diferença entre dois preços teóricos: o preço na taxa informada e o preço com aumento de um ponto-base.
+
+Para migrar, remova o argumento de PU dessas chamadas. Esse ajuste também afeta expressões Polars que encaminhavam uma coluna de PU para `dv01_expr`.
+
+## Projeção de VNA da LFT
+
+`yd.vna.projetado` passa a aceitar o argumento exclusivo por nome `selic` para LFT. A taxa deve ser informada nesse argumento; usar `inflacao` para LFT gera `ValueError`. A taxa não é buscada automaticamente. NTN-B e NTN-C continuam usando `inflacao`, com o contrato de unidade vigente naquela versão.
+
+A documentação distingue a taxa diária de Selic da taxa anual equivalente exigida pela projeção. Para migrar uma projeção de LFT, passe a taxa anual em `selic=`, em formato decimal ou percentual explícito.
+
+## Precificação por curva zero
+
+NTN-C ganha `yd.ntnc.cotacao_curva_zero` e `yd.ntnc.taxa_curva_zero`, com desconto dos fluxos pela curva zero. `yd.ntnbp.taxa` deixa de arredondar a taxa interpolada em quatro casas: passa a retornar o valor em formato decimal sem arredondamento. Arredondamento comercial e spreads ficam a cargo do consumidor.
+
+Fontes adicionais: commits de [DV01](<https://github.com/crdcj/PYield/commit/7c2daa5f>) e [curvas e projeção de VNA](<https://github.com/crdcj/PYield/commit/aa9a9759>).
+
+# Novidades na versão 0.58.2
+
+Nota reconstituída a partir do histórico Git, usando o [commit de incremento da versão](<https://github.com/crdcj/PYield/commit/7a535165>) e o [diff desde o incremento anterior](<https://github.com/crdcj/PYield/compare/d6d61658...7a535165>). O recorte é definido pelos commits de versão, não por tags de publicação.
+
+## Projeção de VNA da LFT
+
+Ajustes de documentação sobre o intervalo de acruamento e inclusão de aviso de log no cálculo interno quando o avanço difere de um dia útil. O helper interno passa a emitir o aviso em vez de lançar erro nessa condição; isso não deve ser interpretado como remoção de todas as validações do fluxo público.
+
+Não houve mudança de assinatura pública nesse recorte. O incremento acompanha os commits de [logging](<https://github.com/crdcj/PYield/commit/e2af2e96>) e [documentação](<https://github.com/crdcj/PYield/commit/735d149f>).
+
+# Novidades na versão 0.59.0
+
+Nota reconstituída a partir do histórico Git, usando o [commit de incremento da versão](<https://github.com/crdcj/PYield/commit/07a2f4ed>) e o [diff desde o incremento anterior](<https://github.com/crdcj/PYield/compare/7a535165...07a2f4ed>). O recorte é definido pelos commits de versão, não por tags de publicação.
+
+## Taxas e DV01 analíticos
+
+As funções `taxa` de `yd.ltn`, `yd.ntnf`, `yd.ntnb`, `yd.ntnc` e `yd.lft` passam a retornar `float` sem truncamento, em vez de `Decimal` truncado em oito casas. Entradas inválidas retornam `float("nan")`; use `math.isnan` no lugar de `.is_nan()`.
+
+`taxa` e `dv01` de todos os títulos descontam os fluxos com `dias úteis / 252`, sem os truncamentos intermediários da STN. Os valores mudam levemente em relação à versão anterior, e `taxa(pu(...))` recupera a taxa original apenas aproximadamente. `pu` e `cotacao` seguem a metodologia oficial e não mudaram.
+
+## Migração
+
+Revise verificações de valores ausentes e operações que pressupõem `Decimal` no retorno de `taxa`. Use `math.isnan(resultado)` e converta explicitamente o valor quando sua aplicação exigir `Decimal`. Uma conversão posterior não recupera a precisão decimal anterior.
+
+Comparações que dependiam do truncamento dos resultados de taxa e DV01 devem ser revistas. Os tipos de retorno de `pu` e `cotacao` foram preservados.
+
 # Novidades na versão 0.60.0
 
 Resumo das principais mudanças em relação à `0.59.0`.
@@ -6819,9 +7255,202 @@ Nas séries, `fim=None` usa a data atual no Brasil. Informe `inicio` ou `ultimos
 
 Consulte as [releases do GitHub](<https://github.com/crdcj/PYield/releases>) para o histórico completo e as notas de migração de versões anteriores.
 
+# Novidades na versão 0.60.1
+
+Nota reconstituída a partir do histórico Git, usando o [commit de incremento da versão](<https://github.com/crdcj/PYield/commit/26e898a5>) e o [diff desde o último snapshot da 0.60.0](<https://github.com/crdcj/PYield/compare/90734c00...26e898a5>). O recorte é definido pelos commits de versão, não por tags de publicação.
+
+## Consultas de um dia no SGS
+
+A consulta ao SGS passa a incluir o dia anterior quando um bloco teria início e fim iguais, evitando o HTTP 400 dessa requisição. O processamento descarta o dia extra e mantém somente o intervalo solicitado, removendo duplicatas e ordenando por data.
+
+A correção alcança as consultas baseadas no SGS, incluindo Selic, PTAX e taxas do IGP-M. Não exige mudança nas chamadas da aplicação e preserva os contratos de retorno.
+
+## Documentação e ferramentas
+
+O Zensical deixa de ter versão fixa nas dependências de desenvolvimento. O guia de desenvolvimento passa a descrever sua atualização e a validação estrita da documentação. Também foram adicionadas referências de metodologia à navegação.
+
+# Novidades na versão 0.61.0
+
+Esta seção cobre apenas as mudanças da `0.60.0` para a `0.61.0`, que não removem nem alteram APIs existentes.
+
+- Calendário de pregões da B3 em `yd.b3`: `eh_pregao(data)`, `pregao_anterior(data)`, `proximo_pregao(data)` e `ultimo_pregao(data=None)`. Há pregão em todo dia útil brasileiro, exceto em 24/12 e 31/12. Fechamentos excepcionais não recorrentes não são modelados.
+- `yd.futuro.dv01_expr(coluna_dias_uteis, coluna_taxa, coluna_preco)` passa a ser público e retorna uma `pl.Expr` com o DV01 dos contratos futuros.
+
+# Novidades na versão 0.62.0
+
+Esta versão remove o cache automático das consultas às fontes externas e o parâmetro `atualizar`. Os downloads passam a usar uma política compartilhada de retentativa leve, com no máximo duas tentativas para falhas transitórias. O cache diário dos históricos em Parquet de TPF e futuros permanece. A mudança é incompatível com chamadas que ainda passam `atualizar`, mesmo quando o valor é `False`.
+
+O Polars 2.0 passa a ser a versão mínima exigida. Ambientes com Polars 1.x precisam atualizar essa dependência para instalar esta versão do PYield.
+
+Selic Over, Selic Meta, DI Over e PTAX passam a retornar `Decimal`, preservando os valores publicados sem passagem por `float`. As taxas Over também ganham a opção diária com `anualizada=False`, e DI Over passa do FTP da CETIP para a API HTTPS do Banco Central. Os novos tipos de retorno exigem atenção na migração, conforme as seções abaixo.
+
+## Por que a política mudou
+
+O cache das consultas externas foi criado para reduzir requisições repetidas e proteger as APIs das fontes. Entretanto, ele podia devolver uma resposta anterior quando o consumidor precisava consultar os dados disponíveis naquele momento. No VNA, isso levou à criação de `atualizar` para ignorar o cache. O consumidor precisava conhecer os prazos de expiração e quais downloads esse parâmetro renovava; os índices de inflação usados no mesmo fluxo tinham caches separados.
+
+A política de reutilização de respostas passa a ser responsabilidade de quem consome a biblioteca. A PYield busca e processa os dados; a aplicação decide se quer armazená-los, por quanto tempo e quando consultá-los novamente. Isso elimina os prazos implícitos e a necessidade de um parâmetro para ignorá-los.
+
+## Comportamento das consultas
+
+Os downloads de BCB, ANBIMA, B3, IBGE, Tesouro Nacional e FGV deixam de manter cache entre chamadas. Isso abrange os indicadores, calendários, VNA, boletins, dados intradia, leilões, estoque, benchmarks, dealers, mercado secundário e RMD. Funções que dependem dessas consultas também passam a receber os dados dos novos downloads. Os timeouts permanecem; o retry segue a política leve abaixo.
+
+Chamadas repetidas podem fazer mais requisições e levar mais tempo. Se sua aplicação consulta o mesmo dado em um laço, obtenha-o uma vez e reutilize o resultado, ou aplique sua própria política de cache considerando os limites da fonte.
+
+Um novo download pode retornar os mesmos dados. A atualização depende da publicação pela fonte, incluindo eventuais atrasos. Datas de referência e horários informados nos dados mantêm seu significado; não representam necessariamente o momento da consulta.
+
+## Indicadores SGS com Decimal
+
+As consultas `yd.selic.over`, `yd.selic.meta`, `yd.di_over` e `yd.ptax` passam a retornar `decimal.Decimal`. As séries `yd.selic.over_serie`, `yd.selic.meta_serie` e `yd.ptax_serie` passam a retornar colunas Polars `Decimal`, inclusive quando vazias:
+
+| Dado | Tipo da coluna | Unidade |
+| --- | --- | --- |
+| Selic Over, Selic Meta e DI Over | `Decimal(18, 10)` | Taxa em unidade decimal |
+| PTAX | `Decimal(18, 4)` | R\\(/US\\) |
+
+Os valores são lidos diretamente do texto do SGS, sem passagem por `float`. As taxas percentuais são divididas por 100 em aritmética decimal. A escala 10 preserva até oito casas decimais do percentual publicado; zeros adicionais não representam precisão adicional da fonte. A PTAX preserva quatro casas.
+
+A mudança é incompatível com código que depende de `float` ou `Float64`. Escalares sem dados passam de `float("nan")` para `Decimal("NaN")`; use `valor.is_nan()` para identificá-los. Séries sem dados continuam vazias, com seus novos esquemas decimais. Para uma conversão explícita:
+
+```python
+taxa = yd.selic.over("28-02-2025")
+taxa_float = float(taxa)
+serie_float = yd.selic.over_serie(ultimos=5).with_columns(
+    taxa=pl.col("taxa").cast(pl.Float64)
+)
+```
+
+A conversão para ponto flutuante pode introduzir aproximação binária. Em cálculos com `Decimal`, crie constantes a partir de texto, por exemplo, `Decimal("0.01")`; precisão e arredondamento dos cálculos continuam dependendo da metodologia. Integrações com NumPy e serializadores JSON podem exigir conversão explícita. Os cálculos e o esquema de leilões de TPF permanecem em `Float64`, com a PTAX convertida explicitamente ao entrar nesse fluxo.
+
+## Taxas Over anuais e diárias
+
+`yd.selic.over`, `yd.selic.over_serie` e `yd.di_over` aceitam o parâmetro opcional `anualizada`, exclusivo por palavra-chave. O padrão `True` preserva a unidade atual: taxas ao ano, em base 252 dias úteis, agora do tipo `Decimal`. Com `anualizada=False`, retornam taxas em decimal ao dia útil:
+
+```python
+taxa_anual = yd.selic.over("28-02-2025")
+taxa_diaria = yd.selic.over("28-02-2025", anualizada=False)
+serie_diaria = yd.selic.over_serie("27-02-2025", "28-02-2025", anualizada=False)
+di_diaria = yd.di_over("28-02-2025", anualizada=False)
+```
+
+A modalidade seleciona a série publicada pelo Banco Central: Selic Over usa SGS 1178 (anualizada) ou 11 (diária); DI Over usa SGS 4389 (anualizada) ou 12 (diária). A biblioteca converte o percentual da fonte para decimal, sem recalcular uma modalidade a partir da outra. A frequência das observações é diária em ambos os casos. Selic Meta mantém seu contrato anual.
+
+## Falhas de rede e retentativas
+
+A PYield faz no máximo duas tentativas por download. Timeout, falha de conexão, transferência interrompida e HTTP 502, 503 ou 504 permitem uma única repetição, após uma espera aleatória entre 0,5 e 1 segundo. Se a segunda tentativa falhar, a exceção é propagada. A retentativa não mantém cache entre chamadas.
+
+A regra é compartilhada pelos downloads HTTP de BCB, ANBIMA, B3, IBGE, Tesouro Nacional, FGV e históricos em Parquet do projeto. Os POSTs de consulta do IMA-Q e de exportação do CSV de derivativos da B3 também usam a regra por serem operações de leitura seguras de repetir. Não há habilitação automática de retry para qualquer POST.
+
+A consulta `yd.di_over(data)` passa do FTP da CETIP para a API HTTPS do Banco Central, série SGS 4389 por padrão ou SGS 12 com `anualizada=False`. O padrão continua sendo a taxa anualizada em base 252, agora do tipo `Decimal` (por exemplo, `Decimal("0.1315000000")` representa 13,15% a.a.). O histórico passa a alcançar 06/03/1986, em vez de 20/08/2012. Datas sem dados retornam `Decimal("NaN")`; HTTP 404 no SGS representa ausência de dados. Falhas de transporte passam a propagar exceções de `requests`, como nas demais consultas SGS, em lugar de `ConnectionError` do adaptador FTP.
+
+Erros de entrada, parsing, validação de arquivos e demais erros HTTP, incluindo 429, não são repetidos. Nos status elegíveis, `Retry-After` é respeitado quando pede até um segundo, tanto em segundos inteiros quanto em data HTTP. Um valor inválido ou que exige espera maior impede a retentativa; a biblioteca propaga o erro sem antecipar o prazo pedido pela fonte.
+
+O retry envolve apenas o transporte. Em consultas paginadas, repete somente a página que falhou, preservando as anteriores. Downloads de anexos e blocos de séries recebem seu próprio limite, sem repetir todo o fluxo de consulta ou o processamento dos dados.
+
+Antes, o retry padrão fazia até três tentativas com esperas crescentes. A nova regra procura absorver um soluço de comunicação com uma única oportunidade adicional. Recuperar um processo noturno por minutos ou horas continua sendo responsabilidade da aplicação. Esta separação também evita a multiplicação de tentativas em várias camadas, discutida na [Amazon Builders' Library](<https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/>).
+
+Consultas longas de Selic Meta passam a buscar os blocos sequencialmente, como as demais séries SGS. Esgotada a retentativa de um bloco, os seguintes não são enviados. Consultas bem-sucedidas com vários blocos podem levar mais tempo que antes, pois deixam de usar downloads paralelos. Paginação, anexos e consultas a fontes alternativas previstas no fluxo continuam podendo exigir downloads distintos.
+
+Nas demais consultas, os tipos das exceções existentes são preservados. Por exemplo, o consumidor pode tratar uma falha do SGS sem reimplementar a consulta:
+
+```python
+import requests
+import pyield as yd
+
+try:
+    dados = yd.selic.meta_serie(ultimos=1)
+except requests.RequestException as erro:
+    registrar_falha(erro)  # tratamento definido pela aplicação
+else:
+    processar(dados)
+```
+
+Quem precisar de recuperação prolongada deve limitar o número de execuções e o tempo total do processo, considerar `Retry-After` e evitar repetir erros de entrada ou certificado. Quando a fonte já estiver reconhecidamente indisponível, a aplicação pode suspender novas consultas até a próxima verificação.
+
+As consultas HTTP separam os timeouts: conexão de 5 segundos e leitura com o limite de cada endpoint, de 10, 30 ou 60 segundos. A DI over passa a usar conexão de 5 segundos e leitura de 30 segundos, como as demais consultas SGS.
+
+Espera curta entre tentativas não significa prazo total curto. Os timeouts se aplicam a cada tentativa. Um timeout de leitura de 60 segundos pode ser consumido novamente na segunda tentativa. No Requests, os timeouts limitam a conexão e a inatividade de leitura, e não o tempo total da chamada; DNS, múltiplos endereços, redirects e transferências que continuam recebendo bytes podem ampliar a duração. Não há garantia de um prazo total rígido. Veja a [documentação de timeouts do Requests](<https://requests.readthedocs.io/en/latest/user/advanced/#timeouts>).
+
+## Migração: remova `atualizar`
+
+O parâmetro foi removido das seguintes funções:
+
+| Namespace | Funções |
+| --- | --- |
+| `yd.vna` | `valor`, `historico`, `ultimo`, `contexto` |
+| `yd.ipca` | `calendario` |
+| `yd.igpm` | `calendario` |
+
+Antes:
+
+```python
+valor = yd.vna.valor("LFT", "31-05-2024", atualizar=True)
+historico = yd.vna.historico("NTN-C", vencimento="01-01-2031", atualizar=True)
+ultimo = yd.vna.ultimo("NTN-B", atualizar=False)
+contexto = yd.vna.contexto("NTN-B", "22-10-2026", atualizar=True)
+calendario_ipca = yd.ipca.calendario(2026, atualizar=True)
+calendario_igpm = yd.igpm.calendario(2026, atualizar=False)
+```
+
+Agora:
+
+```python
+valor = yd.vna.valor("LFT", "31-05-2024")
+historico = yd.vna.historico("NTN-C", vencimento="01-01-2031")
+ultimo = yd.vna.ultimo("NTN-B")
+contexto = yd.vna.contexto("NTN-B", "22-10-2026")
+calendario_ipca = yd.ipca.calendario(2026)
+calendario_igpm = yd.igpm.calendario(2026)
+```
+
+Não há parâmetro substituto. Passar `atualizar` gera `TypeError`.
+
+## Históricos em Parquet
+
+O mecanismo de carregamento dos datasets `anbima_tpf.parquet` e `b3_futures.parquet` continua com cache em memória por processo. A chave muda quando vira a data em `America/Sao_Paulo`; a primeira consulta do novo dia carrega o dataset novamente. Essa renovação é por dia de calendário, não por 24 horas contadas desde o download.
+
+Esses datasets são publicados e mantidos pelo projeto, com um ciclo de distribuição próprio. O mecanismo permanece em `yd.tpf.taxas_historicas`, nas consultas de taxas que usam esse histórico, em `yd.futuro.historico` e nas consultas de DI1 que usam o histórico de futuros. `yd.tpf.taxas` continua buscando diretamente na ANBIMA quando a data não está disponível no dataset; essa consulta direta não mantém cache.
+
+As mudanças de cache e retry não alteram fórmulas ou unidades. Os indicadores SGS passam a usar os tipos decimais descritos acima, e as taxas Over ganham a opção de retorno ao dia útil. As notas da [0.60.0](<https://crdcj.github.io/PYield/release-0.60.0/>) continuam disponíveis para migrações anteriores.
+
+# Notas de versão
+
+Cada versão tem uma página com as mudanças, o racional das decisões e as orientações de migração. Consulte também as [releases do GitHub](<https://github.com/crdcj/PYield/releases>) para as publicações.
+
+| Versão | Principais mudanças |
+| --- | --- |
+| [0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) | Consultas externas sem cache, remoção de `atualizar`, retry leve, indicadores SGS com `Decimal`, taxas Over diárias e Polars 2.0 como mínimo. |
+| [0.61.0](<https://crdcj.github.io/PYield/release-0.61.0/index.md>) | Calendário de pregões da B3 e exposição de `futuro.dv01_expr`. |
+| [0.60.1](<https://crdcj.github.io/PYield/release-0.60.1/index.md>) | Correção de consultas de um dia no SGS. |
+| [0.60.0](<https://crdcj.github.io/PYield/release-0.60.0/index.md>) | Contratos com `Decimal` e migração da API. |
+| [0.59.0](<https://crdcj.github.io/PYield/release-0.59.0/index.md>) | Taxas e DV01 analíticos; taxas retornam `float`. |
+| [0.58.2](<https://crdcj.github.io/PYield/release-0.58.2/index.md>) | Documentação e avisos no cálculo interno de projeção da LFT. |
+| [0.58.1](<https://crdcj.github.io/PYield/release-0.58.1/index.md>) | DV01 sem PU de referência, projeção da LFT e curvas zero de NTN-C. |
+| [0.58.0](<https://crdcj.github.io/PYield/release-0.58.0/index.md>) | Cotações em base 100 e taxas percentuais explícitas. |
+
+## Sobre a recuperação do histórico
+
+As notas de `0.58.0`, `0.58.1`, `0.58.2`, `0.59.0` e `0.60.1` foram reconstituídas dos READMEs e diffs locais, com links para os commits usados. O repositório local não contém tags dessas versões: os limites foram definidos pelos incrementos de versão no `pyproject.toml`. Não foram inferidas datas de publicação nem reconstruído um changelog completo.
+
+O quadro de migração acumulada desde a `0.56.0`, que constava no README da `0.58.0`, foi preservado naquela nota com seu escopo original. As orientações históricas devem ser lidas em sequência com as notas seguintes para migrar até a API atual.
+
 # Selic
 
 Este namespace reúne os indicadores diretamente relacionados à taxa Selic. Os contratos CPM e suas probabilidades implícitas estão documentados separadamente em [CPM](<https://crdcj.github.io/PYield/cpm/index.md>).
+
+`over` e `over_serie` retornam a taxa anualizada em base 252 por padrão. Com `anualizada=False`, consultam a taxa ao dia útil publicada pelo Banco Central. A frequência das observações é diária nas duas modalidades; `meta` e `meta_serie` retornam a meta anual definida pelo Copom.
+
+As consultas escalares retornam `Decimal`; as séries têm colunas `data` (`pl.Date`) e `taxa` (`pl.Decimal(18, 10)`). Valores percentuais são convertidos diretamente do texto para unidade decimal, sem passagem por `float`. Escalares sem dados retornam `Decimal("NaN")`; séries sem dados retornam DataFrame vazio com o mesmo esquema.
+
+```python
+import pyield as yd
+
+taxa_anual = yd.selic.over("28-02-2025")
+taxa_diaria = yd.selic.over("28-02-2025", anualizada=False)
+serie_diaria = yd.selic.over_serie(ultimos=5, anualizada=False)
+meta = yd.selic.meta("28-02-2025")
+```
+
+As docstrings abaixo identificam as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
 
 selic — Dados e análises relacionados à taxa Selic e política monetária.
 
@@ -6829,21 +7458,25 @@ selic — Dados e análises relacionados à taxa Selic e política monetária.
 
 Este namespace reúne os indicadores diretamente relacionados à taxa Selic. O produto CPM e suas análises ficam disponíveis em `pyield.cpm`.
 
-## `over(data)`
+## `over(data, *, anualizada=True)`
 
 Taxa SELIC Over para uma data específica.
+
+Fonte: SGS do Banco Central, série 1178 para a taxa anualizada em base 252 ou série 11 para a taxa diária publicada pela fonte.
 
 Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
 | `data` | `DateLike` | Data da consulta. | *required* |
+| `anualizada` | `bool` | Se `True`, retorna a taxa ao ano, em base 252 dias úteis. Se `False`, retorna a taxa ao dia útil publicada pela fonte. | `True` |
 
 Returns:
 
-| Type | Description |
-| --- | --- |
-| `float` | Taxa SELIC Over em decimal ou `nan` se não disponível. |
+| Name | Type | Description |
+| --- | --- | --- |
+| `Decimal` | `Decimal` | Taxa SELIC Over com dez casas decimais, ao ano ou ao dia útil |
+|  | `Decimal` | conforme `anualizada`, ou `Decimal('NaN')` se não disponível. |
 
 Examples:
 
@@ -6854,11 +7487,11 @@ Examples:
 '10.4%'
 ```
 
-## `over_serie(inicio=None, fim=None, *, ultimos=None)`
+## `over_serie(inicio=None, fim=None, *, ultimos=None, anualizada=True)`
 
-Taxa SELIC Over (série SGS 1178).
+Taxa SELIC Over anualizada ou diária via SGS do Banco Central.
 
-Taxa de juros média diária praticada no mercado interbancário, com títulos públicos como garantia.
+Taxa de juros média diária praticada no mercado interbancário, com títulos públicos como garantia. Consulta a série SGS 1178 para a taxa anualizada em base 252 ou a série SGS 11 para a taxa diária.
 
 Parameters:
 
@@ -6867,12 +7500,21 @@ Parameters:
 | `inicio` | `DateLike \| None` | Data inicial. | `None` |
 | `fim` | `DateLike \| None` | Data final. Se `None`, usa a data mais recente. | `None` |
 | `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Mutuamente exclusivo com `inicio`/`fim`. | `None` |
+| `anualizada` | `bool` | Se `True`, retorna a taxa ao ano, em base 252 dias úteis. Se `False`, retorna a taxa ao dia útil publicada pela fonte. | `True` |
 
 Returns:
 
 | Type | Description |
 | --- | --- |
 | `DataFrame` | DataFrame com colunas data e taxa (decimal), ou DataFrame vazio. |
+
+**Output Columns**
+
+data (pl.Date): Data de referência da observação. taxa (pl.Decimal(18, 10)): Taxa em decimal, ao ano se `anualizada=True` ou ao dia útil se `anualizada=False`.
+
+**Notes**
+
+A frequência das observações é diária nas duas modalidades. Os valores percentuais da série escolhida são convertidos diretamente do texto para Decimal e divididos por 100, sem passagem por float e sem recalcular uma modalidade a partir da outra. A escala de dez casas preserva até oito casas decimais do percentual publicado.
 
 Examples:
 
@@ -6881,21 +7523,23 @@ Examples:
 >>> # Copom de 29-01-2025: over subiu de 12,15% para 13,15% a.a.
 >>> yd.selic.over_serie("28-01-2025", "31-01-2025")
 shape: (4, 2)
-┌────────────┬────────┐
-│ data       ┆ taxa   │
-│ ---        ┆ ---    │
-│ date       ┆ f64    │
-╞════════════╪════════╡
-│ 2025-01-28 ┆ 0.1215 │
-│ 2025-01-29 ┆ 0.1215 │
-│ 2025-01-30 ┆ 0.1315 │
-│ 2025-01-31 ┆ 0.1315 │
-└────────────┴────────┘
+┌────────────┬────────────────┐
+│ data       ┆ taxa           │
+│ ---        ┆ ---            │
+│ date       ┆ decimal[18,10] │
+╞════════════╪════════════════╡
+│ 2025-01-28 ┆ 0.1215000000   │
+│ 2025-01-29 ┆ 0.1215000000   │
+│ 2025-01-30 ┆ 0.1315000000   │
+│ 2025-01-31 ┆ 0.1315000000   │
+└────────────┴────────────────┘
 ```
 
 ## `meta(data)`
 
 Taxa SELIC Meta para uma data específica.
+
+Fonte: SGS do Banco Central, série 432.
 
 Parameters:
 
@@ -6905,10 +7549,11 @@ Parameters:
 
 Returns:
 
-| Type | Description |
-| --- | --- |
-| `float` | Taxa SELIC Meta em decimal ou `nan` se não disponível, inclusive para |
-| `float` | datas anteriores a 05/03/1999. |
+| Name | Type | Description |
+| --- | --- | --- |
+| `Decimal` | `Decimal` | Taxa SELIC Meta em formato decimal com dez casas decimais ou |
+|  | `Decimal` | `Decimal('NaN')` se não disponível, inclusive para datas anteriores |
+|  | `Decimal` | a 05/03/1999. |
 
 Examples:
 
@@ -6942,11 +7587,11 @@ Returns:
 **Output Columns**
 
 - data (Date): data de referência da taxa.
-- taxa (Float64): taxa Selic Meta anual em formato decimal.
+- taxa (pl.Decimal(18, 10)): taxa Selic Meta anual em formato decimal.
 
 **Notes**
 
-Consultas iniciadas antes de 05/03/1999 consideram automaticamente essa data como início da série. Intervalos inteiramente anteriores retornam um DataFrame vazio.
+Consultas iniciadas antes de 05/03/1999 consideram automaticamente essa data como início da série. Intervalos inteiramente anteriores retornam um DataFrame vazio. Os percentuais são convertidos diretamente do texto para Decimal e divididos por 100, sem passagem por float, com dez casas decimais.
 
 Examples:
 
@@ -6955,16 +7600,16 @@ Examples:
 >>> # Copom de 29-01-2025: meta subiu de 12,25% para 13,25% a.a.
 >>> yd.selic.meta_serie("28-01-2025", "31-01-2025")
 shape: (4, 2)
-┌────────────┬────────┐
-│ data       ┆ taxa   │
-│ ---        ┆ ---    │
-│ date       ┆ f64    │
-╞════════════╪════════╡
-│ 2025-01-28 ┆ 0.1225 │
-│ 2025-01-29 ┆ 0.1225 │
-│ 2025-01-30 ┆ 0.1325 │
-│ 2025-01-31 ┆ 0.1325 │
-└────────────┴────────┘
+┌────────────┬────────────────┐
+│ data       ┆ taxa           │
+│ ---        ┆ ---            │
+│ date       ┆ decimal[18,10] │
+╞════════════╪════════════════╡
+│ 2025-01-28 ┆ 0.1225000000   │
+│ 2025-01-29 ┆ 0.1225000000   │
+│ 2025-01-30 ┆ 0.1325000000   │
+│ 2025-01-31 ┆ 0.1325000000   │
+└────────────┴────────────────┘
 ```
 
 # Títulos Públicos Federais (TPF)
@@ -8319,7 +8964,7 @@ Pró-rata entre referências da NTN-C com vencimento em 01/01/2031, consultadas 
 Decimal('6449.641358')
 ```
 
-## `contexto(titulo, data, vencimento=None, *, inflacao_projetada=None, atualizar=False)`
+## `contexto(titulo, data, vencimento=None, *, inflacao_projetada=None)`
 
 Consulta os parâmetros disponíveis para a vigência mensal do VNA.
 
@@ -8331,7 +8976,6 @@ Parameters:
 | `data` | `DateLike` | Data contida na vigência, nos formatos aceitos pela biblioteca. | *required* |
 | `vencimento` | `DateLike \| None` | Obrigatório para selecionar a série da NTN-C; não se aplica à NTN-B. | `None` |
 | `inflacao_projetada` | `float \| Decimal \| str \| None` | Projeção mensal opcional em unidade decimal: 0.0045 representa 0,45%. Aceita também percentual explícito, como `"0.45%"` ou `"0,45%"`. Convertida para Decimal sem arredondar; usada somente se a taxa realizada estiver indisponível. Não busca projeções automaticamente. | `None` |
-| `atualizar` | `bool` | Renova apenas o cache do histórico de VNA, como em historico. Não renova os caches de inflação. | `False` |
 
 Returns:
 
@@ -8378,7 +9022,7 @@ Para a vigência atual da NTN-C, informa o vencimento e uma projeção de 0,45%,
 >>> pendencias = parametros.item(0, "pendencias")
 ```
 
-## `historico(titulo, vencimento=None, *, atualizar=False)`
+## `historico(titulo, vencimento=None)`
 
 Busca os VNAs mensais publicados pelo Tesouro Nacional.
 
@@ -8388,7 +9032,6 @@ Parameters:
 | --- | --- | --- | --- |
 | `titulo` | `TipoTitulo` | NTN-B ou NTN-C. Histórico de LFT não está disponível. | *required* |
 | `vencimento` | `DateLike \| None` | Filtro opcional de série para NTN-C. Se omitido, retorna todas as séries. Não se aplica à NTN-B. | `None` |
-| `atualizar` | `bool` | Se True, baixa novamente o arquivo de VNA e renova seu cache de 60 segundos. Não atualiza o cache dos índices do IPCA. | `False` |
 
 Returns:
 
@@ -8485,7 +9128,7 @@ Projeta a NTN-C a partir da base de 01/12/2025 da série de 2031, em um cenário
 Decimal('6464.135801')
 ```
 
-## `ultimo(titulo, vencimento=None, *, atualizar=False)`
+## `ultimo(titulo, vencimento=None)`
 
 Busca a última referência publicada de cada série de VNA.
 
@@ -8495,7 +9138,6 @@ Parameters:
 | --- | --- | --- | --- |
 | `titulo` | `TipoTitulo` | NTN-B ou NTN-C. Última publicação de LFT não está disponível. | *required* |
 | `vencimento` | `DateLike \| None` | Filtro opcional da NTN-C. Sem filtro, retorna a última referência de cada série. Não se aplica à NTN-B. | `None` |
-| `atualizar` | `bool` | Se True, baixa novamente o arquivo de VNA e renova seu cache de 60 segundos. Não atualiza o cache dos índices do IPCA. | `False` |
 
 Returns:
 
@@ -8529,7 +9171,7 @@ Para NTN-C, seleciona uma série pelo vencimento. Sem esse filtro, o resultado p
 >>> referencia = yd.vna.ultimo("NTN-C", vencimento="01-01-2031")
 ```
 
-## `valor(titulo, data=None, vencimento=None, *, atualizar=False)`
+## `valor(titulo, data=None, vencimento=None)`
 
 Consulta o VNA do título na data informada.
 
@@ -8540,7 +9182,6 @@ Parameters:
 | `titulo` | `TipoTitulo` | LFT, NTN-B ou NTN-C. | *required* |
 | `data` | `DateLike \| None` | Data de referência. Se nula, retorna `Decimal('NaN')`. | `None` |
 | `vencimento` | `DateLike \| None` | Necessário para selecionar a série da NTN-C. Não se aplica aos demais títulos. | `None` |
-| `atualizar` | `bool` | Se True, baixa novamente o arquivo de VNA e renova seu cache de 60 segundos. Não atualiza o cache dos índices do IPCA. | `False` |
 
 Returns:
 
@@ -8626,16 +9267,10 @@ A NTN-C muda no primeiro dia do mês:
 (datetime.date(2026, 7, 1), datetime.date(2026, 8, 1))
 ```
 
-## Atualização manual
+## Atualização dos dados
 
-As consultas `valor`, `historico` e `ultimo` aceitam `atualizar=True`:
+As consultas às fontes externas não mantêm cache entre chamadas. Cada consulta que precisa de dados externos realiza um novo download; a aplicação decide se quer armazenar e reutilizar os resultados.
 
-```python
-historico = yd.vna.historico("NTN-C", vencimento="01-01-2031", atualizar=True)
-ultimo = yd.vna.ultimo("NTN-B", atualizar=True)
-valor = yd.vna.valor("LFT", "31-05-2024", atualizar=True)
-```
+O parâmetro `atualizar` foi removido de `valor`, `historico`, `ultimo` e `contexto`. Remova esse argumento das chamadas existentes.
 
-A opção ignora e renova o cache interno de 60 segundos do arquivo de VNA. Chamadas seguintes reutilizam o download renovado. Para NTN-B e NTN-C, o cache é por planilha do título, compartilhado entre datas e séries de vencimentos; para LFT, é por data de referência. Erros de download são propagados; a entrada anterior permanece disponível somente até sua expiração original.
-
-O padrão continua sendo `atualizar=False`. A opção não invalida caches da aplicação nem o cache dos índices do IPCA usados no pró-rata da NTN-B. A coluna `data` representa a referência do VNA, não o horário do download ou uma nova publicação. Um novo download pode retornar os mesmos dados.
+A coluna `data` representa a referência do VNA, não o horário do download ou uma nova publicação. Um novo download pode retornar os mesmos dados.

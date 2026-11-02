@@ -34,7 +34,7 @@ nro\_reuniao (Int64): Número sequencial informado na ata; nulo sem ata. data\_i
 
 **Notes**
 
-O horizonte depende das datas publicadas pelo BCB. A consulta às atas solicita até 500 registros. O conteúdo bruto fica em cache por oito horas; o status é recalculado a cada chamada. Erros de rede e payload inválido são propagados. O ICS publica um evento por dia: dias únicos consecutivos devem formar pares; grupos incompletos geram ValueError. O início histórico não é inferido subtraindo um dia da decisão.
+O horizonte depende das datas publicadas pelo BCB. A consulta às atas solicita até 500 registros. O status é recalculado a cada chamada. Erros de rede e payload inválido são propagados. O ICS publica um evento por dia: dias únicos consecutivos devem formar pares; grupos incompletos geram ValueError. O início histórico não é inferido subtraindo um dia da decisão.
 
 Examples:
 

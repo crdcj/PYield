@@ -2,7 +2,118 @@
 
 APIs técnicas para dados brutos ou intermediários da B3.
 
-APIs técnicas da B3.
+APIs técnicas da B3: boletins e calendário de pregões.
+
+## `eh_pregao(data)`
+
+Verifica se há pregão na B3 na data informada.
+
+Há pregão em todo dia útil brasileiro, exceto nas vésperas de Natal (24/12) e de Ano Novo (31/12), quando a B3 não abre.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data` | `DateLike` | Data a verificar. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `bool` | `True` se houver pregão na data. |
+
+**Notes**
+
+- Usa os feriados nacionais de `yd.du` com `calendario="auto"`.
+- Fechamentos excepcionais ou históricos não recorrentes, como feriados municipais de São Paulo em anos anteriores, não são modelados.
+- Strings de data aceitas: `DD-MM-YYYY`, `DD/MM/YYYY` e `YYYY-MM-DD`.
+
+Examples:
+
+```pycon
+>>> yd.b3.eh_pregao("23-12-2025")
+True
+```
+
+Dia útil sem pregão:
+
+```pycon
+>>> yd.b3.eh_pregao("24-12-2025")
+False
+```
+
+## `pregao_anterior(data)`
+
+Retorna o último pregão da B3 estritamente anterior à data.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data` | `DateLike` | Data de referência, com ou sem pregão. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `date` | Data do pregão anterior. |
+
+Examples:
+
+```pycon
+>>> yd.b3.pregao_anterior("02-01-2026")
+datetime.date(2025, 12, 30)
+```
+
+## `proximo_pregao(data)`
+
+Retorna o primeiro pregão da B3 estritamente posterior à data.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data` | `DateLike` | Data de referência, com ou sem pregão. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `date` | Data do próximo pregão. |
+
+Examples:
+
+Sábado seguido do feriado de Finados:
+
+```pycon
+>>> yd.b3.proximo_pregao("31-10-2026")
+datetime.date(2026, 11, 3)
+```
+
+## `ultimo_pregao(data=None)`
+
+Retorna o último pregão da B3 na data ou antes dela.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data` | `DateLike \| None` | Data de referência. Se None, usa a data atual no Brasil. | `None` |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `date` | A própria data, se houver pregão; caso contrário, o pregão anterior. |
+
+Examples:
+
+```pycon
+>>> yd.b3.ultimo_pregao("30-12-2025")
+datetime.date(2025, 12, 30)
+>>> yd.b3.ultimo_pregao("31-12-2025")
+datetime.date(2025, 12, 30)
+```
 
 ## boletim
 
@@ -54,6 +165,10 @@ Returns:
 | `bytes` | Conteúdo do ZIP externo em bytes quando o ZIP contém um XML legível. |
 | `bytes` | Retorna `b""` para data sem pregão ou quando a resposta não contém |
 | `bytes` | um ZIP válido. |
+
+**Notes**
+
+Falhas de conexão, timeout, transferência interrompida e HTTP 502, 503 ou 504 permitem uma retentativa, após espera de 0,5 a 1 segundo. Retry-After inválido ou superior a um segundo impede a retentativa. Os timeouts de conexão e leitura são de 5 e 10 segundos por tentativa. Erros de certificado e demais erros HTTP são propagados sem repetição. Após a última falha, a exceção é propagada. A validação do ZIP não provoca novo download. Não mantém cache entre chamadas.
 
 ## `buscar(data, prefixo_ticker=None, comprimento_ticker=None, boletim_completo=False)`
 
@@ -128,6 +243,10 @@ Returns:
 - AdjstdValCtrct (Float64): valor do contrato ajustado.
 - MaxTradLmt (Float64): limite máximo de variação.
 - MinTradLmt (Float64): limite mínimo de variação.
+
+**Notes**
+
+O download segue a política de retentativas de `baixar_zip`.
 
 Raises:
 

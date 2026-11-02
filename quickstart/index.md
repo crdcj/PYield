@@ -22,7 +22,9 @@ Depois, importe a biblioteca com o alias recomendado:
 import pyield as yd
 ```
 
-As consultas de mercado buscam dados nas fontes correspondentes. Portanto, uma conexão com a internet pode ser necessária na primeira consulta ou quando os dados não estiverem disponíveis no cache local.
+As consultas de mercado precisam de conexão com a internet e buscam novamente os dados nas fontes a cada chamada. A exceção são os históricos em Parquet de TPF e futuros, que mantêm cache em memória por processo, renovado diariamente.
+
+Falhas transitórias de comunicação permitem uma única retentativa por download, com espera entre 0,5 e 1 segundo. Se a falha persistir, a exceção é propagada. As consultas HTTP usam 5 segundos para conexão e 10, 30 ou 60 segundos para leitura, conforme o endpoint. Esses limites valem por tentativa; não há garantia de um prazo total rígido. Consulte a [política de retentativas](<https://crdcj.github.io/PYield/release-0.62.0/#falhas-de-rede-e-retentativas>) para os erros elegíveis e o tratamento de `Retry-After`.
 
 ## Dias úteis
 
@@ -156,7 +158,7 @@ yd.ptax("31-05-2024")
 yd.ipca.taxa_serie("01-01-2024", "01-03-2024")
 ```
 
-Os indicadores de inflação retornam `Decimal` nas consultas escalares e colunas Polars `Decimal` nas séries. Para cálculos exatos, use constantes criadas a partir de texto:
+Os indicadores de inflação, Selic, DI Over e PTAX retornam `Decimal` nas consultas escalares e colunas Polars `Decimal` nas séries. Para cálculos exatos, use constantes criadas a partir de texto:
 
 ```python
 from decimal import Decimal
@@ -168,18 +170,29 @@ if not taxa.is_nan():
 
 Os [VNAs](<https://crdcj.github.io/PYield/vna/index.md>) também usam `Decimal`. As taxas históricas e projetadas do IPCA e IGP-M são expressas em unidade decimal. As entradas de inflação em `vna.contexto` e `vna.projetado` aceitam números decimais (`0.0045`) ou percentuais explícitos (`"0.45%"` ou `"0,45%"`), convertidos para `Decimal`. Consulte as [notas da 0.60.0](<https://crdcj.github.io/PYield/release-0.60.0/index.md>) para os tipos e a migração da API.
 
+Para análises que precisam de ponto flutuante, converta explicitamente:
+
+```python
+taxa_float = float(yd.selic.over("31-05-2024"))
+serie_float = yd.ptax_serie(ultimos=5).with_columns(
+    cotacao=pl.col("cotacao").cast(pl.Float64)
+)
+```
+
+A conversão pode introduzir aproximação binária. Veja as [notas da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) para a migração dos indicadores SGS.
+
 ## Datas e ausência de dados
 
 Datas escalares aceitam `DD-MM-YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`, `datetime.date` e `datetime.datetime`. Datas escalares malformadas levantam `ValueError`; em operações vetorizadas, elementos ausentes ou malformados tornam-se `null` para preservar o pipeline Polars.
 
-Consultas válidas sem dados — por exemplo, para uma data futura, feriado ou fim de semana — retornam um DataFrame vazio ou `nan`, conforme o contrato da função:
+Consultas válidas sem dados — por exemplo, para uma data futura, feriado ou fim de semana — retornam um DataFrame vazio, `nan` ou `Decimal("NaN")`, conforme o contrato da função:
 
 ```python
 yd.futuro.historico("01-01-2030", "DI1").is_empty()
 # True
 
 yd.ptax("25-12-2025")
-# nan
+# Decimal('NaN')
 ```
 
 Para detalhes de parâmetros, colunas e convenções financeiras, continue pelo [mapa da API](<https://crdcj.github.io/PYield/api-map/index.md>) ou pela página do módulo desejado.

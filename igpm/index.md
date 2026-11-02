@@ -10,7 +10,7 @@ Nas séries de índices, qualquer dia identifica o mês inteiro; os dois meses e
 
 ## Calendário de divulgação
 
-`yd.igpm.calendario(ano, atualizar=False)` consulta as divulgações mensais na FGV IBRE, excluindo as prévias decendiais e os demais índices. Retorna `competencia` e `data_divulgacao`, ambas `Date`. A competência corresponde ao mês da divulgação mensal. Datas ausentes não são estimadas, e o calendário não comprova publicação. `atualizar=True` renova o cache de 60 segundos do ano.
+`yd.igpm.calendario(ano)` consulta as divulgações mensais na FGV IBRE, excluindo as prévias decendiais e os demais índices. Retorna `competencia` e `data_divulgacao`, ambas `Date`. A competência corresponde ao mês da divulgação mensal. Datas ausentes não são estimadas, e o calendário não comprova publicação.
 
 ```python
 calendario = yd.igpm.calendario(2026)
@@ -18,7 +18,7 @@ calendario = yd.igpm.calendario(2026)
 
 Taxas e números-índice do IGP-M por competência ou série histórica.
 
-## `calendario(ano, *, atualizar=False)`
+## `calendario(ano)`
 
 Consulta o calendário de divulgação mensal do IGP-M na FGV IBRE.
 
@@ -27,7 +27,6 @@ Parameters:
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
 | `ano` | `int` | Ano das divulgações e competências. | *required* |
-| `atualizar` | `bool` | Ignora e renova o cache de 60 segundos desse ano. | `False` |
 
 Returns:
 

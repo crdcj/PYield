@@ -6,13 +6,13 @@ As taxas históricas são retornadas como `Decimal` em `yd.ipca.taxa()` e como `
 
 ## Calendário de divulgação
 
-`yd.ipca.calendario(ano, atualizar=False)` consulta o calendário oficial do IBGE e retorna as colunas `competencia` e `data_divulgacao`, ambas `Date`. O ano seleciona a competência: dezembro pode ter divulgação no ano seguinte. A data prevista não comprova publicação do índice e datas ausentes não são estimadas. `atualizar=True` renova o cache de 60 segundos da consulta.
+`yd.ipca.calendario(ano)` consulta o calendário oficial do IBGE e retorna as colunas `competencia` e `data_divulgacao`, ambas `Date`. O ano seleciona a competência: dezembro pode ter divulgação no ano seguinte. A data prevista não comprova publicação do índice e datas ausentes não são estimadas.
 
 ```python
 calendario = yd.ipca.calendario(2026)
 ```
 
-## `calendario(ano, *, atualizar=False)`
+## `calendario(ano)`
 
 Consulta o calendário oficial de divulgação do IPCA no IBGE.
 
@@ -21,7 +21,6 @@ Parameters:
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
 | `ano` | `int` | Ano da competência, inclusive dezembro divulgado no ano seguinte. | *required* |
-| `atualizar` | `bool` | Ignora e renova o cache de 60 segundos da consulta completa. | `False` |
 
 Returns:
 

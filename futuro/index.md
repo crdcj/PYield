@@ -31,6 +31,43 @@ Series: 'data_referencia' [date]
 ]
 ```
 
+## `dv01_expr(coluna_dias_uteis, coluna_taxa, coluna_preco)`
+
+Retorna a expressão Polars para cálculo de DV01.
+
+Fórmula: DV01 = (Duration / (1 + taxa)) \* preço \* 0,0001
+
+Onde: - Duration = dias\_uteis / 252 - taxa deve estar em formato decimal (ex.: 0.145) - preço é o PU do contrato.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `coluna_dias_uteis` | `str` | Coluna com os dias úteis até o vencimento. | *required* |
+| `coluna_taxa` | `str` | Coluna com a taxa em formato decimal. | *required* |
+| `coluna_preco` | `str` | Coluna com o PU do contrato. | *required* |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `Expr` | Uma `pl.Expr` com o DV01 na unidade de `coluna_preco`. |
+
+Examples:
+
+```pycon
+>>> df = pl.DataFrame({"du": [252], "taxa": [0.10], "pu": [90_909.09]})
+>>> df.select(dv01=yd.futuro.dv01_expr("du", "taxa", "pu"))
+shape: (1, 1)
+┌──────────┐
+│ dv01     │
+│ ---      │
+│ f64      │
+╞══════════╡
+│ 8.264463 │
+└──────────┘
+```
+
 ## `enriquecer(df, contrato)`
 
 Enriquece DataFrame bruto do Price Report (PR) da B3.
