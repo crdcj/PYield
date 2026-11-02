@@ -78,6 +78,33 @@ uv add pyield
 O [mapa completo da API](https://crdcj.github.io/PYield/api-map/) inclui a
 documentação detalhada e as assinaturas públicas.
 
+## Indicadores: taxas e precisão
+
+Selic Over, Selic Meta, DI Over e PTAX retornam `decimal.Decimal` nas consultas
+escalares e colunas Polars `Decimal` nas séries. Os valores são convertidos
+diretamente do texto da fonte: taxas com escala 10 e PTAX com escala 4.
+Escalares sem dados retornam `Decimal("NaN")`.
+
+```python
+import pyield as yd
+
+taxa_anual = yd.selic.over("28-02-2025")
+taxa_diaria = yd.selic.over("28-02-2025", anualizada=False)
+serie_diaria = yd.selic.over_serie(ultimos=5, anualizada=False)
+di_diaria = yd.di_over("28-02-2025", anualizada=False)
+```
+
+As taxas Over são anuais em base 252 por padrão; `anualizada=False` retorna
+a taxa ao dia útil publicada pela fonte. Os valores são expressos em unidade
+decimal, e as observações têm frequência diária em ambos os casos. Selic Meta
+é anual. DI Over passa a usar a API HTTPS do Banco Central em lugar do FTP
+da CETIP.
+
+Quem precisar de ponto flutuante pode usar `float(taxa_anual)` ou converter
+a coluna com `pl.col("taxa").cast(pl.Float64)`. Essa conversão pode introduzir
+aproximação binária. Veja as [notas da 0.62.0](docs/release-0.62.0.md) para
+os tipos e as orientações de migração.
+
 ## Notas de versão
 
 Consulte as [notas de versão](https://crdcj.github.io/PYield/releases/) para

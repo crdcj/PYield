@@ -6,6 +6,7 @@ from typing import Literal
 import polars as pl
 import requests
 
+from pyield._internal.retry import requisitar
 from pyield.relogio import agora
 
 URL_BASE = "https://github.com/crdcj/pyield-data/releases/latest/download"
@@ -47,10 +48,7 @@ def _carregar_arquivo_github(url_arquivo: str) -> pl.DataFrame:
     """
     # 1. Baixa os bytes usando requests (já lida com redirects e proxies do sistema)
     # Adicionando timeout para não travar o processo indefinidamente
-    response = requests.get(url_arquivo, timeout=10)
-
-    # Garante que a requisição foi sucesso (200 OK), senão levanta erro
-    response.raise_for_status()
+    response = requisitar(requests.get, url_arquivo, timeout_leitura=10)
 
     # 2. O Polars lê o buffer como se fosse um arquivo local
     return pl.read_parquet(response.content)

@@ -36,7 +36,8 @@ A documentação está organizada por conceito financeiro e por fonte de dados:
   [LTN](ltn.md), [NTN-B](ntnb.md), [NTN-F](ntnf.md) e demais títulos.
 - **Mercado de futuros:** [DI1](di1.md) e [futuros](futuro.md).
 - **Dados auxiliares:** [IPCA](ipca.md), [IGP-M](igpm.md), [Selic](selic.md), [Copom](copom.md),
-  [compromissadas](compromissada.md), [CPM](cpm.md) e [B3](b3.md).
+  [DI Over](di-over.md), [PTAX](ptax.md), [compromissadas](compromissada.md),
+  [CPM](cpm.md) e [B3](b3.md).
 
 As funções públicas retornam dados em português e seguem convenções consistentes
 de datas, tipos e colunas. Consulte a página de cada módulo para parâmetros,

@@ -9,6 +9,8 @@ import requests
 from lxml import html
 from requests.adapters import HTTPAdapter
 
+from pyield._internal.retry import requisitar
+
 _URL = "https://portalibre.fgv.br/calendario-de-divulgacao"
 
 
@@ -25,16 +27,16 @@ class _AdaptadorFGV(HTTPAdapter):
 def _buscar_calendario(ano: int) -> bytes:
     with requests.Session() as sessao:
         sessao.mount(_URL, _AdaptadorFGV())
-        resposta = sessao.get(
+        resposta = requisitar(
+            sessao.get,
             _URL,
             params={
                 "field_indice_target_id": "128",
                 "field_divulgacao_data_value": f"{ano}-01-01",
                 "field_divulgacao_data_value_1": f"{ano}-12-31",
             },
-            timeout=30,
+            timeout_leitura=30,
         )
-        resposta.raise_for_status()
         return resposta.content
 
 

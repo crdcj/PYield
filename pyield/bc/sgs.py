@@ -4,8 +4,10 @@ Séries disponíveis:
     - IGP-M mensal (SGS 189)
     - PTAX Venda (SGS 1)
     - SELIC Diária (SGS 11)
+    - DI Over diária (SGS 12)
     - SELIC Meta (SGS 432)
     - SELIC Over (SGS 1178)
+    - DI Over anualizada base 252 (SGS 4389)
 
 Exemplos de chamada à API:
     https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados?formato=json&dataInicial=29/01/2025&dataFinal=31/01/2025
@@ -18,9 +20,9 @@ Exemplo de resposta JSON da API do BCB:
 
 Notas de implementação:
     - Intervalos longos são divididos automaticamente em blocos seguros.
-        - SELIC Diária, Over e Meta: valores percentuais convertidos para decimal
-      (divididos por 100) e arredondados para 10 casas decimais.
-    - PTAX Venda: valor absoluto em R$ arredondado para 4 casas.
+    - SELIC Diária, Over, Meta e DI: percentuais convertidos diretamente do
+      texto para Decimal, divididos por 100, com escala de 10 casas decimais.
+    - PTAX Venda: valor em R$/US$, convertido do texto para Decimal com escala 4.
 """
 
 import datetime as dt
@@ -32,8 +34,8 @@ import polars as pl
 import requests
 
 from pyield import relogio
-from pyield._internal.br_numbers import pct_para_decimal
 from pyield._internal.converters import converter_datas, data_referencia_valida
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike, any_is_empty
 
 URL_BASE = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
@@ -47,7 +49,8 @@ LIMITE_DIAS_SEGURO = 3500  # aprox 365 * 9.5
 _DATA_INICIO_SELIC_META = dt.date(1999, 3, 5)
 _LIMITE_DIAS_SELIC_META = 1800
 
-CASAS_DECIMAIS_PTAX = 4
+_TIPO_TAXA = pl.Decimal(precision=18, scale=10)
+_TIPO_PTAX = pl.Decimal(precision=18, scale=4)
 
 
 class SerieSGS(Enum):
@@ -55,17 +58,18 @@ class SerieSGS(Enum):
 
     PTAX_VENDA = 1
     SELIC_DIARIA = 11
+    DI_DIARIA = 12
     IGPM = 189
     SELIC_META = 432
     SELIC_OVER = 1178
+    DI_OVER = 4389
 
 
 # ── Infraestrutura de acesso à API SGS ──────────────────────────────
 
 
 def _chamar_api(url_api: str) -> list[dict[str, str]]:
-    resposta = requests.get(url_api, timeout=30)
-    resposta.raise_for_status()
+    resposta = requisitar(requests.get, url_api, timeout_leitura=30)
     return resposta.json()
 
 
@@ -163,8 +167,8 @@ def _buscar_serie(
 
 # ── Helpers de transformação ─────────────────────────────────────────
 
-ESQUEMA_TAXA = {"data": pl.Date, "taxa": pl.Float64}
-ESQUEMA_PTAX = {"data": pl.Date, "cotacao": pl.Float64}
+ESQUEMA_TAXA = {"data": pl.Date, "taxa": _TIPO_TAXA}
+ESQUEMA_PTAX = {"data": pl.Date, "cotacao": _TIPO_PTAX}
 
 
 def _converter_para_taxa(df: pl.DataFrame) -> pl.DataFrame:
@@ -173,14 +177,14 @@ def _converter_para_taxa(df: pl.DataFrame) -> pl.DataFrame:
         return pl.DataFrame(schema=ESQUEMA_TAXA)
     return df.select(
         "data",
-        taxa=pct_para_decimal(pl.col("valor").cast(pl.Float64)),
+        taxa=(pl.col("valor").cast(_TIPO_TAXA) / 100).cast(_TIPO_TAXA),
     )
 
 
-def _extrair_escalar(df: pl.DataFrame, coluna: str) -> float:
-    """Extrai um valor escalar de um DataFrame ou retorna nan se vazio."""
+def _extrair_escalar(df: pl.DataFrame, coluna: str) -> Decimal:
+    """Extrai um Decimal de um DataFrame ou retorna Decimal('NaN') se vazio."""
     if df.is_empty():
-        return float("nan")
+        return Decimal("NaN")
     return df[coluna].item(0)
 
 
@@ -287,50 +291,71 @@ def selic_over_serie(
     fim: DateLike | None = None,
     *,
     ultimos: int | None = None,
+    anualizada: bool = True,
 ) -> pl.DataFrame:
-    """Taxa SELIC Over (série SGS 1178).
+    """Taxa SELIC Over anualizada ou diária via SGS do Banco Central.
 
     Taxa de juros média diária praticada no mercado interbancário,
-    com títulos públicos como garantia.
+    com títulos públicos como garantia. Consulta a série SGS 1178 para
+    a taxa anualizada em base 252 ou a série SGS 11 para a taxa diária.
 
     Args:
         inicio: Data inicial.
         fim: Data final. Se ``None``, usa a data mais recente.
         ultimos: Número de registros mais recentes a retornar.
             Mutuamente exclusivo com ``inicio``/``fim``.
+        anualizada: Se ``True``, retorna a taxa ao ano, em base 252 dias úteis.
+            Se ``False``, retorna a taxa ao dia útil publicada pela fonte.
 
     Returns:
         DataFrame com colunas data e taxa (decimal), ou DataFrame vazio.
+
+    Output Columns:
+        data (pl.Date): Data de referência da observação.
+        taxa (pl.Decimal(18, 10)): Taxa em decimal, ao ano se ``anualizada=True``
+            ou ao dia útil se ``anualizada=False``.
+
+    Notes:
+        A frequência das observações é diária nas duas modalidades. Os valores
+        percentuais da série escolhida são convertidos diretamente do texto
+        para Decimal e divididos por 100, sem passagem por float e sem
+        recalcular uma modalidade a partir da outra. A escala de dez casas
+        preserva até oito casas decimais do percentual publicado.
 
     Examples:
         >>> import pyield as yd
         >>> # Copom de 29-01-2025: over subiu de 12,15% para 13,15% a.a.
         >>> yd.selic.over_serie("28-01-2025", "31-01-2025")
         shape: (4, 2)
-        ┌────────────┬────────┐
-        │ data       ┆ taxa   │
-        │ ---        ┆ ---    │
-        │ date       ┆ f64    │
-        ╞════════════╪════════╡
-        │ 2025-01-28 ┆ 0.1215 │
-        │ 2025-01-29 ┆ 0.1215 │
-        │ 2025-01-30 ┆ 0.1315 │
-        │ 2025-01-31 ┆ 0.1315 │
-        └────────────┴────────┘
+        ┌────────────┬────────────────┐
+        │ data       ┆ taxa           │
+        │ ---        ┆ ---            │
+        │ date       ┆ decimal[18,10] │
+        ╞════════════╪════════════════╡
+        │ 2025-01-28 ┆ 0.1215000000   │
+        │ 2025-01-29 ┆ 0.1215000000   │
+        │ 2025-01-30 ┆ 0.1315000000   │
+        │ 2025-01-31 ┆ 0.1315000000   │
+        └────────────┴────────────────┘
     """
-    return _converter_para_taxa(
-        _buscar_serie(SerieSGS.SELIC_OVER, inicio, fim, ultimos)
-    )
+    serie = SerieSGS.SELIC_OVER if anualizada else SerieSGS.SELIC_DIARIA
+    return _converter_para_taxa(_buscar_serie(serie, inicio, fim, ultimos))
 
 
-def selic_over(data: DateLike) -> float:
+def selic_over(data: DateLike, *, anualizada: bool = True) -> Decimal:
     """Taxa SELIC Over para uma data específica.
+
+    Fonte: SGS do Banco Central, série 1178 para a taxa anualizada em base 252
+    ou série 11 para a taxa diária publicada pela fonte.
 
     Args:
         data: Data da consulta.
+        anualizada: Se ``True``, retorna a taxa ao ano, em base 252 dias úteis.
+            Se ``False``, retorna a taxa ao dia útil publicada pela fonte.
 
     Returns:
-        Taxa SELIC Over em decimal ou ``nan`` se não disponível.
+        Decimal: Taxa SELIC Over com dez casas decimais, ao ano ou ao dia útil
+        conforme ``anualizada``, ou ``Decimal('NaN')`` se não disponível.
 
     Examples:
         >>> import pyield as yd
@@ -339,8 +364,10 @@ def selic_over(data: DateLike) -> float:
         '10.4%'
     """
     if any_is_empty(data):
-        return float("nan")
-    return _extrair_escalar(selic_over_serie(data, data), "taxa")
+        return Decimal("NaN")
+    return _extrair_escalar(
+        selic_over_serie(data, data, anualizada=anualizada), "taxa"
+    )
 
 
 # ── SELIC Meta ───────────────────────────────────────────────────────
@@ -368,43 +395,48 @@ def selic_meta_serie(
 
     Output Columns:
         * data (Date): data de referência da taxa.
-        * taxa (Float64): taxa Selic Meta anual em formato decimal.
+        * taxa (pl.Decimal(18, 10)): taxa Selic Meta anual em formato decimal.
 
     Notes:
         Consultas iniciadas antes de 05/03/1999 consideram automaticamente essa
         data como início da série. Intervalos inteiramente anteriores retornam um
         DataFrame vazio.
+        Os percentuais são convertidos diretamente do texto para Decimal e
+        divididos por 100, sem passagem por float, com dez casas decimais.
 
     Examples:
         >>> import pyield as yd
         >>> # Copom de 29-01-2025: meta subiu de 12,25% para 13,25% a.a.
         >>> yd.selic.meta_serie("28-01-2025", "31-01-2025")
         shape: (4, 2)
-        ┌────────────┬────────┐
-        │ data       ┆ taxa   │
-        │ ---        ┆ ---    │
-        │ date       ┆ f64    │
-        ╞════════════╪════════╡
-        │ 2025-01-28 ┆ 0.1225 │
-        │ 2025-01-29 ┆ 0.1225 │
-        │ 2025-01-30 ┆ 0.1325 │
-        │ 2025-01-31 ┆ 0.1325 │
-        └────────────┴────────┘
+        ┌────────────┬────────────────┐
+        │ data       ┆ taxa           │
+        │ ---        ┆ ---            │
+        │ date       ┆ decimal[18,10] │
+        ╞════════════╪════════════════╡
+        │ 2025-01-28 ┆ 0.1225000000   │
+        │ 2025-01-29 ┆ 0.1225000000   │
+        │ 2025-01-30 ┆ 0.1325000000   │
+        │ 2025-01-31 ┆ 0.1325000000   │
+        └────────────┴────────────────┘
     """
     return _converter_para_taxa(
         _buscar_serie(SerieSGS.SELIC_META, inicio, fim, ultimos)
     )
 
 
-def selic_meta(data: DateLike) -> float:
+def selic_meta(data: DateLike) -> Decimal:
     """Taxa SELIC Meta para uma data específica.
+
+    Fonte: SGS do Banco Central, série 432.
 
     Args:
         data: Data da consulta.
 
     Returns:
-        Taxa SELIC Meta em decimal ou ``nan`` se não disponível, inclusive para
-        datas anteriores a 05/03/1999.
+        Decimal: Taxa SELIC Meta em formato decimal com dez casas decimais ou
+        ``Decimal('NaN')`` se não disponível, inclusive para datas anteriores
+        a 05/03/1999.
 
     Examples:
         >>> import pyield as yd
@@ -413,7 +445,7 @@ def selic_meta(data: DateLike) -> float:
         '10.5%'
     """
     if any_is_empty(data):
-        return float("nan")
+        return Decimal("NaN")
     return _extrair_escalar(selic_meta_serie(data, data), "taxa")
 
 
@@ -447,7 +479,7 @@ def ptax_serie(
 
     Output Columns:
         * data (Date): data da cotação.
-        * cotacao (Float64): cotação PTAX de venda em R$/US$.
+        * cotacao (pl.Decimal(18, 4)): cotação PTAX de venda em R$/US$.
 
     Notes:
         Disponível desde 28.11.1984. Refere-se às taxas administradas até
@@ -456,56 +488,107 @@ def ptax_serie(
         denominação PTAX. Desde 1 de julho de 2011 (Circular 3506), a PTAX
         corresponde à média aritmética das taxas obtidas em quatro consultas
         diárias aos dealers de câmbio.
+        Os valores são convertidos diretamente do texto para Decimal, sem
+        passagem por float, com quatro casas decimais.
 
     Examples:
         >>> import pyield as yd
         >>> yd.ptax_serie("20-04-2025", "25-04-2025")
         shape: (4, 2)
-        ┌────────────┬─────────┐
-        │ data       ┆ cotacao │
-        │ ---        ┆ ---     │
-        │ date       ┆ f64     │
-        ╞════════════╪═════════╡
-        │ 2025-04-22 ┆ 5.7496  │
-        │ 2025-04-23 ┆ 5.688   │
-        │ 2025-04-24 ┆ 5.6738  │
-        │ 2025-04-25 ┆ 5.6846  │
-        └────────────┴─────────┘
+        ┌────────────┬───────────────┐
+        │ data       ┆ cotacao       │
+        │ ---        ┆ ---           │
+        │ date       ┆ decimal[18,4] │
+        ╞════════════╪═══════════════╡
+        │ 2025-04-22 ┆ 5.7496        │
+        │ 2025-04-23 ┆ 5.6880        │
+        │ 2025-04-24 ┆ 5.6738        │
+        │ 2025-04-25 ┆ 5.6846        │
+        └────────────┴───────────────┘
     """
     df = _buscar_serie(SerieSGS.PTAX_VENDA, inicio, fim, ultimos)
     if df.is_empty():
         return pl.DataFrame(schema=ESQUEMA_PTAX)
     return df.select(
         "data",
-        cotacao=pl.col("valor").cast(pl.Float64).round(CASAS_DECIMAIS_PTAX),
+        cotacao=pl.col("valor").cast(_TIPO_PTAX),
     )
 
 
-def ptax(data: DateLike) -> float:
+def ptax(data: DateLike) -> Decimal:
     """Cotação PTAX de venda para uma data específica.
 
     Retorna a PTAX de venda, taxa de câmbio oficial do dólar no
-    Brasil.
+    Brasil, via SGS do Banco Central (série 1).
 
     Args:
         data: Data desejada.
 
     Returns:
-        Cotação PTAX de venda em R$/US$, ou ``nan`` se não houver
-        cotação (feriado, fim de semana ou data futura).
+        Decimal: Cotação PTAX de venda em R$/US$ com quatro casas decimais, ou
+        ``Decimal('NaN')`` se não houver cotação (feriado, fim de semana ou
+        data futura).
 
     Examples:
         >>> import pyield as yd
         >>> yd.ptax("22-04-2025")
-        5.7496
+        Decimal('5.7496')
 
         >>> yd.ptax("20-04-2025")
-        nan
+        Decimal('NaN')
     """
     if any_is_empty(data):
-        return float("nan")
+        return Decimal("NaN")
     data = converter_datas(data)
     if not data_referencia_valida(data):
-        return float("nan")
+        return Decimal("NaN")
 
     return _extrair_escalar(ptax_serie(data, data), "cotacao")
+
+
+# ── DI Over ─────────────────────────────────────────────────────────
+
+
+def di_over(data: DateLike, *, anualizada: bool = True) -> Decimal:
+    """Obtém a taxa DI over anualizada ou diária via SGS do Banco Central.
+
+    Consulta a taxa DI (Depósito Interfinanceiro) da B3/CETIP, republicada
+    pelo Banco Central na série SGS 4389 (anualizada em base 252) ou
+    SGS 12 (diária), para a data informada.
+    Use ``pyield.di_over`` na API pública principal.
+
+    Args:
+        data: data da consulta para buscar a taxa DI.
+        anualizada: Se ``True``, retorna a taxa ao ano, em base 252 dias úteis.
+            Se ``False``, retorna a taxa ao dia útil publicada pela fonte.
+
+    Returns:
+        Decimal: Taxa DI em formato decimal com dez casas decimais, ao ano se
+        ``anualizada=True`` (0.1315 = 13,15% a.a.) ou ao dia útil se
+        ``anualizada=False``. Retorna ``Decimal('NaN')`` se não houver dado
+        para a data, incluindo feriados e fins de semana.
+
+    Notes:
+        As duas séries têm frequência diária. Por padrão, os valores são taxas
+        anuais em base 252 dias úteis. O percentual informado pela série
+        escolhida é convertido diretamente do texto para Decimal e dividido
+        por 100, sem passagem por float, com dez casas decimais. Essa escala
+        preserva até oito casas decimais do percentual publicado, sem recalcular
+        uma modalidade a partir da outra. O histórico começa em 06/03/1986;
+        a consulta anterior via FTP estava limitada a datas a partir de 20/08/2012.
+
+    Examples:
+        >>> import pyield as yd
+        >>> taxa = yd.di_over("28/02/2025")  # decimal (0.1315 = 13,15% a.a.)
+        >>> f"{taxa:.2%}"
+        '13.15%'
+        >>> yd.di_over("01/01/2025")  # Feriado
+        Decimal('NaN')
+    """
+    if any_is_empty(data):
+        return Decimal("NaN")
+    serie = SerieSGS.DI_OVER if anualizada else SerieSGS.DI_DIARIA
+    return _extrair_escalar(
+        _converter_para_taxa(_buscar_dados_url(serie, data, data)),
+        "taxa",
+    )

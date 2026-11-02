@@ -16,6 +16,7 @@ from lxml.html import fromstring as html_fromstring
 
 import pyield._internal.converters as cv
 from pyield._internal.br_numbers import float_br, inteiro_m
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike
 
 URL_IMA = "https://www.anbima.com.br/informacoes/ima/ima-quantidade-mercado.asp"
@@ -31,8 +32,8 @@ def _buscar_conteudo_url(data_referencia: dt.date) -> bytes:
         "Dt_Ref": f"{data_referencia_str}",
     }
 
-    resposta = requests.post(URL_IMA, data=payload, timeout=10)
-    resposta.raise_for_status()
+    # POST de consulta histórica por data; seguro de repetir.
+    resposta = requisitar(requests.post, URL_IMA, data=payload, timeout_leitura=10)
     if "Não há dados disponíveis" in resposta.text:
         return b""
     return resposta.content

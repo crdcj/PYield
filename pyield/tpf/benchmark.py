@@ -25,6 +25,7 @@ import polars as pl
 import requests
 
 from pyield import relogio
+from pyield._internal.retry import requisitar
 
 registro = logging.getLogger(__name__)
 
@@ -37,8 +38,7 @@ def _buscar_json_api(incluir_historico: bool) -> dict:
     """Busca os dados brutos de benchmarks na API do Tesouro Nacional."""
     param = "S" if incluir_historico else "N"
     url = f"{URL_BASE_API}?incluir_historico={param}"
-    resposta = requests.get(url, timeout=10)
-    resposta.raise_for_status()
+    resposta = requisitar(requests.get, url, timeout_leitura=10)
     return resposta.json()
 
 

@@ -54,6 +54,8 @@ nav:
       - Copom: copom.md
       - Compromissadas: compromissada.md
       - Selic: selic.md
+      - DI Over: di-over.md
+      - PTAX: ptax.md
       - CPM: cpm.md
 
 theme:

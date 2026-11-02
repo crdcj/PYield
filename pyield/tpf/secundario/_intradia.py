@@ -7,6 +7,7 @@ import requests
 
 from pyield import du, relogio
 from pyield._internal.br_numbers import float_br, inteiro_br, taxa_br
+from pyield._internal.retry import requisitar
 
 URL_BASE_TEMPO_REAL = (
     "https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/"
@@ -20,8 +21,7 @@ def _buscar_csv_intradia() -> bytes:
     hoje = relogio.hoje()
     data_formatada = hoje.strftime("%d-%m-%Y")
     url = f"{URL_BASE_TEMPO_REAL}{data_formatada}"
-    resposta = requests.get(url, timeout=30)  # API costuma levar ~10s
-    resposta.raise_for_status()
+    resposta = requisitar(requests.get, url, timeout_leitura=30)  # API costuma levar ~10s
     return resposta.content
 
 

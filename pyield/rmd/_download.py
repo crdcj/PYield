@@ -6,6 +6,8 @@ import zipfile as zf
 import requests
 from lxml import html
 
+from pyield._internal.retry import requisitar
+
 URL_BASE = (
     "https://www.tesourotransparente.gov.br/publicacoes/relatorio-mensal-da-divida-rmd"
 )
@@ -14,8 +16,7 @@ _TIMEOUT_SEGUNDOS = 60
 
 def _buscar_conteudo(url: str) -> bytes:
     """Busca o conteúdo de uma URL, seguindo redirects."""
-    resposta = requests.get(url, timeout=_TIMEOUT_SEGUNDOS)
-    resposta.raise_for_status()
+    resposta = requisitar(requests.get, url, timeout_leitura=_TIMEOUT_SEGUNDOS)
     return resposta.content
 
 

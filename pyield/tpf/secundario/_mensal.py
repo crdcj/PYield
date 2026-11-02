@@ -13,6 +13,7 @@ import requests
 from pyield import relogio
 from pyield._internal.br_numbers import float_br
 from pyield._internal.converters import converter_datas
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike, any_is_empty
 
 URL_BASE_MENSAL = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
@@ -41,8 +42,9 @@ def _nome_arquivo_mensal(data: DateLike, extragrupo: bool = False) -> str:
 
 
 def _baixar_url_zip(url_arquivo: str) -> bytes:
-    resposta = requests.get(url_arquivo, allow_redirects=True, timeout=60)
-    resposta.raise_for_status()
+    resposta = requisitar(
+        requests.get, url_arquivo, allow_redirects=True, timeout_leitura=60
+    )
     return resposta.content
 
 

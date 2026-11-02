@@ -28,6 +28,7 @@ import requests
 from pyield import du
 from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.converters import converter_datas, data_referencia_valida
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike
 
 type _CaminhoArquivo = str | os.PathLike[str]
@@ -67,8 +68,7 @@ def _montar_url_arquivo(data: dt.date) -> str:
 
 def _obter_csv(data: dt.date) -> bytes:
     url_arquivo = _montar_url_arquivo(data)
-    resposta = requests.get(url_arquivo, timeout=10)
-    resposta.raise_for_status()
+    resposta = requisitar(requests.get, url_arquivo, timeout_leitura=10)
     return resposta.content
 
 

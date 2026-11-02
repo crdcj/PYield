@@ -24,6 +24,7 @@ import requests
 from pyield import du
 from pyield._internal.converters import converter_datas, data_referencia_valida
 from pyield._internal.numbers import para_decimal, truncar_decimal
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf.titulos._utils import converter_taxa
 from pyield.vna._calculo import PRECISAO_CALCULO
@@ -115,8 +116,7 @@ def _baixar_texto(data_referencia: dt.date) -> str:
     url_file = f"{data_referencia.strftime('%Y%m%d')}APC238"
     url = url_base + url_file
 
-    response = requests.get(url, timeout=10)
-    response.raise_for_status()
+    response = requisitar(requests.get, url, timeout_leitura=10)
     return response.text
 
 

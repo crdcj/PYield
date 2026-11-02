@@ -75,7 +75,7 @@ def test_paginacao_ipca_sem_cache(monkeypatch):
     def buscar(url, *, params, timeout):
         chamadas.append(params["page"])
         assert url == ibge._URL
-        assert timeout == 30
+        assert timeout == (5, 30)
         return Resposta(params["page"])
 
     monkeypatch.setattr(ibge.requests, "get", buscar)
@@ -145,7 +145,7 @@ def test_igpm_fetch_filtros_sem_cache(monkeypatch):
     def buscar(self, url, *, params, timeout):
         chamadas.append(params)
         assert url == fgv._URL
-        assert timeout == 30
+        assert timeout == (5, 30)
         return Resposta()
 
     monkeypatch.setattr(fgv.requests.Session, "get", buscar)

@@ -5,6 +5,7 @@ import requests
 
 from pyield import relogio
 from pyield._internal import converters as cv
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike
 
 URL_API = "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/dealers"
@@ -23,8 +24,7 @@ def _df_vazio() -> pl.DataFrame:
 
 def _buscar_dealers() -> dict:
     """Busca os dados brutos de dealers na API do Tesouro Nacional."""
-    resposta = requests.get(URL_API, timeout=10)
-    resposta.raise_for_status()
+    resposta = requisitar(requests.get, URL_API, timeout_leitura=10)
     return resposta.json()
 
 

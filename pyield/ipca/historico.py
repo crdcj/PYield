@@ -24,6 +24,7 @@ import requests
 
 from pyield import relogio
 from pyield._internal.converters import converter_datas
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike, any_is_empty
 
 _URL_BASE = "https://servicodados.ibge.gov.br/api/v3/agregados/1737/periodos/"
@@ -34,8 +35,7 @@ _VAR_INDICE = 2266
 
 def _buscar_dados_api(url: str) -> dict[str, str]:
     """Busca dados da API do IBGE e retorna o dicionário da série."""
-    resposta = requests.get(url, timeout=10)
-    resposta.raise_for_status()
+    resposta = requisitar(requests.get, url, timeout_leitura=10)
     dados = resposta.json()
     if not dados:
         raise ValueError(f"Nenhum dado disponível para a URL: {url}")

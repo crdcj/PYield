@@ -6,6 +6,8 @@ from pathlib import Path
 import polars as pl
 import pytest
 
+import pyield as yd
+
 modulo_leiloes = importlib.import_module("pyield.tpf.leiloes")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
@@ -40,6 +42,30 @@ def test_pipeline_leiloes_por_data(monkeypatch):
         lambda *_, **__: DF_PTAX_REFERENCIA,
     )
     resultado = modulo_leiloes.leiloes(data="23-10-2025")
+    assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))
+
+
+def test_pipeline_leiloes_com_ptax_decimal_do_sgs(monkeypatch):
+    """A PTAX Decimal deve preservar o contrato e os cálculos dos leilões."""
+    sgs = importlib.import_module("pyield.bc.sgs")
+    monkeypatch.setattr(
+        modulo_leiloes,
+        "_buscar_dados_leiloes",
+        lambda *_, **__: json.loads(CAMINHO_JSON.read_bytes()),
+    )
+    monkeypatch.setattr(
+        sgs,
+        "_chamar_api",
+        lambda _: [
+            {"data": "22/10/2025", "valor": "5.3898"},
+            {"data": "23/10/2025", "valor": "5.384"},
+            {"data": "24/10/2025", "valor": "5.3797"},
+        ],
+    )
+
+    resultado = yd.tpf.leiloes(data="23-10-2025")
+
+    assert resultado.schema["ptax"] == pl.Float64
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))
 
 

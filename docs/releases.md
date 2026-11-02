@@ -6,7 +6,7 @@ orientações de migração. Consulte também as
 
 | Versão | Principais mudanças |
 |---|---|
-| [0.62.0](release-0.62.0.md) | Consultas externas sem cache nem retentativas, remoção de `atualizar` e Polars 2.0 como mínimo. |
+| [0.62.0](release-0.62.0.md) | Consultas externas sem cache, remoção de `atualizar`, retry leve, indicadores SGS com `Decimal`, taxas Over diárias e Polars 2.0 como mínimo. |
 | [0.61.0](release-0.61.0.md) | Calendário de pregões da B3 e exposição de `futuro.dv01_expr`. |
 | [0.60.1](release-0.60.1.md) | Correção de consultas de um dia no SGS. |
 | [0.60.0](release-0.60.0.md) | Contratos com `Decimal` e migração da API. |

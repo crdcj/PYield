@@ -4,14 +4,14 @@ import polars as pl
 import requests
 
 from pyield._internal.excel import ler_sem_cabecalho
+from pyield._internal.retry import requisitar
 
 _TIMEOUT_SEGUNDOS = 60
 
 
 def _buscar_conteudo(url: str) -> bytes:
     """Busca o conteúdo bruto de uma URL do Tesouro Nacional."""
-    resposta = requests.get(url, timeout=_TIMEOUT_SEGUNDOS)
-    resposta.raise_for_status()
+    resposta = requisitar(requests.get, url, timeout_leitura=_TIMEOUT_SEGUNDOS)
     return resposta.content
 
 

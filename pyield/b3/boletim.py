@@ -39,6 +39,7 @@ import requests
 from lxml import etree
 
 import pyield._internal.converters as cv
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.b3._contratos import normalizar_contratos
 from pyield.b3._validar_pregao import data_negociacao_valida
@@ -122,6 +123,15 @@ def baixar_zip(data: DateLike, boletim_completo: bool = False) -> bytes:
         Conteúdo do ZIP externo em bytes quando o ZIP contém um XML legível.
         Retorna ``b""`` para data sem pregão ou quando a resposta não contém
         um ZIP válido.
+
+    Notes:
+        Falhas de conexão, timeout, transferência interrompida e HTTP 502, 503
+        ou 504 permitem uma retentativa, após espera de 0,5 a 1 segundo.
+        Retry-After inválido ou superior a um segundo impede a retentativa.
+        Os timeouts de conexão e leitura são de 5 e 10 segundos por tentativa.
+        Erros de certificado e demais erros HTTP são propagados sem repetição.
+        Após a última falha, a exceção é propagada. A validação do ZIP não
+        provoca novo download. Não mantém cache entre chamadas.
     """
     if any_is_empty(data):
         return bytes()
@@ -134,8 +144,7 @@ def baixar_zip(data: DateLike, boletim_completo: bool = False) -> bytes:
     prefixo = "PR" if boletim_completo else "SPRD"
     url = f"https://www.b3.com.br/pesquisapregao/download?filelist={prefixo}{data_str}.zip"
 
-    resposta = _SESSAO.get(url, timeout=(5, 10))
-    resposta.raise_for_status()
+    resposta = requisitar(_SESSAO.get, url, timeout_leitura=10)
 
     if not _zip_valido(resposta.content):
         return bytes()
@@ -419,6 +428,9 @@ def buscar(
         * AdjstdValCtrct (Float64): valor do contrato ajustado.
         * MaxTradLmt (Float64): limite máximo de variação.
         * MinTradLmt (Float64): limite mínimo de variação.
+
+    Notes:
+        O download segue a política de retentativas de ``baixar_zip``.
 
     Raises:
         requests.HTTPError: Se a requisição HTTP ao endpoint falhar.

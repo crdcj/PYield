@@ -8,6 +8,7 @@ import requests
 
 from pyield import du, relogio
 from pyield._internal.converters import converter_datas
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike
 
 _URL_ATAS = "https://www.bcb.gov.br/api/servico/sitebcb/copom/atas"
@@ -29,14 +30,14 @@ _SCHEMA = {
 
 
 def _buscar_atas() -> bytes:
-    resposta = requests.get(_URL_ATAS, params={"quantidade": 500}, timeout=30)
-    resposta.raise_for_status()
+    resposta = requisitar(
+        requests.get, _URL_ATAS, params={"quantidade": 500}, timeout_leitura=30
+    )
     return resposta.content
 
 
 def _buscar_calendario() -> bytes:
-    resposta = requests.get(_URL_ICS, timeout=30)
-    resposta.raise_for_status()
+    resposta = requisitar(requests.get, _URL_ICS, timeout_leitura=30)
     return resposta.content
 
 

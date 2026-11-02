@@ -6,6 +6,8 @@ import json
 import polars as pl
 import requests
 
+from pyield._internal.retry import requisitar
+
 _URL = "https://servicodados.ibge.gov.br/api/v3/calendario/9256"
 _PRODUTO_IPCA = 9256
 
@@ -14,8 +16,9 @@ def _buscar_calendario() -> list[bytes]:
     paginas = []
     pagina = 1
     while True:
-        resposta = requests.get(_URL, params={"qtd": 100, "page": pagina}, timeout=30)
-        resposta.raise_for_status()
+        resposta = requisitar(
+            requests.get, _URL, params={"qtd": 100, "page": pagina}, timeout_leitura=30
+        )
         paginas.append(resposta.content)
         proxima = resposta.json()["nextPage"]
         if type(proxima) is not int:

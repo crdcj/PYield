@@ -33,6 +33,7 @@ import polars as pl
 import requests
 
 from pyield import relogio
+from pyield._internal.retry import requisitar
 
 URL_BASE_INTRADIA = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
 
@@ -80,8 +81,7 @@ def _buscar_json_intradia(contrato: str) -> list[dict]:
     cabecalhos = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"  # noqa: E501
     }
-    resposta = requests.get(url, headers=cabecalhos, timeout=10)
-    resposta.raise_for_status()
+    resposta = requisitar(requests.get, url, headers=cabecalhos, timeout_leitura=10)
     resposta.encoding = "utf-8"
 
     if "Quotation not available" in resposta.text:

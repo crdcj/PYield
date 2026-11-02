@@ -72,11 +72,15 @@ Visão geral das principais funções públicas do PYield.
 ??? "`yd.selic` (Selic e política monetária)"
     ```text
     yd.selic
-    ├── over(data)
-    ├── over_serie(...)
+    ├── over(data, *, anualizada=True)
+    ├── over_serie(..., anualizada=True)
     ├── meta(data)
     └── meta_serie(...)
     ```
+
+    `over` e `over_serie` retornam taxas do tipo `Decimal`: ao ano em base 252 por
+    padrão, ou ao dia útil com `anualizada=False`. A frequência das
+    observações é diária nos dois casos. `meta` mantém seu contrato anual.
 
 ??? "`yd.cpm` (opções digitais do COPOM e probabilidades implícitas)"
     ```text
@@ -217,15 +221,24 @@ Visão geral das principais funções públicas do PYield.
     yd.ptax(data)
     ```
 
+    Cotação em `Decimal`, com quatro casas; sem dados retorna `Decimal("NaN")`.
+
 ??? "`yd.ptax_serie` (série histórica da PTAX)"
     ```text
     yd.ptax_serie(inicio, fim)
     ```
 
+    Coluna `cotacao` do tipo Polars `Decimal(18, 4)`.
+
 ??? "`yd.di_over` (taxa DI Over)"
     ```text
-    yd.di_over(data)
+    yd.di_over(data, *, anualizada=True)
     ```
+
+    Taxa do tipo `Decimal`, anualizada em base 252 por padrão ou ao dia útil com
+    `anualizada=False`. A frequência das observações é diária nas duas
+    modalidades; datas sem dados retornam `Decimal("NaN")`. Os dados vêm do SGS do
+    Banco Central: série 4389 para a anualizada e 12 para a diária.
 
 ??? "`yd.forward` (taxa a termo entre dois vértices)"
     ```text

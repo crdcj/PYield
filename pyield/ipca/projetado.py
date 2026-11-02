@@ -6,6 +6,7 @@ import polars as pl
 import requests
 
 from pyield._internal.excel import ler_sem_cabecalho
+from pyield._internal.retry import requisitar
 
 _URL_XLS = "https://www.anbima.com.br/informacoes/indicadores/arqs/indicadores.xls"
 
@@ -20,8 +21,7 @@ class ProjecaoIndicador:
 def _baixar_planilha() -> bytes:
     """Baixa o arquivo XLS de indicadores da ANBIMA e retorna os bytes."""
     try:
-        r = requests.get(_URL_XLS, timeout=10)
-        r.raise_for_status()
+        r = requisitar(requests.get, _URL_XLS, timeout_leitura=10)
         return r.content
     except requests.exceptions.RequestException as e:
         raise ConnectionError(f"Erro ao acessar a planilha da ANBIMA: {e}")

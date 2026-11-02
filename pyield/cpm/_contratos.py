@@ -17,6 +17,7 @@ import requests
 
 from pyield import copom, du
 from pyield._internal.converters import converter_datas
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike
 from pyield.b3 import boletim
 from pyield.futuro.contratos import _MAPA_MESES
@@ -62,10 +63,15 @@ def _buscar_csv(data: dt.date) -> bytes:
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",  # noqa: E501
         "Accept": "application/json, text/plain, */*",
     }
-    resposta = requests.post(
-        url, params=parametros, json=carga, headers=cabecalhos, timeout=(5, 30)
+    # POST de exportação de dados por data; seguro de repetir.
+    resposta = requisitar(
+        requests.post,
+        url,
+        params=parametros,
+        json=carga,
+        headers=cabecalhos,
+        timeout_leitura=30,
     )
-    resposta.raise_for_status()
     return resposta.content
 
 

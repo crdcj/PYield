@@ -69,6 +69,33 @@ source or thematic relationship to another domain. Concepts such as `yd.ltn`,
 `yd.ntnb`, `yd.vna`, and `yd.rmd` therefore live at the root, while
 implementations may remain grouped internally by domain.
 
+## Indicators: rates and precision
+
+Selic Over, Selic Meta, DI Over, and PTAX return `decimal.Decimal` for scalar
+queries and Polars `Decimal` columns for series. Values are parsed directly
+from the source text, with scale 10 for rates and scale 4 for PTAX.
+Missing scalar observations return `Decimal("NaN")`.
+
+```python
+import pyield as yd
+
+annual_rate = yd.selic.over("28-02-2025")
+daily_rate = yd.selic.over("28-02-2025", anualizada=False)
+daily_series = yd.selic.over_serie(ultimos=5, anualizada=False)
+daily_di = yd.di_over("28-02-2025", anualizada=False)
+```
+
+Over rates are annualized on a 252-business-day basis by default;
+`anualizada=False` returns the daily rate published by the source. Rates are
+expressed as decimal fractions, and observations have daily frequency in
+both cases. Selic Meta remains an annual rate. DI Over now uses the Banco
+Central HTTPS API instead of the CETIP FTP server.
+
+For floating-point analysis, use `float(annual_rate)` or cast a column with
+`pl.col("taxa").cast(pl.Float64)`. This conversion may introduce binary
+approximation. See the [0.62.0 migration notes (Portuguese)](docs/release-0.62.0.md)
+for the updated types and migration guidance.
+
 ## Release notes
 
 See the [release notes (Portuguese)](https://crdcj.github.io/PYield/releases/)

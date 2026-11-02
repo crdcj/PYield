@@ -8,6 +8,7 @@ from polars import selectors as cs
 from pyield import du
 from pyield._internal import converters as cv
 from pyield._internal.br_numbers import pct_para_decimal
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike, DatesLike, any_is_empty
 from pyield.bc.sgs import ptax_serie
 from pyield.tpf.titulos import ltn, ntnb, ntnf
@@ -141,8 +142,9 @@ def _buscar_dados_leiloes(
     if ano_inicial is not None:
         parametros["anoinicial"] = str(ano_inicial)
 
-    resposta = requests.get(endpoint_api, params=parametros, timeout=10)
-    resposta.raise_for_status()
+    resposta = requisitar(
+        requests.get, endpoint_api, params=parametros, timeout_leitura=10
+    )
     dados = resposta.json()
     if "registros" not in dados or not dados["registros"]:
         return []
@@ -315,7 +317,7 @@ def _buscar_ptax(df: pl.DataFrame) -> pl.DataFrame:
         return pl.DataFrame()
 
     return (
-        df.select("data", "cotacao")
+        df.select("data", cotacao=pl.col("cotacao").cast(pl.Float64))
         .rename({"data": "data_ref", "cotacao": "ptax"})
         .sort("data_ref")
     )

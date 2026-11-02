@@ -8,6 +8,7 @@ import requests
 
 from pyield import relogio
 from pyield._internal.converters import converter_datas
+from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike, any_is_empty
 
 _URL_INDICES = (
@@ -19,8 +20,7 @@ _ESQUEMA = {"periodo": pl.Int64, "indice": _TIPO_INDICE}
 
 def _buscar_historico() -> bytes:
     """Busca o JSON bruto da série de números-índice do IGP-M."""
-    resposta = requests.get(_URL_INDICES, timeout=30)
-    resposta.raise_for_status()
+    resposta = requisitar(requests.get, _URL_INDICES, timeout_leitura=30)
     return resposta.content
 
 

@@ -1,6 +1,5 @@
 import datetime as dt
 import importlib
-import math
 from decimal import Decimal
 from urllib.parse import parse_qs, urlparse
 
@@ -27,8 +26,8 @@ def test_selic_meta_serie_anterior_ao_inicio_nao_chama_api(monkeypatch):
     resultado = yd.selic.meta_serie("01-01-1995", "04-03-1999")
 
     assert resultado.is_empty()
-    assert resultado.schema == {"data": pl.Date, "taxa": pl.Float64}
-    assert math.isnan(yd.selic.meta("01-01-1995"))
+    assert resultado.schema == {"data": pl.Date, "taxa": pl.Decimal(18, 10)}
+    assert yd.selic.meta("01-01-1995").is_nan()
 
 
 def test_selic_meta_serie_ajusta_inicio_anterior(monkeypatch):
@@ -47,7 +46,9 @@ def test_selic_meta_serie_ajusta_inicio_anterior(monkeypatch):
 
     assert len(urls) == 1
     assert _parametro_data(urls[0], "dataInicial") == dt.date(1999, 3, 5)
-    assert resultado.to_dicts() == [{"data": dt.date(1999, 3, 5), "taxa": 0.45}]
+    assert resultado.to_dicts() == [
+        {"data": dt.date(1999, 3, 5), "taxa": Decimal("0.4500000000")}
+    ]
 
 
 def test_selic_meta_consulta_um_dia_com_intervalo_valido(monkeypatch):
@@ -70,7 +71,9 @@ def test_selic_meta_consulta_um_dia_com_intervalo_valido(monkeypatch):
     assert len(urls) == 1
     assert _parametro_data(urls[0], "dataInicial") == dt.date(2026, 10, 29)
     assert _parametro_data(urls[0], "dataFinal") == dt.date(2026, 10, 30)
-    assert resultado.to_dicts() == [{"data": dt.date(2026, 10, 30), "taxa": 0.14}]
+    assert resultado.to_dicts() == [
+        {"data": dt.date(2026, 10, 30), "taxa": Decimal("0.1400000000")}
+    ]
 
 
 def test_selic_meta_serie_divide_intervalo_em_blocos_seguros(monkeypatch):
@@ -311,12 +314,12 @@ def test_igpm_intervalo_em_blocos_com_dados_vazios(monkeypatch, todos_vazios):
 @pytest.mark.parametrize(
     ("funcao", "publicado", "coluna", "esperado"),
     [
-        (yd.selic.over_serie, "12.15", "taxa", 0.1215),
-        (yd.selic.meta_serie, "12.25", "taxa", 0.1225),
-        (yd.ptax_serie, "5.7496", "cotacao", 5.7496),
+        (yd.selic.over_serie, "12.15", "taxa", Decimal("0.1215000000")),
+        (yd.selic.meta_serie, "12.25", "taxa", Decimal("0.1225000000")),
+        (yd.ptax_serie, "5.7496", "cotacao", Decimal("5.7496")),
     ],
 )
-def test_sgs_preserva_float_em_selic_e_ptax(
+def test_sgs_preserva_decimal_em_selic_e_ptax(
     monkeypatch, funcao, publicado, coluna, esperado
 ):
     monkeypatch.setattr(
@@ -327,5 +330,77 @@ def test_sgs_preserva_float_em_selic_e_ptax(
 
     resultado = funcao(ultimos=1)
 
-    assert resultado.schema == {"data": pl.Date, coluna: pl.Float64}
+    escala = 4 if coluna == "cotacao" else 10
+    assert resultado.schema == {"data": pl.Date, coluna: pl.Decimal(18, escala)}
     assert resultado.to_dicts() == [{"data": dt.date(2025, 4, 22), coluna: esperado}]
+
+
+@pytest.mark.parametrize(
+    ("consultar", "opcoes", "publicado", "esperado"),
+    [
+        (yd.selic.over, {}, "13.15", Decimal("0.1315000000")),
+        (yd.selic.meta, {}, "13.25", Decimal("0.1325000000")),
+        (yd.di_over, {}, "13.15", Decimal("0.1315000000")),
+        (yd.ptax, {}, "5.7496", Decimal("5.7496")),
+        (
+            yd.selic.over,
+            {"anualizada": False},
+            "0.00000001",
+            Decimal("0.0000000001"),
+        ),
+        (
+            yd.di_over,
+            {"anualizada": False},
+            "0.04903712",
+            Decimal("0.0004903712"),
+        ),
+    ],
+)
+def test_sgs_escalar_preserva_tipo_valor_e_escala(
+    monkeypatch, consultar, opcoes, publicado, esperado
+):
+    monkeypatch.setattr(
+        sgs,
+        "_chamar_api",
+        lambda _: [{"data": "22/04/2025", "valor": publicado}],
+    )
+
+    resultado = consultar("22/04/2025", **opcoes)
+
+    assert isinstance(resultado, Decimal)
+    assert resultado.as_tuple() == esperado.as_tuple()
+
+
+@pytest.mark.parametrize(
+    ("consultar", "serie", "coluna", "escala"),
+    [
+        (yd.selic.over, yd.selic.over_serie, "taxa", 10),
+        (yd.selic.meta, yd.selic.meta_serie, "taxa", 10),
+        (yd.ptax, yd.ptax_serie, "cotacao", 4),
+    ],
+)
+def test_sgs_ausencia_preserva_contrato_decimal(
+    monkeypatch, consultar, serie, coluna, escala
+):
+    monkeypatch.setattr(sgs, "_chamar_api", lambda _: [])
+
+    resultado = consultar("22/04/2025")
+    historico = serie(ultimos=1)
+
+    assert isinstance(resultado, Decimal)
+    assert resultado.is_nan()
+    assert historico.is_empty()
+    assert historico.schema == {"data": pl.Date, coluna: pl.Decimal(18, escala)}
+
+
+@pytest.mark.parametrize("consultar", [yd.selic.over, yd.selic.meta, yd.ptax, yd.di_over])
+def test_sgs_entrada_vazia_retorna_decimal_nan_sem_consultar(monkeypatch, consultar):
+    def falhar_se_chamada(_url):
+        pytest.fail("Entrada vazia não deve consultar a API.")
+
+    monkeypatch.setattr(sgs, "_chamar_api", falhar_se_chamada)
+
+    resultado = consultar(None)
+
+    assert isinstance(resultado, Decimal)
+    assert resultado.is_nan()

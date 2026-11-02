@@ -4,14 +4,13 @@ import logging
 from importlib.metadata import PackageNotFoundError, version
 
 from pyield import b3, du, igpm, ipca
-from pyield.b3.di_over import di_over
 from pyield import futuro
 from pyield.futuro import di1
 
 # Ordem intencional: alguns módulos importam `di1` a partir de `pyield`
 # durante a inicialização do pacote.
 from pyield import cpm, copom, selic, tpf, vna
-from pyield.bc.sgs import ptax, ptax_serie
+from pyield.bc.sgs import di_over, ptax, ptax_serie
 from pyield.compromissada import compromissadas
 from pyield.fwd import forward, forwards, forwards_expr
 from pyield.interpolador import Interpolador, interpolar

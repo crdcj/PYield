@@ -198,17 +198,25 @@ Acesse indicadores econômicos do BCB:
 
 ```python
 # SELIC Over (taxa anualizada)
-yd.selic.over("31-05-2024")  # -> 0.104  (10.4% a.a.)
+yd.selic.over("31-05-2024")  # Decimal: taxa ao ano em base 252
+yd.selic.over("31-05-2024", anualizada=False)  # Decimal: taxa ao dia útil
 
 # PTAX (taxa de câmbio oficial)
-yd.ptax("31-05-2024")  # -> 5.4407
+yd.ptax("31-05-2024")  # Decimal: cotação de venda em R$/US$, com quatro casas
 
 # Taxa SELIC meta (definida pelo COPOM)
-yd.selic.meta("31-05-2024")  # -> 0.1075  (10.75% a.a.)
+yd.selic.meta("31-05-2024")  # Decimal: meta anual
 
 # VNA da LFT (Valor Nominal Atualizado)
 yd.vna.valor("LFT", "31-05-2024")  # -> 14903.011480
 ```
+
+Selic Over, Selic Meta, DI Over e PTAX preservam os valores publicados pelo
+Banco Central usando `Decimal`, sem passagem por `float`. As séries retornam
+colunas Polars `Decimal`; escalares sem dados retornam `Decimal("NaN")`.
+Para análises com ponto flutuante, a conversão é explícita com `float(valor)`
+ou `pl.col("taxa").cast(pl.Float64)`. Consulte as
+[notas da 0.62.0](../release-0.62.0.md#indicadores-sgs-com-decimal).
 
 ### 7. Inflação (IPCA)
 
