@@ -78,21 +78,11 @@ uv add pyield
 O [mapa completo da API](https://crdcj.github.io/PYield/api-map/) inclui a
 documentação detalhada e as assinaturas públicas.
 
-## Novidades na versão 0.61.0
+## Notas de versão
 
-Esta seção cobre apenas as mudanças da `0.60.0` para a `0.61.0`, que não
-removem nem alteram APIs existentes.
-
-- Calendário de pregões da B3 em `yd.b3`: `eh_pregao(data)`,
-  `pregao_anterior(data)`, `proximo_pregao(data)` e
-  `ultimo_pregao(data=None)`. Há pregão em todo dia útil brasileiro, exceto em
-  24/12 e 31/12. Fechamentos excepcionais não recorrentes não são modelados.
-- `yd.futuro.dv01_expr(coluna_dias_uteis, coluna_taxa, coluna_preco)` passa a
-  ser público e retorna uma `pl.Expr` com o DV01 dos contratos futuros.
-
-Para atualizar a partir de versões anteriores, consulte as
-[notas de migração da 0.60.0](https://crdcj.github.io/PYield/release-0.60.0/)
-e as [releases do GitHub](https://github.com/crdcj/PYield/releases).
+Consulte as [notas de versão](https://crdcj.github.io/PYield/releases/) para
+mudanças, decisões de arquitetura e orientações de migração. As publicações
+estão disponíveis nas [releases do GitHub](https://github.com/crdcj/PYield/releases).
 
 ## Projeto
 

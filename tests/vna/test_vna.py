@@ -284,7 +284,7 @@ def test_vna_ntnb_calcula_entre_valores_publicados(
     monkeypatch.setattr(
         vna_ntnb,
         "vnas",
-        lambda *, atualizar=False: pl.DataFrame(
+        lambda: pl.DataFrame(
             {
                 "data": [dt.date(2025, 12, 15), dt.date(2026, 1, 15)],
                 "vna": [
@@ -329,7 +329,7 @@ def test_vna_ntnb_usa_numeros_indice_com_precisao_normativa(
     monkeypatch.setattr(
         vna_ntnb,
         "vnas",
-        lambda *, atualizar=False: pl.DataFrame(
+        lambda: pl.DataFrame(
             {
                 "data": [dt.date(2026, 7, 15), dt.date(2026, 8, 15)],
                 "vna": [
@@ -365,7 +365,7 @@ def test_vna_ntnc_seleciona_serie_e_calcula_entre_valores_publicados(
     monkeypatch.setattr(
         vna_ntnc,
         "vnas",
-        lambda *, atualizar=False: pl.DataFrame(
+        lambda: pl.DataFrame(
             {
                 "data": [
                     dt.date(2000, 7, 1),

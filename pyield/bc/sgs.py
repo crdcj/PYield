@@ -24,7 +24,6 @@ Notas de implementação:
 """
 
 import datetime as dt
-from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 from enum import Enum
 from http import HTTPStatus
@@ -34,9 +33,7 @@ import requests
 
 from pyield import relogio
 from pyield._internal.br_numbers import pct_para_decimal
-from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas, data_referencia_valida
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 
 URL_BASE = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
@@ -66,8 +63,6 @@ class SerieSGS(Enum):
 # ── Infraestrutura de acesso à API SGS ──────────────────────────────
 
 
-@ttl_cache()
-@retry_padrao
 def _chamar_api(url_api: str) -> list[dict[str, str]]:
     resposta = requests.get(url_api, timeout=30)
     resposta.raise_for_status()
@@ -136,11 +131,8 @@ def _buscar_dados_url(
         urls.append(_montar_url_intervalo(serie, inicio_consulta, fim_bloco))
         inicio_bloco = fim_bloco + dt.timedelta(days=1)
 
-    if serie == SerieSGS.SELIC_META:
-        with ThreadPoolExecutor(max_workers=min(4, len(urls))) as executor:
-            todos_dfs = list(executor.map(_buscar_api, urls))
-    else:
-        todos_dfs = [_buscar_api(url) for url in urls]
+    # Busca sequencial para interromper na primeira falha da fonte.
+    todos_dfs = [_buscar_api(url) for url in urls]
 
     todos_dfs = [df for df in todos_dfs if not df.is_empty()]
 

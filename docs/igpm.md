@@ -24,11 +24,11 @@ ou `ultimos`; quando informado, `ultimos` tem prioridade sobre as datas.
 
 ## Calendário de divulgação
 
-`yd.igpm.calendario(ano, atualizar=False)` consulta as divulgações mensais na
+`yd.igpm.calendario(ano)` consulta as divulgações mensais na
 FGV IBRE, excluindo as prévias decendiais e os demais índices. Retorna
 `competencia` e `data_divulgacao`, ambas `Date`. A competência corresponde ao
 mês da divulgação mensal. Datas ausentes não são estimadas, e o calendário
-não comprova publicação. `atualizar=True` renova o cache de 60 segundos do ano.
+não comprova publicação.
 
 ```python
 calendario = yd.igpm.calendario(2026)

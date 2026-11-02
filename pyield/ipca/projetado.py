@@ -5,9 +5,7 @@ from decimal import ROUND_HALF_EVEN, Decimal
 import polars as pl
 import requests
 
-from pyield._internal.cache import ttl_cache
 from pyield._internal.excel import ler_sem_cabecalho
-from pyield._internal.retry import retry_padrao
 
 _URL_XLS = "https://www.anbima.com.br/informacoes/indicadores/arqs/indicadores.xls"
 
@@ -19,8 +17,6 @@ class ProjecaoIndicador:
     valor_projetado: Decimal  # Valor projetado em unidade decimal
 
 
-@ttl_cache()
-@retry_padrao
 def _baixar_planilha() -> bytes:
     """Baixa o arquivo XLS de indicadores da ANBIMA e retorna os bytes."""
     try:

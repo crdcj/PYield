@@ -12,9 +12,7 @@ import requests
 
 from pyield import relogio
 from pyield._internal.br_numbers import float_br
-from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 
 URL_BASE_MENSAL = "https://www4.bcb.gov.br/pom/demab/negociacoes/download"
@@ -42,8 +40,6 @@ def _nome_arquivo_mensal(data: DateLike, extragrupo: bool = False) -> str:
     return f"Neg{_tipo_arquivo(extragrupo)}{data_alvo:%Y%m}.ZIP"
 
 
-@ttl_cache()
-@retry_padrao
 def _baixar_url_zip(url_arquivo: str) -> bytes:
     resposta = requests.get(url_arquivo, allow_redirects=True, timeout=60)
     resposta.raise_for_status()

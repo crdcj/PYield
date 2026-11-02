@@ -14,11 +14,11 @@ A taxa histórica indisponível retorna `Decimal("NaN")` na consulta escalar.
 
 ## Calendário de divulgação
 
-`yd.ipca.calendario(ano, atualizar=False)` consulta o calendário oficial do
+`yd.ipca.calendario(ano)` consulta o calendário oficial do
 IBGE e retorna as colunas `competencia` e `data_divulgacao`, ambas `Date`.
 O ano seleciona a competência: dezembro pode ter divulgação no ano seguinte.
 A data prevista não comprova publicação do índice e datas ausentes não são
-estimadas. `atualizar=True` renova o cache de 60 segundos da consulta.
+estimadas.
 
 ```python
 calendario = yd.ipca.calendario(2026)

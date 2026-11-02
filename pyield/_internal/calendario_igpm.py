@@ -9,9 +9,6 @@ import requests
 from lxml import html
 from requests.adapters import HTTPAdapter
 
-from pyield._internal.cache import ttl_cache
-from pyield._internal.retry import retry_padrao
-
 _URL = "https://portalibre.fgv.br/calendario-de-divulgacao"
 
 
@@ -25,8 +22,6 @@ class _AdaptadorFGV(HTTPAdapter):
         return super().init_poolmanager(*args, **kwargs)
 
 
-@ttl_cache()
-@retry_padrao
 def _buscar_calendario(ano: int) -> bytes:
     with requests.Session() as sessao:
         sessao.mount(_URL, _AdaptadorFGV())
@@ -74,12 +69,11 @@ def _processar_calendario(dados: pl.DataFrame) -> pl.DataFrame:
     return calendario.sort("competencia")
 
 
-def calendario(ano: int, *, atualizar: bool = False) -> pl.DataFrame:
+def calendario(ano: int) -> pl.DataFrame:
     """Consulta o calendário de divulgação mensal do IGP-M na FGV IBRE.
 
     Args:
         ano: Ano das divulgações e competências.
-        atualizar: Ignora e renova o cache de 60 segundos desse ano.
 
     Returns:
         DataFrame ordenado por competência. Sem registros, retorna vazio com
@@ -110,6 +104,6 @@ def calendario(ano: int, *, atualizar: bool = False) -> pl.DataFrame:
     """
     if type(ano) is not int or not dt.MINYEAR <= ano <= dt.MAXYEAR:
         raise ValueError("ano deve ser um inteiro entre 1 e 9999.")
-    return _processar_calendario(
-        _parsear_calendario(_buscar_calendario(ano, _atualizar=atualizar))
-    ).filter(pl.col("competencia").dt.year() == ano)
+    return _processar_calendario(_parsear_calendario(_buscar_calendario(ano))).filter(
+        pl.col("competencia").dt.year() == ano
+    )

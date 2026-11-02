@@ -7,12 +7,11 @@ import pytest
 import requests
 
 import pyield as yd
-from pyield._internal.cache import ttl_cache  # noqa: PLC2701
 from pyield.vna import _download, _lft, _ntnb, _ntnc  # noqa: PLC2701
 from tests.vna.test_lft import TEXTO_BCB
 
-TOTAL_REQUISICOES = 4
-TOTAL_DOWNLOADS_VNA = 2
+TOTAL_REQUISICOES = 7
+TOTAL_DOWNLOADS_VNA = 4
 
 
 def _planilha(aba: str, valor: int) -> bytes:
@@ -60,7 +59,9 @@ def _planilha(aba: str, valor: int) -> bytes:
 
 @pytest.mark.parametrize(("titulo", "modulo"), [("NTN-B", _ntnb), ("NTN-C", _ntnc)])
 @pytest.mark.parametrize("operacao", ["valor", "historico", "ultimo"])
-def test_atualizacao_mensal_renova_cache(monkeypatch, titulo, modulo, operacao):
+def test_consultas_mensais_baixam_dados_a_cada_chamada(
+    monkeypatch, titulo, modulo, operacao
+):
     downloads = []
 
     def buscar(url):
@@ -71,28 +72,24 @@ def test_atualizacao_mensal_renova_cache(monkeypatch, titulo, modulo, operacao):
             len(downloads) * 2,
         )
 
-    # Isola o cache; somente o transporte é substituído no fluxo de consulta.
-    monkeypatch.setattr(
-        _download, "baixar_planilha", ttl_cache()(_download.baixar_planilha.__wrapped__)
-    )
     monkeypatch.setattr(_download, "_buscar_conteudo", buscar)
     vencimento = "01-01-2031" if titulo == "NTN-C" else None
 
-    def consultar(**kwargs):
+    def consultar():
         funcao = getattr(yd.vna, operacao)
         if operacao == "valor":
-            return funcao(titulo, "15-12-2025", vencimento, **kwargs)
-        return funcao(titulo, vencimento, **kwargs).item(0, "vna")
+            return funcao(titulo, "15-12-2025", vencimento)
+        return funcao(titulo, vencimento).item(0, "vna")
 
     assert consultar() == Decimal(2)
-    assert consultar() == Decimal(2)
-    assert consultar(atualizar=True) == Decimal(4)
     assert consultar() == Decimal(4)
+    assert consultar() == Decimal(6)
+    assert consultar() == Decimal(8)
     assert len(downloads) == TOTAL_DOWNLOADS_VNA
     assert set(downloads) == {modulo._URL_ARQUIVO}
 
 
-def test_lft_atualiza_apenas_data_consultada_e_propaga_erro(monkeypatch):
+def test_lft_baixa_a_cada_consulta_e_propaga_erro(monkeypatch):
     chamadas = []
     falhar = False
 
@@ -103,18 +100,31 @@ def test_lft_atualiza_apenas_data_consultada_e_propaga_erro(monkeypatch):
         texto = TEXTO_BCB.replace("14903,011480", f"{len(chamadas)},000000")
         return SimpleNamespace(text=texto, raise_for_status=lambda: None)
 
-    # Remove o retry no teste para verificar o erro sem esperas.
-    monkeypatch.setattr(
-        _lft, "_baixar_texto", ttl_cache()(_lft._baixar_texto.__wrapped__.__wrapped__)
-    )
     monkeypatch.setattr(_lft.requests, "get", buscar)
     assert yd.vna.valor("LFT", "31-05-2024") == Decimal(1)
     assert yd.vna.valor("LFT", "29-05-2024") == Decimal(2)
-    assert yd.vna.valor("LFT", "31-05-2024", atualizar=True) == Decimal(3)
     assert yd.vna.valor("LFT", "31-05-2024") == Decimal(3)
-    assert yd.vna.valor("LFT", "29-05-2024") == Decimal(2)
+    assert yd.vna.valor("LFT", "31-05-2024") == Decimal(4)
+    assert yd.vna.valor("LFT", "29-05-2024") == Decimal(5)
     falhar = True
     with pytest.raises(requests.HTTPError, match="falha"):
-        yd.vna.valor("LFT", "31-05-2024", atualizar=True)
-    assert yd.vna.valor("LFT", "31-05-2024") == Decimal(3)
+        yd.vna.valor("LFT", "31-05-2024")
+    falhar = False
+    assert yd.vna.valor("LFT", "31-05-2024") == Decimal(7)
     assert len(chamadas) == TOTAL_REQUISICOES
+
+
+@pytest.mark.parametrize(
+    "funcao",
+    [
+        yd.vna.valor,
+        yd.vna.historico,
+        yd.vna.ultimo,
+        yd.vna.contexto,
+        yd.ipca.calendario,
+        yd.igpm.calendario,
+    ],
+)
+def test_parametro_atualizar_removido(funcao):
+    with pytest.raises(TypeError, match="atualizar"):
+        funcao(atualizar=True)

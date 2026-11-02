@@ -5,12 +5,9 @@ import requests
 
 from pyield import relogio
 from pyield._internal import converters as cv
-from pyield._internal.cache import ttl_cache
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
 
 URL_API = "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/dealers"
-_TTL_UMA_HORA_EM_SEGUNDOS = 60 * 60
 
 ESQUEMA_SAIDA = {
     "inicio_periodo": pl.Date,
@@ -24,8 +21,6 @@ def _df_vazio() -> pl.DataFrame:
     return pl.DataFrame(schema=ESQUEMA_SAIDA)
 
 
-@ttl_cache(ttl=_TTL_UMA_HORA_EM_SEGUNDOS)
-@retry_padrao
 def _buscar_dealers() -> dict:
     """Busca os dados brutos de dealers na API do Tesouro Nacional."""
     resposta = requests.get(URL_API, timeout=10)

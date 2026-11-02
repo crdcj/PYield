@@ -8,7 +8,6 @@ import polars as pl
 import pytest
 
 import pyield as yd
-from pyield._internal.cache import ttl_cache  # noqa: PLC2701
 from pyield.ipca import historico as _ipca
 from pyield.vna import _download, _ntnb, _ntnc  # noqa: PLC2701
 
@@ -21,9 +20,6 @@ ARQUIVOS = {
 
 @pytest.fixture(autouse=True)
 def planilhas_locais(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        _download, "baixar_planilha", ttl_cache()(_download.baixar_planilha.__wrapped__)
-    )
     monkeypatch.setattr(
         _download,
         "_buscar_conteudo",

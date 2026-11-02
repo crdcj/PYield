@@ -33,8 +33,6 @@ import polars as pl
 import requests
 
 from pyield import relogio
-from pyield._internal.cache import ttl_cache
-from pyield._internal.retry import retry_padrao
 
 URL_BASE_INTRADIA = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
 
@@ -77,8 +75,6 @@ MAPEAMENTO = {orig: novo for orig, novo, _ in COLUNAS_INTRADIA}
 TIPOS = {orig: tipo for orig, _, tipo in COLUNAS_INTRADIA}
 
 
-@ttl_cache(ttl=10)
-@retry_padrao
 def _buscar_json_intradia(contrato: str) -> list[dict]:
     url = f"{URL_BASE_INTRADIA}/{contrato}"
     cabecalhos = {

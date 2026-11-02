@@ -33,7 +33,6 @@ def contexto(
     vencimento: DateLike | None = None,
     *,
     inflacao_projetada: float | Decimal | str | None = None,
-    atualizar: bool = False,
 ) -> pl.DataFrame:
     """Consulta os parâmetros disponíveis para a vigência mensal do VNA.
 
@@ -47,8 +46,6 @@ def contexto(
             ``"0.45%"`` ou ``"0,45%"``. Convertida para Decimal sem arredondar;
             usada somente se a taxa realizada estiver indisponível.
             Não busca projeções automaticamente.
-        atualizar: Renova apenas o cache do histórico de VNA, como em historico.
-            Não renova os caches de inflação.
 
     Returns:
         DataFrame com uma linha, inclusive quando faltam parâmetros. Dados
@@ -118,7 +115,7 @@ def contexto(
         if not projecao.is_finite() or projecao <= -1:
             raise ValueError("A projeção deve ser finita e maior que -1.")
 
-    dados = historico(titulo, vencimento, atualizar=atualizar)
+    dados = historico(titulo, vencimento)
     base = dados.filter(pl.col("data") == inicio)
     final = dados.filter(pl.col("data") == fim)
     vna_base = None if base.is_empty() else base.item(0, "vna")

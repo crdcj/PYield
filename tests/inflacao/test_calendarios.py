@@ -11,20 +11,9 @@ import requests
 
 import pyield as yd
 from pyield._internal import calendario_igpm as fgv  # noqa: PLC2701
-from pyield._internal.cache import ttl_cache  # noqa: PLC2701
 from pyield.ipca import _calendario as ibge  # noqa: PLC2701
 
 _DADOS = Path(__file__).parent / "data"
-
-
-@pytest.fixture(autouse=True)
-def caches_isolados(monkeypatch):
-    for modulo in (ibge, fgv):
-        monkeypatch.setattr(
-            modulo,
-            "_buscar_calendario",
-            ttl_cache()(modulo._buscar_calendario.__wrapped__),
-        )
 
 
 def test_ipca_publico_com_respostas_reais(monkeypatch):
@@ -68,7 +57,7 @@ def test_ano_invalido(calendario, ano):
         calendario(ano)
 
 
-def test_paginacao_e_atualizacao_ipca(monkeypatch):
+def test_paginacao_ipca_sem_cache(monkeypatch):
     chamadas = []
 
     class Resposta:
@@ -90,11 +79,11 @@ def test_paginacao_e_atualizacao_ipca(monkeypatch):
         return Resposta(params["page"])
 
     monkeypatch.setattr(ibge.requests, "get", buscar)
-    primeira = yd.ipca.calendario(2026, atualizar=True)
+    primeira = yd.ipca.calendario(2026)
     assert yd.ipca.calendario(2026).equals(primeira)
-    assert chamadas == [1, 2]
-    assert yd.ipca.calendario(2026, atualizar=True).equals(primeira)
     assert chamadas == [1, 2, 1, 2]
+    assert yd.ipca.calendario(2026).equals(primeira)
+    assert chamadas == [1, 2, 1, 2, 1, 2]
 
 
 def test_paginacao_invalida(monkeypatch):
@@ -109,7 +98,7 @@ def test_paginacao_invalida(monkeypatch):
 
     monkeypatch.setattr(ibge.requests, "get", lambda *_, **__: Resposta())
     with pytest.raises(ValueError, match="Paginação"):
-        yd.ipca.calendario(2026, atualizar=True)
+        yd.ipca.calendario(2026)
 
 
 def test_ipca_conflitante_e_filtros(monkeypatch):
@@ -144,7 +133,7 @@ def test_igpm_exclui_previas_e_detecta_conflitos(monkeypatch):
         yd.igpm.calendario(2026)
 
 
-def test_igpm_fetch_filtros_cache_e_atualizacao(monkeypatch):
+def test_igpm_fetch_filtros_sem_cache(monkeypatch):
     chamadas = []
 
     class Resposta:
@@ -162,15 +151,19 @@ def test_igpm_fetch_filtros_cache_e_atualizacao(monkeypatch):
     monkeypatch.setattr(fgv.requests.Session, "get", buscar)
     primeira = yd.igpm.calendario(2026)
     assert yd.igpm.calendario(2026).equals(primeira)
-    assert chamadas == [
-        {
-            "field_indice_target_id": "128",
-            "field_divulgacao_data_value": "2026-01-01",
-            "field_divulgacao_data_value_1": "2026-12-31",
-        }
-    ]
-    assert yd.igpm.calendario(2026, atualizar=True).equals(primeira)
-    assert len(chamadas) == 2
+    assert (
+        chamadas
+        == [
+            {
+                "field_indice_target_id": "128",
+                "field_divulgacao_data_value": "2026-01-01",
+                "field_divulgacao_data_value_1": "2026-12-31",
+            }
+        ]
+        * 2
+    )
+    assert yd.igpm.calendario(2026).equals(primeira)
+    assert len(chamadas) == 3
 
 
 def test_ipca_data_ausente_nao_vira_agenda_valida(monkeypatch):

@@ -7,7 +7,6 @@ import pytest
 import requests
 
 import pyield as yd
-from pyield._internal.cache import ttl_cache  # noqa: PLC2701
 from pyield.bc import sgs
 from pyield.ipca import historico as ipca
 from pyield.vna import _contexto, _download, _ntnb, _ntnc  # noqa: PLC2701
@@ -21,9 +20,6 @@ def fontes_locais(monkeypatch):
         _ntnb._URL_ARQUIVO: "DP_Valores_Nominais_NTNB.xlsx",
         _ntnc._URL_ARQUIVO: "DP_Valores_Nominais_NTNC.xlsx",
     }
-    monkeypatch.setattr(
-        _download, "baixar_planilha", ttl_cache()(_download.baixar_planilha.__wrapped__)
-    )
     monkeypatch.setattr(
         _download, "_buscar_conteudo", lambda url: (_DADOS / arquivos[url]).read_bytes()
     )

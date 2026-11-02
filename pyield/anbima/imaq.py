@@ -16,15 +16,11 @@ from lxml.html import fromstring as html_fromstring
 
 import pyield._internal.converters as cv
 from pyield._internal.br_numbers import float_br, inteiro_m
-from pyield._internal.cache import ttl_cache
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
 
 URL_IMA = "https://www.anbima.com.br/informacoes/ima/ima-quantidade-mercado.asp"
 
 
-@ttl_cache()
-@retry_padrao
 def _buscar_conteudo_url(data_referencia: dt.date) -> bytes:
     data_referencia_str = data_referencia.strftime("%d/%m/%Y")
     payload = {

@@ -69,22 +69,11 @@ source or thematic relationship to another domain. Concepts such as `yd.ltn`,
 `yd.ntnb`, `yd.vna`, and `yd.rmd` therefore live at the root, while
 implementations may remain grouped internally by domain.
 
-## What's new in version 0.61.0
+## Release notes
 
-This section covers only changes from `0.60.0` to `0.61.0`, which neither
-remove nor change existing APIs.
-
-- B3 trading-session calendar in `yd.b3`: `eh_pregao(data)`,
-  `pregao_anterior(data)`, `proximo_pregao(data)`, and
-  `ultimo_pregao(data=None)`. There is a session on every Brazilian business
-  day except December 24 and 31. Non-recurring exceptional closures are not
-  modeled.
-- `yd.futuro.dv01_expr(coluna_dias_uteis, coluna_taxa, coluna_preco)` is now
-  public and returns a `pl.Expr` with the DV01 of futures contracts.
-
-When upgrading from earlier versions, see the
-[0.60.0 migration notes (Portuguese)](https://crdcj.github.io/PYield/release-0.60.0/)
-and the [GitHub releases](https://github.com/crdcj/PYield/releases).
+See the [release notes (Portuguese)](https://crdcj.github.io/PYield/releases/)
+for changes, architectural decisions, and migration guidance. Published versions
+are available on [GitHub Releases](https://github.com/crdcj/PYield/releases).
 
 ## Project
 

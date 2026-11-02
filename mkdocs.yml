@@ -12,7 +12,16 @@ nav:
   - Início: index.md
   - Quickstart: quickstart.md
   - Mapa da API: api-map.md
-  - Novidades na 0.60.0: release-0.60.0.md
+  - Notas de versão:
+      - Visão geral: releases.md
+      - 0.62.0: release-0.62.0.md
+      - 0.61.0: release-0.61.0.md
+      - 0.60.1: release-0.60.1.md
+      - 0.60.0: release-0.60.0.md
+      - 0.59.0: release-0.59.0.md
+      - 0.58.2: release-0.58.2.md
+      - 0.58.1: release-0.58.1.md
+      - 0.58.0: release-0.58.0.md
   - Desenvolvimento e publicação: desenvolvimento.md
   - Artigos:
       - Introdução ao Pyield: articles/pyield_intro.md

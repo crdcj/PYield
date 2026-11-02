@@ -7,9 +7,7 @@ import polars as pl
 import requests
 
 from pyield import relogio
-from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 
 _URL_INDICES = (
@@ -19,8 +17,6 @@ _TIPO_INDICE = pl.Decimal(precision=18, scale=10)
 _ESQUEMA = {"periodo": pl.Int64, "indice": _TIPO_INDICE}
 
 
-@ttl_cache()
-@retry_padrao
 def _buscar_historico() -> bytes:
     """Busca o JSON bruto da série de números-índice do IGP-M."""
     resposta = requests.get(_URL_INDICES, timeout=30)

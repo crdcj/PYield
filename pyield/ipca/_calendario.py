@@ -6,15 +6,10 @@ import json
 import polars as pl
 import requests
 
-from pyield._internal.cache import ttl_cache
-from pyield._internal.retry import retry_padrao
-
 _URL = "https://servicodados.ibge.gov.br/api/v3/calendario/9256"
 _PRODUTO_IPCA = 9256
 
 
-@ttl_cache()
-@retry_padrao
 def _buscar_calendario() -> list[bytes]:
     paginas = []
     pagina = 1
@@ -66,12 +61,11 @@ def _processar_calendario(dados: pl.DataFrame) -> pl.DataFrame:
     return calendario.sort("competencia")
 
 
-def calendario(ano: int, *, atualizar: bool = False) -> pl.DataFrame:
+def calendario(ano: int) -> pl.DataFrame:
     """Consulta o calendário oficial de divulgação do IPCA no IBGE.
 
     Args:
         ano: Ano da competência, inclusive dezembro divulgado no ano seguinte.
-        atualizar: Ignora e renova o cache de 60 segundos da consulta completa.
 
     Returns:
         DataFrame ordenado por competência. Sem registros para o ano, retorna
@@ -100,6 +94,6 @@ def calendario(ano: int, *, atualizar: bool = False) -> pl.DataFrame:
     """
     if type(ano) is not int or not dt.MINYEAR <= ano <= dt.MAXYEAR:
         raise ValueError("ano deve ser um inteiro entre 1 e 9999.")
-    return _processar_calendario(
-        _parsear_calendario(_buscar_calendario(_atualizar=atualizar))
-    ).filter(pl.col("competencia").dt.year() == ano)
+    return _processar_calendario(_parsear_calendario(_buscar_calendario())).filter(
+        pl.col("competencia").dt.year() == ano
+    )

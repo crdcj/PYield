@@ -6,19 +6,14 @@ import zipfile as zf
 import requests
 from lxml import html
 
-from pyield._internal.cache import ttl_cache
-from pyield._internal.retry import retry_padrao
-
 URL_BASE = (
     "https://www.tesourotransparente.gov.br/publicacoes/relatorio-mensal-da-divida-rmd"
 )
 _TIMEOUT_SEGUNDOS = 60
-_TTL_UM_DIA = 86_400  # segundos
 
 
-@retry_padrao
 def _buscar_conteudo(url: str) -> bytes:
-    """Busca o conteúdo de uma URL, seguindo redirects, com retry."""
+    """Busca o conteúdo de uma URL, seguindo redirects."""
     resposta = requests.get(url, timeout=_TIMEOUT_SEGUNDOS)
     resposta.raise_for_status()
     return resposta.content
@@ -47,7 +42,6 @@ def _extrair_excel(conteudo_zip: bytes) -> bytes:
         return arquivo_zip.read(nomes_excel[0])
 
 
-@ttl_cache(ttl=_TTL_UM_DIA)
 def baixar_planilha_rmd() -> bytes:
     """Baixa e extrai a planilha Excel do anexo mais recente do RMD."""
     url_anexo = _buscar_url_anexo()

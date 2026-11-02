@@ -7,9 +7,7 @@ import polars as pl
 import requests
 
 from pyield import du, relogio
-from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
 
 _URL_ATAS = "https://www.bcb.gov.br/api/servico/sitebcb/copom/atas"
@@ -30,16 +28,12 @@ _SCHEMA = {
 }
 
 
-@ttl_cache(ttl=8 * 60 * 60)
-@retry_padrao
 def _buscar_atas() -> bytes:
     resposta = requests.get(_URL_ATAS, params={"quantidade": 500}, timeout=30)
     resposta.raise_for_status()
     return resposta.content
 
 
-@ttl_cache(ttl=8 * 60 * 60)
-@retry_padrao
 def _buscar_calendario() -> bytes:
     resposta = requests.get(_URL_ICS, timeout=30)
     resposta.raise_for_status()
@@ -136,9 +130,9 @@ def calendario(
 
     Notes:
         O horizonte depende das datas publicadas pelo BCB. A consulta às atas
-        solicita até 500 registros. O conteúdo bruto fica em cache por oito
-        horas; o status é recalculado a cada chamada. Erros de rede e payload
-        inválido são propagados. O ICS publica um evento por dia: dias únicos
+        solicita até 500 registros. O status é recalculado a cada chamada.
+        Erros de rede e payload inválido são propagados. O ICS publica um
+        evento por dia: dias únicos
         consecutivos devem formar pares; grupos incompletos geram ValueError.
         O início histórico não é inferido subtraindo um dia da decisão.
 

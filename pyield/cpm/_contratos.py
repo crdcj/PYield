@@ -17,7 +17,6 @@ import requests
 
 from pyield import copom, du
 from pyield._internal.converters import converter_datas
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike
 from pyield.b3 import boletim
 from pyield.futuro.contratos import _MAPA_MESES
@@ -46,7 +45,6 @@ def _df_vazio() -> pl.DataFrame:
 _CSV_ESQUEMA = {"Instrumento financeiro": pl.String, "Preço de referência": pl.Float64}
 
 
-@retry_padrao
 def _buscar_csv(data: dt.date) -> bytes:
     """Busca o CSV diário de derivativos consolidados na B3."""
     url = "https://arquivos.b3.com.br/bdi/table/export/csv"

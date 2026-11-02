@@ -3,8 +3,6 @@
 import polars as pl
 import requests
 
-from pyield._internal.retry import retry_padrao
-
 
 def montar_url(url_base: str, parametros: dict[str, str]) -> str:
     """Monta URL OData com parâmetros opcionais e formato CSV.
@@ -18,9 +16,8 @@ def montar_url(url_base: str, parametros: dict[str, str]) -> str:
     return url_base + "&".join(partes) + "&$format=text/csv"
 
 
-@retry_padrao
 def buscar_csv(url: str) -> bytes:
-    """Busca CSV da API OData do BCB com retry automático."""
+    """Busca CSV da API OData do BCB."""
     r = requests.get(url, timeout=10)
     r.raise_for_status()
     return r.content

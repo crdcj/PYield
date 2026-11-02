@@ -18,8 +18,8 @@ B3 e Tesouro Nacional, com saídas escalares, `polars.Series` e
 ## Por onde começar?
 
 - [Quickstart](quickstart.md): instalação e primeiros fluxos de trabalho.
-- [Novidades e migração para a 0.60.0](release-0.60.0.md): contratos com
-  `Decimal` e alterações da API.
+- [Notas de versão](releases.md): mudanças, decisões de arquitetura e
+  orientações de migração por versão.
 - [Mapa da API](api-map.md): visão por namespace e funções públicas.
 - [Desenvolvimento e publicação](desenvolvimento.md): comandos com `uv`, build,
   documentação e publicação no PyPI.

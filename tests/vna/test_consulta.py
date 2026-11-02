@@ -16,7 +16,7 @@ def series(monkeypatch):
     monkeypatch.setattr(
         ntnb,
         "vnas",
-        lambda *, atualizar=False: pl.DataFrame(
+        lambda: pl.DataFrame(
             {
                 "data": datas,
                 "vna": pl.Series(
@@ -30,7 +30,7 @@ def series(monkeypatch):
     monkeypatch.setattr(
         ntnc,
         "vnas",
-        lambda *, atualizar=False: pl.DataFrame(
+        lambda: pl.DataFrame(
             {
                 "data": [*datas, datas[1]],
                 "vna": pl.Series(

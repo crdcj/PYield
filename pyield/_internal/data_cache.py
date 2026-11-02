@@ -6,7 +6,6 @@ from typing import Literal
 import polars as pl
 import requests
 
-from pyield._internal.retry import retry_padrao
 from pyield.relogio import agora
 
 URL_BASE = "https://github.com/crdcj/pyield-data/releases/latest/download"
@@ -40,7 +39,6 @@ def _validar_id_dataset(id_dataset: str) -> _Dataset:
         raise ValueError(msg) from e
 
 
-@retry_padrao
 def _carregar_arquivo_github(url_arquivo: str) -> pl.DataFrame:
     """
     Baixa o arquivo usando requests e lê com Polars.

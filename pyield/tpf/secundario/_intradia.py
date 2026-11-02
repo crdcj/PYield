@@ -7,8 +7,6 @@ import requests
 
 from pyield import du, relogio
 from pyield._internal.br_numbers import float_br, inteiro_br, taxa_br
-from pyield._internal.cache import ttl_cache
-from pyield._internal.retry import retry_padrao
 
 URL_BASE_TEMPO_REAL = (
     "https://www3.bcb.gov.br/novoselic/rest/precosNegociacao/pub/download/estatisticas/"
@@ -18,8 +16,6 @@ HORA_INICIO_TEMPO_REAL = dt.time(9, 0, 0)
 HORA_FIM_TEMPO_REAL = dt.time(22, 0, 0)
 
 
-@ttl_cache()
-@retry_padrao
 def _buscar_csv_intradia() -> bytes:
     hoje = relogio.hoje()
     data_formatada = hoje.strftime("%d-%m-%Y")

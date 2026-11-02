@@ -29,9 +29,9 @@ Depois, importe a biblioteca com o alias recomendado:
 import pyield as yd
 ```
 
-As consultas de mercado buscam dados nas fontes correspondentes. Portanto, uma
-conexão com a internet pode ser necessária na primeira consulta ou quando os
-dados não estiverem disponíveis no cache local.
+As consultas de mercado precisam de conexão com a internet e buscam novamente
+os dados nas fontes a cada chamada. A exceção são os históricos em Parquet de
+TPF e futuros, que mantêm cache em memória por processo, renovado diariamente.
 
 ## Dias úteis
 

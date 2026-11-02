@@ -25,8 +25,6 @@ import polars as pl
 import requests
 
 from pyield import relogio
-from pyield._internal.cache import ttl_cache
-from pyield._internal.retry import retry_padrao
 
 registro = logging.getLogger(__name__)
 
@@ -35,8 +33,6 @@ URL_BASE_API = (
 )
 
 
-@ttl_cache()
-@retry_padrao
 def _buscar_json_api(incluir_historico: bool) -> dict:
     """Busca os dados brutos de benchmarks na API do Tesouro Nacional."""
     param = "S" if incluir_historico else "N"

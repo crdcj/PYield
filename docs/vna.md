@@ -276,23 +276,14 @@ disponível antes do VNA final da vigência.
 
 ::: pyield.vna
 
-## Atualização manual
+## Atualização dos dados
 
-As consultas `valor`, `historico` e `ultimo` aceitam `atualizar=True`:
+As consultas às fontes externas não mantêm cache entre chamadas. Cada consulta
+que precisa de dados externos realiza um novo download; a aplicação decide se
+quer armazenar e reutilizar os resultados.
 
-```python
-historico = yd.vna.historico("NTN-C", vencimento="01-01-2031", atualizar=True)
-ultimo = yd.vna.ultimo("NTN-B", atualizar=True)
-valor = yd.vna.valor("LFT", "31-05-2024", atualizar=True)
-```
+O parâmetro `atualizar` foi removido de `valor`, `historico`, `ultimo` e
+`contexto`. Remova esse argumento das chamadas existentes.
 
-A opção ignora e renova o cache interno de 60 segundos do arquivo de VNA.
-Chamadas seguintes reutilizam o download renovado. Para NTN-B e NTN-C, o cache
-é por planilha do título, compartilhado entre datas e séries de vencimentos;
-para LFT, é por data de referência. Erros de download são propagados; a entrada
-anterior permanece disponível somente até sua expiração original.
-
-O padrão continua sendo `atualizar=False`. A opção não invalida caches da
-aplicação nem o cache dos índices do IPCA usados no pró-rata da NTN-B.
 A coluna `data` representa a referência do VNA, não o horário do download ou
 uma nova publicação. Um novo download pode retornar os mesmos dados.

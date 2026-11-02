@@ -8,8 +8,6 @@ from polars import selectors as cs
 from pyield import du
 from pyield._internal import converters as cv
 from pyield._internal.br_numbers import pct_para_decimal
-from pyield._internal.cache import ttl_cache
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, DatesLike, any_is_empty
 from pyield.bc.sgs import ptax_serie
 from pyield.tpf.titulos import ltn, ntnb, ntnf
@@ -94,8 +92,6 @@ ORDEM_FINAL_COLUNAS = [
 ]
 
 
-@ttl_cache()
-@retry_padrao
 def _buscar_dados_leiloes(
     data_leilao: dt.date | None = None,
     ano_inicial: int | None = None,

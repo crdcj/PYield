@@ -39,8 +39,6 @@ import requests
 from lxml import etree
 
 import pyield._internal.converters as cv
-from pyield._internal.cache import ttl_cache
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.b3._contratos import normalizar_contratos
 from pyield.b3._validar_pregao import data_negociacao_valida
@@ -107,8 +105,6 @@ _SESSAO.headers["User-Agent"] = (
 )
 
 
-@ttl_cache()
-@retry_padrao
 def baixar_zip(data: DateLike, boletim_completo: bool = False) -> bytes:
     """Baixa o ZIP bruto do Boletim de Negociação da B3.
 

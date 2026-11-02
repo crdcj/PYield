@@ -22,10 +22,8 @@ from decimal import Decimal, localcontext
 import requests
 
 from pyield import du
-from pyield._internal.cache import ttl_cache
 from pyield._internal.converters import converter_datas, data_referencia_valida
 from pyield._internal.numbers import para_decimal, truncar_decimal
-from pyield._internal.retry import retry_padrao
 from pyield._internal.types import DateLike, any_is_empty
 from pyield.tpf.titulos._utils import converter_taxa
 from pyield.vna._calculo import PRECISAO_CALCULO
@@ -110,8 +108,6 @@ def projetado_lft(
         return truncar_decimal(base * (1 + taxa) ** expoente, 6)
 
 
-@ttl_cache()
-@retry_padrao
 def _baixar_texto(data_referencia: dt.date) -> str:
     """Baixa o arquivo diário do SELIC no site do BCB."""
     # Exemplo: https://www3.bcb.gov.br/novoselic/rest/arquivosDiarios/pub/download/3/20240418APC238
@@ -162,7 +158,7 @@ def _validar_valores(valores: list[Decimal]) -> Decimal:
     return valor
 
 
-def vna(data: DateLike | None = None, *, atualizar: bool = False) -> Decimal:
+def vna(data: DateLike | None = None) -> Decimal:
     """Busca o Valor Nominal Atualizado (VNA) da LFT.
 
     Fonte: Banco Central do Brasil, arquivo diário do SELIC. A resposta bruta
@@ -194,7 +190,7 @@ def vna(data: DateLike | None = None, *, atualizar: bool = False) -> Decimal:
     if data is None or not data_referencia_valida(data):
         return Decimal("NaN")
 
-    texto = _baixar_texto(data, _atualizar=atualizar)
+    texto = _baixar_texto(data)
     tabela = _recortar_tabela(texto)
     linhas = _obter_linhas(tabela)
     valores = _extrair_valores_lft(linhas)
