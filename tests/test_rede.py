@@ -2,9 +2,13 @@
 
 import datetime as dt
 import importlib
+import io
+import json
 import time
+import zipfile
 from decimal import Decimal
 from http import HTTPStatus
+from pathlib import Path
 
 import pytest
 import requests
@@ -69,7 +73,7 @@ def horario_pregao(monkeypatch):
         pytest.param(lambda: yd.vna.ultimo("NTN-B"), id="vna-planilha"),
         pytest.param(lambda: yd.b3.boletim.buscar("12-01-2026"), id="boletim-b3"),
         pytest.param(lambda: yd.futuro.intradia("DI1"), id="futuro-intradia"),
-        pytest.param(lambda: yd.cpm.contratos("29-01-2025"), id="cpm-post"),
+        pytest.param(lambda: yd.cpm.contratos("29-01-2025"), id="cpm-boletim"),
         pytest.param(yd.tpf.taxas_historicas, id="parquet-tpf"),
         pytest.param(lambda: yd.futuro.historico("12-01-2026", "DI1"), id="parquet"),
     ],
@@ -110,6 +114,97 @@ def test_consulta_repete_apenas_falha_transitoria(
     assert len(chamadas) == (NUMERO_CONSULTAS if transitoria else 1)
     assert esperas == ([ESPERA_RETRY] if transitoria else [])
     assert len(set(chamadas)) == 1
+
+
+@pytest.mark.parametrize("falha", [requests.ReadTimeout, 503])
+@pytest.mark.parametrize("recuperar", [True, False])
+def test_cpm_repete_apenas_post_preservando_payload(
+    monkeypatch, esperas, falha, recuperar
+):
+    dados = Path(__file__).parent
+    zip_externo = io.BytesIO()
+    with zipfile.ZipFile(zip_externo, "w") as arquivo:
+        arquivo.writestr(
+            "SPRD250203.zip", (dados / "b3/data/SPRD250203.zip").read_bytes()
+        )
+    fontes = {
+        "https://www.b3.com.br/pesquisapregao/download?filelist=SPRD250203.zip": zip_externo.getvalue(),
+        "https://www.bcb.gov.br/api/servico/sitebcb/copom/atas?quantidade=500": (
+            dados / "copom/data/atas.json"
+        ).read_bytes(),
+        "https://www.bcb.gov.br/api/exportarics/sitebcb/agendaics"
+        "?lista=Reuni%C3%B5es%20do%20Copom": (
+            dados / "copom/data/calendario.ics"
+        ).read_bytes(),
+    }
+    consultas = []
+    posts = []
+    erro = requests.ReadTimeout("Exportação da B3 indisponível.")
+    indisponivel = requests.Response()
+    indisponivel.status_code = 503
+
+    def enviar(self, requisicao, **kwargs):
+        if requisicao.method == "GET":
+            consultas.append(requisicao.url)
+            resposta = requests.Response()
+            resposta.status_code = 200
+            resposta._content = fontes[requisicao.url]
+            return resposta
+
+        assert requisicao.method == "POST"
+        assert kwargs["timeout"] == (5, 30)
+        posts.append(requisicao)
+        if len(posts) == 1 or not recuperar:
+            if falha is requests.ReadTimeout:
+                raise erro
+            return indisponivel
+        resposta = requests.Response()
+        resposta.status_code = 200
+        resposta._content = (
+            "Derivativos consolidados\n03/02/2025\n"
+            "Instrumento financeiro;Preço de referência\n"
+            "CPMH25C100000;12,50\n"
+        ).encode()
+        return resposta
+
+    monkeypatch.setattr(requests.Session, "send", enviar)
+
+    if recuperar:
+        resultado = yd.cpm.contratos("03-02-2025")
+        assert resultado.select(
+            "codigo_negociacao", "preco_ajuste"
+        ).drop_nulls().rows() == [("CPMH25C100000", 12.5)]
+    else:
+        tipo_erro = (
+            requests.ReadTimeout
+            if falha is requests.ReadTimeout
+            else requests.HTTPError
+        )
+        with pytest.raises(tipo_erro) as capturado:
+            yd.cpm.contratos("03-02-2025")
+        if falha is requests.ReadTimeout:
+            assert capturado.value is erro
+        else:
+            assert capturado.value.response is indisponivel
+
+    assert consultas == list(fontes)
+    assert len(posts) == NUMERO_CONSULTAS
+    assert esperas == [ESPERA_RETRY]
+    assert (
+        posts[0].url
+        == posts[1].url
+        == ("https://arquivos.b3.com.br/bdi/table/export/csv?lang=pt-BR")
+    )
+    assert posts[0].body == posts[1].body
+    assert json.loads(posts[0].body) == {
+        "Name": "ConsolidatedTradesDerivatives",
+        "Date": "2025-02-03",
+        "FinalDate": "2025-02-03",
+        "ClientId": "",
+        "Filters": {},
+    }
+    assert posts[0].headers == posts[1].headers
+    assert posts[0].headers["Content-Type"] == "application/json"
 
 
 @pytest.mark.usefixtures("sem_espera")

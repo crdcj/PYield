@@ -8,21 +8,20 @@ from lxml import html
 
 from pyield._internal.retry import requisitar
 
-URL_BASE = (
+_URL_PAGINA_RMD = (
     "https://www.tesourotransparente.gov.br/publicacoes/relatorio-mensal-da-divida-rmd"
 )
-_TIMEOUT_SEGUNDOS = 60
 
 
 def _buscar_conteudo(url: str) -> bytes:
     """Busca o conteúdo de uma URL, seguindo redirects."""
-    resposta = requisitar(requests.get, url, timeout_leitura=_TIMEOUT_SEGUNDOS)
+    resposta = requisitar(requests.get, url, timeout_leitura=60)
     return resposta.content
 
 
 def _buscar_url_anexo() -> str:
     """Encontra a URL do arquivo ZIP do anexo mais recente do RMD."""
-    conteudo_pagina = _buscar_conteudo(URL_BASE)
+    conteudo_pagina = _buscar_conteudo(_URL_PAGINA_RMD)
     arvore = html.fromstring(conteudo_pagina)
     resultado = arvore.xpath("//a[contains(@href, 'publicacao-anexo')]/@href")
     if not isinstance(resultado, list) or not resultado:

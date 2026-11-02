@@ -6,12 +6,10 @@ import requests
 from pyield._internal.excel import ler_sem_cabecalho
 from pyield._internal.retry import requisitar
 
-_TIMEOUT_SEGUNDOS = 60
-
 
 def _buscar_conteudo(url: str) -> bytes:
     """Busca o conteúdo bruto de uma URL do Tesouro Nacional."""
-    resposta = requisitar(requests.get, url, timeout_leitura=_TIMEOUT_SEGUNDOS)
+    resposta = requisitar(requests.get, url, timeout_leitura=60)
     return resposta.content
 
 
