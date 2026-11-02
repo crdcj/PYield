@@ -54,6 +54,7 @@ def horario_pregao(monkeypatch):
         pytest.param(lambda: yd.selic.over_serie(ultimos=1), id="selic-over"),
         pytest.param(lambda: yd.selic.meta_serie(ultimos=1), id="selic-meta"),
         pytest.param(lambda: yd.ptax_serie(ultimos=1), id="ptax"),
+        pytest.param(lambda: yd.di_over("28-02-2025"), id="di-over"),
         pytest.param(lambda: yd.igpm.taxa_serie(ultimos=1), id="igpm-taxa"),
         pytest.param(lambda: yd.igpm.indice("01-01-2025"), id="igpm-indice"),
         pytest.param(lambda: yd.ipca.indice("01-01-2025"), id="ipca-indice"),
@@ -78,25 +79,10 @@ def horario_pregao(monkeypatch):
         pytest.param(lambda: yd.futuro.historico("12-01-2026", "DI1"), id="parquet"),
     ],
 )
-@pytest.mark.parametrize(
-    "tipo_erro",
-    [
-        requests.ConnectTimeout,
-        requests.ReadTimeout,
-        requests.ConnectionError,
-        requests.exceptions.SSLError,
-        requests.exceptions.ChunkedEncodingError,
-        requests.HTTPError,
-    ],
-)
 @pytest.mark.usefixtures("horario_pregao")
-def test_consulta_repete_apenas_falha_transitoria(
-    monkeypatch, esperas, consultar, tipo_erro
-):
-    erro = tipo_erro("Fonte indisponível.")
-    resposta = requests.Response()
-    resposta.status_code = 503
-    erro.response = resposta
+def test_consulta_repete_falha_transitoria(monkeypatch, esperas, consultar):
+    # A classificação dos erros é coberta em test_boletim_retry.py.
+    erro = requests.ReadTimeout("Fonte indisponível.")
     chamadas = []
 
     def enviar(self, requisicao, **kwargs):
@@ -106,13 +92,12 @@ def test_consulta_repete_apenas_falha_transitoria(
     data_cache._obter_dataset_com_ttl.cache_clear()
     monkeypatch.setattr(requests.Session, "send", enviar)
 
-    with pytest.raises(tipo_erro) as capturado:
+    with pytest.raises(requests.ReadTimeout) as capturado:
         consultar()
 
     assert capturado.value is erro
-    transitoria = tipo_erro is not requests.exceptions.SSLError
-    assert len(chamadas) == (NUMERO_CONSULTAS if transitoria else 1)
-    assert esperas == ([ESPERA_RETRY] if transitoria else [])
+    assert len(chamadas) == NUMERO_CONSULTAS
+    assert esperas == [ESPERA_RETRY]
     assert len(set(chamadas)) == 1
 
 

@@ -36,8 +36,20 @@ uv run ty check
 Os testes incluem os doctests configurados no projeto. Para uma alteração
 localizada, é possível passar um caminho ou uma expressão ao `pytest`.
 
-Os testes de integração e alguns doctests precisam acessar a rede; falhas de
-fontes externas também podem causar falhas nesses testes.
+Os testes de integração que precisam acessar a rede usam o marcador `rede`.
+Alguns doctests também consultam fontes externas; falhas dessas fontes podem
+causar falhas na execução completa. Para executar os testes locais sem esses
+downloads nem os doctests da biblioteca:
+
+```sh
+uv run pytest tests -m "not rede"
+```
+
+Para executar apenas as integrações externas:
+
+```sh
+uv run pytest tests -m rede
+```
 
 ## Documentação
 

@@ -48,6 +48,7 @@ def _extrair_excel_do_zip(conteudo_zip: bytes) -> bytes:
         return arquivo_zip.read(nome_excel)
 
 
+@pytest.mark.rede
 def test_pipeline_rmd(monkeypatch):
     """yd.rmd() com monkeypatch deve bater com o parquet de referência."""
     conteudo_excel = _extrair_excel_do_zip(_baixar_zip_remoto())
@@ -61,6 +62,7 @@ def test_pipeline_rmd(monkeypatch):
     assert resultado.sort(colunas_ordem).equals(esperado)
 
 
+@pytest.mark.rede
 def test_aba_2_1_estrutura_e_valores(monkeypatch):
     """A aba 2.1 deve retornar estoque plano (somente folhas) com valores em R$."""
     conteudo_excel = _extrair_excel_do_zip(_baixar_zip_remoto())

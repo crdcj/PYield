@@ -1,12 +1,11 @@
-"""Testes do pipeline completo de futuro (dado enriquecido).
+"""Histórico público de futuros com snapshots locais do schema bruto da B3.
 
-Valida que o fluxo end-to-end (PR remoto no release em .gz →
-tipagem/renomeação → data_vencimento → dias_uteis/dias_corridos/dv01/taxa_forward →
-seleção de colunas) produz o DataFrame esperado.
-
-Estratégia: exercita o pipeline real completo em rede, sem fixtures de ZIP local.
+O cache é substituído pelos Parquets brutos, validados separadamente contra
+os XMLs no teste do boletim. Conversões de data, filtros, enriquecimento e
+seleção das colunas públicas executam normalmente.
 """
 
+import importlib
 from pathlib import Path
 
 import polars as pl
@@ -16,6 +15,13 @@ from polars.testing import assert_frame_equal
 from pyield import futuro
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
+modulo_historico = importlib.import_module("pyield.futuro.historico")
+
+
+@pytest.fixture(scope="module")
+def historico_bruto():
+    # Várias datas e famílias para exercitar também os filtros da consulta.
+    return pl.read_parquet(TEST_DATA_DIR / "boletim_negociacao_*.parquet")
 
 
 def _parquet_referencia(data: str, contrato: str) -> Path:
@@ -23,34 +29,6 @@ def _parquet_referencia(data: str, contrato: str) -> Path:
     dia, mes, ano = data.split("-")
     nome = f"futuro_{ano}{mes}{dia}_{contrato}.parquet"
     return TEST_DATA_DIR / nome
-
-
-def _preparar(
-    data: str,
-    contrato: str,
-) -> tuple[pl.DataFrame, pl.DataFrame]:
-    """Executa o pipeline real completo usando dataset PR remoto do release."""
-    df_esperado = pl.read_parquet(_parquet_referencia(data, contrato))
-
-    df_resultado = futuro.historico(data=data, contrato=contrato)
-    return df_resultado, df_esperado
-
-
-def _alinhar_colunas(
-    df_resultado: pl.DataFrame,
-    df_esperado: pl.DataFrame,
-) -> tuple[pl.DataFrame, pl.DataFrame]:
-    """Alinha DataFrames para comparação usando o canônico como subconjunto obrigatório."""
-    colunas_esperadas = df_esperado.columns
-    colunas_faltantes = [
-        col for col in colunas_esperadas if col not in df_resultado.columns
-    ]
-    if colunas_faltantes:
-        raise AssertionError(
-            f"Colunas esperadas ausentes no resultado: {colunas_faltantes}"
-        )
-
-    return df_resultado.select(colunas_esperadas), df_esperado
 
 
 @pytest.mark.parametrize(
@@ -82,10 +60,17 @@ def _alinhar_colunas(
         ("12-01-2026", "WIN"),
     ],
 )
-def test_pipeline_futuro(data, contrato):
-    """Compara `futuro` com parquet canônico usando dados remotos do release."""
-    df_resultado, df_esperado = _preparar(data, contrato)
-    df_resultado, df_esperado = _alinhar_colunas(df_resultado, df_esperado)
+def test_pipeline_futuro(monkeypatch, historico_bruto, data, contrato):
+    monkeypatch.setattr(
+        modulo_historico, "obter_dataset_cacheado", lambda _: historico_bruto
+    )
+    df_esperado = pl.read_parquet(_parquet_referencia(data, contrato))
+
+    df_resultado = futuro.historico(data=data, contrato=contrato)
+
+    # Preserva o contrato anterior: as colunas canônicas são obrigatórias;
+    # colunas adicionais não interferem na comparação.
+    df_resultado = df_resultado.select(df_esperado.columns)
     assert_frame_equal(
         df_resultado,
         df_esperado,

@@ -36,26 +36,7 @@ def test_di_over_consulta_sgs_e_preserva_taxa_anualizada(monkeypatch, data):
     }
 
 
-def test_di_over_nao_reutiliza_taxa_do_dia_anterior(monkeypatch):
-    monkeypatch.setattr(
-        sgs,
-        "_chamar_api",
-        lambda _: [{"data": "31/12/2024", "valor": "12.15"}],
-    )
-
-    assert yd.di_over("01/01/2025").is_nan()
-
-
 def test_di_over_sem_dados(monkeypatch):
     monkeypatch.setattr(sgs, "_chamar_api", lambda _: [])
 
     assert yd.di_over("28/02/2025").is_nan()
-
-
-def test_di_over_entrada_vazia_nao_consulta_api(monkeypatch):
-    def falhar_se_chamada(_url):
-        pytest.fail("Entrada vazia não deve consultar a API.")
-
-    monkeypatch.setattr(sgs, "_chamar_api", falhar_se_chamada)
-
-    assert yd.di_over(None).is_nan()

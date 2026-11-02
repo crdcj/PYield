@@ -134,6 +134,7 @@ def _parquet_referencia(data: str, contrato: str) -> Path:
         ("12-01-2026", "WIN"),
     ],
 )
+@pytest.mark.rede
 def test_pipeline_bruto_boletim(data: str, contrato: str):
     """Compara saída bruta do boletim de negociacao com parquet canônico."""
     df_completo = _baixar_e_parsear_xml_remoto(data)

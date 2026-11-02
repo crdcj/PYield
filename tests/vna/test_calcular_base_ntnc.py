@@ -34,12 +34,12 @@ def test_calculo_publico_reproduz_toda_a_serie_ntnc(indices, vencimento, emissao
         pl.col("anos_vencimento").list.contains(vencimento)
     )
     with localcontext(prec=28):
-        base = Decimal(1000)
+        fator_inicial = Decimal(1)
         indice_base = indices[200006]
         if emissao.day != 1:
-            # Mesma origem do teste histórico de IGP-M: 29 dias de dezembro.
+            # A emissão de 03/12/1999 tem 29 dias de atualização em dezembro.
             expoente = (Decimal(29) / 31).quantize(Decimal("1e-14"), rounding=ROUND_DOWN)
-            base *= (indices[199912] / indices[199911]) ** expoente
+            fator_inicial = (indices[199912] / indices[199911]) ** expoente
             indice_base = indices[199912]
 
         for data, _, publicado in referencias.iter_rows():
@@ -51,7 +51,14 @@ def test_calculo_publico_reproduz_toda_a_serie_ntnc(indices, vencimento, emissao
             )
 
             assert calculado == publicado, data
-            assert calculado == calculo.calcular_base(base, indice_base, indice_atual)
+            # Oráculo independente, preservado do teste histórico de IGP-M.
+            fator = (fator_inicial * indice_atual / indice_base).quantize(
+                Decimal("1e-16"), rounding=ROUND_DOWN
+            )
+            esperado = (Decimal(1000) * fator).quantize(
+                Decimal("1e-6"), rounding=ROUND_DOWN
+            )
+            assert calculado == esperado, data
 
 
 def test_primeiro_vna_publicado_da_serie_2006_perde_precisao(indices):

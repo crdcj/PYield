@@ -53,6 +53,7 @@ addopts = "--doctest-modules"
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+markers = ["rede: integração que consulta fontes externas ou baixa dados de teste"]
 
 [tool.ty.src]
 include = ["pyield"]

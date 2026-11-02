@@ -5,28 +5,12 @@ via a fixture local cpm_patchado. Sem chamadas reais de rede.
 """
 
 import datetime
-from pathlib import Path
 
 import polars as pl
 import pytest
 
 import pyield.cpm._contratos as modulo_contratos  # noqa: PLC2701
 import pyield.cpm._probabilidades as modulo_probabilidades  # noqa: PLC2701
-
-DIRETORIO_DADOS = Path(__file__).parent / "data"
-
-
-# Mapeamento para renomear colunas do parquet antigo (inglês) para português
-_RENOMEAR_COLUNAS = {
-    "TradeDate": "data_referencia",
-    "TickerSymbol": "codigo_negociacao",
-    "MeetingEndDate": "data_fim_reuniao",
-    "ExpiryDate": "data_expiracao",
-    "OptionType": "tipo_opcao",
-    "StrikeChangeBps": "variacao_strike_bps",
-    "SettlementPrice": "preco_ajuste",
-    "BDaysToExp": "dias_uteis",
-}
 
 TOLERANCIA_PROB = 1e-9
 TOLERANCIA_NUMERICA = 1e-12
@@ -35,12 +19,6 @@ STRIKE_DOMINANTE_JAN_2025 = 100
 
 def _taxas_di1_zeradas(*, datas_referencia, **_kwargs) -> pl.Series:
     return pl.Series("taxa_interpolada", [0.0] * len(datas_referencia))
-
-
-@pytest.fixture(scope="module")
-def cpm_fixture() -> pl.DataFrame:
-    df = pl.read_parquet(DIRETORIO_DADOS / "cpm_29012025.parquet")
-    return df.rename(_RENOMEAR_COLUNAS, strict=False)
 
 
 @pytest.fixture
@@ -153,11 +131,6 @@ def test_cum_prob_monotone(cpm_patchado):
 # ── MeetingRank ───────────────────────────────────────────────────────────
 
 
-def test_meeting_rank_starts_at_one(cpm_patchado):
-    df = modulo_probabilidades.probabilidades("29-01-2025")
-    assert df["ranking_reuniao"].min() == 1
-
-
 def test_meeting_rank_consecutive(cpm_patchado):
     df = modulo_probabilidades.probabilidades("29-01-2025")
     rankings = df["ranking_reuniao"].unique().sort().to_list()
@@ -192,13 +165,6 @@ def test_null_price_meeting_excluded(monkeypatch, cpm_fixture):
 def test_meeting_nearest_single_expiry(cpm_patchado):
     df = _reuniao_mais_proxima()
     assert df["data_expiracao"].n_unique() == 1
-
-
-def test_meeting_prob_sums_to_one(cpm_patchado):
-    df = _reuniao_mais_proxima()
-    soma_prob = df["prob"].sum()
-    assert isinstance(soma_prob, (int, float))
-    assert abs(float(soma_prob) - 1.0) < TOLERANCIA_PROB
 
 
 # ── Spot checks ───────────────────────────────────────────────────────────

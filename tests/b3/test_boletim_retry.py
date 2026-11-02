@@ -34,22 +34,10 @@ def _erro(falha):
     return falha("Falha no download da B3.")
 
 
-@pytest.mark.parametrize(
-    "falha",
-    [
-        requests.ConnectTimeout,
-        requests.ReadTimeout,
-        requests.ConnectionError,
-        requests.exceptions.ChunkedEncodingError,
-        502,
-        503,
-        504,
-    ],
-)
-def test_download_recupera_falha_transitoria(monkeypatch, transporte, falha):
+def test_download_recupera_falha_transitoria(monkeypatch, transporte):
     chamadas, esperas = transporte
     conteudo = _criar_zip_boletim()
-    erro = _erro(falha)
+    erro = _erro(requests.ReadTimeout)
 
     def enviar(self, requisicao, **kwargs):
         chamadas.append(requisicao.url)

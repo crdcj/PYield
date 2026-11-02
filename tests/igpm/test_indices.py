@@ -1,7 +1,7 @@
-"""Consulta pública dos números-índice com JSON real e VNAs oficiais."""
+"""Consulta pública dos números-índice com JSON real."""
 
 import datetime as dt
-from decimal import ROUND_DOWN, Decimal, localcontext
+from decimal import Decimal
 from pathlib import Path
 
 import polars as pl
@@ -127,39 +127,3 @@ def test_resposta_sem_valores_preserva_esquema(monkeypatch, conteudo):
     assert resultado.is_empty()
     assert resultado.schema == _ESQUEMA
     assert yd.igpm.indice("01-06-2000").is_nan()
-
-
-@pytest.mark.parametrize(
-    ("vencimento", "data_base"),
-    [(2031, dt.date(2000, 7, 1)), (2006, dt.date(1999, 12, 3))],
-)
-def test_indices_reproduzem_todos_os_vnas_oficiais(vencimento, data_base):
-    indices = {
-        r["periodo"]: r["indice"]
-        for r in yd.igpm.indice_serie("01-11-1999", "30-09-2026").to_dicts()
-    }
-    referencia = pl.read_parquet(
-        Path(__file__).parents[1] / "vna" / "data" / "vna_ntnc.parquet"
-    ).filter(pl.col("anos_vencimento").list.contains(vencimento))
-
-    with localcontext(prec=28):
-        fator_inicial = Decimal(1)
-        denominador = indices[200006]
-        if data_base.day != 1:
-            # A emissão de 03/12/1999 tem 29 dias de atualização em dezembro.
-            expoente = (Decimal(29) / 31).quantize(
-                Decimal("1e-14"), rounding=ROUND_DOWN
-            )
-            fator_inicial = (indices[199912] / indices[199911]) ** expoente
-            denominador = indices[199912]
-        for data, _, esperado in referencia.iter_rows():
-            mes = data - dt.timedelta(days=1)
-            numerador = indices[mes.year * 100 + mes.month]
-            fator = (fator_inicial * numerador / denominador).quantize(
-                Decimal("1e-16"), rounding=ROUND_DOWN
-            )
-            resultado = (Decimal(1000) * fator).quantize(
-                Decimal("1e-6"), rounding=ROUND_DOWN
-            )
-
-            assert resultado == esperado, data
