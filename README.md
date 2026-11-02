@@ -37,7 +37,7 @@ uv add pyield
 - [Documentação completa](https://crdcj.github.io/PYield/): conceitos e referência por módulo.
 - [Mapa da API](https://crdcj.github.io/PYield/api-map/): namespaces e funções públicas.
 - [Desenvolvimento e publicação](https://crdcj.github.io/PYield/desenvolvimento/): ambiente, verificações, build e PyPI.
-- [Gerar e publicar a documentação](docs/desenvolvimento.md#documentação): geração, visualização local e GitHub Pages.
+- [Gerar e publicar a documentação](https://crdcj.github.io/PYield/desenvolvimento/#documentacao): geração, visualização local e GitHub Pages.
 - [Notebook no Colab](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb): exploração interativa.
 - [Pacote no PyPI](https://pypi.org/project/pyield/).
 
@@ -102,7 +102,7 @@ da CETIP.
 
 Quem precisar de ponto flutuante pode usar `float(taxa_anual)` ou converter
 a coluna com `pl.col("taxa").cast(pl.Float64)`. Essa conversão pode introduzir
-aproximação binária. Veja as [notas da 0.62.0](docs/release-0.62.0.md) para
+aproximação binária. Veja as [notas da 0.62.0](https://crdcj.github.io/PYield/release-0.62.0/) para
 os tipos e as orientações de migração.
 
 ## Notas de versão

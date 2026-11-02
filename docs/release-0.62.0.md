@@ -1,6 +1,6 @@
 # Novidades na versão 0.62.0
 
-Esta versão remove o cache automático das consultas às fontes externas, o
+Esta versão remove o cache automático das consultas às fontes externas e o
 parâmetro `atualizar`. Os downloads passam a usar uma política compartilhada de
 retentativa leve, com no máximo duas tentativas para falhas transitórias.
 O cache diário dos históricos em Parquet de TPF e futuros permanece. A mudança

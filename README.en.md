@@ -37,7 +37,7 @@ uv add pyield
 - [Full documentation](https://crdcj.github.io/PYield/): concepts and module reference.
 - [API map](https://crdcj.github.io/PYield/api-map/): public namespaces and functions.
 - [Development and publishing](https://crdcj.github.io/PYield/desenvolvimento/): environment, checks, builds, and PyPI.
-- [Build and publish the documentation](docs/desenvolvimento.md#documentação): generation, local preview, and GitHub Pages.
+- [Build and publish the documentation](https://crdcj.github.io/PYield/desenvolvimento/#documentacao): generation, local preview, and GitHub Pages.
 - [Colab notebook](https://colab.research.google.com/github/crdcj/PYield/blob/main/examples/pyield_quickstart.ipynb): interactive exploration.
 - [Package on PyPI](https://pypi.org/project/pyield/).
 
@@ -93,7 +93,7 @@ Central HTTPS API instead of the CETIP FTP server.
 
 For floating-point analysis, use `float(annual_rate)` or cast a column with
 `pl.col("taxa").cast(pl.Float64)`. This conversion may introduce binary
-approximation. See the [0.62.0 migration notes (Portuguese)](docs/release-0.62.0.md)
+approximation. See the [0.62.0 migration notes (Portuguese)](https://crdcj.github.io/PYield/release-0.62.0/)
 for the updated types and migration guidance.
 
 ## Release notes
