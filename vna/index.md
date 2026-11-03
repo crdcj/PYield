@@ -120,7 +120,9 @@ O parâmetro `inflacao` de NTN-B e NTN-C em `yd.vna.projetado` recebia números 
 
 ## Contexto da vigência
 
-`yd.vna.contexto` reúne os parâmetros disponíveis para uma vigência de NTN-B ou NTN-C em um DataFrame com uma linha. Inclui as datas da vigência, os VNAs publicados no início e no fim, a competência da inflação, sua origem e situação (`realizado`, `projetado` ou `indisponivel`) e uma lista de pendências. Dados numéricos indisponíveis são nulos. Para NTN-C, informe `vencimento`.
+As colunas de números-índice e as escalas decimais do contexto foram atualizadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/#contexto-de-vna-com-numeros-indice>).
+
+`yd.vna.contexto` reúne os parâmetros disponíveis para uma vigência de NTN-B ou NTN-C em um DataFrame com uma linha. Inclui as datas da vigência, os VNAs publicados no início e no fim, os números-índice anterior e atual, a competência da inflação, sua origem e situação (`realizado`, `projetado` ou `indisponivel`) e uma lista de pendências. Dados numéricos indisponíveis são nulos. Para NTN-C, informe `vencimento`.
 
 ```python
 contexto = yd.vna.contexto("NTN-B", "30-06-2026")
@@ -129,7 +131,32 @@ contexto_ntnc = yd.vna.contexto(
 )
 ```
 
-A projeção opcional `inflacao_projetada` só é usada quando a taxa realizada estiver indisponível. Esse parâmetro aceita as mesmas entradas de `yd.vna.projetado`: `0.0045`, `Decimal("0.0045")`, `"0.45%"` ou `"0,45%"` representam 0,45%. As entradas são convertidas para `Decimal` sem arredondamento; a coluna `inflacao` permanece em unidade decimal e pode ser passada diretamente a `yd.vna.projetado`. O contexto não calcula o VNA nem busca projeções automaticamente. Ele reflete os dados disponíveis no momento da consulta, sem reconstruir o que era conhecido na data solicitada. Para comparar operação e liquidação, consulte cada data e compare `inicio_vigencia`.
+O contexto descreve os dados da vigência, incluindo a distinção entre taxa mensal e nível do índice:
+
+| Campo | Significado |
+| --- | --- |
+| `competencia_anterior` | Primeiro dia do mês anterior à `competencia` |
+| `indice_anterior` | Número-índice de `competencia_anterior` |
+| `indice_atual` | Número-índice de `competencia`, o mês do início da vigência |
+| `origem_indice` | `IBGE` para IPCA ou `FGV/Ipeadata` para IGP-M; nula se ambos os índices estiverem ausentes |
+| `inflacao` | Taxa mensal publicada ou projeção informada, em unidade decimal |
+
+Para NTN-B, uma data entre 15/07 e 14/08 seleciona os índices de junho e julho. Para NTN-C, uma data de setembro seleciona os índices de agosto e setembro. Os índices usam `Decimal(18, 2)` para IPCA e `Decimal(18, 3)` para IGP-M, inclusive quando nulos. A cobertura dos números-índice do IGP-M começa em agosto de 1994. Competências anteriores ficam nulas; no contexto de agosto de 1994, `indice_anterior` é nulo e `indice_atual` pode trazer `100.000`. Consulte o [corte histórico do IGP-M](<https://crdcj.github.io/PYield/igpm/index.md>) para acessar o período anterior diretamente na fonte.
+
+```python
+contexto = yd.vna.contexto("NTN-B", "30-06-2026")
+indices = contexto.select(
+    "competencia_anterior", "competencia", "indice_anterior", "indice_atual",
+).row(0)
+# (datetime.date(2026, 5, 1), datetime.date(2026, 6, 1),
+#  Decimal('7640.15'), Decimal('7652.37'))
+```
+
+Os dois índices são consultados independentemente da taxa mensal e da publicação do VNA final. Cada índice ausente fica nulo, sem estimativa por projeção ou por razão entre VNAs. Na NTN-C, `origem_inflacao` identifica o SGS/BCB, enquanto `origem_indice` identifica a FGV via Ipeadata; as fontes podem ter disponibilidades diferentes.
+
+A projeção opcional `inflacao_projetada` só é usada quando a taxa realizada estiver indisponível. Esse parâmetro aceita as mesmas entradas de `yd.vna.projetado`: `0.0045`, `Decimal("0.0045")`, `"0.45%"` ou `"0,45%"` representam 0,45%. As entradas são convertidas para `Decimal` sem arredondamento; a coluna `inflacao` permanece em unidade decimal e pode ser passada diretamente a `yd.vna.projetado`. A inflação realizada usa quatro casas decimais; a projeção preserva a escala informada. Sem inflação disponível, a coluna usa escala 4. Essa compatibilidade de formato não torna os cálculos equivalentes: `projetado` aplica o arredondamento de projeção e usa `1 + inflacao`; o pró-rata realizado da NTN-B usa a razão entre os números-índice. A taxa mensal arredondada pode perder precisão em relação a essa razão. Quando há duas referências publicadas, use `yd.vna.valor`: na NTN-B, consulta os índices do IPCA; na NTN-C, interpola pela razão entre os VNAs publicados. O contexto não calcula o VNA nem busca projeções automaticamente. Ele reflete os dados disponíveis no momento da consulta, sem reconstruir o que era conhecido na data solicitada. Para comparar operação e liquidação, consulte cada data e compare `inicio_vigencia`.
+
+`situacao_inflacao` descreve somente a taxa mensal. `pendencias` mantém os indicadores `vna_base_indisponivel` e `inflacao_indisponivel`, referentes à projeção por taxa. Uma lista vazia não garante que os índices ou o VNA final estejam disponíveis: verifique os campos correspondentes. A disponibilidade dos índices permite obter o fator realizado sem aguardar o VNA final, mas não remove a exigência de duas referências publicadas nas funções `valor` e `calcular_vna` para o pró-rata entre referências.
 
 ### Transição e atenção à divulgação
 
@@ -307,15 +334,16 @@ Returns:
 | Type | Description |
 | --- | --- |
 | `DataFrame` | DataFrame com uma linha, inclusive quando faltam parâmetros. Dados |
-| `DataFrame` | numéricos indisponíveis são nulos, com pendências explícitas. |
+| `DataFrame` | numéricos indisponíveis são nulos, com pendências explícitas de base |
+| `DataFrame` | e inflação para projeção por taxa. |
 
 **Output Columns**
 
-titulo (String): Título consultado. data (Date): Data para a qual os parâmetros foram selecionados. inicio\_vigencia (Date): Início inclusivo, sem ajuste útil. fim\_vigencia (Date): Fim exclusivo, sem ajuste útil. competencia (Date): Primeiro dia do mês da inflação da vigência. vna\_base (Decimal(18, 6)): VNA publicado no início; nulo se ausente. vna\_fim (Decimal(18, 6)): VNA publicado no fim; nulo se ausente. inflacao (Decimal(38, 18)): Variação mensal decimal, realizada ou explicitamente projetada. Pode ser passada diretamente a projetado. situacao\_inflacao (String): "realizado", "projetado" ou "indisponivel". origem\_inflacao (String): "IBGE", "SGS/BCB" ou "informada"; nula sem taxa. pendencias (List\[String\]): "vna\_base\_indisponivel" e/ou "inflacao\_indisponivel". Lista vazia se ambos estiverem disponíveis.
+titulo (String): Título consultado. data (Date): Data para a qual os parâmetros foram selecionados. inicio\_vigencia (Date): Início inclusivo, sem ajuste útil. fim\_vigencia (Date): Fim exclusivo, sem ajuste útil. competencia (Date): Primeiro dia do mês da inflação da vigência. competencia\_anterior (Date): Primeiro dia do mês anterior à competência. vna\_base (Decimal(18, 6)): VNA publicado no início; nulo se ausente. vna\_fim (Decimal(18, 6)): VNA publicado no fim; nulo se ausente. indice\_anterior (Decimal(18, escala)): Número-índice da competência anterior; escala 2 para IPCA e 3 para IGP-M. Nulo se ausente. indice\_atual (Decimal(18, escala)): Número-índice da competência da vigência, com a mesma escala de indice\_anterior. Nulo se ausente. origem\_indice (String): "IBGE" ou "FGV/Ipeadata"; nula se ambos os índices estiverem ausentes. inflacao (Decimal(38, escala)): Variação mensal decimal, com escala 4 quando realizada ou indisponível. Para projeções informadas, preserva a escala da entrada. Pode ser passada diretamente a projetado, que aplica as regras de projeção, mesmo para uma taxa realizada. situacao\_inflacao (String): "realizado", "projetado" ou "indisponivel". origem\_inflacao (String): "IBGE", "SGS/BCB" ou "informada"; nula sem taxa. pendencias (List\[String\]): "vna\_base\_indisponivel" e/ou "inflacao\_indisponivel". Lista vazia se ambos estiverem disponíveis. Refere-se à projeção por taxa; não atesta disponibilidade dos índices.
 
 **Notes**
 
-Fontes: histórico do Tesouro Nacional; taxa do IPCA do IBGE e taxa do IGP-M do SGS/BCB. A competência é o mês do início da vigência: dia 15 para NTN-B e dia 1 para NTN-C. As consultas refletem os dados disponíveis agora, sem reconstruir o que era conhecido na data solicitada. A inflação realizada não comprova publicação do VNA final. Este contexto não calcula VNA, não infere inflação da razão entre VNAs e não estima uma base ausente. Projeções e dados oficiais permanecem identificados. Erros operacionais são propagados, sem tratá-los como falta de dados. Para detectar transição, compare inicio\_vigencia dos contextos de operação e liquidação; cada data seleciona sua própria base.
+Fontes: histórico do Tesouro Nacional; taxa do IPCA do IBGE e taxa do IGP-M do SGS/BCB; números-índice do IPCA do IBGE e do IGP-M da FGV disponibilizados pelo Ipeadata. A competência é o mês do início da vigência: dia 15 para NTN-B e dia 1 para NTN-C. As consultas refletem os dados disponíveis agora, sem reconstruir o que era conhecido na data solicitada. A inflação realizada não comprova publicação do VNA final. Este contexto não calcula VNA, não infere inflação da razão entre VNAs e não estima uma base ausente. Projeções e dados oficiais permanecem identificados. Os números-índice são consultados independentemente da taxa mensal; não são estimados por projeção nem pela razão entre VNAs. Para IGP-M, a cobertura começa em agosto de 1994. Competências anteriores ao corte ficam nulas, inclusive a anterior de agosto/1994. A razão indice\_atual / indice\_anterior preserva informação que a taxa mensal arredondada pode perder. Passar essa taxa a projetado não reproduz necessariamente o pró-rata realizado com os índices. Para NTN-B, valor usa os índices entre duas referências publicadas; para NTN-C, usa a razão entre os VNAs publicados. Índices disponíveis não comprovam a publicação do VNA final; consulte os campos nulos individualmente. Erros operacionais são propagados, sem tratá-los como falta de dados. Para detectar transição, compare inicio\_vigencia dos contextos de operação e liquidação; cada data seleciona sua própria base.
 
 Raises:
 
@@ -333,7 +361,16 @@ Consulta uma vigência histórica da NTN-B e verifica a competência da inflaç�
 ...     "competencia", "vna_base", "inflacao", "situacao_inflacao", "pendencias"
 ... ).row(0)
 (datetime.date(2026, 6, 1), Decimal('4731.856412'),
- Decimal('0.001600000000000000'), 'realizado', [])
+ Decimal('0.0016'), 'realizado', [])
+```
+
+Os números-índice correspondem à competência anterior e à da vigência, independentemente da disponibilidade da taxa mensal:
+
+```pycon
+>>> parametros.select(
+...     "competencia_anterior", "indice_anterior", "indice_atual"
+... ).row(0)
+(datetime.date(2026, 5, 1), Decimal('7640.15'), Decimal('7652.37'))
 ```
 
 Para a vigência atual da NTN-C, informa o vencimento e uma projeção de 0,45%, usada somente se a inflação realizada não estiver disponível. A situação e as pendências dependem dos dados publicados na consulta:
@@ -388,9 +425,16 @@ Seleciona duas referências mensais da NTN-B no histórico publicado:
 >>> referencias = yd.vna.historico("NTN-B")
 >>> referencias.filter(
 ...     pl.col("data").is_between(pl.date(2025, 12, 15), pl.date(2026, 1, 15))
-... ).to_dicts()
-[{'data': datetime.date(2025, 12, 15), 'vna': Decimal('4570.078408')},
- {'data': datetime.date(2026, 1, 15), 'vna': Decimal('4585.159356')}]
+... )
+shape: (2, 2)
+┌────────────┬───────────────┐
+│ data       ┆ vna           │
+│ ---        ┆ ---           │
+│ date       ┆ decimal[18,6] │
+╞════════════╪═══════════════╡
+│ 2025-12-15 ┆ 4570.078408   │
+│ 2026-01-15 ┆ 4585.159356   │
+└────────────┴───────────────┘
 ```
 
 Para NTN-C, filtra o vencimento antes de interpolar para manter apenas uma série de VNA:

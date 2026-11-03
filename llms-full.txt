@@ -261,6 +261,14 @@ yd.di_over(data, *, anualizada=True)
 
 Taxa do tipo `Decimal`, anualizada em base 252 por padrão ou ao dia útil com `anualizada=False`. A frequência das observações é diária nas duas modalidades; datas sem dados retornam `Decimal("NaN")`. Os dados vêm do SGS do Banco Central: série 4389 para a anualizada e 12 para a diária.
 
+**`yd.di_over_serie` (série histórica do DI Over)**
+
+```text
+yd.di_over_serie(inicio=None, fim=None, *, ultimos=None, anualizada=True)
+```
+
+DataFrame com `data` (`Date`) e `taxa` (`Decimal(18, 4)` na anual ou `Decimal(18, 8)` na diária). Consulta o intervalo inclusivo ou os últimos registros; `ultimos` tem prioridade. Usa as mesmas modalidades e séries SGS de `yd.di_over`. Sem dados, retorna DataFrame vazio com o mesmo esquema.
+
 **`yd.forward` (taxa a termo entre dois vértices)**
 
 ```text
@@ -1307,18 +1315,23 @@ O nome e a versão do pacote publicados precisam ser novos no índice. Depois do
 
 # DI Over
 
-`yd.di_over` consulta a taxa DI Over da B3/CETIP republicada pelo Banco Central. A consulta usa a API HTTPS do SGS, substituindo o FTP da CETIP.
+`yd.di_over` consulta a taxa DI Over da B3/CETIP para uma data; `yd.di_over_serie` consulta um intervalo ou os últimos registros disponíveis. As consultas usam a API HTTPS do SGS do Banco Central, substituindo o FTP da CETIP.
 
-O retorno é `Decimal` com dez casas decimais, em unidade decimal. Por padrão, a taxa é anualizada em base 252 dias úteis; com `anualizada=False`, retorna a taxa ao dia útil publicada pela fonte. As duas modalidades têm observações de frequência diária e usam diretamente os valores das respectivas séries, sem recalcular uma modalidade a partir da outra.
+O retorno é `Decimal`, em unidade decimal. Por padrão, a taxa é anualizada em base 252 dias úteis e tem quatro casas decimais; com `anualizada=False`, retorna a taxa ao dia útil com oito casas decimais. Essas escalas correspondem às duas e seis casas percentuais publicadas pela fonte. As modalidades têm observações de frequência diária e usam diretamente os valores das respectivas séries, sem recalcular uma modalidade a partir da outra.
 
 ```python
 import pyield as yd
 
 taxa_anual = yd.di_over("28-02-2025")
 taxa_diaria = yd.di_over("28-02-2025", anualizada=False)
+serie_anual = yd.di_over_serie("27-02-2025", "28-02-2025")
+serie_diaria = yd.di_over_serie("27-02-2025", "28-02-2025", anualizada=False)
+ultimas_taxas = yd.di_over_serie(ultimos=5)
 ```
 
-Datas sem dados retornam `Decimal("NaN")`. O histórico começa em 06/03/1986, ampliando a cobertura anterior do FTP, limitada a 20/08/2012. A docstring abaixo identifica as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
+As séries retornam um DataFrame Polars com colunas `data` (`Date`) e `taxa` (`Decimal(18, 4)` na anual ou `Decimal(18, 8)` na diária). O intervalo inclui as datas inicial e final; se `fim` for omitido, considera a data atual no Brasil. `ultimos` tem prioridade sobre o intervalo. Datas sem observações são omitidas; sem dados, o DataFrame é vazio e preserva o esquema. Intervalos longos são divididos automaticamente em blocos seguros para o SGS, dispensando consultas individuais por data.
+
+As escalas foram ajustadas e `di_over_serie` foi adicionada na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>). Na consulta escalar, datas sem dados retornam `Decimal("NaN")`. O histórico começa em 06/03/1986, ampliando a cobertura anterior do FTP, limitada a 20/08/2012. A docstring abaixo identifica as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
 
 Obtém a taxa DI over anualizada ou diária via SGS do Banco Central.
 
@@ -1335,24 +1348,99 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Taxa DI em formato decimal com dez casas decimais, ao ano se |
-|  | `Decimal` | `anualizada=True` (0.1315 = 13,15% a.a.) ou ao dia útil se |
+| `Decimal` | `Decimal` | Taxa DI em formato decimal com quatro casas decimais ao ano se |
+|  | `Decimal` | `anualizada=True` (0.1315 = 13,15% a.a.) ou oito casas ao dia útil se |
 |  | `Decimal` | `anualizada=False`. Retorna `Decimal('NaN')` se não houver dado |
 |  | `Decimal` | para a data, incluindo feriados e fins de semana. |
 
 **Notes**
 
-As duas séries têm frequência diária. Por padrão, os valores são taxas anuais em base 252 dias úteis. O percentual informado pela série escolhida é convertido diretamente do texto para Decimal e dividido por 100, sem passagem por float, com dez casas decimais. Essa escala preserva até oito casas decimais do percentual publicado, sem recalcular uma modalidade a partir da outra. O histórico começa em 06/03/1986; a consulta anterior via FTP estava limitada a datas a partir de 20/08/2012.
+As duas séries têm frequência diária. Por padrão, os valores são taxas anuais em base 252 dias úteis. O percentual informado pela série escolhida é convertido diretamente do texto para Decimal e dividido por 100, sem passagem por float, com quatro casas decimais na taxa anual e oito na diária. As escalas preservam as duas casas percentuais anuais e as seis diárias, sem recalcular uma modalidade a partir da outra. O histórico começa em 06/03/1986; a consulta anterior via FTP estava limitada a datas a partir de 20/08/2012.
 
 Examples:
 
 ```pycon
 >>> import pyield as yd
 >>> taxa = yd.di_over("28/02/2025")  # decimal (0.1315 = 13,15% a.a.)
+>>> taxa
+Decimal('0.1315')
 >>> f"{taxa:.2%}"
 '13.15%'
+```
+
+Taxa ao dia útil para a mesma data, com oito casas decimais:
+
+```pycon
+>>> yd.di_over("28/02/2025", anualizada=False)
+Decimal('0.00049037')
+```
+
+```pycon
 >>> yd.di_over("01/01/2025")  # Feriado
 Decimal('NaN')
+```
+
+Obtém a série de taxas DI Over via SGS do Banco Central.
+
+Consulta a taxa DI (Depósito Interfinanceiro) da B3/CETIP, republicada pelo Banco Central na série SGS 4389 (anualizada em base 252) ou SGS 12 (diária).
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `inicio` | `DateLike \| None` | Data inicial do intervalo, inclusive. | `None` |
+| `fim` | `DateLike \| None` | Data final do intervalo, inclusive. Se `None`, usa a data atual no Brasil. | `None` |
+| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Se informado, tem prioridade sobre `inicio` e `fim`. | `None` |
+| `anualizada` | `bool` | Se `True`, retorna a taxa ao ano, em base 252 dias úteis. Se `False`, retorna a taxa ao dia útil publicada pela fonte. | `True` |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `DataFrame` | DataFrame com as taxas em decimal, ou vazio se não houver dados. |
+
+**Output Columns**
+
+data (pl.Date): Data de referência da observação. taxa (pl.Decimal(18, 4) ou pl.Decimal(18, 8)): Taxa em decimal, ao ano com escala 4 se `anualizada=True` ou ao dia útil com escala 8 se `anualizada=False`.
+
+**Notes**
+
+A frequência das observações é diária nas duas modalidades. Os valores percentuais da série escolhida são convertidos diretamente do texto para Decimal e divididos por 100, sem passagem por float e sem recalcular uma modalidade a partir da outra. As escalas preservam as duas casas percentuais das taxas anuais e as seis das taxas diárias. O histórico começa em 06/03/1986. Datas sem observações são omitidas. Intervalos longos são divididos automaticamente em blocos seguros para consulta ao SGS.
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se não informar `inicio` nem `ultimos`. |
+
+Examples:
+
+```pycon
+>>> yd.di_over_serie("27-02-2025", "28-02-2025")
+shape: (2, 2)
+┌────────────┬───────────────┐
+│ data       ┆ taxa          │
+│ ---        ┆ ---           │
+│ date       ┆ decimal[18,4] │
+╞════════════╪═══════════════╡
+│ 2025-02-27 ┆ 0.1315        │
+│ 2025-02-28 ┆ 0.1315        │
+└────────────┴───────────────┘
+```
+
+Taxas ao dia útil para o mesmo intervalo, com oito casas decimais:
+
+```pycon
+>>> yd.di_over_serie("27-02-2025", "28-02-2025", anualizada=False)
+shape: (2, 2)
+┌────────────┬───────────────┐
+│ data       ┆ taxa          │
+│ ---        ┆ ---           │
+│ date       ┆ decimal[18,8] │
+╞════════════╪═══════════════╡
+│ 2025-02-27 ┆ 0.00049037    │
+│ 2025-02-28 ┆ 0.00049037    │
+└────────────┴───────────────┘
 ```
 
 Curva de DI Futuro (DI1).
@@ -2685,11 +2773,17 @@ shape: (1, 1)
 
 # IGP-M
 
+As escalas e a cobertura dos números-índice foram ajustadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/#cobertura-e-organizacao-do-igp-m>).
+
 As taxas mensais são retornadas como `Decimal` em `yd.igpm.taxa()` e como `Decimal(18, 4)` na coluna `taxa` de `yd.igpm.taxa_serie()`. A unidade é decimal: `Decimal("0.0027")` representa 0,27%. Os valores são convertidos diretamente do texto do SGS/BCB, sem passagem por `float`.
 
 Quando indisponível, a consulta escalar retorna `Decimal("NaN")`; use `.is_nan()` para verificar. A consulta de série retorna um DataFrame vazio com o mesmo esquema. A série de taxas representa a variação mensal.
 
-Os números-índice são obtidos com `yd.igpm.indice(data)` e `yd.igpm.indice_serie(inicio, fim)` ou `yd.igpm.indice_serie(ultimos=n)`. A fonte é a FGV/Conjuntura Econômica, disponibilizada pelo [Ipeadata](<https://www.ipeadata.gov.br/api/>) na série `IGP12_IGPM12`. O retorno escalar usa `Decimal` e a coluna `indice` usa `Decimal(18, 10)`: as dez casas preservam os valores antigos, anteriores a 1994. A coluna `periodo` identifica a competência no formato `YYYYMM`. O índice indisponível retorna `Decimal("NaN")` na consulta escalar.
+Os números-índice são obtidos com `yd.igpm.indice(data)` e `yd.igpm.indice_serie(inicio, fim)` ou `yd.igpm.indice_serie(ultimos=n)`. A fonte é a FGV/Conjuntura Econômica, disponibilizada pelo [Ipeadata](<https://www.ipeadata.gov.br/api/>) na série `IGP12_IGPM12`. O retorno escalar usa `Decimal` com três casas e a coluna `indice` usa `Decimal(18, 3)`. A cobertura começa em **agosto de 1994**, base 100 da série. A coluna `periodo` identifica a competência no formato `YYYYMM`. O índice indisponível retorna `Decimal("NaN")` na consulta escalar.
+
+O corte acompanha a base do índice: julho de 1994 ainda tem quatro casas decimais na fonte (`92.9684`); de agosto de 1994 em diante, três casas preservam os valores. A biblioteca cobre esse período para manter um esquema simples e coerente com seu uso em cálculos financeiros em reais. Competências anteriores ao corte são omitidas nas séries e retornam `Decimal("NaN")` na consulta escalar. Um intervalo que atravesse o corte retorna somente agosto de 1994 em diante; um intervalo inteiramente anterior retorna DataFrame vazio, com o mesmo esquema. A seleção por `ultimos` também respeita esse limite.
+
+Para consultar os valores anteriores com sua precisão original, acesse a [série completa na API do Ipeadata](<https://www.ipeadata.gov.br/api/odata4/ValoresSerie(SERCODIGO=> "IGP12_IGPM12")). Essa consulta é feita diretamente na fonte, fora da API de índices do PYield. A biblioteca omite esses índices, em vez de retorná-los com precisão reduzida. A cobertura das taxas mensais segue a série SGS 189.
 
 Nas séries de índices, qualquer dia identifica o mês inteiro; os dois meses extremos são incluídos. `fim=None` usa a data atual no Brasil. Informe `inicio` ou `ultimos`; quando informado, `ultimos` tem prioridade sobre as datas.
 
@@ -2701,7 +2795,9 @@ Nas séries de índices, qualquer dia identifica o mês inteiro; os dois meses e
 calendario = yd.igpm.calendario(2026)
 ```
 
-Taxas e números-índice do IGP-M por competência ou série histórica.
+Taxas, números-índice e calendário de divulgação do IGP-M.
+
+Disponibiliza `taxa`, `taxa_serie`, `indice`, `indice_serie` e `calendario`. As taxas vêm do SGS/BCB; os índices e o calendário têm implementações próprias neste pacote.
 
 ## `calendario(ano)`
 
@@ -2760,16 +2856,21 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Número-índice com dez casas decimais ou `Decimal('NaN')` |
-|  | `Decimal` | se a data for nula, vazia ou o índice não estiver disponível. |
+| `Decimal` | `Decimal` | Número-índice com três casas decimais ou `Decimal('NaN')` |
+|  | `Decimal` | se a data for nula, vazia, anterior a agosto de 1994 ou o índice não |
+|  | `Decimal` | estiver disponível. |
+
+**Notes**
+
+A cobertura começa em agosto de 1994, base 100 da série. Os dados anteriores permanecem disponíveis diretamente no Ipeadata, fora do escopo desta consulta.
 
 Examples:
 
 ```pycon
 >>> yd.igpm.indice("01-06-2000")
-Decimal('183.7450000000')
+Decimal('183.745')
 >>> yd.igpm.indice("01-06-1989")
-Decimal('0.0000308619')
+Decimal('NaN')
 ```
 
 ## `indice_serie(inicio=None, fim=None, *, ultimos=None)`
@@ -2796,11 +2897,11 @@ Returns:
 **Output Columns**
 
 - periodo (Int64): competência mensal no formato YYYYMM.
-- indice (Decimal(18, 10)): número-índice do IGP-M.
+- indice (Decimal(18, 3)): número-índice do IGP-M.
 
 **Notes**
 
-Os números do JSON são lidos diretamente como Decimal, sem passagem por float. As dez casas preservam também os valores anteriores a 1994, que podem ser menores que 0.001. Valores ausentes são omitidos.
+Os números do JSON são lidos diretamente como Decimal, sem passagem por float. A cobertura começa em agosto de 1994, base 100 da série, com três casas decimais. Os valores anteriores, que exigem mais casas, ficam fora do escopo da biblioteca e podem ser consultados diretamente na série original do Ipeadata. Valores ausentes e competências anteriores ao corte são omitidos; intervalos inteiramente anteriores retornam vazios. O limite também se aplica à seleção por ultimos.
 
 Raises:
 
@@ -2811,9 +2912,16 @@ Raises:
 Examples:
 
 ```pycon
->>> yd.igpm.indice_serie("01-06-2000", "31-07-2000").to_dicts()
-[{'periodo': 200006, 'indice': Decimal('183.7450000000')},
- {'periodo': 200007, 'indice': Decimal('186.6340000000')}]
+>>> yd.igpm.indice_serie("01-06-2000", "31-07-2000")
+shape: (2, 2)
+┌─────────┬───────────────┐
+│ periodo ┆ indice        │
+│ ---     ┆ ---           │
+│ i64     ┆ decimal[18,3] │
+╞═════════╪═══════════════╡
+│ 200006  ┆ 183.745       │
+│ 200007  ┆ 186.634       │
+└─────────┴───────────────┘
 ```
 
 ## `taxa(data)`
@@ -2886,11 +2994,17 @@ Raises:
 Examples:
 
 ```pycon
->>> df = yd.igpm.taxa_serie("01-01-2025", "31-03-2025")
->>> df.to_dicts()
-[{'periodo': 202501, 'taxa': Decimal('0.0027')},
- {'periodo': 202502, 'taxa': Decimal('0.0106')},
- {'periodo': 202503, 'taxa': Decimal('-0.0034')}]
+>>> yd.igpm.taxa_serie("01-01-2025", "31-03-2025")
+shape: (3, 2)
+┌─────────┬───────────────┐
+│ periodo ┆ taxa          │
+│ ---     ┆ ---           │
+│ i64     ┆ decimal[18,4] │
+╞═════════╪═══════════════╡
+│ 202501  ┆ 0.0027        │
+│ 202502  ┆ 0.0106        │
+│ 202503  ┆ -0.0034       │
+└─────────┴───────────────┘
 ```
 
 A taxa é mensal e decimal: março registra deflação de 0,34%. Para acompanhar as últimas competências, sem fixar os valores:
@@ -6757,7 +6871,7 @@ serie_float = yd.ptax_serie(ultimos=5).with_columns(
 )
 ```
 
-A conversão pode introduzir aproximação binária. Veja as [notas da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) para a migração dos indicadores SGS.
+A conversão pode introduzir aproximação binária. Veja as [notas da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) para a migração dos indicadores SGS e as [notas da 0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>) para as escalas decimais atuais.
 
 ## Datas e ausência de dados
 
@@ -7278,6 +7392,8 @@ Esta seção cobre apenas as mudanças da `0.60.0` para a `0.61.0`, que não rem
 
 # Novidades na versão 0.62.0
 
+> Estas notas descrevem a 0.62.0. Os ajustes posteriores de escalas decimais, a série de DI Over, os índices no contexto de VNA e o corte histórico do IGP-M estão nas [notas da 0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/>).
+
 Esta versão remove o cache automático das consultas às fontes externas e o parâmetro `atualizar`. Os downloads passam a usar uma política compartilhada de retentativa leve, com no máximo duas tentativas para falhas transitórias. O cache diário dos históricos em Parquet de TPF e futuros permanece. A mudança é incompatível com chamadas que ainda passam `atualizar`, mesmo quando o valor é `False`.
 
 O Polars 2.0 passa a ser a versão mínima exigida. Ambientes com Polars 1.x precisam atualizar essa dependência para instalar esta versão do PYield.
@@ -7412,12 +7528,104 @@ Esses datasets são publicados e mantidos pelo projeto, com um ciclo de distribu
 
 As mudanças de cache e retry não alteram fórmulas ou unidades. Os indicadores SGS passam a usar os tipos decimais descritos acima, e as taxas Over ganham a opção de retorno ao dia útil. As notas da [0.60.0](<https://crdcj.github.io/PYield/release-0.60.0/>) continuam disponíveis para migrações anteriores.
 
+# Novidades na versão 0.63.0
+
+Esta versão ajusta as escalas decimais dos indicadores e do contexto de VNA, adiciona `yd.di_over_serie` e inclui os números-índice da inflação em `yd.vna.contexto`. Os índices do IGP-M passam a cobrir agosto de 1994 em diante, com três casas decimais.
+
+Há mudanças no esquema dos DataFrames e na cobertura histórica. Quem compara esquemas, concatena dados persistidos ou usa posições de colunas deve revisar essas integrações antes de atualizar. As políticas de consultas sem cache e retentativas introduzidas na [0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/>) permanecem.
+
+## Escalas decimais dos indicadores
+
+As escalas passam a acompanhar a precisão publicada em cada modalidade, sem zeros adicionais para acomodar outra série. Os valores continuam sendo lidos diretamente do texto da fonte, sem passagem por `float`, e as taxas continuam em unidade decimal.
+
+| Dado | 0.62.0 | 0.63.0 |
+| --- | --- | --- |
+| Selic Over e DI Over anualizados; Selic Meta | `Decimal(18, 10)` | `Decimal(18, 4)` |
+| Selic Over e DI Over diários | `Decimal(18, 10)` | `Decimal(18, 8)` |
+| PTAX | `Decimal(18, 4)` | `Decimal(18, 4)` |
+| Número-índice do IGP-M | `Decimal(18, 10)` | `Decimal(18, 3)`, desde agosto de 1994 |
+| Inflação realizada em `vna.contexto` | `Decimal(38, 18)` | `Decimal(38, 4)` |
+| Projeção informada em `vna.contexto` | `Decimal(38, 18)` | `Decimal(38, escala da entrada)` |
+
+As duas casas percentuais das taxas anuais correspondem a quatro casas em unidade decimal; as seis casas percentuais das diárias correspondem a oito. Escalares, colunas de séries e resultados vazios seguem a escala da modalidade. Por exemplo, a taxa anual antes representada por `Decimal("0.1315000000")` passa a ser `Decimal("0.1315")`: o valor econômico é o mesmo, mas a escala e a representação textual mudam. Escalares sem dados continuam retornando `Decimal("NaN")`.
+
+### Migração dos esquemas
+
+Atualize os esquemas esperados e os tipos usados em persistência, junções e concatenações. Se uma integração precisar manter temporariamente a escala anterior, converta explicitamente na aplicação:
+
+```python
+import polars as pl
+import pyield as yd
+
+serie = yd.selic.over_serie(ultimos=5)
+serie_compativel = serie.with_columns(
+    taxa=pl.col("taxa").cast(pl.Decimal(18, 10))
+)
+```
+
+Esse cast acrescenta zeros à representação; não aumenta a precisão da fonte nem recupera índices do IGP-M anteriores ao novo corte histórico. Para análises que exigem ponto flutuante, use `float(taxa)` ou `pl.col("taxa").cast(pl.Float64)`, considerando a possível aproximação binária.
+
+## Série histórica de DI Over
+
+`yd.di_over_serie` consulta um intervalo inteiro de DI Over ou os últimos registros disponíveis. Reutiliza o SGS do Banco Central e dispensa laços de consultas escalares e a montagem manual do DataFrame.
+
+```python
+serie_anual = yd.di_over_serie("27-02-2025", "28-02-2025")
+serie_diaria = yd.di_over_serie("27-02-2025", "28-02-2025", anualizada=False)
+ultimas_taxas = yd.di_over_serie(ultimos=5)
+```
+
+A assinatura é `yd.di_over_serie(inicio=None, fim=None, *, ultimos=None, anualizada=True)`. Informe `inicio` ou `ultimos`. O intervalo é inclusivo e `fim=None` considera a data atual no Brasil. `ultimos`, quando informado, tem prioridade sobre o intervalo e deve ser maior que zero. Intervalos longos são divididos automaticamente em blocos seguros para o SGS.
+
+O retorno tem `data` do tipo `Date` e `taxa` do tipo `Decimal(18, 4)` na modalidade anual ou `Decimal(18, 8)` na diária. A consulta usa SGS 4389 (anualizada, base 252 dias úteis) ou SGS 12 (diária), sem recalcular uma modalidade a partir da outra. Datas sem dados são omitidas; resultados vazios preservam o esquema. A consulta escalar `yd.di_over` permanece disponível. Veja a [referência de DI Over](<https://crdcj.github.io/PYield/di-over/>).
+
+## Contexto de VNA com números-índice
+
+`yd.vna.contexto` passa a incluir quatro colunas:
+
+| Coluna | Tipo Polars | Significado |
+| --- | --- | --- |
+| `competencia_anterior` | `Date` | Primeiro dia do mês anterior à `competencia` |
+| `indice_anterior` | `Decimal(18, 2)` para IPCA; `Decimal(18, 3)` para IGP-M | Número-índice da competência anterior; nulo se ausente |
+| `indice_atual` | Mesmo tipo de `indice_anterior` | Número-índice da competência da vigência; nulo se ausente |
+| `origem_indice` | `String` | `IBGE` ou `FGV/Ipeadata`; nula se ambos os índices estiverem ausentes |
+
+Os índices das duas competências são consultados independentemente da taxa mensal e da publicação dos VNAs. Não são estimados por projeção nem pela razão entre VNAs. Na NTN-C, a taxa mensal continua vindo do SGS/BCB, enquanto os índices vêm da FGV via Ipeadata; essas fontes podem ter disponibilidades diferentes. A nova consulta pode propagar erros operacionais da fonte, como as demais consultas externas.
+
+```python
+contexto = yd.vna.contexto("NTN-B", "30-06-2026")
+indices = contexto.select(
+    "competencia_anterior", "competencia", "indice_anterior", "indice_atual"
+)
+```
+
+A inflação realizada preserva as quatro casas das taxas do IPCA ou IGP-M, sem preenchimento até 18 casas. Projeções informadas preservam a escala da entrada, sem arredondamento; inflação indisponível usa escala 4. Os VNAs permanecem com seis casas. A conversão de entradas percentuais textuais, como `"0,45%"`, constrói o `Decimal` pelo expoente, evitando arredondamento em uma divisão intermediária por 100.
+
+### Migração do contexto
+
+Selecione colunas pelo nome para evitar depender de posições alteradas pela inclusão dos novos campos. Ao comparar esquemas ou concatenar contextos, considere a escala dos índices de cada título e a escala da projeção informada.
+
+`situacao_inflacao` continua descrevendo somente a taxa mensal. `pendencias` continua indicando falta de base ou taxa para projeção; uma lista vazia não atesta disponibilidade dos índices ou do VNA final. Verifique os campos nulos individualmente.
+
+A razão `indice_atual / indice_anterior` preserva informação que a taxa mensal arredondada pode perder. Passar essa taxa a `yd.vna.projetado` aplica as regras de projeção e não reproduz necessariamente o pró-rata realizado da NTN-B. `yd.vna.valor` usa os índices do IPCA entre duas referências publicadas para NTN-B; para NTN-C, usa a razão entre os VNAs publicados. O contexto não calcula VNA nem elimina a exigência dessas referências. Veja a [documentação de VNA](<https://crdcj.github.io/PYield/vna/#contexto-da-vigencia>).
+
+## Cobertura e organização do IGP-M
+
+Os números-índice do IGP-M passam a usar `Decimal(18, 3)`, com cobertura a partir de agosto de 1994, base 100 da série. O corte evita impor a precisão do histórico antigo às consultas usadas em cálculos financeiros em reais: julho de 1994 ainda exige quatro casas na fonte (`92.9684`).
+
+Competências anteriores são omitidas nas séries e retornam `Decimal("NaN")` na consulta escalar. Intervalos inteiramente anteriores retornam vazios, preservando o novo esquema; intervalos que atravessam o corte retornam apenas agosto de 1994 em diante. O limite também vale para `ultimos`. No contexto de VNA de agosto de 1994, `indice_anterior` fica nulo. A cobertura das taxas mensais segue a série SGS 189.
+
+Se sua aplicação usa o histórico anterior, consulte diretamente a [série completa na API do Ipeadata](<https://www.ipeadata.gov.br/api/odata4/ValoresSerie(SERCODIGO=> "IGP12_IGPM12")) para preservar a precisão original. Um cast da saída atual não recupera esse período. Veja também a [referência do IGP-M](<https://crdcj.github.io/PYield/igpm/>).
+
+O IGP-M passa a ser organizado no pacote `pyield/igpm/`, que reúne as implementações dos números-índice e do calendário. As taxas continuam sendo reexportadas diretamente do SGS/BCB. As chamadas públicas `yd.igpm.taxa`, `taxa_serie`, `indice`, `indice_serie` e `calendario` permanecem iguais; somente os caminhos internos de implementação mudam.
+
 # Notas de versão
 
 Cada versão tem uma página com as mudanças, o racional das decisões e as orientações de migração. Consulte também as [releases do GitHub](<https://github.com/crdcj/PYield/releases>) para as publicações.
 
 | Versão | Principais mudanças |
 | --- | --- |
+| [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>) | Escalas decimais por modalidade, série histórica de DI Over, números-índice no contexto de VNA e índices do IGP-M desde agosto de 1994. |
 | [0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) | Consultas externas sem cache, remoção de `atualizar`, retry leve, indicadores SGS com `Decimal`, taxas Over diárias e Polars 2.0 como mínimo. |
 | [0.61.0](<https://crdcj.github.io/PYield/release-0.61.0/index.md>) | Calendário de pregões da B3 e exposição de `futuro.dv01_expr`. |
 | [0.60.1](<https://crdcj.github.io/PYield/release-0.60.1/index.md>) | Correção de consultas de um dia no SGS. |
@@ -7439,7 +7647,7 @@ Este namespace reúne os indicadores diretamente relacionados à taxa Selic. Os 
 
 `over` e `over_serie` retornam a taxa anualizada em base 252 por padrão. Com `anualizada=False`, consultam a taxa ao dia útil publicada pelo Banco Central. A frequência das observações é diária nas duas modalidades; `meta` e `meta_serie` retornam a meta anual definida pelo Copom.
 
-As consultas escalares retornam `Decimal`; as séries têm colunas `data` (`pl.Date`) e `taxa` (`pl.Decimal(18, 10)`). Valores percentuais são convertidos diretamente do texto para unidade decimal, sem passagem por `float`. Escalares sem dados retornam `Decimal("NaN")`; séries sem dados retornam DataFrame vazio com o mesmo esquema.
+As consultas escalares retornam `Decimal`; as séries têm colunas `data` (`pl.Date`) e `taxa`: `pl.Decimal(18, 4)` nas taxas anuais (Over e Meta) ou `pl.Decimal(18, 8)` na Over diária. Essas escalas correspondem às duas e seis casas percentuais publicadas, respectivamente. Valores percentuais são convertidos diretamente do texto para unidade decimal, sem passagem por `float`. Escalares sem dados retornam `Decimal("NaN")`; séries sem dados retornam DataFrame vazio com o mesmo esquema.
 
 ```python
 import pyield as yd
@@ -7450,7 +7658,7 @@ serie_diaria = yd.selic.over_serie(ultimos=5, anualizada=False)
 meta = yd.selic.meta("28-02-2025")
 ```
 
-As docstrings abaixo identificam as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
+As escalas foram ajustadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/#escalas-decimais-dos-indicadores>). As docstrings abaixo identificam as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
 
 selic — Dados e análises relacionados à taxa Selic e política monetária.
 
@@ -7475,16 +7683,26 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Taxa SELIC Over com dez casas decimais, ao ano ou ao dia útil |
-|  | `Decimal` | conforme `anualizada`, ou `Decimal('NaN')` se não disponível. |
+| `Decimal` | `Decimal` | Taxa SELIC Over com quatro casas decimais ao ano ou oito |
+|  | `Decimal` | ao dia útil, conforme `anualizada`, ou `Decimal('NaN')` se |
+|  | `Decimal` | não disponível. |
 
 Examples:
 
 ```pycon
 >>> import pyield as yd
 >>> taxa = yd.selic.over("31-05-2024")  # decimal (0.104 = 10,4% a.a.)
+>>> taxa
+Decimal('0.1040')
 >>> f"{taxa:.1%}"
 '10.4%'
+```
+
+Taxa ao dia útil para a mesma data, com oito casas decimais:
+
+```pycon
+>>> yd.selic.over("31-05-2024", anualizada=False)
+Decimal('0.00039270')
 ```
 
 ## `over_serie(inicio=None, fim=None, *, ultimos=None, anualizada=True)`
@@ -7510,11 +7728,11 @@ Returns:
 
 **Output Columns**
 
-data (pl.Date): Data de referência da observação. taxa (pl.Decimal(18, 10)): Taxa em decimal, ao ano se `anualizada=True` ou ao dia útil se `anualizada=False`.
+data (pl.Date): Data de referência da observação. taxa (pl.Decimal(18, 4) ou pl.Decimal(18, 8)): Taxa em decimal, ao ano com escala 4 se `anualizada=True` ou ao dia útil com escala 8 se `anualizada=False`.
 
 **Notes**
 
-A frequência das observações é diária nas duas modalidades. Os valores percentuais da série escolhida são convertidos diretamente do texto para Decimal e divididos por 100, sem passagem por float e sem recalcular uma modalidade a partir da outra. A escala de dez casas preserva até oito casas decimais do percentual publicado.
+A frequência das observações é diária nas duas modalidades. Os valores percentuais da série escolhida são convertidos diretamente do texto para Decimal e divididos por 100, sem passagem por float e sem recalcular uma modalidade a partir da outra. As escalas preservam as duas casas percentuais das taxas anuais e as seis das taxas diárias.
 
 Examples:
 
@@ -7523,16 +7741,33 @@ Examples:
 >>> # Copom de 29-01-2025: over subiu de 12,15% para 13,15% a.a.
 >>> yd.selic.over_serie("28-01-2025", "31-01-2025")
 shape: (4, 2)
-┌────────────┬────────────────┐
-│ data       ┆ taxa           │
-│ ---        ┆ ---            │
-│ date       ┆ decimal[18,10] │
-╞════════════╪════════════════╡
-│ 2025-01-28 ┆ 0.1215000000   │
-│ 2025-01-29 ┆ 0.1215000000   │
-│ 2025-01-30 ┆ 0.1315000000   │
-│ 2025-01-31 ┆ 0.1315000000   │
-└────────────┴────────────────┘
+┌────────────┬───────────────┐
+│ data       ┆ taxa          │
+│ ---        ┆ ---           │
+│ date       ┆ decimal[18,4] │
+╞════════════╪═══════════════╡
+│ 2025-01-28 ┆ 0.1215        │
+│ 2025-01-29 ┆ 0.1215        │
+│ 2025-01-30 ┆ 0.1315        │
+│ 2025-01-31 ┆ 0.1315        │
+└────────────┴───────────────┘
+```
+
+Taxas ao dia útil para o mesmo intervalo, com oito casas decimais:
+
+```pycon
+>>> yd.selic.over_serie("28-01-2025", "31-01-2025", anualizada=False)
+shape: (4, 2)
+┌────────────┬───────────────┐
+│ data       ┆ taxa          │
+│ ---        ┆ ---           │
+│ date       ┆ decimal[18,8] │
+╞════════════╪═══════════════╡
+│ 2025-01-28 ┆ 0.00045513    │
+│ 2025-01-29 ┆ 0.00045513    │
+│ 2025-01-30 ┆ 0.00049037    │
+│ 2025-01-31 ┆ 0.00049037    │
+└────────────┴───────────────┘
 ```
 
 ## `meta(data)`
@@ -7551,7 +7786,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Taxa SELIC Meta em formato decimal com dez casas decimais ou |
+| `Decimal` | `Decimal` | Taxa SELIC Meta em formato decimal com quatro casas decimais ou |
 |  | `Decimal` | `Decimal('NaN')` se não disponível, inclusive para datas anteriores |
 |  | `Decimal` | a 05/03/1999. |
 
@@ -7587,11 +7822,11 @@ Returns:
 **Output Columns**
 
 - data (Date): data de referência da taxa.
-- taxa (pl.Decimal(18, 10)): taxa Selic Meta anual em formato decimal.
+- taxa (pl.Decimal(18, 4)): taxa Selic Meta anual em formato decimal.
 
 **Notes**
 
-Consultas iniciadas antes de 05/03/1999 consideram automaticamente essa data como início da série. Intervalos inteiramente anteriores retornam um DataFrame vazio. Os percentuais são convertidos diretamente do texto para Decimal e divididos por 100, sem passagem por float, com dez casas decimais.
+Consultas iniciadas antes de 05/03/1999 consideram automaticamente essa data como início da série. Intervalos inteiramente anteriores retornam um DataFrame vazio. Os percentuais são convertidos diretamente do texto para Decimal e divididos por 100, sem passagem por float, com quatro casas decimais, preservando as duas casas percentuais publicadas.
 
 Examples:
 
@@ -7600,16 +7835,16 @@ Examples:
 >>> # Copom de 29-01-2025: meta subiu de 12,25% para 13,25% a.a.
 >>> yd.selic.meta_serie("28-01-2025", "31-01-2025")
 shape: (4, 2)
-┌────────────┬────────────────┐
-│ data       ┆ taxa           │
-│ ---        ┆ ---            │
-│ date       ┆ decimal[18,10] │
-╞════════════╪════════════════╡
-│ 2025-01-28 ┆ 0.1225000000   │
-│ 2025-01-29 ┆ 0.1225000000   │
-│ 2025-01-30 ┆ 0.1325000000   │
-│ 2025-01-31 ┆ 0.1325000000   │
-└────────────┴────────────────┘
+┌────────────┬───────────────┐
+│ data       ┆ taxa          │
+│ ---        ┆ ---           │
+│ date       ┆ decimal[18,4] │
+╞════════════╪═══════════════╡
+│ 2025-01-28 ┆ 0.1225        │
+│ 2025-01-29 ┆ 0.1225        │
+│ 2025-01-30 ┆ 0.1325        │
+│ 2025-01-31 ┆ 0.1325        │
+└────────────┴───────────────┘
 ```
 
 # Títulos Públicos Federais (TPF)
@@ -8795,7 +9030,9 @@ O parâmetro `inflacao` de NTN-B e NTN-C em `yd.vna.projetado` recebia números 
 
 ## Contexto da vigência
 
-`yd.vna.contexto` reúne os parâmetros disponíveis para uma vigência de NTN-B ou NTN-C em um DataFrame com uma linha. Inclui as datas da vigência, os VNAs publicados no início e no fim, a competência da inflação, sua origem e situação (`realizado`, `projetado` ou `indisponivel`) e uma lista de pendências. Dados numéricos indisponíveis são nulos. Para NTN-C, informe `vencimento`.
+As colunas de números-índice e as escalas decimais do contexto foram atualizadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/#contexto-de-vna-com-numeros-indice>).
+
+`yd.vna.contexto` reúne os parâmetros disponíveis para uma vigência de NTN-B ou NTN-C em um DataFrame com uma linha. Inclui as datas da vigência, os VNAs publicados no início e no fim, os números-índice anterior e atual, a competência da inflação, sua origem e situação (`realizado`, `projetado` ou `indisponivel`) e uma lista de pendências. Dados numéricos indisponíveis são nulos. Para NTN-C, informe `vencimento`.
 
 ```python
 contexto = yd.vna.contexto("NTN-B", "30-06-2026")
@@ -8804,7 +9041,32 @@ contexto_ntnc = yd.vna.contexto(
 )
 ```
 
-A projeção opcional `inflacao_projetada` só é usada quando a taxa realizada estiver indisponível. Esse parâmetro aceita as mesmas entradas de `yd.vna.projetado`: `0.0045`, `Decimal("0.0045")`, `"0.45%"` ou `"0,45%"` representam 0,45%. As entradas são convertidas para `Decimal` sem arredondamento; a coluna `inflacao` permanece em unidade decimal e pode ser passada diretamente a `yd.vna.projetado`. O contexto não calcula o VNA nem busca projeções automaticamente. Ele reflete os dados disponíveis no momento da consulta, sem reconstruir o que era conhecido na data solicitada. Para comparar operação e liquidação, consulte cada data e compare `inicio_vigencia`.
+O contexto descreve os dados da vigência, incluindo a distinção entre taxa mensal e nível do índice:
+
+| Campo | Significado |
+| --- | --- |
+| `competencia_anterior` | Primeiro dia do mês anterior à `competencia` |
+| `indice_anterior` | Número-índice de `competencia_anterior` |
+| `indice_atual` | Número-índice de `competencia`, o mês do início da vigência |
+| `origem_indice` | `IBGE` para IPCA ou `FGV/Ipeadata` para IGP-M; nula se ambos os índices estiverem ausentes |
+| `inflacao` | Taxa mensal publicada ou projeção informada, em unidade decimal |
+
+Para NTN-B, uma data entre 15/07 e 14/08 seleciona os índices de junho e julho. Para NTN-C, uma data de setembro seleciona os índices de agosto e setembro. Os índices usam `Decimal(18, 2)` para IPCA e `Decimal(18, 3)` para IGP-M, inclusive quando nulos. A cobertura dos números-índice do IGP-M começa em agosto de 1994. Competências anteriores ficam nulas; no contexto de agosto de 1994, `indice_anterior` é nulo e `indice_atual` pode trazer `100.000`. Consulte o [corte histórico do IGP-M](<https://crdcj.github.io/PYield/igpm/index.md>) para acessar o período anterior diretamente na fonte.
+
+```python
+contexto = yd.vna.contexto("NTN-B", "30-06-2026")
+indices = contexto.select(
+    "competencia_anterior", "competencia", "indice_anterior", "indice_atual",
+).row(0)
+# (datetime.date(2026, 5, 1), datetime.date(2026, 6, 1),
+#  Decimal('7640.15'), Decimal('7652.37'))
+```
+
+Os dois índices são consultados independentemente da taxa mensal e da publicação do VNA final. Cada índice ausente fica nulo, sem estimativa por projeção ou por razão entre VNAs. Na NTN-C, `origem_inflacao` identifica o SGS/BCB, enquanto `origem_indice` identifica a FGV via Ipeadata; as fontes podem ter disponibilidades diferentes.
+
+A projeção opcional `inflacao_projetada` só é usada quando a taxa realizada estiver indisponível. Esse parâmetro aceita as mesmas entradas de `yd.vna.projetado`: `0.0045`, `Decimal("0.0045")`, `"0.45%"` ou `"0,45%"` representam 0,45%. As entradas são convertidas para `Decimal` sem arredondamento; a coluna `inflacao` permanece em unidade decimal e pode ser passada diretamente a `yd.vna.projetado`. A inflação realizada usa quatro casas decimais; a projeção preserva a escala informada. Sem inflação disponível, a coluna usa escala 4. Essa compatibilidade de formato não torna os cálculos equivalentes: `projetado` aplica o arredondamento de projeção e usa `1 + inflacao`; o pró-rata realizado da NTN-B usa a razão entre os números-índice. A taxa mensal arredondada pode perder precisão em relação a essa razão. Quando há duas referências publicadas, use `yd.vna.valor`: na NTN-B, consulta os índices do IPCA; na NTN-C, interpola pela razão entre os VNAs publicados. O contexto não calcula o VNA nem busca projeções automaticamente. Ele reflete os dados disponíveis no momento da consulta, sem reconstruir o que era conhecido na data solicitada. Para comparar operação e liquidação, consulte cada data e compare `inicio_vigencia`.
+
+`situacao_inflacao` descreve somente a taxa mensal. `pendencias` mantém os indicadores `vna_base_indisponivel` e `inflacao_indisponivel`, referentes à projeção por taxa. Uma lista vazia não garante que os índices ou o VNA final estejam disponíveis: verifique os campos correspondentes. A disponibilidade dos índices permite obter o fator realizado sem aguardar o VNA final, mas não remove a exigência de duas referências publicadas nas funções `valor` e `calcular_vna` para o pró-rata entre referências.
 
 ### Transição e atenção à divulgação
 
@@ -8982,15 +9244,16 @@ Returns:
 | Type | Description |
 | --- | --- |
 | `DataFrame` | DataFrame com uma linha, inclusive quando faltam parâmetros. Dados |
-| `DataFrame` | numéricos indisponíveis são nulos, com pendências explícitas. |
+| `DataFrame` | numéricos indisponíveis são nulos, com pendências explícitas de base |
+| `DataFrame` | e inflação para projeção por taxa. |
 
 **Output Columns**
 
-titulo (String): Título consultado. data (Date): Data para a qual os parâmetros foram selecionados. inicio\_vigencia (Date): Início inclusivo, sem ajuste útil. fim\_vigencia (Date): Fim exclusivo, sem ajuste útil. competencia (Date): Primeiro dia do mês da inflação da vigência. vna\_base (Decimal(18, 6)): VNA publicado no início; nulo se ausente. vna\_fim (Decimal(18, 6)): VNA publicado no fim; nulo se ausente. inflacao (Decimal(38, 18)): Variação mensal decimal, realizada ou explicitamente projetada. Pode ser passada diretamente a projetado. situacao\_inflacao (String): "realizado", "projetado" ou "indisponivel". origem\_inflacao (String): "IBGE", "SGS/BCB" ou "informada"; nula sem taxa. pendencias (List\[String\]): "vna\_base\_indisponivel" e/ou "inflacao\_indisponivel". Lista vazia se ambos estiverem disponíveis.
+titulo (String): Título consultado. data (Date): Data para a qual os parâmetros foram selecionados. inicio\_vigencia (Date): Início inclusivo, sem ajuste útil. fim\_vigencia (Date): Fim exclusivo, sem ajuste útil. competencia (Date): Primeiro dia do mês da inflação da vigência. competencia\_anterior (Date): Primeiro dia do mês anterior à competência. vna\_base (Decimal(18, 6)): VNA publicado no início; nulo se ausente. vna\_fim (Decimal(18, 6)): VNA publicado no fim; nulo se ausente. indice\_anterior (Decimal(18, escala)): Número-índice da competência anterior; escala 2 para IPCA e 3 para IGP-M. Nulo se ausente. indice\_atual (Decimal(18, escala)): Número-índice da competência da vigência, com a mesma escala de indice\_anterior. Nulo se ausente. origem\_indice (String): "IBGE" ou "FGV/Ipeadata"; nula se ambos os índices estiverem ausentes. inflacao (Decimal(38, escala)): Variação mensal decimal, com escala 4 quando realizada ou indisponível. Para projeções informadas, preserva a escala da entrada. Pode ser passada diretamente a projetado, que aplica as regras de projeção, mesmo para uma taxa realizada. situacao\_inflacao (String): "realizado", "projetado" ou "indisponivel". origem\_inflacao (String): "IBGE", "SGS/BCB" ou "informada"; nula sem taxa. pendencias (List\[String\]): "vna\_base\_indisponivel" e/ou "inflacao\_indisponivel". Lista vazia se ambos estiverem disponíveis. Refere-se à projeção por taxa; não atesta disponibilidade dos índices.
 
 **Notes**
 
-Fontes: histórico do Tesouro Nacional; taxa do IPCA do IBGE e taxa do IGP-M do SGS/BCB. A competência é o mês do início da vigência: dia 15 para NTN-B e dia 1 para NTN-C. As consultas refletem os dados disponíveis agora, sem reconstruir o que era conhecido na data solicitada. A inflação realizada não comprova publicação do VNA final. Este contexto não calcula VNA, não infere inflação da razão entre VNAs e não estima uma base ausente. Projeções e dados oficiais permanecem identificados. Erros operacionais são propagados, sem tratá-los como falta de dados. Para detectar transição, compare inicio\_vigencia dos contextos de operação e liquidação; cada data seleciona sua própria base.
+Fontes: histórico do Tesouro Nacional; taxa do IPCA do IBGE e taxa do IGP-M do SGS/BCB; números-índice do IPCA do IBGE e do IGP-M da FGV disponibilizados pelo Ipeadata. A competência é o mês do início da vigência: dia 15 para NTN-B e dia 1 para NTN-C. As consultas refletem os dados disponíveis agora, sem reconstruir o que era conhecido na data solicitada. A inflação realizada não comprova publicação do VNA final. Este contexto não calcula VNA, não infere inflação da razão entre VNAs e não estima uma base ausente. Projeções e dados oficiais permanecem identificados. Os números-índice são consultados independentemente da taxa mensal; não são estimados por projeção nem pela razão entre VNAs. Para IGP-M, a cobertura começa em agosto de 1994. Competências anteriores ao corte ficam nulas, inclusive a anterior de agosto/1994. A razão indice\_atual / indice\_anterior preserva informação que a taxa mensal arredondada pode perder. Passar essa taxa a projetado não reproduz necessariamente o pró-rata realizado com os índices. Para NTN-B, valor usa os índices entre duas referências publicadas; para NTN-C, usa a razão entre os VNAs publicados. Índices disponíveis não comprovam a publicação do VNA final; consulte os campos nulos individualmente. Erros operacionais são propagados, sem tratá-los como falta de dados. Para detectar transição, compare inicio\_vigencia dos contextos de operação e liquidação; cada data seleciona sua própria base.
 
 Raises:
 
@@ -9008,7 +9271,16 @@ Consulta uma vigência histórica da NTN-B e verifica a competência da inflaç�
 ...     "competencia", "vna_base", "inflacao", "situacao_inflacao", "pendencias"
 ... ).row(0)
 (datetime.date(2026, 6, 1), Decimal('4731.856412'),
- Decimal('0.001600000000000000'), 'realizado', [])
+ Decimal('0.0016'), 'realizado', [])
+```
+
+Os números-índice correspondem à competência anterior e à da vigência, independentemente da disponibilidade da taxa mensal:
+
+```pycon
+>>> parametros.select(
+...     "competencia_anterior", "indice_anterior", "indice_atual"
+... ).row(0)
+(datetime.date(2026, 5, 1), Decimal('7640.15'), Decimal('7652.37'))
 ```
 
 Para a vigência atual da NTN-C, informa o vencimento e uma projeção de 0,45%, usada somente se a inflação realizada não estiver disponível. A situação e as pendências dependem dos dados publicados na consulta:
@@ -9063,9 +9335,16 @@ Seleciona duas referências mensais da NTN-B no histórico publicado:
 >>> referencias = yd.vna.historico("NTN-B")
 >>> referencias.filter(
 ...     pl.col("data").is_between(pl.date(2025, 12, 15), pl.date(2026, 1, 15))
-... ).to_dicts()
-[{'data': datetime.date(2025, 12, 15), 'vna': Decimal('4570.078408')},
- {'data': datetime.date(2026, 1, 15), 'vna': Decimal('4585.159356')}]
+... )
+shape: (2, 2)
+┌────────────┬───────────────┐
+│ data       ┆ vna           │
+│ ---        ┆ ---           │
+│ date       ┆ decimal[18,6] │
+╞════════════╪═══════════════╡
+│ 2025-12-15 ┆ 4570.078408   │
+│ 2026-01-15 ┆ 4585.159356   │
+└────────────┴───────────────┘
 ```
 
 Para NTN-C, filtra o vencimento antes de interpolar para manter apenas uma série de VNA:

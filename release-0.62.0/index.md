@@ -1,5 +1,7 @@
 # Novidades na versão 0.62.0
 
+> Estas notas descrevem a 0.62.0. Os ajustes posteriores de escalas decimais, a série de DI Over, os índices no contexto de VNA e o corte histórico do IGP-M estão nas [notas da 0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/>).
+
 Esta versão remove o cache automático das consultas às fontes externas e o parâmetro `atualizar`. Os downloads passam a usar uma política compartilhada de retentativa leve, com no máximo duas tentativas para falhas transitórias. O cache diário dos históricos em Parquet de TPF e futuros permanece. A mudança é incompatível com chamadas que ainda passam `atualizar`, mesmo quando o valor é `False`.
 
 O Polars 2.0 passa a ser a versão mínima exigida. Ambientes com Polars 1.x precisam atualizar essa dependência para instalar esta versão do PYield.

@@ -179,7 +179,7 @@ serie_float = yd.ptax_serie(ultimos=5).with_columns(
 )
 ```
 
-A conversão pode introduzir aproximação binária. Veja as [notas da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) para a migração dos indicadores SGS.
+A conversão pode introduzir aproximação binária. Veja as [notas da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) para a migração dos indicadores SGS e as [notas da 0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>) para as escalas decimais atuais.
 
 ## Datas e ausência de dados
 

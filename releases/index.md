@@ -4,6 +4,7 @@ Cada versão tem uma página com as mudanças, o racional das decisões e as ori
 
 | Versão | Principais mudanças |
 | --- | --- |
+| [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>) | Escalas decimais por modalidade, série histórica de DI Over, números-índice no contexto de VNA e índices do IGP-M desde agosto de 1994. |
 | [0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) | Consultas externas sem cache, remoção de `atualizar`, retry leve, indicadores SGS com `Decimal`, taxas Over diárias e Polars 2.0 como mínimo. |
 | [0.61.0](<https://crdcj.github.io/PYield/release-0.61.0/index.md>) | Calendário de pregões da B3 e exposição de `futuro.dv01_expr`. |
 | [0.60.1](<https://crdcj.github.io/PYield/release-0.60.1/index.md>) | Correção de consultas de um dia no SGS. |
