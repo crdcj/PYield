@@ -10,7 +10,7 @@ import pytest
 import requests
 
 import pyield as yd
-from pyield._internal import calendario_igpm as fgv  # noqa: PLC2701
+from pyield.igpm import _calendario as fgv  # noqa: PLC2701
 from pyield.ipca import _calendario as ibge  # noqa: PLC2701
 
 _DADOS = Path(__file__).parent / "data"

@@ -14,7 +14,8 @@ from pyield._internal.types import DateLike, any_is_empty
 _URL_INDICES = (
     "https://www.ipeadata.gov.br/api/odata4/ValoresSerie(SERCODIGO='IGP12_IGPM12')"
 )
-_TIPO_INDICE = pl.Decimal(precision=18, scale=10)
+_PRIMEIRO_PERIODO = 199408
+_TIPO_INDICE = pl.Decimal(precision=18, scale=3)
 _ESQUEMA = {"periodo": pl.Int64, "indice": _TIPO_INDICE}
 
 
@@ -41,6 +42,7 @@ def _processar_historico(dados: list[dict[str, str | Decimal | None]]) -> pl.Dat
             .cast(pl.Int64),
             indice=pl.col("VALVALOR"),
         )
+        .filter(pl.col("periodo") >= _PRIMEIRO_PERIODO)
         .drop_nulls("indice")
         .sort("periodo")
     )
@@ -70,21 +72,32 @@ def indice_serie(
 
     Output Columns:
         * periodo (Int64): competência mensal no formato YYYYMM.
-        * indice (Decimal(18, 10)): número-índice do IGP-M.
+        * indice (Decimal(18, 3)): número-índice do IGP-M.
 
     Notes:
         Os números do JSON são lidos diretamente como Decimal, sem passagem
-        por float. As dez casas preservam também os valores anteriores a 1994,
-        que podem ser menores que 0.001. Valores ausentes são omitidos.
+        por float. A cobertura começa em agosto de 1994, base 100 da série,
+        com três casas decimais. Os valores anteriores, que exigem mais casas,
+        ficam fora do escopo da biblioteca e podem ser consultados diretamente
+        na série original do Ipeadata. Valores ausentes e competências anteriores
+        ao corte são omitidos; intervalos inteiramente anteriores retornam vazios.
+        O limite também se aplica à seleção por ultimos.
 
     Raises:
         ValueError: Se não informar ``inicio`` nem ``ultimos``, se ``ultimos``
             for menor ou igual a zero ou se alguma data for inválida.
 
     Examples:
-        >>> yd.igpm.indice_serie("01-06-2000", "31-07-2000").to_dicts()
-        [{'periodo': 200006, 'indice': Decimal('183.7450000000')},
-         {'periodo': 200007, 'indice': Decimal('186.6340000000')}]
+        >>> yd.igpm.indice_serie("01-06-2000", "31-07-2000")
+        shape: (2, 2)
+        ┌─────────┬───────────────┐
+        │ periodo ┆ indice        │
+        │ ---     ┆ ---           │
+        │ i64     ┆ decimal[18,3] │
+        ╞═════════╪═══════════════╡
+        │ 200006  ┆ 183.745       │
+        │ 200007  ┆ 186.634       │
+        └─────────┴───────────────┘
     """
     if ultimos is not None:
         if ultimos <= 0:
@@ -100,7 +113,7 @@ def indice_serie(
         raise ValueError("As datas do intervalo devem ser informadas.")
     periodo_inicio = data_inicio.year * 100 + data_inicio.month
     periodo_fim = data_fim.year * 100 + data_fim.month
-    if periodo_inicio > periodo_fim:
+    if periodo_inicio > periodo_fim or periodo_fim < _PRIMEIRO_PERIODO:
         return pl.DataFrame(schema=_ESQUEMA)
     return _processar_historico(_parsear_historico(_buscar_historico())).filter(
         pl.col("periodo").is_between(periodo_inicio, periodo_fim)
@@ -117,14 +130,20 @@ def indice(data: DateLike | None) -> Decimal:
         data: Qualquer data dentro do mês desejado, nos formatos da biblioteca.
 
     Returns:
-        Decimal: Número-índice com dez casas decimais ou ``Decimal('NaN')``
-        se a data for nula, vazia ou o índice não estiver disponível.
+        Decimal: Número-índice com três casas decimais ou ``Decimal('NaN')``
+        se a data for nula, vazia, anterior a agosto de 1994 ou o índice não
+        estiver disponível.
+
+    Notes:
+        A cobertura começa em agosto de 1994, base 100 da série. Os dados
+        anteriores permanecem disponíveis diretamente no Ipeadata, fora do
+        escopo desta consulta.
 
     Examples:
         >>> yd.igpm.indice("01-06-2000")
-        Decimal('183.7450000000')
+        Decimal('183.745')
         >>> yd.igpm.indice("01-06-1989")
-        Decimal('0.0000308619')
+        Decimal('NaN')
     """
     if data is None or any_is_empty(data):
         return Decimal("NaN")

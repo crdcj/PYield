@@ -124,7 +124,7 @@ def converter_taxa(taxa: float | Decimal | str) -> float | Decimal:
     texto = taxa.strip()
     if not re.fullmatch(r"[+-]?[0-9]+(?:[.,][0-9]+)?\s*%", texto):
         raise ValueError('Taxa textual deve ter formato percentual, como "5.75%".')
-    return Decimal(texto[:-1].strip().replace(",", ".")) / 100
+    return Decimal(texto[:-1].strip().replace(",", ".") + "e-2")
 
 
 def normalizar_taxa_precificacao(taxa: float | Decimal) -> float:

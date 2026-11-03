@@ -6,6 +6,7 @@ orientações de migração. Consulte também as
 
 | Versão | Principais mudanças |
 |---|---|
+| [0.63.0](release-0.63.0.md) | Escalas decimais por modalidade, série histórica de DI Over, números-índice no contexto de VNA e índices do IGP-M desde agosto de 1994. |
 | [0.62.0](release-0.62.0.md) | Consultas externas sem cache, remoção de `atualizar`, retry leve, indicadores SGS com `Decimal`, taxas Over diárias e Polars 2.0 como mínimo. |
 | [0.61.0](release-0.61.0.md) | Calendário de pregões da B3 e exposição de `futuro.dv01_expr`. |
 | [0.60.1](release-0.60.1.md) | Correção de consultas de um dia no SGS. |

@@ -260,9 +260,16 @@ def historico(
         >>> referencias = yd.vna.historico("NTN-B")
         >>> referencias.filter(
         ...     pl.col("data").is_between(pl.date(2025, 12, 15), pl.date(2026, 1, 15))
-        ... ).to_dicts()
-        [{'data': datetime.date(2025, 12, 15), 'vna': Decimal('4570.078408')},
-         {'data': datetime.date(2026, 1, 15), 'vna': Decimal('4585.159356')}]
+        ... )
+        shape: (2, 2)
+        ┌────────────┬───────────────┐
+        │ data       ┆ vna           │
+        │ ---        ┆ ---           │
+        │ date       ┆ decimal[18,6] │
+        ╞════════════╪═══════════════╡
+        │ 2025-12-15 ┆ 4570.078408   │
+        │ 2026-01-15 ┆ 4585.159356   │
+        └────────────┴───────────────┘
 
         Para NTN-C, filtra o vencimento antes de interpolar para manter
         apenas uma série de VNA:

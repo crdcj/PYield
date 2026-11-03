@@ -15,8 +15,8 @@ sgs = importlib.import_module("pyield.bc.sgs")
 @pytest.mark.parametrize(
     ("anualizada", "publicado", "esperado"),
     [
-        (True, "13.15", Decimal("0.1315000000")),
-        (False, "0.04903712", Decimal("0.0004903712")),
+        (True, "13.15", Decimal("0.1315")),
+        (False, "0.049037", Decimal("0.00049037")),
     ],
 )
 def test_over_seleciona_serie_e_preserva_decimal_da_fonte(
@@ -51,15 +51,15 @@ def test_selic_over_serie_diaria_por_periodo_ou_ultimos(monkeypatch, consulta):
 
     def chamar_api(url):
         urls.append(url)
-        return [{"data": "28/02/2025", "valor": "0.04903712"}]
+        return [{"data": "28/02/2025", "valor": "0.049037"}]
 
     monkeypatch.setattr(sgs, "_chamar_api", chamar_api)
 
     resultado = yd.selic.over_serie(**consulta, anualizada=False)
 
-    assert resultado.schema == {"data": pl.Date, "taxa": pl.Decimal(18, 10)}
+    assert resultado.schema == {"data": pl.Date, "taxa": pl.Decimal(18, 8)}
     assert resultado.to_dicts() == [
-        {"data": dt.date(2025, 2, 28), "taxa": Decimal("0.0004903712")}
+        {"data": dt.date(2025, 2, 28), "taxa": Decimal("0.00049037")}
     ]
     assert len(urls) == 1
     url = urlparse(urls[0])
@@ -90,7 +90,7 @@ def test_selic_over_serie_diaria_vazia_preserva_esquema(monkeypatch):
     resultado = yd.selic.over_serie(ultimos=1, anualizada=False)
 
     assert resultado.is_empty()
-    assert resultado.schema == {"data": pl.Date, "taxa": pl.Decimal(18, 10)}
+    assert resultado.schema == {"data": pl.Date, "taxa": pl.Decimal(18, 8)}
 
 
 @pytest.mark.parametrize("consultar", [yd.selic.over, yd.di_over])

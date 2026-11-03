@@ -1,5 +1,9 @@
 # Novidades na versão 0.62.0
 
+> Estas notas descrevem a 0.62.0. Os ajustes posteriores de escalas decimais,
+> a série de DI Over, os índices no contexto de VNA e o corte histórico
+> do IGP-M estão nas [notas da 0.63.0](https://crdcj.github.io/PYield/release-0.63.0/).
+
 Esta versão remove o cache automático das consultas às fontes externas e o
 parâmetro `atualizar`. Os downloads passam a usar uma política compartilhada de
 retentativa leve, com no máximo duas tentativas para falhas transitórias.

@@ -240,6 +240,17 @@ Visão geral das principais funções públicas do PYield.
     modalidades; datas sem dados retornam `Decimal("NaN")`. Os dados vêm do SGS do
     Banco Central: série 4389 para a anualizada e 12 para a diária.
 
+??? "`yd.di_over_serie` (série histórica do DI Over)"
+    ```text
+    yd.di_over_serie(inicio=None, fim=None, *, ultimos=None, anualizada=True)
+    ```
+
+    DataFrame com `data` (`Date`) e `taxa` (`Decimal(18, 4)` na anual ou
+    `Decimal(18, 8)` na diária). Consulta o
+    intervalo inclusivo ou os últimos registros; `ultimos` tem prioridade.
+    Usa as mesmas modalidades e séries SGS de `yd.di_over`. Sem dados,
+    retorna DataFrame vazio com o mesmo esquema.
+
 ??? "`yd.forward` (taxa a termo entre dois vértices)"
     ```text
     yd.forward(...)

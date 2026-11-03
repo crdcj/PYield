@@ -216,10 +216,14 @@ permanecem iguais quando se informa a mesma inflação econômica.
 
 ## Contexto da vigência
 
+As colunas de números-índice e as escalas decimais do contexto foram atualizadas
+na [0.63.0](release-0.63.0.md#contexto-de-vna-com-numeros-indice).
+
 `yd.vna.contexto` reúne os parâmetros disponíveis para uma vigência de NTN-B
 ou NTN-C em um DataFrame com uma linha. Inclui as datas da vigência, os VNAs
-publicados no início e no fim, a competência da inflação, sua origem e
-situação (`realizado`, `projetado` ou `indisponivel`) e uma lista de pendências.
+publicados no início e no fim, os números-índice anterior e atual, a competência
+da inflação, sua origem e situação (`realizado`, `projetado` ou `indisponivel`)
+e uma lista de pendências.
 Dados numéricos indisponíveis são nulos. Para NTN-C, informe `vencimento`.
 
 ```python
@@ -229,15 +233,66 @@ contexto_ntnc = yd.vna.contexto(
 )
 ```
 
+O contexto descreve os dados da vigência, incluindo a distinção entre taxa
+mensal e nível do índice:
+
+| Campo | Significado |
+|---|---|
+| `competencia_anterior` | Primeiro dia do mês anterior à `competencia` |
+| `indice_anterior` | Número-índice de `competencia_anterior` |
+| `indice_atual` | Número-índice de `competencia`, o mês do início da vigência |
+| `origem_indice` | `IBGE` para IPCA ou `FGV/Ipeadata` para IGP-M; nula se ambos os índices estiverem ausentes |
+| `inflacao` | Taxa mensal publicada ou projeção informada, em unidade decimal |
+
+Para NTN-B, uma data entre 15/07 e 14/08 seleciona os índices de junho e julho.
+Para NTN-C, uma data de setembro seleciona os índices de agosto e setembro.
+Os índices usam `Decimal(18, 2)` para IPCA e `Decimal(18, 3)` para IGP-M,
+inclusive quando nulos. A cobertura dos números-índice do IGP-M começa em
+agosto de 1994. Competências anteriores ficam nulas; no contexto de agosto
+de 1994, `indice_anterior` é nulo e `indice_atual` pode trazer `100.000`.
+Consulte o [corte histórico do IGP-M](igpm.md) para acessar o período anterior
+diretamente na fonte.
+
+```python
+contexto = yd.vna.contexto("NTN-B", "30-06-2026")
+indices = contexto.select(
+    "competencia_anterior", "competencia", "indice_anterior", "indice_atual",
+).row(0)
+# (datetime.date(2026, 5, 1), datetime.date(2026, 6, 1),
+#  Decimal('7640.15'), Decimal('7652.37'))
+```
+
+Os dois índices são consultados independentemente da taxa mensal e da publicação
+do VNA final. Cada índice ausente fica nulo, sem estimativa por projeção ou por
+razão entre VNAs. Na NTN-C, `origem_inflacao` identifica o SGS/BCB, enquanto
+`origem_indice` identifica a FGV via Ipeadata; as fontes podem ter disponibilidades
+diferentes.
+
 A projeção opcional `inflacao_projetada` só é usada quando a taxa realizada
 estiver indisponível. Esse parâmetro aceita as mesmas entradas de
 `yd.vna.projetado`: `0.0045`, `Decimal("0.0045")`, `"0.45%"` ou `"0,45%"`
 representam 0,45%. As entradas são convertidas para `Decimal` sem
 arredondamento; a coluna `inflacao` permanece em unidade decimal e pode ser
-passada diretamente a `yd.vna.projetado`. O contexto não calcula o VNA nem busca projeções automaticamente.
+passada diretamente a `yd.vna.projetado`. A inflação realizada usa quatro
+casas decimais; a projeção preserva a escala informada. Sem inflação disponível,
+a coluna usa escala 4. Essa compatibilidade de formato não torna os cálculos
+equivalentes: `projetado` aplica o arredondamento de projeção e usa
+`1 + inflacao`; o pró-rata realizado da NTN-B usa a razão entre os números-índice.
+A taxa mensal arredondada pode perder precisão em relação a essa razão.
+Quando há duas referências publicadas, use `yd.vna.valor`: na NTN-B, consulta
+os índices do IPCA; na NTN-C, interpola pela razão entre os VNAs publicados.
+O contexto não calcula o VNA nem busca projeções automaticamente.
 Ele reflete os dados disponíveis no momento da consulta, sem reconstruir o
 que era conhecido na data solicitada. Para comparar operação e liquidação,
 consulte cada data e compare `inicio_vigencia`.
+
+`situacao_inflacao` descreve somente a taxa mensal. `pendencias` mantém os
+indicadores `vna_base_indisponivel` e `inflacao_indisponivel`, referentes à
+projeção por taxa. Uma lista vazia não garante que os índices ou o VNA final
+estejam disponíveis: verifique os campos correspondentes. A disponibilidade
+dos índices permite obter o fator realizado sem aguardar o VNA final, mas não
+remove a exigência de duas referências publicadas nas funções `valor` e
+`calcular_vna` para o pró-rata entre referências.
 
 ### Transição e atenção à divulgação
 

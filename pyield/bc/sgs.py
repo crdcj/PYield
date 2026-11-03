@@ -20,8 +20,9 @@ Exemplo de resposta JSON da API do BCB:
 
 Notas de implementação:
     - Intervalos longos são divididos automaticamente em blocos seguros.
-    - SELIC Diária, Over, Meta e DI: percentuais convertidos diretamente do
-      texto para Decimal, divididos por 100, com escala de 10 casas decimais.
+    - SELIC Over, Meta e DI: percentuais convertidos diretamente do texto
+      para Decimal e divididos por 100; escala 4 para taxas anuais e 8
+      para taxas diárias.
     - PTAX Venda: valor em R$/US$, convertido do texto para Decimal com escala 4.
 """
 
@@ -49,7 +50,8 @@ LIMITE_DIAS_SEGURO = 3500  # aprox 365 * 9.5
 _DATA_INICIO_SELIC_META = dt.date(1999, 3, 5)
 _LIMITE_DIAS_SELIC_META = 1800
 
-_TIPO_TAXA = pl.Decimal(precision=18, scale=10)
+_TIPO_TAXA_ANUAL = pl.Decimal(precision=18, scale=4)
+_TIPO_TAXA_DIARIA = pl.Decimal(precision=18, scale=8)
 _TIPO_PTAX = pl.Decimal(precision=18, scale=4)
 
 
@@ -167,17 +169,17 @@ def _buscar_serie(
 
 # ── Helpers de transformação ─────────────────────────────────────────
 
-ESQUEMA_TAXA = {"data": pl.Date, "taxa": _TIPO_TAXA}
 ESQUEMA_PTAX = {"data": pl.Date, "cotacao": _TIPO_PTAX}
 
 
-def _converter_para_taxa(df: pl.DataFrame) -> pl.DataFrame:
+def _converter_para_taxa(df: pl.DataFrame, *, anualizada: bool = True) -> pl.DataFrame:
     """Converte valor percentual para decimal e renomeia para 'taxa'."""
+    tipo = _TIPO_TAXA_ANUAL if anualizada else _TIPO_TAXA_DIARIA
     if df.is_empty():
-        return pl.DataFrame(schema=ESQUEMA_TAXA)
+        return pl.DataFrame(schema={"data": pl.Date, "taxa": tipo})
     return df.select(
         "data",
-        taxa=(pl.col("valor").cast(_TIPO_TAXA) / 100).cast(_TIPO_TAXA),
+        taxa=(pl.col("valor").cast(tipo) / 100).cast(tipo),
     )
 
 
@@ -222,11 +224,17 @@ def igpm_taxa_serie(
             ``ultimos`` for menor ou igual a 0.
 
     Examples:
-        >>> df = yd.igpm.taxa_serie("01-01-2025", "31-03-2025")
-        >>> df.to_dicts()
-        [{'periodo': 202501, 'taxa': Decimal('0.0027')},
-         {'periodo': 202502, 'taxa': Decimal('0.0106')},
-         {'periodo': 202503, 'taxa': Decimal('-0.0034')}]
+        >>> yd.igpm.taxa_serie("01-01-2025", "31-03-2025")
+        shape: (3, 2)
+        ┌─────────┬───────────────┐
+        │ periodo ┆ taxa          │
+        │ ---     ┆ ---           │
+        │ i64     ┆ decimal[18,4] │
+        ╞═════════╪═══════════════╡
+        │ 202501  ┆ 0.0027        │
+        │ 202502  ┆ 0.0106        │
+        │ 202503  ┆ -0.0034       │
+        └─────────┴───────────────┘
 
         A taxa é mensal e decimal: março registra deflação de 0,34%.
         Para acompanhar as últimas competências, sem fixar os valores:
@@ -312,34 +320,52 @@ def selic_over_serie(
 
     Output Columns:
         data (pl.Date): Data de referência da observação.
-        taxa (pl.Decimal(18, 10)): Taxa em decimal, ao ano se ``anualizada=True``
-            ou ao dia útil se ``anualizada=False``.
+        taxa (pl.Decimal(18, 4) ou pl.Decimal(18, 8)): Taxa em decimal, ao ano
+            com escala 4 se ``anualizada=True`` ou ao dia útil com escala 8
+            se ``anualizada=False``.
 
     Notes:
         A frequência das observações é diária nas duas modalidades. Os valores
         percentuais da série escolhida são convertidos diretamente do texto
         para Decimal e divididos por 100, sem passagem por float e sem
-        recalcular uma modalidade a partir da outra. A escala de dez casas
-        preserva até oito casas decimais do percentual publicado.
+        recalcular uma modalidade a partir da outra. As escalas preservam
+        as duas casas percentuais das taxas anuais e as seis das taxas diárias.
 
     Examples:
         >>> import pyield as yd
         >>> # Copom de 29-01-2025: over subiu de 12,15% para 13,15% a.a.
         >>> yd.selic.over_serie("28-01-2025", "31-01-2025")
         shape: (4, 2)
-        ┌────────────┬────────────────┐
-        │ data       ┆ taxa           │
-        │ ---        ┆ ---            │
-        │ date       ┆ decimal[18,10] │
-        ╞════════════╪════════════════╡
-        │ 2025-01-28 ┆ 0.1215000000   │
-        │ 2025-01-29 ┆ 0.1215000000   │
-        │ 2025-01-30 ┆ 0.1315000000   │
-        │ 2025-01-31 ┆ 0.1315000000   │
-        └────────────┴────────────────┘
+        ┌────────────┬───────────────┐
+        │ data       ┆ taxa          │
+        │ ---        ┆ ---           │
+        │ date       ┆ decimal[18,4] │
+        ╞════════════╪═══════════════╡
+        │ 2025-01-28 ┆ 0.1215        │
+        │ 2025-01-29 ┆ 0.1215        │
+        │ 2025-01-30 ┆ 0.1315        │
+        │ 2025-01-31 ┆ 0.1315        │
+        └────────────┴───────────────┘
+
+        Taxas ao dia útil para o mesmo intervalo, com oito casas decimais:
+
+        >>> yd.selic.over_serie("28-01-2025", "31-01-2025", anualizada=False)
+        shape: (4, 2)
+        ┌────────────┬───────────────┐
+        │ data       ┆ taxa          │
+        │ ---        ┆ ---           │
+        │ date       ┆ decimal[18,8] │
+        ╞════════════╪═══════════════╡
+        │ 2025-01-28 ┆ 0.00045513    │
+        │ 2025-01-29 ┆ 0.00045513    │
+        │ 2025-01-30 ┆ 0.00049037    │
+        │ 2025-01-31 ┆ 0.00049037    │
+        └────────────┴───────────────┘
     """
     serie = SerieSGS.SELIC_OVER if anualizada else SerieSGS.SELIC_DIARIA
-    return _converter_para_taxa(_buscar_serie(serie, inicio, fim, ultimos))
+    return _converter_para_taxa(
+        _buscar_serie(serie, inicio, fim, ultimos), anualizada=anualizada
+    )
 
 
 def selic_over(data: DateLike, *, anualizada: bool = True) -> Decimal:
@@ -354,14 +380,22 @@ def selic_over(data: DateLike, *, anualizada: bool = True) -> Decimal:
             Se ``False``, retorna a taxa ao dia útil publicada pela fonte.
 
     Returns:
-        Decimal: Taxa SELIC Over com dez casas decimais, ao ano ou ao dia útil
-        conforme ``anualizada``, ou ``Decimal('NaN')`` se não disponível.
+        Decimal: Taxa SELIC Over com quatro casas decimais ao ano ou oito
+        ao dia útil, conforme ``anualizada``, ou ``Decimal('NaN')`` se
+        não disponível.
 
     Examples:
         >>> import pyield as yd
         >>> taxa = yd.selic.over("31-05-2024")  # decimal (0.104 = 10,4% a.a.)
+        >>> taxa
+        Decimal('0.1040')
         >>> f"{taxa:.1%}"
         '10.4%'
+
+        Taxa ao dia útil para a mesma data, com oito casas decimais:
+
+        >>> yd.selic.over("31-05-2024", anualizada=False)
+        Decimal('0.00039270')
     """
     if any_is_empty(data):
         return Decimal("NaN")
@@ -395,30 +429,31 @@ def selic_meta_serie(
 
     Output Columns:
         * data (Date): data de referência da taxa.
-        * taxa (pl.Decimal(18, 10)): taxa Selic Meta anual em formato decimal.
+        * taxa (pl.Decimal(18, 4)): taxa Selic Meta anual em formato decimal.
 
     Notes:
         Consultas iniciadas antes de 05/03/1999 consideram automaticamente essa
         data como início da série. Intervalos inteiramente anteriores retornam um
         DataFrame vazio.
         Os percentuais são convertidos diretamente do texto para Decimal e
-        divididos por 100, sem passagem por float, com dez casas decimais.
+        divididos por 100, sem passagem por float, com quatro casas decimais,
+        preservando as duas casas percentuais publicadas.
 
     Examples:
         >>> import pyield as yd
         >>> # Copom de 29-01-2025: meta subiu de 12,25% para 13,25% a.a.
         >>> yd.selic.meta_serie("28-01-2025", "31-01-2025")
         shape: (4, 2)
-        ┌────────────┬────────────────┐
-        │ data       ┆ taxa           │
-        │ ---        ┆ ---            │
-        │ date       ┆ decimal[18,10] │
-        ╞════════════╪════════════════╡
-        │ 2025-01-28 ┆ 0.1225000000   │
-        │ 2025-01-29 ┆ 0.1225000000   │
-        │ 2025-01-30 ┆ 0.1325000000   │
-        │ 2025-01-31 ┆ 0.1325000000   │
-        └────────────┴────────────────┘
+        ┌────────────┬───────────────┐
+        │ data       ┆ taxa          │
+        │ ---        ┆ ---           │
+        │ date       ┆ decimal[18,4] │
+        ╞════════════╪═══════════════╡
+        │ 2025-01-28 ┆ 0.1225        │
+        │ 2025-01-29 ┆ 0.1225        │
+        │ 2025-01-30 ┆ 0.1325        │
+        │ 2025-01-31 ┆ 0.1325        │
+        └────────────┴───────────────┘
     """
     return _converter_para_taxa(
         _buscar_serie(SerieSGS.SELIC_META, inicio, fim, ultimos)
@@ -434,7 +469,7 @@ def selic_meta(data: DateLike) -> Decimal:
         data: Data da consulta.
 
     Returns:
-        Decimal: Taxa SELIC Meta em formato decimal com dez casas decimais ou
+        Decimal: Taxa SELIC Meta em formato decimal com quatro casas decimais ou
         ``Decimal('NaN')`` se não disponível, inclusive para datas anteriores
         a 05/03/1999.
 
@@ -549,6 +584,81 @@ def ptax(data: DateLike) -> Decimal:
 # ── DI Over ─────────────────────────────────────────────────────────
 
 
+def di_over_serie(
+    inicio: DateLike | None = None,
+    fim: DateLike | None = None,
+    *,
+    ultimos: int | None = None,
+    anualizada: bool = True,
+) -> pl.DataFrame:
+    """Obtém a série de taxas DI Over via SGS do Banco Central.
+
+    Consulta a taxa DI (Depósito Interfinanceiro) da B3/CETIP, republicada
+    pelo Banco Central na série SGS 4389 (anualizada em base 252) ou
+    SGS 12 (diária).
+
+    Args:
+        inicio: Data inicial do intervalo, inclusive.
+        fim: Data final do intervalo, inclusive. Se ``None``, usa a data
+            atual no Brasil.
+        ultimos: Número de registros mais recentes a retornar. Se informado,
+            tem prioridade sobre ``inicio`` e ``fim``.
+        anualizada: Se ``True``, retorna a taxa ao ano, em base 252 dias úteis.
+            Se ``False``, retorna a taxa ao dia útil publicada pela fonte.
+
+    Returns:
+        DataFrame com as taxas em decimal, ou vazio se não houver dados.
+
+    Output Columns:
+        data (pl.Date): Data de referência da observação.
+        taxa (pl.Decimal(18, 4) ou pl.Decimal(18, 8)): Taxa em decimal, ao ano
+            com escala 4 se ``anualizada=True`` ou ao dia útil com escala 8
+            se ``anualizada=False``.
+
+    Notes:
+        A frequência das observações é diária nas duas modalidades. Os valores
+        percentuais da série escolhida são convertidos diretamente do texto
+        para Decimal e divididos por 100, sem passagem por float e sem
+        recalcular uma modalidade a partir da outra. As escalas preservam
+        as duas casas percentuais das taxas anuais e as seis das taxas diárias.
+        O histórico começa em 06/03/1986. Datas sem observações são omitidas.
+        Intervalos longos são divididos automaticamente em blocos seguros
+        para consulta ao SGS.
+
+    Raises:
+        ValueError: Se não informar ``inicio`` nem ``ultimos``.
+
+    Examples:
+        >>> yd.di_over_serie("27-02-2025", "28-02-2025")
+        shape: (2, 2)
+        ┌────────────┬───────────────┐
+        │ data       ┆ taxa          │
+        │ ---        ┆ ---           │
+        │ date       ┆ decimal[18,4] │
+        ╞════════════╪═══════════════╡
+        │ 2025-02-27 ┆ 0.1315        │
+        │ 2025-02-28 ┆ 0.1315        │
+        └────────────┴───────────────┘
+
+        Taxas ao dia útil para o mesmo intervalo, com oito casas decimais:
+
+        >>> yd.di_over_serie("27-02-2025", "28-02-2025", anualizada=False)
+        shape: (2, 2)
+        ┌────────────┬───────────────┐
+        │ data       ┆ taxa          │
+        │ ---        ┆ ---           │
+        │ date       ┆ decimal[18,8] │
+        ╞════════════╪═══════════════╡
+        │ 2025-02-27 ┆ 0.00049037    │
+        │ 2025-02-28 ┆ 0.00049037    │
+        └────────────┴───────────────┘
+    """
+    serie = SerieSGS.DI_OVER if anualizada else SerieSGS.DI_DIARIA
+    return _converter_para_taxa(
+        _buscar_serie(serie, inicio, fim, ultimos), anualizada=anualizada
+    )
+
+
 def di_over(data: DateLike, *, anualizada: bool = True) -> Decimal:
     """Obtém a taxa DI over anualizada ou diária via SGS do Banco Central.
 
@@ -563,8 +673,8 @@ def di_over(data: DateLike, *, anualizada: bool = True) -> Decimal:
             Se ``False``, retorna a taxa ao dia útil publicada pela fonte.
 
     Returns:
-        Decimal: Taxa DI em formato decimal com dez casas decimais, ao ano se
-        ``anualizada=True`` (0.1315 = 13,15% a.a.) ou ao dia útil se
+        Decimal: Taxa DI em formato decimal com quatro casas decimais ao ano se
+        ``anualizada=True`` (0.1315 = 13,15% a.a.) ou oito casas ao dia útil se
         ``anualizada=False``. Retorna ``Decimal('NaN')`` se não houver dado
         para a data, incluindo feriados e fins de semana.
 
@@ -572,23 +682,31 @@ def di_over(data: DateLike, *, anualizada: bool = True) -> Decimal:
         As duas séries têm frequência diária. Por padrão, os valores são taxas
         anuais em base 252 dias úteis. O percentual informado pela série
         escolhida é convertido diretamente do texto para Decimal e dividido
-        por 100, sem passagem por float, com dez casas decimais. Essa escala
-        preserva até oito casas decimais do percentual publicado, sem recalcular
-        uma modalidade a partir da outra. O histórico começa em 06/03/1986;
+        por 100, sem passagem por float, com quatro casas decimais na taxa anual
+        e oito na diária. As escalas preservam as duas casas percentuais anuais
+        e as seis diárias, sem recalcular uma modalidade a partir da outra.
+        O histórico começa em 06/03/1986;
         a consulta anterior via FTP estava limitada a datas a partir de 20/08/2012.
 
     Examples:
         >>> import pyield as yd
         >>> taxa = yd.di_over("28/02/2025")  # decimal (0.1315 = 13,15% a.a.)
+        >>> taxa
+        Decimal('0.1315')
         >>> f"{taxa:.2%}"
         '13.15%'
+
+        Taxa ao dia útil para a mesma data, com oito casas decimais:
+
+        >>> yd.di_over("28/02/2025", anualizada=False)
+        Decimal('0.00049037')
+
         >>> yd.di_over("01/01/2025")  # Feriado
         Decimal('NaN')
     """
     if any_is_empty(data):
         return Decimal("NaN")
-    serie = SerieSGS.DI_OVER if anualizada else SerieSGS.DI_DIARIA
     return _extrair_escalar(
-        _converter_para_taxa(_buscar_dados_url(serie, data, data)),
+        di_over_serie(data, data, anualizada=anualizada),
         "taxa",
     )

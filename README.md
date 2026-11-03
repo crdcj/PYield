@@ -71,6 +71,7 @@ uv add pyield
 | `yd.ptax(data)` | função | PTAX para uma data | |
 | `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX | |
 | `yd.di_over(data)` | função | Taxa DI Over | |
+| `yd.di_over_serie(inicio, fim)` | função | Série histórica da taxa DI Over | |
 | `yd.b3` | módulo | Boletins e calendário de pregões da B3 | `boletim`, `eh_pregao`, `pregao_anterior`, `proximo_pregao`, `ultimo_pregao` |
 | `yd.hoje()` | função | Data atual no Brasil | |
 | `yd.agora()` | função | Data e hora atual no Brasil | |
@@ -82,7 +83,8 @@ documentação detalhada e as assinaturas públicas.
 
 Selic Over, Selic Meta, DI Over e PTAX retornam `decimal.Decimal` nas consultas
 escalares e colunas Polars `Decimal` nas séries. Os valores são convertidos
-diretamente do texto da fonte: taxas com escala 10 e PTAX com escala 4.
+diretamente do texto da fonte: taxas anuais com escala 4, diárias com escala 8
+e PTAX com escala 4.
 Escalares sem dados retornam `Decimal("NaN")`.
 
 ```python
@@ -92,6 +94,7 @@ taxa_anual = yd.selic.over("28-02-2025")
 taxa_diaria = yd.selic.over("28-02-2025", anualizada=False)
 serie_diaria = yd.selic.over_serie(ultimos=5, anualizada=False)
 di_diaria = yd.di_over("28-02-2025", anualizada=False)
+di_serie = yd.di_over_serie("27-02-2025", "28-02-2025")
 ```
 
 As taxas Over são anuais em base 252 por padrão; `anualizada=False` retorna
@@ -102,7 +105,7 @@ da CETIP.
 
 Quem precisar de ponto flutuante pode usar `float(taxa_anual)` ou converter
 a coluna com `pl.col("taxa").cast(pl.Float64)`. Essa conversão pode introduzir
-aproximação binária. Veja as [notas da 0.62.0](https://crdcj.github.io/PYield/release-0.62.0/) para
+aproximação binária. Veja as [notas da 0.63.0](https://crdcj.github.io/PYield/release-0.63.0/) para
 os tipos e as orientações de migração.
 
 ## Notas de versão

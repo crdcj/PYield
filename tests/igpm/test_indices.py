@@ -8,10 +8,11 @@ import polars as pl
 import pytest
 
 import pyield as yd
-from pyield._internal import igpm  # noqa: PLC2701
+from pyield.igpm import _indices as igpm  # noqa: PLC2701
 
 _DADOS = Path(__file__).parent / "data" / "igpm_ipeadata_202609.json"
-_ESQUEMA = {"periodo": pl.Int64, "indice": pl.Decimal(precision=18, scale=10)}
+_INICIO_COBERTURA = 199408
+_ESQUEMA = {"periodo": pl.Int64, "indice": pl.Decimal(precision=18, scale=3)}
 
 
 @pytest.fixture(autouse=True)
@@ -29,11 +30,17 @@ def test_indice_por_competencia(data):
     resultado = yd.igpm.indice(data)
 
     assert isinstance(resultado, Decimal)
-    assert resultado.as_tuple() == Decimal("183.7450000000").as_tuple()
+    assert resultado.as_tuple() == Decimal("183.745").as_tuple()
 
 
-def test_indice_preserva_valor_anterior_a_1994():
-    assert yd.igpm.indice("01-06-1989") == Decimal("0.0000308619")
+@pytest.mark.parametrize("data", ["01-06-1989", "01-07-1994", "31-07-1994"])
+def test_indice_anterior_a_agosto_1994_retorna_nan_sem_buscar(monkeypatch, data):
+    def falhar_fetch():
+        raise AssertionError("O histórico não deveria ser buscado.")
+
+    monkeypatch.setattr(igpm, "_buscar_historico", falhar_fetch)
+
+    assert yd.igpm.indice(data).is_nan()
 
 
 def test_serie_intervalo_inclusivo_por_mes():
@@ -41,8 +48,8 @@ def test_serie_intervalo_inclusivo_por_mes():
 
     assert resultado.schema == _ESQUEMA
     assert resultado.to_dicts() == [
-        {"periodo": 200006, "indice": Decimal("183.7450000000")},
-        {"periodo": 200007, "indice": Decimal("186.6340000000")},
+        {"periodo": 200006, "indice": Decimal("183.745")},
+        {"periodo": 200007, "indice": Decimal("186.634")},
     ]
 
 
@@ -59,8 +66,39 @@ def test_ultimos_tem_prioridade():
 
     assert resultado.schema == _ESQUEMA
     assert resultado.to_dicts() == [
-        {"periodo": 202609, "indice": Decimal("1225.8460000000")}
+        {"periodo": 202609, "indice": Decimal("1225.846")}
     ]
+
+
+def test_serie_omite_competencias_anteriores_ao_corte():
+    resultado = yd.igpm.indice_serie("01-06-1989", "30-09-1994")
+
+    assert resultado.schema == _ESQUEMA
+    assert resultado.to_dicts() == [
+        {"periodo": 199408, "indice": Decimal("100.000")},
+        {"periodo": 199409, "indice": Decimal("101.751")},
+    ]
+    assert yd.igpm.indice("01-08-1994").as_tuple() == Decimal("100.000").as_tuple()
+
+
+def test_intervalo_anterior_ao_corte_retorna_vazio_sem_buscar(monkeypatch):
+    def falhar_fetch():
+        raise AssertionError("O histórico não deveria ser buscado.")
+
+    monkeypatch.setattr(igpm, "_buscar_historico", falhar_fetch)
+
+    resultado = yd.igpm.indice_serie("01-06-1989", "31-07-1994")
+
+    assert resultado.is_empty()
+    assert resultado.schema == _ESQUEMA
+
+
+def test_ultimos_respeita_corte_historico():
+    resultado = yd.igpm.indice_serie(ultimos=1000)
+
+    assert resultado.schema == _ESQUEMA
+    assert resultado["periodo"].min() == _INICIO_COBERTURA
+    assert resultado.item(0, "indice").as_tuple() == Decimal("100.000").as_tuple()
 
 
 @pytest.mark.parametrize("data", [None, "", "01-01-1900", "01-01-2100"])

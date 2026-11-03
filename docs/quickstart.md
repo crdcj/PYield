@@ -212,7 +212,8 @@ serie_float = yd.ptax_serie(ultimos=5).with_columns(
 ```
 
 A conversão pode introduzir aproximação binária. Veja as
-[notas da 0.62.0](release-0.62.0.md) para a migração dos indicadores SGS.
+[notas da 0.62.0](release-0.62.0.md) para a migração dos indicadores SGS e as
+[notas da 0.63.0](release-0.63.0.md) para as escalas decimais atuais.
 
 ## Datas e ausência de dados
 

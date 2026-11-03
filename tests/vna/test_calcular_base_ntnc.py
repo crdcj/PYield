@@ -12,7 +12,7 @@ import polars as pl
 import pytest
 
 import pyield as yd
-from pyield._internal import igpm  # noqa: PLC2701
+from pyield.igpm import _indices as igpm  # noqa: PLC2701
 from pyield.vna import _calculo as calculo  # noqa: PLC2701
 
 DADOS = Path(__file__).parent / "data"

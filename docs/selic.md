@@ -10,8 +10,10 @@ Central. A frequência das observações é diária nas duas modalidades;
 `meta` e `meta_serie` retornam a meta anual definida pelo Copom.
 
 As consultas escalares retornam `Decimal`; as séries têm colunas `data`
-(`pl.Date`) e `taxa` (`pl.Decimal(18, 10)`). Valores percentuais são convertidos
-diretamente do texto para unidade decimal, sem passagem por `float`.
+(`pl.Date`) e `taxa`: `pl.Decimal(18, 4)` nas taxas anuais (Over e Meta) ou
+`pl.Decimal(18, 8)` na Over diária. Essas escalas correspondem às duas e seis
+casas percentuais publicadas, respectivamente. Valores percentuais são
+convertidos diretamente do texto para unidade decimal, sem passagem por `float`.
 Escalares sem dados retornam `Decimal("NaN")`; séries sem dados retornam
 DataFrame vazio com o mesmo esquema.
 
@@ -24,6 +26,8 @@ serie_diaria = yd.selic.over_serie(ultimos=5, anualizada=False)
 meta = yd.selic.meta("28-02-2025")
 ```
 
+As escalas foram ajustadas na
+[0.63.0](release-0.63.0.md#escalas-decimais-dos-indicadores).
 As docstrings abaixo identificam as séries de origem. Veja as
 [notas de migração da 0.62.0](release-0.62.0.md#indicadores-sgs-com-decimal)
 para converter explicitamente os resultados para ponto flutuante.

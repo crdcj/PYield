@@ -58,7 +58,7 @@ uv add pyield
 | `yd.compromissadas` | function | BCB repo-operation auctions |
 | `yd.ipca` | module | Historical and projected inflation data |
 | `yd.igpm` | module | Monthly IGP-M rates and index numbers |
-| `yd.ptax`, `yd.ptax_serie`, `yd.di_over` | functions | Exchange-rate and DI indicators |
+| `yd.ptax`, `yd.ptax_serie`, `yd.di_over`, `yd.di_over_serie` | functions | Exchange-rate and DI indicators |
 | `yd.b3` | module | B3 bulletins and trading-session calendar |
 | `yd.hoje`, `yd.agora` | functions | Current date and time in Brazil |
 
@@ -73,7 +73,8 @@ implementations may remain grouped internally by domain.
 
 Selic Over, Selic Meta, DI Over, and PTAX return `decimal.Decimal` for scalar
 queries and Polars `Decimal` columns for series. Values are parsed directly
-from the source text, with scale 10 for rates and scale 4 for PTAX.
+from the source text, with scale 4 for annual rates, scale 8 for daily rates,
+and scale 4 for PTAX.
 Missing scalar observations return `Decimal("NaN")`.
 
 ```python
@@ -83,6 +84,7 @@ annual_rate = yd.selic.over("28-02-2025")
 daily_rate = yd.selic.over("28-02-2025", anualizada=False)
 daily_series = yd.selic.over_serie(ultimos=5, anualizada=False)
 daily_di = yd.di_over("28-02-2025", anualizada=False)
+di_series = yd.di_over_serie("27-02-2025", "28-02-2025")
 ```
 
 Over rates are annualized on a 252-business-day basis by default;
@@ -93,7 +95,7 @@ Central HTTPS API instead of the CETIP FTP server.
 
 For floating-point analysis, use `float(annual_rate)` or cast a column with
 `pl.col("taxa").cast(pl.Float64)`. This conversion may introduce binary
-approximation. See the [0.62.0 migration notes (Portuguese)](https://crdcj.github.io/PYield/release-0.62.0/)
+approximation. See the [0.63.0 migration notes (Portuguese)](https://crdcj.github.io/PYield/release-0.63.0/)
 for the updated types and migration guidance.
 
 ## Release notes
