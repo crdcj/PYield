@@ -7934,6 +7934,7 @@ As correções abaixo alteram apenas resultados que antes estavam errados ou ter
 - `yd.ltn.taxas_forward` sem data retorna DataFrame vazio com as colunas documentadas.
 - `yd.futuro.vencimento` aceita código nulo e retorna `None`, como a assinatura já indicava. `yd.futuro.historico` e `yd.futuro.enriquecer` exigem o contrato completo de três caracteres; um prefixo parcial, como `"D"`, retorna vazio em vez de misturar contratos.
 - Datas informadas como string em branco deixam de gerar `AttributeError` ou `TypeError` em `yd.vna.vigencia` (`ValueError`), `yd.vna.historico`, `yd.ipca.taxa_serie`, `yd.ipca.indice_serie`, `yd.futuro.historico` e nas funções `datas_pagamento` dos títulos (resultado vazio).
+- Consultas externas que recebem HTTP 304 (Not Modified) sem terem feito requisição condicional geram `requests.HTTPError` com a URL consultada. O SGS do Banco Central passou a responder assim, com corpo vazio, para algumas séries e quantidades de `ultimos`. Antes, a resposta terminava em `JSONDecodeError`, que não indicava a falha da fonte.
 
 # Notas de versão
 
@@ -7941,7 +7942,7 @@ Cada versão tem uma página com as mudanças, o racional das decisões e as ori
 
 | Versão | Principais mudanças |
 | --- | --- |
-| [0.64.0](<https://crdcj.github.io/PYield/release-0.64.0/index.md>) | Fonte explícita em `yd.tpf.leiloes` (`fonte="tn"` ou `fonte="bc"`) e remoção de `yd.tpf.leiloes_bcb`; taxas de `yd.tpf.secundario.mensal` em decimal; `nome_comercial` obrigatório em `yd.ntnb1.dv01`; erro para prazos conflitantes na curva zero e no interpolador; duration sem truncamento; correções em prêmio limpo, curvas zero e leilões. |
+| [0.64.0](<https://crdcj.github.io/PYield/release-0.64.0/index.md>) | Fonte explícita em `yd.tpf.leiloes` (`fonte="tn"` ou `fonte="bc"`) e remoção de `yd.tpf.leiloes_bcb`; taxas de `yd.tpf.secundario.mensal` em decimal; `nome_comercial` obrigatório em `yd.ntnb1.dv01`; erro para prazos conflitantes na curva zero e no interpolador; duration sem truncamento; ofertas de compra e venda de `yd.futuro.historico` na convenção da B3; correções em prêmio limpo, curvas zero e leilões. |
 | [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>) | Escalas decimais por modalidade, série histórica de DI Over, números-índice no contexto de VNA e índices do IGP-M desde agosto de 1994. |
 | [0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) | Consultas externas sem cache, remoção de `atualizar`, retry leve, indicadores SGS com `Decimal`, taxas Over diárias e Polars 2.0 como mínimo. |
 | [0.61.0](<https://crdcj.github.io/PYield/release-0.61.0/index.md>) | Calendário de pregões da B3 e exposição de `futuro.dv01_expr`. |
