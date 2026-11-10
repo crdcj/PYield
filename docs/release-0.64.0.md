@@ -230,3 +230,8 @@ terminavam em erros sem relação com a entrada. Os demais valores não mudam.
   `TypeError` em `yd.vna.vigencia` (`ValueError`), `yd.vna.historico`,
   `yd.ipca.taxa_serie`, `yd.ipca.indice_serie`, `yd.futuro.historico` e nas
   funções `datas_pagamento` dos títulos (resultado vazio).
+- Consultas externas que recebem HTTP 304 (Not Modified) sem terem feito
+  requisição condicional geram `requests.HTTPError` com a URL consultada. O
+  SGS do Banco Central passou a responder assim, com corpo vazio, para algumas
+  séries e quantidades de `ultimos`. Antes, a resposta terminava em
+  `JSONDecodeError`, que não indicava a falha da fonte.
