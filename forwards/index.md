@@ -6,7 +6,7 @@ Definindo \\(F\_i = 1 + tx\_i\\) e \\(t\_i = du\_i/252\\), onde 252 é o número
 
 \\\[ f\_{1 \\rightarrow 2} = \\left( \\frac{F\_2^{t\_2}}{F\_1^{t\_1}} \\right)^{\\frac{1}{t\_2 - t\_1}} - 1 \\\]
 
-Aqui, `F₁` e `F₂` são os fatores de capitalização dos prazos `du1` e `du2`, e `tx1` e `tx2` são as respectivas taxas zero.
+Aqui, `F₁` e `F₂` são os fatores de capitalização dos prazos `du1` e `du2`, e `tx₁` e `tx₂` são as respectivas taxas zero, informadas em `taxa1` e `taxa2`.
 
 Parameters:
 
@@ -21,7 +21,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | A taxa a termo calculada entre `du₁` e `du₂`. Retorna `nan` se `du₁ >= du₂` ou se qualquer um dos argumentos de entrada for `float("nan")` ou `None`. |
+| `float` | `float` | A taxa a termo calculada entre `du1` e `du2`. Retorna `nan` se `du1 >= du2` ou se qualquer um dos argumentos de entrada for `float("nan")` ou `None`. |
 
 Examples:
 
@@ -36,15 +36,15 @@ nan
 
 **Notes**
 
-`du₂` precisa ser necessariamente maior que `du₁` para que o cálculo da taxa a termo seja matematicamente válido.
+`du2` precisa ser necessariamente maior que `du1` para que o cálculo da taxa a termo seja matematicamente válido.
 
 ## `forwards(dias_uteis, taxas, agrupar_por=None)`
 
 Calcula taxas a termo a partir de taxas zero.
 
-A taxa a termo em cada vértice é calculada aplicando sucessivamente a fórmula documentada em :func:`forward` aos vértices consecutivos. A primeira taxa de cada grupo é a taxa zero do primeiro vértice, pois não há um vértice anterior para calcular a taxa a termo.
+A taxa a termo em cada vértice é calculada aplicando sucessivamente a fórmula documentada em `forward` aos vértices consecutivos. A primeira taxa de cada grupo é a taxa zero do primeiro vértice, pois não há um vértice anterior para calcular a taxa a termo.
 
-A função preserva a ordem original dos dados de entrada. Nulos em `dias_uteis` ou `taxas` produzem nulo na linha correspondente; NaN produz NaN (nulos e NaN não se misturam). Duplicatas em `(agrupar_por, dias_uteis)` tornam o vértice ambíguo e produzem nulo nas linhas duplicadas. Em todos esses casos a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica inválida (nula ou NaN), pois seu vértice anterior é inválido; a seguinte volta ao normal. Este contrato é alinhado com :func:`forwards_expr`.
+A função preserva a ordem original dos dados de entrada. Nulos em `dias_uteis` ou `taxas` produzem nulo na linha correspondente; NaN produz NaN (nulos e NaN não se misturam). Duplicatas em `(agrupar_por, dias_uteis)` tornam o vértice ambíguo e produzem nulo nas linhas duplicadas. Em todos esses casos a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica inválida (nula ou NaN), pois seu vértice anterior é inválido; a seguinte volta ao normal. Este contrato é alinhado com `forwards_expr`.
 
 A primeira taxa a termo de cada grupo é definida como a taxa zero desse primeiro vértice (fwd₁ = tx₁), dado que não existe um vértice anterior a tx₁ para se calcular a taxa a termo no primeiro ponto.
 
@@ -158,7 +158,7 @@ Series: 'taxa_forward' [f64]
 ```
 
 ```pycon
->>> # NaN se comporta como nulo, mas mantém o dtype NaN no resultado
+>>> # NaN se comporta como nulo, mas o resultado permanece NaN
 >>> # (nulos e NaN não se misturam).
 >>> du = [230, 415, 730, 914]
 >>> tx = [0.0943, float("nan"), 0.079052, 0.077134]
@@ -193,17 +193,17 @@ Series: 'taxa_forward' [f64]
 
 **Notes**
 
-- A função ordena os dados de entrada primeiro por `agrupar_por`, se for fornecido, e depois por `dias_uteis` para garantir a ordem cronológica correta no cálculo das taxas a termo.
-- Nulos em `dias_uteis` ou `taxas` produzem nulo na linha correspondente; NaN produz NaN. Duplicatas em `(agrupar_por,   dias_uteis)` tornam o vértice ambíguo e produzem nulo nas linhas duplicadas. Em todos esses casos, a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica inválida; a seguinte volta ao normal. Mesmo contrato de :func:`forwards_expr`.
+- O cálculo segue a ordem de `dias_uteis` dentro de cada grupo de `agrupar_por`, se fornecido, sem reordenar os dados de entrada.
+- Nulos em `dias_uteis` ou `taxas` produzem nulo na linha correspondente; NaN produz NaN. Duplicatas em `(agrupar_por,   dias_uteis)` tornam o vértice ambíguo e produzem nulo nas linhas duplicadas. Em todos esses casos, a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica inválida; a seguinte volta ao normal. Mesmo contrato de `forwards_expr`.
 - Os resultados são retornados na mesma ordem dos dados de entrada.
 
 ## `forwards_expr(dias_uteis, taxas, agrupar_por=None)`
 
 Cria uma expressão Polars para calcular taxas a termo dentro de DataFrames.
 
-Versão expressiva de :func:`forwards`, no mesmo estilo de `du.contar_expr`. Pensada para uso dentro de `with_columns()` ou `select()`, especialmente em DataFrames com múltiplas datas de referência (ex.: séries históricas de DI1), onde `agrupar_por` define janelas independentes de cálculo sem que seja necessário extrair colunas, calcular fora e juntar de volta.
+Versão em expressão de `forwards`, no mesmo estilo de `du.contar_expr`. Pensada para uso dentro de `with_columns()` ou `select()`, especialmente em DataFrames com múltiplas datas de referência (ex.: séries históricas de DI1), onde `agrupar_por` define janelas independentes de cálculo sem que seja necessário extrair colunas, calcular fora e juntar de volta.
 
-A taxa a termo entre os vértices `j` (anterior) e `k` (atual) segue a fórmula documentada em :func:`forward`. A primeira linha de cada grupo (menor `dias_uteis`) é tratada como spot: `f = tx`.
+A taxa a termo entre os vértices `j` (anterior) e `k` (atual) segue a fórmula documentada em `forward`. A primeira linha de cada grupo (menor `dias_uteis`) é tratada como spot: `f = tx`.
 
 **Ordenação cronológica**
 
@@ -211,9 +211,9 @@ A expressão usa `shift(1).over(agrupar_por, order_by=dias_uteis)`, calculando a
 
 **Propagação de nulos e NaN**
 
-Se `dias_uteis` ou `taxas` for nulo em uma linha, o resultado é nulo nessa linha; se for NaN, o resultado é NaN (nulos e NaN não se misturam). Em ambos os casos, a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica nula/NaN, pois seu vértice anterior é inválido. Como nulos são ordenados ao fim em `order_by=dias_uteis`, um null em `dias_uteis` afeta apenas a própria linha. Mesmo contrato de :func:`forwards`.
+Se `dias_uteis` ou `taxas` for nulo em uma linha, o resultado é nulo nessa linha; se for NaN, o resultado é NaN (nulos e NaN não se misturam). Em ambos os casos, a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica nula/NaN, pois seu vértice anterior é inválido. Como nulos são ordenados ao fim em `order_by=dias_uteis`, um null em `dias_uteis` afeta apenas a própria linha. Mesmo contrato de `forwards`.
 
-Duplicatas em `(agrupar_por, dias_uteis)`: Duplicatas tornam o vértice ambíguo. A função invalida a taxa com nulo nas próprias linhas duplicadas; a partir daí o cascateamento natural de nulos vale (a linha imediatamente posterior em ordem de `dias_uteis` dentro do grupo também fica nula; a seguinte volta ao normal). Mesmo contrato de :func:`forwards`.
+Duplicatas em `(agrupar_por, dias_uteis)`: Duplicatas tornam o vértice ambíguo. A função invalida a taxa com nulo nas próprias linhas duplicadas; a partir daí o cascateamento natural de nulos vale (a linha imediatamente posterior em ordem de `dias_uteis` dentro do grupo também fica nula; a seguinte volta ao normal). Mesmo contrato de `forwards`.
 
 Parameters:
 
@@ -308,4 +308,4 @@ shape: (7, 4)
 **Notes**
 
 - A ordem original do DataFrame é preservada.
-- Para uso fora de DataFrames (arrays, Series soltas), use :func:`forwards`.
+- Para uso fora de DataFrames (arrays, Series soltas), use `forwards`.

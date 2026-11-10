@@ -146,7 +146,7 @@ Returns:
 | Type | Description |
 | --- | --- |
 | `DataFrame` | DataFrame com a curva PRE para a data solicitada. Retorna DataFrame |
-| `DataFrame` | vazio se não houver dados de LTN disponíveis. |
+| `DataFrame` | vazio se não houver dados de LTN nem de NTN-F. |
 
 **Output Columns**
 
@@ -226,100 +226,6 @@ Examples:
 >>> df = yd.tpf.estoque(data)
 >>> df.shape[0] > 0
 True
-```
-
-## `leiloes_bcb(*, data=None, inicio=None, fim=None)`
-
-Busca resultados de leilões de TPFs no BCB.
-
-Fonte: Banco Central do Brasil, disponível desde 12/11/2012. Alternativa a `yd.tpf.leiloes` (Tesouro Nacional) para quando o Tesouro estiver indisponível ou ainda não trouxer a 2ª volta. Recebe os mesmos parâmetros e usa os mesmos nomes de colunas; colunas exclusivas de cada fonte ficam ausentes na outra. Os resultados podem ser unidos com `pl.concat(..., how="diagonal")`.
-
-Parameters:
-
-| Name | Type | Description | Default |
-| --- | --- | --- | --- |
-| `data` | `DateLike \| DatesLike \| None` | Data ou sequência de datas do leilão. Padrão é `None`. | `None` |
-| `inicio` | `DateLike \| None` | Data inicial da consulta. Padrão é `None`. | `None` |
-| `fim` | `DateLike \| None` | Data final da consulta. Padrão é `None`. | `None` |
-
-Returns:
-
-| Type | Description |
-| --- | --- |
-| `DataFrame` | DataFrame Polars com os leilões no período, ordenado por data, título e |
-| `DataFrame` | vencimento. Sem filtros temporais, retorna o histórico completo. |
-| `DataFrame` | Retorna DataFrame vazio se não houver dados. |
-
-**Output Columns**
-
-- data\_1v (Date): data de realização do leilão.
-- data\_liquidacao\_1v (Date): data de liquidação financeira da 1ª volta.
-- numero\_edital (Int64): número do edital do leilão.
-- tipo\_leilao (String): `"Venda"` ou `"Compra"`.
-- tipo\_publico (String): público do leilão (exclusiva do BCB).
-- titulo (String): LTN, LFT, NTN-B ou NTN-F.
-- codigo\_selic (Int64): código do título no Selic (exclusiva do BCB).
-- data\_vencimento (Date): data de vencimento do título.
-- dias\_uteis (Int64): dias úteis entre liquidação e vencimento.
-- dias\_corridos (Int64): dias corridos entre liquidação e vencimento.
-- duration (Float64): duration de Macaulay em anos.
-- prazo\_medio (Float64): maturidade média em anos.
-- quantidade\_ofertada\_1v (Int64): quantidade ofertada na 1ª volta.
-- quantidade\_ofertada\_2v (Int64): quantidade ofertada na 2ª volta.
-- quantidade\_aceita\_1v (Int64): quantidade aceita na 1ª volta.
-- quantidade\_aceita\_2v (Int64): quantidade aceita na 2ª volta.
-- quantidade\_aceita\_total (Int64): quantidade aceita total.
-- quantidade\_liquidada\_1v (Int64): quantidade liquidada na 1ª volta.
-- quantidade\_liquidada\_2v (Int64): quantidade liquidada na 2ª volta.
-- financeiro\_ofertado\_1v (Float64): quantidade ofertada na 1ª volta vezes `pu_medio`.
-- financeiro\_ofertado\_2v (Float64): quantidade ofertada na 2ª volta vezes `pu_medio`.
-- financeiro\_ofertado\_total (Float64): financeiro ofertado total.
-- financeiro\_aceito\_1v (Float64): quantidade aceita na 1ª volta vezes `pu_medio`.
-- financeiro\_aceito\_2v (Float64): quantidade aceita na 2ª volta vezes `pu_medio`.
-- financeiro\_aceito\_total (Float64): financeiro aceito total.
-- colocacao\_1v (Float64): taxa de colocação da 1ª volta.
-- colocacao\_2v (Float64): taxa de colocação da 2ª volta.
-- colocacao\_total (Float64): taxa de colocação total.
-- dv01\_1v (Float64): DV01 da 1ª volta em reais.
-- dv01\_2v (Float64): DV01 da 2ª volta em reais.
-- dv01\_total (Float64): DV01 total em reais.
-- ptax (Float64): PTAX usada na conversão para dólar.
-- dv01\_1v\_usd (Float64): DV01 da 1ª volta em dólar.
-- dv01\_2v\_usd (Float64): DV01 da 2ª volta em dólar.
-- dv01\_total\_usd (Float64): DV01 total em dólar.
-- pu\_minimo (Float64): PU de corte.
-- pu\_medio (Float64): PU médio aceito.
-- taxa\_media (Float64): taxa média aceita.
-- taxa\_maxima (Float64): taxa de corte.
-
-**Notes**
-
-Diferenças em relação ao Tesouro Nacional:
-
-- O BCB não publica `data_liquidacao_2v`, `tipo_ocorrencia`, `benchmark`, `quantidade_bcb`, `financeiro_bcb` nem `tipo_pu_medio`.
-- O financeiro publicado pelo BCB é arredondado a R$ 100 mil. Por isso, os financeiros são calculados como quantidade vezes `pu_medio`, o que reproduz o Tesouro na 1ª volta; na 2ª volta, a diferença típica é inferior a 0,1%.
-- Na 2ª volta, a quantidade ofertada do BCB é a nominal do edital, enquanto o Tesouro pode informar valores ligeiramente menores.
-- Até 10/06/2024, o BCB publica cotação, e não PU, para LFT e NTN-B. Nesses casos, `pu_medio` é estimado pelo financeiro dividido pela quantidade aceita (sujeito ao arredondamento acima) e `pu_minimo` é nulo.
-
-`data` não pode ser combinado com `inicio` ou `fim`. `fim` só pode ser usado junto com `inicio`.
-
-Examples:
-
-```pycon
->>> df = yd.tpf.leiloes_bcb(data="19-08-2025")
->>> df.select("titulo", "quantidade_aceita_total", "pu_medio", "taxa_media")
-shape: (5, 4)
-┌────────┬─────────────────────────┬──────────────┬────────────┐
-│ titulo ┆ quantidade_aceita_total ┆ pu_medio     ┆ taxa_media │
-│ ---    ┆ ---                     ┆ ---          ┆ ---        │
-│ str    ┆ i64                     ┆ f64          ┆ f64        │
-╞════════╪═════════════════════════╪══════════════╪════════════╡
-│ LFT    ┆ 150000                  ┆ 17149.069465 ┆ 0.000636   │
-│ LFT    ┆ 751003                  ┆ 17072.592044 ┆ 0.001068   │
-│ NTN-B  ┆ 300759                  ┆ 4299.806542  ┆ 0.08167    │
-│ NTN-B  ┆ 500542                  ┆ 4143.249763  ┆ 0.07748    │
-│ NTN-B  ┆ 500000                  ┆ 4021.3613    ┆ 0.07323    │
-└────────┴─────────────────────────┴──────────────┴────────────┘
 ```
 
 ## `premios_pre(data)`
@@ -641,7 +547,7 @@ Baixa o ZIP bruto mensal de negociações secundárias de TPFs.
 
 Fonte: Banco Central do Brasil, sistema SELIC. A fonte publica um arquivo por mês; por isso, apenas o ano e o mês de `data` são usados.
 
-A função valida a estrutura mínima do ZIP antes de retornar os bytes, para evitar que pipelines de ingestão salvem arquivo vazio, corrompido ou sem CSV plausível. Use :func:`ler` para processar os bytes ou o arquivo salvo.
+A função valida a estrutura mínima do ZIP antes de retornar os bytes, para evitar que pipelines de ingestão salvem arquivo vazio, corrompido ou sem CSV plausível. Use `ler` para processar os bytes ou o arquivo salvo.
 
 Parameters:
 
@@ -726,7 +632,7 @@ Examples:
 
 Lê o ZIP mensal bruto do secundário de TPFs.
 
-Fonte: Banco Central do Brasil, sistema SELIC. Mesma saída de :func:`mensal`, mas recebe o ZIP bruto em vez de baixá-lo. Útil para processar arquivos salvos com :func:`baixar_zip`.
+Fonte: Banco Central do Brasil, sistema SELIC. Mesma saída de `mensal`, mas recebe o ZIP bruto em vez de baixá-lo. Útil para processar arquivos salvos com `baixar_zip`.
 
 Parameters:
 
@@ -738,7 +644,7 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | DataFrame Polars com as colunas documentadas em :func:`mensal`. |
+| `DataFrame` | DataFrame Polars com as colunas documentadas em `mensal`. |
 
 Raises:
 
@@ -788,9 +694,9 @@ Returns:
 - pu\_maximo (Float64): preço unitário máximo.
 - pu\_lastro (Float64): preço unitário de lastro.
 - valor\_par (Float64): valor par do título.
-- taxa\_minima (Float64): taxa mínima.
-- taxa\_media (Float64): taxa média.
-- taxa\_maxima (Float64): taxa máxima.
+- taxa\_minima (Float64): taxa mínima em decimal (0.1215 = 12,15%).
+- taxa\_media (Float64): taxa média em decimal (0.1215 = 12,15%).
+- taxa\_maxima (Float64): taxa máxima em decimal (0.1215 = 12,15%).
 - operacoes\_corretagem (Int64): operações com corretagem.
 - quantidade\_corretagem (Int64): quantidade com corretagem.
 - financeiro (Float64): valor financeiro negociado (`quantidade * pu_medio`).
@@ -809,7 +715,9 @@ Examples:
 
 Busca resultados de leilões de TPFs.
 
-Fonte: Tesouro Nacional. Dados disponíveis a partir de 04/01/2018. Retorna dados de quantidades, financeiros, taxas de colocação, duration e DV01 dos leilões no período informado.
+Fonte: Tesouro Nacional (`fonte="tn"`, padrão), com dados disponíveis a partir de 04/01/2018, ou Banco Central do Brasil (`fonte="bc"`), com dados disponíveis desde 12/11/2007. Retorna dados de quantidades, financeiros, taxas de colocação, duration e DV01 dos leilões no período informado.
+
+O BCB é uma alternativa para quando o Tesouro estiver indisponível ou ainda não trouxer a 2ª volta. As duas fontes recebem os mesmos parâmetros e usam os mesmos nomes de colunas; colunas exclusivas de cada fonte ficam ausentes na outra. Os resultados podem ser unidos com `pl.concat(..., how="diagonal")`.
 
 Parameters:
 
@@ -818,6 +726,7 @@ Parameters:
 | `data` | `DateLike \| DatesLike \| None` | Data ou sequência de datas do leilão. Padrão é `None`. | `None` |
 | `inicio` | `DateLike \| None` | Data inicial da consulta. Padrão é `None`. | `None` |
 | `fim` | `DateLike \| None` | Data final da consulta. Padrão é `None`. | `None` |
+| `fonte` | `Literal['tn', 'bc']` | `"tn"` (Tesouro Nacional) ou `"bc"` (Banco Central do Brasil). Padrão é `"tn"`. Não há troca automática de fonte. | `'tn'` |
 
 Returns:
 
@@ -827,7 +736,8 @@ Returns:
 | `DataFrame` | uma sequência, concatena os resultados das datas informadas. Se |
 | `DataFrame` | `inicio` for informado, retorna os leilões a partir dessa data. Se |
 | `DataFrame` | nenhum filtro temporal for informado, retorna o histórico completo. |
-| `DataFrame` | Retorna DataFrame vazio se não houver dados para o período. |
+| `DataFrame` | Retorna DataFrame vazio se não houver dados para o período. O resultado |
+| `DataFrame` | é ordenado por data, título e vencimento. |
 
 **Output Columns**
 
@@ -835,14 +745,16 @@ Returns:
 - data\_liquidacao\_1v (Date): data de liquidação financeira da 1ª volta.
 - data\_liquidacao\_2v (Date): data de liquidação financeira da 2ª volta.
 - numero\_edital (Int64): número do edital do leilão.
-- tipo\_leilao (String): tipo da operação.
+- tipo\_leilao (String): tipo da operação (`"Venda"` ou `"Compra"`).
+- tipo\_publico (String): público do leilão (exclusiva do BCB).
 - tipo\_ocorrencia (String): classificação da ocorrência do leilão.
 - titulo (String): código do título público leiloado.
+- codigo\_selic (Int64): código do título no Selic (exclusiva do BCB).
 - benchmark (String): descrição de referência do título.
 - data\_vencimento (Date): data de vencimento do título.
 - dias\_uteis (Int64): dias úteis entre liquidação e vencimento.
 - dias\_corridos (Int64): dias corridos entre liquidação e vencimento.
-- duration (Float64): duration de Macaulay em anos.
+- duration (Float64): duration de Macaulay em anos; `0.0` para LFT.
 - prazo\_medio (Float64): maturidade média em anos.
 - quantidade\_ofertada\_1v (Int64): quantidade ofertada na 1ª volta.
 - quantidade\_ofertada\_2v (Int64): quantidade ofertada na 2ª volta.
@@ -862,7 +774,7 @@ Returns:
 - colocacao\_1v (Float64): taxa de colocação da 1ª volta.
 - colocacao\_2v (Float64): taxa de colocação da 2ª volta.
 - colocacao\_total (Float64): taxa de colocação total.
-- dv01\_1v (Float64): DV01 da 1ª volta em reais.
+- dv01\_1v (Float64): DV01 da 1ª volta em reais. As colunas `dv01_*` valem `0.0` para LFT.
 - dv01\_2v (Float64): DV01 da 2ª volta em reais.
 - dv01\_total (Float64): DV01 total em reais.
 - ptax (Float64): PTAX usada na conversão para dólar.
@@ -871,91 +783,32 @@ Returns:
 - dv01\_total\_usd (Float64): DV01 total em dólar.
 - pu\_minimo (Float64): preço unitário mínimo aceito.
 - pu\_medio (Float64): preço unitário médio ponderado aceito.
-- tipo\_pu\_medio (String): origem do PU médio.
-- taxa\_media (Float64): taxa média aceita.
-- taxa\_maxima (Float64): taxa máxima aceita.
+- tipo\_pu\_medio (String): origem do PU médio — `"original"` quando publicado pela fonte ou `"calculado"` a partir do financeiro e da quantidade aceitos.
+- taxa\_media (Float64): taxa média aceita (decimal).
+- taxa\_maxima (Float64): taxa máxima aceita (decimal).
 
 **Notes**
 
-`data` não pode ser combinado com `inicio` ou `fim`. `fim` só pode ser usado junto com `inicio`. Quando o Tesouro estiver indisponível ou incompleto (por exemplo, sem a 2ª volta), use `yd.tpf.leiloes_bcb`, que usa os mesmos nomes de colunas.
+`data` não pode ser combinado com `inicio` ou `fim`. `fim` só pode ser usado junto com `inicio`.
 
-Busca resultados de leilões de TPFs no BCB.
+Nulo e zero nas quantidades e nos financeiros:
 
-Fonte: Banco Central do Brasil, disponível desde 12/11/2012. Alternativa a `yd.tpf.leiloes` (Tesouro Nacional) para quando o Tesouro estiver indisponível ou ainda não trouxer a 2ª volta. Recebe os mesmos parâmetros e usa os mesmos nomes de colunas; colunas exclusivas de cada fonte ficam ausentes na outra. Os resultados podem ser unidos com `pl.concat(..., how="diagonal")`.
+- Nulo indica que não houve oferta ou que a fonte não publicou o dado, como a 2ª volta de um leilão sem 2ª volta ou ainda não divulgada.
+- Quando houve oferta e nada foi aceito, a quantidade aceita e o financeiro aceito são zero, e não nulos.
+- Em leilão sem aceite na 1ª volta não há PU. Por isso `pu_minimo`, `pu_medio`, as taxas e os financeiros ofertados ficam nulos: o valor ofertado em reais é desconhecido.
 
-Parameters:
-
-| Name | Type | Description | Default |
-| --- | --- | --- | --- |
-| `data` | `DateLike \| DatesLike \| None` | Data ou sequência de datas do leilão. Padrão é `None`. | `None` |
-| `inicio` | `DateLike \| None` | Data inicial da consulta. Padrão é `None`. | `None` |
-| `fim` | `DateLike \| None` | Data final da consulta. Padrão é `None`. | `None` |
-
-Returns:
-
-| Type | Description |
-| --- | --- |
-| `DataFrame` | DataFrame Polars com os leilões no período, ordenado por data, título e |
-| `DataFrame` | vencimento. Sem filtros temporais, retorna o histórico completo. |
-| `DataFrame` | Retorna DataFrame vazio se não houver dados. |
-
-**Output Columns**
-
-- data\_1v (Date): data de realização do leilão.
-- data\_liquidacao\_1v (Date): data de liquidação financeira da 1ª volta.
-- numero\_edital (Int64): número do edital do leilão.
-- tipo\_leilao (String): `"Venda"` ou `"Compra"`.
-- tipo\_publico (String): público do leilão (exclusiva do BCB).
-- titulo (String): LTN, LFT, NTN-B ou NTN-F.
-- codigo\_selic (Int64): código do título no Selic (exclusiva do BCB).
-- data\_vencimento (Date): data de vencimento do título.
-- dias\_uteis (Int64): dias úteis entre liquidação e vencimento.
-- dias\_corridos (Int64): dias corridos entre liquidação e vencimento.
-- duration (Float64): duration de Macaulay em anos.
-- prazo\_medio (Float64): maturidade média em anos.
-- quantidade\_ofertada\_1v (Int64): quantidade ofertada na 1ª volta.
-- quantidade\_ofertada\_2v (Int64): quantidade ofertada na 2ª volta.
-- quantidade\_aceita\_1v (Int64): quantidade aceita na 1ª volta.
-- quantidade\_aceita\_2v (Int64): quantidade aceita na 2ª volta.
-- quantidade\_aceita\_total (Int64): quantidade aceita total.
-- quantidade\_liquidada\_1v (Int64): quantidade liquidada na 1ª volta.
-- quantidade\_liquidada\_2v (Int64): quantidade liquidada na 2ª volta.
-- financeiro\_ofertado\_1v (Float64): quantidade ofertada na 1ª volta vezes `pu_medio`.
-- financeiro\_ofertado\_2v (Float64): quantidade ofertada na 2ª volta vezes `pu_medio`.
-- financeiro\_ofertado\_total (Float64): financeiro ofertado total.
-- financeiro\_aceito\_1v (Float64): quantidade aceita na 1ª volta vezes `pu_medio`.
-- financeiro\_aceito\_2v (Float64): quantidade aceita na 2ª volta vezes `pu_medio`.
-- financeiro\_aceito\_total (Float64): financeiro aceito total.
-- colocacao\_1v (Float64): taxa de colocação da 1ª volta.
-- colocacao\_2v (Float64): taxa de colocação da 2ª volta.
-- colocacao\_total (Float64): taxa de colocação total.
-- dv01\_1v (Float64): DV01 da 1ª volta em reais.
-- dv01\_2v (Float64): DV01 da 2ª volta em reais.
-- dv01\_total (Float64): DV01 total em reais.
-- ptax (Float64): PTAX usada na conversão para dólar.
-- dv01\_1v\_usd (Float64): DV01 da 1ª volta em dólar.
-- dv01\_2v\_usd (Float64): DV01 da 2ª volta em dólar.
-- dv01\_total\_usd (Float64): DV01 total em dólar.
-- pu\_minimo (Float64): PU de corte.
-- pu\_medio (Float64): PU médio aceito.
-- taxa\_media (Float64): taxa média aceita.
-- taxa\_maxima (Float64): taxa de corte.
-
-**Notes**
-
-Diferenças em relação ao Tesouro Nacional:
+Diferenças do BCB em relação ao Tesouro Nacional:
 
 - O BCB não publica `data_liquidacao_2v`, `tipo_ocorrencia`, `benchmark`, `quantidade_bcb`, `financeiro_bcb` nem `tipo_pu_medio`.
 - O financeiro publicado pelo BCB é arredondado a R$ 100 mil. Por isso, os financeiros são calculados como quantidade vezes `pu_medio`, o que reproduz o Tesouro na 1ª volta; na 2ª volta, a diferença típica é inferior a 0,1%.
 - Na 2ª volta, a quantidade ofertada do BCB é a nominal do edital, enquanto o Tesouro pode informar valores ligeiramente menores.
 - Até 10/06/2024, o BCB publica cotação, e não PU, para LFT e NTN-B. Nesses casos, `pu_medio` é estimado pelo financeiro dividido pela quantidade aceita (sujeito ao arredondamento acima) e `pu_minimo` é nulo.
-
-`data` não pode ser combinado com `inicio` ou `fim`. `fim` só pode ser usado junto com `inicio`.
+- O BCB só publica a quantidade aceita na 2ª volta a partir de 27/08/2015. Antes disso, `quantidade_aceita_2v` e `financeiro_aceito_2v` são nulos mesmo quando houve oferta na 2ª volta.
 
 Examples:
 
 ```pycon
->>> df = yd.tpf.leiloes_bcb(data="19-08-2025")
+>>> df = yd.tpf.leiloes(data="19-08-2025", fonte="bc")
 >>> df.select("titulo", "quantidade_aceita_total", "pu_medio", "taxa_media")
 shape: (5, 4)
 ┌────────┬─────────────────────────┬──────────────┬────────────┐
@@ -1022,6 +875,8 @@ Retorna dados do Relatório Mensal da Dívida (RMD) do Tesouro Nacional.
 
 Baixa e processa a planilha do RMD, extraindo dados da aba solicitada. A publicação mais recente é descoberta automaticamente via parse HTML da página oficial do Tesouro Transparente.
 
+Fonte: Tesouro Nacional (Tesouro Transparente).
+
 Parameters:
 
 | Name | Type | Description | Default |
@@ -1046,9 +901,8 @@ Raises:
 
 **Notes**
 
-- A publicação mais recente é descoberta automaticamente via parse HTML do Tesouro Transparente.
-- A aba `"1.3"` traz emissões e resgates da DPMFi.
-- A aba `"2.1"` traz a série histórica de estoque da DPF.
+- A aba `"1.3"` traz emissões e resgates da DPMFi; valores iguais a zero são descartados.
+- A aba `"2.1"` traz a série histórica de estoque da DPF; valores iguais a zero são mantidos.
 
 Erros de download e processamento são propagados ao chamador; não são convertidos em DataFrame vazio.
 

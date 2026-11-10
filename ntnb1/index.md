@@ -16,14 +16,14 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação da operação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento da NTN-B1. | *required* |
-| `taxa` | `float \| Decimal \| str` | Taxa de desconto (YTM) usada no valor presente. Aceita também percentual explícito: "5.75%" ou "5,75%". A taxa de entrada não é truncada antes do cálculo. | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis, usada no valor presente. Aceita também percentual explícito: "5.75%" ou "5,75%". A taxa de entrada não é truncada antes do cálculo. | *required* |
 | `nome_comercial` | `NomeComercial` | Nome comercial (Renda+ ou Educa+). | *required* |
 
 Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Cotação da NTN-B1 em base 100, truncada em 4 casas decimais. |
+| `Decimal` | `Decimal` | Cotação da NTN-B1 em base 100, truncada em 4 casas decimais. Retorna `Decimal("NaN")` para entradas ausentes ou quando não há pagamentos após a liquidação. |
 
 **References**
 
@@ -61,7 +61,13 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Cotação em base 100 calculada pela curva zero. |
+| `float` | `float` | Cotação em base 100 calculada pela curva zero. Retorna NaN para entradas ausentes ou quando não há pagamentos após a liquidação. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se faltar a coluna `dias_uteis` ou `taxa_zero`, se a curva não tiver ao menos um vértice válido ou se um mesmo prazo aparecer com taxas diferentes. |
 
 **Notes**
 
@@ -90,7 +96,7 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `Series` | pl.Series: Série de datas de amortização no intervalo. |
+| `Series` | pl.Series: Série de datas de amortização no intervalo. Retorna série vazia se não houver amortização após a liquidação, como em um título vencido ou que vence na data de liquidação. |
 
 **Notes**
 
@@ -134,7 +140,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação da operação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa` | `float` | Taxa de desconto usada no cálculo. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis, usada no cálculo. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 | `nome_comercial` | `NomeComercial` | Nome comercial (Renda+ ou Educa+). | *required* |
 
 Returns:
@@ -152,11 +158,11 @@ Examples:
 47.10494386899199
 ```
 
-## `dv01(data_liquidacao, data_vencimento, taxa, pu, nome_comercial=NomeComercial.RENDA_MAIS)`
+## `dv01(data_liquidacao, data_vencimento, taxa, pu, nome_comercial)`
 
 Calcula o DV01 (Dollar Value of 01) da NTN-B1 em R$.
 
-Representa a variação do PU informado para um aumento de 1 bp (0,01%) na taxa.
+Representa a variação do PU informado para um aumento de 1 bp (0,01 ponto percentual) na taxa.
 
 Parameters:
 
@@ -164,9 +170,9 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa` | `float` | Taxa de desconto (YTM) da NTN-B1. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva da NTN-B1, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 | `pu` | `float \| Decimal` | PU usado como base para o cálculo. | *required* |
-| `nome_comercial` | `NomeComercial` | Nome comercial (Renda+ ou Educa+). | `RENDA_MAIS` |
+| `nome_comercial` | `NomeComercial` | Nome comercial (Renda+ ou Educa+). | *required* |
 
 Returns:
 
@@ -263,7 +269,8 @@ Returns:
 **References**
 
 - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos Ofertados no Tesouro Direto — Tesouro Educa+ (NTN-B1)*.
-- Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos Ofertados no Tesouro Direto — Tesouro RendA+ (NTN-B1)*. - Secretaria do Tesouro Nacional, [consulta pública sobre a composição dos pagamentos mensais da NTN-B1](<https://www.gov.br/participamaisbrasil/consulta-portaria-composicao-ntn-b11>), processo SEI `17944.005214/2024-09`.
+- Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos Ofertados no Tesouro Direto — Tesouro RendA+ (NTN-B1)*.
+- Secretaria do Tesouro Nacional, [consulta pública sobre a composição dos pagamentos mensais da NTN-B1](<https://www.gov.br/participamaisbrasil/consulta-portaria-composicao-ntn-b11>), processo SEI `17944.005214/2024-09`.
 
 Examples:
 
@@ -296,7 +303,13 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | TIR equivalente anualizada, em formato decimal. Retorna NaN para entradas ausentes. Também retorna NaN se a resolução numérica falhar. |
+| `float` | `float` | TIR equivalente anualizada, em formato decimal. Retorna NaN para entradas ausentes ou quando não há pagamentos após a liquidação. Também retorna NaN se a resolução numérica falhar. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se faltar a coluna `dias_uteis` ou `taxa_zero`, se a curva não tiver ao menos um vértice válido ou se um mesmo prazo aparecer com taxas diferentes. |
 
 **Notes**
 

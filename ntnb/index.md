@@ -2,7 +2,7 @@ Cálculos e dados de NTN-B.
 
 Convenções de precificação (STN, tabela 3): - Cotação em base 100, truncada a 4 casas. - VNA recebido no cálculo do PU: truncado a 6 casas. - Prazo de desconto: dias úteis / 252, truncado a 14 casas. - PU: truncado a 6 casas. - Cada fluxo descontado: arredondado a 10 casas.
 
-Valores de referência derivados conforme as regras da STN, exibidos em base 100: TAXA\_CUPOM = ((0.06 + 1) \*\* 0.5 - 1) \* 100 \# 6% a.a. com capitalização semestral VALOR\_CUPOM = round(TAXA\_CUPOM, 6) -\> 2.956301 VALOR\_FINAL = 102.956301 DIA\_CUPOM = 15 MESES\_CUPOM = {2, 5, 8, 11}
+Valores de referência derivados conforme as regras da STN, exibidos em base 100: - Taxa do cupom: ((0.06 + 1) \*\* 0.5 - 1) \* 100, isto é, 6% a.a. com capitalização semestral. - Valor do cupom: taxa do cupom arredondada a 6 casas (2.956301). - Pagamento final: 100 + valor do cupom (102.956301). - Cupons em 15/02, 15/05, 15/08 e 15/11, conforme o mês de vencimento.
 
 ## `cotacao(data_liquidacao, data_vencimento, taxa)`
 
@@ -20,7 +20,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Cotação em base 100, truncada em 4 casas. Retorna Decimal('NaN') em erro. |
+| `Decimal` | `Decimal` | Cotação em base 100, truncada em 4 casas. Retorna `Decimal("NaN")` para entradas ausentes ou quando não há pagamentos após a liquidação. |
 
 **Notes**
 
@@ -67,6 +67,8 @@ Decimal('97.0813')
 
 Busca as taxas indicativas de NTN-B para a data de referência.
 
+Fonte: ANBIMA (taxas indicativas) e B3 (ajustes do DI Futuro).
+
 Parameters:
 
 | Name | Type | Description | Default |
@@ -94,7 +96,7 @@ Returns:
 - taxa\_compra (Float64): Taxa de compra (decimal).
 - taxa\_venda (Float64): Taxa de venda (decimal).
 - taxa\_indicativa (Float64): Taxa indicativa (decimal).
-- taxa\_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo método flat forward.
+- taxa\_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo método flat forward, sem extrapolação: nula para vencimentos além do contrato de DI mais longo.
 - taxa\_zero (Float64): Taxa zero real (via bootstrap das taxas indicativas).
 - taxa\_forward (Float64): Taxa forward real (a partir das taxas zero).
 - inflacao\_implicita (Float64): Inflação implícita (breakeven) calculada a partir de taxas nominais do DI Futuro e taxas zero das NTN-B.
@@ -165,7 +167,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa` | `float \| str` | TIR real ao ano, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR real ao ano, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 
 Returns:
 
@@ -187,7 +189,7 @@ onde:
 - \\(n\\): número de pagamentos restantes.
 - \\(y\\): TIR real informada em `taxa`, em decimal, expressa ao ano na base de 252 dias úteis, relativa aos fluxos em base 100.
 
-O desconto dos fluxos não aplica os arredondamentos e truncamentos da cotação oficial. O resultado é truncado em 14 casas decimais. O VNA, comum a todos os fluxos, cancela na razão.
+O desconto dos fluxos não aplica os arredondamentos e truncamentos da cotação oficial. O VNA, comum a todos os fluxos, cancela na razão.
 
 Examples:
 
@@ -274,7 +276,7 @@ Examples:
 
 Cria expressão Polars para o DV01 da NTN-B.
 
-O cálculo é aplicado linha a linha e reprifica o PU informado para um aumento de 1 bp na taxa.
+O cálculo é aplicado linha a linha e reprecifica o PU informado para um aumento de 1 bp na taxa.
 
 Parameters:
 
@@ -356,7 +358,14 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame: DataFrame com as taxas calculadas. |
+| `DataFrame` | pl.DataFrame: DataFrame com as taxas calculadas. Retorna vazio, com as mesmas colunas, se alguma entrada for vazia, inclusive a curva nominal. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se vencimentos e taxas tiverem tamanhos diferentes ou se um mesmo vencimento aparecer com taxas diferentes. |
+| `RuntimeError` | Se o bootstrap de `taxas_zero` não convergir. |
 
 **Output Columns**
 
@@ -520,7 +529,7 @@ O lado esquerdo representa o preço teórico, sem os arredondamentos e truncamen
 
 Examples:
 
-Exibe as taxas em formato decimal:
+A taxa é retornada em formato decimal; multiplique por 100 para exibi-la em percentual:
 
 ```pycon
 >>> from pyield import ntnb
@@ -593,7 +602,7 @@ A bisseção é determinística quando encontra um intervalo que contém uma rai
 
 **Precisão do método**
 
-A calibração usa \\(\\mathrm{DU} / 252\\) sem truncamento e soma os valores presentes sem arredondamento. Isso difere de :func:`cotacao`, que aplica as regras da STN de arredondamento dos fluxos e truncamento da cotação.
+A calibração usa \\(\\mathrm{DU} / 252\\) sem truncamento e soma os valores presentes sem arredondamento. Isso difere de `yd.ntnb.cotacao`, que aplica as regras da STN de arredondamento dos fluxos e truncamento da cotação.
 
 Parameters:
 
@@ -607,12 +616,13 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Retorna vazio quando não restarem vencimentos posteriores à liquidação. |
+| `DataFrame` | pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Vértices com taxa nula ou NaN e vencimentos menores ou iguais à liquidação são ignorados e não aparecem no resultado. Retorna vazio quando não restar nenhum vértice. |
 
 Raises:
 
 | Type | Description |
 | --- | --- |
+| `ValueError` | Se vencimentos e taxas tiverem tamanhos diferentes, se um mesmo vencimento aparecer com taxas diferentes ou se alguma taxa for infinita ou menor ou igual a -1. |
 | `RuntimeError` | Se não for possível encontrar um intervalo válido para alguma taxa forward, ocorrer valor não finito na avaliação ou a bisseção não convergir. |
 
 **Output Columns**

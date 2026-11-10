@@ -141,14 +141,14 @@ Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `taxa_lft` | `float \| str` | Taxa de ágio/deságio da LFT sobre a Selic, anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
-| `taxa_di` | `float \| str` | Taxa DI anual efetiva, em decimal, na base de 252 dias úteis, para o mesmo vencimento da LFT (interpolada quando necessário). Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_lft` | `float \| Decimal \| str` | Taxa de ágio/deságio da LFT sobre a Selic, anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_di` | `float \| Decimal \| str` | Taxa DI anual efetiva, em decimal, na base de 252 dias úteis, para o mesmo vencimento da LFT (interpolada quando necessário). Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 
 Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Razão entre a taxa diária equivalente da LFT, usando o DI como referência para a Selic, e a taxa diária DI. Por exemplo, 1.01 representa 101% da taxa diária equivalente DI. |
+| `float` | `float` | Razão entre a taxa diária equivalente da LFT, usando o DI como referência para a Selic, e a taxa diária DI. Por exemplo, 1.01 representa 101% da taxa diária equivalente DI. Retorna NaN para entradas ausentes, se a taxa DI for zero ou se alguma taxa for menor ou igual a -1, casos em que a razão não é definida. |
 
 **Notes**
 
@@ -194,7 +194,7 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `Expr` | pl.Expr: Expressão sem alias com a rentabilidade da LFT sobre o DI. |
+| `Expr` | pl.Expr: Expressão sem alias com a rentabilidade da LFT sobre o DI. Resulta em NaN se a taxa DI for zero ou se alguma taxa for menor ou igual a -1, como em `rentabilidade`. |
 
 ## `taxa(data_liquidacao, data_vencimento, vna, pu)`
 
@@ -234,7 +234,7 @@ Essa taxa é aplicada sobre a atualização pela Selic, representada pelo VNA; n
 
 Examples:
 
-Exibe as taxas em formato decimal:
+A taxa é retornada em formato decimal; multiplique por 100 para exibi-la em percentual:
 
 ```pycon
 >>> from pyield import lft

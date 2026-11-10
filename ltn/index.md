@@ -121,7 +121,7 @@ Examples:
 
 Cria expressão Polars para o DV01 da LTN.
 
-O cálculo é aplicado linha a linha e reprifica o PU teórico para um aumento de 1 bp na taxa.
+O cálculo é aplicado linha a linha e reprecifica o PU teórico para um aumento de 1 bp na taxa.
 
 Parameters:
 
@@ -153,7 +153,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | PU da LTN truncado em seis casas decimais. Retorna `Decimal("NaN")` quando o prazo até o vencimento não é positivo. |
+| `Decimal` | `Decimal` | PU da LTN truncado em seis casas decimais. Retorna `Decimal("NaN")` para entradas nulas ou quando o prazo até o vencimento não é positivo. |
 
 **Notes**
 
@@ -194,14 +194,14 @@ Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `taxa_ltn` | `float \| str` | Taxa anual efetiva da LTN, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
-| `taxa_di` | `float \| str` | Taxa DI anual efetiva, em decimal, na base de 252 dias úteis, para o mesmo prazo da LTN. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_ltn` | `float \| Decimal \| str` | Taxa anual efetiva da LTN, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_di` | `float \| Decimal \| str` | Taxa DI anual efetiva, em decimal, na base de 252 dias úteis, para o mesmo prazo da LTN. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 
 Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Razão entre as taxas diárias equivalentes da LTN e do DI. Por exemplo, 1.01 representa 101% da taxa diária equivalente DI. |
+| `float` | `float` | Razão entre as taxas diárias equivalentes da LTN e do DI. Por exemplo, 1.01 representa 101% da taxa diária equivalente DI. Retorna NaN para entradas ausentes, se a taxa DI for zero ou se alguma taxa for menor ou igual a -1, casos em que a razão não é definida. |
 
 **Notes**
 
@@ -245,13 +245,13 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `Expr` | pl.Expr: Expressão sem alias com a rentabilidade da LTN sobre o DI. |
+| `Expr` | pl.Expr: Expressão sem alias com a rentabilidade da LTN sobre o DI. Resulta em NaN se a taxa DI for zero ou se alguma taxa for menor ou igual a -1, como em `rentabilidade`. |
 
 ## `taxa(data_liquidacao, data_vencimento, preco_unitario)`
 
 Calcula a taxa implícita da LTN a partir do preço unitário (PU).
 
-Inverte algebricamente o valor presente, sem truncamentos da STN:
+Inverte algebricamente o valor presente, sem truncamentos da STN.
 
 Parameters:
 
@@ -284,7 +284,7 @@ Como há apenas um pagamento, a taxa anual efetiva coincide com a taxa zero e co
 
 Examples:
 
-Exibe as taxas em formato decimal:
+A taxa é retornada em formato decimal; multiplique por 100 para exibi-la em percentual:
 
 ```pycon
 >>> from pyield import ltn
@@ -312,7 +312,7 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame: DataFrame com as taxas forward. |
+| `DataFrame` | pl.DataFrame: DataFrame com as taxas forward. Na ausência de dados, retorna vazio com as mesmas colunas e tipos. |
 
 **Output Columns**
 

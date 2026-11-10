@@ -49,8 +49,7 @@ yd.tpf
 ├── vencimentos(data, titulo)
 ├── estoque(data)
 ├── dealers(data=None)
-├── leiloes(data=..., inicio=..., fim=...)
-├── leiloes_bcb(data=..., inicio=..., fim=...)
+├── leiloes(data=..., inicio=..., fim=..., fonte="tn")
 ├── secundario.mensal(data, extragrupo=...)
 ├── secundario.intradia()
 ├── secundario.baixar_zip(data, extragrupo=...)
@@ -242,7 +241,7 @@ Cotação em `Decimal`, com quatro casas; sem dados retorna `Decimal("NaN")`.
 **`yd.ptax_serie` (série histórica da PTAX)**
 
 ```text
-yd.ptax_serie(inicio, fim)
+yd.ptax_serie(inicio=None, fim=None, *, ultimos=None)
 ```
 
 Coluna `cotacao` do tipo Polars `Decimal(18, 4)`.

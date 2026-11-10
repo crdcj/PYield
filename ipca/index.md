@@ -12,6 +12,10 @@ As taxas históricas são retornadas como `Decimal` em `yd.ipca.taxa()` e como `
 calendario = yd.ipca.calendario(2026)
 ```
 
+Taxas, números-índice, projeção e calendário de divulgação do IPCA.
+
+Disponibiliza `taxa`, `taxa_serie`, `indice`, `indice_serie`, `taxa_projetada` e `calendario`.
+
 ## `calendario(ano)`
 
 Consulta o calendário oficial de divulgação do IPCA no IBGE.
@@ -31,7 +35,8 @@ Returns:
 
 **Output Columns**
 
-competencia (Date): Primeiro dia do mês de referência do índice. data\_divulgacao (Date): Data de divulgação prevista pelo IBGE.
+- competencia (Date): Primeiro dia do mês de referência do índice.
+- data\_divulgacao (Date): Data de divulgação prevista pelo IBGE.
 
 **Notes**
 

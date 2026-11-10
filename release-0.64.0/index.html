@@ -1,0 +1,2440 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Biblioteca financeira para o mercado brasileiro.">
+      
+      
+        <meta name="author" content="Carlos Carvalho">
+      
+      
+        <link rel="canonical" href="https://crdcj.github.io/PYield/release-0.64.0/">
+      
+      
+        <link rel="describedby" href="../llms.txt">
+        
+          <link rel="alternate" type="text/markdown" href="./index.md">
+        
+      
+      
+        <link rel="prev" href="../releases/">
+      
+      
+        <link rel="next" href="../release-0.63.0/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.1.0">
+    
+    
+      
+        <title>0.64.0 - PYield Docs</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.4ab2de0c.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Pular para conteúdo
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="./.." title="PYield Docs" class="md-header__button md-logo" aria-label="PYield Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navegação</span>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PYield Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              0.64.0
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Pesquisar</span>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Pesquisar">
+  <button type="button" class="md-search__button">
+    Pesquisar
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/crdcj/PYield" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    PYield
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="PYield Docs" class="md-nav__button md-logo" aria-label="PYield Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    PYield Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/crdcj/PYield" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    PYield
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Início
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Mapa da API
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Notas de versão
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Notas de versão
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Visão geral
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.64.0
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.64.0
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#fonte-dos-leiloes-de-tpf" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fonte dos leilões de TPF
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fonte dos leilões de TPF">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migracao" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Migração
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#taxas-do-secundario-mensal-em-decimal" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Taxas do secundário mensal em decimal
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Taxas do secundário mensal em decimal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migracao_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Migração
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nome_comercial-obrigatorio-em-ydntnb1dv01" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>nome_comercial</code> obrigatório em <code>yd.ntnb1.dv01</code>
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="nome_comercial obrigatório em yd.ntnb1.dv01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migracao_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Migração
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prazos-repetidos-na-curva-zero-e-no-interpolador" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Prazos repetidos na curva zero e no interpolador
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#duration-sem-truncamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Duration sem truncamento
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#taxas-em-decimal" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Taxas em <code>Decimal</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ofertas-de-compra-e-venda-em-ydfuturohistorico" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ofertas de compra e venda em <code>yd.futuro.historico</code>
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ofertas de compra e venda em yd.futuro.historico">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migracao_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Migração
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#correcoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Correções
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.63.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.63.0
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.62.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.62.0
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.61.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.61.0
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.60.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.60.1
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.60.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.60.0
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.59.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.59.0
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.58.2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.58.2
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.58.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.58.1
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.58.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.58.0
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../desenvolvimento/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Desenvolvimento e publicação
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Artigos
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Artigos
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/pyield_intro/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introdução ao Pyield
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Referências normativas
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Referências normativas
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../referencias/metodologia-calculo-tpf-stn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Precificação de leilões — STN
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../referencias/metodologia-calculo-letras-notas-stn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Caderno de fórmulas SELIC — STN
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../referencias/metodologia-calculo-ntnb1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Precificação da NTN-B1 — Tesouro Direto
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../referencias/regulamento-selic-bcb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regulamento do Selic — BCB
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Ferramentas
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_8">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Ferramentas
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../du/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dias Úteis (DU)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../interpolador/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Interpolador
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forwards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Forwards (taxas a termo)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Títulos Públicos Federais
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_9">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Títulos Públicos Federais
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tpf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TPF
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vna/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  VNA
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lft/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  LFT
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ltn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  LTN
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ntnf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  NTN-F
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ntnb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  NTN-B
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ntnbp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  NTN-B Principal
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ntnb1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  NTN-B1
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ntnc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  NTN-C
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Mercado de Futuros
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_10">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Mercado de Futuros
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../di1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  DI1
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../futuro/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Futuro
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dados Auxiliares
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_11">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Dados Auxiliares
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../b3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  B3
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ipca/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  IPCA
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../igpm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  IGP-M
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../copom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Copom
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compromissada/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Compromissadas
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../selic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Selic
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../di-over/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  DI Over
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ptax/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  PTAX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cpm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CPM
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#fonte-dos-leiloes-de-tpf" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fonte dos leilões de TPF
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fonte dos leilões de TPF">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migracao" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Migração
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#taxas-do-secundario-mensal-em-decimal" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Taxas do secundário mensal em decimal
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Taxas do secundário mensal em decimal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migracao_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Migração
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nome_comercial-obrigatorio-em-ydntnb1dv01" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>nome_comercial</code> obrigatório em <code>yd.ntnb1.dv01</code>
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="nome_comercial obrigatório em yd.ntnb1.dv01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migracao_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Migração
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prazos-repetidos-na-curva-zero-e-no-interpolador" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Prazos repetidos na curva zero e no interpolador
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#duration-sem-truncamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Duration sem truncamento
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#taxas-em-decimal" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Taxas em <code>Decimal</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ofertas-de-compra-e-venda-em-ydfuturohistorico" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ofertas de compra e venda em <code>yd.futuro.historico</code>
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ofertas de compra e venda em yd.futuro.historico">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migracao_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Migração
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#correcoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Correções
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+  <button type="button" title="Copy as Markdown" aria-label="Copy as Markdown" class="md-content__button md-icon" data-md-copy-url="./index.md">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/></svg>
+  </button>
+
+
+  
+  
+
+
+<h1 id="novidades-na-versao-0640">Novidades na versão 0.64.0</h1>
+<p>Esta versão reúne as duas fontes de leilões de TPF em <code>yd.tpf.leiloes</code>, com a
+escolha explícita da fonte pelo novo parâmetro <code>fonte</code>. A função
+<code>yd.tpf.leiloes_bcb</code> deixa de existir.</p>
+<h2 id="fonte-dos-leiloes-de-tpf">Fonte dos leilões de TPF</h2>
+<p><code>yd.tpf.leiloes</code> passa a aceitar <code>fonte="tn"</code> (Tesouro Nacional, padrão) ou
+<code>fonte="bc"</code> (Banco Central do Brasil). A API pública fica orientada ao
+conceito, leilão de TPF, e não à fonte de dados.</p>
+<p>Chamadas sem <code>fonte</code> continuam consultando o Tesouro Nacional, com os mesmos
+parâmetros, colunas e valores da 0.63.0. Com <code>fonte="bc"</code>, o resultado é o
+mesmo que <code>yd.tpf.leiloes_bcb</code> retornava: colunas, tipos e metodologia não
+mudam.</p>
+<p>Não há troca automática de fonte. As duas fontes diferem em colunas e em
+metodologia, por exemplo nos financeiros calculados a partir do PU médio e na
+cotação publicada pelo BCB para LFT e NTN-B até 10/06/2024. Se a fonte mudasse
+conforme a disponibilidade do Tesouro, a mesma chamada poderia retornar
+esquemas e valores diferentes. As diferenças estão documentadas nas notas de
+<a href="../tpf/#leiloes"><code>yd.tpf.leiloes</code></a>.</p>
+<h3 id="migracao">Migração</h3>
+<p>Substitua <code>yd.tpf.leiloes_bcb</code> por <code>yd.tpf.leiloes</code> com <code>fonte="bc"</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># 0.63.0</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">tpf</span><span class="o">.</span><span class="n">leiloes_bcb</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s2">"19-08-2025"</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># 0.64.0</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">tpf</span><span class="o">.</span><span class="n">leiloes</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s2">"19-08-2025"</span><span class="p">,</span> <span class="n">fonte</span><span class="o">=</span><span class="s2">"bc"</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Quem usava o BCB como alternativa ao Tesouro indisponível pode tratar o erro
+explicitamente:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">try</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">tpf</span><span class="o">.</span><span class="n">leiloes</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s2">"19-08-2025"</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">RequestException</span><span class="p">:</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">tpf</span><span class="o">.</span><span class="n">leiloes</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s2">"19-08-2025"</span><span class="p">,</span> <span class="n">fonte</span><span class="o">=</span><span class="s2">"bc"</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="taxas-do-secundario-mensal-em-decimal">Taxas do secundário mensal em decimal</h2>
+<p>As colunas <code>taxa_minima</code>, <code>taxa_media</code> e <code>taxa_maxima</code> de
+<code>yd.tpf.secundario.mensal</code> e <code>yd.tpf.secundario.ler</code> passam a ser retornadas
+em decimal (0.1215 = 12,15%), como as demais taxas da biblioteca, incluindo
+<code>yd.tpf.secundario.intradia</code>. Até a 0.63.0 elas vinham em percentual
+(12.15). O tipo continua <code>Float64</code>, e as demais colunas não mudam.</p>
+<h3 id="migracao_1">Migração</h3>
+<p>Para manter a escala anterior, multiplique as três colunas por 100:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">tpf</span><span class="o">.</span><span class="n">secundario</span><span class="o">.</span><span class="n">mensal</span><span class="p">(</span><span class="s2">"07-01-2025"</span><span class="p">)</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"taxa_minima"</span><span class="p">,</span> <span class="s2">"taxa_media"</span><span class="p">,</span> <span class="s2">"taxa_maxima"</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="nome_comercial-obrigatorio-em-ydntnb1dv01"><code>nome_comercial</code> obrigatório em <code>yd.ntnb1.dv01</code></h2>
+<p><code>yd.ntnb1.dv01</code> deixa de assumir Renda+ quando <code>nome_comercial</code> não é
+informado, como as demais funções de <code>yd.ntnb1</code>. Antes, um Educa+ calculado
+sem o argumento retornava o DV01 do Renda+ sem erro. Agora a omissão gera
+<code>TypeError</code>.</p>
+<h3 id="migracao_2">Migração</h3>
+<p>Informe o nome comercial explicitamente:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">r_mais</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ntnb1</span><span class="o">.</span><span class="n">NomeComercial</span><span class="o">.</span><span class="n">RENDA_MAIS</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># 0.63.0</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">dv01</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ntnb1</span><span class="o">.</span><span class="n">dv01</span><span class="p">(</span><span class="s2">"23-06-2025"</span><span class="p">,</span> <span class="s2">"15-12-2084"</span><span class="p">,</span> <span class="s2">"6.86%"</span><span class="p">,</span> <span class="n">pu</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1"># 0.64.0</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">dv01</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ntnb1</span><span class="o">.</span><span class="n">dv01</span><span class="p">(</span><span class="s2">"23-06-2025"</span><span class="p">,</span> <span class="s2">"15-12-2084"</span><span class="p">,</span> <span class="s2">"6.86%"</span><span class="p">,</span> <span class="n">pu</span><span class="p">,</span> <span class="n">r_mais</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="prazos-repetidos-na-curva-zero-e-no-interpolador">Prazos repetidos na curva zero e no interpolador</h2>
+<p>As funções de NTN-B Principal, NTN-B1 e NTN-C que recebem <code>curva_zero</code>
+(<code>yd.ntnbp.taxa</code>, <code>yd.ntnb1.cotacao_curva_zero</code>, <code>yd.ntnb1.taxa_curva_zero</code>,
+<code>yd.ntnc.cotacao_curva_zero</code> e <code>yd.ntnc.taxa_curva_zero</code>) passam a tratar
+prazos repetidos da mesma forma:</p>
+<ul>
+<li>linhas idênticas são aceitas e consideradas uma única vez;</li>
+<li>o mesmo <code>dias_uteis</code> com taxas diferentes gera <code>ValueError</code>.</li>
+</ul>
+<p>A regra vale também para <code>yd.Interpolador</code> e <code>yd.interpolar</code>, que estão na
+base dessas funções. Em <code>yd.interpolar</code> com várias curvas, o conflito é
+verificado dentro de cada data: o mesmo DU em datas diferentes é legítimo. A
+mensagem de erro informa o DU, as taxas conflitantes e, se houver, a data:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ValueError: Curva tem o mesmo prazo com taxas diferentes; informe uma única
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>taxa por prazo. Conflitos: 2025-01-03, DU 200: taxas [0.11, 0.13].
+</span></code></pre></div>
+<p>Antes, o interpolador usava a última linha de cada prazo, e o resultado
+dependia da ordem da curva. A NTN-C rejeitava qualquer repetição, mesmo com
+taxas iguais. Curvas geradas por <code>yd.ntnb.taxas_zero</code> e as curvas internas de
+DI1 e TPF não têm prazos repetidos e não são afetadas.</p>
+<p>O mesmo critério vale para os vértices informados aos bootstraps
+<code>yd.ntnf.taxas_zero</code>, <code>yd.ntnf.taxas_zero_forwards</code> e <code>yd.ntnb.taxas_zero</code>
+(também usado por <code>yd.ntnb.implicitas</code>). Antes, <code>yd.ntnf.taxas_zero</code> aceitava
+o mesmo vencimento com taxas diferentes e o resultado dependia da ordem dos
+vértices; <code>yd.ntnb.taxas_zero</code> repetia o vértice na saída ou falhava com
+<code>RuntimeError</code>; e <code>yd.ntnf.taxas_zero_forwards</code> rejeitava até repetições
+idênticas.</p>
+<h2 id="duration-sem-truncamento">Duration sem truncamento</h2>
+<p><code>yd.ntnb.duration</code>, <code>yd.ntnc.duration</code> e <code>yd.ntnb1.duration</code> deixam de truncar
+o resultado em 14 casas decimais, como já faziam <code>yd.ntnf.duration</code> e as
+versões <code>duration_expr</code> usadas em <code>dados()</code>. A duration é uma medida
+analítica em ponto flutuante, e o truncamento não segue a metodologia de
+cotação do Tesouro. A diferença fica no último dígito do <code>float</code>, por exemplo
+<code>yd.ntnc.duration("21-03-2025", "01-01-2031", "6.7626%")</code> passa de
+<code>4.405363320448</code> para <code>4.405363320448003</code>. O truncamento dos anos úteis nas
+cotações não muda.</p>
+<h2 id="taxas-em-decimal">Taxas em <code>Decimal</code></h2>
+<p>As funções escalares que recebem uma taxa passam a aceitar <code>Decimal</code> de forma
+uniforme, além de <code>float</code> e do percentual textual (<code>"6.25%"</code>). Antes,
+<code>cotacao</code>, <code>pu</code> e parte dos <code>dv01</code> já aceitavam, mas as funções abaixo
+terminavam em erro do Polars ou em <code>TypeError</code>:</p>
+<ul>
+<li><code>duration</code> de <code>yd.ntnb</code>, <code>yd.ntnc</code>, <code>yd.ntnb1</code> e <code>yd.ntnf</code>;</li>
+<li><code>dv01</code> de <code>yd.ntnb1</code> e <code>yd.ntnbp</code>;</li>
+<li><code>rentabilidade</code> de <code>yd.ltn</code>, <code>yd.lft</code> e <code>yd.ntnf</code>, e <code>yd.ntnf.premio_limpo</code>.</li>
+</ul>
+<p>O <code>Decimal</code> é convertido para <code>float</code> antes do cálculo, e o resultado é o
+mesmo obtido com o <code>float</code> equivalente. Chamadas existentes não mudam.</p>
+<h2 id="ofertas-de-compra-e-venda-em-ydfuturohistorico">Ofertas de compra e venda em <code>yd.futuro.historico</code></h2>
+<p>Nos contratos cotados por taxa (DI1, DAP, DDI, FRC e FRO), as colunas
+<code>taxa_ultima_oferta_compra</code> e <code>taxa_ultima_oferta_venda</code> de
+<code>yd.futuro.historico</code> e <code>yd.futuro.enriquecer</code> estavam trocadas. Até a
+0.63.0, a melhor oferta de compra da B3 saía como venda e vice-versa, e a taxa
+de compra ficava acima da de venda.</p>
+<p>As colunas passam a seguir a convenção da B3, a mesma de
+<code>yd.futuro.intradia</code>: comprar um contrato de taxa é comprar taxa, o que
+equivale a vender PU. Por isso a oferta de compra tem a taxa menor. A ordem
+das colunas também muda: compra vem antes de venda. Os contratos cotados por
+preço (DOL, WDO, IND e WIN) não mudam.</p>
+<h3 id="migracao_3">Migração</h3>
+<p>Para manter os valores da 0.63.0, troque os nomes das duas colunas:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">df</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">futuro</span><span class="o">.</span><span class="n">historico</span><span class="p">(</span><span class="s2">"06-11-2026"</span><span class="p">,</span> <span class="s2">"DI1"</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="p">{</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="s2">"taxa_ultima_oferta_compra"</span><span class="p">:</span> <span class="s2">"taxa_ultima_oferta_venda"</span><span class="p">,</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="s2">"taxa_ultima_oferta_venda"</span><span class="p">:</span> <span class="s2">"taxa_ultima_oferta_compra"</span><span class="p">,</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="p">}</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="correcoes">Correções</h2>
+<p>As correções abaixo alteram apenas resultados que antes estavam errados ou
+terminavam em erros sem relação com a entrada. Os demais valores não mudam.</p>
+<ul>
+<li><code>yd.ntnf.premio_limpo</code> retorna NaN quando algum pagamento fica além do
+  último vértice da curva DI, como <code>yd.ntnf.rentabilidade</code> já fazia. Antes, o
+  spread era calculado com apenas parte dos fluxos. O mesmo vale para a coluna
+  <code>premio_limpo</code> de <code>yd.ntnf.dados</code>.</li>
+<li><code>yd.ntnf.taxas_zero</code> calcula a taxa zero do vértice que tem um único
+  pagamento depois da última LTN; nesse caso ela é a própria TIR. Antes, o
+  vértice ficava nulo e os seguintes, NaN. A correção alcança <code>yd.ntnf.dados</code>
+  e <code>yd.tpf.curva_pre</code>.</li>
+<li><code>yd.ntnb1.cotacao_curva_zero</code> e <code>yd.ntnb1.taxa_curva_zero</code> retornam NaN
+  quando não há pagamentos após a liquidação e geram <code>ValueError</code> para curva
+  sem vértice válido, como <code>yd.ntnbp.taxa</code> e as funções de curva da NTN-C.
+  Antes, a cotação saía <code>0.0</code> e a taxa terminava em <code>IndexError</code> ou
+  <code>TypeError</code>.</li>
+<li><code>yd.ntnb.taxas_zero</code>, <code>yd.ntnb.implicitas</code>, <code>yd.ntnf.taxas_zero</code> e
+  <code>yd.ntnf.taxas_zero_forwards</code> ignoram vértices com taxa nula ou NaN, que
+  representam dado ausente: o vértice sai do cálculo e do resultado, e a
+  remoção é registrada no log. Antes, a NTN-B terminava em <code>TypeError</code> ou em
+  um erro do solver; em <code>yd.ntnf.taxas_zero</code>, a taxa zero do vértice era
+  calculada com uma TIR interpolada dos vizinhos, ou a função terminava em
+  <code>TypeError</code> quando o vértice sem taxa era o último; e
+  <code>yd.ntnf.taxas_zero_forwards</code> gerava <code>ValueError</code>.</li>
+<li><code>yd.ntnb.taxas_zero</code> e <code>yd.ntnb.implicitas</code> geram <code>ValueError</code> para taxas
+  infinitas ou menores ou iguais a -1, que antes terminavam em
+  <code>ZeroDivisionError</code> ou em um erro do solver.</li>
+<li><code>yd.tpf.leiloes</code> com <code>fonte="tn"</code> e várias datas retorna o resultado
+  ordenado e sem repetir linhas quando a mesma data é informada mais de uma
+  vez, como já ocorria com <code>fonte="bc"</code>. Sem PTAX disponível, as colunas
+  <code>ptax</code> e <code>dv01_*_usd</code> ficam nulas nas duas fontes, em vez de ausentes na
+  fonte TN e de erro na fonte BC.</li>
+<li>As funções de <code>yd.ntnb1</code> deixam de gerar <code>ValueError</code> quando o vencimento é
+  menor ou igual à liquidação. Título vencido ou que vence na liquidação não
+  tem mais fluxos: <code>datas_pagamento</code> e <code>fluxos_caixa</code> retornam vazio, e
+  <code>cotacao</code>, <code>duration</code>, <code>dv01</code>, <code>cotacao_curva_zero</code> e <code>taxa_curva_zero</code>
+  retornam NaN, como nos demais títulos.</li>
+<li><code>rentabilidade</code> de <code>yd.ltn</code>, <code>yd.lft</code> e <code>yd.ntnf</code> retorna NaN quando a
+  razão sobre o DI não é definida: taxa DI igual a zero ou alguma taxa menor
+  ou igual a -1. As versões <code>rentabilidade_expr</code> seguem a mesma regra. Antes,
+  os escalares de LTN e LFT terminavam em <code>ZeroDivisionError</code> com DI zero e
+  devolviam um número complexo para taxa abaixo de -1; as expressões
+  devolviam <code>inf</code>, <code>-inf</code> ou NaN; e a NTN-F devolvia <code>inf</code> ou <code>0.0</code>.</li>
+<li><code>yd.tpf.leiloes</code> com <code>fonte="bc"</code>, em leilão sem aceite:
+  <code>financeiro_ofertado_total</code> fica nulo, como já ocorria com
+  <code>financeiro_ofertado_1v</code> e <code>financeiro_ofertado_2v</code>, pois sem PU o
+  financeiro ofertado é desconhecido; antes, o total saía <code>0.0</code>. Já
+  <code>financeiro_aceito_1v</code> e <code>financeiro_aceito_2v</code> passam a valer <code>0.0</code>, em
+  vez de nulos, pois quantidade aceita zero significa financeiro aceito
+  zero; <code>financeiro_aceito_total</code> continua <code>0.0</code>.</li>
+<li><code>yd.ltn.taxas_forward</code> sem data retorna DataFrame vazio com as colunas
+  documentadas.</li>
+<li><code>yd.futuro.vencimento</code> aceita código nulo e retorna <code>None</code>, como a
+  assinatura já indicava. <code>yd.futuro.historico</code> e <code>yd.futuro.enriquecer</code>
+  exigem o contrato completo de três caracteres; um prefixo parcial, como
+  <code>"D"</code>, retorna vazio em vez de misturar contratos.</li>
+<li>Datas informadas como string em branco deixam de gerar <code>AttributeError</code> ou
+  <code>TypeError</code> em <code>yd.vna.vigencia</code> (<code>ValueError</code>), <code>yd.vna.historico</code>,
+  <code>yd.ipca.taxa_serie</code>, <code>yd.ipca.indice_serie</code>, <code>yd.futuro.historico</code> e nas
+  funções <code>datas_pagamento</code> dos títulos (resultado vazio).</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      @ 2024-2026 <strong>Carlos Carvalho</strong>. Todos os direitos reservados.
+    </div>
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/crdcj/PYield" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["navigation.instant","content.action.copy"],"redirect":null,"search":"../assets/javascripts/workers/search.719e0d91.min.js","tags":null,"translations":{"clipboard.copied":"Copiado para área de transferência","clipboard.copy":"Copiar para área de transferência","clipboard.error":"Could not copy to clipboard","search.result.more.one":"mais 1 nesta página","search.result.more.other":"# mais nesta página","search.result.none":"Nenhum documento encontrado","search.result.one":"1 documento encontrado","search.result.other":"# documentos encontrados","search.result.placeholder":"Digite para iniciar a busca","search.result.term.missing":"Ausente","select.version":"Selecione a versão"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d31f0ffa.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

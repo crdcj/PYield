@@ -31,13 +31,18 @@ Cálculos e dados de NTN-F.
 
 Convenções de precificação (STN, tabela 3): - Prazo de desconto: dias úteis / 252, truncado a 14 casas. - PU: truncado a 6 casas. - Cada fluxo descontado: arredondado a 9 casas.
 
-Valores de referência derivados conforme as regras da STN: TAXA\_CUPOM = (0.10 + 1) \*\* 0.5 - 1 -\> 10% a.a. com capitalização semestral VALOR\_FACE = 1000 VALOR\_CUPOM = round(VALOR\_FACE \* TAXA\_CUPOM, 5) VALOR\_FINAL = VALOR\_FACE + VALOR\_CUPOM
+**Valores de referência derivados conforme as regras da STN**
+
+- Valor de face: 1000 reais.
+- Taxa do cupom: (0.10 + 1) \*\* 0.5 - 1, isto é, 10% a.a. com capitalização semestral.
+- Valor do cupom: valor de face × taxa do cupom, arredondado a 5 casas (48.80885).
+- Pagamento final: valor de face + valor do cupom (1048.80885).
 
 A NTN-F paga dois cupons por ano (semestrais). As datas de cupom são derivadas do vencimento (retrocedendo 6 em 6 meses), sem depender de meses fixos. Ex.: vencimento 01-01-2027 gera cupons em 01-07-2026, 01-01-2026, ...
 
 ## `dados(data)`
 
-Busca as taxas indicativas de NTN-F para a data de referência.
+Busca as taxas indicativas de NTN-F na ANBIMA para a data de referência.
 
 Parameters:
 
@@ -59,14 +64,14 @@ Returns:
 - data\_base (Date): Data base de emissão do título.
 - data\_vencimento (Date): Data de vencimento do título.
 - dias\_uteis (Int64): Dias úteis entre referência e vencimento.
-- prazo\_medio (Float64): Prazo médio do título em dias corridos.
+- prazo\_medio (Float64): Prazo médio do título (anos).
 - duration (Float64): Macaulay Duration do título (anos).
 - dv01 (Float64): Variação no preço para 1bp de taxa.
 - pu (Float64): Preço unitário (PU).
 - taxa\_compra (Float64): Taxa de compra (decimal).
 - taxa\_venda (Float64): Taxa de venda (decimal).
 - taxa\_indicativa (Float64): Taxa indicativa (decimal).
-- taxa\_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo método flat forward.
+- taxa\_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo método flat forward (decimal).
 - taxa\_zero (Float64): Taxa zero (zero cupom via bootstrap).
 - premio (Float64): prêmio, isto é, o spread sobre o DI.
 - premio\_limpo (Float64): prêmio limpo sobre a curva DI.
@@ -83,7 +88,7 @@ Examples:
 
 Gera todas as datas de pagamento entre liquidação e vencimento.
 
-As datas são exclusivas para a liquidação e inclusivas para o vencimento. Os pagamentos são semestrais, em 1º de janeiro e 1º de julho. No vencimento, o fluxo inclui o último cupom e a amortização do principal. O título NTN-F é determinado pela data de vencimento. As datas são contratuais e não são ajustadas para dias úteis.
+As datas são exclusivas para a liquidação e inclusivas para o vencimento. Os pagamentos são semestrais, contados a partir do vencimento (1º de janeiro e 1º de julho nas NTN-F já emitidas). No vencimento, o fluxo inclui o último cupom e a amortização do principal. O título NTN-F é determinado pela data de vencimento. As datas são contratuais e não são ajustadas para dias úteis.
 
 Parameters:
 
@@ -144,13 +149,13 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação para o cálculo. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento do título. | *required* |
-| `taxa` | `float \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis, usada para descontar os fluxos. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis, usada para descontar os fluxos. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 
 Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Macaulay duration em anos úteis. Retorna NaN se inválido. |
+| `float` | `float` | Macaulay duration em anos úteis. Retorna NaN para entradas ausentes ou quando não há pagamentos após a liquidação. |
 
 **Notes**
 
@@ -215,7 +220,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | DV01, variação de preço para 1 bp. |
+| `float` | `float` | DV01, variação de preço para 1 bp. Retorna NaN para entradas ausentes ou quando não há pagamentos após a liquidação. |
 
 **Notes**
 
@@ -250,7 +255,7 @@ Examples:
 
 Cria expressão Polars para o DV01 da NTN-F.
 
-O cálculo é aplicado linha a linha e reprifica o PU teórico para um aumento de 1 bp na taxa.
+O cálculo é aplicado linha a linha e reprecifica o PU teórico para um aumento de 1 bp na taxa.
 
 Parameters:
 
@@ -324,7 +329,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação para o cálculo. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento do título. | *required* |
-| `taxa_ntnf` | `float \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_ntnf` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 | `vencimentos_di` | `DatesLike` | Vencimentos da curva DI. | *required* |
 | `taxas_di` | `ArrayLike` | Taxas DI anuais efetivas, em decimal, na base de 252 dias úteis, correspondentes aos vencimentos. | *required* |
 
@@ -332,7 +337,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Spread líquido em formato decimal (ex.: 0.0012 = 12 bps). Retorna NaN para entradas ausentes ou fluxos vazios. Também retorna NaN se a resolução numérica falhar. |
+| `float` | `float` | Spread líquido em formato decimal (ex.: 0.0012 = 12 bps). Retorna NaN para entradas ausentes ou fluxos vazios. Também retorna NaN se a resolução numérica falhar ou se houver pagamento além do último vértice da curva DI, pois não há extrapolação na ponta longa. |
 
 **Notes**
 
@@ -353,16 +358,16 @@ Para expressar o spread em pontos-base, multiplique por 10.000. Os preços são 
 
 Examples:
 
-### Obs: apenas algumas taxas DI serão usadas no exemplo.
-
 ```pycon
->>> exp_dates = ["2025-01-01", "2030-01-01", "2035-01-01"]
+>>> from pyield import ntnf
+>>> # Obs: apenas algumas taxas DI serão usadas no exemplo.
+>>> vencimentos_di = ["2025-01-01", "2030-01-01", "2035-01-01"]
 >>> taxas_di = [0.10823, 0.11594, 0.11531]
->>> spread = premio_limpo(
+>>> spread = ntnf.premio_limpo(
 ...     data_liquidacao="23-08-2024",
 ...     data_vencimento="01-01-2035",
 ...     taxa_ntnf=0.116586,
-...     vencimentos_di=exp_dates,
+...     vencimentos_di=vencimentos_di,
 ...     taxas_di=taxas_di,
 ... )
 >>> round(spread * 10_000, 2)  # Converte para bps para exibição
@@ -410,7 +415,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Preço da NTN-F truncado em seis casas decimais. |
+| `Decimal` | `Decimal` | Preço da NTN-F truncado em seis casas decimais. Retorna `Decimal("NaN")` para entradas nulas ou quando não há pagamentos após a liquidação. |
 
 **Notes**
 
@@ -428,10 +433,11 @@ onde:
 
 Os fluxos e os prazos são determinados pela liquidação e pelo vencimento. No cálculo oficial, além do truncamento da TIR descrito em `Args`, cada prazo \\(t\_i\\) é truncado em 14 casas decimais, cada fluxo descontado é arredondado em nove casas e a soma é truncada em seis.
 
+O cupom semestral é 48,80885, que representa 10% a.a. com capitalização semestral e arredondamento para 5 casas, conforme a STN.
+
 **References**
 
 - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos Públicos Federais Ofertados nos Leilões Primários. https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
-- O cupom semestral é 48,81, que representa 10% a.a. com capitalização semestral e arredondamento para 5 casas, conforme a STN.
 
 Examples:
 
@@ -455,7 +461,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação para o cálculo. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento da NTN-F. | *required* |
-| `taxa_ntnf` | `float \| str` | TIR anual efetiva da NTN-F, em formato decimal. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_ntnf` | `float \| Decimal \| str` | TIR anual efetiva da NTN-F, em formato decimal. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 | `vencimentos_di` | `DatesLike` | Datas de vencimento da curva DI. | *required* |
 | `taxas_di` | `ArrayLike` | Taxas DI anuais efetivas, em formato decimal, correspondentes aos vencimentos. | *required* |
 
@@ -463,23 +469,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Razão entre as taxas diárias equivalentes. Por exemplo, 1.01 representa 101% da taxa diária equivalente de referência DI. Retorna NaN para entradas ausentes, fluxos vazios ou preço calculado NaN. Também retorna NaN se a resolução numérica falhar. |
-
-Examples:
-
-```pycon
->>> # Obs: apenas algumas taxas DI serão usadas no exemplo.
->>> exp_dates = ["2025-01-01", "2030-01-01", "2035-01-01"]
->>> taxas_di = [0.10823, 0.11594, 0.11531]
->>> rentabilidade(
-...     data_liquidacao="23-08-2024",
-...     data_vencimento="01-01-2035",
-...     taxa_ntnf="11.6586%",
-...     vencimentos_di=exp_dates,
-...     taxas_di=taxas_di,
-... )
-1.0099602280683393
-```
+| `float` | `float` | Razão entre as taxas diárias equivalentes. Por exemplo, 1.01 representa 101% da taxa diária equivalente de referência DI. Retorna NaN para entradas ausentes, fluxos vazios ou preço calculado NaN. Também retorna NaN se a resolução numérica falhar, se a TIR de referência DI for zero ou se a TIR da NTN-F for menor ou igual a -1, casos em que a razão não é definida. |
 
 **Notes**
 
@@ -525,6 +515,23 @@ Os fluxos mantêm as datas contratuais, excluem pagamentos na liquidação e inc
 > A LTN possui um único pagamento. Nesse caso, a TIR equivalente da referência coincide com a taxa zero DI do vencimento, e a fórmula se reduz à utilizada por `yd.ltn.rentabilidade`. Na NTN-F, a TIR equivalente considera também os cupons intermediários.
 
 Referência: Tesouro Nacional, *Dívida Pública: a experiência brasileira*, Parte 3, capítulo 2, Anexo 2, item 2, páginas 329–330: [Prêmio das NTN-Fs](<https://thot-arquivos.tesouro.gov.br/publicacao-anexo/4710>).
+
+Examples:
+
+```pycon
+>>> from pyield import ntnf
+>>> # Obs: apenas algumas taxas DI serão usadas no exemplo.
+>>> vencimentos_di = ["2025-01-01", "2030-01-01", "2035-01-01"]
+>>> taxas_di = [0.10823, 0.11594, 0.11531]
+>>> ntnf.rentabilidade(
+...     data_liquidacao="23-08-2024",
+...     data_vencimento="01-01-2035",
+...     taxa_ntnf="11.6586%",
+...     vencimentos_di=vencimentos_di,
+...     taxas_di=taxas_di,
+... )
+1.0099602280683393
+```
 
 ## `rentabilidade_expr(data_liquidacao, data_vencimento, taxa_ntnf, vencimentos_di, taxas_di)`
 
@@ -587,7 +594,7 @@ A soma representa o preço teórico, sem os arredondamentos e truncamentos do PU
 
 Examples:
 
-Exibe as taxas em formato decimal:
+A taxa é retornada em formato decimal; multiplique por 100 para exibi-la em percentual:
 
 ```pycon
 >>> from pyield import ntnf
@@ -599,9 +606,9 @@ Exibe as taxas em formato decimal:
 
 ## `taxas_zero(data_liquidacao, vencimentos_ltn, taxas_ltn, vencimentos_ntnf, taxas_ntnf, incluir_cupons=False)`
 
-Calcula as taxas spot (zero cupom) para NTN-F usando bootstrap.
+Calcula as taxas zero cupom (spot) para NTN-F usando bootstrap.
 
-O bootstrap determina as taxas spot a partir das TIRs dos títulos. O método resolve iterativamente as taxas que descontam os fluxos ao preço. Usa as LTNs (zero cupom) até o último vencimento LTN disponível. Após isso, calcula as taxas spot a partir das NTN-F.
+O bootstrap determina as taxas zero a partir das TIRs dos títulos. O método resolve iterativamente as taxas que descontam os fluxos ao preço. Usa as LTNs (zero cupom) até o último vencimento LTN disponível. Após isso, calcula as taxas zero a partir das NTN-F.
 
 Parameters:
 
@@ -612,13 +619,19 @@ Parameters:
 | `taxas_ltn` | `ArrayLike` | Taxas das LTNs. Como a LTN é zero cupom, essas taxas são usadas diretamente como taxas zero no bootstrap. | *required* |
 | `vencimentos_ntnf` | `DatesLike` | Datas de vencimento das NTN-F usadas no bootstrap. | *required* |
 | `taxas_ntnf` | `ArrayLike` | TIRs das NTN-F correspondentes aos vencimentos informados. | *required* |
-| `incluir_cupons` | `bool` | Se True, inclui as datas de cupom (julho). Padrão False. | `False` |
+| `incluir_cupons` | `bool` | Se True, inclui todas as datas de pagamento semestrais até o último vencimento, e não só os vencimentos informados. Padrão False. | `False` |
 
 Returns:
 
 | Type | Description |
 | --- | --- |
 | `DataFrame` | pl.DataFrame: DataFrame com colunas `data_vencimento`, `dias_uteis` e `taxa_zero`. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se vencimentos e taxas tiverem tamanhos diferentes ou se um mesmo vencimento aparecer com taxas diferentes. |
 
 **Output Columns**
 
@@ -648,7 +661,7 @@ onde \\(r\_i := r(t\_i)\\) é a taxa zero para o prazo do pagamento \\(i\\).
 
 As taxas de entrada e de saída são anuais efetivas, em decimal, na base de 252 dias úteis. Para a LTN, a TIR coincide com a taxa zero, pois há apenas um pagamento. O preço teórico não aplica os arredondamentos e truncamentos do PU oficial.
 
-Vencimentos menores ou iguais à liquidação são ignorados antes da construção dos interpoladores.
+Vértices com taxa nula ou NaN e vencimentos menores ou iguais à liquidação são ignorados antes da construção dos interpoladores e não aparecem no resultado.
 
 Examples:
 
@@ -701,7 +714,7 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame: União dos vencimentos futuros de LTN e NTN-F, ordenada. Retorna vazio com esquema quando não há títulos futuros. |
+| `DataFrame` | pl.DataFrame: União dos vencimentos futuros de LTN e NTN-F, ordenada. Vértices com taxa nula ou NaN são ignorados e não aparecem no resultado. Retorna vazio com esquema quando não há títulos futuros. |
 
 **Output Columns**
 
@@ -713,7 +726,7 @@ Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Entradas inválidas, vencimentos duplicados na mesma família, prazos úteis coincidentes ou preço incompatível com a curva anterior. |
+| `ValueError` | Datas inválidas, taxas infinitas ou menores ou iguais a -1, vencimentos duplicados com taxas diferentes na mesma família, prazos úteis coincidentes ou preço incompatível com a curva anterior. |
 | `RuntimeError` | Falha na calibração numérica. |
 
 **Notes**

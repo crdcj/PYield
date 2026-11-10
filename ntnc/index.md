@@ -26,7 +26,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Cotação em base 100, truncada em 4 casas decimais. |
+| `Decimal` | `Decimal` | Cotação em base 100, truncada em 4 casas decimais. Retorna `Decimal("NaN")` para entradas ausentes ou quando não há pagamentos após a liquidação. |
 
 **Notes**
 
@@ -70,7 +70,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação, exclusiva para seleção dos fluxos. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento da NTN-C. | *required* |
-| `curva_zero` | `DataFrame` | DataFrame com `dias_uteis` (prazos inteiros positivos, únicos) e `taxa_zero` (taxas anuais efetivas, em decimal, na base de 252 dias úteis, finitas e maiores que -1). A curva deve conter ao menos um vértice; a ordem é indiferente. | *required* |
+| `curva_zero` | `DataFrame` | DataFrame com `dias_uteis` (prazos inteiros positivos; prazo repetido só é aceito com a mesma taxa) e `taxa_zero` (taxas anuais efetivas, em decimal, na base de 252 dias úteis, finitas e maiores que -1). A curva deve conter ao menos um vértice; a ordem é indiferente. | *required* |
 
 Returns:
 
@@ -82,7 +82,7 @@ Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Curva vazia, colunas ausentes ou vértices inválidos. |
+| `ValueError` | Curva vazia, colunas ausentes, vértices inválidos ou um mesmo prazo com taxas diferentes. |
 
 **Notes**
 
@@ -107,6 +107,8 @@ A curva é uma hipótese do consumidor. A biblioteca não escolhe uma curva de I
 ## `dados(data)`
 
 Busca as taxas indicativas de NTN-C para a data de referência.
+
+Fonte: ANBIMA (taxas indicativas) e B3 (ajustes do DI Futuro).
 
 Parameters:
 
@@ -148,7 +150,7 @@ Examples:
 
 Gera todas as datas de pagamento entre liquidação e vencimento.
 
-Os pagamentos são semestrais. No vencimento, o fluxo inclui o último cupom e a amortização do principal. A NTN-C é definida pela data de vencimento. As datas são contratuais e não são ajustadas para dias úteis.
+Os pagamentos são semestrais. No vencimento, o fluxo inclui o último cupom e a amortização do principal. As datas de cupom retrocedem de 6 em 6 meses a partir do vencimento. As datas são contratuais e não são ajustadas para dias úteis.
 
 Parameters:
 
@@ -199,7 +201,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação da operação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa` | `float \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 
 Returns:
 
@@ -221,14 +223,14 @@ onde:
 - \\(n\\): número de pagamentos restantes.
 - \\(y\\): TIR anual efetiva informada em `taxa`, em decimal, na base de 252 dias úteis, relativa aos fluxos em base 100.
 
-O desconto dos fluxos não aplica os arredondamentos e truncamentos da cotação oficial. O resultado é truncado em 14 casas decimais. O VNA, comum a todos os fluxos, cancela na razão.
+O desconto dos fluxos não aplica os arredondamentos e truncamentos da cotação oficial. O VNA, comum a todos os fluxos, cancela na razão.
 
 Examples:
 
 ```pycon
 >>> from pyield import ntnc
 >>> ntnc.duration("21-03-2025", "01-01-2031", "6.7626%")
-4.405363320448
+4.405363320448003
 ```
 
 ## `duration_expr(data_liquidacao, data_vencimento, taxa)`
@@ -308,7 +310,7 @@ Examples:
 
 Cria expressão Polars para o DV01 da NTN-C.
 
-O cálculo é aplicado linha a linha e reprifica o PU informado para um aumento de 1 bp na taxa.
+O cálculo é aplicado linha a linha e reprecifica o PU informado para um aumento de 1 bp na taxa.
 
 Parameters:
 
@@ -458,7 +460,7 @@ O lado esquerdo representa o preço teórico, sem os arredondamentos e truncamen
 
 Examples:
 
-Exibe as taxas em formato decimal:
+A taxa é retornada em formato decimal; multiplique por 100 para exibi-la em percentual:
 
 ```pycon
 >>> from pyield import ntnc
@@ -490,7 +492,7 @@ Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Curva vazia, colunas ausentes ou vértices inválidos. |
+| `ValueError` | Curva vazia, colunas ausentes, vértices inválidos ou um mesmo prazo com taxas diferentes. |
 
 **Notes**
 
@@ -508,4 +510,4 @@ onde:
 
 A TIR é uma taxa única para todos os pagamentos, enquanto a curva fornece uma taxa zero para cada prazo. A resolução aplica as regras de precisão descritas a seguir aos dois lados da equação.
 
-Usa datas, interpolação e precisão de `cotacao_curva_zero`. Resolve por bisseção a taxa única que reproduz sua cotação, sem truncar a taxa durante a busca. Não inverte um PU nem a cotação truncada de `cotacao`. O intervalo é delimitado pelas menores e maiores taxas interpoladas dos fluxos. A busca para por erro de cotação zero ou meia largura do intervalo inferior a 1e-12, com limite de 100 iterações. A escolha da curva e eventuais spreads ou pisos ficam com o consumidor.
+Usa datas, interpolação e precisão de `cotacao_curva_zero`. Resolve por bisseção a taxa única que reproduz sua cotação, sem truncar a taxa durante a busca. Não inverte um PU nem a cotação truncada de `cotacao`. O intervalo é delimitado pela menor e pela maior taxa interpolada dos fluxos. A busca para por erro de cotação zero ou meia largura do intervalo inferior a 1e-12, com limite de 100 iterações. A escolha da curva e eventuais spreads ou pisos ficam com o consumidor.

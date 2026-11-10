@@ -31,7 +31,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.74">
+      <meta name="generator" content="zensical-0.1.0">
     
     
       
@@ -339,6 +339,33 @@
     
   
   Visão geral
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.64.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.64.0
 
     
   </span>
@@ -1444,6 +1471,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#compra-e-venda-em-contratos-de-taxa" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Compra e venda em contratos de taxa
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#pyield.futuro.datas_disponiveis" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1853,6 +1891,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#compra-e-venda-em-contratos-de-taxa" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Compra e venda em contratos de taxa
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#pyield.futuro.datas_disponiveis" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1933,6 +1982,64 @@
 
 
 <h1 id="futuro">Futuro</h1>
+<h2 id="compra-e-venda-em-contratos-de-taxa">Compra e venda em contratos de taxa</h2>
+<p>Contratos como DI1 e DAP são negociados em taxa. Na convenção da B3, o que se
+compra e se vende é a própria taxa:</p>
+<ul>
+<li><strong>comprar DI1 é comprar taxa</strong>;</li>
+<li><strong>vender DI1 é vender taxa</strong>.</li>
+</ul>
+<p>É por isso que as ofertas de compra e venda têm a ordem descrita abaixo, o
+inverso da intuição de quem vem dos títulos públicos.</p>
+<table>
+<thead>
+<tr>
+<th>Operação</th>
+<th>Jargão</th>
+<th>Equivale a</th>
+<th>Ganha quando a taxa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Comprar DI1 (comprar taxa)</td>
+<td>ficar <strong>tomado</strong>, tomar taxa</td>
+<td>vender PU</td>
+<td>sobe</td>
+</tr>
+<tr>
+<td>Vender DI1 (vender taxa)</td>
+<td>ficar <strong>aplicado</strong>, dar taxa</td>
+<td>comprar PU</td>
+<td>cai</td>
+</tr>
+</tbody>
+</table>
+<p>Quem toma taxa quer pagar barato, por isso oferta a taxa mais baixa. Quem dá
+taxa quer receber caro, por isso oferta a taxa mais alta. Assim, no livro de
+ofertas de um contrato de taxa:</p>
+<ul>
+<li>a <strong>oferta de compra</strong> (bid) é a de quem quer ficar tomado e tem a taxa
+  <strong>menor</strong>;</li>
+<li>a <strong>oferta de venda</strong> (ask) é a de quem quer ficar aplicado e tem a taxa
+  <strong>maior</strong>.</li>
+</ul>
+<p>Quem toma taxa a mercado fecha negócio na oferta de venda, pagando a taxa
+maior. Quem dá taxa a mercado fecha na oferta de compra.</p>
+<p>Nos títulos públicos a lógica é a oposta, porque o título é negociado em PU.
+Comprar uma LTN é comprar PU: quem compra quer PU menor, ou seja, taxa
+maior. A posição comprada no título é aplicada, como a posição vendida no
+DI1. Por isso, quem tem LTN em carteira se protege da alta de juros comprando
+DI1 (ficando tomado).</p>
+<p>O ajuste diário segue a mesma equivalência: para calcular o ajuste, a B3
+converte a taxa em PU, e a posição comprada em taxa é tratada como vendida em
+PU.</p>
+<p>Na biblioteca, as colunas mantêm os nomes da B3. Em <code>yd.futuro.historico</code>
+(<code>taxa_ultima_oferta_compra</code> e <code>taxa_ultima_oferta_venda</code>) e em
+<code>yd.futuro.intradia</code> (<code>taxa_oferta_compra</code> e <code>taxa_oferta_venda</code>), compra é
+compra de taxa. Logo, a taxa de compra fica abaixo da de venda. Os contratos
+cotados por preço, como DOL, WDO, IND e WIN, seguem a convenção usual: compra
+abaixo de venda, em preço.</p>
 
 
 <div class="doc doc-object doc-module">
@@ -2046,7 +2153,9 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyield/futuro/historico.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-297">297</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-295">295</a></span>
+<span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-296">296</a></span>
+<span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-297">297</a></span>
 <span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-298">298</a></span>
 <span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-299">299</a></span>
 <span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-300">300</a></span>
@@ -2070,35 +2179,33 @@
 <span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-318">318</a></span>
 <span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-319">319</a></span>
 <span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-320">320</a></span>
-<span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-321">321</a></span>
-<span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-322">322</a></span>
-<span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-323">323</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.futuro.datas_disponiveis--source--__span-0-297"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-297" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-297"></a><span class="k">def</span><span class="w"> </span><span class="nf">datas_disponiveis</span><span class="p">(</span><span class="n">contrato</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-298"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-298" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-298"></a><span class="w">    </span><span class="sd">"""Retorna as datas disponíveis no dataset histórico cacheado.</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-299"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-299" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-299"></a>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-300"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-300" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-300"></a><span class="sd">    Args:</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-301"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-301" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-301"></a><span class="sd">        contrato: Contrato futuro (ex.: ``DI1``, ``DOL``).</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-302"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-302" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-302"></a>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-303"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-303" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-303"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-304"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-304" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-304"></a><span class="sd">        Series ordenada de datas para as quais há dados históricos.</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-305"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-305" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-305"></a>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-306"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-306" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-306"></a><span class="sd">    Examples:</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-307"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-307" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-307"></a><span class="sd">        &gt;&gt;&gt; yd.futuro.datas_disponiveis("DI1").head(3)</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-308"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-308" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-308"></a><span class="sd">        shape: (3,)</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-309"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-309" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-309"></a><span class="sd">        Series: 'data_referencia' [date]</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-310"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-310" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-310"></a><span class="sd">        [</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-311"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-311" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-311"></a><span class="sd">            2018-01-02</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-312"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-312" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-312"></a><span class="sd">            2018-01-03</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-313"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-313" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-313"></a><span class="sd">            2018-01-04</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-314"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-314" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-314"></a><span class="sd">        ]</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-315"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-315" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-315"></a><span class="sd">    """</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-316"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-316" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-316"></a>    <span class="k">return</span> <span class="p">(</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-317"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-317" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-317"></a>        <span class="n">_obter_cache_filtrado</span><span class="p">(</span><span class="n">contrato</span><span class="p">)</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-318"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-318" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-318"></a>        <span class="o">.</span><span class="n">get_column</span><span class="p">(</span><span class="s2">"TradDt"</span><span class="p">)</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-319"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-319" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-319"></a>        <span class="o">.</span><span class="n">drop_nulls</span><span class="p">()</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-320"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-320" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-320"></a>        <span class="o">.</span><span class="n">unique</span><span class="p">()</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-321"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-321" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-321"></a>        <span class="o">.</span><span class="n">sort</span><span class="p">()</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-322"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-322" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-322"></a>        <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">"data_referencia"</span><span class="p">)</span>
-</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-323"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-323" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-323"></a>    <span class="p">)</span>
+<span class="normal"><a href="#pyield.futuro.datas_disponiveis--source--__codelineno-0-321">321</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.futuro.datas_disponiveis--source--__span-0-295"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-295" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-295"></a><span class="k">def</span><span class="w"> </span><span class="nf">datas_disponiveis</span><span class="p">(</span><span class="n">contrato</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-296"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-296" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-296"></a><span class="w">    </span><span class="sd">"""Retorna as datas disponíveis no dataset histórico cacheado.</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-297"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-297" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-297"></a>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-298"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-298" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-298"></a><span class="sd">    Args:</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-299"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-299" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-299"></a><span class="sd">        contrato: Contrato futuro (ex.: ``DI1``, ``DOL``).</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-300"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-300" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-300"></a>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-301"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-301" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-301"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-302"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-302" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-302"></a><span class="sd">        Series ordenada de datas para as quais há dados históricos.</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-303"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-303" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-303"></a>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-304"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-304" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-304"></a><span class="sd">    Examples:</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-305"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-305" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-305"></a><span class="sd">        &gt;&gt;&gt; yd.futuro.datas_disponiveis("DI1").head(3)</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-306"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-306" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-306"></a><span class="sd">        shape: (3,)</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-307"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-307" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-307"></a><span class="sd">        Series: 'data_referencia' [date]</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-308"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-308" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-308"></a><span class="sd">        [</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-309"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-309" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-309"></a><span class="sd">            2018-01-02</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-310"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-310" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-310"></a><span class="sd">            2018-01-03</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-311"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-311" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-311"></a><span class="sd">            2018-01-04</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-312"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-312" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-312"></a><span class="sd">        ]</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-313"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-313" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-313"></a><span class="sd">    """</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-314"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-314" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-314"></a>    <span class="k">return</span> <span class="p">(</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-315"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-315" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-315"></a>        <span class="n">_obter_cache_filtrado</span><span class="p">(</span><span class="n">contrato</span><span class="p">)</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-316"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-316" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-316"></a>        <span class="o">.</span><span class="n">get_column</span><span class="p">(</span><span class="s2">"TradDt"</span><span class="p">)</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-317"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-317" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-317"></a>        <span class="o">.</span><span class="n">drop_nulls</span><span class="p">()</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-318"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-318" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-318"></a>        <span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-319"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-319" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-319"></a>        <span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-320"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-320" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-320"></a>        <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">"data_referencia"</span><span class="p">)</span>
+</span><span id="pyield.futuro.datas_disponiveis--source--__span-0-321"><a id="pyield.futuro.datas_disponiveis--source--__codelineno-0-321" name="pyield.futuro.datas_disponiveis--source--__codelineno-0-321"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2398,7 +2505,8 @@ derivadas (dv01, taxa_forward) conforme o contrato.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyield/futuro/historico.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.futuro.enriquecer--source--__codelineno-0-162">162</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.futuro.enriquecer--source--__codelineno-0-161">161</a></span>
+<span class="normal"><a href="#pyield.futuro.enriquecer--source--__codelineno-0-162">162</a></span>
 <span class="normal"><a href="#pyield.futuro.enriquecer--source--__codelineno-0-163">163</a></span>
 <span class="normal"><a href="#pyield.futuro.enriquecer--source--__codelineno-0-164">164</a></span>
 <span class="normal"><a href="#pyield.futuro.enriquecer--source--__codelineno-0-165">165</a></span>
@@ -2429,27 +2537,28 @@ derivadas (dv01, taxa_forward) conforme o contrato.</p>
 <span class="normal"><a href="#pyield.futuro.enriquecer--source--__codelineno-0-190">190</a></span>
 <span class="normal"><a href="#pyield.futuro.enriquecer--source--__codelineno-0-191">191</a></span>
 <span class="normal"><a href="#pyield.futuro.enriquecer--source--__codelineno-0-192">192</a></span>
-<span class="normal"><a href="#pyield.futuro.enriquecer--source--__codelineno-0-193">193</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.futuro.enriquecer--source--__span-0-162"><a id="pyield.futuro.enriquecer--source--__codelineno-0-162" name="pyield.futuro.enriquecer--source--__codelineno-0-162"></a><span class="k">def</span><span class="w"> </span><span class="nf">enriquecer</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">contrato</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-163"><a id="pyield.futuro.enriquecer--source--__codelineno-0-163" name="pyield.futuro.enriquecer--source--__codelineno-0-163"></a><span class="w">    </span><span class="sd">"""Enriquece DataFrame bruto do Price Report (PR) da B3.</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-164"><a id="pyield.futuro.enriquecer--source--__codelineno-0-164" name="pyield.futuro.enriquecer--source--__codelineno-0-164"></a>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-165"><a id="pyield.futuro.enriquecer--source--__codelineno-0-165" name="pyield.futuro.enriquecer--source--__codelineno-0-165"></a><span class="sd">    Aceita um DataFrame com colunas no schema original da B3</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-166"><a id="pyield.futuro.enriquecer--source--__codelineno-0-166" name="pyield.futuro.enriquecer--source--__codelineno-0-166"></a><span class="sd">    (ex.: ``TradDt``, ``TckrSymb``). Filtra pelo contrato informado,</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-167"><a id="pyield.futuro.enriquecer--source--__codelineno-0-167" name="pyield.futuro.enriquecer--source--__codelineno-0-167"></a><span class="sd">    adiciona data de vencimento, dias úteis/corridos e colunas</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-168"><a id="pyield.futuro.enriquecer--source--__codelineno-0-168" name="pyield.futuro.enriquecer--source--__codelineno-0-168"></a><span class="sd">    derivadas (dv01, taxa_forward) conforme o contrato.</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-169"><a id="pyield.futuro.enriquecer--source--__codelineno-0-169" name="pyield.futuro.enriquecer--source--__codelineno-0-169"></a>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-170"><a id="pyield.futuro.enriquecer--source--__codelineno-0-170" name="pyield.futuro.enriquecer--source--__codelineno-0-170"></a><span class="sd">    Args:</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-171"><a id="pyield.futuro.enriquecer--source--__codelineno-0-171" name="pyield.futuro.enriquecer--source--__codelineno-0-171"></a><span class="sd">        df: DataFrame com dados brutos do PR da B3.</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-172"><a id="pyield.futuro.enriquecer--source--__codelineno-0-172" name="pyield.futuro.enriquecer--source--__codelineno-0-172"></a><span class="sd">        contrato: Contrato futuro (ex.: ``DI1``, ``DOL``).</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-173"><a id="pyield.futuro.enriquecer--source--__codelineno-0-173" name="pyield.futuro.enriquecer--source--__codelineno-0-173"></a>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-174"><a id="pyield.futuro.enriquecer--source--__codelineno-0-174" name="pyield.futuro.enriquecer--source--__codelineno-0-174"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-175"><a id="pyield.futuro.enriquecer--source--__codelineno-0-175" name="pyield.futuro.enriquecer--source--__codelineno-0-175"></a><span class="sd">        DataFrame Polars enriquecido e ordenado.</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-176"><a id="pyield.futuro.enriquecer--source--__codelineno-0-176" name="pyield.futuro.enriquecer--source--__codelineno-0-176"></a><span class="sd">    """</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-177"><a id="pyield.futuro.enriquecer--source--__codelineno-0-177" name="pyield.futuro.enriquecer--source--__codelineno-0-177"></a>    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">():</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-178"><a id="pyield.futuro.enriquecer--source--__codelineno-0-178" name="pyield.futuro.enriquecer--source--__codelineno-0-178"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-179"><a id="pyield.futuro.enriquecer--source--__codelineno-0-179" name="pyield.futuro.enriquecer--source--__codelineno-0-179"></a>
+<span class="normal"><a href="#pyield.futuro.enriquecer--source--__codelineno-0-193">193</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.futuro.enriquecer--source--__span-0-161"><a id="pyield.futuro.enriquecer--source--__codelineno-0-161" name="pyield.futuro.enriquecer--source--__codelineno-0-161"></a><span class="k">def</span><span class="w"> </span><span class="nf">enriquecer</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">contrato</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-162"><a id="pyield.futuro.enriquecer--source--__codelineno-0-162" name="pyield.futuro.enriquecer--source--__codelineno-0-162"></a><span class="w">    </span><span class="sd">"""Enriquece DataFrame bruto do Price Report (PR) da B3.</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-163"><a id="pyield.futuro.enriquecer--source--__codelineno-0-163" name="pyield.futuro.enriquecer--source--__codelineno-0-163"></a>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-164"><a id="pyield.futuro.enriquecer--source--__codelineno-0-164" name="pyield.futuro.enriquecer--source--__codelineno-0-164"></a><span class="sd">    Aceita um DataFrame com colunas no schema original da B3</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-165"><a id="pyield.futuro.enriquecer--source--__codelineno-0-165" name="pyield.futuro.enriquecer--source--__codelineno-0-165"></a><span class="sd">    (ex.: ``TradDt``, ``TckrSymb``). Filtra pelo contrato informado,</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-166"><a id="pyield.futuro.enriquecer--source--__codelineno-0-166" name="pyield.futuro.enriquecer--source--__codelineno-0-166"></a><span class="sd">    adiciona data de vencimento, dias úteis/corridos e colunas</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-167"><a id="pyield.futuro.enriquecer--source--__codelineno-0-167" name="pyield.futuro.enriquecer--source--__codelineno-0-167"></a><span class="sd">    derivadas (dv01, taxa_forward) conforme o contrato.</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-168"><a id="pyield.futuro.enriquecer--source--__codelineno-0-168" name="pyield.futuro.enriquecer--source--__codelineno-0-168"></a>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-169"><a id="pyield.futuro.enriquecer--source--__codelineno-0-169" name="pyield.futuro.enriquecer--source--__codelineno-0-169"></a><span class="sd">    Args:</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-170"><a id="pyield.futuro.enriquecer--source--__codelineno-0-170" name="pyield.futuro.enriquecer--source--__codelineno-0-170"></a><span class="sd">        df: DataFrame com dados brutos do PR da B3.</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-171"><a id="pyield.futuro.enriquecer--source--__codelineno-0-171" name="pyield.futuro.enriquecer--source--__codelineno-0-171"></a><span class="sd">        contrato: Contrato futuro (ex.: ``DI1``, ``DOL``).</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-172"><a id="pyield.futuro.enriquecer--source--__codelineno-0-172" name="pyield.futuro.enriquecer--source--__codelineno-0-172"></a>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-173"><a id="pyield.futuro.enriquecer--source--__codelineno-0-173" name="pyield.futuro.enriquecer--source--__codelineno-0-173"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-174"><a id="pyield.futuro.enriquecer--source--__codelineno-0-174" name="pyield.futuro.enriquecer--source--__codelineno-0-174"></a><span class="sd">        DataFrame Polars enriquecido e ordenado.</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-175"><a id="pyield.futuro.enriquecer--source--__codelineno-0-175" name="pyield.futuro.enriquecer--source--__codelineno-0-175"></a><span class="sd">    """</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-176"><a id="pyield.futuro.enriquecer--source--__codelineno-0-176" name="pyield.futuro.enriquecer--source--__codelineno-0-176"></a>    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">():</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-177"><a id="pyield.futuro.enriquecer--source--__codelineno-0-177" name="pyield.futuro.enriquecer--source--__codelineno-0-177"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-178"><a id="pyield.futuro.enriquecer--source--__codelineno-0-178" name="pyield.futuro.enriquecer--source--__codelineno-0-178"></a>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-179"><a id="pyield.futuro.enriquecer--source--__codelineno-0-179" name="pyield.futuro.enriquecer--source--__codelineno-0-179"></a>    <span class="n">contrato</span> <span class="o">=</span> <span class="n">normalizar_contrato</span><span class="p">(</span><span class="n">contrato</span><span class="p">)</span>
 </span><span id="pyield.futuro.enriquecer--source--__span-0-180"><a id="pyield.futuro.enriquecer--source--__codelineno-0-180" name="pyield.futuro.enriquecer--source--__codelineno-0-180"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">_RENOMEAR_COLUNAS_PR</span><span class="p">)</span>
 </span><span id="pyield.futuro.enriquecer--source--__span-0-181"><a id="pyield.futuro.enriquecer--source--__codelineno-0-181" name="pyield.futuro.enriquecer--source--__codelineno-0-181"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
-</span><span id="pyield.futuro.enriquecer--source--__span-0-182"><a id="pyield.futuro.enriquecer--source--__codelineno-0-182" name="pyield.futuro.enriquecer--source--__codelineno-0-182"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"codigo_negociacao"</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">starts_with</span><span class="p">(</span><span class="n">contrato</span><span class="p">),</span>
+</span><span id="pyield.futuro.enriquecer--source--__span-0-182"><a id="pyield.futuro.enriquecer--source--__codelineno-0-182" name="pyield.futuro.enriquecer--source--__codelineno-0-182"></a>        <span class="n">_eh_do_contrato</span><span class="p">(</span><span class="s2">"codigo_negociacao"</span><span class="p">,</span> <span class="n">contrato</span><span class="p">),</span>
 </span><span id="pyield.futuro.enriquecer--source--__span-0-183"><a id="pyield.futuro.enriquecer--source--__codelineno-0-183" name="pyield.futuro.enriquecer--source--__codelineno-0-183"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"codigo_negociacao"</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">len_chars</span><span class="p">()</span> <span class="o">==</span> <span class="n">_COMPRIMENTO_TICKER</span><span class="p">,</span>
 </span><span id="pyield.futuro.enriquecer--source--__span-0-184"><a id="pyield.futuro.enriquecer--source--__codelineno-0-184" name="pyield.futuro.enriquecer--source--__codelineno-0-184"></a>    <span class="p">)</span>
 </span><span id="pyield.futuro.enriquecer--source--__span-0-185"><a id="pyield.futuro.enriquecer--source--__codelineno-0-185" name="pyield.futuro.enriquecer--source--__codelineno-0-185"></a>    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">():</span>
@@ -2630,17 +2739,17 @@ derivadas (dv01, taxa_forward) conforme o contrato.</p>
 </span><span id="pyield.futuro.vencimento--source--__span-0-100"><a id="pyield.futuro.vencimento--source--__codelineno-0-100" name="pyield.futuro.vencimento--source--__codelineno-0-100"></a><span class="sd">            null</span>
 </span><span id="pyield.futuro.vencimento--source--__span-0-101"><a id="pyield.futuro.vencimento--source--__codelineno-0-101" name="pyield.futuro.vencimento--source--__codelineno-0-101"></a><span class="sd">        ]</span>
 </span><span id="pyield.futuro.vencimento--source--__span-0-102"><a id="pyield.futuro.vencimento--source--__codelineno-0-102" name="pyield.futuro.vencimento--source--__codelineno-0-102"></a><span class="sd">    """</span>
-</span><span id="pyield.futuro.vencimento--source--__span-0-103"><a id="pyield.futuro.vencimento--source--__codelineno-0-103" name="pyield.futuro.vencimento--source--__codelineno-0-103"></a>    <span class="n">dados</span> <span class="o">=</span> <span class="n">codigo</span> <span class="k">if</span> <span class="n">any_is_array_like</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">codigo</span><span class="p">]</span>
+</span><span id="pyield.futuro.vencimento--source--__span-0-103"><a id="pyield.futuro.vencimento--source--__codelineno-0-103" name="pyield.futuro.vencimento--source--__codelineno-0-103"></a>    <span class="n">eh_colecao</span> <span class="o">=</span> <span class="n">is_array_like</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span>
 </span><span id="pyield.futuro.vencimento--source--__span-0-104"><a id="pyield.futuro.vencimento--source--__codelineno-0-104" name="pyield.futuro.vencimento--source--__codelineno-0-104"></a>    <span class="n">serie</span> <span class="o">=</span> <span class="p">(</span>
-</span><span id="pyield.futuro.vencimento--source--__span-0-105"><a id="pyield.futuro.vencimento--source--__codelineno-0-105" name="pyield.futuro.vencimento--source--__codelineno-0-105"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"codigo"</span><span class="p">:</span> <span class="n">dados</span><span class="p">})</span>
-</span><span id="pyield.futuro.vencimento--source--__span-0-106"><a id="pyield.futuro.vencimento--source--__codelineno-0-106" name="pyield.futuro.vencimento--source--__codelineno-0-106"></a>        <span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">vencimento</span><span class="o">=</span><span class="n">vencimento_expr</span><span class="p">(</span><span class="s2">"codigo"</span><span class="p">,</span> <span class="n">contrato</span><span class="p">))</span>
-</span><span id="pyield.futuro.vencimento--source--__span-0-107"><a id="pyield.futuro.vencimento--source--__codelineno-0-107" name="pyield.futuro.vencimento--source--__codelineno-0-107"></a>        <span class="o">.</span><span class="n">get_column</span><span class="p">(</span><span class="s2">"vencimento"</span><span class="p">)</span>
-</span><span id="pyield.futuro.vencimento--source--__span-0-108"><a id="pyield.futuro.vencimento--source--__codelineno-0-108" name="pyield.futuro.vencimento--source--__codelineno-0-108"></a>    <span class="p">)</span>
-</span><span id="pyield.futuro.vencimento--source--__span-0-109"><a id="pyield.futuro.vencimento--source--__codelineno-0-109" name="pyield.futuro.vencimento--source--__codelineno-0-109"></a>
-</span><span id="pyield.futuro.vencimento--source--__span-0-110"><a id="pyield.futuro.vencimento--source--__codelineno-0-110" name="pyield.futuro.vencimento--source--__codelineno-0-110"></a>    <span class="k">if</span> <span class="n">any_is_array_like</span><span class="p">(</span><span class="n">codigo</span><span class="p">):</span>
-</span><span id="pyield.futuro.vencimento--source--__span-0-111"><a id="pyield.futuro.vencimento--source--__codelineno-0-111" name="pyield.futuro.vencimento--source--__codelineno-0-111"></a>        <span class="k">return</span> <span class="n">serie</span>
-</span><span id="pyield.futuro.vencimento--source--__span-0-112"><a id="pyield.futuro.vencimento--source--__codelineno-0-112" name="pyield.futuro.vencimento--source--__codelineno-0-112"></a>
-</span><span id="pyield.futuro.vencimento--source--__span-0-113"><a id="pyield.futuro.vencimento--source--__codelineno-0-113" name="pyield.futuro.vencimento--source--__codelineno-0-113"></a>    <span class="k">return</span> <span class="n">serie</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+</span><span id="pyield.futuro.vencimento--source--__span-0-105"><a id="pyield.futuro.vencimento--source--__codelineno-0-105" name="pyield.futuro.vencimento--source--__codelineno-0-105"></a>        <span class="c1"># O schema explícito aceita códigos nulos, que resultam em vencimento nulo.</span>
+</span><span id="pyield.futuro.vencimento--source--__span-0-106"><a id="pyield.futuro.vencimento--source--__codelineno-0-106" name="pyield.futuro.vencimento--source--__codelineno-0-106"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+</span><span id="pyield.futuro.vencimento--source--__span-0-107"><a id="pyield.futuro.vencimento--source--__codelineno-0-107" name="pyield.futuro.vencimento--source--__codelineno-0-107"></a>            <span class="p">{</span><span class="s2">"codigo"</span><span class="p">:</span> <span class="n">codigo</span> <span class="k">if</span> <span class="n">eh_colecao</span> <span class="k">else</span> <span class="p">[</span><span class="n">codigo</span><span class="p">]},</span>
+</span><span id="pyield.futuro.vencimento--source--__span-0-108"><a id="pyield.futuro.vencimento--source--__codelineno-0-108" name="pyield.futuro.vencimento--source--__codelineno-0-108"></a>            <span class="n">schema</span><span class="o">=</span><span class="p">{</span><span class="s2">"codigo"</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">String</span><span class="p">},</span>
+</span><span id="pyield.futuro.vencimento--source--__span-0-109"><a id="pyield.futuro.vencimento--source--__codelineno-0-109" name="pyield.futuro.vencimento--source--__codelineno-0-109"></a>        <span class="p">)</span>
+</span><span id="pyield.futuro.vencimento--source--__span-0-110"><a id="pyield.futuro.vencimento--source--__codelineno-0-110" name="pyield.futuro.vencimento--source--__codelineno-0-110"></a>        <span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">vencimento</span><span class="o">=</span><span class="n">vencimento_expr</span><span class="p">(</span><span class="s2">"codigo"</span><span class="p">,</span> <span class="n">contrato</span><span class="p">))</span>
+</span><span id="pyield.futuro.vencimento--source--__span-0-111"><a id="pyield.futuro.vencimento--source--__codelineno-0-111" name="pyield.futuro.vencimento--source--__codelineno-0-111"></a>        <span class="o">.</span><span class="n">get_column</span><span class="p">(</span><span class="s2">"vencimento"</span><span class="p">)</span>
+</span><span id="pyield.futuro.vencimento--source--__span-0-112"><a id="pyield.futuro.vencimento--source--__codelineno-0-112" name="pyield.futuro.vencimento--source--__codelineno-0-112"></a>    <span class="p">)</span>
+</span><span id="pyield.futuro.vencimento--source--__span-0-113"><a id="pyield.futuro.vencimento--source--__codelineno-0-113" name="pyield.futuro.vencimento--source--__codelineno-0-113"></a>    <span class="k">return</span> <span class="n">serie</span> <span class="k">if</span> <span class="n">eh_colecao</span> <span class="k">else</span> <span class="n">serie</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2882,7 +2991,7 @@ para dia útil.</p>
 </span><span id="pyield.futuro.vencimento_expr--source--__span-0-166"><a id="pyield.futuro.vencimento_expr--source--__codelineno-0-166" name="pyield.futuro.vencimento_expr--source--__codelineno-0-166"></a>    <span class="n">data_vencimento</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">date</span><span class="p">(</span>
 </span><span id="pyield.futuro.vencimento_expr--source--__span-0-167"><a id="pyield.futuro.vencimento_expr--source--__codelineno-0-167" name="pyield.futuro.vencimento_expr--source--__codelineno-0-167"></a>        <span class="n">year</span><span class="o">=</span><span class="n">codigo</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int32</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2000</span><span class="p">,</span>
 </span><span id="pyield.futuro.vencimento_expr--source--__span-0-168"><a id="pyield.futuro.vencimento_expr--source--__codelineno-0-168" name="pyield.futuro.vencimento_expr--source--__codelineno-0-168"></a>        <span class="n">month</span><span class="o">=</span><span class="n">codigo</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">replace_strict</span><span class="p">(</span>
-</span><span id="pyield.futuro.vencimento_expr--source--__span-0-169"><a id="pyield.futuro.vencimento_expr--source--__codelineno-0-169" name="pyield.futuro.vencimento_expr--source--__codelineno-0-169"></a>            <span class="n">_MAPA_MESES</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_dtype</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">Int8</span>
+</span><span id="pyield.futuro.vencimento_expr--source--__span-0-169"><a id="pyield.futuro.vencimento_expr--source--__codelineno-0-169" name="pyield.futuro.vencimento_expr--source--__codelineno-0-169"></a>            <span class="n">MAPA_MESES</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_dtype</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">Int8</span>
 </span><span id="pyield.futuro.vencimento_expr--source--__span-0-170"><a id="pyield.futuro.vencimento_expr--source--__codelineno-0-170" name="pyield.futuro.vencimento_expr--source--__codelineno-0-170"></a>        <span class="p">),</span>
 </span><span id="pyield.futuro.vencimento_expr--source--__span-0-171"><a id="pyield.futuro.vencimento_expr--source--__codelineno-0-171" name="pyield.futuro.vencimento_expr--source--__codelineno-0-171"></a>        <span class="n">day</span><span class="o">=</span><span class="n">dia_vencimento</span><span class="p">,</span>
 </span><span id="pyield.futuro.vencimento_expr--source--__span-0-172"><a id="pyield.futuro.vencimento_expr--source--__codelineno-0-172" name="pyield.futuro.vencimento_expr--source--__codelineno-0-172"></a>    <span class="p">)</span>

@@ -4,7 +4,7 @@
 
 `compromissadas` fica na raiz porque representa leilões de operações compromissadas, e não uma série da taxa Selic.
 
-Módulo para consulta dos leilões de operações compromissadas (repos) realizados pelo BCB.
+Consulta dos leilões de operações compromissadas (repos) realizados pelo BCB.
 
 Fonte oficial (API OData): https://olinda.bcb.gov.br/olinda/servico/leiloes\_selic/versao/v1/aplicacao\#!/recursos/leiloes\_compromissadas
 
@@ -45,7 +45,7 @@ Returns:
 - publico (String): público permitido no leilão (SomenteDealer, TodoMercado).
 - financeiro\_aceito (Float64): financeiro aceito no leilão em reais (convertido de milhares).
 - taxa\_corte (Float64): taxa de corte (ex. 0.1490 = 14,90%). Nula se financeiro\_aceito = 0.
-- pct\_aceito (Float64): percentual do volume ofertado efetivamente aceito (0-100). 100 = nenhuma rejeição. 0 indica nada aceito (volume\_aceito = 0).
+- pct\_aceito (Float64): percentual do volume ofertado efetivamente aceito (0-100). 100 = nenhuma rejeição. 0 indica nada aceito (financeiro\_aceito = 0).
 
 **Notes**
 

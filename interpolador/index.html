@@ -31,7 +31,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.74">
+      <meta name="generator" content="zensical-0.1.0">
     
     
       
@@ -339,6 +339,33 @@
     
   
   Visão geral
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.64.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.64.0
 
     
   </span>
@@ -1023,6 +1050,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         interpolar_expr
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interpolar" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        interpolar
       </span>
     </span>
   </a>
@@ -1833,6 +1871,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#interpolar" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        interpolar
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1970,7 +2019,9 @@ independentemente desta flag.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Se não houver ao menos um vértice válido na curva.</p>
+                <p>Se <code>metodo</code> não for <code>"flat_forward"</code> nem <code>"linear"</code>,
+se não houver ao menos um vértice válido na curva ou se a curva
+tiver o mesmo prazo com taxas diferentes.</p>
               </div>
             </td>
           </tr>
@@ -2039,51 +2090,57 @@ vértices e converte o resultado de volta para uma taxa no prazo alvo.</p>
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>pyield/interpolador.py</code></summary>
-                    <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-80"> 80</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-81"> 81</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-82"> 82</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-83"> 83</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-84"> 84</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-85"> 85</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-86"> 86</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-87"> 87</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-88"> 88</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-89"> 89</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-90"> 90</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-91"> 91</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-92"> 92</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-93"> 93</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-94"> 94</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-95"> 95</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-96"> 96</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-97"> 97</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-98"> 98</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-99"> 99</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-100">100</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-101">101</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-102">102</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.interpolador.Interpolador--source--__span-0-80"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-80" name="pyield.interpolador.Interpolador--source--__codelineno-0-80"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-81"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-81" name="pyield.interpolador.Interpolador--source--__codelineno-0-81"></a>    <span class="bp">self</span><span class="p">,</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-82"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-82" name="pyield.interpolador.Interpolador--source--__codelineno-0-82"></a>    <span class="n">dias_uteis</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-83"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-83" name="pyield.interpolador.Interpolador--source--__codelineno-0-83"></a>    <span class="n">taxas</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-84"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-84" name="pyield.interpolador.Interpolador--source--__codelineno-0-84"></a>    <span class="n">metodo</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"flat_forward"</span><span class="p">,</span> <span class="s2">"linear"</span><span class="p">],</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-85"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-85" name="pyield.interpolador.Interpolador--source--__codelineno-0-85"></a>    <span class="n">extrapolar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-86"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-86" name="pyield.interpolador.Interpolador--source--__codelineno-0-86"></a><span class="p">):</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-87"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-87" name="pyield.interpolador.Interpolador--source--__codelineno-0-87"></a>    <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-88"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-88" name="pyield.interpolador.Interpolador--source--__codelineno-0-88"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"dus"</span><span class="p">:</span> <span class="n">dias_uteis</span><span class="p">,</span> <span class="s2">"txs"</span><span class="p">:</span> <span class="n">taxas</span><span class="p">})</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-89"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-89" name="pyield.interpolador.Interpolador--source--__codelineno-0-89"></a>        <span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"dus"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">))</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-90"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-90" name="pyield.interpolador.Interpolador--source--__codelineno-0-90"></a>        <span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"txs"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Float64</span><span class="p">))</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-91"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-91" name="pyield.interpolador.Interpolador--source--__codelineno-0-91"></a>        <span class="o">.</span><span class="n">drop_nulls</span><span class="p">()</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-92"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-92" name="pyield.interpolador.Interpolador--source--__codelineno-0-92"></a>        <span class="o">.</span><span class="n">drop_nans</span><span class="p">()</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-93"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-93" name="pyield.interpolador.Interpolador--source--__codelineno-0-93"></a>        <span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="s2">"dus"</span><span class="p">,</span> <span class="n">keep</span><span class="o">=</span><span class="s2">"last"</span><span class="p">)</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-94"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-94" name="pyield.interpolador.Interpolador--source--__codelineno-0-94"></a>        <span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="s2">"dus"</span><span class="p">)</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-95"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-95" name="pyield.interpolador.Interpolador--source--__codelineno-0-95"></a>    <span class="p">)</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-96"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-96" name="pyield.interpolador.Interpolador--source--__codelineno-0-96"></a>    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">():</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-97"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-97" name="pyield.interpolador.Interpolador--source--__codelineno-0-97"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"A curva deve conter ao menos um vértice válido."</span><span class="p">)</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-98"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-98" name="pyield.interpolador.Interpolador--source--__codelineno-0-98"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="n">df</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-99"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-99" name="pyield.interpolador.Interpolador--source--__codelineno-0-99"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_method</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">metodo</span><span class="p">)</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-100"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-100" name="pyield.interpolador.Interpolador--source--__codelineno-0-100"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_dus</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">get_column</span><span class="p">(</span><span class="s2">"dus"</span><span class="p">))</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-101"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-101" name="pyield.interpolador.Interpolador--source--__codelineno-0-101"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_txs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">get_column</span><span class="p">(</span><span class="s2">"txs"</span><span class="p">))</span>
-</span><span id="pyield.interpolador.Interpolador--source--__span-0-102"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-102" name="pyield.interpolador.Interpolador--source--__codelineno-0-102"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_extrapolate</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">extrapolar</span><span class="p">)</span>
+                    <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-113">113</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-114">114</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-115">115</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-116">116</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-117">117</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-118">118</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-119">119</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-120">120</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-121">121</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-122">122</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-123">123</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-124">124</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-125">125</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-126">126</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-127">127</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-128">128</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-129">129</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-130">130</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-131">131</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-132">132</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-133">133</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-134">134</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-135">135</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-136">136</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-137">137</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador--source--__codelineno-0-138">138</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.interpolador.Interpolador--source--__span-0-113"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-113" name="pyield.interpolador.Interpolador--source--__codelineno-0-113"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-114"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-114" name="pyield.interpolador.Interpolador--source--__codelineno-0-114"></a>    <span class="bp">self</span><span class="p">,</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-115"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-115" name="pyield.interpolador.Interpolador--source--__codelineno-0-115"></a>    <span class="n">dias_uteis</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-116"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-116" name="pyield.interpolador.Interpolador--source--__codelineno-0-116"></a>    <span class="n">taxas</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-117"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-117" name="pyield.interpolador.Interpolador--source--__codelineno-0-117"></a>    <span class="n">metodo</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"flat_forward"</span><span class="p">,</span> <span class="s2">"linear"</span><span class="p">],</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-118"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-118" name="pyield.interpolador.Interpolador--source--__codelineno-0-118"></a>    <span class="n">extrapolar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-119"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-119" name="pyield.interpolador.Interpolador--source--__codelineno-0-119"></a><span class="p">):</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-120"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-120" name="pyield.interpolador.Interpolador--source--__codelineno-0-120"></a>    <span class="k">if</span> <span class="n">metodo</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"flat_forward"</span><span class="p">,</span> <span class="s2">"linear"</span><span class="p">}:</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-121"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-121" name="pyield.interpolador.Interpolador--source--__codelineno-0-121"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Método de interpolação '</span><span class="si">{</span><span class="n">metodo</span><span class="si">}</span><span class="s2">' não reconhecido."</span><span class="p">)</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-122"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-122" name="pyield.interpolador.Interpolador--source--__codelineno-0-122"></a>    <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-123"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-123" name="pyield.interpolador.Interpolador--source--__codelineno-0-123"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"dus"</span><span class="p">:</span> <span class="n">dias_uteis</span><span class="p">,</span> <span class="s2">"txs"</span><span class="p">:</span> <span class="n">taxas</span><span class="p">})</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-124"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-124" name="pyield.interpolador.Interpolador--source--__codelineno-0-124"></a>        <span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-125"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-125" name="pyield.interpolador.Interpolador--source--__codelineno-0-125"></a>            <span class="n">dus</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"dus"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">),</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-126"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-126" name="pyield.interpolador.Interpolador--source--__codelineno-0-126"></a>            <span class="n">txs</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"txs"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Float64</span><span class="p">),</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-127"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-127" name="pyield.interpolador.Interpolador--source--__codelineno-0-127"></a>        <span class="p">)</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-128"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-128" name="pyield.interpolador.Interpolador--source--__codelineno-0-128"></a>        <span class="o">.</span><span class="n">drop_nulls</span><span class="p">()</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-129"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-129" name="pyield.interpolador.Interpolador--source--__codelineno-0-129"></a>        <span class="o">.</span><span class="n">drop_nans</span><span class="p">()</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-130"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-130" name="pyield.interpolador.Interpolador--source--__codelineno-0-130"></a>    <span class="p">)</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-131"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-131" name="pyield.interpolador.Interpolador--source--__codelineno-0-131"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">_rejeitar_vertices_conflitantes</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">"dus"</span><span class="p">,</span> <span class="s2">"txs"</span><span class="p">)</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="s2">"dus"</span><span class="p">)</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-132"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-132" name="pyield.interpolador.Interpolador--source--__codelineno-0-132"></a>    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">():</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-133"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-133" name="pyield.interpolador.Interpolador--source--__codelineno-0-133"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"A curva deve conter ao menos um vértice válido."</span><span class="p">)</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-134"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-134" name="pyield.interpolador.Interpolador--source--__codelineno-0-134"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="n">df</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-135"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-135" name="pyield.interpolador.Interpolador--source--__codelineno-0-135"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_metodo</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">metodo</span><span class="p">)</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-136"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-136" name="pyield.interpolador.Interpolador--source--__codelineno-0-136"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_dus</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">get_column</span><span class="p">(</span><span class="s2">"dus"</span><span class="p">))</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-137"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-137" name="pyield.interpolador.Interpolador--source--__codelineno-0-137"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_txs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">get_column</span><span class="p">(</span><span class="s2">"txs"</span><span class="p">))</span>
+</span><span id="pyield.interpolador.Interpolador--source--__span-0-138"><a id="pyield.interpolador.Interpolador--source--__codelineno-0-138" name="pyield.interpolador.Interpolador--source--__codelineno-0-138"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_extrapolar</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">extrapolar</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
                   </details>
 
@@ -2223,43 +2280,43 @@ vértices e converte o resultado de volta para uma taxa no prazo alvo.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyield/interpolador.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-128">128</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-129">129</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-130">130</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-131">131</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-132">132</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-133">133</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-134">134</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-135">135</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-136">136</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-137">137</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-138">138</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-139">139</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-140">140</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-141">141</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-142">142</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-143">143</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-144">144</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-145">145</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-146">146</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-128"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-128" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-128"></a><span class="k">def</span><span class="w"> </span><span class="nf">interpolar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">du</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-129"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-129" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-129"></a><span class="w">    </span><span class="sd">"""Interpola a taxa para um único dia útil.</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-130"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-130" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-130"></a>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-131"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-131" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-131"></a><span class="sd">    Args:</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-132"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-132" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-132"></a><span class="sd">        du: DU escalar inteiro para interpolação.</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-133"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-133" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-133"></a>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-134"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-134" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-134"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-135"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-135" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-135"></a><span class="sd">        Taxa interpolada como float. Retorna ``float("nan")`` quando o DU</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-136"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-136" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-136"></a><span class="sd">        for negativo ou estiver acima do maior vértice conhecido com</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-137"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-137" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-137"></a><span class="sd">        ``extrapolar=False``. DU abaixo do menor vértice sempre retorna</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-138"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-138" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-138"></a><span class="sd">        a primeira taxa conhecida.</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-139"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-139" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-139"></a>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-140"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-140" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-140"></a><span class="sd">    Raises:</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-141"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-141" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-141"></a><span class="sd">        TypeError: Se ``du`` não for um inteiro.</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-142"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-142" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-142"></a><span class="sd">    """</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-143"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-143" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-143"></a>    <span class="c1"># Aceita qualquer tipo integral (int, np.int64, etc) e rejeita float/string.</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-144"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-144" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-144"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">du</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Integral</span><span class="p">):</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-145"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-145" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-145"></a>        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"du deve ser int. Use interpolar_expr para coluna Polars."</span><span class="p">)</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-146"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-146" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-146"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_taxa_interpolada</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">du</span><span class="p">))</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-164">164</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-165">165</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-166">166</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-167">167</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-168">168</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-169">169</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-170">170</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-171">171</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-172">172</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-173">173</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-174">174</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-175">175</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-176">176</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-177">177</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-178">178</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-179">179</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-180">180</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-181">181</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-182">182</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-164"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-164" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-164"></a><span class="k">def</span><span class="w"> </span><span class="nf">interpolar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">du</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-165"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-165" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-165"></a><span class="w">    </span><span class="sd">"""Interpola a taxa para um único dia útil.</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-166"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-166" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-166"></a>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-167"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-167" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-167"></a><span class="sd">    Args:</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-168"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-168" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-168"></a><span class="sd">        du: DU escalar inteiro para interpolação.</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-169"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-169" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-169"></a>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-170"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-170" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-170"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-171"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-171" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-171"></a><span class="sd">        Taxa interpolada como float. Retorna ``float("nan")`` quando o DU</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-172"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-172" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-172"></a><span class="sd">        for negativo ou estiver acima do maior vértice conhecido com</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-173"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-173" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-173"></a><span class="sd">        ``extrapolar=False``. DU abaixo do menor vértice sempre retorna</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-174"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-174" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-174"></a><span class="sd">        a primeira taxa conhecida.</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-175"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-175" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-175"></a>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-176"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-176" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-176"></a><span class="sd">    Raises:</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-177"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-177" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-177"></a><span class="sd">        TypeError: Se ``du`` não for um inteiro.</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-178"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-178" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-178"></a><span class="sd">    """</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-179"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-179" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-179"></a>    <span class="c1"># Aceita qualquer tipo integral (int, np.int64, etc) e rejeita float/string.</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-180"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-180" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-180"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">du</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Integral</span><span class="p">):</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-181"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-181" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-181"></a>        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"du deve ser int. Use interpolar_expr para coluna Polars."</span><span class="p">)</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar--source--__span-0-182"><a id="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-182" name="pyield.interpolador.Interpolador.interpolar--source--__codelineno-0-182"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_taxa_interpolada</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">du</span><span class="p">))</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2363,79 +2420,83 @@ maior vértice conhecido com <code>extrapolar=False</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyield/interpolador.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-170">170</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-171">171</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-172">172</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-173">173</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-174">174</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-175">175</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-176">176</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-177">177</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-178">178</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-179">179</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-180">180</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-181">181</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-182">182</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-183">183</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-184">184</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-185">185</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-186">186</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-187">187</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-188">188</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-189">189</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-190">190</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-191">191</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-192">192</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-193">193</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-194">194</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-195">195</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-196">196</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-197">197</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-198">198</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-199">199</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-200">200</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-201">201</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-202">202</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-203">203</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-204">204</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-205">205</a></span>
-<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-206">206</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-170"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-170" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-170"></a><span class="k">def</span><span class="w"> </span><span class="nf">interpolar_expr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">du</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pl</span><span class="o">.</span><span class="n">Expr</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">Expr</span><span class="p">:</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-171"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-171" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-171"></a><span class="w">    </span><span class="sd">"""Cria expressão Polars que interpola taxas para uma coluna de DU.</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-172"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-172" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-172"></a>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-173"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-173" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-173"></a><span class="sd">    Útil para adicionar uma coluna de taxas interpoladas a um DataFrame via</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-174"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-174" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-174"></a><span class="sd">    ``with_columns``, compondo livremente com outras expressões Polars (ex.:</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-175"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-175" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-175"></a><span class="sd">    cálculo de inflação implícita na mesma chamada). A curva e o método são</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-176"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-176" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-176"></a><span class="sd">    os configurados na instância.</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-177"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-177" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-177"></a>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-178"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-178" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-178"></a><span class="sd">    Args:</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-179"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-179" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-179"></a><span class="sd">        du: Nome de coluna ou expressão Polars com os DUs alvo. A coluna</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-180"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-180" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-180"></a><span class="sd">            deve ser inteira (será convertida para Int64 internamente).</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-181"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-181" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-181"></a>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-182"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-182" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-182"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-183"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-183" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-183"></a><span class="sd">        pl.Expr: Expressão Float64 sem alias com as taxas interpoladas.</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-184"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-184" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-184"></a><span class="sd">            ``null`` quando o DU for nulo, negativo, ou estiver acima do</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-185"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-185" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-185"></a><span class="sd">            maior vértice conhecido com ``extrapolar=False``.</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-186"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-186" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-186"></a>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-187"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-187" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-187"></a><span class="sd">    Examples:</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-188"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-188" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-188"></a><span class="sd">        &gt;&gt;&gt; from pyield import Interpolador</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-189"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-189" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-189"></a><span class="sd">        &gt;&gt;&gt; interp = Interpolador(</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-190"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-190" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-190"></a><span class="sd">        ...     [30, 60, 90], [0.045, 0.05, 0.055], "flat_forward"</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-191"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-191" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-191"></a><span class="sd">        ... )</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-192"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-192" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-192"></a><span class="sd">        &gt;&gt;&gt; df = pl.DataFrame({"du": [15, 45, 75]})</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-193"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-193" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-193"></a><span class="sd">        &gt;&gt;&gt; df.with_columns(taxa=interp.interpolar_expr("du"))</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-194"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-194" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-194"></a><span class="sd">        shape: (3, 2)</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-195"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-195" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-195"></a><span class="sd">        ┌─────┬──────────┐</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-196"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-196" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-196"></a><span class="sd">        │ du  ┆ taxa     │</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-197"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-197" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-197"></a><span class="sd">        │ --- ┆ ---      │</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-198"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-198" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-198"></a><span class="sd">        │ i64 ┆ f64      │</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-199"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-199" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-199"></a><span class="sd">        ╞═════╪══════════╡</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-200"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-200" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-200"></a><span class="sd">        │ 15  ┆ 0.045    │</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-201"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-201" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-201"></a><span class="sd">        │ 45  ┆ 0.048331 │</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-202"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-202" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-202"></a><span class="sd">        │ 75  ┆ 0.052997 │</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-203"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-203" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-203"></a><span class="sd">        └─────┴──────────┘</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-204"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-204" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-204"></a><span class="sd">    """</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-205"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-205" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-205"></a>    <span class="n">expr</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">du</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">du</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">du</span>
-</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-206"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-206" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-206"></a>    <span class="k">return</span> <span class="n">expr</span><span class="o">.</span><span class="n">map_batches</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_interpolar_serie</span><span class="p">,</span> <span class="n">return_dtype</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">Float64</span><span class="p">)</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-208">208</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-209">209</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-210">210</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-211">211</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-212">212</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-213">213</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-214">214</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-215">215</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-216">216</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-217">217</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-218">218</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-219">219</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-220">220</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-221">221</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-222">222</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-223">223</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-224">224</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-225">225</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-226">226</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-227">227</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-228">228</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-229">229</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-230">230</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-231">231</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-232">232</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-233">233</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-234">234</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-235">235</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-236">236</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-237">237</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-238">238</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-239">239</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-240">240</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-241">241</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-242">242</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-243">243</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-244">244</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-245">245</a></span>
+<span class="normal"><a href="#pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-246">246</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-208"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-208" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-208"></a><span class="k">def</span><span class="w"> </span><span class="nf">interpolar_expr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">du</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pl</span><span class="o">.</span><span class="n">Expr</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">Expr</span><span class="p">:</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-209"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-209" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-209"></a><span class="w">    </span><span class="sd">"""Cria expressão Polars que interpola taxas para uma coluna de DU.</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-210"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-210" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-210"></a>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-211"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-211" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-211"></a><span class="sd">    Útil para adicionar uma coluna de taxas interpoladas a um DataFrame via</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-212"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-212" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-212"></a><span class="sd">    ``with_columns``, compondo livremente com outras expressões Polars (ex.:</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-213"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-213" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-213"></a><span class="sd">    cálculo de inflação implícita na mesma chamada). A curva e o método são</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-214"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-214" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-214"></a><span class="sd">    os configurados na instância.</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-215"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-215" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-215"></a>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-216"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-216" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-216"></a><span class="sd">    Args:</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-217"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-217" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-217"></a><span class="sd">        du: Nome de coluna ou expressão Polars com os DUs alvo. A coluna</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-218"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-218" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-218"></a><span class="sd">            deve ser inteira (será convertida para Int64 internamente).</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-219"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-219" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-219"></a>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-220"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-220" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-220"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-221"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-221" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-221"></a><span class="sd">        pl.Expr: Expressão Float64 sem alias com as taxas interpoladas.</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-222"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-222" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-222"></a><span class="sd">            ``null`` quando o DU for nulo, negativo, ou estiver acima do</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-223"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-223" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-223"></a><span class="sd">            maior vértice conhecido com ``extrapolar=False``.</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-224"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-224" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-224"></a>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-225"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-225" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-225"></a><span class="sd">    Examples:</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-226"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-226" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-226"></a><span class="sd">        &gt;&gt;&gt; from pyield import Interpolador</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-227"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-227" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-227"></a><span class="sd">        &gt;&gt;&gt; interp = Interpolador(</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-228"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-228" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-228"></a><span class="sd">        ...     [30, 60, 90], [0.045, 0.05, 0.055], "flat_forward"</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-229"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-229" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-229"></a><span class="sd">        ... )</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-230"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-230" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-230"></a><span class="sd">        &gt;&gt;&gt; df = pl.DataFrame({"du": [15, 45, 75]})</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-231"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-231" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-231"></a><span class="sd">        &gt;&gt;&gt; df.with_columns(taxa=interp.interpolar_expr("du"))</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-232"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-232" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-232"></a><span class="sd">        shape: (3, 2)</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-233"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-233" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-233"></a><span class="sd">        ┌─────┬──────────┐</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-234"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-234" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-234"></a><span class="sd">        │ du  ┆ taxa     │</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-235"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-235" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-235"></a><span class="sd">        │ --- ┆ ---      │</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-236"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-236" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-236"></a><span class="sd">        │ i64 ┆ f64      │</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-237"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-237" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-237"></a><span class="sd">        ╞═════╪══════════╡</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-238"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-238" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-238"></a><span class="sd">        │ 15  ┆ 0.045    │</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-239"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-239" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-239"></a><span class="sd">        │ 45  ┆ 0.048331 │</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-240"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-240" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-240"></a><span class="sd">        │ 75  ┆ 0.052997 │</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-241"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-241" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-241"></a><span class="sd">        └─────┴──────────┘</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-242"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-242" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-242"></a><span class="sd">    """</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-243"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-243" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-243"></a>    <span class="n">expr</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">du</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">du</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">du</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-244"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-244" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-244"></a>    <span class="k">return</span> <span class="n">expr</span><span class="o">.</span><span class="n">map_batches</span><span class="p">(</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-245"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-245" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-245"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_interpolar_serie</span><span class="p">,</span> <span class="n">return_dtype</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">Float64</span><span class="p">,</span> <span class="n">is_elementwise</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="pyield.interpolador.Interpolador.interpolar_expr--source--__span-0-246"><a id="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-246" name="pyield.interpolador.Interpolador.interpolar_expr--source--__codelineno-0-246"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2446,6 +2507,663 @@ maior vértice conhecido com <code>extrapolar=False</code>.</p>
 
   </div>
 
+    </div>
+
+</div><h2 id="interpolar">interpolar</h2>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+    <div class="doc doc-contents first">
+
+        <p>Interpola taxas flat-forward para uma série de pontos alvo.</p>
+<p>Versão vetorizada de <code>Interpolador</code>. Quando <code>datas_alvo</code> e
+<code>datas_curva</code> são fornecidas, cada ponto é interpolado contra a
+curva da sua data correspondente (multi-curva, sem loop em Python).
+Quando ambas são <code>None</code>, todos os pontos usam a mesma curva.</p>
+<p>O resultado pode ser adicionado a um DataFrame via <code>with_columns</code>,
+preservando a ordem original de <code>dus_alvo</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>dus_alvo</code>
+            </td>
+            <td>
+                  <code><span title="polars.Series">Series</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Series Int com os dias úteis dos pontos a interpolar.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dus_curva</code>
+            </td>
+            <td>
+                  <code><span title="polars.Series">Series</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Series Int com os dias úteis dos vértices conhecidos.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>taxas_curva</code>
+            </td>
+            <td>
+                  <code><span title="polars.Series">Series</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Series Float com as taxas dos vértices conhecidos
+(mesma ordem de <code>dus_curva</code>).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>datas_alvo</code>
+            </td>
+            <td>
+                  <code><span title="polars.Series">Series</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Series Date com a data de referência de cada ponto
+alvo. Quando fornecida, <code>datas_curva</code> também deve ser.
+Padrão: <code>None</code> (curva única).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>datas_curva</code>
+            </td>
+            <td>
+                  <code><span title="polars.Series">Series</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Series Date com a data de referência de cada
+vértice da curva. Padrão: <code>None</code> (curva única).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>extrapolar</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Controla apenas o comportamento na ponta longa (DU acima
+do maior vértice de cada grupo). Se True, retorna a última taxa
+conhecida; se False (padrão), retorna <code>null</code>. A ponta curta
+(DU abaixo do menor vértice) sempre retorna a primeira taxa do
+grupo, independentemente desta flag. O default casa com o da
+classe <code>Interpolador</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="polars.Series">Series</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Series Float64 <code>taxa_interpolada</code> na mesma ordem de</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="polars.Series">Series</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>dus_alvo</code>. <code>null</code> quando o DU é nulo, a data alvo não existe</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="polars.Series">Series</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>na curva, ou o DU está acima do maior vértice e <code>extrapolar</code> é</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="polars.Series">Series</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>False.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Se apenas uma de <code>datas_alvo</code> ou <code>datas_curva</code>
+for fornecida, ou se a curva tiver o mesmo prazo com taxas
+diferentes (na mesma data, quando há várias curvas).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="notes" open>
+  <summary>Notes</summary>
+  <p>Usa a mesma fórmula flat-forward descrita na documentação de
+<code>Interpolador</code>. Os vértices que cercam cada prazo alvo são
+encontrados automaticamente.</p>
+</details>
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <p>Caso típico: adicionar uma coluna de taxas interpoladas a um
+DataFrame com múltiplas datas de referência.</p>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">... </span>    <span class="p">{</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">... </span>        <span class="s2">"data_referencia"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"2025-01-02"</span><span class="p">,</span> <span class="s2">"2025-01-02"</span><span class="p">],</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">... </span>        <span class="s2">"dias_uteis"</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">25</span><span class="p">],</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">... </span>    <span class="p">}</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">... </span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df_curva</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="gp">... </span>    <span class="p">{</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="gp">... </span>        <span class="s2">"data_referencia"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"2025-01-02"</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="gp">... </span>        <span class="s2">"dias_uteis"</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="gp">... </span>        <span class="s2">"taxa"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">,</span> <span class="mf">0.13</span><span class="p">],</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="gp">... </span>    <span class="p">}</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="gp">... </span><span class="p">)</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="gp">... </span>    <span class="n">taxa</span><span class="o">=</span><span class="n">yd</span><span class="o">.</span><span class="n">interpolar</span><span class="p">(</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="gp">... </span>        <span class="n">dus_alvo</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">"dias_uteis"</span><span class="p">],</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="gp">... </span>        <span class="n">dus_curva</span><span class="o">=</span><span class="n">df_curva</span><span class="p">[</span><span class="s2">"dias_uteis"</span><span class="p">],</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="gp">... </span>        <span class="n">taxas_curva</span><span class="o">=</span><span class="n">df_curva</span><span class="p">[</span><span class="s2">"taxa"</span><span class="p">],</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="gp">... </span>        <span class="n">datas_alvo</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">"data_referencia"</span><span class="p">],</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="gp">... </span>        <span class="n">datas_curva</span><span class="o">=</span><span class="n">df_curva</span><span class="p">[</span><span class="s2">"data_referencia"</span><span class="p">],</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="gp">... </span>    <span class="p">)</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="gp">... </span><span class="p">)</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="go">shape: (2, 3)</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="go">┌─────────────────┬────────────┬──────────┐</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="go">│ data_referencia ┆ dias_uteis ┆ taxa     │</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="go">│ ---             ┆ ---        ┆ ---      │</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="go">│ str             ┆ i64        ┆ f64      │</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="go">╞═════════════════╪════════════╪══════════╡</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="go">│ 2025-01-02      ┆ 10         ┆ 0.113293 │</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="go">│ 2025-01-02      ┆ 25         ┆ 0.123323 │</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="go">└─────────────────┴────────────┴──────────┘</span>
+</span></code></pre></div>
+    <p>Curva única (sem datas):</p>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">yd</span><span class="o">.</span><span class="n">interpolar</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">... </span>    <span class="n">dus_alvo</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">25</span><span class="p">]),</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">... </span>    <span class="n">dus_curva</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">]),</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">... </span>    <span class="n">taxas_curva</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">,</span> <span class="mf">0.13</span><span class="p">]),</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">... </span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="go">shape: (2,)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">Series: 'taxa_interpolada' [f64]</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="go">[</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="go">    0.113293</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="go">    0.123323</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="go">]</span>
+</span></code></pre></div>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>pyield/interpolador.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-309">309</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-310">310</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-311">311</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-312">312</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-313">313</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-314">314</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-315">315</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-316">316</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-317">317</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-318">318</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-319">319</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-320">320</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-321">321</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-322">322</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-323">323</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-324">324</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-325">325</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-326">326</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-327">327</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-328">328</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-329">329</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-330">330</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-331">331</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-332">332</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-333">333</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-334">334</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-335">335</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-336">336</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-337">337</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-338">338</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-339">339</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-340">340</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-341">341</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-342">342</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-343">343</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-344">344</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-345">345</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-346">346</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-347">347</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-348">348</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-349">349</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-350">350</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-351">351</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-352">352</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-353">353</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-354">354</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-355">355</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-356">356</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-357">357</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-358">358</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-359">359</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-360">360</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-361">361</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-362">362</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-363">363</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-364">364</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-365">365</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-366">366</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-367">367</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-368">368</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-369">369</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-370">370</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-371">371</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-372">372</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-373">373</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-374">374</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-375">375</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-376">376</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-377">377</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-378">378</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-379">379</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-380">380</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-381">381</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-382">382</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-383">383</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-384">384</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-385">385</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-386">386</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-387">387</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-388">388</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-389">389</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-390">390</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-391">391</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-392">392</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-393">393</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-394">394</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-395">395</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-396">396</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-397">397</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-398">398</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-399">399</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-400">400</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-401">401</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-402">402</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-403">403</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-404">404</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-405">405</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-406">406</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-407">407</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-408">408</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-409">409</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-410">410</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-411">411</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-412">412</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-413">413</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-414">414</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-415">415</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-416">416</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-417">417</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-418">418</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-419">419</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-420">420</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-421">421</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-422">422</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-423">423</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-424">424</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-425">425</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-426">426</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-427">427</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-428">428</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-429">429</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-430">430</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-431">431</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-432">432</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-433">433</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-434">434</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-435">435</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-436">436</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-437">437</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-438">438</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-439">439</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-440">440</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-441">441</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-442">442</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-443">443</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-444">444</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-445">445</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-446">446</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-447">447</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-448">448</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-449">449</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-450">450</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-451">451</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-452">452</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-453">453</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-454">454</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-455">455</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-456">456</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-457">457</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-458">458</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-459">459</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-460">460</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-461">461</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-462">462</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-463">463</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-464">464</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-465">465</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-466">466</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-467">467</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-468">468</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-469">469</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-470">470</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-471">471</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-472">472</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-473">473</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-474">474</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-475">475</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-484">484</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-485">485</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-486">486</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-487">487</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-488">488</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-489">489</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-490">490</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-491">491</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-492">492</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-493">493</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-494">494</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-495">495</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-496">496</a></span>
+<span class="normal"><a href="#pyield.interpolador.interpolar--source--__codelineno-0-497">497</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.interpolador.interpolar--source--__span-0-309"><a id="pyield.interpolador.interpolar--source--__codelineno-0-309" name="pyield.interpolador.interpolar--source--__codelineno-0-309"></a><span class="k">def</span><span class="w"> </span><span class="nf">interpolar</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-310"><a id="pyield.interpolador.interpolar--source--__codelineno-0-310" name="pyield.interpolador.interpolar--source--__codelineno-0-310"></a>    <span class="n">dus_alvo</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-311"><a id="pyield.interpolador.interpolar--source--__codelineno-0-311" name="pyield.interpolador.interpolar--source--__codelineno-0-311"></a>    <span class="n">dus_curva</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-312"><a id="pyield.interpolador.interpolar--source--__codelineno-0-312" name="pyield.interpolador.interpolar--source--__codelineno-0-312"></a>    <span class="n">taxas_curva</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-313"><a id="pyield.interpolador.interpolar--source--__codelineno-0-313" name="pyield.interpolador.interpolar--source--__codelineno-0-313"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-314"><a id="pyield.interpolador.interpolar--source--__codelineno-0-314" name="pyield.interpolador.interpolar--source--__codelineno-0-314"></a>    <span class="n">datas_alvo</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-315"><a id="pyield.interpolador.interpolar--source--__codelineno-0-315" name="pyield.interpolador.interpolar--source--__codelineno-0-315"></a>    <span class="n">datas_curva</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-316"><a id="pyield.interpolador.interpolar--source--__codelineno-0-316" name="pyield.interpolador.interpolar--source--__codelineno-0-316"></a>    <span class="n">extrapolar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-317"><a id="pyield.interpolador.interpolar--source--__codelineno-0-317" name="pyield.interpolador.interpolar--source--__codelineno-0-317"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-318"><a id="pyield.interpolador.interpolar--source--__codelineno-0-318" name="pyield.interpolador.interpolar--source--__codelineno-0-318"></a><span class="w">    </span><span class="sa">r</span><span class="sd">"""Interpola taxas flat-forward para uma série de pontos alvo.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-319"><a id="pyield.interpolador.interpolar--source--__codelineno-0-319" name="pyield.interpolador.interpolar--source--__codelineno-0-319"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-320"><a id="pyield.interpolador.interpolar--source--__codelineno-0-320" name="pyield.interpolador.interpolar--source--__codelineno-0-320"></a><span class="sd">    Versão vetorizada de ``Interpolador``. Quando ``datas_alvo`` e</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-321"><a id="pyield.interpolador.interpolar--source--__codelineno-0-321" name="pyield.interpolador.interpolar--source--__codelineno-0-321"></a><span class="sd">    ``datas_curva`` são fornecidas, cada ponto é interpolado contra a</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-322"><a id="pyield.interpolador.interpolar--source--__codelineno-0-322" name="pyield.interpolador.interpolar--source--__codelineno-0-322"></a><span class="sd">    curva da sua data correspondente (multi-curva, sem loop em Python).</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-323"><a id="pyield.interpolador.interpolar--source--__codelineno-0-323" name="pyield.interpolador.interpolar--source--__codelineno-0-323"></a><span class="sd">    Quando ambas são ``None``, todos os pontos usam a mesma curva.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-324"><a id="pyield.interpolador.interpolar--source--__codelineno-0-324" name="pyield.interpolador.interpolar--source--__codelineno-0-324"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-325"><a id="pyield.interpolador.interpolar--source--__codelineno-0-325" name="pyield.interpolador.interpolar--source--__codelineno-0-325"></a><span class="sd">    O resultado pode ser adicionado a um DataFrame via ``with_columns``,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-326"><a id="pyield.interpolador.interpolar--source--__codelineno-0-326" name="pyield.interpolador.interpolar--source--__codelineno-0-326"></a><span class="sd">    preservando a ordem original de ``dus_alvo``.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-327"><a id="pyield.interpolador.interpolar--source--__codelineno-0-327" name="pyield.interpolador.interpolar--source--__codelineno-0-327"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-328"><a id="pyield.interpolador.interpolar--source--__codelineno-0-328" name="pyield.interpolador.interpolar--source--__codelineno-0-328"></a><span class="sd">    Args:</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-329"><a id="pyield.interpolador.interpolar--source--__codelineno-0-329" name="pyield.interpolador.interpolar--source--__codelineno-0-329"></a><span class="sd">        dus_alvo: Series Int com os dias úteis dos pontos a interpolar.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-330"><a id="pyield.interpolador.interpolar--source--__codelineno-0-330" name="pyield.interpolador.interpolar--source--__codelineno-0-330"></a><span class="sd">        dus_curva: Series Int com os dias úteis dos vértices conhecidos.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-331"><a id="pyield.interpolador.interpolar--source--__codelineno-0-331" name="pyield.interpolador.interpolar--source--__codelineno-0-331"></a><span class="sd">        taxas_curva: Series Float com as taxas dos vértices conhecidos</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-332"><a id="pyield.interpolador.interpolar--source--__codelineno-0-332" name="pyield.interpolador.interpolar--source--__codelineno-0-332"></a><span class="sd">            (mesma ordem de ``dus_curva``).</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-333"><a id="pyield.interpolador.interpolar--source--__codelineno-0-333" name="pyield.interpolador.interpolar--source--__codelineno-0-333"></a><span class="sd">        datas_alvo: Series Date com a data de referência de cada ponto</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-334"><a id="pyield.interpolador.interpolar--source--__codelineno-0-334" name="pyield.interpolador.interpolar--source--__codelineno-0-334"></a><span class="sd">            alvo. Quando fornecida, ``datas_curva`` também deve ser.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-335"><a id="pyield.interpolador.interpolar--source--__codelineno-0-335" name="pyield.interpolador.interpolar--source--__codelineno-0-335"></a><span class="sd">            Padrão: ``None`` (curva única).</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-336"><a id="pyield.interpolador.interpolar--source--__codelineno-0-336" name="pyield.interpolador.interpolar--source--__codelineno-0-336"></a><span class="sd">        datas_curva: Series Date com a data de referência de cada</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-337"><a id="pyield.interpolador.interpolar--source--__codelineno-0-337" name="pyield.interpolador.interpolar--source--__codelineno-0-337"></a><span class="sd">            vértice da curva. Padrão: ``None`` (curva única).</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-338"><a id="pyield.interpolador.interpolar--source--__codelineno-0-338" name="pyield.interpolador.interpolar--source--__codelineno-0-338"></a><span class="sd">        extrapolar: Controla apenas o comportamento na ponta longa (DU acima</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-339"><a id="pyield.interpolador.interpolar--source--__codelineno-0-339" name="pyield.interpolador.interpolar--source--__codelineno-0-339"></a><span class="sd">            do maior vértice de cada grupo). Se True, retorna a última taxa</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-340"><a id="pyield.interpolador.interpolar--source--__codelineno-0-340" name="pyield.interpolador.interpolar--source--__codelineno-0-340"></a><span class="sd">            conhecida; se False (padrão), retorna ``null``. A ponta curta</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-341"><a id="pyield.interpolador.interpolar--source--__codelineno-0-341" name="pyield.interpolador.interpolar--source--__codelineno-0-341"></a><span class="sd">            (DU abaixo do menor vértice) sempre retorna a primeira taxa do</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-342"><a id="pyield.interpolador.interpolar--source--__codelineno-0-342" name="pyield.interpolador.interpolar--source--__codelineno-0-342"></a><span class="sd">            grupo, independentemente desta flag. O default casa com o da</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-343"><a id="pyield.interpolador.interpolar--source--__codelineno-0-343" name="pyield.interpolador.interpolar--source--__codelineno-0-343"></a><span class="sd">            classe ``Interpolador``.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-344"><a id="pyield.interpolador.interpolar--source--__codelineno-0-344" name="pyield.interpolador.interpolar--source--__codelineno-0-344"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-345"><a id="pyield.interpolador.interpolar--source--__codelineno-0-345" name="pyield.interpolador.interpolar--source--__codelineno-0-345"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-346"><a id="pyield.interpolador.interpolar--source--__codelineno-0-346" name="pyield.interpolador.interpolar--source--__codelineno-0-346"></a><span class="sd">        Series Float64 ``taxa_interpolada`` na mesma ordem de</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-347"><a id="pyield.interpolador.interpolar--source--__codelineno-0-347" name="pyield.interpolador.interpolar--source--__codelineno-0-347"></a><span class="sd">        ``dus_alvo``. ``null`` quando o DU é nulo, a data alvo não existe</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-348"><a id="pyield.interpolador.interpolar--source--__codelineno-0-348" name="pyield.interpolador.interpolar--source--__codelineno-0-348"></a><span class="sd">        na curva, ou o DU está acima do maior vértice e ``extrapolar`` é</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-349"><a id="pyield.interpolador.interpolar--source--__codelineno-0-349" name="pyield.interpolador.interpolar--source--__codelineno-0-349"></a><span class="sd">        False.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-350"><a id="pyield.interpolador.interpolar--source--__codelineno-0-350" name="pyield.interpolador.interpolar--source--__codelineno-0-350"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-351"><a id="pyield.interpolador.interpolar--source--__codelineno-0-351" name="pyield.interpolador.interpolar--source--__codelineno-0-351"></a><span class="sd">    Raises:</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-352"><a id="pyield.interpolador.interpolar--source--__codelineno-0-352" name="pyield.interpolador.interpolar--source--__codelineno-0-352"></a><span class="sd">        ValueError: Se apenas uma de ``datas_alvo`` ou ``datas_curva``</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-353"><a id="pyield.interpolador.interpolar--source--__codelineno-0-353" name="pyield.interpolador.interpolar--source--__codelineno-0-353"></a><span class="sd">            for fornecida, ou se a curva tiver o mesmo prazo com taxas</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-354"><a id="pyield.interpolador.interpolar--source--__codelineno-0-354" name="pyield.interpolador.interpolar--source--__codelineno-0-354"></a><span class="sd">            diferentes (na mesma data, quando há várias curvas).</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-355"><a id="pyield.interpolador.interpolar--source--__codelineno-0-355" name="pyield.interpolador.interpolar--source--__codelineno-0-355"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-356"><a id="pyield.interpolador.interpolar--source--__codelineno-0-356" name="pyield.interpolador.interpolar--source--__codelineno-0-356"></a><span class="sd">    Notes:</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-357"><a id="pyield.interpolador.interpolar--source--__codelineno-0-357" name="pyield.interpolador.interpolar--source--__codelineno-0-357"></a><span class="sd">        Usa a mesma fórmula flat-forward descrita na documentação de</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-358"><a id="pyield.interpolador.interpolar--source--__codelineno-0-358" name="pyield.interpolador.interpolar--source--__codelineno-0-358"></a><span class="sd">        ``Interpolador``. Os vértices que cercam cada prazo alvo são</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-359"><a id="pyield.interpolador.interpolar--source--__codelineno-0-359" name="pyield.interpolador.interpolar--source--__codelineno-0-359"></a><span class="sd">        encontrados automaticamente.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-360"><a id="pyield.interpolador.interpolar--source--__codelineno-0-360" name="pyield.interpolador.interpolar--source--__codelineno-0-360"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-361"><a id="pyield.interpolador.interpolar--source--__codelineno-0-361" name="pyield.interpolador.interpolar--source--__codelineno-0-361"></a><span class="sd">    Examples:</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-362"><a id="pyield.interpolador.interpolar--source--__codelineno-0-362" name="pyield.interpolador.interpolar--source--__codelineno-0-362"></a><span class="sd">        Caso típico: adicionar uma coluna de taxas interpoladas a um</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-363"><a id="pyield.interpolador.interpolar--source--__codelineno-0-363" name="pyield.interpolador.interpolar--source--__codelineno-0-363"></a><span class="sd">        DataFrame com múltiplas datas de referência.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-364"><a id="pyield.interpolador.interpolar--source--__codelineno-0-364" name="pyield.interpolador.interpolar--source--__codelineno-0-364"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-365"><a id="pyield.interpolador.interpolar--source--__codelineno-0-365" name="pyield.interpolador.interpolar--source--__codelineno-0-365"></a><span class="sd">        &gt;&gt;&gt; df = pl.DataFrame(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-366"><a id="pyield.interpolador.interpolar--source--__codelineno-0-366" name="pyield.interpolador.interpolar--source--__codelineno-0-366"></a><span class="sd">        ...     {</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-367"><a id="pyield.interpolador.interpolar--source--__codelineno-0-367" name="pyield.interpolador.interpolar--source--__codelineno-0-367"></a><span class="sd">        ...         "data_referencia": ["2025-01-02", "2025-01-02"],</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-368"><a id="pyield.interpolador.interpolar--source--__codelineno-0-368" name="pyield.interpolador.interpolar--source--__codelineno-0-368"></a><span class="sd">        ...         "dias_uteis": [10, 25],</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-369"><a id="pyield.interpolador.interpolar--source--__codelineno-0-369" name="pyield.interpolador.interpolar--source--__codelineno-0-369"></a><span class="sd">        ...     }</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-370"><a id="pyield.interpolador.interpolar--source--__codelineno-0-370" name="pyield.interpolador.interpolar--source--__codelineno-0-370"></a><span class="sd">        ... )</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-371"><a id="pyield.interpolador.interpolar--source--__codelineno-0-371" name="pyield.interpolador.interpolar--source--__codelineno-0-371"></a><span class="sd">        &gt;&gt;&gt; df_curva = pl.DataFrame(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-372"><a id="pyield.interpolador.interpolar--source--__codelineno-0-372" name="pyield.interpolador.interpolar--source--__codelineno-0-372"></a><span class="sd">        ...     {</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-373"><a id="pyield.interpolador.interpolar--source--__codelineno-0-373" name="pyield.interpolador.interpolar--source--__codelineno-0-373"></a><span class="sd">        ...         "data_referencia": ["2025-01-02"] * 3,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-374"><a id="pyield.interpolador.interpolar--source--__codelineno-0-374" name="pyield.interpolador.interpolar--source--__codelineno-0-374"></a><span class="sd">        ...         "dias_uteis": [5, 20, 50],</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-375"><a id="pyield.interpolador.interpolar--source--__codelineno-0-375" name="pyield.interpolador.interpolar--source--__codelineno-0-375"></a><span class="sd">        ...         "taxa": [0.10, 0.12, 0.13],</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-376"><a id="pyield.interpolador.interpolar--source--__codelineno-0-376" name="pyield.interpolador.interpolar--source--__codelineno-0-376"></a><span class="sd">        ...     }</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-377"><a id="pyield.interpolador.interpolar--source--__codelineno-0-377" name="pyield.interpolador.interpolar--source--__codelineno-0-377"></a><span class="sd">        ... )</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-378"><a id="pyield.interpolador.interpolar--source--__codelineno-0-378" name="pyield.interpolador.interpolar--source--__codelineno-0-378"></a><span class="sd">        &gt;&gt;&gt; df.with_columns(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-379"><a id="pyield.interpolador.interpolar--source--__codelineno-0-379" name="pyield.interpolador.interpolar--source--__codelineno-0-379"></a><span class="sd">        ...     taxa=yd.interpolar(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-380"><a id="pyield.interpolador.interpolar--source--__codelineno-0-380" name="pyield.interpolador.interpolar--source--__codelineno-0-380"></a><span class="sd">        ...         dus_alvo=df["dias_uteis"],</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-381"><a id="pyield.interpolador.interpolar--source--__codelineno-0-381" name="pyield.interpolador.interpolar--source--__codelineno-0-381"></a><span class="sd">        ...         dus_curva=df_curva["dias_uteis"],</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-382"><a id="pyield.interpolador.interpolar--source--__codelineno-0-382" name="pyield.interpolador.interpolar--source--__codelineno-0-382"></a><span class="sd">        ...         taxas_curva=df_curva["taxa"],</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-383"><a id="pyield.interpolador.interpolar--source--__codelineno-0-383" name="pyield.interpolador.interpolar--source--__codelineno-0-383"></a><span class="sd">        ...         datas_alvo=df["data_referencia"],</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-384"><a id="pyield.interpolador.interpolar--source--__codelineno-0-384" name="pyield.interpolador.interpolar--source--__codelineno-0-384"></a><span class="sd">        ...         datas_curva=df_curva["data_referencia"],</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-385"><a id="pyield.interpolador.interpolar--source--__codelineno-0-385" name="pyield.interpolador.interpolar--source--__codelineno-0-385"></a><span class="sd">        ...     )</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-386"><a id="pyield.interpolador.interpolar--source--__codelineno-0-386" name="pyield.interpolador.interpolar--source--__codelineno-0-386"></a><span class="sd">        ... )</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-387"><a id="pyield.interpolador.interpolar--source--__codelineno-0-387" name="pyield.interpolador.interpolar--source--__codelineno-0-387"></a><span class="sd">        shape: (2, 3)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-388"><a id="pyield.interpolador.interpolar--source--__codelineno-0-388" name="pyield.interpolador.interpolar--source--__codelineno-0-388"></a><span class="sd">        ┌─────────────────┬────────────┬──────────┐</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-389"><a id="pyield.interpolador.interpolar--source--__codelineno-0-389" name="pyield.interpolador.interpolar--source--__codelineno-0-389"></a><span class="sd">        │ data_referencia ┆ dias_uteis ┆ taxa     │</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-390"><a id="pyield.interpolador.interpolar--source--__codelineno-0-390" name="pyield.interpolador.interpolar--source--__codelineno-0-390"></a><span class="sd">        │ ---             ┆ ---        ┆ ---      │</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-391"><a id="pyield.interpolador.interpolar--source--__codelineno-0-391" name="pyield.interpolador.interpolar--source--__codelineno-0-391"></a><span class="sd">        │ str             ┆ i64        ┆ f64      │</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-392"><a id="pyield.interpolador.interpolar--source--__codelineno-0-392" name="pyield.interpolador.interpolar--source--__codelineno-0-392"></a><span class="sd">        ╞═════════════════╪════════════╪══════════╡</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-393"><a id="pyield.interpolador.interpolar--source--__codelineno-0-393" name="pyield.interpolador.interpolar--source--__codelineno-0-393"></a><span class="sd">        │ 2025-01-02      ┆ 10         ┆ 0.113293 │</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-394"><a id="pyield.interpolador.interpolar--source--__codelineno-0-394" name="pyield.interpolador.interpolar--source--__codelineno-0-394"></a><span class="sd">        │ 2025-01-02      ┆ 25         ┆ 0.123323 │</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-395"><a id="pyield.interpolador.interpolar--source--__codelineno-0-395" name="pyield.interpolador.interpolar--source--__codelineno-0-395"></a><span class="sd">        └─────────────────┴────────────┴──────────┘</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-396"><a id="pyield.interpolador.interpolar--source--__codelineno-0-396" name="pyield.interpolador.interpolar--source--__codelineno-0-396"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-397"><a id="pyield.interpolador.interpolar--source--__codelineno-0-397" name="pyield.interpolador.interpolar--source--__codelineno-0-397"></a><span class="sd">        Curva única (sem datas):</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-398"><a id="pyield.interpolador.interpolar--source--__codelineno-0-398" name="pyield.interpolador.interpolar--source--__codelineno-0-398"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-399"><a id="pyield.interpolador.interpolar--source--__codelineno-0-399" name="pyield.interpolador.interpolar--source--__codelineno-0-399"></a><span class="sd">        &gt;&gt;&gt; yd.interpolar(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-400"><a id="pyield.interpolador.interpolar--source--__codelineno-0-400" name="pyield.interpolador.interpolar--source--__codelineno-0-400"></a><span class="sd">        ...     dus_alvo=pl.Series([10, 25]),</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-401"><a id="pyield.interpolador.interpolar--source--__codelineno-0-401" name="pyield.interpolador.interpolar--source--__codelineno-0-401"></a><span class="sd">        ...     dus_curva=pl.Series([5, 20, 50]),</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-402"><a id="pyield.interpolador.interpolar--source--__codelineno-0-402" name="pyield.interpolador.interpolar--source--__codelineno-0-402"></a><span class="sd">        ...     taxas_curva=pl.Series([0.10, 0.12, 0.13]),</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-403"><a id="pyield.interpolador.interpolar--source--__codelineno-0-403" name="pyield.interpolador.interpolar--source--__codelineno-0-403"></a><span class="sd">        ... )</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-404"><a id="pyield.interpolador.interpolar--source--__codelineno-0-404" name="pyield.interpolador.interpolar--source--__codelineno-0-404"></a><span class="sd">        shape: (2,)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-405"><a id="pyield.interpolador.interpolar--source--__codelineno-0-405" name="pyield.interpolador.interpolar--source--__codelineno-0-405"></a><span class="sd">        Series: 'taxa_interpolada' [f64]</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-406"><a id="pyield.interpolador.interpolar--source--__codelineno-0-406" name="pyield.interpolador.interpolar--source--__codelineno-0-406"></a><span class="sd">        [</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-407"><a id="pyield.interpolador.interpolar--source--__codelineno-0-407" name="pyield.interpolador.interpolar--source--__codelineno-0-407"></a><span class="sd">            0.113293</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-408"><a id="pyield.interpolador.interpolar--source--__codelineno-0-408" name="pyield.interpolador.interpolar--source--__codelineno-0-408"></a><span class="sd">            0.123323</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-409"><a id="pyield.interpolador.interpolar--source--__codelineno-0-409" name="pyield.interpolador.interpolar--source--__codelineno-0-409"></a><span class="sd">        ]</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-410"><a id="pyield.interpolador.interpolar--source--__codelineno-0-410" name="pyield.interpolador.interpolar--source--__codelineno-0-410"></a><span class="sd">    """</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-411"><a id="pyield.interpolador.interpolar--source--__codelineno-0-411" name="pyield.interpolador.interpolar--source--__codelineno-0-411"></a>    <span class="k">if</span> <span class="p">(</span><span class="n">datas_alvo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="n">datas_curva</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-412"><a id="pyield.interpolador.interpolar--source--__codelineno-0-412" name="pyield.interpolador.interpolar--source--__codelineno-0-412"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-413"><a id="pyield.interpolador.interpolar--source--__codelineno-0-413" name="pyield.interpolador.interpolar--source--__codelineno-0-413"></a>            <span class="s2">"datas_alvo e datas_curva devem ser fornecidas juntas ou omitidas juntas."</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-414"><a id="pyield.interpolador.interpolar--source--__codelineno-0-414" name="pyield.interpolador.interpolar--source--__codelineno-0-414"></a>        <span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-415"><a id="pyield.interpolador.interpolar--source--__codelineno-0-415" name="pyield.interpolador.interpolar--source--__codelineno-0-415"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-416"><a id="pyield.interpolador.interpolar--source--__codelineno-0-416" name="pyield.interpolador.interpolar--source--__codelineno-0-416"></a>    <span class="k">if</span> <span class="n">datas_alvo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">datas_curva</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-417"><a id="pyield.interpolador.interpolar--source--__codelineno-0-417" name="pyield.interpolador.interpolar--source--__codelineno-0-417"></a>        <span class="n">df_alvo</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"grupo"</span><span class="p">:</span> <span class="n">datas_alvo</span><span class="p">,</span> <span class="s2">"du_alvo"</span><span class="p">:</span> <span class="n">dus_alvo</span><span class="p">})</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-418"><a id="pyield.interpolador.interpolar--source--__codelineno-0-418" name="pyield.interpolador.interpolar--source--__codelineno-0-418"></a>        <span class="n">df_curva</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-419"><a id="pyield.interpolador.interpolar--source--__codelineno-0-419" name="pyield.interpolador.interpolar--source--__codelineno-0-419"></a>            <span class="p">{</span><span class="s2">"grupo"</span><span class="p">:</span> <span class="n">datas_curva</span><span class="p">,</span> <span class="s2">"du"</span><span class="p">:</span> <span class="n">dus_curva</span><span class="p">,</span> <span class="s2">"tx"</span><span class="p">:</span> <span class="n">taxas_curva</span><span class="p">}</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-420"><a id="pyield.interpolador.interpolar--source--__codelineno-0-420" name="pyield.interpolador.interpolar--source--__codelineno-0-420"></a>        <span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-421"><a id="pyield.interpolador.interpolar--source--__codelineno-0-421" name="pyield.interpolador.interpolar--source--__codelineno-0-421"></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-422"><a id="pyield.interpolador.interpolar--source--__codelineno-0-422" name="pyield.interpolador.interpolar--source--__codelineno-0-422"></a>        <span class="n">df_alvo</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"du_alvo"</span><span class="p">:</span> <span class="n">dus_alvo</span><span class="p">})</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-423"><a id="pyield.interpolador.interpolar--source--__codelineno-0-423" name="pyield.interpolador.interpolar--source--__codelineno-0-423"></a>            <span class="n">grupo</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">lit</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">Int32</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-424"><a id="pyield.interpolador.interpolar--source--__codelineno-0-424" name="pyield.interpolador.interpolar--source--__codelineno-0-424"></a>        <span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-425"><a id="pyield.interpolador.interpolar--source--__codelineno-0-425" name="pyield.interpolador.interpolar--source--__codelineno-0-425"></a>        <span class="n">df_curva</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"du"</span><span class="p">:</span> <span class="n">dus_curva</span><span class="p">,</span> <span class="s2">"tx"</span><span class="p">:</span> <span class="n">taxas_curva</span><span class="p">})</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-426"><a id="pyield.interpolador.interpolar--source--__codelineno-0-426" name="pyield.interpolador.interpolar--source--__codelineno-0-426"></a>            <span class="n">grupo</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">lit</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">Int32</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-427"><a id="pyield.interpolador.interpolar--source--__codelineno-0-427" name="pyield.interpolador.interpolar--source--__codelineno-0-427"></a>        <span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-428"><a id="pyield.interpolador.interpolar--source--__codelineno-0-428" name="pyield.interpolador.interpolar--source--__codelineno-0-428"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-429"><a id="pyield.interpolador.interpolar--source--__codelineno-0-429" name="pyield.interpolador.interpolar--source--__codelineno-0-429"></a>    <span class="n">df_alvo</span> <span class="o">=</span> <span class="n">df_alvo</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-430"><a id="pyield.interpolador.interpolar--source--__codelineno-0-430" name="pyield.interpolador.interpolar--source--__codelineno-0-430"></a>        <span class="n">du_alvo</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"du_alvo"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-431"><a id="pyield.interpolador.interpolar--source--__codelineno-0-431" name="pyield.interpolador.interpolar--source--__codelineno-0-431"></a>    <span class="p">)</span><span class="o">.</span><span class="n">with_row_index</span><span class="p">(</span><span class="s2">"_idx"</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-432"><a id="pyield.interpolador.interpolar--source--__codelineno-0-432" name="pyield.interpolador.interpolar--source--__codelineno-0-432"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-433"><a id="pyield.interpolador.interpolar--source--__codelineno-0-433" name="pyield.interpolador.interpolar--source--__codelineno-0-433"></a>    <span class="n">df_curva</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-434"><a id="pyield.interpolador.interpolar--source--__codelineno-0-434" name="pyield.interpolador.interpolar--source--__codelineno-0-434"></a>        <span class="n">df_curva</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-435"><a id="pyield.interpolador.interpolar--source--__codelineno-0-435" name="pyield.interpolador.interpolar--source--__codelineno-0-435"></a>            <span class="n">du</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"du"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-436"><a id="pyield.interpolador.interpolar--source--__codelineno-0-436" name="pyield.interpolador.interpolar--source--__codelineno-0-436"></a>            <span class="n">tx</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"tx"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Float64</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-437"><a id="pyield.interpolador.interpolar--source--__codelineno-0-437" name="pyield.interpolador.interpolar--source--__codelineno-0-437"></a>        <span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-438"><a id="pyield.interpolador.interpolar--source--__codelineno-0-438" name="pyield.interpolador.interpolar--source--__codelineno-0-438"></a>        <span class="o">.</span><span class="n">drop_nulls</span><span class="p">()</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-439"><a id="pyield.interpolador.interpolar--source--__codelineno-0-439" name="pyield.interpolador.interpolar--source--__codelineno-0-439"></a>        <span class="o">.</span><span class="n">drop_nans</span><span class="p">()</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-440"><a id="pyield.interpolador.interpolar--source--__codelineno-0-440" name="pyield.interpolador.interpolar--source--__codelineno-0-440"></a>    <span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-441"><a id="pyield.interpolador.interpolar--source--__codelineno-0-441" name="pyield.interpolador.interpolar--source--__codelineno-0-441"></a>    <span class="n">grupo</span> <span class="o">=</span> <span class="s2">"grupo"</span> <span class="k">if</span> <span class="n">datas_curva</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-442"><a id="pyield.interpolador.interpolar--source--__codelineno-0-442" name="pyield.interpolador.interpolar--source--__codelineno-0-442"></a>    <span class="n">df_curva</span> <span class="o">=</span> <span class="n">_rejeitar_vertices_conflitantes</span><span class="p">(</span><span class="n">df_curva</span><span class="p">,</span> <span class="s2">"du"</span><span class="p">,</span> <span class="s2">"tx"</span><span class="p">,</span> <span class="n">grupo</span><span class="p">)</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-443"><a id="pyield.interpolador.interpolar--source--__codelineno-0-443" name="pyield.interpolador.interpolar--source--__codelineno-0-443"></a>        <span class="s2">"grupo"</span><span class="p">,</span> <span class="s2">"du"</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-444"><a id="pyield.interpolador.interpolar--source--__codelineno-0-444" name="pyield.interpolador.interpolar--source--__codelineno-0-444"></a>    <span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-445"><a id="pyield.interpolador.interpolar--source--__codelineno-0-445" name="pyield.interpolador.interpolar--source--__codelineno-0-445"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-446"><a id="pyield.interpolador.interpolar--source--__codelineno-0-446" name="pyield.interpolador.interpolar--source--__codelineno-0-446"></a>    <span class="c1"># j = último vértice com du &lt;= du_alvo; k = primeiro com du &gt;= du_alvo.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-447"><a id="pyield.interpolador.interpolar--source--__codelineno-0-447" name="pyield.interpolador.interpolar--source--__codelineno-0-447"></a>    <span class="c1"># Sem j, o alvo está antes do primeiro vértice; sem k, depois do último.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-448"><a id="pyield.interpolador.interpolar--source--__codelineno-0-448" name="pyield.interpolador.interpolar--source--__codelineno-0-448"></a>    <span class="c1"># Alvo nulo ou grupo sem curva deixa j e k nulos e resulta em nulo.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-449"><a id="pyield.interpolador.interpolar--source--__codelineno-0-449" name="pyield.interpolador.interpolar--source--__codelineno-0-449"></a>    <span class="c1"># df_alvo é ordenado por (grupo, du_alvo) e df_curva já vem ordenado por</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-450"><a id="pyield.interpolador.interpolar--source--__codelineno-0-450" name="pyield.interpolador.interpolar--source--__codelineno-0-450"></a>    <span class="c1"># (grupo, du); com isso podemos desligar check_sortedness, que também</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-451"><a id="pyield.interpolador.interpolar--source--__codelineno-0-451" name="pyield.interpolador.interpolar--source--__codelineno-0-451"></a>    <span class="c1"># silencia o aviso do Polars quando se usa `by=`.</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-452"><a id="pyield.interpolador.interpolar--source--__codelineno-0-452" name="pyield.interpolador.interpolar--source--__codelineno-0-452"></a>    <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-453"><a id="pyield.interpolador.interpolar--source--__codelineno-0-453" name="pyield.interpolador.interpolar--source--__codelineno-0-453"></a>        <span class="n">df_alvo</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="s2">"grupo"</span><span class="p">,</span> <span class="s2">"du_alvo"</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-454"><a id="pyield.interpolador.interpolar--source--__codelineno-0-454" name="pyield.interpolador.interpolar--source--__codelineno-0-454"></a>        <span class="o">.</span><span class="n">join_asof</span><span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-455"><a id="pyield.interpolador.interpolar--source--__codelineno-0-455" name="pyield.interpolador.interpolar--source--__codelineno-0-455"></a>            <span class="n">df_curva</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="s2">"du"</span><span class="p">:</span> <span class="s2">"du_j"</span><span class="p">,</span> <span class="s2">"tx"</span><span class="p">:</span> <span class="s2">"tx_j"</span><span class="p">}),</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-456"><a id="pyield.interpolador.interpolar--source--__codelineno-0-456" name="pyield.interpolador.interpolar--source--__codelineno-0-456"></a>            <span class="n">by</span><span class="o">=</span><span class="s2">"grupo"</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-457"><a id="pyield.interpolador.interpolar--source--__codelineno-0-457" name="pyield.interpolador.interpolar--source--__codelineno-0-457"></a>            <span class="n">left_on</span><span class="o">=</span><span class="s2">"du_alvo"</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-458"><a id="pyield.interpolador.interpolar--source--__codelineno-0-458" name="pyield.interpolador.interpolar--source--__codelineno-0-458"></a>            <span class="n">right_on</span><span class="o">=</span><span class="s2">"du_j"</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-459"><a id="pyield.interpolador.interpolar--source--__codelineno-0-459" name="pyield.interpolador.interpolar--source--__codelineno-0-459"></a>            <span class="n">strategy</span><span class="o">=</span><span class="s2">"backward"</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-460"><a id="pyield.interpolador.interpolar--source--__codelineno-0-460" name="pyield.interpolador.interpolar--source--__codelineno-0-460"></a>            <span class="n">check_sortedness</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-461"><a id="pyield.interpolador.interpolar--source--__codelineno-0-461" name="pyield.interpolador.interpolar--source--__codelineno-0-461"></a>        <span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-462"><a id="pyield.interpolador.interpolar--source--__codelineno-0-462" name="pyield.interpolador.interpolar--source--__codelineno-0-462"></a>        <span class="o">.</span><span class="n">join_asof</span><span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-463"><a id="pyield.interpolador.interpolar--source--__codelineno-0-463" name="pyield.interpolador.interpolar--source--__codelineno-0-463"></a>            <span class="n">df_curva</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="s2">"du"</span><span class="p">:</span> <span class="s2">"du_k"</span><span class="p">,</span> <span class="s2">"tx"</span><span class="p">:</span> <span class="s2">"tx_k"</span><span class="p">}),</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-464"><a id="pyield.interpolador.interpolar--source--__codelineno-0-464" name="pyield.interpolador.interpolar--source--__codelineno-0-464"></a>            <span class="n">by</span><span class="o">=</span><span class="s2">"grupo"</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-465"><a id="pyield.interpolador.interpolar--source--__codelineno-0-465" name="pyield.interpolador.interpolar--source--__codelineno-0-465"></a>            <span class="n">left_on</span><span class="o">=</span><span class="s2">"du_alvo"</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-466"><a id="pyield.interpolador.interpolar--source--__codelineno-0-466" name="pyield.interpolador.interpolar--source--__codelineno-0-466"></a>            <span class="n">right_on</span><span class="o">=</span><span class="s2">"du_k"</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-467"><a id="pyield.interpolador.interpolar--source--__codelineno-0-467" name="pyield.interpolador.interpolar--source--__codelineno-0-467"></a>            <span class="n">strategy</span><span class="o">=</span><span class="s2">"forward"</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-468"><a id="pyield.interpolador.interpolar--source--__codelineno-0-468" name="pyield.interpolador.interpolar--source--__codelineno-0-468"></a>            <span class="n">check_sortedness</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-469"><a id="pyield.interpolador.interpolar--source--__codelineno-0-469" name="pyield.interpolador.interpolar--source--__codelineno-0-469"></a>        <span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-470"><a id="pyield.interpolador.interpolar--source--__codelineno-0-470" name="pyield.interpolador.interpolar--source--__codelineno-0-470"></a>    <span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-471"><a id="pyield.interpolador.interpolar--source--__codelineno-0-471" name="pyield.interpolador.interpolar--source--__codelineno-0-471"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-472"><a id="pyield.interpolador.interpolar--source--__codelineno-0-472" name="pyield.interpolador.interpolar--source--__codelineno-0-472"></a>    <span class="c1"># Flat-forward: tx = (Cⱼ * (Cₖ / Cⱼ)^w)^(1/au) - 1,</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-473"><a id="pyield.interpolador.interpolar--source--__codelineno-0-473" name="pyield.interpolador.interpolar--source--__codelineno-0-473"></a>    <span class="c1"># com Fₓ = 1 + txₓ, Cₓ = Fₓ^auₓ e w = (au - auⱼ) / (auₖ - auⱼ).</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-474"><a id="pyield.interpolador.interpolar--source--__codelineno-0-474" name="pyield.interpolador.interpolar--source--__codelineno-0-474"></a>    <span class="n">au</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"du_alvo"</span><span class="p">)</span> <span class="o">/</span> <span class="mi">252</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-475"><a id="pyield.interpolador.interpolar--source--__codelineno-0-475" name="pyield.interpolador.interpolar--source--__codelineno-0-475"></a>    <span class="n">au_j</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"du_j"</span><span class="p">)</span> <span class="o">/</span> <span class="mi">252</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-476"><a id="pyield.interpolador.interpolar--source--__codelineno-0-476" name="pyield.interpolador.interpolar--source--__codelineno-0-476"></a>    <span class="n">au_k</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"du_k"</span><span class="p">)</span> <span class="o">/</span> <span class="mi">252</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-477"><a id="pyield.interpolador.interpolar--source--__codelineno-0-477" name="pyield.interpolador.interpolar--source--__codelineno-0-477"></a>    <span class="n">fa_j</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"tx_j"</span><span class="p">))</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">au_j</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-478"><a id="pyield.interpolador.interpolar--source--__codelineno-0-478" name="pyield.interpolador.interpolar--source--__codelineno-0-478"></a>    <span class="n">fa_k</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"tx_k"</span><span class="p">))</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">au_k</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-479"><a id="pyield.interpolador.interpolar--source--__codelineno-0-479" name="pyield.interpolador.interpolar--source--__codelineno-0-479"></a>    <span class="n">peso</span> <span class="o">=</span> <span class="p">(</span><span class="n">au</span> <span class="o">-</span> <span class="n">au_j</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">au_k</span> <span class="o">-</span> <span class="n">au_j</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-480"><a id="pyield.interpolador.interpolar--source--__codelineno-0-480" name="pyield.interpolador.interpolar--source--__codelineno-0-480"></a>    <span class="n">expr_meio</span> <span class="o">=</span> <span class="p">(</span><span class="n">fa_j</span> <span class="o">*</span> <span class="p">(</span><span class="n">fa_k</span> <span class="o">/</span> <span class="n">fa_j</span><span class="p">)</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">peso</span><span class="p">))</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">au</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-481"><a id="pyield.interpolador.interpolar--source--__codelineno-0-481" name="pyield.interpolador.interpolar--source--__codelineno-0-481"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-482"><a id="pyield.interpolador.interpolar--source--__codelineno-0-482" name="pyield.interpolador.interpolar--source--__codelineno-0-482"></a>    <span class="n">nulo</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">lit</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">Float64</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-483"><a id="pyield.interpolador.interpolar--source--__codelineno-0-483" name="pyield.interpolador.interpolar--source--__codelineno-0-483"></a>    <span class="n">taxa</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-484"><a id="pyield.interpolador.interpolar--source--__codelineno-0-484" name="pyield.interpolador.interpolar--source--__codelineno-0-484"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"du_j"</span><span class="p">)</span> <span class="o">==</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"du_alvo"</span><span class="p">))</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-485"><a id="pyield.interpolador.interpolar--source--__codelineno-0-485" name="pyield.interpolador.interpolar--source--__codelineno-0-485"></a>        <span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"tx_j"</span><span class="p">))</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-486"><a id="pyield.interpolador.interpolar--source--__codelineno-0-486" name="pyield.interpolador.interpolar--source--__codelineno-0-486"></a>        <span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"du_j"</span><span class="p">)</span><span class="o">.</span><span class="n">is_null</span><span class="p">())</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-487"><a id="pyield.interpolador.interpolar--source--__codelineno-0-487" name="pyield.interpolador.interpolar--source--__codelineno-0-487"></a>        <span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"tx_k"</span><span class="p">))</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-488"><a id="pyield.interpolador.interpolar--source--__codelineno-0-488" name="pyield.interpolador.interpolar--source--__codelineno-0-488"></a>        <span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"du_k"</span><span class="p">)</span><span class="o">.</span><span class="n">is_null</span><span class="p">())</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-489"><a id="pyield.interpolador.interpolar--source--__codelineno-0-489" name="pyield.interpolador.interpolar--source--__codelineno-0-489"></a>        <span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"tx_j"</span><span class="p">)</span> <span class="k">if</span> <span class="n">extrapolar</span> <span class="k">else</span> <span class="n">nulo</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-490"><a id="pyield.interpolador.interpolar--source--__codelineno-0-490" name="pyield.interpolador.interpolar--source--__codelineno-0-490"></a>        <span class="o">.</span><span class="n">otherwise</span><span class="p">(</span><span class="n">expr_meio</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-491"><a id="pyield.interpolador.interpolar--source--__codelineno-0-491" name="pyield.interpolador.interpolar--source--__codelineno-0-491"></a>    <span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-492"><a id="pyield.interpolador.interpolar--source--__codelineno-0-492" name="pyield.interpolador.interpolar--source--__codelineno-0-492"></a>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-493"><a id="pyield.interpolador.interpolar--source--__codelineno-0-493" name="pyield.interpolador.interpolar--source--__codelineno-0-493"></a>    <span class="k">return</span> <span class="p">(</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-494"><a id="pyield.interpolador.interpolar--source--__codelineno-0-494" name="pyield.interpolador.interpolar--source--__codelineno-0-494"></a>        <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">taxa_interpolada</span><span class="o">=</span><span class="n">taxa</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-495"><a id="pyield.interpolador.interpolar--source--__codelineno-0-495" name="pyield.interpolador.interpolar--source--__codelineno-0-495"></a>        <span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="s2">"_idx"</span><span class="p">)[</span><span class="s2">"taxa_interpolada"</span><span class="p">]</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-496"><a id="pyield.interpolador.interpolar--source--__codelineno-0-496" name="pyield.interpolador.interpolar--source--__codelineno-0-496"></a>        <span class="o">.</span><span class="n">fill_nan</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+</span><span id="pyield.interpolador.interpolar--source--__span-0-497"><a id="pyield.interpolador.interpolar--source--__codelineno-0-497" name="pyield.interpolador.interpolar--source--__codelineno-0-497"></a>    <span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
     </div>
 
 </div>

@@ -72,7 +72,7 @@ Por padrão, `calendario="auto"` seleciona a lista de feriados com base na data 
 
 ```python
 yd.du.contar("20-11-2024", "21-11-2024", calendario="anterior")  # -> 1
-yd.du.contar("20-11-2024", "21-11-2024", calendario="atual")     # -> 0
+yd.du.contar("20-11-2024", "21-11-2024", calendario="atual")  # -> 0
 ```
 
 Os parâmetros opcionais usam termos em português. `ajuste` define como tratar uma data inicial não útil, enquanto `limites_inclusivos` controla quais extremos de um intervalo gerado são incluídos:

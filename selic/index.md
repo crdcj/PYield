@@ -17,11 +17,9 @@ meta = yd.selic.meta("28-02-2025")
 
 As escalas foram ajustadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/#escalas-decimais-dos-indicadores>). As docstrings abaixo identificam as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
 
-selic — Dados e análises relacionados à taxa Selic e política monetária.
+Indicadores da taxa Selic: `over`, `over_serie`, `meta` e `meta_serie`.
 
-### Submódulos
-
-Este namespace reúne os indicadores diretamente relacionados à taxa Selic. O produto CPM e suas análises ficam disponíveis em `pyield.cpm`.
+O produto CPM e suas análises ficam em `pyield.cpm`; o calendário de reuniões do Copom, em `pyield.copom`.
 
 ## `over(data, *, anualizada=True)`
 
@@ -73,8 +71,8 @@ Parameters:
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
 | `inicio` | `DateLike \| None` | Data inicial. | `None` |
-| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data mais recente. | `None` |
-| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Mutuamente exclusivo com `inicio`/`fim`. | `None` |
+| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data de hoje. | `None` |
+| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Se informado, tem prioridade sobre `inicio` e `fim`. | `None` |
 | `anualizada` | `bool` | Se `True`, retorna a taxa ao ano, em base 252 dias úteis. Se `False`, retorna a taxa ao dia útil publicada pela fonte. | `True` |
 
 Returns:
@@ -85,7 +83,8 @@ Returns:
 
 **Output Columns**
 
-data (pl.Date): Data de referência da observação. taxa (pl.Decimal(18, 4) ou pl.Decimal(18, 8)): Taxa em decimal, ao ano com escala 4 se `anualizada=True` ou ao dia útil com escala 8 se `anualizada=False`.
+- data (Date): Data de referência da observação.
+- taxa (Decimal(18, 4) ou Decimal(18, 8)): Taxa em decimal, ao ano com escala 4 se `anualizada=True` ou ao dia útil com escala 8 se `anualizada=False`.
 
 **Notes**
 
@@ -167,8 +166,8 @@ Parameters:
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
 | `inicio` | `DateLike \| None` | Data inicial. | `None` |
-| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data mais recente. | `None` |
-| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Mutuamente exclusivo com `inicio`/`fim`. | `None` |
+| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data de hoje. | `None` |
+| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Se informado, tem prioridade sobre `inicio` e `fim`. | `None` |
 
 Returns:
 

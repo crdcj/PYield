@@ -55,8 +55,8 @@ Parameters:
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
 | `inicio` | `DateLike \| None` | Data inicial. | `None` |
-| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data mais recente. | `None` |
-| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Mutuamente exclusivo com `inicio`/`fim`. | `None` |
+| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data de hoje. | `None` |
+| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Se informado, tem prioridade sobre `inicio` e `fim`. | `None` |
 
 Returns:
 

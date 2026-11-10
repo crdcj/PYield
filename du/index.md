@@ -429,11 +429,11 @@ Determina se data(s) são dias úteis brasileiros.
 
 REGIME DE FERIADOS: Por padrão, para cada data, a lista de feriados apropriada (anterior vs. atual) é escolhida com base na data de transição 26-12-2023. Também é possível selecionar explicitamente uma das listas para toda a avaliação.
 
-PRESERVAÇÃO DE ORDEM E FORMA: A saída preserva a ordem original dos elementos. Nenhuma ordenação, deduplicação, remodelação ou alinhamento é realizado; o i-ésimo resultado corresponde à i-ésima data fornecida após expansão (se alguma expansão ocorreu de uma entrada escalar em outro lugar da cadeia de chamadas).
+PRESERVAÇÃO DE ORDEM E FORMA: A saída preserva a ordem original dos elementos. Nenhuma ordenação, deduplicação, remodelação ou alinhamento é realizado; o i-ésimo resultado corresponde à i-ésima data fornecida.
 
 PROPAGAÇÃO DE NULOS: Um argumento escalar nulo faz curto-circuito para `None`. Valores nulos dentro de entradas array-like produzem nulos nas posições correspondentes da saída.
 
-TIPO DE RETORNO: Se a entrada (não-nula) resolve para um único elemento, um `bool` Python é retornado. Se esse único elemento for nulo, `None` é retornado. Caso contrário, uma `polars.Series` de booleanos nomeada `'eh_dia_util'` é produzida.
+TIPO DE RETORNO: Se a entrada for escalar, um `bool` Python é retornado; se esse escalar for nulo, `None` é retornado. Para entradas array-like, mesmo com um único elemento, uma `polars.Series` de booleanos nomeada `'eh_dia_util'` é produzida.
 
 FINS DE SEMANA: Sábados e domingos nunca são dias úteis independentemente do regime de feriados.
 

@@ -13,7 +13,7 @@ Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Se não houver ao menos um vértice válido na curva. |
+| `ValueError` | Se `metodo` não for `"flat_forward"` nem `"linear"`, se não houver ao menos um vértice válido na curva ou se a curva tiver o mesmo prazo com taxas diferentes. |
 
 **Notes**
 
@@ -136,4 +136,96 @@ shape: (3, 2)
 │ 45  ┆ 0.048331 │
 │ 75  ┆ 0.052997 │
 └─────┴──────────┘
+```
+
+## interpolar
+
+Interpola taxas flat-forward para uma série de pontos alvo.
+
+Versão vetorizada de `Interpolador`. Quando `datas_alvo` e `datas_curva` são fornecidas, cada ponto é interpolado contra a curva da sua data correspondente (multi-curva, sem loop em Python). Quando ambas são `None`, todos os pontos usam a mesma curva.
+
+O resultado pode ser adicionado a um DataFrame via `with_columns`, preservando a ordem original de `dus_alvo`.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `dus_alvo` | `Series` | Series Int com os dias úteis dos pontos a interpolar. | *required* |
+| `dus_curva` | `Series` | Series Int com os dias úteis dos vértices conhecidos. | *required* |
+| `taxas_curva` | `Series` | Series Float com as taxas dos vértices conhecidos (mesma ordem de `dus_curva`). | *required* |
+| `datas_alvo` | `Series \| None` | Series Date com a data de referência de cada ponto alvo. Quando fornecida, `datas_curva` também deve ser. Padrão: `None` (curva única). | `None` |
+| `datas_curva` | `Series \| None` | Series Date com a data de referência de cada vértice da curva. Padrão: `None` (curva única). | `None` |
+| `extrapolar` | `bool` | Controla apenas o comportamento na ponta longa (DU acima do maior vértice de cada grupo). Se True, retorna a última taxa conhecida; se False (padrão), retorna `null`. A ponta curta (DU abaixo do menor vértice) sempre retorna a primeira taxa do grupo, independentemente desta flag. O default casa com o da classe `Interpolador`. | `False` |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `Series` | Series Float64 `taxa_interpolada` na mesma ordem de |
+| `Series` | `dus_alvo`. `null` quando o DU é nulo, a data alvo não existe |
+| `Series` | na curva, ou o DU está acima do maior vértice e `extrapolar` é |
+| `Series` | False. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se apenas uma de `datas_alvo` ou `datas_curva` for fornecida, ou se a curva tiver o mesmo prazo com taxas diferentes (na mesma data, quando há várias curvas). |
+
+**Notes**
+
+Usa a mesma fórmula flat-forward descrita na documentação de `Interpolador`. Os vértices que cercam cada prazo alvo são encontrados automaticamente.
+
+Examples:
+
+Caso típico: adicionar uma coluna de taxas interpoladas a um DataFrame com múltiplas datas de referência.
+
+```pycon
+>>> df = pl.DataFrame(
+...     {
+...         "data_referencia": ["2025-01-02", "2025-01-02"],
+...         "dias_uteis": [10, 25],
+...     }
+... )
+>>> df_curva = pl.DataFrame(
+...     {
+...         "data_referencia": ["2025-01-02"] * 3,
+...         "dias_uteis": [5, 20, 50],
+...         "taxa": [0.10, 0.12, 0.13],
+...     }
+... )
+>>> df.with_columns(
+...     taxa=yd.interpolar(
+...         dus_alvo=df["dias_uteis"],
+...         dus_curva=df_curva["dias_uteis"],
+...         taxas_curva=df_curva["taxa"],
+...         datas_alvo=df["data_referencia"],
+...         datas_curva=df_curva["data_referencia"],
+...     )
+... )
+shape: (2, 3)
+┌─────────────────┬────────────┬──────────┐
+│ data_referencia ┆ dias_uteis ┆ taxa     │
+│ ---             ┆ ---        ┆ ---      │
+│ str             ┆ i64        ┆ f64      │
+╞═════════════════╪════════════╪══════════╡
+│ 2025-01-02      ┆ 10         ┆ 0.113293 │
+│ 2025-01-02      ┆ 25         ┆ 0.123323 │
+└─────────────────┴────────────┴──────────┘
+```
+
+Curva única (sem datas):
+
+```pycon
+>>> yd.interpolar(
+...     dus_alvo=pl.Series([10, 25]),
+...     dus_curva=pl.Series([5, 20, 50]),
+...     taxas_curva=pl.Series([0.10, 0.12, 0.13]),
+... )
+shape: (2,)
+Series: 'taxa_interpolada' [f64]
+[
+    0.113293
+    0.123323
+]
 ```

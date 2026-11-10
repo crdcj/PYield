@@ -125,7 +125,7 @@ Interpola taxas de DI para datas de negociação e vencimentos especificados.
 
 Calcula taxas de DI interpoladas usando o método **flat-forward** para conjuntos de datas de negociação e vencimentos. Esta função é adequada para cálculos vetorizados com múltiplos pares de datas.
 
-Se taxas de DI não estiverem disponíveis para uma data de negociação, as taxas interpoladas correspondentes serão NaN.
+Se taxas de DI não estiverem disponíveis para uma data de negociação, as taxas interpoladas correspondentes serão nulas.
 
 Trata broadcasting: Se um argumento for escalar e o outro for array, o valor escalar é aplicado a todos os elementos do array.
 
@@ -143,7 +143,7 @@ Returns:
 | Type | Description |
 | --- | --- |
 | `Series` | Series contendo as taxas DI interpoladas (como floats). Valores serão |
-| `Series` | NaN onde interpolação não for possível (ex: sem dados DI para a data |
+| `Series` | nulos onde interpolação não for possível (ex: sem dados DI para a data |
 | `Series` | de negociação). As taxas são retornadas em formato decimal; os exemplos |
 | `Series` | abaixo as multiplicam por 100 apenas para facilitar a leitura. |
 
@@ -151,7 +151,7 @@ Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Se `datas_referencia` e `datas_vencimento` forem ambos array-like mas tiverem tamanhos diferentes. |
+| `ShapeError` | Se `datas_referencia` e `datas_vencimento` forem ambos array-like mas tiverem tamanhos diferentes. |
 | `ValueError` | Se `tipo_taxa` não for `"ajuste"` ou `"fechamento"`. |
 
 **Notes**
@@ -169,7 +169,7 @@ Interpola taxas para múltiplas datas de negociação e vencimento:
 >>> # A taxa não é interpolada (taxa de liquidação é usada)
 >>> # Não há contrato com vencimento 25-11-2027 em 09-05-2025
 >>> # A taxa é interpolada (método flat-forward)
->>> # Não há dados para 10-05-2025 (sábado) -> NaN
+>>> # Não há dados para 10-05-2025 (sábado) -> null
 >>> from pyield import di1
 >>> di1.interpolar_taxas(
 ...     datas_referencia=["08-05-2025", "09-05-2025", "10-05-2025"],

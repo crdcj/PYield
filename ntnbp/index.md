@@ -24,7 +24,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa_tir` | `float \| Decimal \| str` | Taxa interna de retorno anualizada do título. Aceita também percentual explícito: "5.75%" ou "5,75%". A taxa de entrada não é truncada antes do cálculo. | *required* |
+| `taxa_tir` | `float \| Decimal \| str` | TIR anual efetiva do título, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". A taxa de entrada não é truncada antes do cálculo. | *required* |
 
 Returns:
 
@@ -55,7 +55,7 @@ Decimal('84.4317')
 
 Calcula o DV01 (Dollar Value of 01) da NTN-B Principal em R$.
 
-Representa a variação do PU informado para um aumento de 1 bp (0,01%) na taxa.
+Representa a variação do PU informado para um aumento de 1 bp (0,01 ponto percentual) na taxa.
 
 Parameters:
 
@@ -63,7 +63,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa_tir` | `float` | Taxa interna de retorno anualizada do título. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_tir` | `float \| Decimal \| str` | TIR anual efetiva do título, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 | `pu` | `float \| Decimal` | PU usado como base para o cálculo. | *required* |
 
 Returns:
@@ -128,7 +128,7 @@ A taxa zero correspondente ao vencimento é interpolada por flat-forward, sem ar
 
 Arredondamentos comerciais e spreads de compra ou venda ficam a cargo do consumidor.
 
-A curva pode ser produzida por :func:`pyield.ntnb.taxas_zero`. Para cálculos em lote, ela deve ser construída uma única vez e reutilizada entre os títulos.
+A curva pode ser produzida por `yd.ntnb.taxas_zero`. Para cálculos em lote, ela deve ser construída uma única vez e reutilizada entre os títulos.
 
 Parameters:
 
@@ -142,4 +142,10 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | TIR anualizada em formato decimal, sem arredondamento. Retorna `NaN` se a liquidação for igual ou posterior ao vencimento. |
+| `float` | `float` | TIR anualizada em formato decimal, sem arredondamento. Retorna `NaN` se a liquidação for igual ou posterior ao vencimento ou se o prazo exceder o último vértice da curva, pois não há extrapolação na ponta longa. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se faltar a coluna `dias_uteis` ou `taxa_zero`, se a curva não tiver ao menos um vértice válido ou se um mesmo prazo aparecer com taxas diferentes. |

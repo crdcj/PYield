@@ -30,11 +30,24 @@ Returns:
 
 **Output Columns**
 
-nro\_reuniao (Int64): Número sequencial informado na ata; nulo sem ata. data\_inicio (Date): Primeiro dia informado no ICS; nulo fora da agenda. data\_decisao (Date): Último dia da reunião, dataReferencia nas atas. data\_publicacao (Date): Publicação da ata; nula quando não disponível. data\_efetividade (Date): Próximo dia útil após a decisão, calculado pelo calendário brasileiro de yd.du; data de vencimento/liquidação CPM. status (String): "Realizada" se a decisão for até hoje no Brasil; "A realizar" caso contrário. Classificação por data, não por ata. titulo (String): Título original da ata; nulo quando não disponível. fonte (String): "Ata" ou "Calendário", conforme a origem da decisão.
+- nro\_reuniao (Int64): Número sequencial informado na ata; nulo sem ata.
+- data\_inicio (Date): Primeiro dia informado no ICS; nulo fora da agenda.
+- data\_decisao (Date): Último dia da reunião, dataReferencia nas atas.
+- data\_publicacao (Date): Publicação da ata; nula quando não disponível.
+- data\_efetividade (Date): Próximo dia útil após a decisão, calculado pelo calendário brasileiro de yd.du; data de vencimento/liquidação CPM.
+- status (String): "Realizada" se a decisão for até hoje no Brasil; "A realizar" caso contrário. Classificação por data, não por ata.
+- titulo (String): Título original da ata; nulo quando não disponível.
+- fonte (String): "Ata" ou "Calendário", conforme a origem da decisão.
 
 **Notes**
 
-O horizonte depende das datas publicadas pelo BCB. A consulta às atas solicita até 500 registros. O status é recalculado a cada chamada. Erros de rede e payload inválido são propagados. O ICS publica um evento por dia: dias únicos consecutivos devem formar pares; grupos incompletos geram ValueError. O início histórico não é inferido subtraindo um dia da decisão.
+O horizonte depende das datas publicadas pelo BCB. A consulta às atas solicita até 500 registros. O status é recalculado a cada chamada. Erros de rede e payload inválido são propagados. O ICS publica um evento por dia de reunião: cada reunião deve aparecer como dois dias consecutivos, e grupos com outra quantidade de dias geram ValueError. O início histórico não é inferido subtraindo um dia da decisão.
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se `inicio` for posterior a `fim` ou se o calendário ICS do BCB for inválido. |
 
 Examples:
 
@@ -65,7 +78,14 @@ Returns:
 
 **Output Columns**
 
-nro\_reuniao (Int64): Número sequencial da ata, quando disponível. data\_inicio (Date): Primeiro dia no ICS, quando disponível. data\_decisao (Date): Último dia da reunião. data\_publicacao (Date): Publicação da ata, quando disponível. data\_efetividade (Date): Próximo dia útil após a decisão. status (String): "Realizada" ou "A realizar", conforme a data atual. titulo (String): Título da ata, quando disponível. fonte (String): "Ata" ou "Calendário".
+- nro\_reuniao (Int64): Número sequencial da ata, quando disponível.
+- data\_inicio (Date): Primeiro dia no ICS, quando disponível.
+- data\_decisao (Date): Último dia da reunião.
+- data\_publicacao (Date): Publicação da ata, quando disponível.
+- data\_efetividade (Date): Próximo dia útil após a decisão.
+- status (String): "Realizada" ou "A realizar", conforme a data atual.
+- titulo (String): Título da ata, quando disponível.
+- fonte (String): "Ata" ou "Calendário".
 
 Examples:
 

@@ -25,7 +25,9 @@ historico = yd.vna.historico("NTN-C", vencimento="01-01-2031")
 valor = yd.vna.valor("NTN-B", "15-12-2025")
 projecao_ntnb = yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, "0.45%")
 projecao_lft = yd.vna.projetado(
-    "LFT", "18-09-2026", 19905.773236,
+    "LFT",
+    "18-09-2026",
+    19905.773236,
     selic="13.65%",
 )
 ```
@@ -59,9 +61,8 @@ assert nova_base == yd.vna.valor("NTN-B", "15-08-2026")
 
 ```python
 indice_atual = 1225.846  # Pode ser obtido com yd.igpm.indice("01-09-2026")
-nova_base = yd.vna.calcular_base(
-    "NTN-C", indice_atual, vencimento="01-01-2031",  # 01/10/2026
-)
+# Base de 01/10/2026
+nova_base = yd.vna.calcular_base("NTN-C", indice_atual, vencimento="01-01-2031")
 # Decimal('6671.452284')
 assert nova_base == yd.vna.valor("NTN-C", "01-10-2026", "01-01-2031")
 ```
@@ -127,7 +128,9 @@ As colunas de números-índice e as escalas decimais do contexto foram atualizad
 ```python
 contexto = yd.vna.contexto("NTN-B", "30-06-2026")
 contexto_ntnc = yd.vna.contexto(
-    "NTN-C", "15-06-2026", vencimento="01-01-2031",
+    "NTN-C",
+    "15-06-2026",
+    vencimento="01-01-2031",
 )
 ```
 
@@ -146,7 +149,10 @@ Para NTN-B, uma data entre 15/07 e 14/08 seleciona os índices de junho e julho.
 ```python
 contexto = yd.vna.contexto("NTN-B", "30-06-2026")
 indices = contexto.select(
-    "competencia_anterior", "competencia", "indice_anterior", "indice_atual",
+    "competencia_anterior",
+    "competencia",
+    "indice_anterior",
+    "indice_atual",
 ).row(0)
 # (datetime.date(2026, 5, 1), datetime.date(2026, 6, 1),
 #  Decimal('7640.15'), Decimal('7652.37'))
@@ -173,7 +179,9 @@ Os calendários permitem identificar projeções que merecem revisão, sem presu
 ```python
 data_operacao = yd.hoje()
 contexto = yd.vna.contexto(
-    "NTN-C", data_operacao, vencimento="01-01-2031",
+    "NTN-C",
+    data_operacao,
+    vencimento="01-01-2031",
     inflacao_projetada="0,45%",
 )
 agenda = yd.igpm.calendario(contexto.item(0, "competencia").year)
@@ -187,7 +195,9 @@ diagnostico = contexto.join(agenda, on="competencia", how="left").with_columns(
 
 Compare a divulgação com a **data de operação**, mesmo quando o contexto descreve a liquidação. D+1 não antecipa a publicação. Sem data oficial, o exemplo não inventa um alerta. Mensagens, cores, janelas de proximidade e a decisão de impedir uma precificação permanecem na aplicação. A inflação realizada pode estar disponível antes do VNA final da vigência.
 
-Consulta e cálculo de VNA por título: valor, histórico, último e projeção.
+Consulta e cálculo de VNA por título.
+
+Disponibiliza `valor`, `historico`, `ultimo`, `vigencia`, `projetado`, `contexto`, `calcular_vna` e `calcular_base`.
 
 ## `calcular_base(titulo, indice_atual, vencimento=None)`
 
@@ -339,7 +349,21 @@ Returns:
 
 **Output Columns**
 
-titulo (String): Título consultado. data (Date): Data para a qual os parâmetros foram selecionados. inicio\_vigencia (Date): Início inclusivo, sem ajuste útil. fim\_vigencia (Date): Fim exclusivo, sem ajuste útil. competencia (Date): Primeiro dia do mês da inflação da vigência. competencia\_anterior (Date): Primeiro dia do mês anterior à competência. vna\_base (Decimal(18, 6)): VNA publicado no início; nulo se ausente. vna\_fim (Decimal(18, 6)): VNA publicado no fim; nulo se ausente. indice\_anterior (Decimal(18, escala)): Número-índice da competência anterior; escala 2 para IPCA e 3 para IGP-M. Nulo se ausente. indice\_atual (Decimal(18, escala)): Número-índice da competência da vigência, com a mesma escala de indice\_anterior. Nulo se ausente. origem\_indice (String): "IBGE" ou "FGV/Ipeadata"; nula se ambos os índices estiverem ausentes. inflacao (Decimal(38, escala)): Variação mensal decimal, com escala 4 quando realizada ou indisponível. Para projeções informadas, preserva a escala da entrada. Pode ser passada diretamente a projetado, que aplica as regras de projeção, mesmo para uma taxa realizada. situacao\_inflacao (String): "realizado", "projetado" ou "indisponivel". origem\_inflacao (String): "IBGE", "SGS/BCB" ou "informada"; nula sem taxa. pendencias (List\[String\]): "vna\_base\_indisponivel" e/ou "inflacao\_indisponivel". Lista vazia se ambos estiverem disponíveis. Refere-se à projeção por taxa; não atesta disponibilidade dos índices.
+- titulo (String): Título consultado.
+- data (Date): Data para a qual os parâmetros foram selecionados.
+- inicio\_vigencia (Date): Início inclusivo, sem ajuste útil.
+- fim\_vigencia (Date): Fim exclusivo, sem ajuste útil.
+- competencia (Date): Primeiro dia do mês da inflação da vigência.
+- competencia\_anterior (Date): Primeiro dia do mês anterior à competência.
+- vna\_base (Decimal(18, 6)): VNA publicado no início; nulo se ausente.
+- vna\_fim (Decimal(18, 6)): VNA publicado no fim; nulo se ausente.
+- indice\_anterior (Decimal(18, escala)): Número-índice da competência anterior; escala 2 para IPCA e 3 para IGP-M. Nulo se ausente.
+- indice\_atual (Decimal(18, escala)): Número-índice da competência da vigência, com a mesma escala de indice\_anterior. Nulo se ausente.
+- origem\_indice (String): "IBGE" ou "FGV/Ipeadata"; nula se ambos os índices estiverem ausentes.
+- inflacao (Decimal(38, escala)): Variação mensal decimal, com escala 4 quando realizada ou indisponível. Para projeções informadas, preserva a escala da entrada. Pode ser passada diretamente a projetado, que aplica as regras de projeção, mesmo para uma taxa realizada.
+- situacao\_inflacao (String): "realizado", "projetado" ou "indisponivel".
+- origem\_inflacao (String): "IBGE", "SGS/BCB" ou "informada"; nula sem taxa.
+- pendencias (List\[String\]): "vna\_base\_indisponivel" e/ou "inflacao\_indisponivel". Lista vazia se ambos estiverem disponíveis. Refere-se à projeção por taxa; não atesta disponibilidade dos índices.
 
 **Notes**
 
@@ -377,7 +401,9 @@ Para a vigência atual da NTN-C, informa o vencimento e uma projeção de 0,45%,
 
 ```pycon
 >>> parametros = yd.vna.contexto(
-...     "NTN-C", yd.hoje(), vencimento="01-01-2031",
+...     "NTN-C",
+...     yd.hoje(),
+...     vencimento="01-01-2031",
 ...     inflacao_projetada="0,45%",
 ... )
 >>> situacao = parametros.item(0, "situacao_inflacao")

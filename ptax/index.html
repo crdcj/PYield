@@ -31,7 +31,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.74">
+      <meta name="generator" content="zensical-0.1.0">
     
     
       
@@ -339,6 +339,33 @@
     
   
   Visão geral
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.64.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.64.0
 
     
   </span>
@@ -1886,7 +1913,24 @@ Brasil, via SGS do Banco Central (série 1).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyield/bc/sgs.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.ptax--source--__codelineno-0-553">553</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.ptax--source--__codelineno-0-536">536</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-537">537</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-538">538</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-539">539</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-540">540</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-541">541</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-542">542</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-543">543</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-544">544</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-545">545</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-546">546</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-547">547</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-548">548</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-549">549</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-550">550</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-551">551</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-552">552</a></span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-553">553</a></span>
 <span class="normal"><a href="#pyield.ptax--source--__codelineno-0-554">554</a></span>
 <span class="normal"><a href="#pyield.ptax--source--__codelineno-0-555">555</a></span>
 <span class="normal"><a href="#pyield.ptax--source--__codelineno-0-556">556</a></span>
@@ -1897,52 +1941,35 @@ Brasil, via SGS do Banco Central (série 1).</p>
 <span class="normal"><a href="#pyield.ptax--source--__codelineno-0-561">561</a></span>
 <span class="normal"><a href="#pyield.ptax--source--__codelineno-0-562">562</a></span>
 <span class="normal"><a href="#pyield.ptax--source--__codelineno-0-563">563</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-564">564</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-565">565</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-566">566</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-567">567</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-568">568</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-570">570</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-571">571</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-572">572</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-573">573</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-574">574</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-575">575</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-576">576</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-577">577</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-578">578</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-579">579</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-580">580</a></span>
-<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-581">581</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ptax--source--__span-0-553"><a id="pyield.ptax--source--__codelineno-0-553" name="pyield.ptax--source--__codelineno-0-553"></a><span class="k">def</span><span class="w"> </span><span class="nf">ptax</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Decimal</span><span class="p">:</span>
-</span><span id="pyield.ptax--source--__span-0-554"><a id="pyield.ptax--source--__codelineno-0-554" name="pyield.ptax--source--__codelineno-0-554"></a><span class="w">    </span><span class="sd">"""Cotação PTAX de venda para uma data específica.</span>
-</span><span id="pyield.ptax--source--__span-0-555"><a id="pyield.ptax--source--__codelineno-0-555" name="pyield.ptax--source--__codelineno-0-555"></a>
-</span><span id="pyield.ptax--source--__span-0-556"><a id="pyield.ptax--source--__codelineno-0-556" name="pyield.ptax--source--__codelineno-0-556"></a><span class="sd">    Retorna a PTAX de venda, taxa de câmbio oficial do dólar no</span>
-</span><span id="pyield.ptax--source--__span-0-557"><a id="pyield.ptax--source--__codelineno-0-557" name="pyield.ptax--source--__codelineno-0-557"></a><span class="sd">    Brasil, via SGS do Banco Central (série 1).</span>
-</span><span id="pyield.ptax--source--__span-0-558"><a id="pyield.ptax--source--__codelineno-0-558" name="pyield.ptax--source--__codelineno-0-558"></a>
-</span><span id="pyield.ptax--source--__span-0-559"><a id="pyield.ptax--source--__codelineno-0-559" name="pyield.ptax--source--__codelineno-0-559"></a><span class="sd">    Args:</span>
-</span><span id="pyield.ptax--source--__span-0-560"><a id="pyield.ptax--source--__codelineno-0-560" name="pyield.ptax--source--__codelineno-0-560"></a><span class="sd">        data: Data desejada.</span>
-</span><span id="pyield.ptax--source--__span-0-561"><a id="pyield.ptax--source--__codelineno-0-561" name="pyield.ptax--source--__codelineno-0-561"></a>
-</span><span id="pyield.ptax--source--__span-0-562"><a id="pyield.ptax--source--__codelineno-0-562" name="pyield.ptax--source--__codelineno-0-562"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.ptax--source--__span-0-563"><a id="pyield.ptax--source--__codelineno-0-563" name="pyield.ptax--source--__codelineno-0-563"></a><span class="sd">        Decimal: Cotação PTAX de venda em R$/US$ com quatro casas decimais, ou</span>
-</span><span id="pyield.ptax--source--__span-0-564"><a id="pyield.ptax--source--__codelineno-0-564" name="pyield.ptax--source--__codelineno-0-564"></a><span class="sd">        ``Decimal('NaN')`` se não houver cotação (feriado, fim de semana ou</span>
-</span><span id="pyield.ptax--source--__span-0-565"><a id="pyield.ptax--source--__codelineno-0-565" name="pyield.ptax--source--__codelineno-0-565"></a><span class="sd">        data futura).</span>
-</span><span id="pyield.ptax--source--__span-0-566"><a id="pyield.ptax--source--__codelineno-0-566" name="pyield.ptax--source--__codelineno-0-566"></a>
-</span><span id="pyield.ptax--source--__span-0-567"><a id="pyield.ptax--source--__codelineno-0-567" name="pyield.ptax--source--__codelineno-0-567"></a><span class="sd">    Examples:</span>
-</span><span id="pyield.ptax--source--__span-0-568"><a id="pyield.ptax--source--__codelineno-0-568" name="pyield.ptax--source--__codelineno-0-568"></a><span class="sd">        &gt;&gt;&gt; import pyield as yd</span>
-</span><span id="pyield.ptax--source--__span-0-569"><a id="pyield.ptax--source--__codelineno-0-569" name="pyield.ptax--source--__codelineno-0-569"></a><span class="sd">        &gt;&gt;&gt; yd.ptax("22-04-2025")</span>
-</span><span id="pyield.ptax--source--__span-0-570"><a id="pyield.ptax--source--__codelineno-0-570" name="pyield.ptax--source--__codelineno-0-570"></a><span class="sd">        Decimal('5.7496')</span>
-</span><span id="pyield.ptax--source--__span-0-571"><a id="pyield.ptax--source--__codelineno-0-571" name="pyield.ptax--source--__codelineno-0-571"></a>
-</span><span id="pyield.ptax--source--__span-0-572"><a id="pyield.ptax--source--__codelineno-0-572" name="pyield.ptax--source--__codelineno-0-572"></a><span class="sd">        &gt;&gt;&gt; yd.ptax("20-04-2025")</span>
-</span><span id="pyield.ptax--source--__span-0-573"><a id="pyield.ptax--source--__codelineno-0-573" name="pyield.ptax--source--__codelineno-0-573"></a><span class="sd">        Decimal('NaN')</span>
-</span><span id="pyield.ptax--source--__span-0-574"><a id="pyield.ptax--source--__codelineno-0-574" name="pyield.ptax--source--__codelineno-0-574"></a><span class="sd">    """</span>
-</span><span id="pyield.ptax--source--__span-0-575"><a id="pyield.ptax--source--__codelineno-0-575" name="pyield.ptax--source--__codelineno-0-575"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-</span><span id="pyield.ptax--source--__span-0-576"><a id="pyield.ptax--source--__codelineno-0-576" name="pyield.ptax--source--__codelineno-0-576"></a>        <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"NaN"</span><span class="p">)</span>
-</span><span id="pyield.ptax--source--__span-0-577"><a id="pyield.ptax--source--__codelineno-0-577" name="pyield.ptax--source--__codelineno-0-577"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">converter_datas</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-</span><span id="pyield.ptax--source--__span-0-578"><a id="pyield.ptax--source--__codelineno-0-578" name="pyield.ptax--source--__codelineno-0-578"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">data_referencia_valida</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-</span><span id="pyield.ptax--source--__span-0-579"><a id="pyield.ptax--source--__codelineno-0-579" name="pyield.ptax--source--__codelineno-0-579"></a>        <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"NaN"</span><span class="p">)</span>
-</span><span id="pyield.ptax--source--__span-0-580"><a id="pyield.ptax--source--__codelineno-0-580" name="pyield.ptax--source--__codelineno-0-580"></a>
-</span><span id="pyield.ptax--source--__span-0-581"><a id="pyield.ptax--source--__codelineno-0-581" name="pyield.ptax--source--__codelineno-0-581"></a>    <span class="k">return</span> <span class="n">_extrair_escalar</span><span class="p">(</span><span class="n">ptax_serie</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data</span><span class="p">),</span> <span class="s2">"cotacao"</span><span class="p">)</span>
+<span class="normal"><a href="#pyield.ptax--source--__codelineno-0-564">564</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ptax--source--__span-0-536"><a id="pyield.ptax--source--__codelineno-0-536" name="pyield.ptax--source--__codelineno-0-536"></a><span class="k">def</span><span class="w"> </span><span class="nf">ptax</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Decimal</span><span class="p">:</span>
+</span><span id="pyield.ptax--source--__span-0-537"><a id="pyield.ptax--source--__codelineno-0-537" name="pyield.ptax--source--__codelineno-0-537"></a><span class="w">    </span><span class="sd">"""Cotação PTAX de venda para uma data específica.</span>
+</span><span id="pyield.ptax--source--__span-0-538"><a id="pyield.ptax--source--__codelineno-0-538" name="pyield.ptax--source--__codelineno-0-538"></a>
+</span><span id="pyield.ptax--source--__span-0-539"><a id="pyield.ptax--source--__codelineno-0-539" name="pyield.ptax--source--__codelineno-0-539"></a><span class="sd">    Retorna a PTAX de venda, taxa de câmbio oficial do dólar no</span>
+</span><span id="pyield.ptax--source--__span-0-540"><a id="pyield.ptax--source--__codelineno-0-540" name="pyield.ptax--source--__codelineno-0-540"></a><span class="sd">    Brasil, via SGS do Banco Central (série 1).</span>
+</span><span id="pyield.ptax--source--__span-0-541"><a id="pyield.ptax--source--__codelineno-0-541" name="pyield.ptax--source--__codelineno-0-541"></a>
+</span><span id="pyield.ptax--source--__span-0-542"><a id="pyield.ptax--source--__codelineno-0-542" name="pyield.ptax--source--__codelineno-0-542"></a><span class="sd">    Args:</span>
+</span><span id="pyield.ptax--source--__span-0-543"><a id="pyield.ptax--source--__codelineno-0-543" name="pyield.ptax--source--__codelineno-0-543"></a><span class="sd">        data: Data desejada.</span>
+</span><span id="pyield.ptax--source--__span-0-544"><a id="pyield.ptax--source--__codelineno-0-544" name="pyield.ptax--source--__codelineno-0-544"></a>
+</span><span id="pyield.ptax--source--__span-0-545"><a id="pyield.ptax--source--__codelineno-0-545" name="pyield.ptax--source--__codelineno-0-545"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.ptax--source--__span-0-546"><a id="pyield.ptax--source--__codelineno-0-546" name="pyield.ptax--source--__codelineno-0-546"></a><span class="sd">        Decimal: Cotação PTAX de venda em R$/US$ com quatro casas decimais, ou</span>
+</span><span id="pyield.ptax--source--__span-0-547"><a id="pyield.ptax--source--__codelineno-0-547" name="pyield.ptax--source--__codelineno-0-547"></a><span class="sd">        ``Decimal('NaN')`` se não houver cotação (feriado, fim de semana ou</span>
+</span><span id="pyield.ptax--source--__span-0-548"><a id="pyield.ptax--source--__codelineno-0-548" name="pyield.ptax--source--__codelineno-0-548"></a><span class="sd">        data futura).</span>
+</span><span id="pyield.ptax--source--__span-0-549"><a id="pyield.ptax--source--__codelineno-0-549" name="pyield.ptax--source--__codelineno-0-549"></a>
+</span><span id="pyield.ptax--source--__span-0-550"><a id="pyield.ptax--source--__codelineno-0-550" name="pyield.ptax--source--__codelineno-0-550"></a><span class="sd">    Examples:</span>
+</span><span id="pyield.ptax--source--__span-0-551"><a id="pyield.ptax--source--__codelineno-0-551" name="pyield.ptax--source--__codelineno-0-551"></a><span class="sd">        &gt;&gt;&gt; import pyield as yd</span>
+</span><span id="pyield.ptax--source--__span-0-552"><a id="pyield.ptax--source--__codelineno-0-552" name="pyield.ptax--source--__codelineno-0-552"></a><span class="sd">        &gt;&gt;&gt; yd.ptax("22-04-2025")</span>
+</span><span id="pyield.ptax--source--__span-0-553"><a id="pyield.ptax--source--__codelineno-0-553" name="pyield.ptax--source--__codelineno-0-553"></a><span class="sd">        Decimal('5.7496')</span>
+</span><span id="pyield.ptax--source--__span-0-554"><a id="pyield.ptax--source--__codelineno-0-554" name="pyield.ptax--source--__codelineno-0-554"></a>
+</span><span id="pyield.ptax--source--__span-0-555"><a id="pyield.ptax--source--__codelineno-0-555" name="pyield.ptax--source--__codelineno-0-555"></a><span class="sd">        &gt;&gt;&gt; yd.ptax("20-04-2025")</span>
+</span><span id="pyield.ptax--source--__span-0-556"><a id="pyield.ptax--source--__codelineno-0-556" name="pyield.ptax--source--__codelineno-0-556"></a><span class="sd">        Decimal('NaN')</span>
+</span><span id="pyield.ptax--source--__span-0-557"><a id="pyield.ptax--source--__codelineno-0-557" name="pyield.ptax--source--__codelineno-0-557"></a><span class="sd">    """</span>
+</span><span id="pyield.ptax--source--__span-0-558"><a id="pyield.ptax--source--__codelineno-0-558" name="pyield.ptax--source--__codelineno-0-558"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+</span><span id="pyield.ptax--source--__span-0-559"><a id="pyield.ptax--source--__codelineno-0-559" name="pyield.ptax--source--__codelineno-0-559"></a>        <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"NaN"</span><span class="p">)</span>
+</span><span id="pyield.ptax--source--__span-0-560"><a id="pyield.ptax--source--__codelineno-0-560" name="pyield.ptax--source--__codelineno-0-560"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">converter_datas</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span><span id="pyield.ptax--source--__span-0-561"><a id="pyield.ptax--source--__codelineno-0-561" name="pyield.ptax--source--__codelineno-0-561"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">data_referencia_valida</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+</span><span id="pyield.ptax--source--__span-0-562"><a id="pyield.ptax--source--__codelineno-0-562" name="pyield.ptax--source--__codelineno-0-562"></a>        <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"NaN"</span><span class="p">)</span>
+</span><span id="pyield.ptax--source--__span-0-563"><a id="pyield.ptax--source--__codelineno-0-563" name="pyield.ptax--source--__codelineno-0-563"></a>
+</span><span id="pyield.ptax--source--__span-0-564"><a id="pyield.ptax--source--__codelineno-0-564" name="pyield.ptax--source--__codelineno-0-564"></a>    <span class="k">return</span> <span class="n">_extrair_escalar</span><span class="p">(</span><span class="n">ptax_serie</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data</span><span class="p">),</span> <span class="s2">"cotacao"</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2000,7 +2027,7 @@ conversão de DV01 e índices de fundos cambiais.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Data final. Se <code>None</code>, usa a data mais recente.</p>
+                <p>Data final. Se <code>None</code>, usa a data de hoje.</p>
               </div>
             </td>
             <td>
@@ -2016,8 +2043,8 @@ conversão de DV01 e índices de fundos cambiais.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Número de registros mais recentes a retornar.
-Mutuamente exclusivo com <code>inicio</code>/<code>fim</code>.</p>
+                <p>Número de registros mais recentes a retornar. Se informado,
+tem prioridade sobre <code>inicio</code> e <code>fim</code>.</p>
               </div>
             </td>
             <td>
@@ -2100,7 +2127,21 @@ passagem por float, com quatro casas decimais.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyield/bc/sgs.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-490">490</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-484">484</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-485">485</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-486">486</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-487">487</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-488">488</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-489">489</a></span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-490">490</a></span>
 <span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-491">491</a></span>
 <span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-492">492</a></span>
 <span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-493">493</a></span>
@@ -2143,84 +2184,64 @@ passagem por float, com quatro casas decimais.</p>
 <span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-530">530</a></span>
 <span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-531">531</a></span>
 <span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-532">532</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-533">533</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-534">534</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-535">535</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-536">536</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-537">537</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-538">538</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-539">539</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-540">540</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-541">541</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-542">542</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-543">543</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-544">544</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-545">545</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-546">546</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-547">547</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-548">548</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-549">549</a></span>
-<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-550">550</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ptax_serie--source--__span-0-490"><a id="pyield.ptax_serie--source--__codelineno-0-490" name="pyield.ptax_serie--source--__codelineno-0-490"></a><span class="k">def</span><span class="w"> </span><span class="nf">ptax_serie</span><span class="p">(</span>
-</span><span id="pyield.ptax_serie--source--__span-0-491"><a id="pyield.ptax_serie--source--__codelineno-0-491" name="pyield.ptax_serie--source--__codelineno-0-491"></a>    <span class="n">inicio</span><span class="p">:</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="pyield.ptax_serie--source--__span-0-492"><a id="pyield.ptax_serie--source--__codelineno-0-492" name="pyield.ptax_serie--source--__codelineno-0-492"></a>    <span class="n">fim</span><span class="p">:</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="pyield.ptax_serie--source--__span-0-493"><a id="pyield.ptax_serie--source--__codelineno-0-493" name="pyield.ptax_serie--source--__codelineno-0-493"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="pyield.ptax_serie--source--__span-0-494"><a id="pyield.ptax_serie--source--__codelineno-0-494" name="pyield.ptax_serie--source--__codelineno-0-494"></a>    <span class="n">ultimos</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="pyield.ptax_serie--source--__span-0-495"><a id="pyield.ptax_serie--source--__codelineno-0-495" name="pyield.ptax_serie--source--__codelineno-0-495"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-</span><span id="pyield.ptax_serie--source--__span-0-496"><a id="pyield.ptax_serie--source--__codelineno-0-496" name="pyield.ptax_serie--source--__codelineno-0-496"></a><span class="w">    </span><span class="sd">"""Cotação PTAX de venda do dólar (série SGS 1).</span>
-</span><span id="pyield.ptax_serie--source--__span-0-497"><a id="pyield.ptax_serie--source--__codelineno-0-497" name="pyield.ptax_serie--source--__codelineno-0-497"></a>
-</span><span id="pyield.ptax_serie--source--__span-0-498"><a id="pyield.ptax_serie--source--__codelineno-0-498" name="pyield.ptax_serie--source--__codelineno-0-498"></a><span class="sd">    Fonte: Banco Central do Brasil (BCB). Frequência diária.</span>
-</span><span id="pyield.ptax_serie--source--__span-0-499"><a id="pyield.ptax_serie--source--__codelineno-0-499" name="pyield.ptax_serie--source--__codelineno-0-499"></a>
-</span><span id="pyield.ptax_serie--source--__span-0-500"><a id="pyield.ptax_serie--source--__codelineno-0-500" name="pyield.ptax_serie--source--__codelineno-0-500"></a><span class="sd">    A cotação retornada é a PTAX de **venda**, a taxa de câmbio</span>
-</span><span id="pyield.ptax_serie--source--__span-0-501"><a id="pyield.ptax_serie--source--__codelineno-0-501" name="pyield.ptax_serie--source--__codelineno-0-501"></a><span class="sd">    oficial do dólar no Brasil, usada como referência para</span>
-</span><span id="pyield.ptax_serie--source--__span-0-502"><a id="pyield.ptax_serie--source--__codelineno-0-502" name="pyield.ptax_serie--source--__codelineno-0-502"></a><span class="sd">    liquidação de contratos, marcação a mercado de derivativos,</span>
-</span><span id="pyield.ptax_serie--source--__span-0-503"><a id="pyield.ptax_serie--source--__codelineno-0-503" name="pyield.ptax_serie--source--__codelineno-0-503"></a><span class="sd">    conversão de DV01 e índices de fundos cambiais.</span>
+<span class="normal"><a href="#pyield.ptax_serie--source--__codelineno-0-533">533</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ptax_serie--source--__span-0-476"><a id="pyield.ptax_serie--source--__codelineno-0-476" name="pyield.ptax_serie--source--__codelineno-0-476"></a><span class="k">def</span><span class="w"> </span><span class="nf">ptax_serie</span><span class="p">(</span>
+</span><span id="pyield.ptax_serie--source--__span-0-477"><a id="pyield.ptax_serie--source--__codelineno-0-477" name="pyield.ptax_serie--source--__codelineno-0-477"></a>    <span class="n">inicio</span><span class="p">:</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="pyield.ptax_serie--source--__span-0-478"><a id="pyield.ptax_serie--source--__codelineno-0-478" name="pyield.ptax_serie--source--__codelineno-0-478"></a>    <span class="n">fim</span><span class="p">:</span> <span class="n">DateLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="pyield.ptax_serie--source--__span-0-479"><a id="pyield.ptax_serie--source--__codelineno-0-479" name="pyield.ptax_serie--source--__codelineno-0-479"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="pyield.ptax_serie--source--__span-0-480"><a id="pyield.ptax_serie--source--__codelineno-0-480" name="pyield.ptax_serie--source--__codelineno-0-480"></a>    <span class="n">ultimos</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="pyield.ptax_serie--source--__span-0-481"><a id="pyield.ptax_serie--source--__codelineno-0-481" name="pyield.ptax_serie--source--__codelineno-0-481"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+</span><span id="pyield.ptax_serie--source--__span-0-482"><a id="pyield.ptax_serie--source--__codelineno-0-482" name="pyield.ptax_serie--source--__codelineno-0-482"></a><span class="w">    </span><span class="sd">"""Cotação PTAX de venda do dólar (série SGS 1).</span>
+</span><span id="pyield.ptax_serie--source--__span-0-483"><a id="pyield.ptax_serie--source--__codelineno-0-483" name="pyield.ptax_serie--source--__codelineno-0-483"></a>
+</span><span id="pyield.ptax_serie--source--__span-0-484"><a id="pyield.ptax_serie--source--__codelineno-0-484" name="pyield.ptax_serie--source--__codelineno-0-484"></a><span class="sd">    Fonte: Banco Central do Brasil (BCB). Frequência diária.</span>
+</span><span id="pyield.ptax_serie--source--__span-0-485"><a id="pyield.ptax_serie--source--__codelineno-0-485" name="pyield.ptax_serie--source--__codelineno-0-485"></a>
+</span><span id="pyield.ptax_serie--source--__span-0-486"><a id="pyield.ptax_serie--source--__codelineno-0-486" name="pyield.ptax_serie--source--__codelineno-0-486"></a><span class="sd">    A cotação retornada é a PTAX de **venda**, a taxa de câmbio</span>
+</span><span id="pyield.ptax_serie--source--__span-0-487"><a id="pyield.ptax_serie--source--__codelineno-0-487" name="pyield.ptax_serie--source--__codelineno-0-487"></a><span class="sd">    oficial do dólar no Brasil, usada como referência para</span>
+</span><span id="pyield.ptax_serie--source--__span-0-488"><a id="pyield.ptax_serie--source--__codelineno-0-488" name="pyield.ptax_serie--source--__codelineno-0-488"></a><span class="sd">    liquidação de contratos, marcação a mercado de derivativos,</span>
+</span><span id="pyield.ptax_serie--source--__span-0-489"><a id="pyield.ptax_serie--source--__codelineno-0-489" name="pyield.ptax_serie--source--__codelineno-0-489"></a><span class="sd">    conversão de DV01 e índices de fundos cambiais.</span>
+</span><span id="pyield.ptax_serie--source--__span-0-490"><a id="pyield.ptax_serie--source--__codelineno-0-490" name="pyield.ptax_serie--source--__codelineno-0-490"></a>
+</span><span id="pyield.ptax_serie--source--__span-0-491"><a id="pyield.ptax_serie--source--__codelineno-0-491" name="pyield.ptax_serie--source--__codelineno-0-491"></a><span class="sd">    Args:</span>
+</span><span id="pyield.ptax_serie--source--__span-0-492"><a id="pyield.ptax_serie--source--__codelineno-0-492" name="pyield.ptax_serie--source--__codelineno-0-492"></a><span class="sd">        inicio: Data inicial.</span>
+</span><span id="pyield.ptax_serie--source--__span-0-493"><a id="pyield.ptax_serie--source--__codelineno-0-493" name="pyield.ptax_serie--source--__codelineno-0-493"></a><span class="sd">        fim: Data final. Se ``None``, usa a data de hoje.</span>
+</span><span id="pyield.ptax_serie--source--__span-0-494"><a id="pyield.ptax_serie--source--__codelineno-0-494" name="pyield.ptax_serie--source--__codelineno-0-494"></a><span class="sd">        ultimos: Número de registros mais recentes a retornar. Se informado,</span>
+</span><span id="pyield.ptax_serie--source--__span-0-495"><a id="pyield.ptax_serie--source--__codelineno-0-495" name="pyield.ptax_serie--source--__codelineno-0-495"></a><span class="sd">            tem prioridade sobre ``inicio`` e ``fim``.</span>
+</span><span id="pyield.ptax_serie--source--__span-0-496"><a id="pyield.ptax_serie--source--__codelineno-0-496" name="pyield.ptax_serie--source--__codelineno-0-496"></a>
+</span><span id="pyield.ptax_serie--source--__span-0-497"><a id="pyield.ptax_serie--source--__codelineno-0-497" name="pyield.ptax_serie--source--__codelineno-0-497"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.ptax_serie--source--__span-0-498"><a id="pyield.ptax_serie--source--__codelineno-0-498" name="pyield.ptax_serie--source--__codelineno-0-498"></a><span class="sd">        DataFrame com colunas data e cotacao, ou DataFrame vazio</span>
+</span><span id="pyield.ptax_serie--source--__span-0-499"><a id="pyield.ptax_serie--source--__codelineno-0-499" name="pyield.ptax_serie--source--__codelineno-0-499"></a><span class="sd">        se não houver dados.</span>
+</span><span id="pyield.ptax_serie--source--__span-0-500"><a id="pyield.ptax_serie--source--__codelineno-0-500" name="pyield.ptax_serie--source--__codelineno-0-500"></a>
+</span><span id="pyield.ptax_serie--source--__span-0-501"><a id="pyield.ptax_serie--source--__codelineno-0-501" name="pyield.ptax_serie--source--__codelineno-0-501"></a><span class="sd">    Output Columns:</span>
+</span><span id="pyield.ptax_serie--source--__span-0-502"><a id="pyield.ptax_serie--source--__codelineno-0-502" name="pyield.ptax_serie--source--__codelineno-0-502"></a><span class="sd">        * data (Date): data da cotação.</span>
+</span><span id="pyield.ptax_serie--source--__span-0-503"><a id="pyield.ptax_serie--source--__codelineno-0-503" name="pyield.ptax_serie--source--__codelineno-0-503"></a><span class="sd">        * cotacao (pl.Decimal(18, 4)): cotação PTAX de venda em R$/US$.</span>
 </span><span id="pyield.ptax_serie--source--__span-0-504"><a id="pyield.ptax_serie--source--__codelineno-0-504" name="pyield.ptax_serie--source--__codelineno-0-504"></a>
-</span><span id="pyield.ptax_serie--source--__span-0-505"><a id="pyield.ptax_serie--source--__codelineno-0-505" name="pyield.ptax_serie--source--__codelineno-0-505"></a><span class="sd">    Args:</span>
-</span><span id="pyield.ptax_serie--source--__span-0-506"><a id="pyield.ptax_serie--source--__codelineno-0-506" name="pyield.ptax_serie--source--__codelineno-0-506"></a><span class="sd">        inicio: Data inicial.</span>
-</span><span id="pyield.ptax_serie--source--__span-0-507"><a id="pyield.ptax_serie--source--__codelineno-0-507" name="pyield.ptax_serie--source--__codelineno-0-507"></a><span class="sd">        fim: Data final. Se ``None``, usa a data mais recente.</span>
-</span><span id="pyield.ptax_serie--source--__span-0-508"><a id="pyield.ptax_serie--source--__codelineno-0-508" name="pyield.ptax_serie--source--__codelineno-0-508"></a><span class="sd">        ultimos: Número de registros mais recentes a retornar.</span>
-</span><span id="pyield.ptax_serie--source--__span-0-509"><a id="pyield.ptax_serie--source--__codelineno-0-509" name="pyield.ptax_serie--source--__codelineno-0-509"></a><span class="sd">            Mutuamente exclusivo com ``inicio``/``fim``.</span>
-</span><span id="pyield.ptax_serie--source--__span-0-510"><a id="pyield.ptax_serie--source--__codelineno-0-510" name="pyield.ptax_serie--source--__codelineno-0-510"></a>
-</span><span id="pyield.ptax_serie--source--__span-0-511"><a id="pyield.ptax_serie--source--__codelineno-0-511" name="pyield.ptax_serie--source--__codelineno-0-511"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.ptax_serie--source--__span-0-512"><a id="pyield.ptax_serie--source--__codelineno-0-512" name="pyield.ptax_serie--source--__codelineno-0-512"></a><span class="sd">        DataFrame com colunas data e cotacao, ou DataFrame vazio</span>
-</span><span id="pyield.ptax_serie--source--__span-0-513"><a id="pyield.ptax_serie--source--__codelineno-0-513" name="pyield.ptax_serie--source--__codelineno-0-513"></a><span class="sd">        se não houver dados.</span>
+</span><span id="pyield.ptax_serie--source--__span-0-505"><a id="pyield.ptax_serie--source--__codelineno-0-505" name="pyield.ptax_serie--source--__codelineno-0-505"></a><span class="sd">    Notes:</span>
+</span><span id="pyield.ptax_serie--source--__span-0-506"><a id="pyield.ptax_serie--source--__codelineno-0-506" name="pyield.ptax_serie--source--__codelineno-0-506"></a><span class="sd">        Disponível desde 28.11.1984. Refere-se às taxas administradas até</span>
+</span><span id="pyield.ptax_serie--source--__span-0-507"><a id="pyield.ptax_serie--source--__codelineno-0-507" name="pyield.ptax_serie--source--__codelineno-0-507"></a><span class="sd">        março de 1990 e às taxas livres a partir de então (Resolução 1690,</span>
+</span><span id="pyield.ptax_serie--source--__span-0-508"><a id="pyield.ptax_serie--source--__codelineno-0-508" name="pyield.ptax_serie--source--__codelineno-0-508"></a><span class="sd">        de 18.3.1990). A partir de março de 1992, essa taxa recebeu a</span>
+</span><span id="pyield.ptax_serie--source--__span-0-509"><a id="pyield.ptax_serie--source--__codelineno-0-509" name="pyield.ptax_serie--source--__codelineno-0-509"></a><span class="sd">        denominação PTAX. Desde 1 de julho de 2011 (Circular 3506), a PTAX</span>
+</span><span id="pyield.ptax_serie--source--__span-0-510"><a id="pyield.ptax_serie--source--__codelineno-0-510" name="pyield.ptax_serie--source--__codelineno-0-510"></a><span class="sd">        corresponde à média aritmética das taxas obtidas em quatro consultas</span>
+</span><span id="pyield.ptax_serie--source--__span-0-511"><a id="pyield.ptax_serie--source--__codelineno-0-511" name="pyield.ptax_serie--source--__codelineno-0-511"></a><span class="sd">        diárias aos dealers de câmbio.</span>
+</span><span id="pyield.ptax_serie--source--__span-0-512"><a id="pyield.ptax_serie--source--__codelineno-0-512" name="pyield.ptax_serie--source--__codelineno-0-512"></a><span class="sd">        Os valores são convertidos diretamente do texto para Decimal, sem</span>
+</span><span id="pyield.ptax_serie--source--__span-0-513"><a id="pyield.ptax_serie--source--__codelineno-0-513" name="pyield.ptax_serie--source--__codelineno-0-513"></a><span class="sd">        passagem por float, com quatro casas decimais.</span>
 </span><span id="pyield.ptax_serie--source--__span-0-514"><a id="pyield.ptax_serie--source--__codelineno-0-514" name="pyield.ptax_serie--source--__codelineno-0-514"></a>
-</span><span id="pyield.ptax_serie--source--__span-0-515"><a id="pyield.ptax_serie--source--__codelineno-0-515" name="pyield.ptax_serie--source--__codelineno-0-515"></a><span class="sd">    Output Columns:</span>
-</span><span id="pyield.ptax_serie--source--__span-0-516"><a id="pyield.ptax_serie--source--__codelineno-0-516" name="pyield.ptax_serie--source--__codelineno-0-516"></a><span class="sd">        * data (Date): data da cotação.</span>
-</span><span id="pyield.ptax_serie--source--__span-0-517"><a id="pyield.ptax_serie--source--__codelineno-0-517" name="pyield.ptax_serie--source--__codelineno-0-517"></a><span class="sd">        * cotacao (pl.Decimal(18, 4)): cotação PTAX de venda em R$/US$.</span>
-</span><span id="pyield.ptax_serie--source--__span-0-518"><a id="pyield.ptax_serie--source--__codelineno-0-518" name="pyield.ptax_serie--source--__codelineno-0-518"></a>
-</span><span id="pyield.ptax_serie--source--__span-0-519"><a id="pyield.ptax_serie--source--__codelineno-0-519" name="pyield.ptax_serie--source--__codelineno-0-519"></a><span class="sd">    Notes:</span>
-</span><span id="pyield.ptax_serie--source--__span-0-520"><a id="pyield.ptax_serie--source--__codelineno-0-520" name="pyield.ptax_serie--source--__codelineno-0-520"></a><span class="sd">        Disponível desde 28.11.1984. Refere-se às taxas administradas até</span>
-</span><span id="pyield.ptax_serie--source--__span-0-521"><a id="pyield.ptax_serie--source--__codelineno-0-521" name="pyield.ptax_serie--source--__codelineno-0-521"></a><span class="sd">        março de 1990 e às taxas livres a partir de então (Resolução 1690,</span>
-</span><span id="pyield.ptax_serie--source--__span-0-522"><a id="pyield.ptax_serie--source--__codelineno-0-522" name="pyield.ptax_serie--source--__codelineno-0-522"></a><span class="sd">        de 18.3.1990). A partir de março de 1992, essa taxa recebeu a</span>
-</span><span id="pyield.ptax_serie--source--__span-0-523"><a id="pyield.ptax_serie--source--__codelineno-0-523" name="pyield.ptax_serie--source--__codelineno-0-523"></a><span class="sd">        denominação PTAX. Desde 1 de julho de 2011 (Circular 3506), a PTAX</span>
-</span><span id="pyield.ptax_serie--source--__span-0-524"><a id="pyield.ptax_serie--source--__codelineno-0-524" name="pyield.ptax_serie--source--__codelineno-0-524"></a><span class="sd">        corresponde à média aritmética das taxas obtidas em quatro consultas</span>
-</span><span id="pyield.ptax_serie--source--__span-0-525"><a id="pyield.ptax_serie--source--__codelineno-0-525" name="pyield.ptax_serie--source--__codelineno-0-525"></a><span class="sd">        diárias aos dealers de câmbio.</span>
-</span><span id="pyield.ptax_serie--source--__span-0-526"><a id="pyield.ptax_serie--source--__codelineno-0-526" name="pyield.ptax_serie--source--__codelineno-0-526"></a><span class="sd">        Os valores são convertidos diretamente do texto para Decimal, sem</span>
-</span><span id="pyield.ptax_serie--source--__span-0-527"><a id="pyield.ptax_serie--source--__codelineno-0-527" name="pyield.ptax_serie--source--__codelineno-0-527"></a><span class="sd">        passagem por float, com quatro casas decimais.</span>
-</span><span id="pyield.ptax_serie--source--__span-0-528"><a id="pyield.ptax_serie--source--__codelineno-0-528" name="pyield.ptax_serie--source--__codelineno-0-528"></a>
-</span><span id="pyield.ptax_serie--source--__span-0-529"><a id="pyield.ptax_serie--source--__codelineno-0-529" name="pyield.ptax_serie--source--__codelineno-0-529"></a><span class="sd">    Examples:</span>
-</span><span id="pyield.ptax_serie--source--__span-0-530"><a id="pyield.ptax_serie--source--__codelineno-0-530" name="pyield.ptax_serie--source--__codelineno-0-530"></a><span class="sd">        &gt;&gt;&gt; import pyield as yd</span>
-</span><span id="pyield.ptax_serie--source--__span-0-531"><a id="pyield.ptax_serie--source--__codelineno-0-531" name="pyield.ptax_serie--source--__codelineno-0-531"></a><span class="sd">        &gt;&gt;&gt; yd.ptax_serie("20-04-2025", "25-04-2025")</span>
-</span><span id="pyield.ptax_serie--source--__span-0-532"><a id="pyield.ptax_serie--source--__codelineno-0-532" name="pyield.ptax_serie--source--__codelineno-0-532"></a><span class="sd">        shape: (4, 2)</span>
-</span><span id="pyield.ptax_serie--source--__span-0-533"><a id="pyield.ptax_serie--source--__codelineno-0-533" name="pyield.ptax_serie--source--__codelineno-0-533"></a><span class="sd">        ┌────────────┬───────────────┐</span>
-</span><span id="pyield.ptax_serie--source--__span-0-534"><a id="pyield.ptax_serie--source--__codelineno-0-534" name="pyield.ptax_serie--source--__codelineno-0-534"></a><span class="sd">        │ data       ┆ cotacao       │</span>
-</span><span id="pyield.ptax_serie--source--__span-0-535"><a id="pyield.ptax_serie--source--__codelineno-0-535" name="pyield.ptax_serie--source--__codelineno-0-535"></a><span class="sd">        │ ---        ┆ ---           │</span>
-</span><span id="pyield.ptax_serie--source--__span-0-536"><a id="pyield.ptax_serie--source--__codelineno-0-536" name="pyield.ptax_serie--source--__codelineno-0-536"></a><span class="sd">        │ date       ┆ decimal[18,4] │</span>
-</span><span id="pyield.ptax_serie--source--__span-0-537"><a id="pyield.ptax_serie--source--__codelineno-0-537" name="pyield.ptax_serie--source--__codelineno-0-537"></a><span class="sd">        ╞════════════╪═══════════════╡</span>
-</span><span id="pyield.ptax_serie--source--__span-0-538"><a id="pyield.ptax_serie--source--__codelineno-0-538" name="pyield.ptax_serie--source--__codelineno-0-538"></a><span class="sd">        │ 2025-04-22 ┆ 5.7496        │</span>
-</span><span id="pyield.ptax_serie--source--__span-0-539"><a id="pyield.ptax_serie--source--__codelineno-0-539" name="pyield.ptax_serie--source--__codelineno-0-539"></a><span class="sd">        │ 2025-04-23 ┆ 5.6880        │</span>
-</span><span id="pyield.ptax_serie--source--__span-0-540"><a id="pyield.ptax_serie--source--__codelineno-0-540" name="pyield.ptax_serie--source--__codelineno-0-540"></a><span class="sd">        │ 2025-04-24 ┆ 5.6738        │</span>
-</span><span id="pyield.ptax_serie--source--__span-0-541"><a id="pyield.ptax_serie--source--__codelineno-0-541" name="pyield.ptax_serie--source--__codelineno-0-541"></a><span class="sd">        │ 2025-04-25 ┆ 5.6846        │</span>
-</span><span id="pyield.ptax_serie--source--__span-0-542"><a id="pyield.ptax_serie--source--__codelineno-0-542" name="pyield.ptax_serie--source--__codelineno-0-542"></a><span class="sd">        └────────────┴───────────────┘</span>
-</span><span id="pyield.ptax_serie--source--__span-0-543"><a id="pyield.ptax_serie--source--__codelineno-0-543" name="pyield.ptax_serie--source--__codelineno-0-543"></a><span class="sd">    """</span>
-</span><span id="pyield.ptax_serie--source--__span-0-544"><a id="pyield.ptax_serie--source--__codelineno-0-544" name="pyield.ptax_serie--source--__codelineno-0-544"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">_buscar_serie</span><span class="p">(</span><span class="n">SerieSGS</span><span class="o">.</span><span class="n">PTAX_VENDA</span><span class="p">,</span> <span class="n">inicio</span><span class="p">,</span> <span class="n">fim</span><span class="p">,</span> <span class="n">ultimos</span><span class="p">)</span>
-</span><span id="pyield.ptax_serie--source--__span-0-545"><a id="pyield.ptax_serie--source--__codelineno-0-545" name="pyield.ptax_serie--source--__codelineno-0-545"></a>    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">is_empty</span><span class="p">():</span>
-</span><span id="pyield.ptax_serie--source--__span-0-546"><a id="pyield.ptax_serie--source--__codelineno-0-546" name="pyield.ptax_serie--source--__codelineno-0-546"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">schema</span><span class="o">=</span><span class="n">ESQUEMA_PTAX</span><span class="p">)</span>
-</span><span id="pyield.ptax_serie--source--__span-0-547"><a id="pyield.ptax_serie--source--__codelineno-0-547" name="pyield.ptax_serie--source--__codelineno-0-547"></a>    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
-</span><span id="pyield.ptax_serie--source--__span-0-548"><a id="pyield.ptax_serie--source--__codelineno-0-548" name="pyield.ptax_serie--source--__codelineno-0-548"></a>        <span class="s2">"data"</span><span class="p">,</span>
-</span><span id="pyield.ptax_serie--source--__span-0-549"><a id="pyield.ptax_serie--source--__codelineno-0-549" name="pyield.ptax_serie--source--__codelineno-0-549"></a>        <span class="n">cotacao</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"valor"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">_TIPO_PTAX</span><span class="p">),</span>
-</span><span id="pyield.ptax_serie--source--__span-0-550"><a id="pyield.ptax_serie--source--__codelineno-0-550" name="pyield.ptax_serie--source--__codelineno-0-550"></a>    <span class="p">)</span>
+</span><span id="pyield.ptax_serie--source--__span-0-515"><a id="pyield.ptax_serie--source--__codelineno-0-515" name="pyield.ptax_serie--source--__codelineno-0-515"></a><span class="sd">    Examples:</span>
+</span><span id="pyield.ptax_serie--source--__span-0-516"><a id="pyield.ptax_serie--source--__codelineno-0-516" name="pyield.ptax_serie--source--__codelineno-0-516"></a><span class="sd">        &gt;&gt;&gt; import pyield as yd</span>
+</span><span id="pyield.ptax_serie--source--__span-0-517"><a id="pyield.ptax_serie--source--__codelineno-0-517" name="pyield.ptax_serie--source--__codelineno-0-517"></a><span class="sd">        &gt;&gt;&gt; yd.ptax_serie("20-04-2025", "25-04-2025")</span>
+</span><span id="pyield.ptax_serie--source--__span-0-518"><a id="pyield.ptax_serie--source--__codelineno-0-518" name="pyield.ptax_serie--source--__codelineno-0-518"></a><span class="sd">        shape: (4, 2)</span>
+</span><span id="pyield.ptax_serie--source--__span-0-519"><a id="pyield.ptax_serie--source--__codelineno-0-519" name="pyield.ptax_serie--source--__codelineno-0-519"></a><span class="sd">        ┌────────────┬───────────────┐</span>
+</span><span id="pyield.ptax_serie--source--__span-0-520"><a id="pyield.ptax_serie--source--__codelineno-0-520" name="pyield.ptax_serie--source--__codelineno-0-520"></a><span class="sd">        │ data       ┆ cotacao       │</span>
+</span><span id="pyield.ptax_serie--source--__span-0-521"><a id="pyield.ptax_serie--source--__codelineno-0-521" name="pyield.ptax_serie--source--__codelineno-0-521"></a><span class="sd">        │ ---        ┆ ---           │</span>
+</span><span id="pyield.ptax_serie--source--__span-0-522"><a id="pyield.ptax_serie--source--__codelineno-0-522" name="pyield.ptax_serie--source--__codelineno-0-522"></a><span class="sd">        │ date       ┆ decimal[18,4] │</span>
+</span><span id="pyield.ptax_serie--source--__span-0-523"><a id="pyield.ptax_serie--source--__codelineno-0-523" name="pyield.ptax_serie--source--__codelineno-0-523"></a><span class="sd">        ╞════════════╪═══════════════╡</span>
+</span><span id="pyield.ptax_serie--source--__span-0-524"><a id="pyield.ptax_serie--source--__codelineno-0-524" name="pyield.ptax_serie--source--__codelineno-0-524"></a><span class="sd">        │ 2025-04-22 ┆ 5.7496        │</span>
+</span><span id="pyield.ptax_serie--source--__span-0-525"><a id="pyield.ptax_serie--source--__codelineno-0-525" name="pyield.ptax_serie--source--__codelineno-0-525"></a><span class="sd">        │ 2025-04-23 ┆ 5.6880        │</span>
+</span><span id="pyield.ptax_serie--source--__span-0-526"><a id="pyield.ptax_serie--source--__codelineno-0-526" name="pyield.ptax_serie--source--__codelineno-0-526"></a><span class="sd">        │ 2025-04-24 ┆ 5.6738        │</span>
+</span><span id="pyield.ptax_serie--source--__span-0-527"><a id="pyield.ptax_serie--source--__codelineno-0-527" name="pyield.ptax_serie--source--__codelineno-0-527"></a><span class="sd">        │ 2025-04-25 ┆ 5.6846        │</span>
+</span><span id="pyield.ptax_serie--source--__span-0-528"><a id="pyield.ptax_serie--source--__codelineno-0-528" name="pyield.ptax_serie--source--__codelineno-0-528"></a><span class="sd">        └────────────┴───────────────┘</span>
+</span><span id="pyield.ptax_serie--source--__span-0-529"><a id="pyield.ptax_serie--source--__codelineno-0-529" name="pyield.ptax_serie--source--__codelineno-0-529"></a><span class="sd">    """</span>
+</span><span id="pyield.ptax_serie--source--__span-0-530"><a id="pyield.ptax_serie--source--__codelineno-0-530" name="pyield.ptax_serie--source--__codelineno-0-530"></a>    <span class="k">return</span> <span class="n">_buscar_serie</span><span class="p">(</span><span class="n">SerieSGS</span><span class="o">.</span><span class="n">PTAX_VENDA</span><span class="p">,</span> <span class="n">inicio</span><span class="p">,</span> <span class="n">fim</span><span class="p">,</span> <span class="n">ultimos</span><span class="p">)</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
+</span><span id="pyield.ptax_serie--source--__span-0-531"><a id="pyield.ptax_serie--source--__codelineno-0-531" name="pyield.ptax_serie--source--__codelineno-0-531"></a>        <span class="s2">"data"</span><span class="p">,</span>
+</span><span id="pyield.ptax_serie--source--__span-0-532"><a id="pyield.ptax_serie--source--__codelineno-0-532" name="pyield.ptax_serie--source--__codelineno-0-532"></a>        <span class="n">cotacao</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"valor"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">_TIPO_PTAX</span><span class="p">),</span>
+</span><span id="pyield.ptax_serie--source--__span-0-533"><a id="pyield.ptax_serie--source--__codelineno-0-533" name="pyield.ptax_serie--source--__codelineno-0-533"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

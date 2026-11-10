@@ -180,9 +180,7 @@ O DataFrame retornado **não** contém colunas calculadas (dias\_uteis, dias\_co
 
 Como esta é uma camada bruta/intermediária, próxima do XML original da B3, os parâmetros de filtro usam a terminologia da fonte (`ticker`/`TckrSymb`). Nas camadas públicas enriquecidas da biblioteca, o vocabulário preferido é o canônico da lib (ex.: `contrato`, `codigo_negociacao`).
 
-**Nota**
-
-O dataset cacheado `pr` (arquivo `b3_pr.parquet`) pode conter um subconjunto de colunas focado em futuros. Esta função, porém, opera no schema bruto do XML da B3 para a data/relatório consultados.
+O dataset cacheado `futuro` (arquivo `b3_futures.parquet`) pode conter um subconjunto de colunas focado em futuros. Esta função, porém, opera no schema bruto do XML da B3 para a data/relatório consultados.
 
 Parameters:
 
@@ -216,8 +214,8 @@ Returns:
 - IntlFinVol (Float64): volume financeiro internacional.
 - OpnIntrst (Int64): contratos em aberto.
 - FinInstrmQty (Int64): quantidade negociada de instrumentos financeiros.
-- BestBidPric (Float64): ultima melhor oferta de compra no snapshot diario; pode ser nulo.
-- BestAskPric (Float64): ultima melhor oferta de venda no snapshot diario; pode ser nulo. diario; pode ser nulo.
+- BestBidPric (Float64): última melhor oferta de compra no snapshot diário; pode ser nulo.
+- BestAskPric (Float64): última melhor oferta de venda no snapshot diário; pode ser nulo.
 - FrstPric (Float64): preço de abertura.
 - MinPric (Float64): preço mínimo negociado.
 - MaxPric (Float64): preço máximo negociado.
@@ -253,8 +251,6 @@ Raises:
 | Type | Description |
 | --- | --- |
 | `HTTPError` | Se a requisição HTTP ao endpoint falhar. |
-| `BadZipFile` | Se o ZIP estiver corrompido após re-download. |
-| `XMLSyntaxError` | Se o XML recebido estiver malformado. |
 
 Examples:
 
@@ -272,7 +268,7 @@ Examples:
 
 Lê e processa o price report da B3 a partir do dado bruto.
 
-Mesma saída de :func:`buscar`, mas recebe o dado bruto em vez de baixar da rede. Aceita o ZIP externo como `bytes` ou `Path` (caminho para o arquivo ZIP), e também XML descomprimido como `bytes`.
+Mesma saída de `buscar`, mas recebe o dado bruto em vez de baixar da rede. Aceita o ZIP externo como `bytes` ou `Path` (caminho para o arquivo ZIP), e também XML descomprimido como `bytes`.
 
 Por operar diretamente sobre o dado bruto, esta função preserva a terminologia da fonte para filtros de `TckrSymb`.
 
@@ -289,4 +285,4 @@ Returns:
 | Type | Description |
 | --- | --- |
 | `DataFrame` | pl.DataFrame: DataFrame com as mesmas colunas documentadas em |
-| `DataFrame` | func:`buscar`. |
+| `DataFrame` | `buscar`. |

@@ -45,7 +45,8 @@ Returns:
 
 **Output Columns**
 
-competencia (Date): Primeiro dia do mês da divulgação mensal do IGP-M. data\_divulgacao (Date): Data prevista pela FGV IBRE.
+- competencia (Date): Primeiro dia do mês da divulgação mensal do IGP-M.
+- data\_divulgacao (Date): Data prevista pela FGV IBRE.
 
 **Notes**
 

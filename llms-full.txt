@@ -55,8 +55,7 @@ yd.tpf
 ├── vencimentos(data, titulo)
 ├── estoque(data)
 ├── dealers(data=None)
-├── leiloes(data=..., inicio=..., fim=...)
-├── leiloes_bcb(data=..., inicio=..., fim=...)
+├── leiloes(data=..., inicio=..., fim=..., fonte="tn")
 ├── secundario.mensal(data, extragrupo=...)
 ├── secundario.intradia()
 ├── secundario.baixar_zip(data, extragrupo=...)
@@ -248,7 +247,7 @@ Cotação em `Decimal`, com quatro casas; sem dados retorna `Decimal("NaN")`.
 **`yd.ptax_serie` (série histórica da PTAX)**
 
 ```text
-yd.ptax_serie(inicio, fim)
+yd.ptax_serie(inicio=None, fim=None, *, ultimos=None)
 ```
 
 Coluna `cotacao` do tipo Polars `Decimal(18, 4)`.
@@ -419,7 +418,7 @@ Por padrão, `calendario="auto"` seleciona a lista de feriados com base na data 
 
 ```python
 yd.du.contar("20-11-2024", "21-11-2024", calendario="anterior")  # -> 1
-yd.du.contar("20-11-2024", "21-11-2024", calendario="atual")     # -> 0
+yd.du.contar("20-11-2024", "21-11-2024", calendario="atual")  # -> 0
 ```
 
 Os parâmetros opcionais usam termos em português. `ajuste` define como tratar uma data inicial não útil, enquanto `limites_inclusivos` controla quais extremos de um intervalo gerado são incluídos:
@@ -802,9 +801,7 @@ O DataFrame retornado **não** contém colunas calculadas (dias\_uteis, dias\_co
 
 Como esta é uma camada bruta/intermediária, próxima do XML original da B3, os parâmetros de filtro usam a terminologia da fonte (`ticker`/`TckrSymb`). Nas camadas públicas enriquecidas da biblioteca, o vocabulário preferido é o canônico da lib (ex.: `contrato`, `codigo_negociacao`).
 
-**Nota**
-
-O dataset cacheado `pr` (arquivo `b3_pr.parquet`) pode conter um subconjunto de colunas focado em futuros. Esta função, porém, opera no schema bruto do XML da B3 para a data/relatório consultados.
+O dataset cacheado `futuro` (arquivo `b3_futures.parquet`) pode conter um subconjunto de colunas focado em futuros. Esta função, porém, opera no schema bruto do XML da B3 para a data/relatório consultados.
 
 Parameters:
 
@@ -838,8 +835,8 @@ Returns:
 - IntlFinVol (Float64): volume financeiro internacional.
 - OpnIntrst (Int64): contratos em aberto.
 - FinInstrmQty (Int64): quantidade negociada de instrumentos financeiros.
-- BestBidPric (Float64): ultima melhor oferta de compra no snapshot diario; pode ser nulo.
-- BestAskPric (Float64): ultima melhor oferta de venda no snapshot diario; pode ser nulo. diario; pode ser nulo.
+- BestBidPric (Float64): última melhor oferta de compra no snapshot diário; pode ser nulo.
+- BestAskPric (Float64): última melhor oferta de venda no snapshot diário; pode ser nulo.
 - FrstPric (Float64): preço de abertura.
 - MinPric (Float64): preço mínimo negociado.
 - MaxPric (Float64): preço máximo negociado.
@@ -875,8 +872,6 @@ Raises:
 | Type | Description |
 | --- | --- |
 | `HTTPError` | Se a requisição HTTP ao endpoint falhar. |
-| `BadZipFile` | Se o ZIP estiver corrompido após re-download. |
-| `XMLSyntaxError` | Se o XML recebido estiver malformado. |
 
 Examples:
 
@@ -894,7 +889,7 @@ Examples:
 
 Lê e processa o price report da B3 a partir do dado bruto.
 
-Mesma saída de :func:`buscar`, mas recebe o dado bruto em vez de baixar da rede. Aceita o ZIP externo como `bytes` ou `Path` (caminho para o arquivo ZIP), e também XML descomprimido como `bytes`.
+Mesma saída de `buscar`, mas recebe o dado bruto em vez de baixar da rede. Aceita o ZIP externo como `bytes` ou `Path` (caminho para o arquivo ZIP), e também XML descomprimido como `bytes`.
 
 Por operar diretamente sobre o dado bruto, esta função preserva a terminologia da fonte para filtros de `TckrSymb`.
 
@@ -911,7 +906,7 @@ Returns:
 | Type | Description |
 | --- | --- |
 | `DataFrame` | pl.DataFrame: DataFrame com as mesmas colunas documentadas em |
-| `DataFrame` | func:`buscar`. |
+| `DataFrame` | `buscar`. |
 
 # Operações compromissadas
 
@@ -919,7 +914,7 @@ Returns:
 
 `compromissadas` fica na raiz porque representa leilões de operações compromissadas, e não uma série da taxa Selic.
 
-Módulo para consulta dos leilões de operações compromissadas (repos) realizados pelo BCB.
+Consulta dos leilões de operações compromissadas (repos) realizados pelo BCB.
 
 Fonte oficial (API OData): https://olinda.bcb.gov.br/olinda/servico/leiloes\_selic/versao/v1/aplicacao\#!/recursos/leiloes\_compromissadas
 
@@ -960,7 +955,7 @@ Returns:
 - publico (String): público permitido no leilão (SomenteDealer, TodoMercado).
 - financeiro\_aceito (Float64): financeiro aceito no leilão em reais (convertido de milhares).
 - taxa\_corte (Float64): taxa de corte (ex. 0.1490 = 14,90%). Nula se financeiro\_aceito = 0.
-- pct\_aceito (Float64): percentual do volume ofertado efetivamente aceito (0-100). 100 = nenhuma rejeição. 0 indica nada aceito (volume\_aceito = 0).
+- pct\_aceito (Float64): percentual do volume ofertado efetivamente aceito (0-100). 100 = nenhuma rejeição. 0 indica nada aceito (financeiro\_aceito = 0).
 
 **Notes**
 
@@ -1019,11 +1014,24 @@ Returns:
 
 **Output Columns**
 
-nro\_reuniao (Int64): Número sequencial informado na ata; nulo sem ata. data\_inicio (Date): Primeiro dia informado no ICS; nulo fora da agenda. data\_decisao (Date): Último dia da reunião, dataReferencia nas atas. data\_publicacao (Date): Publicação da ata; nula quando não disponível. data\_efetividade (Date): Próximo dia útil após a decisão, calculado pelo calendário brasileiro de yd.du; data de vencimento/liquidação CPM. status (String): "Realizada" se a decisão for até hoje no Brasil; "A realizar" caso contrário. Classificação por data, não por ata. titulo (String): Título original da ata; nulo quando não disponível. fonte (String): "Ata" ou "Calendário", conforme a origem da decisão.
+- nro\_reuniao (Int64): Número sequencial informado na ata; nulo sem ata.
+- data\_inicio (Date): Primeiro dia informado no ICS; nulo fora da agenda.
+- data\_decisao (Date): Último dia da reunião, dataReferencia nas atas.
+- data\_publicacao (Date): Publicação da ata; nula quando não disponível.
+- data\_efetividade (Date): Próximo dia útil após a decisão, calculado pelo calendário brasileiro de yd.du; data de vencimento/liquidação CPM.
+- status (String): "Realizada" se a decisão for até hoje no Brasil; "A realizar" caso contrário. Classificação por data, não por ata.
+- titulo (String): Título original da ata; nulo quando não disponível.
+- fonte (String): "Ata" ou "Calendário", conforme a origem da decisão.
 
 **Notes**
 
-O horizonte depende das datas publicadas pelo BCB. A consulta às atas solicita até 500 registros. O status é recalculado a cada chamada. Erros de rede e payload inválido são propagados. O ICS publica um evento por dia: dias únicos consecutivos devem formar pares; grupos incompletos geram ValueError. O início histórico não é inferido subtraindo um dia da decisão.
+O horizonte depende das datas publicadas pelo BCB. A consulta às atas solicita até 500 registros. O status é recalculado a cada chamada. Erros de rede e payload inválido são propagados. O ICS publica um evento por dia de reunião: cada reunião deve aparecer como dois dias consecutivos, e grupos com outra quantidade de dias geram ValueError. O início histórico não é inferido subtraindo um dia da decisão.
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se `inicio` for posterior a `fim` ou se o calendário ICS do BCB for inválido. |
 
 Examples:
 
@@ -1054,7 +1062,14 @@ Returns:
 
 **Output Columns**
 
-nro\_reuniao (Int64): Número sequencial da ata, quando disponível. data\_inicio (Date): Primeiro dia no ICS, quando disponível. data\_decisao (Date): Último dia da reunião. data\_publicacao (Date): Publicação da ata, quando disponível. data\_efetividade (Date): Próximo dia útil após a decisão. status (String): "Realizada" ou "A realizar", conforme a data atual. titulo (String): Título da ata, quando disponível. fonte (String): "Ata" ou "Calendário".
+- nro\_reuniao (Int64): Número sequencial da ata, quando disponível.
+- data\_inicio (Date): Primeiro dia no ICS, quando disponível.
+- data\_decisao (Date): Último dia da reunião.
+- data\_publicacao (Date): Publicação da ata, quando disponível.
+- data\_efetividade (Date): Próximo dia útil após a decisão.
+- status (String): "Realizada" ou "A realizar", conforme a data atual.
+- titulo (String): Título da ata, quando disponível.
+- fonte (String): "Ata" ou "Calendário".
 
 Examples:
 
@@ -1335,7 +1350,7 @@ As escalas foram ajustadas e `di_over_serie` foi adicionada na [0.63.0](<https:/
 
 Obtém a taxa DI over anualizada ou diária via SGS do Banco Central.
 
-Consulta a taxa DI (Depósito Interfinanceiro) da B3/CETIP, republicada pelo Banco Central na série SGS 4389 (anualizada em base 252) ou SGS 12 (diária), para a data informada. Use `pyield.di_over` na API pública principal.
+Consulta a taxa DI (Depósito Interfinanceiro) da B3/CETIP, republicada pelo Banco Central na série SGS 4389 (anualizada em base 252) ou SGS 12 (diária), para a data informada.
 
 Parameters:
 
@@ -1401,7 +1416,8 @@ Returns:
 
 **Output Columns**
 
-data (pl.Date): Data de referência da observação. taxa (pl.Decimal(18, 4) ou pl.Decimal(18, 8)): Taxa em decimal, ao ano com escala 4 se `anualizada=True` ou ao dia útil com escala 8 se `anualizada=False`.
+- data (Date): Data de referência da observação.
+- taxa (Decimal(18, 4) ou Decimal(18, 8)): Taxa em decimal, ao ano com escala 4 se `anualizada=True` ou ao dia útil com escala 8 se `anualizada=False`.
 
 **Notes**
 
@@ -1570,7 +1586,7 @@ Interpola taxas de DI para datas de negociação e vencimentos especificados.
 
 Calcula taxas de DI interpoladas usando o método **flat-forward** para conjuntos de datas de negociação e vencimentos. Esta função é adequada para cálculos vetorizados com múltiplos pares de datas.
 
-Se taxas de DI não estiverem disponíveis para uma data de negociação, as taxas interpoladas correspondentes serão NaN.
+Se taxas de DI não estiverem disponíveis para uma data de negociação, as taxas interpoladas correspondentes serão nulas.
 
 Trata broadcasting: Se um argumento for escalar e o outro for array, o valor escalar é aplicado a todos os elementos do array.
 
@@ -1588,7 +1604,7 @@ Returns:
 | Type | Description |
 | --- | --- |
 | `Series` | Series contendo as taxas DI interpoladas (como floats). Valores serão |
-| `Series` | NaN onde interpolação não for possível (ex: sem dados DI para a data |
+| `Series` | nulos onde interpolação não for possível (ex: sem dados DI para a data |
 | `Series` | de negociação). As taxas são retornadas em formato decimal; os exemplos |
 | `Series` | abaixo as multiplicam por 100 apenas para facilitar a leitura. |
 
@@ -1596,7 +1612,7 @@ Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Se `datas_referencia` e `datas_vencimento` forem ambos array-like mas tiverem tamanhos diferentes. |
+| `ShapeError` | Se `datas_referencia` e `datas_vencimento` forem ambos array-like mas tiverem tamanhos diferentes. |
 | `ValueError` | Se `tipo_taxa` não for `"ajuste"` ou `"fechamento"`. |
 
 **Notes**
@@ -1614,7 +1630,7 @@ Interpola taxas para múltiplas datas de negociação e vencimento:
 >>> # A taxa não é interpolada (taxa de liquidação é usada)
 >>> # Não há contrato com vencimento 25-11-2027 em 09-05-2025
 >>> # A taxa é interpolada (método flat-forward)
->>> # Não há dados para 10-05-2025 (sábado) -> NaN
+>>> # Não há dados para 10-05-2025 (sábado) -> null
 >>> from pyield import di1
 >>> di1.interpolar_taxas(
 ...     datas_referencia=["08-05-2025", "09-05-2025", "10-05-2025"],
@@ -2091,11 +2107,11 @@ Determina se data(s) são dias úteis brasileiros.
 
 REGIME DE FERIADOS: Por padrão, para cada data, a lista de feriados apropriada (anterior vs. atual) é escolhida com base na data de transição 26-12-2023. Também é possível selecionar explicitamente uma das listas para toda a avaliação.
 
-PRESERVAÇÃO DE ORDEM E FORMA: A saída preserva a ordem original dos elementos. Nenhuma ordenação, deduplicação, remodelação ou alinhamento é realizado; o i-ésimo resultado corresponde à i-ésima data fornecida após expansão (se alguma expansão ocorreu de uma entrada escalar em outro lugar da cadeia de chamadas).
+PRESERVAÇÃO DE ORDEM E FORMA: A saída preserva a ordem original dos elementos. Nenhuma ordenação, deduplicação, remodelação ou alinhamento é realizado; o i-ésimo resultado corresponde à i-ésima data fornecida.
 
 PROPAGAÇÃO DE NULOS: Um argumento escalar nulo faz curto-circuito para `None`. Valores nulos dentro de entradas array-like produzem nulos nas posições correspondentes da saída.
 
-TIPO DE RETORNO: Se a entrada (não-nula) resolve para um único elemento, um `bool` Python é retornado. Se esse único elemento for nulo, `None` é retornado. Caso contrário, uma `polars.Series` de booleanos nomeada `'eh_dia_util'` é produzida.
+TIPO DE RETORNO: Se a entrada for escalar, um `bool` Python é retornado; se esse escalar for nulo, `None` é retornado. Para entradas array-like, mesmo com um único elemento, uma `polars.Series` de booleanos nomeada `'eh_dia_util'` é produzida.
 
 FINS DE SEMANA: Sábados e domingos nunca são dias úteis independentemente do regime de feriados.
 
@@ -2284,7 +2300,7 @@ Definindo \\(F\_i = 1 + tx\_i\\) e \\(t\_i = du\_i/252\\), onde 252 é o número
 
 \\\[ f\_{1 \\rightarrow 2} = \\left( \\frac{F\_2^{t\_2}}{F\_1^{t\_1}} \\right)^{\\frac{1}{t\_2 - t\_1}} - 1 \\\]
 
-Aqui, `F₁` e `F₂` são os fatores de capitalização dos prazos `du1` e `du2`, e `tx1` e `tx2` são as respectivas taxas zero.
+Aqui, `F₁` e `F₂` são os fatores de capitalização dos prazos `du1` e `du2`, e `tx₁` e `tx₂` são as respectivas taxas zero, informadas em `taxa1` e `taxa2`.
 
 Parameters:
 
@@ -2299,7 +2315,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | A taxa a termo calculada entre `du₁` e `du₂`. Retorna `nan` se `du₁ >= du₂` ou se qualquer um dos argumentos de entrada for `float("nan")` ou `None`. |
+| `float` | `float` | A taxa a termo calculada entre `du1` e `du2`. Retorna `nan` se `du1 >= du2` ou se qualquer um dos argumentos de entrada for `float("nan")` ou `None`. |
 
 Examples:
 
@@ -2314,15 +2330,15 @@ nan
 
 **Notes**
 
-`du₂` precisa ser necessariamente maior que `du₁` para que o cálculo da taxa a termo seja matematicamente válido.
+`du2` precisa ser necessariamente maior que `du1` para que o cálculo da taxa a termo seja matematicamente válido.
 
 ## `forwards(dias_uteis, taxas, agrupar_por=None)`
 
 Calcula taxas a termo a partir de taxas zero.
 
-A taxa a termo em cada vértice é calculada aplicando sucessivamente a fórmula documentada em :func:`forward` aos vértices consecutivos. A primeira taxa de cada grupo é a taxa zero do primeiro vértice, pois não há um vértice anterior para calcular a taxa a termo.
+A taxa a termo em cada vértice é calculada aplicando sucessivamente a fórmula documentada em `forward` aos vértices consecutivos. A primeira taxa de cada grupo é a taxa zero do primeiro vértice, pois não há um vértice anterior para calcular a taxa a termo.
 
-A função preserva a ordem original dos dados de entrada. Nulos em `dias_uteis` ou `taxas` produzem nulo na linha correspondente; NaN produz NaN (nulos e NaN não se misturam). Duplicatas em `(agrupar_por, dias_uteis)` tornam o vértice ambíguo e produzem nulo nas linhas duplicadas. Em todos esses casos a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica inválida (nula ou NaN), pois seu vértice anterior é inválido; a seguinte volta ao normal. Este contrato é alinhado com :func:`forwards_expr`.
+A função preserva a ordem original dos dados de entrada. Nulos em `dias_uteis` ou `taxas` produzem nulo na linha correspondente; NaN produz NaN (nulos e NaN não se misturam). Duplicatas em `(agrupar_por, dias_uteis)` tornam o vértice ambíguo e produzem nulo nas linhas duplicadas. Em todos esses casos a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica inválida (nula ou NaN), pois seu vértice anterior é inválido; a seguinte volta ao normal. Este contrato é alinhado com `forwards_expr`.
 
 A primeira taxa a termo de cada grupo é definida como a taxa zero desse primeiro vértice (fwd₁ = tx₁), dado que não existe um vértice anterior a tx₁ para se calcular a taxa a termo no primeiro ponto.
 
@@ -2436,7 +2452,7 @@ Series: 'taxa_forward' [f64]
 ```
 
 ```pycon
->>> # NaN se comporta como nulo, mas mantém o dtype NaN no resultado
+>>> # NaN se comporta como nulo, mas o resultado permanece NaN
 >>> # (nulos e NaN não se misturam).
 >>> du = [230, 415, 730, 914]
 >>> tx = [0.0943, float("nan"), 0.079052, 0.077134]
@@ -2471,17 +2487,17 @@ Series: 'taxa_forward' [f64]
 
 **Notes**
 
-- A função ordena os dados de entrada primeiro por `agrupar_por`, se for fornecido, e depois por `dias_uteis` para garantir a ordem cronológica correta no cálculo das taxas a termo.
-- Nulos em `dias_uteis` ou `taxas` produzem nulo na linha correspondente; NaN produz NaN. Duplicatas em `(agrupar_por,   dias_uteis)` tornam o vértice ambíguo e produzem nulo nas linhas duplicadas. Em todos esses casos, a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica inválida; a seguinte volta ao normal. Mesmo contrato de :func:`forwards_expr`.
+- O cálculo segue a ordem de `dias_uteis` dentro de cada grupo de `agrupar_por`, se fornecido, sem reordenar os dados de entrada.
+- Nulos em `dias_uteis` ou `taxas` produzem nulo na linha correspondente; NaN produz NaN. Duplicatas em `(agrupar_por,   dias_uteis)` tornam o vértice ambíguo e produzem nulo nas linhas duplicadas. Em todos esses casos, a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica inválida; a seguinte volta ao normal. Mesmo contrato de `forwards_expr`.
 - Os resultados são retornados na mesma ordem dos dados de entrada.
 
 ## `forwards_expr(dias_uteis, taxas, agrupar_por=None)`
 
 Cria uma expressão Polars para calcular taxas a termo dentro de DataFrames.
 
-Versão expressiva de :func:`forwards`, no mesmo estilo de `du.contar_expr`. Pensada para uso dentro de `with_columns()` ou `select()`, especialmente em DataFrames com múltiplas datas de referência (ex.: séries históricas de DI1), onde `agrupar_por` define janelas independentes de cálculo sem que seja necessário extrair colunas, calcular fora e juntar de volta.
+Versão em expressão de `forwards`, no mesmo estilo de `du.contar_expr`. Pensada para uso dentro de `with_columns()` ou `select()`, especialmente em DataFrames com múltiplas datas de referência (ex.: séries históricas de DI1), onde `agrupar_por` define janelas independentes de cálculo sem que seja necessário extrair colunas, calcular fora e juntar de volta.
 
-A taxa a termo entre os vértices `j` (anterior) e `k` (atual) segue a fórmula documentada em :func:`forward`. A primeira linha de cada grupo (menor `dias_uteis`) é tratada como spot: `f = tx`.
+A taxa a termo entre os vértices `j` (anterior) e `k` (atual) segue a fórmula documentada em `forward`. A primeira linha de cada grupo (menor `dias_uteis`) é tratada como spot: `f = tx`.
 
 **Ordenação cronológica**
 
@@ -2489,9 +2505,9 @@ A expressão usa `shift(1).over(agrupar_por, order_by=dias_uteis)`, calculando a
 
 **Propagação de nulos e NaN**
 
-Se `dias_uteis` ou `taxas` for nulo em uma linha, o resultado é nulo nessa linha; se for NaN, o resultado é NaN (nulos e NaN não se misturam). Em ambos os casos, a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica nula/NaN, pois seu vértice anterior é inválido. Como nulos são ordenados ao fim em `order_by=dias_uteis`, um null em `dias_uteis` afeta apenas a própria linha. Mesmo contrato de :func:`forwards`.
+Se `dias_uteis` ou `taxas` for nulo em uma linha, o resultado é nulo nessa linha; se for NaN, o resultado é NaN (nulos e NaN não se misturam). Em ambos os casos, a linha imediatamente posterior em ordem de `dias_uteis` dentro do mesmo grupo também fica nula/NaN, pois seu vértice anterior é inválido. Como nulos são ordenados ao fim em `order_by=dias_uteis`, um null em `dias_uteis` afeta apenas a própria linha. Mesmo contrato de `forwards`.
 
-Duplicatas em `(agrupar_por, dias_uteis)`: Duplicatas tornam o vértice ambíguo. A função invalida a taxa com nulo nas próprias linhas duplicadas; a partir daí o cascateamento natural de nulos vale (a linha imediatamente posterior em ordem de `dias_uteis` dentro do grupo também fica nula; a seguinte volta ao normal). Mesmo contrato de :func:`forwards`.
+Duplicatas em `(agrupar_por, dias_uteis)`: Duplicatas tornam o vértice ambíguo. A função invalida a taxa com nulo nas próprias linhas duplicadas; a partir daí o cascateamento natural de nulos vale (a linha imediatamente posterior em ordem de `dias_uteis` dentro do grupo também fica nula; a seguinte volta ao normal). Mesmo contrato de `forwards`.
 
 Parameters:
 
@@ -2586,9 +2602,36 @@ shape: (7, 4)
 **Notes**
 
 - A ordem original do DataFrame é preservada.
-- Para uso fora de DataFrames (arrays, Series soltas), use :func:`forwards`.
+- Para uso fora de DataFrames (arrays, Series soltas), use `forwards`.
 
 # Futuro
+
+## Compra e venda em contratos de taxa
+
+Contratos como DI1 e DAP são negociados em taxa. Na convenção da B3, o que se compra e se vende é a própria taxa:
+
+- **comprar DI1 é comprar taxa**;
+- **vender DI1 é vender taxa**.
+
+É por isso que as ofertas de compra e venda têm a ordem descrita abaixo, o inverso da intuição de quem vem dos títulos públicos.
+
+| Operação | Jargão | Equivale a | Ganha quando a taxa |
+| --- | --- | --- | --- |
+| Comprar DI1 (comprar taxa) | ficar **tomado**, tomar taxa | vender PU | sobe |
+| Vender DI1 (vender taxa) | ficar **aplicado**, dar taxa | comprar PU | cai |
+
+Quem toma taxa quer pagar barato, por isso oferta a taxa mais baixa. Quem dá taxa quer receber caro, por isso oferta a taxa mais alta. Assim, no livro de ofertas de um contrato de taxa:
+
+- a **oferta de compra** (bid) é a de quem quer ficar tomado e tem a taxa **menor**;
+- a **oferta de venda** (ask) é a de quem quer ficar aplicado e tem a taxa **maior**.
+
+Quem toma taxa a mercado fecha negócio na oferta de venda, pagando a taxa maior. Quem dá taxa a mercado fecha na oferta de compra.
+
+Nos títulos públicos a lógica é a oposta, porque o título é negociado em PU. Comprar uma LTN é comprar PU: quem compra quer PU menor, ou seja, taxa maior. A posição comprada no título é aplicada, como a posição vendida no DI1. Por isso, quem tem LTN em carteira se protege da alta de juros comprando DI1 (ficando tomado).
+
+O ajuste diário segue a mesma equivalência: para calcular o ajuste, a B3 converte a taxa em PU, e a posição comprada em taxa é tratada como vendida em PU.
+
+Na biblioteca, as colunas mantêm os nomes da B3. Em `yd.futuro.historico` (`taxa_ultima_oferta_compra` e `taxa_ultima_oferta_venda`) e em `yd.futuro.intradia` (`taxa_oferta_compra` e `taxa_oferta_venda`), compra é compra de taxa. Logo, a taxa de compra fica abaixo da de venda. Os contratos cotados por preço, como DOL, WDO, IND e WIN, seguem a convenção usual: compra abaixo de venda, em preço.
 
 Contratos futuros negociados na B3.
 
@@ -2818,7 +2861,8 @@ Returns:
 
 **Output Columns**
 
-competencia (Date): Primeiro dia do mês da divulgação mensal do IGP-M. data\_divulgacao (Date): Data prevista pela FGV IBRE.
+- competencia (Date): Primeiro dia do mês da divulgação mensal do IGP-M.
+- data\_divulgacao (Date): Data prevista pela FGV IBRE.
 
 **Notes**
 
@@ -3059,7 +3103,7 @@ Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Se não houver ao menos um vértice válido na curva. |
+| `ValueError` | Se `metodo` não for `"flat_forward"` nem `"linear"`, se não houver ao menos um vértice válido na curva ou se a curva tiver o mesmo prazo com taxas diferentes. |
 
 **Notes**
 
@@ -3184,6 +3228,98 @@ shape: (3, 2)
 └─────┴──────────┘
 ```
 
+## interpolar
+
+Interpola taxas flat-forward para uma série de pontos alvo.
+
+Versão vetorizada de `Interpolador`. Quando `datas_alvo` e `datas_curva` são fornecidas, cada ponto é interpolado contra a curva da sua data correspondente (multi-curva, sem loop em Python). Quando ambas são `None`, todos os pontos usam a mesma curva.
+
+O resultado pode ser adicionado a um DataFrame via `with_columns`, preservando a ordem original de `dus_alvo`.
+
+Parameters:
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `dus_alvo` | `Series` | Series Int com os dias úteis dos pontos a interpolar. | *required* |
+| `dus_curva` | `Series` | Series Int com os dias úteis dos vértices conhecidos. | *required* |
+| `taxas_curva` | `Series` | Series Float com as taxas dos vértices conhecidos (mesma ordem de `dus_curva`). | *required* |
+| `datas_alvo` | `Series \| None` | Series Date com a data de referência de cada ponto alvo. Quando fornecida, `datas_curva` também deve ser. Padrão: `None` (curva única). | `None` |
+| `datas_curva` | `Series \| None` | Series Date com a data de referência de cada vértice da curva. Padrão: `None` (curva única). | `None` |
+| `extrapolar` | `bool` | Controla apenas o comportamento na ponta longa (DU acima do maior vértice de cada grupo). Se True, retorna a última taxa conhecida; se False (padrão), retorna `null`. A ponta curta (DU abaixo do menor vértice) sempre retorna a primeira taxa do grupo, independentemente desta flag. O default casa com o da classe `Interpolador`. | `False` |
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `Series` | Series Float64 `taxa_interpolada` na mesma ordem de |
+| `Series` | `dus_alvo`. `null` quando o DU é nulo, a data alvo não existe |
+| `Series` | na curva, ou o DU está acima do maior vértice e `extrapolar` é |
+| `Series` | False. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se apenas uma de `datas_alvo` ou `datas_curva` for fornecida, ou se a curva tiver o mesmo prazo com taxas diferentes (na mesma data, quando há várias curvas). |
+
+**Notes**
+
+Usa a mesma fórmula flat-forward descrita na documentação de `Interpolador`. Os vértices que cercam cada prazo alvo são encontrados automaticamente.
+
+Examples:
+
+Caso típico: adicionar uma coluna de taxas interpoladas a um DataFrame com múltiplas datas de referência.
+
+```pycon
+>>> df = pl.DataFrame(
+...     {
+...         "data_referencia": ["2025-01-02", "2025-01-02"],
+...         "dias_uteis": [10, 25],
+...     }
+... )
+>>> df_curva = pl.DataFrame(
+...     {
+...         "data_referencia": ["2025-01-02"] * 3,
+...         "dias_uteis": [5, 20, 50],
+...         "taxa": [0.10, 0.12, 0.13],
+...     }
+... )
+>>> df.with_columns(
+...     taxa=yd.interpolar(
+...         dus_alvo=df["dias_uteis"],
+...         dus_curva=df_curva["dias_uteis"],
+...         taxas_curva=df_curva["taxa"],
+...         datas_alvo=df["data_referencia"],
+...         datas_curva=df_curva["data_referencia"],
+...     )
+... )
+shape: (2, 3)
+┌─────────────────┬────────────┬──────────┐
+│ data_referencia ┆ dias_uteis ┆ taxa     │
+│ ---             ┆ ---        ┆ ---      │
+│ str             ┆ i64        ┆ f64      │
+╞═════════════════╪════════════╪══════════╡
+│ 2025-01-02      ┆ 10         ┆ 0.113293 │
+│ 2025-01-02      ┆ 25         ┆ 0.123323 │
+└─────────────────┴────────────┴──────────┘
+```
+
+Curva única (sem datas):
+
+```pycon
+>>> yd.interpolar(
+...     dus_alvo=pl.Series([10, 25]),
+...     dus_curva=pl.Series([5, 20, 50]),
+...     taxas_curva=pl.Series([0.10, 0.12, 0.13]),
+... )
+shape: (2,)
+Series: 'taxa_interpolada' [f64]
+[
+    0.113293
+    0.123323
+]
+```
+
 # IPCA
 
 O número-índice é retornado como `Decimal` em `yd.ipca.indice()` e como `Decimal(18, 2)` na coluna `indice` de `yd.ipca.indice_serie()`. Os valores preservam as duas casas publicadas pelo IBGE, sem conversão intermediária para `float`. Quando indisponível, a consulta escalar retorna `Decimal("NaN")`; use `.is_nan()` para verificar.
@@ -3197,6 +3333,10 @@ As taxas históricas são retornadas como `Decimal` em `yd.ipca.taxa()` e como `
 ```python
 calendario = yd.ipca.calendario(2026)
 ```
+
+Taxas, números-índice, projeção e calendário de divulgação do IPCA.
+
+Disponibiliza `taxa`, `taxa_serie`, `indice`, `indice_serie`, `taxa_projetada` e `calendario`.
 
 ## `calendario(ano)`
 
@@ -3217,7 +3357,8 @@ Returns:
 
 **Output Columns**
 
-competencia (Date): Primeiro dia do mês de referência do índice. data\_divulgacao (Date): Data de divulgação prevista pelo IBGE.
+- competencia (Date): Primeiro dia do mês de referência do índice.
+- data\_divulgacao (Date): Data de divulgação prevista pelo IBGE.
 
 **Notes**
 
@@ -3579,14 +3720,14 @@ Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `taxa_lft` | `float \| str` | Taxa de ágio/deságio da LFT sobre a Selic, anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
-| `taxa_di` | `float \| str` | Taxa DI anual efetiva, em decimal, na base de 252 dias úteis, para o mesmo vencimento da LFT (interpolada quando necessário). Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_lft` | `float \| Decimal \| str` | Taxa de ágio/deságio da LFT sobre a Selic, anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_di` | `float \| Decimal \| str` | Taxa DI anual efetiva, em decimal, na base de 252 dias úteis, para o mesmo vencimento da LFT (interpolada quando necessário). Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 
 Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Razão entre a taxa diária equivalente da LFT, usando o DI como referência para a Selic, e a taxa diária DI. Por exemplo, 1.01 representa 101% da taxa diária equivalente DI. |
+| `float` | `float` | Razão entre a taxa diária equivalente da LFT, usando o DI como referência para a Selic, e a taxa diária DI. Por exemplo, 1.01 representa 101% da taxa diária equivalente DI. Retorna NaN para entradas ausentes, se a taxa DI for zero ou se alguma taxa for menor ou igual a -1, casos em que a razão não é definida. |
 
 **Notes**
 
@@ -3632,7 +3773,7 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `Expr` | pl.Expr: Expressão sem alias com a rentabilidade da LFT sobre o DI. |
+| `Expr` | pl.Expr: Expressão sem alias com a rentabilidade da LFT sobre o DI. Resulta em NaN se a taxa DI for zero ou se alguma taxa for menor ou igual a -1, como em `rentabilidade`. |
 
 ## `taxa(data_liquidacao, data_vencimento, vna, pu)`
 
@@ -3672,7 +3813,7 @@ Essa taxa é aplicada sobre a atualização pela Selic, representada pelo VNA; n
 
 Examples:
 
-Exibe as taxas em formato decimal:
+A taxa é retornada em formato decimal; multiplique por 100 para exibi-la em percentual:
 
 ```pycon
 >>> from pyield import lft
@@ -3845,7 +3986,7 @@ Examples:
 
 Cria expressão Polars para o DV01 da LTN.
 
-O cálculo é aplicado linha a linha e reprifica o PU teórico para um aumento de 1 bp na taxa.
+O cálculo é aplicado linha a linha e reprecifica o PU teórico para um aumento de 1 bp na taxa.
 
 Parameters:
 
@@ -3877,7 +4018,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | PU da LTN truncado em seis casas decimais. Retorna `Decimal("NaN")` quando o prazo até o vencimento não é positivo. |
+| `Decimal` | `Decimal` | PU da LTN truncado em seis casas decimais. Retorna `Decimal("NaN")` para entradas nulas ou quando o prazo até o vencimento não é positivo. |
 
 **Notes**
 
@@ -3918,14 +4059,14 @@ Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `taxa_ltn` | `float \| str` | Taxa anual efetiva da LTN, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
-| `taxa_di` | `float \| str` | Taxa DI anual efetiva, em decimal, na base de 252 dias úteis, para o mesmo prazo da LTN. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_ltn` | `float \| Decimal \| str` | Taxa anual efetiva da LTN, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_di` | `float \| Decimal \| str` | Taxa DI anual efetiva, em decimal, na base de 252 dias úteis, para o mesmo prazo da LTN. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 
 Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Razão entre as taxas diárias equivalentes da LTN e do DI. Por exemplo, 1.01 representa 101% da taxa diária equivalente DI. |
+| `float` | `float` | Razão entre as taxas diárias equivalentes da LTN e do DI. Por exemplo, 1.01 representa 101% da taxa diária equivalente DI. Retorna NaN para entradas ausentes, se a taxa DI for zero ou se alguma taxa for menor ou igual a -1, casos em que a razão não é definida. |
 
 **Notes**
 
@@ -3969,13 +4110,13 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `Expr` | pl.Expr: Expressão sem alias com a rentabilidade da LTN sobre o DI. |
+| `Expr` | pl.Expr: Expressão sem alias com a rentabilidade da LTN sobre o DI. Resulta em NaN se a taxa DI for zero ou se alguma taxa for menor ou igual a -1, como em `rentabilidade`. |
 
 ## `taxa(data_liquidacao, data_vencimento, preco_unitario)`
 
 Calcula a taxa implícita da LTN a partir do preço unitário (PU).
 
-Inverte algebricamente o valor presente, sem truncamentos da STN:
+Inverte algebricamente o valor presente, sem truncamentos da STN.
 
 Parameters:
 
@@ -4008,7 +4149,7 @@ Como há apenas um pagamento, a taxa anual efetiva coincide com a taxa zero e co
 
 Examples:
 
-Exibe as taxas em formato decimal:
+A taxa é retornada em formato decimal; multiplique por 100 para exibi-la em percentual:
 
 ```pycon
 >>> from pyield import ltn
@@ -4036,7 +4177,7 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame: DataFrame com as taxas forward. |
+| `DataFrame` | pl.DataFrame: DataFrame com as taxas forward. Na ausência de dados, retorna vazio com as mesmas colunas e tipos. |
 
 **Output Columns**
 
@@ -4128,7 +4269,7 @@ Cálculos e dados de NTN-B.
 
 Convenções de precificação (STN, tabela 3): - Cotação em base 100, truncada a 4 casas. - VNA recebido no cálculo do PU: truncado a 6 casas. - Prazo de desconto: dias úteis / 252, truncado a 14 casas. - PU: truncado a 6 casas. - Cada fluxo descontado: arredondado a 10 casas.
 
-Valores de referência derivados conforme as regras da STN, exibidos em base 100: TAXA\_CUPOM = ((0.06 + 1) \*\* 0.5 - 1) \* 100 \# 6% a.a. com capitalização semestral VALOR\_CUPOM = round(TAXA\_CUPOM, 6) -\> 2.956301 VALOR\_FINAL = 102.956301 DIA\_CUPOM = 15 MESES\_CUPOM = {2, 5, 8, 11}
+Valores de referência derivados conforme as regras da STN, exibidos em base 100: - Taxa do cupom: ((0.06 + 1) \*\* 0.5 - 1) \* 100, isto é, 6% a.a. com capitalização semestral. - Valor do cupom: taxa do cupom arredondada a 6 casas (2.956301). - Pagamento final: 100 + valor do cupom (102.956301). - Cupons em 15/02, 15/05, 15/08 e 15/11, conforme o mês de vencimento.
 
 ## `cotacao(data_liquidacao, data_vencimento, taxa)`
 
@@ -4146,7 +4287,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Cotação em base 100, truncada em 4 casas. Retorna Decimal('NaN') em erro. |
+| `Decimal` | `Decimal` | Cotação em base 100, truncada em 4 casas. Retorna `Decimal("NaN")` para entradas ausentes ou quando não há pagamentos após a liquidação. |
 
 **Notes**
 
@@ -4193,6 +4334,8 @@ Decimal('97.0813')
 
 Busca as taxas indicativas de NTN-B para a data de referência.
 
+Fonte: ANBIMA (taxas indicativas) e B3 (ajustes do DI Futuro).
+
 Parameters:
 
 | Name | Type | Description | Default |
@@ -4220,7 +4363,7 @@ Returns:
 - taxa\_compra (Float64): Taxa de compra (decimal).
 - taxa\_venda (Float64): Taxa de venda (decimal).
 - taxa\_indicativa (Float64): Taxa indicativa (decimal).
-- taxa\_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo método flat forward.
+- taxa\_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo método flat forward, sem extrapolação: nula para vencimentos além do contrato de DI mais longo.
 - taxa\_zero (Float64): Taxa zero real (via bootstrap das taxas indicativas).
 - taxa\_forward (Float64): Taxa forward real (a partir das taxas zero).
 - inflacao\_implicita (Float64): Inflação implícita (breakeven) calculada a partir de taxas nominais do DI Futuro e taxas zero das NTN-B.
@@ -4291,7 +4434,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa` | `float \| str` | TIR real ao ano, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR real ao ano, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 
 Returns:
 
@@ -4313,7 +4456,7 @@ onde:
 - \\(n\\): número de pagamentos restantes.
 - \\(y\\): TIR real informada em `taxa`, em decimal, expressa ao ano na base de 252 dias úteis, relativa aos fluxos em base 100.
 
-O desconto dos fluxos não aplica os arredondamentos e truncamentos da cotação oficial. O resultado é truncado em 14 casas decimais. O VNA, comum a todos os fluxos, cancela na razão.
+O desconto dos fluxos não aplica os arredondamentos e truncamentos da cotação oficial. O VNA, comum a todos os fluxos, cancela na razão.
 
 Examples:
 
@@ -4400,7 +4543,7 @@ Examples:
 
 Cria expressão Polars para o DV01 da NTN-B.
 
-O cálculo é aplicado linha a linha e reprifica o PU informado para um aumento de 1 bp na taxa.
+O cálculo é aplicado linha a linha e reprecifica o PU informado para um aumento de 1 bp na taxa.
 
 Parameters:
 
@@ -4482,7 +4625,14 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame: DataFrame com as taxas calculadas. |
+| `DataFrame` | pl.DataFrame: DataFrame com as taxas calculadas. Retorna vazio, com as mesmas colunas, se alguma entrada for vazia, inclusive a curva nominal. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se vencimentos e taxas tiverem tamanhos diferentes ou se um mesmo vencimento aparecer com taxas diferentes. |
+| `RuntimeError` | Se o bootstrap de `taxas_zero` não convergir. |
 
 **Output Columns**
 
@@ -4646,7 +4796,7 @@ O lado esquerdo representa o preço teórico, sem os arredondamentos e truncamen
 
 Examples:
 
-Exibe as taxas em formato decimal:
+A taxa é retornada em formato decimal; multiplique por 100 para exibi-la em percentual:
 
 ```pycon
 >>> from pyield import ntnb
@@ -4719,7 +4869,7 @@ A bisseção é determinística quando encontra um intervalo que contém uma rai
 
 **Precisão do método**
 
-A calibração usa \\(\\mathrm{DU} / 252\\) sem truncamento e soma os valores presentes sem arredondamento. Isso difere de :func:`cotacao`, que aplica as regras da STN de arredondamento dos fluxos e truncamento da cotação.
+A calibração usa \\(\\mathrm{DU} / 252\\) sem truncamento e soma os valores presentes sem arredondamento. Isso difere de `yd.ntnb.cotacao`, que aplica as regras da STN de arredondamento dos fluxos e truncamento da cotação.
 
 Parameters:
 
@@ -4733,12 +4883,13 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Retorna vazio quando não restarem vencimentos posteriores à liquidação. |
+| `DataFrame` | pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Vértices com taxa nula ou NaN e vencimentos menores ou iguais à liquidação são ignorados e não aparecem no resultado. Retorna vazio quando não restar nenhum vértice. |
 
 Raises:
 
 | Type | Description |
 | --- | --- |
+| `ValueError` | Se vencimentos e taxas tiverem tamanhos diferentes, se um mesmo vencimento aparecer com taxas diferentes ou se alguma taxa for infinita ou menor ou igual a -1. |
 | `RuntimeError` | Se não for possível encontrar um intervalo válido para alguma taxa forward, ocorrer valor não finito na avaliação ou a bisseção não convergir. |
 
 **Output Columns**
@@ -4890,14 +5041,14 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação da operação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento da NTN-B1. | *required* |
-| `taxa` | `float \| Decimal \| str` | Taxa de desconto (YTM) usada no valor presente. Aceita também percentual explícito: "5.75%" ou "5,75%". A taxa de entrada não é truncada antes do cálculo. | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis, usada no valor presente. Aceita também percentual explícito: "5.75%" ou "5,75%". A taxa de entrada não é truncada antes do cálculo. | *required* |
 | `nome_comercial` | `NomeComercial` | Nome comercial (Renda+ ou Educa+). | *required* |
 
 Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Cotação da NTN-B1 em base 100, truncada em 4 casas decimais. |
+| `Decimal` | `Decimal` | Cotação da NTN-B1 em base 100, truncada em 4 casas decimais. Retorna `Decimal("NaN")` para entradas ausentes ou quando não há pagamentos após a liquidação. |
 
 **References**
 
@@ -4935,7 +5086,13 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Cotação em base 100 calculada pela curva zero. |
+| `float` | `float` | Cotação em base 100 calculada pela curva zero. Retorna NaN para entradas ausentes ou quando não há pagamentos após a liquidação. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se faltar a coluna `dias_uteis` ou `taxa_zero`, se a curva não tiver ao menos um vértice válido ou se um mesmo prazo aparecer com taxas diferentes. |
 
 **Notes**
 
@@ -4964,7 +5121,7 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `Series` | pl.Series: Série de datas de amortização no intervalo. |
+| `Series` | pl.Series: Série de datas de amortização no intervalo. Retorna série vazia se não houver amortização após a liquidação, como em um título vencido ou que vence na data de liquidação. |
 
 **Notes**
 
@@ -5008,7 +5165,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação da operação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa` | `float` | Taxa de desconto usada no cálculo. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis, usada no cálculo. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 | `nome_comercial` | `NomeComercial` | Nome comercial (Renda+ ou Educa+). | *required* |
 
 Returns:
@@ -5026,11 +5183,11 @@ Examples:
 47.10494386899199
 ```
 
-## `dv01(data_liquidacao, data_vencimento, taxa, pu, nome_comercial=NomeComercial.RENDA_MAIS)`
+## `dv01(data_liquidacao, data_vencimento, taxa, pu, nome_comercial)`
 
 Calcula o DV01 (Dollar Value of 01) da NTN-B1 em R$.
 
-Representa a variação do PU informado para um aumento de 1 bp (0,01%) na taxa.
+Representa a variação do PU informado para um aumento de 1 bp (0,01 ponto percentual) na taxa.
 
 Parameters:
 
@@ -5038,9 +5195,9 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa` | `float` | Taxa de desconto (YTM) da NTN-B1. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva da NTN-B1, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 | `pu` | `float \| Decimal` | PU usado como base para o cálculo. | *required* |
-| `nome_comercial` | `NomeComercial` | Nome comercial (Renda+ ou Educa+). | `RENDA_MAIS` |
+| `nome_comercial` | `NomeComercial` | Nome comercial (Renda+ ou Educa+). | *required* |
 
 Returns:
 
@@ -5137,7 +5294,8 @@ Returns:
 **References**
 
 - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos Ofertados no Tesouro Direto — Tesouro Educa+ (NTN-B1)*.
-- Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos Ofertados no Tesouro Direto — Tesouro RendA+ (NTN-B1)*. - Secretaria do Tesouro Nacional, [consulta pública sobre a composição dos pagamentos mensais da NTN-B1](<https://www.gov.br/participamaisbrasil/consulta-portaria-composicao-ntn-b11>), processo SEI `17944.005214/2024-09`.
+- Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos Ofertados no Tesouro Direto — Tesouro RendA+ (NTN-B1)*.
+- Secretaria do Tesouro Nacional, [consulta pública sobre a composição dos pagamentos mensais da NTN-B1](<https://www.gov.br/participamaisbrasil/consulta-portaria-composicao-ntn-b11>), processo SEI `17944.005214/2024-09`.
 
 Examples:
 
@@ -5170,7 +5328,13 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | TIR equivalente anualizada, em formato decimal. Retorna NaN para entradas ausentes. Também retorna NaN se a resolução numérica falhar. |
+| `float` | `float` | TIR equivalente anualizada, em formato decimal. Retorna NaN para entradas ausentes ou quando não há pagamentos após a liquidação. Também retorna NaN se a resolução numérica falhar. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se faltar a coluna `dias_uteis` ou `taxa_zero`, se a curva não tiver ao menos um vértice válido ou se um mesmo prazo aparecer com taxas diferentes. |
 
 **Notes**
 
@@ -5207,7 +5371,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa_tir` | `float \| Decimal \| str` | Taxa interna de retorno anualizada do título. Aceita também percentual explícito: "5.75%" ou "5,75%". A taxa de entrada não é truncada antes do cálculo. | *required* |
+| `taxa_tir` | `float \| Decimal \| str` | TIR anual efetiva do título, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". A taxa de entrada não é truncada antes do cálculo. | *required* |
 
 Returns:
 
@@ -5238,7 +5402,7 @@ Decimal('84.4317')
 
 Calcula o DV01 (Dollar Value of 01) da NTN-B Principal em R$.
 
-Representa a variação do PU informado para um aumento de 1 bp (0,01%) na taxa.
+Representa a variação do PU informado para um aumento de 1 bp (0,01 ponto percentual) na taxa.
 
 Parameters:
 
@@ -5246,7 +5410,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa_tir` | `float` | Taxa interna de retorno anualizada do título. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_tir` | `float \| Decimal \| str` | TIR anual efetiva do título, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 | `pu` | `float \| Decimal` | PU usado como base para o cálculo. | *required* |
 
 Returns:
@@ -5311,7 +5475,7 @@ A taxa zero correspondente ao vencimento é interpolada por flat-forward, sem ar
 
 Arredondamentos comerciais e spreads de compra ou venda ficam a cargo do consumidor.
 
-A curva pode ser produzida por :func:`pyield.ntnb.taxas_zero`. Para cálculos em lote, ela deve ser construída uma única vez e reutilizada entre os títulos.
+A curva pode ser produzida por `yd.ntnb.taxas_zero`. Para cálculos em lote, ela deve ser construída uma única vez e reutilizada entre os títulos.
 
 Parameters:
 
@@ -5325,7 +5489,13 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | TIR anualizada em formato decimal, sem arredondamento. Retorna `NaN` se a liquidação for igual ou posterior ao vencimento. |
+| `float` | `float` | TIR anualizada em formato decimal, sem arredondamento. Retorna `NaN` se a liquidação for igual ou posterior ao vencimento ou se o prazo exceder o último vértice da curva, pois não há extrapolação na ponta longa. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se faltar a coluna `dias_uteis` ou `taxa_zero`, se a curva não tiver ao menos um vértice válido ou se um mesmo prazo aparecer com taxas diferentes. |
 
 As funções `yd.ntnc.cotacao_curva_zero` e `yd.ntnc.taxa_curva_zero` recebem uma curva fornecida pelo consumidor, com colunas `dias_uteis` e `taxa_zero`. A primeira retorna a cotação em base 100 sem truncamento final; a segunda, a TIR equivalente como `float`, sem arredondamento comercial. A biblioteca não escolhe a curva de referência nem aplica piso de taxa ANBIMA.
 
@@ -5355,7 +5525,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Cotação em base 100, truncada em 4 casas decimais. |
+| `Decimal` | `Decimal` | Cotação em base 100, truncada em 4 casas decimais. Retorna `Decimal("NaN")` para entradas ausentes ou quando não há pagamentos após a liquidação. |
 
 **Notes**
 
@@ -5399,7 +5569,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação, exclusiva para seleção dos fluxos. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento da NTN-C. | *required* |
-| `curva_zero` | `DataFrame` | DataFrame com `dias_uteis` (prazos inteiros positivos, únicos) e `taxa_zero` (taxas anuais efetivas, em decimal, na base de 252 dias úteis, finitas e maiores que -1). A curva deve conter ao menos um vértice; a ordem é indiferente. | *required* |
+| `curva_zero` | `DataFrame` | DataFrame com `dias_uteis` (prazos inteiros positivos; prazo repetido só é aceito com a mesma taxa) e `taxa_zero` (taxas anuais efetivas, em decimal, na base de 252 dias úteis, finitas e maiores que -1). A curva deve conter ao menos um vértice; a ordem é indiferente. | *required* |
 
 Returns:
 
@@ -5411,7 +5581,7 @@ Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Curva vazia, colunas ausentes ou vértices inválidos. |
+| `ValueError` | Curva vazia, colunas ausentes, vértices inválidos ou um mesmo prazo com taxas diferentes. |
 
 **Notes**
 
@@ -5436,6 +5606,8 @@ A curva é uma hipótese do consumidor. A biblioteca não escolhe uma curva de I
 ## `dados(data)`
 
 Busca as taxas indicativas de NTN-C para a data de referência.
+
+Fonte: ANBIMA (taxas indicativas) e B3 (ajustes do DI Futuro).
 
 Parameters:
 
@@ -5477,7 +5649,7 @@ Examples:
 
 Gera todas as datas de pagamento entre liquidação e vencimento.
 
-Os pagamentos são semestrais. No vencimento, o fluxo inclui o último cupom e a amortização do principal. A NTN-C é definida pela data de vencimento. As datas são contratuais e não são ajustadas para dias úteis.
+Os pagamentos são semestrais. No vencimento, o fluxo inclui o último cupom e a amortização do principal. As datas de cupom retrocedem de 6 em 6 meses a partir do vencimento. As datas são contratuais e não são ajustadas para dias úteis.
 
 Parameters:
 
@@ -5528,7 +5700,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação da operação. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento. | *required* |
-| `taxa` | `float \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 
 Returns:
 
@@ -5550,14 +5722,14 @@ onde:
 - \\(n\\): número de pagamentos restantes.
 - \\(y\\): TIR anual efetiva informada em `taxa`, em decimal, na base de 252 dias úteis, relativa aos fluxos em base 100.
 
-O desconto dos fluxos não aplica os arredondamentos e truncamentos da cotação oficial. O resultado é truncado em 14 casas decimais. O VNA, comum a todos os fluxos, cancela na razão.
+O desconto dos fluxos não aplica os arredondamentos e truncamentos da cotação oficial. O VNA, comum a todos os fluxos, cancela na razão.
 
 Examples:
 
 ```pycon
 >>> from pyield import ntnc
 >>> ntnc.duration("21-03-2025", "01-01-2031", "6.7626%")
-4.405363320448
+4.405363320448003
 ```
 
 ## `duration_expr(data_liquidacao, data_vencimento, taxa)`
@@ -5637,7 +5809,7 @@ Examples:
 
 Cria expressão Polars para o DV01 da NTN-C.
 
-O cálculo é aplicado linha a linha e reprifica o PU informado para um aumento de 1 bp na taxa.
+O cálculo é aplicado linha a linha e reprecifica o PU informado para um aumento de 1 bp na taxa.
 
 Parameters:
 
@@ -5787,7 +5959,7 @@ O lado esquerdo representa o preço teórico, sem os arredondamentos e truncamen
 
 Examples:
 
-Exibe as taxas em formato decimal:
+A taxa é retornada em formato decimal; multiplique por 100 para exibi-la em percentual:
 
 ```pycon
 >>> from pyield import ntnc
@@ -5819,7 +5991,7 @@ Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Curva vazia, colunas ausentes ou vértices inválidos. |
+| `ValueError` | Curva vazia, colunas ausentes, vértices inválidos ou um mesmo prazo com taxas diferentes. |
 
 **Notes**
 
@@ -5837,7 +6009,7 @@ onde:
 
 A TIR é uma taxa única para todos os pagamentos, enquanto a curva fornece uma taxa zero para cada prazo. A resolução aplica as regras de precisão descritas a seguir aos dois lados da equação.
 
-Usa datas, interpolação e precisão de `cotacao_curva_zero`. Resolve por bisseção a taxa única que reproduz sua cotação, sem truncar a taxa durante a busca. Não inverte um PU nem a cotação truncada de `cotacao`. O intervalo é delimitado pelas menores e maiores taxas interpoladas dos fluxos. A busca para por erro de cotação zero ou meia largura do intervalo inferior a 1e-12, com limite de 100 iterações. A escolha da curva e eventuais spreads ou pisos ficam com o consumidor.
+Usa datas, interpolação e precisão de `cotacao_curva_zero`. Resolve por bisseção a taxa única que reproduz sua cotação, sem truncar a taxa durante a busca. Não inverte um PU nem a cotação truncada de `cotacao`. O intervalo é delimitado pela menor e pela maior taxa interpolada dos fluxos. A busca para por erro de cotação zero ou meia largura do intervalo inferior a 1e-12, com limite de 100 iterações. A escolha da curva e eventuais spreads ou pisos ficam com o consumidor.
 
 ## Comparação experimental de curvas zero
 
@@ -5872,13 +6044,18 @@ Cálculos e dados de NTN-F.
 
 Convenções de precificação (STN, tabela 3): - Prazo de desconto: dias úteis / 252, truncado a 14 casas. - PU: truncado a 6 casas. - Cada fluxo descontado: arredondado a 9 casas.
 
-Valores de referência derivados conforme as regras da STN: TAXA\_CUPOM = (0.10 + 1) \*\* 0.5 - 1 -\> 10% a.a. com capitalização semestral VALOR\_FACE = 1000 VALOR\_CUPOM = round(VALOR\_FACE \* TAXA\_CUPOM, 5) VALOR\_FINAL = VALOR\_FACE + VALOR\_CUPOM
+**Valores de referência derivados conforme as regras da STN**
+
+- Valor de face: 1000 reais.
+- Taxa do cupom: (0.10 + 1) \*\* 0.5 - 1, isto é, 10% a.a. com capitalização semestral.
+- Valor do cupom: valor de face × taxa do cupom, arredondado a 5 casas (48.80885).
+- Pagamento final: valor de face + valor do cupom (1048.80885).
 
 A NTN-F paga dois cupons por ano (semestrais). As datas de cupom são derivadas do vencimento (retrocedendo 6 em 6 meses), sem depender de meses fixos. Ex.: vencimento 01-01-2027 gera cupons em 01-07-2026, 01-01-2026, ...
 
 ## `dados(data)`
 
-Busca as taxas indicativas de NTN-F para a data de referência.
+Busca as taxas indicativas de NTN-F na ANBIMA para a data de referência.
 
 Parameters:
 
@@ -5900,14 +6077,14 @@ Returns:
 - data\_base (Date): Data base de emissão do título.
 - data\_vencimento (Date): Data de vencimento do título.
 - dias\_uteis (Int64): Dias úteis entre referência e vencimento.
-- prazo\_medio (Float64): Prazo médio do título em dias corridos.
+- prazo\_medio (Float64): Prazo médio do título (anos).
 - duration (Float64): Macaulay Duration do título (anos).
 - dv01 (Float64): Variação no preço para 1bp de taxa.
 - pu (Float64): Preço unitário (PU).
 - taxa\_compra (Float64): Taxa de compra (decimal).
 - taxa\_venda (Float64): Taxa de venda (decimal).
 - taxa\_indicativa (Float64): Taxa indicativa (decimal).
-- taxa\_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo método flat forward.
+- taxa\_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo método flat forward (decimal).
 - taxa\_zero (Float64): Taxa zero (zero cupom via bootstrap).
 - premio (Float64): prêmio, isto é, o spread sobre o DI.
 - premio\_limpo (Float64): prêmio limpo sobre a curva DI.
@@ -5924,7 +6101,7 @@ Examples:
 
 Gera todas as datas de pagamento entre liquidação e vencimento.
 
-As datas são exclusivas para a liquidação e inclusivas para o vencimento. Os pagamentos são semestrais, em 1º de janeiro e 1º de julho. No vencimento, o fluxo inclui o último cupom e a amortização do principal. O título NTN-F é determinado pela data de vencimento. As datas são contratuais e não são ajustadas para dias úteis.
+As datas são exclusivas para a liquidação e inclusivas para o vencimento. Os pagamentos são semestrais, contados a partir do vencimento (1º de janeiro e 1º de julho nas NTN-F já emitidas). No vencimento, o fluxo inclui o último cupom e a amortização do principal. O título NTN-F é determinado pela data de vencimento. As datas são contratuais e não são ajustadas para dias úteis.
 
 Parameters:
 
@@ -5985,13 +6162,13 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação para o cálculo. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento do título. | *required* |
-| `taxa` | `float \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis, usada para descontar os fluxos. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis, usada para descontar os fluxos. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 
 Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Macaulay duration em anos úteis. Retorna NaN se inválido. |
+| `float` | `float` | Macaulay duration em anos úteis. Retorna NaN para entradas ausentes ou quando não há pagamentos após a liquidação. |
 
 **Notes**
 
@@ -6056,7 +6233,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | DV01, variação de preço para 1 bp. |
+| `float` | `float` | DV01, variação de preço para 1 bp. Retorna NaN para entradas ausentes ou quando não há pagamentos após a liquidação. |
 
 **Notes**
 
@@ -6091,7 +6268,7 @@ Examples:
 
 Cria expressão Polars para o DV01 da NTN-F.
 
-O cálculo é aplicado linha a linha e reprifica o PU teórico para um aumento de 1 bp na taxa.
+O cálculo é aplicado linha a linha e reprecifica o PU teórico para um aumento de 1 bp na taxa.
 
 Parameters:
 
@@ -6165,7 +6342,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação para o cálculo. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento do título. | *required* |
-| `taxa_ntnf` | `float \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_ntnf` | `float \| Decimal \| str` | TIR anual efetiva, em decimal, na base de 252 dias úteis. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 | `vencimentos_di` | `DatesLike` | Vencimentos da curva DI. | *required* |
 | `taxas_di` | `ArrayLike` | Taxas DI anuais efetivas, em decimal, na base de 252 dias úteis, correspondentes aos vencimentos. | *required* |
 
@@ -6173,7 +6350,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Spread líquido em formato decimal (ex.: 0.0012 = 12 bps). Retorna NaN para entradas ausentes ou fluxos vazios. Também retorna NaN se a resolução numérica falhar. |
+| `float` | `float` | Spread líquido em formato decimal (ex.: 0.0012 = 12 bps). Retorna NaN para entradas ausentes ou fluxos vazios. Também retorna NaN se a resolução numérica falhar ou se houver pagamento além do último vértice da curva DI, pois não há extrapolação na ponta longa. |
 
 **Notes**
 
@@ -6194,16 +6371,16 @@ Para expressar o spread em pontos-base, multiplique por 10.000. Os preços são 
 
 Examples:
 
-### Obs: apenas algumas taxas DI serão usadas no exemplo.
-
 ```pycon
->>> exp_dates = ["2025-01-01", "2030-01-01", "2035-01-01"]
+>>> from pyield import ntnf
+>>> # Obs: apenas algumas taxas DI serão usadas no exemplo.
+>>> vencimentos_di = ["2025-01-01", "2030-01-01", "2035-01-01"]
 >>> taxas_di = [0.10823, 0.11594, 0.11531]
->>> spread = premio_limpo(
+>>> spread = ntnf.premio_limpo(
 ...     data_liquidacao="23-08-2024",
 ...     data_vencimento="01-01-2035",
 ...     taxa_ntnf=0.116586,
-...     vencimentos_di=exp_dates,
+...     vencimentos_di=vencimentos_di,
 ...     taxas_di=taxas_di,
 ... )
 >>> round(spread * 10_000, 2)  # Converte para bps para exibição
@@ -6251,7 +6428,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `Decimal` | `Decimal` | Preço da NTN-F truncado em seis casas decimais. |
+| `Decimal` | `Decimal` | Preço da NTN-F truncado em seis casas decimais. Retorna `Decimal("NaN")` para entradas nulas ou quando não há pagamentos após a liquidação. |
 
 **Notes**
 
@@ -6269,10 +6446,11 @@ onde:
 
 Os fluxos e os prazos são determinados pela liquidação e pelo vencimento. No cálculo oficial, além do truncamento da TIR descrito em `Args`, cada prazo \\(t\_i\\) é truncado em 14 casas decimais, cada fluxo descontado é arredondado em nove casas e a soma é truncada em seis.
 
+O cupom semestral é 48,80885, que representa 10% a.a. com capitalização semestral e arredondamento para 5 casas, conforme a STN.
+
 **References**
 
 - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos Públicos Federais Ofertados nos Leilões Primários. https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/
-- O cupom semestral é 48,81, que representa 10% a.a. com capitalização semestral e arredondamento para 5 casas, conforme a STN.
 
 Examples:
 
@@ -6296,7 +6474,7 @@ Parameters:
 | --- | --- | --- | --- |
 | `data_liquidacao` | `DateLike` | Data de liquidação para o cálculo. | *required* |
 | `data_vencimento` | `DateLike` | Data de vencimento da NTN-F. | *required* |
-| `taxa_ntnf` | `float \| str` | TIR anual efetiva da NTN-F, em formato decimal. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
+| `taxa_ntnf` | `float \| Decimal \| str` | TIR anual efetiva da NTN-F, em formato decimal. Aceita também percentual explícito: "5.75%" ou "5,75%". | *required* |
 | `vencimentos_di` | `DatesLike` | Datas de vencimento da curva DI. | *required* |
 | `taxas_di` | `ArrayLike` | Taxas DI anuais efetivas, em formato decimal, correspondentes aos vencimentos. | *required* |
 
@@ -6304,23 +6482,7 @@ Returns:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `float` | `float` | Razão entre as taxas diárias equivalentes. Por exemplo, 1.01 representa 101% da taxa diária equivalente de referência DI. Retorna NaN para entradas ausentes, fluxos vazios ou preço calculado NaN. Também retorna NaN se a resolução numérica falhar. |
-
-Examples:
-
-```pycon
->>> # Obs: apenas algumas taxas DI serão usadas no exemplo.
->>> exp_dates = ["2025-01-01", "2030-01-01", "2035-01-01"]
->>> taxas_di = [0.10823, 0.11594, 0.11531]
->>> rentabilidade(
-...     data_liquidacao="23-08-2024",
-...     data_vencimento="01-01-2035",
-...     taxa_ntnf="11.6586%",
-...     vencimentos_di=exp_dates,
-...     taxas_di=taxas_di,
-... )
-1.0099602280683393
-```
+| `float` | `float` | Razão entre as taxas diárias equivalentes. Por exemplo, 1.01 representa 101% da taxa diária equivalente de referência DI. Retorna NaN para entradas ausentes, fluxos vazios ou preço calculado NaN. Também retorna NaN se a resolução numérica falhar, se a TIR de referência DI for zero ou se a TIR da NTN-F for menor ou igual a -1, casos em que a razão não é definida. |
 
 **Notes**
 
@@ -6366,6 +6528,23 @@ Os fluxos mantêm as datas contratuais, excluem pagamentos na liquidação e inc
 > A LTN possui um único pagamento. Nesse caso, a TIR equivalente da referência coincide com a taxa zero DI do vencimento, e a fórmula se reduz à utilizada por `yd.ltn.rentabilidade`. Na NTN-F, a TIR equivalente considera também os cupons intermediários.
 
 Referência: Tesouro Nacional, *Dívida Pública: a experiência brasileira*, Parte 3, capítulo 2, Anexo 2, item 2, páginas 329–330: [Prêmio das NTN-Fs](<https://thot-arquivos.tesouro.gov.br/publicacao-anexo/4710>).
+
+Examples:
+
+```pycon
+>>> from pyield import ntnf
+>>> # Obs: apenas algumas taxas DI serão usadas no exemplo.
+>>> vencimentos_di = ["2025-01-01", "2030-01-01", "2035-01-01"]
+>>> taxas_di = [0.10823, 0.11594, 0.11531]
+>>> ntnf.rentabilidade(
+...     data_liquidacao="23-08-2024",
+...     data_vencimento="01-01-2035",
+...     taxa_ntnf="11.6586%",
+...     vencimentos_di=vencimentos_di,
+...     taxas_di=taxas_di,
+... )
+1.0099602280683393
+```
 
 ## `rentabilidade_expr(data_liquidacao, data_vencimento, taxa_ntnf, vencimentos_di, taxas_di)`
 
@@ -6428,7 +6607,7 @@ A soma representa o preço teórico, sem os arredondamentos e truncamentos do PU
 
 Examples:
 
-Exibe as taxas em formato decimal:
+A taxa é retornada em formato decimal; multiplique por 100 para exibi-la em percentual:
 
 ```pycon
 >>> from pyield import ntnf
@@ -6440,9 +6619,9 @@ Exibe as taxas em formato decimal:
 
 ## `taxas_zero(data_liquidacao, vencimentos_ltn, taxas_ltn, vencimentos_ntnf, taxas_ntnf, incluir_cupons=False)`
 
-Calcula as taxas spot (zero cupom) para NTN-F usando bootstrap.
+Calcula as taxas zero cupom (spot) para NTN-F usando bootstrap.
 
-O bootstrap determina as taxas spot a partir das TIRs dos títulos. O método resolve iterativamente as taxas que descontam os fluxos ao preço. Usa as LTNs (zero cupom) até o último vencimento LTN disponível. Após isso, calcula as taxas spot a partir das NTN-F.
+O bootstrap determina as taxas zero a partir das TIRs dos títulos. O método resolve iterativamente as taxas que descontam os fluxos ao preço. Usa as LTNs (zero cupom) até o último vencimento LTN disponível. Após isso, calcula as taxas zero a partir das NTN-F.
 
 Parameters:
 
@@ -6453,13 +6632,19 @@ Parameters:
 | `taxas_ltn` | `ArrayLike` | Taxas das LTNs. Como a LTN é zero cupom, essas taxas são usadas diretamente como taxas zero no bootstrap. | *required* |
 | `vencimentos_ntnf` | `DatesLike` | Datas de vencimento das NTN-F usadas no bootstrap. | *required* |
 | `taxas_ntnf` | `ArrayLike` | TIRs das NTN-F correspondentes aos vencimentos informados. | *required* |
-| `incluir_cupons` | `bool` | Se True, inclui as datas de cupom (julho). Padrão False. | `False` |
+| `incluir_cupons` | `bool` | Se True, inclui todas as datas de pagamento semestrais até o último vencimento, e não só os vencimentos informados. Padrão False. | `False` |
 
 Returns:
 
 | Type | Description |
 | --- | --- |
 | `DataFrame` | pl.DataFrame: DataFrame com colunas `data_vencimento`, `dias_uteis` e `taxa_zero`. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ValueError` | Se vencimentos e taxas tiverem tamanhos diferentes ou se um mesmo vencimento aparecer com taxas diferentes. |
 
 **Output Columns**
 
@@ -6489,7 +6674,7 @@ onde \\(r\_i := r(t\_i)\\) é a taxa zero para o prazo do pagamento \\(i\\).
 
 As taxas de entrada e de saída são anuais efetivas, em decimal, na base de 252 dias úteis. Para a LTN, a TIR coincide com a taxa zero, pois há apenas um pagamento. O preço teórico não aplica os arredondamentos e truncamentos do PU oficial.
 
-Vencimentos menores ou iguais à liquidação são ignorados antes da construção dos interpoladores.
+Vértices com taxa nula ou NaN e vencimentos menores ou iguais à liquidação são ignorados antes da construção dos interpoladores e não aparecem no resultado.
 
 Examples:
 
@@ -6542,7 +6727,7 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame: União dos vencimentos futuros de LTN e NTN-F, ordenada. Retorna vazio com esquema quando não há títulos futuros. |
+| `DataFrame` | pl.DataFrame: União dos vencimentos futuros de LTN e NTN-F, ordenada. Vértices com taxa nula ou NaN são ignorados e não aparecem no resultado. Retorna vazio com esquema quando não há títulos futuros. |
 
 **Output Columns**
 
@@ -6554,7 +6739,7 @@ Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Entradas inválidas, vencimentos duplicados na mesma família, prazos úteis coincidentes ou preço incompatível com a curva anterior. |
+| `ValueError` | Datas inválidas, taxas infinitas ou menores ou iguais a -1, vencimentos duplicados com taxas diferentes na mesma família, prazos úteis coincidentes ou preço incompatível com a curva anterior. |
 | `RuntimeError` | Falha na calibração numérica. |
 
 **Notes**
@@ -6653,8 +6838,8 @@ Parameters:
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
 | `inicio` | `DateLike \| None` | Data inicial. | `None` |
-| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data mais recente. | `None` |
-| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Mutuamente exclusivo com `inicio`/`fim`. | `None` |
+| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data de hoje. | `None` |
+| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Se informado, tem prioridade sobre `inicio` e `fim`. | `None` |
 
 Returns:
 
@@ -7558,9 +7743,7 @@ import polars as pl
 import pyield as yd
 
 serie = yd.selic.over_serie(ultimos=5)
-serie_compativel = serie.with_columns(
-    taxa=pl.col("taxa").cast(pl.Decimal(18, 10))
-)
+serie_compativel = serie.with_columns(taxa=pl.col("taxa").cast(pl.Decimal(18, 10)))
 ```
 
 Esse cast acrescenta zeros à representação; não aumenta a precisão da fonte nem recupera índices do IGP-M anteriores ao novo corte histórico. Para análises que exigem ponto flutuante, use `float(taxa)` ou `pl.col("taxa").cast(pl.Float64)`, considerando a possível aproximação binária.
@@ -7619,12 +7802,146 @@ Se sua aplicação usa o histórico anterior, consulte diretamente a [série com
 
 O IGP-M passa a ser organizado no pacote `pyield/igpm/`, que reúne as implementações dos números-índice e do calendário. As taxas continuam sendo reexportadas diretamente do SGS/BCB. As chamadas públicas `yd.igpm.taxa`, `taxa_serie`, `indice`, `indice_serie` e `calendario` permanecem iguais; somente os caminhos internos de implementação mudam.
 
+# Novidades na versão 0.64.0
+
+Esta versão reúne as duas fontes de leilões de TPF em `yd.tpf.leiloes`, com a escolha explícita da fonte pelo novo parâmetro `fonte`. A função `yd.tpf.leiloes_bcb` deixa de existir.
+
+## Fonte dos leilões de TPF
+
+`yd.tpf.leiloes` passa a aceitar `fonte="tn"` (Tesouro Nacional, padrão) ou `fonte="bc"` (Banco Central do Brasil). A API pública fica orientada ao conceito, leilão de TPF, e não à fonte de dados.
+
+Chamadas sem `fonte` continuam consultando o Tesouro Nacional, com os mesmos parâmetros, colunas e valores da 0.63.0. Com `fonte="bc"`, o resultado é o mesmo que `yd.tpf.leiloes_bcb` retornava: colunas, tipos e metodologia não mudam.
+
+Não há troca automática de fonte. As duas fontes diferem em colunas e em metodologia, por exemplo nos financeiros calculados a partir do PU médio e na cotação publicada pelo BCB para LFT e NTN-B até 10/06/2024. Se a fonte mudasse conforme a disponibilidade do Tesouro, a mesma chamada poderia retornar esquemas e valores diferentes. As diferenças estão documentadas nas notas de [`yd.tpf.leiloes`](<https://crdcj.github.io/PYield/tpf/#leiloes>).
+
+### Migração
+
+Substitua `yd.tpf.leiloes_bcb` por `yd.tpf.leiloes` com `fonte="bc"`:
+
+```python
+# 0.63.0
+df = yd.tpf.leiloes_bcb(data="19-08-2025")
+
+# 0.64.0
+df = yd.tpf.leiloes(data="19-08-2025", fonte="bc")
+```
+
+Quem usava o BCB como alternativa ao Tesouro indisponível pode tratar o erro explicitamente:
+
+```python
+try:
+    df = yd.tpf.leiloes(data="19-08-2025")
+except requests.RequestException:
+    df = yd.tpf.leiloes(data="19-08-2025", fonte="bc")
+```
+
+## Taxas do secundário mensal em decimal
+
+As colunas `taxa_minima`, `taxa_media` e `taxa_maxima` de `yd.tpf.secundario.mensal` e `yd.tpf.secundario.ler` passam a ser retornadas em decimal (0.1215 = 12,15%), como as demais taxas da biblioteca, incluindo `yd.tpf.secundario.intradia`. Até a 0.63.0 elas vinham em percentual (12.15). O tipo continua `Float64`, e as demais colunas não mudam.
+
+### Migração
+
+Para manter a escala anterior, multiplique as três colunas por 100:
+
+```python
+df = yd.tpf.secundario.mensal("07-01-2025").with_columns(
+    pl.col("taxa_minima", "taxa_media", "taxa_maxima") * 100
+)
+```
+
+## `nome_comercial` obrigatório em `yd.ntnb1.dv01`
+
+`yd.ntnb1.dv01` deixa de assumir Renda+ quando `nome_comercial` não é informado, como as demais funções de `yd.ntnb1`. Antes, um Educa+ calculado sem o argumento retornava o DV01 do Renda+ sem erro. Agora a omissão gera `TypeError`.
+
+### Migração
+
+Informe o nome comercial explicitamente:
+
+```python
+r_mais = yd.ntnb1.NomeComercial.RENDA_MAIS
+
+# 0.63.0
+dv01 = yd.ntnb1.dv01("23-06-2025", "15-12-2084", "6.86%", pu)
+
+# 0.64.0
+dv01 = yd.ntnb1.dv01("23-06-2025", "15-12-2084", "6.86%", pu, r_mais)
+```
+
+## Prazos repetidos na curva zero e no interpolador
+
+As funções de NTN-B Principal, NTN-B1 e NTN-C que recebem `curva_zero` (`yd.ntnbp.taxa`, `yd.ntnb1.cotacao_curva_zero`, `yd.ntnb1.taxa_curva_zero`, `yd.ntnc.cotacao_curva_zero` e `yd.ntnc.taxa_curva_zero`) passam a tratar prazos repetidos da mesma forma:
+
+- linhas idênticas são aceitas e consideradas uma única vez;
+- o mesmo `dias_uteis` com taxas diferentes gera `ValueError`.
+
+A regra vale também para `yd.Interpolador` e `yd.interpolar`, que estão na base dessas funções. Em `yd.interpolar` com várias curvas, o conflito é verificado dentro de cada data: o mesmo DU em datas diferentes é legítimo. A mensagem de erro informa o DU, as taxas conflitantes e, se houver, a data:
+
+```text
+ValueError: Curva tem o mesmo prazo com taxas diferentes; informe uma única
+taxa por prazo. Conflitos: 2025-01-03, DU 200: taxas [0.11, 0.13].
+```
+
+Antes, o interpolador usava a última linha de cada prazo, e o resultado dependia da ordem da curva. A NTN-C rejeitava qualquer repetição, mesmo com taxas iguais. Curvas geradas por `yd.ntnb.taxas_zero` e as curvas internas de DI1 e TPF não têm prazos repetidos e não são afetadas.
+
+O mesmo critério vale para os vértices informados aos bootstraps `yd.ntnf.taxas_zero`, `yd.ntnf.taxas_zero_forwards` e `yd.ntnb.taxas_zero` (também usado por `yd.ntnb.implicitas`). Antes, `yd.ntnf.taxas_zero` aceitava o mesmo vencimento com taxas diferentes e o resultado dependia da ordem dos vértices; `yd.ntnb.taxas_zero` repetia o vértice na saída ou falhava com `RuntimeError`; e `yd.ntnf.taxas_zero_forwards` rejeitava até repetições idênticas.
+
+## Duration sem truncamento
+
+`yd.ntnb.duration`, `yd.ntnc.duration` e `yd.ntnb1.duration` deixam de truncar o resultado em 14 casas decimais, como já faziam `yd.ntnf.duration` e as versões `duration_expr` usadas em `dados()`. A duration é uma medida analítica em ponto flutuante, e o truncamento não segue a metodologia de cotação do Tesouro. A diferença fica no último dígito do `float`, por exemplo `yd.ntnc.duration("21-03-2025", "01-01-2031", "6.7626%")` passa de `4.405363320448` para `4.405363320448003`. O truncamento dos anos úteis nas cotações não muda.
+
+## Taxas em `Decimal`
+
+As funções escalares que recebem uma taxa passam a aceitar `Decimal` de forma uniforme, além de `float` e do percentual textual (`"6.25%"`). Antes, `cotacao`, `pu` e parte dos `dv01` já aceitavam, mas as funções abaixo terminavam em erro do Polars ou em `TypeError`:
+
+- `duration` de `yd.ntnb`, `yd.ntnc`, `yd.ntnb1` e `yd.ntnf`;
+- `dv01` de `yd.ntnb1` e `yd.ntnbp`;
+- `rentabilidade` de `yd.ltn`, `yd.lft` e `yd.ntnf`, e `yd.ntnf.premio_limpo`.
+
+O `Decimal` é convertido para `float` antes do cálculo, e o resultado é o mesmo obtido com o `float` equivalente. Chamadas existentes não mudam.
+
+## Ofertas de compra e venda em `yd.futuro.historico`
+
+Nos contratos cotados por taxa (DI1, DAP, DDI, FRC e FRO), as colunas `taxa_ultima_oferta_compra` e `taxa_ultima_oferta_venda` de `yd.futuro.historico` e `yd.futuro.enriquecer` estavam trocadas. Até a 0.63.0, a melhor oferta de compra da B3 saía como venda e vice-versa, e a taxa de compra ficava acima da de venda.
+
+As colunas passam a seguir a convenção da B3, a mesma de `yd.futuro.intradia`: comprar um contrato de taxa é comprar taxa, o que equivale a vender PU. Por isso a oferta de compra tem a taxa menor. A ordem das colunas também muda: compra vem antes de venda. Os contratos cotados por preço (DOL, WDO, IND e WIN) não mudam.
+
+### Migração
+
+Para manter os valores da 0.63.0, troque os nomes das duas colunas:
+
+```python
+df = yd.futuro.historico("06-11-2026", "DI1").rename(
+    {
+        "taxa_ultima_oferta_compra": "taxa_ultima_oferta_venda",
+        "taxa_ultima_oferta_venda": "taxa_ultima_oferta_compra",
+    }
+)
+```
+
+## Correções
+
+As correções abaixo alteram apenas resultados que antes estavam errados ou terminavam em erros sem relação com a entrada. Os demais valores não mudam.
+
+- `yd.ntnf.premio_limpo` retorna NaN quando algum pagamento fica além do último vértice da curva DI, como `yd.ntnf.rentabilidade` já fazia. Antes, o spread era calculado com apenas parte dos fluxos. O mesmo vale para a coluna `premio_limpo` de `yd.ntnf.dados`.
+- `yd.ntnf.taxas_zero` calcula a taxa zero do vértice que tem um único pagamento depois da última LTN; nesse caso ela é a própria TIR. Antes, o vértice ficava nulo e os seguintes, NaN. A correção alcança `yd.ntnf.dados` e `yd.tpf.curva_pre`.
+- `yd.ntnb1.cotacao_curva_zero` e `yd.ntnb1.taxa_curva_zero` retornam NaN quando não há pagamentos após a liquidação e geram `ValueError` para curva sem vértice válido, como `yd.ntnbp.taxa` e as funções de curva da NTN-C. Antes, a cotação saía `0.0` e a taxa terminava em `IndexError` ou `TypeError`.
+- `yd.ntnb.taxas_zero`, `yd.ntnb.implicitas`, `yd.ntnf.taxas_zero` e `yd.ntnf.taxas_zero_forwards` ignoram vértices com taxa nula ou NaN, que representam dado ausente: o vértice sai do cálculo e do resultado, e a remoção é registrada no log. Antes, a NTN-B terminava em `TypeError` ou em um erro do solver; em `yd.ntnf.taxas_zero`, a taxa zero do vértice era calculada com uma TIR interpolada dos vizinhos, ou a função terminava em `TypeError` quando o vértice sem taxa era o último; e `yd.ntnf.taxas_zero_forwards` gerava `ValueError`.
+- `yd.ntnb.taxas_zero` e `yd.ntnb.implicitas` geram `ValueError` para taxas infinitas ou menores ou iguais a -1, que antes terminavam em `ZeroDivisionError` ou em um erro do solver.
+- `yd.tpf.leiloes` com `fonte="tn"` e várias datas retorna o resultado ordenado e sem repetir linhas quando a mesma data é informada mais de uma vez, como já ocorria com `fonte="bc"`. Sem PTAX disponível, as colunas `ptax` e `dv01_*_usd` ficam nulas nas duas fontes, em vez de ausentes na fonte TN e de erro na fonte BC.
+- As funções de `yd.ntnb1` deixam de gerar `ValueError` quando o vencimento é menor ou igual à liquidação. Título vencido ou que vence na liquidação não tem mais fluxos: `datas_pagamento` e `fluxos_caixa` retornam vazio, e `cotacao`, `duration`, `dv01`, `cotacao_curva_zero` e `taxa_curva_zero` retornam NaN, como nos demais títulos.
+- `rentabilidade` de `yd.ltn`, `yd.lft` e `yd.ntnf` retorna NaN quando a razão sobre o DI não é definida: taxa DI igual a zero ou alguma taxa menor ou igual a -1. As versões `rentabilidade_expr` seguem a mesma regra. Antes, os escalares de LTN e LFT terminavam em `ZeroDivisionError` com DI zero e devolviam um número complexo para taxa abaixo de -1; as expressões devolviam `inf`, `-inf` ou NaN; e a NTN-F devolvia `inf` ou `0.0`.
+- `yd.tpf.leiloes` com `fonte="bc"`, em leilão sem aceite: `financeiro_ofertado_total` fica nulo, como já ocorria com `financeiro_ofertado_1v` e `financeiro_ofertado_2v`, pois sem PU o financeiro ofertado é desconhecido; antes, o total saía `0.0`. Já `financeiro_aceito_1v` e `financeiro_aceito_2v` passam a valer `0.0`, em vez de nulos, pois quantidade aceita zero significa financeiro aceito zero; `financeiro_aceito_total` continua `0.0`.
+- `yd.ltn.taxas_forward` sem data retorna DataFrame vazio com as colunas documentadas.
+- `yd.futuro.vencimento` aceita código nulo e retorna `None`, como a assinatura já indicava. `yd.futuro.historico` e `yd.futuro.enriquecer` exigem o contrato completo de três caracteres; um prefixo parcial, como `"D"`, retorna vazio em vez de misturar contratos.
+- Datas informadas como string em branco deixam de gerar `AttributeError` ou `TypeError` em `yd.vna.vigencia` (`ValueError`), `yd.vna.historico`, `yd.ipca.taxa_serie`, `yd.ipca.indice_serie`, `yd.futuro.historico` e nas funções `datas_pagamento` dos títulos (resultado vazio).
+
 # Notas de versão
 
 Cada versão tem uma página com as mudanças, o racional das decisões e as orientações de migração. Consulte também as [releases do GitHub](<https://github.com/crdcj/PYield/releases>) para as publicações.
 
 | Versão | Principais mudanças |
 | --- | --- |
+| [0.64.0](<https://crdcj.github.io/PYield/release-0.64.0/index.md>) | Fonte explícita em `yd.tpf.leiloes` (`fonte="tn"` ou `fonte="bc"`) e remoção de `yd.tpf.leiloes_bcb`; taxas de `yd.tpf.secundario.mensal` em decimal; `nome_comercial` obrigatório em `yd.ntnb1.dv01`; erro para prazos conflitantes na curva zero e no interpolador; duration sem truncamento; correções em prêmio limpo, curvas zero e leilões. |
 | [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>) | Escalas decimais por modalidade, série histórica de DI Over, números-índice no contexto de VNA e índices do IGP-M desde agosto de 1994. |
 | [0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) | Consultas externas sem cache, remoção de `atualizar`, retry leve, indicadores SGS com `Decimal`, taxas Over diárias e Polars 2.0 como mínimo. |
 | [0.61.0](<https://crdcj.github.io/PYield/release-0.61.0/index.md>) | Calendário de pregões da B3 e exposição de `futuro.dv01_expr`. |
@@ -7660,11 +7977,9 @@ meta = yd.selic.meta("28-02-2025")
 
 As escalas foram ajustadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/#escalas-decimais-dos-indicadores>). As docstrings abaixo identificam as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
 
-selic — Dados e análises relacionados à taxa Selic e política monetária.
+Indicadores da taxa Selic: `over`, `over_serie`, `meta` e `meta_serie`.
 
-### Submódulos
-
-Este namespace reúne os indicadores diretamente relacionados à taxa Selic. O produto CPM e suas análises ficam disponíveis em `pyield.cpm`.
+O produto CPM e suas análises ficam em `pyield.cpm`; o calendário de reuniões do Copom, em `pyield.copom`.
 
 ## `over(data, *, anualizada=True)`
 
@@ -7716,8 +8031,8 @@ Parameters:
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
 | `inicio` | `DateLike \| None` | Data inicial. | `None` |
-| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data mais recente. | `None` |
-| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Mutuamente exclusivo com `inicio`/`fim`. | `None` |
+| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data de hoje. | `None` |
+| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Se informado, tem prioridade sobre `inicio` e `fim`. | `None` |
 | `anualizada` | `bool` | Se `True`, retorna a taxa ao ano, em base 252 dias úteis. Se `False`, retorna a taxa ao dia útil publicada pela fonte. | `True` |
 
 Returns:
@@ -7728,7 +8043,8 @@ Returns:
 
 **Output Columns**
 
-data (pl.Date): Data de referência da observação. taxa (pl.Decimal(18, 4) ou pl.Decimal(18, 8)): Taxa em decimal, ao ano com escala 4 se `anualizada=True` ou ao dia útil com escala 8 se `anualizada=False`.
+- data (Date): Data de referência da observação.
+- taxa (Decimal(18, 4) ou Decimal(18, 8)): Taxa em decimal, ao ano com escala 4 se `anualizada=True` ou ao dia útil com escala 8 se `anualizada=False`.
 
 **Notes**
 
@@ -7810,8 +8126,8 @@ Parameters:
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
 | `inicio` | `DateLike \| None` | Data inicial. | `None` |
-| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data mais recente. | `None` |
-| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Mutuamente exclusivo com `inicio`/`fim`. | `None` |
+| `fim` | `DateLike \| None` | Data final. Se `None`, usa a data de hoje. | `None` |
+| `ultimos` | `int \| None` | Número de registros mais recentes a retornar. Se informado, tem prioridade sobre `inicio` e `fim`. | `None` |
 
 Returns:
 
@@ -7995,7 +8311,7 @@ Returns:
 | Type | Description |
 | --- | --- |
 | `DataFrame` | DataFrame com a curva PRE para a data solicitada. Retorna DataFrame |
-| `DataFrame` | vazio se não houver dados de LTN disponíveis. |
+| `DataFrame` | vazio se não houver dados de LTN nem de NTN-F. |
 
 **Output Columns**
 
@@ -8075,100 +8391,6 @@ Examples:
 >>> df = yd.tpf.estoque(data)
 >>> df.shape[0] > 0
 True
-```
-
-## `leiloes_bcb(*, data=None, inicio=None, fim=None)`
-
-Busca resultados de leilões de TPFs no BCB.
-
-Fonte: Banco Central do Brasil, disponível desde 12/11/2012. Alternativa a `yd.tpf.leiloes` (Tesouro Nacional) para quando o Tesouro estiver indisponível ou ainda não trouxer a 2ª volta. Recebe os mesmos parâmetros e usa os mesmos nomes de colunas; colunas exclusivas de cada fonte ficam ausentes na outra. Os resultados podem ser unidos com `pl.concat(..., how="diagonal")`.
-
-Parameters:
-
-| Name | Type | Description | Default |
-| --- | --- | --- | --- |
-| `data` | `DateLike \| DatesLike \| None` | Data ou sequência de datas do leilão. Padrão é `None`. | `None` |
-| `inicio` | `DateLike \| None` | Data inicial da consulta. Padrão é `None`. | `None` |
-| `fim` | `DateLike \| None` | Data final da consulta. Padrão é `None`. | `None` |
-
-Returns:
-
-| Type | Description |
-| --- | --- |
-| `DataFrame` | DataFrame Polars com os leilões no período, ordenado por data, título e |
-| `DataFrame` | vencimento. Sem filtros temporais, retorna o histórico completo. |
-| `DataFrame` | Retorna DataFrame vazio se não houver dados. |
-
-**Output Columns**
-
-- data\_1v (Date): data de realização do leilão.
-- data\_liquidacao\_1v (Date): data de liquidação financeira da 1ª volta.
-- numero\_edital (Int64): número do edital do leilão.
-- tipo\_leilao (String): `"Venda"` ou `"Compra"`.
-- tipo\_publico (String): público do leilão (exclusiva do BCB).
-- titulo (String): LTN, LFT, NTN-B ou NTN-F.
-- codigo\_selic (Int64): código do título no Selic (exclusiva do BCB).
-- data\_vencimento (Date): data de vencimento do título.
-- dias\_uteis (Int64): dias úteis entre liquidação e vencimento.
-- dias\_corridos (Int64): dias corridos entre liquidação e vencimento.
-- duration (Float64): duration de Macaulay em anos.
-- prazo\_medio (Float64): maturidade média em anos.
-- quantidade\_ofertada\_1v (Int64): quantidade ofertada na 1ª volta.
-- quantidade\_ofertada\_2v (Int64): quantidade ofertada na 2ª volta.
-- quantidade\_aceita\_1v (Int64): quantidade aceita na 1ª volta.
-- quantidade\_aceita\_2v (Int64): quantidade aceita na 2ª volta.
-- quantidade\_aceita\_total (Int64): quantidade aceita total.
-- quantidade\_liquidada\_1v (Int64): quantidade liquidada na 1ª volta.
-- quantidade\_liquidada\_2v (Int64): quantidade liquidada na 2ª volta.
-- financeiro\_ofertado\_1v (Float64): quantidade ofertada na 1ª volta vezes `pu_medio`.
-- financeiro\_ofertado\_2v (Float64): quantidade ofertada na 2ª volta vezes `pu_medio`.
-- financeiro\_ofertado\_total (Float64): financeiro ofertado total.
-- financeiro\_aceito\_1v (Float64): quantidade aceita na 1ª volta vezes `pu_medio`.
-- financeiro\_aceito\_2v (Float64): quantidade aceita na 2ª volta vezes `pu_medio`.
-- financeiro\_aceito\_total (Float64): financeiro aceito total.
-- colocacao\_1v (Float64): taxa de colocação da 1ª volta.
-- colocacao\_2v (Float64): taxa de colocação da 2ª volta.
-- colocacao\_total (Float64): taxa de colocação total.
-- dv01\_1v (Float64): DV01 da 1ª volta em reais.
-- dv01\_2v (Float64): DV01 da 2ª volta em reais.
-- dv01\_total (Float64): DV01 total em reais.
-- ptax (Float64): PTAX usada na conversão para dólar.
-- dv01\_1v\_usd (Float64): DV01 da 1ª volta em dólar.
-- dv01\_2v\_usd (Float64): DV01 da 2ª volta em dólar.
-- dv01\_total\_usd (Float64): DV01 total em dólar.
-- pu\_minimo (Float64): PU de corte.
-- pu\_medio (Float64): PU médio aceito.
-- taxa\_media (Float64): taxa média aceita.
-- taxa\_maxima (Float64): taxa de corte.
-
-**Notes**
-
-Diferenças em relação ao Tesouro Nacional:
-
-- O BCB não publica `data_liquidacao_2v`, `tipo_ocorrencia`, `benchmark`, `quantidade_bcb`, `financeiro_bcb` nem `tipo_pu_medio`.
-- O financeiro publicado pelo BCB é arredondado a R$ 100 mil. Por isso, os financeiros são calculados como quantidade vezes `pu_medio`, o que reproduz o Tesouro na 1ª volta; na 2ª volta, a diferença típica é inferior a 0,1%.
-- Na 2ª volta, a quantidade ofertada do BCB é a nominal do edital, enquanto o Tesouro pode informar valores ligeiramente menores.
-- Até 10/06/2024, o BCB publica cotação, e não PU, para LFT e NTN-B. Nesses casos, `pu_medio` é estimado pelo financeiro dividido pela quantidade aceita (sujeito ao arredondamento acima) e `pu_minimo` é nulo.
-
-`data` não pode ser combinado com `inicio` ou `fim`. `fim` só pode ser usado junto com `inicio`.
-
-Examples:
-
-```pycon
->>> df = yd.tpf.leiloes_bcb(data="19-08-2025")
->>> df.select("titulo", "quantidade_aceita_total", "pu_medio", "taxa_media")
-shape: (5, 4)
-┌────────┬─────────────────────────┬──────────────┬────────────┐
-│ titulo ┆ quantidade_aceita_total ┆ pu_medio     ┆ taxa_media │
-│ ---    ┆ ---                     ┆ ---          ┆ ---        │
-│ str    ┆ i64                     ┆ f64          ┆ f64        │
-╞════════╪═════════════════════════╪══════════════╪════════════╡
-│ LFT    ┆ 150000                  ┆ 17149.069465 ┆ 0.000636   │
-│ LFT    ┆ 751003                  ┆ 17072.592044 ┆ 0.001068   │
-│ NTN-B  ┆ 300759                  ┆ 4299.806542  ┆ 0.08167    │
-│ NTN-B  ┆ 500542                  ┆ 4143.249763  ┆ 0.07748    │
-│ NTN-B  ┆ 500000                  ┆ 4021.3613    ┆ 0.07323    │
-└────────┴─────────────────────────┴──────────────┴────────────┘
 ```
 
 ## `premios_pre(data)`
@@ -8490,7 +8712,7 @@ Baixa o ZIP bruto mensal de negociações secundárias de TPFs.
 
 Fonte: Banco Central do Brasil, sistema SELIC. A fonte publica um arquivo por mês; por isso, apenas o ano e o mês de `data` são usados.
 
-A função valida a estrutura mínima do ZIP antes de retornar os bytes, para evitar que pipelines de ingestão salvem arquivo vazio, corrompido ou sem CSV plausível. Use :func:`ler` para processar os bytes ou o arquivo salvo.
+A função valida a estrutura mínima do ZIP antes de retornar os bytes, para evitar que pipelines de ingestão salvem arquivo vazio, corrompido ou sem CSV plausível. Use `ler` para processar os bytes ou o arquivo salvo.
 
 Parameters:
 
@@ -8575,7 +8797,7 @@ Examples:
 
 Lê o ZIP mensal bruto do secundário de TPFs.
 
-Fonte: Banco Central do Brasil, sistema SELIC. Mesma saída de :func:`mensal`, mas recebe o ZIP bruto em vez de baixá-lo. Útil para processar arquivos salvos com :func:`baixar_zip`.
+Fonte: Banco Central do Brasil, sistema SELIC. Mesma saída de `mensal`, mas recebe o ZIP bruto em vez de baixá-lo. Útil para processar arquivos salvos com `baixar_zip`.
 
 Parameters:
 
@@ -8587,7 +8809,7 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | DataFrame Polars com as colunas documentadas em :func:`mensal`. |
+| `DataFrame` | DataFrame Polars com as colunas documentadas em `mensal`. |
 
 Raises:
 
@@ -8637,9 +8859,9 @@ Returns:
 - pu\_maximo (Float64): preço unitário máximo.
 - pu\_lastro (Float64): preço unitário de lastro.
 - valor\_par (Float64): valor par do título.
-- taxa\_minima (Float64): taxa mínima.
-- taxa\_media (Float64): taxa média.
-- taxa\_maxima (Float64): taxa máxima.
+- taxa\_minima (Float64): taxa mínima em decimal (0.1215 = 12,15%).
+- taxa\_media (Float64): taxa média em decimal (0.1215 = 12,15%).
+- taxa\_maxima (Float64): taxa máxima em decimal (0.1215 = 12,15%).
 - operacoes\_corretagem (Int64): operações com corretagem.
 - quantidade\_corretagem (Int64): quantidade com corretagem.
 - financeiro (Float64): valor financeiro negociado (`quantidade * pu_medio`).
@@ -8658,7 +8880,9 @@ Examples:
 
 Busca resultados de leilões de TPFs.
 
-Fonte: Tesouro Nacional. Dados disponíveis a partir de 04/01/2018. Retorna dados de quantidades, financeiros, taxas de colocação, duration e DV01 dos leilões no período informado.
+Fonte: Tesouro Nacional (`fonte="tn"`, padrão), com dados disponíveis a partir de 04/01/2018, ou Banco Central do Brasil (`fonte="bc"`), com dados disponíveis desde 12/11/2007. Retorna dados de quantidades, financeiros, taxas de colocação, duration e DV01 dos leilões no período informado.
+
+O BCB é uma alternativa para quando o Tesouro estiver indisponível ou ainda não trouxer a 2ª volta. As duas fontes recebem os mesmos parâmetros e usam os mesmos nomes de colunas; colunas exclusivas de cada fonte ficam ausentes na outra. Os resultados podem ser unidos com `pl.concat(..., how="diagonal")`.
 
 Parameters:
 
@@ -8667,6 +8891,7 @@ Parameters:
 | `data` | `DateLike \| DatesLike \| None` | Data ou sequência de datas do leilão. Padrão é `None`. | `None` |
 | `inicio` | `DateLike \| None` | Data inicial da consulta. Padrão é `None`. | `None` |
 | `fim` | `DateLike \| None` | Data final da consulta. Padrão é `None`. | `None` |
+| `fonte` | `Literal['tn', 'bc']` | `"tn"` (Tesouro Nacional) ou `"bc"` (Banco Central do Brasil). Padrão é `"tn"`. Não há troca automática de fonte. | `'tn'` |
 
 Returns:
 
@@ -8676,7 +8901,8 @@ Returns:
 | `DataFrame` | uma sequência, concatena os resultados das datas informadas. Se |
 | `DataFrame` | `inicio` for informado, retorna os leilões a partir dessa data. Se |
 | `DataFrame` | nenhum filtro temporal for informado, retorna o histórico completo. |
-| `DataFrame` | Retorna DataFrame vazio se não houver dados para o período. |
+| `DataFrame` | Retorna DataFrame vazio se não houver dados para o período. O resultado |
+| `DataFrame` | é ordenado por data, título e vencimento. |
 
 **Output Columns**
 
@@ -8684,14 +8910,16 @@ Returns:
 - data\_liquidacao\_1v (Date): data de liquidação financeira da 1ª volta.
 - data\_liquidacao\_2v (Date): data de liquidação financeira da 2ª volta.
 - numero\_edital (Int64): número do edital do leilão.
-- tipo\_leilao (String): tipo da operação.
+- tipo\_leilao (String): tipo da operação (`"Venda"` ou `"Compra"`).
+- tipo\_publico (String): público do leilão (exclusiva do BCB).
 - tipo\_ocorrencia (String): classificação da ocorrência do leilão.
 - titulo (String): código do título público leiloado.
+- codigo\_selic (Int64): código do título no Selic (exclusiva do BCB).
 - benchmark (String): descrição de referência do título.
 - data\_vencimento (Date): data de vencimento do título.
 - dias\_uteis (Int64): dias úteis entre liquidação e vencimento.
 - dias\_corridos (Int64): dias corridos entre liquidação e vencimento.
-- duration (Float64): duration de Macaulay em anos.
+- duration (Float64): duration de Macaulay em anos; `0.0` para LFT.
 - prazo\_medio (Float64): maturidade média em anos.
 - quantidade\_ofertada\_1v (Int64): quantidade ofertada na 1ª volta.
 - quantidade\_ofertada\_2v (Int64): quantidade ofertada na 2ª volta.
@@ -8711,7 +8939,7 @@ Returns:
 - colocacao\_1v (Float64): taxa de colocação da 1ª volta.
 - colocacao\_2v (Float64): taxa de colocação da 2ª volta.
 - colocacao\_total (Float64): taxa de colocação total.
-- dv01\_1v (Float64): DV01 da 1ª volta em reais.
+- dv01\_1v (Float64): DV01 da 1ª volta em reais. As colunas `dv01_*` valem `0.0` para LFT.
 - dv01\_2v (Float64): DV01 da 2ª volta em reais.
 - dv01\_total (Float64): DV01 total em reais.
 - ptax (Float64): PTAX usada na conversão para dólar.
@@ -8720,91 +8948,32 @@ Returns:
 - dv01\_total\_usd (Float64): DV01 total em dólar.
 - pu\_minimo (Float64): preço unitário mínimo aceito.
 - pu\_medio (Float64): preço unitário médio ponderado aceito.
-- tipo\_pu\_medio (String): origem do PU médio.
-- taxa\_media (Float64): taxa média aceita.
-- taxa\_maxima (Float64): taxa máxima aceita.
+- tipo\_pu\_medio (String): origem do PU médio — `"original"` quando publicado pela fonte ou `"calculado"` a partir do financeiro e da quantidade aceitos.
+- taxa\_media (Float64): taxa média aceita (decimal).
+- taxa\_maxima (Float64): taxa máxima aceita (decimal).
 
 **Notes**
 
-`data` não pode ser combinado com `inicio` ou `fim`. `fim` só pode ser usado junto com `inicio`. Quando o Tesouro estiver indisponível ou incompleto (por exemplo, sem a 2ª volta), use `yd.tpf.leiloes_bcb`, que usa os mesmos nomes de colunas.
+`data` não pode ser combinado com `inicio` ou `fim`. `fim` só pode ser usado junto com `inicio`.
 
-Busca resultados de leilões de TPFs no BCB.
+Nulo e zero nas quantidades e nos financeiros:
 
-Fonte: Banco Central do Brasil, disponível desde 12/11/2012. Alternativa a `yd.tpf.leiloes` (Tesouro Nacional) para quando o Tesouro estiver indisponível ou ainda não trouxer a 2ª volta. Recebe os mesmos parâmetros e usa os mesmos nomes de colunas; colunas exclusivas de cada fonte ficam ausentes na outra. Os resultados podem ser unidos com `pl.concat(..., how="diagonal")`.
+- Nulo indica que não houve oferta ou que a fonte não publicou o dado, como a 2ª volta de um leilão sem 2ª volta ou ainda não divulgada.
+- Quando houve oferta e nada foi aceito, a quantidade aceita e o financeiro aceito são zero, e não nulos.
+- Em leilão sem aceite na 1ª volta não há PU. Por isso `pu_minimo`, `pu_medio`, as taxas e os financeiros ofertados ficam nulos: o valor ofertado em reais é desconhecido.
 
-Parameters:
-
-| Name | Type | Description | Default |
-| --- | --- | --- | --- |
-| `data` | `DateLike \| DatesLike \| None` | Data ou sequência de datas do leilão. Padrão é `None`. | `None` |
-| `inicio` | `DateLike \| None` | Data inicial da consulta. Padrão é `None`. | `None` |
-| `fim` | `DateLike \| None` | Data final da consulta. Padrão é `None`. | `None` |
-
-Returns:
-
-| Type | Description |
-| --- | --- |
-| `DataFrame` | DataFrame Polars com os leilões no período, ordenado por data, título e |
-| `DataFrame` | vencimento. Sem filtros temporais, retorna o histórico completo. |
-| `DataFrame` | Retorna DataFrame vazio se não houver dados. |
-
-**Output Columns**
-
-- data\_1v (Date): data de realização do leilão.
-- data\_liquidacao\_1v (Date): data de liquidação financeira da 1ª volta.
-- numero\_edital (Int64): número do edital do leilão.
-- tipo\_leilao (String): `"Venda"` ou `"Compra"`.
-- tipo\_publico (String): público do leilão (exclusiva do BCB).
-- titulo (String): LTN, LFT, NTN-B ou NTN-F.
-- codigo\_selic (Int64): código do título no Selic (exclusiva do BCB).
-- data\_vencimento (Date): data de vencimento do título.
-- dias\_uteis (Int64): dias úteis entre liquidação e vencimento.
-- dias\_corridos (Int64): dias corridos entre liquidação e vencimento.
-- duration (Float64): duration de Macaulay em anos.
-- prazo\_medio (Float64): maturidade média em anos.
-- quantidade\_ofertada\_1v (Int64): quantidade ofertada na 1ª volta.
-- quantidade\_ofertada\_2v (Int64): quantidade ofertada na 2ª volta.
-- quantidade\_aceita\_1v (Int64): quantidade aceita na 1ª volta.
-- quantidade\_aceita\_2v (Int64): quantidade aceita na 2ª volta.
-- quantidade\_aceita\_total (Int64): quantidade aceita total.
-- quantidade\_liquidada\_1v (Int64): quantidade liquidada na 1ª volta.
-- quantidade\_liquidada\_2v (Int64): quantidade liquidada na 2ª volta.
-- financeiro\_ofertado\_1v (Float64): quantidade ofertada na 1ª volta vezes `pu_medio`.
-- financeiro\_ofertado\_2v (Float64): quantidade ofertada na 2ª volta vezes `pu_medio`.
-- financeiro\_ofertado\_total (Float64): financeiro ofertado total.
-- financeiro\_aceito\_1v (Float64): quantidade aceita na 1ª volta vezes `pu_medio`.
-- financeiro\_aceito\_2v (Float64): quantidade aceita na 2ª volta vezes `pu_medio`.
-- financeiro\_aceito\_total (Float64): financeiro aceito total.
-- colocacao\_1v (Float64): taxa de colocação da 1ª volta.
-- colocacao\_2v (Float64): taxa de colocação da 2ª volta.
-- colocacao\_total (Float64): taxa de colocação total.
-- dv01\_1v (Float64): DV01 da 1ª volta em reais.
-- dv01\_2v (Float64): DV01 da 2ª volta em reais.
-- dv01\_total (Float64): DV01 total em reais.
-- ptax (Float64): PTAX usada na conversão para dólar.
-- dv01\_1v\_usd (Float64): DV01 da 1ª volta em dólar.
-- dv01\_2v\_usd (Float64): DV01 da 2ª volta em dólar.
-- dv01\_total\_usd (Float64): DV01 total em dólar.
-- pu\_minimo (Float64): PU de corte.
-- pu\_medio (Float64): PU médio aceito.
-- taxa\_media (Float64): taxa média aceita.
-- taxa\_maxima (Float64): taxa de corte.
-
-**Notes**
-
-Diferenças em relação ao Tesouro Nacional:
+Diferenças do BCB em relação ao Tesouro Nacional:
 
 - O BCB não publica `data_liquidacao_2v`, `tipo_ocorrencia`, `benchmark`, `quantidade_bcb`, `financeiro_bcb` nem `tipo_pu_medio`.
 - O financeiro publicado pelo BCB é arredondado a R$ 100 mil. Por isso, os financeiros são calculados como quantidade vezes `pu_medio`, o que reproduz o Tesouro na 1ª volta; na 2ª volta, a diferença típica é inferior a 0,1%.
 - Na 2ª volta, a quantidade ofertada do BCB é a nominal do edital, enquanto o Tesouro pode informar valores ligeiramente menores.
 - Até 10/06/2024, o BCB publica cotação, e não PU, para LFT e NTN-B. Nesses casos, `pu_medio` é estimado pelo financeiro dividido pela quantidade aceita (sujeito ao arredondamento acima) e `pu_minimo` é nulo.
-
-`data` não pode ser combinado com `inicio` ou `fim`. `fim` só pode ser usado junto com `inicio`.
+- O BCB só publica a quantidade aceita na 2ª volta a partir de 27/08/2015. Antes disso, `quantidade_aceita_2v` e `financeiro_aceito_2v` são nulos mesmo quando houve oferta na 2ª volta.
 
 Examples:
 
 ```pycon
->>> df = yd.tpf.leiloes_bcb(data="19-08-2025")
+>>> df = yd.tpf.leiloes(data="19-08-2025", fonte="bc")
 >>> df.select("titulo", "quantidade_aceita_total", "pu_medio", "taxa_media")
 shape: (5, 4)
 ┌────────┬─────────────────────────┬──────────────┬────────────┐
@@ -8871,6 +9040,8 @@ Retorna dados do Relatório Mensal da Dívida (RMD) do Tesouro Nacional.
 
 Baixa e processa a planilha do RMD, extraindo dados da aba solicitada. A publicação mais recente é descoberta automaticamente via parse HTML da página oficial do Tesouro Transparente.
 
+Fonte: Tesouro Nacional (Tesouro Transparente).
+
 Parameters:
 
 | Name | Type | Description | Default |
@@ -8895,9 +9066,8 @@ Raises:
 
 **Notes**
 
-- A publicação mais recente é descoberta automaticamente via parse HTML do Tesouro Transparente.
-- A aba `"1.3"` traz emissões e resgates da DPMFi.
-- A aba `"2.1"` traz a série histórica de estoque da DPF.
+- A aba `"1.3"` traz emissões e resgates da DPMFi; valores iguais a zero são descartados.
+- A aba `"2.1"` traz a série histórica de estoque da DPF; valores iguais a zero são mantidos.
 
 Erros de download e processamento são propagados ao chamador; não são convertidos em DataFrame vazio.
 
@@ -8935,7 +9105,9 @@ historico = yd.vna.historico("NTN-C", vencimento="01-01-2031")
 valor = yd.vna.valor("NTN-B", "15-12-2025")
 projecao_ntnb = yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, "0.45%")
 projecao_lft = yd.vna.projetado(
-    "LFT", "18-09-2026", 19905.773236,
+    "LFT",
+    "18-09-2026",
+    19905.773236,
     selic="13.65%",
 )
 ```
@@ -8969,9 +9141,8 @@ assert nova_base == yd.vna.valor("NTN-B", "15-08-2026")
 
 ```python
 indice_atual = 1225.846  # Pode ser obtido com yd.igpm.indice("01-09-2026")
-nova_base = yd.vna.calcular_base(
-    "NTN-C", indice_atual, vencimento="01-01-2031",  # 01/10/2026
-)
+# Base de 01/10/2026
+nova_base = yd.vna.calcular_base("NTN-C", indice_atual, vencimento="01-01-2031")
 # Decimal('6671.452284')
 assert nova_base == yd.vna.valor("NTN-C", "01-10-2026", "01-01-2031")
 ```
@@ -9037,7 +9208,9 @@ As colunas de números-índice e as escalas decimais do contexto foram atualizad
 ```python
 contexto = yd.vna.contexto("NTN-B", "30-06-2026")
 contexto_ntnc = yd.vna.contexto(
-    "NTN-C", "15-06-2026", vencimento="01-01-2031",
+    "NTN-C",
+    "15-06-2026",
+    vencimento="01-01-2031",
 )
 ```
 
@@ -9056,7 +9229,10 @@ Para NTN-B, uma data entre 15/07 e 14/08 seleciona os índices de junho e julho.
 ```python
 contexto = yd.vna.contexto("NTN-B", "30-06-2026")
 indices = contexto.select(
-    "competencia_anterior", "competencia", "indice_anterior", "indice_atual",
+    "competencia_anterior",
+    "competencia",
+    "indice_anterior",
+    "indice_atual",
 ).row(0)
 # (datetime.date(2026, 5, 1), datetime.date(2026, 6, 1),
 #  Decimal('7640.15'), Decimal('7652.37'))
@@ -9083,7 +9259,9 @@ Os calendários permitem identificar projeções que merecem revisão, sem presu
 ```python
 data_operacao = yd.hoje()
 contexto = yd.vna.contexto(
-    "NTN-C", data_operacao, vencimento="01-01-2031",
+    "NTN-C",
+    data_operacao,
+    vencimento="01-01-2031",
     inflacao_projetada="0,45%",
 )
 agenda = yd.igpm.calendario(contexto.item(0, "competencia").year)
@@ -9097,7 +9275,9 @@ diagnostico = contexto.join(agenda, on="competencia", how="left").with_columns(
 
 Compare a divulgação com a **data de operação**, mesmo quando o contexto descreve a liquidação. D+1 não antecipa a publicação. Sem data oficial, o exemplo não inventa um alerta. Mensagens, cores, janelas de proximidade e a decisão de impedir uma precificação permanecem na aplicação. A inflação realizada pode estar disponível antes do VNA final da vigência.
 
-Consulta e cálculo de VNA por título: valor, histórico, último e projeção.
+Consulta e cálculo de VNA por título.
+
+Disponibiliza `valor`, `historico`, `ultimo`, `vigencia`, `projetado`, `contexto`, `calcular_vna` e `calcular_base`.
 
 ## `calcular_base(titulo, indice_atual, vencimento=None)`
 
@@ -9249,7 +9429,21 @@ Returns:
 
 **Output Columns**
 
-titulo (String): Título consultado. data (Date): Data para a qual os parâmetros foram selecionados. inicio\_vigencia (Date): Início inclusivo, sem ajuste útil. fim\_vigencia (Date): Fim exclusivo, sem ajuste útil. competencia (Date): Primeiro dia do mês da inflação da vigência. competencia\_anterior (Date): Primeiro dia do mês anterior à competência. vna\_base (Decimal(18, 6)): VNA publicado no início; nulo se ausente. vna\_fim (Decimal(18, 6)): VNA publicado no fim; nulo se ausente. indice\_anterior (Decimal(18, escala)): Número-índice da competência anterior; escala 2 para IPCA e 3 para IGP-M. Nulo se ausente. indice\_atual (Decimal(18, escala)): Número-índice da competência da vigência, com a mesma escala de indice\_anterior. Nulo se ausente. origem\_indice (String): "IBGE" ou "FGV/Ipeadata"; nula se ambos os índices estiverem ausentes. inflacao (Decimal(38, escala)): Variação mensal decimal, com escala 4 quando realizada ou indisponível. Para projeções informadas, preserva a escala da entrada. Pode ser passada diretamente a projetado, que aplica as regras de projeção, mesmo para uma taxa realizada. situacao\_inflacao (String): "realizado", "projetado" ou "indisponivel". origem\_inflacao (String): "IBGE", "SGS/BCB" ou "informada"; nula sem taxa. pendencias (List\[String\]): "vna\_base\_indisponivel" e/ou "inflacao\_indisponivel". Lista vazia se ambos estiverem disponíveis. Refere-se à projeção por taxa; não atesta disponibilidade dos índices.
+- titulo (String): Título consultado.
+- data (Date): Data para a qual os parâmetros foram selecionados.
+- inicio\_vigencia (Date): Início inclusivo, sem ajuste útil.
+- fim\_vigencia (Date): Fim exclusivo, sem ajuste útil.
+- competencia (Date): Primeiro dia do mês da inflação da vigência.
+- competencia\_anterior (Date): Primeiro dia do mês anterior à competência.
+- vna\_base (Decimal(18, 6)): VNA publicado no início; nulo se ausente.
+- vna\_fim (Decimal(18, 6)): VNA publicado no fim; nulo se ausente.
+- indice\_anterior (Decimal(18, escala)): Número-índice da competência anterior; escala 2 para IPCA e 3 para IGP-M. Nulo se ausente.
+- indice\_atual (Decimal(18, escala)): Número-índice da competência da vigência, com a mesma escala de indice\_anterior. Nulo se ausente.
+- origem\_indice (String): "IBGE" ou "FGV/Ipeadata"; nula se ambos os índices estiverem ausentes.
+- inflacao (Decimal(38, escala)): Variação mensal decimal, com escala 4 quando realizada ou indisponível. Para projeções informadas, preserva a escala da entrada. Pode ser passada diretamente a projetado, que aplica as regras de projeção, mesmo para uma taxa realizada.
+- situacao\_inflacao (String): "realizado", "projetado" ou "indisponivel".
+- origem\_inflacao (String): "IBGE", "SGS/BCB" ou "informada"; nula sem taxa.
+- pendencias (List\[String\]): "vna\_base\_indisponivel" e/ou "inflacao\_indisponivel". Lista vazia se ambos estiverem disponíveis. Refere-se à projeção por taxa; não atesta disponibilidade dos índices.
 
 **Notes**
 
@@ -9287,7 +9481,9 @@ Para a vigência atual da NTN-C, informa o vencimento e uma projeção de 0,45%,
 
 ```pycon
 >>> parametros = yd.vna.contexto(
-...     "NTN-C", yd.hoje(), vencimento="01-01-2031",
+...     "NTN-C",
+...     yd.hoje(),
+...     vencimento="01-01-2031",
 ...     inflacao_projetada="0,45%",
 ... )
 >>> situacao = parametros.item(0, "situacao_inflacao")

@@ -20,7 +20,7 @@ As escalas foram ajustadas e `di_over_serie` foi adicionada na [0.63.0](<https:/
 
 Obtém a taxa DI over anualizada ou diária via SGS do Banco Central.
 
-Consulta a taxa DI (Depósito Interfinanceiro) da B3/CETIP, republicada pelo Banco Central na série SGS 4389 (anualizada em base 252) ou SGS 12 (diária), para a data informada. Use `pyield.di_over` na API pública principal.
+Consulta a taxa DI (Depósito Interfinanceiro) da B3/CETIP, republicada pelo Banco Central na série SGS 4389 (anualizada em base 252) ou SGS 12 (diária), para a data informada.
 
 Parameters:
 
@@ -86,7 +86,8 @@ Returns:
 
 **Output Columns**
 
-data (pl.Date): Data de referência da observação. taxa (pl.Decimal(18, 4) ou pl.Decimal(18, 8)): Taxa em decimal, ao ano com escala 4 se `anualizada=True` ou ao dia útil com escala 8 se `anualizada=False`.
+- data (Date): Data de referência da observação.
+- taxa (Decimal(18, 4) ou Decimal(18, 8)): Taxa em decimal, ao ano com escala 4 se `anualizada=True` ou ao dia útil com escala 8 se `anualizada=False`.
 
 **Notes**
 

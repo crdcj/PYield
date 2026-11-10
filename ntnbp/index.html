@@ -31,7 +31,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.74">
+      <meta name="generator" content="zensical-0.1.0">
     
     
       
@@ -339,6 +339,33 @@
     
   
   Visão geral
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.64.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.64.0
 
     
   </span>
@@ -2023,7 +2050,8 @@ arredondamento da taxa obtida por curva zero.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Taxa interna de retorno anualizada do título.
+                <p>TIR anual efetiva do título, em decimal, na base de
+252 dias úteis.
 Aceita também percentual explícito: "5.75%" ou "5,75%".
 A taxa de entrada não é truncada antes do cálculo.</p>
               </div>
@@ -2137,38 +2165,38 @@ vencimento em 15/05/2015, prazo de 846 dias úteis e taxa de 5,17% a.a.</p>
 </span><span id="pyield.ntnbp.cotacao--source--__span-0-40"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-40" name="pyield.ntnbp.cotacao--source--__codelineno-0-40"></a><span class="sd">    Args:</span>
 </span><span id="pyield.ntnbp.cotacao--source--__span-0-41"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-41" name="pyield.ntnbp.cotacao--source--__codelineno-0-41"></a><span class="sd">        data_liquidacao: Data de liquidação.</span>
 </span><span id="pyield.ntnbp.cotacao--source--__span-0-42"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-42" name="pyield.ntnbp.cotacao--source--__codelineno-0-42"></a><span class="sd">        data_vencimento: Data de vencimento.</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-43"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-43" name="pyield.ntnbp.cotacao--source--__codelineno-0-43"></a><span class="sd">        taxa_tir: Taxa interna de retorno anualizada do título.</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-44"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-44" name="pyield.ntnbp.cotacao--source--__codelineno-0-44"></a><span class="sd">            Aceita também percentual explícito: "5.75%" ou "5,75%".</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-45"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-45" name="pyield.ntnbp.cotacao--source--__codelineno-0-45"></a><span class="sd">            A taxa de entrada não é truncada antes do cálculo.</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-46"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-46" name="pyield.ntnbp.cotacao--source--__codelineno-0-46"></a>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-47"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-47" name="pyield.ntnbp.cotacao--source--__codelineno-0-47"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-48"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-48" name="pyield.ntnbp.cotacao--source--__codelineno-0-48"></a><span class="sd">        Decimal: Cotação em base 100, truncada em 4 casas decimais. Retorna</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-49"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-49" name="pyield.ntnbp.cotacao--source--__codelineno-0-49"></a><span class="sd">            ``Decimal("NaN")`` se a liquidação for igual ou posterior ao vencimento.</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-50"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-50" name="pyield.ntnbp.cotacao--source--__codelineno-0-50"></a>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-51"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-51" name="pyield.ntnbp.cotacao--source--__codelineno-0-51"></a><span class="sd">    Examples:</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-52"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-52" name="pyield.ntnbp.cotacao--source--__codelineno-0-52"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnbp</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-53"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-53" name="pyield.ntnbp.cotacao--source--__codelineno-0-53"></a><span class="sd">        &gt;&gt;&gt; ntnbp.cotacao("02-12-2025", "15-05-2029", "7.77%")</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-54"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-54" name="pyield.ntnbp.cotacao--source--__codelineno-0-54"></a><span class="sd">        Decimal('77.4630')</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-55"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-55" name="pyield.ntnbp.cotacao--source--__codelineno-0-55"></a>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-56"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-56" name="pyield.ntnbp.cotacao--source--__codelineno-0-56"></a><span class="sd">        Exemplo do Tesouro Direto, páginas 2 a 4: liquidação em 03/01/2012,</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-57"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-57" name="pyield.ntnbp.cotacao--source--__codelineno-0-57"></a><span class="sd">        vencimento em 15/05/2015, prazo de 846 dias úteis e taxa de 5,17% a.a.</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-58"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-58" name="pyield.ntnbp.cotacao--source--__codelineno-0-58"></a>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-59"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-59" name="pyield.ntnbp.cotacao--source--__codelineno-0-59"></a><span class="sd">        &gt;&gt;&gt; ntnbp.cotacao("03-01-2012", "15-05-2015", "5.17%")</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-60"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-60" name="pyield.ntnbp.cotacao--source--__codelineno-0-60"></a><span class="sd">        Decimal('84.4317')</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-61"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-61" name="pyield.ntnbp.cotacao--source--__codelineno-0-61"></a>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-62"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-62" name="pyield.ntnbp.cotacao--source--__codelineno-0-62"></a><span class="sd">    References:</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-63"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-63" name="pyield.ntnbp.cotacao--source--__codelineno-0-63"></a><span class="sd">        - Tesouro Direto — Tesouro IPCA+, páginas 2 a 4.</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-64"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-64" name="pyield.ntnbp.cotacao--source--__codelineno-0-64"></a><span class="sd">          &lt;https://www.tesourodireto.com.br/documents/d/guest/tesouro_ipca_juros_semestrais&gt;</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-65"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-65" name="pyield.ntnbp.cotacao--source--__codelineno-0-65"></a><span class="sd">    """</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-66"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-66" name="pyield.ntnbp.cotacao--source--__codelineno-0-66"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">taxa_tir</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-67"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-67" name="pyield.ntnbp.cotacao--source--__codelineno-0-67"></a>        <span class="n">taxa_tir</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">_utils</span><span class="o">.</span><span class="n">converter_taxa</span><span class="p">(</span><span class="n">taxa_tir</span><span class="p">))</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-43"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-43" name="pyield.ntnbp.cotacao--source--__codelineno-0-43"></a><span class="sd">        taxa_tir: TIR anual efetiva do título, em decimal, na base de</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-44"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-44" name="pyield.ntnbp.cotacao--source--__codelineno-0-44"></a><span class="sd">            252 dias úteis.</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-45"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-45" name="pyield.ntnbp.cotacao--source--__codelineno-0-45"></a><span class="sd">            Aceita também percentual explícito: "5.75%" ou "5,75%".</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-46"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-46" name="pyield.ntnbp.cotacao--source--__codelineno-0-46"></a><span class="sd">            A taxa de entrada não é truncada antes do cálculo.</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-47"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-47" name="pyield.ntnbp.cotacao--source--__codelineno-0-47"></a>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-48"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-48" name="pyield.ntnbp.cotacao--source--__codelineno-0-48"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-49"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-49" name="pyield.ntnbp.cotacao--source--__codelineno-0-49"></a><span class="sd">        Decimal: Cotação em base 100, truncada em 4 casas decimais. Retorna</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-50"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-50" name="pyield.ntnbp.cotacao--source--__codelineno-0-50"></a><span class="sd">            ``Decimal("NaN")`` se a liquidação for igual ou posterior ao vencimento.</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-51"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-51" name="pyield.ntnbp.cotacao--source--__codelineno-0-51"></a>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-52"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-52" name="pyield.ntnbp.cotacao--source--__codelineno-0-52"></a><span class="sd">    Examples:</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-53"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-53" name="pyield.ntnbp.cotacao--source--__codelineno-0-53"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnbp</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-54"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-54" name="pyield.ntnbp.cotacao--source--__codelineno-0-54"></a><span class="sd">        &gt;&gt;&gt; ntnbp.cotacao("02-12-2025", "15-05-2029", "7.77%")</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-55"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-55" name="pyield.ntnbp.cotacao--source--__codelineno-0-55"></a><span class="sd">        Decimal('77.4630')</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-56"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-56" name="pyield.ntnbp.cotacao--source--__codelineno-0-56"></a>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-57"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-57" name="pyield.ntnbp.cotacao--source--__codelineno-0-57"></a><span class="sd">        Exemplo do Tesouro Direto, páginas 2 a 4: liquidação em 03/01/2012,</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-58"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-58" name="pyield.ntnbp.cotacao--source--__codelineno-0-58"></a><span class="sd">        vencimento em 15/05/2015, prazo de 846 dias úteis e taxa de 5,17% a.a.</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-59"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-59" name="pyield.ntnbp.cotacao--source--__codelineno-0-59"></a>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-60"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-60" name="pyield.ntnbp.cotacao--source--__codelineno-0-60"></a><span class="sd">        &gt;&gt;&gt; ntnbp.cotacao("03-01-2012", "15-05-2015", "5.17%")</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-61"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-61" name="pyield.ntnbp.cotacao--source--__codelineno-0-61"></a><span class="sd">        Decimal('84.4317')</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-62"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-62" name="pyield.ntnbp.cotacao--source--__codelineno-0-62"></a>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-63"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-63" name="pyield.ntnbp.cotacao--source--__codelineno-0-63"></a><span class="sd">    References:</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-64"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-64" name="pyield.ntnbp.cotacao--source--__codelineno-0-64"></a><span class="sd">        - Tesouro Direto — Tesouro IPCA+, páginas 2 a 4.</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-65"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-65" name="pyield.ntnbp.cotacao--source--__codelineno-0-65"></a><span class="sd">          &lt;https://www.tesourodireto.com.br/documents/d/guest/tesouro_ipca_juros_semestrais&gt;</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-66"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-66" name="pyield.ntnbp.cotacao--source--__codelineno-0-66"></a><span class="sd">    """</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-67"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-67" name="pyield.ntnbp.cotacao--source--__codelineno-0-67"></a>    <span class="n">taxa_tir</span> <span class="o">=</span> <span class="n">converter_taxa</span><span class="p">(</span><span class="n">taxa_tir</span><span class="p">)</span>
 </span><span id="pyield.ntnbp.cotacao--source--__span-0-68"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-68" name="pyield.ntnbp.cotacao--source--__codelineno-0-68"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">data_vencimento</span><span class="p">,</span> <span class="n">taxa_tir</span><span class="p">):</span>
 </span><span id="pyield.ntnbp.cotacao--source--__span-0-69"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-69" name="pyield.ntnbp.cotacao--source--__codelineno-0-69"></a>        <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"NaN"</span><span class="p">)</span>
 </span><span id="pyield.ntnbp.cotacao--source--__span-0-70"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-70" name="pyield.ntnbp.cotacao--source--__codelineno-0-70"></a>
 </span><span id="pyield.ntnbp.cotacao--source--__span-0-71"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-71" name="pyield.ntnbp.cotacao--source--__codelineno-0-71"></a>    <span class="n">dias_uteis</span> <span class="o">=</span> <span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">data_vencimento</span><span class="p">)</span>
 </span><span id="pyield.ntnbp.cotacao--source--__span-0-72"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-72" name="pyield.ntnbp.cotacao--source--__codelineno-0-72"></a>    <span class="k">if</span> <span class="n">dias_uteis</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
 </span><span id="pyield.ntnbp.cotacao--source--__span-0-73"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-73" name="pyield.ntnbp.cotacao--source--__codelineno-0-73"></a>        <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"NaN"</span><span class="p">)</span>
-</span><span id="pyield.ntnbp.cotacao--source--__span-0-74"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-74" name="pyield.ntnbp.cotacao--source--__codelineno-0-74"></a>    <span class="n">anos_uteis</span> <span class="o">=</span> <span class="n">_utils</span><span class="o">.</span><span class="n">truncar</span><span class="p">(</span><span class="n">dias_uteis</span> <span class="o">/</span> <span class="mi">252</span><span class="p">,</span> <span class="mi">14</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.cotacao--source--__span-0-74"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-74" name="pyield.ntnbp.cotacao--source--__codelineno-0-74"></a>    <span class="n">anos_uteis</span> <span class="o">=</span> <span class="n">truncar</span><span class="p">(</span><span class="n">dias_uteis</span> <span class="o">/</span> <span class="mi">252</span><span class="p">,</span> <span class="mi">14</span><span class="p">)</span>
 </span><span id="pyield.ntnbp.cotacao--source--__span-0-75"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-75" name="pyield.ntnbp.cotacao--source--__codelineno-0-75"></a>    <span class="n">cotacao_percentual</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">taxa_tir</span><span class="p">))</span> <span class="o">**</span> <span class="n">anos_uteis</span>
 </span><span id="pyield.ntnbp.cotacao--source--__span-0-76"><a id="pyield.ntnbp.cotacao--source--__codelineno-0-76" name="pyield.ntnbp.cotacao--source--__codelineno-0-76"></a>    <span class="k">return</span> <span class="n">truncar_decimal</span><span class="p">(</span><span class="n">cotacao_percentual</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
@@ -2189,8 +2217,8 @@ vencimento em 15/05/2015, prazo de 846 dias úteis e taxa de 5,17% a.a.</p>
     <div class="doc doc-contents ">
 
         <p>Calcula o DV01 (Dollar Value of 01) da NTN-B Principal em R$.</p>
-<p>Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
-taxa.</p>
+<p>Representa a variação do PU informado para um aumento de 1 bp (0,01 ponto
+percentual) na taxa.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2241,11 +2269,12 @@ taxa.</p>
                 <code>taxa_tir</code>
             </td>
             <td>
-                  <code><span title="float">float</span></code>
+                  <code><span title="float">float</span> | <span title="decimal.Decimal">Decimal</span> | <span title="str">str</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Taxa interna de retorno anualizada do título.
+                <p>TIR anual efetiva do título, em decimal, na
+base de 252 dias úteis.
 Aceita também percentual explícito: "5.75%" ou "5,75%".</p>
               </div>
             </td>
@@ -2308,7 +2337,22 @@ Aceita também percentual explícito: "5.75%" ou "5,75%".</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyield/tpf/titulos/ntnbp.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-178">178</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-163">163</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-164">164</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-165">165</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-166">166</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-167">167</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-168">168</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-169">169</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-170">170</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-171">171</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-172">172</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-173">173</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-174">174</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-175">175</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-176">176</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-177">177</a></span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-178">178</a></span>
 <span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-179">179</a></span>
 <span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-180">180</a></span>
 <span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-181">181</a></span>
@@ -2335,62 +2379,49 @@ Aceita também percentual explícito: "5.75%" ou "5,75%".</p>
 <span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-202">202</a></span>
 <span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-203">203</a></span>
 <span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-204">204</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-205">205</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-206">206</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-207">207</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-208">208</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-209">209</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-210">210</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-211">211</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-212">212</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-213">213</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-214">214</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-215">215</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-216">216</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-217">217</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-218">218</a></span>
-<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-219">219</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnbp.dv01--source--__span-0-178"><a id="pyield.ntnbp.dv01--source--__codelineno-0-178" name="pyield.ntnbp.dv01--source--__codelineno-0-178"></a><span class="k">def</span><span class="w"> </span><span class="nf">dv01</span><span class="p">(</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-179"><a id="pyield.ntnbp.dv01--source--__codelineno-0-179" name="pyield.ntnbp.dv01--source--__codelineno-0-179"></a>    <span class="n">data_liquidacao</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-180"><a id="pyield.ntnbp.dv01--source--__codelineno-0-180" name="pyield.ntnbp.dv01--source--__codelineno-0-180"></a>    <span class="n">data_vencimento</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-181"><a id="pyield.ntnbp.dv01--source--__codelineno-0-181" name="pyield.ntnbp.dv01--source--__codelineno-0-181"></a>    <span class="n">taxa_tir</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-182"><a id="pyield.ntnbp.dv01--source--__codelineno-0-182" name="pyield.ntnbp.dv01--source--__codelineno-0-182"></a>    <span class="n">pu</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Decimal</span><span class="p">,</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-183"><a id="pyield.ntnbp.dv01--source--__codelineno-0-183" name="pyield.ntnbp.dv01--source--__codelineno-0-183"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-184"><a id="pyield.ntnbp.dv01--source--__codelineno-0-184" name="pyield.ntnbp.dv01--source--__codelineno-0-184"></a><span class="w">    </span><span class="sd">"""</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-185"><a id="pyield.ntnbp.dv01--source--__codelineno-0-185" name="pyield.ntnbp.dv01--source--__codelineno-0-185"></a><span class="sd">    Calcula o DV01 (Dollar Value of 01) da NTN-B Principal em R$.</span>
+<span class="normal"><a href="#pyield.ntnbp.dv01--source--__codelineno-0-205">205</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnbp.dv01--source--__span-0-163"><a id="pyield.ntnbp.dv01--source--__codelineno-0-163" name="pyield.ntnbp.dv01--source--__codelineno-0-163"></a><span class="k">def</span><span class="w"> </span><span class="nf">dv01</span><span class="p">(</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-164"><a id="pyield.ntnbp.dv01--source--__codelineno-0-164" name="pyield.ntnbp.dv01--source--__codelineno-0-164"></a>    <span class="n">data_liquidacao</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-165"><a id="pyield.ntnbp.dv01--source--__codelineno-0-165" name="pyield.ntnbp.dv01--source--__codelineno-0-165"></a>    <span class="n">data_vencimento</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-166"><a id="pyield.ntnbp.dv01--source--__codelineno-0-166" name="pyield.ntnbp.dv01--source--__codelineno-0-166"></a>    <span class="n">taxa_tir</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Decimal</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-167"><a id="pyield.ntnbp.dv01--source--__codelineno-0-167" name="pyield.ntnbp.dv01--source--__codelineno-0-167"></a>    <span class="n">pu</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Decimal</span><span class="p">,</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-168"><a id="pyield.ntnbp.dv01--source--__codelineno-0-168" name="pyield.ntnbp.dv01--source--__codelineno-0-168"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-169"><a id="pyield.ntnbp.dv01--source--__codelineno-0-169" name="pyield.ntnbp.dv01--source--__codelineno-0-169"></a><span class="w">    </span><span class="sd">"""</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-170"><a id="pyield.ntnbp.dv01--source--__codelineno-0-170" name="pyield.ntnbp.dv01--source--__codelineno-0-170"></a><span class="sd">    Calcula o DV01 (Dollar Value of 01) da NTN-B Principal em R$.</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-171"><a id="pyield.ntnbp.dv01--source--__codelineno-0-171" name="pyield.ntnbp.dv01--source--__codelineno-0-171"></a>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-172"><a id="pyield.ntnbp.dv01--source--__codelineno-0-172" name="pyield.ntnbp.dv01--source--__codelineno-0-172"></a><span class="sd">    Representa a variação do PU informado para um aumento de 1 bp (0,01 ponto</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-173"><a id="pyield.ntnbp.dv01--source--__codelineno-0-173" name="pyield.ntnbp.dv01--source--__codelineno-0-173"></a><span class="sd">    percentual) na taxa.</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-174"><a id="pyield.ntnbp.dv01--source--__codelineno-0-174" name="pyield.ntnbp.dv01--source--__codelineno-0-174"></a>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-175"><a id="pyield.ntnbp.dv01--source--__codelineno-0-175" name="pyield.ntnbp.dv01--source--__codelineno-0-175"></a><span class="sd">    Args:</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-176"><a id="pyield.ntnbp.dv01--source--__codelineno-0-176" name="pyield.ntnbp.dv01--source--__codelineno-0-176"></a><span class="sd">        data_liquidacao (DateLike): Data de liquidação.</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-177"><a id="pyield.ntnbp.dv01--source--__codelineno-0-177" name="pyield.ntnbp.dv01--source--__codelineno-0-177"></a><span class="sd">        data_vencimento (DateLike): Data de vencimento.</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-178"><a id="pyield.ntnbp.dv01--source--__codelineno-0-178" name="pyield.ntnbp.dv01--source--__codelineno-0-178"></a><span class="sd">        taxa_tir (float | Decimal | str): TIR anual efetiva do título, em decimal, na</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-179"><a id="pyield.ntnbp.dv01--source--__codelineno-0-179" name="pyield.ntnbp.dv01--source--__codelineno-0-179"></a><span class="sd">            base de 252 dias úteis.</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-180"><a id="pyield.ntnbp.dv01--source--__codelineno-0-180" name="pyield.ntnbp.dv01--source--__codelineno-0-180"></a><span class="sd">            Aceita também percentual explícito: "5.75%" ou "5,75%".</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-181"><a id="pyield.ntnbp.dv01--source--__codelineno-0-181" name="pyield.ntnbp.dv01--source--__codelineno-0-181"></a><span class="sd">        pu: PU usado como base para o cálculo.</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-182"><a id="pyield.ntnbp.dv01--source--__codelineno-0-182" name="pyield.ntnbp.dv01--source--__codelineno-0-182"></a>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-183"><a id="pyield.ntnbp.dv01--source--__codelineno-0-183" name="pyield.ntnbp.dv01--source--__codelineno-0-183"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-184"><a id="pyield.ntnbp.dv01--source--__codelineno-0-184" name="pyield.ntnbp.dv01--source--__codelineno-0-184"></a><span class="sd">        float: DV01 (Dollar Value of 01), variação de preço para 1 bp. Retorna</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-185"><a id="pyield.ntnbp.dv01--source--__codelineno-0-185" name="pyield.ntnbp.dv01--source--__codelineno-0-185"></a><span class="sd">            ``NaN`` se a liquidação for igual ou posterior ao vencimento.</span>
 </span><span id="pyield.ntnbp.dv01--source--__span-0-186"><a id="pyield.ntnbp.dv01--source--__codelineno-0-186" name="pyield.ntnbp.dv01--source--__codelineno-0-186"></a>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-187"><a id="pyield.ntnbp.dv01--source--__codelineno-0-187" name="pyield.ntnbp.dv01--source--__codelineno-0-187"></a><span class="sd">    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-188"><a id="pyield.ntnbp.dv01--source--__codelineno-0-188" name="pyield.ntnbp.dv01--source--__codelineno-0-188"></a><span class="sd">    taxa.</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-189"><a id="pyield.ntnbp.dv01--source--__codelineno-0-189" name="pyield.ntnbp.dv01--source--__codelineno-0-189"></a>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-190"><a id="pyield.ntnbp.dv01--source--__codelineno-0-190" name="pyield.ntnbp.dv01--source--__codelineno-0-190"></a><span class="sd">    Args:</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-191"><a id="pyield.ntnbp.dv01--source--__codelineno-0-191" name="pyield.ntnbp.dv01--source--__codelineno-0-191"></a><span class="sd">        data_liquidacao (DateLike): Data de liquidação.</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-192"><a id="pyield.ntnbp.dv01--source--__codelineno-0-192" name="pyield.ntnbp.dv01--source--__codelineno-0-192"></a><span class="sd">        data_vencimento (DateLike): Data de vencimento.</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-193"><a id="pyield.ntnbp.dv01--source--__codelineno-0-193" name="pyield.ntnbp.dv01--source--__codelineno-0-193"></a><span class="sd">        taxa_tir (float): Taxa interna de retorno anualizada do título.</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-194"><a id="pyield.ntnbp.dv01--source--__codelineno-0-194" name="pyield.ntnbp.dv01--source--__codelineno-0-194"></a><span class="sd">            Aceita também percentual explícito: "5.75%" ou "5,75%".</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-195"><a id="pyield.ntnbp.dv01--source--__codelineno-0-195" name="pyield.ntnbp.dv01--source--__codelineno-0-195"></a><span class="sd">        pu: PU usado como base para o cálculo.</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-196"><a id="pyield.ntnbp.dv01--source--__codelineno-0-196" name="pyield.ntnbp.dv01--source--__codelineno-0-196"></a>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-197"><a id="pyield.ntnbp.dv01--source--__codelineno-0-197" name="pyield.ntnbp.dv01--source--__codelineno-0-197"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-198"><a id="pyield.ntnbp.dv01--source--__codelineno-0-198" name="pyield.ntnbp.dv01--source--__codelineno-0-198"></a><span class="sd">        float: DV01 (Dollar Value of 01), variação de preço para 1 bp. Retorna</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-199"><a id="pyield.ntnbp.dv01--source--__codelineno-0-199" name="pyield.ntnbp.dv01--source--__codelineno-0-199"></a><span class="sd">            ``NaN`` se a liquidação for igual ou posterior ao vencimento.</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-200"><a id="pyield.ntnbp.dv01--source--__codelineno-0-200" name="pyield.ntnbp.dv01--source--__codelineno-0-200"></a>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-201"><a id="pyield.ntnbp.dv01--source--__codelineno-0-201" name="pyield.ntnbp.dv01--source--__codelineno-0-201"></a><span class="sd">    Examples:</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-202"><a id="pyield.ntnbp.dv01--source--__codelineno-0-202" name="pyield.ntnbp.dv01--source--__codelineno-0-202"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnbp as bp</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-203"><a id="pyield.ntnbp.dv01--source--__codelineno-0-203" name="pyield.ntnbp.dv01--source--__codelineno-0-203"></a><span class="sd">        &gt;&gt;&gt; cot = bp.cotacao("02-12-2025", "15-05-2029", "7.77%")</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-204"><a id="pyield.ntnbp.dv01--source--__codelineno-0-204" name="pyield.ntnbp.dv01--source--__codelineno-0-204"></a><span class="sd">        &gt;&gt;&gt; pu = bp.pu(4567.033825, cot)</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-205"><a id="pyield.ntnbp.dv01--source--__codelineno-0-205" name="pyield.ntnbp.dv01--source--__codelineno-0-205"></a><span class="sd">        &gt;&gt;&gt; bp.dv01("02-12-2025", "15-05-2029", "7.77%", pu)</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-206"><a id="pyield.ntnbp.dv01--source--__codelineno-0-206" name="pyield.ntnbp.dv01--source--__codelineno-0-206"></a><span class="sd">        1.120055806382451</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-207"><a id="pyield.ntnbp.dv01--source--__codelineno-0-207" name="pyield.ntnbp.dv01--source--__codelineno-0-207"></a><span class="sd">    """</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-208"><a id="pyield.ntnbp.dv01--source--__codelineno-0-208" name="pyield.ntnbp.dv01--source--__codelineno-0-208"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">taxa_tir</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-209"><a id="pyield.ntnbp.dv01--source--__codelineno-0-209" name="pyield.ntnbp.dv01--source--__codelineno-0-209"></a>        <span class="n">taxa_tir</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">_utils</span><span class="o">.</span><span class="n">converter_taxa</span><span class="p">(</span><span class="n">taxa_tir</span><span class="p">))</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-210"><a id="pyield.ntnbp.dv01--source--__codelineno-0-210" name="pyield.ntnbp.dv01--source--__codelineno-0-210"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">data_vencimento</span><span class="p">,</span> <span class="n">taxa_tir</span><span class="p">,</span> <span class="n">pu</span><span class="p">):</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-211"><a id="pyield.ntnbp.dv01--source--__codelineno-0-211" name="pyield.ntnbp.dv01--source--__codelineno-0-211"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-212"><a id="pyield.ntnbp.dv01--source--__codelineno-0-212" name="pyield.ntnbp.dv01--source--__codelineno-0-212"></a>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-213"><a id="pyield.ntnbp.dv01--source--__codelineno-0-213" name="pyield.ntnbp.dv01--source--__codelineno-0-213"></a>    <span class="n">dias_uteis</span> <span class="o">=</span> <span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">data_vencimento</span><span class="p">)</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-214"><a id="pyield.ntnbp.dv01--source--__codelineno-0-214" name="pyield.ntnbp.dv01--source--__codelineno-0-214"></a>    <span class="k">if</span> <span class="n">dias_uteis</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-215"><a id="pyield.ntnbp.dv01--source--__codelineno-0-215" name="pyield.ntnbp.dv01--source--__codelineno-0-215"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-216"><a id="pyield.ntnbp.dv01--source--__codelineno-0-216" name="pyield.ntnbp.dv01--source--__codelineno-0-216"></a>    <span class="n">anos_uteis</span> <span class="o">=</span> <span class="n">dias_uteis</span> <span class="o">/</span> <span class="mi">252</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-217"><a id="pyield.ntnbp.dv01--source--__codelineno-0-217" name="pyield.ntnbp.dv01--source--__codelineno-0-217"></a>    <span class="n">fator_preco</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">taxa_tir</span><span class="p">)</span> <span class="o">**</span> <span class="n">anos_uteis</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-218"><a id="pyield.ntnbp.dv01--source--__codelineno-0-218" name="pyield.ntnbp.dv01--source--__codelineno-0-218"></a>    <span class="n">fator_preco_1bp</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">taxa_tir</span> <span class="o">+</span> <span class="mf">0.0001</span><span class="p">)</span> <span class="o">**</span> <span class="n">anos_uteis</span>
-</span><span id="pyield.ntnbp.dv01--source--__span-0-219"><a id="pyield.ntnbp.dv01--source--__codelineno-0-219" name="pyield.ntnbp.dv01--source--__codelineno-0-219"></a>    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">pu</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">fator_preco</span> <span class="o">/</span> <span class="n">fator_preco_1bp</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-187"><a id="pyield.ntnbp.dv01--source--__codelineno-0-187" name="pyield.ntnbp.dv01--source--__codelineno-0-187"></a><span class="sd">    Examples:</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-188"><a id="pyield.ntnbp.dv01--source--__codelineno-0-188" name="pyield.ntnbp.dv01--source--__codelineno-0-188"></a><span class="sd">        &gt;&gt;&gt; from pyield import ntnbp as bp</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-189"><a id="pyield.ntnbp.dv01--source--__codelineno-0-189" name="pyield.ntnbp.dv01--source--__codelineno-0-189"></a><span class="sd">        &gt;&gt;&gt; cot = bp.cotacao("02-12-2025", "15-05-2029", "7.77%")</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-190"><a id="pyield.ntnbp.dv01--source--__codelineno-0-190" name="pyield.ntnbp.dv01--source--__codelineno-0-190"></a><span class="sd">        &gt;&gt;&gt; pu = bp.pu(4567.033825, cot)</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-191"><a id="pyield.ntnbp.dv01--source--__codelineno-0-191" name="pyield.ntnbp.dv01--source--__codelineno-0-191"></a><span class="sd">        &gt;&gt;&gt; bp.dv01("02-12-2025", "15-05-2029", "7.77%", pu)</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-192"><a id="pyield.ntnbp.dv01--source--__codelineno-0-192" name="pyield.ntnbp.dv01--source--__codelineno-0-192"></a><span class="sd">        1.120055806382451</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-193"><a id="pyield.ntnbp.dv01--source--__codelineno-0-193" name="pyield.ntnbp.dv01--source--__codelineno-0-193"></a><span class="sd">    """</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-194"><a id="pyield.ntnbp.dv01--source--__codelineno-0-194" name="pyield.ntnbp.dv01--source--__codelineno-0-194"></a>    <span class="n">taxa_tir</span> <span class="o">=</span> <span class="n">converter_taxa</span><span class="p">(</span><span class="n">taxa_tir</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-195"><a id="pyield.ntnbp.dv01--source--__codelineno-0-195" name="pyield.ntnbp.dv01--source--__codelineno-0-195"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">data_vencimento</span><span class="p">,</span> <span class="n">taxa_tir</span><span class="p">,</span> <span class="n">pu</span><span class="p">):</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-196"><a id="pyield.ntnbp.dv01--source--__codelineno-0-196" name="pyield.ntnbp.dv01--source--__codelineno-0-196"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-197"><a id="pyield.ntnbp.dv01--source--__codelineno-0-197" name="pyield.ntnbp.dv01--source--__codelineno-0-197"></a>    <span class="n">taxa_tir</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">taxa_tir</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-198"><a id="pyield.ntnbp.dv01--source--__codelineno-0-198" name="pyield.ntnbp.dv01--source--__codelineno-0-198"></a>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-199"><a id="pyield.ntnbp.dv01--source--__codelineno-0-199" name="pyield.ntnbp.dv01--source--__codelineno-0-199"></a>    <span class="n">dias_uteis</span> <span class="o">=</span> <span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">data_vencimento</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-200"><a id="pyield.ntnbp.dv01--source--__codelineno-0-200" name="pyield.ntnbp.dv01--source--__codelineno-0-200"></a>    <span class="k">if</span> <span class="n">dias_uteis</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-201"><a id="pyield.ntnbp.dv01--source--__codelineno-0-201" name="pyield.ntnbp.dv01--source--__codelineno-0-201"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-202"><a id="pyield.ntnbp.dv01--source--__codelineno-0-202" name="pyield.ntnbp.dv01--source--__codelineno-0-202"></a>    <span class="n">anos_uteis</span> <span class="o">=</span> <span class="n">dias_uteis</span> <span class="o">/</span> <span class="mi">252</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-203"><a id="pyield.ntnbp.dv01--source--__codelineno-0-203" name="pyield.ntnbp.dv01--source--__codelineno-0-203"></a>    <span class="n">fator_preco</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">taxa_tir</span><span class="p">)</span> <span class="o">**</span> <span class="n">anos_uteis</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-204"><a id="pyield.ntnbp.dv01--source--__codelineno-0-204" name="pyield.ntnbp.dv01--source--__codelineno-0-204"></a>    <span class="n">fator_preco_1bp</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">taxa_tir</span> <span class="o">+</span> <span class="mf">0.0001</span><span class="p">)</span> <span class="o">**</span> <span class="n">anos_uteis</span>
+</span><span id="pyield.ntnbp.dv01--source--__span-0-205"><a id="pyield.ntnbp.dv01--source--__codelineno-0-205" name="pyield.ntnbp.dv01--source--__codelineno-0-205"></a>    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">pu</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">fator_preco</span> <span class="o">/</span> <span class="n">fator_preco_1bp</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2539,11 +2570,7 @@ ao preço de R$ 1.776,77 apresentado no documento.</p>
 <span class="normal"><a href="#pyield.ntnbp.pu--source--__codelineno-0-107">107</a></span>
 <span class="normal"><a href="#pyield.ntnbp.pu--source--__codelineno-0-108">108</a></span>
 <span class="normal"><a href="#pyield.ntnbp.pu--source--__codelineno-0-109">109</a></span>
-<span class="normal"><a href="#pyield.ntnbp.pu--source--__codelineno-0-110">110</a></span>
-<span class="normal"><a href="#pyield.ntnbp.pu--source--__codelineno-0-111">111</a></span>
-<span class="normal"><a href="#pyield.ntnbp.pu--source--__codelineno-0-112">112</a></span>
-<span class="normal"><a href="#pyield.ntnbp.pu--source--__codelineno-0-113">113</a></span>
-<span class="normal"><a href="#pyield.ntnbp.pu--source--__codelineno-0-114">114</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnbp.pu--source--__span-0-79"><a id="pyield.ntnbp.pu--source--__codelineno-0-79" name="pyield.ntnbp.pu--source--__codelineno-0-79"></a><span class="k">def</span><span class="w"> </span><span class="nf">pu</span><span class="p">(</span><span class="n">vna</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Decimal</span><span class="p">,</span> <span class="n">cotacao</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Decimal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Decimal</span><span class="p">:</span>
+<span class="normal"><a href="#pyield.ntnbp.pu--source--__codelineno-0-110">110</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnbp.pu--source--__span-0-79"><a id="pyield.ntnbp.pu--source--__codelineno-0-79" name="pyield.ntnbp.pu--source--__codelineno-0-79"></a><span class="k">def</span><span class="w"> </span><span class="nf">pu</span><span class="p">(</span><span class="n">vna</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Decimal</span><span class="p">,</span> <span class="n">cotacao</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Decimal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Decimal</span><span class="p">:</span>
 </span><span id="pyield.ntnbp.pu--source--__span-0-80"><a id="pyield.ntnbp.pu--source--__codelineno-0-80" name="pyield.ntnbp.pu--source--__codelineno-0-80"></a><span class="w">    </span><span class="sd">"""</span>
 </span><span id="pyield.ntnbp.pu--source--__span-0-81"><a id="pyield.ntnbp.pu--source--__codelineno-0-81" name="pyield.ntnbp.pu--source--__codelineno-0-81"></a><span class="sd">    Calcula o preço (PU) da NTN-B Principal.</span>
 </span><span id="pyield.ntnbp.pu--source--__span-0-82"><a id="pyield.ntnbp.pu--source--__codelineno-0-82" name="pyield.ntnbp.pu--source--__codelineno-0-82"></a>
@@ -2574,11 +2601,7 @@ ao preço de R$ 1.776,77 apresentado no documento.</p>
 </span><span id="pyield.ntnbp.pu--source--__span-0-107"><a id="pyield.ntnbp.pu--source--__codelineno-0-107" name="pyield.ntnbp.pu--source--__codelineno-0-107"></a><span class="sd">        - Tesouro Direto — Tesouro IPCA+, página 4.</span>
 </span><span id="pyield.ntnbp.pu--source--__span-0-108"><a id="pyield.ntnbp.pu--source--__codelineno-0-108" name="pyield.ntnbp.pu--source--__codelineno-0-108"></a><span class="sd">          &lt;https://www.tesourodireto.com.br/documents/d/guest/tesouro_ipca_juros_semestrais&gt;</span>
 </span><span id="pyield.ntnbp.pu--source--__span-0-109"><a id="pyield.ntnbp.pu--source--__codelineno-0-109" name="pyield.ntnbp.pu--source--__codelineno-0-109"></a><span class="sd">    """</span>
-</span><span id="pyield.ntnbp.pu--source--__span-0-110"><a id="pyield.ntnbp.pu--source--__codelineno-0-110" name="pyield.ntnbp.pu--source--__codelineno-0-110"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">vna</span><span class="p">,</span> <span class="n">cotacao</span><span class="p">):</span>
-</span><span id="pyield.ntnbp.pu--source--__span-0-111"><a id="pyield.ntnbp.pu--source--__codelineno-0-111" name="pyield.ntnbp.pu--source--__codelineno-0-111"></a>        <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"NaN"</span><span class="p">)</span>
-</span><span id="pyield.ntnbp.pu--source--__span-0-112"><a id="pyield.ntnbp.pu--source--__codelineno-0-112" name="pyield.ntnbp.pu--source--__codelineno-0-112"></a>    <span class="n">vna_decimal</span> <span class="o">=</span> <span class="n">truncar_decimal</span><span class="p">(</span><span class="n">vna</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
-</span><span id="pyield.ntnbp.pu--source--__span-0-113"><a id="pyield.ntnbp.pu--source--__codelineno-0-113" name="pyield.ntnbp.pu--source--__codelineno-0-113"></a>    <span class="n">cotacao_decimal</span> <span class="o">=</span> <span class="n">truncar_decimal</span><span class="p">(</span><span class="n">cotacao</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-</span><span id="pyield.ntnbp.pu--source--__span-0-114"><a id="pyield.ntnbp.pu--source--__codelineno-0-114" name="pyield.ntnbp.pu--source--__codelineno-0-114"></a>    <span class="k">return</span> <span class="n">truncar_decimal</span><span class="p">(</span><span class="n">vna_decimal</span> <span class="o">*</span> <span class="n">cotacao_decimal</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.pu--source--__span-0-110"><a id="pyield.ntnbp.pu--source--__codelineno-0-110" name="pyield.ntnbp.pu--source--__codelineno-0-110"></a>    <span class="k">return</span> <span class="n">_utils</span><span class="o">.</span><span class="n">pu_por_vna</span><span class="p">(</span><span class="n">vna</span><span class="p">,</span> <span class="n">cotacao</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2602,7 +2625,7 @@ sem arredondamento. Como a NTN-B Principal possui um único
 fluxo no vencimento, essa taxa zero também é a TIR do título.</p>
 <p>Arredondamentos comerciais e spreads de compra ou venda ficam a cargo
 do consumidor.</p>
-<p>A curva pode ser produzida por :func:<code>pyield.ntnb.taxas_zero</code>. Para
+<p>A curva pode ser produzida por <code>yd.ntnb.taxas_zero</code>. Para
 cálculos em lote, ela deve ser construída uma única vez e reutilizada entre
 os títulos.</p>
 
@@ -2686,7 +2709,34 @@ os títulos.</p>
             <td>
               <div class="doc-md-description">
                 <p>TIR anualizada em formato decimal, sem arredondamento.
-Retorna <code>NaN</code> se a liquidação for igual ou posterior ao vencimento.</p>
+Retorna <code>NaN</code> se a liquidação for igual ou posterior ao
+vencimento ou se o prazo exceder o último vértice da curva, pois
+não há extrapolação na ponta longa.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Se faltar a coluna <code>dias_uteis</code> ou <code>taxa_zero</code>, se a
+curva não tiver ao menos um vértice válido ou se um mesmo prazo
+aparecer com taxas diferentes.</p>
               </div>
             </td>
           </tr>
@@ -2696,7 +2746,29 @@ Retorna <code>NaN</code> se a liquidação for igual ou posterior ao vencimento.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyield/tpf/titulos/ntnbp.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-135">135</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-113">113</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-114">114</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-115">115</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-116">116</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-117">117</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-118">118</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-119">119</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-120">120</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-121">121</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-122">122</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-123">123</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-124">124</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-125">125</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-126">126</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-127">127</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-128">128</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-129">129</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-130">130</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-131">131</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-132">132</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-133">133</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-134">134</a></span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-135">135</a></span>
 <span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-136">136</a></span>
 <span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-137">137</a></span>
 <span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-138">138</a></span>
@@ -2721,62 +2793,54 @@ Retorna <code>NaN</code> se a liquidação for igual ou posterior ao vencimento.
 <span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-157">157</a></span>
 <span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-158">158</a></span>
 <span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-159">159</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-160">160</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-161">161</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-162">162</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-163">163</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-164">164</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-165">165</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-166">166</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-167">167</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-168">168</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-169">169</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-170">170</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-171">171</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-172">172</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-173">173</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-174">174</a></span>
-<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-175">175</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnbp.taxa--source--__span-0-135"><a id="pyield.ntnbp.taxa--source--__codelineno-0-135" name="pyield.ntnbp.taxa--source--__codelineno-0-135"></a><span class="k">def</span><span class="w"> </span><span class="nf">taxa</span><span class="p">(</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-136"><a id="pyield.ntnbp.taxa--source--__codelineno-0-136" name="pyield.ntnbp.taxa--source--__codelineno-0-136"></a>    <span class="n">data_liquidacao</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-137"><a id="pyield.ntnbp.taxa--source--__codelineno-0-137" name="pyield.ntnbp.taxa--source--__codelineno-0-137"></a>    <span class="n">data_vencimento</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-138"><a id="pyield.ntnbp.taxa--source--__codelineno-0-138" name="pyield.ntnbp.taxa--source--__codelineno-0-138"></a>    <span class="n">curva_zero</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-139"><a id="pyield.ntnbp.taxa--source--__codelineno-0-139" name="pyield.ntnbp.taxa--source--__codelineno-0-139"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-140"><a id="pyield.ntnbp.taxa--source--__codelineno-0-140" name="pyield.ntnbp.taxa--source--__codelineno-0-140"></a><span class="w">    </span><span class="sd">"""</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-141"><a id="pyield.ntnbp.taxa--source--__codelineno-0-141" name="pyield.ntnbp.taxa--source--__codelineno-0-141"></a><span class="sd">    Obtém a TIR da NTN-B Principal a partir da curva zero informada.</span>
+<span class="normal"><a href="#pyield.ntnbp.taxa--source--__codelineno-0-160">160</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnbp.taxa--source--__span-0-113"><a id="pyield.ntnbp.taxa--source--__codelineno-0-113" name="pyield.ntnbp.taxa--source--__codelineno-0-113"></a><span class="k">def</span><span class="w"> </span><span class="nf">taxa</span><span class="p">(</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-114"><a id="pyield.ntnbp.taxa--source--__codelineno-0-114" name="pyield.ntnbp.taxa--source--__codelineno-0-114"></a>    <span class="n">data_liquidacao</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-115"><a id="pyield.ntnbp.taxa--source--__codelineno-0-115" name="pyield.ntnbp.taxa--source--__codelineno-0-115"></a>    <span class="n">data_vencimento</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-116"><a id="pyield.ntnbp.taxa--source--__codelineno-0-116" name="pyield.ntnbp.taxa--source--__codelineno-0-116"></a>    <span class="n">curva_zero</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-117"><a id="pyield.ntnbp.taxa--source--__codelineno-0-117" name="pyield.ntnbp.taxa--source--__codelineno-0-117"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-118"><a id="pyield.ntnbp.taxa--source--__codelineno-0-118" name="pyield.ntnbp.taxa--source--__codelineno-0-118"></a><span class="w">    </span><span class="sd">"""</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-119"><a id="pyield.ntnbp.taxa--source--__codelineno-0-119" name="pyield.ntnbp.taxa--source--__codelineno-0-119"></a><span class="sd">    Obtém a TIR da NTN-B Principal a partir da curva zero informada.</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-120"><a id="pyield.ntnbp.taxa--source--__codelineno-0-120" name="pyield.ntnbp.taxa--source--__codelineno-0-120"></a>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-121"><a id="pyield.ntnbp.taxa--source--__codelineno-0-121" name="pyield.ntnbp.taxa--source--__codelineno-0-121"></a><span class="sd">    A taxa zero correspondente ao vencimento é interpolada por flat-forward,</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-122"><a id="pyield.ntnbp.taxa--source--__codelineno-0-122" name="pyield.ntnbp.taxa--source--__codelineno-0-122"></a><span class="sd">    sem arredondamento. Como a NTN-B Principal possui um único</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-123"><a id="pyield.ntnbp.taxa--source--__codelineno-0-123" name="pyield.ntnbp.taxa--source--__codelineno-0-123"></a><span class="sd">    fluxo no vencimento, essa taxa zero também é a TIR do título.</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-124"><a id="pyield.ntnbp.taxa--source--__codelineno-0-124" name="pyield.ntnbp.taxa--source--__codelineno-0-124"></a>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-125"><a id="pyield.ntnbp.taxa--source--__codelineno-0-125" name="pyield.ntnbp.taxa--source--__codelineno-0-125"></a><span class="sd">    Arredondamentos comerciais e spreads de compra ou venda ficam a cargo</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-126"><a id="pyield.ntnbp.taxa--source--__codelineno-0-126" name="pyield.ntnbp.taxa--source--__codelineno-0-126"></a><span class="sd">    do consumidor.</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-127"><a id="pyield.ntnbp.taxa--source--__codelineno-0-127" name="pyield.ntnbp.taxa--source--__codelineno-0-127"></a>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-128"><a id="pyield.ntnbp.taxa--source--__codelineno-0-128" name="pyield.ntnbp.taxa--source--__codelineno-0-128"></a><span class="sd">    A curva pode ser produzida por ``yd.ntnb.taxas_zero``. Para</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-129"><a id="pyield.ntnbp.taxa--source--__codelineno-0-129" name="pyield.ntnbp.taxa--source--__codelineno-0-129"></a><span class="sd">    cálculos em lote, ela deve ser construída uma única vez e reutilizada entre</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-130"><a id="pyield.ntnbp.taxa--source--__codelineno-0-130" name="pyield.ntnbp.taxa--source--__codelineno-0-130"></a><span class="sd">    os títulos.</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-131"><a id="pyield.ntnbp.taxa--source--__codelineno-0-131" name="pyield.ntnbp.taxa--source--__codelineno-0-131"></a>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-132"><a id="pyield.ntnbp.taxa--source--__codelineno-0-132" name="pyield.ntnbp.taxa--source--__codelineno-0-132"></a><span class="sd">    Args:</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-133"><a id="pyield.ntnbp.taxa--source--__codelineno-0-133" name="pyield.ntnbp.taxa--source--__codelineno-0-133"></a><span class="sd">        data_liquidacao: Data de liquidação usada na construção da curva.</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-134"><a id="pyield.ntnbp.taxa--source--__codelineno-0-134" name="pyield.ntnbp.taxa--source--__codelineno-0-134"></a><span class="sd">        data_vencimento: Data de vencimento da NTN-B Principal.</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-135"><a id="pyield.ntnbp.taxa--source--__codelineno-0-135" name="pyield.ntnbp.taxa--source--__codelineno-0-135"></a><span class="sd">        curva_zero: DataFrame com as colunas ``dias_uteis`` e ``taxa_zero``.</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-136"><a id="pyield.ntnbp.taxa--source--__codelineno-0-136" name="pyield.ntnbp.taxa--source--__codelineno-0-136"></a>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-137"><a id="pyield.ntnbp.taxa--source--__codelineno-0-137" name="pyield.ntnbp.taxa--source--__codelineno-0-137"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-138"><a id="pyield.ntnbp.taxa--source--__codelineno-0-138" name="pyield.ntnbp.taxa--source--__codelineno-0-138"></a><span class="sd">        float: TIR anualizada em formato decimal, sem arredondamento.</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-139"><a id="pyield.ntnbp.taxa--source--__codelineno-0-139" name="pyield.ntnbp.taxa--source--__codelineno-0-139"></a><span class="sd">            Retorna ``NaN`` se a liquidação for igual ou posterior ao</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-140"><a id="pyield.ntnbp.taxa--source--__codelineno-0-140" name="pyield.ntnbp.taxa--source--__codelineno-0-140"></a><span class="sd">            vencimento ou se o prazo exceder o último vértice da curva, pois</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-141"><a id="pyield.ntnbp.taxa--source--__codelineno-0-141" name="pyield.ntnbp.taxa--source--__codelineno-0-141"></a><span class="sd">            não há extrapolação na ponta longa.</span>
 </span><span id="pyield.ntnbp.taxa--source--__span-0-142"><a id="pyield.ntnbp.taxa--source--__codelineno-0-142" name="pyield.ntnbp.taxa--source--__codelineno-0-142"></a>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-143"><a id="pyield.ntnbp.taxa--source--__codelineno-0-143" name="pyield.ntnbp.taxa--source--__codelineno-0-143"></a><span class="sd">    A taxa zero correspondente ao vencimento é interpolada por flat-forward,</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-144"><a id="pyield.ntnbp.taxa--source--__codelineno-0-144" name="pyield.ntnbp.taxa--source--__codelineno-0-144"></a><span class="sd">    sem arredondamento. Como a NTN-B Principal possui um único</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-145"><a id="pyield.ntnbp.taxa--source--__codelineno-0-145" name="pyield.ntnbp.taxa--source--__codelineno-0-145"></a><span class="sd">    fluxo no vencimento, essa taxa zero também é a TIR do título.</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-146"><a id="pyield.ntnbp.taxa--source--__codelineno-0-146" name="pyield.ntnbp.taxa--source--__codelineno-0-146"></a>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-147"><a id="pyield.ntnbp.taxa--source--__codelineno-0-147" name="pyield.ntnbp.taxa--source--__codelineno-0-147"></a><span class="sd">    Arredondamentos comerciais e spreads de compra ou venda ficam a cargo</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-148"><a id="pyield.ntnbp.taxa--source--__codelineno-0-148" name="pyield.ntnbp.taxa--source--__codelineno-0-148"></a><span class="sd">    do consumidor.</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-149"><a id="pyield.ntnbp.taxa--source--__codelineno-0-149" name="pyield.ntnbp.taxa--source--__codelineno-0-149"></a>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-150"><a id="pyield.ntnbp.taxa--source--__codelineno-0-150" name="pyield.ntnbp.taxa--source--__codelineno-0-150"></a><span class="sd">    A curva pode ser produzida por :func:`pyield.ntnb.taxas_zero`. Para</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-151"><a id="pyield.ntnbp.taxa--source--__codelineno-0-151" name="pyield.ntnbp.taxa--source--__codelineno-0-151"></a><span class="sd">    cálculos em lote, ela deve ser construída uma única vez e reutilizada entre</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-152"><a id="pyield.ntnbp.taxa--source--__codelineno-0-152" name="pyield.ntnbp.taxa--source--__codelineno-0-152"></a><span class="sd">    os títulos.</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-153"><a id="pyield.ntnbp.taxa--source--__codelineno-0-153" name="pyield.ntnbp.taxa--source--__codelineno-0-153"></a>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-154"><a id="pyield.ntnbp.taxa--source--__codelineno-0-154" name="pyield.ntnbp.taxa--source--__codelineno-0-154"></a><span class="sd">    Args:</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-155"><a id="pyield.ntnbp.taxa--source--__codelineno-0-155" name="pyield.ntnbp.taxa--source--__codelineno-0-155"></a><span class="sd">        data_liquidacao: Data de liquidação usada na construção da curva.</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-156"><a id="pyield.ntnbp.taxa--source--__codelineno-0-156" name="pyield.ntnbp.taxa--source--__codelineno-0-156"></a><span class="sd">        data_vencimento: Data de vencimento da NTN-B Principal.</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-157"><a id="pyield.ntnbp.taxa--source--__codelineno-0-157" name="pyield.ntnbp.taxa--source--__codelineno-0-157"></a><span class="sd">        curva_zero: DataFrame com as colunas ``dias_uteis`` e ``taxa_zero``.</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-158"><a id="pyield.ntnbp.taxa--source--__codelineno-0-158" name="pyield.ntnbp.taxa--source--__codelineno-0-158"></a>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-159"><a id="pyield.ntnbp.taxa--source--__codelineno-0-159" name="pyield.ntnbp.taxa--source--__codelineno-0-159"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-160"><a id="pyield.ntnbp.taxa--source--__codelineno-0-160" name="pyield.ntnbp.taxa--source--__codelineno-0-160"></a><span class="sd">        float: TIR anualizada em formato decimal, sem arredondamento.</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-161"><a id="pyield.ntnbp.taxa--source--__codelineno-0-161" name="pyield.ntnbp.taxa--source--__codelineno-0-161"></a><span class="sd">            Retorna ``NaN`` se a liquidação for igual ou posterior ao vencimento.</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-162"><a id="pyield.ntnbp.taxa--source--__codelineno-0-162" name="pyield.ntnbp.taxa--source--__codelineno-0-162"></a><span class="sd">    """</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-163"><a id="pyield.ntnbp.taxa--source--__codelineno-0-163" name="pyield.ntnbp.taxa--source--__codelineno-0-163"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">data_vencimento</span><span class="p">):</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-164"><a id="pyield.ntnbp.taxa--source--__codelineno-0-164" name="pyield.ntnbp.taxa--source--__codelineno-0-164"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-165"><a id="pyield.ntnbp.taxa--source--__codelineno-0-165" name="pyield.ntnbp.taxa--source--__codelineno-0-165"></a>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-166"><a id="pyield.ntnbp.taxa--source--__codelineno-0-166" name="pyield.ntnbp.taxa--source--__codelineno-0-166"></a>    <span class="n">dias_uteis</span> <span class="o">=</span> <span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">data_vencimento</span><span class="p">)</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-167"><a id="pyield.ntnbp.taxa--source--__codelineno-0-167" name="pyield.ntnbp.taxa--source--__codelineno-0-167"></a>    <span class="k">if</span> <span class="n">dias_uteis</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-168"><a id="pyield.ntnbp.taxa--source--__codelineno-0-168" name="pyield.ntnbp.taxa--source--__codelineno-0-168"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-169"><a id="pyield.ntnbp.taxa--source--__codelineno-0-169" name="pyield.ntnbp.taxa--source--__codelineno-0-169"></a>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-170"><a id="pyield.ntnbp.taxa--source--__codelineno-0-170" name="pyield.ntnbp.taxa--source--__codelineno-0-170"></a>    <span class="n">curva</span> <span class="o">=</span> <span class="n">_normalizar_curva_zero</span><span class="p">(</span><span class="n">curva_zero</span><span class="p">)</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-171"><a id="pyield.ntnbp.taxa--source--__codelineno-0-171" name="pyield.ntnbp.taxa--source--__codelineno-0-171"></a>    <span class="k">return</span> <span class="n">interpolador</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-172"><a id="pyield.ntnbp.taxa--source--__codelineno-0-172" name="pyield.ntnbp.taxa--source--__codelineno-0-172"></a>        <span class="n">curva</span><span class="p">[</span><span class="s2">"dias_uteis"</span><span class="p">],</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-173"><a id="pyield.ntnbp.taxa--source--__codelineno-0-173" name="pyield.ntnbp.taxa--source--__codelineno-0-173"></a>        <span class="n">curva</span><span class="p">[</span><span class="s2">"taxa_zero"</span><span class="p">],</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-174"><a id="pyield.ntnbp.taxa--source--__codelineno-0-174" name="pyield.ntnbp.taxa--source--__codelineno-0-174"></a>        <span class="n">metodo</span><span class="o">=</span><span class="s2">"flat_forward"</span><span class="p">,</span>
-</span><span id="pyield.ntnbp.taxa--source--__span-0-175"><a id="pyield.ntnbp.taxa--source--__codelineno-0-175" name="pyield.ntnbp.taxa--source--__codelineno-0-175"></a>    <span class="p">)</span><span class="o">.</span><span class="n">interpolar</span><span class="p">(</span><span class="n">dias_uteis</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-143"><a id="pyield.ntnbp.taxa--source--__codelineno-0-143" name="pyield.ntnbp.taxa--source--__codelineno-0-143"></a><span class="sd">    Raises:</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-144"><a id="pyield.ntnbp.taxa--source--__codelineno-0-144" name="pyield.ntnbp.taxa--source--__codelineno-0-144"></a><span class="sd">        ValueError: Se faltar a coluna ``dias_uteis`` ou ``taxa_zero``, se a</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-145"><a id="pyield.ntnbp.taxa--source--__codelineno-0-145" name="pyield.ntnbp.taxa--source--__codelineno-0-145"></a><span class="sd">            curva não tiver ao menos um vértice válido ou se um mesmo prazo</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-146"><a id="pyield.ntnbp.taxa--source--__codelineno-0-146" name="pyield.ntnbp.taxa--source--__codelineno-0-146"></a><span class="sd">            aparecer com taxas diferentes.</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-147"><a id="pyield.ntnbp.taxa--source--__codelineno-0-147" name="pyield.ntnbp.taxa--source--__codelineno-0-147"></a><span class="sd">    """</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-148"><a id="pyield.ntnbp.taxa--source--__codelineno-0-148" name="pyield.ntnbp.taxa--source--__codelineno-0-148"></a>    <span class="k">if</span> <span class="n">any_is_empty</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">data_vencimento</span><span class="p">):</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-149"><a id="pyield.ntnbp.taxa--source--__codelineno-0-149" name="pyield.ntnbp.taxa--source--__codelineno-0-149"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-150"><a id="pyield.ntnbp.taxa--source--__codelineno-0-150" name="pyield.ntnbp.taxa--source--__codelineno-0-150"></a>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-151"><a id="pyield.ntnbp.taxa--source--__codelineno-0-151" name="pyield.ntnbp.taxa--source--__codelineno-0-151"></a>    <span class="n">dias_uteis</span> <span class="o">=</span> <span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">data_vencimento</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-152"><a id="pyield.ntnbp.taxa--source--__codelineno-0-152" name="pyield.ntnbp.taxa--source--__codelineno-0-152"></a>    <span class="k">if</span> <span class="n">dias_uteis</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-153"><a id="pyield.ntnbp.taxa--source--__codelineno-0-153" name="pyield.ntnbp.taxa--source--__codelineno-0-153"></a>        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-154"><a id="pyield.ntnbp.taxa--source--__codelineno-0-154" name="pyield.ntnbp.taxa--source--__codelineno-0-154"></a>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-155"><a id="pyield.ntnbp.taxa--source--__codelineno-0-155" name="pyield.ntnbp.taxa--source--__codelineno-0-155"></a>    <span class="n">curva</span> <span class="o">=</span> <span class="n">_utils</span><span class="o">.</span><span class="n">validar_curva_zero</span><span class="p">(</span><span class="n">curva_zero</span><span class="p">)</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-156"><a id="pyield.ntnbp.taxa--source--__codelineno-0-156" name="pyield.ntnbp.taxa--source--__codelineno-0-156"></a>    <span class="k">return</span> <span class="n">interpolador</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-157"><a id="pyield.ntnbp.taxa--source--__codelineno-0-157" name="pyield.ntnbp.taxa--source--__codelineno-0-157"></a>        <span class="n">curva</span><span class="p">[</span><span class="s2">"dias_uteis"</span><span class="p">],</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-158"><a id="pyield.ntnbp.taxa--source--__codelineno-0-158" name="pyield.ntnbp.taxa--source--__codelineno-0-158"></a>        <span class="n">curva</span><span class="p">[</span><span class="s2">"taxa_zero"</span><span class="p">],</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-159"><a id="pyield.ntnbp.taxa--source--__codelineno-0-159" name="pyield.ntnbp.taxa--source--__codelineno-0-159"></a>        <span class="n">metodo</span><span class="o">=</span><span class="s2">"flat_forward"</span><span class="p">,</span>
+</span><span id="pyield.ntnbp.taxa--source--__span-0-160"><a id="pyield.ntnbp.taxa--source--__codelineno-0-160" name="pyield.ntnbp.taxa--source--__codelineno-0-160"></a>    <span class="p">)</span><span class="o">.</span><span class="n">interpolar</span><span class="p">(</span><span class="n">dias_uteis</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
