@@ -286,7 +286,9 @@ def rentabilidade(
     Returns:
         float: Razão entre a taxa diária equivalente da LFT, usando o DI como
             referência para a Selic, e a taxa diária DI. Por exemplo, 1.01
-            representa 101% da taxa diária equivalente DI.
+            representa 101% da taxa diária equivalente DI. Retorna NaN para
+            entradas ausentes, se a taxa DI for zero ou se alguma taxa for
+            menor ou igual a -1, casos em que a razão não é definida.
 
     Notes:
         A rentabilidade relativa \(q\) combina o fator diário da taxa da
@@ -329,9 +331,13 @@ def rentabilidade(
         return float("nan")
     taxa_di = float(taxa_di)
     taxa_lft = float(taxa_lft)
+    if taxa_lft <= -1 or taxa_di <= -1:
+        return float("nan")
     # Fatores diários
     fator_lft = (taxa_lft + 1) ** (1 / 252)
     fator_di = (taxa_di + 1) ** (1 / 252)
+    if fator_di == 1:
+        return float("nan")
     return (fator_lft * fator_di - 1) / (fator_di - 1)
 
 
@@ -351,12 +357,19 @@ def rentabilidade_expr(
 
     Returns:
         pl.Expr: Expressão sem alias com a rentabilidade da LFT sobre o DI.
+            Resulta em NaN se a taxa DI for zero ou se alguma taxa for menor
+            ou igual a -1, como em ``rentabilidade``.
     """
     expr_lft = taxa_lft if isinstance(taxa_lft, pl.Expr) else pl.col(taxa_lft)
     expr_di = taxa_di if isinstance(taxa_di, pl.Expr) else pl.col(taxa_di)
     fator_lft = (expr_lft + 1) ** (1 / 252)
     fator_di = (expr_di + 1) ** (1 / 252)
-    return (fator_lft * fator_di - 1) / (fator_di - 1)
+    indefinida = (expr_lft <= -1) | (expr_di <= -1) | (fator_di == 1)
+    return (
+        pl.when(indefinida)
+        .then(float("nan"))
+        .otherwise((fator_lft * fator_di - 1) / (fator_di - 1))
+    )
 
 
 def pu(

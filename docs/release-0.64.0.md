@@ -207,6 +207,19 @@ terminavam em erros sem relação com a entrada. Os demais valores não mudam.
   tem mais fluxos: `datas_pagamento` e `fluxos_caixa` retornam vazio, e
   `cotacao`, `duration`, `dv01`, `cotacao_curva_zero` e `taxa_curva_zero`
   retornam NaN, como nos demais títulos.
+- `rentabilidade` de `yd.ltn`, `yd.lft` e `yd.ntnf` retorna NaN quando a
+  razão sobre o DI não é definida: taxa DI igual a zero ou alguma taxa menor
+  ou igual a -1. As versões `rentabilidade_expr` seguem a mesma regra. Antes,
+  os escalares de LTN e LFT terminavam em `ZeroDivisionError` com DI zero e
+  devolviam um número complexo para taxa abaixo de -1; as expressões
+  devolviam `inf`, `-inf` ou NaN; e a NTN-F devolvia `inf` ou `0.0`.
+- `yd.tpf.leiloes` com `fonte="bc"`, em leilão sem aceite:
+  `financeiro_ofertado_total` fica nulo, como já ocorria com
+  `financeiro_ofertado_1v` e `financeiro_ofertado_2v`, pois sem PU o
+  financeiro ofertado é desconhecido; antes, o total saía `0.0`. Já
+  `financeiro_aceito_1v` e `financeiro_aceito_2v` passam a valer `0.0`, em
+  vez de nulos, pois quantidade aceita zero significa financeiro aceito
+  zero; `financeiro_aceito_total` continua `0.0`.
 - `yd.ltn.taxas_forward` sem data retorna DataFrame vazio com as colunas
   documentadas.
 - `yd.futuro.vencimento` aceita código nulo e retorna `None`, como a

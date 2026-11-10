@@ -52,3 +52,29 @@ def test_leiloes_bc_rejeita_modos_temporais_ambiguos():
 def test_leiloes_rejeita_fonte_invalida():
     with pytest.raises(ValueError, match="fonte inválida"):
         yd.tpf.leiloes(data="19-08-2025", fonte="anbima")  # ty: ignore[invalid-argument-type]
+
+
+def test_leilao_sem_aceite_tem_financeiro_ofertado_nulo_e_aceito_zero(monkeypatch):
+    """Sem aceite não há PU: o financeiro ofertado é nulo, e o aceito é zero."""
+    csv = CAMINHO_CSV.read_bytes()
+    trecho = b",1108,150000,150000,"
+    assert csv.count(trecho) == 1
+    # Zera a quantidade aceita da LFT 2028 sem alterar o arquivo de referência
+    csv_sem_aceite = csv.replace(trecho, b",1108,150000,0,")
+    monkeypatch.setattr(modulo_bc, "_buscar_csv", lambda *_: csv_sem_aceite)
+    monkeypatch.setattr(modulo_tn, "_buscar_ptax", lambda *_: DF_PTAX_REFERENCIA)
+
+    resultado = yd.tpf.leiloes(data="19-08-2025", fonte="bc")
+    sem_aceite = pl.col("quantidade_aceita_1v") == 0
+    ofertados = pl.col(
+        "financeiro_ofertado_1v", "financeiro_ofertado_2v", "financeiro_ofertado_total"
+    )
+
+    aceitos = pl.col(
+        "financeiro_aceito_1v", "financeiro_aceito_2v", "financeiro_aceito_total"
+    )
+
+    assert resultado.filter(sem_aceite).height == 1
+    assert resultado.filter(sem_aceite).select(aceitos).row(0) == (0.0, 0.0, 0.0)
+    assert resultado.filter(sem_aceite).select(ofertados).row(0) == (None, None, None)
+    assert resultado.filter(~sem_aceite)["financeiro_ofertado_total"].null_count() == 0

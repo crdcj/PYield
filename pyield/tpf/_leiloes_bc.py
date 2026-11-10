@@ -79,6 +79,19 @@ def _buscar_csv(inicio: dt.date | None, fim: dt.date | None) -> bytes:
     return buscar_csv(montar_url(URL_BASE_API, parametros))
 
 
+def _financeiro_aceito(coluna_quantidade: str) -> pl.Expr:
+    """Financeiro aceito de uma volta: quantidade vezes PU médio.
+
+    Sem quantidade aceita o financeiro é zero, mesmo quando não há PU.
+    """
+    quantidade = pl.col(coluna_quantidade)
+    return (
+        pl.when(quantidade == 0)
+        .then(0.0)
+        .otherwise((quantidade * pl.col("pu_medio")).round(2))
+    )
+
+
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     """Converte o CSV bruto do BCB para os nomes e unidades de ``leiloes``."""
     cotacao_sem_pu = (pl.col("data_1v") < DATA_INICIO_PU) & pl.col("titulo").is_in(
@@ -144,12 +157,8 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             .name.keep()
         )
         .with_columns(
-            financeiro_aceito_1v=(
-                pl.col("quantidade_aceita_1v") * pl.col("pu_medio")
-            ).round(2),
-            financeiro_aceito_2v=(
-                pl.col("quantidade_aceita_2v") * pl.col("pu_medio")
-            ).round(2),
+            financeiro_aceito_1v=_financeiro_aceito("quantidade_aceita_1v"),
+            financeiro_aceito_2v=_financeiro_aceito("quantidade_aceita_2v"),
             financeiro_ofertado_1v=(
                 pl.col("quantidade_ofertada_1v") * pl.col("pu_medio")
             ).round(2),
@@ -167,8 +176,16 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
             financeiro_aceito_total=pl.sum_horizontal(
                 "financeiro_aceito_1v", "financeiro_aceito_2v"
             ),
-            financeiro_ofertado_total=pl.sum_horizontal(
-                "financeiro_ofertado_1v", "financeiro_ofertado_2v"
+            # Sem PU (leilão sem aceite), o financeiro ofertado é desconhecido:
+            # o total fica nulo, e não zero, quando nenhuma volta tem valor.
+            financeiro_ofertado_total=pl.when(
+                pl.any_horizontal(
+                    pl.col(
+                        "financeiro_ofertado_1v", "financeiro_ofertado_2v"
+                    ).is_not_null()
+                )
+            ).then(
+                pl.sum_horizontal("financeiro_ofertado_1v", "financeiro_ofertado_2v")
             ),
         )
     )

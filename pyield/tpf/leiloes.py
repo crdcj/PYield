@@ -99,6 +99,17 @@ def leiloes(
         ``data`` não pode ser combinado com ``inicio`` ou ``fim``. ``fim`` só
         pode ser usado junto com ``inicio``.
 
+        Nulo e zero nas quantidades e nos financeiros:
+
+        - Nulo indica que não houve oferta ou que a fonte não publicou o
+          dado, como a 2ª volta de um leilão sem 2ª volta ou ainda não
+          divulgada.
+        - Quando houve oferta e nada foi aceito, a quantidade aceita e o
+          financeiro aceito são zero, e não nulos.
+        - Em leilão sem aceite na 1ª volta não há PU. Por isso ``pu_minimo``,
+          ``pu_medio``, as taxas e os financeiros ofertados ficam nulos: o
+          valor ofertado em reais é desconhecido.
+
         Diferenças do BCB em relação ao Tesouro Nacional:
 
         - O BCB não publica ``data_liquidacao_2v``, ``tipo_ocorrencia``,
@@ -114,6 +125,10 @@ def leiloes(
           Nesses casos, ``pu_medio`` é estimado pelo financeiro dividido pela
           quantidade aceita (sujeito ao arredondamento acima) e
           ``pu_minimo`` é nulo.
+        - O BCB só publica a quantidade aceita na 2ª volta a partir de
+          27/08/2015. Antes disso, ``quantidade_aceita_2v`` e
+          ``financeiro_aceito_2v`` são nulos mesmo quando houve oferta na
+          2ª volta.
 
     Examples:
         >>> df = yd.tpf.leiloes(data="19-08-2025", fonte="bc")

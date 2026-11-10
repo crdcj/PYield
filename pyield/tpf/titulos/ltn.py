@@ -286,6 +286,9 @@ def rentabilidade(
     Returns:
         float: Razão entre as taxas diárias equivalentes da LTN e do DI.
             Por exemplo, 1.01 representa 101% da taxa diária equivalente DI.
+            Retorna NaN para entradas ausentes, se a taxa DI for zero ou se
+            alguma taxa for menor ou igual a -1, casos em que a razão não é
+            definida.
 
     Notes:
         A rentabilidade relativa \(q\) é a razão entre as taxas diárias
@@ -327,8 +330,12 @@ def rentabilidade(
         return float("nan")
     taxa_di = float(taxa_di)
     taxa_ltn = float(taxa_ltn)
+    if taxa_ltn <= -1 or taxa_di <= -1:
+        return float("nan")
     taxa_diaria_ltn = (1 + taxa_ltn) ** (1 / 252) - 1
     taxa_diaria_di = (1 + taxa_di) ** (1 / 252) - 1
+    if taxa_diaria_di == 0:
+        return float("nan")
     return taxa_diaria_ltn / taxa_diaria_di
 
 
@@ -346,12 +353,19 @@ def rentabilidade_expr(
 
     Returns:
         pl.Expr: Expressão sem alias com a rentabilidade da LTN sobre o DI.
+            Resulta em NaN se a taxa DI for zero ou se alguma taxa for menor
+            ou igual a -1, como em ``rentabilidade``.
     """
     expr_ltn = taxa_ltn if isinstance(taxa_ltn, pl.Expr) else pl.col(taxa_ltn)
     expr_di = taxa_di if isinstance(taxa_di, pl.Expr) else pl.col(taxa_di)
     taxa_diaria_ltn = (1 + expr_ltn) ** (1 / 252) - 1
     taxa_diaria_di = (1 + expr_di) ** (1 / 252) - 1
-    return taxa_diaria_ltn / taxa_diaria_di
+    indefinida = (expr_ltn <= -1) | (expr_di <= -1) | (taxa_diaria_di == 0)
+    return (
+        pl.when(indefinida)
+        .then(float("nan"))
+        .otherwise(taxa_diaria_ltn / taxa_diaria_di)
+    )
 
 
 def dv01(

@@ -250,3 +250,41 @@ def test_taxa_decimal_equivale_a_float_e_a_percentual(funcao):
     assert math.isfinite(esperado)
     assert funcao(Decimal("0.0625")) == esperado
     assert funcao("6.25%") == esperado
+
+
+@pytest.mark.parametrize("modulo", [ltn, lft])
+@pytest.mark.parametrize(
+    ("taxa", "taxa_di"),
+    [(0.1, 0.0), (-0.05, 0.0), (0.0, 0.0), (-2.0, 0.1), (0.1, -2.0), (-1.0, 0.1)],
+)
+def test_rentabilidade_indefinida_e_nan_no_escalar_e_na_expressao(
+    modulo, taxa, taxa_di
+):
+    """DI zero ou taxa menor ou igual a -1 não definem a razão sobre o DI."""
+    df = pl.DataFrame({"taxa": [taxa, 0.118746], "taxa_di": [taxa_di, 0.11725]})
+    expressao = df.select(r=modulo.rentabilidade_expr("taxa", "taxa_di"))["r"]
+
+    assert math.isnan(modulo.rentabilidade(taxa, taxa_di))
+    assert math.isnan(expressao[0])
+    # A linha válida do mesmo DataFrame não é afetada
+    assert expressao[1] == modulo.rentabilidade(0.118746, 0.11725)
+
+
+@pytest.mark.parametrize("taxa_ntnf", [0.1, -0.05, 0.0, -2.0])
+def test_rentabilidade_ntnf_indefinida_e_nan(taxa_ntnf):
+    vencimentos_di = ["2025-01-01", "2035-01-01"]
+    taxas_di = [0.0, 0.0] if taxa_ntnf > -1 else [0.108, 0.115]
+
+    resultado = ntnf.rentabilidade(
+        "23-08-2024", "01-01-2035", taxa_ntnf, vencimentos_di, taxas_di
+    )
+
+    assert math.isnan(resultado)
+
+
+def test_rentabilidade_expr_preserva_nulo():
+    df = pl.DataFrame({"taxa": [None, 0.1], "taxa_di": [0.11, None]})
+
+    for modulo in (ltn, lft):
+        expressao = df.select(r=modulo.rentabilidade_expr("taxa", "taxa_di"))["r"]
+        assert expressao.to_list() == [None, None]

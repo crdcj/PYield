@@ -641,9 +641,9 @@ def rentabilidade(
         float: Razão entre as taxas diárias equivalentes. Por exemplo, 1.01
             representa 101% da taxa diária equivalente de referência DI.
             Retorna NaN para entradas ausentes, fluxos vazios ou preço calculado
-            NaN. Também retorna NaN se a resolução numérica falhar. Se a TIR
-            de referência DI for zero, retorna ``inf`` para TIR positiva da
-            NTN-F e ``0.0`` nos demais casos.
+            NaN. Também retorna NaN se a resolução numérica falhar, se a TIR
+            de referência DI for zero ou se a TIR da NTN-F for menor ou igual
+            a -1, casos em que a razão não é definida.
 
     Notes:
         **Preço de referência pela curva DI**
@@ -760,12 +760,13 @@ def rentabilidade(
         return float(fluxos_descontados.sum()) - preco_referencia
 
     tir_di = _utils.encontrar_raiz(diferenca_preco)
+    if taxa_ntnf <= -1:
+        return float("nan")
 
     fator_ntnf = (1 + taxa_ntnf) ** (1 / 252)
     fator_di = (1 + tir_di) ** (1 / 252)
     if fator_di == 1:
-        return float("inf") if fator_ntnf > 1 else 0.0
-
+        return float("nan")
     return (fator_ntnf - 1) / (fator_di - 1)
 
 
