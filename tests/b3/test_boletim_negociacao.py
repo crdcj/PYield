@@ -67,6 +67,8 @@ def test_zip_valido_rejeita_zip_interno_sem_xml():
 
 def test_baixar_zip_descarta_zip_invalido(monkeypatch):
     class Resposta:
+        status_code = 200
+
         content = b"x" * 1024
 
         def raise_for_status(self):

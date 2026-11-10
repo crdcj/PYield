@@ -5,6 +5,7 @@ import random
 import time
 from collections.abc import Callable
 from email.utils import parsedate_to_datetime
+from http import HTTPStatus
 
 import requests
 
@@ -68,6 +69,12 @@ def requisitar(
             url, timeout=(_TIMEOUT_CONEXAO_SEGUNDOS, timeout_leitura), **kwargs
         )
         resposta.raise_for_status()
+        if resposta.status_code == HTTPStatus.NOT_MODIFIED:
+            # Sem requisição condicional, 304 é resposta inválida da fonte.
+            raise requests.HTTPError(
+                f"304 Not Modified sem requisição condicional para url: {url}",
+                response=resposta,
+            )
         return resposta
 
     try:

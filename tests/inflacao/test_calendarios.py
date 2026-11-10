@@ -61,6 +61,8 @@ def test_paginacao_ipca_sem_cache(monkeypatch):
     chamadas = []
 
     class Resposta:
+        status_code = 200
+
         def __init__(self, pagina):
             self.content = (
                 _DADOS / f"ipca_calendario_pagina_{pagina}.json"
@@ -88,6 +90,8 @@ def test_paginacao_ipca_sem_cache(monkeypatch):
 
 def test_paginacao_invalida(monkeypatch):
     class Resposta:
+        status_code = 200
+
         content = b'{"items": [], "nextPage": 1}'
 
         def json(self):
@@ -137,6 +141,8 @@ def test_igpm_fetch_filtros_sem_cache(monkeypatch):
     chamadas = []
 
     class Resposta:
+        status_code = 200
+
         content = (_DADOS / "igpm_calendario_2026.html").read_bytes()
 
         def raise_for_status(self):

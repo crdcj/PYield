@@ -118,6 +118,26 @@ def test_json_invalido_nao_provoca_novo_download(monkeypatch, transporte):
     assert esperas == []
 
 
+def test_304_sem_requisicao_condicional_e_erro_http(monkeypatch, transporte):
+    chamadas, esperas = transporte
+    nao_modificado = requests.Response()
+    nao_modificado.status_code = 304
+    nao_modificado._content = b""
+
+    def enviar(self, requisicao, **kwargs):
+        chamadas.append(requisicao.url)
+        return nao_modificado
+
+    monkeypatch.setattr(requests.Session, "send", enviar)
+
+    with pytest.raises(requests.HTTPError, match="304 Not Modified") as capturado:
+        yd.selic.meta_serie(ultimos=1)
+
+    assert capturado.value.response is nao_modificado
+    assert len(chamadas) == 1
+    assert esperas == []
+
+
 @pytest.mark.parametrize(
     ("consultar", "timeout_esperado"),
     [

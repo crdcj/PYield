@@ -98,7 +98,9 @@ def test_lft_baixa_a_cada_consulta_e_propaga_erro(monkeypatch):
         if falhar:
             raise requests.HTTPError("falha de atualização")
         texto = TEXTO_BCB.replace("14903,011480", f"{len(chamadas)},000000")
-        return SimpleNamespace(text=texto, raise_for_status=lambda: None)
+        return SimpleNamespace(
+            text=texto, status_code=200, raise_for_status=lambda: None
+        )
 
     monkeypatch.setattr(_lft.requests, "get", buscar)
     assert yd.vna.valor("LFT", "31-05-2024") == Decimal(1)
