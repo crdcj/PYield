@@ -141,6 +141,33 @@ terminavam em erro do Polars ou em `TypeError`:
 O `Decimal` é convertido para `float` antes do cálculo, e o resultado é o
 mesmo obtido com o `float` equivalente. Chamadas existentes não mudam.
 
+## Ofertas de compra e venda em `yd.futuro.historico`
+
+Nos contratos cotados por taxa (DI1, DAP, DDI, FRC e FRO), as colunas
+`taxa_ultima_oferta_compra` e `taxa_ultima_oferta_venda` de
+`yd.futuro.historico` e `yd.futuro.enriquecer` estavam trocadas. Até a
+0.63.0, a melhor oferta de compra da B3 saía como venda e vice-versa, e a taxa
+de compra ficava acima da de venda.
+
+As colunas passam a seguir a convenção da B3, a mesma de
+`yd.futuro.intradia`: comprar um contrato de taxa é comprar taxa, o que
+equivale a vender PU. Por isso a oferta de compra tem a taxa menor. A ordem
+das colunas também muda: compra vem antes de venda. Os contratos cotados por
+preço (DOL, WDO, IND e WIN) não mudam.
+
+### Migração
+
+Para manter os valores da 0.63.0, troque os nomes das duas colunas:
+
+```python
+df = yd.futuro.historico("06-11-2026", "DI1").rename(
+    {
+        "taxa_ultima_oferta_compra": "taxa_ultima_oferta_venda",
+        "taxa_ultima_oferta_venda": "taxa_ultima_oferta_compra",
+    }
+)
+```
+
 ## Correções
 
 As correções abaixo alteram apenas resultados que antes estavam errados ou

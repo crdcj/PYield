@@ -127,6 +127,11 @@ def intradia(contrato: str) -> pl.DataFrame:
         as colunas ``taxa_*``. Algumas colunas são específicas de famílias de
         contrato, como ``dv01`` para DI1 e ``taxa_forward`` para DI1 e DAP.
 
+        Em contratos de taxa, as ofertas seguem a convenção da B3: comprar
+        o contrato é comprar taxa (ficar tomado, equivale a vender PU) e
+        vender é ficar aplicado (equivale a comprar PU). Assim,
+        ``taxa_oferta_compra`` fica abaixo de ``taxa_oferta_venda``.
+
     Examples:
         >>> resultado = yd.futuro.intradia("DI1")
         >>> isinstance(resultado, pl.DataFrame)

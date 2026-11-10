@@ -14,16 +14,14 @@ from pyield.futuro import contratos as ct
 from pyield.fwd import forwards_expr
 
 # Renomeação preco_* → taxa_* para contratos cotados por taxa.
-# Bid/Ask são invertidos: BestBidPric (bid em PU) = menor taxa = venda de taxa;
-# BestAskPric (ask em PU) = maior taxa = compra de taxa.
 _PRECO_PARA_TAXA = {
     "preco_abertura": "taxa_abertura",
     "preco_minimo": "taxa_minima",
     "preco_maximo": "taxa_maxima",
     "preco_medio": "taxa_media",
     "preco_fechamento": "taxa_fechamento",
-    "preco_ultima_oferta_compra": "taxa_ultima_oferta_venda",
-    "preco_ultima_oferta_venda": "taxa_ultima_oferta_compra",
+    "preco_ultima_oferta_compra": "taxa_ultima_oferta_compra",
+    "preco_ultima_oferta_venda": "taxa_ultima_oferta_venda",
     "preco_limite_minimo": "taxa_limite_minimo",
     "preco_limite_maximo": "taxa_limite_maximo",
 }
@@ -71,8 +69,8 @@ _COLUNAS_CONTRATO_TAXA = (
     "taxa_maxima",
     "taxa_media",
     "taxa_fechamento",
-    "taxa_ultima_oferta_venda",
     "taxa_ultima_oferta_compra",
+    "taxa_ultima_oferta_venda",
     "taxa_ajuste",
     "taxa_forward",
 )
@@ -239,10 +237,10 @@ def historico(data: DateLike | DatesLike, contrato: str) -> pl.DataFrame:
             * taxa_maxima (Float64): taxa máxima negociada.
             * taxa_media (Float64): taxa média negociada.
             * taxa_fechamento (Float64): última taxa negociada (last).
-            * taxa_ultima_oferta_venda (Float64): melhor taxa de venda
-              (dar; bid em PU) no fim do pregão.
             * taxa_ultima_oferta_compra (Float64): melhor taxa de compra
-              (tomar; ask em PU) no fim do pregão.
+              (bid) ao fim do pregão.
+            * taxa_ultima_oferta_venda (Float64): melhor taxa de venda
+              (ask) ao fim do pregão.
             * taxa_ajuste (Float64): taxa de ajuste.
             * preco_ajuste (Float64): preço de ajuste (PU).
 
@@ -262,10 +260,11 @@ def historico(data: DateLike | DatesLike, contrato: str) -> pl.DataFrame:
 
         ``*_fechamento`` é o último negócio realizado (last trade).
         ``*_ultima_oferta_*`` é o bid/ask ao fim do pregão — não
-        representa negócio realizado e pode ser nulo. Para contratos de
-        taxa (DI1, DAP, etc.), bid/ask são invertidos em relação ao PU:
-        ``taxa_ultima_oferta_compra`` = maior taxa (ask em PU),
-        ``taxa_ultima_oferta_venda`` = menor taxa (bid em PU).
+        representa negócio realizado e pode ser nulo. Em contratos de
+        taxa (DI1, DAP, etc.), segue a convenção da B3: comprar o contrato
+        é comprar taxa (ficar tomado, equivale a vender PU) e vender é
+        ficar aplicado (equivale a comprar PU). Assim, a oferta de compra
+        tem taxa menor que a de venda, como em ``yd.futuro.intradia``.
 
 
     Examples:
