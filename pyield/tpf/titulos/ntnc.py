@@ -352,7 +352,6 @@ def _pagamentos_curva_zero(
         raise ValueError(
             "Curva deve ter prazos inteiros positivos e taxas finitas > -1."
         )
-    curva = _utils.rejeitar_prazos_conflitantes(curva)
 
     fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
     dias = du.contar(data_liquidacao, fluxos["data_pagamento"])
@@ -671,13 +670,13 @@ def duration(
           base de 252 dias úteis, relativa aos fluxos em base 100.
 
         O desconto dos fluxos não aplica os arredondamentos e truncamentos
-        da cotação oficial. O resultado é truncado em 14 casas decimais.
+        da cotação oficial.
         O VNA, comum a todos os fluxos, cancela na razão.
 
     Examples:
         >>> from pyield import ntnc
         >>> ntnc.duration("21-03-2025", "01-01-2031", "6.7626%")
-        4.405363320448
+        4.405363320448003
     """
     if isinstance(taxa, str):
         taxa = float(_utils.converter_taxa(taxa))
@@ -690,9 +689,7 @@ def duration(
 
     anos_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
     vp = df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis
-    duracao = float((vp * anos_uteis).sum()) / float(vp.sum())
-    # Truncar para 14 casas decimais para repetibilidade dos resultados
-    return _utils.truncar(duracao, 14)
+    return float((vp * anos_uteis).sum()) / float(vp.sum())
 
 
 def duration_expr(

@@ -621,7 +621,7 @@ def duration(
           base de 252 dias úteis, relativa aos fluxos em base 100.
 
         O desconto dos fluxos não aplica os arredondamentos e truncamentos
-        da cotação oficial. O resultado é truncado em 14 casas decimais.
+        da cotação oficial.
         O VNA, comum a todos os fluxos, cancela na razão.
 
     Examples:
@@ -640,9 +640,7 @@ def duration(
 
     anos_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
     vp = df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis
-    duration = float((vp * anos_uteis).sum()) / float(vp.sum())
-    # Truncar para 14 casas decimais para repetibilidade dos resultados
-    return _utils.truncar(duration, 14)
+    return float((vp * anos_uteis).sum()) / float(vp.sum())
 
 
 def duration_expr(

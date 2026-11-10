@@ -90,32 +90,20 @@ def filtrar_vertices_futuros(
     return df["data_vencimento"], df["taxa"]
 
 
-def rejeitar_prazos_conflitantes(curva: pl.DataFrame) -> pl.DataFrame:
-    """Remove vértices repetidos e rejeita prazos com taxas diferentes.
-
-    Linhas idênticas não são ambíguas e são mantidas uma única vez. Um mesmo
-    prazo com taxas diferentes não tem taxa correta a escolher, então gera
-    erro em vez de depender da ordem das linhas.
-    """
-    curva = curva.unique(maintain_order=True)
-    if curva["dias_uteis"].n_unique() != curva.height:
-        raise ValueError(
-            "Curva zero não pode conter o mesmo prazo com taxas diferentes."
-        )
-    return curva
-
-
 def validar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:
     """Valida e normaliza a curva zero usada na precificação."""
     if not {"dias_uteis", "taxa_zero"}.issubset(curva_zero.columns):
         raise ValueError(
             "Curva zero deve conter as colunas 'dias_uteis' e 'taxa_zero'."
         )
-    curva = curva_zero.select(
-        pl.col("dias_uteis").cast(pl.Int64),
-        pl.col("taxa_zero").cast(pl.Float64),
-    ).drop_nulls()
-    return rejeitar_prazos_conflitantes(curva).sort("dias_uteis")
+    return (
+        curva_zero.select(
+            pl.col("dias_uteis").cast(pl.Int64),
+            pl.col("taxa_zero").cast(pl.Float64),
+        )
+        .drop_nulls()
+        .sort("dias_uteis")
+    )
 
 
 def coluna_ou_expr(valor: pl.Expr | str, nome: str) -> pl.Expr:

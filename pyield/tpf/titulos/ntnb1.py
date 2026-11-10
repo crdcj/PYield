@@ -494,10 +494,7 @@ def duration(
         return float("nan")
     anos_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
     vp = df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis
-    duration = float((vp * anos_uteis).sum()) / float(vp.sum())
-
-    # Trunca a duração para 14 casas para reprodutibilidade
-    return _utils.truncar(duration, 14)
+    return float((vp * anos_uteis).sum()) / float(vp.sum())
 
 
 def dv01(

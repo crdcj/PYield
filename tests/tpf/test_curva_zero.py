@@ -36,7 +36,7 @@ def test_prazo_repetido_com_taxas_diferentes_gera_erro(funcao):
     curva = pl.DataFrame(
         {"dias_uteis": [500, 500, 2000], "taxa_zero": [0.07, 0.08, 0.075]}
     )
-    with pytest.raises(ValueError, match="mesmo prazo com taxas diferentes"):
+    with pytest.raises(ValueError, match="mesmo prazo com taxas diferentes; .*DU 500"):
         funcao(curva_zero=curva)
 
 

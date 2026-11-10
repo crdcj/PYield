@@ -83,7 +83,7 @@ dv01 = yd.ntnb1.dv01("23-06-2025", "15-12-2084", "6.86%", pu)
 dv01 = yd.ntnb1.dv01("23-06-2025", "15-12-2084", "6.86%", pu, r_mais)
 ```
 
-## Prazos repetidos na curva zero
+## Prazos repetidos na curva zero e no interpolador
 
 As funções de NTN-B Principal, NTN-B1 e NTN-C que recebem `curva_zero`
 (`yd.ntnbp.taxa`, `yd.ntnb1.cotacao_curva_zero`, `yd.ntnb1.taxa_curva_zero`,
@@ -93,10 +93,20 @@ prazos repetidos da mesma forma:
 - linhas idênticas são aceitas e consideradas uma única vez;
 - o mesmo `dias_uteis` com taxas diferentes gera `ValueError`.
 
-Antes, NTN-B Principal e NTN-B1 usavam a última linha de cada prazo, e o
-resultado dependia da ordem da curva. A NTN-C rejeitava qualquer repetição,
-mesmo com taxas iguais. Curvas geradas por `yd.ntnb.taxas_zero` não têm prazos
-repetidos e não são afetadas.
+A regra vale também para `yd.Interpolador` e `yd.interpolar`, que estão na
+base dessas funções. Em `yd.interpolar` com várias curvas, o conflito é
+verificado dentro de cada data: o mesmo DU em datas diferentes é legítimo. A
+mensagem de erro informa o DU, as taxas conflitantes e, se houver, a data:
+
+```text
+ValueError: Curva tem o mesmo prazo com taxas diferentes; informe uma única
+taxa por prazo. Conflitos: 2025-01-03, DU 200: taxas [0.11, 0.13].
+```
+
+Antes, o interpolador usava a última linha de cada prazo, e o resultado
+dependia da ordem da curva. A NTN-C rejeitava qualquer repetição, mesmo com
+taxas iguais. Curvas geradas por `yd.ntnb.taxas_zero` e as curvas internas de
+DI1 e TPF não têm prazos repetidos e não são afetadas.
 
 O mesmo critério vale para os vértices informados aos bootstraps
 `yd.ntnf.taxas_zero`, `yd.ntnf.taxas_zero_forwards` e `yd.ntnb.taxas_zero`
@@ -105,3 +115,14 @@ o mesmo vencimento com taxas diferentes e o resultado dependia da ordem dos
 vértices; `yd.ntnb.taxas_zero` repetia o vértice na saída ou falhava com
 `RuntimeError`; e `yd.ntnf.taxas_zero_forwards` rejeitava até repetições
 idênticas.
+
+## Duration sem truncamento
+
+`yd.ntnb.duration`, `yd.ntnc.duration` e `yd.ntnb1.duration` deixam de truncar
+o resultado em 14 casas decimais, como já faziam `yd.ntnf.duration` e as
+versões `duration_expr` usadas em `dados()`. A duration é uma medida
+analítica em ponto flutuante, e o truncamento não segue a metodologia de
+cotação do Tesouro. A diferença fica no último dígito do `float`, por exemplo
+`yd.ntnc.duration("21-03-2025", "01-01-2031", "6.7626%")` passa de
+`4.405363320448` para `4.405363320448003`. O truncamento dos anos úteis nas
+cotações não muda.

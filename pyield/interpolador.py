@@ -7,6 +7,37 @@ import polars as pl
 from pyield._internal.types import ArrayLike
 
 
+def _rejeitar_vertices_conflitantes(
+    df: pl.DataFrame, du: str, tx: str, grupo: str | None = None
+) -> pl.DataFrame:
+    """Remove vértices idênticos e rejeita o mesmo DU com taxas diferentes.
+
+    Vértices repetidos com a mesma taxa não são ambíguos e ficam uma única
+    vez. O mesmo DU com taxas diferentes não tem taxa correta a escolher e
+    gera erro, que informa o DU, as taxas e, se houver, a data da curva.
+    """
+    chaves = [du] if grupo is None else [grupo, du]
+    df = df.unique(maintain_order=True)
+    conflitos = (
+        df.filter(pl.len().over(chaves) > 1)
+        .group_by(chaves, maintain_order=True)
+        .agg(pl.col(tx))
+    )
+    if conflitos.is_empty():
+        return df
+    descricoes = [
+        (f"{linha[grupo]}, " if grupo is not None else "")
+        + f"DU {linha[du]}: taxas {linha[tx]}"
+        for linha in conflitos.head(5).iter_rows(named=True)
+    ]
+    restantes = conflitos.height - len(descricoes)
+    sufixo = f" (e mais {restantes})" if restantes > 0 else ""
+    raise ValueError(
+        "Curva tem o mesmo prazo com taxas diferentes; informe uma única "
+        f"taxa por prazo. Conflitos: {'; '.join(descricoes)}{sufixo}."
+    )
+
+
 class Interpolador:
     r"""Classe interpoladora para interpolação de taxas de juros.
 
@@ -22,7 +53,8 @@ class Interpolador:
 
     Raises:
         ValueError: Se ``metodo`` não for ``"flat_forward"`` nem ``"linear"``,
-            ou se não houver ao menos um vértice válido na curva.
+            se não houver ao menos um vértice válido na curva ou se a curva
+            tiver o mesmo prazo com taxas diferentes.
 
     Notes:
         - Esta classe usa convenção de 252 dias úteis por ano.
@@ -95,9 +127,8 @@ class Interpolador:
             )
             .drop_nulls()
             .drop_nans()
-            .unique(subset="dus", keep="last")
-            .sort("dus")
         )
+        df = _rejeitar_vertices_conflitantes(df, "dus", "txs").sort("dus")
         if df.is_empty():
             raise ValueError("A curva deve conter ao menos um vértice válido.")
         self._df = df
@@ -321,7 +352,8 @@ def interpolar(  # noqa: PLR0913
 
     Raises:
         ValueError: Se apenas uma de ``datas_alvo`` ou ``datas_curva``
-            for fornecida.
+            for fornecida, ou se a curva tiver o mesmo prazo com taxas
+            diferentes (na mesma data, quando há várias curvas).
 
     Notes:
         Usa a mesma fórmula flat-forward descrita na documentação de
@@ -407,8 +439,10 @@ def interpolar(  # noqa: PLR0913
         )
         .drop_nulls()
         .drop_nans()
-        .unique(subset=["grupo", "du"], keep="last")
-        .sort("grupo", "du")
+    )
+    grupo = "grupo" if datas_curva is not None else None
+    df_curva = _rejeitar_vertices_conflitantes(df_curva, "du", "tx", grupo).sort(
+        "grupo", "du"
     )
 
     # j = último vértice com du <= du_alvo; k = primeiro com du >= du_alvo.
