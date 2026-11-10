@@ -129,7 +129,7 @@ def interpolar_taxas(
     cálculos vetorizados com múltiplos pares de datas.
 
     Se taxas de DI não estiverem disponíveis para uma data de negociação, as
-    taxas interpoladas correspondentes serão NaN.
+    taxas interpoladas correspondentes serão nulas.
 
     Trata broadcasting: Se um argumento for escalar e o outro for array, o valor
     escalar é aplicado a todos os elementos do array.
@@ -146,7 +146,7 @@ def interpolar_taxas(
 
     Returns:
         Series contendo as taxas DI interpoladas (como floats). Valores serão
-        NaN onde interpolação não for possível (ex: sem dados DI para a data
+        nulos onde interpolação não for possível (ex: sem dados DI para a data
         de negociação). As taxas são retornadas em formato decimal; os exemplos
         abaixo as multiplicam por 100 apenas para facilitar a leitura.
 
@@ -168,7 +168,7 @@ def interpolar_taxas(
         >>> # A taxa não é interpolada (taxa de liquidação é usada)
         >>> # Não há contrato com vencimento 25-11-2027 em 09-05-2025
         >>> # A taxa é interpolada (método flat-forward)
-        >>> # Não há dados para 10-05-2025 (sábado) -> NaN
+        >>> # Não há dados para 10-05-2025 (sábado) -> null
         >>> from pyield import di1
         >>> di1.interpolar_taxas(
         ...     datas_referencia=["08-05-2025", "09-05-2025", "10-05-2025"],
@@ -228,7 +228,9 @@ def interpolar_taxas(
     datas_unicas = df_entrada["data_referencia"].drop_nulls().unique().sort().to_list()
     df_ref = buscar_historico_cacheado(datas_unicas, "DI1")
     if df_ref.is_empty():
-        return pl.Series(dtype=pl.Float64)
+        return pl.repeat(None, df_entrada.height, dtype=pl.Float64, eager=True).alias(
+            "taxa_interpolada"
+        )
 
     df_entrada = df_entrada.with_columns(
         dias_uteis=du.contar_expr("data_referencia", "data_vencimento"),

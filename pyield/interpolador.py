@@ -21,7 +21,8 @@ class Interpolador:
             independentemente desta flag.
 
     Raises:
-        ValueError: Se não houver ao menos um vértice válido na curva.
+        ValueError: Se ``metodo`` não for ``"flat_forward"`` nem ``"linear"``,
+            ou se não houver ao menos um vértice válido na curva.
 
     Notes:
         - Esta classe usa convenção de 252 dias úteis por ano.
@@ -84,10 +85,14 @@ class Interpolador:
         metodo: Literal["flat_forward", "linear"],
         extrapolar: bool = False,
     ):
+        if metodo not in {"flat_forward", "linear"}:
+            raise ValueError(f"Método de interpolação '{metodo}' não reconhecido.")
         df = (
             pl.DataFrame({"dus": dias_uteis, "txs": taxas})
-            .with_columns(pl.col("dus").cast(pl.Int64))
-            .with_columns(pl.col("txs").cast(pl.Float64))
+            .with_columns(
+                dus=pl.col("dus").cast(pl.Int64),
+                txs=pl.col("txs").cast(pl.Float64),
+            )
             .drop_nulls()
             .drop_nans()
             .unique(subset="dus", keep="last")
@@ -203,7 +208,9 @@ class Interpolador:
             └─────┴──────────┘
         """
         expr = pl.col(du) if isinstance(du, str) else du
-        return expr.map_batches(self._interpolar_serie, return_dtype=pl.Float64)
+        return expr.map_batches(
+            self._interpolar_serie, return_dtype=pl.Float64, is_elementwise=True
+        )
 
     def _taxa_interpolada(self, du: int) -> float:
         """Encontra o ponto de interpolação apropriado e retorna a taxa de juros.
@@ -244,10 +251,7 @@ class Interpolador:
 
         if method == "linear":
             return self._linear(du, k)
-        elif method == "flat_forward":
-            return self._flat_forward(du, k)
-
-        raise ValueError(f"Método de interpolação '{method}' não reconhecido.")
+        return self._flat_forward(du, k)
 
     def __call__(self, du: int) -> float:
         """Atalho escalar para ``interpolar``.
@@ -320,9 +324,9 @@ def interpolar(  # noqa: PLR0913
             for fornecida.
 
     Notes:
-        Usa as mesmas fórmulas de interpolação linear e flat-forward descritas
-        na documentação de :class:`Interpolador`. Os vértices que cercam cada
-        prazo alvo são encontrados automaticamente.
+        Usa a mesma fórmula flat-forward descrita na documentação de
+        :class:`Interpolador`. Os vértices que cercam cada prazo alvo são
+        encontrados automaticamente.
 
     Examples:
         Caso típico: adicionar uma coluna de taxas interpoladas a um
@@ -407,19 +411,9 @@ def interpolar(  # noqa: PLR0913
         .sort("grupo", "du")
     )
 
-    nulo = pl.lit(None, dtype=pl.Float64)
-    if df_curva.is_empty():
-        return df_alvo.sort("_idx").select(taxa_interpolada=nulo)["taxa_interpolada"]
-
-    # Vértices das pontas por grupo (em ordem de DU, não de chegada).
-    df_extremos = df_curva.group_by("grupo").agg(
-        du_min=pl.col("du").min(),
-        du_max=pl.col("du").max(),
-        tx_min=pl.col("tx").sort_by("du").first(),
-        tx_max=pl.col("tx").sort_by("du").last(),
-    )
-
     # j = último vértice com du <= du_alvo; k = primeiro com du >= du_alvo.
+    # Sem j, o alvo está antes do primeiro vértice; sem k, depois do último.
+    # Alvo nulo ou grupo sem curva deixa j e k nulos e resulta em nulo.
     # df_alvo é ordenado por (grupo, du_alvo) e df_curva já vem ordenado por
     # (grupo, du); com isso podemos desligar check_sortedness, que também
     # silencia o aviso do Polars quando se usa `by=`.
@@ -441,7 +435,6 @@ def interpolar(  # noqa: PLR0913
             strategy="forward",
             check_sortedness=False,
         )
-        .join(df_extremos, on="grupo", how="left")
     )
 
     # Flat-forward: tx = (Cⱼ * (Cₖ / Cⱼ)^w)^(1/au) - 1,
@@ -454,15 +447,14 @@ def interpolar(  # noqa: PLR0913
     peso = (au - au_j) / (au_k - au_j)
     expr_meio = (fa_j * (fa_k / fa_j).pow(peso)).pow(1 / au) - 1
 
+    nulo = pl.lit(None, dtype=pl.Float64)
     taxa = (
-        pl.when(pl.col("du_alvo").is_null() | pl.col("du_min").is_null())
-        .then(nulo)
-        .when(pl.col("du_j") == pl.col("du_alvo"))
+        pl.when(pl.col("du_j") == pl.col("du_alvo"))
         .then(pl.col("tx_j"))
-        .when(pl.col("du_alvo") < pl.col("du_min"))
-        .then(pl.col("tx_min"))
-        .when(pl.col("du_alvo") > pl.col("du_max"))
-        .then(pl.col("tx_max") if extrapolar else nulo)
+        .when(pl.col("du_j").is_null())
+        .then(pl.col("tx_k"))
+        .when(pl.col("du_k").is_null())
+        .then(pl.col("tx_j") if extrapolar else nulo)
         .otherwise(expr_meio)
     )
 

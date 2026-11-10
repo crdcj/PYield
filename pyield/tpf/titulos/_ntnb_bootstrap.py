@@ -6,6 +6,7 @@ from collections.abc import Callable
 
 import polars as pl
 
+import pyield._internal.converters as cv
 from pyield import du
 from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 
@@ -258,8 +259,8 @@ def taxas_zero(
             úteis (ex.: 0.10 para 10%).
 
     Returns:
-        pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Retorna vazio quando
-            não restarem vencimentos posteriores à liquidação.
+        pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Retorna
+            vazio quando não restarem vencimentos posteriores à liquidação.
 
     Raises:
         RuntimeError: Se não for possível encontrar um intervalo válido para
@@ -353,27 +354,24 @@ def taxas_zero(
         >>> 0 < interpolar(du_intermediario) < 1
         True
     """
-    from pyield.tpf.titulos.ntnb import (  # noqa: PLC0415
-        _validar_entradas_taxas_zero,
-        fluxos_caixa,
-    )
+    from pyield.tpf.titulos.ntnb import fluxos_caixa  # noqa: PLC0415
 
+    schema_vazio = {
+        "data_vencimento": pl.Date,
+        "dias_uteis": pl.Int64,
+        "taxa_tir": pl.Float64,
+        "taxa_forward": pl.Float64,
+        "taxa_zero": pl.Float64,
+    }
     if any_is_empty(data_liquidacao, vencimentos, taxas):
-        return pl.DataFrame()
+        return pl.DataFrame(schema=schema_vazio)
 
-    liquidacao, vencimentos, taxas = _validar_entradas_taxas_zero(
-        data_liquidacao, vencimentos, taxas
+    liquidacao = cv.converter_datas(data_liquidacao)
+    vencimentos, taxas = _utils.filtrar_vertices_futuros(
+        liquidacao, cv.converter_datas(vencimentos), taxas, "NTN-B"
     )
     if vencimentos.is_empty():
-        return pl.DataFrame(
-            schema={
-                "data_vencimento": pl.Date,
-                "dias_uteis": pl.Int64,
-                "taxa_tir": pl.Float64,
-                "taxa_forward": pl.Float64,
-                "taxa_zero": pl.Float64,
-            }
-        )
+        return pl.DataFrame(schema=schema_vazio)
 
     titulos = pl.DataFrame({"data_vencimento": vencimentos, "taxa_tir": taxas}).sort(
         "data_vencimento"

@@ -3,6 +3,7 @@ import polars.selectors as cs
 
 from pyield import du
 from pyield._internal.br_numbers import pct_para_decimal
+from pyield.b3._contratos import normalizar_contrato
 from pyield.b3._validar_pregao import intradia_disponivel
 from pyield.b3.derivativos_intradia import derivativo_intradia
 from pyield.futuro.contratos import CONTRATOS_TAXA, dv01_expr
@@ -78,7 +79,7 @@ def intradia(contrato: str) -> pl.DataFrame:
     Output Columns:
         Colunas base:
             * data_referencia (Date): data de negociação.
-            * horario_referencia (Datetime): horário de referência do dado.
+            * horario_referencia (Time): horário de referência do dado.
             * codigo_negociacao (String): código de negociação na B3.
             * data_vencimento (Date): data de vencimento do contrato.
             * dias_uteis (Int64): dias úteis até o vencimento.
@@ -128,6 +129,7 @@ def intradia(contrato: str) -> pl.DataFrame:
         >>> isinstance(resultado, pl.DataFrame)
         True
     """
+    contrato = normalizar_contrato(contrato)
     if not contrato:
         return pl.DataFrame()
     if not intradia_disponivel():

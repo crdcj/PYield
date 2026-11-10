@@ -17,7 +17,6 @@ do vencimento (retrocedendo 6 em 6 meses), sem depender de meses fixos.
 """
 
 import datetime as dt
-import logging
 import math
 from decimal import Decimal
 
@@ -60,8 +59,6 @@ _SCHEMA_DADOS = {
     "rentabilidade": pl.Float64,
 }
 
-logger = logging.getLogger(__name__)
-
 
 def dados(data: DateLike) -> pl.DataFrame:
     """
@@ -81,7 +78,7 @@ def dados(data: DateLike) -> pl.DataFrame:
         - data_base (Date): Data base de emissão do título.
         - data_vencimento (Date): Data de vencimento do título.
         - dias_uteis (Int64): Dias úteis entre referência e vencimento.
-        - prazo_medio (Float64): Prazo médio do título em dias corridos.
+        - prazo_medio (Float64): Prazo médio do título (anos).
         - duration (Float64): Macaulay Duration do título (anos).
         - dv01 (Float64): Variação no preço para 1bp de taxa.
         - pu (Float64): Preço unitário (PU).
@@ -275,7 +272,9 @@ def fluxos_caixa(
         └────────────────┴─────────────────┘
     """
     if any_is_empty(data_liquidacao, data_vencimento):
-        return pl.DataFrame()
+        return pl.DataFrame(
+            schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
+        )
     # Normaliza datas de entrada
     liquidacao = cv.converter_datas(data_liquidacao)
     vencimento = cv.converter_datas(data_vencimento)
@@ -290,16 +289,11 @@ def fluxos_caixa(
         )
 
     # Define o fluxo final no vencimento e os demais como cupom
-    df = pl.DataFrame(
-        data={"data_pagamento": serie_datas_pagamento},
-    ).with_columns(
-        pl.when(pl.col("data_pagamento") == vencimento)
+    return pl.DataFrame({"data_pagamento": serie_datas_pagamento}).with_columns(
+        valor_pagamento=pl.when(pl.col("data_pagamento") == vencimento)
         .then(VALOR_FINAL)
         .otherwise(VALOR_CUPOM)
-        .alias("valor_pagamento")
     )
-
-    return df
 
 
 def _calcular_pu(
@@ -402,35 +396,6 @@ def pu(
         Decimal('999.931303')
     """
     return truncar_decimal(_calcular_pu(data_liquidacao, data_vencimento, taxa), 6)
-
-
-def _filtrar_vertices_futuros(
-    liquidacao: dt.date,
-    vencimentos: pl.Series,
-    taxas: pl.Series,
-    nome_curva: str,
-) -> tuple[pl.Series, pl.Series]:
-    """Remove vértices sem prazo preservando o alinhamento com as taxas."""
-    if len(vencimentos) != len(taxas):
-        raise ValueError(
-            f"Vencimentos e taxas de {nome_curva} devem ter o mesmo tamanho."
-        )
-
-    df = pl.DataFrame(
-        {"data_vencimento": vencimentos, "taxa": taxas},
-        schema={"data_vencimento": pl.Date, "taxa": pl.Float64},
-    ).filter(pl.col("data_vencimento") > liquidacao)
-
-    removidos = len(vencimentos) - df.height
-    if removidos > 0:
-        logger.warning(
-            "Vencimentos de %s menores ou iguais à liquidação foram ignorados: "
-            "%s removidos.",
-            nome_curva,
-            removidos,
-        )
-
-    return df["data_vencimento"], df["taxa"]
 
 
 def taxas_zero(  # noqa
@@ -546,31 +511,22 @@ def taxas_zero(  # noqa
         vencimentos_ntnf,
         taxas_ntnf,
     ):
-        return pl.DataFrame()
+        return pl.DataFrame(
+            schema={
+                "data_vencimento": pl.Date,
+                "dias_uteis": pl.Int64,
+                "taxa_zero": pl.Float64,
+            }
+        )
     # 1. Converter e normalizar inputs para Polars
     liquidacao = cv.converter_datas(data_liquidacao)
     vencimentos_ltn = cv.converter_datas(vencimentos_ltn)
     vencimentos_ntnf = cv.converter_datas(vencimentos_ntnf)
-    if not isinstance(taxas_ltn, pl.Series):
-        serie_ltn_taxas = pl.Series(taxas_ltn).cast(pl.Float64)
-    else:
-        serie_ltn_taxas = taxas_ltn
-    if not isinstance(taxas_ntnf, pl.Series):
-        serie_ntnf_taxas = pl.Series(taxas_ntnf).cast(pl.Float64)
-    else:
-        serie_ntnf_taxas = taxas_ntnf
-
-    vencimentos_ltn, serie_ltn_taxas = _filtrar_vertices_futuros(
-        liquidacao,
-        vencimentos_ltn,
-        serie_ltn_taxas,
-        "LTN",
+    vencimentos_ltn, serie_ltn_taxas = _utils.filtrar_vertices_futuros(
+        liquidacao, vencimentos_ltn, taxas_ltn, "LTN"
     )
-    vencimentos_ntnf, serie_ntnf_taxas = _filtrar_vertices_futuros(
-        liquidacao,
-        vencimentos_ntnf,
-        serie_ntnf_taxas,
-        "NTN-F",
+    vencimentos_ntnf, serie_ntnf_taxas = _utils.filtrar_vertices_futuros(
+        liquidacao, vencimentos_ntnf, taxas_ntnf, "NTN-F"
     )
     if vencimentos_ltn.is_empty() or vencimentos_ntnf.is_empty():
         return pl.DataFrame(
@@ -878,7 +834,8 @@ def premio_limpo(  # noqa
     taxas_di: ArrayLike,
 ) -> float:
     r"""
-    Calcula o spread líquido (prêmio limpo no jargão de mercado) da NTN-F sobre a curva DI.
+    Calcula o spread líquido (prêmio limpo no jargão de mercado) da NTN-F sobre a
+    curva DI.
 
     A função determina o spread que iguala o valor presente dos fluxos ao preço
     do título. Interpola as taxas DI nas datas de pagamento e encontra o spread

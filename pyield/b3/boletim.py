@@ -27,7 +27,6 @@ Estrutura resumida de um registro do XML bruto da B3::
 Ref: https://www.b3.com.br/data/files/16/70/29/9C/6219D710C8F297D7AC094EA8/Catalogo_precos_v1.3.pdf
 """
 
-import datetime as dt
 import io
 import logging
 import re
@@ -332,14 +331,6 @@ def _filtrar_df(
     return df.sort("TckrSymb")
 
 
-def _obter_df_boletim(data: dt.date, boletim_completo: bool) -> pl.DataFrame:
-    dados_zip = baixar_zip(data, boletim_completo)
-    if not dados_zip:
-        return pl.DataFrame()
-    xml_bytes = _extrair(dados_zip)
-    return _processar_xml_extraido(xml_bytes)
-
-
 def buscar(
     data: DateLike,
     prefixo_ticker: str | list[str] | None = None,
@@ -401,8 +392,10 @@ def buscar(
         * IntlFinVol (Float64): volume financeiro internacional.
         * OpnIntrst (Int64): contratos em aberto.
         * FinInstrmQty (Int64): quantidade negociada de instrumentos financeiros.
-        * BestBidPric (Float64): ultima melhor oferta de compra no snapshot diario; pode ser nulo.
-        * BestAskPric (Float64): ultima melhor oferta de venda no snapshot diario; pode ser nulo.                   diario; pode ser nulo.
+        * BestBidPric (Float64): última melhor oferta de compra no snapshot
+          diário; pode ser nulo.
+        * BestAskPric (Float64): última melhor oferta de venda no snapshot
+          diário; pode ser nulo.
         * FrstPric (Float64): preço de abertura.
         * MinPric (Float64): preço mínimo negociado.
         * MaxPric (Float64): preço máximo negociado.
@@ -434,7 +427,6 @@ def buscar(
 
     Raises:
         requests.HTTPError: Se a requisição HTTP ao endpoint falhar.
-        zipfile.BadZipFile: Se o ZIP estiver corrompido após re-download.
         etree.XMLSyntaxError: Se o XML recebido estiver malformado.
 
     Examples:
@@ -445,22 +437,8 @@ def buscar(
         >>> df = yd.b3.boletim.buscar("26-04-2024", ["DI1", "DAP"])
 
     """
-    if any_is_empty(data):
-        return pl.DataFrame()
-
-    data = cv.converter_datas(data)
-    # Validação centralizada (evita chamadas desnecessárias às APIs B3)
-    if not data_negociacao_valida(data):
-        return pl.DataFrame()
-
-    df = _obter_df_boletim(data, boletim_completo)
-    if df.is_empty() or prefixo_ticker is None:
-        return df
-
-    prefixos = normalizar_contratos(prefixo_ticker)
-    if not prefixos:
-        return pl.DataFrame()
-    return _filtrar_df(df, prefixos, comprimento_ticker)
+    dados_zip = baixar_zip(data, boletim_completo)
+    return ler(dados_zip, prefixo_ticker, comprimento_ticker)
 
 
 def ler(
@@ -499,10 +477,12 @@ def ler(
     xml_bytes = _extrair(conteudo) if conteudo[:4] == b"PK\x03\x04" else conteudo
 
     df = _processar_xml_extraido(xml_bytes)
-    if df.is_empty() or prefixo_ticker is None:
+    if df.is_empty():
         return df
 
-    prefixos = normalizar_contratos(prefixo_ticker)
-    if not prefixos:
-        return pl.DataFrame()
+    prefixos = []
+    if prefixo_ticker is not None:
+        prefixos = normalizar_contratos(prefixo_ticker)
+        if not prefixos:
+            return pl.DataFrame()
     return _filtrar_df(df, prefixos, comprimento_ticker)

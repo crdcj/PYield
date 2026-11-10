@@ -665,7 +665,6 @@ def di_over(data: DateLike, *, anualizada: bool = True) -> Decimal:
     Consulta a taxa DI (Depósito Interfinanceiro) da B3/CETIP, republicada
     pelo Banco Central na série SGS 4389 (anualizada em base 252) ou
     SGS 12 (diária), para a data informada.
-    Use ``pyield.di_over`` na API pública principal.
 
     Args:
         data: data da consulta para buscar a taxa DI.

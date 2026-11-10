@@ -75,5 +75,5 @@ def rmd(aba: str) -> pl.DataFrame:
     conteudo_excel = _carregar_planilha_rmd()
     df = _IMPLEMENTACOES[aba](conteudo_excel)
 
-    registro.info(f"Dados do RMD (aba {aba!r}) processados. Shape: {df.shape}.")
+    registro.info("Dados do RMD (aba %r) processados. Shape: %s.", aba, df.shape)
     return df

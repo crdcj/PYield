@@ -38,7 +38,7 @@ def _buscar_dados_api(url: str) -> dict[str, str]:
     resposta = requisitar(requests.get, url, timeout_leitura=10)
     dados = resposta.json()
     if not dados:
-        raise ValueError(f"Nenhum dado disponível para a URL: {url}")
+        return {}
     return dados[0]["resultados"][0]["series"][0]["serie"]
 
 
@@ -60,7 +60,7 @@ def _buscar_periodo(
 ) -> pl.DataFrame:
     """Busca dados do IPCA para um intervalo de datas."""
     if any_is_empty(inicio, fim):
-        return pl.DataFrame()
+        return _processar_ipca({})
     periodo_inicio = converter_datas(inicio).strftime("%Y%m")
     periodo_fim = converter_datas(fim).strftime("%Y%m")
     url = f"{_URL_BASE}{periodo_inicio}-{periodo_fim}/variaveis/{variavel}{_SUFIXO_URL}"

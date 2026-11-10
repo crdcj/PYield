@@ -15,8 +15,6 @@ DIA_CUPOM = 15
 MESES_CUPOM = {2, 5, 8, 11}
 """
 
-import datetime as dt
-import logging
 from decimal import Decimal
 
 import polars as pl
@@ -55,8 +53,6 @@ _SCHEMA_DADOS = {
     "inflacao_implicita": pl.Float64,
 }
 
-logger = logging.getLogger(__name__)
-
 
 def dados(data: DateLike) -> pl.DataFrame:
     """
@@ -84,7 +80,8 @@ def dados(data: DateLike) -> pl.DataFrame:
         - taxa_venda (Float64): Taxa de venda (decimal).
         - taxa_indicativa (Float64): Taxa indicativa (decimal).
         - taxa_di (Float64): Taxa de ajuste do DI Futuro interpolada pelo
-            método flat forward.
+            método flat forward, sem extrapolação: nula para vencimentos além
+            do contrato de DI mais longo.
         - taxa_zero (Float64): Taxa zero real (via bootstrap das taxas indicativas).
         - taxa_forward (Float64): Taxa forward real (a partir das taxas zero).
         - inflacao_implicita (Float64): Inflação implícita (breakeven) calculada
@@ -118,10 +115,10 @@ def dados(data: DateLike) -> pl.DataFrame:
         vencimentos_nominais=df_di["data_vencimento"],
         taxas_nominais=df_di["taxa_ajuste"],
     ).select(
-        pl.col("data_vencimento"),
-        pl.col("taxa_zero_real").alias("taxa_zero"),
-        pl.col("taxa_nominal").alias("taxa_di"),
-        pl.col("inflacao_implicita"),
+        "data_vencimento",
+        "inflacao_implicita",
+        taxa_zero="taxa_zero_real",
+        taxa_di="taxa_nominal",
     )
 
     df = df.join(df_bei, on="data_vencimento", how="left")
@@ -267,16 +264,11 @@ def fluxos_caixa(
             schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
         )
 
-    df = pl.DataFrame(
-        {"data_pagamento": serie_datas_pagamento},
-    ).with_columns(
-        pl.when(pl.col("data_pagamento") == vencimento)
+    return pl.DataFrame({"data_pagamento": serie_datas_pagamento}).with_columns(
+        valor_pagamento=pl.when(pl.col("data_pagamento") == vencimento)
         .then(VALOR_FINAL)
         .otherwise(VALOR_CUPOM)
-        .alias("valor_pagamento")
     )
-
-    return df
 
 
 def cotacao(
@@ -384,17 +376,6 @@ def _cotacao_analitica(
     return float((df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis).sum())
 
 
-def _calcular_pu(
-    vna: float | Decimal,
-    cotacao: float | Decimal,
-) -> Decimal:
-    if any_is_empty(vna, cotacao):
-        return Decimal("NaN")
-    vna_decimal = truncar_decimal(vna, 6)
-    cotacao_decimal = truncar_decimal(cotacao, 4)
-    return truncar_decimal(vna_decimal * cotacao_decimal / BASE_COTACAO, 6)
-
-
 def pu(
     vna: float | Decimal,
     cotacao: float | Decimal,
@@ -439,40 +420,7 @@ def pu(
         >>> ntnb.pu(4315.498383, 100.6409)
         Decimal('4343.156412')
     """
-    return _calcular_pu(vna, cotacao)
-
-
-def _validar_entradas_taxas_zero(
-    data_liquidacao: DateLike,
-    vencimentos: DatesLike,
-    taxas: ArrayLike,
-) -> tuple[dt.date, pl.Series, pl.Series]:
-    # Processa e valida os dados de entrada
-    liquidacao = conversores.converter_datas(data_liquidacao)
-    vencimentos = conversores.converter_datas(vencimentos)
-
-    # Validação estrutural: vencimentos e taxas precisam ter o mesmo tamanho
-    if len(vencimentos) != len(taxas):
-        raise ValueError(
-            "Vencimentos e taxas devem ter o mesmo tamanho. "
-            f"Recebido: {len(vencimentos)} vencimentos e {len(taxas)} taxas."
-        )
-
-    # Cria DataFrame base e filtra vencimentos inválidos
-    df_limpo = pl.DataFrame(
-        data={"vencimentos": vencimentos, "taxas": taxas},
-        schema={"vencimentos": pl.Date, "taxas": pl.Float64},
-    ).filter(pl.col("vencimentos") > liquidacao)
-
-    # Aviso sobre vencimentos filtrados
-    total_filtrados = len(vencimentos) - df_limpo.height
-    if total_filtrados > 0:
-        logger.warning(
-            "Vencimentos menores ou iguais à liquidação foram ignorados: %s removidos.",
-            total_filtrados,
-        )
-
-    return liquidacao, df_limpo["vencimentos"], df_limpo["taxas"]
+    return _utils.pu_por_vna(vna, cotacao)
 
 
 def implicitas(  # noqa: PLR0913
@@ -598,9 +546,19 @@ def implicitas(  # noqa: PLR0913
         vencimentos_nominais,
         taxas_nominais,
     ):
-        return pl.DataFrame()
-    liquidacao, vencimentos_tir, taxas_tir = _validar_entradas_taxas_zero(
-        data_liquidacao, vencimentos_tir, taxas_tir
+        return pl.DataFrame(
+            schema={
+                "data_vencimento": pl.Date,
+                "dias_uteis": pl.Int64,
+                "taxa_tir_real": pl.Float64,
+                "taxa_zero_real": pl.Float64,
+                "taxa_nominal": pl.Float64,
+                "inflacao_implicita": pl.Float64,
+            }
+        )
+    liquidacao = conversores.converter_datas(data_liquidacao)
+    vencimentos_tir, taxas_tir = _utils.filtrar_vertices_futuros(
+        liquidacao, conversores.converter_datas(vencimentos_tir), taxas_tir, "NTN-B"
     )
     vencimentos_nominais = conversores.converter_datas(vencimentos_nominais)
 
@@ -611,7 +569,7 @@ def implicitas(  # noqa: PLR0913
         extrapolar=extrapolar,
     )
     taxa_nominal_expr = interpolador_ff.interpolar_expr("dias_uteis")
-    df = taxas_zero(liquidacao, vencimentos_tir, taxas_tir).select(
+    return taxas_zero(liquidacao, vencimentos_tir, taxas_tir).select(
         "data_vencimento",
         "dias_uteis",
         taxa_tir_real=pl.col("taxa_tir"),
@@ -619,8 +577,6 @@ def implicitas(  # noqa: PLR0913
         taxa_nominal=taxa_nominal_expr,
         inflacao_implicita=(taxa_nominal_expr + 1) / (pl.col("taxa_zero") + 1) - 1,
     )
-
-    return df
 
 
 def duration(

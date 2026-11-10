@@ -233,13 +233,11 @@ def fluxos_caixa(
     valor_final = _obter_valor_final(vencimento)
 
     # Monta DataFrame com fluxos de caixa
-    df = pl.DataFrame({"data_pagamento": serie_datas_pagamento}).with_columns(
-        pl.when(pl.col("data_pagamento") == vencimento)
+    return pl.DataFrame({"data_pagamento": serie_datas_pagamento}).with_columns(
+        valor_pagamento=pl.when(pl.col("data_pagamento") == vencimento)
         .then(valor_final)
         .otherwise(valor_cupom)
-        .alias("valor_pagamento")
     )
-    return df
 
 
 def cotacao(
@@ -514,18 +512,6 @@ def _cotacao_analitica(
     return float((df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis).sum())
 
 
-def _calcular_pu(
-    vna: float | Decimal,
-    cotacao: float | Decimal,
-) -> Decimal:
-    """Calcula o preço unitário da NTN-C a partir do VNA e da cotação."""
-    if any_is_empty(vna, cotacao):
-        return Decimal("NaN")
-    vna_decimal = truncar_decimal(vna, 6)
-    cotacao_decimal = truncar_decimal(cotacao, 4)
-    return truncar_decimal(vna_decimal * cotacao_decimal / 100, 6)
-
-
 def pu(
     vna: float | Decimal,
     cotacao: float | Decimal,
@@ -568,7 +554,7 @@ def pu(
         >>> ntnc.pu(6598.913723, 126.4958)
         Decimal('8347.348705')
     """
-    return _calcular_pu(vna, cotacao)
+    return _utils.pu_por_vna(vna, cotacao)
 
 
 def taxa(

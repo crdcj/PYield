@@ -1,348 +1,12 @@
-import datetime as dt
-import logging
+"""Leilões de TPFs: escolha explícita entre Tesouro Nacional e BCB."""
+
+from typing import Literal
 
 import polars as pl
-import requests
-from polars import selectors as cs
 
-from pyield import du
-from pyield._internal import converters as cv
-from pyield._internal.br_numbers import pct_para_decimal
-from pyield._internal.retry import requisitar
-from pyield._internal.types import DateLike, DatesLike, any_is_empty
-from pyield.bc.sgs import ptax_serie
-from pyield.tpf.titulos import ltn, ntnb, ntnf
-
-logger = logging.getLogger(__name__)
-
-# Definição unificada das colunas: (chave_api, novo_nome, tipo)
-# "prazo" foi omitido pois algumas vezes não vem na API
-DEFINICOES_COLUNAS = [
-    ("data_leilao", "data_1v", pl.String),
-    ("liquidacao", "data_liquidacao_1v", pl.String),
-    ("liquidacao_segunda_volta", "data_liquidacao_2v", pl.String),
-    ("numero_edital", "numero_edital", pl.Int64),
-    ("tipo_leilao", "tipo_leilao", pl.String),
-    ("tipo_ocorrencia", "tipo_ocorrencia", pl.String),
-    ("titulo", "titulo", pl.String),
-    ("benchmark", "benchmark", pl.String),
-    ("vencimento", "data_vencimento", pl.String),
-    ("oferta", "quantidade_ofertada_1v", pl.Int64),
-    ("quantidade_aceita", "quantidade_aceita_1v", pl.Int64),
-    ("oferta_segunda_volta", "quantidade_ofertada_2v", pl.Int64),
-    ("quantidade_aceita_segunda_volta", "quantidade_aceita_2v", pl.Int64),
-    ("quantidade_liquidada", "quantidade_liquidada_1v", pl.Int64),
-    ("quantidade_liquidada_segunda_volta", "quantidade_liquidada_2v", pl.Int64),
-    ("financeiro_aceito", "financeiro_aceito_1v", pl.Float64),
-    ("financeiro_aceito_segunda_volta", "financeiro_aceito_2v", pl.Float64),
-    ("quantidade_bcb", "quantidade_bcb", pl.Int64),
-    ("financeiro_bcb", "financeiro_bcb", pl.Int64),
-    ("pu_minimo", "pu_minimo", pl.Float64),
-    ("pu_medio", "pu_medio", pl.Float64),
-    ("taxa_media", "taxa_media", pl.Float64),
-    ("taxa_maxima", "taxa_maxima", pl.Float64),
-]
-
-ESQUEMA_DADOS = {api: tipo for api, _, tipo in DEFINICOES_COLUNAS}
-MAPA_COLUNAS = {api: novo for api, novo, _ in DEFINICOES_COLUNAS}
-
-ORDEM_FINAL_COLUNAS = [
-    "data_1v",
-    "data_liquidacao_1v",
-    "data_liquidacao_2v",
-    "numero_edital",
-    "tipo_leilao",
-    "tipo_ocorrencia",
-    "titulo",
-    "benchmark",
-    "data_vencimento",
-    "dias_uteis",
-    "dias_corridos",
-    "duration",
-    "prazo_medio",
-    "quantidade_ofertada_1v",
-    "quantidade_ofertada_2v",
-    "quantidade_aceita_1v",
-    "quantidade_aceita_2v",
-    "quantidade_aceita_total",
-    "quantidade_liquidada_1v",
-    "quantidade_liquidada_2v",
-    "financeiro_ofertado_1v",
-    "financeiro_ofertado_2v",
-    "financeiro_ofertado_total",
-    "financeiro_aceito_1v",
-    "financeiro_aceito_2v",
-    "financeiro_aceito_total",
-    "quantidade_bcb",
-    "financeiro_bcb",
-    "colocacao_1v",
-    "colocacao_2v",
-    "colocacao_total",
-    "dv01_1v",
-    "dv01_2v",
-    "dv01_total",
-    "ptax",
-    "dv01_1v_usd",
-    "dv01_2v_usd",
-    "dv01_total_usd",
-    "pu_minimo",
-    "pu_medio",
-    "tipo_pu_medio",
-    "taxa_media",
-    "taxa_maxima",
-]
-
-
-def _buscar_dados_leiloes(
-    data_leilao: dt.date | None = None,
-    ano_inicial: int | None = None,
-) -> list[dict]:
-    """Busca os dados brutos da API do Tesouro.
-
-    Exemplo de resposta da API de leilões do Tesouro:
-    https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/resultados?dataleilao=30/09/2025
-
-        {
-        "registros": [
-            {...},
-            {
-            "quantidade_bcb": 0,
-            "liquidacao_segunda_volta": "30/09/2025",
-            "oferta_segunda_volta": 37499,
-            "data_leilao": "30/09/2025",
-            "oferta": 150000,
-            "titulo": "LFT",
-            "liquidacao": "01/10/2025",
-            "financeiro_aceito_segunda_volta": 0,
-            "quantidade_aceita": 150000,
-            "prazo": 1067,
-            "vencimento": "01/09/2028",
-            "benchmark": "LFT 3 anos",
-            "pu_medio": 17434.81182753125,
-            "taxa_media": 0.0669,
-            "financeiro_aceito": 2615194916.22,
-            "pu_minimo": 17434.632775,
-            "numero_edital": 230,
-            "taxa_maxima": 0.0669,
-            "tipo_leilao": "Venda",
-            "financeiro_bcb": 0,
-            "quantidade_aceita_segunda_volta": 0
-            },
-            {...},
-        ],
-        "status": "ok"
-        }
-    """
-    endpoint_api = (
-        "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/resultados"
-    )
-    parametros = {}
-    if data_leilao is not None:
-        parametros["dataleilao"] = data_leilao.strftime("%d/%m/%Y")
-    if ano_inicial is not None:
-        parametros["anoinicial"] = str(ano_inicial)
-
-    resposta = requisitar(
-        requests.get, endpoint_api, params=parametros, timeout_leitura=10
-    )
-    dados = resposta.json()
-    if "registros" not in dados or not dados["registros"]:
-        return []
-    return dados["registros"]
-
-
-def _transformar_dados_brutos(dados_brutos: list[dict]) -> pl.DataFrame:
-    """Converte dados brutos em um DataFrame Polars limpo e tipado."""
-    df = pl.from_dicts(dados_brutos, schema_overrides=ESQUEMA_DADOS)
-
-    cols_opcionais = {
-        "liquidacao_segunda_volta": pl.String,
-        "oferta_segunda_volta": pl.Int64,
-        "financeiro_aceito_segunda_volta": pl.Float64,
-        "tipo_ocorrencia": pl.String,
-        "quantidade_liquidada": pl.Int64,
-        "quantidade_liquidada_segunda_volta": pl.Int64,
-        "quantidade_aceita_segunda_volta": pl.Int64,
-    }
-
-    for nome_coluna, tipo in cols_opcionais.items():
-        if nome_coluna not in df.columns:
-            df = df.with_columns(pl.lit(None, dtype=tipo).alias(nome_coluna))
-
-    df = (
-        df.rename(MAPA_COLUNAS)
-        .with_columns(
-            cs.starts_with("data_").str.strptime(pl.Date, "%d/%m/%Y"),
-            quantidade_ofertada_total=(
-                pl.sum_horizontal("quantidade_ofertada_1v", "quantidade_ofertada_2v")
-            ),
-            quantidade_aceita_total=(
-                pl.sum_horizontal("quantidade_aceita_1v", "quantidade_aceita_2v")
-            ),
-            financeiro_aceito_total=(
-                pl.sum_horizontal("financeiro_aceito_1v", "financeiro_aceito_2v")
-            ),
-            tipo_pu_medio=pl.when(pl.col("pu_medio") == 0)
-            .then(pl.lit("calculado"))
-            .otherwise(pl.lit("original")),
-            pu_medio=pl.when(pl.col("pu_medio") == 0)
-            .then((pl.col("financeiro_aceito_1v") / pl.col("quantidade_aceita_1v")))
-            .otherwise("pu_medio")
-            .round(6),
-            # A API publica 0 quando não informa o PU mínimo.
-            pu_minimo=pl.when(pl.col("pu_minimo") == 0)
-            .then(None)
-            .otherwise("pu_minimo"),
-        )
-        .with_columns(
-            financeiro_ofertado_1v=pl.when(
-                pl.col("quantidade_ofertada_1v") == pl.col("quantidade_aceita_1v")
-            )
-            .then("financeiro_aceito_1v")
-            .otherwise(pl.col("quantidade_ofertada_1v") * pl.col("pu_medio")),
-            financeiro_ofertado_2v=pl.when(
-                pl.col("quantidade_ofertada_2v") == pl.col("quantidade_aceita_2v")
-            )
-            .then("financeiro_aceito_2v")
-            .otherwise(pl.col("quantidade_ofertada_2v") * pl.col("pu_medio")),
-            colocacao_1v=(
-                pl.col("quantidade_aceita_1v") / pl.col("quantidade_ofertada_1v")
-            ),
-            colocacao_2v=(
-                pl.col("quantidade_aceita_2v") / pl.col("quantidade_ofertada_2v")
-            ),
-            colocacao_total=(
-                pl.col("quantidade_aceita_total") / pl.col("quantidade_ofertada_total")
-            ),
-            dias_corridos=(
-                pl.col("data_vencimento") - pl.col("data_liquidacao_1v")
-            ).dt.total_days(),
-        )
-        .with_columns(
-            financeiro_ofertado_total=(
-                pl.sum_horizontal("financeiro_ofertado_1v", "financeiro_ofertado_2v")
-            ),
-        )
-        .with_columns(
-            cs.starts_with("financeiro_ofertado").round(2),
-            pct_para_decimal(cs.starts_with("taxa")),
-        )
-    )
-    ajustar_cols = [
-        "pu_minimo",
-        "pu_medio",
-        "tipo_pu_medio",
-        "taxa_media",
-        "taxa_maxima",
-    ]
-    df = df.with_columns(
-        pl.when(pl.col("quantidade_aceita_1v") == 0)
-        .then(None)
-        .otherwise(pl.col(ajustar_cols))
-        .name.keep()
-    )
-
-    df = df.with_columns(
-        dias_uteis=du.contar_expr("data_liquidacao_1v", "data_vencimento")
-    )
-    return df.sort("data_1v", "titulo", "data_vencimento")
-
-
-def _adicionar_duration(df: pl.DataFrame) -> pl.DataFrame:
-    """Calcula a duration por tipo de título."""
-    return df.with_columns(
-        duration=(
-            pl.when(pl.col("titulo") == "LTN")
-            .then(ltn.duration_expr("data_liquidacao_1v", "data_vencimento"))
-            .when(pl.col("titulo") == "NTN-F")
-            .then(
-                ntnf.duration_expr(
-                    "data_liquidacao_1v", "data_vencimento", "taxa_media"
-                )
-            )
-            .when(pl.col("titulo") == "NTN-B")
-            .then(
-                ntnb.duration_expr(
-                    "data_liquidacao_1v", "data_vencimento", "taxa_media"
-                )
-            )
-            .otherwise(0.0)
-        )
-    )
-
-
-def _adicionar_prazo_medio(df: pl.DataFrame) -> pl.DataFrame:
-    return df.with_columns(
-        pl.when(pl.col("titulo") == "LFT")
-        .then(pl.col("dias_uteis") / 252)
-        .otherwise("duration")
-        .alias("prazo_medio")
-    )
-
-
-def _adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
-    """Calcula o DV01 com base na duration da 1a volta e nas quantidades aceitas."""
-    dv01_unitario = (
-        pl.when(pl.col("titulo") == "LTN")
-        .then(ltn.dv01_expr("data_liquidacao_1v", "data_vencimento", "taxa_media"))
-        .when(pl.col("titulo") == "NTN-F")
-        .then(ntnf.dv01_expr("data_liquidacao_1v", "data_vencimento", "taxa_media"))
-        .when(pl.col("titulo") == "NTN-B")
-        .then(
-            ntnb.dv01_expr(
-                "data_liquidacao_1v", "data_vencimento", "taxa_media", "pu_medio"
-            )
-        )
-        .otherwise(0.0)
-    )
-
-    return df.with_columns(
-        dv01_1v=dv01_unitario * pl.col("quantidade_aceita_1v"),
-        dv01_2v=dv01_unitario * pl.col("quantidade_aceita_2v"),
-        dv01_total=dv01_unitario * pl.col("quantidade_aceita_total"),
-    ).with_columns(cs.starts_with("dv01").round(2))
-
-
-def _buscar_ptax(df: pl.DataFrame) -> pl.DataFrame:
-    """Busca a PTAX para o intervalo de datas do DataFrame."""
-    inicio = df["data_1v"].min()
-    fim = df["data_1v"].max()
-    assert isinstance(inicio, dt.date)
-    assert isinstance(fim, dt.date)
-    data_min = du.deslocar(inicio, -1)
-    data_max = du.deslocar(fim, 1)
-
-    df = ptax_serie(inicio=data_min, fim=data_max)
-    if df.is_empty():
-        return pl.DataFrame()
-
-    return (
-        df.select("data", cotacao=pl.col("cotacao").cast(pl.Float64))
-        .rename({"data": "data_ref", "cotacao": "ptax"})
-        .sort("data_ref")
-    )
-
-
-def _adicionar_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
-    """Adiciona o DV01 em USD usando a PTAX mais recente por join_asof."""
-    df_ptax = _buscar_ptax(df)
-    if df_ptax.is_empty():
-        logger.warning("Sem dados de PTAX para calcular DV01 em USD.")
-        return df
-
-    return (
-        df.sort("data_1v")
-        .join_asof(df_ptax, left_on="data_1v", right_on="data_ref", strategy="backward")
-        .with_columns(
-            (cs.starts_with("dv01") / pl.col("ptax")).round(2).name.suffix("_usd")
-        )
-    )
-
-
-def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
-    """Seleciona as colunas finais e ordena o DataFrame para saida."""
-    colunas_selecionadas = [col for col in ORDEM_FINAL_COLUNAS if col in df.columns]
-    return df.select(colunas_selecionadas).sort("data_1v", "titulo", "data_vencimento")
+from pyield._internal.types import DateLike, DatesLike
+from pyield.tpf._leiloes_bc import leiloes_bc
+from pyield.tpf._leiloes_tn import leiloes_tn
 
 
 def leiloes(
@@ -350,33 +14,47 @@ def leiloes(
     data: DateLike | DatesLike | None = None,
     inicio: DateLike | None = None,
     fim: DateLike | None = None,
+    fonte: Literal["tn", "bc"] = "tn",
 ) -> pl.DataFrame:
     """Busca resultados de leilões de TPFs.
 
-    Fonte: Tesouro Nacional. Dados disponíveis a partir de 04/01/2018.
-    Retorna dados de quantidades, financeiros, taxas de colocação, duration e
-    DV01 dos leilões no período informado.
+    Fonte: Tesouro Nacional (``fonte="tn"``, padrão), com dados disponíveis a
+    partir de 04/01/2018, ou Banco Central do Brasil (``fonte="bc"``), com
+    dados disponíveis desde 12/11/2012. Retorna dados de quantidades,
+    financeiros, taxas de colocação, duration e DV01 dos leilões no período
+    informado.
+
+    O BCB é uma alternativa para quando o Tesouro estiver indisponível ou ainda
+    não trouxer a 2ª volta. As duas fontes recebem os mesmos parâmetros e usam
+    os mesmos nomes de colunas; colunas exclusivas de cada fonte ficam ausentes
+    na outra. Os resultados podem ser unidos com
+    ``pl.concat(..., how="diagonal")``.
 
     Args:
         data: Data ou sequência de datas do leilão. Padrão é ``None``.
         inicio: Data inicial da consulta. Padrão é ``None``.
         fim: Data final da consulta. Padrão é ``None``.
+        fonte: ``"tn"`` (Tesouro Nacional) ou ``"bc"`` (Banco Central do
+            Brasil). Padrão é ``"tn"``. Não há troca automática de fonte.
 
     Returns:
         DataFrame Polars com os dados processados dos leilões. Se ``data`` for
         uma sequência, concatena os resultados das datas informadas. Se
         ``inicio`` for informado, retorna os leilões a partir dessa data. Se
         nenhum filtro temporal for informado, retorna o histórico completo.
-        Retorna DataFrame vazio se não houver dados para o período.
+        Retorna DataFrame vazio se não houver dados para o período. O resultado
+        é ordenado por data, título e vencimento.
 
     Output Columns:
         * data_1v (Date): data de realização do leilão.
         * data_liquidacao_1v (Date): data de liquidação financeira da 1ª volta.
         * data_liquidacao_2v (Date): data de liquidação financeira da 2ª volta.
         * numero_edital (Int64): número do edital do leilão.
-        * tipo_leilao (String): tipo da operação.
+        * tipo_leilao (String): tipo da operação (``"Venda"`` ou ``"Compra"``).
+        * tipo_publico (String): público do leilão (exclusiva do BCB).
         * tipo_ocorrencia (String): classificação da ocorrência do leilão.
         * titulo (String): código do título público leiloado.
+        * codigo_selic (Int64): código do título no Selic (exclusiva do BCB).
         * benchmark (String): descrição de referência do título.
         * data_vencimento (Date): data de vencimento do título.
         * dias_uteis (Int64): dias úteis entre liquidação e vencimento.
@@ -416,88 +94,43 @@ def leiloes(
 
     Notes:
         ``data`` não pode ser combinado com ``inicio`` ou ``fim``. ``fim`` só
-        pode ser usado junto com ``inicio``. Quando o Tesouro estiver
-        indisponível ou incompleto (por exemplo, sem a 2ª volta), use
-        ``yd.tpf.leiloes_bcb``, que usa os mesmos nomes de colunas.
+        pode ser usado junto com ``inicio``.
+
+        Diferenças do BCB em relação ao Tesouro Nacional:
+
+        - O BCB não publica ``data_liquidacao_2v``, ``tipo_ocorrencia``,
+          ``benchmark``, ``quantidade_bcb``, ``financeiro_bcb`` nem
+          ``tipo_pu_medio``.
+        - O financeiro publicado pelo BCB é arredondado a R$ 100 mil. Por
+          isso, os financeiros são calculados como quantidade vezes
+          ``pu_medio``, o que reproduz o Tesouro na 1ª volta; na 2ª volta, a
+          diferença típica é inferior a 0,1%.
+        - Na 2ª volta, a quantidade ofertada do BCB é a nominal do edital,
+          enquanto o Tesouro pode informar valores ligeiramente menores.
+        - Até 10/06/2024, o BCB publica cotação, e não PU, para LFT e NTN-B.
+          Nesses casos, ``pu_medio`` é estimado pelo financeiro dividido pela
+          quantidade aceita (sujeito ao arredondamento acima) e
+          ``pu_minimo`` é nulo.
+
+    Examples:
+        >>> df = yd.tpf.leiloes(data="19-08-2025", fonte="bc")
+        >>> df.select("titulo", "quantidade_aceita_total", "pu_medio", "taxa_media")
+        shape: (5, 4)
+        ┌────────┬─────────────────────────┬──────────────┬────────────┐
+        │ titulo ┆ quantidade_aceita_total ┆ pu_medio     ┆ taxa_media │
+        │ ---    ┆ ---                     ┆ ---          ┆ ---        │
+        │ str    ┆ i64                     ┆ f64          ┆ f64        │
+        ╞════════╪═════════════════════════╪══════════════╪════════════╡
+        │ LFT    ┆ 150000                  ┆ 17149.069465 ┆ 0.000636   │
+        │ LFT    ┆ 751003                  ┆ 17072.592044 ┆ 0.001068   │
+        │ NTN-B  ┆ 300759                  ┆ 4299.806542  ┆ 0.08167    │
+        │ NTN-B  ┆ 500542                  ┆ 4143.249763  ┆ 0.07748    │
+        │ NTN-B  ┆ 500000                  ┆ 4021.3613    ┆ 0.07323    │
+        └────────┴─────────────────────────┴──────────────┴────────────┘
     """
-    _validar_periodo(data, inicio, fim)
-
-    if data is not None:
-        if any_is_empty(data):
-            return pl.DataFrame()
-
-        datas = cv.converter_datas(data)
-        if not isinstance(datas, pl.Series):
-            return _processar_data_unica(datas)
-
-        if datas.null_count() > 0:
-            msg = "data deve conter apenas datas válidas."
-            raise ValueError(msg)
-
-        resultados = [_processar_data_unica(data) for data in datas]
-        resultados = [df for df in resultados if not df.is_empty()]
-        if not resultados:
-            return pl.DataFrame()
-        return pl.concat(resultados)
-
-    data_inicio = cv.converter_datas(inicio) if inicio is not None else None
-    data_fim = cv.converter_datas(fim) if fim is not None else None
-
-    if data_inicio is not None and data_fim is not None and data_inicio > data_fim:
-        msg = "inicio deve ser menor ou igual a fim."
-        raise ValueError(msg)
-
-    dados_leilao = _buscar_dados_leiloes(
-        ano_inicial=data_inicio.year if data_inicio is not None else None
-    )
-    return _processar_dados_leiloes(dados_leilao, inicio=data_inicio, fim=data_fim)
-
-
-def _processar_dados_leiloes(
-    dados_leilao: list[dict],
-    inicio: dt.date | None = None,
-    fim: dt.date | None = None,
-) -> pl.DataFrame:
-    if not dados_leilao:
-        return pl.DataFrame()
-
-    df = _transformar_dados_brutos(dados_leilao)
-    if inicio is not None:
-        df = df.filter(pl.col("data_1v") >= inicio)
-    if fim is not None:
-        df = df.filter(pl.col("data_1v") <= fim)
-    if df.is_empty():
-        return pl.DataFrame()
-    return _selecionar_e_ordenar_colunas(_enriquecer(df))
-
-
-def _validar_periodo(
-    data: DateLike | DatesLike | None,
-    inicio: DateLike | None,
-    fim: DateLike | None,
-) -> None:
-    if data is not None and (inicio is not None or fim is not None):
-        msg = "data não pode ser combinado com inicio ou fim."
-        raise ValueError(msg)
-    if fim is not None and inicio is None:
-        msg = "fim só pode ser usado junto com inicio."
-        raise ValueError(msg)
-
-
-def _enriquecer(df: pl.DataFrame) -> pl.DataFrame:
-    """Adiciona duration, DV01 e prazo médio, comuns às fontes TN e BCB."""
-    df = _adicionar_duration(df)
-    df = _adicionar_dv01(df)
-    df = _adicionar_dv01_usd(df)
-    df = _adicionar_prazo_medio(df)
-    return df.with_columns(cs.float().fill_nan(None))
-
-
-def _processar_data_unica(data_leilao: DateLike) -> pl.DataFrame:
-    """Busca e processa o leilao de uma unica data."""
-    data = cv.converter_datas(data_leilao)
-    if not du.eh_dia_util(data):
-        return pl.DataFrame()
-
-    dados_leilao = _buscar_dados_leiloes(data_leilao=data)
-    return _processar_dados_leiloes(dados_leilao)
+    if fonte == "tn":
+        return leiloes_tn(data=data, inicio=inicio, fim=fim)
+    if fonte == "bc":
+        return leiloes_bc(data=data, inicio=inicio, fim=fim)
+    msg = f"fonte inválida: {fonte!r}. Use 'tn' ou 'bc'."
+    raise ValueError(msg)

@@ -129,12 +129,12 @@ def contar_expr(
         └────────────┘
     """
     if isinstance(inicio, dt.date):
-        inicio = pl.lit(inicio)
+        inicio = pl.lit(inicio, dtype=pl.Date)
     else:
         inicio = cv.converter_datas_expr(inicio)
 
     if isinstance(fim, dt.date):
-        fim = pl.lit(fim)
+        fim = pl.lit(fim, dtype=pl.Date)
     else:
         fim = cv.converter_datas_expr(fim)
 
@@ -344,8 +344,6 @@ def deslocar_expr(
         │ 2024-01-08 │
         └────────────┘
     """
-    if isinstance(data, str):
-        data = pl.col(data)
     if isinstance(deslocamento, str):
         deslocamento = pl.col(deslocamento)
 

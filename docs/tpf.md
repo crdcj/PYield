@@ -154,8 +154,6 @@ com a fonte; para análises de TPF, prefira a visão estável de `yd.tpf`.
 
 ::: pyield.tpf.leiloes.leiloes
 
-::: pyield.tpf.leiloes_bcb
-
 ## dealers
 
 ::: pyield.tpf.dealers.dealers

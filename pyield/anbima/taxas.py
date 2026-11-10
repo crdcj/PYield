@@ -20,6 +20,7 @@ import logging
 import os
 import socket
 import zipfile as zf
+from http import HTTPStatus
 from pathlib import Path
 
 import polars as pl
@@ -207,14 +208,20 @@ def buscar(data: DateLike) -> pl.DataFrame:
         try:
             socket.gethostbyname(ANBIMA_RTM_HOSTNAME)
         except socket.gaierror:
-            data_str = data.strftime("%d/%m/%Y")
             logger.warning(
-                f"Não foi possível resolver o host da RTM para {data_str}. "
-                "Dados históricos exigem acesso à rede RTM."
+                "Não foi possível resolver o host da RTM para %s. "
+                "Dados históricos exigem acesso à rede RTM.",
+                data.strftime("%d/%m/%Y"),
             )
             return pl.DataFrame()
 
-    csv_bytes = _obter_csv(data)
+    try:
+        csv_bytes = _obter_csv(data)
+    except requests.HTTPError as e:
+        # Arquivo ainda não publicado (ou inexistente) para data válida.
+        if e.response is not None and e.response.status_code == HTTPStatus.NOT_FOUND:
+            return pl.DataFrame()
+        raise
     if not csv_bytes.strip():
         return pl.DataFrame()
 

@@ -24,7 +24,7 @@ def _baixar_planilha() -> bytes:
         r = requisitar(requests.get, _URL_XLS, timeout_leitura=10)
         return r.content
     except requests.exceptions.RequestException as e:
-        raise ConnectionError(f"Erro ao acessar a planilha da ANBIMA: {e}")
+        raise ConnectionError(f"Erro ao acessar a planilha da ANBIMA: {e}") from e
 
 
 def _extrair_datetime(texto: str) -> dt.datetime:

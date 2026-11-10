@@ -12,11 +12,6 @@ from pyield._internal.types import DateLike, any_is_empty
 
 from . import _utils
 
-"""
-Parâmetros globais para cálculos de NTN-B1.
-Estes parâmetros definem o fluxo de amortização conforme o nome comercial.
-"""
-
 
 class NomeComercial(Enum):
     """
@@ -44,8 +39,8 @@ def _obter_parametros_titulo(
     """
     try:
         numero_amortizacoes = MAPA_PARAMETROS[nome_comercial]
-    except KeyError:
-        raise ValueError(f"Nome comercial inválido: {nome_comercial}")
+    except KeyError as e:
+        raise ValueError(f"Nome comercial inválido: {nome_comercial}") from e
 
     pagamento_amortizacao = _utils.truncar(100 / numero_amortizacoes, 6)
     pagamento_amortizacao_final = 100 - (
@@ -124,9 +119,6 @@ def datas_pagamento(
         _utils.subtrair_meses(vencimento, i) for i in range(numero_amortizacoes)
     ]
 
-    if len(datas_amortizacao) == 0:
-        raise ValueError("Nenhuma data de amortização após a liquidação.")
-
     datas_pagamento = pl.Series(name="datas_pagamento", values=datas_amortizacao)
 
     return datas_pagamento.filter(datas_pagamento > liquidacao).sort()
@@ -188,29 +180,23 @@ def fluxos_caixa(
 
     """
     if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
-        return pl.DataFrame({"data_pagamento": [], "valor_pagamento": []})
+        return pl.DataFrame(
+            schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
+        )
 
-    # Valida e normaliza datas
-    liquidacao = conversores.converter_datas(data_liquidacao)
-    vencimento = conversores.converter_datas(data_vencimento)
-
-    # Obtém as datas de amortização
-    serie_datas_pagamento = datas_pagamento(liquidacao, vencimento, nome_comercial)
-    df = pl.DataFrame({"data_pagamento": serie_datas_pagamento})
-
-    # Parâmetros do título
+    serie_datas_pagamento = datas_pagamento(
+        data_liquidacao, data_vencimento, nome_comercial
+    )
     pagamento_amort, pagamento_amort_final, _ = _obter_parametros_titulo(nome_comercial)
+    # A última amortização ocorre no dia 15, como em ``datas_pagamento``.
+    vencimento = conversores.converter_datas(data_vencimento).replace(day=15)
 
     # Define o fluxo final no vencimento e os demais como amortizações
-    df = df.with_columns(
-        pl.when(pl.col("data_pagamento") == vencimento)
+    return pl.DataFrame({"data_pagamento": serie_datas_pagamento}).with_columns(
+        valor_pagamento=pl.when(pl.col("data_pagamento") == vencimento)
         .then(pagamento_amort_final)
         .otherwise(pagamento_amort)
-        .alias("valor_pagamento")
     )
-
-    # Retorna o DataFrame com datas e fluxos
-    return df
 
 
 def cotacao(
@@ -255,6 +241,8 @@ def cotacao(
 
     taxa_float = float(taxa)
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
+    if df_fluxos.is_empty():
+        return Decimal("NaN")
     valores_fluxo = df_fluxos["valor_pagamento"]
     dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
     anos_uteis = _utils.truncar(dias_uteis / 252, 14)
@@ -274,6 +262,8 @@ def _cotacao_analitica(
     nome_comercial: NomeComercial,
 ) -> float:
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
+    if df_fluxos.is_empty():
+        return float("nan")
     anos_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
     return float((df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis).sum())
 
@@ -463,9 +453,9 @@ def pu(
           Ofertados no Tesouro Direto — Tesouro Educa+ (NTN-B1)*.
         - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
           Ofertados no Tesouro Direto — Tesouro RendA+ (NTN-B1)*.
-                - Secretaria do Tesouro Nacional, [consulta pública sobre a composição
-                    dos pagamentos mensais da NTN-B1](https://www.gov.br/participamaisbrasil/consulta-portaria-composicao-ntn-b11),
-                    processo SEI `17944.005214/2024-09`.
+        - Secretaria do Tesouro Nacional, [consulta pública sobre a composição
+          dos pagamentos mensais da NTN-B1](https://www.gov.br/participamaisbrasil/consulta-portaria-composicao-ntn-b11),
+          processo SEI `17944.005214/2024-09`.
 
     Examples:
         >>> from pyield import ntnb1
@@ -476,11 +466,7 @@ def pu(
         >>> ntnb1.pu(4128.272299, 62.6809)
         Decimal('2587.638231')
     """
-    if any_is_empty(vna, cotacao):
-        return Decimal("NaN")
-    vna_decimal = truncar_decimal(vna, 6)
-    cotacao_decimal = truncar_decimal(cotacao, 4)
-    return truncar_decimal(vna_decimal * cotacao_decimal / 100, 6)
+    return _utils.pu_por_vna(vna, cotacao)
 
 
 def duration(
@@ -515,6 +501,8 @@ def duration(
         return float("nan")
 
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
+    if df_fluxos.is_empty():
+        return float("nan")
     anos_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
     vp = df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis
     duration = float((vp * anos_uteis).sum()) / float(vp.sum())

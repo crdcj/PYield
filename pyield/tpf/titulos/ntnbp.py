@@ -107,11 +107,7 @@ def pu(vna: float | Decimal, cotacao: float | Decimal) -> Decimal:
         - Tesouro Direto — Tesouro IPCA+, página 4.
           <https://www.tesourodireto.com.br/documents/d/guest/tesouro_ipca_juros_semestrais>
     """
-    if any_is_empty(vna, cotacao):
-        return Decimal("NaN")
-    vna_decimal = truncar_decimal(vna, 6)
-    cotacao_decimal = truncar_decimal(cotacao, 4)
-    return truncar_decimal(vna_decimal * cotacao_decimal / 100, 6)
+    return _utils.pu_por_vna(vna, cotacao)
 
 
 def _normalizar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:

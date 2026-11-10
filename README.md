@@ -52,7 +52,7 @@ uv add pyield
 | `yd.forwards(...)` | função | Curva de taxas a termo | |
 | `yd.futuro` | módulo | Contratos futuros da B3 | `di1`, `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `dv01_expr`, `vencimento_expr` |
 | `yd.di1` | módulo | Curva DI1 e interpolação | `dados`, `interpolar_taxas`, `interpolar_taxa`, `datas_disponiveis` |
-| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `taxas_historicas`, `vencimentos`, `estoque`, `leiloes`, `leiloes_bcb`, `benchmarks`, `dealers`, `curva_pre`, `premios_pre`, `secundario` |
+| `yd.tpf` | módulo | Títulos públicos federais | `taxas`, `taxas_historicas`, `vencimentos`, `estoque`, `leiloes`, `benchmarks`, `dealers`, `curva_pre`, `premios_pre`, `secundario` |
 | `yd.rmd(aba)` | função | Relatório Mensal da Dívida do Tesouro Nacional | |
 | `yd.lft` | módulo | LFT | `dados`, `vencimentos`, `cotacao`, `pu`, `taxa`, `rentabilidade`, `rentabilidade_expr` |
 | `yd.ltn` | módulo | LTN | `dados`, `vencimentos`, `pu`, `taxa`, `duration_expr`, `dv01`, `dv01_expr`, `rentabilidade`, `rentabilidade_expr`, `taxas_forward` |

@@ -321,9 +321,8 @@ def forwards(
         ]
 
     Notes:
-        - A função ordena os dados de entrada primeiro por `agrupar_por`,
-          se for fornecido, e depois por `dias_uteis` para garantir a ordem
-          cronológica correta no cálculo das taxas a termo.
+        - O cálculo segue a ordem de `dias_uteis` dentro de cada grupo de
+          `agrupar_por`, se fornecido, sem reordenar os dados de entrada.
         - Nulos em `dias_uteis` ou `taxas` produzem nulo na linha
           correspondente; NaN produz NaN. Duplicatas em `(agrupar_por,
           dias_uteis)` tornam o vértice ambíguo e produzem nulo nas linhas
@@ -335,7 +334,7 @@ def forwards(
     """
     # Validações iniciais
     if any_is_empty(dias_uteis, taxas):
-        return pl.Series(dtype=pl.Float64)
+        return pl.Series("taxa_forward", dtype=pl.Float64)
 
     # Delega para a primitiva expressiva. A expressão preserva a ordem
     # original do DataFrame e cuida de nulos, NaN e duplicatas em (du, grupo)

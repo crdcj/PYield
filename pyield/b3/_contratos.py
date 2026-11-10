@@ -17,8 +17,7 @@ def normalizar_contrato(contrato: str | object) -> str:
     if any_is_empty(contrato):
         return ""
 
-    codigo = str(contrato).strip().upper()
-    return codigo
+    return str(contrato).strip().upper()
 
 
 def normalizar_contratos(
@@ -34,23 +33,6 @@ def normalizar_contratos(
     Returns:
         list[str]: Lista normalizada de códigos em caixa alta.
     """
-    if isinstance(contrato, str):
-        codigo = normalizar_contrato(contrato)
-        return [codigo] if codigo else []
-
-    if isinstance(contrato, pl.Series):
-        valores = contrato.to_list()
-    else:
-        valores = list(contrato)
-
-    codigos_unicos: list[str] = []
-    codigos_vistos: set[str] = set()
-    for valor in valores:
-        codigo = normalizar_contrato(valor)
-        if not codigo:
-            continue
-        if codigo not in codigos_vistos:
-            codigos_vistos.add(codigo)
-            codigos_unicos.append(codigo)
-
-    return codigos_unicos
+    valores = [contrato] if isinstance(contrato, str) else contrato
+    codigos = (normalizar_contrato(valor) for valor in valores)
+    return list(dict.fromkeys(codigo for codigo in codigos if codigo))

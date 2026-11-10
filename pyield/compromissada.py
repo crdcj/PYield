@@ -84,12 +84,17 @@ def compromissadas(
         - prazo_dc (Int64): dias corridos até a data de retorno.
         - prazo_du (Int64): dias úteis entre liquidação e retorno.
         - comunicado (Int64): número do comunicado/aviso do BC (pode ser nulo).
-        - tipo_oferta (String): classif. do tipo de oferta (ex: Tomador, Compromissada 1047).
-        - publico (String): público permitido no leilão (SomenteDealer, TodoMercado).
-        - financeiro_aceito (Float64): financeiro aceito no leilão em reais (convertido de milhares).
-        - taxa_corte (Float64): taxa de corte (ex. 0.1490 = 14,90%). Nula se financeiro_aceito = 0.
-        - pct_aceito (Float64): percentual do volume ofertado efetivamente aceito (0-100).
-          100 = nenhuma rejeição. 0 indica nada aceito (volume_aceito = 0).
+        - tipo_oferta (String): classif. do tipo de oferta (ex: Tomador,
+          Compromissada 1047).
+        - publico (String): público permitido no leilão (SomenteDealer,
+          TodoMercado).
+        - financeiro_aceito (Float64): financeiro aceito no leilão em reais
+          (convertido de milhares).
+        - taxa_corte (Float64): taxa de corte (ex. 0.1490 = 14,90%). Nula se
+          financeiro_aceito = 0.
+        - pct_aceito (Float64): percentual do volume ofertado efetivamente
+          aceito (0-100). 100 = nenhuma rejeição. 0 indica nada aceito
+          (financeiro_aceito = 0).
 
     Notes:
         - Dados ordenados por: data_leilao, hora_inicio, tipo_oferta.

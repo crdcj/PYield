@@ -37,3 +37,8 @@ def test_rmd_exposto_como_funcao_na_raiz():
     assert not callable(getattr(yd.tpf, "rmd", None))
     with pytest.raises(ValueError, match="não disponível"):
         rmd(aba="inexistente")
+
+
+def test_leiloes_bcb_exposto_apenas_por_fonte():
+    assert "leiloes_bcb" not in yd.tpf.__all__
+    assert not hasattr(yd.tpf, "leiloes_bcb")

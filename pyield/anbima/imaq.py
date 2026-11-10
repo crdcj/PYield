@@ -9,7 +9,6 @@ Exemplo de página HTML:
 import datetime as dt
 
 import polars as pl
-import polars.selectors as ps
 import requests
 from lxml.html import HtmlElement, HTMLParser
 from lxml.html import fromstring as html_fromstring
@@ -29,7 +28,7 @@ def _buscar_conteudo_url(data_referencia: dt.date) -> bytes:
         "DataRef": "",
         "Pai": "ima",
         "Dt_Ref_Ver": "20250117",
-        "Dt_Ref": f"{data_referencia_str}",
+        "Dt_Ref": data_referencia_str,
     }
 
     # POST de consulta histórica por data; seguro de repetir.
@@ -100,8 +99,7 @@ def _parsear_tabelas_html(html_content: bytes) -> pl.DataFrame:
 def _processar_df(df: pl.DataFrame, data_referencia: dt.date) -> pl.DataFrame:
     """Filtra, converte tipos e aplica transformações numéricas."""
     return (
-        df.with_columns(ps.string().str.strip_chars().name.keep())
-        .filter(
+        df.filter(
             pl.col("Data de Vencimento").is_not_null(),
             pl.col("Título") != "Título",
         )

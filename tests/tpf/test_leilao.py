@@ -8,7 +8,7 @@ import pytest
 
 import pyield as yd
 
-modulo_leiloes = importlib.import_module("pyield.tpf.leiloes")
+modulo_leiloes = importlib.import_module("pyield.tpf._leiloes_tn")
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 CAMINHO_JSON = DIRETORIO_DADOS / "leilao_20251023.json"
@@ -41,7 +41,7 @@ def test_pipeline_leiloes_por_data(monkeypatch):
         "_buscar_ptax",
         lambda *_, **__: DF_PTAX_REFERENCIA,
     )
-    resultado = modulo_leiloes.leiloes(data="23-10-2025")
+    resultado = yd.tpf.leiloes(data="23-10-2025")
     assert resultado.equals(pl.read_parquet(CAMINHO_PARQUET))
 
 
@@ -88,7 +88,7 @@ def test_leiloes_processa_colunas_novas(monkeypatch):
         ),
     )
 
-    resultado = modulo_leiloes.leiloes(data="16-06-2026")
+    resultado = yd.tpf.leiloes(data="16-06-2026")
     linha_lft = resultado.filter(
         pl.col("titulo") == "LFT",
         pl.col("data_vencimento") == dt.date(2032, 6, 1),
@@ -126,7 +126,7 @@ def test_leiloes_inicio_filtra_localmente(monkeypatch):
         ),
     )
 
-    resultado = modulo_leiloes.leiloes(inicio="24-10-2025")
+    resultado = yd.tpf.leiloes(inicio="24-10-2025")
 
     assert resultado["data_1v"].unique().to_list() == [dt.date(2025, 10, 28)]
 
@@ -148,7 +148,7 @@ def test_leiloes_pu_zerado_na_fonte(monkeypatch):
         modulo_leiloes, "_buscar_ptax", lambda *_, **__: DF_PTAX_REFERENCIA
     )
 
-    linha = modulo_leiloes.leiloes(data="23-10-2025").row(0, named=True)
+    linha = yd.tpf.leiloes(data="23-10-2025").row(0, named=True)
     pu_calculado = registro["financeiro_aceito"] / registro["quantidade_aceita"]
 
     assert linha["pu_minimo"] is None
@@ -161,10 +161,24 @@ def test_leiloes_pu_zerado_na_fonte(monkeypatch):
 
 def test_leiloes_rejeita_modos_temporais_ambiguos():
     with pytest.raises(ValueError, match="data não pode ser combinado"):
-        modulo_leiloes.leiloes(data="23-10-2025", inicio="01-10-2025")
+        yd.tpf.leiloes(data="23-10-2025", inicio="01-10-2025")
 
     with pytest.raises(ValueError, match="fim só pode ser usado"):
-        modulo_leiloes.leiloes(fim="23-10-2025")
+        yd.tpf.leiloes(fim="23-10-2025")
 
     with pytest.raises(ValueError, match="inicio deve ser menor"):
-        modulo_leiloes.leiloes(inicio="24-10-2025", fim="23-10-2025")
+        yd.tpf.leiloes(inicio="24-10-2025", fim="23-10-2025")
+
+
+def test_leiloes_rejeita_chave_obrigatoria_ausente(monkeypatch):
+    """Chave obrigatória ausente na API deve gerar erro, não coluna nula."""
+    registros = json.loads(CAMINHO_JSON.read_bytes())
+    sem_vencimento = [
+        {k: v for k, v in r.items() if k != "vencimento"} for r in registros
+    ]
+    monkeypatch.setattr(
+        modulo_leiloes, "_buscar_dados_leiloes", lambda *_, **__: sem_vencimento
+    )
+
+    with pytest.raises(ValueError, match=r"chaves obrigatórias: \['vencimento'\]"):
+        yd.tpf.leiloes(data="23-10-2025")

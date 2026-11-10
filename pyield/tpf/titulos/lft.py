@@ -356,18 +356,6 @@ def rentabilidade_expr(
     return (fator_lft * fator_di - 1) / (fator_di - 1)
 
 
-def _calcular_pu(
-    vna: float | Decimal,
-    cotacao: float | Decimal,
-) -> Decimal:
-    """Calcula o preço unitário da LFT a partir do VNA e da cotação."""
-    if any_is_empty(vna, cotacao):
-        return Decimal("NaN")
-    vna_decimal = truncar_decimal(vna, 6)
-    cotacao_decimal = truncar_decimal(cotacao, 4)
-    return truncar_decimal(vna_decimal * cotacao_decimal / BASE_COTACAO, 6)
-
-
 def pu(
     vna: float | Decimal,
     cotacao: float | Decimal,
@@ -410,7 +398,7 @@ def pu(
         >>> lft.pu(15785.324502, 99.9291)
         Decimal('15774.132706')
     """
-    return _calcular_pu(vna, cotacao)
+    return _utils.pu_por_vna(vna, cotacao)
 
 
 __all__ = [

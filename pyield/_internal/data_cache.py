@@ -1,5 +1,4 @@
 import functools
-import logging
 from enum import Enum
 from typing import Literal
 
@@ -10,18 +9,12 @@ from pyield._internal.retry import requisitar
 from pyield.relogio import agora
 
 URL_BASE = "https://github.com/crdcj/pyield-data/releases/latest/download"
-registro = logging.getLogger(__name__)
 
 
 # Estrutura interna única — usuário não vê isso
 class _Dataset(Enum):
-    TPF = ("anbima_tpf.parquet", "data_referencia", "TPF (ANBIMA)")
-    FUTURO = ("b3_futures.parquet", "data_referencia", "Futuro (B3)")
-
-    def __init__(self, nome_arquivo: str, coluna_data: str, descricao: str):
-        self.nome_arquivo = nome_arquivo
-        self.coluna_data = coluna_data
-        self.descricao = descricao
+    TPF = "anbima_tpf.parquet"
+    FUTURO = "b3_futures.parquet"
 
 
 type IdDataset = Literal["tpf", "futuro"]
@@ -32,9 +25,8 @@ def _obter_chave_data_hoje() -> str:
 
 
 def _validar_id_dataset(id_dataset: str) -> _Dataset:
-    dataset_normalizado = id_dataset.lower()
     try:
-        return _Dataset[dataset_normalizado.upper()]
+        return _Dataset[id_dataset.upper()]
     except KeyError as e:
         msg = f"id_dataset inválido: '{id_dataset}'. Valores aceitos: 'tpf', 'futuro'."
         raise ValueError(msg) from e
@@ -58,14 +50,7 @@ def _carregar_arquivo_github(url_arquivo: str) -> pl.DataFrame:
 def _obter_dataset_com_ttl(id_dataset: str, chave_data: str) -> pl.DataFrame:
     _ = chave_data
     config = _validar_id_dataset(id_dataset)
-    url_completa = f"{URL_BASE}/{config.nome_arquivo}"
-    try:
-        return _carregar_arquivo_github(url_completa)
-    except Exception:
-        registro.exception(
-            "Erro ao carregar dataset '%s' de %s", id_dataset, url_completa
-        )
-        raise
+    return _carregar_arquivo_github(f"{URL_BASE}/{config.value}")
 
 
 def obter_dataset_cacheado(id_dataset: IdDataset) -> pl.DataFrame:

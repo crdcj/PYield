@@ -6,7 +6,7 @@ import polars as pl
 
 from pyield._internal.excel import ler_sem_cabecalho
 
-from ._common import parsear_periodo
+from ._common import obter_periodos_mensais
 
 _LINHA_PERIODOS = 2
 _LINHA_INICIO_DADOS = _LINHA_PERIODOS + 1
@@ -82,13 +82,7 @@ def estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
     """Lê a aba ``1.3`` do Excel e retorna DataFrame longo."""
     df_bruto = ler_sem_cabecalho(conteudo_excel, "1.3")
 
-    periodos_raw = [str(p) for p in df_bruto.row(_LINHA_PERIODOS)[1:] if p is not None]
-
-    datas_e_indices = [
-        (i, data)
-        for i, periodo in enumerate(periodos_raw)
-        if (data := parsear_periodo(periodo)) is not None
-    ]
+    datas_e_indices = obter_periodos_mensais(df_bruto)
     indices_mensais = [i for i, _ in datas_e_indices]
     datas_mensais = [data for _, data in datas_e_indices]
 

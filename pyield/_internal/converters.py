@@ -61,6 +61,8 @@ def converter_datas_expr(expr: pl.Expr | str) -> pl.Expr:
         expr_str.str.to_date(format="%Y-%m-%d", strict=False),
         expr_str.str.to_date(format="%Y-%m-%d %H:%M:%S", strict=False),
         expr_str.str.to_date(format="%Y-%m-%d %H:%M:%S%.f", strict=False),
+        # Datetime com fuso (ex.: relogio.agora()) mantém a data local.
+        expr_str.str.to_date(format="%Y-%m-%d %H:%M:%S%.f%z", strict=False),
     )
 
 

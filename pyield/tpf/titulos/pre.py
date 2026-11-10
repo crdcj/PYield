@@ -60,11 +60,13 @@ def premios_pre(data: DateLike) -> pl.DataFrame:
         "titulo", "data_vencimento", "taxa_indicativa"
     )
     if df.is_empty():
-        return df.select(
-            pl.lit("").alias("titulo"),
-            pl.lit(None, dtype=pl.Date).alias("data_vencimento"),
-            pl.lit(None, dtype=pl.Float64).alias("premio"),
-        ).clear()
+        return pl.DataFrame(
+            schema={
+                "titulo": pl.String,
+                "data_vencimento": pl.Date,
+                "premio": pl.Float64,
+            }
+        )
     df = _utils.adicionar_taxa_di(df, data)
     return (
         df.with_columns(premio=pl.col("taxa_indicativa") - pl.col("taxa_di"))
@@ -154,16 +156,8 @@ def curva_pre(data: DateLike) -> pl.DataFrame:
             incluir_cupons=False,
         )
 
-        ltn_mask = ~df_ltn["data_vencimento"].is_in(
-            df_spots["data_vencimento"].to_list()
-        )
-        ltn_not_in_ntnf = df_ltn.filter(ltn_mask)
-
-        if not ltn_not_in_ntnf.is_empty():
-            ltn_subset = _processar_ltn_adicionais(data, ltn_not_in_ntnf)
-            df = pl.concat([df_spots, ltn_subset])
-        else:
-            df = df_spots
+        ltn_fora_ntnf = df_ltn.join(df_spots, on="data_vencimento", how="anti")
+        df = pl.concat([df_spots, _processar_ltn_adicionais(data, ltn_fora_ntnf)])
 
     _validar_resultado_final(df)
     return df.sort("data_vencimento")
@@ -187,7 +181,7 @@ def _processar_ltn_adicionais(
 def _validar_resultado_final(df: pl.DataFrame) -> None:
     """Valida o DataFrame final combinado."""
     if df["dias_uteis"].is_null().any():
-        raise ValueError("Resultado final contém NaN na coluna dias_uteis")
+        raise ValueError("Resultado final contém nulos na coluna dias_uteis")
 
     if df["taxa_zero"].is_null().any():
-        raise ValueError("Resultado final contém NaN na coluna taxa_zero")
+        raise ValueError("Resultado final contém nulos na coluna taxa_zero")

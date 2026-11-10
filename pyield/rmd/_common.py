@@ -3,6 +3,8 @@
 import datetime as dt
 import re
 
+import polars as pl
+
 _MESES_PT = {
     "Jan": 1,
     "Fev": 2,
@@ -19,6 +21,7 @@ _MESES_PT = {
 }
 
 _PADRAO_ESPACOS = re.compile(r"\s+")
+_LINHA_PERIODOS = 2
 
 
 def parsear_periodo(periodo: str) -> dt.date | None:
@@ -39,3 +42,16 @@ def limpar_rotulo(valor: object) -> str:
     """Remove espaços e notas de rodapé do rótulo lido do Excel."""
     texto = str(valor).replace("¹", "").replace("²", "").strip()
     return _PADRAO_ESPACOS.sub(" ", texto)
+
+
+def obter_periodos_mensais(df_bruto: pl.DataFrame) -> list[tuple[int, dt.date]]:
+    """Extrai pares (índice da coluna de dados, data) dos períodos mensais.
+
+    O índice é relativo às colunas de dados, sem a coluna de rótulos. Células
+    vazias são ignoradas sem deslocar os índices das colunas seguintes.
+    """
+    return [
+        (i, data)
+        for i, periodo in enumerate(df_bruto.row(_LINHA_PERIODOS)[1:])
+        if periodo is not None and (data := parsear_periodo(str(periodo))) is not None
+    ]

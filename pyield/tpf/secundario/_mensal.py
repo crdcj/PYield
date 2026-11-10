@@ -11,7 +11,7 @@ import polars.selectors as ps
 import requests
 
 from pyield import relogio
-from pyield._internal.br_numbers import float_br
+from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.converters import converter_datas
 from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike, any_is_empty
@@ -142,13 +142,11 @@ def _processar_df_mensal(df: pl.DataFrame) -> pl.DataFrame:
         if "QUANT NEG COM CORRETAGEM" in df.columns
         else pl.lit(None, dtype=pl.Int64)
     )
+    quantidade = pl.col("QUANT NEGOCIADA").cast(pl.Int64)
+    pu_medio = float_br("PU MED")
 
     return (
         df.with_columns(ps.string().str.strip_chars())
-        .with_columns(
-            quantidade=pl.col("QUANT NEGOCIADA").cast(pl.Int64),
-            pu_medio=float_br("PU MED"),
-        )
         .select(
             data_liquidacao=pl.col("DATA MOV").str.to_date("%d/%m/%Y", strict=False),
             titulo=pl.col("SIGLA"),
@@ -157,22 +155,20 @@ def _processar_df_mensal(df: pl.DataFrame) -> pl.DataFrame:
             data_emissao=pl.col("EMISSAO").str.to_date("%d/%m/%Y", strict=False),
             data_vencimento=pl.col("VENCIMENTO").str.to_date("%d/%m/%Y", strict=False),
             operacoes=pl.col("NUM DE OPER").cast(pl.Int64),
-            quantidade=pl.col("quantidade"),
+            quantidade=quantidade,
             pu_minimo=float_br("PU MIN"),
-            pu_medio=pl.col("pu_medio"),
+            pu_medio=pu_medio,
             pu_maximo=float_br("PU MAX"),
             pu_lastro=float_br("PU LASTRO"),
             valor_par=float_br("VALOR PAR"),
-            taxa_minima=float_br("TAXA MIN"),
-            taxa_media=float_br("TAXA MED"),
-            taxa_maxima=float_br("TAXA MAX"),
+            taxa_minima=taxa_br("TAXA MIN"),
+            taxa_media=taxa_br("TAXA MED"),
+            taxa_maxima=taxa_br("TAXA MAX"),
             operacoes_corretagem=operacoes_corretagem,
             quantidade_corretagem=quantidade_corretagem,
+            financeiro=(quantidade * pu_medio).round(2),
         )
         .sort(CHAVES_ORDENACAO)
-        .with_columns(
-            financeiro=(pl.col("quantidade") * pl.col("pu_medio")).round(2),
-        )
     )
 
 
@@ -229,9 +225,9 @@ def mensal(data: DateLike, extragrupo: bool = False) -> pl.DataFrame:
         * pu_maximo (Float64): preço unitário máximo.
         * pu_lastro (Float64): preço unitário de lastro.
         * valor_par (Float64): valor par do título.
-        * taxa_minima (Float64): taxa mínima.
-        * taxa_media (Float64): taxa média.
-        * taxa_maxima (Float64): taxa máxima.
+        * taxa_minima (Float64): taxa mínima em decimal (0.1215 = 12,15%).
+        * taxa_media (Float64): taxa média em decimal (0.1215 = 12,15%).
+        * taxa_maxima (Float64): taxa máxima em decimal (0.1215 = 12,15%).
         * operacoes_corretagem (Int64): operações com corretagem.
         * quantidade_corretagem (Int64): quantidade com corretagem.
         * financeiro (Float64): valor financeiro negociado

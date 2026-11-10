@@ -8,6 +8,7 @@ from pyield import du
 from pyield._internal.br_numbers import pct_para_decimal
 from pyield._internal.data_cache import obter_dataset_cacheado
 from pyield._internal.types import DateLike, DatesLike, any_is_empty
+from pyield.b3._contratos import normalizar_contrato
 from pyield.b3._validar_pregao import data_negociacao_valida
 from pyield.futuro import contratos as ct
 from pyield.fwd import forwards_expr
@@ -104,7 +105,7 @@ _RENOMEAR_COLUNAS_PR = {
 def _obter_cache_filtrado(contrato: str) -> pl.DataFrame:
     """Carrega o dataset PR cacheado e filtra por contrato."""
     return obter_dataset_cacheado("futuro").filter(
-        pl.col("TckrSymb").str.starts_with(contrato)
+        pl.col("TckrSymb").str.starts_with(normalizar_contrato(contrato))
     )
 
 
@@ -177,6 +178,7 @@ def enriquecer(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     if df.is_empty():
         return pl.DataFrame()
 
+    contrato = normalizar_contrato(contrato)
     df = df.rename(_RENOMEAR_COLUNAS_PR)
     df = df.filter(
         pl.col("codigo_negociacao").str.starts_with(contrato),
@@ -242,6 +244,7 @@ def historico(data: DateLike | DatesLike, contrato: str) -> pl.DataFrame:
             * taxa_ultima_oferta_compra (Float64): melhor taxa de compra
               (tomar; ask em PU) no fim do pregão.
             * taxa_ajuste (Float64): taxa de ajuste.
+            * preco_ajuste (Float64): preço de ajuste (PU).
 
         Colunas específicas:
             * dv01 (Float64): variação no preço para 1bp de taxa, apenas DI1.

@@ -147,7 +147,7 @@ def _adicionar_fatores_desconto(df: pl.DataFrame) -> pl.DataFrame:
     )
 
     df_desconto = (
-        pares.with_columns(taxa_di1=taxas.fill_nan(None))
+        pares.with_columns(taxa_di1=taxas)
         .with_columns(
             fator_desconto=(
                 (pl.col("dias_uteis") / 252 * (1 + pl.col("taxa_di1")).log()).exp()

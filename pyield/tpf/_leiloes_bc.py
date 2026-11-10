@@ -13,7 +13,7 @@ from pyield._internal import converters as cv
 from pyield._internal.br_numbers import float_br, taxa_br
 from pyield._internal.types import DateLike, DatesLike, any_is_empty
 from pyield.bc._olinda import buscar_csv, montar_url, parsear_csv
-from pyield.tpf.leiloes import _enriquecer, _validar_periodo
+from pyield.tpf._leiloes_tn import _enriquecer, _validar_periodo
 
 URL_BASE_API = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"  # noqa: E501
 
@@ -173,7 +173,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def leiloes_bcb(
+def leiloes_bc(
     *,
     data: DateLike | DatesLike | None = None,
     inicio: DateLike | None = None,
@@ -181,103 +181,8 @@ def leiloes_bcb(
 ) -> pl.DataFrame:
     """Busca resultados de leilões de TPFs no BCB.
 
-    Fonte: Banco Central do Brasil, disponível desde 12/11/2012. Alternativa a
-    ``yd.tpf.leiloes`` (Tesouro Nacional) para quando o Tesouro estiver
-    indisponível ou ainda não trouxer a 2ª volta. Recebe os mesmos parâmetros e
-    usa os mesmos nomes de colunas; colunas exclusivas de cada fonte ficam
-    ausentes na outra. Os resultados podem ser unidos com
-    ``pl.concat(..., how="diagonal")``.
-
-    Args:
-        data: Data ou sequência de datas do leilão. Padrão é ``None``.
-        inicio: Data inicial da consulta. Padrão é ``None``.
-        fim: Data final da consulta. Padrão é ``None``.
-
-    Returns:
-        DataFrame Polars com os leilões no período, ordenado por data, título e
-        vencimento. Sem filtros temporais, retorna o histórico completo.
-        Retorna DataFrame vazio se não houver dados.
-
-    Output Columns:
-        * data_1v (Date): data de realização do leilão.
-        * data_liquidacao_1v (Date): data de liquidação financeira da 1ª volta.
-        * numero_edital (Int64): número do edital do leilão.
-        * tipo_leilao (String): ``"Venda"`` ou ``"Compra"``.
-        * tipo_publico (String): público do leilão (exclusiva do BCB).
-        * titulo (String): LTN, LFT, NTN-B ou NTN-F.
-        * codigo_selic (Int64): código do título no Selic (exclusiva do BCB).
-        * data_vencimento (Date): data de vencimento do título.
-        * dias_uteis (Int64): dias úteis entre liquidação e vencimento.
-        * dias_corridos (Int64): dias corridos entre liquidação e vencimento.
-        * duration (Float64): duration de Macaulay em anos.
-        * prazo_medio (Float64): maturidade média em anos.
-        * quantidade_ofertada_1v (Int64): quantidade ofertada na 1ª volta.
-        * quantidade_ofertada_2v (Int64): quantidade ofertada na 2ª volta.
-        * quantidade_aceita_1v (Int64): quantidade aceita na 1ª volta.
-        * quantidade_aceita_2v (Int64): quantidade aceita na 2ª volta.
-        * quantidade_aceita_total (Int64): quantidade aceita total.
-        * quantidade_liquidada_1v (Int64): quantidade liquidada na 1ª volta.
-        * quantidade_liquidada_2v (Int64): quantidade liquidada na 2ª volta.
-        * financeiro_ofertado_1v (Float64): quantidade ofertada na 1ª volta
-            vezes ``pu_medio``.
-        * financeiro_ofertado_2v (Float64): quantidade ofertada na 2ª volta
-            vezes ``pu_medio``.
-        * financeiro_ofertado_total (Float64): financeiro ofertado total.
-        * financeiro_aceito_1v (Float64): quantidade aceita na 1ª volta vezes
-            ``pu_medio``.
-        * financeiro_aceito_2v (Float64): quantidade aceita na 2ª volta vezes
-            ``pu_medio``.
-        * financeiro_aceito_total (Float64): financeiro aceito total.
-        * colocacao_1v (Float64): taxa de colocação da 1ª volta.
-        * colocacao_2v (Float64): taxa de colocação da 2ª volta.
-        * colocacao_total (Float64): taxa de colocação total.
-        * dv01_1v (Float64): DV01 da 1ª volta em reais.
-        * dv01_2v (Float64): DV01 da 2ª volta em reais.
-        * dv01_total (Float64): DV01 total em reais.
-        * ptax (Float64): PTAX usada na conversão para dólar.
-        * dv01_1v_usd (Float64): DV01 da 1ª volta em dólar.
-        * dv01_2v_usd (Float64): DV01 da 2ª volta em dólar.
-        * dv01_total_usd (Float64): DV01 total em dólar.
-        * pu_minimo (Float64): PU de corte.
-        * pu_medio (Float64): PU médio aceito.
-        * taxa_media (Float64): taxa média aceita.
-        * taxa_maxima (Float64): taxa de corte.
-
-    Notes:
-        Diferenças em relação ao Tesouro Nacional:
-
-        - O BCB não publica ``data_liquidacao_2v``, ``tipo_ocorrencia``,
-          ``benchmark``, ``quantidade_bcb``, ``financeiro_bcb`` nem
-          ``tipo_pu_medio``.
-        - O financeiro publicado pelo BCB é arredondado a R$ 100 mil. Por
-          isso, os financeiros são calculados como quantidade vezes
-          ``pu_medio``, o que reproduz o Tesouro na 1ª volta; na 2ª volta, a
-          diferença típica é inferior a 0,1%.
-        - Na 2ª volta, a quantidade ofertada do BCB é a nominal do edital,
-          enquanto o Tesouro pode informar valores ligeiramente menores.
-        - Até 10/06/2024, o BCB publica cotação, e não PU, para LFT e NTN-B.
-          Nesses casos, ``pu_medio`` é estimado pelo financeiro dividido pela
-          quantidade aceita (sujeito ao arredondamento acima) e
-          ``pu_minimo`` é nulo.
-
-        ``data`` não pode ser combinado com ``inicio`` ou ``fim``. ``fim`` só
-        pode ser usado junto com ``inicio``.
-
-    Examples:
-        >>> df = yd.tpf.leiloes_bcb(data="19-08-2025")
-        >>> df.select("titulo", "quantidade_aceita_total", "pu_medio", "taxa_media")
-        shape: (5, 4)
-        ┌────────┬─────────────────────────┬──────────────┬────────────┐
-        │ titulo ┆ quantidade_aceita_total ┆ pu_medio     ┆ taxa_media │
-        │ ---    ┆ ---                     ┆ ---          ┆ ---        │
-        │ str    ┆ i64                     ┆ f64          ┆ f64        │
-        ╞════════╪═════════════════════════╪══════════════╪════════════╡
-        │ LFT    ┆ 150000                  ┆ 17149.069465 ┆ 0.000636   │
-        │ LFT    ┆ 751003                  ┆ 17072.592044 ┆ 0.001068   │
-        │ NTN-B  ┆ 300759                  ┆ 4299.806542  ┆ 0.08167    │
-        │ NTN-B  ┆ 500542                  ┆ 4143.249763  ┆ 0.07748    │
-        │ NTN-B  ┆ 500000                  ┆ 4021.3613    ┆ 0.07323    │
-        └────────┴─────────────────────────┴──────────────┴────────────┘
+    Exposta por ``yd.tpf.leiloes(fonte="bc")``, cuja docstring documenta o
+    contrato e as diferenças em relação ao Tesouro Nacional.
     """
     _validar_periodo(data, inicio, fim)
 
@@ -287,7 +192,10 @@ def leiloes_bcb(
             return pl.DataFrame()
         convertidas = cv.converter_datas(data)
         if isinstance(convertidas, pl.Series):
-            datas = sorted(convertidas.drop_nulls().to_list())
+            if convertidas.null_count() > 0:
+                msg = "data deve conter apenas datas válidas."
+                raise ValueError(msg)
+            datas = sorted(convertidas.to_list())
         else:
             datas = [convertidas]
         data_inicio, data_fim = datas[0], datas[-1]
