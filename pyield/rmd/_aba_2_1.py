@@ -4,10 +4,7 @@ import polars as pl
 
 from pyield._internal.excel import ler_sem_cabecalho
 
-from ._common import limpar_rotulo, obter_periodos_mensais
-
-_LINHA_PERIODOS = 2
-_LINHA_INICIO_DADOS = _LINHA_PERIODOS + 1
+from ._common import LINHA_INICIO_DADOS, limpar_rotulo, obter_periodos_mensais
 
 # Rótulos (uppercase) que definem transições de estado hierárquico.
 # Valor: (detentor, tipo, categoria, pode_emitir)
@@ -28,7 +25,7 @@ _TRANSICOES: dict[str, tuple[str | None, str | None, str | None, bool]] = {
 def _montar_registros(df_bruto: pl.DataFrame) -> list[tuple[object, ...]]:
     """Converte o bloco hierárquico da aba em registros longos (somente folhas)."""
     periodos = obter_periodos_mensais(df_bruto)
-    linhas = df_bruto[_LINHA_INICIO_DADOS:]
+    linhas = df_bruto[LINHA_INICIO_DADOS:]
     detentor: str | None = None
     tipo: str | None = None
     categoria: str | None = None

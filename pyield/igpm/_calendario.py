@@ -82,8 +82,8 @@ def calendario(ano: int) -> pl.DataFrame:
         o mesmo esquema.
 
     Output Columns:
-        competencia (Date): Primeiro dia do mês da divulgação mensal do IGP-M.
-        data_divulgacao (Date): Data prevista pela FGV IBRE.
+        * competencia (Date): Primeiro dia do mês da divulgação mensal do IGP-M.
+        * data_divulgacao (Date): Data prevista pela FGV IBRE.
 
     Notes:
         Fonte: calendário de divulgação da FGV IBRE. Seleciona o IGP-M mensal

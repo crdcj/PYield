@@ -28,12 +28,13 @@ import polars as pl
 
 import pyield._internal.converters as conversores
 from pyield import du, interpolador
-from pyield._internal.numbers import truncar_decimal
+from pyield._internal.numbers import converter_taxa, truncar, truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 
 from . import _utils
 
 # Valores usados nos cálculos, em base 100, com 6 casas decimais
+ANO_VENCIMENTO_CUPOM_12 = 2031
 VALOR_CUPOM_2031 = 5.830052
 VALOR_FINAL_2031 = 105.830052
 
@@ -58,21 +59,18 @@ _SCHEMA_DADOS = {
 }
 
 
-def _obter_valor_cupom(vencimento: dt.date) -> float:
-    if vencimento.year == 2031:  # noqa
-        return VALOR_CUPOM_2031
-    return VALOR_CUPOM
-
-
-def _obter_valor_final(vencimento: dt.date) -> float:
-    if vencimento.year == 2031:  # noqa
-        return VALOR_FINAL_2031
-    return VALOR_FINAL
+def _valores_fluxo(vencimento: dt.date) -> tuple[float, float]:
+    """Retorna o valor do cupom e o do pagamento final do título."""
+    if vencimento.year == ANO_VENCIMENTO_CUPOM_12:
+        return VALOR_CUPOM_2031, VALOR_FINAL_2031
+    return VALOR_CUPOM, VALOR_FINAL
 
 
 def dados(data: DateLike) -> pl.DataFrame:
     """
     Busca as taxas indicativas de NTN-C para a data de referência.
+
+    Fonte: ANBIMA (taxas indicativas) e B3 (ajustes do DI Futuro).
 
     Args:
         data: Data da consulta.
@@ -127,8 +125,9 @@ def datas_pagamento(
     Gera todas as datas de pagamento entre liquidação e vencimento.
 
     Os pagamentos são semestrais. No vencimento, o fluxo inclui o último cupom
-    e a amortização do principal. A NTN-C é definida pela data de vencimento. As
-    datas são contratuais e não são ajustadas para dias úteis.
+    e a amortização do principal. As datas de cupom retrocedem de 6 em 6 meses
+    a partir do vencimento. As datas são contratuais e não são ajustadas para
+    dias úteis.
 
     Args:
         data_liquidacao: Data de liquidação (exclusiva).
@@ -214,25 +213,14 @@ def fluxos_caixa(
         schema={"data_pagamento": pl.Date, "valor_pagamento": pl.Float64}
     )
 
-    if any_is_empty(data_liquidacao, data_vencimento):
-        return vazio
-
-    # Valida e normaliza datas
-    liquidacao = conversores.converter_datas(data_liquidacao)
     vencimento = conversores.converter_datas(data_vencimento)
+    serie_datas_pagamento = datas_pagamento(data_liquidacao, vencimento)
 
-    # Obtém as datas de pagamento entre liquidação e vencimento
-    serie_datas_pagamento = datas_pagamento(liquidacao, vencimento)
-
-    # Retorna DataFrame vazio se não houver pagamentos (liquidação >= vencimento)
-    if serie_datas_pagamento.is_empty():
+    # Sem pagamentos: entrada ausente ou liquidação >= vencimento
+    if vencimento is None or serie_datas_pagamento.is_empty():
         return vazio
 
-    # Obtém os valores corretos de cupom e final
-    valor_cupom = _obter_valor_cupom(vencimento)
-    valor_final = _obter_valor_final(vencimento)
-
-    # Monta DataFrame com fluxos de caixa
+    valor_cupom, valor_final = _valores_fluxo(vencimento)
     return pl.DataFrame({"data_pagamento": serie_datas_pagamento}).with_columns(
         valor_pagamento=pl.when(pl.col("data_pagamento") == vencimento)
         .then(valor_final)
@@ -257,7 +245,9 @@ def cotacao(
             forma percentual), descartando as casas excedentes sem arredondar.
 
     Returns:
-        Decimal: Cotação em base 100, truncada em 4 casas decimais.
+        Decimal: Cotação em base 100, truncada em 4 casas decimais. Retorna
+            ``Decimal("NaN")`` para entradas ausentes ou quando não há
+            pagamentos após a liquidação.
 
     Notes:
         A cotação teórica em base 100 é:
@@ -300,7 +290,7 @@ def cotacao(
         >>> ntnc.cotacao("21-03-2025", "01-01-2031", "6.7626%")
         Decimal('126.4958')
     """
-    taxa = _utils.converter_taxa(taxa)
+    taxa = converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return Decimal("NaN")
     taxa = _utils.normalizar_taxa_precificacao(taxa)
@@ -311,7 +301,7 @@ def cotacao(
 
     valores_fluxo = df_fluxos["valor_pagamento"]
     dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
-    anos_uteis = _utils.truncar(dias_uteis / 252, 14)
+    anos_uteis = truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa) ** anos_uteis
     # Calcula o valor presente de cada fluxo com arredondamento STN
     vp = (valores_fluxo / fatores_desconto).round(10)
@@ -371,9 +361,10 @@ def cotacao_curva_zero(
     Args:
         data_liquidacao: Data de liquidação, exclusiva para seleção dos fluxos.
         data_vencimento: Data de vencimento da NTN-C.
-        curva_zero: DataFrame com ``dias_uteis`` (prazos inteiros positivos,
-            únicos) e ``taxa_zero`` (taxas anuais efetivas, em decimal,
-            na base de 252 dias úteis, finitas e maiores que -1).
+        curva_zero: DataFrame com ``dias_uteis`` (prazos inteiros positivos;
+            prazo repetido só é aceito com a mesma taxa) e ``taxa_zero``
+            (taxas anuais efetivas, em decimal, na base de 252 dias úteis,
+            finitas e maiores que -1).
             A curva deve conter ao menos um vértice; a ordem é indiferente.
 
     Returns:
@@ -476,7 +467,7 @@ def taxa_curva_zero(
         Usa datas, interpolação e precisão de ``cotacao_curva_zero``. Resolve
         por bisseção a taxa única que reproduz sua cotação, sem truncar a taxa
         durante a busca. Não inverte um PU nem a cotação truncada de ``cotacao``.
-        O intervalo é delimitado pelas menores e maiores taxas interpoladas
+        O intervalo é delimitado pela menor e pela maior taxa interpolada
         dos fluxos. A busca para por erro de cotação zero ou meia largura do
         intervalo inferior a 1e-12, com limite de 100 iterações.
         A escolha da curva e eventuais spreads ou pisos ficam com o consumidor.
@@ -610,7 +601,8 @@ def taxa(
         a atualização pelo IGP-M é representada pelo VNA.
 
     Examples:
-        Exibe as taxas em formato decimal:
+        A taxa é retornada em formato decimal; multiplique por 100 para exibi-la
+        em percentual:
 
         >>> from pyield import ntnc
         >>> ntnc.taxa("21-03-2025", "01-01-2031", 6598.913723, 8347.348705)
@@ -636,7 +628,7 @@ def taxa(
 def duration(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float | str,
+    taxa: float | Decimal | str,
 ) -> float:
     r"""
     Calcula a Macaulay duration da NTN-C em anos úteis.
@@ -678,10 +670,10 @@ def duration(
         >>> ntnc.duration("21-03-2025", "01-01-2031", "6.7626%")
         4.405363320448003
     """
-    if isinstance(taxa, str):
-        taxa = float(_utils.converter_taxa(taxa))
+    taxa = converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
+    taxa = float(taxa)
 
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
     if df_fluxos.is_empty():
@@ -790,7 +782,7 @@ def dv01(
         >>> ntnc.dv01("21-03-2025", "01-01-2031", "6.7626%", pu)
         3.4433825712157833
     """
-    taxa = _utils.converter_taxa(taxa)
+    taxa = converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu):
         return float("nan")
 
@@ -807,7 +799,7 @@ def dv01_expr(
 ) -> pl.Expr:
     """Cria expressão Polars para o DV01 da NTN-C.
 
-    O cálculo é aplicado linha a linha e reprifica o PU informado para um
+    O cálculo é aplicado linha a linha e reprecifica o PU informado para um
     aumento de 1 bp na taxa.
 
     Args:

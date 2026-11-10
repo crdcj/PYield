@@ -145,7 +145,7 @@ def indice(data: DateLike | None) -> Decimal:
         >>> yd.igpm.indice("01-06-1989")
         Decimal('NaN')
     """
-    if data is None or any_is_empty(data):
+    if any_is_empty(data):
         return Decimal("NaN")
     df = indice_serie(data, data)
     if df.is_empty():

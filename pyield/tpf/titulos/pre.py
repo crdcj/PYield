@@ -1,9 +1,11 @@
+"""Curva e prêmios dos títulos prefixados (LTN e NTN-F)."""
+
 import polars as pl
 
 from pyield import du
 from pyield._internal.types import DateLike
 
-from . import _utils
+from . import _utils, ntnf
 
 
 def premios_pre(data: DateLike) -> pl.DataFrame:
@@ -89,7 +91,7 @@ def curva_pre(data: DateLike) -> pl.DataFrame:
 
     Returns:
         DataFrame com a curva PRE para a data solicitada. Retorna DataFrame
-        vazio se não houver dados de LTN disponíveis.
+        vazio se não houver dados de LTN nem de NTN-F.
 
     Output Columns:
         * data_vencimento (Date): data de vencimento do vértice.
@@ -123,8 +125,6 @@ def curva_pre(data: DateLike) -> pl.DataFrame:
         │ 2035-01-01      ┆ 2390       ┆ 14.106777 │
         └─────────────────┴────────────┴───────────┘
     """
-    from pyield.tpf.titulos import ntnf  # noqa: PLC0415
-
     df_ltn = _utils.obter_tpf(data, "LTN").select("data_vencimento", "taxa_indicativa")
     df_ntnf = _utils.obter_tpf(data, "NTN-F").select(
         "data_vencimento", "taxa_indicativa"
@@ -145,9 +145,9 @@ def curva_pre(data: DateLike) -> pl.DataFrame:
         )
 
     if df_ntnf.is_empty():
-        df = _processar_ltn_adicionais(data, df_ltn)
+        df = _curva_ltn(data, df_ltn)
     else:
-        df_spots = ntnf.taxas_zero(
+        df_zero = ntnf.taxas_zero(
             data_liquidacao=data,
             vencimentos_ltn=df_ltn["data_vencimento"],
             taxas_ltn=df_ltn["taxa_indicativa"],
@@ -156,24 +156,20 @@ def curva_pre(data: DateLike) -> pl.DataFrame:
             incluir_cupons=False,
         )
 
-        ltn_fora_ntnf = df_ltn.join(df_spots, on="data_vencimento", how="anti")
-        df = pl.concat([df_spots, _processar_ltn_adicionais(data, ltn_fora_ntnf)])
+        df_ltn_fora_ntnf = df_ltn.join(df_zero, on="data_vencimento", how="anti")
+        df = pl.concat([df_zero, _curva_ltn(data, df_ltn_fora_ntnf)])
 
     _validar_resultado_final(df)
     return df.sort("data_vencimento")
 
 
-def _processar_ltn_adicionais(
-    data_referencia: DateLike,
-    ltn_nao_em_ntnf: pl.DataFrame,
-) -> pl.DataFrame:
-    """Processa vencimentos de LTN fora do bootstrap de NTN-F."""
-    dias_uteis = du.contar(data_referencia, ltn_nao_em_ntnf["data_vencimento"])
+def _curva_ltn(data: DateLike, df_ltn: pl.DataFrame) -> pl.DataFrame:
+    """Monta vértices da curva com LTNs, cuja taxa indicativa já é taxa zero."""
     return pl.DataFrame(
         {
-            "data_vencimento": ltn_nao_em_ntnf["data_vencimento"],
-            "dias_uteis": dias_uteis,
-            "taxa_zero": ltn_nao_em_ntnf["taxa_indicativa"],
+            "data_vencimento": df_ltn["data_vencimento"],
+            "dias_uteis": du.contar(data, df_ltn["data_vencimento"]),
+            "taxa_zero": df_ltn["taxa_indicativa"],
         }
     )
 

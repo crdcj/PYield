@@ -75,14 +75,11 @@ def _chamar_api(url_api: str) -> list[dict[str, str]]:
     return resposta.json()
 
 
-def _montar_url_intervalo(
-    serie: SerieSGS, inicio: dt.date, fim: dt.date | None = None
-) -> str:
-    inicio_str = inicio.strftime("%d/%m/%Y")
-    url = f"{URL_BASE}{serie.value}/dados?formato=json&dataInicial={inicio_str}"
-    if fim:
-        url += f"&dataFinal={fim.strftime('%d/%m/%Y')}"
-    return url
+def _montar_url_intervalo(serie: SerieSGS, inicio: dt.date, fim: dt.date) -> str:
+    return (
+        f"{URL_BASE}{serie.value}/dados?formato=json"
+        f"&dataInicial={inicio:%d/%m/%Y}&dataFinal={fim:%d/%m/%Y}"
+    )
 
 
 def _montar_url_ultimos(serie: SerieSGS, n: int) -> str:
@@ -169,14 +166,14 @@ def _buscar_serie(
 
 # ── Helpers de transformação ─────────────────────────────────────────
 
-ESQUEMA_PTAX = {"data": pl.Date, "cotacao": _TIPO_PTAX}
-
 
 def _converter_para_taxa(df: pl.DataFrame, *, anualizada: bool = True) -> pl.DataFrame:
-    """Converte valor percentual para decimal e renomeia para 'taxa'."""
+    """Converte valor percentual para decimal e renomeia para 'taxa'.
+
+    O DataFrame bruto vazio já carrega o esquema, então o resultado vazio
+    mantém as colunas e os tipos de saída.
+    """
     tipo = _TIPO_TAXA_ANUAL if anualizada else _TIPO_TAXA_DIARIA
-    if df.is_empty():
-        return pl.DataFrame(schema={"data": pl.Date, "taxa": tipo})
     return df.select(
         "data",
         taxa=(pl.col("valor").cast(tipo) / 100).cast(tipo),
@@ -250,14 +247,8 @@ def igpm_taxa_serie(
         inicio = converter_datas(inicio).replace(day=1)
         fim = converter_datas(fim).replace(day=1) if fim is not None else None
     return (
-        _buscar_serie(SerieSGS.IGPM, inicio, fim, ultimos)
-        .select(
-            periodo=pl.col("data").dt.strftime("%Y%m").cast(pl.Int64),
-            # A divisão decimal do Polars preserva a escala do numerador.
-            taxa=(pl.col("valor").cast(pl.Decimal(precision=18, scale=4)) / 100).cast(
-                pl.Decimal(precision=18, scale=4)
-            ),
-        )
+        _converter_para_taxa(_buscar_serie(SerieSGS.IGPM, inicio, fim, ultimos))
+        .select(periodo=pl.col("data").dt.strftime("%Y%m").cast(pl.Int64), taxa="taxa")
         .sort("periodo")
     )
 
@@ -285,10 +276,7 @@ def igpm_taxa(data: DateLike) -> Decimal:
     """
     if any_is_empty(data):
         return Decimal("NaN")
-    df = igpm_taxa_serie(data, data)
-    if df.is_empty():
-        return Decimal("NaN")
-    return df.item(0, "taxa")
+    return _extrair_escalar(igpm_taxa_serie(data, data), "taxa")
 
 
 # ── SELIC Over ───────────────────────────────────────────────────────
@@ -309,9 +297,9 @@ def selic_over_serie(
 
     Args:
         inicio: Data inicial.
-        fim: Data final. Se ``None``, usa a data mais recente.
-        ultimos: Número de registros mais recentes a retornar.
-            Mutuamente exclusivo com ``inicio``/``fim``.
+        fim: Data final. Se ``None``, usa a data de hoje.
+        ultimos: Número de registros mais recentes a retornar. Se informado,
+            tem prioridade sobre ``inicio`` e ``fim``.
         anualizada: Se ``True``, retorna a taxa ao ano, em base 252 dias úteis.
             Se ``False``, retorna a taxa ao dia útil publicada pela fonte.
 
@@ -319,8 +307,8 @@ def selic_over_serie(
         DataFrame com colunas data e taxa (decimal), ou DataFrame vazio.
 
     Output Columns:
-        data (pl.Date): Data de referência da observação.
-        taxa (pl.Decimal(18, 4) ou pl.Decimal(18, 8)): Taxa em decimal, ao ano
+        * data (Date): Data de referência da observação.
+        * taxa (Decimal(18, 4) ou Decimal(18, 8)): Taxa em decimal, ao ano
             com escala 4 se ``anualizada=True`` ou ao dia útil com escala 8
             se ``anualizada=False``.
 
@@ -418,9 +406,9 @@ def selic_meta_serie(
 
     Args:
         inicio: Data inicial.
-        fim: Data final. Se ``None``, usa a data mais recente.
-        ultimos: Número de registros mais recentes a retornar.
-            Mutuamente exclusivo com ``inicio``/``fim``.
+        fim: Data final. Se ``None``, usa a data de hoje.
+        ultimos: Número de registros mais recentes a retornar. Se informado,
+            tem prioridade sobre ``inicio`` e ``fim``.
 
     Returns:
         DataFrame com colunas data e taxa (decimal), ou DataFrame vazio.
@@ -502,9 +490,9 @@ def ptax_serie(
 
     Args:
         inicio: Data inicial.
-        fim: Data final. Se ``None``, usa a data mais recente.
-        ultimos: Número de registros mais recentes a retornar.
-            Mutuamente exclusivo com ``inicio``/``fim``.
+        fim: Data final. Se ``None``, usa a data de hoje.
+        ultimos: Número de registros mais recentes a retornar. Se informado,
+            tem prioridade sobre ``inicio`` e ``fim``.
 
     Returns:
         DataFrame com colunas data e cotacao, ou DataFrame vazio
@@ -539,10 +527,7 @@ def ptax_serie(
         │ 2025-04-25 ┆ 5.6846        │
         └────────────┴───────────────┘
     """
-    df = _buscar_serie(SerieSGS.PTAX_VENDA, inicio, fim, ultimos)
-    if df.is_empty():
-        return pl.DataFrame(schema=ESQUEMA_PTAX)
-    return df.select(
+    return _buscar_serie(SerieSGS.PTAX_VENDA, inicio, fim, ultimos).select(
         "data",
         cotacao=pl.col("valor").cast(_TIPO_PTAX),
     )
@@ -608,8 +593,8 @@ def di_over_serie(
         DataFrame com as taxas em decimal, ou vazio se não houver dados.
 
     Output Columns:
-        data (pl.Date): Data de referência da observação.
-        taxa (pl.Decimal(18, 4) ou pl.Decimal(18, 8)): Taxa em decimal, ao ano
+        * data (Date): Data de referência da observação.
+        * taxa (Decimal(18, 4) ou Decimal(18, 8)): Taxa em decimal, ao ano
             com escala 4 se ``anualizada=True`` ou ao dia útil com escala 8
             se ``anualizada=False``.
 

@@ -18,10 +18,6 @@ ESQUEMA_SAIDA = {
 }
 
 
-def _df_vazio() -> pl.DataFrame:
-    return pl.DataFrame(schema=ESQUEMA_SAIDA)
-
-
 def _buscar_dealers() -> dict:
     """Busca os dados brutos de dealers na API do Tesouro Nacional."""
     resposta = requisitar(requests.get, URL_API, timeout_leitura=10)
@@ -30,11 +26,8 @@ def _buscar_dealers() -> dict:
 
 def _parsear_dealers(dados: dict) -> pl.DataFrame:
     """Converte os registros da API em uma estrutura tabular inicial."""
-    registros = dados.get("registros", [])
-    if not registros:
-        return pl.DataFrame()
     return pl.from_dicts(
-        registros,
+        dados.get("registros") or [],
         schema={
             "INICIO_PERIODO": pl.String,
             "FIM_PERIODO": pl.String,
@@ -89,13 +82,10 @@ def dealers(data: DateLike | None = None) -> pl.DataFrame:
         [datetime.date(2026, 2, 10)]
     """
     if isinstance(data, str) and not data.strip():
-        return _df_vazio()
+        return pl.DataFrame(schema=ESQUEMA_SAIDA)
     data_referencia = relogio.hoje() if data is None else cv.converter_datas(data)
 
-    df = _parsear_dealers(_buscar_dealers())
-    if df.is_empty():
-        return _df_vazio()
-
-    return _processar_dealers(df).filter(
+    # Sem registros, o parse e o processamento já devolvem o esquema de saída.
+    return _processar_dealers(_parsear_dealers(_buscar_dealers())).filter(
         pl.lit(data_referencia).is_between("inicio_periodo", "fim_periodo")
     )

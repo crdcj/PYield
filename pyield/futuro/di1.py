@@ -151,8 +151,9 @@ def interpolar_taxas(
         abaixo as multiplicam por 100 apenas para facilitar a leitura.
 
     Raises:
-        ValueError: Se ``datas_referencia`` e ``datas_vencimento`` forem ambos
-            array-like mas tiverem tamanhos diferentes.
+        polars.exceptions.ShapeError: Se ``datas_referencia`` e
+            ``datas_vencimento`` forem ambos array-like mas tiverem tamanhos
+            diferentes.
         ValueError: Se ``tipo_taxa`` não for ``"ajuste"`` ou ``"fechamento"``.
 
     Notes:
@@ -213,7 +214,7 @@ def interpolar_taxas(
         raise ValueError("tipo_taxa deve ser 'ajuste' ou 'fechamento'.")
 
     if any_is_empty(datas_referencia, datas_vencimento):
-        return pl.Series(dtype=pl.Float64)
+        return pl.Series("taxa_interpolada", dtype=pl.Float64)
 
     df_entrada = pl.DataFrame(
         data={"data_referencia": datas_referencia, "data_vencimento": datas_vencimento}
@@ -221,8 +222,6 @@ def interpolar_taxas(
         data_referencia=cv.converter_datas_expr("data_referencia"),
         data_vencimento=cv.converter_datas_expr("data_vencimento"),
     )
-    if df_entrada.is_empty():
-        return pl.Series(dtype=pl.Float64)
 
     # Carrega curva de DI para todas as datas únicas do alvo.
     datas_unicas = df_entrada["data_referencia"].drop_nulls().unique().sort().to_list()

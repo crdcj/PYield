@@ -6,10 +6,7 @@ import polars as pl
 
 from pyield._internal.excel import ler_sem_cabecalho
 
-from ._common import obter_periodos_mensais
-
-_LINHA_PERIODOS = 2
-_LINHA_INICIO_DADOS = _LINHA_PERIODOS + 1
+from ._common import LINHA_INICIO_DADOS, obter_periodos_mensais
 
 _TITULOS = ("LFT", "LTN", "NTN-B", "NTN-B1", "NTN-F", "NTN-C", "NTN-D", "Demais")
 _SECOES = {"I - EMISSÕES": "Emissões", "II - RESGATES": "Resgates"}
@@ -82,11 +79,11 @@ def estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
     """Lê a aba ``1.3`` do Excel e retorna DataFrame longo."""
     df_bruto = ler_sem_cabecalho(conteudo_excel, "1.3")
 
-    datas_e_indices = obter_periodos_mensais(df_bruto)
-    indices_mensais = [i for i, _ in datas_e_indices]
-    datas_mensais = [data for _, data in datas_e_indices]
+    periodos = obter_periodos_mensais(df_bruto)
+    indices_mensais = [i for i, _ in periodos]
+    datas_mensais = [data for _, data in periodos]
 
-    df_dados = df_bruto[_LINHA_INICIO_DADOS:]
+    df_dados = df_bruto[LINHA_INICIO_DADOS:]
     df_dados = df_dados.filter(df_dados[:, 0].is_not_null())
 
     eventos = _classificar_categorias([str(c) for c in df_dados[:, 0].to_list()])
@@ -95,5 +92,6 @@ def estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
     return (
         _montar_registros(eventos, datas_mensais, matriz)
         .with_columns(valor=pl.col("valor").mul(1_000_000).round(2))
-        .filter(pl.col("valor").is_not_null(), pl.col("valor") != 0)
+        # Valores nulos também são descartados pelo predicado
+        .filter(pl.col("valor") != 0)
     )

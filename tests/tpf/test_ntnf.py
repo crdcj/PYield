@@ -1,5 +1,6 @@
 import datetime as dt
 import inspect
+import math
 from decimal import Decimal
 
 import polars as pl
@@ -90,3 +91,31 @@ def test_taxas_zero_retorna_vazio_sem_vertices_futuros() -> None:
 
 def test_pu_trunca_taxa_percentual_excedente() -> None:
     assert ntnf.pu("21-05-2008", "01-01-2014", "13.6600009%") == Decimal("903.075616")
+
+
+def test_premio_limpo_e_nan_alem_do_ultimo_vertice_di() -> None:
+    """Sem extrapolação da curva DI, pagamento além do último vértice gera NaN."""
+    premio = ntnf.premio_limpo(
+        data_liquidacao="23-08-2024",
+        data_vencimento="01-01-2035",
+        taxa_ntnf=0.116586,
+        vencimentos_di=["2025-01-01", "2030-01-01"],
+        taxas_di=[0.10823, 0.11594],
+    )
+
+    assert math.isnan(premio)
+
+
+def test_taxas_zero_com_pagamento_unico_apos_ultima_ltn() -> None:
+    """Vértice sem cupons anteriores após a última LTN usa a TIR como taxa zero."""
+    curva = ntnf.taxas_zero(
+        data_liquidacao="03-09-2024",
+        vencimentos_ltn=["2024-10-01"],
+        taxas_ltn=[0.105],
+        vencimentos_ntnf=["2025-01-01", "2027-01-01"],
+        taxas_ntnf=[0.108, 0.119],
+        incluir_cupons=True,
+    )
+
+    assert curva["taxa_zero"].is_finite().all()
+    assert curva["taxa_zero"][0] == pytest.approx(0.108)

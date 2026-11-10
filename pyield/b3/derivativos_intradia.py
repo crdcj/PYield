@@ -27,7 +27,6 @@ Exemplo de resposta JSON (resumido):
 """
 
 import datetime as dt
-import logging
 
 import polars as pl
 import requests
@@ -36,8 +35,6 @@ from pyield import relogio
 from pyield._internal.retry import requisitar
 
 URL_BASE_INTRADIA = "https://cotacao.b3.com.br/mds/api/v1/DerivativeQuotation"
-
-logger = logging.getLogger(__name__)
 
 # --- Mapeamento de Colunas ---
 
@@ -88,12 +85,6 @@ def _buscar_json_intradia(contrato: str) -> list[dict]:
         return []
 
     return resposta.json()["Scty"]
-
-
-def _converter_json_intradia(dados_json: list[dict]) -> pl.DataFrame:
-    if not dados_json:
-        return pl.DataFrame()
-    return pl.json_normalize(dados_json)
 
 
 def _processar_colunas_intradia(df: pl.DataFrame) -> pl.DataFrame:
@@ -162,8 +153,7 @@ def derivativo_intradia(contrato: str) -> pl.DataFrame:
     if not dados_json:
         return pl.DataFrame()
 
-    df = _converter_json_intradia(dados_json)
-    df = _processar_colunas_intradia(df)
+    df = _processar_colunas_intradia(pl.json_normalize(dados_json))
     horario = (relogio.agora() - dt.timedelta(minutes=15)).time()
     df = df.with_columns(horario_referencia=horario)
     return df.sort("codigo_negociacao")

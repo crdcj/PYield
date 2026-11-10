@@ -4,13 +4,13 @@ from typing import overload
 import polars as pl
 
 from pyield import du
-from pyield._internal.types import ArrayLike, any_is_array_like
+from pyield._internal.types import ArrayLike, is_array_like
 
 # Lista de contratos que negociam por taxa (juros/cupom).
 # Nestes contratos, as colunas OHLC são taxas e precisam ser divididas por 100.
 CONTRATOS_TAXA = {"DI1", "DAP", "DDI", "FRC", "FRO"}
 
-_MAPA_MESES: dict[str, int] = {
+MAPA_MESES: dict[str, int] = {
     "F": 1,
     "G": 2,
     "H": 3,
@@ -100,17 +100,17 @@ def vencimento(
             null
         ]
     """
-    dados = codigo if any_is_array_like(codigo) else [codigo]
+    eh_colecao = is_array_like(codigo)
     serie = (
-        pl.DataFrame({"codigo": dados})
+        # O schema explícito aceita códigos nulos, que resultam em vencimento nulo.
+        pl.DataFrame(
+            {"codigo": codigo if eh_colecao else [codigo]},
+            schema={"codigo": pl.String},
+        )
         .select(vencimento=vencimento_expr("codigo", contrato))
         .get_column("vencimento")
     )
-
-    if any_is_array_like(codigo):
-        return serie
-
-    return serie.item()
+    return serie if eh_colecao else serie.item()
 
 
 def vencimento_expr(coluna_codigo: str, contrato: str) -> pl.Expr:
@@ -166,7 +166,7 @@ def vencimento_expr(coluna_codigo: str, contrato: str) -> pl.Expr:
     data_vencimento = pl.date(
         year=codigo.str.slice(4, 2).cast(pl.Int32, strict=False) + 2000,
         month=codigo.str.slice(3, 1).replace_strict(
-            _MAPA_MESES, default=None, return_dtype=pl.Int8
+            MAPA_MESES, default=None, return_dtype=pl.Int8
         ),
         day=dia_vencimento,
     )

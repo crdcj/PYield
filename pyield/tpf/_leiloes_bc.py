@@ -15,7 +15,7 @@ from pyield._internal.types import DateLike, DatesLike, any_is_empty
 from pyield.bc._olinda import buscar_csv, montar_url, parsear_csv
 from pyield.tpf._leiloes_tn import _enriquecer, _validar_periodo
 
-URL_BASE_API = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"  # noqa: E501
+URL_BASE_API = "https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/odata/leiloesTitulosPublicos(dataMovimentoInicio=@dataMovimentoInicio,dataMovimentoFim=@dataMovimentoFim,dataLiquidacao=@dataLiquidacao,codigoTitulo=@codigoTitulo,dataVencimento=@dataVencimento,edital=@edital,tipoPublico=@tipoPublico,tipoOferta=@tipoOferta)?"
 
 MAPA_TITULOS = {
     100000: "LTN",
@@ -24,7 +24,8 @@ MAPA_TITULOS = {
     950199: "NTN-F",
 }
 
-# Até esta data, o BCB publica cotação (% do VNA), e não PU, para LFT e NTN-B.
+# Antes desta data (até 10/06/2024), o BCB publica cotação (% do VNA), e não PU,
+# para LFT e NTN-B.
 DATA_INICIO_PU = dt.date(2024, 6, 11)
 
 ORDEM_FINAL_COLUNAS = [
@@ -191,6 +192,8 @@ def leiloes_bc(
         if any_is_empty(data):
             return pl.DataFrame()
         convertidas = cv.converter_datas(data)
+        if convertidas is None:
+            return pl.DataFrame()
         if isinstance(convertidas, pl.Series):
             if convertidas.null_count() > 0:
                 msg = "data deve conter apenas datas válidas."

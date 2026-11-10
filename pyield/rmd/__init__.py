@@ -7,7 +7,7 @@ import polars as pl
 from . import _aba_1_3, _aba_2_1
 from ._download import baixar_planilha_rmd as _carregar_planilha_rmd
 
-registro = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 _IMPLEMENTACOES = {
     "1.3": _aba_1_3.estruturar_dados,
@@ -21,6 +21,8 @@ def rmd(aba: str) -> pl.DataFrame:
     Baixa e processa a planilha do RMD, extraindo dados da aba solicitada. A
     publicação mais recente é descoberta automaticamente via parse HTML da página
     oficial do Tesouro Transparente.
+
+    Fonte: Tesouro Nacional (Tesouro Transparente).
 
     Args:
         aba: Número da aba a processar. Abas implementadas: ``"1.3"`` e ``"2.1"``.
@@ -54,10 +56,10 @@ def rmd(aba: str) -> pl.DataFrame:
         ValueError: Se ``aba`` não estiver entre as abas implementadas.
 
     Notes:
-        - A publicação mais recente é descoberta automaticamente via parse HTML
-          do Tesouro Transparente.
-        - A aba ``"1.3"`` traz emissões e resgates da DPMFi.
-        - A aba ``"2.1"`` traz a série histórica de estoque da DPF.
+        - A aba ``"1.3"`` traz emissões e resgates da DPMFi; valores iguais a
+          zero são descartados.
+        - A aba ``"2.1"`` traz a série histórica de estoque da DPF; valores
+          iguais a zero são mantidos.
 
         Erros de download e processamento são propagados ao chamador; não
         são convertidos em DataFrame vazio.
@@ -75,5 +77,5 @@ def rmd(aba: str) -> pl.DataFrame:
     conteudo_excel = _carregar_planilha_rmd()
     df = _IMPLEMENTACOES[aba](conteudo_excel)
 
-    registro.info("Dados do RMD (aba %r) processados. Shape: %s.", aba, df.shape)
+    logger.info("Dados do RMD (aba %r) processados. Shape: %s.", aba, df.shape)
     return df

@@ -75,8 +75,8 @@ def calendario(ano: int) -> pl.DataFrame:
         vazio com o mesmo esquema.
 
     Output Columns:
-        competencia (Date): Primeiro dia do mês de referência do índice.
-        data_divulgacao (Date): Data de divulgação prevista pelo IBGE.
+        * competencia (Date): Primeiro dia do mês de referência do índice.
+        * data_divulgacao (Date): Data de divulgação prevista pelo IBGE.
 
     Notes:
         Fonte: API de calendário do IBGE, produto 9256. Percorre todas as

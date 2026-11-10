@@ -7,7 +7,7 @@ import zipfile as zf
 from pathlib import Path
 
 import polars as pl
-import polars.selectors as ps
+import polars.selectors as cs
 import requests
 
 from pyield import relogio
@@ -23,10 +23,6 @@ COLUNAS_MINIMAS_CSV = 2
 type CaminhoArquivo = str | os.PathLike[str]
 
 
-def _tipo_arquivo(extragrupo: bool) -> str:
-    return "E" if extragrupo else "T"
-
-
 def _data_mensal(data: DateLike) -> dt.date:
     data_alvo = converter_datas(data)
     if not isinstance(data_alvo, dt.date):
@@ -38,14 +34,12 @@ def _data_mensal(data: DateLike) -> dt.date:
 def _nome_arquivo_mensal(data: DateLike, extragrupo: bool = False) -> str:
     """Retorna o nome do ZIP mensal no BCB (ex.: ``NegT202606.ZIP``)."""
     data_alvo = _data_mensal(data)
-    return f"Neg{_tipo_arquivo(extragrupo)}{data_alvo:%Y%m}.ZIP"
+    tipo = "E" if extragrupo else "T"
+    return f"Neg{tipo}{data_alvo:%Y%m}.ZIP"
 
 
 def _baixar_url_zip(url_arquivo: str) -> bytes:
-    resposta = requisitar(
-        requests.get, url_arquivo, allow_redirects=True, timeout_leitura=60
-    )
-    return resposta.content
+    return requisitar(requests.get, url_arquivo, timeout_leitura=60).content
 
 
 def baixar_zip(data: DateLike, extragrupo: bool = False) -> bytes:
@@ -56,7 +50,7 @@ def baixar_zip(data: DateLike, extragrupo: bool = False) -> bytes:
 
     A função valida a estrutura mínima do ZIP antes de retornar os bytes, para
     evitar que pipelines de ingestão salvem arquivo vazio, corrompido ou sem
-    CSV plausível. Use :func:`ler` para processar os bytes ou o arquivo salvo.
+    CSV plausível. Use ``ler`` para processar os bytes ou o arquivo salvo.
 
     Args:
         data: Data de referência. Apenas ano e mês definem o arquivo.
@@ -99,12 +93,11 @@ def _extrair_csv_zip(conteudo_zip: bytes) -> bytes:
         return arquivo_zip.read(nomes[0])
 
 
-def _validar_zip(conteudo_zip: bytes, nome: str | None = None) -> None:
-    rotulo = f"{nome}: " if nome else ""
+def _validar_zip(conteudo_zip: bytes, nome: str) -> None:
     try:
         conteudo_csv = _extrair_csv_zip(conteudo_zip)
     except ValueError as exc:
-        msg = f"{rotulo}{exc}"
+        msg = f"{nome}: {exc}"
         raise ValueError(msg) from exc
 
     df_amostra = pl.read_csv(
@@ -117,7 +110,7 @@ def _validar_zip(conteudo_zip: bytes, nome: str | None = None) -> None:
     )
 
     if len(df_amostra.columns) < COLUNAS_MINIMAS_CSV:
-        msg = f"{rotulo}CSV não parece estar separado por ponto e vírgula"
+        msg = f"{nome}: CSV não parece estar separado por ponto e vírgula"
         raise ValueError(msg)
 
 
@@ -146,7 +139,7 @@ def _processar_df_mensal(df: pl.DataFrame) -> pl.DataFrame:
     pu_medio = float_br("PU MED")
 
     return (
-        df.with_columns(ps.string().str.strip_chars())
+        df.with_columns(cs.string().str.strip_chars())
         .select(
             data_liquidacao=pl.col("DATA MOV").str.to_date("%d/%m/%Y", strict=False),
             titulo=pl.col("SIGLA"),
@@ -176,14 +169,14 @@ def ler(fonte: bytes | CaminhoArquivo) -> pl.DataFrame:
     """Lê o ZIP mensal bruto do secundário de TPFs.
 
     Fonte: Banco Central do Brasil, sistema SELIC. Mesma saída de
-    :func:`mensal`, mas recebe o ZIP bruto em vez de baixá-lo. Útil para
-    processar arquivos salvos com :func:`baixar_zip`.
+    ``mensal``, mas recebe o ZIP bruto em vez de baixá-lo. Útil para
+    processar arquivos salvos com ``baixar_zip``.
 
     Args:
         fonte: ZIP bruto em bytes ou caminho para o arquivo ZIP no disco.
 
     Returns:
-        DataFrame Polars com as colunas documentadas em :func:`mensal`.
+        DataFrame Polars com as colunas documentadas em ``mensal``.
 
     Raises:
         ValueError: Se o conteúdo não for um ZIP válido.

@@ -1,4 +1,8 @@
-"""Consulta e cálculo de VNA por título: valor, histórico, último e projeção."""
+"""Consulta e cálculo de VNA por título.
+
+Disponibiliza ``valor``, ``historico``, ``ultimo``, ``vigencia``, ``projetado``,
+``contexto``, ``calcular_vna`` e ``calcular_base``.
+"""
 
 from pyield.vna._calculo import calcular_vna
 from pyield.vna._consulta import (

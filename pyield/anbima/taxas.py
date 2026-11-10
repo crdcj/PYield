@@ -12,7 +12,7 @@ Exemplo de dado bruto (CSV separado por @, encoding latin1):
     Titulo@Data Referencia@Codigo SELIC@Data Base/Emissao@Data Vencimento@Tx. Compra@Tx. Venda@Tx. Indicativas@PU@Desvio padrao@Interv. Ind. Inf. (D0)@Interv. Ind. Sup. (D0)@Interv. Ind. Inf. (D+1)@Interv. Ind. Sup. (D+1)@Criterio
     LTN@20250924@100000@20230707@20251001@14,9483@14,9263@14,9375@997,241543@0,00433039162894@14,7341@15,2612@14,7316@15,2689@Calculado
     LTN@20250924@100000@20200206@20260101@14,7741@14,7485@14,7616@963,001853@0,00729826731971@14,7008@14,9986@14,7021@14,9975@Calculado
-"""  # noqa: E501
+"""
 
 import datetime as dt
 import io
@@ -47,24 +47,19 @@ logger = logging.getLogger(__name__)
 
 
 def _montar_nome_arquivo(data: dt.date) -> str:
-    data_url = data.strftime("%y%m%d")
-    if data < DATA_MUDANCA_FORMATO:
-        nome_arquivo = f"ms{data_url}.exe"
-    else:
-        nome_arquivo = f"ms{data_url}.txt"
-    return nome_arquivo
+    extensao = "exe" if data < DATA_MUDANCA_FORMATO else "txt"
+    return f"ms{data:%y%m%d}.{extensao}"
 
 
 def _montar_url_arquivo(data: dt.date) -> str:
     ultimo_dia_util = du.ultimo_dia_util()
     qtd_dias_uteis = du.contar(data, ultimo_dia_util)
+    url_base = ANBIMA_URL
     if qtd_dias_uteis > DIAS_RETENCAO_PUBLICA:
         # Para datas com mais de 5 dias úteis, apenas os dados da RTM estão disponíveis
         logger.info("Tentando buscar dados RTM para %s", data.strftime("%d/%m/%Y"))
-        url_arquivo = f"{ANBIMA_RTM_URL}/{_montar_nome_arquivo(data)}"
-    else:
-        url_arquivo = f"{ANBIMA_URL}/{_montar_nome_arquivo(data)}"
-    return url_arquivo
+        url_base = ANBIMA_RTM_URL
+    return f"{url_base}/{_montar_nome_arquivo(data)}"
 
 
 def _obter_csv(data: dt.date) -> bytes:

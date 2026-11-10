@@ -12,7 +12,7 @@ from decimal import Decimal
 import polars as pl
 
 from pyield import du
-from pyield._internal.numbers import truncar_decimal
+from pyield._internal.numbers import converter_taxa, truncar, truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 
 from . import _utils
@@ -115,7 +115,7 @@ def vencimentos(data: DateLike) -> pl.Series:
             2030-09-01
         ]
     """
-    return dados(data)["data_vencimento"]
+    return _utils.obter_tpf(data, "LFT")["data_vencimento"]
 
 
 def cotacao(
@@ -174,7 +174,7 @@ def cotacao(
         Decimal('98.9645')
 
     """
-    taxa = _utils.converter_taxa(taxa)
+    taxa = converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return Decimal("NaN")
     taxa = _utils.normalizar_taxa_precificacao(taxa)
@@ -184,7 +184,7 @@ def cotacao(
         return Decimal("NaN")
 
     # Número de períodos truncado conforme regras da STN
-    anos_truncados = _utils.truncar(dias_uteis / 252, 14)
+    anos_truncados = truncar(dias_uteis / 252, 14)
 
     cotacao_percentual = BASE_COTACAO / (1 + taxa) ** anos_truncados
 
@@ -237,7 +237,8 @@ def taxa(
         corresponde a deságio, negativa a ágio e zero a preço igual ao VNA.
 
     Examples:
-        Exibe as taxas em formato decimal:
+        A taxa é retornada em formato decimal; multiplique por 100 para exibi-la
+        em percentual:
 
         >>> from pyield import lft
         >>> lft.taxa("24-07-2024", "01-09-2030", 15785.324502, 15621.867466)
@@ -265,7 +266,9 @@ def taxa(
     return _utils.encontrar_raiz(diferenca_preco)
 
 
-def rentabilidade(taxa_lft: float | str, taxa_di: float | str) -> float:
+def rentabilidade(
+    taxa_lft: float | Decimal | str, taxa_di: float | Decimal | str
+) -> float:
     r"""
     Calcula a rentabilidade da LFT sobre a taxa de DI Futuro.
 
@@ -320,13 +323,13 @@ def rentabilidade(taxa_lft: float | str, taxa_di: float | str) -> float:
         >>> lft.rentabilidade(taxa_lft, taxa_di)
         1.008594331960501
     """
-    if isinstance(taxa_lft, str):
-        taxa_lft = float(_utils.converter_taxa(taxa_lft))
-    if isinstance(taxa_di, str):
-        taxa_di = float(_utils.converter_taxa(taxa_di))
+    taxa_lft = converter_taxa(taxa_lft)
+    taxa_di = converter_taxa(taxa_di)
     if any_is_empty(taxa_lft, taxa_di):
         return float("nan")
-    # Taxa diária
+    taxa_di = float(taxa_di)
+    taxa_lft = float(taxa_lft)
+    # Fatores diários
     fator_lft = (taxa_lft + 1) ** (1 / 252)
     fator_di = (taxa_di + 1) ** (1 / 252)
     return (fator_lft * fator_di - 1) / (fator_di - 1)

@@ -1,4 +1,4 @@
-"""Módulo para consulta dos leilões de operações compromissadas (repos) realizados pelo BCB.
+"""Consulta dos leilões de operações compromissadas (repos) realizados pelo BCB.
 
 Fonte oficial (API OData):
 https://olinda.bcb.gov.br/olinda/servico/leiloes_selic/versao/v1/aplicacao#!/recursos/leiloes_compromissadas

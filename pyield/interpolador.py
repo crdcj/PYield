@@ -132,10 +132,10 @@ class Interpolador:
         if df.is_empty():
             raise ValueError("A curva deve conter ao menos um vértice válido.")
         self._df = df
-        self._method = str(metodo)
+        self._metodo = str(metodo)
         self._dus = tuple(df.get_column("dus"))
         self._txs = tuple(df.get_column("txs"))
-        self._extrapolate = bool(extrapolar)
+        self._extrapolar = bool(extrapolar)
 
     def _linear(self, du: int, k: int) -> float:
         """Calcula internamente a interpolação linear entre dois vértices."""
@@ -153,7 +153,7 @@ class Interpolador:
         au_k = self._dus[k] / 252
         au = du / 252
 
-        # Fator simples, fator acumulado e peso temporal da interpolacao.
+        # Fator simples, fator acumulado e peso temporal da interpolação.
         fs_j = 1 + tx_j
         fs_k = 1 + tx_k
         fa_j = fs_j**au_j
@@ -187,7 +187,7 @@ class Interpolador:
         Helper interno usado por ``interpolar_expr`` via ``map_batches``.
         A API pública para uso vetorizado é ``interpolar_expr`` (composição
         com expressões Polars) ou a função top-level ``interpolar`` (curva
-        única ou multi-curva sem Polars).
+        única ou multi-curva, a partir de Series).
 
         Args:
             du: Sequência de DUs (lista, tupla, ``pl.Series``, ``np.ndarray``,
@@ -198,10 +198,12 @@ class Interpolador:
             da entrada. ``null`` quando o DU for nulo, negativo, ou estiver
             acima do maior vértice conhecido com ``extrapolar=False``.
         """
-        s_dus = pl.Series(name="taxa_interpolada", values=du, dtype=pl.Int64)
-        return s_dus.map_elements(
-            self._taxa_interpolada, return_dtype=pl.Float64
-        ).fill_nan(None)
+        return (
+            pl.Series(values=du, dtype=pl.Int64)
+            .map_elements(self._taxa_interpolada, return_dtype=pl.Float64)
+            .fill_nan(None)
+            .alias("taxa_interpolada")
+        )
 
     def interpolar_expr(self, du: str | pl.Expr) -> pl.Expr:
         """Cria expressão Polars que interpola taxas para uma coluna de DU.
@@ -253,34 +255,30 @@ class Interpolador:
 
         Returns:
             Taxa de juros interpolada pelo método especificado para o número de
-            dias úteis fornecido. Se a entrada estiver fora do intervalo e
-            extrapolação estiver desabilitada, retorna float("nan").
+            dias úteis fornecido. Retorna float("nan") se o DU for negativo ou
+            estiver acima do maior vértice com a extrapolação desabilitada.
         """
-        # Validação de entrada.
-        if not isinstance(du, int) or du < 0:
+        if du < 0:
             return float("nan")
 
-        # Referências locais para facilitar legibilidade.
         dus = self._dus
         txs = self._txs
-        extrapolate = self._extrapolate
-        method = self._method
 
         # Extrapolação na ponta curta sempre retorna a primeira taxa conhecida.
         if du < dus[0]:
             return txs[0]
         # Extrapolação na ponta longa depende da flag de extrapolação.
-        elif du > dus[-1]:
-            return txs[-1] if extrapolate else float("nan")
+        if du > dus[-1]:
+            return txs[-1] if self._extrapolar else float("nan")
 
-        # Encontra k tal que dus[k-1] < du < dus[k].
+        # Encontra k tal que dus[k-1] < du <= dus[k].
         k = bisect.bisect_left(dus, du)
 
         # Se du for exatamente um ponto conhecido, retorna a taxa desse ponto.
-        if k < len(dus) and dus[k] == du:
+        if dus[k] == du:
             return txs[k]
 
-        if method == "linear":
+        if self._metodo == "linear":
             return self._linear(du, k)
         return self._flat_forward(du, k)
 
@@ -289,7 +287,7 @@ class Interpolador:
 
         Para interpolação vetorizada, use ``interpolar_expr`` (em pipelines
         Polars) ou a função top-level ``pyield.interpolar`` (curva única ou
-        multi-curva sem Polars).
+        multi-curva, a partir de Series).
 
         Args:
             du: DU escalar inteiro.
@@ -319,7 +317,7 @@ def interpolar(  # noqa: PLR0913
 ) -> pl.Series:
     r"""Interpola taxas flat-forward para uma série de pontos alvo.
 
-    Versão vetorizada de :class:`Interpolador`. Quando ``datas_alvo`` e
+    Versão vetorizada de ``Interpolador``. Quando ``datas_alvo`` e
     ``datas_curva`` são fornecidas, cada ponto é interpolado contra a
     curva da sua data correspondente (multi-curva, sem loop em Python).
     Quando ambas são ``None``, todos os pontos usam a mesma curva.
@@ -342,12 +340,12 @@ def interpolar(  # noqa: PLR0913
             conhecida; se False (padrão), retorna ``null``. A ponta curta
             (DU abaixo do menor vértice) sempre retorna a primeira taxa do
             grupo, independentemente desta flag. O default casa com o da
-            classe :class:`Interpolador`.
+            classe ``Interpolador``.
 
     Returns:
         Series Float64 ``taxa_interpolada`` na mesma ordem de
         ``dus_alvo``. ``null`` quando o DU é nulo, a data alvo não existe
-        na curva, ou o ponto está fora do intervalo e ``extrapolar`` é
+        na curva, ou o DU está acima do maior vértice e ``extrapolar`` é
         False.
 
     Raises:
@@ -357,7 +355,7 @@ def interpolar(  # noqa: PLR0913
 
     Notes:
         Usa a mesma fórmula flat-forward descrita na documentação de
-        :class:`Interpolador`. Os vértices que cercam cada prazo alvo são
+        ``Interpolador``. Os vértices que cercam cada prazo alvo são
         encontrados automaticamente.
 
     Examples:

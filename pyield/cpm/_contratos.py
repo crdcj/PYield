@@ -20,7 +20,7 @@ from pyield._internal.converters import converter_datas
 from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike
 from pyield.b3 import boletim
-from pyield.futuro.contratos import _MAPA_MESES
+from pyield.futuro.contratos import MAPA_MESES
 
 # Mapeamento mínimo para consumo do módulo CPM a partir do schema XML bruto.
 _RENOMEAR_COLUNAS_CPM = {
@@ -155,7 +155,7 @@ def contratos(data: DateLike) -> pl.DataFrame:
         ),
         _mes_reuniao=pl.col("codigo_negociacao")
         .str.slice(3, 1)
-        .replace_strict(_MAPA_MESES, default=None, return_dtype=pl.Int32),
+        .replace_strict(MAPA_MESES, default=None, return_dtype=pl.Int32),
         _ano_reuniao=(
             pl.col("codigo_negociacao")
             .str.slice(4, 2)

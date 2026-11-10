@@ -108,9 +108,8 @@ def _adicionar_fatores_desconto(df: pl.DataFrame) -> pl.DataFrame:
     """
     Adiciona as colunas de taxa DI1 e fator de desconto.
 
-    A função usa ``di1.interpolar_taxas()`` de forma vetorizada para buscar
-    todas as taxas DI1 em uma única chamada, com uma busca e um interpolador por
-    data_referencia única. Em seguida, calcula os fatores de desconto com
+    A função usa ``di1.interpolar_taxas()``, que interpola a taxa DI1 de cada
+    linha em uma única chamada. Em seguida, calcula os fatores de desconto com
     expressões Polars.
 
     Método de interpolação
@@ -134,29 +133,16 @@ def _adicionar_fatores_desconto(df: pl.DataFrame) -> pl.DataFrame:
     (por exemplo, aproximadamente 4,6 pontos-base em du=17 para taxas na faixa
     da Selic em 2026).
     """
-    pares = (
-        df.select("data_referencia", "data_expiracao", "dias_uteis")
-        .unique(subset=["data_referencia", "data_expiracao"])
-        .sort("data_referencia", "data_expiracao")
-    )
-
     taxas = di1.interpolar_taxas(
-        datas_referencia=pares["data_referencia"],
-        datas_vencimento=pares["data_expiracao"],
+        datas_referencia=df["data_referencia"],
+        datas_vencimento=df["data_expiracao"],
         extrapolar=True,
     )
-
-    df_desconto = (
-        pares.with_columns(taxa_di1=taxas)
-        .with_columns(
-            fator_desconto=(
-                (pl.col("dias_uteis") / 252 * (1 + pl.col("taxa_di1")).log()).exp()
-            ),
-        )
-        .select("data_referencia", "data_expiracao", "taxa_di1", "fator_desconto")
+    return df.with_columns(taxa_di1=taxas).with_columns(
+        fator_desconto=(
+            (pl.col("dias_uteis") / 252 * (1 + pl.col("taxa_di1")).log()).exp()
+        ),
     )
-
-    return df.join(df_desconto, on=["data_referencia", "data_expiracao"], how="left")
 
 
 def _adicionar_probabilidades(df: pl.DataFrame) -> pl.DataFrame:
@@ -250,7 +236,6 @@ def probabilidades(
         return _df_vazio()
 
     return (
-        df.pipe(_adicionar_probabilidades)
-        .select(_df_vazio().columns)
-        .sort("ranking_reuniao", "variacao_strike_bps")
+        # _adicionar_probabilidades já ordena por reunião e variação do strike
+        df.pipe(_adicionar_probabilidades).select(_df_vazio().columns)
     )

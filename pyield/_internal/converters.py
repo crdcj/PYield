@@ -3,8 +3,7 @@ from typing import overload
 
 import polars as pl
 
-from pyield._internal import types
-from pyield._internal.types import DateLike, DatesLike
+from pyield._internal.types import DateLike, DatesLike, is_array_like
 
 
 def data_referencia_valida(date: dt.date | None) -> bool:
@@ -59,7 +58,7 @@ def converter_datas_expr(expr: pl.Expr | str) -> pl.Expr:
         expr_str.str.to_date(format="%d-%m-%Y", strict=False),
         expr_str.str.to_date(format="%d/%m/%Y", strict=False),
         expr_str.str.to_date(format="%Y-%m-%d", strict=False),
-        expr_str.str.to_date(format="%Y-%m-%d %H:%M:%S", strict=False),
+        # A fração de segundo (%.f) é opcional.
         expr_str.str.to_date(format="%Y-%m-%d %H:%M:%S%.f", strict=False),
         # Datetime com fuso (ex.: relogio.agora()) mantém a data local.
         expr_str.str.to_date(format="%Y-%m-%d %H:%M:%S%.f%z", strict=False),
@@ -186,15 +185,9 @@ def converter_datas(
             2024-12-27
         ]
     """
-    if types.is_array_like(dates):
-        eh_escalar = False
-        serie = pl.Series(values=dates)
-    else:
-        eh_escalar = True
-        serie = pl.Series(values=[dates])
-
+    eh_escalar = not is_array_like(dates)
     serie = (
-        pl.DataFrame({"dates": serie}, nan_to_null=True)
+        pl.DataFrame({"dates": pl.Series(values=[dates] if eh_escalar else dates)})
         .select(converter_datas_expr("dates"))
         .get_column("dates")
     )

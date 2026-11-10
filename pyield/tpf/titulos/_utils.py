@@ -1,7 +1,6 @@
 import datetime as dt
 import logging
 import math
-import re
 from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
 
@@ -10,7 +9,8 @@ import polars as pl
 import pyield._internal.converters as conversores
 from pyield._internal.numbers import truncar, truncar_decimal
 from pyield._internal.types import ArrayLike, DateLike, any_is_empty
-from pyield.tpf._taxas import TipoTPF
+from pyield.futuro import di1
+from pyield.tpf import _taxas
 
 logger = logging.getLogger(__name__)
 
@@ -29,18 +29,14 @@ COLUNAS_DADOS_TPF = (
 
 def obter_tpf(
     data_referencia: DateLike,
-    tipo_titulo: TipoTPF,
+    tipo_titulo: _taxas.TipoTPF,
 ) -> pl.DataFrame:
-    """Busca taxas indicativas de TPF no padrão de colunas usado por ``tn``."""
-    from pyield.tpf._taxas import taxas  # noqa: PLC0415
-
-    return taxas(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
+    """Busca taxas indicativas de TPF com as colunas comuns aos títulos."""
+    return _taxas.taxas(data_referencia, tipo_titulo).select(COLUNAS_DADOS_TPF)
 
 
 def adicionar_taxa_di(df: pl.DataFrame, data_ref: DateLike) -> pl.DataFrame:
     """Adiciona a coluna `taxa_di` ao DataFrame pelo método flat forward."""
-    from pyield.futuro import di1  # noqa: PLC0415
-
     taxas_di = di1.interpolar_taxas(
         datas_referencia=data_ref,
         datas_vencimento=df["data_vencimento"],
@@ -57,11 +53,13 @@ def filtrar_vertices_futuros(
     taxas: ArrayLike,
     nome_curva: str,
 ) -> tuple[pl.Series, pl.Series]:
-    """Remove vértices sem prazo preservando o alinhamento com as taxas.
+    """Remove vértices sem taxa ou sem prazo, preservando o alinhamento.
 
-    Vencimentos repetidos com a mesma taxa são considerados uma única vez. O
-    mesmo vencimento com taxas diferentes gera erro, pois não há taxa correta
-    a escolher.
+    Vértices com taxa nula ou NaN representam dado ausente e são ignorados,
+    assim como vencimentos menores ou iguais à liquidação. Vencimentos
+    repetidos com a mesma taxa são considerados uma única vez. O mesmo
+    vencimento com taxas diferentes gera erro, pois não há taxa correta a
+    escolher.
     """
     if len(vencimentos) != len(taxas):
         raise ValueError(
@@ -71,9 +69,19 @@ def filtrar_vertices_futuros(
     df = pl.DataFrame(
         {"data_vencimento": vencimentos, "taxa": taxas},
         schema={"data_vencimento": pl.Date, "taxa": pl.Float64},
-    ).filter(pl.col("data_vencimento") > liquidacao)
+    )
+    # is_not_nan retorna nulo para taxa nula, e o filtro descarta os dois casos
+    com_taxa = df.filter(pl.col("taxa").is_not_nan())
+    sem_taxa = df.height - com_taxa.height
+    if sem_taxa > 0:
+        logger.warning(
+            "Vértices de %s sem taxa foram ignorados: %s removidos.",
+            nome_curva,
+            sem_taxa,
+        )
 
-    removidos = len(vencimentos) - df.height
+    df = com_taxa.filter(pl.col("data_vencimento") > liquidacao)
+    removidos = com_taxa.height - df.height
     if removidos > 0:
         logger.warning(
             "Vencimentos de %s menores ou iguais à liquidação foram ignorados: "
@@ -91,19 +99,22 @@ def filtrar_vertices_futuros(
 
 
 def validar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:
-    """Valida e normaliza a curva zero usada na precificação."""
+    """Valida e normaliza a curva zero usada na precificação.
+
+    Linhas com nulos são descartadas. A curva resultante deve ter ao menos um
+    vértice; a ordenação fica a cargo da interpolação.
+    """
     if not {"dias_uteis", "taxa_zero"}.issubset(curva_zero.columns):
         raise ValueError(
             "Curva zero deve conter as colunas 'dias_uteis' e 'taxa_zero'."
         )
-    return (
-        curva_zero.select(
-            pl.col("dias_uteis").cast(pl.Int64),
-            pl.col("taxa_zero").cast(pl.Float64),
-        )
-        .drop_nulls()
-        .sort("dias_uteis")
-    )
+    curva = curva_zero.select(
+        pl.col("dias_uteis").cast(pl.Int64),
+        pl.col("taxa_zero").cast(pl.Float64),
+    ).drop_nulls()
+    if curva.is_empty():
+        raise ValueError("A curva deve conter ao menos um vértice válido.")
+    return curva
 
 
 def coluna_ou_expr(valor: pl.Expr | str, nome: str) -> pl.Expr:
@@ -121,25 +132,25 @@ def subtrair_meses(data: dt.date, meses: int) -> dt.date:
     return data.replace(year=ano, month=mes)
 
 
-def gerar_datas_pagamento(
-    inicio: DateLike,
-    fim: DateLike,
-    intervalo_meses: int = 6,
-) -> pl.Series:
-    """Gera datas contratuais entre o início exclusivo e o fim inclusivo."""
-    if intervalo_meses <= 0:
-        raise ValueError("O intervalo em meses deve ser maior que zero.")
+def gerar_datas_pagamento(inicio: DateLike, fim: DateLike) -> pl.Series:
+    """Gera datas semestrais entre o início exclusivo e o fim inclusivo.
 
+    As datas retrocedem de 6 em 6 meses a partir do fim.
+    """
+    vazia = pl.Series(name="datas_pagamento", dtype=pl.Date)
     if any_is_empty(inicio, fim):
-        return pl.Series(name="datas_pagamento", dtype=pl.Date)
+        return vazia
 
     data_inicio = conversores.converter_datas(inicio)
     data_pagamento = conversores.converter_datas(fim)
-    datas_pagamento = []
+    # Strings em branco passam por any_is_empty e são convertidas em None
+    if data_inicio is None or data_pagamento is None:
+        return vazia
 
+    datas_pagamento = []
     while data_pagamento > data_inicio:
         datas_pagamento.append(data_pagamento)
-        data_pagamento = subtrair_meses(data_pagamento, intervalo_meses)
+        data_pagamento = subtrair_meses(data_pagamento, 6)
 
     return pl.Series(
         name="datas_pagamento",
@@ -155,16 +166,6 @@ def pu_por_vna(vna: float | Decimal, cotacao: float | Decimal) -> Decimal:
     vna_decimal = truncar_decimal(vna, 6)
     cotacao_decimal = truncar_decimal(cotacao, 4)
     return truncar_decimal(vna_decimal * cotacao_decimal / 100, 6)
-
-
-def converter_taxa(taxa: float | Decimal | str) -> float | Decimal:
-    """Converte percentual explícito para decimal, sem arredondar ou truncar."""
-    if not isinstance(taxa, str):
-        return taxa
-    texto = taxa.strip()
-    if not re.fullmatch(r"[+-]?[0-9]+(?:[.,][0-9]+)?\s*%", texto):
-        raise ValueError('Taxa textual deve ter formato percentual, como "5.75%".')
-    return Decimal(texto[:-1].strip().replace(",", ".") + "e-2")
 
 
 def normalizar_taxa_precificacao(taxa: float | Decimal) -> float:

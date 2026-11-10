@@ -27,7 +27,7 @@ import requests
 from pyield import relogio
 from pyield._internal.retry import requisitar
 
-registro = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 URL_BASE_API = (
     "https://apiapex.tesouro.gov.br/aria/v1/api-leiloes-pub/custom/benchmarks"
@@ -43,10 +43,7 @@ def _buscar_json_api(incluir_historico: bool) -> dict:
 
 
 def _parsear_df(dados: dict) -> pl.DataFrame:
-    registros = dados.get("registros", [])
-    if not registros:
-        return pl.DataFrame()
-    return pl.DataFrame(registros)
+    return pl.DataFrame(dados.get("registros") or [])
 
 
 def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
@@ -60,7 +57,7 @@ def _processar_df(df: pl.DataFrame) -> pl.DataFrame:
 
     total_nulos = sum(df.null_count().row(0))
     if total_nulos:
-        registro.warning(
+        logger.warning(
             "Células nulas após parse (total=%s). Linhas descartadas.",
             total_nulos,
         )

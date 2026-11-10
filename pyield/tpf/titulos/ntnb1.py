@@ -7,7 +7,7 @@ import polars as pl
 
 import pyield._internal.converters as conversores
 from pyield import du, interpolador
-from pyield._internal.numbers import truncar_decimal
+from pyield._internal.numbers import converter_taxa, truncar, truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 
 from . import _utils
@@ -22,8 +22,8 @@ class NomeComercial(Enum):
     EDUCA_MAIS = "Educa+"
 
 
-# Mapeamento estático do número de meses (constante)
-MAPA_PARAMETROS = {
+# Número de amortizações mensais de cada nome comercial
+_NUMERO_AMORTIZACOES = {
     NomeComercial.RENDA_MAIS: 240,
     NomeComercial.EDUCA_MAIS: 60,
 }
@@ -38,11 +38,11 @@ def _obter_parametros_titulo(
     Retorna: (pagamento_amortizacao, pagamento_amortizacao_final, numero_amortizacoes)
     """
     try:
-        numero_amortizacoes = MAPA_PARAMETROS[nome_comercial]
+        numero_amortizacoes = _NUMERO_AMORTIZACOES[nome_comercial]
     except KeyError as e:
         raise ValueError(f"Nome comercial inválido: {nome_comercial}") from e
 
-    pagamento_amortizacao = _utils.truncar(100 / numero_amortizacoes, 6)
+    pagamento_amortizacao = truncar(100 / numero_amortizacoes, 6)
     pagamento_amortizacao_final = 100 - (
         pagamento_amortizacao * (numero_amortizacoes - 1)
     )
@@ -68,7 +68,9 @@ def datas_pagamento(
         nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
 
     Returns:
-        pl.Series: Série de datas de amortização no intervalo.
+        pl.Series: Série de datas de amortização no intervalo. Retorna série
+            vazia se não houver amortização após a liquidação, como em um
+            título vencido ou que vence na data de liquidação.
 
     Notes:
         Para obter as datas efetivas de processamento, use
@@ -103,14 +105,9 @@ def datas_pagamento(
     if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
         return pl.Series("datas_pagamento", dtype=pl.Date)
 
-    # Valida e normaliza datas
     liquidacao = conversores.converter_datas(data_liquidacao)
-    vencimento = conversores.converter_datas(data_vencimento)
-
-    if vencimento <= liquidacao:
-        raise ValueError("A data de vencimento deve ser posterior à liquidação.")
-
-    vencimento = vencimento.replace(day=15)
+    # A última amortização ocorre no dia 15 do mês de vencimento
+    vencimento = conversores.converter_datas(data_vencimento).replace(day=15)
 
     # Parâmetros do título
     _, _, numero_amortizacoes = _obter_parametros_titulo(nome_comercial)
@@ -119,9 +116,8 @@ def datas_pagamento(
         _utils.subtrair_meses(vencimento, i) for i in range(numero_amortizacoes)
     ]
 
-    datas_pagamento = pl.Series(name="datas_pagamento", values=datas_amortizacao)
-
-    return datas_pagamento.filter(datas_pagamento > liquidacao).sort()
+    serie_datas_pagamento = pl.Series(name="datas_pagamento", values=datas_amortizacao)
+    return serie_datas_pagamento.filter(serie_datas_pagamento > liquidacao).sort()
 
 
 def fluxos_caixa(
@@ -211,13 +207,16 @@ def cotacao(
     Args:
         data_liquidacao: Data de liquidação da operação.
         data_vencimento: Data de vencimento da NTN-B1.
-        taxa: Taxa de desconto (YTM) usada no valor presente.
+        taxa: TIR anual efetiva, em decimal, na base de 252 dias úteis,
+            usada no valor presente.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
             A taxa de entrada não é truncada antes do cálculo.
         nome_comercial: Nome comercial (Renda+ ou Educa+).
 
     Returns:
         Decimal: Cotação da NTN-B1 em base 100, truncada em 4 casas decimais.
+            Retorna ``Decimal("NaN")`` para entradas ausentes ou quando não
+            há pagamentos após a liquidação.
 
     References:
         - Tesouro Direto, *Cálculo da Rentabilidade dos Títulos Públicos
@@ -234,8 +233,7 @@ def cotacao(
         >>> ntnb1.cotacao("22-06-2023", "15-12-2034", "5.36%", educa_mais)
         Decimal('62.6809')
     """
-    if isinstance(taxa, str):
-        taxa = float(_utils.converter_taxa(taxa))
+    taxa = converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa, nome_comercial):
         return Decimal("NaN")
 
@@ -245,7 +243,7 @@ def cotacao(
         return Decimal("NaN")
     valores_fluxo = df_fluxos["valor_pagamento"]
     dias_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"])
-    anos_uteis = _utils.truncar(dias_uteis / 252, 14)
+    anos_uteis = truncar(dias_uteis / 252, 14)
     fatores_desconto = (1 + taxa_float) ** anos_uteis
     # Mantém precisão intermediária antes do truncamento final da cotação.
     vp = (valores_fluxo / fatores_desconto).round(10)
@@ -266,6 +264,24 @@ def _cotacao_analitica(
         return float("nan")
     anos_uteis = du.contar(data_liquidacao, df_fluxos["data_pagamento"]) / 252
     return float((df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis).sum())
+
+
+def _pagamentos_curva_zero(
+    data_liquidacao: DateLike,
+    data_vencimento: DateLike,
+    curva_zero: pl.DataFrame,
+    nome_comercial: NomeComercial,
+) -> pl.DataFrame:
+    """Fluxos com prazo em dias úteis e taxa zero interpolada de cada pagamento."""
+    curva = _utils.validar_curva_zero(curva_zero)
+    fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
+    if fluxos.is_empty():
+        return fluxos
+    dias_uteis = du.contar(data_liquidacao, fluxos["data_pagamento"])
+    taxas = interpolador.interpolar(
+        dias_uteis, curva["dias_uteis"], curva["taxa_zero"], extrapolar=True
+    )
+    return fluxos.with_columns(dias_uteis=dias_uteis, taxa=taxas)
 
 
 def cotacao_curva_zero(
@@ -289,11 +305,14 @@ def cotacao_curva_zero(
         nome_comercial: Nome comercial, Renda+ ou Educa+.
 
     Returns:
-        float: Cotação em base 100 calculada pela curva zero.
+        float: Cotação em base 100 calculada pela curva zero. Retorna NaN
+            para entradas ausentes ou quando não há pagamentos após a
+            liquidação.
 
     Raises:
-        ValueError: Se faltarem as colunas ``dias_uteis`` e ``taxa_zero`` ou
-            se um mesmo prazo aparecer com taxas diferentes.
+        ValueError: Se faltar a coluna ``dias_uteis`` ou ``taxa_zero``, se a
+            curva não tiver ao menos um vértice válido ou se um mesmo prazo
+            aparecer com taxas diferentes.
 
     Notes:
         Os documentos oficiais descrevem o desconto dos fluxos por uma taxa
@@ -309,16 +328,11 @@ def cotacao_curva_zero(
     if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
         return float("nan")
 
-    curva = _utils.validar_curva_zero(curva_zero)
-    fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
-    dias_fluxos = du.contar(data_liquidacao, fluxos["data_pagamento"])
-    taxas_fluxos = interpolador.interpolar(
-        dias_fluxos,
-        curva["dias_uteis"],
-        curva["taxa_zero"],
-        extrapolar=True,
+    pagamentos = _pagamentos_curva_zero(
+        data_liquidacao, data_vencimento, curva_zero, nome_comercial
     )
-    pagamentos = fluxos.with_columns(dias_uteis=dias_fluxos, taxa=taxas_fluxos)
+    if pagamentos.is_empty():
+        return float("nan")
     return _utils.cotacao_por_taxas(pagamentos)
 
 
@@ -380,12 +394,13 @@ def taxa_curva_zero(
 
     Returns:
         float: TIR equivalente anualizada, em formato decimal. Retorna NaN
-            para entradas ausentes.
-            Também retorna NaN se a resolução numérica falhar.
+            para entradas ausentes ou quando não há pagamentos após a
+            liquidação. Também retorna NaN se a resolução numérica falhar.
 
     Raises:
-        ValueError: Se faltarem as colunas ``dias_uteis`` e ``taxa_zero`` ou
-            se um mesmo prazo aparecer com taxas diferentes.
+        ValueError: Se faltar a coluna ``dias_uteis`` ou ``taxa_zero``, se a
+            curva não tiver ao menos um vértice válido ou se um mesmo prazo
+            aparecer com taxas diferentes.
 
     Notes:
         Os documentos oficiais descrevem o desconto dos fluxos por uma taxa
@@ -401,23 +416,15 @@ def taxa_curva_zero(
     if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
         return float("nan")
 
-    curva = _utils.validar_curva_zero(curva_zero)
-    fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
-    dias_fluxos = du.contar(data_liquidacao, fluxos["data_pagamento"])
-    taxas_zero = interpolador.interpolar(
-        dias_fluxos,
-        curva["dias_uteis"],
-        curva["taxa_zero"],
-        extrapolar=True,
+    pagamentos = _pagamentos_curva_zero(
+        data_liquidacao, data_vencimento, curva_zero, nome_comercial
     )
-    pagamentos_base = fluxos.with_columns(dias_uteis=dias_fluxos)
-    cotacao_alvo = _utils.cotacao_por_taxas(
-        pagamentos_base.with_columns(taxa=taxas_zero)
-    )
+    if pagamentos.is_empty():
+        return float("nan")
     return _resolver_taxa_equivalente(
-        cotacao_alvo,
-        pagamentos_base,
-        taxa_inicial=float(taxas_zero[-1]),
+        cotacao_alvo=_utils.cotacao_por_taxas(pagamentos),
+        pagamentos_base=pagamentos,
+        taxa_inicial=float(pagamentos["taxa"][-1]),
     )
 
 
@@ -461,7 +468,7 @@ def pu(
 def duration(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float | str,
+    taxa: float | Decimal | str,
     nome_comercial: NomeComercial,
 ) -> float:
     """
@@ -470,7 +477,8 @@ def duration(
     Args:
         data_liquidacao (DateLike): Data de liquidação da operação.
         data_vencimento (DateLike): Data de vencimento.
-        taxa (float): Taxa de desconto usada no cálculo.
+        taxa (float | Decimal | str): TIR anual efetiva, em decimal, na base de
+            252 dias úteis, usada no cálculo.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
         nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
 
@@ -483,11 +491,10 @@ def duration(
         >>> ntnb1.duration("23-06-2025", "15-12-2084", "6.86%", r_mais)
         47.10494386899199
     """
-    # Retorna NaN se houver entradas nulas
-    if isinstance(taxa, str):
-        taxa = float(_utils.converter_taxa(taxa))
+    taxa = converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa, nome_comercial):
         return float("nan")
+    taxa = float(taxa)
 
     df_fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
     if df_fluxos.is_empty():
@@ -500,20 +507,21 @@ def duration(
 def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa: float | str,
+    taxa: float | Decimal | str,
     pu: float | Decimal,
     nome_comercial: NomeComercial,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da NTN-B1 em R$.
 
-    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
-    taxa.
+    Representa a variação do PU informado para um aumento de 1 bp (0,01 ponto
+    percentual) na taxa.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
-        taxa (float): Taxa de desconto (YTM) da NTN-B1.
+        taxa (float | Decimal | str): TIR anual efetiva da NTN-B1, em decimal, na base
+            de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
         pu: PU usado como base para o cálculo.
         nome_comercial (NomeComercial): Nome comercial (Renda+ ou Educa+).
@@ -529,10 +537,10 @@ def dv01(
         >>> ntnb1.dv01("23-06-2025", "15-12-2084", "6.86%", pu, r_mais)
         0.7746782352496799
     """
-    if isinstance(taxa, str):
-        taxa = float(_utils.converter_taxa(taxa))
+    taxa = converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa, pu, nome_comercial):
         return float("nan")
+    taxa = float(taxa)
 
     cot1 = _cotacao_analitica(data_liquidacao, data_vencimento, taxa, nome_comercial)
     cot2 = _cotacao_analitica(

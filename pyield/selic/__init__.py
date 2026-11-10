@@ -1,10 +1,7 @@
-"""
-selic — Dados e análises relacionados à taxa Selic e política monetária.
+"""Indicadores da taxa Selic: ``over``, ``over_serie``, ``meta`` e ``meta_serie``.
 
-Submódulos
-----------
-Este namespace reúne os indicadores diretamente relacionados à taxa Selic.
-O produto CPM e suas análises ficam disponíveis em ``pyield.cpm``.
+O produto CPM e suas análises ficam em ``pyield.cpm``; o calendário de
+reuniões do Copom, em ``pyield.copom``.
 """
 
 from pyield.bc.sgs import selic_meta as meta

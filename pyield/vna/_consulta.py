@@ -281,12 +281,10 @@ def historico(
     modulo = _modulo_mensal(titulo)
     if vencimento is not None and titulo != "NTN-C":
         raise ValueError("Vencimento aplica-se apenas à NTN-C.")
-    ano = None
-    if vencimento is not None and not any_is_empty(vencimento):
-        ano = converter_datas(vencimento).year
+    data_vencimento = converter_datas(vencimento)
     df = modulo.vnas()
-    if ano is not None:
-        df = df.filter(pl.col("anos_vencimento").list.contains(ano))
+    if data_vencimento is not None:
+        df = df.filter(pl.col("anos_vencimento").list.contains(data_vencimento.year))
     return df.sort("data", maintain_order=True)
 
 
@@ -441,9 +439,7 @@ def projetado(
     if titulo == "LFT":
         if inflacao is not None:
             raise ValueError("Use selic para a projeção da LFT.")
-        if selic is None:
-            return Decimal("NaN")
-        if any_is_empty(selic):
+        if selic is None or any_is_empty(selic):
             return Decimal("NaN")
         data_convertida = converter_datas(data)
         if du.eh_dia_util(data_convertida):

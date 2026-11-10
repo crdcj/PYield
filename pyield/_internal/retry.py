@@ -2,14 +2,13 @@
 
 import logging
 import random
-import ssl
 import time
 from collections.abc import Callable
 from email.utils import parsedate_to_datetime
 
 import requests
 
-registro = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 _TIMEOUT_CONEXAO_SEGUNDOS = 5
 _ESPERA_MINIMA = 0.5
 _ESPERA_MAXIMA = 1.0
@@ -29,7 +28,7 @@ def _segundos_retry_after(valor: str) -> float | None:
 
 
 def _espera_apos_falha(erro: Exception) -> float | None:
-    if isinstance(erro, (requests.exceptions.SSLError, ssl.SSLError)):
+    if isinstance(erro, requests.exceptions.SSLError):
         return None
     espera = random.uniform(_ESPERA_MINIMA, _ESPERA_MAXIMA)
     if isinstance(erro, requests.HTTPError):
@@ -45,37 +44,6 @@ def _espera_apos_falha(erro: Exception) -> float | None:
     return espera
 
 
-def executar_com_retry[**P, R](
-    operacao: Callable[P, R], *args: P.args, **kwargs: P.kwargs
-) -> R:
-    """Executa um download seguro de repetir, com no máximo duas tentativas.
-
-    Repete somente falhas transitórias de comunicação ou HTTP 502/503/504.
-    Retry-After inválido ou superior a um segundo impede a retentativa.
-    A segunda falha é propagada, preservando a exceção do transporte.
-    """
-    try:
-        return operacao(*args, **kwargs)
-    except (
-        requests.ConnectionError,
-        requests.Timeout,
-        requests.exceptions.ChunkedEncodingError,
-        requests.HTTPError,
-        ConnectionError,
-        TimeoutError,
-    ) as erro:
-        espera = _espera_apos_falha(erro)
-        if espera is None:
-            raise
-        registro.warning(
-            "Falha transitória no download (%s). Última tentativa em %.2f segundos.",
-            type(erro).__name__,
-            espera,
-        )
-        time.sleep(espera)
-    return operacao(*args, **kwargs)
-
-
 def requisitar(
     enviar: Callable[..., requests.Response],
     url: str,
@@ -88,6 +56,11 @@ def requisitar(
     O chamador mantém método e sessão e informa apenas o timeout de leitura.
     O timeout de conexão é fixo em 5 segundos. Apenas envio, download e status
     HTTP participam da retentativa; o corpo é processado pelo chamador.
+
+    Há no máximo duas tentativas. Repete somente falhas transitórias de
+    comunicação ou HTTP 502/503/504. Retry-After inválido ou superior a um
+    segundo impede a retentativa. A segunda falha é propagada, preservando a
+    exceção do transporte.
     """
 
     def baixar() -> requests.Response:
@@ -97,4 +70,23 @@ def requisitar(
         resposta.raise_for_status()
         return resposta
 
-    return executar_com_retry(baixar)
+    try:
+        return baixar()
+    except (
+        requests.ConnectionError,
+        requests.Timeout,
+        requests.exceptions.ChunkedEncodingError,
+        requests.HTTPError,
+        ConnectionError,
+        TimeoutError,
+    ) as erro:
+        espera = _espera_apos_falha(erro)
+        if espera is None:
+            raise
+        logger.warning(
+            "Falha transitória no download (%s). Última tentativa em %.2f segundos.",
+            type(erro).__name__,
+            espera,
+        )
+        time.sleep(espera)
+    return baixar()

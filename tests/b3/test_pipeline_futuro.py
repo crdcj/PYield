@@ -5,6 +5,7 @@ os XMLs no teste do boletim. Conversões de data, filtros, enriquecimento e
 seleção das colunas públicas executam normalmente.
 """
 
+import datetime as dt
 import importlib
 from pathlib import Path
 
@@ -78,3 +79,16 @@ def test_pipeline_futuro(monkeypatch, historico_bruto, data, contrato):
         check_exact=False,
         check_dtypes=True,
     )
+
+
+def test_vencimento_aceita_codigo_nulo():
+    assert futuro.vencimento(None, "DI1") is None
+    assert futuro.vencimento([None, "DI1F27"], "DI1").to_list() == [
+        None,
+        dt.date(2027, 1, 4),
+    ]
+
+
+def test_historico_nao_mistura_contratos_por_prefixo_parcial(historico_bruto):
+    """O contrato é o prefixo completo de três caracteres do ticker."""
+    assert futuro.enriquecer(historico_bruto, "D").is_empty()

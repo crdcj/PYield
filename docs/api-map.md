@@ -224,7 +224,7 @@ Visão geral das principais funções públicas do PYield.
 
 ??? "`yd.ptax_serie` (série histórica da PTAX)"
     ```text
-    yd.ptax_serie(inicio, fim)
+    yd.ptax_serie(inicio=None, fim=None, *, ultimos=None)
     ```
 
     Coluna `cotacao` do tipo Polars `Decimal(18, 4)`.

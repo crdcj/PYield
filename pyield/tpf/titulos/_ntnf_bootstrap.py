@@ -6,7 +6,7 @@ import math
 import polars as pl
 
 from pyield import du
-from pyield._internal import converters as cv
+from pyield._internal import converters as conversores
 from pyield._internal.types import ArrayLike, DateLike, DatesLike
 from pyield.interpolador import Interpolador
 
@@ -18,22 +18,23 @@ TOLERANCIA_PRECO = 1e-12
 def _preparar_titulos(
     liquidacao: dt.date, vencimentos: DatesLike, taxas: ArrayLike, titulo: str
 ) -> pl.DataFrame:
-    datas = cv.converter_datas(vencimentos)
+    datas = conversores.converter_datas(vencimentos)
     valores = pl.Series(taxas, dtype=pl.Float64)
     if len(datas) != len(valores):
         raise ValueError(f"Vencimentos e taxas de {titulo} devem ter o mesmo tamanho.")
-    df = pl.DataFrame({"data_vencimento": datas, "taxa": valores})
+    # Taxa nula ou NaN é dado ausente: o vértice é removido adiante, sem erro.
+    taxas_informadas = valores.drop_nulls().drop_nans()
     if (
-        df.null_count().sum_horizontal().item()
-        or df.filter(~pl.col("taxa").is_finite() | (pl.col("taxa") <= -1)).height
+        datas.has_nulls()
+        or not (taxas_informadas.is_finite() & (taxas_informadas > -1)).all()
     ):
         raise ValueError(
             "Datas e taxas devem ser válidas, com taxas finitas acima de -1."
         )
-    df = df.filter(pl.col("data_vencimento") > liquidacao).unique(maintain_order=True)
-    if df["data_vencimento"].n_unique() != df.height:
-        raise ValueError(f"Vencimentos duplicados de {titulo} com taxas diferentes.")
-    return df.with_columns(titulo=pl.lit(titulo))
+    datas, valores = _utils.filtrar_vertices_futuros(liquidacao, datas, valores, titulo)
+    return pl.DataFrame({"data_vencimento": datas, "taxa": valores}).with_columns(
+        titulo=pl.lit(titulo)
+    )
 
 
 def _calibrar_zero(  # noqa: PLR0913, PLR0917
@@ -117,7 +118,8 @@ def taxas_zero_forwards(  # noqa: PLR0913, PLR0917
 
     Returns:
         pl.DataFrame: União dos vencimentos futuros de LTN e NTN-F, ordenada.
-            Retorna vazio com esquema quando não há títulos futuros.
+            Vértices com taxa nula ou NaN são ignorados e não aparecem no
+            resultado. Retorna vazio com esquema quando não há títulos futuros.
 
     Output Columns:
         - data_vencimento (Date): Vértice da curva prefixada conjunta.
@@ -125,9 +127,10 @@ def taxas_zero_forwards(  # noqa: PLR0913, PLR0917
         - taxa_zero (Float64): Taxa zero nominal anual em formato decimal.
 
     Raises:
-        ValueError: Entradas inválidas, vencimentos duplicados com taxas
-            diferentes na mesma família, prazos úteis coincidentes ou preço
-            incompatível com a curva anterior.
+        ValueError: Datas inválidas, taxas infinitas ou menores ou iguais a
+            -1, vencimentos duplicados com taxas diferentes na mesma família,
+            prazos úteis coincidentes ou preço incompatível com a curva
+            anterior.
         RuntimeError: Falha na calibração numérica.
 
     Notes:
@@ -146,7 +149,7 @@ def taxas_zero_forwards(  # noqa: PLR0913, PLR0917
     """
     from pyield.tpf.titulos.ntnf import datas_pagamento  # noqa: PLC0415
 
-    liquidacao = cv.converter_datas(data_liquidacao)
+    liquidacao = conversores.converter_datas(data_liquidacao)
     ltn = _preparar_titulos(liquidacao, vencimentos_ltn, taxas_ltn, "LTN")
     ntnf = _preparar_titulos(liquidacao, vencimentos_ntnf, taxas_ntnf, "NTN-F")
     titulos = (
@@ -179,7 +182,10 @@ def taxas_zero_forwards(  # noqa: PLR0913, PLR0917
         taxas.append(zero)
         if incluir_cupons and titulo == "NTN-F":
             cupons.update(datas_pagamento(liquidacao, vencimento).to_list())
-    curva = pl.DataFrame(dict(zip(esquema, [datas, dias, taxas])), schema=esquema)
+    curva = pl.DataFrame(
+        {"data_vencimento": datas, "dias_uteis": dias, "taxa_zero": taxas},
+        schema=esquema,
+    )
     if not cupons:
         return curva
     datas_saida = pl.Series(sorted(set(datas) | cupons), dtype=pl.Date)

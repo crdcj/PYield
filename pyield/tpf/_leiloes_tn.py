@@ -1,3 +1,9 @@
+"""Leilões de TPFs publicados pelo Tesouro Nacional.
+
+Além do ETL da fonte, reúne o enriquecimento (duration, DV01 e prazo médio)
+compartilhado com a fonte BCB.
+"""
+
 import datetime as dt
 import logging
 
@@ -157,33 +163,33 @@ def _buscar_dados_leiloes(
     resposta = requisitar(
         requests.get, endpoint_api, params=parametros, timeout_leitura=10
     )
-    dados = resposta.json()
-    if "registros" not in dados or not dados["registros"]:
-        return []
-    return dados["registros"]
+    return resposta.json().get("registros") or []
 
 
-def _transformar_dados_brutos(dados_brutos: list[dict]) -> pl.DataFrame:
+def _processar_registros(dados_brutos: list[dict]) -> pl.DataFrame:
     """Converte dados brutos em um DataFrame Polars limpo e tipado."""
     ausentes = ESQUEMA_DADOS.keys() - CHAVES_OPCIONAIS - set().union(*dados_brutos)
     if ausentes:
         msg = f"Resposta do Tesouro sem as chaves obrigatórias: {sorted(ausentes)}."
         raise ValueError(msg)
 
-    # O schema completo cria como nulas as chaves opcionais ausentes e descarta
-    # chaves fora da definição (ex.: "prazo").
-    ajustar_cols = [
+    # Sem aceite na 1ª volta, preços e taxas não têm significado e ficam nulos.
+    colunas_sem_aceite = [
         "pu_minimo",
         "pu_medio",
         "tipo_pu_medio",
         "taxa_media",
         "taxa_maxima",
     ]
+    # A API publica 0 quando não informa o PU médio.
+    pu_medio_zerado = pl.col("pu_medio") == 0
     return (
+        # O schema completo cria como nulas as chaves opcionais ausentes e
+        # descarta chaves fora da definição (ex.: "prazo").
         pl.from_dicts(dados_brutos, schema=ESQUEMA_DADOS)
         .rename(MAPA_COLUNAS)
         .with_columns(
-            cs.starts_with("data_").str.strptime(pl.Date, "%d/%m/%Y"),
+            cs.starts_with("data_").str.to_date("%d/%m/%Y"),
             quantidade_ofertada_total=(
                 pl.sum_horizontal("quantidade_ofertada_1v", "quantidade_ofertada_2v")
             ),
@@ -193,10 +199,10 @@ def _transformar_dados_brutos(dados_brutos: list[dict]) -> pl.DataFrame:
             financeiro_aceito_total=(
                 pl.sum_horizontal("financeiro_aceito_1v", "financeiro_aceito_2v")
             ),
-            tipo_pu_medio=pl.when(pl.col("pu_medio") == 0)
+            tipo_pu_medio=pl.when(pu_medio_zerado)
             .then(pl.lit("calculado"))
             .otherwise(pl.lit("original")),
-            pu_medio=pl.when(pl.col("pu_medio") == 0)
+            pu_medio=pl.when(pu_medio_zerado)
             .then((pl.col("financeiro_aceito_1v") / pl.col("quantidade_aceita_1v")))
             .otherwise("pu_medio")
             .round(6),
@@ -241,7 +247,7 @@ def _transformar_dados_brutos(dados_brutos: list[dict]) -> pl.DataFrame:
         .with_columns(
             pl.when(pl.col("quantidade_aceita_1v") == 0)
             .then(None)
-            .otherwise(pl.col(ajustar_cols))
+            .otherwise(pl.col(colunas_sem_aceite))
             .name.keep(),
             dias_uteis=du.contar_expr("data_liquidacao_1v", "data_vencimento"),
         )
@@ -280,7 +286,7 @@ def _adicionar_prazo_medio(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def _adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
-    """Calcula o DV01 com base na duration da 1a volta e nas quantidades aceitas."""
+    """Calcula o DV01 unitário por título e multiplica pelas quantidades aceitas."""
     dv01_unitario = (
         pl.when(pl.col("titulo") == "LTN")
         .then(ltn.dv01_expr("data_liquidacao_1v", "data_vencimento", "taxa_media"))
@@ -303,29 +309,26 @@ def _adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def _buscar_ptax(df: pl.DataFrame) -> pl.DataFrame:
-    """Busca a PTAX para o intervalo de datas do DataFrame."""
+    """Busca a PTAX do dia útil anterior ao primeiro leilão até o último leilão."""
     inicio = df["data_1v"].min()
     fim = df["data_1v"].max()
     assert isinstance(inicio, dt.date)
     assert isinstance(fim, dt.date)
-    data_min = du.deslocar(inicio, -1)
-    data_max = du.deslocar(fim, 1)
-
-    df = ptax_serie(inicio=data_min, fim=data_max)
-    if df.is_empty():
-        return pl.DataFrame()
-
-    return df.select(data_ref="data", ptax=pl.col("cotacao").cast(pl.Float64)).sort(
-        "data_ref"
+    return (
+        ptax_serie(inicio=du.deslocar(inicio, -1), fim=fim)
+        .select(data_ref="data", ptax=pl.col("cotacao").cast(pl.Float64))
+        .sort("data_ref")
     )
 
 
 def _adicionar_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
-    """Adiciona o DV01 em USD usando a PTAX mais recente por join_asof."""
+    """Adiciona o DV01 em USD usando a PTAX mais recente por join_asof.
+
+    Sem PTAX disponível, as colunas ``ptax`` e ``dv01_*_usd`` ficam nulas.
+    """
     df_ptax = _buscar_ptax(df)
     if df_ptax.is_empty():
         logger.warning("Sem dados de PTAX para calcular DV01 em USD.")
-        return df
 
     return (
         df.sort("data_1v")
@@ -337,9 +340,8 @@ def _adicionar_dv01_usd(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def _selecionar_e_ordenar_colunas(df: pl.DataFrame) -> pl.DataFrame:
-    """Seleciona as colunas finais e ordena o DataFrame para saida."""
-    colunas_selecionadas = [col for col in ORDEM_FINAL_COLUNAS if col in df.columns]
-    return df.select(colunas_selecionadas).sort("data_1v", "titulo", "data_vencimento")
+    """Seleciona as colunas finais e ordena o DataFrame para saída."""
+    return df.select(ORDEM_FINAL_COLUNAS).sort("data_1v", "titulo", "data_vencimento")
 
 
 def leiloes_tn(
@@ -360,18 +362,22 @@ def leiloes_tn(
             return pl.DataFrame()
 
         datas = cv.converter_datas(data)
-        if not isinstance(datas, pl.Series):
-            return _processar_data_unica(datas)
+        if isinstance(datas, pl.Series):
+            if datas.null_count() > 0:
+                msg = "data deve conter apenas datas válidas."
+                raise ValueError(msg)
+            dias = datas.unique().sort().to_list()
+        else:
+            dias = [datas]
 
-        if datas.null_count() > 0:
-            msg = "data deve conter apenas datas válidas."
-            raise ValueError(msg)
-
-        resultados = [_processar_data_unica(data) for data in datas]
-        resultados = [df for df in resultados if not df.is_empty()]
-        if not resultados:
-            return pl.DataFrame()
-        return pl.concat(resultados)
+        # A API é consultada uma vez por dia útil; o processamento é único.
+        registros = [
+            registro
+            for dia in dias
+            if du.eh_dia_util(dia)
+            for registro in _buscar_dados_leiloes(data_leilao=dia)
+        ]
+        return _processar_dados_leiloes(registros)
 
     data_inicio = cv.converter_datas(inicio) if inicio is not None else None
     data_fim = cv.converter_datas(fim) if fim is not None else None
@@ -394,7 +400,7 @@ def _processar_dados_leiloes(
     if not dados_leilao:
         return pl.DataFrame()
 
-    df = _transformar_dados_brutos(dados_leilao)
+    df = _processar_registros(dados_leilao)
     if inicio is not None:
         df = df.filter(pl.col("data_1v") >= inicio)
     if fim is not None:
@@ -424,13 +430,3 @@ def _enriquecer(df: pl.DataFrame) -> pl.DataFrame:
     df = _adicionar_dv01_usd(df)
     df = _adicionar_prazo_medio(df)
     return df.with_columns(cs.float().fill_nan(None))
-
-
-def _processar_data_unica(data_leilao: DateLike) -> pl.DataFrame:
-    """Busca e processa o leilao de uma unica data."""
-    data = cv.converter_datas(data_leilao)
-    if not du.eh_dia_util(data):
-        return pl.DataFrame()
-
-    dados_leilao = _buscar_dados_leiloes(data_leilao=data)
-    return _processar_dados_leiloes(dados_leilao)

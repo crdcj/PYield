@@ -1,5 +1,4 @@
 import functools
-from enum import Enum
 from typing import Literal
 
 import polars as pl
@@ -11,25 +10,12 @@ from pyield.relogio import agora
 URL_BASE = "https://github.com/crdcj/pyield-data/releases/latest/download"
 
 
-# Estrutura interna única — usuário não vê isso
-class _Dataset(Enum):
-    TPF = "anbima_tpf.parquet"
-    FUTURO = "b3_futures.parquet"
-
-
 type IdDataset = Literal["tpf", "futuro"]
 
-
-def _obter_chave_data_hoje() -> str:
-    return agora().strftime("%Y-%m-%d")
-
-
-def _validar_id_dataset(id_dataset: str) -> _Dataset:
-    try:
-        return _Dataset[id_dataset.upper()]
-    except KeyError as e:
-        msg = f"id_dataset inválido: '{id_dataset}'. Valores aceitos: 'tpf', 'futuro'."
-        raise ValueError(msg) from e
+_ARQUIVOS: dict[IdDataset, str] = {
+    "tpf": "anbima_tpf.parquet",
+    "futuro": "b3_futures.parquet",
+}
 
 
 def _carregar_arquivo_github(url_arquivo: str) -> pl.DataFrame:
@@ -47,10 +33,10 @@ def _carregar_arquivo_github(url_arquivo: str) -> pl.DataFrame:
 
 
 @functools.lru_cache(maxsize=8)
-def _obter_dataset_com_ttl(id_dataset: str, chave_data: str) -> pl.DataFrame:
+def _obter_dataset_com_ttl(id_dataset: IdDataset, chave_data: str) -> pl.DataFrame:
+    # chave_data só compõe a chave do cache, que assim expira a cada dia.
     _ = chave_data
-    config = _validar_id_dataset(id_dataset)
-    return _carregar_arquivo_github(f"{URL_BASE}/{config.value}")
+    return _carregar_arquivo_github(f"{URL_BASE}/{_ARQUIVOS[id_dataset]}")
 
 
 def obter_dataset_cacheado(id_dataset: IdDataset) -> pl.DataFrame:
@@ -60,5 +46,4 @@ def obter_dataset_cacheado(id_dataset: IdDataset) -> pl.DataFrame:
     Args:
         id_dataset: "tpf" ou "futuro"
     """
-    df = _obter_dataset_com_ttl(id_dataset.lower(), _obter_chave_data_hoje())
-    return df.clone()
+    return _obter_dataset_com_ttl(id_dataset, f"{agora():%Y-%m-%d}").clone()

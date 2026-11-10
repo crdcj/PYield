@@ -1,9 +1,10 @@
 import math
+from decimal import Decimal
 
 import polars as pl
 import pytest
 
-from pyield import du, lft, ltn, ntnb, ntnc, ntnf
+from pyield import du, lft, ltn, ntnb, ntnb1, ntnbp, ntnc, ntnf
 
 
 @pytest.mark.parametrize("nome", ["rentabilidade", "premio_limpo"])
@@ -220,3 +221,32 @@ def test_ntnc_exprs_batem_com_calculos_escalares():
     assert resultado["dv01"][0] == pytest.approx(
         ntnc.dv01(data_liquidacao, data_vencimento, taxa, pu)
     )
+
+
+R_MAIS = ntnb1.NomeComercial.RENDA_MAIS
+FUNCOES_COM_TAXA = [
+    lambda taxa: ntnb.duration("05-09-2024", "15-08-2040", taxa),
+    lambda taxa: ntnc.duration("21-03-2025", "01-01-2031", taxa),
+    lambda taxa: ntnf.duration("02-09-2024", "01-01-2035", taxa),
+    lambda taxa: ntnb1.duration("23-06-2025", "15-12-2084", taxa, R_MAIS),
+    lambda taxa: ntnb1.dv01("23-06-2025", "15-12-2084", taxa, 100.0, R_MAIS),
+    lambda taxa: ntnbp.dv01("03-01-2025", "15-05-2035", taxa, 2000.0),
+    lambda taxa: ltn.rentabilidade(taxa, Decimal("0.11725")),
+    lambda taxa: lft.rentabilidade(taxa, Decimal("0.11725")),
+    lambda taxa: ntnf.rentabilidade(
+        "23-08-2024", "01-01-2035", taxa, ["2025-01-01", "2035-01-01"], [0.108, 0.115]
+    ),
+    lambda taxa: ntnf.premio_limpo(
+        "23-08-2024", "01-01-2035", taxa, ["2025-01-01", "2035-01-01"], [0.108, 0.115]
+    ),
+]
+
+
+@pytest.mark.parametrize("funcao", FUNCOES_COM_TAXA)
+def test_taxa_decimal_equivale_a_float_e_a_percentual(funcao):
+    """A taxa pode ser float, Decimal ou percentual textual, com o mesmo resultado."""
+    esperado = funcao(0.0625)
+
+    assert math.isfinite(esperado)
+    assert funcao(Decimal("0.0625")) == esperado
+    assert funcao("6.25%") == esperado

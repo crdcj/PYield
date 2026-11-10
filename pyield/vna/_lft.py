@@ -23,14 +23,13 @@ import requests
 
 from pyield import du
 from pyield._internal.converters import converter_datas, data_referencia_valida
-from pyield._internal.numbers import para_decimal, truncar_decimal
+from pyield._internal.numbers import converter_taxa, para_decimal, truncar_decimal
 from pyield._internal.retry import requisitar
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf.titulos._utils import converter_taxa
 from pyield.vna._calculo import PRECISAO_CALCULO
 
 CODIGO_LFT = "210100"
-_LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def projetado_lft(
@@ -95,7 +94,7 @@ def projetado_lft(
         raise ValueError("A data de projeção não pode ser anterior à data-base.")
     dias_uteis = du.contar(inicio, fim)
     if dias_uteis != 1:
-        _LOGGER.warning(
+        logger.warning(
             "A projeção da LFT avançou uma quantidade diferente de um dia útil.",
         )
     base = para_decimal(vna_base)

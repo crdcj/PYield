@@ -126,3 +126,67 @@ cotação do Tesouro. A diferença fica no último dígito do `float`, por exemp
 `yd.ntnc.duration("21-03-2025", "01-01-2031", "6.7626%")` passa de
 `4.405363320448` para `4.405363320448003`. O truncamento dos anos úteis nas
 cotações não muda.
+
+## Taxas em `Decimal`
+
+As funções escalares que recebem uma taxa passam a aceitar `Decimal` de forma
+uniforme, além de `float` e do percentual textual (`"6.25%"`). Antes,
+`cotacao`, `pu` e parte dos `dv01` já aceitavam, mas as funções abaixo
+terminavam em erro do Polars ou em `TypeError`:
+
+- `duration` de `yd.ntnb`, `yd.ntnc`, `yd.ntnb1` e `yd.ntnf`;
+- `dv01` de `yd.ntnb1` e `yd.ntnbp`;
+- `rentabilidade` de `yd.ltn`, `yd.lft` e `yd.ntnf`, e `yd.ntnf.premio_limpo`.
+
+O `Decimal` é convertido para `float` antes do cálculo, e o resultado é o
+mesmo obtido com o `float` equivalente. Chamadas existentes não mudam.
+
+## Correções
+
+As correções abaixo alteram apenas resultados que antes estavam errados ou
+terminavam em erros sem relação com a entrada. Os demais valores não mudam.
+
+- `yd.ntnf.premio_limpo` retorna NaN quando algum pagamento fica além do
+  último vértice da curva DI, como `yd.ntnf.rentabilidade` já fazia. Antes, o
+  spread era calculado com apenas parte dos fluxos. O mesmo vale para a coluna
+  `premio_limpo` de `yd.ntnf.dados`.
+- `yd.ntnf.taxas_zero` calcula a taxa zero do vértice que tem um único
+  pagamento depois da última LTN; nesse caso ela é a própria TIR. Antes, o
+  vértice ficava nulo e os seguintes, NaN. A correção alcança `yd.ntnf.dados`
+  e `yd.tpf.curva_pre`.
+- `yd.ntnb1.cotacao_curva_zero` e `yd.ntnb1.taxa_curva_zero` retornam NaN
+  quando não há pagamentos após a liquidação e geram `ValueError` para curva
+  sem vértice válido, como `yd.ntnbp.taxa` e as funções de curva da NTN-C.
+  Antes, a cotação saía `0.0` e a taxa terminava em `IndexError` ou
+  `TypeError`.
+- `yd.ntnb.taxas_zero`, `yd.ntnb.implicitas`, `yd.ntnf.taxas_zero` e
+  `yd.ntnf.taxas_zero_forwards` ignoram vértices com taxa nula ou NaN, que
+  representam dado ausente: o vértice sai do cálculo e do resultado, e a
+  remoção é registrada no log. Antes, a NTN-B terminava em `TypeError` ou em
+  um erro do solver; em `yd.ntnf.taxas_zero`, a taxa zero do vértice era
+  calculada com uma TIR interpolada dos vizinhos, ou a função terminava em
+  `TypeError` quando o vértice sem taxa era o último; e
+  `yd.ntnf.taxas_zero_forwards` gerava `ValueError`.
+- `yd.ntnb.taxas_zero` e `yd.ntnb.implicitas` geram `ValueError` para taxas
+  infinitas ou menores ou iguais a -1, que antes terminavam em
+  `ZeroDivisionError` ou em um erro do solver.
+- `yd.tpf.leiloes` com `fonte="tn"` e várias datas retorna o resultado
+  ordenado e sem repetir linhas quando a mesma data é informada mais de uma
+  vez, como já ocorria com `fonte="bc"`. Sem PTAX disponível, as colunas
+  `ptax` e `dv01_*_usd` ficam nulas nas duas fontes, em vez de ausentes na
+  fonte TN e de erro na fonte BC.
+- As funções de `yd.ntnb1` deixam de gerar `ValueError` quando o vencimento é
+  menor ou igual à liquidação. Título vencido ou que vence na liquidação não
+  tem mais fluxos: `datas_pagamento` e `fluxos_caixa` retornam vazio, e
+  `cotacao`, `duration`, `dv01`, `cotacao_curva_zero` e `taxa_curva_zero`
+  retornam NaN, como nos demais títulos.
+- `yd.ltn.taxas_forward` sem data retorna DataFrame vazio com as colunas
+  documentadas.
+- `yd.futuro.vencimento` aceita código nulo e retorna `None`, como a
+  assinatura já indicava. `yd.futuro.historico` e `yd.futuro.enriquecer`
+  exigem o contrato completo de três caracteres; um prefixo parcial, como
+  `"D"`, retorna vazio em vez de misturar contratos.
+- Datas informadas como string em branco deixam de gerar `AttributeError` ou
+  `TypeError` em `yd.vna.vigencia` (`ValueError`), `yd.vna.historico`,
+  `yd.ipca.taxa_serie`, `yd.ipca.indice_serie`, `yd.futuro.historico` e nas
+  funções `datas_pagamento` dos títulos (resultado vazio).

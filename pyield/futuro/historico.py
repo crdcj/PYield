@@ -105,8 +105,13 @@ _RENOMEAR_COLUNAS_PR = {
 def _obter_cache_filtrado(contrato: str) -> pl.DataFrame:
     """Carrega o dataset PR cacheado e filtra por contrato."""
     return obter_dataset_cacheado("futuro").filter(
-        pl.col("TckrSymb").str.starts_with(normalizar_contrato(contrato))
+        _eh_do_contrato("TckrSymb", normalizar_contrato(contrato))
     )
+
+
+def _eh_do_contrato(coluna_ticker: str, contrato: str) -> pl.Expr:
+    """Seleciona tickers cujo prefixo de três caracteres é o contrato."""
+    return pl.col(coluna_ticker).str.slice(0, 3) == contrato
 
 
 def _enriquecer_dados(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
@@ -117,8 +122,7 @@ def _enriquecer_dados(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
         ).dt.total_days(),
     ).filter(pl.col("dias_corridos") > 0)
 
-    eh_taxa = contrato in ct.CONTRATOS_TAXA
-    if eh_taxa:
+    if contrato in ct.CONTRATOS_TAXA:
         df = df.rename(_PRECO_PARA_TAXA, strict=False)
         df = df.with_columns(pct_para_decimal(cs.starts_with("taxa_")))
 
@@ -152,11 +156,7 @@ def buscar_historico_cacheado(datas: list[dt.date], contrato: str) -> pl.DataFra
     if not datas:
         return pl.DataFrame()
 
-    df = _obter_cache_filtrado(contrato)
-    df = df.filter(pl.col("TradDt").is_in(datas))
-    if df.is_empty():
-        return pl.DataFrame()
-
+    df = _obter_cache_filtrado(contrato).filter(pl.col("TradDt").is_in(datas))
     return enriquecer(df, contrato)
 
 
@@ -181,7 +181,7 @@ def enriquecer(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     contrato = normalizar_contrato(contrato)
     df = df.rename(_RENOMEAR_COLUNAS_PR)
     df = df.filter(
-        pl.col("codigo_negociacao").str.starts_with(contrato),
+        _eh_do_contrato("codigo_negociacao", contrato),
         pl.col("codigo_negociacao").str.len_chars() == _COMPRIMENTO_TICKER,
     )
     if df.is_empty():
@@ -282,19 +282,15 @@ def historico(data: DateLike | DatesLike, contrato: str) -> pl.DataFrame:
     if any_is_empty(data, contrato):
         return pl.DataFrame()
 
-    dados_convertidos = cv.converter_datas(data)
-    if isinstance(dados_convertidos, pl.Series):
-        datas_validas = [
-            data_ref
-            for data_ref in dados_convertidos
-            if data_ref is not None and data_negociacao_valida(data_ref)
-        ]
-        return buscar_historico_cacheado(datas_validas, contrato)
-
-    if not data_negociacao_valida(dados_convertidos):
-        return pl.DataFrame()
-
-    return buscar_historico_cacheado([dados_convertidos], contrato)
+    datas = cv.converter_datas(data)
+    if not isinstance(datas, pl.Series):
+        datas = [datas]
+    datas_validas = [
+        data_ref
+        for data_ref in datas
+        if data_ref is not None and data_negociacao_valida(data_ref)
+    ]
+    return buscar_historico_cacheado(datas_validas, contrato)
 
 
 def datas_disponiveis(contrato: str) -> pl.Series:

@@ -20,7 +20,7 @@ def leiloes(
 
     Fonte: Tesouro Nacional (``fonte="tn"``, padrão), com dados disponíveis a
     partir de 04/01/2018, ou Banco Central do Brasil (``fonte="bc"``), com
-    dados disponíveis desde 12/11/2012. Retorna dados de quantidades,
+    dados disponíveis desde 12/11/2007. Retorna dados de quantidades,
     financeiros, taxas de colocação, duration e DV01 dos leilões no período
     informado.
 
@@ -59,7 +59,7 @@ def leiloes(
         * data_vencimento (Date): data de vencimento do título.
         * dias_uteis (Int64): dias úteis entre liquidação e vencimento.
         * dias_corridos (Int64): dias corridos entre liquidação e vencimento.
-        * duration (Float64): duration de Macaulay em anos.
+        * duration (Float64): duration de Macaulay em anos; ``0.0`` para LFT.
         * prazo_medio (Float64): maturidade média em anos.
         * quantidade_ofertada_1v (Int64): quantidade ofertada na 1ª volta.
         * quantidade_ofertada_2v (Int64): quantidade ofertada na 2ª volta.
@@ -79,7 +79,8 @@ def leiloes(
         * colocacao_1v (Float64): taxa de colocação da 1ª volta.
         * colocacao_2v (Float64): taxa de colocação da 2ª volta.
         * colocacao_total (Float64): taxa de colocação total.
-        * dv01_1v (Float64): DV01 da 1ª volta em reais.
+        * dv01_1v (Float64): DV01 da 1ª volta em reais. As colunas ``dv01_*``
+            valem ``0.0`` para LFT.
         * dv01_2v (Float64): DV01 da 2ª volta em reais.
         * dv01_total (Float64): DV01 total em reais.
         * ptax (Float64): PTAX usada na conversão para dólar.
@@ -88,9 +89,11 @@ def leiloes(
         * dv01_total_usd (Float64): DV01 total em dólar.
         * pu_minimo (Float64): preço unitário mínimo aceito.
         * pu_medio (Float64): preço unitário médio ponderado aceito.
-        * tipo_pu_medio (String): origem do PU médio.
-        * taxa_media (Float64): taxa média aceita.
-        * taxa_maxima (Float64): taxa máxima aceita.
+        * tipo_pu_medio (String): origem do PU médio — ``"original"`` quando
+            publicado pela fonte ou ``"calculado"`` a partir do financeiro e
+            da quantidade aceitos.
+        * taxa_media (Float64): taxa média aceita (decimal).
+        * taxa_maxima (Float64): taxa máxima aceita (decimal).
 
     Notes:
         ``data`` não pode ser combinado com ``inicio`` ou ``fim``. ``fim`` só

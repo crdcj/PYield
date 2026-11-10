@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import Sequence
+from collections.abc import Sequence
 
 import polars as pl
 
@@ -14,14 +14,14 @@ def forwards_expr(
     r"""
     Cria uma expressão Polars para calcular taxas a termo dentro de DataFrames.
 
-    Versão expressiva de :func:`forwards`, no mesmo estilo de ``du.contar_expr``.
+    Versão em expressão de ``forwards``, no mesmo estilo de ``du.contar_expr``.
     Pensada para uso dentro de ``with_columns()`` ou ``select()``, especialmente
     em DataFrames com múltiplas datas de referência (ex.: séries históricas de
     DI1), onde ``agrupar_por`` define janelas independentes de cálculo sem que
     seja necessário extrair colunas, calcular fora e juntar de volta.
 
     A taxa a termo entre os vértices ``j`` (anterior) e ``k`` (atual) segue a
-    fórmula documentada em :func:`forward`. A primeira linha de cada grupo
+    fórmula documentada em ``forward``. A primeira linha de cada grupo
     (menor ``dias_uteis``) é tratada como spot: ``f = tx``.
 
     Ordenação cronológica:
@@ -36,14 +36,14 @@ def forwards_expr(
         ordem de ``dias_uteis`` dentro do mesmo grupo também fica nula/NaN,
         pois seu vértice anterior é inválido. Como nulos são ordenados ao
         fim em ``order_by=dias_uteis``, um null em ``dias_uteis`` afeta
-        apenas a própria linha. Mesmo contrato de :func:`forwards`.
+        apenas a própria linha. Mesmo contrato de ``forwards``.
 
     Duplicatas em ``(agrupar_por, dias_uteis)``:
         Duplicatas tornam o vértice ambíguo. A função invalida a taxa com
         nulo nas próprias linhas duplicadas; a partir daí o cascateamento
         natural de nulos vale (a linha imediatamente posterior em ordem de
         ``dias_uteis`` dentro do grupo também fica nula; a seguinte volta
-        ao normal). Mesmo contrato de :func:`forwards`.
+        ao normal). Mesmo contrato de ``forwards``.
 
     Args:
         dias_uteis (pl.Expr | str): Nome de coluna ou expressão Polars com
@@ -133,7 +133,7 @@ def forwards_expr(
     Notes:
         - A ordem original do DataFrame é preservada.
         - Para uso fora de DataFrames (arrays, Series soltas), use
-          :func:`forwards`.
+          ``forwards``.
     """
     du_k = pl.col(dias_uteis) if isinstance(dias_uteis, str) else dias_uteis
     tx_k = pl.col(taxas) if isinstance(taxas, str) else taxas
@@ -173,7 +173,7 @@ def forwards(
     Calcula taxas a termo a partir de taxas zero.
 
     A taxa a termo em cada vértice é calculada aplicando sucessivamente a
-    fórmula documentada em :func:`forward` aos vértices consecutivos. A
+    fórmula documentada em ``forward`` aos vértices consecutivos. A
     primeira taxa de cada grupo é a taxa zero do primeiro vértice, pois não há
     um vértice anterior para calcular a taxa a termo.
 
@@ -184,7 +184,7 @@ def forwards(
     duplicadas. Em todos esses casos a linha imediatamente posterior em ordem
     de ``dias_uteis`` dentro do mesmo grupo também fica inválida (nula ou
     NaN), pois seu vértice anterior é inválido; a seguinte volta ao normal.
-    Este contrato é alinhado com :func:`forwards_expr`.
+    Este contrato é alinhado com ``forwards_expr``.
 
     A primeira taxa a termo de cada grupo é definida como a
     taxa zero desse primeiro vértice (fwd₁ = tx₁), dado que não existe um vértice
@@ -290,7 +290,7 @@ def forwards(
             0.069558
         ]
 
-        >>> # NaN se comporta como nulo, mas mantém o dtype NaN no resultado
+        >>> # NaN se comporta como nulo, mas o resultado permanece NaN
         >>> # (nulos e NaN não se misturam).
         >>> du = [230, 415, 730, 914]
         >>> tx = [0.0943, float("nan"), 0.079052, 0.077134]
@@ -329,14 +329,14 @@ def forwards(
           duplicadas. Em todos esses casos, a linha imediatamente posterior
           em ordem de `dias_uteis` dentro do mesmo grupo também fica
           inválida; a seguinte volta ao normal. Mesmo contrato de
-          :func:`forwards_expr`.
+          ``forwards_expr``.
         - Os resultados são retornados na mesma ordem dos dados de entrada.
     """
     # Validações iniciais
     if any_is_empty(dias_uteis, taxas):
         return pl.Series("taxa_forward", dtype=pl.Float64)
 
-    # Delega para a primitiva expressiva. A expressão preserva a ordem
+    # Delega para a versão em expressão. A expressão preserva a ordem
     # original do DataFrame e cuida de nulos, NaN e duplicatas em (du, grupo)
     # via propagação local de nulos (ver Notes).
     df = pl.DataFrame(
@@ -368,7 +368,8 @@ def forward(
     \]
 
     Aqui, ``F₁`` e ``F₂`` são os fatores de capitalização dos prazos ``du1``
-    e ``du2``, e ``tx1`` e ``tx2`` são as respectivas taxas zero.
+    e ``du2``, e ``tx₁`` e ``tx₂`` são as respectivas taxas zero, informadas
+    em ``taxa1`` e ``taxa2``.
 
     Args:
         du1 (int): Número de dias úteis do primeiro ponto (prazo menor).
@@ -377,8 +378,8 @@ def forward(
         taxa2 (float): Taxa zero para o prazo `du2`.
 
     Returns:
-        float: A taxa a termo calculada entre `du₁` e `du₂`. Retorna
-            `nan` se `du₁ >= du₂` ou se qualquer um dos
+        float: A taxa a termo calculada entre `du1` e `du2`. Retorna
+            `nan` se `du1 >= du2` ou se qualquer um dos
             argumentos de entrada for `float("nan")` ou `None`.
 
     Examples:
@@ -390,7 +391,7 @@ def forward(
         nan
 
     Notes:
-        `du₂` precisa ser necessariamente maior que `du₁` para que
+        `du2` precisa ser necessariamente maior que `du1` para que
         o cálculo da taxa a termo seja matematicamente válido.
     """
     if any_is_empty(taxa1, taxa2, du1, du2):

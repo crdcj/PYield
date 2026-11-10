@@ -23,7 +23,7 @@ from decimal import Decimal
 import polars as pl
 
 from pyield import du, interpolador
-from pyield._internal.numbers import truncar_decimal
+from pyield._internal.numbers import converter_taxa, truncar, truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 
 from . import _utils
@@ -40,7 +40,8 @@ def cotacao(
     Args:
         data_liquidacao: Data de liquidação.
         data_vencimento: Data de vencimento.
-        taxa_tir: Taxa interna de retorno anualizada do título.
+        taxa_tir: TIR anual efetiva do título, em decimal, na base de
+            252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
             A taxa de entrada não é truncada antes do cálculo.
 
@@ -63,15 +64,14 @@ def cotacao(
         - Tesouro Direto — Tesouro IPCA+, páginas 2 a 4.
           <https://www.tesourodireto.com.br/documents/d/guest/tesouro_ipca_juros_semestrais>
     """
-    if isinstance(taxa_tir, str):
-        taxa_tir = float(_utils.converter_taxa(taxa_tir))
+    taxa_tir = converter_taxa(taxa_tir)
     if any_is_empty(data_liquidacao, data_vencimento, taxa_tir):
         return Decimal("NaN")
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:
         return Decimal("NaN")
-    anos_uteis = _utils.truncar(dias_uteis / 252, 14)
+    anos_uteis = truncar(dias_uteis / 252, 14)
     cotacao_percentual = 100 / (1 + float(taxa_tir)) ** anos_uteis
     return truncar_decimal(cotacao_percentual, 4)
 
@@ -125,7 +125,7 @@ def taxa(
     Arredondamentos comerciais e spreads de compra ou venda ficam a cargo
     do consumidor.
 
-    A curva pode ser produzida por :func:`pyield.ntnb.taxas_zero`. Para
+    A curva pode ser produzida por ``yd.ntnb.taxas_zero``. Para
     cálculos em lote, ela deve ser construída uma única vez e reutilizada entre
     os títulos.
 
@@ -136,11 +136,14 @@ def taxa(
 
     Returns:
         float: TIR anualizada em formato decimal, sem arredondamento.
-            Retorna ``NaN`` se a liquidação for igual ou posterior ao vencimento.
+            Retorna ``NaN`` se a liquidação for igual ou posterior ao
+            vencimento ou se o prazo exceder o último vértice da curva, pois
+            não há extrapolação na ponta longa.
 
     Raises:
-        ValueError: Se faltarem as colunas ``dias_uteis`` e ``taxa_zero`` ou
-            se um mesmo prazo aparecer com taxas diferentes.
+        ValueError: Se faltar a coluna ``dias_uteis`` ou ``taxa_zero``, se a
+            curva não tiver ao menos um vértice válido ou se um mesmo prazo
+            aparecer com taxas diferentes.
     """
     if any_is_empty(data_liquidacao, data_vencimento):
         return float("nan")
@@ -160,19 +163,20 @@ def taxa(
 def dv01(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
-    taxa_tir: float | str,
+    taxa_tir: float | Decimal | str,
     pu: float | Decimal,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da NTN-B Principal em R$.
 
-    Representa a variação do PU informado para um aumento de 1 bp (0,01%) na
-    taxa.
+    Representa a variação do PU informado para um aumento de 1 bp (0,01 ponto
+    percentual) na taxa.
 
     Args:
         data_liquidacao (DateLike): Data de liquidação.
         data_vencimento (DateLike): Data de vencimento.
-        taxa_tir (float): Taxa interna de retorno anualizada do título.
+        taxa_tir (float | Decimal | str): TIR anual efetiva do título, em decimal, na
+            base de 252 dias úteis.
             Aceita também percentual explícito: "5.75%" ou "5,75%".
         pu: PU usado como base para o cálculo.
 
@@ -187,10 +191,10 @@ def dv01(
         >>> bp.dv01("02-12-2025", "15-05-2029", "7.77%", pu)
         1.120055806382451
     """
-    if isinstance(taxa_tir, str):
-        taxa_tir = float(_utils.converter_taxa(taxa_tir))
+    taxa_tir = converter_taxa(taxa_tir)
     if any_is_empty(data_liquidacao, data_vencimento, taxa_tir, pu):
         return float("nan")
+    taxa_tir = float(taxa_tir)
 
     dias_uteis = du.contar(data_liquidacao, data_vencimento)
     if dias_uteis <= 0:

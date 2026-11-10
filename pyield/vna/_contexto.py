@@ -8,9 +8,8 @@ import polars as pl
 
 from pyield import igpm, ipca
 from pyield._internal.converters import converter_datas
-from pyield._internal.numbers import para_decimal
+from pyield._internal.numbers import converter_taxa, para_decimal
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf.titulos._utils import converter_taxa
 from pyield.vna._consulta import historico, vigencia
 
 _ESQUEMA = {
@@ -58,27 +57,27 @@ def contexto(
         e inflação para projeção por taxa.
 
     Output Columns:
-        titulo (String): Título consultado.
-        data (Date): Data para a qual os parâmetros foram selecionados.
-        inicio_vigencia (Date): Início inclusivo, sem ajuste útil.
-        fim_vigencia (Date): Fim exclusivo, sem ajuste útil.
-        competencia (Date): Primeiro dia do mês da inflação da vigência.
-        competencia_anterior (Date): Primeiro dia do mês anterior à competência.
-        vna_base (Decimal(18, 6)): VNA publicado no início; nulo se ausente.
-        vna_fim (Decimal(18, 6)): VNA publicado no fim; nulo se ausente.
-        indice_anterior (Decimal(18, escala)): Número-índice da competência
+        * titulo (String): Título consultado.
+        * data (Date): Data para a qual os parâmetros foram selecionados.
+        * inicio_vigencia (Date): Início inclusivo, sem ajuste útil.
+        * fim_vigencia (Date): Fim exclusivo, sem ajuste útil.
+        * competencia (Date): Primeiro dia do mês da inflação da vigência.
+        * competencia_anterior (Date): Primeiro dia do mês anterior à competência.
+        * vna_base (Decimal(18, 6)): VNA publicado no início; nulo se ausente.
+        * vna_fim (Decimal(18, 6)): VNA publicado no fim; nulo se ausente.
+        * indice_anterior (Decimal(18, escala)): Número-índice da competência
             anterior; escala 2 para IPCA e 3 para IGP-M. Nulo se ausente.
-        indice_atual (Decimal(18, escala)): Número-índice da competência da
+        * indice_atual (Decimal(18, escala)): Número-índice da competência da
             vigência, com a mesma escala de indice_anterior. Nulo se ausente.
-        origem_indice (String): "IBGE" ou "FGV/Ipeadata"; nula se ambos os
+        * origem_indice (String): "IBGE" ou "FGV/Ipeadata"; nula se ambos os
             índices estiverem ausentes.
-        inflacao (Decimal(38, escala)): Variação mensal decimal, com escala 4
+        * inflacao (Decimal(38, escala)): Variação mensal decimal, com escala 4
             quando realizada ou indisponível. Para projeções informadas, preserva
             a escala da entrada. Pode ser passada diretamente a projetado,
             que aplica as regras de projeção, mesmo para uma taxa realizada.
-        situacao_inflacao (String): "realizado", "projetado" ou "indisponivel".
-        origem_inflacao (String): "IBGE", "SGS/BCB" ou "informada"; nula sem taxa.
-        pendencias (List[String]): "vna_base_indisponivel" e/ou
+        * situacao_inflacao (String): "realizado", "projetado" ou "indisponivel".
+        * origem_inflacao (String): "IBGE", "SGS/BCB" ou "informada"; nula sem taxa.
+        * pendencias (List[String]): "vna_base_indisponivel" e/ou
             "inflacao_indisponivel". Lista vazia se ambos estiverem disponíveis.
             Refere-se à projeção por taxa; não atesta disponibilidade dos índices.
 

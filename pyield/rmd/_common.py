@@ -1,7 +1,6 @@
 """Helpers compartilhados pelos parsers do RMD."""
 
 import datetime as dt
-import re
 
 import polars as pl
 
@@ -20,11 +19,11 @@ _MESES_PT = {
     "Dez": 12,
 }
 
-_PADRAO_ESPACOS = re.compile(r"\s+")
 _LINHA_PERIODOS = 2
+LINHA_INICIO_DADOS = _LINHA_PERIODOS + 1
 
 
-def parsear_periodo(periodo: str) -> dt.date | None:
+def _parsear_periodo(periodo: str) -> dt.date | None:
     """Converte string de período para ``datetime.date`` ou ``None``."""
     try:
         mes_str, ano_str = periodo.split("/")
@@ -40,8 +39,7 @@ def parsear_periodo(periodo: str) -> dt.date | None:
 
 def limpar_rotulo(valor: object) -> str:
     """Remove espaços e notas de rodapé do rótulo lido do Excel."""
-    texto = str(valor).replace("¹", "").replace("²", "").strip()
-    return _PADRAO_ESPACOS.sub(" ", texto)
+    return " ".join(str(valor).replace("¹", "").replace("²", "").split())
 
 
 def obter_periodos_mensais(df_bruto: pl.DataFrame) -> list[tuple[int, dt.date]]:
@@ -53,5 +51,5 @@ def obter_periodos_mensais(df_bruto: pl.DataFrame) -> list[tuple[int, dt.date]]:
     return [
         (i, data)
         for i, periodo in enumerate(df_bruto.row(_LINHA_PERIODOS)[1:])
-        if periodo is not None and (data := parsear_periodo(str(periodo))) is not None
+        if periodo is not None and (data := _parsear_periodo(str(periodo))) is not None
     ]

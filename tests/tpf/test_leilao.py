@@ -182,3 +182,27 @@ def test_leiloes_rejeita_chave_obrigatoria_ausente(monkeypatch):
 
     with pytest.raises(ValueError, match=r"chaves obrigatórias: \['vencimento'\]"):
         yd.tpf.leiloes(data="23-10-2025")
+
+
+def test_leiloes_sequencia_de_datas_ordena_e_remove_repetidas(monkeypatch):
+    """Datas repetidas ou fora de ordem não duplicam nem desordenam o resultado."""
+    dados_23 = json.loads(CAMINHO_JSON.read_bytes())
+    dados_por_data = {
+        dt.date(2025, 10, 23): dados_23,
+        dt.date(2025, 10, 28): [
+            {**registro, "data_leilao": "28/10/2025"} for registro in dados_23
+        ],
+    }
+    monkeypatch.setattr(
+        modulo_leiloes,
+        "_buscar_dados_leiloes",
+        lambda data_leilao=None, **__: dados_por_data[data_leilao],
+    )
+    monkeypatch.setattr(
+        modulo_leiloes, "_buscar_ptax", lambda *_, **__: DF_PTAX_REFERENCIA
+    )
+
+    resultado = yd.tpf.leiloes(data=["28-10-2025", "23-10-2025", "28-10-2025"])
+
+    assert resultado["data_1v"].is_sorted()
+    assert resultado.height == 2 * len(dados_23)

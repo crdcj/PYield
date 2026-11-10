@@ -1,15 +1,10 @@
+import re
 from decimal import ROUND_DOWN, Decimal
 from typing import overload
 
 import polars as pl
 
-
-@overload
-def truncar(values: float | int | Decimal, decimals: int) -> float: ...
-
-
-@overload
-def truncar(values: pl.Series, decimals: int) -> pl.Series: ...
+_ERRO_CASAS_NEGATIVAS = "O número de casas decimais não pode ser negativo."
 
 
 def para_decimal(value: float | int | Decimal) -> Decimal:
@@ -17,16 +12,32 @@ def para_decimal(value: float | int | Decimal) -> Decimal:
     return value if isinstance(value, Decimal) else Decimal(str(value))
 
 
+def converter_taxa(taxa: float | Decimal | str) -> float | Decimal:
+    """Converte percentual explícito para decimal, sem arredondar ou truncar."""
+    if not isinstance(taxa, str):
+        return taxa
+    texto = taxa.strip()
+    if not re.fullmatch(r"[+-]?[0-9]+(?:[.,][0-9]+)?\s*%", texto):
+        raise ValueError('Taxa textual deve ter formato percentual, como "5.75%".')
+    return Decimal(texto[:-1].strip().replace(",", ".") + "e-2")
+
+
 def truncar_decimal(value: float | int | Decimal, decimals: int) -> Decimal:
     """Trunca um escalar e preserva o resultado como Decimal."""
     if decimals < 0:
-        raise ValueError("decimals must be non-negative")
+        raise ValueError(_ERRO_CASAS_NEGATIVAS)
 
     decimal = para_decimal(value)
     if not decimal.is_finite():
         return decimal
     quantizer = Decimal(f"1e-{decimals}")
     return decimal.quantize(quantizer, rounding=ROUND_DOWN)
+
+
+@overload
+def truncar(values: float | int | Decimal, decimals: int) -> float: ...
+@overload
+def truncar(values: pl.Series, decimals: int) -> pl.Series: ...
 
 
 def truncar(
@@ -55,7 +66,7 @@ def truncar(
         ]
     """
     if decimals < 0:
-        raise ValueError("decimals must be non-negative")
+        raise ValueError(_ERRO_CASAS_NEGATIVAS)
 
     if isinstance(values, pl.Series):
         return values.truncate(decimals)

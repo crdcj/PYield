@@ -25,8 +25,7 @@ def agora() -> dt.datetime:
 
     Examples:
         >>> import datetime as dt
-        >>> from pyield import relogio
-        >>> resultado = relogio.agora()
+        >>> resultado = yd.agora()
         >>> isinstance(resultado, dt.datetime)
         True
         >>> str(resultado.tzinfo) == "America/Sao_Paulo"
@@ -46,8 +45,7 @@ def hoje() -> dt.date:
 
     Examples:
         >>> import datetime as dt
-        >>> from pyield import relogio
-        >>> resultado = relogio.hoje()
+        >>> resultado = yd.hoje()
         >>> isinstance(resultado, dt.date)
         True
     """

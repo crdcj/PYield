@@ -166,7 +166,7 @@ def taxas(
     if df.is_empty():
         return pl.DataFrame(schema=_SCHEMA_SAIDA)
 
-    df = df.select(col for col in _COLUNAS_SAIDA if col in df.columns)
+    df = df.select(_COLUNAS_SAIDA)
     if titulo:
         tipos_titulo = _mapear_tipo_titulo(titulo)
         df = df.filter(pl.col("titulo").is_in(tipos_titulo))

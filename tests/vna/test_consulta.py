@@ -190,3 +190,9 @@ def test_projecao_preserva_arredondamento_meio_para_par(
     data = "30-06-2026" if titulo == "NTN-B" else "16-06-2026"
     resultado = yd.vna.projetado(titulo, data, 1000, inflacao)
     assert resultado == yd.vna.projetado(titulo, data, 1000, taxa_arredondada)
+
+
+@pytest.mark.parametrize("titulo", ["NTN-B", "NTN-C"])
+def test_vigencia_rejeita_data_em_branco(titulo):
+    with pytest.raises(ValueError, match="deve ser informada"):
+        yd.vna.vigencia(titulo, "  ")

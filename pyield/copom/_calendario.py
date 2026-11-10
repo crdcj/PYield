@@ -118,24 +118,28 @@ def calendario(
         Consultas sem registros retornam DataFrame vazio com o mesmo esquema.
 
     Output Columns:
-        nro_reuniao (Int64): Número sequencial informado na ata; nulo sem ata.
-        data_inicio (Date): Primeiro dia informado no ICS; nulo fora da agenda.
-        data_decisao (Date): Último dia da reunião, dataReferencia nas atas.
-        data_publicacao (Date): Publicação da ata; nula quando não disponível.
-        data_efetividade (Date): Próximo dia útil após a decisão, calculado pelo
+        * nro_reuniao (Int64): Número sequencial informado na ata; nulo sem ata.
+        * data_inicio (Date): Primeiro dia informado no ICS; nulo fora da agenda.
+        * data_decisao (Date): Último dia da reunião, dataReferencia nas atas.
+        * data_publicacao (Date): Publicação da ata; nula quando não disponível.
+        * data_efetividade (Date): Próximo dia útil após a decisão, calculado pelo
             calendário brasileiro de yd.du; data de vencimento/liquidação CPM.
-        status (String): "Realizada" se a decisão for até hoje no Brasil;
+        * status (String): "Realizada" se a decisão for até hoje no Brasil;
             "A realizar" caso contrário. Classificação por data, não por ata.
-        titulo (String): Título original da ata; nulo quando não disponível.
-        fonte (String): "Ata" ou "Calendário", conforme a origem da decisão.
+        * titulo (String): Título original da ata; nulo quando não disponível.
+        * fonte (String): "Ata" ou "Calendário", conforme a origem da decisão.
 
     Notes:
         O horizonte depende das datas publicadas pelo BCB. A consulta às atas
         solicita até 500 registros. O status é recalculado a cada chamada.
         Erros de rede e payload inválido são propagados. O ICS publica um
-        evento por dia: dias únicos
-        consecutivos devem formar pares; grupos incompletos geram ValueError.
+        evento por dia de reunião: cada reunião deve aparecer como dois dias
+        consecutivos, e grupos com outra quantidade de dias geram ValueError.
         O início histórico não é inferido subtraindo um dia da decisão.
+
+    Raises:
+        ValueError: Se ``inicio`` for posterior a ``fim`` ou se o calendário
+            ICS do BCB for inválido.
 
     Examples:
         >>> cal = yd.copom.calendario(inicio="01-01-2026")  # doctest: +SKIP
@@ -183,14 +187,14 @@ def proxima_reuniao(referencia: DateLike | None = None) -> pl.DataFrame:
         Retorna vazio quando não há reunião publicada a partir da referência.
 
     Output Columns:
-        nro_reuniao (Int64): Número sequencial da ata, quando disponível.
-        data_inicio (Date): Primeiro dia no ICS, quando disponível.
-        data_decisao (Date): Último dia da reunião.
-        data_publicacao (Date): Publicação da ata, quando disponível.
-        data_efetividade (Date): Próximo dia útil após a decisão.
-        status (String): "Realizada" ou "A realizar", conforme a data atual.
-        titulo (String): Título da ata, quando disponível.
-        fonte (String): "Ata" ou "Calendário".
+        * nro_reuniao (Int64): Número sequencial da ata, quando disponível.
+        * data_inicio (Date): Primeiro dia no ICS, quando disponível.
+        * data_decisao (Date): Último dia da reunião.
+        * data_publicacao (Date): Publicação da ata, quando disponível.
+        * data_efetividade (Date): Próximo dia útil após a decisão.
+        * status (String): "Realizada" ou "A realizar", conforme a data atual.
+        * titulo (String): Título da ata, quando disponível.
+        * fonte (String): "Ata" ou "Calendário".
 
     Examples:
         >>> yd.copom.proxima_reuniao("01-01-2026").height  # doctest: +SKIP

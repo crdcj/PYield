@@ -6,9 +6,8 @@ from decimal import Decimal
 import polars as pl
 
 import pyield._internal.converters as conversores
-from pyield._internal.numbers import para_decimal
+from pyield._internal.numbers import converter_taxa, para_decimal
 from pyield._internal.types import DateLike, any_is_empty
-from pyield.tpf.titulos._utils import converter_taxa
 from pyield.vna import _calculo as _vna
 from pyield.vna import _download
 
@@ -122,9 +121,9 @@ def vigencia(data: DateLike) -> tuple[dt.date, dt.date]:
         >>> yd.vna.vigencia("NTN-C", "31-07-2026")
         (datetime.date(2026, 7, 1), datetime.date(2026, 8, 1))
     """
-    if any_is_empty(data):
-        raise ValueError("A data da vigência deve ser informada.")
     data = conversores.converter_datas(data)
+    if data is None:
+        raise ValueError("A data da vigência deve ser informada.")
     inicio = data.replace(day=1)
     fim = (inicio + dt.timedelta(days=32)).replace(day=1)
     return inicio, fim

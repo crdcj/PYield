@@ -81,14 +81,33 @@ def test_apenas_ltn_e_vencidos():
     [
         (["01-01-2030"], []),
         (["01-01-2030"] * 2, [0.1, 0.2]),
-        (["01-01-2030"], [float("nan")]),
         (["01-01-2030"], [-1.0]),
-        (["01-01-2030"], [None]),
+        (["01-01-2030"], [float("inf")]),
     ],
 )
 def test_entradas_invalidas(datas, taxas):
     with pytest.raises(ValueError, match="tamanho|duplicados|válidas"):
         yd.ntnf.taxas_zero_forwards("04-09-2026", datas, taxas, [], [])
+
+
+@pytest.mark.parametrize("taxa_ausente", [float("nan"), None])
+def test_vertice_sem_taxa_e_ignorado(taxa_ausente):
+    """Taxa nula ou NaN é dado ausente: o vértice sai do cálculo e do resultado."""
+    ltn = (["2025-01-01"], [0.108])
+    vencimentos = ["2027-01-01", "2029-01-01", "2031-01-01"]
+    com_ausente = yd.ntnf.taxas_zero_forwards(
+        "03-09-2024", *ltn, vencimentos, [0.119, taxa_ausente, 0.121]
+    )
+    sem_o_vertice = yd.ntnf.taxas_zero_forwards(
+        "03-09-2024", *ltn, [vencimentos[0], vencimentos[2]], [0.119, 0.121]
+    )
+    apenas_ausente = yd.ntnf.taxas_zero_forwards(
+        "04-09-2026", ["01-01-2030"], [taxa_ausente], [], []
+    )
+
+    assert com_ausente.equals(sem_o_vertice)
+    assert apenas_ausente.is_empty()
+    assert apenas_ausente.schema == com_ausente.schema
 
 
 def test_preco_incompativel():

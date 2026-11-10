@@ -59,10 +59,7 @@ def _selecionar_feriados(
             raise ValueError("Opção inválida para calendario.")
 
 
-def _expressao_feriados(
-    expr_data: pl.Expr,
-    calendario: Calendario = "auto",
-) -> pl.Expr:
+def _expressao_feriados(expr_data: pl.Expr, calendario: Calendario) -> pl.Expr:
     match calendario:
         case "anterior":
             return pl.lit(feriados_br.ANTERIORES)
@@ -273,10 +270,7 @@ def contar(
         [253, 231, 212]
     """
     resultado = (
-        pl.DataFrame(
-            data={"inicio": inicio, "fim": fim},
-            nan_to_null=True,
-        )
+        pl.DataFrame(data={"inicio": inicio, "fim": fim})
         .select(dias_uteis=contar_expr("inicio", "fim", calendario))
         .get_column("dias_uteis")
     )
@@ -565,10 +559,7 @@ def deslocar(
         ]
     """
     resultado = (
-        pl.DataFrame(
-            data={"datas": datas, "deslocamento": deslocamento},
-            nan_to_null=True,
-        )
+        pl.DataFrame(data={"datas": datas, "deslocamento": deslocamento})
         .select(
             data_ajustada=deslocar_expr(
                 "datas",
@@ -726,17 +717,15 @@ def eh_dia_util(
 
     PRESERVAÇÃO DE ORDEM E FORMA: A saída preserva a ordem original dos elementos.
     Nenhuma ordenação, deduplicação, remodelação ou alinhamento é realizado; o
-    i-ésimo resultado corresponde à i-ésima data fornecida após expansão (se
-    alguma expansão ocorreu de uma entrada escalar em outro lugar da cadeia
-    de chamadas).
+    i-ésimo resultado corresponde à i-ésima data fornecida.
 
     PROPAGAÇÃO DE NULOS: Um argumento escalar nulo faz curto-circuito para ``None``.
     Valores nulos dentro de entradas array-like produzem nulos nas posições
     correspondentes da saída.
 
-    TIPO DE RETORNO: Se a entrada (não-nula) resolve para um único elemento, um
-    ``bool`` Python é retornado. Se esse único elemento for nulo, ``None`` é
-    retornado. Caso contrário, uma ``polars.Series`` de booleanos nomeada
+    TIPO DE RETORNO: Se a entrada for escalar, um ``bool`` Python é retornado;
+    se esse escalar for nulo, ``None`` é retornado. Para entradas array-like,
+    mesmo com um único elemento, uma ``polars.Series`` de booleanos nomeada
     ``'eh_dia_util'`` é produzida.
 
     FINS DE SEMANA: Sábados e domingos nunca são dias úteis independentemente do
@@ -778,7 +767,7 @@ def eh_dia_util(
         - Strings inválidas são tratadas como ``null`` e propagadas ao resultado.
     """
     resultado = (
-        pl.DataFrame({"datas": datas}, nan_to_null=True)
+        pl.DataFrame({"datas": datas})
         .select(eh_dia_util=eh_dia_util_expr("datas", calendario=calendario))
         .get_column("eh_dia_util")
     )
@@ -802,10 +791,4 @@ def ultimo_dia_util() -> dt.date:
         - A determinação do último dia útil considera a lista de feriados brasileiros
           correta (antes ou depois da transição 2023-12-26) aplicável à data atual.
     """
-    # Obtém a data atual do Brasil sem informação de fuso horário
-    hoje_brasil = relogio.hoje()
-    resultado = deslocar(hoje_brasil, 0, ajuste="anterior")
-    assert isinstance(resultado, dt.date), (
-        "Premissa violada: deslocar não retornou uma data para a data atual."
-    )
-    return resultado
+    return deslocar(relogio.hoje(), 0, ajuste="anterior")

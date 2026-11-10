@@ -314,7 +314,7 @@ def _processar_xml_extraido(xml_bytes: bytes) -> pl.DataFrame:
     registros = _parsear_xml_registros(xml_bytes)
     if not registros:
         return pl.DataFrame()
-    return _converter_para_df(registros).sort("TckrSymb")
+    return _converter_para_df(registros)
 
 
 def _filtrar_df(
@@ -354,10 +354,9 @@ def buscar(
     Nas camadas públicas enriquecidas da biblioteca, o vocabulário preferido é
     o canônico da lib (ex.: `contrato`, `codigo_negociacao`).
 
-    Nota:
-        O dataset cacheado ``pr`` (arquivo ``b3_pr.parquet``) pode conter um
-        subconjunto de colunas focado em futuros. Esta função, porém, opera no
-        schema bruto do XML da B3 para a data/relatório consultados.
+    O dataset cacheado ``futuro`` (arquivo ``b3_futures.parquet``) pode conter
+    um subconjunto de colunas focado em futuros. Esta função, porém, opera no
+    schema bruto do XML da B3 para a data/relatório consultados.
 
     Args:
         data: Data de negociação no formato 'DD-MM-YYYY', 'DD/MM/YYYY',
@@ -427,7 +426,6 @@ def buscar(
 
     Raises:
         requests.HTTPError: Se a requisição HTTP ao endpoint falhar.
-        etree.XMLSyntaxError: Se o XML recebido estiver malformado.
 
     Examples:
         >>> import pyield as yd
@@ -448,7 +446,7 @@ def ler(
 ) -> pl.DataFrame:
     """Lê e processa o price report da B3 a partir do dado bruto.
 
-    Mesma saída de :func:`buscar`, mas recebe o dado bruto em vez de
+    Mesma saída de ``buscar``, mas recebe o dado bruto em vez de
     baixar da rede. Aceita o ZIP externo como ``bytes`` ou ``Path``
     (caminho para o arquivo ZIP), e também XML descomprimido como ``bytes``.
 
@@ -467,7 +465,7 @@ def ler(
 
     Returns:
         pl.DataFrame: DataFrame com as mesmas colunas documentadas em
-        :func:`buscar`.
+        ``buscar``.
     """
     conteudo = fonte.read_bytes() if isinstance(fonte, Path) else fonte
 

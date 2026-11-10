@@ -11,7 +11,7 @@ from decimal import Decimal
 import polars as pl
 
 from pyield import du, fwd
-from pyield._internal.numbers import truncar_decimal
+from pyield._internal.numbers import converter_taxa, truncar, truncar_decimal
 from pyield._internal.types import DateLike, any_is_empty
 
 from . import _utils
@@ -124,7 +124,7 @@ def vencimentos(data: DateLike) -> pl.Series:
             2030-01-01
         ]
     """
-    return dados(data)["data_vencimento"]
+    return _utils.obter_tpf(data, "LTN")["data_vencimento"]
 
 
 def pu(
@@ -145,7 +145,8 @@ def pu(
 
     Returns:
         Decimal: PU da LTN truncado em seis casas decimais. Retorna
-            ``Decimal("NaN")`` quando o prazo até o vencimento não é positivo.
+            ``Decimal("NaN")`` para entradas nulas ou quando o prazo até o
+            vencimento não é positivo.
 
     Notes:
         O PU teórico é:
@@ -166,9 +167,8 @@ def pu(
         Como a LTN possui um único pagamento, sua taxa anual efetiva coincide
         com a taxa zero e com a TIR para o prazo do título. O fluxo e o prazo
         são determinados pelo título e pela liquidação. No cálculo oficial,
-        além do truncamento da taxa
-        descrito em `Args`, o prazo é truncado em 14 casas decimais e o PU
-        é truncado em seis.
+        além do truncamento da taxa descrito em `Args`, o prazo é truncado em
+        14 casas decimais e o PU é truncado em seis.
 
     References:
         - Secretaria do Tesouro Nacional. Metodologia de Cálculo dos Títulos
@@ -183,7 +183,7 @@ def pu(
         Decimal('753.315323')
     """
     # Valida e normaliza entradas
-    taxa = _utils.converter_taxa(taxa)
+    taxa = converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return Decimal("NaN")
     taxa = _utils.normalizar_taxa_precificacao(taxa)
@@ -193,7 +193,7 @@ def pu(
         return Decimal("NaN")
 
     # Calcula anos úteis truncados conforme a STN
-    anos_truncados = _utils.truncar(dias_uteis / 252, 14)
+    anos_truncados = truncar(dias_uteis / 252, 14)
 
     fator_desconto = (1 + taxa) ** anos_truncados
 
@@ -209,7 +209,7 @@ def taxa(
     r"""
     Calcula a taxa implícita da LTN a partir do preço unitário (PU).
 
-    Inverte algebricamente o valor presente, sem truncamentos da STN:
+    Inverte algebricamente o valor presente, sem truncamentos da STN.
 
     Args:
         data_liquidacao: Data de liquidação.
@@ -240,11 +240,11 @@ def taxa(
         Como há apenas um pagamento, a taxa anual efetiva coincide com a taxa
         zero e com a TIR para o prazo do título. A inversão usa o preço e o
         prazo sem os truncamentos do PU oficial; por isso, pode não recuperar
-        exatamente a taxa usada
-        para gerar um PU por `pu`.
+        exatamente a taxa usada para gerar um PU por `pu`.
 
     Examples:
-        Exibe as taxas em formato decimal:
+        A taxa é retornada em formato decimal; multiplique por 100 para exibi-la
+        em percentual:
 
         >>> from pyield import ltn
         >>> ltn.taxa("05-07-2024", "01-01-2030", 535.279902)
@@ -267,7 +267,9 @@ def taxa(
     return (VALOR_FACE / preco_float) ** (252 / dias_uteis) - 1
 
 
-def rentabilidade(taxa_ltn: float | str, taxa_di: float | str) -> float:
+def rentabilidade(
+    taxa_ltn: float | Decimal | str, taxa_di: float | Decimal | str
+) -> float:
     r"""
     Calcula a rentabilidade da LTN sobre a taxa de DI Futuro.
 
@@ -319,17 +321,14 @@ def rentabilidade(taxa_ltn: float | str, taxa_di: float | str) -> float:
         >>> ltn.rentabilidade("11.8746%", "11.725%")
         1.0120718007994287
     """
-    if isinstance(taxa_ltn, str):
-        taxa_ltn = float(_utils.converter_taxa(taxa_ltn))
-    if isinstance(taxa_di, str):
-        taxa_di = float(_utils.converter_taxa(taxa_di))
+    taxa_ltn = converter_taxa(taxa_ltn)
+    taxa_di = converter_taxa(taxa_di)
     if any_is_empty(taxa_ltn, taxa_di):
         return float("nan")
-    # Cálculo das taxas diárias
+    taxa_di = float(taxa_di)
+    taxa_ltn = float(taxa_ltn)
     taxa_diaria_ltn = (1 + taxa_ltn) ** (1 / 252) - 1
     taxa_diaria_di = (1 + taxa_di) ** (1 / 252) - 1
-
-    # Retorno do cálculo da rentabilidade
     return taxa_diaria_ltn / taxa_diaria_di
 
 
@@ -409,7 +408,7 @@ def dv01(
         >>> ltn.dv01("26-03-2025", "01-01-2032", "15.097%")
         0.2269055067940826
     """
-    taxa = _utils.converter_taxa(taxa)
+    taxa = converter_taxa(taxa)
     if any_is_empty(data_liquidacao, data_vencimento, taxa):
         return float("nan")
 
@@ -459,7 +458,7 @@ def dv01_expr(
 ) -> pl.Expr:
     """Cria expressão Polars para o DV01 da LTN.
 
-    O cálculo é aplicado linha a linha e reprifica o PU teórico para um
+    O cálculo é aplicado linha a linha e reprecifica o PU teórico para um
     aumento de 1 bp na taxa.
 
     Args:
@@ -498,7 +497,8 @@ def taxas_forward(data: DateLike) -> pl.DataFrame:
         data: Data das taxas indicativas.
 
     Returns:
-        pl.DataFrame: DataFrame com as taxas forward.
+        pl.DataFrame: DataFrame com as taxas forward. Na ausência de dados,
+            retorna vazio com as mesmas colunas e tipos.
 
     Output Columns:
         - data_vencimento (Date): Data de vencimento.
@@ -552,8 +552,6 @@ def taxas_forward(data: DateLike) -> pl.DataFrame:
         │ 2032-01-01      ┆ 1553       ┆ 13.883          ┆ 14.481206    │
         └─────────────────┴────────────┴─────────────────┴──────────────┘
     """
-    if any_is_empty(data):
-        return pl.DataFrame()
     return (
         _utils.obter_tpf(data, "LTN")
         .select(

@@ -23,8 +23,8 @@ _PRECO_PARA_TAXA_INTRADIA = {
     "preco_oferta_venda": "taxa_oferta_venda",
 }
 
-# Ordem preferida de colunas na saída. Colunas preco_* e taxa_* são
-# mutuamente exclusivas — o rename no preprocessamento garante isso.
+# Ordem preferida de colunas na saída. O rename torna preco_* e taxa_*
+# mutuamente exclusivas, exceto preco_ultimo, calculado para DI1 e DAP.
 _ORDEM_COLUNAS = (
     "data_referencia",
     "horario_referencia",
@@ -74,7 +74,8 @@ def intradia(contrato: str) -> pl.DataFrame:
 
     Returns:
         DataFrame Polars com os dados intradia processados. Retorna DataFrame
-        vazio fora do horário de pregão ou quando não houver dados.
+        vazio em dia sem pregão, antes do início da divulgação intradia ou
+        quando não houver dados.
 
     Output Columns:
         Colunas base:
@@ -115,6 +116,8 @@ def intradia(contrato: str) -> pl.DataFrame:
 
         Colunas específicas:
             * dv01 (Float64): variação no preço para 1bp de taxa, apenas DI1.
+            * preco_ultimo (Float64): PU calculado a partir de ``taxa_ultima``,
+                apenas DI1 e DAP.
             * taxa_forward (Float64): taxa a termo, apenas DI1 e DAP.
 
     Notes:
@@ -145,7 +148,9 @@ def intradia(contrato: str) -> pl.DataFrame:
 def _processar_intradia(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
     df = df.filter(pl.col("codigo_mercado") == "FUT")
     if contrato in CONTRATOS_TAXA:
-        df = df.rename(_PRECO_PARA_TAXA_INTRADIA, strict=False)
+        df = df.rename(_PRECO_PARA_TAXA_INTRADIA, strict=False).with_columns(
+            pct_para_decimal(cs.starts_with("taxa_"))
+        )
     df = df.drop_nulls("data_vencimento").sort("data_vencimento")
 
     data_negociacao = du.ultimo_dia_util()
@@ -154,9 +159,6 @@ def _processar_intradia(df: pl.DataFrame, contrato: str) -> pl.DataFrame:
         dias_corridos=(pl.col("data_vencimento") - data_negociacao).dt.total_days(),
         dias_uteis=du.contar_expr(data_negociacao, "data_vencimento"),
     ).filter(pl.col("dias_corridos") > 0)
-
-    if contrato in CONTRATOS_TAXA:
-        df = df.with_columns(pct_para_decimal(cs.starts_with("taxa_")))
 
     if contrato in {"DI1", "DAP"}:
         anos_uteis = pl.col("dias_uteis") / 252

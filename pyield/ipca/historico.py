@@ -53,31 +53,6 @@ def _processar_ipca(dados: dict[str, str]) -> pl.DataFrame:
     )
 
 
-def _buscar_periodo(
-    inicio: DateLike,
-    fim: DateLike,
-    variavel: int,
-) -> pl.DataFrame:
-    """Busca dados do IPCA para um intervalo de datas."""
-    if any_is_empty(inicio, fim):
-        return _processar_ipca({})
-    periodo_inicio = converter_datas(inicio).strftime("%Y%m")
-    periodo_fim = converter_datas(fim).strftime("%Y%m")
-    url = f"{_URL_BASE}{periodo_inicio}-{periodo_fim}/variaveis/{variavel}{_SUFIXO_URL}"
-    return _processar_ipca(_buscar_dados_api(url))
-
-
-def _buscar_ultimos(
-    qtd_meses: int,
-    variavel: int,
-) -> pl.DataFrame:
-    """Busca os últimos N meses de dados do IPCA."""
-    if qtd_meses <= 0:
-        raise ValueError("O número de meses deve ser maior que 0.")
-    url = f"{_URL_BASE}-{qtd_meses}/variaveis/{variavel}{_SUFIXO_URL}"
-    return _processar_ipca(_buscar_dados_api(url))
-
-
 def _extrair_escalar(df: pl.DataFrame, coluna: str) -> Decimal:
     if df.is_empty():
         return Decimal("NaN")
@@ -90,13 +65,21 @@ def _buscar_serie(
     ultimos: int | None,
     variavel: int,
 ) -> pl.DataFrame:
+    """Busca a série do IPCA pelos últimos meses ou por um intervalo de datas."""
     if ultimos is not None:
-        return _buscar_ultimos(ultimos, variavel)
-    if inicio is None:
-        raise ValueError("Informe 'inicio' ou 'ultimos'.")
-    if fim is None:
-        fim = relogio.hoje()
-    return _buscar_periodo(inicio, fim, variavel)
+        if ultimos <= 0:
+            raise ValueError("O número de meses deve ser maior que 0.")
+        periodos = f"-{ultimos}"
+    else:
+        if inicio is None:
+            raise ValueError("Informe 'inicio' ou 'ultimos'.")
+        data_inicio = converter_datas(inicio)
+        data_fim = relogio.hoje() if fim is None else converter_datas(fim)
+        if data_inicio is None or data_fim is None:
+            return _processar_ipca({})
+        periodos = f"{data_inicio:%Y%m}-{data_fim:%Y%m}"
+    url = f"{_URL_BASE}{periodos}/variaveis/{variavel}{_SUFIXO_URL}"
+    return _processar_ipca(_buscar_dados_api(url))
 
 
 def taxa_serie(
@@ -151,15 +134,12 @@ def taxa_serie(
         >>> # Obter as taxas do IPCA dos últimos 3 meses
         >>> df = ipca.taxa_serie(ultimos=3)
     """
-    return (
-        _buscar_serie(inicio, fim, ultimos, _VAR_TAXA)
-        .with_columns(
-            # A divisão decimal do Polars preserva a escala do numerador.
-            taxa=(pl.col("valor").cast(pl.Decimal(precision=18, scale=4)) / 100).cast(
-                pl.Decimal(precision=18, scale=4)
-            )
-        )
-        .select("periodo", "taxa")
+    return _buscar_serie(inicio, fim, ultimos, _VAR_TAXA).select(
+        "periodo",
+        # A divisão decimal do Polars preserva a escala do numerador.
+        taxa=(pl.col("valor").cast(pl.Decimal(precision=18, scale=4)) / 100).cast(
+            pl.Decimal(precision=18, scale=4)
+        ),
     )
 
 

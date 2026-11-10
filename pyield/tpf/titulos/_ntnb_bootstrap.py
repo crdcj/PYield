@@ -6,21 +6,13 @@ from collections.abc import Callable
 
 import polars as pl
 
-import pyield._internal.converters as cv
+import pyield._internal.converters as conversores
 from pyield import du
 from pyield._internal.types import ArrayLike, DateLike, DatesLike, any_is_empty
 
 from . import _utils
 
 MAX_EXPANSOES_INTERVALO = 32
-
-
-def _gerar_vertices_pagamentos(
-    fluxos_titulos: list[pl.DataFrame],
-) -> list[dt.date]:
-    """Gera vértices nas datas de pagamento dos títulos."""
-    datas = {data for fluxos in fluxos_titulos for data in fluxos["data_pagamento"]}
-    return sorted(datas)
 
 
 def _resolver_taxa_forward(
@@ -64,7 +56,7 @@ def _calibrar_taxa_forward(
 ) -> float:
     """Calibra apenas os fluxos posteriores ao vencimento anterior."""
     cotacao_alvo = sum(valor / (1 + taxa_tir) ** (dias / 252) for dias, valor in fluxos)
-    pv_fixo = sum(
+    vp_fixo = sum(
         valor * descontos[dias] for dias, valor in fluxos if dias <= dias_anterior
     )
     trecho = [
@@ -75,7 +67,7 @@ def _calibrar_taxa_forward(
 
     def erro(taxa_forward: float) -> float:
         return (
-            pv_fixo
+            vp_fixo
             + sum(valor / (1 + taxa_forward) ** prazo for prazo, valor in trecho)
             - cotacao_alvo
         )
@@ -87,7 +79,10 @@ def _bootstrap(
     liquidacao: dt.date, titulos: pl.DataFrame, fluxos_titulos: list[pl.DataFrame]
 ) -> pl.DataFrame:
     """Acumula os descontos dos trechos calibrados e retorna a curva nos vencimentos."""
-    vertices = _gerar_vertices_pagamentos(fluxos_titulos)
+    # Os vértices são as datas de pagamento de todos os títulos
+    vertices = sorted(
+        {data for fluxos in fluxos_titulos for data in fluxos["data_pagamento"]}
+    )
     dias_por_data = dict(
         zip(vertices, du.contar(liquidacao, pl.Series(vertices)), strict=True)
     )
@@ -95,7 +90,7 @@ def _bootstrap(
     dias_anterior = 0
     desconto_anterior = 1.0
     taxas_forward = []
-    taxas_zero = []
+    taxas_zero_vencimentos = []
     indice_vertice = 0
 
     for vencimento, taxa_tir, fluxos in zip(
@@ -121,7 +116,7 @@ def _bootstrap(
         dias_vencimento = dias_por_data[vencimento]
         desconto_anterior = descontos[dias_vencimento]
         taxas_forward.append(taxa_forward)
-        taxas_zero.append(
+        taxas_zero_vencimentos.append(
             desconto_anterior ** (-252 / dias_vencimento) - 1
             if dias_vencimento
             else taxa_forward
@@ -133,7 +128,7 @@ def _bootstrap(
             [dias_por_data[data] for data in titulos["data_vencimento"]], dtype=pl.Int64
         ),
         taxa_forward=pl.Series(taxas_forward, dtype=pl.Float64),
-        taxa_zero=pl.Series(taxas_zero, dtype=pl.Float64),
+        taxa_zero=pl.Series(taxas_zero_vencimentos, dtype=pl.Float64),
     ).select("data_vencimento", "dias_uteis", "taxa_tir", "taxa_forward", "taxa_zero")
 
 
@@ -248,7 +243,7 @@ def taxas_zero(
         **Precisão do método**
 
         A calibração usa \(\mathrm{DU} / 252\) sem truncamento e soma os valores
-        presentes sem arredondamento. Isso difere de :func:`cotacao`, que
+        presentes sem arredondamento. Isso difere de ``yd.ntnb.cotacao``, que
         aplica as regras da STN de arredondamento dos fluxos e truncamento da
         cotação.
 
@@ -259,12 +254,15 @@ def taxas_zero(
             úteis (ex.: 0.10 para 10%).
 
     Returns:
-        pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards. Retorna
-            vazio quando não restarem vencimentos posteriores à liquidação.
+        pl.DataFrame: Curva zero calibrada pelo bootstrap de forwards.
+            Vértices com taxa nula ou NaN e vencimentos menores ou iguais à
+            liquidação são ignorados e não aparecem no resultado. Retorna
+            vazio quando não restar nenhum vértice.
 
     Raises:
-        ValueError: Se vencimentos e taxas tiverem tamanhos diferentes ou se
-            um mesmo vencimento aparecer com taxas diferentes.
+        ValueError: Se vencimentos e taxas tiverem tamanhos diferentes, se
+            um mesmo vencimento aparecer com taxas diferentes ou se alguma
+            taxa for infinita ou menor ou igual a -1.
         RuntimeError: Se não for possível encontrar um intervalo válido para
             alguma taxa forward, ocorrer valor não finito na avaliação ou
             a bisseção não convergir.
@@ -368,18 +366,21 @@ def taxas_zero(
     if any_is_empty(data_liquidacao, vencimentos, taxas):
         return pl.DataFrame(schema=schema_vazio)
 
-    liquidacao = cv.converter_datas(data_liquidacao)
+    liquidacao = conversores.converter_datas(data_liquidacao)
     vencimentos, taxas = _utils.filtrar_vertices_futuros(
-        liquidacao, cv.converter_datas(vencimentos), taxas, "NTN-B"
+        liquidacao, conversores.converter_datas(vencimentos), taxas, "NTN-B"
     )
     if vencimentos.is_empty():
         return pl.DataFrame(schema=schema_vazio)
+    # Taxas nulas e NaN já foram removidas com seus vértices
+    if not (taxas.is_finite() & (taxas > -1)).all():
+        raise ValueError("Taxas de NTN-B devem ser finitas e maiores que -1.")
 
     titulos = pl.DataFrame({"data_vencimento": vencimentos, "taxa_tir": taxas}).sort(
         "data_vencimento"
     )
-    vencimentos_ordenados = titulos["data_vencimento"].to_list()
     fluxos_titulos = [
-        fluxos_caixa(liquidacao, vencimento) for vencimento in vencimentos_ordenados
+        fluxos_caixa(liquidacao, vencimento)
+        for vencimento in titulos["data_vencimento"]
     ]
     return _bootstrap(liquidacao, titulos, fluxos_titulos)
